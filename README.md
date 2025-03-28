@@ -28,6 +28,11 @@ Make sure the following libraries are installed:
     * `./configure --with-sdl-prefix=$PWD/../ --prefix=$PWD/../`
     * `make -j8 install`
     * `cd ../..`
+  * Execute configure on SDL_mixer and install into the build folder
+    * `cd deps/SDL_mixer`
+    * `./configure --with-sdl-prefix=$PWD/../ --prefix=$PWD/../`
+    * `make -j8 install`
+    * `cd ../..`
   * Execute make to compile libcimgui.a on linux
     * `make static`
   * Execute dub to compile the executable
