@@ -1,9 +1,12 @@
 [submodule "deps/cimgui"]
 	path = deps/cimgui
 	url = git@github.com:cimgui/cimgui.git
+	ignore = dirty
 [submodule "deps/SDL"]
 	path = deps/SDL
 	url = git@github.com:libsdl-org/SDL.git
+	ignore = dirty
 [submodule "deps/SDL_ttf"]
 	path = deps/SDL_ttf
 	url = git@github.com:libsdl-org/SDL_ttf.git
+	ignore = dirty
