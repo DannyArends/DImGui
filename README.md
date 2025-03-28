@@ -20,7 +20,12 @@ Make sure the following libraries are installed:
     * `cd ../..`
   * Execute configure on SDL_ttf, and install into the build folder
     * `cd deps/SDL_ttf`
-    * `./configure --prefix=$PWD/../`
+    * `./configure --with-sdl-prefix=$PWD/../ --prefix=$PWD/../`
+    * `make -j8 install`
+    * `cd ../..`
+  * Execute configure on SDL_image and install into the build folder
+    * `cd deps/SDL_ttf`
+    * `./configure --with-sdl-prefix=$PWD/../ --prefix=$PWD/../`
     * `make -j8 install`
     * `cd ../..`
   * Execute make to compile libcimgui.a on linux

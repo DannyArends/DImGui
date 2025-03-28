@@ -10,3 +10,7 @@
 	path = deps/SDL_ttf
 	url = git@github.com:libsdl-org/SDL_ttf.git
 	ignore = dirty
+[submodule "deps/SDL_image"]
+	path = deps/SDL_image
+	url = git@github.com:libsdl-org/SDL_image.git
+	ignore = dirty
