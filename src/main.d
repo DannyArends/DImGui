@@ -235,12 +235,16 @@ void main(string[] args){
 
   // Setup SDL
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER);
-  SDL_version compiled;
   SDL_version linked;
 
   SDL_GetVersion(&linked);
   SDL_Log("SDL[C] v%u.%u.%u", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
   SDL_Log("SDL[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+
+  SDL_Log("SDL[TTF] %d", TTF_Init());
+  linked = *TTF_Linked_Version();
+  SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_PATCHLEVEL);
+  SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
 
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window* window = SDL_CreateWindow("ImGUI", SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
@@ -362,6 +366,7 @@ void main(string[] args){
   vkDestroyInstance(g_Instance, g_Allocator);
 
   SDL_DestroyWindow(window);
+  TTF_Quit();
   SDL_Quit();
   return;
 }

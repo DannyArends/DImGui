@@ -2,3 +2,9 @@ libcimgui.so
 libcimgui.a
 imgui.ini
 DImGui
+
+deps/SDL
+deps/bin/
+deps/include/
+deps/lib/
+deps/share/
