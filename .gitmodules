@@ -17,3 +17,4 @@
 [submodule "deps/SDL_mixer"]
 	path = deps/SDL_mixer
 	url = git@github.com:libsdl-org/SDL_mixer.git
+	ignore = dirty

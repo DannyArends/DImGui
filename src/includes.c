@@ -9,6 +9,7 @@
 extern DECLSPEC int SDLCALL SDL_Init(Uint32 flags);
 extern DECLSPEC void SDLCALL SDL_Quit(void);
 
+#include <SDL_audio.h>
 #include <SDL_events.h>
 #include <SDL_video.h>
 #include <SDL_log.h>
@@ -20,6 +21,7 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #define SDL_h_
 #include <SDL_ttf.h>
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 
 
 #include <vulkan/vulkan.h>

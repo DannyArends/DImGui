@@ -1,4 +1,5 @@
 import includes;
+import std.conv : to;
 import std.string : toStringz;
 import core.stdc.string : strcmp;
 
@@ -38,6 +39,27 @@ bool IsExtensionAvailable(VkExtensionProperties[] properties, const(char)* exten
   return false;
 }
 
+void printSoundDecoders() {
+  int nChunk = Mix_GetNumChunkDecoders();
+  int nMusic = Mix_GetNumMusicDecoders();
+
+  string chunk = "(chunk):";
+  string music = "(music):";
+
+  for(int i =  0; i < nChunk; ++i){ chunk ~= " " ~ to!string(Mix_GetChunkDecoder(i)); } ;
+  for(int i = 0; i < nMusic; ++i){ music ~= " " ~ to!string(Mix_GetMusicDecoder(i)); } ;
+
+  int bits, sample_size, rate, audio_rate,audio_channels;
+  Uint16 audio_format;
+  Mix_QuerySpec(&audio_rate, &audio_format, &audio_channels);
+  bits = audio_format&0xFF;
+  sample_size = bits/8+audio_channels;
+  rate = audio_rate;
+  SDL_Log("Decoders %s", toStringz(chunk));
+  SDL_Log("Decoders %s", toStringz(music));
+  SDL_Log("Audio @ %d Hz %d bit %s, %d bytes audio buffer\n", audio_rate, bits, audio_channels>1?"stereo".ptr:"mono".ptr, 1024 );
+}
+
 void SetupVulkan(const(char)*[] extensions) {
   // Enumerate available extensions
   uint32_t properties_count;
@@ -58,13 +80,23 @@ void SetupVulkan(const(char)*[] extensions) {
   extensions.length += 1;
   extensions[extensions.length-1] = "VK_EXT_debug_report";
 
+  // Application info structure
+  VkApplicationInfo applicationInfo  = {
+    pApplicationName: "DImgUi", 
+    applicationVersion: 0, 
+    pEngineName: "DImgUi v0", 
+    engineVersion: 0,
+    apiVersion: VK_MAKE_API_VERSION( 0, 1, 4, 0 )
+  };
+
   // Create instance
   VkInstanceCreateInfo createInstance = { 
     sType : VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
     enabledLayerCount : 1,
     ppEnabledLayerNames : &layers[0],
     enabledExtensionCount : cast(uint)extensions.length,
-    ppEnabledExtensionNames : &extensions[0]
+    ppEnabledExtensionNames : &extensions[0],
+    pApplicationInfo: &applicationInfo
   };
 
   vkCreateInstance(&createInstance, g_Allocator, &g_Instance);
@@ -251,6 +283,14 @@ void main(string[] args){
   SDL_Log("TTF[C] v%u.%u.%u", SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_PATCHLEVEL);
   SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
 
+  SDL_Log("SDL[MIX] %d", Mix_Init(MIX_INIT_MP3 | MIX_INIT_OGG | MIX_INIT_MID));
+  linked = *Mix_Linked_Version();
+  SDL_Log("MIX[C] v%u.%u.%u", SDL_MIXER_MAJOR_VERSION, SDL_MIXER_MINOR_VERSION, SDL_MIXER_PATCHLEVEL);
+  SDL_Log("MIX[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+
+  Mix_OpenAudio(44100, AUDIO_S32LSB, 2, 1024);
+  printSoundDecoders();
+
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window* window = SDL_CreateWindow("ImGUI", SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
 
@@ -371,6 +411,8 @@ void main(string[] args){
   vkDestroyInstance(g_Instance, g_Allocator);
 
   SDL_DestroyWindow(window);
+  Mix_CloseAudio();
+  Mix_Quit();
   IMG_Quit();
   TTF_Quit();
   SDL_Quit();
