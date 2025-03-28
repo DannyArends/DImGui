@@ -4,3 +4,6 @@
 [submodule "deps/SDL"]
 	path = deps/SDL
 	url = git@github.com:libsdl-org/SDL.git
+[submodule "deps/SDL_ttf"]
+	path = deps/SDL_ttf
+	url = git@github.com:libsdl-org/SDL_ttf.git
