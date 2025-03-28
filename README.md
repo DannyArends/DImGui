@@ -14,10 +14,10 @@ Make sure the following libraries are installed:
   * `git submodule update --init --recursive` (If already cloned)
 * Compile
   * Execute configure on SDL2, and install into the build folder
-    * `cd SDL`
+    * `cd deps/SDL`
     * `./configure --prefix=$PWD/build/`
     * `make install`
-    * `cd ..`
+    * `cd ../..`
   * Execute make to compile libcimgui.a on linux
     * `make static`
   * Execute dub to compile the executable

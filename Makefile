@@ -2,15 +2,15 @@
 # Cross Platform Makefile
 # Compatible with Ubuntu 14.04.1 and macOS
 
-OBJS  = ./cimgui/cimgui.o
-OBJS += ./cimgui/cimgui_impl.o
-OBJS += ./cimgui/imgui/imgui.o
-OBJS += ./cimgui/imgui/imgui_draw.o
-OBJS += ./cimgui/imgui/imgui_demo.o
-OBJS += ./cimgui/imgui/imgui_tables.o
-OBJS += ./cimgui/imgui/imgui_widgets.o
-OBJS += ./cimgui/imgui/backends/imgui_impl_vulkan.o
-OBJS += ./cimgui/imgui/backends/imgui_impl_sdl2.o
+OBJS  = ./deps/cimgui/cimgui.o
+OBJS += ./deps/cimgui/cimgui_impl.o
+OBJS += ./deps/cimgui/imgui/imgui.o
+OBJS += ./deps/cimgui/imgui/imgui_draw.o
+OBJS += ./deps/cimgui/imgui/imgui_demo.o
+OBJS += ./deps/cimgui/imgui/imgui_tables.o
+OBJS += ./deps/cimgui/imgui/imgui_widgets.o
+OBJS += ./deps/cimgui/imgui/backends/imgui_impl_vulkan.o
+OBJS += ./deps/cimgui/imgui/backends/imgui_impl_sdl2.o
 
 CXXFLAGS=-O2 -fno-exceptions -fno-rtti
 
@@ -22,9 +22,9 @@ ifeq ($(UNAME_S), Linux) #LINUX
 	ECHO_MESSAGE = "Linux"
 
 	OUTPUTNAME = libcimgui.so
-	CXXFLAGS += -I./cimgui/imgui/
-	CXXFLAGS += -I./cimgui/imgui/backends/
-	CXXFLAGS += -I/usr/include/SDL2/
+	CXXFLAGS += -I./deps/cimgui/imgui/
+	CXXFLAGS += -I./deps/cimgui/imgui/backends/
+	CXXFLAGS += -I./deps/SDL2/include
 	CXXFLAGS += -fno-threadsafe-statics
 	CXXFLAGS += -DCIMGUI_USE_SDL2 -DCIMGUI_USE_VULKAN -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API="extern \"C\" "
 	CXXFLAGS += -Wall
