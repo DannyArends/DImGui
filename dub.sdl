@@ -11,6 +11,7 @@ lflags "-L./deps/lib/"
 lflags "-L./"
 lflags "-l:libSDL2.a"
 lflags "-l:libSDL2_ttf.a"
+lflags "-l:libSDL2_image.a"
 lflags "-l:libcimgui.a"
 lflags "-lvulkan"
 

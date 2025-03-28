@@ -24,7 +24,7 @@ Make sure the following libraries are installed:
     * `make -j8 install`
     * `cd ../..`
   * Execute configure on SDL_image and install into the build folder
-    * `cd deps/SDL_ttf`
+    * `cd deps/SDL_image`
     * `./configure --with-sdl-prefix=$PWD/../ --prefix=$PWD/../`
     * `make -j8 install`
     * `cd ../..`

@@ -246,6 +246,11 @@ void main(string[] args){
   SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_PATCHLEVEL);
   SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
 
+  SDL_Log("SDL[IMG] %d", IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF));
+  linked = *IMG_Linked_Version();
+  SDL_Log("TTF[C] v%u.%u.%u", SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_PATCHLEVEL);
+  SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window* window = SDL_CreateWindow("ImGUI", SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
 
@@ -366,6 +371,7 @@ void main(string[] args){
   vkDestroyInstance(g_Instance, g_Allocator);
 
   SDL_DestroyWindow(window);
+  IMG_Quit();
   TTF_Quit();
   SDL_Quit();
   return;
