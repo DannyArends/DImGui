@@ -1,3 +1,4 @@
-libCImGui.so
+libcimgui.so
+libcimgui.a
 imgui.ini
 DImGui

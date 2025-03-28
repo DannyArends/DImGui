@@ -13,8 +13,13 @@ Make sure the following libraries are installed:
   * `git clone --recursive https://github.com/DannyArends/DImGui.git`
   * `git submodule update --init --recursive` (If already cloned)
 * Compile
-  * Execute make to compile libCImGui.so on linux
-    * `make`
+  * Execute configure on SDL2, and install into the build folder
+    * `cd SDL`
+    * `./configure --prefix=$PWD/build/`
+    * `make install`
+    * `cd ..`
+  * Execute make to compile libcimgui.a on linux
+    * `make static`
   * Execute dub to compile the executable
     * `dub`
 

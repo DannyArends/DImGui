@@ -13,6 +13,7 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #include <SDL_video.h>
 #include <SDL_log.h>
 #include <SDL_timer.h>
+#include <SDL_version.h>
 #include <SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 

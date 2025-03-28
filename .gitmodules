@@ -1,6 +1,6 @@
-[submodule "cimgui"]
-	path = cimgui
+[submodule "deps/cimgui"]
+	path = deps/cimgui
 	url = git@github.com:cimgui/cimgui.git
-[submodule "SDL"]
-	path = SDL
+[submodule "deps/SDL"]
+	path = deps/SDL
 	url = git@github.com:libsdl-org/SDL.git
