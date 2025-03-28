@@ -1,4 +1,5 @@
-name "imgui_test"
+name "dimgui"
+targetName "DImGui"
 description "An example of calling imgui from D."
 authors "Danny Arends"
 copyright "Copyright © 2025, Danny Arends"
@@ -11,4 +12,4 @@ lflags "-L./"
 lflags "-lSDL2"
 lflags "-lvulkan"
 lflags "-lCImGui"
-targetName "imgui_test"
+
