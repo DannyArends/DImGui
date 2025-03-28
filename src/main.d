@@ -1,4 +1,5 @@
 import includes;
+import std.array : join;
 import std.conv : to;
 import std.string : toStringz;
 import core.stdc.string : strcmp;
@@ -278,7 +279,12 @@ void main(string[] args){
   SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_PATCHLEVEL);
   SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
 
-  SDL_Log("SDL[IMG] %d", IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF));
+  int r = IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF);
+  string[] gfxFmts;
+  if(r & IMG_INIT_JPG) gfxFmts ~= "jpg";
+  if(r & IMG_INIT_PNG) gfxFmts ~= "png";
+  if(r & IMG_INIT_TIF) gfxFmts ~= "tif";
+  SDL_Log("SDL[IMG] %d = %s", r, toStringz(gfxFmts.join(",")));
   linked = *IMG_Linked_Version();
   SDL_Log("TTF[C] v%u.%u.%u", SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_PATCHLEVEL);
   SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
