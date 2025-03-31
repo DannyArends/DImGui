@@ -15,8 +15,6 @@ CXXFLAGS += -I./deps/cimgui/imgui/
 CXXFLAGS += -I./deps/cimgui/imgui/backends/
 UNAME_S := $(shell uname -s)
 
-AR := ar -rc
-
 ifeq ($(UNAME_S), Linux) #LINUX
 	ECHO_MESSAGE = "Linux"
 
