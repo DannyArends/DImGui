@@ -19,10 +19,10 @@
 		"lflags-windows-x86_64": ["-LIBPATH:C:/VulkanSDK/1.4.309.0/Lib", 
                               "-LIBPATH:./", 
                               "-LIBPATH:./deps/libs/lib", 
-                              "SDL2main.lib", "SDL2.lib", "SDL2_ttf.lib", "SDL2_mixer.lib", "SDL2_image.lib",
+                              "SDL2main.lib", "SDL2.lib", "SDL2_image.lib", "SDL2_mixer.lib", "SDL2_ttf.lib",
                               "cimgui.lib", "vulkan-1.lib"],
 		"dflags-linux": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
-		"lflags-linux": ["-L./", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image", "-lSDL2_mixer", "-lcimgui", "-lvulkan"],
+		"lflags-linux": ["-L./", "-lSDL2", "-lSDL2_image", "-lSDL2_mixer", "-lSDL2_ttf", "-lcimgui", "-lvulkan"],
 		"copyFiles-windows-x86_64": [
 			"deps/libs/lib/SDL2_image.dll",
 			"deps/libs/lib/SDL2_mixer.dll",
