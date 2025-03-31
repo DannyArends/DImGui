@@ -1,22 +1,9 @@
 import includes;
-import std.array : join;
-import std.conv : to;
+
 import std.string : toStringz;
 import core.stdc.string : strcmp;
-
-static VkAllocationCallbacks*   g_Allocator = null;
-static VkInstance               g_Instance = cast(VkInstance)VK_NULL_HANDLE;
-static VkPhysicalDevice         g_PhysicalDevice = cast(VkPhysicalDevice)VK_NULL_HANDLE;
-static VkDevice                 g_Device = cast(VkDevice)VK_NULL_HANDLE;
-static uint32_t                 g_QueueFamily = uint.max;
-static VkQueue                  g_Queue = cast(VkQueue)VK_NULL_HANDLE;
-static VkDebugReportCallbackEXT g_DebugReport = cast(VkDebugReportCallbackEXT)VK_NULL_HANDLE;
-static VkPipelineCache          g_PipelineCache = cast(VkPipelineCache)VK_NULL_HANDLE;
-static VkDescriptorPool         g_DescriptorPool = cast(VkDescriptorPool)VK_NULL_HANDLE;
-
-static ImGui_ImplVulkanH_Window g_Window;
-static uint32_t                 g_MinImageCount = 2;
-static bool                     g_SwapChainRebuild = false;
+import initsdl : printSoundDecoders, initSDL;
+import application : App;
 
 PFN_vkCreateDebugReportCallbackEXT  vkDebugCallback;
 PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugCallback;
@@ -40,28 +27,7 @@ bool IsExtensionAvailable(VkExtensionProperties[] properties, const(char)* exten
   return false;
 }
 
-void printSoundDecoders() {
-  int nChunk = Mix_GetNumChunkDecoders();
-  int nMusic = Mix_GetNumMusicDecoders();
-
-  string chunk = "(chunk):";
-  string music = "(music):";
-
-  for(int i =  0; i < nChunk; ++i){ chunk ~= " " ~ to!string(Mix_GetChunkDecoder(i)); } ;
-  for(int i = 0; i < nMusic; ++i){ music ~= " " ~ to!string(Mix_GetMusicDecoder(i)); } ;
-
-  int bits, sample_size, rate, audio_rate,audio_channels;
-  Uint16 audio_format;
-  Mix_QuerySpec(&audio_rate, &audio_format, &audio_channels);
-  bits = audio_format&0xFF;
-  sample_size = bits/8+audio_channels;
-  rate = audio_rate;
-  SDL_Log("Decoders %s", toStringz(chunk));
-  SDL_Log("Decoders %s", toStringz(music));
-  SDL_Log("Audio @ %d Hz %d bit %s, %d bytes audio buffer\n", audio_rate, bits, audio_channels>1?"stereo".ptr:"mono".ptr, 1024 );
-}
-
-void SetupVulkan(const(char)*[] extensions) {
+void SetupVulkan(ref App app, const(char)*[] extensions) {
   // Enumerate available extensions
   uint32_t properties_count;
   VkExtensionProperties[] properties;
@@ -100,12 +66,12 @@ void SetupVulkan(const(char)*[] extensions) {
     pApplicationInfo: &applicationInfo
   };
 
-  vkCreateInstance(&createInstance, g_Allocator, &g_Instance);
-  SDL_Log("vkCreateInstance: %p", g_Instance);
+  vkCreateInstance(&createInstance, app.g_Allocator, &app.g_Instance);
+  SDL_Log("vkCreateInstance: %p", app.g_Instance);
 
   // Hook instance function
-  vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(g_Instance, "vkCreateDebugReportCallbackEXT");
-  vkDestroyDebugCallback = cast(PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(g_Instance, "vkDestroyDebugReportCallbackEXT");
+  vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.g_Instance, "vkCreateDebugReportCallbackEXT");
+  vkDestroyDebugCallback = cast(PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(app.g_Instance, "vkDestroyDebugReportCallbackEXT");
 
   VkDebugReportCallbackCreateInfoEXT createDebug = {
     sType : VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -113,13 +79,13 @@ void SetupVulkan(const(char)*[] extensions) {
     pfnCallback : &debugCallback,
     pUserData : null
   };
-  vkDebugCallback(g_Instance, &createDebug, g_Allocator, &g_DebugReport);
+  vkDebugCallback(app.g_Instance, &createDebug, app.g_Allocator, &app.g_DebugReport);
 
   // Select Physical Device (GPU)
-  g_PhysicalDevice = ImGui_ImplVulkanH_SelectPhysicalDevice(g_Instance);
+  app.g_PhysicalDevice = ImGui_ImplVulkanH_SelectPhysicalDevice(app.g_Instance);
 
   //  Select graphics queue family
-  g_QueueFamily = ImGui_ImplVulkanH_SelectQueueFamilyIndex(g_PhysicalDevice);
+  app.g_QueueFamily = ImGui_ImplVulkanH_SelectQueueFamilyIndex(app.g_PhysicalDevice);
 
   uint32_t device_extensions_count = 1;
   const(char)*[] device_extensions = ["VK_KHR_swapchain"];
@@ -128,7 +94,7 @@ void SetupVulkan(const(char)*[] extensions) {
   float[] queue_priority = [1.0f];
   VkDeviceQueueCreateInfo[1] queue_info;
   queue_info[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_info[0].queueFamilyIndex = g_QueueFamily;
+  queue_info[0].queueFamilyIndex = app.g_QueueFamily;
   queue_info[0].queueCount = 1;
   queue_info[0].pQueuePriorities = &queue_priority[0];
 
@@ -139,9 +105,9 @@ void SetupVulkan(const(char)*[] extensions) {
     enabledExtensionCount : device_extensions_count,
     ppEnabledExtensionNames : &device_extensions[0],
   };
-  vkCreateDevice(g_PhysicalDevice, &createDevice, g_Allocator, &g_Device);
+  vkCreateDevice(app.g_PhysicalDevice, &createDevice, app.g_Allocator, &app.g_Device);
 
-  vkGetDeviceQueue(g_Device, g_QueueFamily, 0, &g_Queue);
+  vkGetDeviceQueue(app.g_Device, app.g_QueueFamily, 0, &app.g_Queue);
 
   // Create Descriptor Pool
   VkDescriptorPoolSize[] pool_sizes = [ { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE } ];
@@ -158,15 +124,15 @@ void SetupVulkan(const(char)*[] extensions) {
     poolSizeCount : cast(uint32_t)pool_sizes.length,
     pPoolSizes : &pool_sizes[0]
   };
-  vkCreateDescriptorPool(g_Device, &createPool, g_Allocator, &g_DescriptorPool);
+  vkCreateDescriptorPool(app.g_Device, &createPool, app.g_Allocator, &app.g_DescriptorPool);
 }
 
-static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height) {
+static void SetupVulkanWindow(ref App app, ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height) {
   wd.Surface = surface;
 
   // Check for WSI support
   VkBool32 isSupported;
-  vkGetPhysicalDeviceSurfaceSupportKHR(g_PhysicalDevice, g_QueueFamily, wd.Surface, &isSupported);
+  vkGetPhysicalDeviceSurfaceSupportKHR(app.g_PhysicalDevice, app.g_QueueFamily, wd.Surface, &isSupported);
   if (!isSupported) {
     SDL_Log("[vulkan] Error no WSI support on physical device 0");
     abort();
@@ -175,34 +141,34 @@ static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface
   // Select Image & ColorSpace Format
   VkFormat[] rImageFormat = [ VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM ];
   VkColorSpaceKHR rColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-  wd.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(g_PhysicalDevice, wd.Surface, &rImageFormat[0], cast(int)rImageFormat.length, rColorSpace);
+  wd.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(app.g_PhysicalDevice, wd.Surface, &rImageFormat[0], cast(int)rImageFormat.length, rColorSpace);
 
   // Select presentMode
   VkPresentModeKHR[] presentModes = [ VK_PRESENT_MODE_FIFO_KHR ];
   //VkPresentModeKHR[] presentModes = [ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR ];
-  wd.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(g_PhysicalDevice, wd.Surface, &presentModes[0], cast(int)presentModes.length);
+  wd.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(app.g_PhysicalDevice, wd.Surface, &presentModes[0], cast(int)presentModes.length);
 
   // Create ImGUI window
-  ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, wd, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
+  ImGui_ImplVulkanH_CreateOrResizeWindow(app.g_Instance, app.g_PhysicalDevice, app.g_Device, wd, app.g_QueueFamily, app.g_Allocator, width, height, app.g_MinImageCount);
 }
 
-static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* drawData) {
+static void FrameRender(App app, ImGui_ImplVulkanH_Window* wd, ImDrawData* drawData) {
   VkSemaphore image_acquired_semaphore  = wd.FrameSemaphores.Data[wd.SemaphoreIndex].ImageAcquiredSemaphore;
   VkSemaphore render_complete_semaphore = wd.FrameSemaphores.Data[wd.SemaphoreIndex].RenderCompleteSemaphore;
-  VkResult err = vkAcquireNextImageKHR(g_Device, wd.Swapchain, uint64_t.max, image_acquired_semaphore, cast(VkFence_T*)VK_NULL_HANDLE, &wd.FrameIndex);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) g_SwapChainRebuild = true;
+  VkResult err = vkAcquireNextImageKHR(app.g_Device, wd.Swapchain, uint64_t.max, image_acquired_semaphore, cast(VkFence_T*)VK_NULL_HANDLE, &wd.FrameIndex);
+  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.g_SwapChainRebuild = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
 
   ImGui_ImplVulkanH_Frame* fd = &wd.Frames.Data[wd.FrameIndex];
 
   {  // Wait for Fence
-    enforceVK(vkWaitForFences(g_Device, 1, &fd.Fence, VK_TRUE, uint64_t.max));
-    enforceVK(vkResetFences(g_Device, 1, &fd.Fence));
+    enforceVK(vkWaitForFences(app.g_Device, 1, &fd.Fence, VK_TRUE, uint64_t.max));
+    enforceVK(vkResetFences(app.g_Device, 1, &fd.Fence));
   }
 
   {  // Record command buffer
-    enforceVK(vkResetCommandPool(g_Device, fd.CommandPool, 0));
+    enforceVK(vkResetCommandPool(app.g_Device, fd.CommandPool, 0));
     VkCommandBufferBeginInfo info = {
       sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
@@ -241,12 +207,12 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* drawData) {
       pSignalSemaphores : &render_complete_semaphore,
     };
     enforceVK(vkEndCommandBuffer(fd.CommandBuffer));
-    enforceVK(vkQueueSubmit(g_Queue, 1, &info, fd.Fence));
+    enforceVK(vkQueueSubmit(app.g_Queue, 1, &info, fd.Fence));
   }
 }
 
-void FramePresent(ImGui_ImplVulkanH_Window* wd) {
-  if (g_SwapChainRebuild) return;
+void FramePresent(ref App app, ImGui_ImplVulkanH_Window* wd) {
+  if (app.g_SwapChainRebuild) return;
   VkSemaphore render_complete_semaphore = wd.FrameSemaphores.Data[wd.SemaphoreIndex].RenderCompleteSemaphore;
   VkPresentInfoKHR info = {
     sType : VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -256,67 +222,34 @@ void FramePresent(ImGui_ImplVulkanH_Window* wd) {
     pSwapchains : &wd.Swapchain,
     pImageIndices : &wd.FrameIndex,
   };
-  VkResult err = vkQueuePresentKHR(g_Queue, &info);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) g_SwapChainRebuild = true;
+  VkResult err = vkQueuePresentKHR(app.g_Queue, &info);
+  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.g_SwapChainRebuild = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
   wd.SemaphoreIndex = (wd.SemaphoreIndex + 1) % wd.SemaphoreCount; // Now we can use the next set of semaphores
 }
 
 void main(string[] args){
-  auto g_Window = *ImGui_ImplVulkanH_Window_ImGui_ImplVulkanH_Window();
-
-  // Setup SDL
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER);
-  SDL_version linked;
-
-  SDL_GetVersion(&linked);
-  SDL_Log("SDL[C] v%u.%u.%u", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
-  SDL_Log("SDL[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
-
-  SDL_Log("SDL[TTF] %d", TTF_Init());
-  linked = *TTF_Linked_Version();
-  SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_PATCHLEVEL);
-  SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
-
-  int r = IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF);
-  string[] gfxFmts;
-  if(r & IMG_INIT_JPG) gfxFmts ~= "jpg";
-  if(r & IMG_INIT_PNG) gfxFmts ~= "png";
-  if(r & IMG_INIT_TIF) gfxFmts ~= "tif";
-  SDL_Log("SDL[IMG] %d = %s", r, toStringz(gfxFmts.join(",")));
-  linked = *IMG_Linked_Version();
-  SDL_Log("TTF[C] v%u.%u.%u", SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_PATCHLEVEL);
-  SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
-
-  SDL_Log("SDL[MIX] %d", Mix_Init(MIX_INIT_MP3 | MIX_INIT_OGG | MIX_INIT_MID));
-  linked = *Mix_Linked_Version();
-  SDL_Log("MIX[C] v%u.%u.%u", SDL_MIXER_MAJOR_VERSION, SDL_MIXER_MINOR_VERSION, SDL_MIXER_PATCHLEVEL);
-  SDL_Log("MIX[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
-
-  Mix_OpenAudio(44100, AUDIO_S32LSB, 2, 1024);
-  printSoundDecoders();
-
-  SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-  SDL_Window* window = SDL_CreateWindow("ImGUI", SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
+  App app;
+  app.initSDL(); // Hook SDL immediately to be able to do output
 
   // Get available extensions
   uint32_t extensions_count = 0;
   const(char)*[] extensions;
-  SDL_Vulkan_GetInstanceExtensions(window, &extensions_count, null);
+  SDL_Vulkan_GetInstanceExtensions(app.window, &extensions_count, null);
   extensions.length = extensions_count;
-  SDL_Vulkan_GetInstanceExtensions(window, &extensions_count, &extensions[0]);
+  SDL_Vulkan_GetInstanceExtensions(app.window, &extensions_count, &extensions[0]);
   // Setup Vulkan
-  SetupVulkan(extensions);
+  app.SetupVulkan(extensions);
 
   // Create Window Surface
   VkSurfaceKHR surface;
-  SDL_Vulkan_CreateSurface(window, g_Instance, &surface);
+  SDL_Vulkan_CreateSurface(app.window, app.g_Instance, &surface);
   SDL_Log("SDL_Vulkan_CreateSurface: %p", surface);
 
   int w, h;
-  SDL_GetWindowSize(window, &w, &h);
-  SetupVulkanWindow(&g_Window, surface, w, h);
+  SDL_GetWindowSize(app.window, &w, &h);
+  app.SetupVulkanWindow(&app.g_Window, surface, w, h);
 
   igCreateContext(null);
   ImGuiIO* io = igGetIO_Nil(); cast(void)io;
@@ -336,21 +269,21 @@ void main(string[] args){
   }
 
   // Setup Platform/Renderer backends
-  ImGui_ImplSDL2_InitForVulkan(window);
+  ImGui_ImplSDL2_InitForVulkan(app.window);
   ImGui_ImplVulkan_InitInfo init_info = {
-    Instance : g_Instance,
-    PhysicalDevice : g_PhysicalDevice,
-    Device : g_Device,
-    QueueFamily : g_QueueFamily,
-    Queue : g_Queue,
-    PipelineCache : g_PipelineCache,
-    DescriptorPool : g_DescriptorPool,
-    RenderPass : g_Window.RenderPass,
+    Instance : app.g_Instance,
+    PhysicalDevice : app.g_PhysicalDevice,
+    Device : app.g_Device,
+    QueueFamily : app.g_QueueFamily,
+    Queue : app.g_Queue,
+    PipelineCache : app.g_PipelineCache,
+    DescriptorPool : app.g_DescriptorPool,
+    RenderPass : app.g_Window.RenderPass,
     Subpass : 0,
-    MinImageCount : g_MinImageCount,
-    ImageCount : g_Window.ImageCount,
+    MinImageCount : app.g_MinImageCount,
+    ImageCount : app.g_Window.ImageCount,
     MSAASamples : VK_SAMPLE_COUNT_1_BIT,
-    Allocator : g_Allocator,
+    Allocator : app.g_Allocator,
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&init_info);
@@ -366,18 +299,18 @@ void main(string[] args){
     while (SDL_PollEvent(&event)){
       ImGui_ImplSDL2_ProcessEvent(&event);
       if (event.type == SDL_QUIT) done = true;
-      if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)) done = true;
+      if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(app.window)) done = true;
     }
-    if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED) {
+    if (SDL_GetWindowFlags(app.window) & SDL_WINDOW_MINIMIZED) {
       SDL_Delay(10);
       continue;
     }
-    SDL_GetWindowSize(window, &w, &h);
-    if (w > 0 && h > 0 && (g_SwapChainRebuild || g_Window.Width != w || g_Window.Height != h)) {
-      ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-      ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_Window, g_QueueFamily, g_Allocator, w, h, g_MinImageCount);
-      g_Window.FrameIndex = 0;
-      g_SwapChainRebuild = false;
+    SDL_GetWindowSize(app.window, &w, &h);
+    if (w > 0 && h > 0 && (app.g_SwapChainRebuild || app.g_Window.Width != w || app.g_Window.Height != h)) {
+      ImGui_ImplVulkan_SetMinImageCount(app.g_MinImageCount);
+      ImGui_ImplVulkanH_CreateOrResizeWindow(app.g_Instance, app.g_PhysicalDevice, app.g_Device, &app.g_Window, app.g_QueueFamily, app.g_Allocator, w, h, app.g_MinImageCount);
+      app.g_Window.FrameIndex = 0;
+      app.g_SwapChainRebuild = false;
     }
     // Start ImGui frame
     ImGui_ImplVulkan_NewFrame();
@@ -389,10 +322,10 @@ void main(string[] args){
     igRender();
     ImDrawData* drawData = igGetDrawData();
     const bool main_is_minimized = (drawData.DisplaySize.x <= 0.0f || drawData.DisplaySize.y <= 0.0f);
-    g_Window.ClearValue.color.float32 = [clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w];
+    app.g_Window.ClearValue.color.float32 = [clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w];
 
     // Render a frame
-    if (!main_is_minimized) FrameRender(&g_Window, drawData);
+    if (!main_is_minimized) app.FrameRender(&app.g_Window, drawData);
 
     // Update and render additional Platform windows
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -401,22 +334,22 @@ void main(string[] args){
     }
 
     // Present frame
-    if (!main_is_minimized) FramePresent(&g_Window);
+    if (!main_is_minimized) app.FramePresent(&app.g_Window);
   }
 
   // Cleanup
-  enforceVK(vkDeviceWaitIdle(g_Device));
+  enforceVK(vkDeviceWaitIdle(app.g_Device));
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
-  ImGui_ImplVulkanH_DestroyWindow(g_Instance, g_Device, &g_Window, g_Allocator);
+  ImGui_ImplVulkanH_DestroyWindow(app.g_Instance, app.g_Device, &app.g_Window, app.g_Allocator);
 
-  vkDestroyDescriptorPool(g_Device, g_DescriptorPool, g_Allocator);
-  vkDestroyDebugCallback(g_Instance, g_DebugReport, g_Allocator);
-  vkDestroyDevice(g_Device, g_Allocator);
-  vkDestroyInstance(g_Instance, g_Allocator);
+  vkDestroyDescriptorPool(app.g_Device, app.g_DescriptorPool, app.g_Allocator);
+  vkDestroyDebugCallback(app.g_Instance, app.g_DebugReport, app.g_Allocator);
+  vkDestroyDevice(app.g_Device, app.g_Allocator);
+  vkDestroyInstance(app.g_Instance, app.g_Allocator);
 
-  SDL_DestroyWindow(window);
+  SDL_DestroyWindow(app.window);
   Mix_CloseAudio();
   Mix_Quit();
   IMG_Quit();
