@@ -24,19 +24,19 @@
 		"dflags-linux": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
 		"lflags-linux": ["-L./", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image", "-lSDL2_mixer", "-lcimgui", "-lvulkan"],
 		"copyFiles-windows-x86_64": [
-			"libs/lib/SDL2_image.dll",
-			"libs/lib/SDL2_mixer.dll",
-			"libs/lib/SDL2_ttf.dll",
-			"libs/lib/optional/libavif-16.dll",
-			"libs/lib/optional/libgme.dll",
-			"libs/lib/optional/libogg-0.dll",
-			"libs/lib/optional/libopus-0.dll",
-			"libs/lib/optional/libopusfile-0.dll",
-			"libs/lib/optional/libtiff-5.dll",
-			"libs/lib/optional/libwavpack-1.dll",
-			"libs/lib/optional/libwebp-7.dll",
-			"libs/lib/optional/libwebpdemux-2.dll",
-			"libs/lib/optional/libxmp.dll"
+			"deps/libs/lib/SDL2_image.dll",
+			"deps/libs/lib/SDL2_mixer.dll",
+			"deps/libs/lib/SDL2_ttf.dll",
+			"deps/libs/lib/optional/libavif-16.dll",
+			"deps/libs/lib/optional/libgme.dll",
+			"deps/libs/lib/optional/libogg-0.dll",
+			"deps/libs/lib/optional/libopus-0.dll",
+			"deps/libs/lib/optional/libopusfile-0.dll",
+			"deps/libs/lib/optional/libtiff-5.dll",
+			"deps/libs/lib/optional/libwavpack-1.dll",
+			"deps/libs/lib/optional/libwebp-7.dll",
+			"deps/libs/lib/optional/libwebpdemux-2.dll",
+			"deps/libs/lib/optional/libxmp.dll"
 		],
 	}
 	]
