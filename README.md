@@ -12,9 +12,13 @@ Make sure the following libraries are installed:
 * Clone the repository
   * `git clone --recursive https://github.com/DannyArends/DImGui.git`
   * `git submodule update --init --recursive` (If already cloned)
-* Compile
-  * Execute make to compile libcimgui.so on linux
-    * `make`
+* Compile [Linux]
+  * Make sure the `SDL2`, `SDL2_image`, `SDL2_mixer`, `SDL2_ttf` development libraries are instelled on the system
+  * Execute dub to compile the executable
+    * `dub`
+* Compile [MS windows (x64)]
+  * Install the LunarG Vulkan SDK and install the SDL2 Component
+  * Check the paths in the dub.json file, and update the version (1.4.309.0) to the version installed
   * Execute dub to compile the executable
     * `dub`
 
