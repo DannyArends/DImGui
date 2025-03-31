@@ -2,7 +2,7 @@ import includes;
 
 import std.string : toStringz;
 import core.stdc.string : strcmp;
-import initsdl : printSoundDecoders, initSDL;
+import sdl : printSoundDecoders, initSDL, quitSDL;
 import physicaldevice : pickPhysicalDevice;
 import application : App;
 
@@ -48,15 +48,6 @@ void SetupVulkan(ref App app, const(char)*[] extensions) {
   extensions.length += 1;
   extensions[extensions.length-1] = "VK_EXT_debug_report";
 
-  // Application info structure
-  VkApplicationInfo applicationInfo  = {
-    pApplicationName: "DImgUi", 
-    applicationVersion: 0, 
-    pEngineName: "DImgUi v0", 
-    engineVersion: 0,
-    apiVersion: VK_MAKE_API_VERSION( 0, 1, 4, 0 )
-  };
-
   // Create instance
   VkInstanceCreateInfo createInstance = { 
     sType : VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -64,7 +55,7 @@ void SetupVulkan(ref App app, const(char)*[] extensions) {
     ppEnabledLayerNames : &layers[0],
     enabledExtensionCount : cast(uint)extensions.length,
     ppEnabledExtensionNames : &extensions[0],
-    pApplicationInfo: &applicationInfo
+    pApplicationInfo: &app.applicationInfo
   };
 
   vkCreateInstance(&createInstance, app.g_Allocator, &app.instance);
@@ -74,6 +65,7 @@ void SetupVulkan(ref App app, const(char)*[] extensions) {
   vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkCreateDebugReportCallbackEXT");
   vkDestroyDebugCallback = cast(PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkDestroyDebugReportCallbackEXT");
 
+  // Create Debug callback
   VkDebugReportCallbackCreateInfoEXT createDebug = {
     sType : VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
     flags : VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,
@@ -350,12 +342,7 @@ void main(string[] args){
   vkDestroyDevice(app.g_Device, app.g_Allocator);
   vkDestroyInstance(app.instance, app.g_Allocator);
 
-  SDL_DestroyWindow(app);
-  Mix_CloseAudio();
-  Mix_Quit();
-  IMG_Quit();
-  TTF_Quit();
-  SDL_Quit();
+  app.quitSDL();
   return;
 }
 

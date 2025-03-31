@@ -64,3 +64,13 @@ void initSDL(ref App app){
   app.ptr = SDL_CreateWindow("ImGUI", SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
 }
 
+
+void quitSDL(ref App app){
+  SDL_DestroyWindow(app);
+  Mix_CloseAudio();
+  Mix_Quit();
+  IMG_Quit();
+  TTF_Quit();
+  SDL_Quit();
+}
+
