@@ -18,26 +18,7 @@
                               "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
 		"lflags-windows-x86_64": ["-LIBPATH:C:/VulkanSDK/1.4.309.0/Lib", "-LIBPATH:./", "SDL2main.lib", "SDL2.lib", "cimgui.lib", "vulkan-1.lib"],
 		"dflags-linux": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
-		"lflags-linux": ["-L./", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image", "-lSDL2_mixer", "-lcimgui", "-lvulkan"],
-		"copyFiles-windows-x86_64": [
-			"libs/windows/x86_64/libfreetype-6.dll",
-			"libs/windows/x86_64/libgcc_s_seh-1.dll",
-			"libs/windows/x86_64/libjpeg-9.dll",
-			"libs/windows/x86_64/libogg-0.dll",
-			"libs/windows/x86_64/libpng16-16.dll",
-			"libs/windows/x86_64/libstdc++-6.dll",
-			"libs/windows/x86_64/libtiff-5.dll",
-			"libs/windows/x86_64/libvorbis-0.dll",
-			"libs/windows/x86_64/libvorbisfile-3.dll",
-			"libs/windows/x86_64/libwebp-7.dll",
-			"libs/windows/x86_64/libwinpthread-1.dll",
-			"libs/windows/x86_64/SDL2.dll",
-			"libs/windows/x86_64/SDL2_image.dll",
-			"libs/windows/x86_64/SDL2_mixer.dll",
-			"libs/windows/x86_64/SDL2_net.dll",
-			"libs/windows/x86_64/SDL2_ttf.dll",
-			"libs/windows/x86_64/zlib1.dll"
-		]
+		"lflags-linux": ["-L./", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image", "-lSDL2_mixer", "-lcimgui", "-lvulkan"]
 	}
 	]
 }
