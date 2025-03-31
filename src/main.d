@@ -3,6 +3,7 @@ import includes;
 import std.string : toStringz;
 import core.stdc.string : strcmp;
 import initsdl : printSoundDecoders, initSDL;
+import physicaldevice : pickPhysicalDevice;
 import application : App;
 
 PFN_vkCreateDebugReportCallbackEXT  vkDebugCallback;
@@ -66,12 +67,12 @@ void SetupVulkan(ref App app, const(char)*[] extensions) {
     pApplicationInfo: &applicationInfo
   };
 
-  vkCreateInstance(&createInstance, app.g_Allocator, &app.g_Instance);
-  SDL_Log("vkCreateInstance: %p", app.g_Instance);
+  vkCreateInstance(&createInstance, app.g_Allocator, &app.instance);
+  SDL_Log("vkCreateInstance: %p", app.instance);
 
   // Hook instance function
-  vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.g_Instance, "vkCreateDebugReportCallbackEXT");
-  vkDestroyDebugCallback = cast(PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(app.g_Instance, "vkDestroyDebugReportCallbackEXT");
+  vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkCreateDebugReportCallbackEXT");
+  vkDestroyDebugCallback = cast(PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkDestroyDebugReportCallbackEXT");
 
   VkDebugReportCallbackCreateInfoEXT createDebug = {
     sType : VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -79,13 +80,13 @@ void SetupVulkan(ref App app, const(char)*[] extensions) {
     pfnCallback : &debugCallback,
     pUserData : null
   };
-  vkDebugCallback(app.g_Instance, &createDebug, app.g_Allocator, &app.g_DebugReport);
+  vkDebugCallback(app.instance, &createDebug, app.g_Allocator, &app.g_DebugReport);
 
   // Select Physical Device (GPU)
-  app.g_PhysicalDevice = ImGui_ImplVulkanH_SelectPhysicalDevice(app.g_Instance);
+  app.pickPhysicalDevice();
 
   //  Select graphics queue family
-  app.g_QueueFamily = ImGui_ImplVulkanH_SelectQueueFamilyIndex(app.g_PhysicalDevice);
+  app.g_QueueFamily = ImGui_ImplVulkanH_SelectQueueFamilyIndex(app.physicalDevice);
 
   uint32_t device_extensions_count = 1;
   const(char)*[] device_extensions = ["VK_KHR_swapchain"];
@@ -105,7 +106,7 @@ void SetupVulkan(ref App app, const(char)*[] extensions) {
     enabledExtensionCount : device_extensions_count,
     ppEnabledExtensionNames : &device_extensions[0],
   };
-  vkCreateDevice(app.g_PhysicalDevice, &createDevice, app.g_Allocator, &app.g_Device);
+  vkCreateDevice(app.physicalDevice, &createDevice, app.g_Allocator, &app.g_Device);
 
   vkGetDeviceQueue(app.g_Device, app.g_QueueFamily, 0, &app.g_Queue);
 
@@ -132,7 +133,7 @@ static void SetupVulkanWindow(ref App app, ImGui_ImplVulkanH_Window* wd, VkSurfa
 
   // Check for WSI support
   VkBool32 isSupported;
-  vkGetPhysicalDeviceSurfaceSupportKHR(app.g_PhysicalDevice, app.g_QueueFamily, wd.Surface, &isSupported);
+  vkGetPhysicalDeviceSurfaceSupportKHR(app.physicalDevice, app.g_QueueFamily, wd.Surface, &isSupported);
   if (!isSupported) {
     SDL_Log("[vulkan] Error no WSI support on physical device 0");
     abort();
@@ -141,15 +142,15 @@ static void SetupVulkanWindow(ref App app, ImGui_ImplVulkanH_Window* wd, VkSurfa
   // Select Image & ColorSpace Format
   VkFormat[] rImageFormat = [ VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM ];
   VkColorSpaceKHR rColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-  wd.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(app.g_PhysicalDevice, wd.Surface, &rImageFormat[0], cast(int)rImageFormat.length, rColorSpace);
+  wd.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(app.physicalDevice, wd.Surface, &rImageFormat[0], cast(int)rImageFormat.length, rColorSpace);
 
   // Select presentMode
   VkPresentModeKHR[] presentModes = [ VK_PRESENT_MODE_FIFO_KHR ];
   //VkPresentModeKHR[] presentModes = [ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR ];
-  wd.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(app.g_PhysicalDevice, wd.Surface, &presentModes[0], cast(int)presentModes.length);
+  wd.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(app.physicalDevice, wd.Surface, &presentModes[0], cast(int)presentModes.length);
 
   // Create ImGUI window
-  ImGui_ImplVulkanH_CreateOrResizeWindow(app.g_Instance, app.g_PhysicalDevice, app.g_Device, wd, app.g_QueueFamily, app.g_Allocator, width, height, app.g_MinImageCount);
+  ImGui_ImplVulkanH_CreateOrResizeWindow(app.instance, app.physicalDevice, app.g_Device, wd, app.g_QueueFamily, app.g_Allocator, width, height, app.g_MinImageCount);
 }
 
 static void FrameRender(App app, ImGui_ImplVulkanH_Window* wd, ImDrawData* drawData) {
@@ -236,19 +237,19 @@ void main(string[] args){
   // Get available extensions
   uint32_t extensions_count = 0;
   const(char)*[] extensions;
-  SDL_Vulkan_GetInstanceExtensions(app.window, &extensions_count, null);
+  SDL_Vulkan_GetInstanceExtensions(app, &extensions_count, null);
   extensions.length = extensions_count;
-  SDL_Vulkan_GetInstanceExtensions(app.window, &extensions_count, &extensions[0]);
+  SDL_Vulkan_GetInstanceExtensions(app, &extensions_count, &extensions[0]);
   // Setup Vulkan
   app.SetupVulkan(extensions);
 
   // Create Window Surface
   VkSurfaceKHR surface;
-  SDL_Vulkan_CreateSurface(app.window, app.g_Instance, &surface);
+  SDL_Vulkan_CreateSurface(app, app.instance, &surface);
   SDL_Log("SDL_Vulkan_CreateSurface: %p", surface);
 
   int w, h;
-  SDL_GetWindowSize(app.window, &w, &h);
+  SDL_GetWindowSize(app, &w, &h);
   app.SetupVulkanWindow(&app.g_Window, surface, w, h);
 
   igCreateContext(null);
@@ -269,10 +270,10 @@ void main(string[] args){
   }
 
   // Setup Platform/Renderer backends
-  ImGui_ImplSDL2_InitForVulkan(app.window);
+  ImGui_ImplSDL2_InitForVulkan(app);
   ImGui_ImplVulkan_InitInfo init_info = {
-    Instance : app.g_Instance,
-    PhysicalDevice : app.g_PhysicalDevice,
+    Instance : app.instance,
+    PhysicalDevice : app.physicalDevice,
     Device : app.g_Device,
     QueueFamily : app.g_QueueFamily,
     Queue : app.g_Queue,
@@ -299,16 +300,16 @@ void main(string[] args){
     while (SDL_PollEvent(&event)){
       ImGui_ImplSDL2_ProcessEvent(&event);
       if (event.type == SDL_QUIT) done = true;
-      if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(app.window)) done = true;
+      if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(app)) done = true;
     }
-    if (SDL_GetWindowFlags(app.window) & SDL_WINDOW_MINIMIZED) {
+    if (SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) {
       SDL_Delay(10);
       continue;
     }
-    SDL_GetWindowSize(app.window, &w, &h);
+    SDL_GetWindowSize(app, &w, &h);
     if (w > 0 && h > 0 && (app.g_SwapChainRebuild || app.g_Window.Width != w || app.g_Window.Height != h)) {
       ImGui_ImplVulkan_SetMinImageCount(app.g_MinImageCount);
-      ImGui_ImplVulkanH_CreateOrResizeWindow(app.g_Instance, app.g_PhysicalDevice, app.g_Device, &app.g_Window, app.g_QueueFamily, app.g_Allocator, w, h, app.g_MinImageCount);
+      ImGui_ImplVulkanH_CreateOrResizeWindow(app.instance, app.physicalDevice, app.g_Device, &app.g_Window, app.g_QueueFamily, app.g_Allocator, w, h, app.g_MinImageCount);
       app.g_Window.FrameIndex = 0;
       app.g_SwapChainRebuild = false;
     }
@@ -342,14 +343,14 @@ void main(string[] args){
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
-  ImGui_ImplVulkanH_DestroyWindow(app.g_Instance, app.g_Device, &app.g_Window, app.g_Allocator);
+  ImGui_ImplVulkanH_DestroyWindow(app.instance, app.g_Device, &app.g_Window, app.g_Allocator);
 
   vkDestroyDescriptorPool(app.g_Device, app.g_DescriptorPool, app.g_Allocator);
-  vkDestroyDebugCallback(app.g_Instance, app.g_DebugReport, app.g_Allocator);
+  vkDestroyDebugCallback(app.instance, app.g_DebugReport, app.g_Allocator);
   vkDestroyDevice(app.g_Device, app.g_Allocator);
-  vkDestroyInstance(app.g_Instance, app.g_Allocator);
+  vkDestroyInstance(app.instance, app.g_Allocator);
 
-  SDL_DestroyWindow(app.window);
+  SDL_DestroyWindow(app);
   Mix_CloseAudio();
   Mix_Quit();
   IMG_Quit();
