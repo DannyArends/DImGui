@@ -39,7 +39,7 @@ bool IsExtensionAvailable(VkExtensionProperties[] properties, const(char)* exten
   }
   return false;
 }
-/*
+
 void printSoundDecoders() {
   int nChunk = Mix_GetNumChunkDecoders();
   int nMusic = Mix_GetNumMusicDecoders();
@@ -59,7 +59,7 @@ void printSoundDecoders() {
   SDL_Log("Decoders %s", toStringz(chunk));
   SDL_Log("Decoders %s", toStringz(music));
   SDL_Log("Audio @ %d Hz %d bit %s, %d bytes audio buffer\n", audio_rate, bits, audio_channels>1?"stereo".ptr:"mono".ptr, 1024 );
-}*/
+}
 
 void SetupVulkan(const(char)*[] extensions) {
   // Enumerate available extensions
@@ -273,7 +273,7 @@ void main(string[] args){
   SDL_GetVersion(&linked);
   SDL_Log("SDL[C] v%u.%u.%u", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
   SDL_Log("SDL[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
-/*
+
   SDL_Log("SDL[TTF] %d", TTF_Init());
   linked = *TTF_Linked_Version();
   SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_PATCHLEVEL);
@@ -295,7 +295,7 @@ void main(string[] args){
   SDL_Log("MIX[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
 
   Mix_OpenAudio(44100, AUDIO_S32LSB, 2, 1024);
-  printSoundDecoders(); */
+  printSoundDecoders();
 
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window* window = SDL_CreateWindow("ImGUI", SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
@@ -417,10 +417,10 @@ void main(string[] args){
   vkDestroyInstance(g_Instance, g_Allocator);
 
   SDL_DestroyWindow(window);
-/*  Mix_CloseAudio();
+  Mix_CloseAudio();
   Mix_Quit();
   IMG_Quit();
-  TTF_Quit(); */
+  TTF_Quit();
   SDL_Quit();
   return;
 }
