@@ -13,7 +13,7 @@ Make sure the following libraries are installed:
   * `git clone --recursive https://github.com/DannyArends/DImGui.git`
   * `git submodule update --init --recursive` (If already cloned)
 * Compile [Linux]
-  * Make sure the `SDL2`, `SDL2_image`, `SDL2_mixer`, `SDL2_ttf` development libraries are instelled on the system
+  * Make sure the `SDL2`, `SDL2_image`, `SDL2_mixer`, `SDL2_ttf` development libraries are installed
   * Execute dub to compile the executable
     * `dub`
 * Compile [MS windows (x64)]
