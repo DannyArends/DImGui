@@ -24,7 +24,7 @@ ifeq ($(UNAME_S), Linux) #LINUX
 	OUTPUTNAME = libcimgui.so
 	CXXFLAGS += -I./deps/cimgui/imgui/
 	CXXFLAGS += -I./deps/cimgui/imgui/backends/
-	CXXFLAGS += -I./deps/include/SDL2
+	CXXFLAGS += -I/usr/include/SDL2/
 	CXXFLAGS += -fno-threadsafe-statics
 	CXXFLAGS += -DCIMGUI_USE_SDL2 -DCIMGUI_USE_VULKAN -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API="extern \"C\" "
 	CXXFLAGS += -Wall
