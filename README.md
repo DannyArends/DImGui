@@ -13,28 +13,8 @@ Make sure the following libraries are installed:
   * `git clone --recursive https://github.com/DannyArends/DImGui.git`
   * `git submodule update --init --recursive` (If already cloned)
 * Compile
-  * Execute configure on SDL, and install into the build folder
-    * `cd deps/SDL`
-    * `./configure --prefix=$PWD/../`
-    * `make -j8 install`
-    * `cd ../..`
-  * Execute configure on SDL_ttf, and install into the build folder
-    * `cd deps/SDL_ttf`
-    * `./configure --with-sdl-prefix=$PWD/../ --prefix=$PWD/../`
-    * `make -j8 install`
-    * `cd ../..`
-  * Execute configure on SDL_image and install into the build folder
-    * `cd deps/SDL_image`
-    * `./configure --with-sdl-prefix=$PWD/../ --prefix=$PWD/../`
-    * `make -j8 install`
-    * `cd ../..`
-  * Execute configure on SDL_mixer and install into the build folder
-    * `cd deps/SDL_mixer`
-    * `./configure --with-sdl-prefix=$PWD/../ --prefix=$PWD/../`
-    * `make -j8 install`
-    * `cd ../..`
-  * Execute make to compile libcimgui.a on linux
-    * `make static`
+  * Execute make to compile libcimgui.so on linux
+    * `make`
   * Execute dub to compile the executable
     * `dub`
 
