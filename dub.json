@@ -1,0 +1,22 @@
+{
+	"name": "dimgui",
+	"targetName": "DImGui",
+	"description": "An example of calling imgui from D.",
+	"authors": ["Danny Arends"],
+	"homepage": "http://www.dannyarends.nl",
+	"copyright": "Copyright © 2025, Danny Arends",
+	"license": "GPL-v3",
+	"preBuildCommands-linux": [
+		"make -j 8"
+	],
+	"configurations": [
+	{
+		"name": "default",
+		"targetType": "executable",
+		"platforms": ["linux"],
+		"dflags": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
+		"lflags": ["-L./deps/lib/", "-L./", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image", "-lSDL2_mixer", "-lcimgui", "-lvulkan"],
+	}
+	]
+}
+
