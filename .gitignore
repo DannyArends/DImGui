@@ -16,3 +16,4 @@ cimgui.dll
 cimgui.exp
 cimgui.lib
 *.obj
+*.dll

@@ -26,7 +26,7 @@
                               "SDL2_ttf.lib",
                               "SDL2_mixer.lib",
                               "SDL2_image.lib",
-                              "cimgui.lib", 
+                              "cimgui.lib",
                               "vulkan-1.lib"],
 		"dflags-linux": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
 		"lflags-linux": ["-L./", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image", "-lSDL2_mixer", "-lcimgui", "-lvulkan"],
@@ -34,7 +34,17 @@
 			"libs/lib/SDL2_image.dll",
 			"libs/lib/SDL2_mixer.dll",
 			"libs/lib/SDL2_ttf.dll",
-	],
+			"libs/lib/optional/libavif-16.dll",
+			"libs/lib/optional/libgme.dll",
+			"libs/lib/optional/libogg-0.dll",
+			"libs/lib/optional/libopus-0.dll",
+			"libs/lib/optional/libopusfile-0.dll",
+			"libs/lib/optional/libtiff-5.dll",
+			"libs/lib/optional/libwavpack-1.dll",
+			"libs/lib/optional/libwebp-7.dll",
+			"libs/lib/optional/libwebpdemux-2.dll",
+			"libs/lib/optional/libxmp.dll"
+		],
 	}
 	]
 }
