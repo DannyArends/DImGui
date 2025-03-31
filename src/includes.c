@@ -18,11 +18,11 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #include <SDL_version.h>
 #include <SDL_vulkan.h>
 
-#define SDL_h_
+/*#define SDL_h_
 #include <SDL_ttf.h>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
-
+*/
 
 #include <vulkan/vulkan.h>
 
@@ -33,4 +33,3 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "cimgui.h"
 #include "cimgui_impl.h"
-

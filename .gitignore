@@ -8,3 +8,11 @@ deps/bin/
 deps/include/
 deps/lib/
 deps/share/
+
+.dub/
+DImGui.exe
+DImGui.pdb
+cimgui.dll
+cimgui.exp
+cimgui.lib
+*.obj
