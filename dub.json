@@ -7,7 +7,7 @@
 	"copyright": "Copyright © 2025, Danny Arends",
 	"license": "GPL-v3",
 	"preBuildCommands-linux": [ "make -j 8" ],
-	"preBuildCommands-windows-x86_64": [ "compile.bat" ],
+	"preBuildCommands-windows-x86_64": [ "compile.bat C:/VulkanSDK/1.4.309.0" ],
 	"configurations": [
 	{
 		"name": "default",
