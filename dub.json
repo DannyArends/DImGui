@@ -6,9 +6,8 @@
 	"homepage": "http://www.dannyarends.nl",
 	"copyright": "Copyright © 2025, Danny Arends",
 	"license": "GPL-v3",
-	"preBuildCommands-linux": [
-		"make -j 8"
-	],
+	"preBuildCommands-linux": [ "make -j 8" ],
+	"preBuildCommands-windows-x86_64": [ "compile.bat" ],
 	"configurations": [
 	{
 		"name": "default",
