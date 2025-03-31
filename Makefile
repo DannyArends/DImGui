@@ -1,6 +1,4 @@
-#
-# Cross Platform Makefile
-# Compatible with Ubuntu 14.04.1 and macOS
+# Makefile - For Linux and MacOS
 
 OBJS  = ./deps/cimgui/cimgui.o
 OBJS += ./deps/cimgui/cimgui_impl.o
