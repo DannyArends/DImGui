@@ -1,39 +1,20 @@
 import includes;
 import application : App;
 import physicaldevice : pickPhysicalDevice;
-import instance : createInstance, addExtension, loadExtensionProperties, isExtensionAvailable;
+import instance : createInstance, loadInstanceExtensions, addExtension, loadExtensionProperties, isExtensionAvailable;
 import vkdebug : enforceVK, createDebugCallback;
+import surface : createSurface, loadSurfaceCapabilities;
+import logicaldevice : createLogicalDevice;
 
 void setupVulkan(ref App app) {
+  app.loadInstanceExtensions();
   app.loadExtensionProperties();
   app.createInstance();
   app.createDebugCallback();
   app.pickPhysicalDevice();
-
-  //  Select graphics queue family
-  app.queueFamily = ImGui_ImplVulkanH_SelectQueueFamilyIndex(app.physicalDevice);
-
-  uint32_t device_extensions_count = 1;
-  const(char)*[] device_extensions = ["VK_KHR_swapchain"];
-
-  // Create Logical Device (with 1 queue)
-  float[] queue_priority = [1.0f];
-  VkDeviceQueueCreateInfo[1] queue_info;
-  queue_info[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_info[0].queueFamilyIndex = app.queueFamily;
-  queue_info[0].queueCount = 1;
-  queue_info[0].pQueuePriorities = &queue_priority[0];
-
-  VkDeviceCreateInfo createDevice = {
-    sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-    queueCreateInfoCount : queue_info.sizeof / queue_info[0].sizeof,
-    pQueueCreateInfos : &queue_info[0],
-    enabledExtensionCount : device_extensions_count,
-    ppEnabledExtensionNames : &device_extensions[0],
-  };
-  vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.dev);
-
-  vkGetDeviceQueue(app.dev, app.queueFamily, 0, &app.queue);
+  app.createSurface();
+  app.loadSurfaceCapabilities();
+  app.createLogicalDevice();
 
   // Create Descriptor Pool
   VkDescriptorPoolSize[] pool_sizes = [ { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE } ];

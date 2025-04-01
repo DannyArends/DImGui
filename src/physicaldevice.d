@@ -3,12 +3,13 @@ import includes;
 import application : App;
 
 void pickPhysicalDevice(ref App app, uint select = 0) {
-  uint pDevicetype = 0;
-  vkEnumeratePhysicalDevices(app.instance, &app.nPhysDevices, null);
-  SDL_Log("Number of physical vulkan devices found: %d", app.nPhysDevices);
-  app.physicalDevices.length = app.nPhysDevices;
-  vkEnumeratePhysicalDevices(app.instance, &app.nPhysDevices, &app.physicalDevices[0]);
-  if(select > app.nPhysDevices) select = 0;
+  uint32_t nPhysDevices;
+  uint32_t pDevicetype = 0;
+  vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, null);
+  SDL_Log("Number of physical vulkan devices found: %d", nPhysDevices);
+  app.physicalDevices.length = nPhysDevices;
+  vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, &app.physicalDevices[0]);
+  if(select > nPhysDevices) select = 0;
 
   foreach(i, physDevice; app.physicalDevices) {
     VkPhysicalDeviceProperties properties;

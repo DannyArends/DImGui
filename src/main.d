@@ -3,7 +3,6 @@ import includes;
 import std.string : toStringz;
 import core.stdc.string : strcmp;
 import application : App;
-import instance : loadExtensions;
 import sdl : printSoundDecoders, initSDL, quitSDL;
 import vkdebug : enforceVK, vkDestroyDebugCallback;
 import vulkan : setupVulkan;
@@ -88,7 +87,7 @@ static void FrameRender(App app, ImDrawData* drawData) {
       pSignalSemaphores : &render_complete_semaphore,
     };
     enforceVK(vkEndCommandBuffer(fd.CommandBuffer));
-    enforceVK(vkQueueSubmit(app.queue, 1, &info, fd.Fence));
+    enforceVK(vkQueueSubmit(app.gfxQueue, 1, &info, fd.Fence));
   }
 }
 
@@ -103,7 +102,7 @@ void FramePresent(ref App app) {
     pSwapchains : &app.wd.Swapchain,
     pImageIndices : &app.wd.FrameIndex,
   };
-  VkResult err = vkQueuePresentKHR(app.queue, &info);
+  VkResult err = vkQueuePresentKHR(app.gfxQueue, &info);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuildSwapChain = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
@@ -113,17 +112,11 @@ void FramePresent(ref App app) {
 void main(string[] args){
   App app;
   app.initSDL();            // initialize SDL
-  app.loadExtensions();     // Get available extensions
   app.setupVulkan();        // Setup Vulkan
-
-  // Create Window Surface
-  VkSurfaceKHR surface;
-  SDL_Vulkan_CreateSurface(app, app.instance, &surface);
-  SDL_Log("SDL_Vulkan_CreateSurface: %p", surface);
 
   int w, h;
   SDL_GetWindowSize(app, &w, &h);
-  app.SetupVulkanWindow(app.wd, surface, w, h);
+  app.SetupVulkanWindow(app.wd, app.surface, w, h);
 
   igCreateContext(null);
   ImGuiIO* io = igGetIO_Nil(); cast(void)io;
@@ -149,7 +142,7 @@ void main(string[] args){
     PhysicalDevice : app.physicalDevice,
     Device : app.dev,
     QueueFamily : app.queueFamily,
-    Queue : app.queue,
+    Queue : app.gfxQueue,
     PipelineCache : app.pipelineCache,
     DescriptorPool : app.descriptorPool,
     RenderPass : app.wd.RenderPass,

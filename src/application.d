@@ -1,5 +1,8 @@
 import includes;
 
+import surface : Surface;
+import logicaldevice : VkQueueFamilyIndices;
+
 struct App {
   SDL_Window*                 ptr = null;
   alias ptr this;
@@ -15,31 +18,29 @@ struct App {
 
   VkAllocationCallbacks*                allocator = null;
   VkInstance                            instance = null;
-
-  uint32_t                              nProperties;
   VkExtensionProperties[]               properties;
-
-  uint32_t                              nExtensions;
   const(char)*[]                        extensions;
   const(char)*[]                        validationLayers;
-
-  uint                                  nPhysDevices;
   uint                                  selected;
   VkPhysicalDevice[]                    physicalDevices;
-  @property VkPhysicalDevice            physicalDevice() { return(physicalDevices[selected]); }
 
 
   VkDevice                              dev = null;
-  uint32_t                              queueFamily = uint.max;
-  VkQueue                               queue = null;
+  Surface                               surface;
+  VkQueueFamilyIndices                  familyIndices;
+  VkQueue                               gfxQueue = null;
+  VkQueue                               presentQueue = null;
   VkDebugReportCallbackEXT              debugReport = null;
   VkPipelineCache                       pipelineCache = null;
   VkDescriptorPool                      descriptorPool = null;
 
   ImGui_ImplVulkanH_Window*             window;
-  @property ImGui_ImplVulkanH_Window*   wd() { return(window); }
 
-  uint32_t                              minImageCnt = 2;
+  @property ImGui_ImplVulkanH_Window*   wd() { return(window); }
+  @property VkPhysicalDevice            physicalDevice() { return(physicalDevices[selected]); }
+  @property uint32_t                    queueFamily() { return(familyIndices.graphicsFamily); }
+
+  uint                                  minImageCnt = 2;
   bool                                  rebuildSwapChain = false;
   bool                                  verbose = false;
 }
