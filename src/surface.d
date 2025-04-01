@@ -33,5 +33,6 @@ void loadSurfaceCapabilities(ref App app) {
   app.surface.presentModes.length = presentModeCount;
   enforceVK(vkGetPhysicalDeviceSurfacePresentModesKHR(app.physicalDevice, app.surface, &presentModeCount, &app.surface.presentModes[0]));
 
-  SDL_Log("formatCount: %d, presentModeCount: %d", formatCount, presentModeCount);
+  SDL_Log("[SurfaceCapabilities] formatCount: %d, presentModeCount: %d", formatCount, presentModeCount);
 }
+

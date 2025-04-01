@@ -209,7 +209,7 @@ void main(string[] args){
     // Present frame
     if (!main_is_minimized) app.FramePresent();
   }
-
+  SDL_Log("Starting IMGui cleanup");
   // Cleanup
   enforceVK(vkDeviceWaitIdle(app.dev));
   ImGui_ImplVulkan_Shutdown();
@@ -217,11 +217,13 @@ void main(string[] args){
   igDestroyContext(null);
   ImGui_ImplVulkanH_DestroyWindow(app.instance, app.dev, app.wd, app.allocator);
 
+  SDL_Log("Starting Vulkan cleanup");
   vkDestroyDescriptorPool(app.dev, app.descriptorPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugReport, app.allocator);
   vkDestroyDevice(app.dev, app.allocator);
   vkDestroyInstance(app.instance, app.allocator);
 
+  SDL_Log("Starting SDL cleanup");
   app.quitSDL();
   return;
 }
