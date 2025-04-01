@@ -2,130 +2,18 @@ import includes;
 
 import std.string : toStringz;
 import core.stdc.string : strcmp;
-import sdl : printSoundDecoders, initSDL, quitSDL;
-import physicaldevice : pickPhysicalDevice;
 import application : App;
-
-PFN_vkCreateDebugReportCallbackEXT  vkDebugCallback;
-PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugCallback;
-
-extern(C) void enforceVK(VkResult err) {
-  if (err == VK_SUCCESS) return;
-  SDL_Log("[vulkan] Error: VkResult = %d\n", err);
-  if (err < 0) abort();
-}
-
-extern(C) uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, 
-                            size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) {
-    SDL_Log("[vulkan] Debug report from ObjectType: %i\nMessage: %s\n\n", objectType, pMessage);
-    return VK_FALSE;
-}
-
-bool IsExtensionAvailable(VkExtensionProperties[] properties, const(char)* extension) {
-  for(uint32_t i = 0 ; i < properties.length; i++) {
-    if (strcmp(toStringz(properties[i].extensionName), extension) == 0) return true;
-  }
-  return false;
-}
-
-void SetupVulkan(ref App app, const(char)*[] extensions) {
-  // Enumerate available extensions
-  uint32_t properties_count;
-  VkExtensionProperties[] properties;
-  vkEnumerateInstanceExtensionProperties(null, &properties_count, null);
-  properties.length = properties_count;
-  enforceVK(vkEnumerateInstanceExtensionProperties(null, &properties_count, &properties[0]));
-
-  // Enable required extensions
-  if (IsExtensionAvailable(properties, toStringz(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))){
-    extensions.length += 1;
-    extensions[extensions.length-1] = toStringz(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-  }
-
-  // Add Debug layer
-  const(char)*[] layers = ["VK_LAYER_KHRONOS_validation"];
-
-  extensions.length += 1;
-  extensions[extensions.length-1] = "VK_EXT_debug_report";
-
-  // Create instance
-  VkInstanceCreateInfo createInstance = { 
-    sType : VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-    enabledLayerCount : 1,
-    ppEnabledLayerNames : &layers[0],
-    enabledExtensionCount : cast(uint)extensions.length,
-    ppEnabledExtensionNames : &extensions[0],
-    pApplicationInfo: &app.applicationInfo
-  };
-
-  vkCreateInstance(&createInstance, app.g_Allocator, &app.instance);
-  SDL_Log("vkCreateInstance: %p", app.instance);
-
-  // Hook instance function
-  vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkCreateDebugReportCallbackEXT");
-  vkDestroyDebugCallback = cast(PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkDestroyDebugReportCallbackEXT");
-
-  // Create Debug callback
-  VkDebugReportCallbackCreateInfoEXT createDebug = {
-    sType : VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
-    flags : VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,
-    pfnCallback : &debugCallback,
-    pUserData : null
-  };
-  vkDebugCallback(app.instance, &createDebug, app.g_Allocator, &app.g_DebugReport);
-
-  // Select Physical Device (GPU)
-  app.pickPhysicalDevice();
-
-  //  Select graphics queue family
-  app.g_QueueFamily = ImGui_ImplVulkanH_SelectQueueFamilyIndex(app.physicalDevice);
-
-  uint32_t device_extensions_count = 1;
-  const(char)*[] device_extensions = ["VK_KHR_swapchain"];
-
-  // Create Logical Device (with 1 queue)
-  float[] queue_priority = [1.0f];
-  VkDeviceQueueCreateInfo[1] queue_info;
-  queue_info[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_info[0].queueFamilyIndex = app.g_QueueFamily;
-  queue_info[0].queueCount = 1;
-  queue_info[0].pQueuePriorities = &queue_priority[0];
-
-  VkDeviceCreateInfo createDevice = {
-    sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-    queueCreateInfoCount : queue_info.sizeof / queue_info[0].sizeof,
-    pQueueCreateInfos : &queue_info[0],
-    enabledExtensionCount : device_extensions_count,
-    ppEnabledExtensionNames : &device_extensions[0],
-  };
-  vkCreateDevice(app.physicalDevice, &createDevice, app.g_Allocator, &app.g_Device);
-
-  vkGetDeviceQueue(app.g_Device, app.g_QueueFamily, 0, &app.g_Queue);
-
-  // Create Descriptor Pool
-  VkDescriptorPoolSize[] pool_sizes = [ { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE } ];
-  uint maxSets = 0;
-  for(int i = 0; i < pool_sizes.length; i++){
-      VkDescriptorPoolSize pool_size = pool_sizes[i];
-      maxSets += pool_size.descriptorCount;
-  }
-
-  VkDescriptorPoolCreateInfo createPool = {
-    sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-    flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    maxSets : maxSets,
-    poolSizeCount : cast(uint32_t)pool_sizes.length,
-    pPoolSizes : &pool_sizes[0]
-  };
-  vkCreateDescriptorPool(app.g_Device, &createPool, app.g_Allocator, &app.g_DescriptorPool);
-}
+import instance : loadExtensions;
+import sdl : printSoundDecoders, initSDL, quitSDL;
+import vkdebug : enforceVK, vkDestroyDebugCallback;
+import vulkan : setupVulkan;
 
 static void SetupVulkanWindow(ref App app, ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height) {
   wd.Surface = surface;
 
   // Check for WSI support
   VkBool32 isSupported;
-  vkGetPhysicalDeviceSurfaceSupportKHR(app.physicalDevice, app.g_QueueFamily, wd.Surface, &isSupported);
+  vkGetPhysicalDeviceSurfaceSupportKHR(app.physicalDevice, app.queueFamily, wd.Surface, &isSupported);
   if (!isSupported) {
     SDL_Log("[vulkan] Error no WSI support on physical device 0");
     abort();
@@ -142,26 +30,26 @@ static void SetupVulkanWindow(ref App app, ImGui_ImplVulkanH_Window* wd, VkSurfa
   wd.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(app.physicalDevice, wd.Surface, &presentModes[0], cast(int)presentModes.length);
 
   // Create ImGUI window
-  ImGui_ImplVulkanH_CreateOrResizeWindow(app.instance, app.physicalDevice, app.g_Device, wd, app.g_QueueFamily, app.g_Allocator, width, height, app.g_MinImageCount);
+  ImGui_ImplVulkanH_CreateOrResizeWindow(app.instance, app.physicalDevice, app.dev, wd, app.queueFamily, app.allocator, width, height, app.minImageCnt);
 }
 
-static void FrameRender(App app, ImGui_ImplVulkanH_Window* wd, ImDrawData* drawData) {
-  VkSemaphore image_acquired_semaphore  = wd.FrameSemaphores.Data[wd.SemaphoreIndex].ImageAcquiredSemaphore;
-  VkSemaphore render_complete_semaphore = wd.FrameSemaphores.Data[wd.SemaphoreIndex].RenderCompleteSemaphore;
-  VkResult err = vkAcquireNextImageKHR(app.g_Device, wd.Swapchain, uint64_t.max, image_acquired_semaphore, cast(VkFence_T*)VK_NULL_HANDLE, &wd.FrameIndex);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.g_SwapChainRebuild = true;
+static void FrameRender(App app, ImDrawData* drawData) {
+  VkSemaphore image_acquired_semaphore  = app.wd.FrameSemaphores.Data[app.wd.SemaphoreIndex].ImageAcquiredSemaphore;
+  VkSemaphore render_complete_semaphore = app.wd.FrameSemaphores.Data[app.wd.SemaphoreIndex].RenderCompleteSemaphore;
+  VkResult err = vkAcquireNextImageKHR(app.dev, app.wd.Swapchain, uint64_t.max, image_acquired_semaphore, cast(VkFence_T*)VK_NULL_HANDLE, &app.wd.FrameIndex);
+  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuildSwapChain = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
 
-  ImGui_ImplVulkanH_Frame* fd = &wd.Frames.Data[wd.FrameIndex];
+  ImGui_ImplVulkanH_Frame* fd = &app.wd.Frames.Data[app.wd.FrameIndex];
 
   {  // Wait for Fence
-    enforceVK(vkWaitForFences(app.g_Device, 1, &fd.Fence, VK_TRUE, uint64_t.max));
-    enforceVK(vkResetFences(app.g_Device, 1, &fd.Fence));
+    enforceVK(vkWaitForFences(app.dev, 1, &fd.Fence, VK_TRUE, uint64_t.max));
+    enforceVK(vkResetFences(app.dev, 1, &fd.Fence));
   }
 
   {  // Record command buffer
-    enforceVK(vkResetCommandPool(app.g_Device, fd.CommandPool, 0));
+    enforceVK(vkResetCommandPool(app.dev, fd.CommandPool, 0));
     VkCommandBufferBeginInfo info = {
       sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
@@ -170,15 +58,15 @@ static void FrameRender(App app, ImGui_ImplVulkanH_Window* wd, ImDrawData* drawD
   }
 
   {  // RenderPass
-    VkRect2D renderArea = { extent: { width: wd.Width, height: wd.Height } };
+    VkRect2D renderArea = { extent: { width: app.wd.Width, height: app.wd.Height } };
 
     VkRenderPassBeginInfo info = {
       sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-      renderPass : wd.RenderPass,
+      renderPass : app.wd.RenderPass,
       framebuffer : fd.Framebuffer,
       renderArea : renderArea,
       clearValueCount : 1,
-      pClearValues : &wd.ClearValue
+      pClearValues : &app.wd.ClearValue
     };
     vkCmdBeginRenderPass(fd.CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
   }
@@ -200,40 +88,33 @@ static void FrameRender(App app, ImGui_ImplVulkanH_Window* wd, ImDrawData* drawD
       pSignalSemaphores : &render_complete_semaphore,
     };
     enforceVK(vkEndCommandBuffer(fd.CommandBuffer));
-    enforceVK(vkQueueSubmit(app.g_Queue, 1, &info, fd.Fence));
+    enforceVK(vkQueueSubmit(app.queue, 1, &info, fd.Fence));
   }
 }
 
-void FramePresent(ref App app, ImGui_ImplVulkanH_Window* wd) {
-  if (app.g_SwapChainRebuild) return;
-  VkSemaphore render_complete_semaphore = wd.FrameSemaphores.Data[wd.SemaphoreIndex].RenderCompleteSemaphore;
+void FramePresent(ref App app) {
+  if (app.rebuildSwapChain) return;
+  VkSemaphore render_complete_semaphore = app.wd.FrameSemaphores.Data[app.wd.SemaphoreIndex].RenderCompleteSemaphore;
   VkPresentInfoKHR info = {
     sType : VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
     waitSemaphoreCount : 1,
     pWaitSemaphores : &render_complete_semaphore,
     swapchainCount : 1,
-    pSwapchains : &wd.Swapchain,
-    pImageIndices : &wd.FrameIndex,
+    pSwapchains : &app.wd.Swapchain,
+    pImageIndices : &app.wd.FrameIndex,
   };
-  VkResult err = vkQueuePresentKHR(app.g_Queue, &info);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.g_SwapChainRebuild = true;
+  VkResult err = vkQueuePresentKHR(app.queue, &info);
+  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuildSwapChain = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
-  wd.SemaphoreIndex = (wd.SemaphoreIndex + 1) % wd.SemaphoreCount; // Now we can use the next set of semaphores
+  app.wd.SemaphoreIndex = (app.wd.SemaphoreIndex + 1) % app.wd.SemaphoreCount; // Now we can use the next set of semaphores
 }
 
 void main(string[] args){
   App app;
-  app.initSDL(); // Hook SDL immediately to be able to do output
-
-  // Get available extensions
-  uint32_t extensions_count = 0;
-  const(char)*[] extensions;
-  SDL_Vulkan_GetInstanceExtensions(app, &extensions_count, null);
-  extensions.length = extensions_count;
-  SDL_Vulkan_GetInstanceExtensions(app, &extensions_count, &extensions[0]);
-  // Setup Vulkan
-  app.SetupVulkan(extensions);
+  app.initSDL();            // initialize SDL
+  app.loadExtensions();     // Get available extensions
+  app.setupVulkan();        // Setup Vulkan
 
   // Create Window Surface
   VkSurfaceKHR surface;
@@ -242,7 +123,7 @@ void main(string[] args){
 
   int w, h;
   SDL_GetWindowSize(app, &w, &h);
-  app.SetupVulkanWindow(&app.g_Window, surface, w, h);
+  app.SetupVulkanWindow(app.wd, surface, w, h);
 
   igCreateContext(null);
   ImGuiIO* io = igGetIO_Nil(); cast(void)io;
@@ -266,17 +147,17 @@ void main(string[] args){
   ImGui_ImplVulkan_InitInfo init_info = {
     Instance : app.instance,
     PhysicalDevice : app.physicalDevice,
-    Device : app.g_Device,
-    QueueFamily : app.g_QueueFamily,
-    Queue : app.g_Queue,
-    PipelineCache : app.g_PipelineCache,
-    DescriptorPool : app.g_DescriptorPool,
-    RenderPass : app.g_Window.RenderPass,
+    Device : app.dev,
+    QueueFamily : app.queueFamily,
+    Queue : app.queue,
+    PipelineCache : app.pipelineCache,
+    DescriptorPool : app.descriptorPool,
+    RenderPass : app.wd.RenderPass,
     Subpass : 0,
-    MinImageCount : app.g_MinImageCount,
-    ImageCount : app.g_Window.ImageCount,
+    MinImageCount : app.minImageCnt,
+    ImageCount : app.wd.ImageCount,
     MSAASamples : VK_SAMPLE_COUNT_1_BIT,
-    Allocator : app.g_Allocator,
+    Allocator : app.allocator,
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&init_info);
@@ -299,11 +180,11 @@ void main(string[] args){
       continue;
     }
     SDL_GetWindowSize(app, &w, &h);
-    if (w > 0 && h > 0 && (app.g_SwapChainRebuild || app.g_Window.Width != w || app.g_Window.Height != h)) {
-      ImGui_ImplVulkan_SetMinImageCount(app.g_MinImageCount);
-      ImGui_ImplVulkanH_CreateOrResizeWindow(app.instance, app.physicalDevice, app.g_Device, &app.g_Window, app.g_QueueFamily, app.g_Allocator, w, h, app.g_MinImageCount);
-      app.g_Window.FrameIndex = 0;
-      app.g_SwapChainRebuild = false;
+    if (w > 0 && h > 0 && (app.rebuildSwapChain || app.wd.Width != w || app.wd.Height != h)) {
+      ImGui_ImplVulkan_SetMinImageCount(app.minImageCnt);
+      ImGui_ImplVulkanH_CreateOrResizeWindow(app.instance, app.physicalDevice, app.dev, app.wd, app.queueFamily, app.allocator, w, h, app.minImageCnt);
+      app.wd.FrameIndex = 0;
+      app.rebuildSwapChain = false;
     }
     // Start ImGui frame
     ImGui_ImplVulkan_NewFrame();
@@ -315,10 +196,10 @@ void main(string[] args){
     igRender();
     ImDrawData* drawData = igGetDrawData();
     const bool main_is_minimized = (drawData.DisplaySize.x <= 0.0f || drawData.DisplaySize.y <= 0.0f);
-    app.g_Window.ClearValue.color.float32 = [clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w];
+    app.wd.ClearValue.color.float32 = [clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w];
 
     // Render a frame
-    if (!main_is_minimized) app.FrameRender(&app.g_Window, drawData);
+    if (!main_is_minimized) app.FrameRender(drawData);
 
     // Update and render additional Platform windows
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -327,20 +208,20 @@ void main(string[] args){
     }
 
     // Present frame
-    if (!main_is_minimized) app.FramePresent(&app.g_Window);
+    if (!main_is_minimized) app.FramePresent();
   }
 
   // Cleanup
-  enforceVK(vkDeviceWaitIdle(app.g_Device));
+  enforceVK(vkDeviceWaitIdle(app.dev));
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
-  ImGui_ImplVulkanH_DestroyWindow(app.instance, app.g_Device, &app.g_Window, app.g_Allocator);
+  ImGui_ImplVulkanH_DestroyWindow(app.instance, app.dev, app.wd, app.allocator);
 
-  vkDestroyDescriptorPool(app.g_Device, app.g_DescriptorPool, app.g_Allocator);
-  vkDestroyDebugCallback(app.instance, app.g_DebugReport, app.g_Allocator);
-  vkDestroyDevice(app.g_Device, app.g_Allocator);
-  vkDestroyInstance(app.instance, app.g_Allocator);
+  vkDestroyDescriptorPool(app.dev, app.descriptorPool, app.allocator);
+  vkDestroyDebugCallback(app.instance, app.debugReport, app.allocator);
+  vkDestroyDevice(app.dev, app.allocator);
+  vkDestroyInstance(app.instance, app.allocator);
 
   app.quitSDL();
   return;

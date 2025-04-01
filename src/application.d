@@ -13,23 +13,34 @@ struct App {
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 4, 0 )
   };
 
-  VkAllocationCallbacks*      g_Allocator = null;
-  VkInstance                  instance = null;
+  VkAllocationCallbacks*                allocator = null;
+  VkInstance                            instance = null;
 
-  uint                        nPhysDevices;
-  uint                        selected;
-  VkPhysicalDevice[]          physicalDevices;
-  @property VkPhysicalDevice  physicalDevice() { return(physicalDevices[selected]); }
+  uint32_t                              nProperties;
+  VkExtensionProperties[]               properties;
 
-  VkDevice                    g_Device = null;
-  uint32_t                    g_QueueFamily = uint.max;
-  VkQueue                     g_Queue = null;
-  VkDebugReportCallbackEXT    g_DebugReport = null;
-  VkPipelineCache             g_PipelineCache = null;
-  VkDescriptorPool            g_DescriptorPool = null;
+  uint32_t                              nExtensions;
+  const(char)*[]                        extensions;
+  const(char)*[]                        validationLayers;
 
-  ImGui_ImplVulkanH_Window    g_Window;
-  uint32_t                    g_MinImageCount = 2;
-  bool                        g_SwapChainRebuild = false;
+  uint                                  nPhysDevices;
+  uint                                  selected;
+  VkPhysicalDevice[]                    physicalDevices;
+  @property VkPhysicalDevice            physicalDevice() { return(physicalDevices[selected]); }
+
+
+  VkDevice                              dev = null;
+  uint32_t                              queueFamily = uint.max;
+  VkQueue                               queue = null;
+  VkDebugReportCallbackEXT              debugReport = null;
+  VkPipelineCache                       pipelineCache = null;
+  VkDescriptorPool                      descriptorPool = null;
+
+  ImGui_ImplVulkanH_Window*             window;
+  @property ImGui_ImplVulkanH_Window*   wd() { return(window); }
+
+  uint32_t                              minImageCnt = 2;
+  bool                                  rebuildSwapChain = false;
+  bool                                  verbose = false;
 }
 

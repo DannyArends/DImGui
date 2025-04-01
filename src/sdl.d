@@ -27,7 +27,7 @@ void printSoundDecoders() {
 }
 
 void initSDL(ref App app){
-  app.g_Window = *ImGui_ImplVulkanH_Window_ImGui_ImplVulkanH_Window();
+  app.window = ImGui_ImplVulkanH_Window_ImGui_ImplVulkanH_Window();
 
   // Setup SDL
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER);
