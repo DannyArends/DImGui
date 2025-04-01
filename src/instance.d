@@ -1,4 +1,5 @@
 import includes;
+import core.stdc.string : strcmp;
 import std.string : toStringz;
 import application : App;
 import vkdebug : enforceVK, checkValidationLayerSupport;
