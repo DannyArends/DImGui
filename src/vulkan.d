@@ -32,4 +32,6 @@ void setupVulkan(ref App app) {
     pPoolSizes : &pool_sizes[0]
   };
   vkCreateDescriptorPool(app.dev, &createPool, app.allocator, &app.descriptorPool);
+  SDL_Log("Done with setupVulkan");
 }
+

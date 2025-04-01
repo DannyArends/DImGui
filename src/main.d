@@ -8,6 +8,7 @@ import vkdebug : enforceVK, vkDestroyDebugCallback;
 import vulkan : setupVulkan;
 
 static void SetupVulkanWindow(ref App app, ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height) {
+  SDL_Log("SetupVulkanWindow");
   wd.Surface = surface;
 
   // Check for WSI support
@@ -30,6 +31,7 @@ static void SetupVulkanWindow(ref App app, ImGui_ImplVulkanH_Window* wd, VkSurfa
 
   // Create ImGUI window
   ImGui_ImplVulkanH_CreateOrResizeWindow(app.instance, app.physicalDevice, app.dev, wd, app.queueFamily, app.allocator, width, height, app.minImageCnt);
+  SDL_Log("Done with SetupVulkanWindow");
 }
 
 static void FrameRender(App app, ImDrawData* drawData) {
@@ -119,9 +121,10 @@ void main(string[] args){
   app.SetupVulkanWindow(app.wd, app.surface, w, h);
 
   igCreateContext(null);
+  SDL_Log("Done with igCreateContext");
   ImGuiIO* io = igGetIO_Nil(); cast(void)io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
   //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;     // Enable Multi-Viewport / Platform Windows
 
@@ -136,7 +139,9 @@ void main(string[] args){
   }
 
   // Setup Platform/Renderer backends
+  SDL_Log("ImGui_ImplSDL2_InitForVulkan");
   ImGui_ImplSDL2_InitForVulkan(app);
+  SDL_Log("Done with ImGui_ImplSDL2_InitForVulkan");
   ImGui_ImplVulkan_InitInfo init_info = {
     Instance : app.instance,
     PhysicalDevice : app.physicalDevice,
@@ -153,6 +158,7 @@ void main(string[] args){
     Allocator : app.allocator,
     CheckVkResultFn : &enforceVK
   };
+  SDL_Log("ImGui_ImplVulkan_Init");
   ImGui_ImplVulkan_Init(&init_info);
 
   bool show_demo_window = true;

@@ -70,7 +70,7 @@ void createLogicalDevice(ref App app){
   SDL_Log("Logical device %p created", app.dev);
   vkGetDeviceQueue(app.dev, app.familyIndices.graphicsFamily, 0, &app.gfxQueue);
   SDL_Log("Logical device graphics queue obtained");
-  vkGetDeviceQueue(app.dev, app.familyIndices.presentFamily, 0, &app.presentQueue);
-  SDL_Log("Logical device present queue obtained");
+//  vkGetDeviceQueue(app.dev, app.familyIndices.presentFamily, 0, &app.presentQueue);
+//  SDL_Log("Logical device present queue obtained");
 }
 
