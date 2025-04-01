@@ -38,9 +38,9 @@ struct App {
 
   @property ImGui_ImplVulkanH_Window*   wd() { return(window); }
   @property VkPhysicalDevice            physicalDevice() { return(physicalDevices[selected]); }
-  @property uint32_t                    queueFamily() { return(familyIndices.graphicsFamily); }
+  @property uint                        queueFamily() { return(familyIndices.graphicsFamily); }
+  @property uint                        minImageCnt(){ return(surface.capabilities.minImageCount); }
 
-  uint                                  minImageCnt = 2;
   bool                                  rebuildSwapChain = false;
   bool                                  verbose = false;
 }
