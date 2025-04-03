@@ -11,6 +11,10 @@ struct Descriptor {
 }
 
 void createDescriptorSets(ref App app) {
+  if(app.textureArray.length == 0){
+    SDL_Log("No texture, skipping DescriptorSet creation");
+    return;
+  }
   app.descriptor.layouts.length = app.textureArray.length;
   for (size_t i = 0; i < app.textureArray.length; i++) {
      app.descriptor.layouts[i] = app.descriptor.descriptorSetLayout;
@@ -98,6 +102,10 @@ void createDescriptorSetLayout(ref App app) {
 
 
 void createDescriptorPool(ref App app) {
+  if(app.textureArray.length == 0){
+    SDL_Log("No texture, skipping DescriptorPool creation");
+    return;
+  }
   VkDescriptorPoolSize[2] poolSizes = [
     { type: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount: cast(uint)(app.textureArray.length) },
     { type: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorCount: cast(uint)(app.textureArray.length) },

@@ -10,6 +10,7 @@ import geometry : Geometry;
 
 import texture : Texture;
 import uniformbuffer : Uniform;
+import depthbuffer : DepthBuffer;
 
 struct App {
   SDL_Window*                 ptr = null;
@@ -52,6 +53,7 @@ struct App {
   VkSampler textureSampler;
   Uniform uniform;
   Camera camera;
+  DepthBuffer depthbuffer;
 
   ImGui_ImplVulkanH_Window*             window;
 
@@ -59,6 +61,7 @@ struct App {
   @property VkPhysicalDevice            physicalDevice() { return(physicalDevices[selected]); }
   @property uint                        queueFamily() { return(familyIndices.graphicsFamily); }
   @property uint                        minImageCnt(){ return(surface.capabilities.minImageCount); }
+  @property uint                        ImageCount(){ return(cast(uint)(swapchain.swapChainImages.length)); }
   @property float                       aspectRatio(){
     return(surface.capabilities.currentExtent.width / cast(float) surface.capabilities.currentExtent.height);
   }

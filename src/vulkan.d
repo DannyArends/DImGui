@@ -8,8 +8,12 @@ import logicaldevice : createLogicalDevice;
 
 import swapchain : createSwapChain, aquireSwapChainImages;
 import renderpass : createRenderPass;
-import descriptorset : createDescriptorSetLayout;
+import descriptorset : createDescriptorSetLayout, createDescriptorSets, createDescriptorPool;
 import pipeline : createGraphicsPipeline;
+import commands : createCommandPool, createCommandBuffers;
+import depthbuffer : createDepthResources;
+import framebuffer : createFramebuffers;
+import uniformbuffer: createUniformBuffers;
 
 void setupVulkan(ref App app, string vertPath = "data/shaders/vert.spv", string fragPath = "data/shaders/frag.spv") {
   app.loadInstanceExtensions();
@@ -21,11 +25,24 @@ void setupVulkan(ref App app, string vertPath = "data/shaders/vert.spv", string 
   app.loadSurfaceCapabilities();
   app.createLogicalDevice();
 
-/*  app.createSwapChain();
+/*
+  app.createSwapChain();
   app.aquireSwapChainImages();
   app.createRenderPass();
   app.createDescriptorSetLayout();
-  app.createGraphicsPipeline(vertPath, fragPath); */
+  app.createGraphicsPipeline(vertPath, fragPath);
+  app.createCommandPool();
+  app.createDepthResources();
+  app.createFramebuffers();
+
+  // Create objects
+
+  app.createUniformBuffers();
+  app.createDescriptorPool();
+  app.createDescriptorSets();
+  app.createCommandBuffers();
+//  app.createSyncObjects();
+*/
 
   // Create Descriptor Pool
   VkDescriptorPoolSize[] pool_sizes = [ { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE } ];

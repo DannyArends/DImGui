@@ -17,21 +17,28 @@ static void SetupVulkanWindow(ref App app, ImGui_ImplVulkanH_Window* wd, VkSurfa
   if (!isSupported) {
     SDL_Log("[vulkan] Error no WSI support on physical device 0");
     abort();
+  }else{
+    SDL_Log("WSI support on physical device");
   }
 
   // Select Image & ColorSpace Format
   VkFormat[] rImageFormat = [ VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM ];
   VkColorSpaceKHR rColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
   wd.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(app.physicalDevice, wd.Surface, &rImageFormat[0], cast(int)rImageFormat.length, rColorSpace);
+  SDL_Log("SurfaceFormat selected");
 
   // Select presentMode
   VkPresentModeKHR[] presentModes = [ VK_PRESENT_MODE_FIFO_KHR ];
   //VkPresentModeKHR[] presentModes = [ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR ];
   wd.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(app.physicalDevice, wd.Surface, &presentModes[0], cast(int)presentModes.length);
+  SDL_Log("PresentMode selected");
 
+//  wd.Swapchain = app.swapchain;
+  //wd.ImageCount = cast(uint)app.swapchain.swapChainImages.length;
+//  wd.RenderPass = app.renderpass;
   // Create ImGUI window
   ImGui_ImplVulkanH_CreateOrResizeWindow(app.instance, app.physicalDevice, app.dev, wd, app.queueFamily, app.allocator, width, height, app.minImageCnt);
-  SDL_Log("Done with SetupVulkanWindow");
+  SDL_Log("Done with SetupVulkanWindow: %d", wd.ImageCount);
 }
 
 static void FrameRender(App app, ImDrawData* drawData) {
@@ -124,9 +131,7 @@ void main(string[] args){
   SDL_Log("Done with igCreateContext");
   ImGuiIO* io = igGetIO_Nil(); cast(void)io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-  //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;     // Enable Multi-Viewport / Platform Windows
 
   // Setup Dear ImGui style
   igStyleColorsDark(null);
@@ -142,6 +147,8 @@ void main(string[] args){
   SDL_Log("ImGui_ImplSDL2_InitForVulkan");
   ImGui_ImplSDL2_InitForVulkan(app);
   SDL_Log("Done with ImGui_ImplSDL2_InitForVulkan");
+
+  SDL_Log("ImageCount: %d, app.minImageCnt: %d", app.wd.ImageCount, app.minImageCnt);
   ImGui_ImplVulkan_InitInfo init_info = {
     Instance : app.instance,
     PhysicalDevice : app.physicalDevice,

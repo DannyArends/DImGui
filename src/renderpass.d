@@ -1,5 +1,6 @@
 import includes;
 import application : App;
+import depthbuffer : findDepthFormat;
 import vkdebug : enforceVK;
 
 // Create a renderpass for IMGui (Currently not used)
@@ -17,13 +18,27 @@ void createRenderPass(ref App app) {
 
   VkAttachmentReference colorAttachmentRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
+  VkAttachmentDescription depthAttachment = {
+    format: app.findDepthFormat(),
+    samples: VK_SAMPLE_COUNT_1_BIT,
+    loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+    storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+    stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+    initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+    finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+  };
+  
+  VkAttachmentReference depthAttachmentRef = { attachment: 1, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+
   VkSubpassDescription subpass = { 
     pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
     colorAttachmentCount: 1,
     pColorAttachments: &colorAttachmentRef,
+    pDepthStencilAttachment: &depthAttachmentRef
   };
 
-  VkAttachmentDescription[1] attachments = [colorAttachment];
+  VkAttachmentDescription[2] attachments = [colorAttachment, depthAttachment];
 
   VkSubpassDependency dependency = {
     srcSubpass : VK_SUBPASS_EXTERNAL,
