@@ -6,8 +6,16 @@
 	"homepage": "http://www.dannyarends.nl",
 	"copyright": "Copyright © 2025, Danny Arends",
 	"license": "GPL-v3",
-	"preBuildCommands-linux": [ "make -j 8" ],
-	"preBuildCommands-windows-x86_64": [ "compile.bat C:/VulkanSDK/1.4.309.0" ],
+	"preBuildCommands-linux": [ 
+		"make -j 8",
+		"glslc data/shaders/wavefront.vert -o data/shaders/vert.spv",
+		"glslc data/shaders/wavefront.frag -o data/shaders/frag.spv"
+	],
+	"preBuildCommands-windows-x86_64": [
+		"compile.bat C:/VulkanSDK/1.4.309.0",
+		"glslc.exe data/shaders/wavefront.vert -o data/shaders/vert.spv",
+		"glslc.exe data/shaders/wavefront.frag -o data/shaders/frag.spv"
+  ],
 	"configurations": [
 	{
 		"name": "default",

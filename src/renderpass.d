@@ -44,8 +44,7 @@ void createRenderPass(ref App app) {
     pDependencies : &dependency
   };
 
-  VkRenderPass renderpass;
-  enforceVK(vkCreateRenderPass(app.dev, &renderPassInfo, null, &renderpass));
+  enforceVK(vkCreateRenderPass(app.dev, &renderPassInfo, null, &app.renderpass));
   SDL_Log("Vulkan render pass created");
 }
 
