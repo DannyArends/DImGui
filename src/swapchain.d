@@ -46,18 +46,19 @@ void createSwapChain(ref App app, SwapChain* oldChain = null) {
 
   enforceVK(vkCreateSwapchainKHR(app.dev, &swapchainCreateInfo, app.allocator, &swapchain.swapChain));
   SDL_Log("Swapchain created, minImage:%d", app.surface.capabilities.minImageCount);
+  app.swapchain = swapchain;
 }
 
 // Aquire swapchain images
-void aquireSwapChainImages(ref App app, ref SwapChain swapchain) {
+void aquireSwapChainImages(ref App app) {
   uint imageCount;
-  vkGetSwapchainImagesKHR(app.dev, swapchain.swapChain, &imageCount, null);
-  swapchain.swapChainImages.length = imageCount;
-  vkGetSwapchainImagesKHR(app.dev, swapchain.swapChain, &imageCount, &swapchain.swapChainImages[0]);
+  vkGetSwapchainImagesKHR(app.dev, app.swapchain.swapChain, &imageCount, null);
+  app.swapchain.swapChainImages.length = imageCount;
+  vkGetSwapchainImagesKHR(app.dev, app.swapchain.swapChain, &imageCount, &app.swapchain.swapChainImages[0]);
   SDL_Log("Swapchain images: %d", imageCount);
 
   // Allocate space for an imageview per image
-  swapchain.swapChainImageViews.length = swapchain.swapChainImages.length;
+  app.swapchain.swapChainImageViews.length = app.swapchain.swapChainImages.length;
 
   VkComponentMapping components = {
     r: VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -70,9 +71,9 @@ void aquireSwapChainImages(ref App app, ref SwapChain swapchain) {
     aspectMask: VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel: 0, levelCount: 1, baseArrayLayer: 0, layerCount: 1
   };
 
-  for (size_t i = 0; i < swapchain.swapChainImages.length; i++) {
-    swapchain.swapChainImageViews[i] = app.createImageView(swapchain.swapChainImages[i], app.surface.surfaceformats[0].format);
+  for (size_t i = 0; i < app.swapchain.swapChainImages.length; i++) {
+    app.swapchain.swapChainImageViews[i] = app.createImageView(app.swapchain.swapChainImages[i], app.surface.surfaceformats[0].format);
   }
-  SDL_Log("Swapchain image views: %d", swapchain.swapChainImageViews.length);
+  SDL_Log("Swapchain image views: %d", app.swapchain.swapChainImageViews.length);
 }
 

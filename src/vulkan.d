@@ -6,6 +6,10 @@ import vkdebug : enforceVK, createDebugCallback;
 import surface : createSurface, loadSurfaceCapabilities;
 import logicaldevice : createLogicalDevice;
 
+import swapchain : createSwapChain, aquireSwapChainImages;
+import renderpass : createRenderPass;
+import descriptorset : createDescriptorSetLayout;
+
 void setupVulkan(ref App app) {
   app.loadInstanceExtensions();
   app.loadExtensionProperties();
@@ -15,6 +19,12 @@ void setupVulkan(ref App app) {
   app.createSurface();
   app.loadSurfaceCapabilities();
   app.createLogicalDevice();
+
+  /*app.createSwapChain();
+  app.aquireSwapChainImages();
+  app.createRenderPass();
+  app.createDescriptorSetLayout();*/
+
 
   // Create Descriptor Pool
   VkDescriptorPoolSize[] pool_sizes = [ { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE } ];

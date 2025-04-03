@@ -1,7 +1,15 @@
 import includes;
 
+import camera : Camera;
+import descriptorset : Descriptor;
 import surface : Surface;
 import logicaldevice : VkQueueFamilyIndices;
+import swapchain : SwapChain;
+import pipeline : GraphicsPipeline;
+import geometry : Geometry;
+
+import texture : Texture;
+import uniformbuffer : Uniform;
 
 struct App {
   SDL_Window*                 ptr = null;
@@ -33,6 +41,17 @@ struct App {
   VkDebugReportCallbackEXT              debugReport = null;
   VkPipelineCache                       pipelineCache = null;
   VkDescriptorPool                      descriptorPool = null;
+  VkCommandPool                         commandPool;
+  VkCommandBuffer[]                     commandBuffers;
+  SwapChain                             swapchain;
+  VkRenderPass                          renderpass;
+  GraphicsPipeline                      pipeline;
+  Geometry[]                            geometry;
+  Descriptor                            descriptor;
+  Texture[] textureArray;
+  VkSampler textureSampler;
+  Uniform uniform;
+  Camera camera;
 
   ImGui_ImplVulkanH_Window*             window;
 
@@ -40,8 +59,12 @@ struct App {
   @property VkPhysicalDevice            physicalDevice() { return(physicalDevices[selected]); }
   @property uint                        queueFamily() { return(familyIndices.graphicsFamily); }
   @property uint                        minImageCnt(){ return(surface.capabilities.minImageCount); }
+  @property float                       aspectRatio(){
+    return(surface.capabilities.currentExtent.width / cast(float) surface.capabilities.currentExtent.height);
+  }
 
   bool                                  rebuildSwapChain = false;
   bool                                  verbose = false;
 }
+
 
