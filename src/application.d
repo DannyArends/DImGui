@@ -8,6 +8,7 @@ import swapchain : SwapChain;
 import pipeline : GraphicsPipeline;
 import geometry : Geometry;
 
+import sync : SyncObjects;
 import texture : Texture;
 import uniformbuffer : Uniform;
 import depthbuffer : DepthBuffer;
@@ -54,7 +55,7 @@ struct App {
   Uniform uniform;
   Camera camera;
   DepthBuffer depthbuffer;
-
+  SyncObjects synchronization;
   ImGui_ImplVulkanH_Window*             window;
 
   @property ImGui_ImplVulkanH_Window*   wd() { return(window); }

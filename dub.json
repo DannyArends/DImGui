@@ -9,13 +9,17 @@
 	"preBuildCommands-linux": [ 
 		"make -j 8",
 		"glslc data/shaders/wavefront.vert -o data/shaders/vert.spv",
-		"glslc data/shaders/wavefront.frag -o data/shaders/frag.spv"
+		"glslc data/shaders/wavefront.frag -o data/shaders/frag.spv",
+		"glslc data/shaders/imgui.vert -o data/shaders/imgui.vert.spv",
+		"glslc data/shaders/imgui.frag -o data/shaders/imgui.frag.spv"
 	],
 	"preBuildCommands-windows-x86_64": [
 		"compile.bat C:/VulkanSDK/1.4.309.0",
 		"glslc.exe data/shaders/wavefront.vert -o data/shaders/vert.spv",
-		"glslc.exe data/shaders/wavefront.frag -o data/shaders/frag.spv"
-  ],
+		"glslc.exe data/shaders/wavefront.frag -o data/shaders/frag.spv",
+		"glslc.exe data/shaders/imgui.vert -o data/shaders/imgui.vert.spv",
+		"glslc.exe data/shaders/imgui.frag -o data/shaders/imgui.frag.spv"
+	],
 	"configurations": [
 	{
 		"name": "default",
