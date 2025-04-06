@@ -17,17 +17,24 @@ App loadSDL() {
   return(app);
 }
 
-void createOrResizeWindow(ref App app, uint queueFamily) {
-  enforceVK(vkDeviceWaitIdle(app.device));
+void cleanFrameData(ref App app) {
   for (uint i = 0; i < app.sync.length; i++) {
     vkDestroySemaphore(app.device, app.sync[i].imageAcquired, app.allocator);
     vkDestroySemaphore(app.device, app.sync[i].renderComplete, app.allocator);
   }
-  for (uint i = 0; i < app.fences.length; i++) {
+  for (uint i = 0; i < app.imageCount; i++) {
     vkDestroyFence(app.device, app.fences[i], app.allocator);
+    vkFreeCommandBuffers(app.device, app.commandPool[i], 1, &app.commandBuffers[i]);
     vkDestroyCommandPool(app.device, app.commandPool[i], app.allocator);
+    vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
+    vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
   }
   if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
+}
+
+void createOrResizeWindow(ref App app, uint queueFamily) {
+  enforceVK(vkDeviceWaitIdle(app.device));
+  app.cleanFrameData();
 
   app.loadSurfaceCapabilities();
   app.createSwapChain(app.swapChain);
@@ -183,8 +190,24 @@ void main(string[] args) {
     app.renderFrame(drawData);
     app.presentFrame();
     app.totalFramesRendered++;
-    //return;
   }
+  enforceVK(vkDeviceWaitIdle(app.device));
+  ImGui_ImplVulkan_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  igDestroyContext(null);
+  app.cleanFrameData();
+
+  vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
+  vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
+  vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
+  vkDestroyDevice(app.device, app.allocator);
+
+  vkDestroySurfaceKHR(app.instance, app.surface, app.allocator);
+  vkDestroyInstance(app.instance, app.allocator);
+
+  SDL_DestroyWindow(app);
+  SDL_Quit();
+  return;
 }
 
 void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClearValue(VkClearColorValue([0.45f, 0.55f, 0.60f, 1.00f]))){
@@ -192,7 +215,7 @@ void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClear
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
 
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
-  if (app.verbose) SDL_Log("frame: %d [S:%d,F:%d]", app.totalFramesRendered, app.syncIndex, app.frameIndex);
+  if (app.verbose) SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
