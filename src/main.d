@@ -1,6 +1,5 @@
 import engine;
 import validation;
-
 import commands : createCommandBuffers;
 import descriptor : createDescriptorPool;
 import devices : pickPhysicalDevice, createLogicalDevice;
