@@ -1,5 +1,6 @@
 public import includes;
 public import core.stdc.string : strcmp;
+import sfx : Audio;
 
 struct Sync {
   VkSemaphore imageAcquired;
@@ -9,6 +10,8 @@ struct Sync {
 struct App {
   SDL_Window* window;
   alias window this;
+
+  Audio sfx;
 
   // Application info structure
   VkApplicationInfo applicationInfo  = {
