@@ -1,13 +1,13 @@
 import engine;
 
-void createCommandBuffers(ref App app, uint queueFamily){
+void createCommandBuffers(ref App app){
   app.commandPool.length = app.imageCount;
   app.commandBuffers.length = app.imageCount;
 
   VkCommandPoolCreateInfo poolInfo = {
     sType : VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
     flags : VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-    queueFamilyIndex : queueFamily
+    queueFamilyIndex : app.queueFamily
   };
   for (uint i = 0; i < app.imageCount; i++) {
     enforceVK(vkCreateCommandPool(app.device, &poolInfo, null, &app.commandPool[i]));

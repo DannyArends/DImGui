@@ -14,7 +14,7 @@ import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 import renderpass : createRenderPass;
 
-void createOrResizeWindow(ref App app, uint queueFamily) {
+void createOrResizeWindow(ref App app) {
   enforceVK(vkDeviceWaitIdle(app.device));
 
   app.destroyFrameData();
@@ -24,7 +24,7 @@ void createOrResizeWindow(ref App app, uint queueFamily) {
   app.aquireSwapChainImages();
   app.createRenderPass();
   app.createFramebuffers();
-  app.createCommandBuffers(queueFamily);
+  app.createCommandBuffers();
   app.createSyncObjects();
 }
 
@@ -32,12 +32,11 @@ void main(string[] args) {
   App app = initializeSDL();
   app.createInstance();
   app.createDebugCallback();
-  uint queueFamily = app.pickPhysicalDevice(1);
-  app.createLogicalDevice(queueFamily);
+  app.createLogicalDevice();
   app.createDescriptorPool();
   app.createSurface();
-  app.createOrResizeWindow(queueFamily); // Create window (swapchain, renderpass, framebuffers, etc)
-  app.initializeImGui(queueFamily); // Initialize ImGui (IO, Style, etc)
+  app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
+  app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
 
   int width, height;
   while (!app.finished) { // Main loop
@@ -47,7 +46,7 @@ void main(string[] args) {
     SDL_GetWindowSize(app.window, &width, &height);
     if(width > 0 && height > 0 && (app.rebuild || app.width != width || app.height != height)) {
       ImGui_ImplVulkan_SetMinImageCount(app.capabilities.minImageCount);
-      app.createOrResizeWindow(queueFamily);
+      app.createOrResizeWindow();
       app.frameIndex = 0;
       app.rebuild = false;
     }
