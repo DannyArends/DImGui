@@ -2,21 +2,22 @@ import engine;
 import extensions;
 
 // Creates a physicalDevice & associated Queue
-uint pickPhysicalDevice(ref App app, uint device = 0){
+void pickPhysicalDevice(ref App app, uint device = 0){
   auto physicalDevices = app.queryPhysicalDevices();  // Query Physical Devices and pick 0
   app.physicalDevice = physicalDevices[device];
 
   if(app.queryDeviceExtensionProperties().has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
-
-  return(selectQueueFamily(app.physicalDevice));
+  app.queueFamily = selectQueueFamily(app.physicalDevice);
 }
 
 // Create Logical Device (with 1 queue)
-void createLogicalDevice(ref App app, uint queueFamily){
+void createLogicalDevice(ref App app, uint device = 0){
+  app.pickPhysicalDevice(device);
+
   float[] queuePriority = [1.0f];
   VkDeviceQueueCreateInfo[] createQueue = [{
     sType : VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-    queueFamilyIndex : queueFamily,
+    queueFamilyIndex : app.queueFamily,
     queueCount : 1,
     pQueuePriorities : &queuePriority[0]
   }];
@@ -32,8 +33,8 @@ void createLogicalDevice(ref App app, uint queueFamily){
   SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device );
 
   // Get the Queue from the queueFamily
-  vkGetDeviceQueue(app.device, queueFamily, 0, &app.queue);
-  SDL_Log("vkGetDeviceQueue[family:%d]: %p", queueFamily, app.queue);
+  vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
+  SDL_Log("vkGetDeviceQueue[family:%d]: %p", app.queueFamily, app.queue);
 }
 
 void list(VkPhysicalDevice physicalDevice, size_t i) {

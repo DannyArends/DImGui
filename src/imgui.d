@@ -1,6 +1,6 @@
 import engine;
 
-void initializeImGui(ref App app, uint queueFamily){
+void initializeImGui(ref App app){
   igCreateContext(null);
   ImGuiIO* io = igGetIO_Nil();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
@@ -12,9 +12,8 @@ void initializeImGui(ref App app, uint queueFamily){
     Instance : app.instance,
     PhysicalDevice : app.physicalDevice,
     Device : app.device,
-    QueueFamily : queueFamily,
+    QueueFamily : app.queueFamily,
     Queue : app.queue,
-    PipelineCache : null,
     DescriptorPool : app.descriptorPool,
     Allocator : app.allocator,
     MinImageCount : app.capabilities.minImageCount,
@@ -23,5 +22,5 @@ void initializeImGui(ref App app, uint queueFamily){
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&imguiInit);
-  SDL_Log("ImGui_ImplVulkan_Init");
+  SDL_Log("ImGui initialized");
 }

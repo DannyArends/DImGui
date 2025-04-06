@@ -46,6 +46,7 @@ struct App {
   VkDebugReportCallbackEXT debugCallback = null;
 
   // Sync and Frame Tracking
+  uint queueFamily = uint.max;
   uint syncIndex = 0;
   uint frameIndex = 0;
   uint totalFramesRendered = 0;
