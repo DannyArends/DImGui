@@ -1,6 +1,5 @@
 public import includes;
 public import core.stdc.string : strcmp;
-import sfx : Audio;
 
 struct Sync {
   VkSemaphore imageAcquired;
@@ -10,18 +9,18 @@ struct Sync {
 struct App {
   SDL_Window* window;
   alias window this;
-
-  Audio sfx;
+  enum const(char)* applicationName = "CalderaD";
 
   // Application info structure
   VkApplicationInfo applicationInfo  = {
-    pApplicationName: "Testing", 
+    pApplicationName: applicationName, 
     applicationVersion: 0, 
-    pEngineName: "Engine v0", 
+    pEngineName: "CalderaD Engine with Dear ImGui", 
     engineVersion: 0,
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 0, 0 )
   };
 
+  // Vulkan
   VkInstance instance = null;
   VkPhysicalDevice physicalDevice = null;
   VkDevice device = null;
@@ -46,6 +45,7 @@ struct App {
   VkAllocationCallbacks* allocator = null;
   VkDebugReportCallbackEXT debugCallback = null;
 
+  // Sync and Frame Tracking
   uint syncIndex = 0;
   uint frameIndex = 0;
   uint totalFramesRendered = 0;
@@ -54,10 +54,11 @@ struct App {
   @property uint height(){ return(capabilities.currentExtent.height); };
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
 
-  const(char)*[] deviceExtensions; // Enabled extensions
-  const(char)*[] instanceExtensions; // Enabled extensions
-  const(char)*[] layers; // Enabled layers
+  const(char)*[] instanceExtensions;    // Enabled instance extensions
+  const(char)*[] deviceExtensions;      // Enabled device extensions
+  const(char)*[] layers;                // Enabled layers
 
+  // Global boolean flags
   bool finished = false;
   bool showdemo = true;
   bool verbose = false;
