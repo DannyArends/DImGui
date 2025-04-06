@@ -37,7 +37,8 @@ void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClear
   vkCmdEndRenderPass(app.commandBuffers[app.frameIndex]);
 
   enforceVK(vkEndCommandBuffer(app.commandBuffers[app.frameIndex]));
-  
+
+  // TODO: Add Additional command buffer for rendering
   VkCommandBuffer[] submitCommandBuffers = [ app.commandBuffers[app.frameIndex] ];
 
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;

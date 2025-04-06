@@ -8,7 +8,7 @@ import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
-import window: createOrResizeWindow, checkForResize;
+import window: createOrResizeWindow, checkForResize, renderGUI;
 
 void main(string[] args) {
   App app = initializeSDL();
@@ -25,15 +25,7 @@ void main(string[] args) {
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
 
     app.checkForResize();
-
-    // Start ImGui frame
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
-    igNewFrame();
-    if(app.showdemo) igShowDemoWindow(&app.showdemo);
-
-    igRender();
-    ImDrawData* drawData = igGetDrawData();
+    ImDrawData* drawData = app.renderGUI();
 
     app.renderFrame(drawData);
     app.presentFrame();

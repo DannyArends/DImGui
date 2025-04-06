@@ -8,6 +8,17 @@ import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 
+ImDrawData* renderGUI(ref App app){
+  // Start ImGui frame
+  ImGui_ImplVulkan_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  igNewFrame();
+  if(app.showdemo) igShowDemoWindow(&app.showdemo);
+
+  igRender();
+  return(igGetDrawData());
+}
+
 void createOrResizeWindow(ref App app) {
   enforceVK(vkDeviceWaitIdle(app.device));
 
