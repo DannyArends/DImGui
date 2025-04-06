@@ -1,0 +1,45 @@
+{
+	"name": "dimgui",
+	"targetName": "DImGui",
+	"description": "An example of calling imgui from D.",
+	"authors": ["Danny Arends"],
+	"homepage": "http://www.dannyarends.nl",
+	"copyright": "Copyright © 2025, Danny Arends",
+	"license": "GPL-v3",
+	"preBuildCommands-linux": [ "make -j 8" ],
+	//"preBuildCommands-windows-x86_64": [ "compile.bat C:/VulkanSDK/1.4.309.0" ],
+	"configurations": [
+	{
+		"name": "default",
+		"targetType": "executable",
+		"targetPath": "bin",
+		"platforms": ["linux", "windows"],
+		"dflags-windows-x86_64": ["-P-IC:/VulkanSDK/1.4.309.0/Include", 
+                              "-P-IC:/VulkanSDK/1.4.309.0/Include/SDL2", 
+                              "-P-I./deps/libs/include/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
+		"lflags-windows-x86_64": ["-LIBPATH:C:/VulkanSDK/1.4.309.0/Lib", 
+                              "-LIBPATH:./bin/", 
+                              "-LIBPATH:./deps/libs/lib", 
+                              "SDL2main.lib", "SDL2.lib", "SDL2_image.lib", "SDL2_mixer.lib", "SDL2_ttf.lib",
+                              "cimgui.lib", "vulkan-1.lib"],
+		"dflags-linux": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
+		"lflags-linux": ["-L./", "-lSDL2", "-lSDL2_image", "-lSDL2_mixer", "-lSDL2_ttf", "-lcimgui", "-lvulkan"],
+		"copyFiles-windows-x86_64": [
+			"deps/libs/lib/SDL2_image.dll",
+			"deps/libs/lib/SDL2_mixer.dll",
+			"deps/libs/lib/SDL2_ttf.dll",
+			"deps/libs/lib/optional/libavif-16.dll",
+			"deps/libs/lib/optional/libgme.dll",
+			"deps/libs/lib/optional/libogg-0.dll",
+			"deps/libs/lib/optional/libopus-0.dll",
+			"deps/libs/lib/optional/libopusfile-0.dll",
+			"deps/libs/lib/optional/libtiff-5.dll",
+			"deps/libs/lib/optional/libwavpack-1.dll",
+			"deps/libs/lib/optional/libwebp-7.dll",
+			"deps/libs/lib/optional/libwebpdemux-2.dll",
+			"deps/libs/lib/optional/libxmp.dll"
+		],
+	}
+	]
+}
+
