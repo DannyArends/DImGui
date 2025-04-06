@@ -64,9 +64,3 @@ extern(C) void enforceVK(VkResult err) {
   SDL_Log("[enforceVK] Error: VkResult = %d\n", err);
   if (err < 0) abort();
 }
-
-extern(C) uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, 
-                             size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) {
-    SDL_Log("[debugCallback] Debug report from ObjectType: %d\nMessage %d: %s\n", objectType, messageCode, pMessage);
-    return VK_FALSE;
-}
