@@ -1,32 +1,14 @@
 import engine;
 import validation;
-import commands : createCommandBuffers;
 import descriptor : createDescriptorPool;
 import devices : pickPhysicalDevice, createLogicalDevice;
 import events : handleEvents;
 import frame : destroyFrameData, presentFrame, renderFrame;
-import framebuffer : createFramebuffers;
 import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
-import swapchain : createSwapChain, aquireSwapChainImages;
-import sync : createSyncObjects;
-import renderpass : createRenderPass;
-
-void createOrResizeWindow(ref App app) {
-  enforceVK(vkDeviceWaitIdle(app.device));
-
-  app.destroyFrameData();
-
-  app.querySurfaceCapabilities();
-  app.createSwapChain(app.swapChain);
-  app.aquireSwapChainImages();
-  app.createRenderPass();
-  app.createFramebuffers();
-  app.createCommandBuffers();
-  app.createSyncObjects();
-}
+import window: createOrResizeWindow, checkForResize;
 
 void main(string[] args) {
   App app = initializeSDL();
@@ -38,18 +20,11 @@ void main(string[] args) {
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
 
-  int width, height;
   while (!app.finished) { // Main loop
     app.handleEvents();
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
 
-    SDL_GetWindowSize(app.window, &width, &height);
-    if(width > 0 && height > 0 && (app.rebuild || app.width != width || app.height != height)) {
-      ImGui_ImplVulkan_SetMinImageCount(app.capabilities.minImageCount);
-      app.createOrResizeWindow();
-      app.frameIndex = 0;
-      app.rebuild = false;
-    }
+    app.checkForResize();
 
     // Start ImGui frame
     ImGui_ImplVulkan_NewFrame();
