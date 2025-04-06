@@ -1,8 +1,44 @@
 import engine;
+import sfx : createAudio;
+
+void checkSDLError() {
+  const(char)* err = SDL_GetError();
+  if (err[0] != '\0') { SDL_Log("SDL_GetError: '%s'", err); SDL_ClearError(); }
+}
+
+enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };
 
 App initializeSDL() {
+  int[4] init;
   App app;
-  SDL_Init(SDL_INIT_VIDEO);
+  SDL_version linked;
+
+  // Initialize Libraries
+  init[MAIN] = SDL_Init(SDL_INIT_VIDEO);
+  SDL_GetVersion(&linked);
+  SDL_Log("SDL[C] v%u.%u.%u", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+  SDL_Log("SDL[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+
+  init[TTF] = TTF_Init(); checkSDLError();
+  linked = *TTF_Linked_Version();
+  SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_PATCHLEVEL);
+  SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+
+  init[IMG] = IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF); checkSDLError();
+  linked = *IMG_Linked_Version();
+  SDL_Log("TTF[C] v%u.%u.%u", SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_PATCHLEVEL);
+  SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+
+  init[MIX] = Mix_Init(MIX_INIT_MP3 | MIX_INIT_OGG | MIX_INIT_MID); checkSDLError();
+  linked = *Mix_Linked_Version();
+  SDL_Log("MIX[C] v%u.%u.%u", SDL_MIXER_MAJOR_VERSION, SDL_MIXER_MINOR_VERSION, SDL_MIXER_PATCHLEVEL);
+  SDL_Log("MIX[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+
+  SDL_Log("INIT: [%d,%d,%d,%d]", init[MAIN], init[TTF], init[IMG], init[MIX]);
+  // Open Audio
+  app.sfx = createAudio();
+
+  // Create window
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   app.window = SDL_CreateWindow("ImGUI", SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
   SDL_Log("SDL_CreateWindow: %p", app.window);
