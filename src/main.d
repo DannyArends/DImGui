@@ -30,6 +30,8 @@ void cleanFrameData(ref App app) {
     vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
   }
   if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
+  if(app.swapChain) vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
+  app.swapChain = null;
 }
 
 void createOrResizeWindow(ref App app, uint queueFamily) {
@@ -199,7 +201,6 @@ void main(string[] args) {
 
   vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
-  vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDevice(app.device, app.allocator);
 
   vkDestroySurfaceKHR(app.instance, app.surface, app.allocator);
