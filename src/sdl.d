@@ -1,5 +1,5 @@
 import engine;
-import sfx : createAudio;
+import sfx : openAudio;
 
 void checkSDLError() {
   const(char)* err = SDL_GetError();
@@ -34,13 +34,15 @@ App initializeSDL() {
   SDL_Log("MIX[C] v%u.%u.%u", SDL_MIXER_MAJOR_VERSION, SDL_MIXER_MINOR_VERSION, SDL_MIXER_PATCHLEVEL);
   SDL_Log("MIX[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
 
+  // Log all SDL library return codes
   SDL_Log("INIT: [%d,%d,%d,%d]", init[MAIN], init[TTF], init[IMG], init[MIX]);
-  // Open Audio
-  app.sfx = createAudio();
 
-  // Create window
+  // Open Audio
+  openAudio();
+
+  // Create SDL Window
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-  app.window = SDL_CreateWindow("ImGUI", SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
+  app.window = SDL_CreateWindow(app.applicationName, SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
   SDL_Log("SDL_CreateWindow: %p", app.window);
   return(app);
 }

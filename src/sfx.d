@@ -11,7 +11,7 @@ struct Audio {
   @property int sampleSize(){ return((bits / 8) + audioChannels); }
 }
 
-Audio createAudio(int rate = 44100, int size = 1024) {
+void openAudio(int rate = 44100, int size = 1024) {
   Audio sfx;
 
   Mix_OpenAudio(rate, AUDIO_S32LSB, 2, size);
@@ -27,5 +27,4 @@ Audio createAudio(int rate = 44100, int size = 1024) {
   Mix_QuerySpec(&sfx.audioRate, &sfx.audioFmt, &sfx.audioChannels);
   SDL_Log("Decoders chunks|music %d|%d", nChunk, nMusic);
   SDL_Log("Audio @ %d Hz %d bit %s with %d bits audio buffer\n", sfx.audioRate, sfx.bits, sfx.audioChannels > 1?"stereo".ptr:"mono".ptr, size);
-  return(sfx);
 }
