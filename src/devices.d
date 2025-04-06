@@ -1,4 +1,35 @@
 import engine;
+import extensions;
+
+// Creates a physicalDevice & associated Queue
+uint createPhysicalDevice(ref App app, uint device = 0){
+  auto physicalDevices = app.queryPhysicalDevices();  // Query Physical Devices and pick 0
+  app.physicalDevice = physicalDevices[device];
+
+  if(app.queryDeviceExtensionProperties().has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
+
+  uint queueFamily = selectQueueFamily(app.physicalDevice);
+
+  // Create Logical Device (with 1 queue)
+  float[] queuePriority = [1.0f];
+  VkDeviceQueueCreateInfo[] createQueue = [{
+    sType : VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+    queueFamilyIndex : queueFamily,
+    queueCount : 1,
+    pQueuePriorities : &queuePriority[0]
+  }];
+
+  VkDeviceCreateInfo createDevice = {
+    sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    queueCreateInfoCount : cast(uint)createQueue.length,
+    pQueueCreateInfos : &createQueue[0],
+    enabledExtensionCount : cast(uint)app.deviceExtensions.length,
+    ppEnabledExtensionNames : &app.deviceExtensions[0],
+  };
+  enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
+  SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device );
+  return(queueFamily);
+}
 
 void list(VkPhysicalDevice physicalDevice, size_t i) {
   VkPhysicalDeviceProperties properties;
@@ -25,21 +56,6 @@ VkPhysicalDevice[] queryPhysicalDevices(ref App app) {
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, &physicalDevices[0]);
   if(app.verbose) foreach(i, physicalDevice; physicalDevices) { physicalDevice.list(i); }
   return(physicalDevices);
-}
-
-// Load Device Extensions Properties
-VkExtensionProperties[] queryDeviceExtensionProperties(ref App app, const(char)* layer = null) {
-  if(app.verbose) SDL_Log("queryInstanceExtensionProperties");
-  uint nProperties;
-  VkExtensionProperties[] properties;
-
-  vkEnumerateDeviceExtensionProperties(app.physicalDevice, null, &nProperties, null);
-  if(nProperties == 0) return properties;
-  properties.length = nProperties;
-  enforceVK(vkEnumerateDeviceExtensionProperties(app.physicalDevice, null, &nProperties, &properties[0]));
-  SDL_Log("Found %d device extensions", properties.length);
-  if(app.verbose) foreach(i, property; properties) { SDL_Log("-Extension[%d] %s", i, property.extensionName.ptr); }
-  return(properties);
 }
 
 uint selectQueueFamily(VkPhysicalDevice physicalDevice){
