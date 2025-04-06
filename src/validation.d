@@ -3,6 +3,12 @@ import engine;
 PFN_vkCreateDebugReportCallbackEXT  vkDebugCallback;
 PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugCallback;
 
+extern(C) uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, 
+                             size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) {
+    SDL_Log("[debugCallback] Debug report from ObjectType: %d\nMessage %d: %s\n", objectType, messageCode, pMessage);
+    return VK_FALSE;
+}
+
 void createDebugCallback(ref App app){
   // Hook instance function
   vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkCreateDebugReportCallbackEXT");
