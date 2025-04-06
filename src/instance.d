@@ -2,6 +2,7 @@ import engine;
 import extensions;
 
 void createInstance(ref App app){
+  app.loadInstanceExtensions();
   auto layers = app.queryInstanceLayerProperties();
   auto extensions = app.queryInstanceExtensionProperties();
 

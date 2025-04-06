@@ -55,6 +55,8 @@ struct App {
   const(char)*[] instanceExtensions; // Enabled extensions
   const(char)*[] layers; // Enabled layers
 
+  bool finished = false;
+  bool showdemo = true;
   bool verbose = false;
   bool rebuild = false;
 }

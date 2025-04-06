@@ -1,24 +1,26 @@
 import engine;
-import extensions;
-import descriptor;
-import devices;
-import commands;
-import frame;
-import framebuffer;
-import imgui;
-import instance;
-import sdl;
-import surface;
-import swapchain;
-import sync;
-import renderpass;
 import validation;
+
+import commands : createCommandBuffers;
+import descriptor : createDescriptorPool;
+import devices : pickPhysicalDevice, createLogicalDevice;
+import events : handleEvents;
+import frame : destroyFrameData, presentFrame, renderFrame;
+import framebuffer : createFramebuffers;
+import imgui : initializeImGui;
+import instance : createInstance;
+import sdl : initializeSDL;
+import surface : createSurface, querySurfaceCapabilities;
+import swapchain : createSwapChain, aquireSwapChainImages;
+import sync : createSyncObjects;
+import renderpass : createRenderPass;
 
 void createOrResizeWindow(ref App app, uint queueFamily) {
   enforceVK(vkDeviceWaitIdle(app.device));
-  app.cleanFrameData();
 
-  app.loadSurfaceCapabilities();
+  app.destroyFrameData();
+
+  app.querySurfaceCapabilities();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
   app.createRenderPass();
@@ -28,38 +30,21 @@ void createOrResizeWindow(ref App app, uint queueFamily) {
 }
 
 void main(string[] args) {
-  App app = loadSDL();
-  app.loadInstanceExtensions();
+  App app = initializeSDL();
   app.createInstance();
   app.createDebugCallback();
-  uint queueFamily = app.createPhysicalDevice(1);
+  uint queueFamily = app.pickPhysicalDevice(1);
+  app.createLogicalDevice(queueFamily);
+  app.createDescriptorPool();
+  app.createSurface();
+  app.createOrResizeWindow(queueFamily); // Create window (swapchain, renderpass, framebuffers, etc)
+  app.initializeImGui(queueFamily); // Initialize ImGui (IO, Style, etc)
 
-  // Get the Queue from the queueFamily
-  vkGetDeviceQueue(app.device, queueFamily, 0, &app.queue);
-  SDL_Log("vkGetDeviceQueue[family:%d]: %p", queueFamily, app.queue);
-
-  app.createDescriptorPool(); // Create Descriptor Pool
-
-  // Get a SDL_Vulkan surface
-  SDL_Vulkan_CreateSurface(app, app.instance, &app.surface);
-  SDL_Log("SDL_Vulkan_CreateSurface: %p", app.surface);
-
-  app.createOrResizeWindow(queueFamily); // Create swapchain, renderpass, framebuffers, etc
-  app.initImGui(queueFamily); // initialize ImGui (IO, Style)
-
-  // Main loop
-  bool done = false;
-  bool demo = true;
-  while (!done) {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-      ImGui_ImplSDL2_ProcessEvent(&event);
-      if(event.type == SDL_QUIT) done = true;
-      if(event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(app)) done = true;
-    }
+  int width, height;
+  while (!app.finished) { // Main loop
+    app.handleEvents();
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
 
-    int width, height;
     SDL_GetWindowSize(app.window, &width, &height);
     if(width > 0 && height > 0 && (app.rebuild || app.width != width || app.height != height)) {
       ImGui_ImplVulkan_SetMinImageCount(app.capabilities.minImageCount);
@@ -67,13 +52,16 @@ void main(string[] args) {
       app.frameIndex = 0;
       app.rebuild = false;
     }
+
     // Start ImGui frame
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     igNewFrame();
-    if(demo) igShowDemoWindow(&demo);
+    if(app.showdemo) igShowDemoWindow(&app.showdemo);
+
     igRender();
     ImDrawData* drawData = igGetDrawData();
+
     app.renderFrame(drawData);
     app.presentFrame();
     app.totalFramesRendered++;
@@ -82,7 +70,7 @@ void main(string[] args) {
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
-  app.cleanFrameData();
+  app.destroyFrameData();
 
   vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
@@ -93,5 +81,4 @@ void main(string[] args) {
 
   SDL_DestroyWindow(app);
   SDL_Quit();
-  return;
 }

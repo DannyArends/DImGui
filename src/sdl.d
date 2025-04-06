@@ -1,6 +1,6 @@
 import engine;
 
-App loadSDL() {
+App initializeSDL() {
   App app;
   SDL_Init(SDL_INIT_VIDEO);
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
