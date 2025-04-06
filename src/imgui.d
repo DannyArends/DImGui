@@ -1,6 +1,6 @@
 import engine;
 
-void initImGui(ref App app, uint queueFamily){
+void initializeImGui(ref App app, uint queueFamily){
   igCreateContext(null);
   ImGuiIO* io = igGetIO_Nil();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls

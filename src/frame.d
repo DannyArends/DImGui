@@ -20,9 +20,7 @@ void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClear
   };
   enforceVK(vkBeginCommandBuffer(app.commandBuffers[app.frameIndex], &commandBufferInfo));
 
-  int w,h;
-  SDL_GetWindowSize(app, &w, &h);
-  VkRect2D renderArea = { extent: { width: w, height: h } };
+  VkRect2D renderArea = { extent: { width: app.width, height: app.height } };
 
   VkRenderPassBeginInfo renderPassInfo = {
     sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -76,7 +74,7 @@ void presentFrame(ref App app){
   app.syncIndex = (app.syncIndex + 1) % app.sync.length; // Now we can use the next set of semaphores
 }
 
-void cleanFrameData(ref App app) {
+void destroyFrameData(ref App app) {
   for (uint i = 0; i < app.sync.length; i++) {
     vkDestroySemaphore(app.device, app.sync[i].imageAcquired, app.allocator);
     vkDestroySemaphore(app.device, app.sync[i].renderComplete, app.allocator);
