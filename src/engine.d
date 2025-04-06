@@ -1,9 +1,6 @@
 public import includes;
 public import core.stdc.string : strcmp;
 
-PFN_vkCreateDebugReportCallbackEXT  vkDebugCallback;
-PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugCallback;
-
 struct Sync {
   VkSemaphore imageAcquired;
   VkSemaphore renderComplete;
