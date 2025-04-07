@@ -38,33 +38,62 @@ void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDev
 
   enforceVK(vkAllocateMemory(app.device, &allocInfo, null, bufferMemory));
   vkBindBufferMemory(app.device, (*buffer), (*bufferMemory), 0);
-  SDL_Log("Buffer [size=%d] created, allocated, and bound", size);
+  if(app.verbose) SDL_Log("Buffer [size=%d] created, allocated, and bound", size);
+}
+
+void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+  VkCommandBuffer commandBuffer = app.beginSingleTimeCommands();
+  VkBufferCopy copyRegion = { size: size };
+  vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+  app.endSingleTimeCommands(commandBuffer);
 }
 
 void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, uint height) {
-    VkCommandBuffer commandBuffer = app.beginSingleTimeCommands();
-    VkOffset3D imageOffset = { 0, 0, 0 };
-    VkExtent3D imageExtent = { width, height, 1 };
+  VkCommandBuffer commandBuffer = app.beginSingleTimeCommands();
+  VkOffset3D imageOffset = { 0, 0, 0 };
+  VkExtent3D imageExtent = { width, height, 1 };
 
-    VkImageSubresourceLayers imageSubresource = {
-      aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
-      mipLevel: 0,
-      baseArrayLayer: 0,
-      layerCount: 1
-    };
-    
-    VkBufferImageCopy region = {
-      bufferOffset: 0,
-      bufferRowLength: 0,
-      bufferImageHeight: 0,
-      imageSubresource: imageSubresource,
-      imageOffset: imageOffset,
-      imageExtent: imageExtent
-    };
+  VkImageSubresourceLayers imageSubresource = {
+    aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
+    mipLevel: 0,
+    baseArrayLayer: 0,
+    layerCount: 1
+  };
+  
+  VkBufferImageCopy region = {
+    bufferOffset: 0,
+    bufferRowLength: 0,
+    bufferImageHeight: 0,
+    imageSubresource: imageSubresource,
+    imageOffset: imageOffset,
+    imageExtent: imageExtent
+  };
 
-    SDL_Log("copyBufferToImage %dx%d", width, height);
+  if(app.verbose) SDL_Log("copyBufferToImage %dx%d", width, height);
+  vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+  app.endSingleTimeCommands(commandBuffer);
+}
 
-    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-    app.endSingleTimeCommands(commandBuffer);
+void toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory, VkBufferUsageFlags usage) {
+  uint size = cast(uint)(object[0].sizeof * object.length);
+  SDL_Log("bufferObject: Transfer of %d bytes", size);
+
+  VkBuffer stagingBuffer;
+  VkDeviceMemory stagingBufferMemory;
+  app.createBuffer(&stagingBuffer, &stagingBufferMemory, size);
+
+  void* data;
+  vkMapMemory(app.device, stagingBufferMemory, 0, size, 0, &data);
+  memcpy(data, cast(void*)object, size);
+  vkUnmapMemory(app.device, stagingBufferMemory);
+
+  auto properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+  app.createBuffer(buffer, memory, size, usage, properties);
+
+  app.copyBuffer(stagingBuffer, (*buffer), size);
+
+  vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
+  vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+  SDL_Log("bufferObject: %d bytes uploaded", size);
 }
 

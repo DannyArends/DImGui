@@ -1,6 +1,8 @@
 public import includes;
 public import core.stdc.string : strcmp;
 
+import geometry : Geometry, Cube;
+
 struct Sync {
   VkSemaphore imageAcquired;
   VkSemaphore renderComplete;
@@ -19,6 +21,8 @@ struct App {
     engineVersion: 0,
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 0, 0 )
   };
+
+  Geometry[] objects = [Cube()];
 
   // Vulkan
   VkInstance instance = null;
