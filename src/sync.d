@@ -3,7 +3,7 @@ import engine;
 void createSyncObjects(ref App app) {
   app.sync.length = app.imageCount + 1;
   app.fences.length = app.imageCount;
-  SDL_Log("createSyncObjects, SyncObjects:%d, fences: ", app.sync.length, app.fences.length);
+  SDL_Log("createSyncObjects: Semaphores:%d, Fences: %d", app.sync.length, app.fences.length);
 
   VkSemaphoreCreateInfo semaphoreInfo = { sType: VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
   for (size_t i = 0; i < app.sync.length; i++) {
