@@ -88,6 +88,5 @@ void destroyFrameData(ref App app) {
     vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
   }
   if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
-  if(app.swapChain) vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
-  app.swapChain = null;
 }
+

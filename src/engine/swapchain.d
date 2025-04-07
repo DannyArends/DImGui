@@ -22,6 +22,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
 
   enforceVK(vkCreateSwapchainKHR(app.device, &swapchainCreateInfo, app.allocator, &app.swapChain));
   SDL_Log("Swapchain %p created, minImage:%d", app.swapChain, app.capabilities.minImageCount);
+  if(oldChain) { vkDestroySwapchainKHR(app.device, oldChain, app.allocator); }
 }
 
 // createImageView from swapchain images
