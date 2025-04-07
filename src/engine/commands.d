@@ -1,16 +1,15 @@
 import engine;
 
-VkCommandPool createCommandPool(VkDevice device, uint queueFamilyIndex, bool verbose = false) {
+void createCommandPool(ref App app) {
   VkCommandPool commandPool;
 
   VkCommandPoolCreateInfo poolInfo = {
     sType: VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-    queueFamilyIndex: queueFamilyIndex,
+    queueFamilyIndex: app.queueFamily,
     flags: VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
   };
-  enforceVK(vkCreateCommandPool(device, &poolInfo, null, &commandPool));
-  if(verbose) SDL_Log("Commandpool %p at queue %d created", commandPool, poolInfo.queueFamilyIndex);
-  return(commandPool);
+  enforceVK(vkCreateCommandPool(app.device, &poolInfo, null, &app.commandPool));
+  if(app.verbose) SDL_Log("Commandpool %p at queue %d created", app.commandPool, poolInfo.queueFamilyIndex);
 }
 
 VkCommandBuffer createCommandBuffer(VkDevice device, VkCommandPool commandPool, uint nBuffers = 1, bool verbose = false) {
@@ -28,12 +27,10 @@ VkCommandBuffer createCommandBuffer(VkDevice device, VkCommandPool commandPool, 
 }
 
 void createCommandBuffers(ref App app){
-  app.commandPool.length = app.imageCount;
   app.commandBuffers.length = app.imageCount;
 
   for (uint i = 0; i < app.imageCount; i++) {
-    app.commandPool[i] = app.device.createCommandPool(app.queueFamily, app.verbose);
-    app.commandBuffers[i] = app.device.createCommandBuffer(app.commandPool[i], 1, app.verbose);
+    app.commandBuffers[i] = app.device.createCommandBuffer(app.commandPool, 1, app.verbose);
   }
 }
 

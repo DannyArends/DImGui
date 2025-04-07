@@ -12,7 +12,7 @@ void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClear
 
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex], true, uint.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex]));
-  enforceVK(vkResetCommandPool(app.device, app.commandPool[app.frameIndex], 0));
+  enforceVK(vkResetCommandBuffer(app.commandBuffers[app.frameIndex], 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = {
     sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -82,8 +82,7 @@ void destroyFrameData(ref App app) {
   }
   for (uint i = 0; i < app.imageCount; i++) {
     vkDestroyFence(app.device, app.fences[i], app.allocator);
-    vkFreeCommandBuffers(app.device, app.commandPool[i], 1, &app.commandBuffers[i]);
-    vkDestroyCommandPool(app.device, app.commandPool[i], app.allocator);
+    vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.commandBuffers[i]);
     vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
     vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
   }
