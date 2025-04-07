@@ -1,5 +1,7 @@
 import engine;
 import validation;
+
+import commands : createCommandPool;
 import descriptor : createDescriptorPool;
 import devices : pickPhysicalDevice, createLogicalDevice;
 import events : handleEvents;
@@ -15,6 +17,7 @@ void main(string[] args) {
   app.createInstance();
   app.createDebugCallback();
   app.createLogicalDevice();
+  app.createCommandPool();
   app.createDescriptorPool();
   app.createSurface();
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
@@ -37,8 +40,9 @@ void main(string[] args) {
   igDestroyContext(null);
   app.destroyFrameData();
 
-  vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator); 
+  vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
+  vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
   vkDestroyDevice(app.device, app.allocator);
 

@@ -38,7 +38,7 @@ struct App {
   VkFence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
-  VkCommandPool[] commandPool = null;
+  VkCommandPool commandPool = null;
   VkCommandBuffer[] commandBuffers = null;
   VkFramebuffer[] swapChainFramebuffers = null;
 
