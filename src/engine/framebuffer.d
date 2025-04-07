@@ -18,5 +18,5 @@ void createFramebuffers(ref App app) {
 
     enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, null, &app.swapChainFramebuffers[i]));
   }
-  SDL_Log("%d Framebuffers created", app.swapChainFramebuffers.length);
+  if(app.verbose) SDL_Log("%d Framebuffers created", app.swapChainFramebuffers.length);
 }

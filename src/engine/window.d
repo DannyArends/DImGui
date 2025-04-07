@@ -20,7 +20,7 @@ ImDrawData* renderGUI(ref App app){
 }
 
 void createOrResizeWindow(ref App app) {
-  SDL_Log("Window ReSize, recreate SwapChain");
+  if(app.verbose) SDL_Log("Window ReSize, recreate SwapChain");
   enforceVK(vkDeviceWaitIdle(app.device));
 
   app.destroyFrameData();
