@@ -21,7 +21,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   };
 
   enforceVK(vkCreateSwapchainKHR(app.device, &swapchainCreateInfo, app.allocator, &app.swapChain));
-  SDL_Log("Swapchain %p created, minImage:%d", app.swapChain, app.capabilities.minImageCount);
+  if(app.verbose) SDL_Log("Swapchain %p created, minImage:%d", app.swapChain, app.capabilities.minImageCount);
   if(oldChain) { vkDestroySwapchainKHR(app.device, oldChain, app.allocator); }
 }
 
@@ -44,7 +44,7 @@ VkImageView createImageView(App app, VkImage image, VkFormat format, VkImageAspe
   };
   VkImageView imageView;
   enforceVK(vkCreateImageView(app.device, &viewInfo, null, &imageView));
-  SDL_Log("imageView %p to %p created", imageView, image);
+  if(app.verbose) SDL_Log("imageView %p to %p created", imageView, image);
   return imageView;
 }
 
@@ -54,7 +54,7 @@ void aquireSwapChainImages(ref App app) {
   vkGetSwapchainImagesKHR(app.device, app.swapChain, &imageCount, null);
   app.swapChainImages.length = imageCount;
   vkGetSwapchainImagesKHR(app.device, app.swapChain, &imageCount, &app.swapChainImages[0]);
-  SDL_Log("Swapchain images: %d", app.imageCount);
+  if(app.verbose) SDL_Log("Swapchain images: %d", app.imageCount);
 
   // Allocate space for an imageview per image
   app.swapChainImageViews.length = app.imageCount;
@@ -73,5 +73,5 @@ void aquireSwapChainImages(ref App app) {
   for (uint i = 0; i < app.imageCount; i++) {
     app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.surfaceformats[0].format);
   }
-  SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
+  if(app.verbose) SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
 }
