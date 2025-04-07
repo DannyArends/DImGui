@@ -10,6 +10,7 @@ import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
+import textures : loadTexture, destroyTexture;
 import window: createOrResizeWindow, checkForResize, renderGUI;
 
 void main(string[] args) {
@@ -18,6 +19,7 @@ void main(string[] args) {
   app.createDebugCallback();
   app.createLogicalDevice();
   app.createCommandPool();
+  auto texture = app.loadTexture("./assets/textures/viking_room.png");
   app.createDescriptorPool();
   app.createSurface();
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
@@ -42,6 +44,7 @@ void main(string[] args) {
 
   vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
+  app.destroyTexture(texture);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
   vkDestroyDevice(app.device, app.allocator);

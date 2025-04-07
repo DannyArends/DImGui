@@ -1,0 +1,70 @@
+import engine;
+
+import commands : beginSingleTimeCommands, endSingleTimeCommands;
+
+uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
+  VkPhysicalDeviceMemoryProperties memoryProperties;
+  vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+  for (uint i = 0; i < memoryProperties.memoryTypeCount; i++) {
+    if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
+  }
+  assert(0, "Failed to find suitable memory type");
+}
+
+@nogc bool hasStencilComponent(VkFormat format) nothrow {
+  return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDeviceSize size, 
+                  VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+                  VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+  VkBufferCreateInfo bufferInfo = {
+    sType: VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+    size: size,
+    usage: usage,
+    sharingMode: VK_SHARING_MODE_EXCLUSIVE
+  };
+
+  enforceVK(vkCreateBuffer(app.device, &bufferInfo, null, buffer));
+
+  VkMemoryRequirements memoryRequirements;
+  vkGetBufferMemoryRequirements(app.device, (*buffer), &memoryRequirements);
+
+  VkMemoryAllocateInfo allocInfo = {
+    sType: VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+    allocationSize: memoryRequirements.size,
+    memoryTypeIndex: app.physicalDevice.findMemoryType(memoryRequirements.memoryTypeBits, properties)
+  };
+
+  enforceVK(vkAllocateMemory(app.device, &allocInfo, null, bufferMemory));
+  vkBindBufferMemory(app.device, (*buffer), (*bufferMemory), 0);
+  SDL_Log("Buffer [size=%d] created, allocated, and bound", size);
+}
+
+void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, uint height) {
+    VkCommandBuffer commandBuffer = app.beginSingleTimeCommands();
+    VkOffset3D imageOffset = { 0, 0, 0 };
+    VkExtent3D imageExtent = { width, height, 1 };
+
+    VkImageSubresourceLayers imageSubresource = {
+      aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
+      mipLevel: 0,
+      baseArrayLayer: 0,
+      layerCount: 1
+    };
+    
+    VkBufferImageCopy region = {
+      bufferOffset: 0,
+      bufferRowLength: 0,
+      bufferImageHeight: 0,
+      imageSubresource: imageSubresource,
+      imageOffset: imageOffset,
+      imageExtent: imageExtent
+    };
+
+    SDL_Log("copyBufferToImage %dx%d", width, height);
+
+    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    app.endSingleTimeCommands(commandBuffer);
+}
+
