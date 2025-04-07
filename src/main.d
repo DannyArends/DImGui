@@ -37,6 +37,7 @@ void main(string[] args) {
   igDestroyContext(null);
   app.destroyFrameData();
 
+  vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator); 
   vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
   vkDestroyDevice(app.device, app.allocator);
