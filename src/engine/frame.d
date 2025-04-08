@@ -1,6 +1,9 @@
 import engine;
 
-void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClearValue(VkClearColorValue([0.45f, 0.55f, 0.60f, 0.50f]))){
+import depthbuffer : destroyDepthBuffer;
+import pipeline : destroyPipeline;
+
+void renderFrame(ref App app, ImDrawData* drawData){
   VkSemaphore imageAcquired  = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
 
@@ -27,8 +30,8 @@ void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClear
     renderPass : app.imguiPass,
     framebuffer : app.swapChainFramebuffers[app.frameIndex],
     renderArea : renderArea,
-    clearValueCount : 1,
-    pClearValues : &clear
+    clearValueCount : app.clear.length,
+    pClearValues : &app.clear[0]
   };
   vkCmdBeginRenderPass(app.imguiBuffers[app.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   
@@ -86,6 +89,8 @@ void destroyFrameData(ref App app) {
     vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
     vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
   }
+  if(app.depthbuffer.depthImage) app.destroyDepthBuffer();
+  if(app.pipeline.graphicsPipeline) app.destroyPipeline();
   if(app.imguiPass) vkDestroyRenderPass(app.device, app.imguiPass, app.allocator);
   if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
 }

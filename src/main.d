@@ -28,7 +28,8 @@ void main(string[] args) {
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
 
-  while (!app.finished) { // Main loop
+  uint frames = 4000;
+  while (!app.finished && app.totalFramesRendered < frames) { // Main loop
     app.handleEvents();
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
 
@@ -49,7 +50,6 @@ void main(string[] args) {
   vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
   app.objects[0].destroy(app);
   app.destroyTexture(texture);
-  app.destroyPipeline(app.pipeline);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
   vkDestroyDevice(app.device, app.allocator);

@@ -33,7 +33,7 @@ void draw(ref App app, Geometry object, size_t i) {
   vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX_BUFFER_BIND_ID, 1, &object.vertexBuffer, &offsets[0]);
   vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDraw(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)1, 0, 0);
+  vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)1, 0, 0, 0);
 }
 
 struct Cube {

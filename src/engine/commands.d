@@ -77,19 +77,13 @@ void recordRenderCommandBuffer(ref App app) {
       extent: { width: app.width, height: app.height }
     };
 
-    VkClearValue[2] clearValues;
-    VkClearColorValue color = { float32: [0.0f, 0.0f, 0.0f, 1.0f] };
-    VkClearDepthStencilValue depthStencil =  { depth: 1.0f, stencil: 0 };
-    clearValues[0].color = color;
-    clearValues[1].depthStencil = depthStencil;
-
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
       renderPass: app.renderpass,
       framebuffer: app.swapChainFramebuffers[i],
       renderArea: renderArea,
-      clearValueCount: clearValues.length,
-      pClearValues: &clearValues[0]
+      clearValueCount: app.clear.length,
+      pClearValues: &app.clear[0]
     };
 
     vkCmdBeginRenderPass(app.renderBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
