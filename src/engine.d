@@ -74,12 +74,6 @@ struct App {
   @property uint width(){ return(capabilities.currentExtent.width); };
   @property uint height(){ return(capabilities.currentExtent.height); };
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
-  /*@property VkClearValue[2] clear() { 
-
-    clearValues[0].color = VkClearColorValue([0.0f, 0.0f, 0.0f, 1.0f]);
-    clearValues[1].depthStencil = VkClearDepthStencilValue(1.0f, 0);
-    return(clearValues);
-  }*/
 
   const(char)*[] instanceExtensions;    // Enabled instance extensions
   const(char)*[] deviceExtensions;      // Enabled device extensions
