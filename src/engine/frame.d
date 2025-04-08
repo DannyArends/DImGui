@@ -1,6 +1,6 @@
 import engine;
 
-void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClearValue(VkClearColorValue([0.45f, 0.55f, 0.60f, 0.00f]))){
+void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClearValue(VkClearColorValue([0.45f, 0.55f, 0.60f, 0.50f]))){
   VkSemaphore imageAcquired  = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
 
@@ -33,12 +33,11 @@ void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClear
   vkCmdBeginRenderPass(app.imguiBuffers[app.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   
   ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[app.frameIndex], null);
-  
+
   vkCmdEndRenderPass(app.imguiBuffers[app.frameIndex]);
 
   enforceVK(vkEndCommandBuffer(app.imguiBuffers[app.frameIndex]));
 
-  // TODO: Add Additional command buffer for rendering
   VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
 
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
