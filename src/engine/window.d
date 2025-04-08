@@ -1,10 +1,11 @@
 import engine;
 
+import depthbuffer : createDepthResources;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
 import frame : destroyFrameData;
 import framebuffer : createFramebuffers;
 import pipeline : createGraphicsPipeline;
-import renderpass : createRenderPass, createImGuiRenderPass;
+import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
@@ -29,8 +30,9 @@ void createOrResizeWindow(ref App app) {
   app.querySurfaceCapabilities();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
-  app.createRenderPass();
-  app.createImGuiRenderPass();
+  app.createDepthResources();
+  app.renderpass = app.createRenderPass();
+  app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
   app.createFramebuffers();
   app.createImGuiCommandBuffers();
   app.pipeline = app.createGraphicsPipeline();
@@ -49,3 +51,4 @@ void checkForResize(ref App app){
     app.rebuild = false;
   }
 }
+

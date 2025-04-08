@@ -3,9 +3,9 @@ import engine;
 import shaders : createShaderModule, createShaderStageInfo;
 import vertex : Vertex;
 
-void destroyPipeline(App app, GraphicsPipeline pipeline) {
-  vkDestroyPipelineLayout(app.device, pipeline.pipelineLayout, app.allocator);
-  vkDestroyPipeline(app.device, pipeline.graphicsPipeline, app.allocator);
+void destroyPipeline(ref App app) {
+  vkDestroyPipelineLayout(app.device, app.pipeline.pipelineLayout, app.allocator);
+  vkDestroyPipeline(app.device, app.pipeline.graphicsPipeline, app.allocator);
 }
 
 GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "assets/shaders/vert.spv", const(char)* fragPath = "assets/shaders/frag.spv") {

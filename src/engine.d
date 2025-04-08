@@ -13,6 +13,12 @@ struct GraphicsPipeline {
   VkPipeline graphicsPipeline;
 }
 
+struct DepthBuffer {
+  VkImage depthImage;
+  VkDeviceMemory depthImageMemory;
+  VkImageView depthImageView;
+}
+
 struct App {
   SDL_Window* window;
   alias window this;
@@ -27,8 +33,10 @@ struct App {
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 0, 0 )
   };
 
+  VkClearValue[2] clear = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Geometry[] objects = [Cube()];
   GraphicsPipeline pipeline = {null, null};
+  DepthBuffer depthbuffer = {null, null, null};
 
   // Vulkan
   VkInstance instance = null;
@@ -66,6 +74,12 @@ struct App {
   @property uint width(){ return(capabilities.currentExtent.width); };
   @property uint height(){ return(capabilities.currentExtent.height); };
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
+  /*@property VkClearValue[2] clear() { 
+
+    clearValues[0].color = VkClearColorValue([0.0f, 0.0f, 0.0f, 1.0f]);
+    clearValues[1].depthStencil = VkClearDepthStencilValue(1.0f, 0);
+    return(clearValues);
+  }*/
 
   const(char)*[] instanceExtensions;    // Enabled instance extensions
   const(char)*[] deviceExtensions;      // Enabled device extensions

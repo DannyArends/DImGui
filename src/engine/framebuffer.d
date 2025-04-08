@@ -4,7 +4,7 @@ void createFramebuffers(ref App app) {
   app.swapChainFramebuffers.length = app.imageCount;
 
   for (size_t i = 0; i < app.imageCount; i++) {
-    VkImageView[] attachments = [app.swapChainImageViews[i]];
+    VkImageView[] attachments = [app.swapChainImageViews[i], app.depthbuffer.depthImageView];
 
     VkFramebufferCreateInfo framebufferInfo = {
       sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -20,3 +20,4 @@ void createFramebuffers(ref App app) {
   }
   if(app.verbose) SDL_Log("%d Framebuffers created", app.swapChainFramebuffers.length);
 }
+
