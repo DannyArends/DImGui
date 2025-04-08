@@ -18,7 +18,7 @@ void initializeImGui(ref App app){
     Allocator : app.allocator,
     MinImageCount : app.capabilities.minImageCount,
     ImageCount : cast(uint)app.imageCount,
-    RenderPass : app.renderpass,
+    RenderPass : app.imguiPass,
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&imguiInit);

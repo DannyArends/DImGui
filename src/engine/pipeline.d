@@ -3,16 +3,10 @@ import engine;
 import shaders : createShaderModule, createShaderStageInfo;
 import vertex : Vertex;
 
-struct GraphicsPipeline {
-  VkPipelineLayout pipelineLayout;
-  VkPipeline graphicsPipeline;
-}
-
 void destroyPipeline(App app, GraphicsPipeline pipeline) {
   vkDestroyPipelineLayout(app.device, pipeline.pipelineLayout, app.allocator);
   vkDestroyPipeline(app.device, pipeline.graphicsPipeline, app.allocator);
 }
-
 
 GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "assets/shaders/vert.spv", const(char)* fragPath = "assets/shaders/frag.spv") {
   GraphicsPipeline pipeline;
@@ -106,14 +100,6 @@ GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "as
     blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
   };
   
-  VkDynamicState[] dynamicStates = [ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH ];
-
-  VkPipelineDynamicStateCreateInfo dynamicState = {
-    sType: VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-    dynamicStateCount: cast(uint)dynamicStates.length,
-    pDynamicStates: &dynamicStates[0]
-  };
-
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
   };
@@ -143,7 +129,7 @@ GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "as
     pMultisampleState: &multisampling,
     pDepthStencilState: &depthStencil,                        // Optional
     pColorBlendState: &colorBlending,
-    pDynamicState: &dynamicState,                             // Optional
+    pDynamicState: null,                             // Optional
     layout: pipeline.pipelineLayout,
     renderPass: app.renderpass,
     subpass: 0,
