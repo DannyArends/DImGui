@@ -27,18 +27,13 @@ struct Geometry {
 }
 
 // Draws geometry[j] to buffer[i]
-void draw(ref App app, size_t i, size_t j) {
-  SDL_Log("Draw");
+void draw(ref App app, Geometry object, size_t i) {
   VkDeviceSize[] offsets = [0];
 
-  SDL_Log("vkCmdBindVertexBuffers");
-  vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX_BUFFER_BIND_ID, 1, &app.objects[j].vertexBuffer, &offsets[0]);
-  SDL_Log("vkCmdBindIndexBuffer");
-  vkCmdBindIndexBuffer(app.renderBuffers[i], app.objects[j].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX_BUFFER_BIND_ID, 1, &object.vertexBuffer, &offsets[0]);
+  vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-  SDL_Log("vkCmdDraw");
-  vkCmdDraw(app.renderBuffers[i], cast(uint)app.objects[j].indices.length, cast(uint)1, 0, 0);
-  SDL_Log("Draw Done");
+  vkCmdDraw(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)1, 0, 0);
 }
 
 struct Cube {
