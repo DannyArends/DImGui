@@ -1,5 +1,7 @@
 import engine;
 
+import geometry : draw;
+
 void createCommandPool(ref App app) {
   VkCommandPool commandPool;
 
@@ -27,7 +29,7 @@ VkCommandBuffer[] createCommandBuffer(VkDevice device, VkCommandPool commandPool
   return(commandBuffer);
 }
 
-void createCommandBuffers(ref App app) { app.commandBuffers = app.device.createCommandBuffer(app.commandPool, app.imageCount, app.verbose); }
+void createImGuiCommandBuffers(ref App app) { app.imguiBuffers = app.device.createCommandBuffer(app.commandPool, app.imageCount, app.verbose); }
 
 VkCommandBuffer beginSingleTimeCommands(ref App app) {
   VkCommandBuffer[1] commandBuffer = app.device.createCommandBuffer(app.commandPool, 1, app.verbose);
@@ -53,5 +55,53 @@ void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer) {
   vkQueueWaitIdle(app.queue);
 
   vkFreeCommandBuffers(app.device, app.commandPool, 1, &commandBuffer);
+}
+
+void createRenderCommandBuffers(ref App app) { 
+  app.renderBuffers = app.device.createCommandBuffer(app.commandPool, app.imageCount, app.verbose);
+  SDL_Log("createRenderCommandBuffers");
+}
+
+void recordRenderCommandBuffer(ref App app) {
+  SDL_Log("recordRenderCommandBuffer");
+  for (size_t i = 0; i < app.renderBuffers.length; i++) {
+    VkCommandBufferBeginInfo beginInfo = {
+      sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+      pInheritanceInfo: null // Optional
+    };
+    enforceVK(vkBeginCommandBuffer(app.renderBuffers[i], &beginInfo));
+    SDL_Log("Command buffer %d recording", i);
+
+    VkRect2D renderArea = {
+      offset: { x:0, y:0 },
+      extent: { width: app.width, height: app.height }
+    };
+
+    VkClearValue[2] clearValues;
+    VkClearColorValue color = { float32: [0.0f, 0.0f, 0.0f, 1.0f] };
+    VkClearDepthStencilValue depthStencil =  { depth: 1.0f, stencil: 0 };
+    clearValues[0].color = color;
+    clearValues[1].depthStencil = depthStencil;
+
+    VkRenderPassBeginInfo renderPassInfo = {
+      sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+      renderPass: app.renderpass,
+      framebuffer: app.swapChainFramebuffers[i],
+      renderArea: renderArea,
+      clearValueCount: clearValues.length,
+      pClearValues: &clearValues[0]
+    };
+
+    vkCmdBeginRenderPass(app.renderBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    SDL_Log("Render pass recording to %d", i);
+    vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipeline.graphicsPipeline);
+    SDL_Log("Going to draw objects");
+    for(size_t j = 0; j < app.objects.length; j++) {
+      app.draw(i, j);
+    }
+    vkCmdEndRenderPass(app.renderBuffers[i]);
+    enforceVK(vkEndCommandBuffer(app.renderBuffers[i]));
+    SDL_Log("Render pass finished to %d", i);
+  }
 }
 

@@ -8,7 +8,7 @@ import events : handleEvents;
 import frame : destroyFrameData, presentFrame, renderFrame;
 import imgui : initializeImGui;
 import instance : createInstance;
-import pipeline : createGraphicsPipeline, destroyPipeline;
+import pipeline : destroyPipeline;
 import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
 import textures : loadTexture, destroyTexture;
@@ -26,7 +26,6 @@ void main(string[] args) {
   app.createDescriptorPool();
   app.createSurface();
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
-  auto pipeline = app.createGraphicsPipeline();
   app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
 
   while (!app.finished) { // Main loop
@@ -50,7 +49,7 @@ void main(string[] args) {
   vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
   app.objects[0].destroy(app);
   app.destroyTexture(texture);
-  app.destroyPipeline(pipeline);
+  app.destroyPipeline(app.pipeline);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
   vkDestroyDevice(app.device, app.allocator);

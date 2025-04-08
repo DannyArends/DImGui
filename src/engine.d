@@ -8,6 +8,11 @@ struct Sync {
   VkSemaphore renderComplete;
 }
 
+struct GraphicsPipeline {
+  VkPipelineLayout pipelineLayout;
+  VkPipeline graphicsPipeline;
+}
+
 struct App {
   SDL_Window* window;
   alias window this;
@@ -23,6 +28,7 @@ struct App {
   };
 
   Geometry[] objects = [Cube()];
+  GraphicsPipeline pipeline = {null, null};
 
   // Vulkan
   VkInstance instance = null;
@@ -41,9 +47,11 @@ struct App {
   // per Frame
   VkFence[] fences = null;
   VkImage[] swapChainImages = null;
+  VkRenderPass imguiPass = null;
   VkRenderPass renderpass = null;
   VkImageView[] swapChainImageViews = null;
-  VkCommandBuffer[] commandBuffers = null;
+  VkCommandBuffer[] imguiBuffers = null;
+  VkCommandBuffer[] renderBuffers = null;
   VkFramebuffer[] swapChainFramebuffers = null;
 
   VkAllocationCallbacks* allocator = null;

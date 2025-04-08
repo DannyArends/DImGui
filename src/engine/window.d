@@ -1,9 +1,10 @@
 import engine;
 
-import commands : createCommandBuffers;
+import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
 import frame : destroyFrameData;
 import framebuffer : createFramebuffers;
-import renderpass : createRenderPass;
+import pipeline : createGraphicsPipeline;
+import renderpass : createRenderPass, createImGuiRenderPass;
 import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
@@ -29,8 +30,12 @@ void createOrResizeWindow(ref App app) {
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
   app.createRenderPass();
+  app.createImGuiRenderPass();
   app.createFramebuffers();
-  app.createCommandBuffers();
+  app.createImGuiCommandBuffers();
+  app.pipeline = app.createGraphicsPipeline();
+  app.createRenderCommandBuffers();
+  app.recordRenderCommandBuffer();
   app.createSyncObjects();
 }
 

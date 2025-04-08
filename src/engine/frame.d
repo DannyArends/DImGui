@@ -1,6 +1,6 @@
 import engine;
 
-void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClearValue(VkClearColorValue([0.45f, 0.55f, 0.60f, 1.00f]))){
+void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClearValue(VkClearColorValue([0.45f, 0.55f, 0.60f, 0.00f]))){
   VkSemaphore imageAcquired  = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
 
@@ -12,34 +12,34 @@ void renderFrame(ref App app, ImDrawData* drawData, VkClearValue clear = VkClear
 
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex], true, uint.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex]));
-  enforceVK(vkResetCommandBuffer(app.commandBuffers[app.frameIndex], 0));
+  enforceVK(vkResetCommandBuffer(app.imguiBuffers[app.frameIndex], 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = {
     sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
   };
-  enforceVK(vkBeginCommandBuffer(app.commandBuffers[app.frameIndex], &commandBufferInfo));
+  enforceVK(vkBeginCommandBuffer(app.imguiBuffers[app.frameIndex], &commandBufferInfo));
 
   VkRect2D renderArea = { extent: { width: app.width, height: app.height } };
 
   VkRenderPassBeginInfo renderPassInfo = {
     sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass : app.renderpass,
+    renderPass : app.imguiPass,
     framebuffer : app.swapChainFramebuffers[app.frameIndex],
     renderArea : renderArea,
     clearValueCount : 1,
     pClearValues : &clear
   };
-  vkCmdBeginRenderPass(app.commandBuffers[app.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBeginRenderPass(app.imguiBuffers[app.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   
-  ImGui_ImplVulkan_RenderDrawData(drawData, app.commandBuffers[app.frameIndex], null);
+  ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[app.frameIndex], null);
   
-  vkCmdEndRenderPass(app.commandBuffers[app.frameIndex]);
+  vkCmdEndRenderPass(app.imguiBuffers[app.frameIndex]);
 
-  enforceVK(vkEndCommandBuffer(app.commandBuffers[app.frameIndex]));
+  enforceVK(vkEndCommandBuffer(app.imguiBuffers[app.frameIndex]));
 
   // TODO: Add Additional command buffer for rendering
-  VkCommandBuffer[] submitCommandBuffers = [ app.commandBuffers[app.frameIndex] ];
+  VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
 
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -82,10 +82,12 @@ void destroyFrameData(ref App app) {
   }
   for (uint i = 0; i < app.imageCount; i++) {
     vkDestroyFence(app.device, app.fences[i], app.allocator);
-    vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.commandBuffers[i]);
+    vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.imguiBuffers[i]);
+    vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.renderBuffers[i]);
     vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
     vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
   }
+  if(app.imguiPass) vkDestroyRenderPass(app.device, app.imguiPass, app.allocator);
   if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
 }
 
