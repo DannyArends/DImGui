@@ -18,7 +18,7 @@ struct Texture {
 }
 
 // Convert an SDL-Surface to RGBA32 format
-void toRGBA(ref SDL_Surface* surface) {
+void toRGBA(ref SDL_Surface* surface, bool verbose = false) {
   SDL_PixelFormat *fmt = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
   fmt.BitsPerPixel = 32;
   SDL_Surface* adapted = SDL_ConvertSurface(surface, fmt, 0);
@@ -26,16 +26,16 @@ void toRGBA(ref SDL_Surface* surface) {
   if (adapted) {
     SDL_FreeSurface(surface); // Free the SDL_Surface
     surface = adapted;
-    SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+    if(verbose) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   }
 }
 
 Texture loadTexture(App app, const(char)* path) {
   auto surface = IMG_Load(path);
-  SDL_Log("loading %s, Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+  SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
 
   // Adapt surface to 32 bit, and create structure
-  if (surface.format.BitsPerPixel != 32) { surface.toRGBA(); }
+  if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
   Texture texture = { width: surface.w, height: surface.h, surface: surface };
 
   // Create a buffer to transfer the image to the GPU
@@ -59,7 +59,7 @@ Texture loadTexture(App app, const(char)* path) {
   texture.textureImageView = app.createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
 
   // Cleanup
-  SDL_Log("Freeing surface: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+  if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   SDL_FreeSurface(surface);
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);

@@ -43,7 +43,7 @@ void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceM
     memoryTypeIndex: app.physicalDevice.findMemoryType(memoryRequirements.memoryTypeBits, properties)
 
   };
-  SDL_Log("createImage: Allocating %d Bytes", memoryRequirements.size);
+  if(app.verbose) SDL_Log("createImage: Allocating %d Bytes", memoryRequirements.size);
   enforceVK(vkAllocateMemory(app.device, &allocInfo, null, imageMemory));
 
   vkBindImageMemory(app.device, (*image), (*imageMemory), 0);
@@ -53,9 +53,9 @@ void transitionImageLayout(ref App app, VkImage image,
                            VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                            VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
-  SDL_Log("transitionImageLayout");
+  if(app.verbose) SDL_Log("transitionImageLayout");
   VkCommandBuffer commandBuffer = app.beginSingleTimeCommands();
-  SDL_Log(" - Single time command started");
+  if(app.verbose) SDL_Log(" - Single time command started for commandBuffer[%p]", commandBuffer);
   VkImageSubresourceRange subresourceRange = {
     aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
     baseMipLevel: 0,
@@ -108,6 +108,6 @@ void transitionImageLayout(ref App app, VkImage image,
 
   vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
   app.endSingleTimeCommands(commandBuffer);
-  SDL_Log(" - Single time command finished");
+  if(app.verbose) SDL_Log(" - Single time command finished for commandBuffer[%p]", commandBuffer);
 }
 

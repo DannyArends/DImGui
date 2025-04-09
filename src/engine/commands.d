@@ -59,18 +59,18 @@ void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer) {
 
 void createRenderCommandBuffers(ref App app) { 
   app.renderBuffers = app.device.createCommandBuffer(app.commandPool, app.imageCount, app.verbose);
-  SDL_Log("createRenderCommandBuffers");
+  if(app.verbose) SDL_Log("createRenderCommandBuffers created %d renderBuffer using commandpool[%p]", app.imageCount, app.commandPool);
 }
 
 void recordRenderCommandBuffer(ref App app) {
-  SDL_Log("recordRenderCommandBuffer");
+  if(app.verbose) SDL_Log("recordRenderCommandBuffer");
   for (size_t i = 0; i < app.renderBuffers.length; i++) {
     VkCommandBufferBeginInfo beginInfo = {
       sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       pInheritanceInfo: null // Optional
     };
     enforceVK(vkBeginCommandBuffer(app.renderBuffers[i], &beginInfo));
-    SDL_Log("Command buffer %d recording", i);
+    if(app.verbose) SDL_Log("renderBuffer %d recording", i);
 
     VkRect2D renderArea = {
       offset: { x:0, y:0 },
@@ -87,15 +87,15 @@ void recordRenderCommandBuffer(ref App app) {
     };
 
     vkCmdBeginRenderPass(app.renderBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    SDL_Log("Render pass recording to buffer %d", i);
+    if(app.verbose) SDL_Log("Render pass recording to buffer %d", i);
     vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipeline.graphicsPipeline);
-    SDL_Log("Going to draw objects");
+    if(app.verbose) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, i);
     for(size_t x = 0; x < app.objects.length; x++) {
       app.draw(app.objects[x], i);
     }
     vkCmdEndRenderPass(app.renderBuffers[i]);
     enforceVK(vkEndCommandBuffer(app.renderBuffers[i]));
-    SDL_Log("Render pass finished to %d", i);
+    if(app.verbose) SDL_Log("Render pass finished to %d", i);
   }
 }
 

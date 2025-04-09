@@ -38,7 +38,7 @@ void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDev
 
   enforceVK(vkAllocateMemory(app.device, &allocInfo, null, bufferMemory));
   vkBindBufferMemory(app.device, (*buffer), (*bufferMemory), 0);
-  if(app.verbose) SDL_Log("Buffer [size=%d] created, allocated, and bound", size);
+  if(app.verbose) SDL_Log("Buffer %p [size=%d] created, allocated, and bound", (*buffer), size);
 }
 
 void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
@@ -69,14 +69,14 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
     imageExtent: imageExtent
   };
 
-  if(app.verbose) SDL_Log("copyBufferToImage %dx%d", width, height);
+  if(app.verbose) SDL_Log("copyBufferToImage buffer[%p] to image[%p] %dx%d", buffer, image, width, height);
   vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
   app.endSingleTimeCommands(commandBuffer);
 }
 
 void toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory, VkBufferUsageFlags usage) {
   uint size = cast(uint)(object[0].sizeof * object.length);
-  SDL_Log("bufferObject: Transfer of %d x %d = %d bytes", object[0].sizeof, object.length, size);
+  if(app.verbose) SDL_Log("toGPU: Transfering %d x %d = %d bytes", object[0].sizeof, object.length, size);
 
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
@@ -94,6 +94,6 @@ void toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory,
 
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
-  SDL_Log("bufferObject: %d bytes uploaded", size);
+  if(app.verbose) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", (*buffer), size);
 }
 
