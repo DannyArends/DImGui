@@ -3,7 +3,7 @@ import engine;
 import depthbuffer : findDepthFormat;
 
 VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR) {
-  SDL_Log("Creating renderpass");
+  if(app.verbose) SDL_Log("Creating renderpass");
   VkAttachmentDescription colorAttachment = {
     format : app.surfaceformats[0].format,
     samples : VK_SAMPLE_COUNT_1_BIT,
@@ -64,4 +64,3 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
   return(renderpass);
 }
-

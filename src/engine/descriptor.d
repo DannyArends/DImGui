@@ -3,7 +3,7 @@ import engine;
 import uniforms : UniformBufferObject;
 
 void createImGuiDescriptorPool(ref App app){
-  SDL_Log("create ImGui DescriptorPool, images: %d", app.imageCount);
+  if(app.verbose) SDL_Log("create ImGui DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
     {
       type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -22,7 +22,7 @@ void createImGuiDescriptorPool(ref App app){
 }
 
 void createDescriptorPool(ref App app){
-  SDL_Log("create Render DescriptorPool, images: %d", app.imageCount);
+  if(app.verbose) SDL_Log("create Render DescriptorPool, images: %d", app.imageCount);
   VkDescriptorPoolSize[] poolSizes = [
     { type: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount: cast(uint)(app.imageCount) },
   ];
@@ -38,7 +38,7 @@ void createDescriptorPool(ref App app){
 }
 
 void createDescriptorSetLayout(ref App app) {
-  SDL_Log("creating DescriptorSetLayout");
+  if(app.verbose) SDL_Log("Creating DescriptorSetLayout");
   VkDescriptorSetLayoutBinding uboLayoutBinding = {
     binding: 0,
     descriptorCount: 1,
@@ -58,7 +58,7 @@ void createDescriptorSetLayout(ref App app) {
 }
 
 void createDescriptorSet(ref App app) {
-  SDL_Log("creating DescriptorSets, copy layout");
+  if(app.verbose) SDL_Log("creating DescriptorSets, copy layout");
   VkDescriptorSetLayout[] layouts;
   layouts.length = app.imageCount;
   for (size_t i = 0; i < app.imageCount; i++) {
@@ -73,10 +73,10 @@ void createDescriptorSet(ref App app) {
     descriptorSetCount: app.imageCount,
     pSetLayouts: &layouts[0]
   };
-  SDL_Log("Allocating %d DescriptorSets", app.imageCount);
+  if(app.verbose) SDL_Log("Allocating %d DescriptorSets", app.imageCount);
   enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.descriptorSets[0]));
 
-  SDL_Log("Update %d DescriptorSets", app.imageCount);
+  if(app.verbose) SDL_Log("Update %d DescriptorSets", app.imageCount);
   for (size_t i = 0; i <  app.imageCount; i++) {
     VkDescriptorBufferInfo bufferInfo = {
       buffer: app.uniform.uniformBuffers[0],
