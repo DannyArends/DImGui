@@ -9,6 +9,8 @@ deps/include/
 deps/lib/
 deps/share/
 
+bin/renderdoc.cap
+
 .dub/
 DImGui.exe
 DImGui.pdb

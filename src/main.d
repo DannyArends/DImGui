@@ -2,17 +2,19 @@ import engine;
 import validation;
 
 import commands : createCommandPool;
-import descriptor : createDescriptorPool;
+import descriptor : createImGuiDescriptorPool;
 import devices : pickPhysicalDevice, createLogicalDevice;
 import events : handleEvents;
-import frame : destroyFrameData, presentFrame, renderFrame;
+import frame : presentFrame, renderFrame;
 import imgui : initializeImGui;
 import instance : createInstance;
 import pipeline : destroyPipeline;
 import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
 import textures : loadTexture, destroyTexture;
-import window: createOrResizeWindow, checkForResize, renderGUI;
+import window: createOrResizeWindow, checkForResize, renderGUI, destroyFrameData;
+
+import matrix : mat4, scale, translate;
 
 void main(string[] args) {
   App app = initializeSDL();
@@ -21,8 +23,17 @@ void main(string[] args) {
   app.createLogicalDevice();
   app.createCommandPool();
   auto texture = app.loadTexture("./assets/textures/viking_room.png");
+  app.createImGuiDescriptorPool();
+  for(int x = -2; x < 0; x++){
+    for(int y = 0; y < 2; y++){
+      mat4 instance;
+      auto scalefactor = 0.2f;
+      instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
+      instance = translate(instance, [cast(float) x /4.0f, cast(float)y /4.0f, 0.5f]);
+      app.objects[0].instances ~= instance;
+    }
+  }
   app.objects[0].buffer(app);
-  app.createDescriptorPool();
   app.createSurface();
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
@@ -46,7 +57,7 @@ void main(string[] args) {
   app.destroyFrameData();
 
   vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
-  vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
+  vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
   app.objects[0].destroy(app);
   app.destroyTexture(texture);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);

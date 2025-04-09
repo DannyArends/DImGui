@@ -99,9 +99,11 @@ GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "as
     pAttachments: &colorBlendAttachment,
     blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
   };
-  
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    setLayoutCount: 1, // Optional
+    pSetLayouts: &app.descriptorSetLayout, // Optional
   };
   enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, null, &pipeline.pipelineLayout));
 
