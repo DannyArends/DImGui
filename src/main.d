@@ -24,8 +24,10 @@ void main(string[] args) {
   app.createCommandPool();
   auto texture = app.loadTexture("./assets/textures/viking_room.png");
   app.createImGuiDescriptorPool();
-  for(int x = -2; x < 0; x++){
-    for(int y = 0; y < 2; y++){
+
+  // Add a couple of instances to the cube
+  for(int x = -2; x < 0; x++) {
+    for(int y = 0; y < 2; y++) {
       mat4 instance;
       auto scalefactor = 0.2f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
@@ -33,6 +35,7 @@ void main(string[] args) {
       app.objects[0].instances ~= instance;
     }
   }
+  //Buffer the Cube
   app.objects[0].buffer(app);
   app.createSurface();
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)

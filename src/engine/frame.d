@@ -43,6 +43,7 @@ void renderFrame(ref App app, ImDrawData* drawData){
 
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
+  // Update the uniform buffer in case anything has changed
   app.updateUniformBuffer(app.frameIndex);
 
   VkSubmitInfo submitInfo = {
