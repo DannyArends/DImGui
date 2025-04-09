@@ -48,7 +48,6 @@ struct App {
   VkDescriptorPool imguiPool = null;
   VkDescriptorPool descriptorPool = null;
   VkDescriptorSetLayout descriptorSetLayout = null;
-  //VkDescriptorSetLayout[] layouts;
   VkDescriptorSet[] descriptorSets = null;
 
   VkSurfaceKHR surface = null;
