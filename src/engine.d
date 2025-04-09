@@ -1,7 +1,8 @@
 public import includes;
-public import core.stdc.string : strcmp;
+public import core.stdc.string : strcmp, memcpy;
 
-import geometry : Geometry, Cube;
+import geometry : Geometry;
+import cube : Cube;
 
 struct Sync {
   VkSemaphore imageAcquired;
@@ -82,7 +83,7 @@ struct App {
   // Global boolean flags
   bool finished = false;
   bool showdemo = true;
-  bool verbose = true;
+  bool verbose = false;
   bool rebuild = false;
 }
 

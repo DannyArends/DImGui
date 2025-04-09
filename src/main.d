@@ -12,7 +12,6 @@ import pipeline : destroyPipeline;
 import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
 import textures : loadTexture, destroyTexture;
-import geometry : Geometry;
 import window: createOrResizeWindow, checkForResize, renderGUI;
 
 void main(string[] args) {
