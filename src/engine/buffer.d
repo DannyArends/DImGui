@@ -76,7 +76,7 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
 
 void toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory, VkBufferUsageFlags usage) {
   uint size = cast(uint)(object[0].sizeof * object.length);
-  SDL_Log("bufferObject: Transfer of %d bytes", size);
+  SDL_Log("bufferObject: Transfer of %d x %d = %d bytes", object[0].sizeof, object.length, size);
 
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;

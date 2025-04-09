@@ -1,7 +1,5 @@
 import engine;
-
-import depthbuffer : destroyDepthBuffer;
-import pipeline : destroyPipeline;
+import uniforms : updateUniformBuffer;
 
 void renderFrame(ref App app, ImDrawData* drawData){
   VkSemaphore imageAcquired  = app.sync[app.syncIndex].imageAcquired;
@@ -45,6 +43,8 @@ void renderFrame(ref App app, ImDrawData* drawData){
 
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
+  app.updateUniformBuffer(app.frameIndex);
+
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
     waitSemaphoreCount : 1,
@@ -75,23 +75,5 @@ void presentFrame(ref App app){
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
   app.syncIndex = (app.syncIndex + 1) % app.sync.length; // Now we can use the next set of semaphores
-}
-
-void destroyFrameData(ref App app) {
-  for (uint i = 0; i < app.sync.length; i++) {
-    vkDestroySemaphore(app.device, app.sync[i].imageAcquired, app.allocator);
-    vkDestroySemaphore(app.device, app.sync[i].renderComplete, app.allocator);
-  }
-  for (uint i = 0; i < app.imageCount; i++) {
-    vkDestroyFence(app.device, app.fences[i], app.allocator);
-    vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.imguiBuffers[i]);
-    vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.renderBuffers[i]);
-    vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
-    vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
-  }
-  if(app.depthbuffer.depthImage) app.destroyDepthBuffer();
-  if(app.pipeline.graphicsPipeline) app.destroyPipeline();
-  if(app.imguiPass) vkDestroyRenderPass(app.device, app.imguiPass, app.allocator);
-  if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
 }
 

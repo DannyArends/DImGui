@@ -2,6 +2,7 @@ public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
 import geometry : Geometry;
+import uniforms : Uniform;
 import cube : Cube;
 
 struct Sync {
@@ -44,7 +45,11 @@ struct App {
   VkPhysicalDevice physicalDevice = null;
   VkDevice device = null;
   VkQueue queue = null;
+  VkDescriptorPool imguiPool = null;
   VkDescriptorPool descriptorPool = null;
+  VkDescriptorSetLayout descriptorSetLayout = null;
+  //VkDescriptorSetLayout[] layouts;
+  VkDescriptorSet[] descriptorSets = null;
 
   VkSurfaceKHR surface = null;
   VkSurfaceFormatKHR[] surfaceformats = null;
@@ -52,6 +57,7 @@ struct App {
   VkSwapchainKHR swapChain = null;
   VkCommandPool commandPool = null;
   Sync[] sync = null;
+  Uniform uniform = {null, null};
 
   // per Frame
   VkFence[] fences = null;
