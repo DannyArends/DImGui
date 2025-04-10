@@ -1,6 +1,3 @@
-#include <stdio.h>          // printf, fprintf
-#include <stdlib.h>         // abort
-#include <assert.h>
 #define SDLCALL
 #define DECLSPEC
 #define SDL_INIT_TIMER 0x00000001u
@@ -31,3 +28,4 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "cimgui.h"
 #include "cimgui_impl.h"
+

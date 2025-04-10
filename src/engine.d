@@ -41,6 +41,7 @@ struct App {
   Camera camera;
   GraphicsPipeline pipeline = {null, null};
   DepthBuffer depthbuffer = {null, null, null};
+  ImGuiIO* io;
 
   // Vulkan
   VkInstance instance = null;
@@ -100,3 +101,4 @@ extern(C) void enforceVK(VkResult err) {
   SDL_Log("[enforceVK] Error: VkResult = %d\n", err);
   if (err < 0) abort();
 }
+
