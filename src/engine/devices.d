@@ -6,7 +6,12 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   auto physicalDevices = app.queryPhysicalDevices();  // Query Physical Devices and pick 0
   app.physicalDevice = physicalDevices[device];
 
-  if(app.queryDeviceExtensionProperties().has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
+  auto extension = app.queryDeviceExtensionProperties();
+
+  if(extension.has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
+  if(extension.has("VK_KHR_maintenance3")){ app.deviceExtensions ~= "VK_KHR_maintenance3"; }
+  if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
+
   app.queueFamily = selectQueueFamily(app.physicalDevice);
 }
 
@@ -22,12 +27,21 @@ void createLogicalDevice(ref App app, uint device = 0){
     pQueuePriorities : &queuePriority[0]
   }];
 
+  VkPhysicalDeviceVulkan12Features features = { 
+    sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+    descriptorIndexing : VK_TRUE,
+    runtimeDescriptorArray : VK_TRUE,
+    shaderSampledImageArrayNonUniformIndexing : VK_TRUE,
+    shaderStorageBufferArrayNonUniformIndexing : VK_TRUE
+  };
+
   VkDeviceCreateInfo createDevice = {
     sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
     queueCreateInfoCount : cast(uint)createQueue.length,
     pQueueCreateInfos : &createQueue[0],
     enabledExtensionCount : cast(uint)app.deviceExtensions.length,
     ppEnabledExtensionNames : &app.deviceExtensions[0],
+    pNext : &features
   };
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
   SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device );

@@ -66,6 +66,37 @@ Texture loadTexture(App app, const(char)* path) {
   return(texture);
 }
 
+// Create a TextureSampler for sampling from a texture
+void createSampler(ref App app) {
+  SDL_Log("Create texture sampler");
+  VkPhysicalDeviceProperties properties = {};
+  VkPhysicalDeviceFeatures supportedFeatures = {};
+
+  vkGetPhysicalDeviceProperties(app.physicalDevice, &properties);
+  vkGetPhysicalDeviceFeatures(app.physicalDevice, &supportedFeatures);
+
+  VkSamplerCreateInfo samplerInfo = {
+    sType: VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+    magFilter: VK_FILTER_LINEAR,
+    minFilter: VK_FILTER_LINEAR,
+    addressModeU: VK_SAMPLER_ADDRESS_MODE_REPEAT,
+    addressModeV: VK_SAMPLER_ADDRESS_MODE_REPEAT,
+    addressModeW: VK_SAMPLER_ADDRESS_MODE_REPEAT,
+    anisotropyEnable: ((supportedFeatures.samplerAnisotropy) ? VK_FALSE : VK_TRUE),
+    maxAnisotropy: properties.limits.maxSamplerAnisotropy,
+    borderColor: VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+    unnormalizedCoordinates: VK_FALSE,
+    compareEnable: VK_FALSE,
+    compareOp: VK_COMPARE_OP_ALWAYS,
+    mipmapMode: VK_SAMPLER_MIPMAP_MODE_LINEAR,
+    mipLodBias: 0.0f,
+    minLod: 0.0f,
+    maxLod: 0.0f
+  };
+
+  enforceVK(vkCreateSampler(app.device, &samplerInfo, null, &app.sampler));
+}
+
 void destroyTexture(App app, Texture texture) {
   vkDestroyImageView(app.device, texture.textureImageView, app.allocator);
   vkDestroyImage(app.device, texture.textureImage, app.allocator);

@@ -11,9 +11,9 @@ import instance : createInstance;
 import pipeline : destroyPipeline;
 import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
-import textures : loadTexture, destroyTexture;
+import textures : loadTexture, createSampler, destroyTexture;
 import window: createOrResizeWindow, checkForResize, renderGUI, destroyFrameData;
-
+import geometry : Instance;
 import matrix : mat4, scale, translate;
 
 void main(string[] args) {
@@ -22,7 +22,10 @@ void main(string[] args) {
   app.createDebugCallback();
   app.createLogicalDevice();
   app.createCommandPool();
-  auto texture = app.loadTexture("./assets/textures/viking_room.png");
+  app.createSampler();
+  app.textures ~= app.loadTexture("./assets/textures/grunge.png");
+  app.textures ~= app.loadTexture("./assets/textures/viking_room.png");
+
   app.createImGuiDescriptorPool();
 
   // Add a couple of instances to the cube
@@ -32,7 +35,7 @@ void main(string[] args) {
       auto scalefactor = 0.2f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
       instance = translate(instance, [cast(float) x /4.0f, cast(float)y /4.0f, 0.5f]);
-      app.objects[0].instances ~= instance;
+      app.objects[0].instances ~= Instance(1, instance);
     }
   }
   //Buffer the Cube
@@ -62,7 +65,10 @@ void main(string[] args) {
   vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
   app.objects[0].destroy(app);
-  app.destroyTexture(texture);
+  foreach(texture; app.textures){
+    app.destroyTexture(texture);
+  }
+  vkDestroySampler(app.device, app.sampler, null);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
   vkDestroyDevice(app.device, app.allocator);

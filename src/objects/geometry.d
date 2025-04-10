@@ -4,6 +4,11 @@ import buffer : toGPU;
 import matrix : mat4;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
 
+struct Instance {
+  uint tid = 0;
+  mat4 matrix = mat4.init;
+}
+
 struct Geometry {
   VkBuffer vertexBuffer = null;
   VkDeviceMemory vertexBufferMemory = null;
@@ -16,7 +21,7 @@ struct Geometry {
 
   Vertex[] vertices;
   uint[] indices;
-  mat4[] instances = [mat4.init]; 
+  Instance[] instances = [Instance.init]; 
 
   void buffer(ref App app) {
     app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -42,7 +47,7 @@ void draw(ref App app, Geometry object, size_t i) {
   vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE_BUFFER_BIND_ID, 1, &object.instanceBuffer, &offsets[0]);
   vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipeline.pipelineLayout, 0, 1, &app.descriptorSets[i], 0, null);
+  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipeline.pipelineLayout, 0, 1, &app.descriptorSets[0], 0, null);
   if(app.verbose) SDL_Log("DRAW: %d instances", object.instances.length);
   vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
 }
