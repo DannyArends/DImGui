@@ -1,5 +1,7 @@
 import engine;
 
+import std.math : cos, sin;
+
 import vector : normalize, vMul, vAdd, negate, xyz;
 import matrix : Matrix, multiply, rotate, radian;
 import quaternion : xyzw;
@@ -17,7 +19,7 @@ struct Camera {
     bool[2]      isdrag        = [false, false];
 
     // Move the camera forward
-    @property float[3] forward() const { 
+    @property @nogc float[3] forward() const nothrow { 
       float[3] direction = rotation.direction();
       direction[2] = 0.0f;
       direction.normalize();
@@ -26,27 +28,27 @@ struct Camera {
     }
 
     // Move the camera backward
-    @property float[3] back() const { 
+    @property @nogc float[3] back() const nothrow { 
       float[3] back = -forward()[];
       return(back);
     }
 
     // Move the camera to the left of the view direction
-    @property float[3] left() const {
+    @property @nogc float[3] left() const nothrow {
       float[3] direction = forward();
       float[3] left = multiply(rotate(Matrix.init, [-90.0f, 0.0f, 0.0f]), direction.xyzw()).xyz;
       return(left);
     }
 
     // Move the camera to the right of the view direction
-    @property float[3] right() const { 
+    @property @nogc float[3] right() const nothrow { 
       float[3] right = -left()[];
       return(right);
     }
 }
 
 /* Get the normalized direction of the xy camera rotation (gimbal lock) */
-float[3] direction(const float[3] rotation) {
+@nogc float[3] direction(const float[3] rotation) nothrow {
     float[3] direction = [
         cos(radian(rotation[1])) * cos(radian(rotation[0])),
         cos(radian(rotation[1])) * sin(radian(rotation[0])),
@@ -57,7 +59,7 @@ float[3] direction(const float[3] rotation) {
     return(direction);
 }
 
-void move(ref Camera camera, float[3] movement) {
+@nogc void move(ref Camera camera, float[3] movement) nothrow {
     camera.lookat = vAdd(camera.lookat, movement);
     camera.position = vAdd(camera.lookat, vMul(camera.rotation.direction(), camera.distance));
     //SDL_Log("%s", toStringz(format("%s", camera.position)));
@@ -65,7 +67,7 @@ void move(ref Camera camera, float[3] movement) {
 }
 
 /* Drag the camera in the x/y directions, causes camera rotation */
-void drag(ref Camera camera, float xrel, float yrel) {
+@nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
     camera.rotation[0] -= xrel; 
     if(camera.rotation[0]  > 360) camera.rotation[0] = 0;
     if(camera.rotation[0]  < 0) camera.rotation[0] = 360;
