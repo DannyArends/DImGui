@@ -2,9 +2,10 @@ public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
 import camera : Camera;
+import cube : Cube;
 import geometry : Geometry;
 import uniforms : Uniform;
-import cube : Cube;
+import textures : Texture;
 
 struct Sync {
   VkSemaphore imageAcquired;
@@ -33,11 +34,13 @@ struct App {
     applicationVersion: 0, 
     pEngineName: "CalderaD Engine with Dear ImGui", 
     engineVersion: 0,
-    apiVersion: VK_MAKE_API_VERSION( 0, 1, 0, 0 )
+    apiVersion: VK_MAKE_API_VERSION( 0, 1, 2, 0 )
   };
 
   VkClearValue[2] clear = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Geometry[] objects = [Cube()];
+  Texture[] textures = null;
+  VkSampler sampler;
   Camera camera;
   GraphicsPipeline pipeline = {null, null};
   DepthBuffer depthbuffer = {null, null, null};
