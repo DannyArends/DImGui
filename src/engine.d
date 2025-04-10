@@ -1,6 +1,7 @@
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
+import camera : Camera;
 import geometry : Geometry;
 import uniforms : Uniform;
 import cube : Cube;
@@ -37,6 +38,7 @@ struct App {
 
   VkClearValue[2] clear = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Geometry[] objects = [Cube()];
+  Camera camera;
   GraphicsPipeline pipeline = {null, null};
   DepthBuffer depthbuffer = {null, null, null};
 
@@ -77,8 +79,9 @@ struct App {
   uint frameIndex = 0;
   uint totalFramesRendered = 0;
 
-  @property uint width(){ return(capabilities.currentExtent.width); };
-  @property uint height(){ return(capabilities.currentExtent.height); };
+  @property uint width() { return(capabilities.currentExtent.width); };
+  @property uint height() { return(capabilities.currentExtent.height); };
+  @property float aspectRatio() { return(this.width / cast(float) this.height); }
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
 
   const(char)*[] instanceExtensions;    // Enabled instance extensions

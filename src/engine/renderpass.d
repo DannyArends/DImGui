@@ -64,3 +64,4 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
   return(renderpass);
 }
+
