@@ -46,3 +46,4 @@ App initializeSDL() {
   SDL_Log("SDL_CreateWindow: %p", app.window);
   return(app);
 }
+

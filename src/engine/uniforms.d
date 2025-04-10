@@ -3,7 +3,8 @@ import engine;
 import core.time : MonoTime;
 
 import buffer : createBuffer;
-import matrix : mat4, rotate;
+import matrix : mat4, rotate, lookAt, perspective;
+
 
 struct UniformBufferObject {
   mat4 scene = mat4.init;
@@ -32,9 +33,9 @@ void createUniforms(ref App app) {
 
 void updateUniformBuffer(ref App app, uint currentImage) {
   UniformBufferObject ubo = {
-    scene: mat4.init,
-    view: mat4.init,
-    proj: mat4.init,
+    scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
+    view: lookAt(app.camera.position, app.camera.lookat, app.camera.up),
+    proj: perspective(app.camera.fov, app.aspectRatio, app.camera.nearfar[0], app.camera.nearfar[1]),
     orientation: mat4.init
   };
 
