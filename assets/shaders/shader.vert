@@ -31,7 +31,6 @@ void main() {
   mat4 model = ubo.scene * instance;
   gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * vec4(inPosition, 1.0);
 
-//  gl_Position = instance * vec4(inPosition, 1.0);
   fragColor = inColor;
   fragNormal = inNormal;
   fragTexCoord = inTexCoord;
