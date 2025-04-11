@@ -82,8 +82,8 @@ void recordRenderCommandBuffer(ref App app) {
       renderPass: app.renderpass,
       framebuffer: app.swapChainFramebuffers[i],
       renderArea: renderArea,
-      clearValueCount: app.clear.length,
-      pClearValues: &app.clear[0]
+      clearValueCount: app.clearValue.length,
+      pClearValues: &app.clearValue[0]
     };
 
     vkCmdBeginRenderPass(app.renderBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);

@@ -28,8 +28,8 @@ void renderFrame(ref App app, ImDrawData* drawData){
     renderPass : app.imguiPass,
     framebuffer : app.swapChainFramebuffers[app.frameIndex],
     renderArea : renderArea,
-    clearValueCount : app.clear.length,
-    pClearValues : &app.clear[0]
+    clearValueCount : app.clearValue.length,
+    pClearValues : &app.clearValue[0]
   };
   vkCmdBeginRenderPass(app.imguiBuffers[app.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   
