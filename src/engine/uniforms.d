@@ -14,22 +14,15 @@ struct UniformBufferObject {
 }
 
 struct Uniform {
-  VkBuffer[] uniformBuffers;
-  VkDeviceMemory[] uniformBuffersMemory;
+  VkBuffer uniformBuffers;
+  VkDeviceMemory uniformBuffersMemory;
 }
 
 void createUniforms(ref App app) {
   VkDeviceSize size = UniformBufferObject.sizeof;
-
-  app.uniform.uniformBuffers.length = app.imageCount;
-  app.uniform.uniformBuffersMemory.length = app.imageCount;
-
-  for (size_t i = 0; i <  app.imageCount; i++) {
-    app.createBuffer(&app.uniform.uniformBuffers[i], &app.uniform.uniformBuffersMemory[i], size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-  }
+  app.createBuffer(&app.uniform.uniformBuffers, &app.uniform.uniformBuffersMemory, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   SDL_Log("Created %d UniformBuffers of size: %d bytes", app.imageCount, size);
 }
-
 
 void updateUniformBuffer(ref App app, uint currentImage) {
   UniformBufferObject ubo = {
@@ -49,16 +42,14 @@ void updateUniformBuffer(ref App app, uint currentImage) {
   }
 
   void* data;
-  vkMapMemory(app.device, app.uniform.uniformBuffersMemory[currentImage], 0, ubo.sizeof, 0, &data);
+  vkMapMemory(app.device, app.uniform.uniformBuffersMemory, 0, ubo.sizeof, 0, &data);
   memcpy(data, &ubo, ubo.sizeof);
-  vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory[currentImage]);
+  vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory);
   //toStdout("UniformBuffer updated");
 }
 
 void destroyUniforms(App app) {
-  for (size_t i = 0; i <  app.imageCount; i++) {
-    vkDestroyBuffer(app.device, app.uniform.uniformBuffers[i], app.allocator);
-    vkFreeMemory(app.device, app.uniform.uniformBuffersMemory[i], app.allocator);
-  }
+  vkDestroyBuffer(app.device, app.uniform.uniformBuffers, app.allocator);
+  vkFreeMemory(app.device, app.uniform.uniformBuffersMemory, app.allocator);
 }
 
