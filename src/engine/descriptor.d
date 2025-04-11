@@ -22,7 +22,7 @@ void createImGuiDescriptorPool(ref App app){
 }
 
 void createDescriptorPool(ref App app){
-  if(app.verbose) SDL_Log("create Render DescriptorPool, images: %d", app.imageCount);
+  if(app.verbose) SDL_Log("create Render DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
     { type: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount: cast(uint)(1) },
     { type: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorCount: cast(uint)(app.textures.length) }
@@ -39,7 +39,7 @@ void createDescriptorPool(ref App app){
 }
 
 void createDescriptorSetLayout(ref App app) {
-  if(app.verbose) SDL_Log("Creating DescriptorSetLayout");
+  if(app.verbose) SDL_Log("Creating Render DescriptorSetLayout");
   VkDescriptorSetLayoutBinding uboLayoutBinding = {
     binding: 0,
     descriptorCount: 1,
@@ -65,7 +65,7 @@ void createDescriptorSetLayout(ref App app) {
 }
 
 void createDescriptorSet(ref App app) {
-  if(app.verbose) SDL_Log("creating DescriptorSets, copy layout");
+  if(app.verbose) SDL_Log("creating Render DescriptorSet");
   VkDescriptorSetLayout[] layouts = [app.descriptorSetLayout];
 
   app.descriptorSets.length = 1;
@@ -76,11 +76,10 @@ void createDescriptorSet(ref App app) {
     descriptorSetCount: 1,
     pSetLayouts: &layouts[0]
   };
-  if(app.verbose) SDL_Log("Allocating %d DescriptorSets", app.imageCount);
+  if(app.verbose) SDL_Log("Allocating DescriptorSets");
   enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.descriptorSets[0]));
 
-  if(app.verbose) SDL_Log("Update %d DescriptorSets", app.imageCount);
-
+  if(app.verbose) SDL_Log("Update DescriptorSet, adding %d textures", app.textures.length);
   VkDescriptorImageInfo[] textureImages;
   for (size_t i = 0; i < app.textures.length; i++) {
     VkDescriptorImageInfo textureImage = {
@@ -92,7 +91,7 @@ void createDescriptorSet(ref App app) {
   }
 
   VkDescriptorBufferInfo bufferInfo = {
-    buffer: app.uniform.uniformBuffers[0],
+    buffer: app.uniform.uniformBuffers,
     offset: 0,
     range: UniformBufferObject.sizeof
   };
