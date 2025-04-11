@@ -68,8 +68,6 @@ void createDescriptorSet(ref App app) {
   if(app.verbose) SDL_Log("creating Render DescriptorSet");
   VkDescriptorSetLayout[] layouts = [app.descriptorSetLayout];
 
-  app.descriptorSets.length = 1;
-
   VkDescriptorSetAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
     descriptorPool: app.descriptorPool,
@@ -77,7 +75,7 @@ void createDescriptorSet(ref App app) {
     pSetLayouts: &layouts[0]
   };
   if(app.verbose) SDL_Log("Allocating DescriptorSets");
-  enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.descriptorSets[0]));
+  enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.descriptorSet));
 
   if(app.verbose) SDL_Log("Update DescriptorSet, adding %d textures", app.textures.length);
   VkDescriptorImageInfo[] textureImages;
@@ -99,7 +97,7 @@ void createDescriptorSet(ref App app) {
   VkWriteDescriptorSet[2] descriptorWrites = [
     {
       sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.descriptorSets[0],
+      dstSet: app.descriptorSet,
       dstBinding: 0,
       dstArrayElement: 0,
       descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -110,7 +108,7 @@ void createDescriptorSet(ref App app) {
     },
     {
       sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.descriptorSets[0],
+      dstSet: app.descriptorSet,
       dstBinding: 1,
       dstArrayElement: 0,
       descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,

@@ -47,7 +47,7 @@ void draw(ref App app, Geometry object, size_t i) {
   vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE_BUFFER_BIND_ID, 1, &object.instanceBuffer, &offsets[0]);
   vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipeline.pipelineLayout, 0, 1, &app.descriptorSets[0], 0, null);
+  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipeline.pipelineLayout, 0, 1, &app.descriptorSet, 0, null);
   if(app.verbose) SDL_Log("DRAW: %d instances", object.instances.length);
   vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
 }
