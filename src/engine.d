@@ -37,7 +37,7 @@ struct App {
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 2, 0 )
   };
 
-  VkClearValue[2] clear = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
+  VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Geometry[] objects = [Cube()];
   Texture[] textures = null;
   VkSampler sampler;
