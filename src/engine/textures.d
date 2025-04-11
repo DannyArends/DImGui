@@ -5,9 +5,8 @@ import images : imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
 
 struct Texture {
-  int width = 0;
-  int height = 0;
-  int id = 0;
+  uint width = 0;
+  uint height = 0;
 
   VkImage textureImage;
   VkDeviceMemory textureImageMemory;
@@ -68,7 +67,7 @@ Texture loadTexture(App app, const(char)* path) {
 
 // Create a TextureSampler for sampling from a texture
 void createSampler(ref App app) {
-  SDL_Log("Create texture sampler");
+  if(app.verbose) SDL_Log("Create texture sampler");
   VkPhysicalDeviceProperties properties = {};
   VkPhysicalDeviceFeatures supportedFeatures = {};
 
