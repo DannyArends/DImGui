@@ -6,6 +6,7 @@ import descriptor : createImGuiDescriptorPool;
 import devices : pickPhysicalDevice, createLogicalDevice;
 import events : handleEvents;
 import frame : presentFrame, renderFrame;
+import glyphatlas : loadGlyphAtlas, createTextureImage;
 import imgui : initializeImGui;
 import instance : createInstance;
 import pipeline : destroyPipeline;
@@ -18,11 +19,15 @@ import matrix : mat4, scale, translate;
 
 void main(string[] args) {
   App app = initializeSDL();
+  
+  auto g = loadGlyphAtlas("./assets/fonts/FreeMono.ttf");
+  
   app.createInstance();
   app.createDebugCallback();
   app.createLogicalDevice();
   app.createCommandPool();
   app.createSampler();
+  app.textures ~= app.createTextureImage(g.surface);
   app.textures ~= app.loadTexture("./assets/textures/grunge.png");
   app.textures ~= app.loadTexture("./assets/textures/viking_room.png");
 
