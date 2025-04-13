@@ -4,6 +4,11 @@
 
 import std.math : sqrt;
 
+struct Vector { 
+  float[3] data = [ 0.0f, 0.0f, 0.0f ];
+  alias data this;
+}
+
 /* Convert a T[4] to a T[3] */
 @nogc pure T[3] xyz(T)(const T[4] v) nothrow { 
     return([v[0], v[1], v[2]]);
@@ -13,6 +18,10 @@ import std.math : sqrt;
 @nogc pure T x(T)(const T[] v) nothrow { assert(v.length > 0); return(v[0]); }
 @nogc pure T y(T)(const T[] v) nothrow { assert(v.length > 1); return(v[1]); }
 @nogc pure T z(T)(const T[] v) nothrow { assert(v.length > 2); return(v[2]); }
+
+@nogc pure void x(T)(ref T[3] v, T i) nothrow { v[0] = i; }
+@nogc pure void y(T)(ref T[3] v, T i) nothrow { v[1] = i; }
+@nogc pure void z(T)(ref T[3] v, T i) nothrow { v[2] = i; }
 
 /* xzy & yzx swiffle functions for T[3] vector v */
 @nogc pure T[3] xzy(T)(const T[3] v) nothrow { return([v[0], v[2], v[1]]); }
@@ -51,6 +60,10 @@ import std.math : sqrt;
     T sum = 0;
     for (size_t i = 0; i < v.length; i++) { sum += v[i]; }
     return(sum);
+}
+
+@nogc pure T magnitude(T)(T[3] v) nothrow {
+  return(sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]));
 }
 
 /* Returns the normalized vector of v */
