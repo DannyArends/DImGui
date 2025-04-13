@@ -15,7 +15,7 @@ import surface : createSurface, querySurfaceCapabilities;
 import textures : loadTexture, createSampler, destroyTexture;
 import window: createOrResizeWindow, checkForResize, renderGUI, destroyFrameData;
 import geometry : Instance;
-import matrix : mat4, scale, translate;
+import matrix : mat4, scale, translate, rotate;
 
 void main(string[] args) {
   App app = initializeSDL();
@@ -34,17 +34,22 @@ void main(string[] args) {
   app.createImGuiDescriptorPool();
 
   // Add a couple of instances to the cube
-  for(int x = -2; x < 0; x++) {
-    for(int y = 0; y < 2; y++) {
+  for(int x = -10; x < 10; x++) {
+    for(int z = -10; z < 10; z++) {
       mat4 instance;
-      auto scalefactor = 0.2f;
+      auto scalefactor = 0.25f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
-      instance = translate(instance, [cast(float) x /4.0f, cast(float)y /4.0f, 0.5f]);
-      app.objects[0].instances ~= Instance(1, instance);
+      instance = translate(instance, [cast(float) x /4.0f, -1.0f, cast(float)z /4.0f]);
+      if(x <= 0 && z <= 0) app.objects[1].instances ~= Instance(0, instance);
+      if(x > 0 && z > 0) app.objects[1].instances ~= Instance(1, instance);
+      if(x <= 0 && z > 0) app.objects[1].instances ~= Instance(2, instance);
     }
   }
   //Buffer the Cube
-  app.objects[0].buffer(app);
+  for (uint i = 0; i < app.objects.length; i++) {
+    app.objects[i].buffer(app);
+  }
+
   app.createSurface();
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
@@ -69,7 +74,9 @@ void main(string[] args) {
 
   vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
-  app.objects[0].destroy(app);
+  for (uint i = 0; i < app.objects.length; i++) {
+    app.objects[i].destroy(app);
+  }
   foreach(texture; app.textures){
     app.destroyTexture(texture);
   }
