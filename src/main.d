@@ -7,6 +7,7 @@ import devices : pickPhysicalDevice, createLogicalDevice;
 import events : handleEvents;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, createTextureImage;
+import icosahedron : refineIcosahedron;
 import imgui : initializeImGui;
 import instance : createInstance;
 import pipeline : destroyPipeline;
@@ -14,7 +15,7 @@ import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
 import textures : loadTexture, createSampler, destroyTexture;
 import window: createOrResizeWindow, checkForResize, renderGUI, destroyFrameData;
-import geometry : Instance;
+import geometry : Instance, computeNormals;
 import matrix : mat4, scale, translate, rotate;
 
 void main(string[] args) {
@@ -30,6 +31,7 @@ void main(string[] args) {
   app.textures ~= app.createTextureImage(g.surface);
   app.textures ~= app.loadTexture("./assets/textures/grunge.png");
   app.textures ~= app.loadTexture("./assets/textures/viking_room.png");
+  app.textures ~= app.loadTexture("./assets/textures/solarsystem/2k_earth_daymap.jpg");
 
   app.createImGuiDescriptorPool();
 
@@ -45,6 +47,12 @@ void main(string[] args) {
       if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(2, instance);
     }
   }
+  app.objects[2].refineIcosahedron(4);
+  app.objects[2].computeNormals();
+  app.objects[2].instances[0] = scale(app.objects[2].instances[0], [5.0f, 5.0f, 5.0f]);
+
+  app.objects[2].instances[0].tid = 3;
+  app.objects[2].instances[0] = translate(app.objects[2].instances[0], [10.0f, 6.0f, 2.0f]);
   //Buffer the Cube
   for (uint i = 0; i < app.objects.length; i++) {
     app.objects[i].buffer(app);

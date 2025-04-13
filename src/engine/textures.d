@@ -30,6 +30,7 @@ void toRGBA(ref SDL_Surface* surface, bool verbose = false) {
 }
 
 Texture loadTexture(App app, const(char)* path) {
+  SDL_Log("loadTexture '%s'", path);
   auto surface = IMG_Load(path);
   SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
 

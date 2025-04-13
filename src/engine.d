@@ -3,6 +3,7 @@ public import core.stdc.string : strcmp, memcpy;
 
 import camera : Camera;
 import cube : Cube, Square;
+import icosahedron : Icosahedron;
 import geometry : Geometry;
 import uniforms : Uniform;
 import textures : Texture;
@@ -38,7 +39,7 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
-  Geometry[] objects = [Square(), Cube()];
+  Geometry[] objects = [Square(), Cube(), Icosahedron()];
   Texture[] textures = null;
   VkSampler sampler;
   Camera camera;
