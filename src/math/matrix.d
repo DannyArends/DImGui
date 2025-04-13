@@ -16,12 +16,12 @@ struct Matrix { /* Matrix[4x4] structure, defaults to identity matrix */
 
 alias Matrix mat4;
 
-
-
 /* Radian to degree, -180 .. 0 .. 180 */
 @nogc pure float degree(float rad) nothrow { return rad * (180.0f / PI); }
+
 /* Degree to radian, -180 .. 0 .. 180 */
 @nogc pure float radian(float deg) nothrow {return (deg * PI) / 180.0f; }
+
 /* Matrix x Matrix */
 @nogc pure Matrix multiply(const Matrix m1, const Matrix m2) nothrow {
   Matrix res;
@@ -59,12 +59,8 @@ alias Matrix mat4;
   -sin(β)      ,  cos(β)*sin(γ)                          ,  cos(β)*cos(γ)                          , 0.0f,
    0.0f        ,  0.0f                                   ,  0.0f,                                    1.0f ]
   );
-  auto r = m.multiply(mt);
-  return(r);
+  return(m.multiply(mt));
 }
-
-/* ref Matrix x Yaw, Pitch, Roll vector in degrees V(x, y, z) */
-//@nogc pure Matrix rotate(ref Matrix m, const float[3] v) nothrow { m = rotate(m, v); return(m); }
 
 /* Matrix x Scale V(x, y, z) */
 @nogc pure Matrix scale(ref Matrix m, const float[3] v) nothrow {
@@ -113,23 +109,18 @@ alias Matrix mat4;
 
 /* lookAt function, looks from pos at "at" using the upvector (up) */
 @nogc pure Matrix lookAt(const float[3] pos, const float[3] at, const float[3] up) nothrow {
-  Matrix view;
-
   auto f = vSub(at, pos);
   normalize(f);
   auto s = cross(f, up);
   normalize(s);
   auto u = cross(s, f);
 
-  view[0] = s[0];  view[4] = s[1];  view[8]  = s[2];
-  view[1] = u[0];  view[5] = u[1];  view[9]  = u[2];
-  view[2] = -f[0]; view[6] = -f[1]; view[10] = -f[2];
-
-  view[12] = -dot(s, pos);
-  view[13] = -dot(u, pos);
-  view[14] =  dot(f, pos);
-
-  return view;
+  return(Matrix([
+        s[0], u[0], -f[0],  0.0f,
+        s[1], u[1], -f[1],  0.0f,
+        s[2], u[2], -f[2],  0.0f,
+        -dot(s, pos),-dot(u, pos), dot(f, pos), 1.0f
+    ]));
 }
 
 /* transpose a Matrix */
