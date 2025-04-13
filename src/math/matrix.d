@@ -2,7 +2,7 @@
 // Distributed under the GNU General Public License, Version 3
 // See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
 
-import std.math : PI, sin, cos;
+import std.math : PI, sin, cos, tan;
 import vector, quaternion;
 
 struct Matrix { /* Matrix[4x4] structure, defaults to identity matrix */
@@ -15,6 +15,8 @@ struct Matrix { /* Matrix[4x4] structure, defaults to identity matrix */
 }
 
 alias Matrix mat4;
+
+
 
 /* Radian to degree, -180 .. 0 .. 180 */
 @nogc pure float degree(float rad) nothrow { return rad * (180.0f / PI); }
@@ -94,19 +96,19 @@ alias Matrix mat4;
 
 /* Perspective projection Matrix V4(f, a, n, f) */
 @nogc pure Matrix perspective(float fovy, float aspectRatio, float near, float far) nothrow {
-  Matrix projection;
+  float fov_rad = fovy * 2.0f * PI / 360.0f;
+  float focalLength = 1.0f / tan(fov_rad / 2.0f);
 
-  float y_scale = (1.0f / cos(fovy * PI / 180.0f));
-  float x_scale = y_scale / aspectRatio;
-  float frustumLength = far - near;
-
-  projection[0] = x_scale;
-  projection[5] = -y_scale;
-  projection[10] = -((far + near) / frustumLength);
-  projection[11] = -1;
-  projection[14] = -((2 * near * far) / frustumLength);
-
-  return projection;
+  float x  =  focalLength / aspectRatio;
+  float y  = -focalLength;
+  float A  = near / (far - near);
+  float B  = far * A;
+  return(Matrix([
+        x,    0.0f,  0.0f,  0.0f,
+        0.0f,    y,  0.0f,  0.0f,
+        0.0f, 0.0f,     A, -1.0f,
+        0.0f, 0.0f,     B,  0.0f,
+    ]));
 }
 
 /* lookAt function, looks from pos at "at" using the upvector (up) */

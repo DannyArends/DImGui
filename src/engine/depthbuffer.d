@@ -41,8 +41,7 @@ void createDepthResources(ref App app) {
   VkFormat depthFormat = app.findDepthFormat();
   SDL_Log(" - depthFormat: %d", depthFormat);
   app.createImage(app.width, app.height, &app.depthbuffer.depthImage, &app.depthbuffer.depthImageMemory, 
-                  depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                  depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
   SDL_Log(" - image created: %p", app.depthbuffer.depthImage);
   app.depthbuffer.depthImageView = app.createImageView(app.depthbuffer.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
   SDL_Log(" - image view created: %p", app.depthbuffer.depthImageView);
