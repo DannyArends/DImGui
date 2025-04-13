@@ -38,7 +38,7 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
-  Geometry[] objects = [Cube(), Square()];
+  Geometry[] objects = [Square(), Cube()];
   Texture[] textures = null;
   VkSampler sampler;
   Camera camera;
