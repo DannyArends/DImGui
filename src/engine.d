@@ -2,7 +2,7 @@ public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
 import camera : Camera;
-import cube : Cube;
+import cube : Cube, Square;
 import geometry : Geometry;
 import uniforms : Uniform;
 import textures : Texture;
@@ -38,7 +38,7 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
-  Geometry[] objects = [Cube()];
+  Geometry[] objects = [Cube(), Square()];
   Texture[] textures = null;
   VkSampler sampler;
   Camera camera;
