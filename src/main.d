@@ -40,9 +40,9 @@ void main(string[] args) {
       auto scalefactor = 0.25f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
       instance = translate(instance, [cast(float) x /4.0f, -1.0f, cast(float)z /4.0f]);
-      if(x <= 0 && z <= 0) app.objects[1].instances ~= Instance(0, instance);
-      if(x > 0 && z > 0) app.objects[1].instances ~= Instance(1, instance);
-      if(x <= 0 && z > 0) app.objects[1].instances ~= Instance(2, instance);
+      if(x <= 0 && z <= 0) app.objects[0].instances ~= Instance(0, instance);
+      if(x > 0 && z > 0) app.objects[0].instances ~= Instance(1, instance);
+      if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(2, instance);
     }
   }
   //Buffer the Cube
