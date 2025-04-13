@@ -5,8 +5,8 @@ import camera : move, drag;
 void handleKeyEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_KEYDOWN) {
     auto symbol = e.key.keysym.sym;
-    if(symbol == SDLK_PAGEUP){ app.camera.move([ 0.0f,  0.0f, 1.0f]); }
-    if(symbol == SDLK_PAGEDOWN){ app.camera.move([ 0.0f,  0.0f, -1.0f]); }
+    if(symbol == SDLK_PAGEUP){ app.camera.move([ 0.0f,  1.0f, 0.0f]); }
+    if(symbol == SDLK_PAGEDOWN){ app.camera.move([ 0.0f,  -1.0f, 0.0f]); }
     if(symbol == SDLK_w || symbol == SDLK_UP){ app.camera.move(app.camera.forward()); }
     if(symbol == SDLK_s || symbol == SDLK_DOWN){ app.camera.move(app.camera.back());  }
     if(symbol == SDLK_a || symbol == SDLK_LEFT){ app.camera.move(app.camera.left());  }
@@ -27,8 +27,8 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if(app.camera.isdrag[1]) app.camera.drag(e.motion.xrel, e.motion.yrel);
   }
   if(e.type == SDL_MOUSEWHEEL){
-    if (e.wheel.y < 0 && app.camera.distance  >= -40.0f) app.camera.distance -= 0.5f;
-    if (e.wheel.y > 0 && app.camera.distance  <= -1.0f) app.camera.distance += 0.5f;
+    if (e.wheel.y < 0 && app.camera.distance  >= 2.0f) app.camera.distance -= 0.5f;
+    if (e.wheel.y > 0 && app.camera.distance  <= 40.0f) app.camera.distance += 0.5f;
     app.camera.move([ 0.0f,  0.0f,  0.0f]);
   }
 }
