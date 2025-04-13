@@ -7,7 +7,7 @@ import matrix : Matrix, multiply, rotate, radian;
 import quaternion : xyzw;
 
 struct Camera {
-    float[3]     position(){
+    @nogc float[3] position() const nothrow {
       return(vAdd(lookat, vMul(rotation.direction(), distance)));
     }
     float[3]     lookat      = [0.0f, 0.0f, 0.0f];    // Position in the middle of the screen
@@ -64,8 +64,6 @@ struct Camera {
 
 @nogc void move(ref Camera camera, float[3] movement) nothrow {
     camera.lookat = vAdd(camera.lookat, movement);
-    //SDL_Log("%s", toStringz(format("%s", camera.position)));
-    //SDL_Log("%s", toStringz(format("%s", camera.lookat)));
 }
 
 /* Drag the camera in the x/y directions, causes camera rotation */
