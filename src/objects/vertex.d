@@ -7,7 +7,7 @@ enum VERTEX_BUFFER_BIND_ID = 0;
 const INSTANCE_BUFFER_BIND_ID = 1;
 
 struct Vertex {
-  float[3] pos = [0.0f, 0.0f, 0.0f];
+  float[3] position = [0.0f, 0.0f, 0.0f];
   float[2] texCoord = [0.0f, 1.0f];
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
   float[3] normal = [0.0f, 1.0f, 0.0f];
@@ -22,7 +22,7 @@ struct Vertex {
 
   @nogc static VkVertexInputAttributeDescription[9] getAttributeDescriptions() nothrow {
     VkVertexInputAttributeDescription[9] attributeDescriptions = [
-      { binding: VERTEX_BUFFER_BIND_ID, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.pos.offsetof },
+      { binding: VERTEX_BUFFER_BIND_ID, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.position.offsetof },
       { binding: VERTEX_BUFFER_BIND_ID, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.color.offsetof },
       { binding: VERTEX_BUFFER_BIND_ID, location: 2, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.normal.offsetof },
       { binding: VERTEX_BUFFER_BIND_ID, location: 3, format: VK_FORMAT_R32G32_SFLOAT, offset: Vertex.texCoord.offsetof },
