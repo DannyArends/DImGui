@@ -75,7 +75,4 @@ struct Camera {
     camera.rotation[1] -= yrel;
     if(camera.rotation[1]  > 65) camera.rotation[1] = 65;
     if(camera.rotation[1]  < -65) camera.rotation[1] = -65;
-
-    camera.move([0.0f, 0.0f, 0.0f]);
 }
-
