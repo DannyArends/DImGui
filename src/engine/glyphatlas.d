@@ -26,6 +26,7 @@ struct GlyphAtlas {
     int ascent;
     int miny;
     int advance;
+    SDL_Surface* _surface = null;
 
     // Get a specific glyph from the atlas
     Glyph getGlyph(dchar letter) nothrow {
@@ -57,7 +58,8 @@ struct GlyphAtlas {
     // Generate a surface from the initialized atlas
     // NOTE: Make sure ttf, atlas, and width have been set by calling createGlyphAtlas()
     SDL_Surface* surface() {
-      return(TTF_RenderUNICODE_Blended_Wrapped(ttf, &atlas[0], SDL_Color(255, 0, 255, 255), width));
+      if(_surface == null) _surface = TTF_RenderUNICODE_Blended_Wrapped(ttf, &atlas[0], SDL_Color(255, 255, 255, 255), width);
+      return(_surface);
     };
 }
 
