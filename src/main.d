@@ -22,7 +22,7 @@ import matrix : mat4, scale, translate, rotate;
 void main(string[] args) {
   App app = initializeSDL();
   
-  auto g = loadGlyphAtlas("./assets/fonts/FreeMono.ttf", 80, '\U000000FF', 1024);
+  auto g = loadGlyphAtlas("./assets/fonts/FreeMono.ttf", 96);
   
   app.createInstance();
   app.createDebugCallback();
