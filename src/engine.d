@@ -2,7 +2,8 @@ public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
 import camera : Camera;
-import cube : Cube, Square;
+import cube : Cube;
+import square : Square;
 import icosahedron : Icosahedron;
 import geometry : Geometry;
 import uniforms : Uniform;
