@@ -79,7 +79,7 @@ GlyphAtlas loadGlyphAtlas(const(char)* filename, ubyte pointsize = 12, dchar to 
 // Populates the GlyphAtlas with Glyphs to dchar in our atlas
 ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024) {
   MonoTime sT = MonoTime.currTime;
-  int i, atlasrow, atlasloc, w, h;
+  int i, atlasrow, atlasloc;
   ushort[] atlas = [];
   dchar c = '\U00000000';
   glyphatlas.width = (width > max_width)? max_width : width;
@@ -87,7 +87,7 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
     if (isValidDchar(c) && TTF_GlyphIsProvided(glyphatlas.ttf, cast(ushort)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
       Glyph glyph = Glyph();
       TTF_GlyphMetrics(glyphatlas.ttf, cast(ushort)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
-      if (atlasloc + glyph.advance >= width) {
+      if (atlasloc + glyph.advance >= glyphatlas.width) {
         atlas ~= cast(ushort)('\n');
         i = 0;
         atlasloc = 0;
@@ -104,16 +104,15 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
     }
     c++;
   }
-  TTF_SizeUNICODE(glyphatlas.ttf, &atlas[0], &w, &h);
   SDL_Log("%d unicode glyphs (%d unique ones)\n", atlas.length, glyphatlas.glyphs.length);
   SDL_Log("FontAscent: %d\n", TTF_FontAscent(glyphatlas.ttf));
   SDL_Log("FontAdvance: %d\n", glyphatlas.advance);
-  glyphatlas.height = h; // Use height from TTF_SizeUNICODE, since TTF_FontHeight reports it wrong for some glyphatlas
+  glyphatlas.height = glyphatlas.pointsize;
   glyphatlas.ascent = TTF_FontAscent(glyphatlas.ttf);
 
   MonoTime cT = MonoTime.currTime;
   auto time = (cT - sT).total!"msecs"();  // Update the current time
-  SDL_Log("%d/%d unicode glyphs on %d lines in %d msecs\n", glyphatlas.glyphs.length, c, ++atlasrow, time);
+  SDL_Log("%d/%d Glyphs on %d lines [%d x %d] in %d msecs\n", glyphatlas.glyphs.length, c, ++atlasrow, glyphatlas.width, glyphatlas.height, time);
   return(atlas);
 }
 
