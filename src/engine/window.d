@@ -1,5 +1,7 @@
 import engine;
 
+import std.algorithm : sort;
+
 import depthbuffer : createDepthResources, destroyDepthBuffer;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
@@ -9,6 +11,7 @@ import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
+import geometry : distance;
 import uniforms : createUniforms, destroyUniforms;
 
 ImDrawData* renderGUI(ref App app){
@@ -44,6 +47,7 @@ void createOrResizeWindow(ref App app) {
   app.createRenderCommandBuffers();
   app.recordRenderCommandBuffer();
   app.createSyncObjects();
+  //app.objects.sort!("a.distance > b.distance")(app.camera);  // Sort the 3D objects by distance
 }
 
 void destroyFrameData(ref App app) {

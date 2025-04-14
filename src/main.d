@@ -13,9 +13,9 @@ import instance : createInstance;
 import pipeline : destroyPipeline;
 import sdl : initializeSDL;
 import surface : createSurface, querySurfaceCapabilities;
-import textures : loadTexture, createSampler, destroyTexture;
+import textures : loadTextures, createSampler, destroyTexture;
 import window: createOrResizeWindow, checkForResize, renderGUI, destroyFrameData;
-import geometry : Instance, computeNormals;
+import geometry : Instance, computeNormals, destroyObject;
 import matrix : mat4, scale, translate, rotate;
 
 void main(string[] args) {
@@ -29,10 +29,7 @@ void main(string[] args) {
   app.createCommandPool();
   app.createSampler();
   app.textures ~= app.createTextureImage(g.surface);
-  app.textures ~= app.loadTexture("./assets/textures/grunge.png");
-  app.textures ~= app.loadTexture("./assets/textures/viking_room.png");
-  app.textures ~= app.loadTexture("./assets/textures/solarsystem/2k_earth_daymap.jpg");
-
+  app.loadTextures("./assets/textures/");
   app.createImGuiDescriptorPool();
 
   // Add a couple of instances to the cube
@@ -51,7 +48,7 @@ void main(string[] args) {
   app.objects[2].computeNormals();
   app.objects[2].instances[0] = scale(app.objects[2].instances[0], [5.0f, 5.0f, 5.0f]);
 
-  app.objects[2].instances[0].tid = 3;
+  app.objects[2].instances[0].tid = 6;
   app.objects[2].instances[0] = translate(app.objects[2].instances[0], [10.0f, 6.0f, 2.0f]);
   //Buffer the Cube
   for (uint i = 0; i < app.objects.length; i++) {
@@ -82,12 +79,8 @@ void main(string[] args) {
 
   vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
-  for (uint i = 0; i < app.objects.length; i++) {
-    app.objects[i].destroy(app);
-  }
-  foreach(texture; app.textures){
-    app.destroyTexture(texture);
-  }
+  foreach(object; app.objects) { app.destroyObject(object); }
+  foreach(texture; app.textures) { app.destroyTexture(texture); }
   vkDestroySampler(app.device, app.sampler, null);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);

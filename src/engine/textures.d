@@ -1,5 +1,5 @@
 import engine;
-
+import io : dir;
 import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
@@ -29,10 +29,16 @@ void toRGBA(ref SDL_Surface* surface, bool verbose = false) {
   }
 }
 
+// Load all texture files matching pattern in folder
+void loadTextures(ref App app, string folder, string pattern = "*.{png,jpg}") {
+  immutable(char)*[] files = dir(folder, pattern, false);
+  foreach(file; files){ app.textures ~= app.loadTexture(file); }
+}
+
 Texture loadTexture(App app, const(char)* path) {
-  SDL_Log("loadTexture '%s'", path);
+  if(app.verbose) SDL_Log("loadTexture '%s'", path);
   auto surface = IMG_Load(path);
-  SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+  if(app.verbose) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
 
   // Adapt surface to 32 bit, and create structure
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }

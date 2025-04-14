@@ -77,6 +77,10 @@ alias Matrix mat4;
   return(multiply(m, translation));
 }
 
+@nogc pure float[3] getTranslation(const Matrix m) nothrow {
+  return([m[12], m[13], m[14]]);
+}
+
 /* Orthogonal projection Matrix V4(l, r, b, t) */
 @nogc pure Matrix orthogonal(float left, float right, float bottom, float top) nothrow {
   Matrix projection;
