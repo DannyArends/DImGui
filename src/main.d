@@ -32,20 +32,22 @@ void main(string[] args) {
   app.textures ~= app.createTextureImage(g.surface);
   app.loadTextures("./assets/textures/");
   app.createImGuiDescriptorPool();
+  app.createSurface();
 
+  // Add objects
   app.objects ~= Text(g);
   app.objects[3].instances[0] = rotate(app.objects[3].instances[0], [0.0f, 90.0f, 0.0f]);
 
-  // Add a couple of instances to the cube
+  // Add a couple of instances to object 0
   for(int x = -10; x < 10; x++) {
     for(int z = -10; z < 10; z++) {
       mat4 instance;
       auto scalefactor = 0.25f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
       instance = translate(instance, [cast(float) x /4.0f, -1.0f, cast(float)z /4.0f]);
-      if(x <= 0 && z <= 0) app.objects[0].instances ~= Instance(0, instance);
-      if(x > 0 && z > 0) app.objects[0].instances ~= Instance(1, instance);
-      if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(2, instance);
+      if(x <= 0 && z <= 0) app.objects[0].instances ~= Instance(5, instance);
+      if(x > 0 && z > 0) app.objects[0].instances ~= Instance(6, instance);
+      if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(7, instance);
     }
   }
   app.objects[2].refineIcosahedron(4);
@@ -60,7 +62,6 @@ void main(string[] args) {
     app.objects[i].buffer(app);
   }
 
-  app.createSurface();
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
 
