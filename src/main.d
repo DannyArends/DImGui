@@ -12,6 +12,7 @@ import imgui : initializeImGui;
 import instance : createInstance;
 import pipeline : destroyPipeline;
 import sdl : initializeSDL;
+import text : Text;
 import surface : createSurface, querySurfaceCapabilities;
 import textures : loadTextures, createSampler, destroyTexture;
 import window: createOrResizeWindow, checkForResize, renderGUI, destroyFrameData;
@@ -21,7 +22,7 @@ import matrix : mat4, scale, translate, rotate;
 void main(string[] args) {
   App app = initializeSDL();
   
-  auto g = loadGlyphAtlas("./assets/fonts/FreeMono.ttf");
+  auto g = loadGlyphAtlas("./assets/fonts/FreeMono.ttf", 80, '\U000000FF', 1024);
   
   app.createInstance();
   app.createDebugCallback();
@@ -31,6 +32,9 @@ void main(string[] args) {
   app.textures ~= app.createTextureImage(g.surface);
   app.loadTextures("./assets/textures/");
   app.createImGuiDescriptorPool();
+
+  app.objects ~= Text(g);
+  app.objects[3].instances[0] = rotate(app.objects[3].instances[0], [0.0f, 90.0f, 0.0f]);
 
   // Add a couple of instances to the cube
   for(int x = -10; x < 10; x++) {
@@ -50,7 +54,8 @@ void main(string[] args) {
 
   app.objects[2].instances[0].tid = 6;
   app.objects[2].instances[0] = translate(app.objects[2].instances[0], [10.0f, 6.0f, 2.0f]);
-  //Buffer the Cube
+
+  //Buffer the objects
   for (uint i = 0; i < app.objects.length; i++) {
     app.objects[i].buffer(app);
   }
