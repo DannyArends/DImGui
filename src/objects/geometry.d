@@ -1,8 +1,9 @@
 import engine;
 
 import buffer : toGPU;
-import matrix : mat4;
-import vector : vSub, vAdd, cross, normalize;
+import camera : Camera;
+import matrix : mat4, getTranslation;
+import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
 
 struct Instance {
@@ -31,16 +32,22 @@ struct Geometry {
     app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
   }
-
-  void destroy(ref App app) {
-    vkDestroyBuffer(app.device, vertexBuffer, app.allocator);
-    vkFreeMemory(app.device, vertexBufferMemory, app.allocator);
-    vkDestroyBuffer(app.device, indexBuffer, app.allocator);
-    vkFreeMemory(app.device, indexBufferMemory, app.allocator);
-    vkDestroyBuffer(app.device, instanceBuffer, app.allocator);
-    vkFreeMemory(app.device, instanceBufferMemory, app.allocator);
-  }
 }
+
+/* Euclidean distance between object and camera */
+@nogc float distance(const Geometry object, const Camera camera) nothrow { 
+    return euclidean(object.instances[0].getTranslation(), camera.position); 
+}
+
+void destroyObject(ref App app, Geometry object) {
+  vkDestroyBuffer(app.device, object.vertexBuffer, app.allocator);
+  vkFreeMemory(app.device, object.vertexBufferMemory, app.allocator);
+  vkDestroyBuffer(app.device, object.indexBuffer, app.allocator);
+  vkFreeMemory(app.device, object.indexBufferMemory, app.allocator);
+  vkDestroyBuffer(app.device, object.instanceBuffer, app.allocator);
+  vkFreeMemory(app.device, object.instanceBufferMemory, app.allocator);
+}
+
 
 /* Add a vertex to a geometry of the object */
 uint addVertex(ref Geometry geometry, const Vertex v) nothrow {

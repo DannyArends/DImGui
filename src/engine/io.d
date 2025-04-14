@@ -1,5 +1,10 @@
 import includes;
 
+import std.algorithm : map, filter;
+import std.array : array;
+import std.file : dirEntries, SpanMode;
+import std.string : toStringz;
+
 uint[] readFile(const(char*) path, bool verbose) {
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
@@ -19,4 +24,10 @@ uint[] readFile(const(char*) path, bool verbose) {
   if(readTotal != content.length) SDL_Log("[ERROR] read %db, expected %db\n", readTotal, content.length);
   if(verbose) SDL_Log("readFile: loaded %d bytes\n", readTotal);
   return content;
+}
+
+immutable(char)*[] dir(string path, string pattern = "*", bool shallow = true) { 
+  auto mode = SpanMode.shallow;
+  if(!shallow) mode = SpanMode.depth;
+  return(dirEntries(path, pattern, mode).filter!(a => a.isFile).map!(a => a.name.toStringz).array);
 }
