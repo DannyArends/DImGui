@@ -73,7 +73,7 @@ void loadGlyphAtlas(ref App app,
   glyphatlas.ttf = TTF_OpenFont(filename, glyphatlas.pointsize);
   if (!glyphatlas.ttf) {
     SDL_Log("Error by loading TTF_Font %s: %s\n", filename, SDL_GetError());
-    assert(0, "Unable to load font");
+    abort();
   }
   glyphatlas.atlas = glyphatlas.createGlyphAtlas(to, width, max_width);
   app.glyphAtlas = glyphatlas;
