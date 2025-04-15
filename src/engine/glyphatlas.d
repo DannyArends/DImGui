@@ -15,65 +15,66 @@ import swapchain : createImageView;
   The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas
 */
 struct GlyphAtlas {
-    const(char)* path;
-    TTF_Font* ttf; // Pointer to the loaded TTF_Font
-    ubyte pointsize; // Font size
-    Glyph[dchar] glyphs; // associative array couples Glyph and dchar
-    ushort[] atlas; // ushort array of chars which were valid and stored into the atlas (\n for linebreaks)
-    Texture texture; // Holds the SDL surface with the atlas
-    int width;
-    int height;
-    int ascent;
-    int miny;
-    int advance;
-    SDL_Surface* _surface = null;
+  const(char)* path;
+  TTF_Font* ttf; // Pointer to the loaded TTF_Font
+  ubyte pointsize; // Font size
+  Glyph[dchar] glyphs; // associative array couples Glyph and dchar
+  ushort[] atlas; // ushort array of chars which were valid and stored into the atlas (\n for linebreaks)
+  Texture texture; // Holds the SDL surface with the atlas
+  int width;
+  int height;
+  int ascent;
+  int miny;
+  int advance;
+  SDL_Surface* _surface = null;
 
-    // Get a specific glyph from the atlas
-    Glyph getGlyph(dchar letter) nothrow {
-      if(letter in glyphs) return(glyphs[letter]);
-      return(glyphs[0]);
-    }
+  // Get a specific glyph from the atlas
+  Glyph getGlyph(dchar letter) nothrow {
+    if(letter in glyphs) return(glyphs[letter]);
+    return(glyphs[0]);
+  }
 
-    // Glyph texture X postion
-    @property float tX(Glyph glyph) { 
-      return((glyph.atlasloc + glyph.minx) / cast(float)(surface.w));
-    }
+  // Glyph texture X postion
+  @property float tX(Glyph glyph) { 
+    return((glyph.atlasloc + glyph.minx) / cast(float)(surface.w));
+  }
 
-    // Glyph texture Y postion
-    @property  float tY(Glyph glyph) {
-      int lineHsum = (this.height) * glyph.atlasrow;
-      return((lineHsum + (this.ascent - glyph.maxy)) / cast(float)(surface.h));
-    }
+  // Glyph texture Y postion
+  @property  float tY(Glyph glyph) {
+    int lineHsum = (this.height) * glyph.atlasrow;
+    return((lineHsum + (this.ascent - glyph.maxy)) / cast(float)(surface.h));
+  }
 
-    // X postion of the glyph, when on column col
-    @property float pX(Glyph glyph, size_t col) {
-      return(cast(float)(col) * glyph.advance + glyph.minx);
-    }
+  // X postion of the glyph, when on column col
+  @property float pX(Glyph glyph, size_t col) {
+    return(cast(float)(col) * glyph.advance + glyph.minx);
+  }
 
-    // Y postion of the glyph, when on line[0] out of line[1]
-    @property float pY(Glyph glyph, size_t[2] line) {
-      return(cast(float)(line[1] - line[0]) * (this.height) + glyph.miny - this.miny);
-    }
+  // Y postion of the glyph, when on line[0] out of line[1]
+  @property float pY(Glyph glyph, size_t[2] line) {
+    return(cast(float)(line[1] - line[0]) * (this.height) + glyph.miny - this.miny);
+  }
 
-    // Generate a surface from the initialized atlas
-    // NOTE: Make sure ttf, atlas, and width have been set by calling createGlyphAtlas()
-    SDL_Surface* surface() {
-      if(_surface == null) _surface = TTF_RenderUNICODE_Blended_Wrapped(ttf, &atlas[0], SDL_Color(255, 255, 255, 255), width);
-      return(_surface);
-    };
+  // Generate a surface from the initialized atlas
+  // NOTE: Make sure ttf, atlas, and width have been set by calling createGlyphAtlas()
+  SDL_Surface* surface() {
+    if(_surface == null) _surface = TTF_RenderUNICODE_Blended_Wrapped(ttf, &atlas[0], SDL_Color(255, 255, 255, 255), width);
+    return(_surface);
+  };
+  alias surface this;
 }
 
 // Loads a GlyphAtlas from file
-GlyphAtlas loadGlyphAtlas(const(char)* filename, ubyte pointsize = 12, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024) {
+void loadGlyphAtlas(ref App app, const(char)* filename, ubyte pointsize = 12, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024) {
   GlyphAtlas glyphatlas = GlyphAtlas(filename);
   glyphatlas.pointsize = (pointsize == 0)? 12 : pointsize;
   glyphatlas.ttf = TTF_OpenFont(filename, glyphatlas.pointsize);
   if (!glyphatlas.ttf) {
     SDL_Log("Error by loading TTF_Font %s: %s\n", filename, SDL_GetError());
-    return(glyphatlas);
+    assert(0, "Unable to load font");
   }
   glyphatlas.atlas = glyphatlas.createGlyphAtlas(to, width, max_width);
-  return(glyphatlas);
+  app.glyphAtlas = glyphatlas;
 }
 
 // Populates the GlyphAtlas with Glyphs to dchar in our atlas
@@ -117,7 +118,7 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
 }
 
 // Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray
-Texture createTextureImage(ref App app, SDL_Surface* surface, const(char)* path = "DEFAULT") {
+void createFontTexture(ref App app, SDL_Surface* surface, const(char)* path = "DEFAULT") {
   SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   if (surface.format.BitsPerPixel != 32) surface.toRGBA();
 
@@ -144,6 +145,6 @@ Texture createTextureImage(ref App app, SDL_Surface* surface, const(char)* path 
   SDL_FreeSurface(surface);
   vkDestroyBuffer(app.device, stagingBuffer, null);
   vkFreeMemory(app.device, stagingBufferMemory, null);
-  return(texture);
+  app.textures ~= texture;
 }
 

@@ -1,13 +1,15 @@
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
+import validation;
+
 import camera : Camera;
-import cube : Cube;
-import square : Square;
-import icosahedron : Icosahedron;
-import geometry : Geometry;
+import glyphatlas : GlyphAtlas;
+import geometry : Geometry, destroyObject;
+import pipeline : destroyPipeline;
 import uniforms : Uniform;
-import textures : Texture;
+import textures : Texture, destroyTexture;
+import window : destroyFrameData;
 
 struct Sync {
   VkSemaphore imageAcquired;
@@ -40,12 +42,13 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
-  Geometry[] objects = [Square(), Cube(), Icosahedron()];
-  Texture[] textures = null;
+  Geometry[] objects = [];
+  Texture[] textures;
   VkSampler sampler;
   Camera camera;
-  GraphicsPipeline pipeline = {null, null};
-  DepthBuffer depthbuffer = {null, null, null};
+  GlyphAtlas glyphAtlas;
+  GraphicsPipeline pipeline;
+  DepthBuffer depthbuffer;
   ImGuiIO* io;
 
   // Vulkan
@@ -99,6 +102,29 @@ struct App {
   bool showdemo = true;
   bool verbose = false;
   bool rebuild = false;
+}
+
+void cleanUp(ref App app){
+  enforceVK(vkDeviceWaitIdle(app.device));
+  ImGui_ImplVulkan_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  igDestroyContext(null);
+  app.destroyFrameData();
+
+  vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
+  vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
+  foreach(object; app.objects) { app.destroyObject(object); }
+  foreach(texture; app.textures) { app.destroyTexture(texture); }
+  vkDestroySampler(app.device, app.sampler, null);
+  vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
+  vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
+  vkDestroyDevice(app.device, app.allocator);
+
+  vkDestroySurfaceKHR(app.instance, app.surface, app.allocator);
+  vkDestroyInstance(app.instance, app.allocator);
+
+  SDL_DestroyWindow(app);
+  SDL_Quit();
 }
 
 extern(C) void enforceVK(VkResult err) {
