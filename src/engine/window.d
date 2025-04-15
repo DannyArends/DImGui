@@ -65,7 +65,7 @@ void destroyFrameData(ref App app) {
   if(app.descriptorSetLayout) vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator);
   if(app.uniform.uniformBuffers) app.destroyUniforms();
   if(app.descriptorPool) vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
-  if(app.depthbuffer.depthImage) app.destroyDepthBuffer();
+  if(app.depthBuffer.depthImage) app.destroyDepthBuffer();
   if(app.pipeline.graphicsPipeline) app.destroyPipeline();
   if(app.imguiPass) vkDestroyRenderPass(app.device, app.imguiPass, app.allocator);
   if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
