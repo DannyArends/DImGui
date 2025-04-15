@@ -65,7 +65,9 @@ struct GlyphAtlas {
 }
 
 // Loads a GlyphAtlas from file
-void loadGlyphAtlas(ref App app, const(char)* filename, ubyte pointsize = 12, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024) {
+void loadGlyphAtlas(ref App app, 
+                    const(char)* filename = "./assets/fonts/FreeMono.ttf", 
+                    ubyte pointsize = 96, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024) {
   GlyphAtlas glyphatlas = GlyphAtlas(filename);
   glyphatlas.pointsize = (pointsize == 0)? 12 : pointsize;
   glyphatlas.ttf = TTF_OpenFont(filename, glyphatlas.pointsize);

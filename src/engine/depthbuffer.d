@@ -10,9 +10,9 @@ struct DepthBuffer {
 }
 
 void destroyDepthBuffer(ref App app) {
-  vkFreeMemory(app.device, app.depthbuffer.depthImageMemory, app.allocator);
-  vkDestroyImageView(app.device, app.depthbuffer.depthImageView, app.allocator);
-  vkDestroyImage(app.device, app.depthbuffer.depthImage, app.allocator);
+  vkFreeMemory(app.device, app.depthBuffer.depthImageMemory, app.allocator);
+  vkDestroyImageView(app.device, app.depthBuffer.depthImageView, app.allocator);
+  vkDestroyImage(app.device, app.depthBuffer.depthImage, app.allocator);
 }
 
 VkFormat findSupportedFormat(ref App app, const VkFormat[] candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
@@ -40,12 +40,12 @@ void createDepthResources(ref App app) {
   SDL_Log("Depth resources creation");
   VkFormat depthFormat = app.findDepthFormat();
   SDL_Log(" - depthFormat: %d", depthFormat);
-  app.createImage(app.width, app.height, &app.depthbuffer.depthImage, &app.depthbuffer.depthImageMemory, 
+  app.createImage(app.width, app.height, &app.depthBuffer.depthImage, &app.depthBuffer.depthImageMemory, 
                   depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-  SDL_Log(" - image created: %p", app.depthbuffer.depthImage);
-  app.depthbuffer.depthImageView = app.createImageView(app.depthbuffer.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-  SDL_Log(" - image view created: %p", app.depthbuffer.depthImageView);
-  app.transitionImageLayout(app.depthbuffer.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
+  SDL_Log(" - image created: %p", app.depthBuffer.depthImage);
+  app.depthBuffer.depthImageView = app.createImageView(app.depthBuffer.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+  SDL_Log(" - image view created: %p", app.depthBuffer.depthImageView);
+  app.transitionImageLayout(app.depthBuffer.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
   SDL_Log("Depth resources created");
 }
 

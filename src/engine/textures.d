@@ -30,7 +30,7 @@ void toRGBA(ref SDL_Surface* surface, bool verbose = false) {
 }
 
 // Load all texture files matching pattern in folder
-void loadTextures(ref App app, string folder, string pattern = "*.{png,jpg}") {
+void loadTextures(ref App app, string folder = "./assets/textures/", string pattern = "*.{png,jpg}") {
   immutable(char)*[] files = dir(folder, pattern, false);
   foreach(file; files){ app.textures ~= app.loadTexture(file); }
 }
@@ -103,7 +103,7 @@ void createSampler(ref App app) {
   enforceVK(vkCreateSampler(app.device, &samplerInfo, null, &app.sampler));
 }
 
-void destroyTexture(App app, Texture texture) {
+void deAllocate(App app, Texture texture) {
   vkDestroyImageView(app.device, texture.textureImageView, app.allocator);
   vkDestroyImage(app.device, texture.textureImage, app.allocator);
   vkFreeMemory(app.device, texture.textureImageMemory, app.allocator);

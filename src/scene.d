@@ -1,7 +1,7 @@
 import engine;
 
 import cube : Cube;
-import geometry : Instance, computeNormals, destroyObject;
+import geometry : Instance, computeNormals;
 import icosahedron : Icosahedron, refineIcosahedron;
 import matrix : mat4, scale, translate, rotate;
 import square : Square;

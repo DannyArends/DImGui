@@ -5,10 +5,10 @@ import validation;
 
 import camera : Camera;
 import glyphatlas : GlyphAtlas;
-import geometry : Geometry, destroyObject;
+import geometry : Geometry, deAllocate;
 import pipeline : destroyPipeline;
 import uniforms : Uniform;
-import textures : Texture, destroyTexture;
+import textures : Texture, deAllocate;
 import window : destroyFrameData;
 
 struct Sync {
@@ -48,7 +48,7 @@ struct App {
   Camera camera;
   GlyphAtlas glyphAtlas;
   GraphicsPipeline pipeline;
-  DepthBuffer depthbuffer;
+  DepthBuffer depthBuffer;
   ImGuiIO* io;
 
   // Vulkan
@@ -104,7 +104,7 @@ struct App {
   bool rebuild = false;
 }
 
-void cleanUp(ref App app){
+void cleanUp(App app){
   enforceVK(vkDeviceWaitIdle(app.device));
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
@@ -113,8 +113,8 @@ void cleanUp(ref App app){
 
   vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
-  foreach(object; app.objects) { app.destroyObject(object); }
-  foreach(texture; app.textures) { app.destroyTexture(texture); }
+  foreach(object; app.objects) { app.deAllocate(object); }
+  foreach(texture; app.textures) { app.deAllocate(texture); }
   vkDestroySampler(app.device, app.sampler, null);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);

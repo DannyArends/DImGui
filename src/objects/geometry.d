@@ -39,7 +39,7 @@ struct Geometry {
     return euclidean(object.instances[0].getTranslation(), camera.position); 
 }
 
-void destroyObject(ref App app, Geometry object) {
+void deAllocate(ref App app, Geometry object) {
   vkDestroyBuffer(app.device, object.vertexBuffer, app.allocator);
   vkFreeMemory(app.device, object.vertexBufferMemory, app.allocator);
   vkDestroyBuffer(app.device, object.indexBuffer, app.allocator);

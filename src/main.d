@@ -6,7 +6,6 @@ import descriptor : createImGuiDescriptorPool;
 import devices : pickPhysicalDevice, createLogicalDevice;
 import events : handleEvents;
 import frame : presentFrame, renderFrame;
-
 import glyphatlas : loadGlyphAtlas, createFontTexture;
 import scene : createScene;
 import imgui : initializeImGui;
@@ -18,16 +17,14 @@ import window: createOrResizeWindow, checkForResize, renderGUI;
 
 void main(string[] args) {
   App app = initializeSDL();
-  
-  app.loadGlyphAtlas("./assets/fonts/FreeMono.ttf", 96);
-
+  app.loadGlyphAtlas();
   app.createInstance();
   app.createDebugCallback();
   app.createLogicalDevice();
   app.createCommandPool();
   app.createSampler();
   app.createFontTexture(app.glyphAtlas);
-  app.loadTextures("./assets/textures/");
+  app.loadTextures();
   app.createImGuiDescriptorPool();
   app.createSurface();
   app.createScene();
