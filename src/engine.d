@@ -6,7 +6,6 @@ import validation;
 import camera : Camera;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
-import pipeline : destroyPipelines;
 import uniforms : Uniform;
 import textures : Texture, deAllocate;
 import window : destroyFrameData;

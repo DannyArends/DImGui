@@ -5,7 +5,7 @@ void initializeImGui(ref App app){
   app.io = igGetIO_Nil();
   app.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   igStyleColorsDark(null);
-  SDL_Log("ImGuiIO: %p", app.io);
+  if(app.verbose) SDL_Log("ImGuiIO: %p", app.io);
   ImGui_ImplSDL2_InitForVulkan(app.window);
 
   ImGui_ImplVulkan_InitInfo imguiInit = {
@@ -22,5 +22,5 @@ void initializeImGui(ref App app){
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&imguiInit);
-  SDL_Log("ImGui initialized");
+  if(app.verbose) SDL_Log("ImGui initialized");
 }
