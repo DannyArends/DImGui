@@ -1,18 +1,28 @@
 import engine;
 
 import std.algorithm : sort;
+import std.traits : EnumMembers;
 
 import depthbuffer : createDepthResources, destroyDepthBuffer;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
 import framebuffer : createFramebuffers;
-import pipeline : createGraphicsPipeline, destroyPipeline;
+import pipeline : createGraphicsPipeline, destroyPipelines;
 import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 import geometry : distance;
 import uniforms : createUniforms, destroyUniforms;
+
+VkPrimitiveTopology[] supportedTopologies = 
+[
+  VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+  VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
+  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN
+];
 
 ImDrawData* renderGUI(ref App app){
   // Start ImGui frame
@@ -43,7 +53,10 @@ void createOrResizeWindow(ref App app) {
   app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
   app.createFramebuffers();
   app.createImGuiCommandBuffers();
-  app.pipeline = app.createGraphicsPipeline();
+
+  foreach(member; supportedTopologies){
+    app.pipelines[member] = app.createGraphicsPipeline(member);
+  }
   app.createRenderCommandBuffers();
   app.recordRenderCommandBuffer();
   app.createSyncObjects();
@@ -66,7 +79,7 @@ void destroyFrameData(ref App app) {
   if(app.uniform.uniformBuffers) app.destroyUniforms();
   if(app.descriptorPool) vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
   if(app.depthBuffer.depthImage) app.destroyDepthBuffer();
-  if(app.pipeline.graphicsPipeline) app.destroyPipeline();
+  if(app.pipelines) app.destroyPipelines();
   if(app.imguiPass) vkDestroyRenderPass(app.device, app.imguiPass, app.allocator);
   if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
 }

@@ -21,7 +21,7 @@ struct Uniform {
 void createUniforms(ref App app) {
   VkDeviceSize size = UniformBufferObject.sizeof;
   app.createBuffer(&app.uniform.uniformBuffers, &app.uniform.uniformBuffersMemory, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-  SDL_Log("Created %d UniformBuffers of size: %d bytes", app.imageCount, size);
+  if(app.verbose) SDL_Log("Created %d UniformBuffers of size: %d bytes", app.imageCount, size);
 }
 
 void updateUniformBuffer(ref App app, uint currentImage) {

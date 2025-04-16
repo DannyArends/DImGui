@@ -28,12 +28,12 @@ void createScene(ref App app){
       if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(7, instance);
     }
   }
-  app.objects[2].refineIcosahedron(4);
-  app.objects[2].computeNormals();
+  app.objects[2].refineIcosahedron(3);
+ // app.objects[2].computeNormals();
   app.objects[2].instances[0] = scale(app.objects[2].instances[0], [5.0f, 5.0f, 5.0f]);
 
-  app.objects[2].instances[0].tid = 6;
-  app.objects[2].instances[0] = translate(app.objects[2].instances[0], [10.0f, 6.0f, 2.0f]);
+  app.objects[2].instances[0].tid = 8;
+ // app.objects[2].instances[0] = translate(app.objects[2].instances[0], [10.0f, 6.0f, 2.0f]);
 
   //Buffer the objects
   for (uint i = 0; i < app.objects.length; i++) {

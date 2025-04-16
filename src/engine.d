@@ -6,7 +6,7 @@ import validation;
 import camera : Camera;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
-import pipeline : destroyPipeline;
+import pipeline : destroyPipelines;
 import uniforms : Uniform;
 import textures : Texture, deAllocate;
 import window : destroyFrameData;
@@ -47,7 +47,9 @@ struct App {
   VkSampler sampler;
   Camera camera;
   GlyphAtlas glyphAtlas;
-  GraphicsPipeline pipeline;
+  VkShaderModule[] shaders;
+  VkPipelineShaderStageCreateInfo[] shaderStages;
+  GraphicsPipeline[VkPrimitiveTopology] pipelines;
   DepthBuffer depthBuffer;
   ImGuiIO* io;
 
@@ -111,6 +113,7 @@ void cleanUp(App app){
   igDestroyContext(null);
   app.destroyFrameData();
 
+  foreach(shader; app.shaders){  vkDestroyShaderModule(app.device, shader, app.allocator); }
   vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
   foreach(object; app.objects) { app.deAllocate(object); }

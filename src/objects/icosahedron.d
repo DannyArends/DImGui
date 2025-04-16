@@ -1,8 +1,9 @@
+import includes;
 
-import std.math : PI, atan, sin, cos, tan, sqrt;
+import std.math : PI, atan, sin, cos, tan, sqrt, atan2, asin;
 
 import geometry : Geometry, faces, addVertex;
-import vector : midpoint, cross, vSub;
+import vector : midpoint, cross, vSub, normalize;
 import vertex : Vertex;
 
 const float x = 0.426943;
@@ -13,8 +14,8 @@ struct Icosahedron {
     vertices : [ 
                  Vertex([-x, y,0], toTC([-x, y,0]), [1.0f, 1.0f, 1.0f, 1.0f]), 
                  Vertex([ x, y,0], toTC([ x, y,0]), [1.0f, 1.0f, 1.0f, 1.0f]),
-                 Vertex([-x,-y,0], toTC([-x,-y,0]), [1.0f, 0.8f, 1.0f, 1.0f]),
-                 Vertex([ x,-y,0], toTC([ x,-y,0]), [1.0f, 0.8f, 1.0f, 1.0f]),
+                 Vertex([-x,-y,0], toTC([-x,-y,0]), [1.0f, 1.0f, 1.0f, 1.0f]),
+                 Vertex([ x,-y,0], toTC([ x,-y,0]), [1.0f, 1.0f, 1.0f, 1.0f]),
                                                             
                  Vertex([0,-x, y], toTC([0,-x, y]), [1.0f, 1.0f, 1.0f, 1.0f]), 
                  Vertex([0, x, y], toTC([0, x, y]), [1.0f, 1.0f, 1.0f, 1.0f]),
@@ -29,8 +30,11 @@ struct Icosahedron {
     indices : [0, 11, 5, 0,  5,  1,  0,  1,  7,  0, 7, 10, 0, 10, 11,
                1,  5, 9, 5, 11,  4, 11, 10,  2, 10, 7,  6, 7,  1,  8,
                3,  9, 4, 3,  4,  2,  3,  2,  6,  3, 6,  8, 3,  8,  9,
-               4,  9, 5, 2,  4, 11,  6,  2, 10,  8, 6,  7, 9,  8,  1]
+               4,  9, 5, 2,  4, 11,  6,  2, 10,  8, 6,  7, 9,  8,  1],
+
+    topology : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
   };
+
   alias geometry this;
 }
 
@@ -46,30 +50,6 @@ struct Icosahedron {
       if (p[2] < 0.0f) normalisedZ = -normalisedZ;
     }
     float[2] texCoord = [0.0f, (-p[1] + 1.0f) / 2.0f];
-    if (normalisedZ == 0.0f) {
-      texCoord[0] = ((normalisedX * PI) / 2.0f);
-    } else {
-      texCoord[0] = atan(normalisedX / normalisedZ);
-    }
-    if (normalisedZ < 0.0f)  texCoord[0] += PI;
-    if (texCoord[0] < 0.0f)  texCoord[0] += 2.0f * PI;      // Shift U coordinate between 0-2pi
-
-    texCoord[0] /= (2.0f * PI);                             // Normalize U coordinate range 0-2pi -> 0, 1
-    return(texCoord);
-}
-
-float[2] getTextureCoord(const float[3] normal) {
-    float normalisedX =  0.0f;
-    float normalisedZ = -1.0f;
-    float xSq = normal[0] * normal[0];
-    float zSq = normal[2] * normal[2];
-    if ((xSq + zSq) > 0.0f) {
-      normalisedX = sqrt(xSq / (xSq + zSq));
-      normalisedZ = sqrt(zSq / (xSq + zSq));
-      if (normal[0] < 0.0f) normalisedX = -normalisedX;
-      if (normal[2] < 0.0f) normalisedZ = -normalisedZ;
-    }
-    float[2] texCoord = [0.0f, (-normal[1] + 1.0f) / 2.0f];
     if (normalisedZ == 0.0f) {
       texCoord[0] = ((normalisedX * PI) / 2.0f);
     } else {
@@ -98,9 +78,9 @@ void refineIcosahedron(ref Geometry object, uint recursionLevel = 1) {
       b = midpoint(p1, p2, true);
       c = midpoint(p2, p0, true);
 
-      ta = getTextureCoord(a);
-      tb = getTextureCoord(b);
-      tc = getTextureCoord(c);
+      ta = toTC(a);
+      tb = toTC(b);
+      tc = toTC(c);
 
       ia = object.addVertex(Vertex(a, ta));
       ib = object.addVertex(Vertex(b, tb));

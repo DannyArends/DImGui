@@ -96,13 +96,11 @@ alias Matrix mat4;
 
 /* Perspective projection Matrix V4(f, a, n, f) */
 @nogc pure Matrix perspective(float fovy, float aspectRatio, float near, float far) nothrow {
-  float fov_rad = fovy * 2.0f * PI / 360.0f;
-  float focalLength = 1.0f / tan(fov_rad / 2.0f);
-
-  float x  =  focalLength / aspectRatio;
-  float y  = -focalLength;
-  float A  = near / (far - near);
-  float B  = far * A;
+  float tanHalfFovy = tan(radian(fovy) / 2.0f);
+  float x  =  1.0f / (aspectRatio * tanHalfFovy);
+  float y  = -1.0f / tanHalfFovy;
+  float A  = -(far + near) / (far - near);
+  float B  = -2.0f * far * near / (far - near);
   return(Matrix([
         x,    0.0f,  0.0f,  0.0f,
         0.0f,    y,  0.0f,  0.0f,

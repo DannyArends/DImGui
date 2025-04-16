@@ -3,21 +3,15 @@ import engine;
 import shaders : createShaderModule, createShaderStageInfo;
 import vertex : Vertex;
 
-void destroyPipeline(ref App app) {
-  vkDestroyPipelineLayout(app.device, app.pipeline.pipelineLayout, app.allocator);
-  vkDestroyPipeline(app.device, app.pipeline.graphicsPipeline, app.allocator);
+void destroyPipelines(ref App app) {
+  foreach(pipeline; app.pipelines){
+    vkDestroyPipelineLayout(app.device, pipeline.pipelineLayout, app.allocator);
+    vkDestroyPipeline(app.device, pipeline.graphicsPipeline, app.allocator);
+  }
 }
 
-GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "assets/shaders/vert.spv", const(char)* fragPath = "assets/shaders/frag.spv") {
+GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
   GraphicsPipeline pipeline;
-
-  auto vShader = app.createShaderModule(vertPath);
-  auto fShader = app.createShaderModule(fragPath);
-
-  VkPipelineShaderStageCreateInfo vInfo = createShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, vShader);
-  VkPipelineShaderStageCreateInfo fInfo = createShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fShader);
-  VkPipelineShaderStageCreateInfo[] shaderStages = [ vInfo, fInfo ];
-
   auto bindingDescription = Vertex.getBindingDescription();
   auto attributeDescriptions = Vertex.getAttributeDescriptions();
 
@@ -33,7 +27,7 @@ GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "as
   // Input Assembly
   VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-    topology: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    topology: topology,
     primitiveRestartEnable: VK_FALSE
   };
 
@@ -122,8 +116,8 @@ GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "as
 
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-    stageCount: 2,
-    pStages: &shaderStages[0],
+    stageCount: cast(uint)app.shaderStages.length,
+    pStages: &app.shaderStages[0],
     pVertexInputState: &vertexInputInfo,
     pInputAssemblyState: &inputAssembly,
     pViewportState: &viewportState,
@@ -139,8 +133,6 @@ GraphicsPipeline createGraphicsPipeline(ref App app, const(char)* vertPath = "as
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &pipeline.graphicsPipeline));
-  vkDestroyShaderModule(app.device, vShader, app.allocator);
-  vkDestroyShaderModule(app.device, fShader, app.allocator);
   return(pipeline);
 }
 

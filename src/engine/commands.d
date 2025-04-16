@@ -88,7 +88,7 @@ void recordRenderCommandBuffer(ref App app) {
 
     vkCmdBeginRenderPass(app.renderBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     if(app.verbose) SDL_Log("Render pass recording to buffer %d", i);
-    vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipeline.graphicsPipeline);
+
     if(app.verbose) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, i);
     for(size_t x = 0; x < app.objects.length; x++) {
       app.draw(app.objects[x], i);
