@@ -20,5 +20,6 @@ void main() {
   vec3 blended = fragColor.rgb * color.rgb;
   if(color.a < 0.2f) discard;
   outColor = vec4(blended, color.a);
+//  outColor = vec4(fragTexCoord[0], fragTexCoord[1], 0.0f, 1.0f);
 }
 
