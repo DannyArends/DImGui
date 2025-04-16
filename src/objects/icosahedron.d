@@ -64,7 +64,6 @@ struct Icosahedron {
 
 void refineIcosahedron(ref Geometry object, uint recursionLevel = 1) {
   float[3] p0, p1, p2, a,b,c;
-  float[2] ta, tb, tc;
   uint ia, ib, ic;
   for (uint i = 0; i < recursionLevel; i++) {
     uint[] indices;
@@ -78,13 +77,9 @@ void refineIcosahedron(ref Geometry object, uint recursionLevel = 1) {
       b = midpoint(p1, p2, true);
       c = midpoint(p2, p0, true);
 
-      ta = toTC(a);
-      tb = toTC(b);
-      tc = toTC(c);
-
-      ia = object.addVertex(Vertex(a, ta));
-      ib = object.addVertex(Vertex(b, tb));
-      ic = object.addVertex(Vertex(c, tc));
+      ia = object.addVertex(Vertex(a, toTC(a)));
+      ib = object.addVertex(Vertex(b, toTC(b)));
+      ic = object.addVertex(Vertex(c, toTC(c)));
 
       // Split triangle into 4 new triangles
       indices ~= tri[0]; indices ~= ia; indices ~= ic;
@@ -106,7 +101,7 @@ void refineIcosahedron(ref Geometry object, uint recursionLevel = 1) {
         if (object.vertices[index].texCoord[0] >= 0.9f){    // On the other side, add new vertex
           Vertex vDup = object.vertices[index];
           vDup.texCoord[0] -= 1.0f;                         // Move texture coord
-          object.indices[j] = object.addVertex(vDup);      // Insert vertex and update index array
+          object.indices[j] = object.addVertex(vDup);       // Insert vertex and update index array
         }
       }
     }
