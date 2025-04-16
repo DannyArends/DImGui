@@ -26,3 +26,13 @@ VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stag
   ));
 }
 
+void createShadersStages(ref App app, const(char)* vertPath = "assets/shaders/vert.spv", const(char)* fragPath = "assets/shaders/frag.spv"){
+  auto vShader = app.createShaderModule(vertPath);
+  auto fShader = app.createShaderModule(fragPath);
+  app.shaders = [ vShader, fShader ];
+
+  VkPipelineShaderStageCreateInfo vInfo = createShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, vShader);
+  VkPipelineShaderStageCreateInfo fInfo = createShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fShader);
+  app.shaderStages = [ vInfo, fInfo ];
+}
+

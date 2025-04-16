@@ -32,7 +32,8 @@ void createLogicalDevice(ref App app, uint device = 0){
     descriptorIndexing : VK_TRUE,
     runtimeDescriptorArray : VK_TRUE,
     shaderSampledImageArrayNonUniformIndexing : VK_TRUE,
-    shaderStorageBufferArrayNonUniformIndexing : VK_TRUE
+    shaderStorageBufferArrayNonUniformIndexing : VK_TRUE,
+    pNext : null
   };
 
   VkDeviceCreateInfo createDevice = {

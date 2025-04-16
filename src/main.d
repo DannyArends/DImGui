@@ -11,6 +11,7 @@ import scene : createScene;
 import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL;
+import shaders : createShadersStages;
 import surface : createSurface, querySurfaceCapabilities;
 import textures : loadTextures, createSampler;
 import window: createOrResizeWindow, checkForResize, renderGUI;
@@ -21,6 +22,7 @@ void main(string[] args) {
   app.createInstance();
   app.createDebugCallback();
   app.createLogicalDevice();
+  app.createShadersStages();
   app.createCommandPool();
   app.createSampler();
   app.createFontTexture(app.glyphAtlas);
@@ -28,7 +30,6 @@ void main(string[] args) {
   app.createImGuiDescriptorPool();
   app.createSurface();
   app.createScene();
-
   app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
 
