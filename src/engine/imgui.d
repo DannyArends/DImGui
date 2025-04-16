@@ -24,3 +24,4 @@ void initializeImGui(ref App app){
   ImGui_ImplVulkan_Init(&imguiInit);
   if(app.verbose) SDL_Log("ImGui initialized");
 }
+

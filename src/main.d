@@ -3,7 +3,7 @@ import validation;
 
 import commands : createCommandPool;
 import descriptor : createImGuiDescriptorPool;
-import devices : pickPhysicalDevice, createLogicalDevice;
+import devices : createLogicalDevice;
 import events : handleEvents;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, createFontTexture;
@@ -30,8 +30,8 @@ void main(string[] args) {
   app.createImGuiDescriptorPool();
   app.createSurface();
   app.createScene();
-  app.createOrResizeWindow(); // Create window (swapchain, renderpass, framebuffers, etc)
-  app.initializeImGui(); // Initialize ImGui (IO, Style, etc)
+  app.createOrResizeWindow();   // Create window (swapchain, renderpass, framebuffers, etc)
+  app.initializeImGui();        // Initialize ImGui (IO, Style, etc)
 
   uint frames = 4000;
   while (!app.finished && app.totalFramesRendered < frames) { // Main loop
