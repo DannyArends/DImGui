@@ -80,7 +80,7 @@ void loadGlyphAtlas(ref App app,
 }
 
 // Populates the GlyphAtlas with Glyphs to dchar in our atlas
-ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024) {
+ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024, bool verbose = false) {
   MonoTime sT = MonoTime.currTime;
   int i, atlasrow, atlasloc;
   ushort[] atlas = [];
@@ -107,21 +107,23 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
     }
     c++;
   }
-  SDL_Log("%d unicode glyphs (%d unique ones)\n", atlas.length, glyphatlas.glyphs.length);
-  SDL_Log("FontAscent: %d\n", TTF_FontAscent(glyphatlas.ttf));
-  SDL_Log("FontAdvance: %d\n", glyphatlas.advance);
+  if(verbose) SDL_Log("%d unicode glyphs (%d unique ones)\n", atlas.length, glyphatlas.glyphs.length);
+  if(verbose) SDL_Log("FontAscent: %d\n", TTF_FontAscent(glyphatlas.ttf));
+  if(verbose) SDL_Log("FontAdvance: %d\n", glyphatlas.advance);
   glyphatlas.height = glyphatlas.pointsize;
   glyphatlas.ascent = TTF_FontAscent(glyphatlas.ttf);
 
   MonoTime cT = MonoTime.currTime;
   auto time = (cT - sT).total!"msecs"();  // Update the current time
-  SDL_Log("%d/%d Glyphs on %d lines [%d x %d] in %d msecs\n", glyphatlas.glyphs.length, c, ++atlasrow, glyphatlas.width, glyphatlas.height, time);
+  if(verbose) {
+    SDL_Log("%d/%d Glyphs on %d lines [%d x %d] in %d msecs\n", glyphatlas.glyphs.length, c, ++atlasrow, glyphatlas.width, glyphatlas.height, time);
+  }
   return(atlas);
 }
 
 // Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray
 void createFontTexture(ref App app, SDL_Surface* surface, const(char)* path = "DEFAULT") {
-  SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+  if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   if (surface.format.BitsPerPixel != 32) surface.toRGBA();
 
   Texture texture = { width: surface.w, height: surface.h, surface: surface };
@@ -143,7 +145,7 @@ void createFontTexture(ref App app, SDL_Surface* surface, const(char)* path = "D
   app.transitionImageLayout(texture.textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   texture.textureImageView = app.createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
 
-  SDL_Log("Freeing surface: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+  if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   SDL_FreeSurface(surface);
   vkDestroyBuffer(app.device, stagingBuffer, null);
   vkFreeMemory(app.device, stagingBufferMemory, null);

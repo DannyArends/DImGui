@@ -3,8 +3,8 @@ import engine;
 import shaders : createShaderModule, createShaderStageInfo;
 import vertex : Vertex;
 
-void destroyPipelines(ref App app) {
-  foreach(pipeline; app.pipelines){
+void deAllocate(App app, GraphicsPipeline[VkPrimitiveTopology] pipelines) {
+  foreach(pipeline; pipelines){
     vkDestroyPipelineLayout(app.device, pipeline.pipelineLayout, app.allocator);
     vkDestroyPipeline(app.device, pipeline.graphicsPipeline, app.allocator);
   }

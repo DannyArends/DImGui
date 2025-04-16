@@ -7,7 +7,7 @@ import depthbuffer : createDepthResources, destroyDepthBuffer;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
 import framebuffer : createFramebuffers;
-import pipeline : createGraphicsPipeline, destroyPipelines;
+import pipeline : createGraphicsPipeline, deAllocate;
 import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
@@ -79,7 +79,7 @@ void destroyFrameData(ref App app) {
   if(app.uniform.uniformBuffers) app.destroyUniforms();
   if(app.descriptorPool) vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
   if(app.depthBuffer.depthImage) app.destroyDepthBuffer();
-  if(app.pipelines) app.destroyPipelines();
+  if(app.pipelines) app.deAllocate(app.pipelines);
   if(app.imguiPass) vkDestroyRenderPass(app.device, app.imguiPass, app.allocator);
   if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
 }

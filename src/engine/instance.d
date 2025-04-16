@@ -20,6 +20,6 @@ void createInstance(ref App app){
   };
 
   enforceVK(vkCreateInstance(&createInstance, app.allocator, &app.instance));
-  SDL_Log("vkCreateInstance[layers:%d, extensions:%d]: %p", app.layers.length, app.instanceExtensions.length, app.instance );
+  if(app.verbose) SDL_Log("vkCreateInstance[layers:%d, extensions:%d]: %p", app.layers.length, app.instanceExtensions.length, app.instance );
 }
 

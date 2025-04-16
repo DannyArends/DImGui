@@ -9,9 +9,9 @@ import glyphatlas : GlyphAtlas;
 struct Text {
   Geometry geometry = { };
 
-  this(GlyphAtlas atlas, string value = "Hellow World", float scale = 1.0f){
+  this(GlyphAtlas atlas, string value = "Hellow World", float scale = 1.0f, bool verbose = false){
     float glyphscale = (1.0f/scale) * atlas.pointsize;
-    SDL_Log("GlyphAtlas: %d, %d, %d, %d, %d", atlas.width, atlas.height, atlas.ascent, atlas.miny, atlas.advance);
+    if(verbose) SDL_Log("GlyphAtlas: %d, %d, %d, %d, %d", atlas.width, atlas.height, atlas.ascent, atlas.miny, atlas.advance);
     size_t[2] line = [1, value.split("\n").length];
     uint col = 0;
     uint nGlyhs = 0;

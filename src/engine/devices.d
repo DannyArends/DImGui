@@ -45,11 +45,11 @@ void createLogicalDevice(ref App app, uint device = 0){
     pNext : &features
   };
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
-  SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device );
+  if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device );
 
   // Get the Queue from the queueFamily
   vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
-  SDL_Log("vkGetDeviceQueue[family:%d]: %p", app.queueFamily, app.queue);
+  if(app.verbose) SDL_Log("vkGetDeviceQueue[family:%d]: %p", app.queueFamily, app.queue);
 }
 
 void list(VkPhysicalDevice physicalDevice, size_t i) {
@@ -72,7 +72,7 @@ VkPhysicalDevice[] queryPhysicalDevices(ref App app) {
   uint nPhysDevices = 0;
   VkPhysicalDevice[] physicalDevices;
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, null);
-  SDL_Log("Number of physical vulkan devices found: %d", nPhysDevices);
+  if(app.verbose) SDL_Log("Number of physical vulkan devices found: %d", nPhysDevices);
   physicalDevices.length = nPhysDevices;
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, &physicalDevices[0]);
   if(app.verbose) foreach(i, physicalDevice; physicalDevices) { physicalDevice.list(i); }
