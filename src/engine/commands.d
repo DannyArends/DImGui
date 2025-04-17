@@ -74,7 +74,7 @@ void recordRenderCommandBuffer(ref App app) {
 
     VkRect2D renderArea = {
       offset: { x:0, y:0 },
-      extent: { width: app.width, height: app.height }
+      extent: { width: app.camera.width, height: app.camera.height }
     };
 
     VkRenderPassBeginInfo renderPassInfo = {
@@ -91,7 +91,8 @@ void recordRenderCommandBuffer(ref App app) {
 
     if(app.verbose) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, i);
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(app.objects[x].visible) app.draw(app.objects[x], i);
+      if(!app.objects[x].isBuffered) app.objects[x].buffer(app);
+      if(app.objects[x].isVisible) app.draw(app.objects[x], i);
     }
     vkCmdEndRenderPass(app.renderBuffers[i]);
     enforceVK(vkEndCommandBuffer(app.renderBuffers[i]));

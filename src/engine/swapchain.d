@@ -5,14 +5,14 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   VkSwapchainCreateInfoKHR swapchainCreateInfo = { // SwapChain CreateInfo
     sType: VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
     surface: app.surface,
-    minImageCount: app.capabilities.minImageCount,
+    minImageCount: app.camera.minImageCount,
     imageFormat: app.surfaceformats[0].format,
     imageColorSpace: app.surfaceformats[0].colorSpace,
-    imageExtent: app.capabilities.currentExtent,
+    imageExtent: app.camera.currentExtent,
     imageArrayLayers: 1,
     imageUsage: VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
     imageSharingMode: VK_SHARING_MODE_EXCLUSIVE,
-    preTransform: app.capabilities.currentTransform,
+    preTransform: app.camera.currentTransform,
     compositeAlpha: VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
     presentMode: VK_PRESENT_MODE_FIFO_KHR,
     clipped: VK_TRUE,
@@ -20,7 +20,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   };
 
   enforceVK(vkCreateSwapchainKHR(app.device, &swapchainCreateInfo, app.allocator, &app.swapChain));
-  if(app.verbose) SDL_Log("Swapchain %p created, minImage:%d", app.swapChain, app.capabilities.minImageCount);
+  if(app.verbose) SDL_Log("Swapchain %p created, minImage:%d", app.swapChain, app.camera.minImageCount);
   if(oldChain) { vkDestroySwapchainKHR(app.device, oldChain, app.allocator); }
 }
 

@@ -40,10 +40,5 @@ void createScene(ref App app){
   //Cube
   app.objects ~= Text(app.glyphAtlas);
   app.objects[4].rotate([10.0f, 75.0f, 0.0f]);
-
-  //Buffer the objects
-  for (uint i = 0; i < app.objects.length; i++) {
-    app.objects[i].buffer(app);
-  }
 }
 

@@ -11,8 +11,8 @@ void createFramebuffers(ref App app) {
       renderPass: app.renderpass,
       attachmentCount: cast(uint)attachments.length,
       pAttachments: &attachments[0],
-      width: app.capabilities.currentExtent.width,
-      height: app.capabilities.currentExtent.height,
+      width: app.camera.width,
+      height: app.camera.height,
       layers: 1
     };
 

@@ -125,7 +125,8 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
 // Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray
 void createFontTexture(ref App app, SDL_Surface* surface, const(char)* path = "DEFAULT") {
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
-  if (surface.format.BitsPerPixel != 32) surface.toRGBA();
+  app.glyphAtlas.fontTextureId = cast(uint)(app.textures.length);
+  if(surface.format.BitsPerPixel != 32) surface.toRGBA();
 
   Texture texture = { width: surface.w, height: surface.h, surface: surface };
   VkBuffer stagingBuffer;
@@ -151,6 +152,5 @@ void createFontTexture(ref App app, SDL_Surface* surface, const(char)* path = "D
   vkDestroyBuffer(app.device, stagingBuffer, null);
   vkFreeMemory(app.device, stagingBufferMemory, null);
   app.textures ~= texture;
-  app.glyphAtlas.fontTextureId = cast(uint)(app.textures.length-1);
 }
 
