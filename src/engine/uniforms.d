@@ -27,17 +27,17 @@ void createUniforms(ref App app) {
 void updateUniformBuffer(ref App app, uint currentImage) {
   UniformBufferObject ubo = {
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
-    view: lookAt(app.camera.position, app.camera.lookat, app.camera.up),
-    proj: perspective(app.camera.fov, app.aspectRatio, app.camera.nearfar[0], app.camera.nearfar[1]),
+    view: app.camera.view,
+    proj: app.camera.proj,
     orientation: mat4.init
   };
 
   // Adjust for screen orientation so that the world is always up
-  if (app.capabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) {
+  if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) {
     ubo.orientation = rotate(mat4.init, [-90.0f, 0.0f, 0.0f]);
-  } else if (app.capabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+  } else if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
     ubo.orientation = rotate(mat4.init, [90.0f, 0.0f, 0.0f]);
-  } else if (app.capabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR) {
+  } else if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR) {
     ubo.orientation = rotate(mat4.init, [180.0f, 0.0f, 0.0f]);
   }
 

@@ -2,7 +2,7 @@ import engine;
 
 void querySurfaceCapabilities(ref App app) {
   uint formatCount;
-  enforceVK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(app.physicalDevice, app.surface, &app.capabilities));  // Capabilities
+  enforceVK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(app.physicalDevice, app.surface, &app.camera.capabilities));  // Capabilities
 
   // Surface formats
   enforceVK(vkGetPhysicalDeviceSurfaceFormatsKHR(app.physicalDevice, app.surface, &formatCount, null));

@@ -87,8 +87,8 @@ void destroyFrameData(ref App app) {
 void checkForResize(ref App app){
   int width, height;
   SDL_GetWindowSize(app.window, &width, &height);
-  if(width > 0 && height > 0 && (app.rebuild || app.width != width || app.height != height)) {
-    ImGui_ImplVulkan_SetMinImageCount(app.capabilities.minImageCount);
+  if(width > 0 && height > 0 && (app.rebuild || app.camera.width != width || app.camera.height != height)) {
+    ImGui_ImplVulkan_SetMinImageCount(app.camera.minImageCount);
     app.createOrResizeWindow();
     app.frameIndex = 0;
     app.rebuild = false;

@@ -21,7 +21,7 @@ void renderFrame(ref App app, ImDrawData* drawData){
   };
   enforceVK(vkBeginCommandBuffer(app.imguiBuffers[app.frameIndex], &commandBufferInfo));
 
-  VkRect2D renderArea = { extent: { width: app.width, height: app.height } };
+  VkRect2D renderArea = { extent: { width: app.camera.width, height: app.camera.height } };
 
   VkRenderPassBeginInfo renderPassInfo = {
     sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,

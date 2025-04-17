@@ -16,7 +16,7 @@ void initializeImGui(ref App app){
     Queue : app.queue,
     DescriptorPool : app.imguiPool,
     Allocator : app.allocator,
-    MinImageCount : app.capabilities.minImageCount,
+    MinImageCount : app.camera.minImageCount,
     ImageCount : cast(uint)app.imageCount,
     RenderPass : app.imguiPass,
     CheckVkResultFn : &enforceVK

@@ -33,13 +33,13 @@ GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topolog
 
   // Viewport
   VkViewport viewport = { x: 0.0f, y: 0.0f,
-    width: cast(float) app.capabilities.currentExtent.width,
-    height: cast(float) app.capabilities.currentExtent.height,
+    width: cast(float) app.camera.width,
+    height: cast(float) app.camera.height,
     minDepth: 0.0f,
     maxDepth: 1.0f
   };
 
-  VkRect2D scissor = { offset: {0, 0}, extent: app.capabilities.currentExtent };
+  VkRect2D scissor = { offset: {0, 0}, extent: app.camera.currentExtent };
 
   VkPipelineViewportStateCreateInfo viewportState = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,

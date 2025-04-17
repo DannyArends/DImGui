@@ -6,6 +6,8 @@ import validation;
 import camera : Camera;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
+import matrix : multiply, inverse;
+import vector : normalize;
 import uniforms : Uniform;
 import textures : Texture, deAllocate;
 import window : destroyFrameData;
@@ -64,7 +66,6 @@ struct App {
 
   VkSurfaceKHR surface = null;
   VkSurfaceFormatKHR[] surfaceformats = null;
-  VkSurfaceCapabilitiesKHR capabilities;
   VkSwapchainKHR swapChain = null;
   VkCommandPool commandPool = null;
   Sync[] sync = null;
@@ -89,9 +90,6 @@ struct App {
   uint frameIndex = 0;
   uint totalFramesRendered = 0;
 
-  @property uint width() { return(capabilities.currentExtent.width); };
-  @property uint height() { return(capabilities.currentExtent.height); };
-  @property float aspectRatio() { return(this.width / cast(float) this.height); }
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
 
   const(char)*[] instanceExtensions;    // Enabled instance extensions
