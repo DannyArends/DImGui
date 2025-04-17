@@ -2,7 +2,7 @@ import includes;
 
 import std.math : cos, sin;
 
-import vector : normalize, vMul, vAdd, negate, xyz;
+import vector : normalize, vMul,vSub, vAdd, negate, xyz;
 import matrix : Matrix, multiply, inverse, rotate, radian, perspective, lookAt;
 import quaternion : xyzw;
 
@@ -39,13 +39,9 @@ struct Camera {
   @property uint height() { return(currentExtent.height); };
   @property float aspectRatio() { return(this.width / cast(float) this.height); }
 
-  @property Matrix proj() {
-    return(perspective(fov, aspectRatio, nearfar[0], nearfar[1]));
-  }
+  @property Matrix proj() { return(perspective(fov, aspectRatio, nearfar[0], nearfar[1])); }
 
-  @property Matrix view() {
-    return(lookAt(position, lookat, up));
-  }
+  @property @nogc Matrix view() nothrow { return(lookAt(position, lookat, up)); }
 
   // Move the camera to the left of the view direction
   @property @nogc float[3] left() const nothrow {
@@ -67,15 +63,17 @@ struct Camera {
 /* Create a position/rotation matrix through 3D space starting from xy */
 float[3][2] castRay(Camera camera, uint x, uint y) {
   float[2] ndc = [(2.0f * x) / cast(float) camera.width - 1.0f,                             // Normalized device X
-                    1.0f - (2.0f * y) / cast(float) camera.height];                           // Normalized device Y
-  float[4] clip = [ndc[0], ndc[1], 1.0f, 1.0f];                                               // Homogeneous clip coordinates
+                  (2.0f * y) / cast(float) camera.height - 1.0f];                           // Normalized device Y
+  SDL_Log("[%d, %d] -> [%f, %f]", x, y, ndc[0], ndc[1]);
+  float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];                                               // Homogeneous clip coordinates
   float[4] eye = multiply(inverse(camera.proj), clip);                                  // Eye coordinates
-  float[3] world = multiply(inverse(camera.view), [ eye[0], eye[1], 0.0f, 0.0f]).xyz;         // World coordinates (offset to camera position)
+  float[3] world = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz;         // World coordinates (offset to camera position)
   float[3] direction = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz;   // Ray direction
+
   direction.normalize();
+
   return([camera.position.vAdd(world), direction]);
 }
-
 
 /* Get the normalized direction of the xy camera rotation (gimbal lock) */
 @nogc float[3] direction(const float[3] rotation) nothrow {

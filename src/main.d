@@ -33,7 +33,7 @@ void main(string[] args) {
   app.createOrResizeWindow();   // Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();        // Initialize ImGui (IO, Style, etc)
 
-  uint frames = 4000;
+  uint frames = 500000;
   while (!app.finished && app.totalFramesRendered < frames) { // Main loop
     app.handleEvents();
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }

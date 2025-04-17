@@ -1,6 +1,8 @@
 import engine;
 
-import camera : move, drag;
+import commands : recordRenderCommandBuffer;
+import camera : move, drag, castRay;
+import line : createLine;
 
 void handleKeyEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_KEYDOWN) {
@@ -18,6 +20,11 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_MOUSEBUTTONDOWN){
     if (e.button.button == SDL_BUTTON_LEFT) { app.camera.isdrag[0] = true; }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
+    auto x = app.camera.castRay(e.motion.x, e.motion.y);
+    //SDL_Log("[%f, %f, %f] -> [%f, %f, %f]", x[0][0], x[0][1], x[0][2], x[1][0], x[1][1], x[1][2]);
+    app.objects ~= createLine(x);
+    enforceVK(vkDeviceWaitIdle(app.device));
+    app.recordRenderCommandBuffer();
   }
   if(e.type == SDL_MOUSEBUTTONUP){
     if (e.button.button == SDL_BUTTON_LEFT) { app.camera.isdrag[0] = false; }
