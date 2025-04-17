@@ -2,7 +2,7 @@ import engine;
 
 import buffer : toGPU;
 import camera : Camera;
-import matrix : mat4, getTranslation;
+import matrix : mat4, getTranslation, translate, rotate, scale;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
 
@@ -36,6 +36,22 @@ struct Geometry {
   bool visible = true;
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
+
+@nogc void position(ref Geometry object, float[3] p, uint instance = 0) nothrow {
+  assert(instance <  object.instances.length, "No such instance");
+  object.instances[instance] = translate(object.instances[instance], p);
+}
+
+@nogc void rotate(ref Geometry object, float[3] r, uint instance = 0) nothrow {
+  assert(instance <  object.instances.length, "No such instance");
+  object.instances[instance] = rotate(object.instances[instance], r);
+}
+
+@nogc void scale(ref Geometry object, float[3] s, uint instance = 0) nothrow {
+  assert(instance <  object.instances.length, "No such instance");
+  object.instances[instance] = scale(object.instances[instance], s);
+}
+
 
 /* Euclidean distance between object and camera */
 @nogc float distance(const Geometry object, const Camera camera) nothrow { 
