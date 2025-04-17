@@ -38,6 +38,7 @@ struct Text {
       col++;
       nGlyhs++;
     }
+    instances[0].tid = atlas.fontTextureId;
   }
 
   alias geometry this;
