@@ -19,9 +19,9 @@ struct BoudingBox {
     ],
     indices : [0, 1,  0, 3,  0, 4,  1, 2, 
                1, 5,  2, 3,  2, 6,  3, 7, 
-               4, 5,  4, 7,  5, 6,  6, 7]
+               4, 5,  4, 7,  5, 6,  6, 7],
+    topology : VK_PRIMITIVE_TOPOLOGY_LINE_LIST
   };
-  //Cube geometry;
   alias geometry this;
 
   @property @nogc pure float[3] min() nothrow const { return(vertices[0].position); }
@@ -62,7 +62,6 @@ BoudingBox computeBoundingBox(Geometry object) {
     if (object.vertices[i].position[2] > size[1][2]) size[1][2] = object.vertices[i].position[2];
   }
   box.setDimensions(size[0], size[1]);
-  box.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
   box.instances[0].matrix = object.instances[0].matrix;
   return(box);
 }
