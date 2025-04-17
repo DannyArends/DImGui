@@ -11,8 +11,8 @@ import vertex : Vertex;
 struct Line {
   Geometry geometry = {
     vertices : [
-      Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 1.0f, 1.0f, 1.0f ]),
-      Vertex([  0.0f, 1.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 1.0f, 1.0f, 1.0f ])
+      Vertex([ 0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
+      Vertex([ 0.0f, 1.0f, 0.0f ], [  0.0f, 0.0f ], [ 0.0f, 1.0f, 0.0f, 1.0f ])
     ],
     indices : [0, 1],
     topology : VK_PRIMITIVE_TOPOLOGY_LINE_LIST
@@ -27,12 +27,15 @@ struct Intersection{
   alias intersects this;
 }
 
-@nogc pure Intersection intersects(Line line, const BoundingBox box) nothrow {
+Line createLine(float[3][2] ray, float length = 10){
+  Line line;
+  line.vertices[0].position = ray[0];
+  line.vertices[1].position = ray[1].vMul(length);
+  return(line);
+}
+
+@nogc pure Intersection intersects(float[3][2] ray, const BoundingBox box) nothrow {
   Intersection i;
-  float[3][2] ray = [
-    line.instances[0].multiply(line.vertices[0].position),
-    line.vertices[1].position.vSub(line.vertices[0].position)
-  ];
 
   float[3] bmin = box.instances[0].multiply(box.min);
   float[3] bmax = box.instances[0].multiply(box.max);
