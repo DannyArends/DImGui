@@ -21,6 +21,7 @@ struct GlyphAtlas {
   Glyph[dchar] glyphs; // associative array couples Glyph and dchar
   ushort[] atlas; // ushort array of chars which were valid and stored into the atlas (\n for linebreaks)
   Texture texture; // Holds the SDL surface with the atlas
+  uint fontTextureId = 0;
   int width;
   int height;
   int ascent;
@@ -150,5 +151,6 @@ void createFontTexture(ref App app, SDL_Surface* surface, const(char)* path = "D
   vkDestroyBuffer(app.device, stagingBuffer, null);
   vkFreeMemory(app.device, stagingBufferMemory, null);
   app.textures ~= texture;
+  app.glyphAtlas.fontTextureId = cast(uint)(app.textures.length-1);
 }
 

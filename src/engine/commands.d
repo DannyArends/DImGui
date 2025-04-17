@@ -91,7 +91,7 @@ void recordRenderCommandBuffer(ref App app) {
 
     if(app.verbose) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, i);
     for(size_t x = 0; x < app.objects.length; x++) {
-      app.draw(app.objects[x], i);
+      if(app.objects[x].visible) app.draw(app.objects[x], i);
     }
     vkCmdEndRenderPass(app.renderBuffers[i]);
     enforceVK(vkEndCommandBuffer(app.renderBuffers[i]));

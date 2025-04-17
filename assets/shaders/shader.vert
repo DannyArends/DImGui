@@ -19,14 +19,14 @@ layout(location = 2) in vec3 inNormal;
 layout(location = 3) in vec2 inTexCoord;
 
 // Per Instance attributes
-layout(location = 4) in uint Tid;
+layout(location = 4) in int Tid;
 layout(location = 5) in mat4 instance;
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec3 fragNormal;
 layout(location = 2) out vec2 fragTexCoord;
-layout(location = 3) out uint fragTid;
+layout(location = 3) out int fragTid;
 
 void main() {
   mat4 model = ubo.scene * instance;

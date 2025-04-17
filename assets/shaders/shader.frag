@@ -11,15 +11,19 @@ layout(binding = 1) uniform sampler2D texureSampler[];
 layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec3 fragNormal;
 layout(location = 2) in vec2 fragTexCoord;
-layout(location = 3) flat in uint fragTid;
+layout(location = 3) flat in int fragTid;
 
 layout(location = 0) out vec4 outColor;
 
 void main() {
-  vec4 color = texture(texureSampler[fragTid], fragTexCoord).rgba;
-  vec3 blended = fragColor.rgb * color.rgb;
-  if(color.a < 0.2f) discard;
-  outColor = vec4(blended, color.a);
-//  outColor = vec4(fragTexCoord[0], fragTexCoord[1], 0.0f, 1.0f);
+  if(fragTid >= 0){
+    vec4 color = texture(texureSampler[fragTid], fragTexCoord).rgba;
+    vec3 blended = fragColor.rgb * color.rgb;
+    if(color.a < 0.2f) discard;
+    outColor = vec4(blended, color.a);
+  }else{
+    outColor = fragColor;
+  }
+//outColor = vec4(fragTexCoord[0], fragTexCoord[1], 0.0f, 1.0f);
 }
 

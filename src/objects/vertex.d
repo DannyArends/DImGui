@@ -27,7 +27,7 @@ struct Vertex {
       { binding: VERTEX_BUFFER_BIND_ID, location: 2, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.normal.offsetof },
       { binding: VERTEX_BUFFER_BIND_ID, location: 3, format: VK_FORMAT_R32G32_SFLOAT, offset: Vertex.texCoord.offsetof },
 
-      { binding: INSTANCE_BUFFER_BIND_ID, location: 4, format: VK_FORMAT_R8_UINT, offset: 0 },
+      { binding: INSTANCE_BUFFER_BIND_ID, location: 4, format: VK_FORMAT_R8_SINT, offset: 0 },
       { binding: INSTANCE_BUFFER_BIND_ID, location: 5, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof },
       { binding: INSTANCE_BUFFER_BIND_ID, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 4 * float.sizeof },
       { binding: INSTANCE_BUFFER_BIND_ID, location: 7, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 8 * float.sizeof },

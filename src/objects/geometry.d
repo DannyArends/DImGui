@@ -7,7 +7,7 @@ import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
 
 struct Instance {
-  uint tid = 0;
+  int tid = -1;
   mat4 matrix = mat4.init;
   alias matrix this;
 }
@@ -33,6 +33,7 @@ struct Geometry {
     app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
   }
 
+  bool visible = true;
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
 
@@ -69,30 +70,30 @@ pure uint[3][] faces(const Geometry geometry) nothrow {
 }
 
 /* Compute normal vectors of a Geometry */
-void computeNormals(ref Geometry geometry, bool invert = false) {
-    auto faces = geometry.faces;
-    float[3][] normals = new float[3][faces.length];
-    auto cnt = 0;
-    foreach (uint[3] face; faces) {
-      auto edge1 = geometry.vertices[face[1]].position.vSub(geometry.vertices[face[0]].position);
-      auto edge2 = geometry.vertices[face[2]].position.vSub(geometry.vertices[face[0]].position);
-      auto cp = cross(edge1, edge2);
-      normals[cnt] = cp.normalize();
-      cnt++;
-    }
-    for (size_t i = 0; i < geometry.vertices.length; i++) {  // Set all normals to 0
-      geometry.vertices[i].normal = [0.0f, 0.0f, 0.0f];
-    }
-    foreach (size_t i, uint[3] face; faces) {    // Sum triangle normals per vertex
-      geometry.vertices[face[0]].normal = geometry.vertices[face[0]].normal.vAdd(normals[i]);
-      geometry.vertices[face[1]].normal = geometry.vertices[face[1]].normal.vAdd(normals[i]);
-      geometry.vertices[face[2]].normal = geometry.vertices[face[2]].normal.vAdd(normals[i]);
-    }
-    for (size_t i = 0; i < geometry.vertices.length; i++) {  // Normalize each normal
-      geometry.vertices[i].normal.normalize();
-      if(invert) geometry.vertices[i].normal[] = -geometry.vertices[i].normal[];
-    }
-    SDL_Log("computeNormals %d vertex normals computed\n", geometry.vertices.length);
+void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = false) {
+  auto faces = geometry.faces;
+  float[3][] normals = new float[3][faces.length];
+  auto cnt = 0;
+  foreach (uint[3] face; faces) {
+    auto edge1 = geometry.vertices[face[1]].position.vSub(geometry.vertices[face[0]].position);
+    auto edge2 = geometry.vertices[face[2]].position.vSub(geometry.vertices[face[0]].position);
+    auto cp = cross(edge1, edge2);
+    normals[cnt] = cp.normalize();
+    cnt++;
+  }
+  for (size_t i = 0; i < geometry.vertices.length; i++) {  // Set all normals to 0
+    geometry.vertices[i].normal = [0.0f, 0.0f, 0.0f];
+  }
+  foreach (size_t i, uint[3] face; faces) {    // Sum triangle normals per vertex
+    geometry.vertices[face[0]].normal = geometry.vertices[face[0]].normal.vAdd(normals[i]);
+    geometry.vertices[face[1]].normal = geometry.vertices[face[1]].normal.vAdd(normals[i]);
+    geometry.vertices[face[2]].normal = geometry.vertices[face[2]].normal.vAdd(normals[i]);
+  }
+  for (size_t i = 0; i < geometry.vertices.length; i++) {  // Normalize each normal
+    geometry.vertices[i].normal.normalize();
+    if(invert) geometry.vertices[i].normal[] = -geometry.vertices[i].normal[];
+  }
+  if(verbose) SDL_Log("computeNormals %d vertex normals computed\n", geometry.vertices.length);
 }
 
 // Draws geometry[j] to buffer[i]
@@ -105,9 +106,10 @@ void draw(ref App app, Geometry object, size_t i) {
   vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE_BUFFER_BIND_ID, 1, &object.instanceBuffer, &offsets[0]);
   vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[object.topology].pipelineLayout, 0, 1, &app.descriptorSet, 0, null);
-  if(app.verbose) SDL_Log("DRAW: %d instances", object.instances.length);
+  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                          app.pipelines[object.topology].pipelineLayout, 0, 1, &app.descriptorSet, 0, null);
 
+  if(app.verbose) SDL_Log("DRAW: %d instances", object.instances.length);
   vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
 }
 
