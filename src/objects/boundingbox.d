@@ -4,7 +4,7 @@ import cube : Cube;
 import geometry : Geometry;
 import vertex : Vertex;
 
-struct BoudingBox {
+struct BoundingBox {
   Geometry geometry = {
     vertices : [
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
@@ -46,8 +46,8 @@ struct BoudingBox {
 }
 
 /* Compute the bounding box for object */
-BoudingBox computeBoundingBox(Geometry object) {
-  BoudingBox box;
+BoundingBox computeBoundingBox(Geometry object) {
+  BoundingBox box;
   float[3][2] size = [[float.infinity, float.infinity, float.infinity], 
                       [-float.infinity, -float.infinity, -float.infinity]];
 
