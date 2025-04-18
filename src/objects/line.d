@@ -30,7 +30,7 @@ struct Intersection{
 Line createLine(float[3][2] ray, float length = 10){
   Line line;
   line.vertices[0].position = ray[0];
-  line.vertices[1].position = ray[1].vMul(length);
+  line.vertices[1].position = ray[0].vAdd(ray[1].vMul(length));
   return(line);
 }
 
