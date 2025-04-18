@@ -47,6 +47,8 @@ void createLogicalDevice(ref App app, uint device = 0){
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
   if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device );
 
+  vkGetPhysicalDeviceProperties(app.physicalDevice, &app.properties);
+
   // Get the Queue from the queueFamily
   vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
   if(app.verbose) SDL_Log("vkGetDeviceQueue[family:%d]: %p", app.queueFamily, app.queue);

@@ -64,6 +64,11 @@ Texture loadTexture(App app, const(char)* path) {
   // Create an imageview on the image
   texture.textureImageView = app.createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
 
+  //Register texture with imGui
+  //SDL_Log("ImGui_ImplVulkan_AddTexture: %p", app.sampler);
+  //ImGui_ImplVulkan_AddTexture(app.sampler, texture.textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  //SDL_Log("ImGui_ImplVulkan_AddTexture Done");
+
   // Cleanup
   if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   SDL_FreeSurface(surface);

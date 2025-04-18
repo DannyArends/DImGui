@@ -12,7 +12,7 @@ import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shaders : createShadersStages;
-import surface : createSurface, querySurfaceCapabilities;
+import surface : createSurface;
 import textures : loadTextures, createSampler;
 import window: createOrResizeWindow, checkForResize, renderGUI;
 
