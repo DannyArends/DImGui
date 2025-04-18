@@ -5,7 +5,7 @@ import std.array : array;
 import std.file : dirEntries, SpanMode;
 import std.string : toStringz;
 
-uint[] readFile(const(char*) path, bool verbose) {
+uint[] readFile(const(char*) path, bool verbose = false) {
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
 
