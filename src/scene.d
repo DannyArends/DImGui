@@ -10,12 +10,12 @@ import text : Text;
 import wavefront : loadWavefront;
 
 void createScene(ref App app){
-  // Add objects
+  // Add a Square
   app.objects ~= Square();
 
   for(int x = -100; x < 100; x++) {
     for(int z = -100; z < 100; z++) {
-      mat4 instance;  // Add a instances to object 0
+      mat4 instance;  // Add a instances of object 0
       auto scalefactor = 0.25f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
       instance = translate(instance, [cast(float) x /4.0f, -1.0f, cast(float)z /4.0f]);
@@ -25,11 +25,11 @@ void createScene(ref App app){
     }
   }
 
-  //Cube
+  // Add a Cube
   app.objects ~= Cube();
   app.objects[1].position([3.0f, 0.0f, 3.0f]);
 
-  //Icosahedron test
+  // Add a Icosahedron test
   app.objects ~= Icosahedron();
   app.objects[2].instances[0].tid = 8;
   app.objects[2].refineIcosahedron(3);
@@ -38,13 +38,14 @@ void createScene(ref App app){
   app.objects[2].position([10.0f, 2.0f, 2.0f]);
   app.objects ~= computeBoundingBox(app.objects[2]);
 
-  //Cube
+  // Add some Text
   app.objects ~= Text(app.glyphAtlas);
   app.objects[4].rotate([10.0f, 75.0f, 0.0f]);
-  
-  //Wavefront
+  app.objects[4].position([5.0f, 2.0f, 2.0f]);
+
+  // Add a Wavefront object
   app.objects ~= app.loadWavefront("assets/objects/viking_room.obj");
+  app.objects[5].rotate([0.0f, 180.0f, 0.0f]);
+  app.objects[5].position([2.0f, 0.0f, 0.0f]);
   app.objects ~= computeBoundingBox(app.objects[5]);
-
 }
-
