@@ -47,7 +47,7 @@ struct BoundingBox {
 
 /* Compute the bounding box for object */
 BoundingBox computeBoundingBox(Geometry object) {
-  BoundingBox box;
+  BoundingBox box = BoundingBox();
   float[3][2] size = [[float.infinity, float.infinity, float.infinity], 
                       [-float.infinity, -float.infinity, -float.infinity]];
 

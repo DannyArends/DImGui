@@ -7,6 +7,7 @@ import icosahedron : Icosahedron, refineIcosahedron;
 import matrix : mat4, scale, translate, rotate;
 import square : Square;
 import text : Text;
+import wavefront : loadWavefront;
 
 void createScene(ref App app){
   // Add objects
@@ -40,5 +41,10 @@ void createScene(ref App app){
   //Cube
   app.objects ~= Text(app.glyphAtlas);
   app.objects[4].rotate([10.0f, 75.0f, 0.0f]);
+  
+  //Wavefront
+  app.objects ~= app.loadWavefront("assets/objects/viking_room.obj");
+  app.objects ~= computeBoundingBox(app.objects[5]);
+
 }
 
