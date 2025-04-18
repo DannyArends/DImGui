@@ -27,7 +27,7 @@ struct Intersection{
   alias intersects this;
 }
 
-Line createLine(float[3][2] ray, float length = 10){
+Line createLine(float[3][2] ray, float length = 50){
   Line line;
   line.vertices[0].position = ray[0];
   line.vertices[1].position = ray[0].vAdd(ray[1].vMul(length));
