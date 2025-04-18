@@ -64,14 +64,11 @@ struct Camera {
 float[3][2] castRay(Camera camera, uint x, uint y) {
   float[2] ndc = [(2.0f * x) / cast(float) camera.width - 1.0f,                             // Normalized device X
                   (2.0f * y) / cast(float) camera.height - 1.0f];                           // Normalized device Y
-  SDL_Log("[%d, %d] -> [%f, %f]", x, y, ndc[0], ndc[1]);
-  float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];                                               // Homogeneous clip coordinates
-  float[4] eye = multiply(inverse(camera.proj), clip);                                  // Eye coordinates
-  float[3] world = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz;         // World coordinates (offset to camera position)
-  float[3] direction = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz;   // Ray direction
-
+  float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];                                            // Homogeneous clip coordinates
+  float[4] eye = multiply(inverse(camera.proj), clip);                                      // Eye coordinates
+  float[3] world = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz;     // World coordinates (offset to camera position)
+  float[3] direction = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz; // Ray direction
   direction.normalize();
-
   return([camera.position.vAdd(world), direction]);
 }
 
