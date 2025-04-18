@@ -37,6 +37,7 @@
 			"deps/libs/lib/SDL2_mixer.dll",
 			"deps/libs/lib/SDL2_ttf.dll",
 			"deps/libs/lib/optional/libavif-16.dll",
+			"deps/libs/lib/optional/libfreetype-6.dll",
 			"deps/libs/lib/optional/libgme.dll",
 			"deps/libs/lib/optional/libogg-0.dll",
 			"deps/libs/lib/optional/libopus-0.dll",
@@ -45,7 +46,8 @@
 			"deps/libs/lib/optional/libwavpack-1.dll",
 			"deps/libs/lib/optional/libwebp-7.dll",
 			"deps/libs/lib/optional/libwebpdemux-2.dll",
-			"deps/libs/lib/optional/libxmp.dll"
+			"deps/libs/lib/optional/libxmp.dll",
+			"deps/libs/lib/optional/zlib1.dll"
 		],
 	}
 	]

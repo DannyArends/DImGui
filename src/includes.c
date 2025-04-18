@@ -16,6 +16,8 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #include <SDL_vulkan.h>
 
 #define SDL_h_
+#undef SDL_DEPRECATED
+#define SDL_DEPRECATED
 #include <SDL_ttf.h>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
