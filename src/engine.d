@@ -57,6 +57,7 @@ struct App {
   // Vulkan
   VkInstance instance = null;
   VkPhysicalDevice physicalDevice = null;
+  VkPhysicalDeviceProperties properties;
   VkDevice device = null;
   VkQueue queue = null;
   VkDescriptorPool imguiPool = null;
