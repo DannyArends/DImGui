@@ -7,9 +7,8 @@ import std.datetime : MonoTime;
 import std.utf : isValidDchar;
 import std.string : toStringz;
 import glyph: Glyph; 
-import textures : Texture, toRGBA;
+import textures : Texture, toRGBA, toGPU;
 import images : createImage, imageSize, transitionImageLayout;
-import buffer : copyBufferToImage, createBuffer;
 import swapchain : createImageView;
 /* 
   The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas
@@ -123,34 +122,13 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
 }
 
 // Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray
-void createFontTexture(ref App app, SDL_Surface* surface, const(char)* path = "DEFAULT") {
+Texture createFontTexture(ref App app, SDL_Surface* surface, const(char)* path = "DEFAULT") {
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   app.glyphAtlas.fontTextureId = cast(uint)(app.textures.length);
   if(surface.format.BitsPerPixel != 32) surface.toRGBA();
 
   Texture texture = { width: surface.w, height: surface.h, surface: surface };
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, surface.imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-  );
-  void* data;
-  vkMapMemory(app.device, stagingBufferMemory, 0, surface.imageSize, 0, &data);
-  memcpy(data, surface.pixels, cast(uint)surface.imageSize);
-  vkUnmapMemory(app.device, stagingBufferMemory);
-  app.createImage(surface.w, surface.h,&texture.textureImage, &texture.textureImageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, 
-    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-  );
-
-  app.transitionImageLayout(texture.textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  app.copyBufferToImage(stagingBuffer, texture.textureImage, surface.w, surface.h);
-  app.transitionImageLayout(texture.textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  texture.textureImageView = app.createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
-
-  if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
-  SDL_FreeSurface(surface);
-  vkDestroyBuffer(app.device, stagingBuffer, null);
-  vkFreeMemory(app.device, stagingBufferMemory, null);
-  app.textures ~= texture;
+  app.toGPU(texture);
+  return(texture);
 }
 
