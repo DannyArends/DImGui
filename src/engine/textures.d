@@ -1,4 +1,5 @@
 import engine;
+
 import io : dir;
 import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;
@@ -36,45 +37,42 @@ void loadTextures(ref App app, string folder = "./assets/textures/", string patt
 }
 
 Texture loadTexture(App app, const(char)* path) {
-  if(app.verbose) SDL_Log("loadTexture '%s'", path);
+  SDL_Log("loadTexture '%s'", path);
   auto surface = IMG_Load(path);
   if(app.verbose) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
 
   // Adapt surface to 32 bit, and create structure
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
   Texture texture = { width: surface.w, height: surface.h, surface: surface };
-
+  app.toGPU(texture);
+  return(texture);
+}
+void toGPU(App app, ref Texture texture){
   // Create a buffer to transfer the image to the GPU
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, surface.imageSize);
+  app.createBuffer(&stagingBuffer, &stagingBufferMemory, texture.surface.imageSize);
 
   // Copy the image data to the StagingBuffer memory
   void* data;
-  vkMapMemory(app.device, stagingBufferMemory, 0, surface.imageSize, 0, &data);
-  memcpy(data, surface.pixels, surface.imageSize);
+  vkMapMemory(app.device, stagingBufferMemory, 0, texture.surface.imageSize, 0, &data);
+  memcpy(data, texture.surface.pixels, texture.surface.imageSize);
   vkUnmapMemory(app.device, stagingBufferMemory);
 
   // Create an image, transition the layout
-  app.createImage(surface.w, surface.h, &texture.textureImage, &texture.textureImageMemory);
+  app.createImage(texture.surface.w, texture.surface.h, &texture.textureImage, &texture.textureImageMemory);
   app.transitionImageLayout(texture.textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  app.copyBufferToImage(stagingBuffer, texture.textureImage, surface.w, surface.h);
+  app.copyBufferToImage(stagingBuffer, texture.textureImage, texture.surface.w, texture.surface.h);
   app.transitionImageLayout(texture.textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   // Create an imageview on the image
   texture.textureImageView = app.createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
 
-  //Register texture with imGui
-  //SDL_Log("ImGui_ImplVulkan_AddTexture: %p", app.sampler);
-  //ImGui_ImplVulkan_AddTexture(app.sampler, texture.textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  //SDL_Log("ImGui_ImplVulkan_AddTexture Done");
-
   // Cleanup
-  if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
-  SDL_FreeSurface(surface);
+  if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));
+  SDL_FreeSurface(texture.surface);
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
-  return(texture);
 }
 
 // Create a TextureSampler for sampling from a texture
