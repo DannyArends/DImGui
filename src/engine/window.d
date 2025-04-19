@@ -1,3 +1,7 @@
+// Copyright Danny Arends 2025
+// Distributed under the GNU General Public License, Version 3
+// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+
 import engine;
 
 import std.algorithm : sort;
@@ -42,14 +46,10 @@ void createOrResizeWindow(ref App app) {
   app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
   app.createFramebuffers();
   app.createImGuiCommandBuffers();
-
-  foreach(member; supportedTopologies){
-    app.pipelines[member] = app.createGraphicsPipeline(member);
-  }
+  foreach(member; supportedTopologies) { app.pipelines[member] = app.createGraphicsPipeline(member); }
   app.createRenderCommandBuffers();
   app.recordRenderCommandBuffer();
   app.createSyncObjects();
-  //app.objects.sort!("a.distance > b.distance")(app.camera);  // Sort the 3D objects by distance
 }
 
 void destroyFrameData(ref App app) {

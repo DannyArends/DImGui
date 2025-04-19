@@ -1,3 +1,7 @@
+// Copyright Danny Arends 2025
+// Distributed under the GNU General Public License, Version 3
+// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+
 import includes;
 
 import std.algorithm.mutation: swap;
@@ -37,8 +41,8 @@ Line createLine(float[3][2] ray, float length = 50){
 @nogc pure Intersection intersects(float[3][2] ray, const BoundingBox box) nothrow {
   Intersection i;
 
-  float[3] bmin = box.instances[0].multiply(box.min);
-  float[3] bmax = box.instances[0].multiply(box.max);
+  float[3] bmin = box.geometry.instances[0].multiply(box.min);
+  float[3] bmax = box.geometry.instances[0].multiply(box.max);
 
   float tmin = (bmin.x - ray[0].x) / ray[1].x;
   float tmax = (bmax.x - ray[0].x) / ray[1].x; 

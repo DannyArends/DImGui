@@ -1,4 +1,11 @@
+// Copyright Danny Arends 2025
+// Distributed under the GNU General Public License, Version 3
+// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+
 import engine;
+
+import std.conv : to;
+import std.string : toStringz;
 
 void initializeImGui(ref App app){
   igCreateContext(null);
@@ -43,11 +50,10 @@ ImDrawData* renderGUI(ref App app){
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
   igEnd();
   igSetNextWindowPos(ImVec2(0, app.io.DisplaySize.y - 40), ImGuiCond_Always, ImVec2(0.0f,0.0f));
-  igBegin("Main Menu", null, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-    if(igButton("BTN1", ImVec2(0.0f, 0.0f))){ SDL_Log("Pressed BTN1"); } igSameLine(0,5);
-    if(igButton("BTN2", ImVec2(0.0f, 0.0f))){ SDL_Log("Pressed BTN2"); } igSameLine(0,5);
-    if(igButton("BTN3", ImVec2(0.0f, 0.0f))){ SDL_Log("Pressed BTN3"); } igSameLine(0,5);
-    if(igButton("BTN4", ImVec2(0.0f, 0.0f))){ SDL_Log("Pressed BTN4"); }
+  igBegin("Main Menu", null, flags);
+  foreach(i, object; app.objects){
+    if(igButton(("BTN" ~ to!string(i)).toStringz, ImVec2(0.0f, 0.0f))){ SDL_Log("Pressed %i", i); } igSameLine(0,5);
+  }
   igEnd();
   igRender();
 

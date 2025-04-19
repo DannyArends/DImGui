@@ -1,3 +1,7 @@
+// Copyright Danny Arends 2025
+// Distributed under the GNU General Public License, Version 3
+// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+
 import engine;
 
 import buffer : toGPU;
@@ -7,12 +11,14 @@ import textures : id;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
 
+/* An instance of a Geometry */
 struct Instance {
   int tid = -1;
   mat4 matrix = mat4.init;
   alias matrix this;
 }
 
+/* A Geometry that can be drawn */
 struct Geometry {
   VkBuffer vertexBuffer = null;
   VkDeviceMemory vertexBufferMemory = null;
@@ -40,21 +46,25 @@ struct Geometry {
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
 
+/* Set position of instance from object.instances by p */
 @nogc void position(ref Geometry object, float[3] p, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = translate(object.instances[instance], p);
 }
 
+/* Rotate instance from object.instances by r */
 @nogc void rotate(ref Geometry object, float[3] r, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = rotate(object.instances[instance], r);
 }
 
+/* Scale instance from object.instances by s */
 @nogc void scale(ref Geometry object, float[3] s, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = scale(object.instances[instance], s);
 }
 
+/* Set tid for instance from object.instances to Texture name */
 @nogc void texture(ref Geometry object, const Texture[] textures, const(char)* name, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance].tid = textures.id(name);

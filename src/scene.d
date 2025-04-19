@@ -1,6 +1,9 @@
+// Copyright Danny Arends 2025
+// Distributed under the GNU General Public License, Version 3
+// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+
 import engine;
 
-import boundingbox : computeBoundingBox;
 import cube : Cube;
 import geometry : Instance, computeNormals, position, rotate, scale, texture;
 import icosahedron : Icosahedron, refineIcosahedron;
@@ -36,17 +39,15 @@ void createScene(ref App app){
   app.objects[2].computeNormals();
   app.objects[2].scale([3.0f, 3.0f, 3.0f]);
   app.objects[2].position([10.0f, 2.0f, 2.0f]);
-  app.objects ~= computeBoundingBox(app.objects[2]);
 
   // Add some Text
   app.objects ~= Text(app);
-  app.objects[4].rotate([90.0f, 0.0f, 0.0f]);
-  app.objects[4].position([5.0f, 2.0f, 2.0f]);
+  app.objects[3].rotate([90.0f, 0.0f, 0.0f]);
+  app.objects[3].position([5.0f, 2.0f, 2.0f]);
 
   // Add a Wavefront object
   app.objects ~= app.loadWavefront("assets/objects/viking_room.obj");
-  app.objects[5].texture(app.textures, "viking");
-  app.objects[5].rotate([0.0f, 180.0f, 0.0f]);
-  app.objects[5].position([2.0f, 0.0f, 0.0f]);
-  app.objects ~= computeBoundingBox(app.objects[5]);
+  app.objects[4].texture(app.textures, "viking");
+  app.objects[4].rotate([0.0f, 180.0f, 0.0f]);
+  app.objects[4].position([2.0f, 0.0f, 0.0f]);
 }

@@ -1,3 +1,7 @@
+// Copyright Danny Arends 2025
+// Distributed under the GNU General Public License, Version 3
+// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
@@ -43,7 +47,7 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
-  Geometry[] objects = [];
+  Geometry[] objects;
   Texture[] textures;
   VkSampler sampler;
   Camera camera;
@@ -100,6 +104,7 @@ struct App {
   // Global boolean flags
   bool finished = false;
   bool showdemo = false;
+  bool showBounds = true;
   bool verbose = false;
   bool rebuild = false;
 }
