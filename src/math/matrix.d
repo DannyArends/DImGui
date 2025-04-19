@@ -19,13 +19,13 @@ struct Matrix {
 
 alias Matrix mat4;
 
-/* Radian to degree, -180 .. 0 .. 180 */
+/** Radian to degree, -180 .. 0 .. 180 */
 @nogc pure float degree(float rad) nothrow { return rad * (180.0f / PI); }
 
-/* Degree to radian, -180 .. 0 .. 180 */
+/** Degree to radian, -180 .. 0 .. 180 */
 @nogc pure float radian(float deg) nothrow {return deg * (PI / 180.0f); }
 
-/* Matrix x Matrix */
+/** Matrix x Matrix */
 @nogc pure Matrix multiply(const Matrix m1, const Matrix m2) nothrow {
   Matrix res;
   float[4] v1;
@@ -39,12 +39,12 @@ alias Matrix mat4;
   return res;
 }
 
-/* Matrix x V3 */
+/** Matrix x V3 */
 @nogc pure float[3] multiply(const Matrix m, const float[3] v) nothrow {
   return(m.multiply(v.xyzw()).xyz());
 }
 
-/* Matrix x V4 */
+/** Matrix x V4 */
 @nogc pure float[4] multiply(const Matrix m, const float[4] v) nothrow {
   float[4] res;
   for (size_t i = 0; i < 4; ++i) {
@@ -53,7 +53,7 @@ alias Matrix mat4;
   return res;
 }
 
-/* Matrix x Yaw, Pitch, Roll vector in degrees V(yaw, pitch, roll) - Applies rotations in local object space (Yaw -> Pitch -> Roll) */
+/** Matrix x Yaw, Pitch, Roll vector in degrees V(yaw, pitch, roll) - Applies rotations in local object space (Yaw -> Pitch -> Roll) */
 @nogc pure Matrix rotate(const Matrix m, const float[3] v) nothrow {
   float yaw   = radian(v[0]); float pitch = radian(v[1]); float roll  = radian(v[2]);
 
@@ -82,7 +82,7 @@ alias Matrix mat4;
   return m.multiply(rotateRoll.multiply(rotatePitch).multiply(rotateYaw));
 }
 
-/* Matrix x Scale V(x, y, z) */
+/** Matrix x Scale V(x, y, z) */
 @nogc pure Matrix scale(ref Matrix m, const float[3] v) nothrow {
   Matrix scale;
   scale[0] = v[0]; scale[5] = v[1]; scale[10] = v[2];
@@ -90,18 +90,17 @@ alias Matrix mat4;
   return(m);
 }
 
-/* Matrix x Translation V(x, y, z) */
+/** Matrix x Translation V(x, y, z) */
 @nogc pure Matrix translate(const Matrix m, const float[3] v) nothrow {
   Matrix translation;
   translation[12] = v[0]; translation[13] = v[1]; translation[14] = v[2];
   return(multiply(m, translation));
 }
 
-@nogc pure float[3] getTranslation(const Matrix m) nothrow {
-  return([m[12], m[13], m[14]]);
-}
+/** getTranslation float[3] from a Matrix V4(l, r, b, t) */
+@nogc pure float[3] getTranslation(const Matrix m) nothrow { return([m[12], m[13], m[14]]); }
 
-/* Orthogonal projection Matrix V4(l, r, b, t) */
+/** Orthogonal projection Matrix V4(l, r, b, t) */
 @nogc pure Matrix orthogonal(float left, float right, float bottom, float top) nothrow {
   Matrix projection;
 
@@ -114,7 +113,7 @@ alias Matrix mat4;
   return projection;
 }
 
-/* Perspective projection Matrix V4(f, a, n, f) */
+/** Perspective projection Matrix V4(f, a, n, f) */
 @nogc pure Matrix perspective(float fovy, float aspectRatio, float near, float far) nothrow {
   float tanHalfFovy = tan(radian(fovy) / 2.0f);
   float x  =  1.0f / (aspectRatio * tanHalfFovy);
@@ -129,7 +128,7 @@ alias Matrix mat4;
     ]));
 }
 
-/* lookAt function, looks from pos at "at" using the upvector (up) */
+/** lookAt function, looks from pos at "at" using the upvector (up) */
 @nogc pure Matrix lookAt(const float[3] pos, const float[3] at, const float[3] up) nothrow {
   auto f = vSub(at, pos);
   normalize(f);
@@ -145,7 +144,7 @@ alias Matrix mat4;
     ]));
 }
 
-/* transpose a Matrix */
+/** transpose a Matrix */
 @nogc pure Matrix transpose(const Matrix m) nothrow {
   Matrix mt;
   for (size_t row = 0; row < 4; ++row) {
@@ -156,7 +155,7 @@ alias Matrix mat4;
   return(mt);
 }
 
-/* inverse of a Matrix using the determinant */
+/** inverse of a Matrix using the determinant */
 @nogc pure Matrix inverse(const Matrix m) nothrow {
   Matrix inv;
 

@@ -12,12 +12,12 @@ struct Vector {
   alias data this;
 }
 
-/* Convert a T[4] to a T[3] */
+/** Convert a T[4] to a T[3] */
 @nogc pure T[3] xyz(T)(const T[4] v) nothrow { 
     return([v[0], v[1], v[2]]);
 }
 
-/* Positional shortcuts for arrays */
+/** Positional shortcuts for arrays */
 @nogc pure T x(T)(const T[] v) nothrow { assert(v.length > 0); return(v[0]); }
 @nogc pure T y(T)(const T[] v) nothrow { assert(v.length > 1); return(v[1]); }
 @nogc pure T z(T)(const T[] v) nothrow { assert(v.length > 2); return(v[2]); }
@@ -26,50 +26,51 @@ struct Vector {
 @nogc pure void y(T)(ref T[3] v, T i) nothrow { v[1] = i; }
 @nogc pure void z(T)(ref T[3] v, T i) nothrow { v[2] = i; }
 
-/* xzy & yzx swiffle functions for T[3] vector v */
+/** xzy & yzx swiffle functions for T[3] vector v */
 @nogc pure T[3] xzy(T)(const T[3] v) nothrow { return([v[0], v[2], v[1]]); }
 @nogc pure T[3] yzx(T)(const T[3] v) nothrow { return([v[1], v[2], v[0]]); }
 
-/* Positional shortcuts for color arrays */
+/** Positional shortcuts for color arrays */
 @nogc pure T red(T)(const T[] v) nothrow { assert(v.length > 0); return(v[0]); }
 @nogc pure T green(T)(const T[] v) nothrow { assert(v.length > 1); return(v[1]); }
 @nogc pure T blue(T)(const T[] v) nothrow { assert(v.length > 2); return(v[2]); }
 
-/* Dot product between v1 and v2 */
+/** Dot product between v1 and v2 */
 @nogc pure T dot(T)(const T[3] v1, const T[3] v2) nothrow {
     T[3] vDot = v1[] * v2[];
     return(sum(vDot));
 }
 
-/* Euclidean distance between v1 and v2 */
+/** Euclidean distance between v1 and v2 */
 @nogc pure T euclidean(T)(const T[3] v1, const T[3] v2) nothrow {
     return sqrt( (v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]) + (v1[2] - v2[2]) * (v1[2] - v2[2]) );
 }
 
-/* Compute the (normalized) mid-point between v1 and v2 */
+/** Compute the (normalized) mid-point between v1 and v2 */
 @nogc pure T[3] midpoint(T)(const T[3] v1, const T[3] v2, bool normalized = false) nothrow {
     T[3] vMean = (v1[] + v2[]) / 2.0f;
     if(normalized) vMean.normalize();
     return(vMean);
 }
 
-/* Mean of vector v */
+/** Mean of vector v */
 @nogc pure T mean(T)(const T[] v) nothrow {
     return(sum(v) / cast(T)(v.length));
 }
 
-/* Sum of vector v */
+/** Sum of vector v */
 @nogc pure T sum(T)(const T[] v) nothrow { 
     T sum = 0;
     for (size_t i = 0; i < v.length; i++) { sum += v[i]; }
     return(sum);
 }
 
+/** Square root of vector v magnitude */
 @nogc pure T magnitude(T)(T[3] v) nothrow {
   return(sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]));
 }
 
-/* Returns the normalized vector of v */
+/** Returns the normalized vector of v */
 @nogc pure T[3] normalize(T)(ref T[3] v) nothrow {
     float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
     if(sqr == 1 || sqr == 0) return(v);
@@ -78,7 +79,7 @@ struct Vector {
     return(v);
 }
 
-/* Get the largest containing square of two vectors */
+/** Get the largest containing square of two vectors */
 @nogc pure T[3] containingSquare(T)(const T[3] v1, const T[3] v2) nothrow { 
     T[3] res = [ 0.0f, 0.0f, 0.0f ];
     res[0] = (v1[0] > v2[0])? v1[0] : v2[0];
@@ -87,7 +88,7 @@ struct Vector {
     return res;
 }
 
-/* Cross product between vectors */
+/** Cross product between vectors */
 @nogc pure T[3] cross(T)(const T[3] v1, const T[3] v2) nothrow {
     T[3] res = [ 0.0f, 0.0f, 0.0f ];
     res[0] = v1[1]*v2[2] - v1[2]*v2[1];
@@ -96,9 +97,9 @@ struct Vector {
     return res;
 }
 
-/* T[3] pass through vectorized functions for +,-,*,^ */
-// vAdd: a + v(1) | v(1) + v(2)
-// vMul, vDiv, vPow: b * v(1), b / v(1), v(1) * v(1)
+/** T[3] pass through vectorized functions for +,-,*,^
+ * vAdd: a + v(1) | v(1) + v(2)
+ * vMul, vDiv, vPow: b * v(1), b / v(1), v(1) * v(1) */
 @nogc pure T[3] vAdd(T)(const T[3] v1, const T[3] v2) nothrow {
     T[3] vAdd = v1[] + v2[]; return(vAdd);
 }

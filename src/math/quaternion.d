@@ -15,7 +15,7 @@ struct Quaternion {
   alias data this;
 }
 
-/* Returns the normalized vector of v */
+/** Returns the normalized vector of v */
 @nogc pure T[4] normalize(T)(ref T[4] v) nothrow {
     float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3];
     if(sqr == 1 || sqr == 0) return(v);
@@ -24,17 +24,17 @@ struct Quaternion {
     return(v);
 }
 
-/* Create a T[3], w as a T[4] */
+/** Create a T[3], w as a T[4] */
 @nogc pure T[4] xyzw(T)(const T[3] v, T w = 1.0f) nothrow {
     return([v.x, v.y, v.z, w]);
 }
 
-/* Create a T[3], alpha as a T[4] */
+/** Create a T[3], alpha as a T[4] */
 @nogc pure T[4] rgba(T)(const T[3] v, T a = 1.0f) nothrow {
     return([v.red, v.green, v.blue, a]);
 }
 
-/* angleAxis */
+/** angleAxis */
 @nogc pure T[4] angleAxis(T)(T angle, T[3] axis) nothrow {
   if (axis.magnitude == 0.0f) return( Quaternion.init);
   axis.normalize();
@@ -43,6 +43,7 @@ struct Quaternion {
   return(result.normalize());
 }
 
+/** Quaternion to Matrix */
 @nogc pure Matrix toMatrix(T)(T[4] v) nothrow {
   return(Matrix(
   [1 - 2 * v.y * v.y - 2 * v.z * v.z, 2 * v.x * v.y - 2 * v.z * v.w, 2 * v.x * v.z + 2 * v.y * v.w, 0,
@@ -52,13 +53,14 @@ struct Quaternion {
   ]));
 }
 
-/* Positional shortcuts for quaternion */
+/** Positional shortcut .w for Quaternion */
 @nogc pure T w(T)(const T[] v) nothrow { assert(v.length > 3); return(v[3]); }
+/** Positional shortcut .alpha for Quaternion */
 @nogc pure T alpha(T)(const T[] v) nothrow { assert(v.length > 3); return(v[3]); }
 
-/* T[4] math pass through vectorized functions for +,-,*,^ */
-// vAdd: a + v(1) | v(1) + v(2)
-// vMul, vDiv, vPow: b * v(1), b / v(1), v(1) * v(1)
+/** T[4] math pass through vectorized functions for +,-,*,^
+ * vAdd: a + v(1) | v(1) + v(2)
+ * vMul, vDiv, vPow: b * v(1), b / v(1), v(1) * v(1) */
 @nogc pure T[4] vAdd(T)(const T[4] v1, const T[4] v2) nothrow {
   T[4] vAdd = v1[] + v2[]; return(vAdd);
 }
