@@ -118,11 +118,11 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
 }
 
 // Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray
-void createFontTexture(ref App app, ref GlyphAtlas atlas) {
-  auto surface = atlas.surface();
+void createFontTexture(ref App app) {
+  auto surface = app.glyphAtlas.surface();
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   if(surface.format.BitsPerPixel != 32) surface.toRGBA();
 
-  atlas.texture = Texture(atlas.path, surface.w, surface.h, surface);
-  app.toGPU(atlas.texture);
+  app.glyphAtlas.texture = Texture(app.glyphAtlas.path, surface.w, surface.h, surface);
+  app.toGPU(app.glyphAtlas.texture);
 }
