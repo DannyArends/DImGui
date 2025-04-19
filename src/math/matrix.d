@@ -56,23 +56,23 @@ alias Matrix mat4;
 
   Matrix rotateYaw = Matrix([
       cos(yaw), 0.0f, sin(yaw), 0.0f,
-      0.0f,   1.0f, 0.0f,   0.0f,
-      -sin(yaw), 0.0f, cos(yaw), 0.0f,
-      0.0f,   0.0f, 0.0f,   1.0f
+      0.0f,     1.0f, 0.0f,     0.0f,
+     -sin(yaw), 0.0f, cos(yaw), 0.0f,
+      0.0f,     0.0f, 0.0f,     1.0f
   ]);
 
   Matrix rotatePitch = Matrix([
       cos(pitch), -sin(pitch), 0.0f, 0.0f,
       sin(pitch),  cos(pitch), 0.0f, 0.0f,
-      0.0f,      0.0f,     1.0f, 0.0f,
-      0.0f,      0.0f,     0.0f, 1.0f
+      0.0f,        0.0f,       1.0f, 0.0f,
+      0.0f,        0.0f,       0.0f, 1.0f
   ]);
 
   Matrix rotateRoll = Matrix([
-      1.0f, 0.0f,    0.0f,     0.0f,
+      1.0f, 0.0f,       0.0f,      0.0f,
       0.0f, cos(roll), -sin(roll), 0.0f,
-      0.0f, sin(roll),  cos(roll),  0.0f,
-      0.0f, 0.0f,    0.0f,     1.0f
+      0.0f, sin(roll),  cos(roll), 0.0f,
+      0.0f, 0.0f,       0.0f,      1.0f
   ]);
 
   // Apply rotations in the order: Roll -> Pitch -> Yaw (local axes)
