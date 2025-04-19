@@ -1,6 +1,7 @@
-// Copyright Danny Arends 2025
-// Distributed under the GNU General Public License, Version 3
-// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
 
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
@@ -16,22 +17,30 @@ import uniforms : Uniform;
 import textures : Texture, deAllocate;
 import window : destroyFrameData;
 
+/** Sync
+ */
 struct Sync {
   VkSemaphore imageAcquired;
   VkSemaphore renderComplete;
 }
 
+/** GraphicsPipeline
+ */
 struct GraphicsPipeline {
   VkPipelineLayout pipelineLayout;
   VkPipeline graphicsPipeline;
 }
 
+/** DepthBuffer
+ */
 struct DepthBuffer {
   VkImage depthImage;
   VkDeviceMemory depthImageMemory;
   VkImageView depthImageView;
 }
 
+/** Main application structure
+ */
 struct App {
   SDL_Window* window;
   alias window this;

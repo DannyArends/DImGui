@@ -1,6 +1,7 @@
-// Copyright Danny Arends 2025
-// Distributed under the GNU General Public License, Version 3
-// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
 
 import includes;
 
@@ -12,6 +13,8 @@ import matrix : multiply;
 import vector : vAdd, vSub, vMul, x, y, z;
 import vertex : Vertex;
 
+/** Line
+ */
 struct Line {
   Geometry geometry = {
     vertices : [
@@ -24,21 +27,29 @@ struct Line {
   alias geometry this;
 }
 
-struct Intersection{
+/** Intersection
+ */
+struct Intersection {
   bool intersects = false;
   float[3] intersection;
   float[3] intersectionOut;
   alias intersects this;
 }
 
-Line createLine(float[3][2] ray, float length = 50){
+/** Ray
+ */
+alias float[3][2] Ray;
+
+/** Create a Line from a Ray
+ */
+Line createLine(Ray ray, float length = 50){
   Line line;
   line.vertices[0].position = ray[0];
   line.vertices[1].position = ray[0].vAdd(ray[1].vMul(length));
   return(line);
 }
 
-@nogc pure Intersection intersects(float[3][2] ray, const BoundingBox box) nothrow {
+@nogc pure Intersection intersects(Ray ray, const BoundingBox box) nothrow {
   Intersection i;
 
   float[3] bmin = box.geometry.instances[0].multiply(box.min);

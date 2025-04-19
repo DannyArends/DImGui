@@ -1,9 +1,12 @@
-// Copyright Danny Arends 2021
-// Distributed under the GNU General Public License, Version 3
-// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
 
 import std.math : sqrt;
 
+/** Vector, stored as float[3]
+ */
 struct Vector { 
   float[3] data = [ 0.0f, 0.0f, 0.0f ];
   alias data this;

@@ -1,6 +1,7 @@
-// Copyright Danny Arends 2025
-// Distributed under the GNU General Public License, Version 3
-// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
 
 import engine;
 
@@ -11,27 +12,29 @@ import textures : id;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
 
-/* An instance of a Geometry */
+/** An instance of a Geometry
+ */
 struct Instance {
   int tid = -1;
   mat4 matrix = mat4.init;
   alias matrix this;
 }
 
-/* A Geometry that can be drawn */
+/** A Geometry that can be rendered
+ */
 struct Geometry {
-  VkBuffer vertexBuffer = null;
-  VkDeviceMemory vertexBufferMemory = null;
+  VkBuffer vertexBuffer = null;                 /// Vulkan vertex buffer pointer
+  VkDeviceMemory vertexBufferMemory = null;     /// Vulkan vertex buffer memory pointer
 
-  VkBuffer indexBuffer = null;
-  VkDeviceMemory indexBufferMemory = null;
+  VkBuffer indexBuffer = null;                  /// Vulkan index buffer pointer
+  VkDeviceMemory indexBufferMemory = null;      /// Vulkan index buffer pointer
 
-  VkBuffer instanceBuffer = null;
-  VkDeviceMemory instanceBufferMemory = null;
+  VkBuffer instanceBuffer = null;               /// Vulkan instance buffer pointer
+  VkDeviceMemory instanceBufferMemory = null;   /// Vulkan instance buffer pointer
 
-  Vertex[] vertices;
-  uint[] indices;
-  Instance[] instances = [Instance.init];
+  Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
+  uint[] indices;                               /// Indices of type uint stored on the CPU
+  Instance[] instances = [Instance.init];       /// Instance array
   alias instances this;
 
   void buffer(ref App app) {
@@ -41,40 +44,41 @@ struct Geometry {
     isBuffered = true;
   }
 
-  bool isVisible = true;
-  bool isBuffered = false;
-  VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  bool isVisible = true;    /// Boolean flag
+  bool isBuffered = false;  /// Boolean flag
+  VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
 }
 
-/* Set position of instance from object.instances by p */
+/** Set position of instance from object.instances by p */
 @nogc void position(ref Geometry object, float[3] p, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = translate(object.instances[instance], p);
 }
 
-/* Rotate instance from object.instances by r */
+/** Rotate instance from object.instances by r */
 @nogc void rotate(ref Geometry object, float[3] r, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = rotate(object.instances[instance], r);
 }
 
-/* Scale instance from object.instances by s */
+/** Scale instance from object.instances by s */
 @nogc void scale(ref Geometry object, float[3] s, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = scale(object.instances[instance], s);
 }
 
-/* Set tid for instance from object.instances to Texture name */
+/** Set tid for instance from object.instances to Texture name */
 @nogc void texture(ref Geometry object, const Texture[] textures, const(char)* name, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance].tid = textures.id(name);
 }
 
-/* Euclidean distance between object and camera */
+/** Euclidean distance between Geometry and Camera */
 @nogc float distance(const Geometry object, const Camera camera) nothrow { 
     return euclidean(object.instances[0].getTranslation(), camera.position); 
 }
 
+/** deAllocate all GPU buffers */
 void deAllocate(ref App app, Geometry object) {
   vkDestroyBuffer(app.device, object.vertexBuffer, app.allocator);
   vkFreeMemory(app.device, object.vertexBufferMemory, app.allocator);
@@ -84,14 +88,13 @@ void deAllocate(ref App app, Geometry object) {
   vkFreeMemory(app.device, object.instanceBufferMemory, app.allocator);
 }
 
-
-/* Add a vertex to a geometry of the object */
+/** Add a vertex to a geometry of the object */
 uint addVertex(ref Geometry geometry, const Vertex v) nothrow {
   geometry.vertices ~= v;
   return(cast(uint)(geometry.vertices.length-1));
 }
 
-/* Get all the triangle faces of a geometry */
+/** Get all the triangle faces of a geometry */
 pure uint[3][] faces(const Geometry geometry) nothrow {
   uint[3][] fList;
   if(geometry.indices.length <= 2) return(fList); // Objects (e.g. lines) can have less elements than a triangle 
@@ -102,7 +105,7 @@ pure uint[3][] faces(const Geometry geometry) nothrow {
   return(fList);
 }
 
-/* Compute normal vectors of a Geometry */
+/** Compute normal vectors of a Geometry */
 void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = false) {
   auto faces = geometry.faces;
   float[3][] normals = new float[3][faces.length];
@@ -129,7 +132,7 @@ void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = f
   if(verbose) SDL_Log("computeNormals %d vertex normals computed\n", geometry.vertices.length);
 }
 
-// Draws geometry[j] to buffer[i]
+/** Render a Geometry to app.renderBuffers[i] */
 void draw(ref App app, Geometry object, size_t i) {
   VkDeviceSize[] offsets = [0];
 
