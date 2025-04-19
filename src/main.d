@@ -21,6 +21,9 @@ import surface : createSurface;
 import textures : loadTextures, createSampler;
 import window: createOrResizeWindow, checkForResize;
 
+/** 
+ * Main entry point for Windows and Linux
+ */
 void main(string[] args) {
   App app = initializeSDL();
   app.loadGlyphAtlas();
@@ -33,10 +36,10 @@ void main(string[] args) {
   app.createFontTexture();
   app.loadTextures();
   app.createImGuiDescriptorPool();
-  app.createSurface();
-  app.createScene();
-  app.createOrResizeWindow();   // Create window (swapchain, renderpass, framebuffers, etc)
-  app.initializeImGui();        // Initialize ImGui (IO, Style, etc)
+  app.createSurface();              /// Create rendering surface
+  app.createScene();                /// Create a scene with Geometries
+  app.createOrResizeWindow();       /// Create window (swapchain, renderpass, framebuffers, etc)
+  app.initializeImGui();            /// Initialize ImGui (IO, Style, etc)
 
   uint frames = 500000;
   while (!app.finished && app.totalFramesRendered < frames) { // Main loop
