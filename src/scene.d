@@ -40,7 +40,7 @@ void createScene(ref App app){
 
   // Add some Text
   app.objects ~= Text(app);
-  app.objects[4].rotate([10.0f, 75.0f, 0.0f]);
+  app.objects[4].rotate([90.0f, 0.0f, 0.0f]);
   app.objects[4].position([5.0f, 2.0f, 2.0f]);
 
   // Add a Wavefront object

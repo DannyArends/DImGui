@@ -47,7 +47,7 @@ WaveFront loadWavefront(ref App app, const(char)* path) {
     if(t.length > 2) obj.vertices[t[0]].normal = normals[t[2]];
     obj.indices ~= t[0];
   }
-  obj.rotate([0.0f, 0.0f, 90.0f]);
+  obj.rotate([0.0f, 0.0f, -90.0f]);
   if(app.verbose) SDL_Log("Vertices %d, indices %d", obj.vertices.length, obj.indices.length);
   return(obj);
 }

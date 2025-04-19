@@ -50,16 +50,33 @@ alias Matrix mat4;
   return res;
 }
 
-/* Matrix x Yaw, Pitch, Roll vector in degrees V(x, y, z) */
+/* Matrix x Yaw, Pitch, Roll vector in degrees V(yaw, pitch, roll) - Applies rotations in local object space (Yaw -> Pitch -> Roll) */
 @nogc pure Matrix rotate(const Matrix m, const float[3] v) nothrow {
-  float α = radian(v[0]); float β = radian(v[1]); float γ = radian(v[2]);
-  Matrix mt = Matrix([
-  cos(α)*cos(β), (cos(α)*sin(β)*sin(γ)) - (sin(α)*cos(γ)), (cos(α)*sin(β)*cos(γ)) + (sin(β)*sin(γ)), 0.0f,
-  sin(α)*cos(β), (sin(α)*sin(β)*sin(γ)) + (cos(α)*cos(γ)), (sin(α)*sin(β)*cos(γ)) - (cos(β)*sin(γ)), 0.0f,
-  -sin(β)      ,  cos(β)*sin(γ)                          ,  cos(β)*cos(γ)                          , 0.0f,
-   0.0f        ,  0.0f                                   ,  0.0f,                                    1.0f ]
-  );
-  return(m.multiply(mt));
+  float yaw   = radian(v[0]); float pitch = radian(v[1]); float roll  = radian(v[2]);
+
+  Matrix rotateYaw = Matrix([
+      cos(yaw), 0.0f, sin(yaw), 0.0f,
+      0.0f,   1.0f, 0.0f,   0.0f,
+      -sin(yaw), 0.0f, cos(yaw), 0.0f,
+      0.0f,   0.0f, 0.0f,   1.0f
+  ]);
+
+  Matrix rotatePitch = Matrix([
+      cos(pitch), -sin(pitch), 0.0f, 0.0f,
+      sin(pitch),  cos(pitch), 0.0f, 0.0f,
+      0.0f,      0.0f,     1.0f, 0.0f,
+      0.0f,      0.0f,     0.0f, 1.0f
+  ]);
+
+  Matrix rotateRoll = Matrix([
+      1.0f, 0.0f,    0.0f,     0.0f,
+      0.0f, cos(roll), -sin(roll), 0.0f,
+      0.0f, sin(roll),  cos(roll),  0.0f,
+      0.0f, 0.0f,    0.0f,     1.0f
+  ]);
+
+  // Apply rotations in the order: Roll -> Pitch -> Yaw (local axes)
+  return m.multiply(rotateRoll.multiply(rotatePitch).multiply(rotateYaw));
 }
 
 /* Matrix x Scale V(x, y, z) */
