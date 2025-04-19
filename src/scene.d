@@ -2,7 +2,7 @@ import engine;
 
 import boundingbox : computeBoundingBox;
 import cube : Cube;
-import geometry : Instance, computeNormals, position, rotate, scale;
+import geometry : Instance, computeNormals, position, rotate, scale, texture;
 import icosahedron : Icosahedron, refineIcosahedron;
 import matrix : mat4, scale, translate, rotate;
 import square : Square;
@@ -31,7 +31,7 @@ void createScene(ref App app){
 
   // Add a Icosahedron test
   app.objects ~= Icosahedron();
-  app.objects[2].instances[0].tid = 8;
+  app.objects[2].texture(app.textures, "sun");
   app.objects[2].refineIcosahedron(3);
   app.objects[2].computeNormals();
   app.objects[2].scale([3.0f, 3.0f, 3.0f]);
@@ -39,12 +39,13 @@ void createScene(ref App app){
   app.objects ~= computeBoundingBox(app.objects[2]);
 
   // Add some Text
-  app.objects ~= Text(app.glyphAtlas);
+  app.objects ~= Text(app);
   app.objects[4].rotate([10.0f, 75.0f, 0.0f]);
   app.objects[4].position([5.0f, 2.0f, 2.0f]);
 
   // Add a Wavefront object
   app.objects ~= app.loadWavefront("assets/objects/viking_room.obj");
+  app.objects[5].texture(app.textures, "viking");
   app.objects[5].rotate([0.0f, 180.0f, 0.0f]);
   app.objects[5].position([2.0f, 0.0f, 0.0f]);
   app.objects ~= computeBoundingBox(app.objects[5]);

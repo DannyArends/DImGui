@@ -3,6 +3,7 @@ import engine;
 import buffer : toGPU;
 import camera : Camera;
 import matrix : mat4, getTranslation, translate, rotate, scale;
+import textures : id;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
 
@@ -54,6 +55,10 @@ struct Geometry {
   object.instances[instance] = scale(object.instances[instance], s);
 }
 
+@nogc void texture(ref Geometry object, const Texture[] textures, const(char)* name, uint instance = 0) nothrow {
+  assert(instance <  object.instances.length, "No such instance");
+  object.instances[instance].tid = textures.id(name);
+}
 
 /* Euclidean distance between object and camera */
 @nogc float distance(const Geometry object, const Camera camera) nothrow { 
