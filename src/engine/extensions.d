@@ -8,7 +8,7 @@ void loadInstanceExtensions(ref App app) {
   app.instanceExtensions.length = nExtensions;
   SDL_Vulkan_GetInstanceExtensions(app.window, &nExtensions, &app.instanceExtensions[0]);
   if(app.verbose) SDL_Log("Found %d instance extensions", app.instanceExtensions.length);
-  if(app.verbose) for(uint i = 0; i < app.instanceExtensions.length; i++){ SDL_Log("- %s", app.instanceExtensions[i]); }
+  //if(app.verbose) for(uint i = 0; i < app.instanceExtensions.length; i++){ SDL_Log("- %s", app.instanceExtensions[i]); }
 }
 
 // query Instance Extensions Properties
@@ -22,7 +22,7 @@ VkExtensionProperties[] queryInstanceExtensionProperties(ref App app, const(char
   properties.length = nProperties;
   enforceVK(vkEnumerateInstanceExtensionProperties(layer, &nProperties, &properties[0]));
   if(app.verbose) SDL_Log("Found %d instance extensions", properties.length);
-  if(app.verbose) foreach(i, property; properties) { SDL_Log("-Extension[%d] %s", i, property.extensionName.ptr); }
+  //if(app.verbose) foreach(i, property; properties) { SDL_Log("-Extension[%d] %s", i, property.extensionName.ptr); }
   return(properties);
 }
 
@@ -36,7 +36,7 @@ VkLayerProperties[] queryInstanceLayerProperties(ref App app) {
   layers.length = nLayers;
   enforceVK(vkEnumerateInstanceLayerProperties(&nLayers, &layers[0]));
   if(app.verbose) SDL_Log("Found %d layers", layers.length);
-  if(app.verbose) foreach(i, layer; layers) { SDL_Log("-Layer[%d] %s", i, layer.layerName.ptr); }
+  //if(app.verbose) foreach(i, layer; layers) { SDL_Log("-Layer[%d] %s", i, layer.layerName.ptr); }
   return(layers);
 }
 
@@ -51,7 +51,7 @@ VkExtensionProperties[] queryDeviceExtensionProperties(ref App app) {
   properties.length = nProperties;
   enforceVK(vkEnumerateDeviceExtensionProperties(app.physicalDevice, null, &nProperties, &properties[0]));
   if(app.verbose) SDL_Log("Found %d device extensions", properties.length);
-  if(app.verbose) foreach(i, property; properties) { SDL_Log("-Extension[%d] %s", i, property.extensionName.ptr); }
+  //if(app.verbose) foreach(i, property; properties) { SDL_Log("-Extension[%d] %s", i, property.extensionName.ptr); }
   return(properties);
 }
 

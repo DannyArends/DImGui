@@ -38,7 +38,7 @@ struct Text {
       col++;
       nGlyhs++;
     }
-    this.texture(app.textures, "FreeMono");
+    this.texture(app.textures, app.glyphAtlas.path);
   }
 
   alias geometry this;
