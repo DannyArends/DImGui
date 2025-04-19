@@ -8,7 +8,7 @@ import events : handleEvents;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, createFontTexture;
 import scene : createScene;
-import imgui : initializeImGui, renderGUI;
+import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shaders : createShadersStages;
@@ -39,9 +39,7 @@ void main(string[] args) {
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
 
     app.checkForResize();
-    ImDrawData* drawData = app.renderGUI();
-
-    app.renderFrame(drawData);
+    app.renderFrame();
     app.presentFrame();
     app.totalFramesRendered++;
   }
