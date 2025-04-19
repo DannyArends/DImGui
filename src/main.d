@@ -25,7 +25,7 @@ void main(string[] args) {
   app.createShadersStages();
   app.createCommandPool();
   app.createSampler();
-  app.createFontTexture(app.glyphAtlas);
+  app.createFontTexture();
   app.loadTextures();
   app.createImGuiDescriptorPool();
   app.createSurface();
