@@ -1,7 +1,9 @@
 import engine;
+
+import imgui : renderGUI;
 import uniforms : updateUniformBuffer;
 
-void renderFrame(ref App app, ImDrawData* drawData){
+void renderFrame(ref App app){
   VkSemaphore imageAcquired  = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
 
@@ -32,7 +34,9 @@ void renderFrame(ref App app, ImDrawData* drawData){
     pClearValues : &app.clearValue[0]
   };
   vkCmdBeginRenderPass(app.imguiBuffers[app.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-  
+
+  // Render UI
+  ImDrawData* drawData = app.renderGUI();
   ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[app.frameIndex], null);
 
   vkCmdEndRenderPass(app.imguiBuffers[app.frameIndex]);
