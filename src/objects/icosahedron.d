@@ -1,6 +1,7 @@
-// Copyright Danny Arends 2025
-// Distributed under the GNU General Public License, Version 3
-// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
 
 import includes;
 
@@ -13,6 +14,8 @@ import vertex : Vertex;
 const float x = 0.426943;
 const float y = 0.904279;
 
+/** Icosahedron
+ */
 struct Icosahedron {
   Geometry geometry = {
     vertices : [ 

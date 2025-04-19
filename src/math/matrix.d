@@ -1,11 +1,14 @@
-// Copyright Danny Arends 2021
-// Distributed under the GNU General Public License, Version 3
-// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
 
 import std.math : PI, sin, cos, tan;
 import vector, quaternion;
 
-struct Matrix { /* Matrix[4x4] structure, defaults to identity matrix */
+/** Matrix is a [4x4] 'structure' stored as float[16] (defaults to identity matrix).
+ */
+struct Matrix {
     float[16] data = [
       1.0f, 0.0f, 0.0f, 0.0f,
       0.0f, 1.0f, 0.0f, 0.0f,

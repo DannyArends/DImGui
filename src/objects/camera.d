@@ -1,6 +1,7 @@
-// Copyright Danny Arends 2025
-// Distributed under the GNU General Public License, Version 3
-// See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
 
 import includes;
 
@@ -10,6 +11,8 @@ import vector : normalize, vMul,vSub, vAdd, negate, xyz;
 import matrix : Matrix, multiply, inverse, rotate, radian, perspective, lookAt;
 import quaternion : xyzw;
 
+/** Camera
+ */
 struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
