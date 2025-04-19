@@ -45,16 +45,15 @@ struct Camera {
 
   // Move the camera to the left of the view direction
   @property @nogc float[3] left() const nothrow {
-    float[3] direction = forward();
-    direction[1] = 0.0f;
-    float[3] left = multiply(rotate(Matrix.init, [0.0f, -90.0f, 0.0f]), direction.xyzw()).xyz;
+    float[3] left = -right()[];
     return(left);
   }
 
   // Move the camera to the right of the view direction
   @property @nogc float[3] right() const nothrow { 
-    float[3] right = -left()[];
-    return(right);
+    float[3] direction = forward();
+    direction[1] = 0.0f;
+    return(multiply(rotate(Matrix.init, [90.0f, 0.0f, 0.0f]), direction.xyzw()).xyz);
   }
 
   @nogc float[3] position() const nothrow { return(vAdd(lookat, vMul(rotation.direction(), distance))); }
@@ -62,7 +61,7 @@ struct Camera {
 
 /* Create a position/rotation matrix through 3D space starting from xy */
 float[3][2] castRay(Camera camera, uint x, uint y) {
-  float[2] ndc = [(2.0f * x) / cast(float) camera.width - 1.0f,                             // Normalized device X
+  float[2] ndc = [(2.0f * x) / cast(float) camera.width  - 1.0f,                            // Normalized device X
                   (2.0f * y) / cast(float) camera.height - 1.0f];                           // Normalized device Y
   float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];                                            // Homogeneous clip coordinates
   float[4] eye = multiply(inverse(camera.proj), clip);                                      // Eye coordinates
