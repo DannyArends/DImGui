@@ -1,15 +1,15 @@
-import includes;
+import engine;
 
 import std.array : split, array;
-
 import vertex : Vertex;
-import geometry : Geometry;
+import geometry : Geometry, texture;
 import glyphatlas : GlyphAtlas;
 
 struct Text {
   Geometry geometry = { };
 
-  this(GlyphAtlas atlas, string value = "Hellow World", float scale = 1.0f, bool verbose = false){
+  this(App app, string value = "Hellow World", float scale = 1.0f, bool verbose = false){
+    auto atlas = app.glyphAtlas;
     float glyphscale = (1.0f/scale) * atlas.pointsize;
     if(verbose) SDL_Log("GlyphAtlas: %d, %d, %d, %d, %d", atlas.width, atlas.height, atlas.ascent, atlas.miny, atlas.advance);
     size_t[2] line = [1, value.split("\n").length];
@@ -38,7 +38,7 @@ struct Text {
       col++;
       nGlyhs++;
     }
-    instances[0].tid = atlas.fontTextureId;
+    this.texture(app.textures, "FreeMono");
   }
 
   alias geometry this;

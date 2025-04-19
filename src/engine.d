@@ -99,7 +99,7 @@ struct App {
 
   // Global boolean flags
   bool finished = false;
-  bool showdemo = true;
+  bool showdemo = false;
   bool verbose = false;
   bool rebuild = false;
 }

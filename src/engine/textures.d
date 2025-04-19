@@ -1,19 +1,23 @@
 import engine;
 
+import core.stdc.string : strstr;
+
 import io : dir;
 import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
 
 struct Texture {
+  const(char)* path;
   uint width = 0;
   uint height = 0;
+  SDL_Surface* surface;
 
   VkImage textureImage;
   VkDeviceMemory textureImageMemory;
   VkImageView textureImageView;
 
-  SDL_Surface* surface;
+  uint tid;
   alias surface this;
 }
 
@@ -33,21 +37,20 @@ void toRGBA(ref SDL_Surface* surface, bool verbose = false) {
 // Load all texture files matching pattern in folder
 void loadTextures(ref App app, string folder = "./assets/textures/", string pattern = "*.{png,jpg}") {
   immutable(char)*[] files = dir(folder, pattern, false);
-  foreach(file; files){ app.textures ~= app.loadTexture(file); }
+  foreach(file; files){ app.loadTexture(file); }
 }
 
-Texture loadTexture(App app, const(char)* path) {
-  SDL_Log("loadTexture '%s'", path);
+void loadTexture(ref App app, const(char)* path) {
+  if(app.verbose) SDL_Log("loadTexture '%s'", path);
   auto surface = IMG_Load(path);
   if(app.verbose) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
 
   // Adapt surface to 32 bit, and create structure
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
-  Texture texture = { width: surface.w, height: surface.h, surface: surface };
+  Texture texture = { path : path, width: surface.w, height: surface.h, surface: surface };
   app.toGPU(texture);
-  return(texture);
 }
-void toGPU(App app, ref Texture texture){
+void toGPU(ref App app, ref Texture texture){
   // Create a buffer to transfer the image to the GPU
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
@@ -73,6 +76,15 @@ void toGPU(App app, ref Texture texture){
   SDL_FreeSurface(texture.surface);
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+  texture.tid = cast(uint)app.textures.length;
+  app.textures ~= texture;
+}
+
+@nogc int id(const Texture[] textures, const(char)* name) nothrow {
+  foreach(texture; textures) {
+    if (strstr(texture.path, name) != null) return(texture.tid);
+  }
+  return(-1);
 }
 
 // Create a TextureSampler for sampling from a texture
@@ -104,6 +116,7 @@ void createSampler(ref App app) {
   };
 
   enforceVK(vkCreateSampler(app.device, &samplerInfo, null, &app.sampler));
+  if(app.verbose) SDL_Log("Done texture sampler");
 }
 
 void deAllocate(App app, Texture texture) {
@@ -111,4 +124,3 @@ void deAllocate(App app, Texture texture) {
   vkDestroyImage(app.device, texture.textureImage, app.allocator);
   vkFreeMemory(app.device, texture.textureImageMemory, app.allocator);
 }
-

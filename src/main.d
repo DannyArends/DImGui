@@ -8,13 +8,13 @@ import events : handleEvents;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, createFontTexture;
 import scene : createScene;
-import imgui : initializeImGui;
+import imgui : initializeImGui, renderGUI;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shaders : createShadersStages;
 import surface : createSurface;
 import textures : loadTextures, createSampler;
-import window: createOrResizeWindow, checkForResize, renderGUI;
+import window: createOrResizeWindow, checkForResize;
 
 void main(string[] args) {
   App app = initializeSDL();
@@ -25,7 +25,7 @@ void main(string[] args) {
   app.createShadersStages();
   app.createCommandPool();
   app.createSampler();
-  app.textures ~= app.createFontTexture(app.glyphAtlas);
+  app.createFontTexture(app.glyphAtlas);
   app.loadTextures();
   app.createImGuiDescriptorPool();
   app.createSurface();
