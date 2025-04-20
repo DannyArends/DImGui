@@ -13,10 +13,9 @@ import geometry : Geometry, rotate;
 import io : readFile;
 import vertex : Vertex;
 
-struct WaveFront {
-  Geometry geometry;
-  alias geometry this;
-}
+/** WaveFront
+ */
+class WaveFront : Geometry { }
 
 WaveFront loadWavefront(ref App app, const(char)* path) {
   char[] content = cast(char[])readFile(path); // Open for reading
@@ -42,7 +41,7 @@ WaveFront loadWavefront(ref App app, const(char)* path) {
       }
     }
   }
-  WaveFront obj = WaveFront();
+  WaveFront obj = new WaveFront();
   foreach (p; positions) { obj.vertices ~= Vertex(p); }
   foreach (t; triangles) {
     if(t.length > 1) {

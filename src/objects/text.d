@@ -10,9 +10,7 @@ import vertex : Vertex;
 import geometry : Geometry, texture;
 import glyphatlas : GlyphAtlas;
 
-struct Text {
-  Geometry geometry = { };
-
+class Text : Geometry {
   this(App app, string value = "Hellow World", float scale = 1.0f, bool verbose = false){
     auto atlas = app.glyphAtlas;
     float glyphscale = (1.0f/scale) * atlas.pointsize;
@@ -45,7 +43,5 @@ struct Text {
     }
     this.texture(app.textures, app.glyphAtlas.path);
   }
-
-  alias geometry this;
 }
 

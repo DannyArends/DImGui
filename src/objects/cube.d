@@ -8,9 +8,9 @@ import vertex : Vertex;
 
 /** Cube
  */
-struct Cube {
-  Geometry geometry = {
-    vertices : [
+class Cube : Geometry {
+  this(){
+    vertices = [
       Vertex([  0.5f,  0.5f,  0.5f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 1.0f, 1.0f ]),
       Vertex([ -0.5f,  0.5f,  0.5f ], [  1.0f, 0.0f ], [ 1.0f, 0.0f, 1.0f, 1.0f ]),
       Vertex([ -0.5f, -0.5f,  0.5f ], [  1.0f, 1.0f ], [ 1.0f, 0.0f, 1.0f, 1.0f ]),
@@ -40,15 +40,15 @@ struct Cube {
       Vertex([ -0.5f, -0.5f, -0.5f ], [  1.0f, 0.0f ], [ 0.0f, 1.0f, 0.0f, 1.0f ]),
       Vertex([ -0.5f,  0.5f, -0.5f ], [  1.0f, 1.0f ], [ 0.0f, 1.0f, 0.0f, 1.0f ]),
       Vertex([  0.5f,  0.5f, -0.5f ], [  0.0f, 1.0f ], [ 0.0f, 1.0f, 0.0f, 1.0f ])
-    ],
-    indices : [0, 1, 2,   2, 3, 0,      // front
+    ];
+    indices = [0, 1, 2,   2, 3, 0,      // front
                4, 5, 6,   6, 7, 4,      // right
                8, 9,10,  10,11, 8,      // top
               12,13,14,  14,15,12,      // left
               16,17,18,  18,19,16,      // bottom
-              20,21,22,  22,23,20]      // backside
-  };
+              20,21,22,  22,23,20];      // backside
+  }
 
-  alias geometry this;
+  //alias geometry this;
 }
 
