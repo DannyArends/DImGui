@@ -7,7 +7,7 @@ import engine;
 
 import buffer : toGPU;
 import camera : Camera;
-import matrix : mat4, getTranslation, translate, rotate, scale;
+import matrix : mat4, position, translate, rotate, scale;
 import textures : Texture, id;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
@@ -37,10 +37,10 @@ class Geometry {
   Instance[] instances = [Instance.init];       /// Instance array
   alias instances this;
 
+  /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {
-    if(vertexBuffer){
-      app.deAllocate(this);
-    }
+    if(vertexBuffer) app.deAllocate(this);
+
     app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -51,20 +51,24 @@ class Geometry {
   bool isBuffered = false;  /// Boolean flag
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
 
-/* Figure out how to make this work so that the caller is always the "above object" calling (oGL does this with classes)*/
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseEnter;
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseExit;
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseDown;
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseUp;
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseOver;
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseMove;
-  void function(ref App app, ref Geometry obj, SDL_Event e) onFrame;
+  void function(ref App app, ref Geometry obj) onFrame;
 }
 
 /** Set position of instance from object.instances by p */
 @nogc void position(T)(T object, float[3] p, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
-  object.instances[instance] = translate(object.instances[instance], p);
+  object.instances[instance] = position(object.instances[instance], p);
+}
+
+@nogc float[3] position(T)(T object, uint instance = 0) nothrow {
+  assert(instance <  object.instances.length, "No such instance");
+  return(position(object.instances[instance]));
 }
 
 /** Rotate instance from object.instances by r */

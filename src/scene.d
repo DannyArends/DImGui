@@ -6,7 +6,7 @@
 import engine;
 
 import cube : Cube;
-import geometry : Instance, computeNormals, position, rotate, scale, texture;
+import geometry : Geometry, Instance, computeNormals, position, rotate, scale, texture;
 import icosahedron : Icosahedron, refineIcosahedron;
 import matrix : mat4, scale, translate, rotate;
 import particlesystem : ParticleSystem;
@@ -43,6 +43,12 @@ void createScene(ref App app){
   app.objects[2].computeNormals();
   app.objects[2].scale([3.0f, 3.0f, 3.0f]);
   app.objects[2].position([10.0f, 2.0f, 2.0f]);
+  app.objects[2].onFrame = (ref App app, ref Geometry obj){
+      auto p = obj.position;
+      obj.rotate([0.5f, 0.0f, 0.0f]);
+      obj.position(p);
+      obj.isBuffered = false;
+    };
 
   SDL_Log("createScene: Add Text");
   app.objects ~= new Text(app);
