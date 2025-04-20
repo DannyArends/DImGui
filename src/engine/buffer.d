@@ -79,7 +79,7 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
   app.endSingleTimeCommands(commandBuffer);
 }
 
-void toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory, VkBufferUsageFlags usage) {
+bool toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory, VkBufferUsageFlags usage) {
   uint size = cast(uint)(object[0].sizeof * object.length);
   if(app.verbose) SDL_Log("toGPU: Transfering %d x %d = %d bytes", object[0].sizeof, object.length, size);
 
@@ -100,5 +100,6 @@ void toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory,
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
   if(app.verbose) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", (*buffer), size);
+  return(true);
 }
 
