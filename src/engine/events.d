@@ -8,6 +8,7 @@ import engine;
 import commands : recordRenderCommandBuffer;
 import camera : move, drag, castRay;
 import line : createLine;
+import sdl : FRAMESTART, LASTTICK;
 
 void handleKeyEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_KEYDOWN) {
@@ -52,10 +53,15 @@ void handleEvents(ref App app) {
     if(!app.io.WantCaptureKeyboard) app.handleKeyEvents(e);
     if(!app.io.WantCaptureMouse) app.handleMouseEvents(e);
   }
-  // Make sure we record the command buffer every frame after handling events
-  foreach(object; app.objects){
-    if(object.onFrame) object.onFrame(app, object);
+
+  if(app.time[FRAMESTART] - app.time[LASTTICK] > 10000) {
+    app.time[LASTTICK] = app.time[FRAMESTART];
+    if(app.verbose) SDL_Log("10 seconds: Frame: %d", app.totalFramesRendered);
   }
+
+  // Call all onFrame() handlers
+  foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object); }
+  // Make sure we record the command buffer every frame after handling events
   enforceVK(vkDeviceWaitIdle(app.device));
   app.recordRenderCommandBuffer();
 }

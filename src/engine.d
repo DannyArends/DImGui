@@ -102,6 +102,7 @@ struct App {
   uint queueFamily = uint.max;
   uint syncIndex = 0;
   uint frameIndex = 0;
+  ulong[4] time = [0, 0, 0, 0];
   uint totalFramesRendered = 0;
 
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }

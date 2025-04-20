@@ -12,12 +12,13 @@ void checkSDLError() {
 }
 
 enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };
+enum { START = 0, STARTUP = 1, FRAMESTART = 2, LASTTICK = 3 };
 
 App initializeSDL() {
   int[4] init;
   App app;
   SDL_version linked;
-
+  app.time[START] = SDL_GetTicks64();
   // Initialize Libraries
   init[MAIN] = SDL_Init(SDL_INIT_VIDEO);
   SDL_GetVersion(&linked);
