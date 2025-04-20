@@ -5,7 +5,8 @@
 
 import engine;
 
-// Load Instance Extensions
+/** Load Instance Extensions
+ */
 void loadInstanceExtensions(ref App app) {
   if(app.verbose) SDL_Log("loadInstanceExtensions");
   uint nExtensions;
@@ -16,7 +17,8 @@ void loadInstanceExtensions(ref App app) {
   //if(app.verbose) for(uint i = 0; i < app.instanceExtensions.length; i++){ SDL_Log("- %s", app.instanceExtensions[i]); }
 }
 
-// query Instance Extensions Properties
+/** query Instance Extensions Properties
+ */
 VkExtensionProperties[] queryInstanceExtensionProperties(ref App app, const(char)* layer = null) {
   if(app.verbose) SDL_Log("queryInstanceExtensionProperties");
   uint nProperties;
@@ -31,7 +33,8 @@ VkExtensionProperties[] queryInstanceExtensionProperties(ref App app, const(char
   return(properties);
 }
 
-// query Instance Layer Properties
+/** query Instance Layer Properties
+ */
 VkLayerProperties[] queryInstanceLayerProperties(ref App app) {
   if(app.verbose) SDL_Log("queryInstanceLayerProperties");
   uint nLayers;
@@ -45,7 +48,8 @@ VkLayerProperties[] queryInstanceLayerProperties(ref App app) {
   return(layers);
 }
 
-// query Device Extensions Properties
+/** query Device Extensions Properties
+ */
 VkExtensionProperties[] queryDeviceExtensionProperties(ref App app) {
   if(app.verbose) SDL_Log("queryDeviceExtensionProperties");
   uint nProperties;

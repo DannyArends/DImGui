@@ -46,7 +46,7 @@ struct App {
   alias window this;
   enum const(char)* applicationName = "CalderaD";
 
-  // Application info structure
+  /// Application information structure
   VkApplicationInfo applicationInfo  = {
     pApplicationName: applicationName, 
     applicationVersion: 0, 
@@ -56,11 +56,12 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
-  Geometry[] objects;
-  Texture[] textures;
+  Geometry[] objects;         /// All geometric objects for rendering
+  Texture[] textures;         /// Textures
+  Camera camera;              /// Our camera class
+  GlyphAtlas glyphAtlas;      /// GlyphAtlas for geometric font rendering
+
   VkSampler sampler;
-  Camera camera;
-  GlyphAtlas glyphAtlas;
   VkShaderModule[] shaders;
   VkPipelineShaderStageCreateInfo[] shaderStages;
   GraphicsPipeline[VkPrimitiveTopology] pipelines;
@@ -99,26 +100,28 @@ struct App {
   VkDebugReportCallbackEXT debugCallback = null;
 
   // Sync and Frame Tracking
-  uint queueFamily = uint.max;
-  uint syncIndex = 0;
-  uint frameIndex = 0;
-  ulong[4] time = [0, 0, 0, 0];
-  uint totalFramesRendered = 0;
+  uint queueFamily = uint.max;          /// Current queueFamily used
+  uint syncIndex = 0;                   /// Sync index (Semaphore)
+  uint frameIndex = 0;                  /// Current frame index (Fence)
+  ulong[4] time = [0, 0, 0, 0];         /// Time monitoring (START, STARTUP, FRAMESTART, LASTTICK)
+  uint totalFramesRendered = 0;         /// Total frames rendered so far
 
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
 
-  const(char)*[] instanceExtensions;    // Enabled instance extensions
-  const(char)*[] deviceExtensions;      // Enabled device extensions
-  const(char)*[] layers;                // Enabled layers
+  const(char)*[] instanceExtensions;    /// Enabled instance extensions
+  const(char)*[] deviceExtensions;      /// Enabled device extensions
+  const(char)*[] layers;                /// Enabled layers
 
   // Global boolean flags
-  bool finished = false;
-  bool showdemo = false;
-  bool showBounds = true;
-  bool verbose = false;
-  bool rebuild = false;
+  bool finished = false;                /// Is the main loop finished ?
+  bool showdemo = false;                /// Are we showing the ImGui demo window ?
+  bool showBounds = true;               /// TO IMPLEMENT: Show bounding boxes
+  bool verbose = false;                 /// Be very verbose
+  bool rebuild = false;                 /// Rebuild the swapChain?
 }
 
+/** Shutdown ImGui and deAllocate all vulkan related objects in existance
+ */
 void cleanUp(App app){
   enforceVK(vkDeviceWaitIdle(app.device));
   ImGui_ImplVulkan_Shutdown();
@@ -143,6 +146,8 @@ void cleanUp(App app){
   SDL_Quit();
 }
 
+/** Check result of vulkan call and print if an error occured
+ */
 extern(C) void enforceVK(VkResult err) {
   if (err == VK_SUCCESS) return;
   SDL_Log("[enforceVK] Error: VkResult = %d\n", err);
