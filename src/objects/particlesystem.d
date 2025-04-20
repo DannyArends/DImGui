@@ -11,15 +11,17 @@ import std.math : abs;
 import particle : Particle;
 import geometry : Geometry;
 import vector : Vector, vMul, vAdd, magnitude, normalize;
-import vertex : Vertex;
+import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
 /** ParticleSystem
  */
 class ParticleSystem : Geometry {
-  float[3] position = [0.0f, 10.0f, 0.0f];
-  float[3][2] impulse = [[-1.0f, -1.0f, -1.0f],[1.0f, 1.0f, 1.0f]];
+  float[3] position = [15.0f, 8.0f, -8.0f];
+  float[3][2] impulse = [[-2.0f, -1.0f, -1.0f],
+                         [2.0f, 2.0f, 1.0f]];
   float[3] gravity = [0.0f, -0.005f, 0.0f];
-  float[4] color = [0.0f, 0.0f, 0.0f, 1.0f];
+  float[4][2] color = [[0.0f, 0.5f, 0.6f, 1.0f],
+                       [0.1f, 1.0f, 1.0f, 1.0f]];
   float floor = -1.0f;
   float rate = 0.000001f;
   Particle[] particles;
@@ -31,14 +33,17 @@ class ParticleSystem : Geometry {
     for(uint i = 0; i < nParticles; i++) { spawn(i); }
 
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-    onFrame = (ref App app, ref Geometry obj){
-      (cast(ParticleSystem)obj).age();
-    };
+
+    /** onFrame handler aging the particles every frame */
+    onFrame = (ref App app, ref Geometry obj){ (cast(ParticleSystem)obj).age(); };
   }
   
   /** (Re)Spawn a particle at i */
   void spawn(uint i) {
-    vertices[i] = Vertex(position, [0.0f,0.0f], color);
+    auto r = uniform(color[0][0], color[1][0]);
+    auto g = uniform(color[0][1], color[1][1]);
+    auto b = uniform(color[0][2], color[1][2]);
+    vertices[i] = Vertex(position, [0.0f,0.0f], [r, g, b, 1.0f]);
     indices[i] = i;
     particles[i].velocity = [uniform(impulse[0][0], impulse[1][0]),
                              uniform(impulse[0][1], impulse[1][1]),
@@ -66,6 +71,6 @@ class ParticleSystem : Geometry {
       }
       vertices[i].position[] = vertices[i].position[] + particles[i].velocity[];
     }
-    buffers[0] = false;
+    buffers[VERTEX] = false;
   }
 }

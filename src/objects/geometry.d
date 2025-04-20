@@ -10,7 +10,7 @@ import camera : Camera;
 import matrix : mat4, position, translate, rotate, scale;
 import textures : Texture, id;
 import vector : vSub, vAdd, cross, normalize, euclidean;
-import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
+import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
 /** An instance of a Geometry
  */
@@ -39,17 +39,17 @@ class Geometry {
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {
-    app.deAllocate(this, this.buffers);
+    app.deAllocate(this, buffers);
 
-    if(!buffers[0]) buffers[0] = app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    if(!buffers[1]) buffers[1] = app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    if(!buffers[2]) buffers[2] = app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    if(!buffers[VERTEX]) buffers[VERTEX] = app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    if(!buffers[INDEX]) buffers[INDEX] = app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    if(!buffers[INSTANCE]) buffers[INSTANCE] = app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
   }
 
   bool isVisible = true;                          /// Boolean flag
   bool[3] buffers = [false, false, false];        /// Boolean flag
   @property @nogc bool isBuffered() nothrow { 
-    return(buffers[0] && buffers[1] && buffers[2]); 
+    return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
@@ -67,6 +67,7 @@ class Geometry {
 @nogc void position(T)(T object, float[3] p, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = position(object.instances[instance], p);
+  object.buffers[INSTANCE] = false;
 }
 
 @nogc float[3] position(T)(T object, uint instance = 0) nothrow {
@@ -78,12 +79,14 @@ class Geometry {
 @nogc void rotate(T)(T object, float[3] r, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = rotate(object.instances[instance], r);
+  object.buffers[INSTANCE] = false;
 }
 
 /** Scale instance from object.instances by s */
 @nogc void scale(T)(T object, float[3] s, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = scale(object.instances[instance], s);
+  object.buffers[INSTANCE] = false;
 }
 
 /** Set tid for instance from object.instances to Texture name */
@@ -99,15 +102,15 @@ class Geometry {
 
 /** deAllocate all GPU buffers */
 void deAllocate(ref App app, Geometry object, bool[3] buffers) {
-  if(!buffers[0]) {
+  if(!buffers[VERTEX]) {
     vkDestroyBuffer(app.device, object.vertexBuffer, app.allocator);
     vkFreeMemory(app.device, object.vertexBufferMemory, app.allocator);
   }
-  if(!buffers[1]) {
+  if(!buffers[INDEX]) {
     vkDestroyBuffer(app.device, object.indexBuffer, app.allocator);
     vkFreeMemory(app.device, object.indexBufferMemory, app.allocator);
   }
-  if(!buffers[2]) {
+  if(!buffers[INSTANCE]) {
     vkDestroyBuffer(app.device, object.instanceBuffer, app.allocator);
     vkFreeMemory(app.device, object.instanceBufferMemory, app.allocator);
   }
@@ -116,6 +119,7 @@ void deAllocate(ref App app, Geometry object, bool[3] buffers) {
 /** Add a vertex to a geometry of the object */
 uint addVertex(ref Geometry geometry, const Vertex v) nothrow {
   geometry.vertices ~= v;
+  geometry.buffers[VERTEX] = false;
   return(cast(uint)(geometry.vertices.length-1));
 }
 
@@ -154,6 +158,7 @@ void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = f
     geometry.vertices[i].normal.normalize();
     if(invert) geometry.vertices[i].normal[] = -geometry.vertices[i].normal[];
   }
+  geometry.buffers[VERTEX] = false;
   if(verbose) SDL_Log("computeNormals %d vertex normals computed\n", geometry.vertices.length);
 }
 
@@ -163,8 +168,8 @@ void draw(ref App app, Geometry object, size_t i) {
 
   vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[object.topology].graphicsPipeline);
 
-  vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX_BUFFER_BIND_ID, 1, &object.vertexBuffer, &offsets[0]);
-  vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE_BUFFER_BIND_ID, 1, &object.instanceBuffer, &offsets[0]);
+  vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer, &offsets[0]);
+  vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE, 1, &object.instanceBuffer, &offsets[0]);
   vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 

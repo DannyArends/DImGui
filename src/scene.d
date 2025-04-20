@@ -5,6 +5,8 @@
 
 import engine;
 
+import std.random : uniform;
+
 import cube : Cube;
 import geometry : Geometry, Instance, computeNormals, position, rotate, scale, texture;
 import icosahedron : Icosahedron, refineIcosahedron;
@@ -12,6 +14,7 @@ import matrix : mat4, scale, translate, rotate;
 import particlesystem : ParticleSystem;
 import square : Square;
 import text : Text;
+import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 import wavefront : loadWavefront;
 
 /** Create a scene for rendering
@@ -19,7 +22,7 @@ import wavefront : loadWavefront;
 void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
-
+  app.objects[0].position([0.0f,-0.5f,0.0f]);
   for(int x = -100; x < 100; x++) {
     for(int z = -100; z < 100; z++) {
       mat4 instance;  // Add a instances of object 0
@@ -48,13 +51,15 @@ void createScene(ref App app){
       auto p = obj.position;
       obj.rotate([0.5f, 0.0f, 0.0f]);
       obj.position(p);
-      obj.buffers[2] = false;
     };
 
   SDL_Log("createScene: Add Text");
   app.objects ~= new Text(app);
   app.objects[3].rotate([90.0f, 0.0f, 0.0f]);
   app.objects[3].position([5.0f, 2.0f, 2.0f]);
+  app.objects[3].onFrame = (ref App app, ref Geometry obj){
+      obj.rotate([0.0f, 0.2f, 0.4f]);
+    };
 
   SDL_Log("createScene: Add Wavefront");
   app.objects ~= app.loadWavefront("assets/objects/viking_room.obj");
@@ -64,7 +69,8 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add ParticleSystem");
   app.objects ~= new ParticleSystem();
-  /* Stress test with 20 x 20 instanced rendering of a 10k / 50k Particle system (50k x 400 = ~20mio particles)
+  /** Stress test with 20 x 20 instanced rendering of a 10k / 50k Particle system (50k x 400 = ~20mio particles) */
+  /*
   for(int x = -10; x < 10; x++) {
     for(int z = -10; z < 10; z++) {
       mat4 instance;  // Add a instances of object 0
@@ -73,7 +79,7 @@ void createScene(ref App app){
       instance = translate(instance, [cast(float) x * 4, 2.0f, cast(float)z * 4]);
       app.objects[5].instances ~= Instance(-1, instance);
     }
-  }*/
+  } */
 
-  SDL_Log("createScene: Done");
+  SDL_Log("createScene: Finished");
 }

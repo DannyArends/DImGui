@@ -79,9 +79,11 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
   app.endSingleTimeCommands(commandBuffer);
 }
 
-bool toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory, VkBufferUsageFlags usage) {
-  uint size = cast(uint)(object[0].sizeof * object.length);
-  if(app.verbose) SDL_Log("toGPU: Transfering %d x %d = %d bytes", object[0].sizeof, object.length, size);
+/** Create Vulkan buffer and memory pointer and transfer the array of objects into the GPU memory
+ */
+bool toGPU(T)(ref App app, T[] objects, VkBuffer* buffer, VkDeviceMemory* memory, VkBufferUsageFlags usage, VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+  uint size = cast(uint)(objects[0].sizeof * objects.length);
+  if(app.verbose) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, size);
 
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
@@ -89,10 +91,9 @@ bool toGPU(T)(ref App app, T[] object, VkBuffer* buffer, VkDeviceMemory* memory,
 
   void* data;
   vkMapMemory(app.device, stagingBufferMemory, 0, size, 0, &data);
-  memcpy(data, cast(void*)object, size);
+  memcpy(data, cast(void*)objects, size);
   vkUnmapMemory(app.device, stagingBufferMemory);
 
-  auto properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   app.createBuffer(buffer, memory, size, usage, properties);
 
   app.copyBuffer(stagingBuffer, (*buffer), size);
