@@ -53,6 +53,9 @@ void handleEvents(ref App app) {
     if(!app.io.WantCaptureMouse) app.handleMouseEvents(e);
   }
   // Make sure we record the command buffer every frame after handling events
+  foreach(object; app.objects){
+    if(object.onFrame) object.onFrame(app, object);
+  }
   enforceVK(vkDeviceWaitIdle(app.device));
   app.recordRenderCommandBuffer();
 }

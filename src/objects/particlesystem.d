@@ -23,7 +23,7 @@ class ParticleSystem : Geometry {
       indices[i] = i;
     }
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-    onFrame = (ref App app, ref Geometry obj, SDL_Event e){
+    onFrame = (ref App app, ref Geometry obj){
       ParticleSystem pSystem = cast(ParticleSystem)obj;
       pSystem.vertices = pSystem.particles.age();
       pSystem.isBuffered = false;

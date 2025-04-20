@@ -98,7 +98,11 @@ alias Matrix mat4;
 }
 
 /** getTranslation float[3] from a Matrix V4(l, r, b, t) */
-@nogc pure float[3] getTranslation(const Matrix m) nothrow { return([m[12], m[13], m[14]]); }
+@nogc pure float[3] position(const Matrix m) nothrow { return([m[12], m[13], m[14]]); }
+@nogc pure Matrix position(ref Matrix m, const float[3] v) nothrow { 
+  m[12] = v[0]; m[13] = v[1]; m[14] = v[2];
+  return(m);
+}
 
 /** Orthogonal projection Matrix V4(l, r, b, t) */
 @nogc pure Matrix orthogonal(float left, float right, float bottom, float top) nothrow {
