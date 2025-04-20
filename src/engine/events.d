@@ -26,8 +26,6 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
       app.objects ~= createLine(app.camera.castRay(e.motion.x, e.motion.y));
-      enforceVK(vkDeviceWaitIdle(app.device));
-      app.recordRenderCommandBuffer();
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
   }
@@ -54,5 +52,7 @@ void handleEvents(ref App app) {
     if(!app.io.WantCaptureKeyboard) app.handleKeyEvents(e);
     if(!app.io.WantCaptureMouse) app.handleMouseEvents(e);
   }
+  // Make sure we record the command buffer every frame after handling events
+  enforceVK(vkDeviceWaitIdle(app.device));
+  app.recordRenderCommandBuffer();
 }
-
