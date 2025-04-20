@@ -7,6 +7,46 @@ import engine;
 
 import geometry : draw;
 
+/** Record Vulkan render command buffer by rendering all objects to all render buffers
+ */
+void recordRenderCommandBuffer(ref App app) {
+  if(app.verbose) SDL_Log("recordRenderCommandBuffer");
+  for (size_t i = 0; i < app.renderBuffers.length; i++) {
+    VkCommandBufferBeginInfo beginInfo = {
+      sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+      pInheritanceInfo: null // Optional
+    };
+    enforceVK(vkBeginCommandBuffer(app.renderBuffers[i], &beginInfo));
+    if(app.verbose) SDL_Log("renderBuffer %d recording", i);
+
+    VkRect2D renderArea = {
+      offset: { x:0, y:0 },
+      extent: { width: app.camera.width, height: app.camera.height }
+    };
+
+    VkRenderPassBeginInfo renderPassInfo = {
+      sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+      renderPass: app.renderpass,
+      framebuffer: app.swapChainFramebuffers[i],
+      renderArea: renderArea,
+      clearValueCount: app.clearValue.length,
+      pClearValues: &app.clearValue[0]
+    };
+
+    vkCmdBeginRenderPass(app.renderBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    if(app.verbose) SDL_Log("Render pass recording to buffer %d", i);
+
+    if(app.verbose) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, i);
+    for(size_t x = 0; x < app.objects.length; x++) {
+      if(!app.objects[x].isBuffered) app.objects[x].buffer(app);
+      if(app.objects[x].isVisible) app.draw(app.objects[x], i);
+    }
+    vkCmdEndRenderPass(app.renderBuffers[i]);
+    enforceVK(vkEndCommandBuffer(app.renderBuffers[i]));
+    if(app.verbose) SDL_Log("Render pass finished to %d", i);
+  }
+}
+
 void createCommandPool(ref App app) {
   VkCommandPool commandPool;
 
@@ -67,41 +107,4 @@ void createRenderCommandBuffers(ref App app) {
   if(app.verbose) SDL_Log("createRenderCommandBuffers created %d renderBuffer using commandpool[%p]", app.imageCount, app.commandPool);
 }
 
-void recordRenderCommandBuffer(ref App app) {
-  if(app.verbose) SDL_Log("recordRenderCommandBuffer");
-  for (size_t i = 0; i < app.renderBuffers.length; i++) {
-    VkCommandBufferBeginInfo beginInfo = {
-      sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-      pInheritanceInfo: null // Optional
-    };
-    enforceVK(vkBeginCommandBuffer(app.renderBuffers[i], &beginInfo));
-    if(app.verbose) SDL_Log("renderBuffer %d recording", i);
-
-    VkRect2D renderArea = {
-      offset: { x:0, y:0 },
-      extent: { width: app.camera.width, height: app.camera.height }
-    };
-
-    VkRenderPassBeginInfo renderPassInfo = {
-      sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-      renderPass: app.renderpass,
-      framebuffer: app.swapChainFramebuffers[i],
-      renderArea: renderArea,
-      clearValueCount: app.clearValue.length,
-      pClearValues: &app.clearValue[0]
-    };
-
-    vkCmdBeginRenderPass(app.renderBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    if(app.verbose) SDL_Log("Render pass recording to buffer %d", i);
-
-    if(app.verbose) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, i);
-    for(size_t x = 0; x < app.objects.length; x++) {
-      if(!app.objects[x].isBuffered) app.objects[x].buffer(app);
-      if(app.objects[x].isVisible) app.draw(app.objects[x], i);
-    }
-    vkCmdEndRenderPass(app.renderBuffers[i]);
-    enforceVK(vkEndCommandBuffer(app.renderBuffers[i]));
-    if(app.verbose) SDL_Log("Render pass finished to %d", i);
-  }
-}
 
