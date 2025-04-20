@@ -11,9 +11,9 @@ import vertex : Vertex;
 
 /** BoundingBox
  */
-struct BoundingBox {
-  Geometry geometry = {
-    vertices : [
+class BoundingBox : Geometry {
+  this(){
+   vertices = [
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
@@ -23,13 +23,12 @@ struct BoundingBox {
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ])
-    ],
-    indices : [0, 1,  0, 3,  0, 4,  1, 2, 
+    ];
+    indices = [0, 1,  0, 3,  0, 4,  1, 2, 
                1, 5,  2, 3,  2, 6,  3, 7, 
-               4, 5,  4, 7,  5, 6,  6, 7],
-    topology : VK_PRIMITIVE_TOPOLOGY_LINE_LIST
+               4, 5,  4, 7,  5, 6,  6, 7];
+    topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
   };
-  alias geometry this;
 
   @property @nogc pure float[3] min() nothrow const { return(vertices[0].position); }
   @property @nogc pure float[3] max() nothrow const { return(vertices[6].position); }
@@ -54,7 +53,7 @@ struct BoundingBox {
 
 /* Compute the bounding box for object */
 BoundingBox computeBoundingBox(Geometry object) {
-  BoundingBox box = BoundingBox();
+  BoundingBox box = new BoundingBox();
   float[3][2] size = [[float.infinity, float.infinity, float.infinity], 
                       [-float.infinity, -float.infinity, -float.infinity]];
 

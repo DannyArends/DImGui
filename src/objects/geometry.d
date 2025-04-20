@@ -8,7 +8,7 @@ import engine;
 import buffer : toGPU;
 import camera : Camera;
 import matrix : mat4, getTranslation, translate, rotate, scale;
-import textures : id;
+import textures : Texture, id;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID;
 
@@ -22,7 +22,7 @@ struct Instance {
 
 /** A Geometry that can be rendered
  */
-struct Geometry {
+class Geometry {
   VkBuffer vertexBuffer = null;                 /// Vulkan vertex buffer pointer
   VkDeviceMemory vertexBufferMemory = null;     /// Vulkan vertex buffer memory pointer
 
@@ -38,6 +38,9 @@ struct Geometry {
   alias instances this;
 
   void buffer(ref App app) {
+    if(vertexBuffer){
+      app.deAllocate(this);
+    }
     app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -47,35 +50,44 @@ struct Geometry {
   bool isVisible = true;    /// Boolean flag
   bool isBuffered = false;  /// Boolean flag
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
+
+/* Figure out how to make this work so that the caller is always the "above object" calling (oGL does this with classes)*/
+  void function(ref App app, ref Geometry obj, SDL_Event e) onMouseEnter;
+  void function(ref App app, ref Geometry obj, SDL_Event e) onMouseExit;
+  void function(ref App app, ref Geometry obj, SDL_Event e) onMouseDown;
+  void function(ref App app, ref Geometry obj, SDL_Event e) onMouseUp;
+  void function(ref App app, ref Geometry obj, SDL_Event e) onMouseOver;
+  void function(ref App app, ref Geometry obj, SDL_Event e) onMouseMove;
+  void function(ref App app, ref Geometry obj, SDL_Event e) onFrame;
 }
 
 /** Set position of instance from object.instances by p */
-@nogc void position(ref Geometry object, float[3] p, uint instance = 0) nothrow {
+@nogc void position(T)(T object, float[3] p, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = translate(object.instances[instance], p);
 }
 
 /** Rotate instance from object.instances by r */
-@nogc void rotate(ref Geometry object, float[3] r, uint instance = 0) nothrow {
+@nogc void rotate(T)(T object, float[3] r, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = rotate(object.instances[instance], r);
 }
 
 /** Scale instance from object.instances by s */
-@nogc void scale(ref Geometry object, float[3] s, uint instance = 0) nothrow {
+@nogc void scale(T)(T object, float[3] s, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = scale(object.instances[instance], s);
 }
 
 /** Set tid for instance from object.instances to Texture name */
-@nogc void texture(ref Geometry object, const Texture[] textures, const(char)* name, uint instance = 0) nothrow {
+@nogc void texture(T)(T object, const Texture[] textures, const(char)* name, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance].tid = textures.id(name);
 }
 
 /** Euclidean distance between Geometry and Camera */
-@nogc float distance(const Geometry object, const Camera camera) nothrow { 
-    return euclidean(object.instances[0].getTranslation(), camera.position); 
+@nogc float distance(T)(const T object, const Camera camera) nothrow { 
+  return euclidean(object.instances[0].getTranslation(), camera.position); 
 }
 
 /** deAllocate all GPU buffers */

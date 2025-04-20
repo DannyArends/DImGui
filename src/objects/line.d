@@ -15,16 +15,15 @@ import vertex : Vertex;
 
 /** Line
  */
-struct Line {
-  Geometry geometry = {
-    vertices : [
+class Line : Geometry {
+  this(){
+    vertices = [
       Vertex([ 0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([ 0.0f, 1.0f, 0.0f ], [  0.0f, 0.0f ], [ 0.0f, 1.0f, 0.0f, 1.0f ])
-    ],
-    indices : [0, 1],
-    topology : VK_PRIMITIVE_TOPOLOGY_LINE_LIST
-  };
-  alias geometry this;
+    ];
+    indices = [0, 1];
+    topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+  }
 }
 
 /** Intersection
@@ -43,7 +42,7 @@ alias float[3][2] Ray;
 /** Create a Line from a Ray
  */
 Line createLine(Ray ray, float length = 50){
-  Line line;
+  Line line = new Line();
   line.vertices[0].position = ray[0];
   line.vertices[1].position = ray[0].vAdd(ray[1].vMul(length));
   return(line);
@@ -52,8 +51,8 @@ Line createLine(Ray ray, float length = 50){
 @nogc pure Intersection intersects(Ray ray, const BoundingBox box) nothrow {
   Intersection i;
 
-  float[3] bmin = box.geometry.instances[0].multiply(box.min);
-  float[3] bmax = box.geometry.instances[0].multiply(box.max);
+  float[3] bmin = box.instances[0].multiply(box.min);
+  float[3] bmax = box.instances[0].multiply(box.max);
 
   float tmin = (bmin.x - ray[0].x) / ray[1].x;
   float tmax = (bmax.x - ray[0].x) / ray[1].x; 

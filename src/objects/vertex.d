@@ -11,11 +11,13 @@ import geometry : Instance;
 enum VERTEX_BUFFER_BIND_ID = 0;
 const INSTANCE_BUFFER_BIND_ID = 1;
 
+/** Vertex Structure
+ */
 struct Vertex {
-  float[3] position = [0.0f, 0.0f, 0.0f];
-  float[2] texCoord = [0.0f, 1.0f];
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
-  float[3] normal = [0.0f, 1.0f, 0.0f];
+  float[3] position = [0.0f, 0.0f, 0.0f];     /// Vertex position
+  float[2] texCoord = [0.0f, 1.0f];           /// Vertex texture coordinates
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];  /// Vertex color
+  float[3] normal = [0.0f, 1.0f, 0.0f];       /// Vertex normal
 
   @nogc static VkVertexInputBindingDescription[2] getBindingDescription() nothrow {
     VkVertexInputBindingDescription[2] bindingDescription = [

@@ -22,6 +22,7 @@ import uniforms : createUniforms, destroyUniforms;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
+  VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
   VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
   VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,

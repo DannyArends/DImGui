@@ -31,6 +31,7 @@ layout(location = 3) out int fragTid;
 void main() {
   mat4 model = ubo.scene * instance;
   gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * vec4(inPosition, 1.0);
+  gl_PointSize = 2.0f;
 
   fragColor = inColor;
   fragNormal = inNormal;
