@@ -39,16 +39,19 @@ class Geometry {
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {
-    if(vertexBuffer) app.deAllocate(this);
+    app.deAllocate(this, this.buffers);
 
-    app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    isBuffered = true;
+    if(!buffers[0]) buffers[0] = app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    if(!buffers[1]) buffers[1] = app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    if(!buffers[2]) buffers[2] = app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
   }
 
-  bool isVisible = true;    /// Boolean flag
-  bool isBuffered = false;  /// Boolean flag
+  bool isVisible = true;                          /// Boolean flag
+  bool[3] buffers = [false, false, false];        /// Boolean flag
+  @property @nogc bool isBuffered() nothrow { 
+    return(buffers[0] && buffers[1] && buffers[2]); 
+  }
+
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
 
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseEnter;
@@ -95,13 +98,19 @@ class Geometry {
 }
 
 /** deAllocate all GPU buffers */
-void deAllocate(ref App app, Geometry object) {
-  vkDestroyBuffer(app.device, object.vertexBuffer, app.allocator);
-  vkFreeMemory(app.device, object.vertexBufferMemory, app.allocator);
-  vkDestroyBuffer(app.device, object.indexBuffer, app.allocator);
-  vkFreeMemory(app.device, object.indexBufferMemory, app.allocator);
-  vkDestroyBuffer(app.device, object.instanceBuffer, app.allocator);
-  vkFreeMemory(app.device, object.instanceBufferMemory, app.allocator);
+void deAllocate(ref App app, Geometry object, bool[3] buffers) {
+  if(!buffers[0]) {
+    vkDestroyBuffer(app.device, object.vertexBuffer, app.allocator);
+    vkFreeMemory(app.device, object.vertexBufferMemory, app.allocator);
+  }
+  if(!buffers[1]) {
+    vkDestroyBuffer(app.device, object.indexBuffer, app.allocator);
+    vkFreeMemory(app.device, object.indexBufferMemory, app.allocator);
+  }
+  if(!buffers[2]) {
+    vkDestroyBuffer(app.device, object.instanceBuffer, app.allocator);
+    vkFreeMemory(app.device, object.instanceBufferMemory, app.allocator);
+  }
 }
 
 /** Add a vertex to a geometry of the object */

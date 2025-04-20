@@ -128,7 +128,7 @@ void cleanUp(App app){
   foreach(shader; app.shaders){  vkDestroyShaderModule(app.device, shader, app.allocator); }
   vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
   vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
-  foreach(object; app.objects) { app.deAllocate(object); }
+  foreach(object; app.objects) { app.deAllocate(object, [false, false, false]); }
   foreach(texture; app.textures) { app.deAllocate(texture); }
   vkDestroySampler(app.device, app.sampler, null);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);

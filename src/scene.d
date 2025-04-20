@@ -23,12 +23,13 @@ void createScene(ref App app){
   for(int x = -100; x < 100; x++) {
     for(int z = -100; z < 100; z++) {
       mat4 instance;  // Add a instances of object 0
-      auto scalefactor = 0.25f;
+      auto scalefactor = 0.5f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
-      instance = translate(instance, [cast(float) x /4.0f, -1.0f, cast(float)z /4.0f]);
+      instance = translate(instance, [cast(float) x /2.0f, -1.0f, cast(float)z /2.0f]);
       if(x <= 0 && z <= 0) app.objects[0].instances ~= Instance(5, instance);
       if(x > 0 && z > 0) app.objects[0].instances ~= Instance(6, instance);
-      if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(7, instance);
+      if(x > 0 && z <= 0) app.objects[0].instances ~= Instance(7, instance);
+      if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(8, instance);
     }
   }
 
@@ -47,7 +48,7 @@ void createScene(ref App app){
       auto p = obj.position;
       obj.rotate([0.5f, 0.0f, 0.0f]);
       obj.position(p);
-      obj.isBuffered = false;
+      obj.buffers[2] = false;
     };
 
   SDL_Log("createScene: Add Text");
@@ -60,6 +61,19 @@ void createScene(ref App app){
   app.objects[4].texture(app.textures, "viking");
   app.objects[4].rotate([0.0f, 180.0f, 0.0f]);
   app.objects[4].position([2.0f, 0.0f, 0.0f]);
+
+  SDL_Log("createScene: Add ParticleSystem");
+  app.objects ~= new ParticleSystem();
+  /* Stress test with 20 x 20 instanced rendering of a 10k / 50k Particle system (50k x 400 = ~20mio particles)
+  for(int x = -10; x < 10; x++) {
+    for(int z = -10; z < 10; z++) {
+      mat4 instance;  // Add a instances of object 0
+      auto scalefactor = 0.25f;
+      instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
+      instance = translate(instance, [cast(float) x * 4, 2.0f, cast(float)z * 4]);
+      app.objects[5].instances ~= Instance(-1, instance);
+    }
+  }*/
 
   SDL_Log("createScene: Done");
 }

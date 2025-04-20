@@ -37,7 +37,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if(app.camera.isdrag[1]) app.camera.drag(e.motion.xrel, e.motion.yrel);
   }
   if(e.type == SDL_MOUSEWHEEL){
-    if (e.wheel.y < 0 && app.camera.distance <= 40.0f) app.camera.distance += 0.5f;
+    if (e.wheel.y < 0 && app.camera.distance <= 60.0f) app.camera.distance += 0.5f;
     if (e.wheel.y > 0 && app.camera.distance >=  2.0f) app.camera.distance -= 0.5f;
     app.camera.move([ 0.0f,  0.0f,  0.0f]);
   }
