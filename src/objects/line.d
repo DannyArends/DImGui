@@ -23,7 +23,7 @@ class Line : Geometry {
     ];
     indices = [0, 1];
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-    onTick = (ref App app, ref Geometry obj) { obj.deAllocate = true; };
+    onTick = (ref App app, ref Geometry obj) { obj.deAllocate = true; }; // Set the deAllocate flag onTick
   }
 }
 
