@@ -3,7 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import includes;
+import engine;
 
 import std.algorithm.mutation: swap;
 
@@ -23,6 +23,7 @@ class Line : Geometry {
     ];
     indices = [0, 1];
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    onTick = (ref App app, ref Geometry obj) { obj.deAllocate = true; };
   }
 }
 
