@@ -67,7 +67,7 @@ void handleEvents(ref App app) {
     if(!app.io.WantCaptureMouse) app.handleMouseEvents(e);
   }
 
-  if(app.time[FRAMESTART] - app.time[LASTTICK] > 10000) {
+  if(app.time[FRAMESTART] - app.time[LASTTICK] > 2500) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.verbose) SDL_Log("10 seconds: Frame: %d", app.totalFramesRendered);
     foreach(object; app.objects) { if(object.onTick) object.onTick(app, object); }
