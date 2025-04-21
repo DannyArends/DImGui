@@ -10,10 +10,12 @@ import std.random : uniform;
 import cube : Cube;
 import geometry : Geometry, Instance, computeNormals, position, rotate, scale, texture;
 import icosahedron : Icosahedron, refineIcosahedron;
+import lsystem : createLSystem;
 import matrix : mat4, scale, translate, rotate;
 import particlesystem : ParticleSystem;
 import square : Square;
 import text : Text;
+import turtle : Turtle;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 import wavefront : loadWavefront;
 
@@ -81,5 +83,8 @@ void createScene(ref App app){
     }
   } */
 
+  SDL_Log("createScene: Add ParticleSystem");
+  app.objects ~= new Turtle(createLSystem());
+  app.objects[6].position([2.0f, 1.0f, -2.0f]);
   SDL_Log("createScene: Finished");
 }
