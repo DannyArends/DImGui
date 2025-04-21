@@ -47,6 +47,7 @@ class Geometry {
   }
 
   bool isVisible = true;                          /// Boolean flag
+  bool deAllocate = false;                        /// Boolean flag
   bool[3] buffers = [false, false, false];        /// Boolean flag
   @property @nogc bool isBuffered() nothrow { 
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
@@ -61,6 +62,7 @@ class Geometry {
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseOver;
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseMove;
   void function(ref App app, ref Geometry obj) onFrame;
+  void function(ref App app, ref Geometry obj) onTick;
 }
 
 /** Set position of instance from object.instances by p */
@@ -101,7 +103,7 @@ class Geometry {
 }
 
 /** deAllocate all GPU buffers */
-void deAllocate(ref App app, Geometry object, bool[3] buffers) {
+void deAllocate(ref App app, Geometry object, bool[3] buffers = [false, false, false]) {
   if(!buffers[VERTEX]) {
     vkDestroyBuffer(app.device, object.vertexBuffer, app.allocator);
     vkFreeMemory(app.device, object.vertexBufferMemory, app.allocator);

@@ -53,7 +53,10 @@ ImDrawData* renderGUI(ref App app){
   igSetNextWindowPos(ImVec2(0, app.io.DisplaySize.y - 40), ImGuiCond_Always, ImVec2(0.0f,0.0f));
   igBegin("Main Menu", null, flags);
   foreach(i, object; app.objects){
-    if(igButton(("BTN" ~ to!string(i)).toStringz, ImVec2(0.0f, 0.0f))){ SDL_Log("Pressed %i", i); } igSameLine(0,5);
+    if(igButton(("BTN" ~ to!string(i)).toStringz, ImVec2(0.0f, 0.0f))){ 
+      //SDL_Log("Pressed %i", i);
+      app.objects[i].isVisible = !app.objects[i].isVisible;
+    } igSameLine(0,5);
   }
   igEnd();
   igRender();

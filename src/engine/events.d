@@ -5,8 +5,11 @@
 
 import engine;
 
+import std.algorithm : remove, reverse;
+
 import commands : recordRenderCommandBuffer;
 import camera : move, drag, castRay;
+import geometry : deAllocate;
 import line : createLine;
 import sdl : FRAMESTART, LASTTICK;
 
@@ -44,6 +47,16 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   }
 }
 
+/** Deallocate and removes stale Geometry from the app.objects array
+ */
+void removeGeometry(ref App app) {
+  size_t[] idx;
+  foreach(i, object; app.objects) { if(object.deAllocate){ app.deAllocate(object); idx ~= i; } }
+  foreach(i; idx.reverse) { app.objects = app.objects.remove(i); }
+}
+
+/** Handles all ImGui IO and SDL events
+ */
 void handleEvents(ref App app) {
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
@@ -57,11 +70,14 @@ void handleEvents(ref App app) {
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 10000) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.verbose) SDL_Log("10 seconds: Frame: %d", app.totalFramesRendered);
+    foreach(object; app.objects) { if(object.onTick) object.onTick(app, object); }
   }
 
   // Call all onFrame() handlers
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object); }
-  // Make sure we record the command buffer every frame after handling events
+
+  // Make sure we remove stale geometry and record the command buffer every frame after handling events
   enforceVK(vkDeviceWaitIdle(app.device));
+  app.removeGeometry();
   app.recordRenderCommandBuffer();
 }

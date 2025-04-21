@@ -18,7 +18,7 @@ import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 class ParticleSystem : Geometry {
   float[3] position = [15.0f, 8.0f, -8.0f];
   float[3][2] impulse = [[-2.0f, -1.0f, -1.0f],
-                         [2.0f, 2.0f, 1.0f]];
+                         [2.0f, 8.0f, 10.0f]];
   float[3] gravity = [0.0f, -0.005f, 0.0f];
   float[4][2] color = [[0.0f, 0.5f, 0.6f, 1.0f],
                        [0.1f, 1.0f, 1.0f, 1.0f]];
