@@ -110,7 +110,7 @@ LSystem createLSystem() {
   }
 
   for(size_t i = 0; i < 5; i++){
-    SDL_Log("state: %s", to!string(test.state).toStringz);
+    //SDL_Log("state: %s", to!string(test.state).toStringz);
     test.iterate();
   }
   return(test);
