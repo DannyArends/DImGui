@@ -63,6 +63,7 @@ class Geometry {
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseMove;
   void function(ref App app, ref Geometry obj) onFrame;
   void function(ref App app, ref Geometry obj) onTick;
+  string function() name;
 }
 
 /** Set position of instance from object.instances by p */

@@ -35,6 +35,7 @@ class Turtle : Geometry {
 
     /** onFrame handler aging the particles every frame */
     onFrame = (ref App app, ref Geometry obj){ (cast(Turtle)obj).age(); };
+    name = (){ return(typeof(this).stringof); };
   }
 
   void age() {

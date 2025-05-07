@@ -46,9 +46,7 @@ class Cube : Geometry {
                8, 9,10,  10,11, 8,      // top
               12,13,14,  14,15,12,      // left
               16,17,18,  18,19,16,      // bottom
-              20,21,22,  22,23,20];      // backside
+              20,21,22,  22,23,20];     // backside
+    name = (){ return(typeof(this).stringof); };
   }
-
-  //alias geometry this;
 }
-

@@ -6,7 +6,10 @@
 import engine;
 
 import std.conv : to;
+import std.format : format;
 import std.string : toStringz;
+
+import geometry : position;
 
 void initializeImGui(ref App app){
   igCreateContext(null);
@@ -50,14 +53,30 @@ ImDrawData* renderGUI(ref App app){
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
   igEnd();
-  igSetNextWindowPos(ImVec2(0, app.io.DisplaySize.y - 40), ImGuiCond_Always, ImVec2(0.0f,0.0f));
-  igBegin("Main Menu", null, flags);
+  //igSetNextWindowPos(ImVec2(0, app.io.DisplaySize.y - 40), ImGuiCond_Always, ImVec2(0.0f,0.0f));
+  igBegin("Main Menu", null, 0);
+  igBeginTable("Objects", 3, 0, ImVec2(0.0f, 0.0f), 0.0f);
   foreach(i, object; app.objects){
-    if(igButton(("BTN" ~ to!string(i)).toStringz, ImVec2(0.0f, 0.0f))){ 
-      //SDL_Log("Pressed %i", i);
+    igTableNextRow(0, 5.0f);
+    string text = to!string(i);
+    if(object.name) text = object.name() ~ " " ~ text;
+    igTableSetColumnIndex(0);
+    igText(text.toStringz, ImVec2(0.0f, 0.0f));
+    igTableSetColumnIndex(1);
+    igPushID_Int(to!int(i));
+    if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))){ 
       app.objects[i].isVisible = !app.objects[i].isVisible;
-    } igSameLine(0,5);
+    }
+    igSameLine(0,5);
+    if(igButton("Delete", ImVec2(0.0f, 0.0f))){
+      app.objects[i].deAllocate = true;
+    }
+    igTableSetColumnIndex(2);
+    auto p = app.objects[i].position;
+    igText(format("[%.1f %.1f %.1f]", p[0], p[1], p[2]).toStringz, ImVec2(0.0f, 0.0f));
+    igPopID();
   }
+  igEndTable();
   igEnd();
   igRender();
 
