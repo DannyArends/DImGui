@@ -18,9 +18,12 @@ App initializeSDL() {
   int[4] init;
   App app;
   SDL_version linked;
-  app.time[START] = SDL_GetTicks64();
-  // Initialize Libraries
+
+  // Initialize the SDL library for video
   init[MAIN] = SDL_Init(SDL_INIT_VIDEO);
+  app.time[START] = SDL_GetTicks();
+
+  // Make sure we know all versions (compiled and linked)
   SDL_GetVersion(&linked);
   if(app.verbose) SDL_Log("SDL[C] v%u.%u.%u", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
   if(app.verbose) SDL_Log("SDL[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);

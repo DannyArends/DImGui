@@ -40,10 +40,10 @@ void main(string[] args) {
   app.createScene();                /// Create a scene with Geometries
   app.createOrResizeWindow();       /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();            /// Initialize ImGui (IO, Style, etc)
-  app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks64();
+  app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 500000;
   while (!app.finished && app.totalFramesRendered < frames) { // Main loop
-    app.time[FRAMESTART] = SDL_GetTicks64();
+    app.time[FRAMESTART] = SDL_GetTicks();
     app.handleEvents();
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
 
