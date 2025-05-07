@@ -5,11 +5,11 @@
 
 import std.random : uniform;
 
-/* Generate a random color
+/** Generate a random color
  */
 float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), alpha]); }
 
-/* Amino Acid Residue to 'official' colors
+/** Amino Acid Residue to 'official' colors
  */
 @nogc float[4] residueToColor(string residue) nothrow {
   switch (residue) {
@@ -39,7 +39,7 @@ float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(
   }
 }
 
-/* Atom to Jmol color scheme
+/** Atom to Jmol color scheme
  */
 @nogc float[4] atomToColor(string atom) nothrow {
   switch (atom) {
@@ -48,7 +48,7 @@ float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(
     case "Li":  return [0.800, 0.502, 1.000, 1.0];
     case "Be":  return [0.761, 1.000, 0.000, 1.0];
     case "B" :  return [1.000, 0.710, 0.710, 1.0];
-    case "C" :  return [0.565, 0.565, 0.565, 1.0];
+    case "C" :  return [0.0, 0.0, 0.0, 1.0];
     case "N" :  return [0.188, 0.314, 0.973, 1.0];
     case "O" :  return [1.000, 0.051, 0.051, 1.0];
     case "F" :  return [0.565, 0.878, 0.314, 1.0];

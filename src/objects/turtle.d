@@ -9,7 +9,7 @@ import std.random : Random, uniform;
 import std.conv : to;
 import std.string : toStringz;
 
-import geometry : Geometry;
+import geometry : Instance, Geometry;
 import lsystem : LSystem, Symbols;
 import vector : vAdd, vMul, normalize;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
@@ -30,6 +30,7 @@ class Turtle : Geometry {
 
     vertices = [Vertex(origin, [0.0f, 0.0f], colors[0]), Vertex([0.0f, 0.0f, 0.0f], [0.0f, 0.0f], colors[1])];
     indices = [0, 1];
+    instances = [Instance()];
 
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 

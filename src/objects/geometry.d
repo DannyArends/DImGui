@@ -34,7 +34,7 @@ class Geometry {
 
   Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
   uint[] indices;                               /// Indices of type uint stored on the CPU
-  Instance[] instances = [Instance.init];       /// Instance array
+  Instance[] instances;                         /// Instance array
   alias instances this;
 
   /** Allocate vertex, index, and instance buffers */
