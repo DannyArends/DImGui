@@ -8,7 +8,7 @@ import engine;
 import std.algorithm.mutation: swap;
 
 import boundingbox : BoundingBox;
-import geometry : Geometry;
+import geometry : Instance, Geometry;
 import matrix : multiply;
 import vector : vAdd, vSub, vMul, x, y, z;
 import vertex : Vertex;
@@ -22,6 +22,8 @@ class Line : Geometry {
       Vertex([ 0.0f, 1.0f, 0.0f ], [  0.0f, 0.0f ], [ 0.0f, 1.0f, 0.0f, 1.0f ])
     ];
     indices = [0, 1];
+    instances = [Instance()];
+
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     onTick = (ref App app, ref Geometry obj) { obj.deAllocate = true; }; // Set the deAllocate flag onTick
     name = (){ return(typeof(this).stringof); };

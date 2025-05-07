@@ -9,14 +9,17 @@ import std.algorithm : map, startsWith, splitter;
 import std.array : array, split;
 import std.conv : to;
 
-import geometry : Geometry, rotate;
+import geometry : Instance, Geometry, rotate;
 import io : readFile;
 import vertex : Vertex;
 
 /** WaveFront
  */
 class WaveFront : Geometry {
-  this(){ name = (){ return(typeof(this).stringof); }; }
+  this(){ 
+    instances = [Instance()];
+    name = (){ return(typeof(this).stringof); };
+  }
 }
 
 WaveFront loadWavefront(ref App app, const(char)* path) {

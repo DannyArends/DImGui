@@ -5,7 +5,9 @@
 
 import engine;
 
+import std.algorithm : sort;
 import std.random : uniform;
+import std.string : toStringz;
 
 import cube : Cube;
 import geometry : Geometry, Instance, computeNormals, position, rotate, scale, texture;
@@ -13,7 +15,7 @@ import icosahedron : Icosahedron, refineIcosahedron;
 import lsystem : createLSystem;
 import matrix : mat4, scale, translate, rotate;
 import particlesystem : ParticleSystem;
-import pdb : AtomCloud, loadProteinCif;
+import pdb : AtomCloud, Backbone, AminoAcidCloud, loadProteinCif;
 import square : Square;
 import text : Text;
 import turtle : Turtle;
@@ -89,8 +91,20 @@ void createScene(ref App app){
   app.objects[6].position([2.0f, 1.0f, -2.0f]);
 
   SDL_Log("createScene: Add PDB object");
-  auto pdb = loadProteinCif("assets/objects/3kql.cif.gz");
-  app.objects ~= new AtomCloud(pdb.atoms());
-  app.objects[7].scale([0.01f, 0.01f, 0.01f]);
+  auto protein = loadProteinCif("assets/objects/3kql.cif.gz");
+  uint i = 7;
+  app.objects ~= new AtomCloud(protein.atoms());
+  app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+  i++;
+  foreach (p; sort(protein.keys)) {
+    if (protein[p].isAAChain()) {
+      app.objects ~= new Backbone(protein[p]);
+      app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+      i++;
+      app.objects ~= new AminoAcidCloud(protein[p]);
+      app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+      i++;
+    }
+  }
   SDL_Log("createScene: Finished");
 }

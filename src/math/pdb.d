@@ -14,7 +14,7 @@ import std.regex : regex, matchAll;
 import std.stdio, std.string; 
 
 import color : atomToColor, Colors, residueToColor;
-import geometry : Geometry, addVertex;
+import geometry : Instance, Geometry, addVertex;
 import io : loadGzfile, isfile;
 import vertex : Vertex;
 
@@ -69,19 +69,67 @@ struct Protein {
   }
 }
 
-// Pointcloud of all Atoms
+/** Pointcloud of all Atoms
+ */
 class AtomCloud : Geometry {
   this(Atom[] atoms) {
     foreach(i, Atom atom; atoms) {
-      vertices ~=Vertex(atom.location, [1.0f, 1.0f], atomToColor(atom.element));
+      vertices ~= Vertex(atom.location, [1.0f, 1.0f], atomToColor(atom.element));
       indices ~= cast(uint)i;
     }
+    instances = [Instance()];
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     name = (){ return(typeof(this).stringof); };
   }
 }
 
-// PDB format description version 3.3, ftp://ftp.wwpdb.org/pub/pdb/doc/format_descriptions/Format_v33_A4.pdf
+/** AminoAcids rendering
+ */
+class AminoAcidCloud : Geometry {
+  this(AminoAcid[int] peptides) nothrow {
+    uint vs, vi, vp = 0;
+    foreach (uint i; sort(peptides.keys)) {
+      foreach (s; ["N", "CA", "C", "O"]) {
+        if (s in peptides[i].atoms) {
+          vertices ~= Vertex(peptides[i].atoms[s].location, [1.0f, 1.0f], residueToColor(peptides[i].name));
+          vi = cast(uint)(vertices.length - 1);
+          if (s == "N") vs = vi;
+          else
+            indices ~= [vs, vi];
+          if (vp != 0) indices ~= [vp, vi];
+          vp = vi;
+        }
+      }
+    }
+    instances = [Instance()];
+    topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    name = (){ return(typeof(this).stringof); };
+  }
+}
+
+// Protein backbone
+class Backbone : Geometry {
+  this(AminoAcid[int] peptides) nothrow {
+    uint vi, vp = 0;
+    foreach (uint i; sort(peptides.keys)) {
+      foreach (s; ["N", "CA", "C", "O"]) {
+        if (s in peptides[i].atoms) {
+          vertices ~= Vertex(peptides[i].atoms[s].location, [1.0f, 1.0f]);
+          vi =  cast(uint)(vertices.length - 1);
+          if (vp != 0) indices ~= [vp, vi];
+          vp = vi;
+        }
+      }
+    }
+    instances = [Instance()];
+    topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    name = (){ return(typeof(this).stringof); };
+  }
+}
+
+/** loadProtein
+ * See: PDB format description version 3.3, ftp://ftp.wwpdb.org/pub/pdb/doc/format_descriptions/Format_v33_A4.pdf
+ */
 Protein loadProtein(string path) {
     Protein protein;
     if (!isfile(path)) {
@@ -121,7 +169,9 @@ Protein loadProtein(string path) {
     return(protein);
 }
 
-// PDB mmCIF File Format, http://mmcif.wwpdb.org/pdbx-mmcif-home-page.html
+/** loadProteinCif
+ * See: PDB mmCIF File Format, http://mmcif.wwpdb.org/pdbx-mmcif-home-page.html
+ */
 Protein loadProteinCif(string path, string chain = "") {
     Protein protein;
     if (!isfile(path)) {

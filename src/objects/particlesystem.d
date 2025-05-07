@@ -9,7 +9,7 @@ import std.random : uniform;
 import std.math : abs;
 
 import particle : Particle;
-import geometry : Geometry;
+import geometry : Instance, Geometry;
 import vector : Vector, vMul, vAdd, magnitude, normalize;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
@@ -30,6 +30,7 @@ class ParticleSystem : Geometry {
     particles.length = nParticles;
     vertices.length = nParticles;
     indices.length = nParticles;
+    instances = [Instance()];
     for(uint i = 0; i < nParticles; i++) { spawn(i); }
 
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
