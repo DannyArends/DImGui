@@ -7,8 +7,11 @@ import includes;
 
 import std.algorithm : map, filter;
 import std.array : array;
-import std.file : dirEntries, SpanMode;
+import std.conv : to;
+import std.stdio : File;
+import std.file : exists, isFile, dirEntries, SpanMode;
 import std.string : toStringz;
+import std.zlib : UnCompress;
 
 uint[] readFile(const(char*) path, bool verbose = false) {
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
@@ -36,3 +39,25 @@ immutable(char)*[] dir(string path, string pattern = "*", bool shallow = true) {
   if(!shallow) mode = SpanMode.depth;
   return(dirEntries(path, pattern, mode).filter!(a => a.isFile).map!(a => a.name.toStringz).array);
 }
+
+
+bool isfile(string path) {
+  try {
+    if (path.exists() || path.isFile) return(true);
+  } catch (Exception e) { SDL_Log("path %s was not a file", path.ptr); }
+  return(false);
+}
+
+string loadGzfile (const string path, uint chunkSize = 1024) {
+  string content = "";
+  if (!path.isfile) { return(content); }
+
+  auto uc = new UnCompress();
+  foreach (chunk; File(path).byChunk(chunkSize)) {
+    auto uncompressed = uc.uncompress(chunk);
+    content ~= to!string(uncompressed);
+  }
+  content ~= to!string(uc.flush());  // flush the compression buffer
+  return(content);
+}
+
