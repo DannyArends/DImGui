@@ -13,6 +13,7 @@ import icosahedron : Icosahedron, refineIcosahedron;
 import lsystem : createLSystem;
 import matrix : mat4, scale, translate, rotate;
 import particlesystem : ParticleSystem;
+import pdb : AtomCloud, loadProteinCif;
 import square : Square;
 import text : Text;
 import turtle : Turtle;
@@ -86,5 +87,10 @@ void createScene(ref App app){
   SDL_Log("createScene: Add ParticleSystem");
   app.objects ~= new Turtle(createLSystem());
   app.objects[6].position([2.0f, 1.0f, -2.0f]);
+
+  SDL_Log("createScene: Add PDB object");
+  auto pdb = loadProteinCif("assets/objects/3kql.cif.gz");
+  app.objects ~= new AtomCloud(pdb.atoms());
+  app.objects[7].scale([0.01f, 0.01f, 0.01f]);
   SDL_Log("createScene: Finished");
 }
