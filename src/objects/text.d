@@ -42,6 +42,7 @@ class Text : Geometry {
       nGlyhs++;
     }
     this.texture(app.textures, app.glyphAtlas.path);
+    name = (){ return(typeof(this).stringof); };
   }
 }
 

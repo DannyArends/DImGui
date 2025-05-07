@@ -15,7 +15,9 @@ import vertex : Vertex;
 
 /** WaveFront
  */
-class WaveFront : Geometry { }
+class WaveFront : Geometry {
+  this(){ name = (){ return(typeof(this).stringof); }; }
+}
 
 WaveFront loadWavefront(ref App app, const(char)* path) {
   char[] content = cast(char[])readFile(path); // Open for reading

@@ -36,8 +36,9 @@ class ParticleSystem : Geometry {
 
     /** onFrame handler aging the particles every frame */
     onFrame = (ref App app, ref Geometry obj){ (cast(ParticleSystem)obj).age(); };
+    name = (){ return(typeof(this).stringof); };
   }
-  
+
   /** (Re)Spawn a particle at i */
   void spawn(uint i) {
     auto r = uniform(color[0][0], color[1][0]);
