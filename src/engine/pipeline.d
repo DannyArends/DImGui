@@ -5,6 +5,7 @@
 
 import engine;
 
+import devices : getSampleCount;
 import shaders : createShaderModule, createShaderStageInfo;
 import vertex : Vertex;
 
@@ -72,7 +73,7 @@ GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topolog
   VkPipelineMultisampleStateCreateInfo multisampling = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
     sampleShadingEnable: VK_FALSE,
-    rasterizationSamples: VK_SAMPLE_COUNT_1_BIT,
+    rasterizationSamples: app.getSampleCount(),
     minSampleShading: 1.0f,                                   // Optional
     pSampleMask: null,                                        // Optional
     alphaToCoverageEnable: VK_FALSE,                          // Optional

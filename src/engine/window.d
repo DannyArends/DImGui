@@ -8,10 +8,12 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
+import devices : getSampleCount;
 import depthbuffer : createDepthResources, destroyDepthBuffer;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
 import framebuffer : createFramebuffers;
+import images : createColorResources, destroyColorBuffer;
 import pipeline : createGraphicsPipeline, deAllocate;
 import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
@@ -39,6 +41,7 @@ void createOrResizeWindow(ref App app) {
   app.querySurfaceCapabilities();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
+  app.createColorResources();
   app.createDepthResources();
   app.createUniforms();
   app.createDescriptorPool();
@@ -69,6 +72,7 @@ void destroyFrameData(ref App app) {
   if(app.descriptorSetLayout) vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator);
   if(app.uniform.uniformBuffers) app.destroyUniforms();
   if(app.descriptorPool) vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
+  if(app.colorBuffer.colorImage) app.destroyColorBuffer();
   if(app.depthBuffer.depthImage) app.destroyDepthBuffer();
   if(app.pipelines) app.deAllocate(app.pipelines);
   if(app.imguiPass) vkDestroyRenderPass(app.device, app.imguiPass, app.allocator);

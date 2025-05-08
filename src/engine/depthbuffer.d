@@ -4,7 +4,7 @@
  */
 
 import engine;
-
+import devices : getSampleCount;
 import images : createImage,transitionImageLayout;
 import swapchain : createImageView;
 
@@ -46,7 +46,7 @@ void createDepthResources(ref App app) {
   VkFormat depthFormat = app.findDepthFormat();
   if(app.verbose) SDL_Log(" - depthFormat: %d", depthFormat);
   app.createImage(app.camera.width, app.camera.height, &app.depthBuffer.depthImage, &app.depthBuffer.depthImageMemory, 
-                  depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+                  depthFormat, app.getSampleCount(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.depthImage);
   app.depthBuffer.depthImageView = app.createImageView(app.depthBuffer.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
   if(app.verbose) SDL_Log(" - image view created: %p", app.depthBuffer.depthImageView);

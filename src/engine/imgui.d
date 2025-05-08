@@ -10,6 +10,7 @@ import std.format : format;
 import std.string : toStringz;
 
 import geometry : position;
+import devices : getSampleCount;
 
 void initializeImGui(ref App app){
   igCreateContext(null);
@@ -30,6 +31,7 @@ void initializeImGui(ref App app){
     MinImageCount : app.camera.minImageCount,
     ImageCount : cast(uint)app.imageCount,
     RenderPass : app.imguiPass,
+    MSAASamples : app.getSampleCount(),
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&imguiInit);

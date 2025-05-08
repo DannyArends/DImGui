@@ -6,16 +6,30 @@
 import engine;
 
 import depthbuffer : findDepthFormat;
+import devices : getSampleCount;
 
-VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR) {
+VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
+                                           VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR) {
   if(app.verbose) SDL_Log("Creating renderpass");
+
   VkAttachmentDescription colorAttachment = {
     format : app.surfaceformats[0].format,
-    samples : VK_SAMPLE_COUNT_1_BIT,
+    samples : app.getSampleCount(),
     loadOp : loadOp,
     storeOp : VK_ATTACHMENT_STORE_OP_STORE,
     initialLayout : initialLayout,
     finalLayout : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+  };
+
+  VkAttachmentDescription colorAttachmentResolve = {
+    format : app.surfaceformats[0].format,
+    samples : VK_SAMPLE_COUNT_1_BIT,
+    loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    storeOp : VK_ATTACHMENT_STORE_OP_STORE,
+    stencilLoadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    stencilStoreOp : VK_ATTACHMENT_STORE_OP_DONT_CARE,
+    initialLayout : VK_IMAGE_LAYOUT_UNDEFINED,
+    finalLayout :VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
   };
 
   VkAttachmentReference colorAttachmentRef = {
@@ -23,9 +37,14 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
     layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
   };
 
+  VkAttachmentReference colorAttachmentResolveRef = {
+    attachment : 2,
+    layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+  };
+
   VkAttachmentDescription depthAttachment = {
     format: app.findDepthFormat(),
-    samples: VK_SAMPLE_COUNT_1_BIT,
+    samples: app.getSampleCount(),
     loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
     storeOp: VK_ATTACHMENT_STORE_OP_STORE,
     initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
@@ -38,7 +57,8 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
     pipelineBindPoint : VK_PIPELINE_BIND_POINT_GRAPHICS,
     colorAttachmentCount : 1,
     pColorAttachments : &colorAttachmentRef,
-    pDepthStencilAttachment: &depthAttachmentRef
+    pDepthStencilAttachment: &depthAttachmentRef,
+    pResolveAttachments: &colorAttachmentResolveRef
   };
 
   VkSubpassDependency subpassDependency = {
@@ -50,7 +70,7 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
     dstAccessMask : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
   };
 
-  VkAttachmentDescription[2] attachments = [colorAttachment, depthAttachment];
+  VkAttachmentDescription[3] attachments = [colorAttachment, depthAttachment, colorAttachmentResolve];
 
   VkRenderPassCreateInfo createInfo = {
     sType : VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
