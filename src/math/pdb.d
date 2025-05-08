@@ -89,7 +89,7 @@ class AminoAcidCloud : Geometry {
   this(AminoAcid[int] peptides) nothrow {
     uint vs, vi, vp = 0;
     foreach (uint i; sort(peptides.keys)) {
-      foreach (s; ["N", "CA", "C", "O"]) {
+      foreach (s; ["N", "CA", "C"]) {
         if (s in peptides[i].atoms) {
           vertices ~= Vertex(peptides[i].atoms[s].location, [1.0f, 1.0f], residueToColor(peptides[i].name));
           vi = cast(uint)(vertices.length - 1);
@@ -116,8 +116,8 @@ class Backbone : Geometry {
         if (s in peptides[i].atoms) {
           vertices ~= Vertex(peptides[i].atoms[s].location, [1.0f, 1.0f]);
           vi =  cast(uint)(vertices.length - 1);
-          if (vp != 0) indices ~= [vp, vi];
-          vp = vi;
+          if (s != "O"){ indices ~= [vp, vi]; vp = vi; }
+          if (s == "O"){ indices ~= [vp, vi]; vertices[vi].color = [1.0f, 0.0f, 0.0f, 1.0f]; }
         }
       }
     }
