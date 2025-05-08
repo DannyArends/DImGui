@@ -9,13 +9,15 @@ import core.time : MonoTime;
 
 import buffer : createBuffer;
 import matrix : mat4, rotate, lookAt, perspective;
-
+import lights : Light, Lights;
 
 struct UniformBufferObject {
   mat4 scene = mat4.init;
   mat4 view = mat4.init;
   mat4 proj = mat4.init;
   mat4 orientation = mat4.init; // Screen orientation
+  Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
+  int nlights = 4;
 }
 
 struct Uniform {
@@ -34,7 +36,7 @@ void updateUniformBuffer(ref App app, uint currentImage) {
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,
     proj: app.camera.proj,
-    orientation: mat4.init
+    orientation: mat4.init,
   };
 
   // Adjust for screen orientation so that the world is always up
@@ -50,7 +52,6 @@ void updateUniformBuffer(ref App app, uint currentImage) {
   vkMapMemory(app.device, app.uniform.uniformBuffersMemory, 0, ubo.sizeof, 0, &data);
   memcpy(data, &ubo, ubo.sizeof);
   vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory);
-  //toStdout("UniformBuffer updated");
 }
 
 void destroyUniforms(App app) {

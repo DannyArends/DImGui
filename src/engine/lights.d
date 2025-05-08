@@ -6,18 +6,16 @@
 public import includes;
 
 struct Light {
-  float[4] position  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light Position
-  float[3] intensity = [0.0f, 0.0f, 0.0f];          /// Light intensity
-  float ambient = 0.0f;                             /// Light intensity
-  float attenuation = 0.0f;                         /// Light intensity
-  float[3] direction = [0.0f, 0.0f, 0.0f];          /// Light direction
-  float angle = 0.0f;                               /// Light angle
+  float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light Position
+  float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
+  float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
+  float[4] properties = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light properties [ambient, attenuation, angle]
 }
 
 enum Lights : Light {
-  White = Light([ 0.0f,  1.0f,  0.0f, 0.0f], [0.6f, 0.6f, 0.6f], 1.0f),
-  Red   = Light([ 5.0f,  5.0f,  5.0f, 1.0f], [5.0f, 0.0f, 0.0f], 0.0f, 0.05f, [1.0f, -0.15f, 1.0f], 35),
-  Green = Light([-5.0f,  5.0f,  5.0f, 1.0f], [0.0f, 1.0f, 0.0f], 0.0f, 0.05f),
-  Blue  = Light([ 5.0f,  5.0f, -5.0f, 1.0f], [0.0f, 0.0f, 2.0f], 0.0f, 0.05f)
+  White = Light([ 0.0f,  1.0f,  0.0f, 0.0f], [0.4f, 0.4f, 0.4f, 1.0f], [0.0f,   0.0f, 0.0f, 0.0f], [1.0f, 0.0f, 0.0f, 0.0f]),
+  Red   = Light([-5.0f,  5.0f, -5.0f, 1.0f], [5.0f, 0.0f, 0.0f, 1.0f], [1.0f, -0.15f, 1.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f]),
+  Green = Light([-5.0f,  5.0f, -5.0f, 1.0f], [0.0f, 5.0f, 0.0f, 1.0f], [0.0f, -0.15f, 1.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f]),
+  Blue  = Light([-5.0f,  5.0f, -5.0f, 1.0f], [0.0f, 0.0f, 5.0f, 1.0f], [1.0f, -0.15f, 0.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f])
 };
 
