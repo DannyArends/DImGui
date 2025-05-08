@@ -8,10 +8,12 @@ public import core.stdc.string : strcmp, memcpy;
 
 import validation;
 
+import depthbuffer : DepthBuffer;
 import camera : Camera;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
 import matrix : multiply, inverse;
+import images : ColorBuffer;
 import vector : normalize;
 import uniforms : Uniform;
 import textures : Texture, deAllocate;
@@ -29,14 +31,6 @@ struct Sync {
 struct GraphicsPipeline {
   VkPipelineLayout pipelineLayout;
   VkPipeline graphicsPipeline;
-}
-
-/** DepthBuffer
- */
-struct DepthBuffer {
-  VkImage depthImage;
-  VkDeviceMemory depthImageMemory;
-  VkImageView depthImageView;
 }
 
 /** Main application structure
@@ -66,6 +60,7 @@ struct App {
   VkPipelineShaderStageCreateInfo[] shaderStages;
   GraphicsPipeline[VkPrimitiveTopology] pipelines;
   DepthBuffer depthBuffer;
+  ColorBuffer colorBuffer;
   ImGuiIO* io;
 
   // Vulkan

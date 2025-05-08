@@ -48,8 +48,8 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add an Icosahedron");
   app.objects ~= new Icosahedron();
-  //app.objects[2].texture(app.textures, "sun");
-  app.objects[2].refineIcosahedron(4);
+  app.objects[2].texture(app.textures, "sun");
+  app.objects[2].refineIcosahedron(3);
   app.objects[2].computeNormals();
   app.objects[2].scale([3.0f, 3.0f, 3.0f]);
   app.objects[2].position([10.0f, 2.0f, 2.0f]);

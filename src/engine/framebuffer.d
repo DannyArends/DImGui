@@ -9,7 +9,7 @@ void createFramebuffers(ref App app) {
   app.swapChainFramebuffers.length = app.imageCount;
 
   for (size_t i = 0; i < app.imageCount; i++) {
-    VkImageView[] attachments = [app.swapChainImageViews[i], app.depthBuffer.depthImageView];
+    VkImageView[] attachments = [app. colorBuffer.colorImageView, app.depthBuffer.depthImageView, app.swapChainImageViews[i]];
 
     VkFramebufferCreateInfo framebufferInfo = {
       sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,

@@ -5,13 +5,35 @@
 
 import engine;
 
+import devices : getSampleCount;
 import buffer : findMemoryType, hasStencilComponent;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
+import swapchain : createImageView;
 
 VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * (surface.format.BitsPerPixel / 8)); }
 
+struct ColorBuffer {
+  VkImage colorImage;
+  VkDeviceMemory colorImageMemory;
+  VkImageView colorImageView;
+}
+
+void destroyColorBuffer(ref App app) {
+  vkFreeMemory(app.device, app.colorBuffer.colorImageMemory, app.allocator);
+  vkDestroyImageView(app.device, app.colorBuffer.colorImageView, app.allocator);
+  vkDestroyImage(app.device, app.colorBuffer.colorImage, app.allocator);
+}
+
+void createColorResources(ref App app) {
+  app.createImage(app.camera.width, app.camera.height, &app.colorBuffer.colorImage, &app.colorBuffer.colorImageMemory,
+                  app.surfaceformats[0].format, app.getSampleCount(), VK_IMAGE_TILING_OPTIMAL,
+                  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+  app.colorBuffer.colorImageView = app.createImageView(app.colorBuffer.colorImage, app.surfaceformats[0].format, 1);
+}
+
 void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceMemory* imageMemory, 
                  VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
+                 VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
                  VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
                  VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
                  VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
@@ -33,7 +55,7 @@ void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceM
     initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
     usage: usage,
     sharingMode: VK_SHARING_MODE_EXCLUSIVE,
-    samples: VK_SAMPLE_COUNT_1_BIT,
+    samples: samples,
     flags: 0
   };
   
