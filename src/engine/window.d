@@ -10,7 +10,7 @@ import std.traits : EnumMembers;
 
 import devices : getSampleCount;
 import depthbuffer : createDepthResources, destroyDepthBuffer;
-import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
+import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet, createImGuiDescriptorPool, createImGuiDescriptorSetLayout, addImGuiTexture;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
 import framebuffer : createFramebuffers;
 import images : createColorResources, destroyColorBuffer;

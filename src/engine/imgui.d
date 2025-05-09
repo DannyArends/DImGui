@@ -15,6 +15,8 @@ import devices : getSampleCount;
 void initializeImGui(ref App app){
   igCreateContext(null);
   app.io = igGetIO_Nil();
+  app.fonts ~= ImFontAtlas_AddFontDefault(app.io.Fonts, null);
+  app.fonts ~= ImFontAtlas_AddFontFromFileTTF(app.io.Fonts, "assets/fonts/FreeMono.ttf", 12, null, null);
   app.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   igStyleColorsDark(null);
   if(app.verbose) SDL_Log("ImGuiIO: %p", app.io);
@@ -44,6 +46,7 @@ ImDrawData* renderGUI(ref App app){
   ImGui_ImplSDL2_NewFrame();
   igNewFrame();
   if(app.showdemo) igShowDemoWindow(&app.showdemo);
+  igPushFont(app.fonts[1]);
   igSetNextWindowPos(ImVec2(0.0f, 0.0f), 0, ImVec2(0.0f, 0.0f));
   auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
   igBegin("FPS", null, flags);
@@ -55,8 +58,10 @@ ImDrawData* renderGUI(ref App app){
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
   igEnd();
-  //igSetNextWindowPos(ImVec2(0, app.io.DisplaySize.y - 40), ImGuiCond_Always, ImVec2(0.0f,0.0f));
-  igBegin("Main Menu", null, 0);
+  igPopFont();
+
+  igPushFont(app.fonts[0]);
+  igBegin("All Objects", null, 0);
   igBeginTable("Objects", 3, 0, ImVec2(0.0f, 0.0f), 0.0f);
   foreach(i, object; app.objects){
     igTableNextRow(0, 5.0f);
@@ -80,6 +85,14 @@ ImDrawData* renderGUI(ref App app){
   }
   igEndTable();
   igEnd();
+  igPopFont();
+
+  igBegin("Vulkan Texture Test", null, 0);
+  igText("pointer = %p", app.textures[4].descrSet);
+  igText("size = %d x %d", app.textures[4].width, app.textures[5].height);
+  igImage(cast(ImTextureID)app.textures[4].descrSet, ImVec2(app.textures[5].width/10, app.textures[5].height/10), ImVec2(0, 0), ImVec2(1, 1));
+  igEnd();
+
   igRender();
 
   return(igGetDrawData());

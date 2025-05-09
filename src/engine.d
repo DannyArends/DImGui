@@ -62,6 +62,7 @@ struct App {
   DepthBuffer depthBuffer;
   ColorBuffer colorBuffer;
   ImGuiIO* io;
+  ImFont*[] fonts;
 
   // Vulkan
   VkInstance instance = null;
@@ -70,6 +71,8 @@ struct App {
   VkDevice device = null;
   VkQueue queue = null;
   VkDescriptorPool imguiPool = null;
+  VkDescriptorSetLayout ImGuiSetLayout = null;
+
   VkDescriptorPool descriptorPool = null;
   VkDescriptorSetLayout descriptorSetLayout = null;
   VkDescriptorSet descriptorSet = null;
@@ -129,6 +132,7 @@ void cleanUp(App app){
   vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
   foreach(object; app.objects) { app.deAllocate(object, [false, false, false]); }
   foreach(texture; app.textures) { app.deAllocate(texture); }
+  vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator);
   vkDestroySampler(app.device, app.sampler, null);
   vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
   vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);

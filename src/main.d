@@ -7,7 +7,7 @@ import engine;
 import validation;
 
 import commands : createCommandPool;
-import descriptor : createImGuiDescriptorPool;
+import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout, addImGuiTexture;
 import devices : createLogicalDevice;
 import events : handleEvents;
 import frame : presentFrame, renderFrame;
@@ -18,6 +18,7 @@ import instance : createInstance;
 import sdl : initializeSDL, START, STARTUP, FRAMESTART, LASTTICK;
 import shaders : createShadersStages;
 import surface : createSurface;
+import textures : Texture;
 import textures : loadTextures, createSampler;
 import window: createOrResizeWindow, checkForResize;
 
@@ -33,9 +34,11 @@ void main(string[] args) {
   app.createShadersStages();
   app.createCommandPool();
   app.createSampler();
+  app.createImGuiDescriptorPool();
+  app.createImGuiDescriptorSetLayout();
   app.createFontTexture();
   app.loadTextures();
-  app.createImGuiDescriptorPool();
+
   app.createSurface();              /// Create rendering surface
   app.createScene();                /// Create a scene with Geometries
   app.createOrResizeWindow();       /// Create window (swapchain, renderpass, framebuffers, etc)
