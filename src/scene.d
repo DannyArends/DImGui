@@ -25,6 +25,7 @@ import wavefront : loadWavefront;
 /** Create a scene for rendering
  */
 void createScene(ref App app){
+
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
   app.objects[0].position([0.0f,-0.5f,0.0f]);
@@ -76,6 +77,7 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add ParticleSystem");
   app.objects ~= new ParticleSystem();
+
   /** Stress test with 20 x 20 instanced rendering of a 10k / 50k Particle system (50k x 400 = ~20mio particles) */
   /*
   for(int x = -10; x < 10; x++) {
@@ -94,18 +96,18 @@ void createScene(ref App app){
   app.objects[6].position([2.0f, 1.0f, -2.0f]);
 
   SDL_Log("createScene: Add PDB object");
-  auto protein = loadProteinCif("assets/objects/3kql.cif.gz");
+  auto protein = loadProteinCif("assets/objects/1gfl.cif.gz");
   uint i = 7;
   app.objects ~= new AtomCloud(protein.atoms());
-  app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+  app.objects[i].scale([0.5f, 0.5f, 0.5f]);
   i++;
   foreach (p; sort(protein.keys)) {
     if (protein[p].isAAChain()) {
       app.objects ~= new Backbone(protein[p]);
-      app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+      app.objects[i].scale([0.5f, 0.5f, 0.5f]);
       i++;
       app.objects ~= new AminoAcidCloud(protein[p]);
-      app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+      app.objects[i].scale([0.5f, 0.5f, 0.5f]);
       i++;
     }
   }

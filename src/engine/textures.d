@@ -11,6 +11,7 @@ import io : dir;
 import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
+import descriptor : addImGuiTexture;
 
 struct Texture {
   const(char)* path;
@@ -18,6 +19,7 @@ struct Texture {
   uint height = 0;
   SDL_Surface* surface;
 
+  VkDescriptorSet descrSet;
   VkImage textureImage;
   VkDeviceMemory textureImageMemory;
   VkImageView textureImageView;
@@ -54,6 +56,7 @@ void loadTexture(ref App app, const(char)* path) {
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
   Texture texture = { path : path, width: surface.w, height: surface.h, surface: surface };
   app.toGPU(texture);
+//  ImGui_ImplVulkan_AddTexture(app.sampler, texture.textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 void toGPU(ref App app, ref Texture texture){
   // Create a buffer to transfer the image to the GPU
@@ -75,6 +78,9 @@ void toGPU(ref App app, ref Texture texture){
 
   // Create an imageview on the image
   texture.textureImageView = app.createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+
+  // Create an ImGui texture
+  app.addImGuiTexture(texture);
 
   // Cleanup
   if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));
