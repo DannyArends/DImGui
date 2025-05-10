@@ -10,6 +10,7 @@ import std.format : format;
 import std.string : toStringz;
 
 import geometry : position;
+import lights : Light;
 import devices : getSampleCount;
 
 void initializeImGui(ref App app){
@@ -45,9 +46,10 @@ struct GUI{
   bool showDemo = false;
   bool showFPS = true;
   bool showObjects = false;
+  bool showLights = false;
   bool showTexture = false;
-  float minpos = -50.0;
-  float maxpos = 50.0;
+  float[2] pos = [-50.0, 50];
+  float[2] col = [0.0, 10.0f];
 }
 
 void showFPSwindow(ref App app, uint font = 1) {
@@ -84,15 +86,15 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
         if(igButton("X", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; }
       igTableNextColumn();
         igPushItemWidth(100);
-          igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.minpos, &app.gui.maxpos, "%.2f", 0);
+          igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
         igPopItemWidth();
       igTableNextColumn();
         igPushItemWidth(100);
-          igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.minpos, &app.gui.maxpos, "%.2f", 0);
+          igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
         igPopItemWidth();
       igTableNextColumn();
         igPushItemWidth(100);
-          igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.minpos, &app.gui.maxpos, "%.2f", 0);
+          igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
         igPopItemWidth();
       app.objects[i].position = p;
       igPopID();
@@ -122,12 +124,53 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+void showLightswindow(ref App app, bool* show, uint font = 0) {
+  igPushFont(app.fonts[font]);
+  if(igBegin("Lights", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+    igBeginTable("Lights_Tbl", 3,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
+    foreach(i, ref Light light; app.lights) {
+      igPushID_Int(to!int(i));
+      igTableNextRow(0, 5.0f);
+      igTableNextColumn();
+      igText(format("light %d",i).toStringz, ImVec2(0.0f, 0.0f));
+      igTableNextColumn();
+      igText(format("light %d",i).toStringz, ImVec2(0.0f, 0.0f));
+      igTableNextColumn();
+      igPushItemWidth(50);
+      igSliderScalar("##pX", ImGuiDataType_Float,  &light.position[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
+      igPushItemWidth(50);
+      igSliderScalar("##pY", ImGuiDataType_Float,  &light.position[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
+      igPushItemWidth(50);
+      igSliderScalar("##pZ", ImGuiDataType_Float,  &light.position[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+
+      igPushItemWidth(50);
+      igSliderScalar("##I0", ImGuiDataType_Float,  &light.intensity[0], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
+      igPushItemWidth(50);
+      igSliderScalar("##I1", ImGuiDataType_Float,  &light.intensity[1], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
+      igPushItemWidth(50);
+      igSliderScalar("##I2", ImGuiDataType_Float,  &light.intensity[2], &app.gui.col[0], &app.gui.col[1], "%.2f", 0);
+
+      igPushItemWidth(50);
+      igSliderScalar("##D0", ImGuiDataType_Float,  &light.direction[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
+      igPushItemWidth(50);
+      igSliderScalar("##D1", ImGuiDataType_Float,  &light.direction[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
+      igPushItemWidth(50);
+      igSliderScalar("##D2", ImGuiDataType_Float,  &light.direction[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+      igPopID();
+    }
+    igEndTable();
+    igEnd();
+  }else { igEnd(); }
+  igPopFont();
+}
+
 void showMenu(ref App app, uint font = 0) {
   if(igBeginMainMenuBar()) {
     if(igBeginMenu("File".toStringz, true)) {
       if(igMenuItem_Bool("FPS".toStringz,null, false, true)) {  app.gui.showFPS = !app.gui.showFPS; }
       if(igMenuItem_Bool("Demo".toStringz,null, false, true)) {  app.gui.showDemo = !app.gui.showDemo; }
       if(igMenuItem_Bool("Objects".toStringz,null, false, true)) { app.gui.showObjects = !app.gui.showObjects; }
+      if(igMenuItem_Bool("Lights".toStringz,null, false, true)) { app.gui.showLights = !app.gui.showLights; }
       if(igMenuItem_Bool("Textures".toStringz,null, false, true)) {  app.gui.showTexture = !app.gui.showTexture; }
       igEndMenu();
     }
@@ -144,6 +187,7 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
   if(app.gui.showFPS) app.showFPSwindow();
   if(app.gui.showObjects) app.showObjectswindow(&app.gui.showObjects);
+  if(app.gui.showLights) app.showLightswindow(&app.gui.showLights);
   if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture);
 
   igRender();

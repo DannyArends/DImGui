@@ -19,7 +19,7 @@ import vector : normalize;
 import uniforms : Uniform;
 import textures : Texture, deAllocate;
 import window : destroyFrameData;
-
+import lights : Light, Lights;
 /** Sync
  */
 struct Sync {
@@ -53,6 +53,7 @@ struct App {
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Geometry[] objects;         /// All geometric objects for rendering
   Texture[] textures;         /// Textures
+  Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
   GUI gui;
   Camera camera;              /// Our camera class
   GlyphAtlas glyphAtlas;      /// GlyphAtlas for geometric font rendering

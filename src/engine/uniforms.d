@@ -16,8 +16,8 @@ struct UniformBufferObject {
   mat4 view = mat4.init;
   mat4 proj = mat4.init;
   mat4 orientation = mat4.init; // Screen orientation
-  Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
-  int nlights = 4;
+  Light[4] lights;
+  uint nlights = 4;
 }
 
 struct Uniform {
@@ -37,6 +37,8 @@ void updateUniformBuffer(ref App app, uint currentImage) {
     view: app.camera.view,
     proj: app.camera.proj,
     orientation: mat4.init,
+    lights : app.lights,
+    nlights : 4
   };
 
   // Adjust for screen orientation so that the world is always up
