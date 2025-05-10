@@ -96,7 +96,7 @@ void createScene(ref App app){
   app.objects[6].position([2.0f, 1.0f, -2.0f]);
 
   SDL_Log("createScene: Add PDB object");
-  auto protein = loadProteinCif("assets/objects/1gfl.cif.gz");
+  auto protein = loadProteinCif("assets/objects/3kql.cif.gz");
   uint i = 7;
   app.objects ~= new AtomCloud(protein.atoms());
   app.objects[i].scale([0.5f, 0.5f, 0.5f]);
