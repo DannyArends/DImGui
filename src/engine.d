@@ -14,6 +14,7 @@ import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
 import matrix : multiply, inverse;
 import images : ColorBuffer;
+import imgui : GUI;
 import vector : normalize;
 import uniforms : Uniform;
 import textures : Texture, deAllocate;
@@ -52,6 +53,7 @@ struct App {
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Geometry[] objects;         /// All geometric objects for rendering
   Texture[] textures;         /// Textures
+  GUI gui;
   Camera camera;              /// Our camera class
   GlyphAtlas glyphAtlas;      /// GlyphAtlas for geometric font rendering
 
@@ -112,7 +114,6 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                /// Is the main loop finished ?
-  bool showdemo = false;                /// Are we showing the ImGui demo window ?
   bool showBounds = true;               /// TO IMPLEMENT: Show bounding boxes
   bool verbose = false;                 /// Be very verbose
   bool rebuild = false;                 /// Rebuild the swapChain?

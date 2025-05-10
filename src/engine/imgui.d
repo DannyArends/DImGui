@@ -18,6 +18,7 @@ void initializeImGui(ref App app){
   app.fonts ~= ImFontAtlas_AddFontDefault(app.io.Fonts, null);
   app.fonts ~= ImFontAtlas_AddFontFromFileTTF(app.io.Fonts, "assets/fonts/FreeMono.ttf", 12, null, null);
   app.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  app.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
   igStyleColorsDark(null);
   if(app.verbose) SDL_Log("ImGuiIO: %p", app.io);
   ImGui_ImplSDL2_InitForVulkan(app.window);
@@ -40,60 +41,111 @@ void initializeImGui(ref App app){
   if(app.verbose) SDL_Log("ImGui initialized");
 }
 
+struct GUI{
+  bool showDemo = false;
+  bool showFPS = true;
+  bool showObjects = false;
+  bool showTexture = false;
+  float minpos = -50.0;
+  float maxpos = 50.0;
+}
+
+void showFPSwindow(ref App app, uint font = 1) {
+  igPushFont(app.fonts[font]);
+  igSetNextWindowPos(ImVec2(0.0f, 20.0f), 0, ImVec2(0.0f, 0.0f));
+  auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
+  igBegin("FPS", null, flags);
+    igText("%s", app.properties.deviceName.ptr);
+    igText("Vulkan v%d.%d.%d", VK_API_VERSION_MAJOR(app.properties.apiVersion),
+                     VK_API_VERSION_MINOR(app.properties.apiVersion),
+                     VK_API_VERSION_PATCH(app.properties.apiVersion));
+    igText("%.1f FPS, %.1f ms %d objects, %d textures", app.io.Framerate, 1000.0f / app.io.Framerate, app.objects.length, app.textures.length);
+    igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
+    igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
+  igEnd();
+  igPopFont();
+}
+
+void showObjectswindow(ref App app, bool* show, uint font = 0) {
+  igPushFont(app.fonts[font]);
+  if(igBegin("Objects", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+    igBeginTable("Object_Tbl", 5,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+
+    foreach(i, object; app.objects){
+      igPushID_Int(to!int(i));
+      auto p = app.objects[i].position;
+      igTableNextRow(0, 5.0f);
+      string text = to!string(i);
+      if(object.name) text = object.name() ~ " " ~ text;
+      igTableNextColumn();
+      igText(text.toStringz, ImVec2(0.0f, 0.0f));
+      igTableNextColumn();
+        if(igButton((app.objects[i].isVisible?"H":"S"), ImVec2(0.0f, 0.0f))) { app.objects[i].isVisible = !app.objects[i].isVisible; } igSameLine(0,5);
+        if(igButton("X", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; }
+      igTableNextColumn();
+        igPushItemWidth(100);
+          igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.minpos, &app.gui.maxpos, "%.2f", 0);
+        igPopItemWidth();
+      igTableNextColumn();
+        igPushItemWidth(100);
+          igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.minpos, &app.gui.maxpos, "%.2f", 0);
+        igPopItemWidth();
+      igTableNextColumn();
+        igPushItemWidth(100);
+          igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.minpos, &app.gui.maxpos, "%.2f", 0);
+        igPopItemWidth();
+      app.objects[i].position = p;
+      igPopID();
+      }
+    igEndTable();
+    igEnd();
+  }else { igEnd(); }
+  igPopFont();
+}
+
+void showTextureswindow(ref App app, bool* show, uint font = 0) {
+  igPushFont(app.fonts[font]);
+  if(igBegin("Textures", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+    igBeginTable("Texture_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+    foreach(i, texture; app.textures) {
+      igTableNextRow(0, 5.0f);
+      igTableNextColumn();
+      igText(texture.path, ImVec2(0.0f, 0.0f));
+      igTableNextColumn();
+      igText("%d x %d", texture.width, texture.height);
+      igTableNextColumn();
+      igImage(cast(ImTextureID)texture.descrSet, ImVec2(100, 100), ImVec2(0, 0), ImVec2(1, 1));
+    }
+    igEndTable();
+    igEnd();
+  }else { igEnd(); }
+  igPopFont();
+}
+
+void showMenu(ref App app, uint font = 0) {
+  if(igBeginMainMenuBar()) {
+    if(igBeginMenu("File".toStringz, true)) {
+      if(igMenuItem_Bool("FPS".toStringz,null, false, true)) {  app.gui.showFPS = !app.gui.showFPS; }
+      if(igMenuItem_Bool("Demo".toStringz,null, false, true)) {  app.gui.showDemo = !app.gui.showDemo; }
+      if(igMenuItem_Bool("Objects".toStringz,null, false, true)) { app.gui.showObjects = !app.gui.showObjects; }
+      if(igMenuItem_Bool("Textures".toStringz,null, false, true)) {  app.gui.showTexture = !app.gui.showTexture; }
+      igEndMenu();
+    }
+    igEndMainMenuBar();
+  }
+}
+
 ImDrawData* renderGUI(ref App app){
   // Start ImGui frame
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplSDL2_NewFrame();
   igNewFrame();
-  if(app.showdemo) igShowDemoWindow(&app.showdemo);
-  igPushFont(app.fonts[1]);
-  igSetNextWindowPos(ImVec2(0.0f, 0.0f), 0, ImVec2(0.0f, 0.0f));
-  auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
-  igBegin("FPS", null, flags);
-    igText("%s", app.properties.deviceName.ptr);
-    igText("Vulkan v%d.%d.%d", VK_API_VERSION_MAJOR(app.properties.apiVersion),
-                       VK_API_VERSION_MINOR(app.properties.apiVersion),
-                       VK_API_VERSION_PATCH(app.properties.apiVersion));
-    igText("%.1f FPS, %.1f ms", app.io.Framerate, 1000.0f / app.io.Framerate);
-    igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
-    igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
-  igEnd();
-  igPopFont();
-
-  igPushFont(app.fonts[0]);
-  igBegin("All Objects", null, 0);
-  igBeginTable("Objects", 3, 0, ImVec2(0.0f, 0.0f), 0.0f);
-  foreach(i, object; app.objects){
-    igTableNextRow(0, 5.0f);
-    string text = to!string(i);
-    if(object.name) text = object.name() ~ " " ~ text;
-    igTableSetColumnIndex(0);
-    igText(text.toStringz, ImVec2(0.0f, 0.0f));
-    igTableSetColumnIndex(1);
-    igPushID_Int(to!int(i));
-    if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))){ 
-      app.objects[i].isVisible = !app.objects[i].isVisible;
-    }
-    igSameLine(0,5);
-    if(igButton("Delete", ImVec2(0.0f, 0.0f))){
-      app.objects[i].deAllocate = true;
-    }
-    igTableSetColumnIndex(2);
-    auto p = app.objects[i].position;
-    igText(format("[%.1f %.1f %.1f]", p[0], p[1], p[2]).toStringz, ImVec2(0.0f, 0.0f));
-    igPopID();
-  }
-  igEndTable();
-  igEnd();
-  igPopFont();
-
-  igBegin("Vulkan Texture Test", null, 0);
-  igText("pointer = %p", app.textures[4].descrSet);
-  igText("size = %d x %d", app.textures[4].width, app.textures[5].height);
-  igImage(cast(ImTextureID)app.textures[4].descrSet, ImVec2(app.textures[5].width/10, app.textures[5].height/10), ImVec2(0, 0), ImVec2(1, 1));
-  igEnd();
+  app.showMenu();
+  if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
+  if(app.gui.showFPS) app.showFPSwindow();
+  if(app.gui.showObjects) app.showObjectswindow(&app.gui.showObjects);
+  if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture);
 
   igRender();
-
   return(igGetDrawData());
 }
