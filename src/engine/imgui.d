@@ -49,7 +49,7 @@ struct GUI{
   bool showLights = false;
   bool showTexture = false;
   float[2] pos = [-50.0, 50];
-  float[2] col = [0.0, 10.0f];
+  float[2] col = [0.0, 2.0f];
 }
 
 void showFPSwindow(ref App app, uint font = 1) {
@@ -127,35 +127,47 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
 void showLightswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.fonts[font]);
   if(igBegin("Lights", show, ImGuiWindowFlags_NoFocusOnAppearing)){
-    igBeginTable("Lights_Tbl", 3,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
+    igBeginTable("Lights_Tbl", 2,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, ref Light light; app.lights) {
       igPushID_Int(to!int(i));
       igTableNextRow(0, 5.0f);
       igTableNextColumn();
       igText(format("light %d",i).toStringz, ImVec2(0.0f, 0.0f));
       igTableNextColumn();
-      igText(format("light %d",i).toStringz, ImVec2(0.0f, 0.0f));
-      igTableNextColumn();
-      igPushItemWidth(50);
-      igSliderScalar("##pX", ImGuiDataType_Float,  &light.position[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-      igPushItemWidth(50);
-      igSliderScalar("##pY", ImGuiDataType_Float,  &light.position[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-      igPushItemWidth(50);
-      igSliderScalar("##pZ", ImGuiDataType_Float,  &light.position[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+      igBeginTable("Light_Tbl", 2,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
+        igTableNextRow(0, 5.0f);
+        igTableNextColumn();
+          igText("Position".toStringz, ImVec2(0.0f, 0.0f));
+        igTableNextColumn();
+          igPushItemWidth(75);
+          igSliderScalar("##pX", ImGuiDataType_Float,  &light.position[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
+          igPushItemWidth(75);
+          igSliderScalar("##pY", ImGuiDataType_Float,  &light.position[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
+          igPushItemWidth(75);
+          igSliderScalar("##pZ", ImGuiDataType_Float,  &light.position[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
 
-      igPushItemWidth(50);
-      igSliderScalar("##I0", ImGuiDataType_Float,  &light.intensity[0], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
-      igPushItemWidth(50);
-      igSliderScalar("##I1", ImGuiDataType_Float,  &light.intensity[1], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
-      igPushItemWidth(50);
-      igSliderScalar("##I2", ImGuiDataType_Float,  &light.intensity[2], &app.gui.col[0], &app.gui.col[1], "%.2f", 0);
+        igTableNextRow(0, 5.0f);
+        igTableNextColumn();
+          igText("Intensity".toStringz, ImVec2(0.0f, 0.0f));
+        igTableNextColumn();
+          igPushItemWidth(75);
+          igSliderScalar("##I0", ImGuiDataType_Float,  &light.intensity[0], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
+          igPushItemWidth(75);
+          igSliderScalar("##I1", ImGuiDataType_Float,  &light.intensity[1], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
+          igPushItemWidth(75);
+          igSliderScalar("##I2", ImGuiDataType_Float,  &light.intensity[2], &app.gui.col[0], &app.gui.col[1], "%.2f", 0);
 
-      igPushItemWidth(50);
-      igSliderScalar("##D0", ImGuiDataType_Float,  &light.direction[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-      igPushItemWidth(50);
-      igSliderScalar("##D1", ImGuiDataType_Float,  &light.direction[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-      igPushItemWidth(50);
-      igSliderScalar("##D2", ImGuiDataType_Float,  &light.direction[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+        igTableNextRow(0, 5.0f);
+        igTableNextColumn();
+          igText("Direction".toStringz, ImVec2(0.0f, 0.0f));
+        igTableNextColumn();
+          igPushItemWidth(75);
+          igSliderScalar("##D0", ImGuiDataType_Float,  &light.direction[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
+          igPushItemWidth(75);
+          igSliderScalar("##D1", ImGuiDataType_Float,  &light.direction[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
+          igPushItemWidth(75);
+          igSliderScalar("##D2", ImGuiDataType_Float,  &light.direction[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+        igEndTable();
       igPopID();
     }
     igEndTable();
