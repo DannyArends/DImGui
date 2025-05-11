@@ -15,7 +15,7 @@ class Square : Geometry {
                  Vertex([-0.5f, 0.0f,  0.5f], [1.0f, 0.0f], [1.0f, 1.0f, 1.0f, 1.0f]) ];
     indices = [0, 2, 1, 0, 3, 2];
     instances = [Instance()];
-    topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    //topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     name = (){ return(typeof(this).stringof); };
   };
 }
