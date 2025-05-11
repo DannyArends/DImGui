@@ -8,6 +8,34 @@ import engine;
 import uniforms : UniformBufferObject;
 import textures : Texture;
 
+struct DescriptorLayoutBuilder {
+  VkDescriptorSetLayoutBinding[] bindings;
+
+  void add(uint binding, uint count, VkShaderStageFlags shaderStage, VkDescriptorType type){
+    VkDescriptorSetLayoutBinding layout = {
+      binding: binding,
+      stageFlags: shaderStage,
+      descriptorCount: count,
+      descriptorType: type
+    };
+    bindings ~= layout;
+  }
+  void clear(){ bindings = []; }
+
+  VkDescriptorSetLayout build(VkDevice device, VkDescriptorSetLayoutCreateFlags flags = 0, void* pNext = null){
+    VkDescriptorSetLayoutCreateInfo info = {
+      sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+      pBindings: &bindings[0],
+      bindingCount: cast(uint)bindings.length,
+      flags: flags,
+      pNext: pNext
+    };
+    VkDescriptorSetLayout set;
+    enforceVK(vkCreateDescriptorSetLayout(device, &info, null, &set));
+    return set;
+  }
+};
+
 /** ImGui DescriptorPool (Images)
  */
 void createImGuiDescriptorPool(ref App app){
@@ -54,28 +82,10 @@ void createDescriptorPool(ref App app){
  */
 void createDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating Render DescriptorSetLayout");
-  VkDescriptorSetLayoutBinding uboLayoutBinding = {
-    binding: 0,
-    descriptorCount: 1,
-    descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-    stageFlags: VK_SHADER_STAGE_VERTEX_BIT
-  };
-
-  VkDescriptorSetLayoutBinding samplerLayoutBinding = {
-    binding: 1,
-    descriptorCount: cast(uint)app.textures.length,
-    descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    stageFlags: VK_SHADER_STAGE_FRAGMENT_BIT
-  };
-
-  VkDescriptorSetLayoutBinding[2] bindings = [uboLayoutBinding, samplerLayoutBinding];
-
-  VkDescriptorSetLayoutCreateInfo layoutInfo = {
-    sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-    bindingCount: bindings.length,
-    pBindings: &bindings[0]
-  };
-  enforceVK(vkCreateDescriptorSetLayout(app.device, &layoutInfo, null, &app.descriptorSetLayout));
+  DescriptorLayoutBuilder builder;
+  builder.add(0, 1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  builder.add(1, cast(uint) app.textures.length, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  app.descriptorSetLayout = builder.build(app.device);
   app.frameDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator); });
 }
 
@@ -83,25 +93,13 @@ void createDescriptorSetLayout(ref App app) {
  */
 void createImGuiDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating ImGui DescriptorSetLayout");
-  VkDescriptorSetLayoutBinding samplerLayoutBinding = {
-    binding: 0,
-    descriptorCount: 1,
-    descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    stageFlags: VK_SHADER_STAGE_FRAGMENT_BIT
-  };
-
-  VkDescriptorSetLayoutBinding[1] bindings = [samplerLayoutBinding];
-
-  VkDescriptorSetLayoutCreateInfo layoutInfo = {
-    sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-    bindingCount: bindings.length,
-    pBindings: &bindings[0]
-  };
-  enforceVK(vkCreateDescriptorSetLayout(app.device, &layoutInfo, null, &app.ImGuiSetLayout));
+  DescriptorLayoutBuilder builder;
+  builder.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  app.ImGuiSetLayout = builder.build(app.device);
   app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator); });
 }
 
-/** Create ImGui DescriptorSet (UBO and Combined image sampler)
+/** Add a texture to the ImGui DescriptorSet (Combined image sampler)
  */
 void addImGuiTexture(ref App app, ref Texture texture) {
   if(app.verbose) SDL_Log("creating imGui DescriptorSet");
