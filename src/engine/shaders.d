@@ -39,5 +39,9 @@ void createShadersStages(ref App app, const(char)* vertPath = "assets/shaders/ve
   VkPipelineShaderStageCreateInfo vInfo = createShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, vShader);
   VkPipelineShaderStageCreateInfo fInfo = createShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fShader);
   app.shaderStages = [ vInfo, fInfo ];
-}
 
+  app.mainDeletionQueue.add(() {
+    vkDestroyShaderModule(app.device, app.shaders[0], app.allocator);
+    vkDestroyShaderModule(app.device, app.shaders[1], app.allocator);
+  });
+}

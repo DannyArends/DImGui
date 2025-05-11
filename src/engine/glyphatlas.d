@@ -9,7 +9,7 @@ import std.datetime : MonoTime;
 import std.utf : isValidDchar;
 import std.string : toStringz;
 import glyph: Glyph; 
-import textures : Texture, toRGBA, toGPU;
+import textures : Texture, deAllocate, toRGBA, toGPU;
 import images : createImage, imageSize, transitionImageLayout;
 import swapchain : createImageView;
 
@@ -127,4 +127,5 @@ void createFontTexture(ref App app) {
 
   app.glyphAtlas.texture = Texture(app.glyphAtlas.path, surface.w, surface.h, surface);
   app.toGPU(app.glyphAtlas.texture);
+  app.mainDeletionQueue.add((){ app.deAllocate(app.glyphAtlas.texture); });
 }
