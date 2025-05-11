@@ -9,13 +9,6 @@ import devices : getSampleCount;
 import shaders : createShaderModule, createShaderStageInfo;
 import vertex : Vertex;
 
-void deAllocate(App app, GraphicsPipeline[VkPrimitiveTopology] pipelines) {
-  foreach(pipeline; pipelines){
-    vkDestroyPipelineLayout(app.device, pipeline.pipelineLayout, app.allocator);
-    vkDestroyPipeline(app.device, pipeline.graphicsPipeline, app.allocator);
-  }
-}
-
 GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
   GraphicsPipeline pipeline;
   auto bindingDescription = Vertex.getBindingDescription();
@@ -139,6 +132,10 @@ GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topolog
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &pipeline.graphicsPipeline));
+  app.frameDeletionQueue.add((){
+    vkDestroyPipelineLayout(app.device, pipeline.pipelineLayout, app.allocator);
+    vkDestroyPipeline(app.device, pipeline.graphicsPipeline, app.allocator);
+  });
   return(pipeline);
 }
 

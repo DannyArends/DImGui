@@ -61,6 +61,8 @@ void createLogicalDevice(ref App app, uint device = 0){
     pNext : &features
   };
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
+  app.mainDeletionQueue.add((){ vkDestroyDevice(app.device, app.allocator); });
+
   if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device );
 
   vkGetPhysicalDeviceProperties(app.physicalDevice, &app.properties);

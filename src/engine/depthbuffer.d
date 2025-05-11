@@ -14,12 +14,6 @@ struct DepthBuffer {
   VkImageView depthImageView;
 }
 
-void destroyDepthBuffer(ref App app) {
-  vkFreeMemory(app.device, app.depthBuffer.depthImageMemory, app.allocator);
-  vkDestroyImageView(app.device, app.depthBuffer.depthImageView, app.allocator);
-  vkDestroyImage(app.device, app.depthBuffer.depthImage, app.allocator);
-}
-
 VkFormat findSupportedFormat(ref App app, const VkFormat[] candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
   foreach(VkFormat format; candidates) {
     VkFormatProperties props;
@@ -52,5 +46,10 @@ void createDepthResources(ref App app) {
   if(app.verbose) SDL_Log(" - image view created: %p", app.depthBuffer.depthImageView);
   app.transitionImageLayout(app.depthBuffer.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
   if(app.verbose) SDL_Log("Depth resources created");
+  app.frameDeletionQueue.add((){
+    vkFreeMemory(app.device, app.depthBuffer.depthImageMemory, app.allocator);
+    vkDestroyImageView(app.device, app.depthBuffer.depthImageView, app.allocator);
+    vkDestroyImage(app.device, app.depthBuffer.depthImage, app.allocator);
+  });
 }
 

@@ -27,4 +27,5 @@ void createDebugCallback(ref App app){
     pUserData : null
   };
   vkDebugCallback(app.instance, &createDebug, app.allocator, &app.debugCallback);
+  app.mainDeletionQueue.add((){ vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator); });
 }

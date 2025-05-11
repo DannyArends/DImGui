@@ -29,6 +29,10 @@ void createUniforms(ref App app) {
   VkDeviceSize size = UniformBufferObject.sizeof;
   app.createBuffer(&app.uniform.uniformBuffers, &app.uniform.uniformBuffersMemory, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   if(app.verbose) SDL_Log("Created %d UniformBuffers of size: %d bytes", app.imageCount, size);
+  app.frameDeletionQueue.add((){
+    vkDestroyBuffer(app.device, app.uniform.uniformBuffers, app.allocator);
+    vkFreeMemory(app.device, app.uniform.uniformBuffersMemory, app.allocator);
+  });
 }
 
 void updateUniformBuffer(ref App app, uint currentImage) {
@@ -55,9 +59,3 @@ void updateUniformBuffer(ref App app, uint currentImage) {
   memcpy(data, &ubo, ubo.sizeof);
   vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory);
 }
-
-void destroyUniforms(App app) {
-  vkDestroyBuffer(app.device, app.uniform.uniformBuffers, app.allocator);
-  vkFreeMemory(app.device, app.uniform.uniformBuffersMemory, app.allocator);
-}
-

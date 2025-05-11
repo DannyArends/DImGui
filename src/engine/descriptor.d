@@ -27,6 +27,7 @@ void createImGuiDescriptorPool(ref App app){
     pPoolSizes : &poolSizes[0]
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.imguiPool));
+  app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator); });
 }
 
 /** Our DescriptorPool (UBO and Combined image sampler)
@@ -46,6 +47,7 @@ void createDescriptorPool(ref App app){
     pPoolSizes : &poolSizes[0]
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.descriptorPool));
+  app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator); });
 }
 
 /** Our DescriptorSetLayout (UBO and Combined image sampler)
@@ -74,6 +76,7 @@ void createDescriptorSetLayout(ref App app) {
     pBindings: &bindings[0]
   };
   enforceVK(vkCreateDescriptorSetLayout(app.device, &layoutInfo, null, &app.descriptorSetLayout));
+  app.frameDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator); });
 }
 
 /** ImGui DescriptorSetLayout (Combined image sampler)
@@ -95,6 +98,7 @@ void createImGuiDescriptorSetLayout(ref App app) {
     pBindings: &bindings[0]
   };
   enforceVK(vkCreateDescriptorSetLayout(app.device, &layoutInfo, null, &app.ImGuiSetLayout));
+  app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator); });
 }
 
 /** Create ImGui DescriptorSet (UBO and Combined image sampler)
