@@ -9,18 +9,18 @@ import std.algorithm : sort;
 import std.traits : EnumMembers;
 
 import devices : getSampleCount;
-import depthbuffer : createDepthResources, destroyDepthBuffer;
-import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet, createImGuiDescriptorPool, createImGuiDescriptorSetLayout, addImGuiTexture;
+import depthbuffer : createDepthResources;
+import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
 import framebuffer : createFramebuffers;
-import images : createColorResources, destroyColorBuffer;
-import pipeline : createGraphicsPipeline, deAllocate;
+import images : createColorResources;
+import pipeline : createGraphicsPipeline;
 import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 import geometry : distance;
-import uniforms : createUniforms, destroyUniforms;
+import uniforms : createUniforms;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -35,8 +35,7 @@ VkPrimitiveTopology[] supportedTopologies =
 void createOrResizeWindow(ref App app) {
   if(app.verbose) SDL_Log("Window ReSize, recreate SwapChain");
   enforceVK(vkDeviceWaitIdle(app.device));
-
-  app.destroyFrameData();
+  app.frameDeletionQueue.flush();
 
   app.querySurfaceCapabilities();
   app.createSwapChain(app.swapChain);
@@ -57,28 +56,6 @@ void createOrResizeWindow(ref App app) {
   app.createSyncObjects();
 }
 
-void destroyFrameData(ref App app) {
-  for (uint i = 0; i < app.sync.length; i++) {
-    vkDestroySemaphore(app.device, app.sync[i].imageAcquired, app.allocator);
-    vkDestroySemaphore(app.device, app.sync[i].renderComplete, app.allocator);
-  }
-  for (uint i = 0; i < app.imageCount; i++) {
-    vkDestroyFence(app.device, app.fences[i], app.allocator);
-    vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.imguiBuffers[i]);
-    vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.renderBuffers[i]);
-    vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
-    vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
-  }
-  if(app.descriptorSetLayout) vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator);
-  if(app.uniform.uniformBuffers) app.destroyUniforms();
-  if(app.descriptorPool) vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator);
-  if(app.colorBuffer.colorImage) app.destroyColorBuffer();
-  if(app.depthBuffer.depthImage) app.destroyDepthBuffer();
-  if(app.pipelines) app.deAllocate(app.pipelines);
-  if(app.imguiPass) vkDestroyRenderPass(app.device, app.imguiPass, app.allocator);
-  if(app.renderpass) vkDestroyRenderPass(app.device, app.renderpass, app.allocator);
-}
-
 void checkForResize(ref App app){
   int width, height;
   SDL_GetWindowSize(app.window, &width, &height);
@@ -89,4 +66,3 @@ void checkForResize(ref App app){
     app.rebuild = false;
   }
 }
-

@@ -56,8 +56,8 @@ void loadTexture(ref App app, const(char)* path) {
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
   Texture texture = { path : path, width: surface.w, height: surface.h, surface: surface };
   app.toGPU(texture);
-//  ImGui_ImplVulkan_AddTexture(app.sampler, texture.textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
+
 void toGPU(ref App app, ref Texture texture){
   // Create a buffer to transfer the image to the GPU
   VkBuffer stagingBuffer;
@@ -127,6 +127,8 @@ void createSampler(ref App app) {
   };
 
   enforceVK(vkCreateSampler(app.device, &samplerInfo, null, &app.sampler));
+  app.mainDeletionQueue.add((){ vkDestroySampler(app.device, app.sampler, null); });
+
   if(app.verbose) SDL_Log("Done texture sampler");
 }
 

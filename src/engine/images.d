@@ -18,17 +18,16 @@ struct ColorBuffer {
   VkImageView colorImageView;
 }
 
-void destroyColorBuffer(ref App app) {
-  vkFreeMemory(app.device, app.colorBuffer.colorImageMemory, app.allocator);
-  vkDestroyImageView(app.device, app.colorBuffer.colorImageView, app.allocator);
-  vkDestroyImage(app.device, app.colorBuffer.colorImage, app.allocator);
-}
-
 void createColorResources(ref App app) {
   app.createImage(app.camera.width, app.camera.height, &app.colorBuffer.colorImage, &app.colorBuffer.colorImageMemory,
                   app.surfaceformats[0].format, app.getSampleCount(), VK_IMAGE_TILING_OPTIMAL,
                   VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
   app.colorBuffer.colorImageView = app.createImageView(app.colorBuffer.colorImage, app.surfaceformats[0].format, 1);
+  app.frameDeletionQueue.add((){ 
+    vkFreeMemory(app.device, app.colorBuffer.colorImageMemory, app.allocator);
+    vkDestroyImageView(app.device, app.colorBuffer.colorImageView, app.allocator);
+    vkDestroyImage(app.device, app.colorBuffer.colorImage, app.allocator);
+  });
 }
 
 void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceMemory* imageMemory, 

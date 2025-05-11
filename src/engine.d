@@ -10,6 +10,7 @@ import validation;
 
 import depthbuffer : DepthBuffer;
 import camera : Camera;
+import deletion : DeletionQueue;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
 import matrix : multiply, inverse;
@@ -18,8 +19,8 @@ import imgui : GUI;
 import vector : normalize;
 import uniforms : Uniform;
 import textures : Texture, deAllocate;
-import window : destroyFrameData;
 import lights : Light, Lights;
+
 /** Sync
  */
 struct Sync {
@@ -64,6 +65,8 @@ struct App {
   GraphicsPipeline[VkPrimitiveTopology] pipelines;
   DepthBuffer depthBuffer;
   ColorBuffer colorBuffer;
+  DeletionQueue mainDeletionQueue;
+  DeletionQueue frameDeletionQueue;
   ImGuiIO* io;
   ImFont*[] fonts;
 
@@ -124,25 +127,17 @@ struct App {
  */
 void cleanUp(App app){
   enforceVK(vkDeviceWaitIdle(app.device));
+  app.frameDeletionQueue.flush();
+
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
-  app.destroyFrameData();
 
   foreach(shader; app.shaders){  vkDestroyShaderModule(app.device, shader, app.allocator); }
-  vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
-  vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator);
   foreach(object; app.objects) { app.deAllocate(object, [false, false, false]); }
   foreach(texture; app.textures) { app.deAllocate(texture); }
-  vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator);
-  vkDestroySampler(app.device, app.sampler, null);
-  vkDestroyCommandPool(app.device, app.commandPool, app.allocator);
-  vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
-  vkDestroyDevice(app.device, app.allocator);
 
-  vkDestroySurfaceKHR(app.instance, app.surface, app.allocator);
-  vkDestroyInstance(app.instance, app.allocator);
-
+  app.mainDeletionQueue.flush();
   SDL_DestroyWindow(app);
   SDL_Quit();
 }

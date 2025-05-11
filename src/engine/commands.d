@@ -56,6 +56,8 @@ void createCommandPool(ref App app) {
     flags: VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
   };
   enforceVK(vkCreateCommandPool(app.device, &poolInfo, null, &app.commandPool));
+  app.mainDeletionQueue.add((){ vkDestroyCommandPool(app.device, app.commandPool, app.allocator); });
+
   if(app.verbose) SDL_Log("Commandpool %p at queue %d created", app.commandPool, poolInfo.queueFamilyIndex);
 }
 
