@@ -87,4 +87,3 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
 
   return(renderpass);
 }
-

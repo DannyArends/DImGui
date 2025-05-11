@@ -9,6 +9,13 @@ import devices : getSampleCount;
 import shaders : createShaderModule, createShaderStageInfo;
 import vertex : Vertex;
 
+/** GraphicsPipeline
+ */
+struct GraphicsPipeline {
+  VkPipelineLayout pipelineLayout;
+  VkPipeline graphicsPipeline;
+}
+
 GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
   GraphicsPipeline pipeline;
   auto bindingDescription = Vertex.getBindingDescription();
@@ -138,4 +145,3 @@ GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topolog
   });
   return(pipeline);
 }
-

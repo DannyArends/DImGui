@@ -108,5 +108,3 @@ void createRenderCommandBuffers(ref App app) {
   app.renderBuffers = app.device.createCommandBuffer(app.commandPool, app.imageCount, app.verbose);
   if(app.verbose) SDL_Log("createRenderCommandBuffers created %d renderBuffer using commandpool[%p]", app.imageCount, app.commandPool);
 }
-
-

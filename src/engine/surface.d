@@ -25,4 +25,3 @@ void createSurface(ref App app) {
   });
   if(app.verbose) SDL_Log("SDL_Vulkan_CreateSurface: %p", app.surface);
 }
-

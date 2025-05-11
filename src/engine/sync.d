@@ -5,6 +5,13 @@
 
 import engine;
 
+/** Sync
+ */
+struct Sync {
+  VkSemaphore imageAcquired;
+  VkSemaphore renderComplete;
+}
+
 void createSyncObjects(ref App app) {
   app.sync.length = app.imageCount + 1;
   app.fences.length = app.imageCount;
