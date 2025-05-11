@@ -4,14 +4,12 @@
  */
 import std.algorithm : reverse;
 
-struct DeletionQueue{
+struct DeletionQueue {
   void delegate()[] queue;
 
   void add(void delegate() fn){ queue ~= fn; }
   void flush(){
-    foreach(fn; queue.reverse){
-      fn();
-    }
+    foreach(fn; queue.reverse){ fn(); }
     queue = [];
   }
 }
