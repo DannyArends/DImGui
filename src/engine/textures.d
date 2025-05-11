@@ -56,6 +56,7 @@ void loadTexture(ref App app, const(char)* path) {
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
   Texture texture = { path : path, width: surface.w, height: surface.h, surface: surface };
   app.toGPU(texture);
+  app.mainDeletionQueue.add((){ app.deAllocate(texture); });
 }
 
 void toGPU(ref App app, ref Texture texture){

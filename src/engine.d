@@ -19,7 +19,7 @@ import imgui : GUI;
 import vector : normalize;
 import uniforms : Uniform;
 import sync : Sync;
-import textures : Texture, deAllocate;
+import textures : Texture;
 
 /** Main application structure
  */
@@ -119,10 +119,8 @@ void cleanUp(App app){
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
 
-  foreach(shader; app.shaders){  vkDestroyShaderModule(app.device, shader, app.allocator); }
+  // Delete objects and flush the deletion queue
   foreach(object; app.objects) { app.deAllocate(object, [false, false, false]); }
-  foreach(texture; app.textures) { app.deAllocate(texture); }
-
   app.mainDeletionQueue.flush();
   SDL_DestroyWindow(app);
   SDL_Quit();
