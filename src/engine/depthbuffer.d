@@ -52,4 +52,3 @@ void createDepthResources(ref App app) {
     vkDestroyImage(app.device, app.depthBuffer.depthImage, app.allocator);
   });
 }
-

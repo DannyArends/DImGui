@@ -6,34 +6,20 @@
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
-import validation;
-
 import depthbuffer : DepthBuffer;
 import camera : Camera;
 import deletion : DeletionQueue;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
+import lights : Light, Lights;
 import matrix : multiply, inverse;
+import pipeline : GraphicsPipeline;
 import images : ColorBuffer;
 import imgui : GUI;
 import vector : normalize;
 import uniforms : Uniform;
+import sync : Sync;
 import textures : Texture, deAllocate;
-import lights : Light, Lights;
-
-/** Sync
- */
-struct Sync {
-  VkSemaphore imageAcquired;
-  VkSemaphore renderComplete;
-}
-
-/** GraphicsPipeline
- */
-struct GraphicsPipeline {
-  VkPipelineLayout pipelineLayout;
-  VkPipeline graphicsPipeline;
-}
 
 /** Main application structure
  */

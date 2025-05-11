@@ -136,4 +136,3 @@ void transitionImageLayout(ref App app, VkImage image,
   app.endSingleTimeCommands(commandBuffer);
   if(app.verbose) SDL_Log(" - Single time command finished for commandBuffer[%p]", commandBuffer);
 }
-
