@@ -7,6 +7,7 @@ import engine;
 import validation;
 
 import commands : createCommandPool;
+import compute : createComputeDescriptorPool, createComputeDescriptorSetLayout, createComputePipeline;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout, addImGuiTexture;
 import devices : createLogicalDevice;
 import events : handleEvents;
@@ -33,6 +34,10 @@ void main(string[] args) {
   app.createLogicalDevice();
   app.createShadersStages();
   app.createCommandPool();
+  app.createComputeDescriptorPool();
+  app.createComputeDescriptorSetLayout();
+  app.createComputePipeline();
+
   app.createSampler();
   app.createImGuiDescriptorPool();
   app.createImGuiDescriptorSetLayout();

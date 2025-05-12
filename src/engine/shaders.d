@@ -31,7 +31,8 @@ VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stag
   ));
 }
 
-void createShadersStages(ref App app, const(char)* vertPath = "assets/shaders/vert.spv", const(char)* fragPath = "assets/shaders/frag.spv"){
+void createShadersStages(ref App app, const(char)* vertPath = "assets/shaders/vert.spv", 
+                                      const(char)* fragPath = "assets/shaders/frag.spv"){
   auto vShader = app.createShaderModule(vertPath);
   auto fShader = app.createShaderModule(fragPath);
   app.shaders = [ vShader, fShader ];

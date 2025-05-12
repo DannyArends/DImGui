@@ -8,10 +8,11 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
+//import compute : createComputeDescriptorSet, recordCompute;
 import devices : getSampleCount;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
-import commands : createImGuiCommandBuffers, createRenderCommandBuffers, recordRenderCommandBuffer;
+import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
 import pipeline : createGraphicsPipeline;
@@ -21,6 +22,8 @@ import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 import geometry : distance;
 import uniforms : createUniforms;
+
+import compute: createComputeBufferAndImage, createComputeDescriptorSet, recordCompute;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -43,6 +46,11 @@ void createOrResizeWindow(ref App app) {
   app.createColorResources();
   app.createDepthResources();
   app.createUniforms();
+  
+  app.createComputeBufferAndImage();
+  app.createComputeDescriptorSet();
+  app.recordCompute();
+  
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createDescriptorSet();
@@ -52,7 +60,6 @@ void createOrResizeWindow(ref App app) {
   app.createImGuiCommandBuffers();
   foreach(member; supportedTopologies) { app.pipelines[member] = app.createGraphicsPipeline(member); }
   app.createRenderCommandBuffers();
-  app.recordRenderCommandBuffer();
   app.createSyncObjects();
 }
 

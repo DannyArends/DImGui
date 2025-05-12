@@ -8,6 +8,7 @@ public import core.stdc.string : strcmp, memcpy;
 
 import depthbuffer : DepthBuffer;
 import camera : Camera;
+import compute : Compute;
 import deletion : DeletionQueue;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
@@ -68,6 +69,8 @@ struct App {
   VkDescriptorPool descriptorPool = null;
   VkDescriptorSetLayout descriptorSetLayout = null;
   VkDescriptorSet descriptorSet = null;
+
+  Compute compute;
 
   VkSurfaceKHR surface = null;
   VkSurfaceFormatKHR[] surfaceformats = null;

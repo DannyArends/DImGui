@@ -70,8 +70,8 @@ void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceM
 
   };
   if(app.verbose) SDL_Log("createImage: Allocating %d Bytes", memoryRequirements.size);
-  enforceVK(vkAllocateMemory(app.device, &allocInfo, null, imageMemory));
 
+  enforceVK(vkAllocateMemory(app.device, &allocInfo, null, imageMemory));
   vkBindImageMemory(app.device, (*image), (*imageMemory), 0);
 }
 
