@@ -3,6 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 import std.math : ceil;
+import core.time : MonoTime;
 
 import engine;
 import textures : Texture;
@@ -10,10 +11,12 @@ import commands : createCommandBuffer;
 import descriptor : DescriptorLayoutBuilder, addImGuiTexture;
 import pipeline : GraphicsPipeline;
 import images : createImage;
+import uniforms : ComputeUniform;
 import swapchain : createImageView;
 import shaders : createShaderModule, createShaderStageInfo;
 
 struct Compute {
+  float angle = 15.0f;
   VkDescriptorPool pool = null;
   VkDescriptorSetLayout layout = null;
   VkDescriptorSet set = null;
@@ -30,10 +33,8 @@ struct Compute {
 void createComputeDescriptorPool(ref App app){
   if(app.verbose) SDL_Log("create Compute DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
-    {
-      type : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-      descriptorCount : 1
-    }
+    { type : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorCount : 1 },
+    { type : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount : 1 }
   ];
 
   VkDescriptorPoolCreateInfo createPool = {
@@ -52,6 +53,7 @@ void createComputeDescriptorPool(ref App app){
 void createComputeDescriptorSetLayout(ref App app) {
   DescriptorLayoutBuilder builder;
   builder.add(0, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+  builder.add(1, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   app.compute.layout = builder.build(app.device);
   app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.compute.layout, app.allocator); });
 }
@@ -101,7 +103,13 @@ void createComputeDescriptorSet(ref App app) {
     imageView: app.compute.imageView,
   };
 
-  VkWriteDescriptorSet[1] descriptorWrites = [
+  VkDescriptorBufferInfo bufferInfo = {
+    buffer: app.uniform.computeBuffers,
+    offset: 0,
+    range: ComputeUniform.sizeof
+  };
+
+  VkWriteDescriptorSet[2] descriptorWrites = [
     {
       sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
       dstSet: app.compute.set,
@@ -110,9 +118,21 @@ void createComputeDescriptorSet(ref App app) {
       descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
       descriptorCount: 1,
       pImageInfo: &imageInfo
+    },
+    {
+      sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+      dstSet: app.compute.set,
+      dstBinding: 1,
+      dstArrayElement: 0,
+      descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+      descriptorCount: 1,
+      pBufferInfo: &bufferInfo,
+      pImageInfo: null,
+      pTexelBufferView: null
     }
+
   ];
-  vkUpdateDescriptorSets(app.device, 1, &descriptorWrites[0], 0, null);
+  vkUpdateDescriptorSets(app.device, descriptorWrites.length, &descriptorWrites[0], 0, null);
 }
 
 void createComputeBufferAndImage(ref App app){

@@ -6,8 +6,9 @@
 import engine;
 
 import std.conv : to;
+import std.path : baseName;
 import std.format : format;
-import std.string : toStringz;
+import std.string : toStringz, fromStringz;
 
 import geometry : position;
 import lights : Light;
@@ -146,7 +147,7 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
     foreach(i, texture; app.textures) {
       igTableNextRow(0, 5.0f);
       igTableNextColumn();
-      igText(texture.path, ImVec2(0.0f, 0.0f));
+      igText(toStringz(baseName(fromStringz(texture.path))), ImVec2(0.0f, 0.0f));
       igTableNextColumn();
       igText("%d x %d", texture.width, texture.height);
       igTableNextColumn();

@@ -9,12 +9,14 @@
 	"preBuildCommands-linux": [
 		"make -j 8",
 		"glslc assets/shaders/shader.vert -o assets/shaders/vert.spv",
-		"glslc assets/shaders/shader.frag -o assets/shaders/frag.spv"
+		"glslc assets/shaders/shader.frag -o assets/shaders/frag.spv",
+		"glslc assets/shaders/shader.comp -o assets/shaders/comp.spv"
 	],
 	"preBuildCommands-windows-x86_64": [
 		"compile.bat C:/VulkanSDK/1.4.309.0",
 		"glslc.exe assets/shaders/shader.vert -o assets/shaders/vert.spv",
-		"glslc.exe assets/shaders/shader.frag -o assets/shaders/frag.spv"
+		"glslc.exe assets/shaders/shader.frag -o assets/shaders/frag.spv",
+		"glslc.exe assets/shaders/shader.comp -o assets/shaders/comp.spv"
 	],
 	"configurations": [
 	{
