@@ -42,6 +42,40 @@ void initializeImGui(ref App app){
   if(app.verbose) SDL_Log("ImGui initialized");
 }
 
+/** Record Vulkan render command buffer by rendering all objects to all render buffers
+ */
+void recordImGuiCommandBuffer(ref App app, uint frameIndex) {
+  if(app.verbose) SDL_Log("recordImGuiCommandBuffer");
+  enforceVK(vkResetCommandBuffer(app.imguiBuffers[frameIndex], 0));
+
+  VkCommandBufferBeginInfo commandBufferInfo = {
+    sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+  };
+  enforceVK(vkBeginCommandBuffer(app.imguiBuffers[frameIndex], &commandBufferInfo));
+
+  VkRect2D renderArea = { extent: { width: app.camera.width, height: app.camera.height } };
+
+  VkRenderPassBeginInfo renderPassInfo = {
+    sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+    renderPass : app.imguiPass,
+    framebuffer : app.swapChainFramebuffers[frameIndex],
+    renderArea : renderArea,
+    clearValueCount : app.clearValue.length,
+    pClearValues : &app.clearValue[0]
+  };
+  vkCmdBeginRenderPass(app.imguiBuffers[frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+  // Render UI
+  ImDrawData* drawData = app.renderGUI();
+  ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[frameIndex], null);
+
+  vkCmdEndRenderPass(app.imguiBuffers[frameIndex]);
+
+  enforceVK(vkEndCommandBuffer(app.imguiBuffers[frameIndex]));
+}
+
+
 struct GUI{
   bool showDemo = false;
   bool showFPS = true;

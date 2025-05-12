@@ -3,7 +3,7 @@
 // Distributed under the GNU General Public License, Version 3
 // See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
 
-#version 450
+#version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
 layout(binding = 1) uniform sampler2D texureSampler[];

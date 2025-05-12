@@ -3,8 +3,7 @@
 // Distributed under the GNU General Public License, Version 3
 // See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
 
-#version 450
-#extension GL_EXT_nonuniform_qualifier : enable
+#version 460
 
 struct Light {
   vec4 position;
@@ -39,33 +38,33 @@ layout(location = 2) out vec2 fragTexCoord;
 layout(location = 3) out int fragTid;
 
 vec3 illuminate(Light light, vec4 position, vec3 normal) {
-    float attenuation = 1.0;
-    vec3 s;
-    if (light.position.w == 0.0) {
-      // Directional lighting
-      s = normalize( light.position.xyz );
-    } else {
-      // Point lighting
-      s = normalize( light.position.xyz - position.xyz );
-      float l = abs(length( light.position.xyz - position.xyz ));
-      attenuation = 1.0 / (1.0 + light.properties[1] * pow(l, 2.0));
+  float attenuation = 1.0;
+  vec3 s;
+  if (light.position.w == 0.0) {
+    // Directional lighting
+    s = normalize( light.position.xyz );
+  } else {
+    // Point lighting
+    s = normalize( light.position.xyz - position.xyz );
+    float l = abs(length( light.position.xyz - position.xyz ));
+    attenuation = 1.0 / (1.0 + light.properties[1] * pow(l, 2.0));
 
-      // Cone lighting
-      float lAngle = degrees(acos(dot(-s, normalize(light.direction.xyz))));
-      if (lAngle >= light.properties[2]) { 
-        attenuation = 0.0;
-      }
+    // Cone lighting
+    float lAngle = degrees(acos(dot(-s, normalize(light.direction.xyz))));
+    if (lAngle >= light.properties[2]) { 
+      attenuation = 0.0;
     }
-    vec3 r = reflect( -s, normal );
-    float sDotN = max( dot( s, normal ), 0.0 );
+  }
+  vec3 r = reflect( -s, normal );
+  float sDotN = max( dot( s, normal ), 0.0 );
 
-    vec3 ambientCol = light.intensity.rgb * inColor.rgb * light.properties[0];
-    vec3 diffuseCol = light.intensity.rgb * inColor.rgb * sDotN;
-    vec3 specularCol = vec3( 0.0 );
-    if (sDotN > 0.0 && light.position.w > 0.0) {
-      specularCol = light.intensity.rgb * inColor.rgb * pow(max(dot(s, r), 0.0), inColor[3]);
-    }
-    return ambientCol + attenuation * (diffuseCol + specularCol);
+  vec3 ambientCol = light.intensity.rgb * inColor.rgb * light.properties[0];
+  vec3 diffuseCol = light.intensity.rgb * inColor.rgb * sDotN;
+  vec3 specularCol = vec3( 0.0 );
+  if (sDotN > 0.0 && light.position.w > 0.0) {
+    specularCol = light.intensity.rgb * inColor.rgb * pow(max(dot(s, r), 0.0), inColor[3]);
+  }
+  return ambientCol + attenuation * (diffuseCol + specularCol);
 }
 
 void main() {
@@ -85,4 +84,3 @@ void main() {
   fragTexCoord = inTexCoord;
   fragTid = Tid;
 }
-

@@ -76,8 +76,7 @@ void handleEvents(ref App app) {
   // Call all onFrame() handlers
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object); }
 
-  // Make sure we remove stale geometry and record the command buffer every frame after handling events
+  // Wait and remove stale geometry
   enforceVK(vkDeviceWaitIdle(app.device));
   app.removeGeometry();
-  app.recordRenderCommandBuffer();
 }

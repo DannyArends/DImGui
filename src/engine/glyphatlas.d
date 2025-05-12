@@ -10,7 +10,7 @@ import std.utf : isValidDchar;
 import std.string : toStringz;
 import glyph: Glyph; 
 import textures : Texture, deAllocate, toRGBA, toGPU;
-import images : createImage, imageSize, transitionImageLayout;
+import images : createImage, imageSize;
 import swapchain : createImageView;
 
 /** The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas

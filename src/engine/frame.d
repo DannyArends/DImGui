@@ -5,8 +5,10 @@
 
 import engine;
 
-import imgui : renderGUI;
+import commands : recordRenderCommandBuffer;
+import imgui : recordImGuiCommandBuffer;
 import uniforms : updateUniformBuffer;
+
 
 void renderFrame(ref App app){
   VkSemaphore imageAcquired  = app.sync[app.syncIndex].imageAcquired;
@@ -20,35 +22,12 @@ void renderFrame(ref App app){
 
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex], true, uint.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex]));
-  enforceVK(vkResetCommandBuffer(app.imguiBuffers[app.frameIndex], 0));
 
-  VkCommandBufferBeginInfo commandBufferInfo = {
-    sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-  };
-  enforceVK(vkBeginCommandBuffer(app.imguiBuffers[app.frameIndex], &commandBufferInfo));
+  // Record Command Buffers for the current frame
+  app.recordRenderCommandBuffer(app.frameIndex);
+  app.recordImGuiCommandBuffer(app.frameIndex);
 
-  VkRect2D renderArea = { extent: { width: app.camera.width, height: app.camera.height } };
-
-  VkRenderPassBeginInfo renderPassInfo = {
-    sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass : app.imguiPass,
-    framebuffer : app.swapChainFramebuffers[app.frameIndex],
-    renderArea : renderArea,
-    clearValueCount : app.clearValue.length,
-    pClearValues : &app.clearValue[0]
-  };
-  vkCmdBeginRenderPass(app.imguiBuffers[app.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-  // Render UI
-  ImDrawData* drawData = app.renderGUI();
-  ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[app.frameIndex], null);
-
-  vkCmdEndRenderPass(app.imguiBuffers[app.frameIndex]);
-
-  enforceVK(vkEndCommandBuffer(app.imguiBuffers[app.frameIndex]));
-
-  VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
+  VkCommandBuffer[] submitCommandBuffers = [ app.compute.buffer[app.frameIndex], app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
 
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
