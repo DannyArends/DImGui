@@ -27,7 +27,7 @@ void renderFrame(ref App app){
   app.recordRenderCommandBuffer(app.frameIndex);
   app.recordImGuiCommandBuffer(app.frameIndex);
 
-  VkCommandBuffer[] submitCommandBuffers = [ app.compute.buffer[app.frameIndex], app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
+  VkCommandBuffer[] submitCommandBuffers = [ app.compute.buffer[0], app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
 
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
