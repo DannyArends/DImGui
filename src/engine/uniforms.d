@@ -22,10 +22,6 @@ struct UniformBufferObject {
   uint nlights = 4;
 }
 
-struct ComputeUniform {
-  float angle;
-}
-
 struct Uniform {
   VkBuffer uniformBuffers;
   VkBuffer computeBuffers;
@@ -33,23 +29,17 @@ struct Uniform {
   VkDeviceMemory computeBuffersMemory;
 }
 
-void createUniforms(ref App app) {
+void createRenderUBO(ref App app) {
   app.createBuffer(&app.uniform.uniformBuffers, &app.uniform.uniformBuffersMemory, UniformBufferObject.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   if(app.verbose) SDL_Log("Created %d UniformBuffers of size: %d bytes", app.imageCount, UniformBufferObject.sizeof);
-
-  app.createBuffer(&app.uniform.computeBuffers, &app.uniform.computeBuffersMemory, ComputeUniform.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-  if(app.verbose) SDL_Log("Created %d ComputeBuffers of size: %d bytes", app.imageCount, ComputeUniform.sizeof);
 
   app.frameDeletionQueue.add((){
     vkDestroyBuffer(app.device, app.uniform.uniformBuffers, app.allocator);
     vkFreeMemory(app.device, app.uniform.uniformBuffersMemory, app.allocator);
-
-    vkDestroyBuffer(app.device, app.uniform.computeBuffers, app.allocator);
-    vkFreeMemory(app.device, app.uniform.computeBuffersMemory, app.allocator);
   });
 }
 
-void updateUniformBuffer(ref App app, uint currentImage) {
+void updateRenderUBO(ref App app, uint currentImage) {
   UniformBufferObject ubo = {
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,
@@ -72,16 +62,5 @@ void updateUniformBuffer(ref App app, uint currentImage) {
   vkMapMemory(app.device, app.uniform.uniformBuffersMemory, 0, ubo.sizeof, 0, &data);
   memcpy(data, &ubo, ubo.sizeof);
   vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory);
-
-  ComputeUniform buffer = {
-    angle: app.compute.angle
-  };
-
-  app.compute.angle += 0.01f;
-  if(app.compute.angle > 1.0f)  app.compute.angle = 0.0f;
-
-  vkMapMemory(app.device, app.uniform.computeBuffersMemory, 0, ComputeUniform.sizeof, 0, &data);
-  memcpy(data, &buffer, ComputeUniform.sizeof);
-  vkUnmapMemory(app.device, app.uniform.computeBuffersMemory);
 }
 
