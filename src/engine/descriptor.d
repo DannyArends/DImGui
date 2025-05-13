@@ -43,7 +43,7 @@ void createImGuiDescriptorPool(ref App app){
   VkDescriptorPoolSize[] poolSizes = [
     {
       type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      descriptorCount : IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
+      descriptorCount : 1000 + IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
     }
   ];
 
@@ -102,7 +102,7 @@ void createImGuiDescriptorSetLayout(ref App app) {
 /** Add a texture to the ImGui DescriptorSet (Combined image sampler)
  */
 void addImGuiTexture(ref App app, ref Texture texture) {
-  if(app.verbose) SDL_Log("creating imGui DescriptorSet");
+  if(app.verbose) SDL_Log("addImGuiTexture %p", texture.textureImageView);
   VkDescriptorSetLayout[] layouts = [app.ImGuiSetLayout];
 
   VkDescriptorSetAllocateInfo allocInfo = {

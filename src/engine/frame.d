@@ -7,8 +7,8 @@ import engine;
 
 import commands : recordRenderCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
-import uniforms : updateUniformBuffer;
-
+import uniforms : updateRenderUBO;
+import compute : updateComputeUBO;
 
 void renderFrame(ref App app){
   VkSemaphore imageAcquired  = app.sync[app.syncIndex].imageAcquired;
@@ -27,12 +27,14 @@ void renderFrame(ref App app){
   app.recordRenderCommandBuffer(app.frameIndex);
   app.recordImGuiCommandBuffer(app.frameIndex);
 
-  VkCommandBuffer[] submitCommandBuffers = [ app.compute.buffer[0], app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
+//  VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
+  VkCommandBuffer[] submitCommandBuffers = [ app.compute.buffer[app.frameIndex], app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
 
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
   // Update the uniform buffer in case anything has changed
-  app.updateUniformBuffer(app.frameIndex);
+  app.updateRenderUBO(app.frameIndex);
+  app.updateComputeUBO();
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -49,7 +51,8 @@ void renderFrame(ref App app){
   enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.frameIndex]));
 }
 
-void presentFrame(ref App app){
+void presentFrame(ref App app) {
+  if(app.rebuild) return;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
   VkPresentInfoKHR info = {
     sType : VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,

@@ -21,9 +21,9 @@ import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 import geometry : distance;
-import uniforms : createUniforms;
+import uniforms : createRenderUBO;
 
-import compute: createComputeBufferAndImage, createComputeDescriptorSet, recordCompute;
+import compute: createComputeBufferAndImage, createComputeUBO, updateComputeDescriptorSet, recordCompute;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -45,11 +45,14 @@ void createOrResizeWindow(ref App app) {
   app.aquireSwapChainImages();
   app.createColorResources();
   app.createDepthResources();
-  app.createUniforms();
+  app.createRenderUBO();
+  app.createComputeUBO();
   
   app.createComputeBufferAndImage();
-  app.createComputeDescriptorSet();
-  app.recordCompute();
+  app.updateComputeDescriptorSet();
+  for(uint i = 0; i < app.imageCount; i++) {
+    app.recordCompute(i);
+  }
   
   app.createDescriptorPool();
   app.createDescriptorSetLayout();

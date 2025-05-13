@@ -99,6 +99,13 @@ void toGPU(ref App app, ref Texture texture){
   return(-1);
 }
 
+@nogc int idx(const Texture[] textures, const(char)* name) nothrow {
+  for(uint i = 0; i < textures.length; i++) {
+    if (strstr(textures[i].path, name) != null) return(i);
+  }
+  return(-1);
+}
+
 // Create a TextureSampler for sampling from a texture
 void createSampler(ref App app) {
   if(app.verbose) SDL_Log("Create texture sampler");
