@@ -17,7 +17,7 @@ void renderFrame(ref App app){
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
   //if (app.verbose) SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
-  if (err == VK_ERROR_OUT_OF_DATE_KHR){ app.outofdate = true; return; }
+  if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
 
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex], true, uint.max));
@@ -52,7 +52,7 @@ void renderFrame(ref App app){
 }
 
 void presentFrame(ref App app) {
-  if(app.outofdate) return;
+  if(app.rebuild) return;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
   VkPresentInfoKHR info = {
     sType : VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
