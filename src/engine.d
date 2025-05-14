@@ -110,6 +110,7 @@ struct App {
   bool showBounds = true;               /// TO IMPLEMENT: Show bounding boxes
   bool verbose = false;                 /// Be very verbose
   bool rebuild = false;                 /// Rebuild the swapChain?
+  bool outofdate = false;               /// Rebuild the swapChain?
 }
 
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance
