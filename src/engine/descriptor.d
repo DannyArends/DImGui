@@ -43,7 +43,7 @@ void createImGuiDescriptorPool(ref App app){
   VkDescriptorPoolSize[] poolSizes = [
     {
       type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      descriptorCount : 1000 + IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
+      descriptorCount : IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
     }
   ];
 
@@ -94,7 +94,7 @@ void createDescriptorSetLayout(ref App app) {
 void createImGuiDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating ImGui DescriptorSetLayout");
   DescriptorLayoutBuilder builder;
-  builder.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  builder.add(0, cast(uint) app.textures.length + 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   app.ImGuiSetLayout = builder.build(app.device);
   app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator); });
 }
