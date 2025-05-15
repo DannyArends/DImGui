@@ -6,6 +6,8 @@
 import engine;
 import extensions;
 
+/** Load instance extensions and create the Vulkan instance
+ */
 void createInstance(ref App app){
   app.loadInstanceExtensions();
   auto layers = app.queryInstanceLayerProperties();

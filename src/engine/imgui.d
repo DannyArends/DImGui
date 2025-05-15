@@ -14,6 +14,20 @@ import geometry : position;
 import lights : Light;
 import devices : getSampleCount;
 
+/** Main GUI structure
+ */
+struct GUI {
+  bool showDemo = false;
+  bool showFPS = true;
+  bool showObjects = false;
+  bool showLights = false;
+  bool showTexture = false;
+  float[2] pos = [-50.0, 50];
+  float[2] col = [0.0, 2.0f];
+}
+
+/** Code to initialize the ImGui backend
+ */
 void initializeImGui(ref App app){
   igCreateContext(null);
   app.io = igGetIO_Nil();
@@ -76,17 +90,8 @@ void recordImGuiCommandBuffer(ref App app, uint frameIndex) {
   enforceVK(vkEndCommandBuffer(app.imguiBuffers[frameIndex]));
 }
 
-
-struct GUI{
-  bool showDemo = false;
-  bool showFPS = true;
-  bool showObjects = false;
-  bool showLights = false;
-  bool showTexture = false;
-  float[2] pos = [-50.0, 50];
-  float[2] col = [0.0, 2.0f];
-}
-
+/** Show the GUI window with FPS statistics
+ */
 void showFPSwindow(ref App app, uint font = 1) {
   igPushFont(app.fonts[font]);
   igSetNextWindowPos(ImVec2(0.0f, 20.0f), 0, ImVec2(0.0f, 0.0f));
@@ -103,6 +108,8 @@ void showFPSwindow(ref App app, uint font = 1) {
   igPopFont();
 }
 
+/** Show the GUI window which allows us to manipulate 3D objects
+ */
 void showObjectswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.fonts[font]);
   if(igBegin("Objects", show, ImGuiWindowFlags_NoFocusOnAppearing)){
@@ -140,6 +147,8 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+/** Show the GUI window which shows loaded Textures
+ */
 void showTextureswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.fonts[font]);
   if(igBegin("Textures", show, ImGuiWindowFlags_NoFocusOnAppearing)){
@@ -160,6 +169,8 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+/** Show the GUI window which allows us to manipulate lighting
+ */
 void showLightswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.fonts[font]);
   if(igBegin("Lights", show, ImGuiWindowFlags_NoFocusOnAppearing)){
@@ -212,6 +223,8 @@ void showLightswindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+/** Main Menu
+ */
 void showMenu(ref App app, uint font = 0) {
   if(igBeginMainMenuBar()) {
     if(igBeginMenu("File".toStringz, true)) {
@@ -226,6 +239,8 @@ void showMenu(ref App app, uint font = 0) {
   }
 }
 
+/** Render the GUI and return the ImDrawData*
+ */
 ImDrawData* renderGUI(ref App app){
   // Start ImGui frame
   ImGui_ImplVulkan_NewFrame();
@@ -241,3 +256,4 @@ ImDrawData* renderGUI(ref App app){
   igRender();
   return(igGetDrawData());
 }
+
