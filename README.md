@@ -21,6 +21,8 @@ Make sure the following (development) libraries are installed:
     * [SDL_ttf](https://www.libsdl.org/projects/SDL_ttf/)
   * Execute dub to compile the executable
     * `dub`
+  * For some linux distributions, the dynamic loader never checks the current directory for shared libs, which can be fixed by:
+    * `$LD_LIBRARY_PATH=. dub`
 * Compile [MS windows (x64)]
   * Install the [Visual Studio 2019 Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) with **MSVC v142** and the **Windows 10 SDK**
   * Install the [LunarG Vulkan SDK](https://vulkan.lunarg.com/) and make sure to **install the SDL2 Component**
