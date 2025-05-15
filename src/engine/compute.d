@@ -166,7 +166,7 @@ void updateComputeDescriptorSet(ref App app) {
 }
 
 void createComputeBufferAndImage(ref App app){
-  app.compute.buffer = app.device.createCommandBuffer(app.commandPool, 2, app.verbose);
+  app.compute.buffer = app.device.createCommandBuffer(app.commandPool, app.imageCount, app.verbose);
 
   app.compute.pInBuffers.length = app.imageCount;
   app.compute.pInBuffersMemory.length = app.imageCount;
