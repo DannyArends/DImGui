@@ -53,4 +53,4 @@ Or be a maintainer, and adopt (the documentation of) a function.
 
 ### License
 
-CalderaD is written by Danny Arends and is released under the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3). See [LICENSE.txt](./LICENSE.txt).
+Written by Danny Arends and is released under the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3). See [LICENSE.txt](./LICENSE.txt).
