@@ -4,7 +4,7 @@
  */
 
 import engine;
-
+import std.algorithm : min;
 import std.conv : to;
 import std.path : baseName;
 import std.format : format;
@@ -145,13 +145,14 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
   if(igBegin("Textures", show, ImGuiWindowFlags_NoFocusOnAppearing)){
     igBeginTable("Texture_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, texture; app.textures) {
+      float ratio = cast(float)(texture.height) / texture.width;
       igTableNextRow(0, 5.0f);
       igTableNextColumn();
       igText(toStringz(baseName(fromStringz(texture.path))), ImVec2(0.0f, 0.0f));
       igTableNextColumn();
       igText("%d x %d", texture.width, texture.height);
       igTableNextColumn();
-      igImage(cast(ImTextureID)texture.descrSet, ImVec2(100, 100), ImVec2(0, 0), ImVec2(1, 1));
+      igImage(cast(ImTextureID)texture.descrSet, ImVec2(100, min(100, cast(uint)(100 * ratio))), ImVec2(0, 0), ImVec2(1, 1));
     }
     igEndTable();
     igEnd();
