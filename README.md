@@ -19,7 +19,7 @@ Make sure the following (development) libraries are installed:
     * [SDL2_image](https://www.libsdl.org/projects/SDL_image/)
     * [SDL_mixer](https://www.libsdl.org/projects/SDL_mixer/)
     * [SDL_ttf](https://www.libsdl.org/projects/SDL_ttf/)
-  * Execute dub to compile the executable
+  * Execute dub to compile the executable and run the engine:
     * `dub`
   * For some linux distributions, the dynamic loader never checks the current directory for shared libs, which can be fixed by:
     * `$LD_LIBRARY_PATH=. dub`
