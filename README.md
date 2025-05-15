@@ -1,6 +1,6 @@
 ## DImGui
 Another SDL2 + Vulkan + ImGui renderer in the D Programming Language.
-![Screenshot](/assets/screenshots/example_1.png?raw=true "Screenshot")
+![Screenshot](/assets/screenshots/example_1.png? "Screenshot")
 
 ### Prerequisites
 Make sure the following (development) libraries are installed:
