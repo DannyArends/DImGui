@@ -24,7 +24,7 @@
 		"targetType": "executable",
 		"targetPath": "bin",
 		"platforms": ["linux", "windows"],
-		"libs-linux": ["SDL2", "SDL2_image", "SDL2_mixer", "SDL2_ttf", "cimgui", "vulkan", "cimgui"],
+		"libs-linux": ["SDL2", "SDL2_image", "SDL2_mixer", "SDL2_ttf", "cimgui", "vulkan"],
 		"dflags-windows-x86_64": ["-P-IC:/VulkanSDK/1.4.309.0/Include", 
                               "-P-IC:/VulkanSDK/1.4.309.0/Include/SDL2", 
                               "-P-I./deps/libs/include/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
