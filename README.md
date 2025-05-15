@@ -28,7 +28,7 @@ Make sure the following (development) libraries are installed:
     * `dub`
 
 ### Structure
-The following folders are interesting, if you're interested in how CalderaD is coded:
+The following folders are interesting, if you're interested in how the repository is structured:
 
 - [src/](./src/) which stores the D source code 
 - [src/engine](./src/engine/) main folder for the engine objects
