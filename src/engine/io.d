@@ -13,6 +13,8 @@ import std.file : exists, isFile, dirEntries, SpanMode;
 import std.string : toStringz;
 import std.zlib : UnCompress;
 
+/** Read content of a file as a uint[]
+ */
 uint[] readFile(const(char*) path, bool verbose = false) {
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
@@ -34,13 +36,16 @@ uint[] readFile(const(char*) path, bool verbose = false) {
   return content;
 }
 
+/** Content of a directory
+ */
 immutable(char)*[] dir(string path, string pattern = "*", bool shallow = true) { 
   auto mode = SpanMode.shallow;
   if(!shallow) mode = SpanMode.depth;
   return(dirEntries(path, pattern, mode).filter!(a => a.isFile).map!(a => a.name.toStringz).array);
 }
 
-
+/** Helper function to determine if a path is a file
+ */
 bool isfile(string path) {
   try {
     if (path.exists() || path.isFile) return(true);
@@ -48,6 +53,8 @@ bool isfile(string path) {
   return(false);
 }
 
+/** Load a gzip file
+ */
 string loadGzfile (const string path, uint chunkSize = 1024) {
   string content = "";
   if (!path.isfile) { return(content); }
