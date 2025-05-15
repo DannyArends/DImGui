@@ -1,4 +1,4 @@
-### DImGui
+## DImGui
 Another SDL2 + Vulkan + ImGui renderer in the D Programming Language.
 
 ### Prerequisites
@@ -43,7 +43,7 @@ Some noteworthy files:
 - [src/main.d](./src/main.d) contains the main entry function, and SDL event loop
 - [src/includes.c](./src/includes.c) the file holding the importC instructions
 
-## Contributing
+### Contributing
 
 Want to contribute? Great! Contribute to this repo by starring or forking on Github, and feel free 
 to start an issue first to discuss idea's before sending a pull request. You're also welcome to 
