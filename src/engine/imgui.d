@@ -26,6 +26,7 @@ struct GUI {
   bool showTexture = false;
   float[2] pos = [-50.0, 50];
   float[2] col = [0.0, 2.0f];
+  float[2] sound = [0.0, 1.0f];
 }
 
 /** Code to initialize the ImGui backend
@@ -176,6 +177,7 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
 void showSFXwindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.fonts[font]);
   if(igBegin("Sounds", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+    igSliderScalar("Volume", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
     igBeginTable("Sounds_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, sound; app.soundfx) {
       igPushID_Int(to!int(i));
