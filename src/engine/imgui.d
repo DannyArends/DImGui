@@ -172,7 +172,7 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
-/** Show the GUI window which shows loaded Textures
+/** Show the GUI window for Sound Effects
  */
 void showSFXwindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.fonts[font]);
