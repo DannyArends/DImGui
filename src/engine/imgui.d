@@ -13,6 +13,7 @@ import std.string : toStringz, fromStringz;
 import geometry : position;
 import lights : Light;
 import devices : getSampleCount;
+import sfx : play;
 
 /** Main GUI structure
  */
@@ -21,6 +22,7 @@ struct GUI {
   bool showFPS = true;
   bool showObjects = false;
   bool showLights = false;
+  bool showSFX = false;
   bool showTexture = false;
   float[2] pos = [-50.0, 50];
   float[2] col = [0.0, 2.0f];
@@ -169,6 +171,27 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+/** Show the GUI window which shows loaded Textures
+ */
+void showSFXwindow(ref App app, bool* show, uint font = 0) {
+  igPushFont(app.fonts[font]);
+  if(igBegin("Sounds", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+    igBeginTable("Sounds_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+    foreach(i, sound; app.soundfx) {
+      igPushID_Int(to!int(i));
+      igTableNextRow(0, 5.0f);
+      igTableNextColumn();
+      igText(toStringz(baseName(fromStringz(sound.path))), ImVec2(0.0f, 0.0f));
+      igTableNextColumn();
+      if(igButton("Play", ImVec2(0.0f, 0.0f))){ app.play(sound); }
+      igPopID();
+    }
+    igEndTable();
+    igEnd();
+  }else { igEnd(); }
+  igPopFont();
+}
+
 /** Show the GUI window which allows us to manipulate lighting
  */
 void showLightswindow(ref App app, bool* show, uint font = 0) {
@@ -231,6 +254,7 @@ void showMenu(ref App app, uint font = 0) {
       if(igMenuItem_Bool("FPS".toStringz,null, false, true)) {  app.gui.showFPS = !app.gui.showFPS; }
       if(igMenuItem_Bool("Demo".toStringz,null, false, true)) {  app.gui.showDemo = !app.gui.showDemo; }
       if(igMenuItem_Bool("Objects".toStringz,null, false, true)) { app.gui.showObjects = !app.gui.showObjects; }
+      if(igMenuItem_Bool("Sounds".toStringz,null, false, true)) { app.gui.showSFX = !app.gui.showSFX; }
       if(igMenuItem_Bool("Lights".toStringz,null, false, true)) { app.gui.showLights = !app.gui.showLights; }
       if(igMenuItem_Bool("Textures".toStringz,null, false, true)) {  app.gui.showTexture = !app.gui.showTexture; }
       igEndMenu();
@@ -250,6 +274,7 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
   if(app.gui.showFPS) app.showFPSwindow();
   if(app.gui.showObjects) app.showObjectswindow(&app.gui.showObjects);
+  if(app.gui.showSFX) app.showSFXwindow(&app.gui.showSFX);
   if(app.gui.showLights) app.showLightswindow(&app.gui.showLights);
   if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture);
 

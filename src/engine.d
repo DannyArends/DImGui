@@ -20,6 +20,7 @@ import imgui : GUI;
 import vector : normalize;
 import uniforms : Uniform;
 import sync : Sync;
+import sfx : WavFMT;
 import textures : Texture;
 
 /** Main application structure
@@ -56,6 +57,8 @@ struct App {
   DeletionQueue frameDeletionQueue;
   ImGuiIO* io;
   ImFont*[] fonts;
+  WavFMT[] soundfx;
+  float soundEffectGain = 0.8;
 
   // Vulkan
   VkInstance instance = null;
