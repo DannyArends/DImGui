@@ -4,6 +4,8 @@
  */
 
 import engine;
+
+import icon : setIcon;
 import sfx : openAudio;
 
 void checkSDLError() {
@@ -53,6 +55,8 @@ App initializeSDL() {
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   app.window = SDL_CreateWindow(app.applicationName, SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
   if(app.verbose) SDL_Log("SDL_CreateWindow: %p", app.window);
+  app.window.setIcon();
+
   return(app);
 }
 
