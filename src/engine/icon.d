@@ -6,6 +6,8 @@ import includes;
 
 import io : isfile;
 
+/** Set an icon for the SDL window
+ */
 void setIcon(SDL_Window *window, const(char)* path = "assets/icons/icon.png") {
   if (path.isfile()) {
     SDL_Surface* surface = IMG_Load(path);
