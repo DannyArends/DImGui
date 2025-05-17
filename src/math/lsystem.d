@@ -91,7 +91,7 @@ struct LSystem {
 
 LSystem createLSystem() {
   auto test = LSystem([Symbols.Origin]);
-  test.rules[Symbols.Origin] ~= Rule("W.O", 5);
+  test.rules[Symbols.Origin] = Rules([Rule("W.O", 5)]);
   test.rules[Symbols.Origin] ~= Rule("S.O", 5);
   test.rules[Symbols.Origin] ~= Rule("A.O", 5);
   test.rules[Symbols.Origin] ~= Rule("D.O", 5);
