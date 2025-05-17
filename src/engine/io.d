@@ -53,6 +53,8 @@ bool isfile(string path) {
   return(false);
 }
 
+bool isfile(const(char)* path) { return(isfile(to!string(path))); }
+
 /** Load a gzip file
  */
 string loadGzfile (const string path, uint chunkSize = 1024) {
