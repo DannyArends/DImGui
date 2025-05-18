@@ -27,8 +27,8 @@ class Text : Geometry {
       float pY = atlas.pY(cChar, line) /  glyphscale;
       float w = cChar.gX / glyphscale;
       float h = cChar.gY / glyphscale;
-      float tXo = cChar.gX / cast(float)(atlas.surface.w);
-      float tYo = cChar.gY / cast(float)(atlas.surface.h);
+      float tXo = cChar.gX / cast(float)(atlas.width);
+      float tYo = cChar.gY / cast(float)(atlas.height);
 
       vertices ~=
                [ Vertex([   pX,   pY, 0.0f], [atlas.tX(cChar), atlas.tY(cChar)+ tYo], [1.0f, 1.0f, 1.0f, 1.0f]), 
