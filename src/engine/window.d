@@ -49,11 +49,7 @@ void createOrResizeWindow(ref App app) {
   app.createComputeUBO();
   
   app.createComputeBufferAndImage();
-  app.updateComputeDescriptorSet();
-  for(uint i = 0; i < app.imageCount; i++) {
-    app.recordCompute(i);
-  }
-  
+
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createDescriptorSet();

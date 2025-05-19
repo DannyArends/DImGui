@@ -5,6 +5,7 @@
 
 import engine;
 
+import compute : recordCompute, updateComputeDescriptorSet;
 import commands : recordRenderCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
 import uniforms : updateRenderUBO;
@@ -24,6 +25,9 @@ void renderFrame(ref App app){
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex]));
 
   // Record Command Buffers for the current frame
+
+  app.updateComputeDescriptorSet(app.frameIndex);
+  app.recordCompute(app.frameIndex);
   app.recordRenderCommandBuffer(app.frameIndex);
   app.recordImGuiCommandBuffer(app.frameIndex);
 

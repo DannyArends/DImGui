@@ -6,15 +6,22 @@
 #version 460
 
 struct Particle {
-  float[3] position;    /// Position
+  vec3 position;    /// Position
+  vec3 velocity;    /// Velocity
+  float mass;           /// Mass
+  float life;           /// Life
+  float random;         /// Random number
 };
 
 //size of a workgroup for compute
-layout (local_size_x = 16, local_size_y = 16) in;
+layout (local_size_x = 256, local_size_y = 1) in;
 
 //descriptor bindings for the pipeline
 layout(rgba16f, set = 0, binding = 0) uniform image2D image;
 layout(set = 0, binding = 1) uniform UniformBufferObject{
+  vec4 position;
+  vec4 gravity;
+  float floor;
   float deltaTime;
 } ubo;
 
@@ -22,8 +29,29 @@ layout(set = 0, binding = 2) readonly buffer ParticleIn {
    Particle pIn[];
 };
 
+layout(std140, binding = 3) buffer ParticleOut {
+   Particle pOut[];
+};
+
 void main(){
-  ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-  ivec2 size = imageSize(image);
-  imageStore(image, texelCoord, vec4(pIn[0].position[0] * ubo.deltaTime, ubo.deltaTime, ubo.deltaTime, 1.0));
+  uint index = gl_GlobalInvocationID.x;  
+  Particle particleIn = pIn[index];
+  vec3 particleEnergy = particleIn.velocity * particleIn.mass;
+  pOut[index].life = particleIn.life - (particleIn.random);
+  vec3 totalEnergy = ubo.gravity.xyz * particleIn.mass + particleEnergy;
+  vec3 newVelocity = totalEnergy / particleIn.mass;
+
+  vec3 newPosition = particleIn.position + newVelocity;
+  if(newPosition[1] < ubo.floor) { // Bounce
+    particleIn.position[1] = ubo.floor;
+    newVelocity[1] = -newVelocity[1];
+    newVelocity = newVelocity / (1.5 * particleIn.mass);
+  }
+
+  pOut[index].position = particleIn.position + newVelocity;
+  pOut[index].velocity = newVelocity;
+
+  for(uint y = 0; y < 100; y++){
+    imageStore(image, ivec2(index, y), vec4(pIn[0].position[0] * ubo.deltaTime, ubo.deltaTime, ubo.deltaTime, 1.0));
+  }
 }
