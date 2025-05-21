@@ -99,17 +99,15 @@ VkPhysicalDevice[] queryPhysicalDevices(ref App app) {
   return(physicalDevices);
 }
 
-uint selectQueueFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits type = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT){
+uint selectQueueFamily(VkPhysicalDevice physicalDevice) {
   uint32_t nQueue;
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, null);
   VkQueueFamilyProperties[] queueProperties;
   queueProperties.length = nQueue;
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, &queueProperties[0]);
   foreach(i, queueProperty; queueProperties) {
-    if (queueProperty.queueFlags & type){
-      SDL_Log("Queue %d for type %#010x", i, type);
-      return cast(uint)i;
-    }
+    if ((queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT)) return cast(uint)i;
   }
   assert(0);
 }
+
