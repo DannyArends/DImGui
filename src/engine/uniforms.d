@@ -39,7 +39,8 @@ void createRenderUBO(ref App app) {
   });
 }
 
-void updateRenderUBO(ref App app, uint currentImage) {
+// TODO: Each render frame should have it's own UBO, specified by frameIndex
+void updateRenderUBO(ref App app, uint frameIndex = 0) {
   UniformBufferObject ubo = {
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,

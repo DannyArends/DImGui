@@ -24,5 +24,10 @@ void createFramebuffers(ref App app) {
     enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, null, &app.swapChainFramebuffers[i]));
   }
   if(app.verbose) SDL_Log("%d Framebuffers created", app.swapChainFramebuffers.length);
+  app.frameDeletionQueue.add((){
+    for (uint i = 0; i < app.imageCount; i++) {
+      vkDestroyFramebuffer(app.device, app.swapChainFramebuffers[i], app.allocator);
+    }
+  });
 }
 

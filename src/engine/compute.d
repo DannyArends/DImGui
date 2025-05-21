@@ -282,7 +282,8 @@ void createComputeUBO(ref App app) {
   });
 }
 
-void updateComputeUBO(ref App app){
+// TODO: Each compute should have it's own UBO, specified by frameIndex
+void updateComputeUBO(ref App app, uint frameIndex = 0){
   uint now = SDL_GetTicks();
   ComputeUniform buffer = {
     deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
@@ -295,7 +296,7 @@ void updateComputeUBO(ref App app){
   vkUnmapMemory(app.device, app.uniform.computeBuffersMemory);
 }
 
-void recordCompute(ref App app, uint frameIndex) {
+void recordComputeCommandBuffer(ref App app, uint frameIndex) {
   enforceVK(vkResetCommandBuffer(app.compute.buffer[frameIndex], 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = {
