@@ -20,7 +20,7 @@ struct Compute {
   uint lastTick = 0;
   VkDescriptorPool pool = null;
   VkDescriptorSetLayout layout = null;
-  VkDescriptorSet set = null;
+  VkDescriptorSet[] set = null;
 
   VkCommandBuffer[] buffer = null;
   GraphicsPipeline pipeline;
@@ -49,7 +49,7 @@ void createComputeDescriptorPool(ref App app){
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    maxSets : 1, // Allocate 1000 texture space
+    maxSets : 1000, // Allocate 1000 texture space
     poolSizeCount : cast(uint32_t)poolSizes.length,
     pPoolSizes : &poolSizes[0]
   };
@@ -97,16 +97,18 @@ void createComputePipeline(ref App app, const(char)* compPath = "assets/shaders/
 
 void createComputeDescriptorSet(ref App app) {
   if(app.verbose) SDL_Log("Creating Compute DescriptorSet from pool %p", app.compute.pool);
-  VkDescriptorSetLayout[] layouts = [app.compute.layout];
+  app.compute.set.length = app.imageCount;
+
+  VkDescriptorSetLayout[] layouts = [app.compute.layout, app.compute.layout];
 
   VkDescriptorSetAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
     descriptorPool: app.compute.pool,
-    descriptorSetCount: 1,
+    descriptorSetCount: app.imageCount,
     pSetLayouts: &layouts[0]
   };
 
-  enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.compute.set));
+  enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.compute.set[0]));
 }
 
 void updateComputeDescriptorSet(ref App app, uint frameIndex = 0) {
@@ -131,7 +133,7 @@ void updateComputeDescriptorSet(ref App app, uint frameIndex = 0) {
   VkWriteDescriptorSet[3] descriptorWrites = [
     {
       sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.compute.set,
+      dstSet: app.compute.set[frameIndex],
       dstBinding: 0,
       dstArrayElement: 0,
       descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
@@ -140,7 +142,7 @@ void updateComputeDescriptorSet(ref App app, uint frameIndex = 0) {
     },
     {
       sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.compute.set,
+      dstSet: app.compute.set[frameIndex],
       dstBinding: 1,
       dstArrayElement: 0,
       descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -151,7 +153,7 @@ void updateComputeDescriptorSet(ref App app, uint frameIndex = 0) {
     },
     {
       sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.compute.set,
+      dstSet: app.compute.set[frameIndex],
       dstBinding: 2,
       dstArrayElement: 0,
       descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -316,7 +318,7 @@ void recordComputeCommandBuffer(ref App app, uint frameIndex) {
   vkCmdBindPipeline(app.compute.buffer[frameIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipeline.graphicsPipeline);
 
   // bind the descriptor set containing the draw image for the compute pipeline
-  vkCmdBindDescriptorSets(app.compute.buffer[frameIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipeline.pipelineLayout, 0, 1, &app.compute.set, 0, null);
+  vkCmdBindDescriptorSets(app.compute.buffer[frameIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipeline.pipelineLayout, 0, 1, &app.compute.set[frameIndex], 0, null);
 
   // execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
   vkCmdDispatch(app.compute.buffer[frameIndex], cast(uint)ceil(app.camera.width / 16.0), cast(uint)ceil(app.camera.height / 16.0), 1);

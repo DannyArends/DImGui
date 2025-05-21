@@ -23,7 +23,7 @@ import sync : createSyncObjects;
 import geometry : distance;
 import uniforms : createRenderUBO;
 
-import compute: createComputeBufferAndImage, createComputeUBO, updateComputeDescriptorSet;
+import compute: createComputeBufferAndImage, createComputeDescriptorSet, createComputeUBO, updateComputeDescriptorSet;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -46,15 +46,16 @@ void createOrResizeWindow(ref App app) {
   app.createColorResources();
   app.createDepthResources();
   app.createRenderUBO();
-
   app.createComputeUBO();
-  app.createComputeBufferAndImage();
 
+  app.createComputeBufferAndImage();
 
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createDescriptorSet();
   app.createTextureDescriptor();
+
+  app.createComputeDescriptorSet();
 
   app.renderpass = app.createRenderPass();
   app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);

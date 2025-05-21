@@ -91,6 +91,7 @@ void recordImGuiCommandBuffer(ref App app, uint frameIndex) {
   vkCmdEndRenderPass(app.imguiBuffers[frameIndex]);
 
   enforceVK(vkEndCommandBuffer(app.imguiBuffers[frameIndex]));
+  if(app.verbose) SDL_Log("Done recordImGuiCommandBuffer");
 }
 
 /** Show the GUI window with FPS statistics

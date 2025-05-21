@@ -6,6 +6,7 @@
 import engine;
 
 void createFramebuffers(ref App app) {
+  if(app.verbose) SDL_Log("createFramebuffers");
   app.swapChainFramebuffers.length = app.imageCount;
 
   for (size_t i = 0; i < app.imageCount; i++) {
