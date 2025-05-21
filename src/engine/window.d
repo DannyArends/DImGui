@@ -8,7 +8,7 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
-//import compute : createComputeDescriptorSet, recordCompute;
+
 import devices : getSampleCount;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
@@ -23,7 +23,7 @@ import sync : createSyncObjects;
 import geometry : distance;
 import uniforms : createRenderUBO;
 
-import compute: createComputeBufferAndImage, createComputeUBO, updateComputeDescriptorSet, recordCompute;
+import compute: createComputeBufferAndImage, createComputeUBO, updateComputeDescriptorSet;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -47,13 +47,10 @@ void createOrResizeWindow(ref App app) {
   app.createDepthResources();
   app.createRenderUBO();
   app.createComputeUBO();
-  
+
   app.createComputeBufferAndImage();
   app.updateComputeDescriptorSet();
-  for(uint i = 0; i < app.imageCount; i++) {
-    app.recordCompute(i);
-  }
-  
+
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createDescriptorSet();

@@ -77,5 +77,10 @@ void aquireSwapChainImages(ref App app) {
     app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.surfaceformats[0].format);
   }
   if(app.verbose) SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
+  app.frameDeletionQueue.add((){
+    for (uint i = 0; i < app.imageCount; i++) {
+      vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
+    }
+  });
 }
 

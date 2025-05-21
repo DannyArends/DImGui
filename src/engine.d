@@ -19,7 +19,7 @@ import images : ColorBuffer;
 import imgui : GUI;
 import vector : normalize;
 import uniforms : Uniform;
-import sync : Sync;
+import sync : Sync, Fence;
 import sfx : WavFMT;
 import textures : Texture;
 
@@ -83,7 +83,7 @@ struct App {
   Uniform uniform = {null, null};
 
   // per Frame
-  VkFence[] fences = null;
+  Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkRenderPass imguiPass = null;
   VkRenderPass renderpass = null;
