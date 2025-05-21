@@ -12,6 +12,7 @@ import descriptor : updateDescriptorSet;
 import compute : updateComputeDescriptorSet, updateComputeUBO, recordComputeCommandBuffer;
 
 void renderFrame(ref App app){
+  if(app.verbose) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired    = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete   = app.sync[app.syncIndex].renderComplete;
@@ -65,9 +66,11 @@ void renderFrame(ref App app){
   };
   
   enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.frameIndex].renderInFlight));
+  if(app.verbose) SDL_Log("Done renderFrame");
 }
 
 void presentFrame(ref App app) {
+  if(app.verbose) SDL_Log("presentFrame");
   if(app.rebuild) return;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
   VkPresentInfoKHR info = {
@@ -83,5 +86,6 @@ void presentFrame(ref App app) {
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
   app.syncIndex = (app.syncIndex + 1) % app.sync.length; // Now we can use the next set of semaphores
+  if(app.verbose) SDL_Log("Done presentFrame");
 }
 

@@ -72,7 +72,7 @@ struct App {
   VkDescriptorPool descriptorPool = null;
   VkDescriptorSetLayout descriptorSetLayout = null;
   VkDescriptorImageInfo[] textureImagesInfo;
-  VkDescriptorSet descriptorSet = null;
+  VkDescriptorSet[] descriptorSet = null;
 
   Compute compute;
 

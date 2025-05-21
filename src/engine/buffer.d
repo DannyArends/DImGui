@@ -53,6 +53,33 @@ void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
   app.endSingleTimeCommands(commandBuffer);
 }
 
+void updateBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+  if(app.verbose) SDL_Log("updateBuffer");
+  VkBufferCopy copyRegion = { size: size };
+  vkCmdCopyBuffer(app.renderBuffers[app.frameIndex], srcBuffer, dstBuffer, 1, &copyRegion);
+
+  VkBufferMemoryBarrier bufferBarrier = {
+    sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+    srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,      // Data written by transfer operation
+    dstAccessMask : VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, // Data read by vertex attributes
+    srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
+    dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
+    buffer : dstBuffer, // Barrier for your single vertex buffer
+    offset : 0,
+    size : VK_WHOLE_SIZE // Or app.currentVertexDataSize
+  };
+
+  vkCmdPipelineBarrier(
+      app.renderBuffers[app.frameIndex],
+      VK_PIPELINE_STAGE_TRANSFER_BIT,       // Source stage: Where the write occurred (copy)
+      VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,   // Destination stage: Where the read will occur (vertex shader input)
+      0, // dependencyFlags
+      0, null, // memoryBarriers
+      1, &bufferBarrier, // bufferMemoryBarriers
+      0, null // imageMemoryBarriers
+  );
+}
+
 void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, uint height) {
   VkCommandBuffer commandBuffer = app.beginSingleTimeCommands();
   VkOffset3D imageOffset = { 0, 0, 0 };
@@ -81,7 +108,8 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
 
 /** Create Vulkan buffer and memory pointer and transfer the array of objects into the GPU memory
  */
-bool toGPU(T)(ref App app, T[] objects, VkBuffer* buffer, VkDeviceMemory* memory, VkBufferUsageFlags usage, VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+bool toGPU(T)(ref App app, T[] objects, VkBuffer* buffer, VkDeviceMemory* memory, 
+              VkBufferUsageFlags usage, VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
   uint size = cast(uint)(objects[0].sizeof * objects.length);
   if(app.verbose) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, size);
 
@@ -94,12 +122,15 @@ bool toGPU(T)(ref App app, T[] objects, VkBuffer* buffer, VkDeviceMemory* memory
   memcpy(data, cast(void*)objects, size);
   vkUnmapMemory(app.device, stagingBufferMemory);
 
-  app.createBuffer(buffer, memory, size, usage, properties);
+  if(!(*buffer)) app.createBuffer(buffer, memory, size, usage, properties);
 
-  app.copyBuffer(stagingBuffer, (*buffer), size);
+  app.updateBuffer(stagingBuffer, (*buffer), size);
 
-  vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-  vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+  app.mainDeletionQueue.add((){
+    vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
+    vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+  });
+
   if(app.verbose) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", (*buffer), size);
   return(true);
 }

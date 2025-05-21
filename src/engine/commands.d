@@ -33,12 +33,16 @@ void recordRenderCommandBuffer(ref App app, uint frameIndex) {
     pClearValues: &app.clearValue[0]
   };
 
+  for(size_t x = 0; x < app.objects.length; x++) {
+    if(!app.objects[x].isBuffered){ app.objects[x].buffer(app); }
+  }
+
   vkCmdBeginRenderPass(app.renderBuffers[frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   if(app.verbose) SDL_Log("Render pass recording to buffer %d", frameIndex);
 
   if(app.verbose) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, frameIndex);
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isBuffered) app.objects[x].buffer(app);
+  //  if(!app.objects[x].isBuffered) app.objects[x].buffer(app);
     if(app.objects[x].isVisible) app.draw(app.objects[x], frameIndex);
   }
   vkCmdEndRenderPass(app.renderBuffers[frameIndex]);

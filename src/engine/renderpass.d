@@ -83,6 +83,7 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
   };
   VkRenderPass renderpass;
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
+  if(app.verbose) SDL_Log("Renderpass created");
   app.frameDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
 
   return(renderpass);

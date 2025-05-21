@@ -39,7 +39,7 @@ class Geometry {
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {
-    app.deAllocate(this, buffers);
+    //app.deAllocate(this, buffers);
 
     if(!buffers[VERTEX]) buffers[VERTEX] = app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) buffers[INDEX] = app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
@@ -176,7 +176,7 @@ void draw(ref App app, Geometry object, size_t i) {
   vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.pipelines[object.topology].pipelineLayout, 0, 1, &app.descriptorSet, 0, null);
+                          app.pipelines[object.topology].pipelineLayout, 0, 1, &app.descriptorSet[i], 0, null);
 
   if(app.verbose) SDL_Log("DRAW: %d instances", object.instances.length);
   vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);

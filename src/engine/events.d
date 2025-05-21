@@ -58,6 +58,7 @@ void removeGeometry(ref App app) {
 /** Handles all ImGui IO and SDL events
  */
 void handleEvents(ref App app) {
+  if(app.verbose) SDL_Log("handleEvents");
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     ImGui_ImplSDL2_ProcessEvent(&e);
@@ -77,6 +78,6 @@ void handleEvents(ref App app) {
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object); }
 
   // Wait and remove stale geometry
-  enforceVK(vkDeviceWaitIdle(app.device));
-  app.removeGeometry();
+//  enforceVK(vkDeviceWaitIdle(app.device));
+//  app.removeGeometry();
 }
