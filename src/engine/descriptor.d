@@ -146,20 +146,26 @@ void createDescriptorSet(ref App app) {
   };
   if(app.verbose) SDL_Log("Allocating DescriptorSets");
   enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.descriptorSet));
+}
 
-  if(app.verbose) SDL_Log("Update DescriptorSet, adding %d textures", app.textures.length);
-  VkDescriptorImageInfo[] textureImages;
+void createTextureDescriptor(ref App app) {
+  app.textureImagesInfo.length = app.textures.length;
+
   for (size_t i = 0; i < app.textures.length; i++) {
     VkDescriptorImageInfo textureImage = {
       imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
       imageView: app.textures[i].textureImageView, // Texture 0 is reserved for font
       sampler: app.sampler
     };
-    textureImages ~= textureImage;
+    app.textureImagesInfo[i] = textureImage;
   }
+}
+
+void updateDescriptorSet(ref App app, uint frameIndex = 0) {
+  if(app.verbose) SDL_Log("Update DescriptorSet, adding %d textures", app.textures.length);
 
   VkDescriptorBufferInfo bufferInfo = {
-    buffer: app.uniform.uniformBuffers,
+    buffer: app.uniform.uniformBuffers[frameIndex],
     offset: 0,
     range: UniformBufferObject.sizeof
   };
@@ -183,7 +189,7 @@ void createDescriptorSet(ref App app) {
       dstArrayElement: 0,
       descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
       descriptorCount: cast(uint)app.textures.length,
-      pImageInfo: &textureImages[0]
+      pImageInfo: &app.textureImagesInfo[0]
     }
   ];
   vkUpdateDescriptorSets(app.device, descriptorWrites.length, &descriptorWrites[0], 0, null);

@@ -23,19 +23,25 @@ struct UniformBufferObject {
 }
 
 struct Uniform {
-  VkBuffer uniformBuffers;
-  VkBuffer computeBuffers;
-  VkDeviceMemory uniformBuffersMemory;
-  VkDeviceMemory computeBuffersMemory;
+  VkBuffer[] uniformBuffers;
+  VkBuffer[] computeBuffers;
+  VkDeviceMemory[] uniformBuffersMemory;
+  VkDeviceMemory[] computeBuffersMemory;
 }
 
 void createRenderUBO(ref App app) {
-  app.createBuffer(&app.uniform.uniformBuffers, &app.uniform.uniformBuffersMemory, UniformBufferObject.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-  if(app.verbose) SDL_Log("Created %d UniformBuffers of size: %d bytes", app.imageCount, UniformBufferObject.sizeof);
+  app.uniform.uniformBuffers.length = app.imageCount;
+  app.uniform.uniformBuffersMemory.length = app.imageCount;
 
+  for (uint i = 0; i < app.imageCount; i++) {
+    app.createBuffer(&app.uniform.uniformBuffers[i], &app.uniform.uniformBuffersMemory[i], UniformBufferObject.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+  }
+  if(app.verbose) SDL_Log("Created %d Render UBO of size: %d bytes", app.imageCount, UniformBufferObject.sizeof);
   app.frameDeletionQueue.add((){
-    vkDestroyBuffer(app.device, app.uniform.uniformBuffers, app.allocator);
-    vkFreeMemory(app.device, app.uniform.uniformBuffersMemory, app.allocator);
+    for (uint i = 0; i < app.imageCount; i++) {
+      vkDestroyBuffer(app.device, app.uniform.uniformBuffers[i], app.allocator);
+      vkFreeMemory(app.device, app.uniform.uniformBuffersMemory[i], app.allocator);
+    }
   });
 }
 
@@ -60,8 +66,8 @@ void updateRenderUBO(ref App app, uint frameIndex = 0) {
   }
 
   void* data;
-  vkMapMemory(app.device, app.uniform.uniformBuffersMemory, 0, ubo.sizeof, 0, &data);
+  vkMapMemory(app.device, app.uniform.uniformBuffersMemory[frameIndex], 0, ubo.sizeof, 0, &data);
   memcpy(data, &ubo, ubo.sizeof);
-  vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory);
+  vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory[frameIndex]);
 }
 

@@ -11,7 +11,7 @@ import std.traits : EnumMembers;
 
 import devices : getSampleCount;
 import depthbuffer : createDepthResources;
-import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet;
+import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet, createTextureDescriptor;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
@@ -46,14 +46,15 @@ void createOrResizeWindow(ref App app) {
   app.createColorResources();
   app.createDepthResources();
   app.createRenderUBO();
-  app.createComputeUBO();
 
+  app.createComputeUBO();
   app.createComputeBufferAndImage();
-  app.updateComputeDescriptorSet();
+
 
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createDescriptorSet();
+  app.createTextureDescriptor();
 
   app.renderpass = app.createRenderPass();
   app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);

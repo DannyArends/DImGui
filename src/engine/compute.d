@@ -109,7 +109,7 @@ void createComputeDescriptorSet(ref App app) {
   enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.compute.set));
 }
 
-void updateComputeDescriptorSet(ref App app) {
+void updateComputeDescriptorSet(ref App app, uint frameIndex = 0) {
   VkDescriptorImageInfo imageInfo = {
     imageLayout: VK_IMAGE_LAYOUT_GENERAL,
     imageView: app.compute.imageView,
@@ -117,7 +117,7 @@ void updateComputeDescriptorSet(ref App app) {
   if(app.verbose) SDL_Log("Linking image: %p", app.compute.imageView);
 
   VkDescriptorBufferInfo bufferInfo = {
-    buffer: app.uniform.computeBuffers,
+    buffer: app.uniform.computeBuffers[frameIndex],
     offset: 0,
     range: ComputeUniform.sizeof
   };
@@ -273,16 +273,22 @@ void transitionImage(ref App app, VkCommandBuffer commandBuffer, VkImage image,
 }
 
 void createComputeUBO(ref App app) {
-  app.createBuffer(&app.uniform.computeBuffers, &app.uniform.computeBuffersMemory, ComputeUniform.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-  if(app.verbose) SDL_Log("Created %d ComputeBuffers of size: %d bytes", app.imageCount, ComputeUniform.sizeof);
+  app.uniform.computeBuffers.length = app.imageCount;
+  app.uniform.computeBuffersMemory.length = app.imageCount;
+
+  for (uint i = 0; i < app.imageCount; i++) {
+    app.createBuffer(&app.uniform.computeBuffers[i], &app.uniform.computeBuffersMemory[i], ComputeUniform.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+  }
+  if(app.verbose) SDL_Log("Created %d Compute UBO of size: %d bytes", app.imageCount, ComputeUniform.sizeof);
 
   app.frameDeletionQueue.add((){
-    vkDestroyBuffer(app.device, app.uniform.computeBuffers, app.allocator);
-    vkFreeMemory(app.device, app.uniform.computeBuffersMemory, app.allocator);
+    for (uint i = 0; i < app.imageCount; i++) {
+      vkDestroyBuffer(app.device, app.uniform.computeBuffers[i], app.allocator);
+      vkFreeMemory(app.device, app.uniform.computeBuffersMemory[i], app.allocator);
+    }
   });
 }
 
-// TODO: Each compute should have it's own UBO, specified by frameIndex
 void updateComputeUBO(ref App app, uint frameIndex = 0){
   uint now = SDL_GetTicks();
   ComputeUniform buffer = {
@@ -291,9 +297,9 @@ void updateComputeUBO(ref App app, uint frameIndex = 0){
   app.compute.lastTick = now;
 
   void* data;
-  vkMapMemory(app.device, app.uniform.computeBuffersMemory, 0, ComputeUniform.sizeof, 0, &data);
+  vkMapMemory(app.device, app.uniform.computeBuffersMemory[frameIndex], 0, ComputeUniform.sizeof, 0, &data);
   memcpy(data, &buffer, ComputeUniform.sizeof);
-  vkUnmapMemory(app.device, app.uniform.computeBuffersMemory);
+  vkUnmapMemory(app.device, app.uniform.computeBuffersMemory[frameIndex]);
 }
 
 void recordComputeCommandBuffer(ref App app, uint frameIndex) {
