@@ -8,7 +8,8 @@ import engine;
 import commands : recordRenderCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
 import uniforms : updateRenderUBO;
-import compute : updateComputeUBO, recordComputeCommandBuffer;
+import descriptor : updateDescriptorSet;
+import compute : updateComputeDescriptorSet, updateComputeUBO, recordComputeCommandBuffer;
 
 void renderFrame(ref App app){
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
@@ -21,8 +22,9 @@ void renderFrame(ref App app){
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
 
-  // Compute Submission
+  /// Compute Submission
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex].computeInFlight, true, uint.max));
+  app.updateComputeDescriptorSet(app.frameIndex);
   app.updateComputeUBO(app.frameIndex);
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex].computeInFlight));
   app.recordComputeCommandBuffer(app.frameIndex);
@@ -37,8 +39,9 @@ void renderFrame(ref App app){
 
   enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.frameIndex].computeInFlight));
 
-  // Graphics submission
+  /// Graphics & ImGui Submission
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex].renderInFlight, true, uint.max));
+  app.updateDescriptorSet(app.frameIndex);
   app.updateRenderUBO(app.frameIndex);
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex].renderInFlight));
   app.recordRenderCommandBuffer(app.frameIndex);
