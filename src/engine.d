@@ -113,7 +113,7 @@ struct App {
   // Global boolean flags
   bool finished = false;                /// Is the main loop finished ?
   bool showBounds = true;               /// TO IMPLEMENT: Show bounding boxes
-  bool verbose = true;                 /// Be very verbose
+  bool verbose = false;                 /// Be very verbose
   bool rebuild = false;                 /// Rebuild the swapChain?
 }
 
