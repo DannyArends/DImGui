@@ -51,7 +51,7 @@ void main(string[] args) {
   app.createOrResizeWindow();       /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();            /// Initialize ImGui (IO, Style, etc)
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
-  uint frames = 5000;
+  uint frames = 50000;
   while (!app.finished && app.totalFramesRendered < frames) { // Main loop
     app.time[FRAMESTART] = SDL_GetTicks();
     app.handleEvents();

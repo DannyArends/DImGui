@@ -20,7 +20,7 @@ void createInstance(ref App app){
   VkInstanceCreateInfo createInstance = { 
     sType : VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
     enabledLayerCount : cast(uint)app.layers.length,
-    ppEnabledLayerNames : null,//&app.layers[0],
+    ppEnabledLayerNames : &app.layers[0],
     enabledExtensionCount : cast(uint)app.instanceExtensions.length,
     ppEnabledExtensionNames : &app.instanceExtensions[0],
     pApplicationInfo: &app.applicationInfo
