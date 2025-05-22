@@ -7,6 +7,23 @@ import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 
+struct GeometryBuffer {
+  VkBuffer vb = null;            /// Vulkan Buffer pointer
+  VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
+  VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
+  VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
+  void* data;
+}
+
+void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
+  vkUnmapMemory(app.device, buffer.sbM);
+  vkDestroyBuffer(app.device, buffer.sb, null);
+  vkFreeMemory(app.device, buffer.sbM, null);
+
+  vkDestroyBuffer(app.device, buffer.vb, null);
+  vkFreeMemory(app.device, buffer.vbM, null);
+}
+
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memoryProperties;
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
@@ -53,10 +70,10 @@ void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
   app.endSingleTimeCommands(commandBuffer);
 }
 
-void updateBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size) {
   if(app.verbose) SDL_Log("updateBuffer");
   VkBufferCopy copyRegion = { size: size };
-  vkCmdCopyBuffer(app.renderBuffers[app.frameIndex], srcBuffer, dstBuffer, 1, &copyRegion);
+  vkCmdCopyBuffer(app.renderBuffers[app.frameIndex], buffer.sb, buffer.vb, 1, &copyRegion);
 
   VkBufferMemoryBarrier bufferBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
@@ -64,7 +81,7 @@ void updateBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceS
     dstAccessMask : VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, // Data read by vertex attributes
     srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
     dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-    buffer : dstBuffer, // Barrier for your single vertex buffer
+    buffer : buffer.vb, // Barrier for your single vertex buffer
     offset : 0,
     size : VK_WHOLE_SIZE // Or app.currentVertexDataSize
   };
@@ -108,30 +125,22 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
 
 /** Create Vulkan buffer and memory pointer and transfer the array of objects into the GPU memory
  */
-bool toGPU(T)(ref App app, T[] objects, VkBuffer* buffer, VkDeviceMemory* memory, 
-              VkBufferUsageFlags usage, VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsageFlags usage, 
+              VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
   uint size = cast(uint)(objects[0].sizeof * objects.length);
   if(app.verbose) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, size);
 
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, size);
+  if(!buffer.sb) {
+    app.createBuffer(&buffer.sb, &buffer.sbM, size);
+    vkMapMemory(app.device, buffer.sbM, 0, size, 0, &buffer.data);
+  }
+  memcpy(buffer.data, cast(void*)objects, size);
 
-  void* data;
-  vkMapMemory(app.device, stagingBufferMemory, 0, size, 0, &data);
-  memcpy(data, cast(void*)objects, size);
-  vkUnmapMemory(app.device, stagingBufferMemory);
+  if(!buffer.vb) app.createBuffer(&buffer.vb, &buffer.vbM, size, usage, properties);
 
-  if(!(*buffer)) app.createBuffer(buffer, memory, size, usage, properties);
+  app.updateBuffer(buffer, size);
 
-  app.updateBuffer(stagingBuffer, (*buffer), size);
-
-  app.mainDeletionQueue.add((){
-    vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-    vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
-  });
-
-  if(app.verbose) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", (*buffer), size);
+  if(app.verbose) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer, size);
   return(true);
 }
 
