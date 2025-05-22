@@ -9,7 +9,7 @@ public import core.stdc.string : strcmp, memcpy;
 import depthbuffer : DepthBuffer;
 import camera : Camera;
 import compute : Compute;
-import deletion : DeletionQueue;
+import deletion : CheckedDeletionQueue, DeletionQueue;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, deAllocate;
 import lights : Light, Lights;
@@ -55,6 +55,7 @@ struct App {
   ColorBuffer colorBuffer;
   DeletionQueue mainDeletionQueue;
   DeletionQueue frameDeletionQueue;
+  CheckedDeletionQueue bufferDeletionQueue;
   ImGuiIO* io;
   ImFont*[] fonts;
   WavFMT[] soundfx;
@@ -112,7 +113,7 @@ struct App {
   // Global boolean flags
   bool finished = false;                /// Is the main loop finished ?
   bool showBounds = true;               /// TO IMPLEMENT: Show bounding boxes
-  bool verbose = false;                 /// Be very verbose
+  bool verbose = true;                 /// Be very verbose
   bool rebuild = false;                 /// Rebuild the swapChain?
 }
 
@@ -120,7 +121,10 @@ struct App {
  */
 void cleanUp(App app){
   enforceVK(vkDeviceWaitIdle(app.device));
+  app.bufferDeletionQueue.flush();
   app.frameDeletionQueue.flush();
+
+  SDL_Log("Unflushed: %d", app.bufferDeletionQueue.queue.length);
 
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
@@ -139,5 +143,13 @@ extern(C) void enforceVK(VkResult err) {
   if (err == VK_SUCCESS) return;
   SDL_Log("[enforceVK] Error: VkResult = %d\n", err);
   if (err < 0) abort();
+}
+
+import std.stdio : writefln;
+import std.string : fromStringz;
+
+extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message){
+  // Change to fit your needs (like to output to a file)
+  writefln("%s", fromStringz(message));
 }
 

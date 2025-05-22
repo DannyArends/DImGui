@@ -19,7 +19,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
     imageSharingMode: VK_SHARING_MODE_EXCLUSIVE,
     preTransform: app.camera.currentTransform,
     compositeAlpha: VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-    presentMode: VK_PRESENT_MODE_IMMEDIATE_KHR, // VK_PRESENT_MODE_IMMEDIATE_KHR
+    presentMode: VK_PRESENT_MODE_FIFO_KHR, // VK_PRESENT_MODE_IMMEDIATE_KHR
     clipped: VK_TRUE,
     oldSwapchain: oldChain,
   };

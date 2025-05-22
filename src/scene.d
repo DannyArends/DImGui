@@ -92,7 +92,7 @@ void createScene(ref App app){
   } */
 
   SDL_Log("createScene: Add L-System");
-  /*app.objects ~= new Turtle(createLSystem());
+  app.objects ~= new Turtle(createLSystem());
   app.objects[6].computeNormals();
   app.objects[6].position([2.0f, 1.0f, -2.0f]);
 
@@ -111,7 +111,7 @@ void createScene(ref App app){
       app.objects[i].scale([0.5f, 0.5f, 0.5f]);
       i++;
     }
-  } */
+  }
   SDL_Log("createScene: Finished");
 }
 

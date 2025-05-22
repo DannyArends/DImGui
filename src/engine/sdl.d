@@ -62,6 +62,8 @@ App initializeSDL() {
     abort();
   }
   app.window.setIcon();
+  SDL_LogSetOutputFunction(&myLogFn, null); // replace NULL with some other
+
   return(app);
 }
 

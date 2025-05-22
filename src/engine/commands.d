@@ -34,7 +34,10 @@ void recordRenderCommandBuffer(ref App app, uint frameIndex) {
   };
 
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isBuffered){ app.objects[x].buffer(app); }
+    if(!app.objects[x].isBuffered) { 
+      if(app.verbose) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
+      app.objects[x].buffer(app);
+    }
   }
 
   vkCmdBeginRenderPass(app.renderBuffers[frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
