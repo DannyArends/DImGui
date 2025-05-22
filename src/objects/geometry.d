@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : toGPU;
+import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
 import camera : Camera;
 import matrix : mat4, position, translate, rotate, scale;
 import textures : Texture, id;
@@ -23,14 +23,9 @@ struct Instance {
 /** A Geometry that can be rendered
  */
 class Geometry {
-  VkBuffer vertexBuffer = null;                 /// Vulkan vertex buffer pointer
-  VkDeviceMemory vertexBufferMemory = null;     /// Vulkan vertex buffer memory pointer
-
-  VkBuffer indexBuffer = null;                  /// Vulkan index buffer pointer
-  VkDeviceMemory indexBufferMemory = null;      /// Vulkan index buffer pointer
-
-  VkBuffer instanceBuffer = null;               /// Vulkan instance buffer pointer
-  VkDeviceMemory instanceBufferMemory = null;   /// Vulkan instance buffer pointer
+  GeometryBuffer vertexBuffer;
+  GeometryBuffer indexBuffer;
+  GeometryBuffer instanceBuffer;
 
   Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
   uint[] indices;                               /// Indices of type uint stored on the CPU
@@ -41,9 +36,12 @@ class Geometry {
   void buffer(ref App app) {
     //app.deAllocate(this, buffers);
 
-    if(!buffers[VERTEX]) buffers[VERTEX] = app.toGPU(vertices, &vertexBuffer, &vertexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    if(!buffers[INDEX]) buffers[INDEX] = app.toGPU(indices, &indexBuffer, &indexBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    if(!buffers[INSTANCE]) buffers[INSTANCE] = app.toGPU(instances, &instanceBuffer, &instanceBufferMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    if(!buffers[VERTEX]) 
+      buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    if(!buffers[INDEX]) 
+      buffers[INDEX] = app.toGPU(indices, indexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    if(!buffers[INSTANCE]) 
+      buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
   }
 
   bool isVisible = true;                          /// Boolean flag
@@ -105,18 +103,9 @@ class Geometry {
 
 /** deAllocate all GPU buffers */
 void deAllocate(ref App app, Geometry object, bool[3] buffers = [false, false, false]) {
-  if(!buffers[VERTEX]) {
-    vkDestroyBuffer(app.device, object.vertexBuffer, app.allocator);
-    vkFreeMemory(app.device, object.vertexBufferMemory, app.allocator);
-  }
-  if(!buffers[INDEX]) {
-    vkDestroyBuffer(app.device, object.indexBuffer, app.allocator);
-    vkFreeMemory(app.device, object.indexBufferMemory, app.allocator);
-  }
-  if(!buffers[INSTANCE]) {
-    vkDestroyBuffer(app.device, object.instanceBuffer, app.allocator);
-    vkFreeMemory(app.device, object.instanceBufferMemory, app.allocator);
-  }
+  if(!buffers[VERTEX]) app.destroyGeometryBuffers(object.vertexBuffer);
+  if(!buffers[INDEX]) app.destroyGeometryBuffers(object.indexBuffer);
+  if(!buffers[INSTANCE]) app.destroyGeometryBuffers(object.instanceBuffer);
 }
 
 /** Add a vertex to a geometry of the object */
@@ -171,9 +160,9 @@ void draw(ref App app, Geometry object, size_t i) {
 
   vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[object.topology].graphicsPipeline);
 
-  vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer, &offsets[0]);
-  vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE, 1, &object.instanceBuffer, &offsets[0]);
-  vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
+  vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
+  vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
                           app.pipelines[object.topology].pipelineLayout, 0, 1, &app.descriptorSet[i], 0, null);
