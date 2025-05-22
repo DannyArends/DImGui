@@ -136,7 +136,6 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsage
   if(size > buffer.size) {
     if(buffer.size != 0) {
       // Resize, the old buffer was not empty
-      SDL_Log("Resize, the buffer was not empty: %p", buffer.vb);
       auto oldbuffer = buffer;
       oldbuffer.fence = app.fences[app.frameIndex].renderInFlight;
       app.bufferDeletionQueue.add((){ // Add the old buffer to the buffer deletion queue
