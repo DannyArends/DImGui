@@ -12,6 +12,8 @@ struct GeometryBuffer {
   VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
+  VkFence fence;                 /// Fence to complete before destoying the buffer
+  uint size = 0;
   void* data;
 }
 
@@ -130,17 +132,29 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsage
   uint size = cast(uint)(objects[0].sizeof * objects.length);
   if(app.verbose) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, size);
 
-  if(!buffer.sb) {
+  // Check if we need to allocate a new buffer or resize the current buffer
+  if(size > buffer.size) {
+    if(buffer.size != 0) {
+      // Resize, the old buffer was not empty
+      SDL_Log("Resize, the buffer was not empty: %p", buffer.vb);
+      auto oldbuffer = buffer;
+      oldbuffer.fence = app.fences[app.frameIndex].renderInFlight;
+      app.bufferDeletionQueue.add((){ // Add the old buffer to the buffer deletion queue
+        if (vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS){ app.destroyGeometryBuffers(oldbuffer); return(true); }
+        return(false);
+      });
+      buffer = GeometryBuffer();
+    }
     app.createBuffer(&buffer.sb, &buffer.sbM, size);
+    app.createBuffer(&buffer.vb, &buffer.vbM, size, usage, properties);
     vkMapMemory(app.device, buffer.sbM, 0, size, 0, &buffer.data);
+    buffer.size = size;
   }
   memcpy(buffer.data, cast(void*)objects, size);
 
-  if(!buffer.vb) app.createBuffer(&buffer.vb, &buffer.vbM, size, usage, properties);
-
   app.updateBuffer(buffer, size);
 
-  if(app.verbose) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer, size);
+  if(app.verbose) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, size);
   return(true);
 }
 

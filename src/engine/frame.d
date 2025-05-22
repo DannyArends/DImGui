@@ -42,6 +42,7 @@ void renderFrame(ref App app){
 
   /// Graphics & ImGui Submission
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex].renderInFlight, true, uint.max));
+  app.bufferDeletionQueue.flush();
   app.updateDescriptorSet(app.frameIndex);
   app.updateRenderUBO(app.frameIndex);
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex].renderInFlight));

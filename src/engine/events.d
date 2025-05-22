@@ -51,7 +51,12 @@ void handleMouseEvents(ref App app, SDL_Event e) {
  */
 void removeGeometry(ref App app) {
   size_t[] idx;
-  foreach(i, object; app.objects) { if(object.deAllocate){ app.deAllocate(object); idx ~= i; } }
+  foreach(i, ref object; app.objects) {
+    if(object.deAllocate) { 
+      enforceVK(vkDeviceWaitIdle(app.device));
+      app.deAllocate(object); idx ~= i;
+    }
+  }
   foreach(i; idx.reverse) { app.objects = app.objects.remove(i); }
 }
 
@@ -79,5 +84,5 @@ void handleEvents(ref App app) {
 
   // Wait and remove stale geometry
 //  enforceVK(vkDeviceWaitIdle(app.device));
-//  app.removeGeometry();
+  app.removeGeometry();
 }

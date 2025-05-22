@@ -26,6 +26,7 @@ class Geometry {
   GeometryBuffer vertexBuffer;
   GeometryBuffer indexBuffer;
   GeometryBuffer instanceBuffer;
+  VkFence fence;                                /// Fence to complete before destoying the object
 
   Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
   uint[] indices;                               /// Indices of type uint stored on the CPU
@@ -34,8 +35,6 @@ class Geometry {
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {
-    //app.deAllocate(this, buffers);
-
     if(!buffers[VERTEX]) 
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) 
