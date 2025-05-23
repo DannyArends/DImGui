@@ -122,8 +122,7 @@ struct App {
  */
 void cleanUp(App app){
   enforceVK(vkDeviceWaitIdle(app.device));
-  app.bufferDeletionQueue.flush();
-  app.frameDeletionQueue.flush();
+  app.frameDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
 
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();

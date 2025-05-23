@@ -18,11 +18,14 @@ void renderFrame(ref App app){
   VkSemaphore renderComplete   = app.sync[app.syncIndex].renderComplete;
 
   // --- Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight ---
+  if(app.verbose) SDL_Log("Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight");
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
 
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, uint.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
+
+  app.bufferDeletionQueue.flush();
 
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
@@ -32,7 +35,7 @@ void renderFrame(ref App app){
   //SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
-
+  if(app.verbose) SDL_Log("Phase 2: Prepare & Submit Compute Work");
   app.updateComputeDescriptorSet(app.syncIndex);
   app.updateComputeUBO(app.syncIndex);
 
@@ -49,8 +52,7 @@ void renderFrame(ref App app){
   enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
 
   // --- Phase 3: Prepare & Submit Graphics & ImGui Work ---
-
-  app.bufferDeletionQueue.flush();
+  if(app.verbose) SDL_Log("Phase 3: Prepare & Submit Graphics & ImGui Work");
 
   app.updateDescriptorSet(app.syncIndex);
   app.updateRenderUBO(app.syncIndex);
