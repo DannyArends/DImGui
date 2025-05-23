@@ -36,7 +36,7 @@ VkPrimitiveTopology[] supportedTopologies =
 ];
 
 void createOrResizeWindow(ref App app) {
-  if(app.verbose) SDL_Log("Window ReSize, recreate SwapChain");
+  if(app.verbose) SDL_Log("Window created or resized, recreate SwapChain");
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush();
 
@@ -72,8 +72,7 @@ void checkForResize(ref App app){
   if(width > 0 && height > 0 && (app.rebuild || app.camera.width != width || app.camera.height != height)) {
     ImGui_ImplVulkan_SetMinImageCount(app.camera.minImageCount);
     app.createOrResizeWindow();
-    app.frameIndex = 0;
-    app.syncIndex = 0;
+    app.syncIndex = app.frameIndex = 0;
     app.rebuild = false;
   }
 }
