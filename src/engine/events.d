@@ -13,6 +13,8 @@ import geometry : deAllocate;
 import line : createLine;
 import sdl : FRAMESTART, LASTTICK;
 
+/** Handle keyboard events
+ */
 void handleKeyEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_KEYDOWN) {
     auto symbol = e.key.keysym.sym;
@@ -25,6 +27,8 @@ void handleKeyEvents(ref App app, SDL_Event e) {
   }
 }
 
+/** Handle mouse events
+ */
 void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_MOUSEBUTTONDOWN){
     if (e.button.button == SDL_BUTTON_LEFT) { 

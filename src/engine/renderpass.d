@@ -8,6 +8,8 @@ import engine;
 import depthbuffer : findDepthFormat;
 import devices : getSampleCount;
 
+/** Create a RenderPass object using a specified initial Layout and loadOp
+ */
 VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                                            VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR) {
   if(app.verbose) SDL_Log("Creating renderpass");
@@ -88,3 +90,4 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
 
   return(renderpass);
 }
+
