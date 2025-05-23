@@ -13,8 +13,8 @@ struct GeometryBuffer {
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
   VkFence fence;                 /// Fence to complete before destoying the buffer
-  uint size = 0;
-  void* data;
+  uint size = 0;                 /// Size of the buffer
+  void* data;                    /// Pointer to mapped data
 }
 
 void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
