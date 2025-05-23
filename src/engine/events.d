@@ -68,8 +68,8 @@ void handleEvents(ref App app) {
     ImGui_ImplSDL2_ProcessEvent(&e);
     if(e.type == SDL_QUIT) app.finished = true;
     if(e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_CLOSE && e.window.windowID == SDL_GetWindowID(app)) app.finished = true;
-    if(!app.io.WantCaptureKeyboard) app.handleKeyEvents(e);
-    if(!app.io.WantCaptureMouse) app.handleMouseEvents(e);
+    if(!app.gui.io.WantCaptureKeyboard) app.handleKeyEvents(e);
+    if(!app.gui.io.WantCaptureMouse) app.handleMouseEvents(e);
   }
 
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 2500) {

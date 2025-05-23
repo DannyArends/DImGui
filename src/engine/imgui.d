@@ -18,6 +18,9 @@ import sfx : play;
 /** Main GUI structure
  */
 struct GUI {
+  ImGuiIO* io;
+  ImFont*[] fonts;
+
   bool showDemo = false;
   bool showFPS = true;
   bool showObjects = false;
@@ -33,13 +36,13 @@ struct GUI {
  */
 void initializeImGui(ref App app){
   igCreateContext(null);
-  app.io = igGetIO_Nil();
-  app.fonts ~= ImFontAtlas_AddFontDefault(app.io.Fonts, null);
-  app.fonts ~= ImFontAtlas_AddFontFromFileTTF(app.io.Fonts, "assets/fonts/FreeMono.ttf", 12, null, null);
-  app.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  app.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
+  app.gui.io = igGetIO_Nil();
+  app.gui.fonts ~= ImFontAtlas_AddFontDefault(app.gui.io.Fonts, null);
+  app.gui.fonts ~= ImFontAtlas_AddFontFromFileTTF(app.gui.io.Fonts, "assets/fonts/FreeMono.ttf", 12, null, null);
+  app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
   igStyleColorsDark(null);
-  if(app.verbose) SDL_Log("ImGuiIO: %p", app.io);
+  if(app.verbose) SDL_Log("ImGuiIO: %p", app.gui.io);
   ImGui_ImplSDL2_InitForVulkan(app.window);
 
   ImGui_ImplVulkan_InitInfo imguiInit = {
@@ -97,7 +100,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 /** Show the GUI window with FPS statistics
  */
 void showFPSwindow(ref App app, uint font = 1) {
-  igPushFont(app.fonts[font]);
+  igPushFont(app.gui.fonts[font]);
   igSetNextWindowPos(ImVec2(0.0f, 20.0f), 0, ImVec2(0.0f, 0.0f));
   auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
   igBegin("FPS", null, flags);
@@ -105,7 +108,7 @@ void showFPSwindow(ref App app, uint font = 1) {
     igText("Vulkan v%d.%d.%d", VK_API_VERSION_MAJOR(app.properties.apiVersion),
                      VK_API_VERSION_MINOR(app.properties.apiVersion),
                      VK_API_VERSION_PATCH(app.properties.apiVersion));
-    igText("%.1f FPS, %.1f ms %d objects, %d textures", app.io.Framerate, 1000.0f / app.io.Framerate, app.objects.length, app.textures.length);
+    igText("%.1f FPS, %.1f ms %d objects, %d textures", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate, app.objects.length, app.textures.length);
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
   igEnd();
@@ -115,7 +118,7 @@ void showFPSwindow(ref App app, uint font = 1) {
 /** Show the GUI window which allows us to manipulate 3D objects
  */
 void showObjectswindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.fonts[font]);
+  igPushFont(app.gui.fonts[font]);
   if(igBegin("Objects", show, ImGuiWindowFlags_NoFocusOnAppearing)){
     igBeginTable("Object_Tbl", 5,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
@@ -154,7 +157,7 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
 /** Show the GUI window which shows loaded Textures
  */
 void showTextureswindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.fonts[font]);
+  igPushFont(app.gui.fonts[font]);
   if(igBegin("Textures", show, ImGuiWindowFlags_NoFocusOnAppearing)){
     igBeginTable("Texture_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, texture; app.textures) {
@@ -176,7 +179,7 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
 /** Show the GUI window for Sound Effects
  */
 void showSFXwindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.fonts[font]);
+  igPushFont(app.gui.fonts[font]);
   if(igBegin("Sounds", show, ImGuiWindowFlags_NoFocusOnAppearing)){
     igSliderScalar("Volume", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
     igBeginTable("Sounds_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
@@ -198,7 +201,7 @@ void showSFXwindow(ref App app, bool* show, uint font = 0) {
 /** Show the GUI window which allows us to manipulate lighting
  */
 void showLightswindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.fonts[font]);
+  igPushFont(app.gui.fonts[font]);
   if(igBegin("Lights", show, ImGuiWindowFlags_NoFocusOnAppearing)){
     igBeginTable("Lights_Tbl", 2,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, ref Light light; app.lights) {
