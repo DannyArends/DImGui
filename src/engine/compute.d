@@ -274,6 +274,7 @@ void transitionImage(ref App app, VkCommandBuffer commandBuffer, VkImage image,
   destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
   vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
+  if(app.verbose) SDL_Log("transitionImage done");
 }
 
 void createComputeUBO(ref App app) {
@@ -307,6 +308,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
 }
 
 void recordComputeCommandBuffer(ref App app, uint syncIndex) {
+  if(app.verbose) SDL_Log("Record Compute Command Buffer: %d", syncIndex);
   enforceVK(vkResetCommandBuffer(app.compute.buffer[syncIndex], 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = {
@@ -328,5 +330,6 @@ void recordComputeCommandBuffer(ref App app, uint syncIndex) {
   app.transitionImage(app.compute.buffer[syncIndex], app.compute.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   vkEndCommandBuffer(app.compute.buffer[syncIndex]);
+  if(app.verbose) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
 }
 

@@ -73,6 +73,7 @@ void checkForResize(ref App app){
     ImGui_ImplVulkan_SetMinImageCount(app.camera.minImageCount);
     app.createOrResizeWindow();
     app.frameIndex = 0;
+    app.syncIndex = 0;
     app.rebuild = false;
   }
 }

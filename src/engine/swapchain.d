@@ -58,8 +58,7 @@ void aquireSwapChainImages(ref App app) {
   vkGetSwapchainImagesKHR(app.device, app.swapChain, &imageCount, null);
   app.swapChainImages.length = imageCount;
   vkGetSwapchainImagesKHR(app.device, app.swapChain, &imageCount, &app.swapChainImages[0]);
-  SDL_Log("Swapchain images aquired: %d", app.imageCount);
-  SDL_Log("inFlight images: %d", app.imagesInFlight);
+  if(app.verbose) SDL_Log("Swapchain images: %d, inFlight images: %d", app.imageCount, app.imagesInFlight);
 
   VkComponentMapping components = {
     r: VK_COMPONENT_SWIZZLE_IDENTITY,
