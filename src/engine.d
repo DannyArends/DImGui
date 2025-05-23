@@ -79,10 +79,10 @@ struct App {
   VkSurfaceFormatKHR[] surfaceformats = null;
   VkSwapchainKHR swapChain = null;
   VkCommandPool commandPool = null;
-  Sync[] sync = null;
   Uniform uniform = {null, null};
 
   // per Frame
+  Sync[] sync = null;
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkRenderPass imguiPass = null;

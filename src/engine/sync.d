@@ -18,6 +18,8 @@ struct Fence {
   VkFence computeInFlight;
 }
 
+/** Create Vulkan synchronization objects
+ */
 void createSyncObjects(ref App app) {
   app.sync.length = app.framesInFlight;
   app.fences.length = app.framesInFlight;

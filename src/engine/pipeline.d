@@ -16,6 +16,8 @@ struct GraphicsPipeline {
   VkPipeline graphicsPipeline;
 }
 
+/** Create a GraphicsPipeline object for a specified topology
+ */
 GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
   GraphicsPipeline pipeline;
   auto bindingDescription = Vertex.getBindingDescription();
