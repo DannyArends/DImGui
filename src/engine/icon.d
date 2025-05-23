@@ -15,3 +15,4 @@ void setIcon(SDL_Window *window, const(char)* path = "assets/icons/icon.png") {
     SDL_FreeSurface(surface);
   }
 }
+
