@@ -125,8 +125,6 @@ void cleanUp(App app){
   app.bufferDeletionQueue.flush();
   app.frameDeletionQueue.flush();
 
-  SDL_Log("Unflushed: %d", app.bufferDeletionQueue.queue.length);
-
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
