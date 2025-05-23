@@ -11,7 +11,7 @@ import camera : Camera;
 import compute : Compute;
 import deletion : CheckedDeletionQueue, DeletionQueue;
 import glyphatlas : GlyphAtlas;
-import geometry : Geometry, deAllocate;
+import geometry : Geometry, cleanup;
 import lights : Light, Lights;
 import matrix : multiply, inverse;
 import pipeline : GraphicsPipeline;
@@ -104,8 +104,8 @@ struct App {
   ulong[4] time = [0, 0, 0, 0];         /// Time monitoring (START, STARTUP, FRAMESTART, LASTTICK)
   uint totalFramesRendered = 0;         /// Total frames rendered so far
 
-  uint imagesInFlight = 8;              /// Total images in flight
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
+  @property uint imagesInFlight() { return(cast(uint)swapChainImages.length + 1); }
 
   const(char)*[] instanceExtensions;    /// Enabled instance extensions
   const(char)*[] deviceExtensions;      /// Enabled device extensions
@@ -130,7 +130,7 @@ void cleanUp(App app){
   igDestroyContext(null);
 
   // Delete objects and flush the deletion queue
-  foreach(object; app.objects) { app.deAllocate(object, [false, false, false]); }
+  foreach(object; app.objects) { app.cleanup(object); }
   app.mainDeletionQueue.flush();
   SDL_DestroyWindow(app);
   SDL_Quit();

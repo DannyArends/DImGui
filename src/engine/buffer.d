@@ -18,12 +18,12 @@ struct GeometryBuffer {
 }
 
 void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
-  vkUnmapMemory(app.device, buffer.sbM);
-  vkDestroyBuffer(app.device, buffer.sb, null);
-  vkFreeMemory(app.device, buffer.sbM, null);
+  if(buffer.sbM) vkUnmapMemory(app.device, buffer.sbM);
+  if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, null);
+  if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, null);
 
-  vkDestroyBuffer(app.device, buffer.vb, null);
-  vkFreeMemory(app.device, buffer.vbM, null);
+  if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, null);
+  if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, null);
 }
 
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
