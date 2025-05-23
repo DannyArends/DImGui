@@ -5,6 +5,8 @@
 
 import engine;
 
+/** Create a framebuffer for each SwapChain ImageView with Color and Depth attachement
+ */
 void createFramebuffers(ref App app) {
   if(app.verbose) SDL_Log("createFramebuffers");
   app.swapChainFramebuffers.length = app.imageCount;

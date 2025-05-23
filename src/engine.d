@@ -40,6 +40,7 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
+  Compute compute;            /// Compute shaders
   Geometry[] objects;         /// All geometric objects for rendering
   Texture[] textures;         /// Textures
   Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
@@ -72,8 +73,6 @@ struct App {
   VkDescriptorSetLayout descriptorSetLayout = null;
   VkDescriptorImageInfo[] textureImagesInfo;
   VkDescriptorSet[] descriptorSet = null;
-
-  Compute compute;
 
   VkSurfaceKHR surface = null;
   VkSurfaceFormatKHR[] surfaceformats = null;
