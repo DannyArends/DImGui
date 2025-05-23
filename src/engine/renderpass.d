@@ -12,7 +12,7 @@ import devices : getSampleCount;
  */
 VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                                            VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR) {
-  if(app.verbose) SDL_Log("Creating renderpass");
+  if(app.verbose) SDL_Log("Creating RenderPass");
 
   VkAttachmentDescription colorAttachment = {
     format : app.surfaceformats[0].format,
@@ -85,7 +85,7 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
   };
   VkRenderPass renderpass;
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
-  if(app.verbose) SDL_Log("Renderpass created");
+  if(app.verbose) SDL_Log("RenderPass created");
   app.frameDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
 
   return(renderpass);
