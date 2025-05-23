@@ -43,7 +43,7 @@ struct App {
   Geometry[] objects;         /// All geometric objects for rendering
   Texture[] textures;         /// Textures
   Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
-  GUI gui;
+  GUI gui;                    /// ImGui related variables
   Camera camera;              /// Our camera class
   GlyphAtlas glyphAtlas;      /// GlyphAtlas for geometric font rendering
 
@@ -56,8 +56,6 @@ struct App {
   DeletionQueue mainDeletionQueue;
   DeletionQueue frameDeletionQueue;
   CheckedDeletionQueue bufferDeletionQueue;
-  ImGuiIO* io;
-  ImFont*[] fonts;
   WavFMT[] soundfx;
   float soundEffectGain = 0.8;
 
@@ -128,7 +126,7 @@ void cleanUp(App app){
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
 
-  // Delete objects and flush the deletion queue
+  // Delete objects and flush the main deletion queue
   foreach(object; app.objects) { app.cleanup(object); }
   app.mainDeletionQueue.flush();
   SDL_DestroyWindow(app);
@@ -143,11 +141,11 @@ extern(C) void enforceVK(VkResult err) {
   if (err < 0) abort();
 }
 
-import std.stdio : writefln;
-import std.string : fromStringz;
-
-extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message){
-  // Change to fit your needs (like to output to a file)
+/** Log function to allow SDL_Log to be redirected to a file
+ */
+extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) {
+  import std.stdio : writefln;
+  import std.string : fromStringz;
   writefln("%s", fromStringz(message));
 }
 
