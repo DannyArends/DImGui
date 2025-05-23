@@ -30,23 +30,22 @@ struct Uniform {
 }
 
 void createRenderUBO(ref App app) {
-  app.uniform.uniformBuffers.length = app.imageCount;
-  app.uniform.uniformBuffersMemory.length = app.imageCount;
+  app.uniform.uniformBuffers.length = app.imagesInFlight;
+  app.uniform.uniformBuffersMemory.length = app.imagesInFlight;
 
-  for (uint i = 0; i < app.imageCount; i++) {
+  for (uint i = 0; i < app.imagesInFlight; i++) {
     app.createBuffer(&app.uniform.uniformBuffers[i], &app.uniform.uniformBuffersMemory[i], UniformBufferObject.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   }
-  if(app.verbose) SDL_Log("Created %d Render UBO of size: %d bytes", app.imageCount, UniformBufferObject.sizeof);
+  if(app.verbose) SDL_Log("Created %d Render UBO of size: %d bytes", app.imagesInFlight, UniformBufferObject.sizeof);
   app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.imageCount; i++) {
+    for (uint i = 0; i < app.imagesInFlight; i++) {
       vkDestroyBuffer(app.device, app.uniform.uniformBuffers[i], app.allocator);
       vkFreeMemory(app.device, app.uniform.uniformBuffersMemory[i], app.allocator);
     }
   });
 }
 
-// TODO: Each render frame should have it's own UBO, specified by frameIndex
-void updateRenderUBO(ref App app, uint frameIndex = 0) {
+void updateRenderUBO(ref App app, uint syncIndex) {
   UniformBufferObject ubo = {
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,
@@ -66,8 +65,8 @@ void updateRenderUBO(ref App app, uint frameIndex = 0) {
   }
 
   void* data;
-  vkMapMemory(app.device, app.uniform.uniformBuffersMemory[frameIndex], 0, ubo.sizeof, 0, &data);
+  vkMapMemory(app.device, app.uniform.uniformBuffersMemory[syncIndex], 0, ubo.sizeof, 0, &data);
   memcpy(data, &ubo, ubo.sizeof);
-  vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory[frameIndex]);
+  vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory[syncIndex]);
 }
 

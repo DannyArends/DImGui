@@ -75,7 +75,7 @@ void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
 void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size) {
   if(app.verbose) SDL_Log("updateBuffer");
   VkBufferCopy copyRegion = { size: size };
-  vkCmdCopyBuffer(app.renderBuffers[app.frameIndex], buffer.sb, buffer.vb, 1, &copyRegion);
+  vkCmdCopyBuffer(app.renderBuffers[app.syncIndex], buffer.sb, buffer.vb, 1, &copyRegion);
 
   VkBufferMemoryBarrier bufferBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
@@ -89,7 +89,7 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size) {
   };
 
   vkCmdPipelineBarrier(
-      app.renderBuffers[app.frameIndex],
+      app.renderBuffers[app.syncIndex],
       VK_PIPELINE_STAGE_TRANSFER_BIT,       // Source stage: Where the write occurred (copy)
       VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,   // Destination stage: Where the read will occur (vertex shader input)
       0, // dependencyFlags
@@ -137,7 +137,7 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsage
     if(buffer.size != 0) {
       // Resize, the old buffer was not empty
       auto oldbuffer = buffer;
-      oldbuffer.fence = app.fences[app.frameIndex].renderInFlight;
+      oldbuffer.fence = app.fences[app.syncIndex].renderInFlight;
       app.bufferDeletionQueue.add((){ // Add the old buffer to the buffer deletion queue
         if (vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS){ app.destroyGeometryBuffers(oldbuffer); return(true); }
         return(false);

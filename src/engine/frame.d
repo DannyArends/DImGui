@@ -17,39 +17,48 @@ void renderFrame(ref App app){
   VkSemaphore imageAcquired    = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete   = app.sync[app.syncIndex].renderComplete;
 
+  // --- Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight ---
+  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
+  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
+
+  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, uint.max));
+  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
+
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
-  //if (app.verbose) SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
 
-  /// Compute Submission
-  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex].computeInFlight, true, uint.max));
-  app.updateComputeDescriptorSet(app.frameIndex);
-  app.updateComputeUBO(app.frameIndex);
-  enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex].computeInFlight));
-  app.recordComputeCommandBuffer(app.frameIndex);
+  //SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
+
+  // --- Phase 2: Prepare & Submit Compute Work ---
+
+  app.updateComputeDescriptorSet(app.syncIndex);
+  app.updateComputeUBO(app.syncIndex);
+
+  app.recordComputeCommandBuffer(app.syncIndex);
 
   VkSubmitInfo submitComputeInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
     commandBufferCount : 1,
-    pCommandBuffers : &app.compute.buffer[app.frameIndex],
+    pCommandBuffers : &app.compute.buffer[app.syncIndex],
     signalSemaphoreCount : 1,
     pSignalSemaphores : &computeComplete
   };
 
-  enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.frameIndex].computeInFlight));
+  enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
 
-  /// Graphics & ImGui Submission
-  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.frameIndex].renderInFlight, true, uint.max));
+  // --- Phase 3: Prepare & Submit Graphics & ImGui Work ---
+
   app.bufferDeletionQueue.flush();
-  app.updateDescriptorSet(app.frameIndex);
-  app.updateRenderUBO(app.frameIndex);
-  enforceVK(vkResetFences(app.device, 1, &app.fences[app.frameIndex].renderInFlight));
-  app.recordRenderCommandBuffer(app.frameIndex);
-  app.recordImGuiCommandBuffer(app.frameIndex);
 
-  VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.frameIndex], app.imguiBuffers[app.frameIndex] ];
+  app.updateDescriptorSet(app.syncIndex);
+  app.updateRenderUBO(app.syncIndex);
+
+  app.recordRenderCommandBuffer(app.syncIndex);
+  app.recordImGuiCommandBuffer(app.syncIndex);
+
+  VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.syncIndex], app.imguiBuffers[app.syncIndex] ];
 
   VkSemaphore[] waitSemaphores = [ computeComplete, imageAcquired ];
   VkPipelineStageFlags[] waitStages = [ VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT ];
@@ -66,7 +75,7 @@ void renderFrame(ref App app){
     pSignalSemaphores : &renderComplete
   };
   
-  enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.frameIndex].renderInFlight));
+  enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
   if(app.verbose) SDL_Log("Done renderFrame");
 }
 

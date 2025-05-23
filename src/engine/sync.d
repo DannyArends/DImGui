@@ -19,8 +19,8 @@ struct Fence {
 }
 
 void createSyncObjects(ref App app) {
-  app.sync.length = app.imageCount;
-  app.fences.length = app.imageCount;
+  app.sync.length = app.imagesInFlight;
+  app.fences.length = app.imagesInFlight;
   if(app.verbose) SDL_Log("createSyncObjects: Semaphores:%d, Fences: %d", app.sync.length, app.fences.length);
 
   VkSemaphoreCreateInfo semaphoreInfo = { sType: VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
@@ -38,7 +38,7 @@ void createSyncObjects(ref App app) {
   }
   if(app.verbose) SDL_Log("Done vkCreateFence");
   app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.imageCount; i++) {
+    for (uint i = 0; i < app.imagesInFlight; i++) {
       vkDestroySemaphore(app.device, app.sync[i].computeComplete, app.allocator);
       vkDestroySemaphore(app.device, app.sync[i].imageAcquired, app.allocator);
       vkDestroySemaphore(app.device, app.sync[i].renderComplete, app.allocator);

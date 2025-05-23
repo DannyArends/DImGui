@@ -51,7 +51,7 @@ void initializeImGui(ref App app){
     DescriptorPool : app.imguiPool,
     Allocator : app.allocator,
     MinImageCount : app.camera.minImageCount,
-    ImageCount : cast(uint)app.imageCount,
+    ImageCount : cast(uint)app.imagesInFlight,
     RenderPass : app.imguiPass,
     MSAASamples : app.getSampleCount(),
     CheckVkResultFn : &enforceVK
@@ -62,35 +62,35 @@ void initializeImGui(ref App app){
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
  */
-void recordImGuiCommandBuffer(ref App app, uint frameIndex) {
+void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
   if(app.verbose) SDL_Log("recordImGuiCommandBuffer");
-  enforceVK(vkResetCommandBuffer(app.imguiBuffers[frameIndex], 0));
+  enforceVK(vkResetCommandBuffer(app.imguiBuffers[syncIndex], 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = {
     sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
   };
-  enforceVK(vkBeginCommandBuffer(app.imguiBuffers[frameIndex], &commandBufferInfo));
+  enforceVK(vkBeginCommandBuffer(app.imguiBuffers[syncIndex], &commandBufferInfo));
 
   VkRect2D renderArea = { extent: { width: app.camera.width, height: app.camera.height } };
 
   VkRenderPassBeginInfo renderPassInfo = {
     sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
     renderPass : app.imguiPass,
-    framebuffer : app.swapChainFramebuffers[frameIndex],
+    framebuffer : app.swapChainFramebuffers[app.frameIndex],
     renderArea : renderArea,
     clearValueCount : app.clearValue.length,
     pClearValues : &app.clearValue[0]
   };
-  vkCmdBeginRenderPass(app.imguiBuffers[frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBeginRenderPass(app.imguiBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
   // Render UI
   ImDrawData* drawData = app.renderGUI();
-  ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[frameIndex], null);
+  ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[syncIndex], null);
 
-  vkCmdEndRenderPass(app.imguiBuffers[frameIndex]);
+  vkCmdEndRenderPass(app.imguiBuffers[syncIndex]);
 
-  enforceVK(vkEndCommandBuffer(app.imguiBuffers[frameIndex]));
+  enforceVK(vkEndCommandBuffer(app.imguiBuffers[syncIndex]));
   if(app.verbose) SDL_Log("Done recordImGuiCommandBuffer");
 }
 
