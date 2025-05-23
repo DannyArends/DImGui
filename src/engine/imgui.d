@@ -51,7 +51,7 @@ void initializeImGui(ref App app){
     DescriptorPool : app.imguiPool,
     Allocator : app.allocator,
     MinImageCount : app.camera.minImageCount,
-    ImageCount : cast(uint)app.imagesInFlight,
+    ImageCount : cast(uint)app.framesInFlight,
     RenderPass : app.imguiPass,
     MSAASamples : app.getSampleCount(),
     CheckVkResultFn : &enforceVK

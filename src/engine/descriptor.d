@@ -70,7 +70,7 @@ void createDescriptorPool(ref App app){
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    maxSets : app.imagesInFlight,
+    maxSets : app.framesInFlight,
     poolSizeCount : cast(uint32_t)poolSizes.length,
     pPoolSizes : &poolSizes[0]
   };
@@ -136,16 +136,16 @@ void addImGuiTexture(ref App app, ref Texture texture) {
  */
 void createDescriptorSet(ref App app) {
   if(app.verbose) SDL_Log("creating Render DescriptorSet");
-  app.descriptorSet.length = app.imagesInFlight;
+  app.descriptorSet.length = app.framesInFlight;
 
   VkDescriptorSetLayout[] layouts;
-  layouts.length = app.imagesInFlight;
-  for(uint i = 0; i < app.imagesInFlight; i++) { layouts[i] = app.descriptorSetLayout; }
+  layouts.length = app.framesInFlight;
+  for(uint i = 0; i < app.framesInFlight; i++) { layouts[i] = app.descriptorSetLayout; }
 
   VkDescriptorSetAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
     descriptorPool: app.descriptorPool,
-    descriptorSetCount: app.imagesInFlight,
+    descriptorSetCount: app.framesInFlight,
     pSetLayouts: &layouts[0]
   };
   if(app.verbose) SDL_Log("Allocating DescriptorSets");

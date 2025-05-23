@@ -30,15 +30,15 @@ struct Uniform {
 }
 
 void createRenderUBO(ref App app) {
-  app.uniform.uniformBuffers.length = app.imagesInFlight;
-  app.uniform.uniformBuffersMemory.length = app.imagesInFlight;
+  app.uniform.uniformBuffers.length = app.framesInFlight;
+  app.uniform.uniformBuffersMemory.length = app.framesInFlight;
 
-  for (uint i = 0; i < app.imagesInFlight; i++) {
+  for (uint i = 0; i < app.framesInFlight; i++) {
     app.createBuffer(&app.uniform.uniformBuffers[i], &app.uniform.uniformBuffersMemory[i], UniformBufferObject.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   }
-  if(app.verbose) SDL_Log("Created %d Render UBO of size: %d bytes", app.imagesInFlight, UniformBufferObject.sizeof);
+  if(app.verbose) SDL_Log("Created %d Render UBO of size: %d bytes", app.framesInFlight, UniformBufferObject.sizeof);
   app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.imagesInFlight; i++) {
+    for (uint i = 0; i < app.framesInFlight; i++) {
       vkDestroyBuffer(app.device, app.uniform.uniformBuffers[i], app.allocator);
       vkFreeMemory(app.device, app.uniform.uniformBuffersMemory[i], app.allocator);
     }
