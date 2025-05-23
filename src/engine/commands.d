@@ -84,9 +84,9 @@ VkCommandBuffer[] createCommandBuffer(VkDevice device, VkCommandPool commandPool
 }
 
 void createImGuiCommandBuffers(ref App app) { 
-  app.imguiBuffers = app.device.createCommandBuffer(app.commandPool, app.imagesInFlight, app.verbose);
+  app.imguiBuffers = app.device.createCommandBuffer(app.commandPool, app.framesInFlight, app.verbose);
   app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.imagesInFlight; i++) {
+    for (uint i = 0; i < app.framesInFlight; i++) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.imguiBuffers[i]);
     }
   });
@@ -119,10 +119,10 @@ void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer) {
 }
 
 void createRenderCommandBuffers(ref App app) { 
-  app.renderBuffers = app.device.createCommandBuffer(app.commandPool, app.imagesInFlight, app.verbose);
-  if(app.verbose) SDL_Log("createRenderCommandBuffers created %d renderBuffer using commandpool[%p]", app.imagesInFlight, app.commandPool);
+  app.renderBuffers = app.device.createCommandBuffer(app.commandPool, app.framesInFlight, app.verbose);
+  if(app.verbose) SDL_Log("createRenderCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
   app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.imagesInFlight; i++) {
+    for (uint i = 0; i < app.framesInFlight; i++) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.renderBuffers[i]);
     }
   });

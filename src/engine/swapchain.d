@@ -19,7 +19,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
     imageSharingMode: VK_SHARING_MODE_EXCLUSIVE,
     preTransform: app.camera.currentTransform,
     compositeAlpha: VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-    presentMode: VK_PRESENT_MODE_FIFO_KHR, // VK_PRESENT_MODE_IMMEDIATE_KHR or VK_PRESENT_MODE_FIFO_KHR
+    presentMode: VK_PRESENT_MODE_IMMEDIATE_KHR, // VK_PRESENT_MODE_IMMEDIATE_KHR or VK_PRESENT_MODE_FIFO_KHR
     clipped: VK_TRUE,
     oldSwapchain: oldChain,
   };
@@ -58,7 +58,7 @@ void aquireSwapChainImages(ref App app) {
   vkGetSwapchainImagesKHR(app.device, app.swapChain, &imageCount, null);
   app.swapChainImages.length = imageCount;
   vkGetSwapchainImagesKHR(app.device, app.swapChain, &imageCount, &app.swapChainImages[0]);
-  if(app.verbose) SDL_Log("Swapchain images: %d, inFlight images: %d", app.imageCount, app.imagesInFlight);
+  if(app.verbose) SDL_Log("SwapChain images: %d, Frames in flight: %d", app.imageCount, app.framesInFlight);
 
   VkComponentMapping components = {
     r: VK_COMPONENT_SWIZZLE_IDENTITY,

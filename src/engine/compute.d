@@ -97,16 +97,16 @@ void createComputePipeline(ref App app, const(char)* compPath = "assets/shaders/
 
 void createComputeDescriptorSet(ref App app) {
   if(app.verbose) SDL_Log("Creating Compute DescriptorSet from pool %p", app.compute.pool);
-  app.compute.set.length = app.imagesInFlight;
+  app.compute.set.length = app.framesInFlight;
 
   VkDescriptorSetLayout[] layouts;
-  layouts.length = app.imagesInFlight;
-  for(uint i = 0; i < app.imagesInFlight; i++) { layouts[i] = app.compute.layout; }
+  layouts.length = app.framesInFlight;
+  for(uint i = 0; i < app.framesInFlight; i++) { layouts[i] = app.compute.layout; }
 
   VkDescriptorSetAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
     descriptorPool: app.compute.pool,
-    descriptorSetCount: app.imagesInFlight,
+    descriptorSetCount: app.framesInFlight,
     pSetLayouts: &layouts[0]
   };
 
@@ -170,10 +170,10 @@ void updateComputeDescriptorSet(ref App app, uint syncIndex = 0) {
 }
 
 void createComputeBufferAndImage(ref App app){
-  app.compute.buffer = app.device.createCommandBuffer(app.commandPool, app.imagesInFlight, app.verbose);
+  app.compute.buffer = app.device.createCommandBuffer(app.commandPool, app.framesInFlight, app.verbose);
 
-  app.compute.pInBuffers.length = app.imagesInFlight;
-  app.compute.pInBuffersMemory.length = app.imagesInFlight;
+  app.compute.pInBuffers.length = app.framesInFlight;
+  app.compute.pInBuffersMemory.length = app.framesInFlight;
 
   uint size = float.sizeof * 3 * 1000; // 1000 x vec3
   float[3000] transfer;
@@ -191,13 +191,13 @@ void createComputeBufferAndImage(ref App app){
   vkUnmapMemory(app.device, stagingBufferMemory);
 
   // On GPU buffer
-  for(uint i = 0; i < app.imagesInFlight; i++) {
+  for(uint i = 0; i < app.framesInFlight; i++) {
     app.createBuffer(&app.compute.pInBuffers[i], &app.compute.pInBuffersMemory[i], size, 
                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     app.copyBuffer(stagingBuffer, app.compute.pInBuffers[i], size);
   }
   app.frameDeletionQueue.add((){
-    for(uint i = 0; i < app.imagesInFlight; i++) {
+    for(uint i = 0; i < app.framesInFlight; i++) {
       vkDestroyBuffer(app.device, app.compute.pInBuffers[i], app.allocator);
       vkFreeMemory(app.device, app.compute.pInBuffersMemory[i], app.allocator);
     }
@@ -278,16 +278,16 @@ void transitionImage(ref App app, VkCommandBuffer commandBuffer, VkImage image,
 }
 
 void createComputeUBO(ref App app) {
-  app.uniform.computeBuffers.length = app.imagesInFlight;
-  app.uniform.computeBuffersMemory.length = app.imagesInFlight;
+  app.uniform.computeBuffers.length = app.framesInFlight;
+  app.uniform.computeBuffersMemory.length = app.framesInFlight;
 
-  for (uint i = 0; i < app.imagesInFlight; i++) {
+  for (uint i = 0; i < app.framesInFlight; i++) {
     app.createBuffer(&app.uniform.computeBuffers[i], &app.uniform.computeBuffersMemory[i], ComputeUniform.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   }
-  if(app.verbose) SDL_Log("Created %d Compute UBO of size: %d bytes", app.imagesInFlight, ComputeUniform.sizeof);
+  if(app.verbose) SDL_Log("Created %d Compute UBO of size: %d bytes", app.framesInFlight, ComputeUniform.sizeof);
 
   app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.imagesInFlight; i++) {
+    for (uint i = 0; i < app.framesInFlight; i++) {
       vkDestroyBuffer(app.device, app.uniform.computeBuffers[i], app.allocator);
       vkFreeMemory(app.device, app.uniform.computeBuffersMemory[i], app.allocator);
     }

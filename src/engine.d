@@ -105,7 +105,7 @@ struct App {
   uint totalFramesRendered = 0;         /// Total frames rendered so far
 
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
-  @property uint imagesInFlight() { return(cast(uint)swapChainImages.length + 1); }
+  @property uint framesInFlight() { return(cast(uint)swapChainImages.length + 1); }
 
   const(char)*[] instanceExtensions;    /// Enabled instance extensions
   const(char)*[] deviceExtensions;      /// Enabled device extensions
