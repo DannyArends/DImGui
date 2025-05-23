@@ -100,11 +100,21 @@ class Geometry {
   return euclidean(object.instances[0].getTranslation(), camera.position); 
 }
 
-/** deAllocate all GPU buffers */
-void deAllocate(ref App app, Geometry object, bool[3] buffers = [false, false, false]) {
-  if(!buffers[VERTEX]) app.destroyGeometryBuffers(object.vertexBuffer);
-  if(!buffers[INDEX]) app.destroyGeometryBuffers(object.indexBuffer);
-  if(!buffers[INSTANCE]) app.destroyGeometryBuffers(object.instanceBuffer);
+/** Cleanup all GPU buffers, now */
+void cleanup(ref App app, Geometry object) {
+  app.destroyGeometryBuffers(object.vertexBuffer);
+  app.destroyGeometryBuffers(object.indexBuffer);
+  app.destroyGeometryBuffers(object.instanceBuffer);
+}
+
+/** deAllocate all GPU buffers after waiting for the object to not be in use anymore */
+void deAllocate(ref App app, Geometry object) {
+  // We use the vertex buffer fence to wait until the buffers aren't in-use anymore
+  object.vertexBuffer.fence = app.fences[app.syncIndex].renderInFlight;
+  app.bufferDeletionQueue.add((){
+    if (vkGetFenceStatus(app.device, object.vertexBuffer.fence) == VK_SUCCESS){ app.cleanup(object); return(true); }
+    return(false);
+  });
 }
 
 /** Add a vertex to a geometry of the object */

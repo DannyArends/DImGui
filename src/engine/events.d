@@ -53,7 +53,6 @@ void removeGeometry(ref App app) {
   size_t[] idx;
   foreach(i, ref object; app.objects) {
     if(object.deAllocate) { 
-      enforceVK(vkDeviceWaitIdle(app.device));
       app.deAllocate(object); idx ~= i;
     }
   }
