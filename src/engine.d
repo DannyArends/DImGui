@@ -104,6 +104,7 @@ struct App {
   ulong[4] time = [0, 0, 0, 0];         /// Time monitoring (START, STARTUP, FRAMESTART, LASTTICK)
   uint totalFramesRendered = 0;         /// Total frames rendered so far
 
+  uint imagesInFlight = 8;              /// Total images in flight
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
 
   const(char)*[] instanceExtensions;    /// Enabled instance extensions

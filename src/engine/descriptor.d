@@ -70,7 +70,7 @@ void createDescriptorPool(ref App app){
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    maxSets : app.imageCount,
+    maxSets : app.imagesInFlight,
     poolSizeCount : cast(uint32_t)poolSizes.length,
     pPoolSizes : &poolSizes[0]
   };
@@ -136,14 +136,16 @@ void addImGuiTexture(ref App app, ref Texture texture) {
  */
 void createDescriptorSet(ref App app) {
   if(app.verbose) SDL_Log("creating Render DescriptorSet");
-  app.descriptorSet.length = app.imageCount;
+  app.descriptorSet.length = app.imagesInFlight;
 
-  VkDescriptorSetLayout[] layouts = [app.descriptorSetLayout, app.descriptorSetLayout];
+  VkDescriptorSetLayout[] layouts;
+  layouts.length = app.imagesInFlight;
+  for(uint i = 0; i < app.imagesInFlight; i++) { layouts[i] = app.descriptorSetLayout; }
 
   VkDescriptorSetAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
     descriptorPool: app.descriptorPool,
-    descriptorSetCount: app.imageCount,
+    descriptorSetCount: app.imagesInFlight,
     pSetLayouts: &layouts[0]
   };
   if(app.verbose) SDL_Log("Allocating DescriptorSets");
@@ -163,11 +165,11 @@ void createTextureDescriptor(ref App app) {
   }
 }
 
-void updateDescriptorSet(ref App app, uint frameIndex = 0) {
+void updateDescriptorSet(ref App app, uint syncIndex) {
   if(app.verbose) SDL_Log("Update DescriptorSet, adding %d textures", app.textures.length);
 
   VkDescriptorBufferInfo bufferInfo = {
-    buffer: app.uniform.uniformBuffers[frameIndex],
+    buffer: app.uniform.uniformBuffers[syncIndex],
     offset: 0,
     range: UniformBufferObject.sizeof
   };
@@ -175,7 +177,7 @@ void updateDescriptorSet(ref App app, uint frameIndex = 0) {
   VkWriteDescriptorSet[2] descriptorWrites = [
     {
       sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.descriptorSet[frameIndex],
+      dstSet: app.descriptorSet[syncIndex],
       dstBinding: 0,
       dstArrayElement: 0,
       descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -186,7 +188,7 @@ void updateDescriptorSet(ref App app, uint frameIndex = 0) {
     },
     {
       sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.descriptorSet[frameIndex],
+      dstSet: app.descriptorSet[syncIndex],
       dstBinding: 1,
       dstArrayElement: 0,
       descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
