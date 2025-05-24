@@ -64,11 +64,11 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
     dstAccessMask : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
   };
 
-  VkAttachmentDescription[3] attachments = [colorAttachment, depthAttachment, colorAttachmentResolve];
+  VkAttachmentDescription[] attachments = [colorAttachment, depthAttachment, colorAttachmentResolve];
 
   VkRenderPassCreateInfo createInfo = {
     sType : VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-    attachmentCount : attachments.length,
+    attachmentCount : cast(uint)(attachments.length),
     pAttachments : &attachments[0],
     subpassCount : 1,
     pSubpasses : &subpassDescription,
