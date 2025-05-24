@@ -39,11 +39,11 @@ struct DescriptorLayoutBuilder {
 /** ImGui DescriptorPool (Images)
  */
 void createImGuiDescriptorPool(ref App app){
-  if(app.verbose) SDL_Log("create ImGui DescriptorPool");
+  if(app.verbose) SDL_Log("Creating ImGui DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
     {
       type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      descriptorCount : 1000//IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
+      descriptorCount : 1000 ///IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
     }
   ];
 
@@ -51,30 +51,32 @@ void createImGuiDescriptorPool(ref App app){
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
     maxSets : 1000, // Allocate 1000 texture space
-    poolSizeCount : cast(uint32_t)poolSizes.length,
+    poolSizeCount : cast(uint)poolSizes.length,
     pPoolSizes : &poolSizes[0]
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.imguiPool));
+  if(app.verbose) SDL_Log("Created ImGui DescriptorPool: %p", app.imguiPool);
   app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator); });
 }
 
 /** Our DescriptorPool (UBO and Combined image sampler)
  */
 void createDescriptorPool(ref App app){
-  if(app.verbose) SDL_Log("create Render DescriptorPool");
+  if(app.verbose) SDL_Log("Creating Render DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
-    { type: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount: cast(uint)(1) },
-    { type: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorCount: cast(uint)(app.textures.length) }
+    { type: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount: cast(uint)(app.framesInFlight) },
+    { type: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorCount: cast(uint)(app.framesInFlight * app.textures.length) }
   ];
 
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
     maxSets : app.framesInFlight,
-    poolSizeCount : cast(uint32_t)poolSizes.length,
+    poolSizeCount : cast(uint)poolSizes.length,
     pPoolSizes : &poolSizes[0]
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.descriptorPool));
+  if(app.verbose) SDL_Log("Created Render DescriptorPool: %p", app.descriptorPool);
   app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator); });
 }
 

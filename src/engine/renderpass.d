@@ -6,7 +6,7 @@
 import engine;
 
 import depthbuffer : findDepthFormat;
-import devices : getSampleCount;
+import devices : getMSAASamples;
 
 /** Create a RenderPass object using a specified initial Layout and loadOp
  */
@@ -16,7 +16,7 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
 
   VkAttachmentDescription colorAttachment = {
     format : app.surfaceformats[0].format,
-    samples : app.getSampleCount(),
+    samples : app.getMSAASamples(),
     loadOp : loadOp,
     storeOp : VK_ATTACHMENT_STORE_OP_STORE,
     initialLayout : initialLayout,
@@ -46,7 +46,7 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
 
   VkAttachmentDescription depthAttachment = {
     format: app.findDepthFormat(),
-    samples: app.getSampleCount(),
+    samples: app.getMSAASamples(),
     loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
     storeOp: VK_ATTACHMENT_STORE_OP_STORE,
     initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
