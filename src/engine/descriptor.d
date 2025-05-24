@@ -36,47 +36,40 @@ struct DescriptorLayoutBuilder {
   }
 };
 
-/** ImGui DescriptorPool (Images)
- */
-void createImGuiDescriptorPool(ref App app){
-  if(app.verbose) SDL_Log("Creating ImGui DescriptorPool");
-  VkDescriptorPoolSize[] poolSizes = [
-    {
-      type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      descriptorCount : 1000 ///IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
-    }
-  ];
-
+VkDescriptorPool createDSPool(ref App app, const(char)* name, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
+  if(app.verbose) SDL_Log("Creating %s DescriptorPool", name);
+  VkDescriptorPool pool;
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    maxSets : 1000, // Allocate 1000 texture space
+    maxSets : maxSets, /// Allocate maxSets (Default: 1024 Sets)
     poolSizeCount : cast(uint)poolSizes.length,
     pPoolSizes : &poolSizes[0]
   };
-  enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.imguiPool));
-  if(app.verbose) SDL_Log("Created ImGui DescriptorPool: %p", app.imguiPool);
+  enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &pool));
+  if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", name, pool);
+  return(pool);
+}
+
+/** ImGui DescriptorPool (Images)
+ */
+void createImGuiDescriptorPool(ref App app){
+  VkDescriptorPoolSize[] poolSizes = [{
+    type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    descriptorCount : 1000 ///IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
+  }];
+  app.imguiPool = app.createDSPool("ImGui", poolSizes);
   app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator); });
 }
 
 /** Our DescriptorPool (UBO and Combined image sampler)
  */
 void createDescriptorPool(ref App app){
-  if(app.verbose) SDL_Log("Creating Render DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
     { type: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount: cast(uint)(app.framesInFlight) },
     { type: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorCount: cast(uint)(app.framesInFlight * app.textures.length) }
   ];
-
-  VkDescriptorPoolCreateInfo createPool = {
-    sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-    flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    maxSets : app.framesInFlight,
-    poolSizeCount : cast(uint)poolSizes.length,
-    pPoolSizes : &poolSizes[0]
-  };
-  enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.descriptorPool));
-  if(app.verbose) SDL_Log("Created Render DescriptorPool: %p", app.descriptorPool);
+  app.descriptorPool = app.createDSPool("Rendering", poolSizes, app.framesInFlight);
   app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator); });
 }
 
