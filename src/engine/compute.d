@@ -39,22 +39,23 @@ struct ComputeUniform {
 /** Compute Descriptor Pool (Image)
  */
 void createComputeDescriptorPool(ref App app){
-  if(app.verbose) SDL_Log("create Compute DescriptorPool");
+  if(app.verbose) SDL_Log("Creating Compute DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
-    { type : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorCount : 1 },
-    { type : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount : 1 },
-    { type : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorCount : 1 }
+    { type : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorCount : cast(uint)(app.framesInFlight) },
+    { type : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount : cast(uint)(app.framesInFlight) },
+    { type : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorCount : cast(uint)(app.framesInFlight) }
   ];
 
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    maxSets : 1000, // Allocate 1000 texture space
+    maxSets : cast(uint)(app.framesInFlight), // Allocate 1000 texture space
     poolSizeCount : cast(uint32_t)poolSizes.length,
     pPoolSizes : &poolSizes[0]
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.compute.pool));
-  app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.compute.pool, app.allocator); });
+  if(app.verbose) SDL_Log("Created Compute DescriptorPool: %p", app.compute.pool);
+  app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.compute.pool, app.allocator); });
 }
 
 /** Compute DescriptorSetLayout (Image)

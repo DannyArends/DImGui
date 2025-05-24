@@ -8,8 +8,6 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
-
-import devices : getSampleCount;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet, createTextureDescriptor;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
@@ -23,7 +21,8 @@ import sync : createSyncObjects;
 import geometry : distance;
 import uniforms : createRenderUBO;
 
-import compute: createComputeBufferAndImage, createComputeDescriptorSet, createComputeUBO, updateComputeDescriptorSet;
+import compute: createComputeBufferAndImage, createComputeDescriptorPool, createComputeDescriptorSet, createComputeDescriptorSetLayout, createComputeUBO, updateComputeDescriptorSet, createComputePipeline;
+
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -45,23 +44,32 @@ void createOrResizeWindow(ref App app) {
   app.aquireSwapChainImages();
   app.createColorResources();
   app.createDepthResources();
-  app.createRenderUBO();
+
+  // Compute resources
   app.createComputeUBO();
-
   app.createComputeBufferAndImage();
+  app.createComputeDescriptorPool();
+  app.createComputeDescriptorSetLayout();
+  app.createComputeDescriptorSet();
+  app.createComputePipeline();
 
+  // Render resources
+  app.createRenderUBO();
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createDescriptorSet();
   app.createTextureDescriptor();
 
-  app.createComputeDescriptorSet();
+  // ImGui resources
+  app.createImGuiCommandBuffers();
 
   app.renderpass = app.createRenderPass();
   app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
   app.createFramebuffers();
-  app.createImGuiCommandBuffers();
-  foreach(member; supportedTopologies) { app.pipelines[member] = app.createGraphicsPipeline(member); }
+
+  foreach(member; supportedTopologies) { 
+    app.pipelines[member] = app.createGraphicsPipeline(member);
+  }
   app.createRenderCommandBuffers();
   app.createSyncObjects();
 }

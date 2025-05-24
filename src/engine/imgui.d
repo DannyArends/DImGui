@@ -12,7 +12,7 @@ import std.string : toStringz, fromStringz;
 
 import geometry : position;
 import lights : Light;
-import devices : getSampleCount;
+import devices : getMSAASamples;
 import sfx : play;
 
 /** Main GUI structure
@@ -56,7 +56,7 @@ void initializeImGui(ref App app){
     MinImageCount : app.camera.minImageCount,
     ImageCount : cast(uint)app.framesInFlight,
     RenderPass : app.imguiPass,
-    MSAASamples : app.getSampleCount(),
+    MSAASamples : app.getMSAASamples(),
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&imguiInit);
