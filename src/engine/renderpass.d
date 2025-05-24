@@ -34,16 +34,6 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
     finalLayout :VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
   };
 
-  VkAttachmentReference colorAttachmentRef = {
-    attachment : 0,
-    layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-  };
-
-  VkAttachmentReference colorAttachmentResolveRef = {
-    attachment : 2,
-    layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-  };
-
   VkAttachmentDescription depthAttachment = {
     format: app.findDepthFormat(),
     samples: app.getMSAASamples(),
@@ -53,6 +43,8 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
     finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
   };
 
+  VkAttachmentReference colorAttachmentRef = { attachment : 0, layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+  VkAttachmentReference colorAttachmentResolveRef = { attachment : 2, layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
   VkAttachmentReference depthAttachmentRef = { attachment: 1, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
   VkSubpassDescription subpassDescription = {
