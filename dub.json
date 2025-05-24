@@ -8,16 +8,17 @@
 	"license": "GPL-v3",
 	"preBuildCommands-linux": [
 		"make -j 8",
-		"glslc assets/shaders/shader.vert -o assets/shaders/vert.spv",
-		"glslc assets/shaders/shader.frag -o assets/shaders/frag.spv",
-		"glslc assets/shaders/shader.comp -o assets/shaders/comp.spv"
+		"glslc -fshader-stage=vertex assets/shaders/vertex.glsl -o assets/shaders/vertex.spv",
+		"glslc -fshader-stage=fragment assets/shaders/fragment.glsl -o assets/shaders/fragment.spv",
+		"glslc -fshader-stage=compute assets/shaders/texture.glsl  -o assets/shaders/texture.spv",
+		"glslc -fshader-stage=compute assets/shaders/particle.glsl  -o assets/shaders/particle.spv"
 	],
 	"preBuildCommands-windows-x86_64": [
 		"compile.bat C:/VulkanSDK/1.4.309.0",
-		"glslc.exe assets/shaders/shader.vert -o assets/shaders/vert.spv",
-		"glslc.exe assets/shaders/shader.frag -o assets/shaders/frag.spv",
-		"glslc.exe assets/shaders/texture.comp -o assets/shaders/texture.spv",
-		"glslc.exe assets/shaders/particle.comp -o assets/shaders/particle.spv"
+		"glslc.exe -fshader-stage=vertex assets/shaders/vertex.glsl -o assets/shaders/vertex.spv",
+		"glslc.exe -fshader-stage=fragment assets/shaders/fragment.glsl -o assets/shaders/fragment.spv",
+		"glslc.exe -fshader-stage=compute assets/shaders/texture.glsl  -o assets/shaders/texture.spv",
+		"glslc.exe -fshader-stage=compute assets/shaders/particle.glsl  -o assets/shaders/particle.spv"
 	],
 	"configurations": [
 	{
