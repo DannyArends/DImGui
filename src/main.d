@@ -27,27 +27,28 @@ import window: createOrResizeWindow, checkForResize;
  * Main entry point for Windows and Linux
  */
 void main(string[] args) {
-  App app = initializeSDL();
-  app.loadGlyphAtlas();
-  app.loadAllSoundEffect();
-  app.createInstance();
-  app.createDebugCallback();
-  app.createLogicalDevice();
-  app.createShadersStages();
-  app.createComputeShader();
-  app.createCommandPool();
-  app.createSampler();
-  app.createImGuiDescriptorPool();
-  app.createImGuiDescriptorSetLayout();
-  app.createFontTexture();
-  app.loadTextures();
-  app.createSurface();                    /// Create rendering surface
-  app.createScene();                      /// Create a scene with Geometries
+  App app = initializeSDL();              /// Initialize SDL library and create a window
+  app.loadGlyphAtlas();                   /// Load & parse the Glyph Atlas
+  app.loadAllSoundEffect();               /// Load all available sound effects
+  app.createInstance();                   /// Create a Vulkan instance
+  app.createDebugCallback();              /// Hook the debug callback to the validation layer
+  app.createLogicalDevice();              /// Create a logical device for rendering
+  app.createShadersStages();              /// Load the vertex and fragment shaders
+  app.createComputeShader();              /// Load the compute shader
+  app.createCommandPool();                /// Create the rendering CommandPool
+  app.createSampler();                    /// Create a texture sampler
+  app.createImGuiDescriptorPool();        /// ImGui DescriptorPool
+  app.createImGuiDescriptorSetLayout();   /// ImGui DescriptorSet layout
+  app.createFontTexture();                /// Create a Texture from the GlyphAtlas
+  app.loadTextures();                     /// Transfer all textures to the GPU
+  app.createSurface();                    /// Create Vulkan rendering surface
+  app.createScene();                      /// Create our scene with geometries
   app.createOrResizeWindow();             /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                  /// Initialize ImGui (IO, Style, etc)
+
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 50000;
-  while (!app.finished && app.totalFramesRendered < frames) { // Main loop
+  while (!app.finished && app.totalFramesRendered < frames) { /// Event polling & rendering Loop
     app.time[FRAMESTART] = SDL_GetTicks();
     app.handleEvents();
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
@@ -60,4 +61,3 @@ void main(string[] args) {
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
   app.cleanUp();
 }
-
