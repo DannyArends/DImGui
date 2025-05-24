@@ -8,9 +8,9 @@ import core.time : MonoTime;
 import engine;
 
 import buffer : createBuffer, copyBuffer;
-import textures : Texture, idx;
+import textures : Texture, idx, registerTexture;
 import commands : createCommandBuffer;
-import descriptor : DescriptorLayoutBuilder, addImGuiTexture;
+import descriptor : DescriptorLayoutBuilder, createDescriptorSet;
 import pipeline : GraphicsPipeline;
 import images : createImage;
 import swapchain : createImageView;
@@ -24,16 +24,10 @@ struct Compute {
 
   VkCommandBuffer[] buffer = null;
   GraphicsPipeline pipeline;
+
   VkImage image;
   VkDeviceMemory memory;
   VkImageView imageView;
-
-  VkBuffer[] pInBuffers;
-  VkDeviceMemory[] pInBuffersMemory;
-}
-
-struct ComputeUniform {
-  float deltaTime;
 }
 
 /** Compute Descriptor Pool (Image)
@@ -41,9 +35,7 @@ struct ComputeUniform {
 void createComputeDescriptorPool(ref App app){
   if(app.verbose) SDL_Log("Creating Compute DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
-    { type : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorCount : cast(uint)(app.framesInFlight) },
-    { type : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount : cast(uint)(app.framesInFlight) },
-    { type : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorCount : cast(uint)(app.framesInFlight) }
+    { type : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorCount : cast(uint)(app.framesInFlight) }
   ];
 
   VkDescriptorPoolCreateInfo createPool = {
@@ -63,16 +55,21 @@ void createComputeDescriptorPool(ref App app){
 void createComputeDescriptorSetLayout(ref App app) {
   DescriptorLayoutBuilder builder;
   builder.add(0, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-  builder.add(1, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  builder.add(2, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   app.compute.layout = builder.build(app.device);
   app.frameDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.compute.layout, app.allocator); });
 }
 
-void createComputeShader(ref App app, const(char)* compPath = "assets/shaders/comp.spv"){
-  auto cShader = app.createShaderModule(compPath);
-  app.computeStage = createShaderStageInfo(VK_SHADER_STAGE_COMPUTE_BIT, cShader);
+void createComputeStages(ref App app) {
+  app.computeStages ~= app.createComputeShader("assets/shaders/texture.spv");
+  app.computeStages ~= app.createComputeShader("assets/shaders/particle.spv");
+}
+
+VkPipelineShaderStageCreateInfo createComputeShader(ref App app, const(char)* path = "assets/shaders/texture.spv") {
+  VkPipelineShaderStageCreateInfo shaderStage;
+  auto cShader = app.createShaderModule(path);
+  shaderStage = createShaderStageInfo(VK_SHADER_STAGE_COMPUTE_BIT, cShader);
   app.mainDeletionQueue.add(() { vkDestroyShaderModule(app.device, cShader, app.allocator); });
+  return(shaderStage);
 }
 
 void createComputePipeline(ref App app) {
@@ -87,7 +84,7 @@ void createComputePipeline(ref App app) {
   VkComputePipelineCreateInfo computeInfo = {
     sType : VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
     layout : app.compute.pipeline.pipelineLayout,
-    stage : app.computeStage,
+    stage : app.computeStages[0],
     pNext : null
   };
   enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipeline.graphicsPipeline));
@@ -99,21 +96,7 @@ void createComputePipeline(ref App app) {
 }
 
 void createComputeDescriptorSet(ref App app) {
-  if(app.verbose) SDL_Log("Creating Compute DescriptorSet from pool %p", app.compute.pool);
-  app.compute.set.length = app.framesInFlight;
-
-  VkDescriptorSetLayout[] layouts;
-  layouts.length = app.framesInFlight;
-  for(uint i = 0; i < app.framesInFlight; i++) { layouts[i] = app.compute.layout; }
-
-  VkDescriptorSetAllocateInfo allocInfo = {
-    sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-    descriptorPool: app.compute.pool,
-    descriptorSetCount: app.framesInFlight,
-    pSetLayouts: &layouts[0]
-  };
-
-  enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.compute.set[0]));
+  app.compute.set = createDescriptorSet(app.device, app.compute.pool, app.compute.layout,  app.framesInFlight);
 }
 
 void updateComputeDescriptorSet(ref App app, uint syncIndex = 0) {
@@ -123,51 +106,15 @@ void updateComputeDescriptorSet(ref App app, uint syncIndex = 0) {
   };
   if(app.verbose) SDL_Log("Linking image: %p", app.compute.imageView);
 
-  VkDescriptorBufferInfo bufferInfo = {
-    buffer: app.uniform.computeBuffers[syncIndex],
-    offset: 0,
-    range: ComputeUniform.sizeof
-  };
-
-  VkDescriptorBufferInfo pInBufferInfo = {
-    buffer: app.compute.pInBuffers[0],
-    offset: 0,
-    range: float.sizeof * 3 * 1000
-  };
-
-  VkWriteDescriptorSet[3] descriptorWrites = [
-    {
-      sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.compute.set[syncIndex],
-      dstBinding: 0,
-      dstArrayElement: 0,
-      descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-      descriptorCount: 1,
-      pImageInfo: &imageInfo
-    },
-    {
-      sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.compute.set[syncIndex],
-      dstBinding: 1,
-      dstArrayElement: 0,
-      descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-      descriptorCount: 1,
-      pBufferInfo: &bufferInfo,
-      pImageInfo: null,
-      pTexelBufferView: null
-    },
-    {
-      sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: app.compute.set[syncIndex],
-      dstBinding: 2,
-      dstArrayElement: 0,
-      descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-      descriptorCount: 1,
-      pBufferInfo: &pInBufferInfo,
-      pImageInfo: null,
-      pTexelBufferView: null
-    }
-  ];
+  VkWriteDescriptorSet[1] descriptorWrites = [ {
+    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+    dstSet: app.compute.set[syncIndex],
+    dstBinding: 0,
+    dstArrayElement: 0,
+    descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+    descriptorCount: 1,
+    pImageInfo: &imageInfo
+  }];
   vkUpdateDescriptorSets(app.device, descriptorWrites.length, &descriptorWrites[0], 0, null);
   if(app.verbose) SDL_Log("updateComputeDescriptorSet DONE");
 }
@@ -175,47 +122,12 @@ void updateComputeDescriptorSet(ref App app, uint syncIndex = 0) {
 void createComputeBufferAndImage(ref App app){
   app.compute.buffer = app.device.createCommandBuffer(app.commandPool, app.framesInFlight, app.verbose);
 
-  app.compute.pInBuffers.length = app.framesInFlight;
-  app.compute.pInBuffersMemory.length = app.framesInFlight;
-
-  uint size = float.sizeof * 3 * 1000; // 1000 x vec3
-  float[3000] transfer;
-  for(uint i = 0; i < 3000; i++) {
-    transfer[i] = cast(float)i;
-  }
-  // Staging buffer
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, size);
-
-  void* data;
-  vkMapMemory(app.device, stagingBufferMemory, 0, size, 0, &data);
-  memcpy(data, &transfer[0], size);
-  vkUnmapMemory(app.device, stagingBufferMemory);
-
-  // On GPU buffer
-  for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.compute.pInBuffers[i], &app.compute.pInBuffersMemory[i], size, 
-                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    app.copyBuffer(stagingBuffer, app.compute.pInBuffers[i], size);
-  }
-  app.frameDeletionQueue.add((){
-    for(uint i = 0; i < app.framesInFlight; i++) {
-      vkDestroyBuffer(app.device, app.compute.pInBuffers[i], app.allocator);
-      vkFreeMemory(app.device, app.compute.pInBuffersMemory[i], app.allocator);
-    }
-  });
-
-  vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-  vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
-
   VkImageUsageFlags usage;
   usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   usage |= VK_IMAGE_USAGE_STORAGE_BIT;
   usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
   usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
 
   app.createImage(app.camera.width, app.camera.height, &app.compute.image, &app.compute.memory, VK_FORMAT_R16G16B16A16_SFLOAT, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
   app.compute.imageView = app.createImageView(app.compute.image, VK_FORMAT_R16G16B16A16_SFLOAT);
@@ -228,14 +140,15 @@ void createComputeBufferAndImage(ref App app){
     vkFreeMemory(app.device, app.compute.memory, app.allocator);
   });
 
+  int idx = app.textures.idx("Compute");
   Texture texture = {
     path : "Compute", width: app.camera.width, height: app.camera.height,
     textureImage: app.compute.image,
     textureImageMemory: app.compute.memory,
     textureImageView: app.compute.imageView
   };
-  app.addImGuiTexture(texture);
-  int idx = app.textures.idx("Compute");
+  app.registerTexture(texture);
+
   if(idx < 0){
    app.textures ~= texture;
   }else{
@@ -280,36 +193,6 @@ void transitionImage(ref App app, VkCommandBuffer commandBuffer, VkImage image,
   if(app.verbose) SDL_Log("transitionImage done");
 }
 
-void createComputeUBO(ref App app) {
-  app.uniform.computeBuffers.length = app.framesInFlight;
-  app.uniform.computeBuffersMemory.length = app.framesInFlight;
-
-  for (uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.uniform.computeBuffers[i], &app.uniform.computeBuffersMemory[i], ComputeUniform.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-  }
-  if(app.verbose) SDL_Log("Created %d Compute UBO of size: %d bytes", app.framesInFlight, ComputeUniform.sizeof);
-
-  app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.framesInFlight; i++) {
-      vkDestroyBuffer(app.device, app.uniform.computeBuffers[i], app.allocator);
-      vkFreeMemory(app.device, app.uniform.computeBuffersMemory[i], app.allocator);
-    }
-  });
-}
-
-void updateComputeUBO(ref App app, uint syncIndex = 0){
-  uint now = SDL_GetTicks();
-  ComputeUniform buffer = {
-    deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
-  };
-  app.compute.lastTick = now;
-
-  void* data;
-  vkMapMemory(app.device, app.uniform.computeBuffersMemory[syncIndex], 0, ComputeUniform.sizeof, 0, &data);
-  memcpy(data, &buffer, ComputeUniform.sizeof);
-  vkUnmapMemory(app.device, app.uniform.computeBuffersMemory[syncIndex]);
-}
-
 void recordComputeCommandBuffer(ref App app, uint syncIndex) {
   if(app.verbose) SDL_Log("Record Compute Command Buffer: %d", syncIndex);
   enforceVK(vkResetCommandBuffer(app.compute.buffer[syncIndex], 0));
@@ -335,4 +218,3 @@ void recordComputeCommandBuffer(ref App app, uint syncIndex) {
   vkEndCommandBuffer(app.compute.buffer[syncIndex]);
   if(app.verbose) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
 }
-

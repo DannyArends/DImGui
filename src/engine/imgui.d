@@ -168,7 +168,7 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
       igTableNextColumn();
       igText("%d x %d", texture.width, texture.height);
       igTableNextColumn();
-      igImage(cast(ImTextureID)texture.descrSet, ImVec2(100, min(100, cast(uint)(100 * ratio))), ImVec2(0, 0), ImVec2(1, 1));
+      igImage(cast(ImTextureID)texture.imID, ImVec2(100, min(100, cast(uint)(100 * ratio))), ImVec2(0, 0), ImVec2(1, 1));
     }
     igEndTable();
     igEnd();

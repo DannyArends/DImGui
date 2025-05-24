@@ -8,7 +8,7 @@ import engine;
 import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
 import camera : Camera;
 import matrix : mat4, position, translate, rotate, scale;
-import textures : Texture, id;
+import textures : Texture, idx;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
@@ -92,7 +92,7 @@ class Geometry {
 /** Set tid for instance from object.instances to Texture name */
 @nogc void texture(T)(T object, const Texture[] textures, const(char)* name, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
-  object.instances[instance].tid = textures.id(name);
+  object.instances[instance].tid = textures.idx(name);
 }
 
 /** Euclidean distance between Geometry and Camera */
