@@ -51,6 +51,7 @@ struct App {
   VkSampler sampler;
   VkShaderModule[] shaders;
   VkPipelineShaderStageCreateInfo[] shaderStages;
+  VkPipelineShaderStageCreateInfo computeStage;
   GraphicsPipeline[VkPrimitiveTopology] pipelines;
   DepthBuffer depthBuffer;
   ColorBuffer colorBuffer;

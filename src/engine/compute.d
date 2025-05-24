@@ -66,14 +66,16 @@ void createComputeDescriptorSetLayout(ref App app) {
   builder.add(1, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   builder.add(2, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
   app.compute.layout = builder.build(app.device);
-  app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.compute.layout, app.allocator); });
+  app.frameDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.compute.layout, app.allocator); });
 }
 
-void createComputePipeline(ref App app, const(char)* compPath = "assets/shaders/comp.spv") {
+void createComputeShader(ref App app, const(char)* compPath = "assets/shaders/comp.spv"){
   auto cShader = app.createShaderModule(compPath);
-  VkPipelineShaderStageCreateInfo cInfo = createShaderStageInfo(VK_SHADER_STAGE_COMPUTE_BIT, cShader);
+  app.computeStage = createShaderStageInfo(VK_SHADER_STAGE_COMPUTE_BIT, cShader);
   app.mainDeletionQueue.add(() { vkDestroyShaderModule(app.device, cShader, app.allocator); });
+}
 
+void createComputePipeline(ref App app) {
   VkPipelineLayoutCreateInfo computeLayout = {
     sType : VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     pSetLayouts : &app.compute.layout,
@@ -85,12 +87,12 @@ void createComputePipeline(ref App app, const(char)* compPath = "assets/shaders/
   VkComputePipelineCreateInfo computeInfo = {
     sType : VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
     layout : app.compute.pipeline.pipelineLayout,
-    stage : cInfo,
+    stage : app.computeStage,
     pNext : null
   };
   enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipeline.graphicsPipeline));
   if(app.verbose) SDL_Log("Compute pipeline at: %p", app.compute.pipeline.graphicsPipeline);
-  app.mainDeletionQueue.add((){
+  app.frameDeletionQueue.add((){
     vkDestroyPipelineLayout(app.device, app.compute.pipeline.pipelineLayout, app.allocator);
     vkDestroyPipeline(app.device, app.compute.pipeline.graphicsPipeline, app.allocator);
   });

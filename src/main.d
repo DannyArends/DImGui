@@ -7,6 +7,7 @@ import engine;
 import validation;
 
 import commands : createCommandPool;
+import compute : createComputeShader;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : handleEvents;
@@ -33,19 +34,17 @@ void main(string[] args) {
   app.createDebugCallback();
   app.createLogicalDevice();
   app.createShadersStages();
+  app.createComputeShader();
   app.createCommandPool();
-
   app.createSampler();
   app.createImGuiDescriptorPool();
   app.createImGuiDescriptorSetLayout();
-
   app.createFontTexture();
   app.loadTextures();
-
-  app.createSurface();              /// Create rendering surface
-  app.createScene();                /// Create a scene with Geometries
-  app.createOrResizeWindow();       /// Create window (swapchain, renderpass, framebuffers, etc)
-  app.initializeImGui();            /// Initialize ImGui (IO, Style, etc)
+  app.createSurface();                    /// Create rendering surface
+  app.createScene();                      /// Create a scene with Geometries
+  app.createOrResizeWindow();             /// Create window (swapchain, renderpass, framebuffers, etc)
+  app.initializeImGui();                  /// Initialize ImGui (IO, Style, etc)
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 50000;
   while (!app.finished && app.totalFramesRendered < frames) { // Main loop

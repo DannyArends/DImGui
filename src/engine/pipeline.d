@@ -6,7 +6,6 @@
 import engine;
 
 import devices : getMSAASamples;
-import shaders : createShaderModule, createShaderStageInfo;
 import vertex : Vertex;
 
 /** GraphicsPipeline
@@ -18,8 +17,8 @@ struct GraphicsPipeline {
 
 /** Create a GraphicsPipeline object for a specified topology
  */
-GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
-  GraphicsPipeline pipeline;
+void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
+  app.pipelines[topology] = GraphicsPipeline();
   auto bindingDescription = Vertex.getBindingDescription();
   auto attributeDescriptions = Vertex.getAttributeDescriptions();
 
@@ -107,8 +106,8 @@ GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topolog
     setLayoutCount: 1, // Optional
     pSetLayouts: &app.descriptorSetLayout, // Optional
   };
-  enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, null, &pipeline.pipelineLayout));
-
+  enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, null, &app.pipelines[topology].pipelineLayout));
+  
   VkPipelineDepthStencilStateCreateInfo depthStencil = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
     depthTestEnable: VK_TRUE,
@@ -134,16 +133,15 @@ GraphicsPipeline createGraphicsPipeline(ref App app, VkPrimitiveTopology topolog
     pDepthStencilState: &depthStencil,                        // Optional
     pColorBlendState: &colorBlending,
     pDynamicState: null,                             // Optional
-    layout: pipeline.pipelineLayout,
+    layout: app.pipelines[topology].pipelineLayout,
     renderPass: app.renderpass,
     subpass: 0,
     basePipelineHandle: null,                                 // Optional
   };
 
-  enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &pipeline.graphicsPipeline));
+  enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.pipelines[topology].graphicsPipeline));
   app.frameDeletionQueue.add((){
-    vkDestroyPipelineLayout(app.device, pipeline.pipelineLayout, app.allocator);
-    vkDestroyPipeline(app.device, pipeline.graphicsPipeline, app.allocator);
+    vkDestroyPipelineLayout(app.device, app.pipelines[topology].pipelineLayout, app.allocator);
+    vkDestroyPipeline(app.device, app.pipelines[topology].graphicsPipeline, app.allocator);
   });
-  return(pipeline);
 }

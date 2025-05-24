@@ -39,6 +39,7 @@ void createOrResizeWindow(ref App app) {
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush();
 
+  // Query window settings then create a SwapChain, DepthBuffer, and ColorBuffer
   app.querySurfaceCapabilities();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
@@ -51,7 +52,6 @@ void createOrResizeWindow(ref App app) {
   app.createComputeDescriptorPool();
   app.createComputeDescriptorSetLayout();
   app.createComputeDescriptorSet();
-  app.createComputePipeline();
 
   // Render resources
   app.createRenderUBO();
@@ -63,12 +63,14 @@ void createOrResizeWindow(ref App app) {
   // ImGui resources
   app.createImGuiCommandBuffers();
 
+  // RenderPass, FrameBuffers, Render Pipelines, and Synchronization
   app.renderpass = app.createRenderPass();
   app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
   app.createFramebuffers();
 
+  app.createComputePipeline();
   foreach(member; supportedTopologies) { 
-    app.pipelines[member] = app.createGraphicsPipeline(member);
+    app.createGraphicsPipeline(member);
   }
   app.createRenderCommandBuffers();
   app.createSyncObjects();
@@ -84,4 +86,3 @@ void checkForResize(ref App app){
     app.rebuild = false;
   }
 }
-
