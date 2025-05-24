@@ -8,8 +8,9 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
+import compute: createComputeBufferAndImage, createComputeDescriptorPool, createComputeDescriptorSet, createComputeDescriptorSetLayout, createComputeUBO, createComputePipeline;
 import depthbuffer : createDepthResources;
-import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet, createTextureDescriptor;
+import descriptor : createDescriptorPool, createDescriptorSetLayout, createDescriptorSet, createTextureDescriptors;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
@@ -18,11 +19,7 @@ import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
-import geometry : distance;
 import uniforms : createRenderUBO;
-
-import compute: createComputeBufferAndImage, createComputeDescriptorPool, createComputeDescriptorSet, createComputeDescriptorSetLayout, createComputeUBO, updateComputeDescriptorSet, createComputePipeline;
-
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -58,7 +55,7 @@ void createOrResizeWindow(ref App app) {
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createDescriptorSet();
-  app.createTextureDescriptor();
+  app.createTextureDescriptors();
 
   // ImGui resources
   app.createImGuiCommandBuffers();
