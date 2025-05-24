@@ -16,7 +16,8 @@
 		"compile.bat C:/VulkanSDK/1.4.309.0",
 		"glslc.exe assets/shaders/shader.vert -o assets/shaders/vert.spv",
 		"glslc.exe assets/shaders/shader.frag -o assets/shaders/frag.spv",
-		"glslc.exe assets/shaders/shader.comp -o assets/shaders/comp.spv"
+		"glslc.exe assets/shaders/texture.comp -o assets/shaders/texture.spv",
+		"glslc.exe assets/shaders/particle.comp -o assets/shaders/particle.spv"
 	],
 	"configurations": [
 	{

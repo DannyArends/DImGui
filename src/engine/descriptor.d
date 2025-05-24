@@ -101,57 +101,29 @@ void createImGuiDescriptorSetLayout(ref App app) {
   app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator); });
 }
 
-/** Add a texture to the ImGui DescriptorSet (Combined image sampler)
- */
-void addImGuiTexture(ref App app, ref Texture texture) {
-  if(app.verbose) SDL_Log("addImGuiTexture %p", texture.textureImageView);
-  VkDescriptorSetLayout[] layouts = [app.ImGuiSetLayout];
+VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, VkDescriptorSetLayout layout, uint size){
+  VkDescriptorSetLayout[] layouts;
+  VkDescriptorSet[] set;
+  layouts.length = set.length = size;
+
+  for(uint i = 0; i < size; i++) { layouts[i] = layout; }
 
   VkDescriptorSetAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-    descriptorPool: app.imguiPool,
-    descriptorSetCount: 1,
+    descriptorPool: pool,
+    descriptorSetCount: size,
     pSetLayouts: &layouts[0]
   };
-  enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &texture.descrSet));
 
-  VkDescriptorImageInfo textureImage = {
-    imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    imageView: texture.textureImageView,
-    sampler: app.sampler
-  };
-  VkWriteDescriptorSet[1] descriptorWrites = [
-    {
-      sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-      dstSet: texture.descrSet,
-      dstBinding: 0,
-      dstArrayElement: 0,
-      descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      descriptorCount: 1,
-      pImageInfo: &textureImage
-    }
-  ];
-  vkUpdateDescriptorSets(app.device, 1, &descriptorWrites[0], 0, null);
+  enforceVK(vkAllocateDescriptorSets(device, &allocInfo, &set[0]));
+  return(set);
 }
 
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
-void createDescriptorSet(ref App app) {
+void createRenderDescriptor(ref App app) {
   if(app.verbose) SDL_Log("creating Render DescriptorSet");
-  app.descriptorSet.length = app.framesInFlight;
-
-  VkDescriptorSetLayout[] layouts;
-  layouts.length = app.framesInFlight;
-  for(uint i = 0; i < app.framesInFlight; i++) { layouts[i] = app.descriptorSetLayout; }
-
-  VkDescriptorSetAllocateInfo allocInfo = {
-    sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-    descriptorPool: app.descriptorPool,
-    descriptorSetCount: app.framesInFlight,
-    pSetLayouts: &layouts[0]
-  };
-  if(app.verbose) SDL_Log("Allocating DescriptorSets");
-  enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.descriptorSet[0]));
+  app.descriptorSet = createDescriptorSet(app.device, app.descriptorPool, app.descriptorSetLayout,  app.framesInFlight);
 }
 
 void createTextureDescriptors(ref App app) {

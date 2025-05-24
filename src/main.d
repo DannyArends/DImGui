@@ -7,7 +7,7 @@ import engine;
 import validation;
 
 import commands : createCommandPool;
-import compute : createComputeShader;
+import compute : createComputeStages;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : handleEvents;
@@ -34,7 +34,7 @@ void main(string[] args) {
   app.createDebugCallback();              /// Hook the debug callback to the validation layer
   app.createLogicalDevice();              /// Create a logical device for rendering
   app.createShadersStages();              /// Load the vertex and fragment shaders
-  app.createComputeShader();              /// Load the compute shader
+  app.createComputeStages();              /// Load the compute shader
   app.createCommandPool();                /// Create the rendering CommandPool
   app.createSampler();                    /// Create a texture sampler
   app.createImGuiDescriptorPool();        /// ImGui DescriptorPool

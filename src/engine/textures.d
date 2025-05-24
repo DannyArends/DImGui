@@ -11,7 +11,7 @@ import io : dir;
 import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
-import descriptor : addImGuiTexture;
+import descriptor : createDescriptorSet;
 
 struct Texture {
   const(char)* path;
@@ -19,12 +19,11 @@ struct Texture {
   uint height = 0;
   SDL_Surface* surface;
 
-  VkDescriptorSet descrSet;
+  VkDescriptorSet imID;
   VkImage textureImage;
   VkDeviceMemory textureImageMemory;
   VkImageView textureImageView;
 
-  uint tid;
   alias surface this;
 }
 
@@ -80,33 +79,26 @@ void toGPU(ref App app, ref Texture texture){
   // Create an imageview on the image
   texture.textureImageView = app.createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
 
-  // Create an ImGui texture
-  app.addImGuiTexture(texture);
+  // Register Texture with ImGui, and store in texture array
+  app.registerTexture(texture);
+  app.textures ~= texture;
 
   // Cleanup
   if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));
   SDL_FreeSurface(texture.surface);
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
-  texture.tid = cast(uint)app.textures.length;
-  app.textures ~= texture;
 }
 
-@nogc int id(const Texture[] textures, const(char)* name) nothrow {
-  foreach(texture; textures) {
-    if (strstr(texture.path, name) != null) return(texture.tid);
-  }
-  return(-1);
-}
-
+/** Texture index
+ */
 @nogc int idx(const Texture[] textures, const(char)* name) nothrow {
-  for(uint i = 0; i < textures.length; i++) {
-    if (strstr(textures[i].path, name) != null) return(i);
-  }
+  for(uint i = 0; i < textures.length; i++) { if (strstr(textures[i].path, name) != null) return(i); }
   return(-1);
 }
 
-// Create a TextureSampler for sampling from a texture
+/** Create a TextureSampler for sampling from a texture
+ */
 void createSampler(ref App app) {
   if(app.verbose) SDL_Log("Create texture sampler");
   VkPhysicalDeviceProperties properties = {};
@@ -137,7 +129,30 @@ void createSampler(ref App app) {
   enforceVK(vkCreateSampler(app.device, &samplerInfo, null, &app.sampler));
   app.mainDeletionQueue.add((){ vkDestroySampler(app.device, app.sampler, null); });
 
-  if(app.verbose) SDL_Log("Done texture sampler");
+  if(app.verbose) SDL_Log("Created TextureSampler: %p", app.sampler);
+}
+
+/** 'Register' a texture in the ImGui DescriptorSet
+ */
+void registerTexture(ref App app, ref Texture texture) {
+  if(app.verbose) SDL_Log("Registering Texture %p with ImGui", texture.textureImageView);
+  texture.imID = createDescriptorSet(app.device, app.imguiPool, app.ImGuiSetLayout, 1)[0];
+
+  VkDescriptorImageInfo textureImage = {
+    imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    imageView: texture.textureImageView,
+    sampler: app.sampler
+  };
+  VkWriteDescriptorSet[1] descriptorWrites = [{
+    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+    dstSet: texture.imID,
+    dstBinding: 0,
+    dstArrayElement: 0,
+    descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    descriptorCount: 1,
+    pImageInfo: &textureImage
+  }];
+  vkUpdateDescriptorSets(app.device, 1, &descriptorWrites[0], 0, null);
 }
 
 void deAllocate(App app, Texture texture) {
