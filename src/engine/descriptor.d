@@ -154,13 +154,13 @@ void createDescriptorSet(ref App app) {
   enforceVK(vkAllocateDescriptorSets(app.device, &allocInfo, &app.descriptorSet[0]));
 }
 
-void createTextureDescriptor(ref App app) {
+void createTextureDescriptors(ref App app) {
   app.textureImagesInfo.length = app.textures.length;
 
   for (size_t i = 0; i < app.textures.length; i++) {
     VkDescriptorImageInfo textureImage = {
       imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-      imageView: app.textures[i].textureImageView, // Texture 0 is reserved for font
+      imageView: app.textures[i].textureImageView,
       sampler: app.sampler
     };
     app.textureImagesInfo[i] = textureImage;
