@@ -14,7 +14,7 @@ struct Particle {
 };
 
 //size of a workgroup for compute
-layout (local_size_x = 256, local_size_y = 1) in;
+layout (local_size_x = 256) in;
 
 //descriptor bindings for the pipeline
 layout(set = 0, binding = 0) uniform UniformBufferObject{

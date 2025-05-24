@@ -10,7 +10,7 @@ import engine;
 import buffer : createBuffer, copyBuffer;
 import textures : Texture, idx, registerTexture;
 import commands : createCommandBuffer;
-import descriptor : DescriptorLayoutBuilder, createDescriptorSet;
+import descriptor : DescriptorLayoutBuilder, createDSPool, createDescriptorSet;
 import pipeline : GraphicsPipeline;
 import images : createImage;
 import swapchain : createImageView;
@@ -30,23 +30,14 @@ struct Compute {
   VkImageView imageView;
 }
 
-/** Compute Descriptor Pool (Image)
+/** Compute Descriptor Pool
  */
 void createComputeDescriptorPool(ref App app){
   if(app.verbose) SDL_Log("Creating Compute DescriptorPool");
   VkDescriptorPoolSize[] poolSizes = [
     { type : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, descriptorCount : cast(uint)(app.framesInFlight) }
   ];
-
-  VkDescriptorPoolCreateInfo createPool = {
-    sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-    flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-    maxSets : cast(uint)(app.framesInFlight), // Allocate 1000 texture space
-    poolSizeCount : cast(uint32_t)poolSizes.length,
-    pPoolSizes : &poolSizes[0]
-  };
-  enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.compute.pool));
-  if(app.verbose) SDL_Log("Created Compute DescriptorPool: %p", app.compute.pool);
+  app.compute.pool = app.createDSPool("Compute", poolSizes);
   app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.compute.pool, app.allocator); });
 }
 
