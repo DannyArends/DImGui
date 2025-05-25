@@ -8,7 +8,7 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
-import compute: createComputeBufferAndImage, createComputeDescriptorPool, createComputeDescriptorSet, createComputeDescriptorSetLayout, createComputePipeline;
+import compute: createComputeBufferAndImage, createComputeDescriptorPool, createComputePipeline;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createRenderDescriptor, createTextureDescriptors;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
@@ -46,8 +46,6 @@ void createOrResizeWindow(ref App app) {
   // Compute resources
   app.createComputeBufferAndImage();
   app.createComputeDescriptorPool();
-  app.createComputeDescriptorSetLayout();
-  app.createComputeDescriptorSet();
 
   // Render resources
   app.createRenderUBO();

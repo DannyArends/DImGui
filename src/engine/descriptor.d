@@ -6,6 +6,7 @@
 import engine;
 
 import uniforms : UniformBufferObject;
+import shaders : reflectDescriptorSets;
 import textures : Texture;
 
 struct DescriptorLayoutBuilder {
@@ -88,10 +89,11 @@ void createDescriptorPool(ref App app){
  */
 void createDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating Render DescriptorSetLayout");
-  DescriptorLayoutBuilder builder;
-  builder.add(0, 1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  builder.add(1, cast(uint) app.textures.length, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  app.descriptorSetLayout = builder.build(app.device);
+//  DescriptorLayoutBuilder builder;
+//  builder.add(0, 1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+//  builder.add(1, cast(uint) app.textures.length, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+//  app.descriptorSetLayout = builder.build(app.device);
+  app.descriptorSetLayout = app.reflectDescriptorSets(app.shaders);
   app.frameDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator); });
 }
 

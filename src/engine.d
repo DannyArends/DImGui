@@ -17,6 +17,7 @@ import matrix : multiply, inverse;
 import pipeline : GraphicsPipeline;
 import images : ColorBuffer;
 import imgui : GUI;
+import shaders : Shader;
 import vector : normalize;
 import uniforms : Uniform;
 import sync : Sync, Fence;
@@ -49,7 +50,7 @@ struct App {
   GlyphAtlas glyphAtlas;      /// GlyphAtlas for geometric font rendering
 
   VkSampler sampler;
-  VkShaderModule[] shaders;
+  Shader[] shaders;
   VkPipelineShaderStageCreateInfo[] shaderStages;
   VkPipelineShaderStageCreateInfo[] computeStages;
   GraphicsPipeline[VkPrimitiveTopology] pipelines;
@@ -64,6 +65,9 @@ struct App {
   // ShaderC
   shaderc_compiler_t compiler;
   shaderc_compile_options_t options;
+
+  // SPIR-V reflection
+  spvc_context context;
 
   // Vulkan
   VkInstance instance = null;
@@ -145,8 +149,14 @@ void cleanUp(App app){
  */
 extern(C) void enforceVK(VkResult err) {
   if (err == VK_SUCCESS) return;
-  SDL_Log("[enforceVK] Error: VkResult = %d\n", err);
+  SDL_Log("[enforceVK] Error: VkResult = %d", err);
   if (err < 0) abort();
+}
+
+void enforceSPIRV(App app, spvc_result err){
+  if(err == SPVC_SUCCESS) return;
+  SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));
+  abort();
 }
 
 /** Log function to allow SDL_Log to be redirected to a file

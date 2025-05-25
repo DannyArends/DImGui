@@ -14,7 +14,7 @@ import descriptor : DescriptorLayoutBuilder, createDSPool, createDescriptorSet;
 import pipeline : GraphicsPipeline;
 import images : createImage;
 import swapchain : createImageView;
-import shaders : createShaderModule, createShaderStageInfo;
+import shaders : createShaderModule, reflectDescriptorSets, createShaderStageInfo;
 
 struct Compute {
   uint lastTick = 0;
@@ -24,6 +24,7 @@ struct Compute {
 
   VkCommandBuffer[] commandBuffer = null;
   GraphicsPipeline pipeline;
+  Shader[] shaders;
 
   VkImage image;
   VkDeviceMemory memory;
@@ -43,43 +44,28 @@ void createComputeDescriptorPool(ref App app){
   app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.compute.pool, app.allocator); });
 }
 
-/** Compute DescriptorSetLayout (Image)
- */
-void createComputeDescriptorSetLayout(ref App app) {
-  app.compute.layout.length = 2;
-  
-  DescriptorLayoutBuilder builder;
-  builder.add(0, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-  app.compute.layout[0] = builder.build(app.device);
-  builder.clear();
-  builder.add(0, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  builder.add(1, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  builder.add(2, 1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  app.compute.layout[1] = builder.build(app.device);
-  app.frameDeletionQueue.add((){ 
-    for(uint i = 0; i < app.compute.layout.length; i++) {
-      vkDestroyDescriptorSetLayout(app.device, app.compute.layout[i], app.allocator);
+void createComputeStages(ref App app) {
+  const(char)*[] computePaths = ["assets/shaders/texture.glsl", "assets/shaders/particle.glsl"];
+  foreach(path; computePaths){
+    auto shader = app.createShaderModule(path, shaderc_glsl_compute_shader);
+    app.compute.shaders ~= shader;
+    app.computeStages ~= createShaderStageInfo(VK_SHADER_STAGE_COMPUTE_BIT, shader);
+  }
+
+  app.mainDeletionQueue.add(() { 
+    for(uint i = 0; i < app.compute.shaders.length; i++) {
+      vkDestroyShaderModule(app.device, app.compute.shaders[i], app.allocator);
     }
   });
 }
 
-void createComputeStages(ref App app) {
-  app.computeStages ~= app.createComputeShader("assets/shaders/texture.glsl");
-  app.computeStages ~= app.createComputeShader("assets/shaders/particle.glsl");
-}
+void createComputePipeline(ref App app, uint selectedShader = 0) {
+  VkDescriptorSetLayout pSetLayouts = app.reflectDescriptorSets([app.compute.shaders[selectedShader]]);
+  app.compute.set = createDescriptorSet(app.device, app.compute.pool, pSetLayouts,  app.framesInFlight);
 
-VkPipelineShaderStageCreateInfo createComputeShader(ref App app, const(char)* path = "assets/shaders/texture.spv") {
-  VkPipelineShaderStageCreateInfo shaderStage;
-  auto cShader = app.createShaderModule(path, shaderc_glsl_compute_shader);
-  shaderStage = createShaderStageInfo(VK_SHADER_STAGE_COMPUTE_BIT, cShader);
-  app.mainDeletionQueue.add(() { vkDestroyShaderModule(app.device, cShader, app.allocator); });
-  return(shaderStage);
-}
-
-void createComputePipeline(ref App app, uint stage = 0, uint layout = 0) {
   VkPipelineLayoutCreateInfo computeLayout = {
     sType : VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-    pSetLayouts : &app.compute.layout[layout],
+    pSetLayouts : &pSetLayouts,
     setLayoutCount : 1,
     pNext : null
   };
@@ -88,19 +74,16 @@ void createComputePipeline(ref App app, uint stage = 0, uint layout = 0) {
   VkComputePipelineCreateInfo computeInfo = {
     sType : VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
     layout : app.compute.pipeline.pipelineLayout,
-    stage : app.computeStages[stage],
+    stage : app.computeStages[selectedShader],
     pNext : null
   };
   enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipeline.graphicsPipeline));
-  SDL_Log("Compute pipeline [stage: %d] at: %p", stage, app.compute.pipeline.graphicsPipeline);
+  SDL_Log("Compute pipeline [sel: %d] at: %p", selectedShader, app.compute.pipeline.graphicsPipeline);
   app.frameDeletionQueue.add((){
+    vkDestroyDescriptorSetLayout(app.device, pSetLayouts, app.allocator);
     vkDestroyPipelineLayout(app.device, app.compute.pipeline.pipelineLayout, app.allocator);
     vkDestroyPipeline(app.device, app.compute.pipeline.graphicsPipeline, app.allocator);
   });
-}
-
-void createComputeDescriptorSet(ref App app, uint layout = 0) {
-  app.compute.set = createDescriptorSet(app.device, app.compute.pool, app.compute.layout[layout],  app.framesInFlight);
 }
 
 void updateComputeDescriptorSet(ref App app, uint syncIndex = 0) {

@@ -7,7 +7,97 @@ import engine;
 import std.stdio : writefln;
 import std.string : toStringz, fromStringz;
 
+import descriptor : DescriptorLayoutBuilder;
 import io : readFile;
+
+struct Shader {
+  const(char)* path;
+  VkShaderStageFlagBits stage;
+  VkShaderModule shaderModule;
+
+  const(uint)* code;
+  size_t codeSize;
+  @property size_t nwords(){ return(codeSize / uint.sizeof); };
+
+  alias shaderModule this;
+}
+
+void createReflectionContext(ref App app){
+  spvc_result result = spvc_context_create(&app.context);
+  if(result != SPVC_SUCCESS) {
+    SDL_Log("Failed to create SPIRV-Cross context: %s", spvc_context_get_last_error_string(app.context));
+    abort();
+  }
+}
+
+VkShaderStageFlagBits convert(shaderc_shader_kind kind) {
+  switch (kind) {
+    case shaderc_vertex_shader: return VK_SHADER_STAGE_VERTEX_BIT; break;
+    case shaderc_fragment_shader: return VK_SHADER_STAGE_FRAGMENT_BIT; break;
+    case shaderc_compute_shader: return VK_SHADER_STAGE_COMPUTE_BIT; break;
+    case shaderc_geometry_shader: return VK_SHADER_STAGE_GEOMETRY_BIT; break;
+    default: SDL_Log("Error: ShaderStage not recognized"); return cast(VkShaderStageFlagBits)(0);
+  }
+}
+
+VkDescriptorType convert(spvc_resource_type type) {
+  switch (type) {
+    case SPVC_RESOURCE_TYPE_UNIFORM_BUFFER: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; break;
+    case SPVC_RESOURCE_TYPE_STORAGE_BUFFER: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;
+    case SPVC_RESOURCE_TYPE_SAMPLED_IMAGE: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; break;
+    case SPVC_RESOURCE_TYPE_STORAGE_IMAGE: return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE; break;
+    default: SDL_Log("Error: ShaderResource not recognized"); return cast(VkDescriptorType)(0);
+  }
+}
+
+VkDescriptorSetLayout reflectDescriptorSets(ref App app, Shader[] shaders) {
+  DescriptorLayoutBuilder builder;
+  spvc_parsed_ir ir = null;
+  spvc_compiler compiler_glsl = null; // We use a compiler instance to access resources
+  spvc_resources resources = null;
+
+  foreach(shader; shaders) {
+    app.enforceSPIRV(spvc_context_parse_spirv(app.context, shader.code, shader.nwords, &ir));
+    app.enforceSPIRV(spvc_context_create_compiler(app.context, SPVC_BACKEND_GLSL, ir, SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &compiler_glsl));
+    app.enforceSPIRV(spvc_compiler_create_shader_resources(compiler_glsl, &resources));
+
+    spvc_resource_type[const(char)*] types = [
+      "Uniform Buffer" : SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,
+      "Storage Buffer" : SPVC_RESOURCE_TYPE_STORAGE_BUFFER,
+      "Sampled Image" : SPVC_RESOURCE_TYPE_SAMPLED_IMAGE,
+      "Storage Image" : SPVC_RESOURCE_TYPE_STORAGE_IMAGE
+    ];
+
+    int found_descriptors = 0;
+    foreach(type; types.byKey) {
+      spvc_reflected_resource* list = null;
+      size_t count = 0;
+      app.enforceSPIRV(spvc_resources_get_resource_list_for_type(resources, types[type], &list, &count));
+      for(size_t i = 0; i < count; ++i) {
+        uint set = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationDescriptorSet);
+        uint binding = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationBinding);
+        const(char)* name = spvc_compiler_get_name(compiler_glsl, list[i].id);
+        spvc_type_id type_id = list[i].type_id;
+        spvc_type resource_type = spvc_compiler_get_type_handle(compiler_glsl, type_id);
+        uint array_dimensions = spvc_type_get_num_array_dimensions(resource_type);
+        uint array_size = 1;
+        uint descriptorCount = 1; // Default
+        if (array_dimensions > 0) {
+          array_size = spvc_type_get_array_dimension(resource_type, 0);
+          if (spvc_type_array_dimension_is_literal(resource_type, 0)) {
+            descriptorCount = spvc_type_get_array_dimension(resource_type, 0);
+          }
+        }
+        if(!descriptorCount) descriptorCount = cast(uint)app.textures.length;
+        builder.add(binding, descriptorCount, shader.stage, convert(types[type]));
+        SDL_Log("%s: %s layout(set=%u, binding = %u) '%s', typeIDX: [%u,%u], ArraySize: %u, DescriptorCount: %u\n",
+                shader.path, type, set, binding, (name != "\0")? name : "(unnamed)", list[i].id, list[i].base_type_id, array_size, descriptorCount);
+
+      }
+    }
+  }
+  return(builder.build(app.device));
+}
 
 /** Create the ShaderC compiler
  */
@@ -26,9 +116,11 @@ void createCompiler(ref App app) {
 
 /** Load GLSL, compile to SpirV, and create the vulkan shaderModule
  */
-VkShaderModule createShaderModule(App app, const(char)* path, shaderc_shader_kind type = shaderc_glsl_vertex_shader) {
+Shader createShaderModule(App app, const(char)* path, shaderc_shader_kind type = shaderc_glsl_vertex_shader) {
   auto source = readFile(path, app.verbose);
   auto result = shaderc_compile_into_spv(app.compiler, &(cast(char[])source)[0], source.length, type, path, "main", app.options);
+
+  Shader shader = {path, convert(type)};
 
   if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
     SDL_Log("Shader '%s' compilation failed:\n%s", path, shaderc_result_get_error_message(result));
@@ -38,18 +130,18 @@ VkShaderModule createShaderModule(App app, const(char)* path, shaderc_shader_kin
     abort();
   }
 
-  auto code = shaderc_result_get_bytes(result);
-  auto codeSize = shaderc_result_get_length(result);
+  shader.code = cast(const(uint)*)(shaderc_result_get_bytes(result));
+  shader.codeSize = shaderc_result_get_length(result);
   VkShaderModuleCreateInfo createInfo = {
     sType: VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-    codeSize: codeSize,
-    pCode: &(cast(const(uint)*)(code))[0]
+    codeSize: shader.codeSize,
+    pCode: &shader.code[0]
   };
-  VkShaderModule shaderModule;
-  enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shaderModule));
 
-  shaderc_result_release(result); // Release the compilation result
-  return(shaderModule);
+  enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shader.shaderModule));
+  //shaderc_result_release(result); // Release the compilation result
+//  app.reflectDescriptorSets(shader);
+  return(shader);
 }
 
 /** createShaderStageInfo helper function, since the VkPipelineShaderStageCreateInfo contains a variable "module"
