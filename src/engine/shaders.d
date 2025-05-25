@@ -4,21 +4,54 @@
  */
 
 import engine;
+import std.stdio : writefln;
+import std.string : toStringz, fromStringz;
 
 import io : readFile;
 
-VkShaderModule createShaderModule(App app, const(char)* path) {
-  auto code = readFile(path, app.verbose);
+/** Create the ShaderC compiler
+ */
+void createCompiler(ref App app) {
+  app.compiler = shaderc_compiler_initialize();
+  if(!app.compiler) { SDL_Log("Failed to initialize shaderc compiler."); abort(); }
+
+  app.options = shaderc_compile_options_initialize();
+  if (!app.options) {
+    SDL_Log("Failed to initialize shaderc compiler options.");
+    shaderc_compiler_release(app.compiler);
+    abort();
+  }
+  shaderc_compile_options_set_generate_debug_info(app.options);
+}
+
+/** Load GLSL, compile to SpirV, and create the vulkan shaderModule
+ */
+VkShaderModule createShaderModule(App app, const(char)* path, shaderc_shader_kind type = shaderc_glsl_vertex_shader) {
+  auto source = readFile(path, app.verbose);
+  auto result = shaderc_compile_into_spv(app.compiler, &(cast(char[])source)[0], source.length, type, path, "main", app.options);
+
+  if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+    SDL_Log("Shader '%s' compilation failed:\n%s", path, shaderc_result_get_error_message(result));
+    shaderc_result_release(result);
+    shaderc_compile_options_release(app.options);
+    shaderc_compiler_release(app.compiler);
+    abort();
+  }
+
+  auto code = shaderc_result_get_bytes(result);
+  auto codeSize = shaderc_result_get_length(result);
   VkShaderModuleCreateInfo createInfo = {
     sType: VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-    codeSize: cast(uint) code.length,
-    pCode: &code[0]
+    codeSize: codeSize,
+    pCode: &(cast(const(uint)*)(code))[0]
   };
   VkShaderModule shaderModule;
   enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shaderModule));
   return(shaderModule);
 }
 
+/** createShaderStageInfo helper function, since the VkPipelineShaderStageCreateInfo contains a variable "module"
+ */
 VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const(char)* name = "main") {
   return(VkPipelineShaderStageCreateInfo(
     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,    //sType
@@ -31,10 +64,12 @@ VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stag
   ));
 }
 
-void createShadersStages(ref App app, const(char)* vertPath = "assets/shaders/vertex.spv", 
-                                      const(char)* fragPath = "assets/shaders/fragment.spv"){
-  auto vShader = app.createShaderModule(vertPath);
-  auto fShader = app.createShaderModule(fragPath);
+/** Load vertex and fragment shaders, and create the shaderStages array
+ */
+void createShadersStages(ref App app, const(char)* vertPath = "assets/shaders/vertex.glsl", 
+                                      const(char)* fragPath = "assets/shaders/fragment.glsl"){
+  auto vShader = app.createShaderModule(vertPath, shaderc_glsl_vertex_shader);
+  auto fShader = app.createShaderModule(fragPath, shaderc_glsl_fragment_shader);
   app.shaders = [ vShader, fShader ];
 
   VkPipelineShaderStageCreateInfo vInfo = createShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, vShader);

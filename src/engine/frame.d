@@ -44,7 +44,7 @@ void renderFrame(ref App app){
   VkSubmitInfo submitComputeInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
     commandBufferCount : 1,
-    pCommandBuffers : &app.compute.buffer[app.syncIndex],
+    pCommandBuffers : &app.compute.commandBuffer[app.syncIndex],
     signalSemaphoreCount : 1,
     pSignalSemaphores : &computeComplete
   };

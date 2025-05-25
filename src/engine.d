@@ -61,6 +61,10 @@ struct App {
   WavFMT[] soundfx;
   float soundEffectGain = 0.8;
 
+  // ShaderC
+  shaderc_compiler_t compiler;
+  shaderc_compile_options_t options;
+
   // Vulkan
   VkInstance instance = null;
   VkPhysicalDevice physicalDevice = null;
@@ -129,6 +133,10 @@ void cleanUp(App app){
   // Delete objects and flush the main deletion queue
   foreach(object; app.objects) { app.cleanup(object); }
   app.mainDeletionQueue.flush();
+
+  // Clear the ShaderC compiler and Quit SDL
+  shaderc_compile_options_release(app.options);
+  shaderc_compiler_release(app.compiler);
   SDL_DestroyWindow(app);
   SDL_Quit();
 }

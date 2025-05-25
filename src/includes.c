@@ -26,7 +26,9 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #include <SDL_ttf.h>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
+
 #include <vulkan/vulkan.h>
+#include <shaderc/shaderc.h>
 
 #define IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE   (1)     // Minimum per atlas
 
