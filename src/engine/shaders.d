@@ -47,6 +47,8 @@ VkShaderModule createShaderModule(App app, const(char)* path, shaderc_shader_kin
   };
   VkShaderModule shaderModule;
   enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shaderModule));
+
+  shaderc_result_release(result); // Release the compilation result
   return(shaderModule);
 }
 
