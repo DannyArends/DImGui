@@ -17,7 +17,7 @@ import scene : createScene;
 import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL, START, STARTUP, FRAMESTART, LASTTICK;
-import shaders : createShadersStages;
+import shaders : createCompiler, createShadersStages;
 import surface : createSurface;
 import sfx : loadAllSoundEffect;
 import textures : Texture, loadTextures, createSampler;
@@ -28,6 +28,7 @@ import window: createOrResizeWindow, checkForResize;
  */
 void main(string[] args) {
   App app = initializeSDL();              /// Initialize SDL library and create a window
+  app.createCompiler();
   app.loadGlyphAtlas();                   /// Load & parse the Glyph Atlas
   app.loadAllSoundEffect();               /// Load all available sound effects
   app.createInstance();                   /// Create a Vulkan instance

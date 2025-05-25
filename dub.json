@@ -6,20 +6,8 @@
 	"homepage": "http://www.dannyarends.nl",
 	"copyright": "Copyright © 2025, Danny Arends",
 	"license": "GPL-v3",
-	"preBuildCommands-linux": [
-		"make -j 8",
-		"glslc -fshader-stage=vertex assets/shaders/vertex.glsl -o assets/shaders/vertex.spv",
-		"glslc -fshader-stage=fragment assets/shaders/fragment.glsl -o assets/shaders/fragment.spv",
-		"glslc -fshader-stage=compute assets/shaders/texture.glsl  -o assets/shaders/texture.spv",
-		"glslc -fshader-stage=compute assets/shaders/particle.glsl  -o assets/shaders/particle.spv"
-	],
-	"preBuildCommands-windows-x86_64": [
-		"compile.bat C:/VulkanSDK/1.4.309.0",
-		"glslc.exe -fshader-stage=vertex assets/shaders/vertex.glsl -o assets/shaders/vertex.spv",
-		"glslc.exe -fshader-stage=fragment assets/shaders/fragment.glsl -o assets/shaders/fragment.spv",
-		"glslc.exe -fshader-stage=compute assets/shaders/texture.glsl  -o assets/shaders/texture.spv",
-		"glslc.exe -fshader-stage=compute assets/shaders/particle.glsl  -o assets/shaders/particle.spv"
-	],
+	"preBuildCommands-linux": [ "make -j 8" ],
+	"preBuildCommands-windows-x86_64": [ "compile.bat C:/VulkanSDK/1.4.309.0" ],
 	"configurations": [
 	{
 		"name": "default",
@@ -34,7 +22,7 @@
                               "-LIBPATH:./bin/", 
                               "-LIBPATH:./deps/libs/lib", 
                               "SDL2main.lib", "SDL2.lib", "SDL2_image.lib", "SDL2_mixer.lib", "SDL2_ttf.lib",
-                              "cimgui.lib", "vulkan-1.lib"],
+                              "cimgui.lib", "vulkan-1.lib", "shaderc_shared.lib"],
 		"dflags-linux": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
 		"lflags-linux": ["-L$PACKAGE_DIR"],
 		"copyFiles-windows-x86_64": [

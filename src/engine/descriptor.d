@@ -36,6 +36,7 @@ struct DescriptorLayoutBuilder {
   }
 };
 
+
 VkDescriptorPool createDSPool(ref App app, const(char)* name, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
   if(app.verbose) SDL_Log("Creating %s DescriptorPool", name);
   VkDescriptorPool pool;
@@ -62,7 +63,17 @@ void createImGuiDescriptorPool(ref App app){
   app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator); });
 }
 
-/** Our DescriptorPool (UBO and Combined image sampler)
+/** ImGui DescriptorSetLayout (1024 * Combined Image Samplers)
+ */
+void createImGuiDescriptorSetLayout(ref App app) {
+  if(app.verbose) SDL_Log("Creating ImGui DescriptorSetLayout");
+  DescriptorLayoutBuilder builder;
+  builder.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  app.ImGuiSetLayout = builder.build(app.device);
+  app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator); });
+}
+
+/** Our DescriptorPool (FiF * UBO and FiF * Textures * Combined Image samplers)
  */
 void createDescriptorPool(ref App app){
   VkDescriptorPoolSize[] poolSizes = [
@@ -73,7 +84,7 @@ void createDescriptorPool(ref App app){
   app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator); });
 }
 
-/** Our DescriptorSetLayout (UBO and Combined image sampler)
+/** Our DescriptorSetLayout (1 x UBO and Textures * Combined Image Sampler)
  */
 void createDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating Render DescriptorSetLayout");
@@ -84,16 +95,8 @@ void createDescriptorSetLayout(ref App app) {
   app.frameDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator); });
 }
 
-/** ImGui DescriptorSetLayout (Combined image sampler)
+/** Allocate a Descriptor Set
  */
-void createImGuiDescriptorSetLayout(ref App app) {
-  if(app.verbose) SDL_Log("Creating ImGui DescriptorSetLayout");
-  DescriptorLayoutBuilder builder;
-  builder.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  app.ImGuiSetLayout = builder.build(app.device);
-  app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator); });
-}
-
 VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, VkDescriptorSetLayout layout, uint size){
   VkDescriptorSetLayout[] layouts;
   VkDescriptorSet[] set;
