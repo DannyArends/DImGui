@@ -12,7 +12,7 @@ import textures : Texture, idx, registerTexture;
 import commands : createCommandBuffer;
 import descriptor : DescriptorLayoutBuilder, createDSPool, createDescriptorSet;
 import pipeline : GraphicsPipeline;
-import images : createImage, transitionImage;
+import images : createImage, transitionImageLayout;
 import swapchain : createImageView;
 import shaders : createShaderModule, createPoolSizes, createDescriptorSetLayout, createShaderStageInfo;
 
@@ -191,7 +191,7 @@ void recordComputeCommandBuffer(ref App app, uint syncIndex) {
   };
   enforceVK(vkBeginCommandBuffer(app.compute.commandBuffer[syncIndex], &commandBufferInfo));
 
-  app.transitionImage(app.compute.commandBuffer[syncIndex], app.textures[idx].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+  app.transitionImageLayout(app.textures[idx].image, app.compute.commandBuffer[syncIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
   // bind the gradient drawing compute pipeline
   vkCmdBindPipeline(app.compute.commandBuffer[syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipeline.graphicsPipeline);
@@ -202,7 +202,7 @@ void recordComputeCommandBuffer(ref App app, uint syncIndex) {
   // execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
   vkCmdDispatch(app.compute.commandBuffer[syncIndex], cast(uint)ceil(app.camera.width / 16.0), cast(uint)ceil(app.camera.height / 16.0), 1);
 
-  app.transitionImage(app.compute.commandBuffer[syncIndex], app.textures[idx].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  app.transitionImageLayout(app.textures[idx].image, app.compute.commandBuffer[syncIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   vkEndCommandBuffer(app.compute.commandBuffer[syncIndex]);
   if(app.verbose) SDL_Log("Compute Command Buffer: %d Done", syncIndex);

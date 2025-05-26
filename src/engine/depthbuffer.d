@@ -44,7 +44,7 @@ void createDepthResources(ref App app) {
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.depthImage);
   app.depthBuffer.depthImageView = app.createImageView(app.depthBuffer.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
   if(app.verbose) SDL_Log(" - image view created: %p", app.depthBuffer.depthImageView);
-  app.transitionImageLayout(app.depthBuffer.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
+  app.transitionImageLayout(app.depthBuffer.depthImage, null, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
   if(app.verbose) SDL_Log("Depth resources created");
   app.frameDeletionQueue.add((){
     vkFreeMemory(app.device, app.depthBuffer.depthImageMemory, app.allocator);
