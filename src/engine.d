@@ -8,7 +8,7 @@ public import core.stdc.string : strcmp, memcpy;
 
 import depthbuffer : DepthBuffer;
 import camera : Camera;
-import compute : Compute;
+import compute : Compute, SSBO;
 import deletion : CheckedDeletionQueue, DeletionQueue;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, cleanup;
@@ -44,6 +44,7 @@ struct App {
   Compute compute;            /// Compute shaders
   Geometry[] objects;         /// All geometric objects for rendering
   Texture[] textures;         /// Textures
+  SSBO[] buffers;             /// SSBO buffers
   Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
   GUI gui;                    /// ImGui related variables
   Camera camera;              /// Our camera class
@@ -139,8 +140,7 @@ void cleanUp(App app){
   app.mainDeletionQueue.flush();
 
   // Clear the ShaderC compiler and Quit SDL
-  shaderc_compile_options_release(app.options);
-  shaderc_compiler_release(app.compiler);
+
   SDL_DestroyWindow(app);
   SDL_Quit();
 }

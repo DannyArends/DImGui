@@ -20,9 +20,9 @@ struct Texture {
   SDL_Surface* surface;
 
   VkDescriptorSet imID;
-  VkImage textureImage;
-  VkDeviceMemory textureImageMemory;
-  VkImageView textureImageView;
+  VkImage image;
+  VkImageView view;
+  VkDeviceMemory memory;
 
   alias surface this;
 }
@@ -71,13 +71,13 @@ void toGPU(ref App app, ref Texture texture){
   vkUnmapMemory(app.device, stagingBufferMemory);
 
   // Create an image, transition the layout
-  app.createImage(texture.surface.w, texture.surface.h, &texture.textureImage, &texture.textureImageMemory);
-  app.transitionImageLayout(texture.textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  app.copyBufferToImage(stagingBuffer, texture.textureImage, texture.surface.w, texture.surface.h);
-  app.transitionImageLayout(texture.textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory);
+  app.transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  app.copyBufferToImage(stagingBuffer, texture.image, texture.surface.w, texture.surface.h);
+  app.transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   // Create an imageview on the image
-  texture.textureImageView = app.createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+  texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
   // Register Texture with ImGui, and store in texture array
   app.registerTexture(texture);
@@ -135,12 +135,12 @@ void createSampler(ref App app) {
 /** 'Register' a texture in the ImGui DescriptorSet
  */
 void registerTexture(ref App app, ref Texture texture) {
-  if(app.verbose) SDL_Log("Registering Texture %p with ImGui", texture.textureImageView);
+  if(app.verbose) SDL_Log("Registering Texture %p with ImGui", texture.view);
   texture.imID = createDescriptorSet(app.device, app.imguiPool, app.ImGuiSetLayout, 1)[0];
 
   VkDescriptorImageInfo textureImage = {
     imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    imageView: texture.textureImageView,
+    imageView: texture.view,
     sampler: app.sampler
   };
   VkWriteDescriptorSet[1] descriptorWrites = [{
@@ -156,7 +156,7 @@ void registerTexture(ref App app, ref Texture texture) {
 }
 
 void deAllocate(App app, Texture texture) {
-  vkDestroyImageView(app.device, texture.textureImageView, app.allocator);
-  vkDestroyImage(app.device, texture.textureImage, app.allocator);
-  vkFreeMemory(app.device, texture.textureImageMemory, app.allocator);
+  vkDestroyImageView(app.device, texture.view, app.allocator);
+  vkDestroyImage(app.device, texture.image, app.allocator);
+  vkFreeMemory(app.device, texture.memory, app.allocator);
 }
