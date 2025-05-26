@@ -75,13 +75,20 @@ void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceM
   vkBindImageMemory(app.device, (*image), (*imageMemory), 0);
 }
 
-void transitionImageLayout(ref App app, VkImage image, 
+/** Transition Image Layout from old to new layout
+ */
+void transitionImageLayout(ref App app, VkImage image, VkCommandBuffer commandBuffer = null,
                            VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                            VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
-  if(app.verbose) SDL_Log("transitionImageLayout");
-  VkCommandBuffer commandBuffer = app.beginSingleTimeCommands();
-  if(app.verbose) SDL_Log(" - Single time command started for commandBuffer[%p]", commandBuffer);
+  bool isSingleTimeCommand = (commandBuffer == null); /// Check if a commandBuffer is provided
+  if(app.verbose) SDL_Log("transitionImageLayout %d", isSingleTimeCommand);
+
+  if (isSingleTimeCommand) {
+    commandBuffer = app.beginSingleTimeCommands();
+    if(app.verbose) SDL_Log(" - transitionImageLayout via single time CommandBuffer");
+  }
+
   VkImageSubresourceRange subresourceRange = {
     aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
     baseMipLevel: 0,
@@ -110,8 +117,8 @@ void transitionImageLayout(ref App app, VkImage image,
   VkPipelineStageFlags sourceStage;
   VkPipelineStageFlags destinationStage;
 
-  if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-    barrier.srcAccessMask = 0;
+  if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && (newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_GENERAL)) {
+    barrier.srcAccessMask = VK_ACCESS_NONE;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
     sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
@@ -123,52 +130,23 @@ void transitionImageLayout(ref App app, VkImage image,
     sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-    barrier.srcAccessMask = 0;
+    barrier.srcAccessMask = VK_ACCESS_NONE;
     barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
     sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  }else {
+  } else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+    barrier.srcAccessMask = VK_ACCESS_NONE;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  } else {
     SDL_Log("unsupported layout transition!");
   }
 
   vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
-  app.endSingleTimeCommands(commandBuffer);
-  if(app.verbose) SDL_Log(" - Single time command finished for commandBuffer[%p]", commandBuffer);
-}
 
-void transitionImage(ref App app, VkCommandBuffer commandBuffer, VkImage image, 
-                           VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
-                           VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
-  if(app.verbose) SDL_Log("transitionImage");
-  VkImageSubresourceRange subresourceRange = {
-    aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
-    baseMipLevel: 0,
-    levelCount: 1,
-    baseArrayLayer: 0,
-    layerCount: 1,
-  };
-
-  VkImageMemoryBarrier barrier = {
-    sType: VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    oldLayout: oldLayout,
-    newLayout: newLayout,
-    srcQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
-    dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
-    image: image,
-    subresourceRange: subresourceRange,
-  };
-
-  VkPipelineStageFlags sourceStage;
-  VkPipelineStageFlags destinationStage;
-
-  barrier.srcAccessMask = 0;
-  barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-  sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-  destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-  vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
-  if(app.verbose) SDL_Log("transitionImage done");
+  if (isSingleTimeCommand) app.endSingleTimeCommands(commandBuffer);
+  if(app.verbose) SDL_Log(" - transitionImageLayout finished for commandBuffer[%p]", commandBuffer);
 }

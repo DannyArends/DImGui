@@ -72,9 +72,9 @@ void toGPU(ref App app, ref Texture texture){
 
   // Create an image, transition the layout
   app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory);
-  app.transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  app.transitionImageLayout(texture.image, null, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
   app.copyBufferToImage(stagingBuffer, texture.image, texture.surface.w, texture.surface.h);
-  app.transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  app.transitionImageLayout(texture.image, null, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   // Create an imageview on the image
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
