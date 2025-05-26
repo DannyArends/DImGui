@@ -12,7 +12,7 @@ import textures : Texture, idx, registerTexture;
 import commands : createCommandBuffer;
 import descriptor : DescriptorLayoutBuilder, createDSPool, createDescriptorSet;
 import pipeline : GraphicsPipeline;
-import images : createImage;
+import images : createImage, transitionImage;
 import swapchain : createImageView;
 import shaders : createShaderModule, createPoolSizes, createDescriptorSetLayout, createShaderStageInfo;
 
@@ -41,6 +41,8 @@ void createComputeDescriptorPool(ref App app){
   app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.compute.pool, app.allocator); });
 }
 
+/** Load shader modules for compute
+ */
 void createComputeStages(ref App app) {
   const(char)*[] computePaths = ["assets/shaders/texture.glsl", "assets/shaders/particle.glsl"];
   foreach(path; computePaths){
@@ -56,6 +58,8 @@ void createComputeStages(ref App app) {
   });
 }
 
+/** Create the compute pipeline specified by the selectedShader
+ */
 void createComputePipeline(ref App app, uint selectedShader = 0) {
   VkDescriptorSetLayout pSetLayouts = app.createDescriptorSetLayout([app.compute.shaders[selectedShader]]);
   app.compute.set = createDescriptorSet(app.device, app.compute.pool, pSetLayouts,  app.framesInFlight);
@@ -83,6 +87,9 @@ void createComputePipeline(ref App app, uint selectedShader = 0) {
   });
 }
 
+/** Update the DescriptorSet 
+ * TODO: should be based on selectedShader and compute shader reflection
+ */
 void updateComputeDescriptorSet(ref App app, uint syncIndex = 0) {
   int idx = app.textures.idx("Compute");
 
@@ -141,7 +148,7 @@ void createStorageImage(ref App app){
   }else{
    app.textures[idx] = texture;
   }
-  if(app.verbose) SDL_Log("Compute texture at: %d", app.textures.idx("Compute"));
+  if(app.verbose) SDL_Log("Compute texture at: %d", idx);
 
   app.frameDeletionQueue.add((){
     if(app.verbose) SDL_Log("Delete compute image");
@@ -172,42 +179,6 @@ void createSSBO(ref App app, uint size = 1024 * 1024) {
       vkFreeMemory(app.device, app.buffers[idx].memory[i], app.allocator);
     }
   });
-}
-
-void transitionImage(ref App app, VkCommandBuffer commandBuffer, VkImage image, 
-                           VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
-                           VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
-  if(app.verbose) SDL_Log("transitionImage");
-  VkImageSubresourceRange subresourceRange = {
-    aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
-    baseMipLevel: 0,
-    levelCount: 1,
-    baseArrayLayer: 0,
-    layerCount: 1,
-  };
-
-  VkImageMemoryBarrier barrier = {
-    sType: VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-    oldLayout: oldLayout,
-    newLayout: newLayout,
-    srcQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
-    dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
-    image: image,
-    subresourceRange: subresourceRange,
-  };
-
-  VkPipelineStageFlags sourceStage;
-  VkPipelineStageFlags destinationStage;
-
-  barrier.srcAccessMask = 0;
-  barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-  sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-  destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-  vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
-  if(app.verbose) SDL_Log("transitionImage done");
 }
 
 void recordComputeCommandBuffer(ref App app, uint syncIndex) {

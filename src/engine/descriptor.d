@@ -77,10 +77,6 @@ void createImGuiDescriptorSetLayout(ref App app) {
 /** Our DescriptorPool (FiF * UBO and FiF * Textures * Combined Image samplers)
  */
 void createDescriptorPool(ref App app){
-/*  VkDescriptorPoolSize[] poolSizes = [
-    { type: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount: cast(uint)(app.framesInFlight) },
-    { type: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorCount: cast(uint)(app.framesInFlight * app.textures.length) }
-  ]; */
   VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(app.shaders);
   app.descriptorPool = app.createDSPool("Rendering", poolSizes, app.framesInFlight);
   app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator); });
