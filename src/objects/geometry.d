@@ -90,7 +90,7 @@ class Geometry {
 }
 
 /** Set tid for instance from object.instances to Texture name */
-@nogc void texture(T)(T object, const Texture[] textures, const(char)* name, uint instance = 0) nothrow {
+void texture(T)(T object, const Texture[] textures, const(char)* name, uint instance = 0) {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance].tid = textures.idx(name);
 }

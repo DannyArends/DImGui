@@ -44,9 +44,9 @@ void main(string[] args) {
   app.createFontTexture();                /// Create a Texture from the GlyphAtlas
   app.loadTextures();                     /// Transfer all textures to the GPU
   app.createSurface();                    /// Create Vulkan rendering surface
-  app.createScene();                      /// Create our scene with geometries
   app.createOrResizeWindow();             /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                  /// Initialize ImGui (IO, Style, etc)
+  app.createScene();                      /// Create our scene with geometries
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 50000;
