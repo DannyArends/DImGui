@@ -17,18 +17,18 @@ struct Particle {
 layout (local_size_x = 256) in;
 
 //descriptor bindings for the pipeline
-layout(set = 0, binding = 0) uniform UniformBufferObject{
+layout(set = 0, binding = 0) uniform ParticleUniformBuffer {
   vec4 position;
   vec4 gravity;
   float floor;
   float deltaTime;
 } ubo;
 
-layout(set = 0, binding = 1) readonly buffer ParticleIn {
+layout(set = 0, binding = 1) readonly buffer lastFrame {
    Particle pIn[];
 };
 
-layout(set = 0, binding = 2) buffer ParticleOut {
+layout(set = 0, binding = 2) buffer currentFrame {
    Particle pOut[];
 };
 

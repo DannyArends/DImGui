@@ -9,6 +9,16 @@ import uniforms : UniformBufferObject;
 import shaders : createDescriptorSetLayout, createPoolSizes;
 import textures : Texture;
 
+struct Descriptor {
+  VkDescriptorType type;
+  const(char)* name;
+  const(char)* base;
+  uint set;
+  uint binding;
+  uint count;
+  uint bufferIdx;
+}
+
 struct DescriptorLayoutBuilder {
   VkDescriptorSetLayoutBinding[] bindings;
 
