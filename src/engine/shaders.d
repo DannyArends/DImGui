@@ -7,17 +7,8 @@ import engine;
 import std.stdio : writefln;
 import std.string : toStringz, fromStringz;
 
-import descriptor : DescriptorLayoutBuilder;
+import descriptor : Descriptor, DescriptorLayoutBuilder;
 import io : readFile;
-
-struct Descriptor {
-  VkDescriptorType type;
-  const(char)* name;
-  const(char)* base;
-  uint set;
-  uint binding;
-  uint count;
-}
 
 struct Shader {
   const(char)* path;
@@ -28,8 +19,8 @@ struct Shader {
   size_t codeSize;
   @property size_t nwords(){ return(codeSize / uint.sizeof); };
 
+  uint[3] groupCount;
   Descriptor[] descriptors;
-
   alias shaderModule this;
 }
 
@@ -72,6 +63,7 @@ VkDescriptorType convert(spvc_resource_type type) {
 const(char)* check(const(char)* inp){ return((strcmp(inp, "")==0?"(none)":inp)); }
 
 void reflectShader(ref App app, ref Shader shader) {
+  if(app.verbose) SDL_Log("Reflect: %s", shader.path);
   shader.descriptors = [];
   spvc_parsed_ir ir = null;
   spvc_compiler compiler_glsl = null;
@@ -81,27 +73,42 @@ void reflectShader(ref App app, ref Shader shader) {
   app.enforceSPIRV(spvc_context_create_compiler(app.context, SPVC_BACKEND_GLSL, ir, SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &compiler_glsl));
   app.enforceSPIRV(spvc_compiler_create_shader_resources(compiler_glsl, &resources));
   app.enforceSPIRV(spvc_compiler_create_shader_resources(compiler_glsl, &resources));
-  if(app.verbose) SDL_Log("%s", shader.path);
+
+  // Phase 1 Get Entry Points to determine compute groupSizes for x, y, z
+  spvc_entry_point* entry_points = null;
+  size_t num_entry_points = 0;
+  app.enforceSPIRV(spvc_compiler_get_entry_points(compiler_glsl, &entry_points, &num_entry_points));
+  for (size_t i = 0; i < num_entry_points; ++i) {
+    if(entry_points[i].execution_model == SpvExecutionModelGLCompute) {
+      app.enforceSPIRV(spvc_compiler_set_entry_point(compiler_glsl, entry_points[i].name, entry_points[i].execution_model));
+      shader.groupCount[0] = spvc_compiler_get_execution_mode_argument_by_index(compiler_glsl, SpvExecutionModeLocalSize, 0);
+      shader.groupCount[1] = spvc_compiler_get_execution_mode_argument_by_index(compiler_glsl, SpvExecutionModeLocalSize, 1);
+      shader.groupCount[2] = spvc_compiler_get_execution_mode_argument_by_index(compiler_glsl, SpvExecutionModeLocalSize, 2);
+      if(app.verbose) SDL_Log("*Compute Entry: [%d, %d, %d]", shader.groupCount[0], shader.groupCount[1], shader.groupCount[2]);
+    }
+  }
+
+  // Phase 2 Find ShaderResource sets & bindings
   foreach(type; types.byKey) {
     spvc_reflected_resource* list = null;
     size_t count = 0;
     app.enforceSPIRV(spvc_resources_get_resource_list_for_type(resources, types[type], &list, &count));
     for(size_t i = 0; i < count; ++i) {
       auto descr = Descriptor(convert(types[type]));
-      descr.set = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationDescriptorSet);
-      descr.binding = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationBinding);
-      descr.name = spvc_compiler_get_name(compiler_glsl, list[i].id);
       spvc_type_id type_id = list[i].type_id;
       spvc_type_id base_type_id = list[i].base_type_id;
+      
+      descr.name = spvc_compiler_get_name(compiler_glsl, list[i].id);
       descr.base = spvc_compiler_get_name(compiler_glsl, base_type_id);
+      descr.set = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationDescriptorSet);
+      descr.binding = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationBinding);
+            
       spvc_type resource_type = spvc_compiler_get_type_handle(compiler_glsl, type_id);
       uint array_dimensions = spvc_type_get_num_array_dimensions(resource_type);
-      uint array_size = 1;
       descr.count = 1; // Default
-      if (array_dimensions > 0) {
-        array_size = spvc_type_get_array_dimension(resource_type, 0);
-        if (spvc_type_array_dimension_is_literal(resource_type, 0)) {
-          descr.count = spvc_type_get_array_dimension(resource_type, 0);
+      for(uint x = 0; x < array_dimensions; ++x) {
+        if (spvc_type_array_dimension_is_literal(resource_type, x)) {
+          descr.count *= spvc_type_get_array_dimension(resource_type, x);
         }
       }
       if(!descr.count) descr.count = cast(uint)app.textures.length;

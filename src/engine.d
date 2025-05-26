@@ -44,7 +44,7 @@ struct App {
   Compute compute;            /// Compute shaders
   Geometry[] objects;         /// All geometric objects for rendering
   Texture[] textures;         /// Textures
-  SSBO[] buffers;             /// SSBO buffers
+  SSBO[const(char)*] buffers;             /// SSBO buffers
   Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
   GUI gui;                    /// ImGui related variables
   Camera camera;              /// Our camera class

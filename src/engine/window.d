@@ -8,7 +8,7 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
-import compute: createComputeCommandBuffers, createComputeDescriptorPool, createComputeResources, createComputePipeline;
+import compute: createComputeCommandBuffers, createComputeUBO, createComputeDescriptorPool, createComputeResources, createComputePipeline;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createRenderDescriptor, createTextureDescriptors;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
@@ -32,6 +32,9 @@ VkPrimitiveTopology[] supportedTopologies =
   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN
 ];
 
+/** 
+ * Called on Window creation and Resize, should rebuild all perFrame objects
+ */
 void createOrResizeWindow(ref App app) {
   if(app.verbose) SDL_Log("Window created or resized, recreate SwapChain");
   enforceVK(vkDeviceWaitIdle(app.device));
@@ -44,7 +47,7 @@ void createOrResizeWindow(ref App app) {
   app.createColorResources();
   app.createDepthResources();
 
-  // Do reflection on the ComputeShaders (they might create texture resources)
+  // Do reflection on the ComputeShaders first, since it might create texture resources
   app.reflectShaders(app.compute.shaders);
   app.createComputeResources();
 

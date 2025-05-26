@@ -22,6 +22,13 @@ struct UniformBufferObject {
   uint nlights = 4;
 }
 
+struct ParticleUniformBuffer {
+  float[4] position;
+  float[4] gravity;
+  float floor;
+  float deltaTime;
+};
+
 struct Uniform {
   VkBuffer[] uniformBuffers;
   VkBuffer[] computeBuffers;

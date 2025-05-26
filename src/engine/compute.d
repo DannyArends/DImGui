@@ -10,11 +10,12 @@ import engine;
 import buffer : createBuffer, copyBuffer;
 import textures : Texture, idx, registerTexture;
 import commands : createCommandBuffer;
-import descriptor : DescriptorLayoutBuilder, createDSPool, createDescriptorSet;
+import descriptor : Descriptor, DescriptorLayoutBuilder, createDSPool, createDescriptorSet;
 import pipeline : GraphicsPipeline;
 import images : createImage, transitionImageLayout;
 import swapchain : createImageView;
-import shaders : createShaderModule, createPoolSizes, createDescriptorSetLayout, createShaderStageInfo;
+import shaders : Shader, createShaderModule, createPoolSizes, createDescriptorSetLayout, createShaderStageInfo;
+import uniforms : ParticleUniformBuffer;
 
 struct SSBO {
   VkBuffer[] buffers;
@@ -30,6 +31,8 @@ struct Compute {
   VkCommandBuffer[] commandBuffer = null;
   GraphicsPipeline pipeline;
   Shader[] shaders;
+
+  ParticleUniformBuffer[] particleUniformBuffer;
 }
 
 /** Compute Descriptor Pool
@@ -90,25 +93,65 @@ void createComputePipeline(ref App app, uint selectedShader = 0) {
 /** Update the DescriptorSet 
  * TODO: should be based on selectedShader and compute shader reflection
  */
-void updateComputeDescriptorSet(ref App app, uint syncIndex = 0) {
-  int idx = app.textures.idx("Compute");
-
-  VkDescriptorImageInfo imageInfo = {
-    imageLayout: VK_IMAGE_LAYOUT_GENERAL,
-    imageView: app.textures[idx].view,
-  };
-  if(app.verbose) SDL_Log("Linking image: %p", app.textures[idx].view);
-
-  VkWriteDescriptorSet[1] descriptorWrites = [ {
-    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-    dstSet: app.compute.set[syncIndex],
-    dstBinding: 0,
-    dstArrayElement: 0,
-    descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-    descriptorCount: 1,
-    pImageInfo: &imageInfo
-  }];
-  vkUpdateDescriptorSets(app.device, descriptorWrites.length, &descriptorWrites[0], 0, null);
+void updateComputeDescriptorSet(ref App app, uint syncIndex = 0, uint selectedShader = 0) {
+  auto shader = app.compute.shaders[selectedShader];
+  VkWriteDescriptorSet[] descriptorWrites;
+  for(uint d = 0; d < shader.descriptors.length; d++) {
+    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+      VkDescriptorBufferInfo bufferInfo = {
+        buffer: app.uniform.computeBuffers[syncIndex],
+        offset: 0,
+        range: ParticleUniformBuffer.sizeof
+      };
+      descriptorWrites ~= VkWriteDescriptorSet(
+        sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        dstSet: app.compute.set[syncIndex],
+        dstBinding: shader.descriptors[d].binding,
+        dstArrayElement: 0,
+        descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        descriptorCount: 1,
+        pBufferInfo: &bufferInfo,
+        pImageInfo: null,
+        pTexelBufferView: null
+      );
+    }
+    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+      if(strcmp(shader.descriptors[d].base, "lastFrame")){ syncIndex = ((syncIndex--) % app.framesInFlight); }
+      VkDescriptorBufferInfo bufferInfo = {
+        buffer: app.buffers[shader.descriptors[d].base].buffers[syncIndex],
+        offset: 0,
+        range: 4 * 1024
+      };
+      descriptorWrites ~= VkWriteDescriptorSet(
+        sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        dstSet: app.compute.set[syncIndex],
+        dstBinding: shader.descriptors[d].binding,
+        dstArrayElement: 0,
+        descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        descriptorCount: 1,
+        pBufferInfo: &bufferInfo,
+        pImageInfo: null,
+        pTexelBufferView: null
+      );
+    }
+    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+      VkDescriptorImageInfo imageInfo = {
+        imageLayout: VK_IMAGE_LAYOUT_GENERAL,
+        imageView: app.textures[app.textures.idx(shader.descriptors[d].name)].view,
+      };
+      descriptorWrites ~= VkWriteDescriptorSet(
+        sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        dstSet: app.compute.set[syncIndex],
+        dstBinding: shader.descriptors[d].binding,
+        dstArrayElement: 0,
+        descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        descriptorCount: shader.descriptors[d].count,
+        pImageInfo: &imageInfo
+      );
+    }
+  }
+  
+  vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null);
   if(app.verbose) SDL_Log("updateComputeDescriptorSet DONE");
 }
 
@@ -117,16 +160,17 @@ void createComputeCommandBuffers(ref App app) {
 }
 
 void createComputeResources(ref App app) {
-  app.buffers = [];
-  foreach(shader; app.compute.shaders) {
-    foreach(descriptor; shader.descriptors) {
-      if(descriptor.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage();
-      if(descriptor.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) app.createSSBO();
+  for(uint s = 0; s < app.compute.shaders.length; s++) {
+    auto shader = app.compute.shaders[s];
+    for(uint d = 0; d < shader.descriptors.length; d++) {
+      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shader.descriptors[d]);
+      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) app.createSSBO(shader.descriptors[d]);
+      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createComputeUBO(shader.descriptors[d]);
     }
   }
 }
 
-void createStorageImage(ref App app){
+void createStorageImage(ref App app, Descriptor descriptor){
   VkImageUsageFlags usage;
   usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -134,7 +178,7 @@ void createStorageImage(ref App app){
   usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
   usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-  Texture texture = { path : "Compute", width: app.camera.width, height: app.camera.height };
+  Texture texture = { path : descriptor.name, width: app.camera.width, height: app.camera.height };
 
   app.createImage(texture.width, texture.height, &texture.image, &texture.memory, VK_FORMAT_R16G16B16A16_SFLOAT, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
   texture.view = app.createImageView(texture.image, VK_FORMAT_R16G16B16A16_SFLOAT);
@@ -142,7 +186,7 @@ void createStorageImage(ref App app){
   app.registerTexture(texture); // Register texture with ImGui
 
   // Update the Texture Array for rendering
-  int idx = app.textures.idx("Compute");
+  int idx = app.textures.idx(descriptor.name);
   if(idx < 0) {
    app.textures ~= texture;
   }else{
@@ -158,51 +202,82 @@ void createStorageImage(ref App app){
   });
 }
 
-void createSSBO(ref App app, uint size = 1024 * 1024) {
-  size_t idx = app.buffers.length;
-  if(app.verbose) SDL_Log("createSSBO at %d, size = %d", idx, size);
-  app.buffers.length++;
-
-  app.buffers[idx].buffers.length = app.framesInFlight;
-  app.buffers[idx].memory.length = app.framesInFlight;
+void createSSBO(ref App app, Descriptor descriptor, uint size = 4 * 1024) {
+  SDL_Log("createSSBO at %s, size = %d", descriptor.base, size);
+  app.buffers[descriptor.base] = SSBO();
+  app.buffers[descriptor.base].buffers.length = app.framesInFlight;
+  app.buffers[descriptor.base].memory.length = app.framesInFlight;
 
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.buffers[idx].buffers[i], &app.buffers[idx].memory[i], size, 
+    app.createBuffer(&app.buffers[descriptor.base].buffers[i], &app.buffers[descriptor.base].memory[i], size, 
                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   }
 
   app.frameDeletionQueue.add((){
-    if(app.verbose) SDL_Log("Delete createSSBO at %d", idx);
+    SDL_Log("Delete SSBO at %s", descriptor.base);
     for(uint i = 0; i < app.framesInFlight; i++) {
-      vkDestroyBuffer(app.device, app.buffers[idx].buffers[i], app.allocator);
-      vkFreeMemory(app.device, app.buffers[idx].memory[i], app.allocator);
+      vkDestroyBuffer(app.device, app.buffers[descriptor.base].buffers[i], app.allocator);
+      vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
     }
   });
 }
 
-void recordComputeCommandBuffer(ref App app, uint syncIndex) {
+void createComputeUBO(ref App app, Descriptor descriptor) {
+  app.uniform.computeBuffers.length = app.framesInFlight;
+  app.uniform.computeBuffersMemory.length = app.framesInFlight;
+  for(uint i = 0; i < app.framesInFlight; i++) {
+    app.createBuffer(&app.uniform.computeBuffers[i], &app.uniform.computeBuffersMemory[i], ParticleUniformBuffer.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+  }
+  if(app.verbose) SDL_Log("Created %d ComputeBuffers of size: %d bytes", app.imageCount, ParticleUniformBuffer.sizeof);
+
+  app.frameDeletionQueue.add((){
+    for(uint i = 0; i < app.framesInFlight; i++) {
+      vkDestroyBuffer(app.device, app.uniform.computeBuffers[i], app.allocator);
+      vkFreeMemory(app.device, app.uniform.computeBuffersMemory[i], app.allocator);
+    }
+  });
+}
+
+/** recordComputeCommandBuffer for syncIndex and the selected ComputeShader
+ */
+void recordComputeCommandBuffer(ref App app, uint syncIndex = 0, uint selectedShader = 0) {
   if(app.verbose) SDL_Log("Record Compute Command Buffer: %d", syncIndex);
   enforceVK(vkResetCommandBuffer(app.compute.commandBuffer[syncIndex], 0));
-  int idx = app.textures.idx("Compute");
+  auto shader = app.compute.shaders[selectedShader];
 
-  VkCommandBufferBeginInfo commandBufferInfo = {
-    sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO
-  };
+  VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
   enforceVK(vkBeginCommandBuffer(app.compute.commandBuffer[syncIndex], &commandBufferInfo));
 
-  app.transitionImageLayout(app.textures[idx].image, app.compute.commandBuffer[syncIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+  float[3] nJobs = [1, 1, 1];
+  for(uint d = 0; d < shader.descriptors.length; d++) {
+    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+      uint idx = app.textures.idx(shader.descriptors[d].name);
+      app.transitionImageLayout(app.textures[idx].image, app.compute.commandBuffer[syncIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+      nJobs[0] = app.textures[idx].width;
+      nJobs[1] = app.textures[idx].height;
+    }else{
+      nJobs[0] = 500; // Set based on the size of the SSBO and the Object being Send
+    }
+  }
 
-  // bind the gradient drawing compute pipeline
+  // Bind the compute pipeline
   vkCmdBindPipeline(app.compute.commandBuffer[syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipeline.graphicsPipeline);
 
-  // bind the descriptor set containing the draw image for the compute pipeline
+  // Bind the descriptor set containing the compute resources for the compute pipeline
   vkCmdBindDescriptorSets(app.compute.commandBuffer[syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipeline.pipelineLayout, 0, 1, &app.compute.set[syncIndex], 0, null);
 
-  // execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
-  vkCmdDispatch(app.compute.commandBuffer[syncIndex], cast(uint)ceil(app.camera.width / 16.0), cast(uint)ceil(app.camera.height / 16.0), 1);
+  // Execute the compute pipeline dispatch
+  vkCmdDispatch(app.compute.commandBuffer[syncIndex], cast(uint)ceil(nJobs[0] / shader.groupCount[0])
+                                                    , cast(uint)ceil(nJobs[1] / shader.groupCount[1])
+                                                    , cast(uint)ceil(nJobs[2] / shader.groupCount[2]));
 
-  app.transitionImageLayout(app.textures[idx].image, app.compute.commandBuffer[syncIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  for(uint d = 0; d < shader.descriptors.length; d++) {
+    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+      uint idx = app.textures.idx(shader.descriptors[d].name);
+      app.transitionImageLayout(app.textures[idx].image, app.compute.commandBuffer[syncIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+  }
 
   vkEndCommandBuffer(app.compute.commandBuffer[syncIndex]);
   if(app.verbose) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
