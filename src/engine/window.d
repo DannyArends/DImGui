@@ -8,7 +8,7 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
-import compute: createComputeBufferAndImage, createComputeDescriptorPool, createComputePipeline;
+import compute: createComputeCommandBuffers, createComputeDescriptorPool, createComputeResources, createComputePipeline;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createRenderDescriptor, createTextureDescriptors;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
@@ -17,6 +17,7 @@ import images : createColorResources;
 import pipeline : createGraphicsPipeline;
 import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
+import shaders : reflectShaders;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 import uniforms : createRenderUBO;
@@ -43,8 +44,14 @@ void createOrResizeWindow(ref App app) {
   app.createColorResources();
   app.createDepthResources();
 
+  // Do reflection on the ComputeShaders (they might create texture resources)
+  app.reflectShaders(app.compute.shaders);
+  app.createComputeResources();
+
+  // Do reflection on the RenderingShaders
+  app.reflectShaders(app.shaders);
+
   // Compute resources
-  app.createComputeBufferAndImage();
   app.createComputeDescriptorPool();
 
   // Render resources
@@ -62,11 +69,12 @@ void createOrResizeWindow(ref App app) {
   app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
   app.createFramebuffers();
 
-  app.createComputePipeline();
-  foreach(member; supportedTopologies) { 
-    app.createGraphicsPipeline(member);
-  }
+
   app.createRenderCommandBuffers();
+  foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
+  app.createComputeCommandBuffers();
+  app.createComputePipeline();
+
   app.createSyncObjects();
 }
 

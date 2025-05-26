@@ -6,7 +6,7 @@
 import engine;
 
 import uniforms : UniformBufferObject;
-import shaders : reflectDescriptorSets;
+import shaders : createDescriptorSetLayout, createPoolSizes;
 import textures : Texture;
 
 struct DescriptorLayoutBuilder {
@@ -77,10 +77,11 @@ void createImGuiDescriptorSetLayout(ref App app) {
 /** Our DescriptorPool (FiF * UBO and FiF * Textures * Combined Image samplers)
  */
 void createDescriptorPool(ref App app){
-  VkDescriptorPoolSize[] poolSizes = [
+/*  VkDescriptorPoolSize[] poolSizes = [
     { type: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount: cast(uint)(app.framesInFlight) },
     { type: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorCount: cast(uint)(app.framesInFlight * app.textures.length) }
-  ];
+  ]; */
+  VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(app.shaders);
   app.descriptorPool = app.createDSPool("Rendering", poolSizes, app.framesInFlight);
   app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator); });
 }
@@ -89,11 +90,8 @@ void createDescriptorPool(ref App app){
  */
 void createDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating Render DescriptorSetLayout");
-//  DescriptorLayoutBuilder builder;
-//  builder.add(0, 1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-//  builder.add(1, cast(uint) app.textures.length, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-//  app.descriptorSetLayout = builder.build(app.device);
-  app.descriptorSetLayout = app.reflectDescriptorSets(app.shaders);
+  app.descriptorSetLayout = app.createDescriptorSetLayout(app.shaders);
+  if(app.verbose) SDL_Log("Created Render DescriptorSetLayout");
   app.frameDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator); });
 }
 
@@ -130,7 +128,7 @@ void createTextureDescriptors(ref App app) {
   for (size_t i = 0; i < app.textures.length; i++) {
     VkDescriptorImageInfo textureImage = {
       imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-      imageView: app.textures[i].textureImageView,
+      imageView: app.textures[i].view,
       sampler: app.sampler
     };
     app.textureImagesInfo[i] = textureImage;

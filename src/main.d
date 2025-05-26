@@ -28,8 +28,8 @@ import window: createOrResizeWindow, checkForResize;
  */
 void main(string[] args) {
   App app = initializeSDL();              /// Initialize SDL library and create a window
-  app.createCompiler();
-  app.createReflectionContext();
+  app.createCompiler();                   /// Create the SPIR-V compiler
+  app.createReflectionContext();          /// Create a SPIR-V reflection context
   app.loadGlyphAtlas();                   /// Load & parse the Glyph Atlas
   app.loadAllSoundEffect();               /// Load all available sound effects
   app.createInstance();                   /// Create a Vulkan instance
