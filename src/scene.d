@@ -46,7 +46,7 @@ void createScene(ref App app){
   app.objects ~= new Cube();
   //app.objects[1].computeNormals();
   app.objects[1].position([3.0f, 0.0f, 3.0f]);
-  app.objects[1].instances[0].tid = 19;
+  app.objects[1].texture(app.textures, "image");
 
   SDL_Log("createScene: Add an Icosahedron");
   app.objects ~= new Icosahedron();

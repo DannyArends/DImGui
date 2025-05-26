@@ -16,7 +16,6 @@ struct Descriptor {
   uint set;
   uint binding;
   uint count;
-  uint bufferIdx;
 }
 
 struct DescriptorLayoutBuilder {

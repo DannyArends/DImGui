@@ -63,7 +63,8 @@ VkDescriptorType convert(spvc_resource_type type) {
 const(char)* check(const(char)* inp){ return((strcmp(inp, "")==0?"(none)":inp)); }
 
 void reflectShader(ref App app, ref Shader shader) {
-  if(app.verbose) SDL_Log("Reflect: %s", shader.path);
+  //if(app.verbose) 
+  SDL_Log("Reflect: %s", shader.path);
   shader.descriptors = [];
   spvc_parsed_ir ir = null;
   spvc_compiler compiler_glsl = null;
@@ -84,7 +85,8 @@ void reflectShader(ref App app, ref Shader shader) {
       shader.groupCount[0] = spvc_compiler_get_execution_mode_argument_by_index(compiler_glsl, SpvExecutionModeLocalSize, 0);
       shader.groupCount[1] = spvc_compiler_get_execution_mode_argument_by_index(compiler_glsl, SpvExecutionModeLocalSize, 1);
       shader.groupCount[2] = spvc_compiler_get_execution_mode_argument_by_index(compiler_glsl, SpvExecutionModeLocalSize, 2);
-      if(app.verbose) SDL_Log("*Compute Entry: [%d, %d, %d]", shader.groupCount[0], shader.groupCount[1], shader.groupCount[2]);
+      //if(app.verbose) 
+      SDL_Log("*Compute Entry: [%d, %d, %d]", shader.groupCount[0], shader.groupCount[1], shader.groupCount[2]);
     }
   }
 
@@ -113,10 +115,10 @@ void reflectShader(ref App app, ref Shader shader) {
       }
       if(!descr.count) descr.count = cast(uint)app.textures.length;
       shader.descriptors ~= descr;
-      if(app.verbose){
+      //if(app.verbose){
         SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u)", 
                 descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding);
-      }
+      //}
     }
   }
 }

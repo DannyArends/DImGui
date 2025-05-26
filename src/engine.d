@@ -19,7 +19,7 @@ import images : ColorBuffer;
 import imgui : GUI;
 import shaders : Shader;
 import vector : normalize;
-import uniforms : Uniform;
+import uniforms : Uniform, UBO;
 import sync : Sync, Fence;
 import sfx : WavFMT;
 import textures : Texture;
@@ -41,10 +41,11 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
-  Compute compute;            /// Compute shaders
-  Geometry[] objects;         /// All geometric objects for rendering
+  Compute compute;                        /// Compute shaders
+  Geometry[] objects;                     /// All geometric objects for rendering
   Texture[] textures;         /// Textures
-  SSBO[const(char)*] buffers;             /// SSBO buffers
+  SSBO[const(char)*] buffers;         /// SSBO buffers
+  UBO[const(char)*] ubos;             /// UBO buffers
   Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
   GUI gui;                    /// ImGui related variables
   Camera camera;              /// Our camera class

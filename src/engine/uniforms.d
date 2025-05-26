@@ -29,11 +29,13 @@ struct ParticleUniformBuffer {
   float deltaTime;
 };
 
+struct UBO {
+  VkBuffer[] buffer;
+  VkDeviceMemory[] memory;
+}
 struct Uniform {
   VkBuffer[] uniformBuffers;
-  VkBuffer[] computeBuffers;
   VkDeviceMemory[] uniformBuffersMemory;
-  VkDeviceMemory[] computeBuffersMemory;
 }
 
 void createRenderUBO(ref App app) {
