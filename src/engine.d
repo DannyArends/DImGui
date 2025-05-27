@@ -8,7 +8,7 @@ public import core.stdc.string : strcmp, memcpy;
 
 import depthbuffer : DepthBuffer;
 import camera : Camera;
-import compute : Compute, SSBO;
+import compute : Compute;
 import deletion : CheckedDeletionQueue, DeletionQueue;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, cleanup;
@@ -19,8 +19,9 @@ import images : ColorBuffer;
 import imgui : GUI;
 import shaders : Shader;
 import vector : normalize;
-import uniforms : Uniform, UBO;
+import uniforms : UBO;
 import sync : Sync, Fence;
+import ssbo : SSBO;
 import sfx : WavFMT;
 import textures : Texture;
 
@@ -82,25 +83,25 @@ struct App {
 
   VkDescriptorPool descriptorPool = null;
   VkDescriptorSetLayout descriptorSetLayout = null;
-  VkDescriptorImageInfo[] textureImagesInfo;
   VkDescriptorSet[] descriptorSet = null;
 
   VkSurfaceKHR surface = null;
   VkSurfaceFormatKHR[] surfaceformats = null;
   VkSwapchainKHR swapChain = null;
   VkCommandPool commandPool = null;
-  Uniform uniform = {null, null};
 
   // per Frame
   Sync[] sync = null;
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
+  VkImageView[] swapChainImageViews = null;
+  VkFramebuffer[] swapChainFramebuffers = null;
+
   VkRenderPass imguiPass = null;
   VkRenderPass renderpass = null;
-  VkImageView[] swapChainImageViews = null;
+
   VkCommandBuffer[] imguiBuffers = null;
   VkCommandBuffer[] renderBuffers = null;
-  VkFramebuffer[] swapChainFramebuffers = null;
 
   VkAllocationCallbacks* allocator = null;
   VkDebugReportCallbackEXT debugCallback = null;

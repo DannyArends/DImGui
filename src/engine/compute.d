@@ -15,12 +15,8 @@ import pipeline : GraphicsPipeline;
 import images : createImage, transitionImageLayout;
 import swapchain : createImageView;
 import shaders : Shader, createShaderModule, createPoolSizes, createDescriptorSetLayout, createShaderStageInfo;
-import uniforms : UBO, ParticleUniformBuffer;
-
-struct SSBO {
-  VkBuffer[] buffers;
-  VkDeviceMemory[] memory;
-}
+import ssbo : SSBO, createSSBO;
+import uniforms : UBO, createUBO, UniformBufferObject, ParticleUniformBuffer;
 
 struct Compute {
   uint lastTick = 0;
@@ -91,119 +87,25 @@ void createComputePipeline(ref App app, uint selectedShader = 0) {
   });
 }
 
-/** Update the DescriptorSet 
- * TODO: This should depend whole on the 'compute' we could use e.g. the other shader modules as well as long as it's combined
- * in a stages that were combine, then we can use it for rendering as well (vert + frage)
- */
-void updateComputeDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] dstSet, uint syncIndex = 0) {
-  VkWriteDescriptorSet[] descriptorWrites;
-  for(uint s = 0; s < shaders.length; s++) {
-    auto shader = shaders[s];
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      // Image sampler write
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-        VkDescriptorImageInfo[] textureInfo;
-        textureInfo.length = app.textures.length;
-
-        for (size_t i = 0; i < app.textures.length; i++) {
-          VkDescriptorImageInfo textureImage = {
-            imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            imageView: app.textures[i].view,
-            sampler: app.sampler
-          };
-          textureInfo[i] = textureImage;
-        }
-        descriptorWrites ~= VkWriteDescriptorSet(
-          sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-          dstSet: dstSet[syncIndex],
-          dstBinding: shader.descriptors[d].binding,
-          dstArrayElement: 0,
-          descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-          descriptorCount: cast(uint)app.textures.length,
-          pImageInfo: &textureInfo[0]
-        );
-      }
-      // Uniform Buffer Write
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        VkDescriptorBufferInfo bufferInfo = {
-          buffer: app.ubos[shader.descriptors[d].base].buffer[syncIndex],
-          offset: 0,
-          range: ParticleUniformBuffer.sizeof
-        };
-        descriptorWrites ~= VkWriteDescriptorSet(
-          sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-          dstSet: dstSet[syncIndex],
-          dstBinding: shader.descriptors[d].binding,
-          dstArrayElement: 0,
-          descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-          descriptorCount: 1,
-          pBufferInfo: &bufferInfo,
-          pImageInfo: null,
-          pTexelBufferView: null
-        );
-      }
-      // SSBO Buffer Write
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if(strcmp(shader.descriptors[d].base, "lastFrame")){ syncIndex = ((syncIndex--) % app.framesInFlight); }
-        VkDescriptorBufferInfo bufferInfo = {
-          buffer: app.buffers[shader.descriptors[d].base].buffers[syncIndex],
-          offset: 0,
-          range: 4 * 1024
-        };
-        descriptorWrites ~= VkWriteDescriptorSet(
-          sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-          dstSet: dstSet[syncIndex],
-          dstBinding: shader.descriptors[d].binding,
-          dstArrayElement: 0,
-          descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-          descriptorCount: 1,
-          pBufferInfo: &bufferInfo,
-          pImageInfo: null,
-          pTexelBufferView: null
-        );
-      }
-      // Compute Stored Image
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-        VkDescriptorImageInfo imageInfo = {
-          imageLayout: VK_IMAGE_LAYOUT_GENERAL,
-          imageView: app.textures[app.textures.idx(shader.descriptors[d].name)].view,
-        };
-        descriptorWrites ~= VkWriteDescriptorSet(
-          sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-          dstSet: dstSet[syncIndex],
-          dstBinding: shader.descriptors[d].binding,
-          dstArrayElement: 0,
-          descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-          descriptorCount: shader.descriptors[d].count,
-          pImageInfo: &imageInfo
-        );
-      }
-    }
-  }
-  vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null);
-  if(app.verbose) SDL_Log("updateComputeDescriptorSet DONE");
-}
 
 void createComputeCommandBuffers(ref App app) {
   app.compute.commandBuffer = app.device.createCommandBuffer(app.commandPool, app.framesInFlight, app.verbose);
+
+  if(app.verbose) SDL_Log("createComputeCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
+  app.frameDeletionQueue.add((){
+    for (uint i = 0; i < app.framesInFlight; i++) {
+      vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.compute.commandBuffer[i]);
+    }
+  });
 }
 
-void createComputeResources(ref App app) {
-  for(uint s = 0; s < app.compute.shaders.length; s++) {
-    auto shader = app.compute.shaders[s];
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shader.descriptors[d]);
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) app.createSSBO(shader.descriptors[d]);
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createComputeUBO(shader.descriptors[d]);
-    }
-  }
-  SDL_Log("Rendering Shader Resources: %d ", app.shaders.length);
-  for(uint s = 0; s < app.shaders.length; s++) {
-    auto shader = app.shaders[s];
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shader.descriptors[d]);
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) app.createSSBO(shader.descriptors[d]);
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createComputeUBO(shader.descriptors[d]);
+void createResources(ref App app, Shader[] shaders) {
+  if(app.verbose) SDL_Log("Creating Compute Resources: %d shaders", app.shaders.length);
+  for(uint s = 0; s < shaders.length; s++) {
+    for(uint d = 0; d < shaders[s].descriptors.length; d++) {
+      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
+      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) app.createSSBO(shaders[s].descriptors[d]);
+      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createUBO(shaders[s].descriptors[d]);
     }
   }
 }
@@ -218,7 +120,8 @@ void createStorageImage(ref App app, Descriptor descriptor){
 
   Texture texture = { path : descriptor.name, width: app.camera.width, height: app.camera.height };
 
-  app.createImage(texture.width, texture.height, &texture.image, &texture.memory, VK_FORMAT_R16G16B16A16_SFLOAT, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
+  app.createImage(texture.width, texture.height, &texture.image, &texture.memory, 
+                  VK_FORMAT_R16G16B16A16_SFLOAT, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
   texture.view = app.createImageView(texture.image, VK_FORMAT_R16G16B16A16_SFLOAT);
   if(app.verbose) SDL_Log("Create compute image %p, view: %p", texture.image, texture.view);
   app.registerTexture(texture); // Register texture with ImGui
@@ -237,46 +140,6 @@ void createStorageImage(ref App app, Descriptor descriptor){
     vkDestroyImageView(app.device, texture.view, app.allocator);
     vkDestroyImage(app.device, texture.image, app.allocator);
     vkFreeMemory(app.device, texture.memory, app.allocator);
-  });
-}
-
-void createSSBO(ref App app, Descriptor descriptor, uint size = 4 * 1024) {
-  if(app.verbose) SDL_Log("createSSBO at %s, size = %d", descriptor.base, size);
-  app.buffers[descriptor.base] = SSBO();
-  app.buffers[descriptor.base].buffers.length = app.framesInFlight;
-  app.buffers[descriptor.base].memory.length = app.framesInFlight;
-
-  for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.buffers[descriptor.base].buffers[i], &app.buffers[descriptor.base].memory[i], size, 
-                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  }
-
-  app.frameDeletionQueue.add((){
-    if(app.verbose) SDL_Log("Delete SSBO at %s", descriptor.base);
-    for(uint i = 0; i < app.framesInFlight; i++) {
-      vkDestroyBuffer(app.device, app.buffers[descriptor.base].buffers[i], app.allocator);
-      vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
-    }
-  });
-}
-
-void createComputeUBO(ref App app, Descriptor descriptor) {
-  SDL_Log("create UBO at %s", descriptor.base);
-  app.ubos[descriptor.base] = UBO();
-  app.ubos[descriptor.base].buffer.length = app.framesInFlight;
-  app.ubos[descriptor.base].memory.length = app.framesInFlight;
-  for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.ubos[descriptor.base].buffer[i], &app.ubos[descriptor.base].memory[i], ParticleUniformBuffer.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-  }
-  if(app.verbose) SDL_Log("Created %d ComputeBuffers of size: %d bytes", app.imageCount, ParticleUniformBuffer.sizeof);
-
-  app.frameDeletionQueue.add((){
-    if(app.verbose) SDL_Log("Delete Compute UBO at %s", descriptor.base);
-    for(uint i = 0; i < app.framesInFlight; i++) {
-      vkDestroyBuffer(app.device, app.ubos[descriptor.base].buffer[i], app.allocator);
-      vkFreeMemory(app.device, app.ubos[descriptor.base].memory[i], app.allocator);
-    }
   });
 }
 

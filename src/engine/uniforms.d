@@ -9,6 +9,7 @@ import core.time : MonoTime;
 import std.random : uniform;
 import std.conv : to;
 
+import descriptor : Descriptor;
 import buffer : createBuffer;
 import matrix : mat4, rotate, lookAt, perspective;
 import lights : Light, Lights;
@@ -33,28 +34,31 @@ struct UBO {
   VkBuffer[] buffer;
   VkDeviceMemory[] memory;
 }
-struct Uniform {
-  VkBuffer[] uniformBuffers;
-  VkDeviceMemory[] uniformBuffersMemory;
-}
 
-void createRenderUBO(ref App app) {
-  app.uniform.uniformBuffers.length = app.framesInFlight;
-  app.uniform.uniformBuffersMemory.length = app.framesInFlight;
+void createUBO(ref App app, Descriptor descriptor) {
+  uint size = 0;
+  if(SDL_strcmp(descriptor.base, "ParticleUniformBuffer") == 0) size = ParticleUniformBuffer.sizeof;
+  if(SDL_strcmp(descriptor.base, "UniformBufferObject") == 0) size = UniformBufferObject.sizeof;
+  if(app.verbose) SDL_Log("Create UBO at %s, size = %d", descriptor.base, size);
 
-  for (uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.uniform.uniformBuffers[i], &app.uniform.uniformBuffersMemory[i], UniformBufferObject.sizeof, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+  app.ubos[descriptor.base] = UBO();
+  app.ubos[descriptor.base].buffer.length = app.framesInFlight;
+  app.ubos[descriptor.base].memory.length = app.framesInFlight;
+  for(uint i = 0; i < app.framesInFlight; i++) {
+    app.createBuffer(&app.ubos[descriptor.base].buffer[i], &app.ubos[descriptor.base].memory[i], size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   }
-  if(app.verbose) SDL_Log("Created %d Render UBO of size: %d bytes", app.framesInFlight, UniformBufferObject.sizeof);
+  if(app.verbose) SDL_Log("Created %d ComputeBuffers of size: %d bytes", app.imageCount, size);
+
   app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.framesInFlight; i++) {
-      vkDestroyBuffer(app.device, app.uniform.uniformBuffers[i], app.allocator);
-      vkFreeMemory(app.device, app.uniform.uniformBuffersMemory[i], app.allocator);
+    if(app.verbose) SDL_Log("Delete Compute UBO at %s", descriptor.base);
+    for(uint i = 0; i < app.framesInFlight; i++) {
+      vkDestroyBuffer(app.device, app.ubos[descriptor.base].buffer[i], app.allocator);
+      vkFreeMemory(app.device, app.ubos[descriptor.base].memory[i], app.allocator);
     }
   });
 }
 
-void updateRenderUBO(ref App app, uint syncIndex) {
+void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
   UniformBufferObject ubo = {
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,
@@ -73,9 +77,17 @@ void updateRenderUBO(ref App app, uint syncIndex) {
     ubo.orientation = rotate(mat4.init, [180.0f, 0.0f, 0.0f]);
   }
 
-  void* data;
-  vkMapMemory(app.device, app.uniform.uniformBuffersMemory[syncIndex], 0, ubo.sizeof, 0, &data);
-  memcpy(data, &ubo, ubo.sizeof);
-  vkUnmapMemory(app.device, app.uniform.uniformBuffersMemory[syncIndex]);
+
+  for(uint s = 0; s < shaders.length; s++) {
+    auto shader = shaders[s];
+    for(uint d = 0; d < shader.descriptors.length; d++) {
+      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+        void* data;
+        vkMapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex], 0, ubo.sizeof, 0, &data);
+        memcpy(data, &ubo, ubo.sizeof);
+        vkUnmapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex]);
+      }
+    }
+  }
 }
 
