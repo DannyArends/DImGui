@@ -98,16 +98,18 @@ void reflectShader(ref App app, ref Shader shader) {
       spvc_type_id type_id = list[i].type_id;
       spvc_type_id base_type_id = list[i].base_type_id;
 
-      descr.name = spvc_compiler_get_name(compiler_glsl, list[i].id);
-      descr.base = spvc_compiler_get_name(compiler_glsl, base_type_id);
-      descr.set = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationDescriptorSet);
-      descr.binding = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationBinding);
+      descr.name      = spvc_compiler_get_name(compiler_glsl, list[i].id);
+      descr.base      = spvc_compiler_get_name(compiler_glsl, base_type_id);
+      descr.set       = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationDescriptorSet);
+      descr.binding   = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationBinding);
 
-      if(types[type] == SPVC_RESOURCE_TYPE_UNIFORM_BUFFER) { // for UBO we want to know the size of it
-        auto struct_type = spvc_compiler_get_type_handle(compiler_glsl, base_type_id);
-        SDL_Log("%s - %d %p", type, base_type_id, struct_type);
+       // for UBO we want to know the size of it
+      spvc_type struct_type = spvc_compiler_get_type_handle(compiler_glsl, base_type_id);
+      if(types[type] == SPVC_RESOURCE_TYPE_UNIFORM_BUFFER) {
         app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler_glsl, struct_type, &descr.size));
       }
+
+      // Figure out the descriptor count
       spvc_type resource_type = spvc_compiler_get_type_handle(compiler_glsl, type_id);
       uint array_dimensions = spvc_type_get_num_array_dimensions(resource_type);
       descr.count = 1; // Default
