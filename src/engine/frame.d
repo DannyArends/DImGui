@@ -9,7 +9,7 @@ import commands : recordRenderCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
 import uniforms : updateRenderUBO;
 import descriptor : updateDescriptorSet;
-import compute : updateComputeDescriptorSet, recordComputeCommandBuffer;
+import compute : recordComputeCommandBuffer;
 
 void renderFrame(ref App app){
   if(app.verbose) SDL_Log("renderFrame");
@@ -36,8 +36,8 @@ void renderFrame(ref App app){
 
   // --- Phase 2: Prepare & Submit Compute Work ---
   if(app.verbose) SDL_Log("Phase 2: Prepare & Submit Compute Work");
-  app.updateComputeDescriptorSet([app.compute.shaders[0]], app.compute.set, app.syncIndex);
   //app.updateComputeUBO(app.syncIndex);
+  app.updateDescriptorSet([app.compute.shaders[0]], app.compute.set, app.syncIndex);
 
   app.recordComputeCommandBuffer(app.syncIndex);
 
@@ -54,9 +54,9 @@ void renderFrame(ref App app){
   // --- Phase 3: Prepare & Submit Graphics & ImGui Work ---
   if(app.verbose) SDL_Log("Phase 3: Prepare & Submit Graphics & ImGui Work");
 
-  app.updateDescriptorSet(app.syncIndex);
-  //The above line should become: app.updateComputeDescriptorSet(app.shaders, app.descriptorSet, app.syncIndex);
-  app.updateRenderUBO(app.syncIndex);
+  //The above line should become: 
+  app.updateRenderUBO(app.shaders, app.syncIndex);
+  app.updateDescriptorSet(app.shaders, app.descriptorSet, app.syncIndex);
 
   app.recordRenderCommandBuffer(app.syncIndex);
   app.recordImGuiCommandBuffer(app.syncIndex);

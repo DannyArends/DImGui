@@ -8,9 +8,9 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
-import compute: createComputeCommandBuffers, createComputeUBO, createComputeDescriptorPool, createComputeResources, createComputePipeline;
+import compute: createComputeCommandBuffers, createComputeDescriptorPool, createResources, createComputePipeline;
 import depthbuffer : createDepthResources;
-import descriptor : createDescriptorPool, createDescriptorSetLayout, createRenderDescriptor, createTextureDescriptors;
+import descriptor : createDescriptorPool, createDescriptorSetLayout, createRenderDescriptor;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
@@ -20,7 +20,6 @@ import surface : querySurfaceCapabilities;
 import shaders : reflectShaders;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
-import uniforms : createRenderUBO;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -49,20 +48,19 @@ void createOrResizeWindow(ref App app) {
 
   // Do reflection on the ComputeShaders first, since it might create texture resources
   app.reflectShaders(app.compute.shaders);
-  app.createComputeResources();
+  app.createResources(app.compute.shaders);
 
   // Do reflection on the RenderingShaders
   app.reflectShaders(app.shaders);
+  app.createResources(app.shaders);
 
   // Compute resources
   app.createComputeDescriptorPool();
 
   // Render resources
-  app.createRenderUBO();
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createRenderDescriptor();
-  app.createTextureDescriptors();
 
   // ImGui resources
   app.createImGuiCommandBuffers();
