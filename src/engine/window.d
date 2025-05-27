@@ -35,29 +35,28 @@ VkPrimitiveTopology[] supportedTopologies =
  * Called on Window creation and Resize, should rebuild all perFrame objects
  */
 void createOrResizeWindow(ref App app) {
-  if(app.verbose) SDL_Log("Window created or resized, recreate SwapChain");
+  if(app.verbose) SDL_Log("Window Created or ReSized, recreate SwapChain");
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush();
 
-  // Query window settings then create a SwapChain, DepthBuffer, and ColorBuffer
+  // Query window settings then create a SwapChain, DepthBuffer, ColorBuffer, and Synchronization
   app.querySurfaceCapabilities();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
   app.createColorResources();
   app.createDepthResources();
+  app.createSyncObjects();
 
-  // Do reflection on the ComputeShaders first, since it might create texture resources
+  // Do reflection on the ComputeShaders
   app.reflectShaders(app.compute.shaders);
   app.createResources(app.compute.shaders);
+  app.createComputeDescriptorPool();
+  app.createComputeCommandBuffers();
+  app.createComputePipeline();
 
   // Do reflection on the RenderingShaders
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders);
-
-  // Compute resources
-  app.createComputeDescriptorPool();
-
-  // Render resources
   app.createDescriptorPool();
   app.createDescriptorSetLayout();
   app.createRenderDescriptor();
@@ -67,16 +66,11 @@ void createOrResizeWindow(ref App app) {
 
   // RenderPass, FrameBuffers, Render Pipelines, and Synchronization
   app.renderpass = app.createRenderPass();
-  app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
   app.createFramebuffers();
-
+  app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
 
   app.createRenderCommandBuffers();
   foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
-  app.createComputeCommandBuffers();
-  app.createComputePipeline();
-
-  app.createSyncObjects();
 }
 
 void checkForResize(ref App app){

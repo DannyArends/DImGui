@@ -87,10 +87,8 @@ void createComputePipeline(ref App app, uint selectedShader = 0) {
   });
 }
 
-
 void createComputeCommandBuffers(ref App app) {
   app.compute.commandBuffer = app.device.createCommandBuffer(app.commandPool, app.framesInFlight, app.verbose);
-
   if(app.verbose) SDL_Log("createComputeCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
   app.frameDeletionQueue.add((){
     for (uint i = 0; i < app.framesInFlight; i++) {

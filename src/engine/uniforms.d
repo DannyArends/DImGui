@@ -77,7 +77,6 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     ubo.orientation = rotate(mat4.init, [180.0f, 0.0f, 0.0f]);
   }
 
-
   for(uint s = 0; s < shaders.length; s++) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
