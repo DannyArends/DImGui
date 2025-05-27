@@ -13,6 +13,8 @@ struct Descriptor {
   VkDescriptorType type;
   const(char)* name;
   const(char)* base;
+  size_t size;  // Size  of the structure
+
   uint set;
   uint binding;
   uint count;
@@ -161,14 +163,10 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
       }
       // Uniform Buffer Write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        uint size = 0;
-        if(SDL_strcmp(shader.descriptors[d].base, "ParticleUniformBuffer") == 0) size = ParticleUniformBuffer.sizeof;
-        if(SDL_strcmp(shader.descriptors[d].base, "UniformBufferObject") == 0) size = UniformBufferObject.sizeof;
-
         VkDescriptorBufferInfo bufferInfo = {
           buffer: app.ubos[shader.descriptors[d].base].buffer[syncIndex],
           offset: 0,
-          range: size
+          range: shader.descriptors[d].size
         };
         descriptorWrites ~= VkWriteDescriptorSet(
           sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

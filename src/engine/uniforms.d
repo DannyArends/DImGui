@@ -36,18 +36,15 @@ struct UBO {
 }
 
 void createUBO(ref App app, Descriptor descriptor) {
-  uint size = 0;
-  if(SDL_strcmp(descriptor.base, "ParticleUniformBuffer") == 0) size = ParticleUniformBuffer.sizeof;
-  if(SDL_strcmp(descriptor.base, "UniformBufferObject") == 0) size = UniformBufferObject.sizeof;
-  if(app.verbose) SDL_Log("Create UBO at %s, size = %d", descriptor.base, size);
+  if(app.verbose) SDL_Log("Create UBO at %s, size = %d", descriptor.base, descriptor.size);
 
   app.ubos[descriptor.base] = UBO();
   app.ubos[descriptor.base].buffer.length = app.framesInFlight;
   app.ubos[descriptor.base].memory.length = app.framesInFlight;
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.ubos[descriptor.base].buffer[i], &app.ubos[descriptor.base].memory[i], size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    app.createBuffer(&app.ubos[descriptor.base].buffer[i], &app.ubos[descriptor.base].memory[i], descriptor.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   }
-  if(app.verbose) SDL_Log("Created %d ComputeBuffers of size: %d bytes", app.imageCount, size);
+  if(app.verbose) SDL_Log("Created %d ComputeBuffers of size: %d bytes", app.imageCount, descriptor.size);
 
   app.frameDeletionQueue.add((){
     if(app.verbose) SDL_Log("Delete Compute UBO at %s", descriptor.base);
@@ -82,8 +79,8 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
         void* data;
-        vkMapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex], 0, ubo.sizeof, 0, &data);
-        memcpy(data, &ubo, ubo.sizeof);
+        vkMapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex], 0, shader.descriptors[d].size, 0, &data);
+        memcpy(data, &ubo, shader.descriptors[d].size);
         vkUnmapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex]);
       }
     }
