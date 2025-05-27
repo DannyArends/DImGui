@@ -12,6 +12,7 @@ import textures : Texture, idx;
 struct Descriptor {
   VkDescriptorType type;
   const(char)* name;
+  const(char)* sname;
   const(char)* base;
   size_t size;  // Size  of the structure
 
