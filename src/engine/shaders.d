@@ -103,19 +103,27 @@ void reflectShader(ref App app, ref Shader shader) {
       descr.set       = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationDescriptorSet);
       descr.binding   = spvc_compiler_get_decoration(compiler_glsl, list[i].id, SpvDecorationBinding);
 
-       // for UBO we want to know the size of it
-      spvc_type struct_type = spvc_compiler_get_type_handle(compiler_glsl, base_type_id);
+      spvc_type type_handle = spvc_compiler_get_type_handle(compiler_glsl, type_id);
+      spvc_type base_handle = spvc_compiler_get_type_handle(compiler_glsl, base_type_id);
+
+      // UBO: Get the size of the UBO
       if(types[type] == SPVC_RESOURCE_TYPE_UNIFORM_BUFFER) {
-        app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler_glsl, struct_type, &descr.size));
+        app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler_glsl, base_handle, &descr.size));
       }
 
-      // Figure out the descriptor count
-      spvc_type resource_type = spvc_compiler_get_type_handle(compiler_glsl, type_id);
-      uint array_dimensions = spvc_type_get_num_array_dimensions(resource_type);
+      // SSBO: Get the size of the SSBO element
+      if (types[type] == SPVC_RESOURCE_TYPE_STORAGE_BUFFER) {
+          spvc_type_id element_id = spvc_type_get_member_type(type_handle, 0);
+          spvc_type element_handle = spvc_compiler_get_type_handle(compiler_glsl, element_id);
+          app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler_glsl, element_handle, &descr.size));
+      }
+
+      // Figure out the descriptor count in a round-about way
+      uint array_dimensions = spvc_type_get_num_array_dimensions(type_handle);
       descr.count = 1; // Default
       for(uint x = 0; x < array_dimensions; ++x) {
-        if (spvc_type_array_dimension_is_literal(resource_type, x)) {
-          descr.count *= spvc_type_get_array_dimension(resource_type, x);
+        if (spvc_type_array_dimension_is_literal(type_handle, x)) {
+          descr.count *= spvc_type_get_array_dimension(type_handle, x);
         }
       }
       if(!descr.count) descr.count = cast(uint)app.textures.length;
