@@ -54,7 +54,6 @@ void renderFrame(ref App app){
   // --- Phase 3: Prepare & Submit Graphics & ImGui Work ---
   if(app.verbose) SDL_Log("Phase 3: Prepare & Submit Graphics & ImGui Work");
 
-  //The above line should become: 
   app.updateRenderUBO(app.shaders, app.syncIndex);
   app.updateDescriptorSet(app.shaders, app.descriptorSet, app.syncIndex);
 
