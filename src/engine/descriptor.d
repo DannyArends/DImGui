@@ -69,7 +69,7 @@ VkDescriptorPoolSize[] createPoolSizes(ref App app, Shader[] shaders){
 }
 
 VkDescriptorPool createDSPool(ref App app, const(char)* name, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
-  if(app.verbose) SDL_Log("Creating %s DescriptorPool", name);
+  SDL_Log("Creating %s DescriptorPool", name);
   VkDescriptorPool pool;
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -104,21 +104,15 @@ void createImGuiDescriptorSetLayout(ref App app) {
   app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator); });
 }
 
-/** Our DescriptorPool (FiF * UBO and FiF * Textures * Combined Image samplers)
+/** Create a descriptor pool based on the shaders provided
  */
-void createDescriptorPool(ref App app){
-  VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(app.shaders);
-  app.descriptorPool = app.createDSPool("Rendering", poolSizes, app.framesInFlight);
-  app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.descriptorPool, app.allocator); });
-}
-
-/** Our DescriptorSetLayout (1 x UBO and Textures * Combined Image Sampler)
- */
-void createDescriptorSetLayout(ref App app) {
-  if(app.verbose) SDL_Log("Creating Render DescriptorSetLayout");
-  app.descriptorSetLayout = app.createDescriptorSetLayout(app.shaders);
-  if(app.verbose) SDL_Log("Created Render DescriptorSetLayout");
-  app.frameDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator); });
+void createDSPool(ref App app, ref VkDescriptorPool pool, Shader[] shaders) {
+  SDL_Log("createDSPool");
+  VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(shaders);
+  pool = app.createDSPool("Rendering", poolSizes, app.framesInFlight);
+  app.frameDeletionQueue.add((){ 
+    vkDestroyDescriptorPool(app.device, pool, app.allocator); 
+  });
 }
 
 /** Allocate a Descriptor Set
@@ -143,9 +137,13 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
 
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
-void createRenderDescriptor(ref App app) {
-  if(app.verbose) SDL_Log("creating Render DescriptorSet");
+void createDescriptors(ref App app) {
+  if(app.verbose) SDL_Log("createDescriptors");
+  app.descriptorSetLayout = app.createDescriptorSetLayout(app.shaders);
   app.descriptorSet = createDescriptorSet(app.device, app.descriptorPool, app.descriptorSetLayout,  app.framesInFlight);
+  app.frameDeletionQueue.add((){ 
+    vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator); 
+  });
 }
 
 /** Update the DescriptorSet 

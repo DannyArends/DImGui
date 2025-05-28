@@ -8,9 +8,9 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
-import compute: createComputeCommandBuffers, createComputeDescriptorPool, createComputePipeline;
+import compute: createComputeCommandBuffers, createComputePipeline;
 import depthbuffer : createDepthResources;
-import descriptor : createDescriptorPool, createDescriptorSetLayout, createRenderDescriptor;
+import descriptor : createDescriptors;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
@@ -49,17 +49,14 @@ void createOrResizeWindow(ref App app) {
 
   // Do reflection on the ComputeShaders
   app.reflectShaders(app.compute.shaders);
-  app.createResources(app.compute.shaders);
-  app.createComputeDescriptorPool();
+  app.createResources(app.compute.pool, app.compute.shaders);
   app.createComputeCommandBuffers();
   app.createComputePipeline();
 
   // Do reflection on the RenderingShaders
   app.reflectShaders(app.shaders);
-  app.createResources(app.shaders);
-  app.createDescriptorPool();
-  app.createDescriptorSetLayout();
-  app.createRenderDescriptor();
+  app.createResources(app.descriptorPool, app.shaders);
+  app.createDescriptors();
 
   // ImGui resources
   app.createImGuiCommandBuffers();

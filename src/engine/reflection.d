@@ -5,7 +5,7 @@
 
 import engine;
 
-import descriptor : Descriptor;
+import descriptor : Descriptor, createDSPool;
 import compute : createStorageImage;
 import ssbo : createSSBO;
 import uniforms : createUBO;
@@ -96,7 +96,7 @@ void reflectShaders(ref App app, ref Shader[] shaders) {
   for(uint i = 0; i < shaders.length; i++) { app.reflectShader(shaders[i]); }
 }
 
-void createResources(ref App app, Shader[] shaders) {
+void createResources(ref App app, ref VkDescriptorPool pool, Shader[] shaders) {
   if(app.verbose) SDL_Log("Creating Shader Resources: %d shaders", app.shaders.length);
   for(uint s = 0; s < shaders.length; s++) {
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {
@@ -105,6 +105,7 @@ void createResources(ref App app, Shader[] shaders) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createUBO(shaders[s].descriptors[d]);
     }
   }
+  app.createDSPool(pool, shaders);
 }
 
 VkShaderStageFlagBits convert(shaderc_shader_kind kind) {

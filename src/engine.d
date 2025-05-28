@@ -44,13 +44,13 @@ struct App {
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Compute compute;                        /// Compute shaders
   Geometry[] objects;                     /// All geometric objects for rendering
-  Texture[] textures;         /// Textures
-  SSBO[const(char)*] buffers;         /// SSBO buffers
-  UBO[const(char)*] ubos;             /// UBO buffers
+  Texture[] textures;                     /// Textures
+  SSBO[const(char)*] buffers;             /// SSBO buffers
+  UBO[const(char)*] ubos;                 /// UBO buffers
   Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
-  GUI gui;                    /// ImGui related variables
-  Camera camera;              /// Our camera class
-  GlyphAtlas glyphAtlas;      /// GlyphAtlas for geometric font rendering
+  GUI gui;                                /// ImGui related variables
+  Camera camera;                          /// Our camera class
+  GlyphAtlas glyphAtlas;                  /// GlyphAtlas for geometric font rendering
 
   VkSampler sampler;
   Shader[] shaders;

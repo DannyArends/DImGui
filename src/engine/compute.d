@@ -20,21 +20,11 @@ import uniforms : UBO;
 
 struct Compute {
   VkDescriptorPool pool = null;
-  VkDescriptorSetLayout[] layout = null;
   VkDescriptorSet[] set = null;
 
   VkCommandBuffer[] commandBuffer = null;
   GraphicsPipeline pipeline;
   Shader[] shaders;
-}
-
-/** Compute Descriptor Pool
- */
-void createComputeDescriptorPool(ref App app){
-  if(app.verbose) SDL_Log("Creating Compute DescriptorPool");
-  VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(app.compute.shaders);
-  app.compute.pool = app.createDSPool("Compute", poolSizes, cast(uint)(app.framesInFlight));
-  app.frameDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.compute.pool, app.allocator); });
 }
 
 /** Load shader modules for compute
