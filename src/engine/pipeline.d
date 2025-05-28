@@ -5,6 +5,7 @@
 
 import engine;
 
+import shaders : createStageInfo;
 import devices : getMSAASamples;
 import vertex : Vertex;
 
@@ -121,10 +122,11 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     back: {}                                                  // Optional
   };
 
+  auto stages = createStageInfo(app.shaders);
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-    stageCount: cast(uint)app.shaderStages.length,
-    pStages: &app.shaderStages[0],
+    stageCount: cast(uint)stages.length,
+    pStages: &stages[0],
     pVertexInputState: &vertexInputInfo,
     pInputAssemblyState: &inputAssembly,
     pViewportState: &viewportState,

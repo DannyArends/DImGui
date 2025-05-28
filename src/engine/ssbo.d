@@ -13,14 +13,14 @@ struct SSBO {
   VkDeviceMemory[] memory;
 }
 
-void createSSBO(ref App app, Descriptor descriptor, uint size = 4 * 1024) {
-  if(app.verbose) SDL_Log("createSSBO at %s, size = %d", descriptor.base, size);
+void createSSBO(ref App app, Descriptor descriptor, uint nObjects = 1000) {
+  if(app.verbose) SDL_Log("createSSBO at %s, size = %d", descriptor.base, descriptor.size * nObjects);
   app.buffers[descriptor.base] = SSBO();
   app.buffers[descriptor.base].buffers.length = app.framesInFlight;
   app.buffers[descriptor.base].memory.length = app.framesInFlight;
 
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.buffers[descriptor.base].buffers[i], &app.buffers[descriptor.base].memory[i], size, 
+    app.createBuffer(&app.buffers[descriptor.base].buffers[i], &app.buffers[descriptor.base].memory[i], descriptor.size * nObjects, 
                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   }

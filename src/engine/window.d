@@ -8,7 +8,7 @@ import engine;
 import std.algorithm : sort;
 import std.traits : EnumMembers;
 
-import compute: createComputeCommandBuffers, createComputeDescriptorPool, createResources, createComputePipeline;
+import compute: createComputeCommandBuffers, createComputeDescriptorPool, createComputePipeline;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptorPool, createDescriptorSetLayout, createRenderDescriptor;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
@@ -17,7 +17,7 @@ import images : createColorResources;
 import pipeline : createGraphicsPipeline;
 import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
-import shaders : reflectShaders;
+import reflection : reflectShaders, createResources;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 

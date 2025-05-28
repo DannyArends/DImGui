@@ -39,7 +39,7 @@ void renderFrame(ref App app){
   //app.updateComputeUBO(app.syncIndex);
   app.updateDescriptorSet([app.compute.shaders[0]], app.compute.set, app.syncIndex);
 
-  app.recordComputeCommandBuffer(app.syncIndex);
+  app.recordComputeCommandBuffer(app.syncIndex, 0);
 
   VkSubmitInfo submitComputeInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,

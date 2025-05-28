@@ -7,19 +7,18 @@ import core.time : MonoTime;
 
 import engine;
 
-import buffer : createBuffer, copyBuffer;
 import textures : Texture, idx, registerTexture;
 import commands : createCommandBuffer;
-import descriptor : Descriptor, DescriptorLayoutBuilder, createDSPool, createDescriptorSet;
+import descriptor : Descriptor, createDSPool, createPoolSizes, createDescriptorSetLayout, createDescriptorSet;
 import pipeline : GraphicsPipeline;
 import images : createImage, transitionImageLayout;
 import swapchain : createImageView;
-import shaders : Shader, createShaderModule, createPoolSizes, createDescriptorSetLayout, createShaderStageInfo;
-import ssbo : SSBO, createSSBO;
-import uniforms : UBO, createUBO, UniformBufferObject, ParticleUniformBuffer;
+import shaders : Shader, createShaderModule;
+import ssbo : SSBO;
+import reflection : createResources;
+import uniforms : UBO;
 
 struct Compute {
-  uint lastTick = 0;
   VkDescriptorPool pool = null;
   VkDescriptorSetLayout[] layout = null;
   VkDescriptorSet[] set = null;
@@ -27,8 +26,6 @@ struct Compute {
   VkCommandBuffer[] commandBuffer = null;
   GraphicsPipeline pipeline;
   Shader[] shaders;
-
-  ParticleUniformBuffer[] particleUniformBuffer;
 }
 
 /** Compute Descriptor Pool
@@ -42,12 +39,10 @@ void createComputeDescriptorPool(ref App app){
 
 /** Load shader modules for compute
  */
-void createComputeStages(ref App app) {
+void createComputeShaders(ref App app) {
   const(char)*[] computePaths = ["assets/shaders/texture.glsl", "assets/shaders/particle.glsl"];
   foreach(path; computePaths){
-    auto shader = app.createShaderModule(path, shaderc_glsl_compute_shader);
-    app.compute.shaders ~= shader;
-    app.computeStages ~= createShaderStageInfo(VK_SHADER_STAGE_COMPUTE_BIT, shader);
+    app.compute.shaders ~= app.createShaderModule(path, shaderc_glsl_compute_shader);
   }
 
   app.mainDeletionQueue.add(() { 
@@ -74,7 +69,7 @@ void createComputePipeline(ref App app, uint selectedShader = 0) {
   VkComputePipelineCreateInfo computeInfo = {
     sType : VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
     layout : app.compute.pipeline.pipelineLayout,
-    stage : app.computeStages[selectedShader],
+    stage : app.compute.shaders[selectedShader].info,
     pNext : null
   };
   enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipeline.graphicsPipeline));
@@ -95,17 +90,6 @@ void createComputeCommandBuffers(ref App app) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.compute.commandBuffer[i]);
     }
   });
-}
-
-void createResources(ref App app, Shader[] shaders) {
-  if(app.verbose) SDL_Log("Creating Compute Resources: %d shaders", app.shaders.length);
-  for(uint s = 0; s < shaders.length; s++) {
-    for(uint d = 0; d < shaders[s].descriptors.length; d++) {
-      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
-      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) app.createSSBO(shaders[s].descriptors[d]);
-      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createUBO(shaders[s].descriptors[d]);
-    }
-  }
 }
 
 void createStorageImage(ref App app, Descriptor descriptor){
@@ -167,7 +151,8 @@ void recordComputeCommandBuffer(ref App app, uint syncIndex = 0, uint selectedSh
   vkCmdBindPipeline(app.compute.commandBuffer[syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipeline.graphicsPipeline);
 
   // Bind the descriptor set containing the compute resources for the compute pipeline
-  vkCmdBindDescriptorSets(app.compute.commandBuffer[syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipeline.pipelineLayout, 0, 1, &app.compute.set[syncIndex], 0, null);
+  vkCmdBindDescriptorSets(app.compute.commandBuffer[syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, 
+                          app.compute.pipeline.pipelineLayout, 0, 1, &app.compute.set[syncIndex], 0, null);
 
   // Execute the compute pipeline dispatch
   vkCmdDispatch(app.compute.commandBuffer[syncIndex], cast(uint)ceil(nJobs[0] / shader.groupCount[0])

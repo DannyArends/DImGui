@@ -6,7 +6,7 @@
 import engine;
 
 import uniforms : UniformBufferObject, ParticleUniformBuffer;
-import shaders : Shader, createDescriptorSetLayout, createPoolSizes;
+import shaders : Shader;
 import textures : Texture, idx;
 
 struct Descriptor {
@@ -48,6 +48,25 @@ struct DescriptorLayoutBuilder {
   }
 };
 
+VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders){
+  DescriptorLayoutBuilder builder;
+  foreach(shader; shaders) {
+    foreach(descriptor; shader.descriptors) {
+      builder.add(descriptor.binding, descriptor.count, shader.stage, descriptor.type);
+    }
+  }
+  return(builder.build(app.device));
+}
+
+VkDescriptorPoolSize[] createPoolSizes(ref App app, Shader[] shaders){
+  VkDescriptorPoolSize[] poolSizes;
+  foreach(shader; shaders) {
+    foreach(descriptor; shader.descriptors) {
+      poolSizes ~= VkDescriptorPoolSize(descriptor.type, descriptor.count * cast(uint)(app.framesInFlight));
+    }
+  }
+  return(poolSizes);
+}
 
 VkDescriptorPool createDSPool(ref App app, const(char)* name, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
   if(app.verbose) SDL_Log("Creating %s DescriptorPool", name);
@@ -75,7 +94,7 @@ void createImGuiDescriptorPool(ref App app){
   app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator); });
 }
 
-/** ImGui DescriptorSetLayout (1024 * Combined Image Samplers)
+/** ImGui DescriptorSetLayout (1000 * Combined Image Samplers)
  */
 void createImGuiDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating ImGui DescriptorSetLayout");
