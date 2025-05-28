@@ -7,7 +7,7 @@ import engine;
 import validation;
 
 import commands : createCommandPool;
-import compute : createComputeStages;
+import compute : createComputeShaders;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : handleEvents;
@@ -17,7 +17,8 @@ import scene : createScene;
 import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL, START, STARTUP, FRAMESTART, LASTTICK;
-import shaders : createCompiler, createReflectionContext, createShadersStages;
+import shaders : createCompiler, createRenderShaders;
+import reflection : createReflectionContext;
 import surface : createSurface;
 import sfx : loadAllSoundEffect;
 import textures : Texture, loadTextures, createSampler;
@@ -35,8 +36,8 @@ void main(string[] args) {
   app.createInstance();                   /// Create a Vulkan instance
   app.createDebugCallback();              /// Hook the debug callback to the validation layer
   app.createLogicalDevice();              /// Create a logical device for rendering
-  app.createShadersStages();              /// Load the vertex and fragment shaders
-  app.createComputeStages();              /// Load the compute shader
+  app.createRenderShaders();              /// Load the vertex and fragment shaders
+  app.createComputeShaders();              /// Load the compute shader
   app.createCommandPool();                /// Create the rendering CommandPool
   app.createSampler();                    /// Create a texture sampler
   app.createImGuiDescriptorPool();        /// ImGui DescriptorPool
