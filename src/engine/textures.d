@@ -136,7 +136,7 @@ void createSampler(ref App app) {
  */
 void registerTexture(ref App app, ref Texture texture) {
   if(app.verbose) SDL_Log("Registering Texture %p with ImGui", texture.view);
-  texture.imID = createDescriptorSet(app.device, app.imguiPool, app.ImGuiSetLayout, 1)[0];
+  texture.imID = createDescriptorSet(app.device, app.pools[IMGUI], app.layouts[IMGUI], 1)[0];
 
   VkDescriptorImageInfo textureImage = {
     imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

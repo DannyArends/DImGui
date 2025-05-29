@@ -105,7 +105,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     setLayoutCount: 1, // Optional
-    pSetLayouts: &app.descriptorSetLayout, // Optional
+    pSetLayouts: &app.layouts[RENDER], // Optional
   };
   enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, null, &app.pipelines[topology].pipelineLayout));
   

@@ -12,13 +12,14 @@ import io : readFile;
 import reflection : convert, reflectShader;
 
 struct Shader {
-  const(char)* path;
-  VkShaderStageFlagBits stage;
-  VkShaderModule shaderModule;
-  VkPipelineShaderStageCreateInfo info;
+  const(char)* path;                      /// Path of the shader
+  VkShaderStageFlagBits stage;            /// Shader Stage (Vertex, Fragment, Compute)
+  VkShaderModule shaderModule;            /// Vulkan Shader Module
+  VkPipelineShaderStageCreateInfo info;   /// Shader Stage Create Info Object
+  const(char)* poolID;                             /// Descriptor pool from which to allocate
 
-  const(uint)* code;
-  size_t codeSize;
+  const(uint)* code;                      /// Compiled Code
+  size_t codeSize;                        /// Size of the compiled code
   @property size_t nwords(){ return(codeSize / uint.sizeof); };
 
   uint[3] groupCount;

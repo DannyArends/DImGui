@@ -68,9 +68,9 @@ VkDescriptorPoolSize[] createPoolSizes(ref App app, Shader[] shaders){
   return(poolSizes);
 }
 
-VkDescriptorPool createDSPool(ref App app, const(char)* name, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
-  SDL_Log("Creating %s DescriptorPool", name);
-  VkDescriptorPool pool;
+void createDSPool(ref App app, const(char)* poolID, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
+  SDL_Log("Creating DescriptorPool[%s]", poolID);
+  app.pools[poolID] = VkDescriptorPool();
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
     flags : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
@@ -78,10 +78,11 @@ VkDescriptorPool createDSPool(ref App app, const(char)* name, VkDescriptorPoolSi
     poolSizeCount : cast(uint)poolSizes.length,
     pPoolSizes : &poolSizes[0]
   };
-  enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &pool));
-  if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", name, pool);
-  return(pool);
+  enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.pools[poolID]));
+  if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", poolID, app.pools[poolID]);
 }
+
+
 
 /** ImGui DescriptorPool (Images)
  */
@@ -90,8 +91,8 @@ void createImGuiDescriptorPool(ref App app){
     type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
     descriptorCount : 1000 ///IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
   }];
-  app.imguiPool = app.createDSPool("ImGui", poolSizes);
-  app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.imguiPool, app.allocator); });
+  app.createDSPool(IMGUI, poolSizes);
+  app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.pools[IMGUI], app.allocator); });
 }
 
 /** ImGui DescriptorSetLayout (1000 * Combined Image Samplers)
@@ -100,18 +101,18 @@ void createImGuiDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating ImGui DescriptorSetLayout");
   DescriptorLayoutBuilder builder;
   builder.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  app.ImGuiSetLayout = builder.build(app.device);
-  app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.ImGuiSetLayout, app.allocator); });
+  app.layouts[IMGUI] = builder.build(app.device);
+  app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.layouts[IMGUI], app.allocator); });
 }
 
 /** Create a descriptor pool based on the shaders provided
  */
-void createDSPool(ref App app, ref VkDescriptorPool pool, Shader[] shaders) {
-  SDL_Log("createDSPool");
+void createDSPool(ref App app, const(char)* poolID, Shader[] shaders) {
+  SDL_Log("createDSPool by shader: %s", poolID);
   VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(shaders);
-  pool = app.createDSPool("Rendering", poolSizes, app.framesInFlight);
+  app.createDSPool(poolID, poolSizes, 2 * app.framesInFlight);
   app.frameDeletionQueue.add((){ 
-    vkDestroyDescriptorPool(app.device, pool, app.allocator); 
+    vkDestroyDescriptorPool(app.device, app.pools[poolID], app.allocator); 
   });
 }
 
@@ -138,11 +139,11 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
 void createDescriptors(ref App app) {
-  if(app.verbose) SDL_Log("createDescriptors");
-  app.descriptorSetLayout = app.createDescriptorSetLayout(app.shaders);
-  app.descriptorSet = createDescriptorSet(app.device, app.descriptorPool, app.descriptorSetLayout,  app.framesInFlight);
+  SDL_Log("createDescriptors");
+  app.layouts[RENDER] = app.createDescriptorSetLayout(app.shaders);
+  app.sets[RENDER] = createDescriptorSet(app.device, app.pools[RENDER], app.layouts[RENDER],  app.framesInFlight);
   app.frameDeletionQueue.add((){ 
-    vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, app.allocator); 
+    vkDestroyDescriptorSetLayout(app.device, app.layouts[RENDER], app.allocator); 
   });
 }
 

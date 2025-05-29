@@ -49,13 +49,17 @@ void createOrResizeWindow(ref App app) {
 
   // Do reflection on the ComputeShaders
   app.reflectShaders(app.compute.shaders);
-  app.createResources(app.compute.pool, app.compute.shaders);
-  app.createComputeCommandBuffers();
-  app.createComputePipeline();
+  app.createResources(app.compute.shaders, COMPUTE);
+  foreach(ref shader; app.compute.shaders) {
+    SDL_Log("Window[1] %s", shader.path);
+    app.createComputeCommandBuffers(shader);
+    SDL_Log("Window[2] %s", shader.path);
+    app.createComputePipeline(shader);
+  }
 
   // Do reflection on the RenderingShaders
   app.reflectShaders(app.shaders);
-  app.createResources(app.descriptorPool, app.shaders);
+  app.createResources(app.shaders, RENDER);
   app.createDescriptors();
 
   // ImGui resources
