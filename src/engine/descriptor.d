@@ -69,7 +69,7 @@ VkDescriptorPoolSize[] createPoolSizes(ref App app, Shader[] shaders){
 }
 
 void createDSPool(ref App app, const(char)* poolID, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
-  SDL_Log("Creating DescriptorPool[%s]", poolID);
+  if(app.verbose) SDL_Log("Creating DescriptorPool[%s]", poolID);
   app.pools[poolID] = VkDescriptorPool();
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -110,7 +110,7 @@ void createImGuiDescriptorSetLayout(ref App app) {
 void createDSPool(ref App app, const(char)* poolID, Shader[] shaders) {
   uint nShaders = 1;
   if(strstr(poolID, COMPUTE) != null){ nShaders = cast(uint)shaders.length; }
-  SDL_Log("createDSPool by shader: %s, with %d shader size", poolID, nShaders);
+  if(app.verbose) SDL_Log("createDSPool by shader: %s, with %d shader size", poolID, nShaders);
   VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(shaders);
   app.createDSPool(poolID, poolSizes, nShaders * app.framesInFlight); // TODO this should be based on the number of shaders
   app.frameDeletionQueue.add((){ 
@@ -141,7 +141,7 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
 void createDescriptors(ref App app) {
-  SDL_Log("createDescriptors");
+  if(app.verbose) SDL_Log("createDescriptors for rendering pipeline");
   app.layouts[RENDER] = app.createDescriptorSetLayout(app.shaders);
   app.sets[RENDER] = createDescriptorSet(app.device, app.pools[RENDER], app.layouts[RENDER],  app.framesInFlight);
   app.frameDeletionQueue.add((){ 

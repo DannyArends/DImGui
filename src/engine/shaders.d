@@ -16,7 +16,6 @@ struct Shader {
   VkShaderStageFlagBits stage;            /// Shader Stage (Vertex, Fragment, Compute)
   VkShaderModule shaderModule;            /// Vulkan Shader Module
   VkPipelineShaderStageCreateInfo info;   /// Shader Stage Create Info Object
-  const(char)* poolID;                             /// Descriptor pool from which to allocate
 
   const(uint)* code;                      /// Compiled Code
   size_t codeSize;                        /// Size of the compiled code
@@ -94,7 +93,7 @@ VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stag
   ));
 }
 
-VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders){
+VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
   VkPipelineShaderStageCreateInfo[] info;
   foreach(shader; shaders){ info ~= shader.info; }
   return(info);

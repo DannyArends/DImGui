@@ -47,17 +47,15 @@ void createOrResizeWindow(ref App app) {
   app.createDepthResources();
   app.createSyncObjects();
 
-  // Do reflection on the ComputeShaders
+  // Do reflection on the compute shaders, and create the compute command buffers and pipelines
   app.reflectShaders(app.compute.shaders);
   app.createResources(app.compute.shaders, COMPUTE);
   foreach(ref shader; app.compute.shaders) {
-    SDL_Log("Window[1] %s", shader.path);
     app.createComputeCommandBuffers(shader);
-    SDL_Log("Window[2] %s", shader.path);
     app.createComputePipeline(shader);
   }
 
-  // Do reflection on the RenderingShaders
+  // Do reflection on the render shaders
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, RENDER);
   app.createDescriptors();
@@ -65,8 +63,8 @@ void createOrResizeWindow(ref App app) {
   // ImGui resources
   app.createImGuiCommandBuffers();
 
-  // RenderPass, FrameBuffers, Render Pipelines, and Synchronization
-  app.renderpass = app.createRenderPass();
+  // Create RenderPass, FrameBuffers, render command buffers and the render pipelines
+  app.createRenderPass();
   app.createFramebuffers();
   app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
 
@@ -74,6 +72,9 @@ void createOrResizeWindow(ref App app) {
   foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
 }
 
+/** 
+ * Check if the window was resized, and if so recreate the window resources
+ */
 void checkForResize(ref App app){
   int width, height;
   SDL_GetWindowSize(app.window, &width, &height);
