@@ -25,6 +25,10 @@ import ssbo : SSBO;
 import sfx : WavFMT;
 import textures : Texture;
 
+const(char)* IMGUI = "IMGUI"; 
+const(char)* COMPUTE = "COMPUTE";
+const(char)* RENDER = "RENDER";
+
 /** Main application structure
  */
 struct App {
@@ -76,12 +80,10 @@ struct App {
   VkPhysicalDeviceProperties properties;
   VkDevice device = null;
   VkQueue queue = null;
-  VkDescriptorPool imguiPool = null;
-  VkDescriptorSetLayout ImGuiSetLayout = null;
 
-  VkDescriptorPool descriptorPool = null;
-  VkDescriptorSetLayout descriptorSetLayout = null;
-  VkDescriptorSet[] descriptorSet = null;
+  VkDescriptorPool[const(char)*] pools;
+  VkDescriptorSetLayout[const(char)*] layouts;
+  VkDescriptorSet[][const(char)*] sets = null;
 
   VkSurfaceKHR surface = null;
   VkSurfaceFormatKHR[] surfaceformats = null;

@@ -37,14 +37,19 @@ void renderFrame(ref App app){
   // --- Phase 2: Prepare & Submit Compute Work ---
   if(app.verbose) SDL_Log("Phase 2: Prepare & Submit Compute Work");
   //app.updateComputeUBO(app.syncIndex);
-  app.updateDescriptorSet([app.compute.shaders[0]], app.compute.set, app.syncIndex);
+  //TODO: Change to Compute Shader SET
 
-  app.recordComputeCommandBuffer(app.syncIndex, 0);
+  VkCommandBuffer[] computeCommandBuffers = [];
+  foreach(ref shader; app.compute.shaders){
+    app.updateDescriptorSet([shader], app.sets[shader.path], app.syncIndex);
+    app.recordComputeCommandBuffer(shader, app.syncIndex);
+    computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
+  }
 
   VkSubmitInfo submitComputeInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    commandBufferCount : 1,
-    pCommandBuffers : &app.compute.commandBuffer[app.syncIndex],
+    commandBufferCount : 2,
+    pCommandBuffers : &computeCommandBuffers[0],
     signalSemaphoreCount : 1,
     pSignalSemaphores : &computeComplete
   };
@@ -55,7 +60,7 @@ void renderFrame(ref App app){
   if(app.verbose) SDL_Log("Phase 3: Prepare & Submit Graphics & ImGui Work");
 
   app.updateRenderUBO(app.shaders, app.syncIndex);
-  app.updateDescriptorSet(app.shaders, app.descriptorSet, app.syncIndex);
+  app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex);
 
   app.recordRenderCommandBuffer(app.syncIndex);
   app.recordImGuiCommandBuffer(app.syncIndex);

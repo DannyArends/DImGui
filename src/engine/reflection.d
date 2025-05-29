@@ -96,16 +96,17 @@ void reflectShaders(ref App app, ref Shader[] shaders) {
   for(uint i = 0; i < shaders.length; i++) { app.reflectShader(shaders[i]); }
 }
 
-void createResources(ref App app, ref VkDescriptorPool pool, Shader[] shaders) {
-  if(app.verbose) SDL_Log("Creating Shader Resources: %d shaders", app.shaders.length);
+void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
+  SDL_Log("Creating Shader Resources: %d shaders at pool %d", app.shaders.length, poolID);
+  app.createDSPool(poolID, shaders);
   for(uint s = 0; s < shaders.length; s++) {
+    shaders[s].poolID = poolID;
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) app.createSSBO(shaders[s].descriptors[d]);
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createUBO(shaders[s].descriptors[d]);
     }
   }
-  app.createDSPool(pool, shaders);
 }
 
 VkShaderStageFlagBits convert(shaderc_shader_kind kind) {
