@@ -46,51 +46,51 @@ struct App {
   };
 
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
-  Compute compute;                        /// Compute shaders
-  Geometry[] objects;                     /// All geometric objects for rendering
-  Texture[] textures;                     /// Textures
-  SSBO[const(char)*] buffers;             /// SSBO buffers
-  UBO[const(char)*] ubos;                 /// UBO buffers
-  Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];
-  GUI gui;                                /// ImGui related variables
-  Camera camera;                          /// Our camera class
-  GlyphAtlas glyphAtlas;                  /// GlyphAtlas for geometric font rendering
+  Compute compute;                                                              /// Compute shaders
+  Geometry[] objects;                                                           /// All geometric objects for rendering
+  Texture[] textures;                                                           /// Textures
+  WavFMT[] soundfx;                                                             /// Sound effects
+  SSBO[const(char)*] buffers;                                                   /// SSBO buffers
+  UBO[const(char)*] ubos;                                                       /// UBO buffers
+  Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];      /// Scene lighting
+  GUI gui;                                                                      /// ImGui related variables
+  Camera camera;                                                                /// Our camera class
+  GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
 
   VkSampler sampler;
   Shader[] shaders;
   GraphicsPipeline[VkPrimitiveTopology] pipelines;
   DepthBuffer depthBuffer;
   ColorBuffer colorBuffer;
-  DeletionQueue mainDeletionQueue;
-  DeletionQueue frameDeletionQueue;
-  CheckedDeletionQueue bufferDeletionQueue;
-  WavFMT[] soundfx;
-  float soundEffectGain = 0.8;
 
-  // ShaderC
+  // Deletion queues for cleaning up resources
+  DeletionQueue mainDeletionQueue;                                              /// On application shutdown
+  DeletionQueue frameDeletionQueue;                                             /// When rebuilding the SwapChain
+  CheckedDeletionQueue bufferDeletionQueue;                                     /// On each frame rendered
+
+  // ShaderC & SPIR-V reflection
   shaderc_compiler_t compiler;
   shaderc_compile_options_t options;
-
-  // SPIR-V reflection
   spvc_context context;
 
-  // Vulkan
+  // Vulkan Instance related variables
   VkInstance instance = null;
   VkPhysicalDevice physicalDevice = null;
   VkPhysicalDeviceProperties properties;
   VkDevice device = null;
   VkQueue queue = null;
 
-  VkDescriptorPool[const(char)*] pools;
-  VkDescriptorSetLayout[const(char)*] layouts;
-  VkDescriptorSet[][const(char)*] sets = null;
+  VkDescriptorPool[const(char)*] pools;         /// Descriptor pools (IMGUI, COMPUTE, RENDER)
+  VkDescriptorSetLayout[const(char)*] layouts;  /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorSet[][const(char)*] sets;         /// Descriptor sets per Frames In FLight for (IMGUI, RENDER, N x computeShader.PATH)
 
+  // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;
   VkSurfaceFormatKHR[] surfaceformats = null;
   VkSwapchainKHR swapChain = null;
   VkCommandPool commandPool = null;
 
-  // per Frame
+  // Per frame resources (reset when rebuilding the swapchain)
   Sync[] sync = null;
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
@@ -107,24 +107,26 @@ struct App {
   VkDebugReportCallbackEXT debugCallback = null;
 
   // Sync and Frame Tracking
-  uint queueFamily = uint.max;          /// Current queueFamily used
-  uint syncIndex = 0;                   /// Sync index (Semaphore)
-  uint frameIndex = 0;                  /// Current frame index (Fence)
-  ulong[4] time = [0, 0, 0, 0];         /// Time monitoring (START, STARTUP, FRAMESTART, LASTTICK)
-  uint totalFramesRendered = 0;         /// Total frames rendered so far
+  uint queueFamily = uint.max;                    /// Current queueFamily used
+  uint syncIndex = 0;                             /// Sync index (Semaphore)
+  uint frameIndex = 0;                            /// Current frame index (Fence)
+  float soundEffectGain = 0.8;                    /// Sound Effects Gain
+  ulong[4] time = [0, 0, 0, 0];                   /// Time monitoring (START, STARTUP, FRAMESTART, LASTTICK)
+  uint totalFramesRendered = 0;                   /// Total frames rendered so far
 
-  @property uint imageCount() { return(cast(uint)swapChainImages.length); }
-  @property uint framesInFlight() { return(cast(uint)swapChainImages.length + 1); }
-
-  const(char)*[] instanceExtensions;    /// Enabled instance extensions
-  const(char)*[] deviceExtensions;      /// Enabled device extensions
-  const(char)*[] layers;                /// Enabled layers
+  const(char)*[] instanceExtensions;              /// Enabled instance extensions
+  const(char)*[] deviceExtensions;                /// Enabled device extensions
+  const(char)*[] layers;                          /// Enabled layers
 
   // Global boolean flags
-  bool finished = false;                /// Is the main loop finished ?
-  bool showBounds = true;               /// TO IMPLEMENT: Show bounding boxes
-  bool verbose = false;                 /// Be very verbose
-  bool rebuild = false;                 /// Rebuild the swapChain?
+  bool finished = false;                          /// Is the main loop finished ?
+  bool showBounds = true;                         /// TO IMPLEMENT: Show bounding boxes
+  bool verbose = false;                           /// Be very verbose
+  bool rebuild = false;                           /// Rebuild the swapChain?
+
+  // Properties based on the SwapChain
+  @property uint imageCount() { return(cast(uint)swapChainImages.length); }
+  @property uint framesInFlight() { return(cast(uint)swapChainImages.length + 1); }
 }
 
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance

@@ -9,7 +9,7 @@ import engine;
 
 import textures : Texture, idx, registerTexture;
 import commands : createCommandBuffer;
-import descriptor : Descriptor, createDSPool, createPoolSizes, createDescriptorSetLayout, createDescriptorSet;
+import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet;
 import pipeline : GraphicsPipeline;
 import images : createImage, transitionImageLayout;
 import swapchain : createImageView;
@@ -18,16 +18,17 @@ import ssbo : SSBO;
 import reflection : createResources;
 import uniforms : UBO;
 
+/** Compute structure with shaders, command buffer and pipelines
+ */
 struct Compute {
-  VkCommandBuffer[][const(char)*] commands;
-  GraphicsPipeline[const(char)*] pipelines;
-  Shader[] shaders;
+  Shader[] shaders;                           /// Compute shader objects
+  VkCommandBuffer[][const(char)*] commands;   /// Command buffers
+  GraphicsPipeline[const(char)*] pipelines;   /// Pipelines
 }
 
 /** Load shader modules for compute
  */
-void createComputeShaders(ref App app) {
-  const(char)*[] computePaths = ["assets/shaders/texture.glsl", "assets/shaders/particle.glsl"];
+void createComputeShaders(ref App app, const(char)*[] computePaths = ["assets/shaders/texture.glsl", "assets/shaders/particle.glsl"]) {
   foreach(path; computePaths){
     app.compute.shaders ~= app.createShaderModule(path, shaderc_glsl_compute_shader);
   }
@@ -42,7 +43,7 @@ void createComputeShaders(ref App app) {
 /** Create the compute pipeline specified by the selectedShader
  */
 void createComputePipeline(ref App app, Shader shader) {
-  SDL_Log("Created Compute Pipeline for %s", shader.path);
+  SDL_Log("createComputePipeline for Shader %s", shader.path);
   app.compute.pipelines[shader.path] = GraphicsPipeline();
   VkDescriptorSetLayout pSetLayouts = app.createDescriptorSetLayout([shader]);
   app.sets[shader.path] = createDescriptorSet(app.device, app.pools[COMPUTE], pSetLayouts,  app.framesInFlight);
@@ -117,18 +118,18 @@ void createStorageImage(ref App app, Descriptor descriptor){
 /** recordComputeCommandBuffer for syncIndex and the selected ComputeShader
  */
 void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) {
-  if(app.verbose) SDL_Log("Record Compute Command Buffer: %d", syncIndex);
-  enforceVK(vkResetCommandBuffer(app.compute.commands[shader.path][syncIndex], 0));
-
+  if(app.verbose) SDL_Log("Record Compute Command Buffer [%s]: %d", shader.path, syncIndex);
+  VkCommandBuffer cmdBuffer = app.compute.commands[shader.path][syncIndex];
+  enforceVK(vkResetCommandBuffer(cmdBuffer, 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-  enforceVK(vkBeginCommandBuffer(app.compute.commands[shader.path][syncIndex], &commandBufferInfo));
+  enforceVK(vkBeginCommandBuffer(cmdBuffer, &commandBufferInfo));
 
   float[3] nJobs = [1, 1, 1];
   for(uint d = 0; d < shader.descriptors.length; d++) {
-    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(app.textures[idx].image, app.compute.commands[shader.path][syncIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+      app.transitionImageLayout(app.textures[idx].image, cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
       nJobs[0] = app.textures[idx].width;
       nJobs[1] = app.textures[idx].height;
     }else{
@@ -140,7 +141,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].graphicsPipeline);
 
   // Bind the descriptor set containing the compute resources for the compute pipeline
-  vkCmdBindDescriptorSets(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, 
+  vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, 
                           app.compute.pipelines[shader.path].pipelineLayout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
 
   // Execute the compute pipeline dispatch
@@ -149,12 +150,13 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
                                                     , cast(uint)ceil(nJobs[2] / shader.groupCount[2]));
 
   for(uint d = 0; d < shader.descriptors.length; d++) {
-    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(app.textures[idx].image, app.compute.commands[shader.path][syncIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      app.transitionImageLayout(app.textures[idx].image, cmdBuffer, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
   }
 
-  vkEndCommandBuffer(app.compute.commands[shader.path][syncIndex]);
+  vkEndCommandBuffer(cmdBuffer);
   if(app.verbose) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
 }
+

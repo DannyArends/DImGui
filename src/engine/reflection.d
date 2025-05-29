@@ -97,7 +97,7 @@ void reflectShaders(ref App app, ref Shader[] shaders) {
 }
 
 void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
-  SDL_Log("Creating Shader Resources: %d shaders at pool %d", app.shaders.length, poolID);
+  if(app.verbose) SDL_Log("Creating Shader Resources: %d shaders at pool %s", app.shaders.length, poolID);
   app.createDSPool(poolID, shaders);
   for(uint s = 0; s < shaders.length; s++) {
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {
