@@ -10,7 +10,7 @@ import devices : getMSAASamples;
 
 /** Create a RenderPass object using a specified initial Layout and loadOp
  */
-void createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
+VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                                            VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR) {
   if(app.verbose) SDL_Log("Creating RenderPass");
 
@@ -76,8 +76,10 @@ void createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAGE_LAYOUT
     pDependencies : &subpassDependency,
   };
 
-  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &app.renderpass));
+  VkRenderPass renderpass;
+  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
   if(app.verbose) SDL_Log("RenderPass created");
-  app.frameDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.renderpass, app.allocator); });
+  app.frameDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
+  return(renderpass);
 }
 

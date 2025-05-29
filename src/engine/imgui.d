@@ -55,7 +55,7 @@ void initializeImGui(ref App app){
     Allocator : app.allocator,
     MinImageCount : app.camera.minImageCount,
     ImageCount : cast(uint)app.framesInFlight,
-    RenderPass : app.imguiPass,
+    RenderPass : app.imguipass,
     MSAASamples : app.getMSAASamples(),
     CheckVkResultFn : &enforceVK
   };
@@ -79,7 +79,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 
   VkRenderPassBeginInfo renderPassInfo = {
     sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass : app.imguiPass,
+    renderPass : app.imguipass,
     framebuffer : app.swapChainFramebuffers[app.frameIndex],
     renderArea : renderArea,
     clearValueCount : app.clearValue.length,
