@@ -93,7 +93,7 @@ void toGPU(ref App app, ref Texture texture){
 /** Texture index
  */
 @nogc int idx(const Texture[] textures, const(char)* name) nothrow {
-  for(uint i = 0; i < textures.length; i++) { if (strstr(textures[i].path, name) != null) return(i); }
+  for(uint i = 0; i < textures.length; i++) { if(strstr(textures[i].path, name) != null) return(i); }
   return(-1);
 }
 

@@ -42,12 +42,11 @@ void createComputeShaders(ref App app) {
 /** Create the compute pipeline specified by the selectedShader
  */
 void createComputePipeline(ref App app, Shader shader) {
+  SDL_Log("Created Compute Pipeline for %s", shader.path);
   app.compute.pipelines[shader.path] = GraphicsPipeline();
   VkDescriptorSetLayout pSetLayouts = app.createDescriptorSetLayout([shader]);
-  SDL_Log("Created layout for %s %p", shader.path, pSetLayouts);
-  //TODO Create a separate set for the shader
   app.sets[shader.path] = createDescriptorSet(app.device, app.pools[COMPUTE], pSetLayouts,  app.framesInFlight);
-  SDL_Log("!!!!");
+
   VkPipelineLayoutCreateInfo computeLayout = {
     sType : VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     pSetLayouts : &pSetLayouts,
@@ -141,7 +140,6 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].graphicsPipeline);
 
   // Bind the descriptor set containing the compute resources for the compute pipeline
-  //TODO: Change to Compute Shader SET
   vkCmdBindDescriptorSets(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, 
                           app.compute.pipelines[shader.path].pipelineLayout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
 

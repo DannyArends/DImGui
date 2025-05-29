@@ -108,9 +108,11 @@ void createImGuiDescriptorSetLayout(ref App app) {
 /** Create a descriptor pool based on the shaders provided
  */
 void createDSPool(ref App app, const(char)* poolID, Shader[] shaders) {
-  SDL_Log("createDSPool by shader: %s", poolID);
+  uint nShaders = 1;
+  if(strstr(poolID, COMPUTE) != null){ nShaders = cast(uint)shaders.length; }
+  SDL_Log("createDSPool by shader: %s, with %d shader size", poolID, nShaders);
   VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(shaders);
-  app.createDSPool(poolID, poolSizes, 2 * app.framesInFlight);
+  app.createDSPool(poolID, poolSizes, nShaders * app.framesInFlight); // TODO this should be based on the number of shaders
   app.frameDeletionQueue.add((){ 
     vkDestroyDescriptorPool(app.device, app.pools[poolID], app.allocator); 
   });
