@@ -97,7 +97,7 @@ struct App {
   VkImageView[] swapChainImageViews = null;
   VkFramebuffer[] swapChainFramebuffers = null;
 
-  VkRenderPass imguiPass = null;
+  VkRenderPass imguipass = null;
   VkRenderPass renderpass = null;
 
   VkCommandBuffer[] imguiBuffers = null;

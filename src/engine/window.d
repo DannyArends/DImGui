@@ -64,9 +64,9 @@ void createOrResizeWindow(ref App app) {
   app.createImGuiCommandBuffers();
 
   // Create RenderPass, FrameBuffers, render command buffers and the render pipelines
-  app.createRenderPass();
+  app.renderpass = app.createRenderPass();
   app.createFramebuffers();
-  app.imguiPass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
+  app.imguipass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
 
   app.createRenderCommandBuffers();
   foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
