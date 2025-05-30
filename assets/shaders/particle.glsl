@@ -14,7 +14,7 @@ struct Particle {
 };
 
 //size of a workgroup for compute
-layout (local_size_x = 256) in;
+layout (local_size_x = 512) in;
 
 //descriptor bindings for the pipeline
 layout(set = 0, binding = 0) uniform ParticleUniformBuffer {
@@ -24,7 +24,7 @@ layout(set = 0, binding = 0) uniform ParticleUniformBuffer {
   float deltaTime;
 } ubo;
 
-layout(set = 0, binding = 1) readonly buffer lastFrame {
+layout(set = 0, binding = 1) buffer lastFrame {
    Particle pIn[];
 };
 
@@ -47,7 +47,7 @@ void main(){
     newVelocity[1] = -newVelocity[1];
     newVelocity = newVelocity / (1.5 * particleIn.mass);
   }
-
+  pOut[index] = particleIn;
   pOut[index].position = particleIn.position + newVelocity;
   pOut[index].velocity = newVelocity;
 }

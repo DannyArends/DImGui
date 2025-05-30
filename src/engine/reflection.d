@@ -6,7 +6,7 @@
 import engine;
 
 import descriptor : Descriptor, createDSPool;
-import compute : createStorageImage;
+import compute : createStorageImage, transferToSSBO;
 import ssbo : createSSBO;
 import uniforms : createUBO;
 import shaders : Shader;
@@ -84,10 +84,10 @@ void reflectShader(ref App app, ref Shader shader) {
       }
       if(!descr.count) descr.count = cast(uint)app.textures.length;
       shader.descriptors ~= descr;
-      if(app.verbose){
+      //if(app.verbose){
         SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
                 descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.size);
-      }
+      //}
     }
   }
 }
@@ -102,7 +102,13 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
   for(uint s = 0; s < shaders.length; s++) {
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
-      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) app.createSSBO(shaders[s].descriptors[d]);
+      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
+        uint nObjects = cast(uint)app.compute.system.particles.length;
+        app.createSSBO(shaders[s].descriptors[d], nObjects);
+        if(strstr(shaders[s].descriptors[d].base, "currentFrame") != null){
+          app.transferToSSBO(shaders[s].descriptors[d]);
+        }
+      }
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createUBO(shaders[s].descriptors[d]);
     }
   }

@@ -13,7 +13,8 @@ struct Descriptor {
   VkDescriptorType type;
   const(char)* name;
   const(char)* base;
-  size_t size;  // Size  of the structure
+  size_t size;            /// Size  of the structure
+  size_t nObjects;        /// Number of objects stored
 
   uint set;
   uint binding;
@@ -183,11 +184,10 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
       }
       // Uniform Buffer Write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        VkDescriptorBufferInfo bufferInfo = {
+        VkDescriptorBufferInfo* bufferInfo = new VkDescriptorBufferInfo(
           buffer: app.ubos[shader.descriptors[d].base].buffer[syncIndex],
-          offset: 0,
           range: shader.descriptors[d].size
-        };
+        );
         descriptorWrites ~= VkWriteDescriptorSet(
           sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
           dstSet: dstSet[syncIndex],
@@ -195,19 +195,15 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
           dstArrayElement: 0,
           descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
           descriptorCount: 1,
-          pBufferInfo: &bufferInfo,
-          pImageInfo: null,
-          pTexelBufferView: null
+          pBufferInfo: bufferInfo
         );
       }
       // SSBO Buffer Write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if(strcmp(shader.descriptors[d].base, "lastFrame")){ syncIndex = ((syncIndex--) % app.framesInFlight); }
-        VkDescriptorBufferInfo bufferInfo = {
+        VkDescriptorBufferInfo* bufferInfo = new VkDescriptorBufferInfo(
           buffer: app.buffers[shader.descriptors[d].base].buffers[syncIndex],
-          offset: 0,
-          range: 4 * 1024
-        };
+          range: shader.descriptors[d].nObjects * shader.descriptors[d].size
+        ); // Weird this overwrites the previous one
         descriptorWrites ~= VkWriteDescriptorSet(
           sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
           dstSet: dstSet[syncIndex],
@@ -215,17 +211,15 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
           dstArrayElement: 0,
           descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
           descriptorCount: 1,
-          pBufferInfo: &bufferInfo,
-          pImageInfo: null,
-          pTexelBufferView: null
+          pBufferInfo: bufferInfo
         );
       }
       // Compute Stored Image
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-        VkDescriptorImageInfo imageInfo = {
+        VkDescriptorImageInfo* imageInfo = new VkDescriptorImageInfo(
           imageLayout: VK_IMAGE_LAYOUT_GENERAL,
           imageView: app.textures[app.textures.idx(shader.descriptors[d].name)].view,
-        };
+        );
         descriptorWrites ~= VkWriteDescriptorSet(
           sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
           dstSet: dstSet[syncIndex],
@@ -233,7 +227,7 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
           dstArrayElement: 0,
           descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
           descriptorCount: shader.descriptors[d].count,
-          pImageInfo: &imageInfo
+          pImageInfo: imageInfo
         );
       }
     }
