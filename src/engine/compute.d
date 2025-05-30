@@ -7,20 +7,25 @@ import core.time : MonoTime;
 
 import engine;
 
-import textures : Texture, idx, registerTexture;
+import buffer : createBuffer, copyBuffer;
 import commands : createCommandBuffer;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet;
-import pipeline : GraphicsPipeline;
 import images : createImage, transitionImageLayout;
+import particlesystem : ParticleSystem;
+import pipeline : GraphicsPipeline;
+import reflection : createResources;
 import swapchain : createImageView;
 import shaders : Shader, createShaderModule;
 import ssbo : SSBO;
-import reflection : createResources;
-import uniforms : UBO;
-
+import sync : insertWriteBarrier, insertReadBarrier;
+import textures : Texture, idx, registerTexture;
+import uniforms : ParticleUniformBuffer, UBO;
+import quaternion : xyzw;
 /** Compute structure with shaders, command buffer and pipelines
  */
 struct Compute {
+  uint lastTick;
+  ParticleSystem system;
   Shader[] shaders;                           /// Compute shader objects
   VkCommandBuffer[][const(char)*] commands;   /// Command buffers
   GraphicsPipeline[const(char)*] pipelines;   /// Pipelines
@@ -29,6 +34,7 @@ struct Compute {
 /** Load shader modules for compute
  */
 void createComputeShaders(ref App app, const(char)*[] computePaths = ["assets/shaders/texture.glsl", "assets/shaders/particle.glsl"]) {
+  app.compute.system = new ParticleSystem(50000);
   foreach(path; computePaths){
     app.compute.shaders ~= app.createShaderModule(path, shaderc_glsl_compute_shader);
   }
@@ -82,6 +88,56 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
   });
 }
 
+void transferToSSBO(ref App app, Descriptor descriptor){
+  uint size = cast(uint)(descriptor.nObjects * descriptor.size);
+  VkBuffer stagingBuffer;
+  VkDeviceMemory stagingBufferMemory;
+  app.createBuffer(&stagingBuffer, &stagingBufferMemory, size);
+  void* data;
+  vkMapMemory(app.device, stagingBufferMemory, 0, size, 0, &data);
+  memcpy(data, &app.compute.system.particles[0], size);
+  vkUnmapMemory(app.device, stagingBufferMemory);
+  for(uint i = 0; i < app.framesInFlight; i++) {
+    app.copyBuffer(stagingBuffer, app.buffers[descriptor.base].buffers[i], size);
+  }
+  vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
+  vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+}
+
+void updateComputeUBO(ref App app, uint syncIndex = 0 ){
+
+  for(uint s = 0; s < app.compute.shaders.length; s++) {
+    auto shader = app.compute.shaders[s];
+    for(uint d = 0; d < shader.descriptors.length; d++) {
+      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){
+        uint now = SDL_GetTicks();
+        ParticleUniformBuffer buffer = {
+          position: app.compute.system.position.xyzw,
+          gravity: app.compute.system.gravity.xyzw,
+          floor: app.compute.system.floor,
+          deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
+        };
+        app.compute.lastTick = now;
+
+        void* data;
+        vkMapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex], 0, ParticleUniformBuffer.sizeof, 0, &data);
+        memcpy(data, &buffer, ParticleUniformBuffer.sizeof);
+        vkUnmapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex]);
+      }
+      /* Copy data off the GPU to the CPU */
+      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
+        if(strstr(shader.descriptors[d].base, "currentFrame") != null){
+          uint size = cast(uint)(shader.descriptors[d].size * shader.descriptors[d].nObjects);
+          void* mappedData;
+          vkMapMemory(app.device, app.buffers[shader.descriptors[d].base].memory[syncIndex], 0, size, 0, &mappedData);
+          memcpy(&app.compute.system.particles[0], mappedData, size);
+          vkUnmapMemory(app.device, app.buffers[shader.descriptors[d].base].memory[syncIndex]);
+        }
+      }
+    }
+  }
+}
+
 void createStorageImage(ref App app, Descriptor descriptor){
   VkImageUsageFlags usage;
   usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -126,15 +182,33 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   enforceVK(vkBeginCommandBuffer(cmdBuffer, &commandBufferInfo));
 
   float[3] nJobs = [1, 1, 1];
+  uint size;
+  VkBuffer src;
+  VkBuffer dst;
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
       app.transitionImageLayout(app.textures[idx].image, cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
       nJobs[0] = app.textures[idx].width;
       nJobs[1] = app.textures[idx].height;
-    }else{
-      nJobs[0] = 500; // Set based on the size of the SSBO and the Object being Send
+    }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+      nJobs[0] = shader.descriptors[d].nObjects; // Set based on the size of the SSBO and the Object being Send
+      size = cast(uint)(shader.descriptors[d].size * shader.descriptors[d].nObjects);
+      if(strstr(shader.descriptors[d].base, "currentFrame") != null){ 
+        src = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
+      }
+      if(strstr(shader.descriptors[d].base, "lastFrame") != null){ 
+        dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
+      }
     }
+  }
+  if(src && dst){
+    cmdBuffer.insertWriteBarrier(dst, size);
+
+    VkBufferCopy copyRegion = {size: size};
+    vkCmdCopyBuffer(cmdBuffer, src, dst, 1, &copyRegion );
+
+    cmdBuffer.insertReadBarrier(src, size);
   }
 
   // Bind the compute pipeline

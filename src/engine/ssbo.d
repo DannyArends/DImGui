@@ -13,16 +13,17 @@ struct SSBO {
   VkDeviceMemory[] memory;
 }
 
-void createSSBO(ref App app, Descriptor descriptor, uint nObjects = 1000) {
-  if(app.verbose) SDL_Log("createSSBO at %s, size = %d", descriptor.base, descriptor.size * nObjects);
+void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
+  SDL_Log("createSSBO at %s, size = %d", descriptor.base, descriptor.size * nObjects);
   app.buffers[descriptor.base] = SSBO();
   app.buffers[descriptor.base].buffers.length = app.framesInFlight;
   app.buffers[descriptor.base].memory.length = app.framesInFlight;
 
+  descriptor.nObjects = nObjects;
   for(uint i = 0; i < app.framesInFlight; i++) {
     app.createBuffer(&app.buffers[descriptor.base].buffers[i], &app.buffers[descriptor.base].memory[i], descriptor.size * nObjects, 
-                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
   }
 
   app.frameDeletionQueue.add((){

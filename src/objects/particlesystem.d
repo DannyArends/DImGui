@@ -26,7 +26,7 @@ class ParticleSystem : Geometry {
   float rate = 0.000001f;
   Particle[] particles;
 
-  this(uint nParticles = 10000, bool verbose = false) {
+  this(uint nParticles = 1000, bool verbose = false) {
     particles.length = nParticles;
     vertices.length = nParticles;
     indices.length = nParticles;
@@ -46,6 +46,8 @@ class ParticleSystem : Geometry {
     auto g = uniform(color[0][1], color[1][1]);
     auto b = uniform(color[0][2], color[1][2]);
     vertices[i] = Vertex(position, [0.0f,0.0f], [r, g, b, 1.0f]);
+
+    particles[i].position = position;
     indices[i] = i;
     particles[i].velocity = [uniform(impulse[0][0], impulse[1][0]),
                              uniform(impulse[0][1], impulse[1][1]),
@@ -54,24 +56,13 @@ class ParticleSystem : Geometry {
     particles[i].velocity[] = particles[i].velocity[].vMul(uniform(0.01f, 0.1f));
     particles[i].life = uniform(0.1f, 1.0f);
     particles[i].mass = uniform(1.0f, 5.0f);
-    particles[i].random = uniform(0.0f, 0.005f);
+    particles[i].random = uniform(0.0f, 0.1f);
   }
 
   /** Age all particles */
   void age() {
     for (uint i = 0; i < particles.length; i++) {
-      particles[i].life -= (rate + particles[i].random);
-      if(particles[i].life < 0.0f) spawn(i);
-
-      float[3] tE = gravity.vMul(particles[i].mass).vAdd(particles[i].energy);
-      particles[i].velocity[] = tE[] / particles[i].mass;
-
-      if(vertices[i].position[1] + particles[i].velocity[1] < floor){
-        vertices[i].position[1] = floor;
-        particles[i].velocity[1] = -particles[i].velocity[1];
-        particles[i].velocity[] = particles[i].velocity[] / (1.5 * particles[i].mass);
-      }
-      vertices[i].position[] = vertices[i].position[] + particles[i].velocity[];
+      vertices[i].position[] = particles[i].position[];
     }
     buffers[VERTEX] = false;
   }
