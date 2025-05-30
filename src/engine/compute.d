@@ -88,24 +88,25 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
   });
 }
 
-void transferToSSBO(ref App app, Descriptor descriptor){
-  uint size = cast(uint)(descriptor.nObjects * descriptor.size);
+void transferToSSBO(ref App app, Descriptor descriptor) {
+  void* data;
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, size);
-  void* data;
-  vkMapMemory(app.device, stagingBufferMemory, 0, size, 0, &data);
-  memcpy(data, &app.compute.system.particles[0], size);
+
+  app.createBuffer(&stagingBuffer, &stagingBufferMemory, descriptor.size);
+  vkMapMemory(app.device, stagingBufferMemory, 0, descriptor.size, 0, &data);
+  memcpy(data, &app.compute.system.particles[0], descriptor.size);
   vkUnmapMemory(app.device, stagingBufferMemory);
+
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.copyBuffer(stagingBuffer, app.buffers[descriptor.base].buffers[i], size);
+    app.copyBuffer(stagingBuffer, app.buffers[descriptor.base].buffers[i], descriptor.size);
   }
+
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
 }
 
-void updateComputeUBO(ref App app, uint syncIndex = 0 ){
-
+void updateComputeUBO(ref App app, uint syncIndex = 0){
   for(uint s = 0; s < app.compute.shaders.length; s++) {
     auto shader = app.compute.shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
@@ -127,11 +128,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0 ){
       /* Copy data off the GPU to the CPU */
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
         if(strstr(shader.descriptors[d].base, "currentFrame") != null){
-          uint size = cast(uint)(shader.descriptors[d].size * shader.descriptors[d].nObjects);
-          void* mappedData;
-          vkMapMemory(app.device, app.buffers[shader.descriptors[d].base].memory[syncIndex], 0, size, 0, &mappedData);
-          memcpy(&app.compute.system.particles[0], mappedData, size);
-          vkUnmapMemory(app.device, app.buffers[shader.descriptors[d].base].memory[syncIndex]);
+          memcpy(&app.compute.system.particles[0], app.buffers[shader.descriptors[d].base].data[syncIndex], shader.descriptors[d].size);
         }
       }
     }
@@ -183,8 +180,8 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
 
   float[3] nJobs = [1, 1, 1];
   uint size;
-  VkBuffer src;
-  VkBuffer dst;
+  VkBuffer src, dst;
+
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
@@ -193,22 +190,20 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
       nJobs[1] = app.textures[idx].height;
     }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
       nJobs[0] = shader.descriptors[d].nObjects; // Set based on the size of the SSBO and the Object being Send
-      size = cast(uint)(shader.descriptors[d].size * shader.descriptors[d].nObjects);
-      if(strstr(shader.descriptors[d].base, "currentFrame") != null){ 
+      size = shader.descriptors[d].size;
+      if(strstr(shader.descriptors[d].base, "currentFrame") != null) { 
         src = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
       }
-      if(strstr(shader.descriptors[d].base, "lastFrame") != null){ 
+      if(strstr(shader.descriptors[d].base, "lastFrame") != null) { 
         dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
       }
     }
   }
-  if(src && dst){
-    cmdBuffer.insertWriteBarrier(dst, size);
-
+  if (src && dst) {
+    cmdBuffer.insertWriteBarrier(dst);
     VkBufferCopy copyRegion = {size: size};
-    vkCmdCopyBuffer(cmdBuffer, src, dst, 1, &copyRegion );
-
-    cmdBuffer.insertReadBarrier(src, size);
+    vkCmdCopyBuffer(cmdBuffer, src, dst, 1, &copyRegion);
+    cmdBuffer.insertReadBarrier(src);
   }
 
   // Bind the compute pipeline
