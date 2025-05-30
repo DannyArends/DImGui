@@ -13,12 +13,14 @@ struct Descriptor {
   VkDescriptorType type;
   const(char)* name;
   const(char)* base;
-  size_t size;            /// Size  of the structure
+  size_t bytes;            /// Size  of the structure
   size_t nObjects;        /// Number of objects stored
 
   uint set;
   uint binding;
   uint count;
+
+  @property uint size(){ return(cast(uint)(bytes * nObjects)); }
 }
 
 struct DescriptorLayoutBuilder {
@@ -186,7 +188,7 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
         VkDescriptorBufferInfo* bufferInfo = new VkDescriptorBufferInfo(
           buffer: app.ubos[shader.descriptors[d].base].buffer[syncIndex],
-          range: shader.descriptors[d].size
+          range: shader.descriptors[d].bytes
         );
         descriptorWrites ~= VkWriteDescriptorSet(
           sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -202,7 +204,7 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         VkDescriptorBufferInfo* bufferInfo = new VkDescriptorBufferInfo(
           buffer: app.buffers[shader.descriptors[d].base].buffers[syncIndex],
-          range: shader.descriptors[d].nObjects * shader.descriptors[d].size
+          range: shader.descriptors[d].size
         ); // Weird this overwrites the previous one
         descriptorWrites ~= VkWriteDescriptorSet(
           sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

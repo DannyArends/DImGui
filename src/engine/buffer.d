@@ -65,27 +65,27 @@ void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDev
   if(app.verbose) SDL_Log("Buffer %p [size=%d] created, allocated, and bound", (*buffer), size);
 }
 
-void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size = VK_WHOLE_SIZE) {
   VkCommandBuffer commandBuffer = app.beginSingleTimeCommands();
-  VkBufferCopy copyRegion = { size: size };
+  VkBufferCopy copyRegion = { size : size };
   vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
   app.endSingleTimeCommands(commandBuffer);
 }
 
-void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size) {
+void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
   if(app.verbose) SDL_Log("updateBuffer");
-  VkBufferCopy copyRegion = { size: size };
+  VkBufferCopy copyRegion = { size : size };
   vkCmdCopyBuffer(app.renderBuffers[app.syncIndex], buffer.sb, buffer.vb, 1, &copyRegion);
 
   VkBufferMemoryBarrier bufferBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-    srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,      // Data written by transfer operation
-    dstAccessMask : VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, // Data read by vertex attributes
+    srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,         // Data written by transfer operation
+    dstAccessMask : VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,  // Data read by vertex attributes
     srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
     dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-    buffer : buffer.vb, // Barrier for your single vertex buffer
+    buffer : buffer.vb,                                   // Block on this vulkan buffer
     offset : 0,
-    size : VK_WHOLE_SIZE // Or app.currentVertexDataSize
+    size : size                                           // size of the buffer
   };
 
   vkCmdPipelineBarrier(

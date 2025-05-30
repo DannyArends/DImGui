@@ -64,14 +64,14 @@ void reflectShader(ref App app, ref Shader shader) {
 
       // UBO: Get the size of the UBO
       if(types[type] == SPVC_RESOURCE_TYPE_UNIFORM_BUFFER) {
-        app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler_glsl, base_handle, &descr.size));
+        app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler_glsl, base_handle, &descr.bytes));
       }
 
       // SSBO: Get the size of the SSBO element
       if (types[type] == SPVC_RESOURCE_TYPE_STORAGE_BUFFER) {
           spvc_type_id element_id = spvc_type_get_member_type(type_handle, 0);
           spvc_type element_handle = spvc_compiler_get_type_handle(compiler_glsl, element_id);
-          app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler_glsl, element_handle, &descr.size));
+          app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler_glsl, element_handle, &descr.bytes));
       }
 
       // Figure out the descriptor count in a round-about way
@@ -86,7 +86,7 @@ void reflectShader(ref App app, ref Shader shader) {
       shader.descriptors ~= descr;
       //if(app.verbose){
         SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
-                descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.size);
+                descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);
       //}
     }
   }
@@ -103,9 +103,8 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
-        uint nObjects = cast(uint)app.compute.system.particles.length;
-        app.createSSBO(shaders[s].descriptors[d], nObjects);
-        if(strstr(shaders[s].descriptors[d].base, "currentFrame") != null){
+        app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
+        if(strstr(shaders[s].descriptors[d].base, "currentFrame") != null) {
           app.transferToSSBO(shaders[s].descriptors[d]);
         }
       }
