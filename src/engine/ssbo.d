@@ -15,7 +15,7 @@ struct SSBO {
 }
 
 void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
-  SDL_Log("createSSBO at %s, size = %d", descriptor.base, descriptor.size);
+  if(app.verbose) SDL_Log("createSSBO at %s, size = %d", descriptor.base, descriptor.bytes);
   app.buffers[descriptor.base] = SSBO();
   app.buffers[descriptor.base].data.length = app.framesInFlight;
   app.buffers[descriptor.base].buffers.length = app.framesInFlight;

@@ -49,7 +49,7 @@ void createComputeShaders(ref App app, const(char)*[] computePaths = ["assets/sh
 /** Create the compute pipeline specified by the selectedShader
  */
 void createComputePipeline(ref App app, Shader shader) {
-  SDL_Log("createComputePipeline for Shader %s", shader.path);
+  if(app.verbose) SDL_Log("createComputePipeline for Shader %s", shader.path);
   app.compute.pipelines[shader.path] = GraphicsPipeline();
   VkDescriptorSetLayout pSetLayouts = app.createDescriptorSetLayout([shader]);
   app.sets[shader.path] = createDescriptorSet(app.device, app.pools[COMPUTE], pSetLayouts,  app.framesInFlight);
@@ -127,7 +127,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
       }
       /* Copy data off the GPU to the CPU */
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
-        if(strstr(shader.descriptors[d].base, "currentFrame") != null){
+        if(SDL_strstr(shader.descriptors[d].base, "currentFrame") != null){
           memcpy(&app.compute.system.particles[0], app.buffers[shader.descriptors[d].base].data[syncIndex], shader.descriptors[d].size);
         }
       }
@@ -191,10 +191,10 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
     }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
       nJobs[0] = shader.descriptors[d].nObjects; // Set based on the size of the SSBO and the Object being Send
       size = shader.descriptors[d].size;
-      if(strstr(shader.descriptors[d].base, "currentFrame") != null) { 
+      if(SDL_strstr(shader.descriptors[d].base, "currentFrame") != null) { 
         src = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
       }
-      if(strstr(shader.descriptors[d].base, "lastFrame") != null) { 
+      if(SDL_strstr(shader.descriptors[d].base, "lastFrame") != null) { 
         dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
       }
     }
