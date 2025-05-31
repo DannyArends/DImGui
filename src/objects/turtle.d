@@ -35,7 +35,7 @@ class Turtle : Geometry {
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
     /** onFrame handler aging the particles every frame */
-    onFrame = (ref App app, ref Geometry obj){ (cast(Turtle)obj).age(); };
+    onFrame = (ref App app, ref Geometry obj, float dt){ (cast(Turtle)obj).age(); };
     name = (){ return(typeof(this).stringof); };
   }
 

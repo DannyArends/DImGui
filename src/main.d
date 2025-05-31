@@ -16,7 +16,7 @@ import glyphatlas : loadGlyphAtlas, createFontTexture;
 import scene : createScene;
 import imgui : initializeImGui;
 import instance : createInstance;
-import sdl : initializeSDL, START, STARTUP, FRAMESTART, LASTTICK;
+import sdl : initializeSDL, START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
 import shaders : createCompiler, createRenderShaders;
 import reflection : createReflectionContext;
 import surface : createSurface;
@@ -52,14 +52,15 @@ void main(string[] args) {
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 50000;
   while (!app.finished && app.totalFramesRendered < frames) { /// Event polling & rendering Loop
-    app.time[FRAMESTART] = SDL_GetTicks();
     app.handleEvents();
+    app.time[FRAMESTART] = SDL_GetTicks();
     if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
 
     app.checkForResize();
     app.renderFrame();
     app.presentFrame();
     app.totalFramesRendered++;
+    app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
   app.cleanUp();

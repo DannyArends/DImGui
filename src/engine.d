@@ -111,7 +111,7 @@ struct App {
   uint syncIndex = 0;                             /// Sync index (Semaphore)
   uint frameIndex = 0;                            /// Current frame index (Fence)
   float soundEffectGain = 0.8;                    /// Sound Effects Gain
-  ulong[4] time = [0, 0, 0, 0];                   /// Time monitoring (START, STARTUP, FRAMESTART, LASTTICK)
+  ulong[5] time = [0, 0, 0, 0, 0];                /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK)
   uint totalFramesRendered = 0;                   /// Total frames rendered so far
 
   const(char)*[] instanceExtensions;              /// Enabled instance extensions

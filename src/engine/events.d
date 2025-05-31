@@ -12,7 +12,7 @@ import commands : recordRenderCommandBuffer;
 import camera : move, drag, castRay;
 import geometry : deAllocate;
 import line : createLine;
-import sdl : FRAMESTART, LASTTICK;
+import sdl : FRAMESTART, FRAMESTOP, LASTTICK;
 
 /** Handle keyboard events
  */
@@ -85,7 +85,8 @@ void handleEvents(ref App app) {
   }
 
   // Call all onFrame() handlers
-  foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object); }
+  float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
+  foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 
   // Wait and remove stale geometry
 //  enforceVK(vkDeviceWaitIdle(app.device));

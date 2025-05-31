@@ -14,7 +14,7 @@ void checkSDLError() {
 }
 
 enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };
-enum { START = 0, STARTUP = 1, FRAMESTART = 2, LASTTICK = 3 };
+enum { START = 0, STARTUP = 1, FRAMESTART = 2, FRAMESTOP = 3, LASTTICK = 4 };
 
 App initializeSDL() {
   int[4] init;
