@@ -5,6 +5,7 @@
 
 import engine;
 
+import core.memory : GC;
 import std.algorithm : remove, reverse;
 
 import commands : recordRenderCommandBuffer;
@@ -77,6 +78,7 @@ void handleEvents(ref App app) {
   }
 
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 2500) {
+    GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.verbose) SDL_Log("10 seconds: Frame: %d", app.totalFramesRendered);
     foreach(object; app.objects) { if(object.onTick) object.onTick(app, object); }
