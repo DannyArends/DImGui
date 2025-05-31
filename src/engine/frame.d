@@ -37,7 +37,6 @@ void renderFrame(ref App app){
   // --- Phase 2: Prepare & Submit Compute Work ---
   if(app.verbose) SDL_Log("Phase 2: Prepare & Submit Compute Work");
   app.updateComputeUBO(app.syncIndex);
-  //TODO: Change to Compute Shader SET
 
   VkCommandBuffer[] computeCommandBuffers = [];
   foreach(ref shader; app.compute.shaders){
@@ -48,7 +47,7 @@ void renderFrame(ref App app){
 
   VkSubmitInfo submitComputeInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    commandBufferCount : 2,
+    commandBufferCount : cast(uint)computeCommandBuffers.length,
     pCommandBuffers : &computeCommandBuffers[0],
     signalSemaphoreCount : 1,
     pSignalSemaphores : &computeComplete
