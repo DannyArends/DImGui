@@ -58,7 +58,7 @@ class Geometry {
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseUp;
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseOver;
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseMove;
-  void function(ref App app, ref Geometry obj) onFrame;
+  void function(ref App app, ref Geometry obj, float dt) onFrame;
   void function(ref App app, ref Geometry obj) onTick;
   string function() name;
 }

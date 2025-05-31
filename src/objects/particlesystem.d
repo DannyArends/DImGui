@@ -36,7 +36,7 @@ class ParticleSystem : Geometry {
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
 
     /** onFrame handler aging the particles every frame */
-    onFrame = (ref App app, ref Geometry obj){ (cast(ParticleSystem)obj).age(); };
+    onFrame = (ref App app, ref Geometry obj, float dt){ (cast(ParticleSystem)obj).age(); };
     name = (){ return(typeof(this).stringof); };
   }
 

@@ -55,9 +55,9 @@ void createScene(ref App app){
   app.objects[2].computeNormals();
   app.objects[2].scale([3.0f, 3.0f, 3.0f]);
   app.objects[2].position([10.0f, 2.0f, 2.0f]);
-  app.objects[2].onFrame = (ref App app, ref Geometry obj){
+  app.objects[2].onFrame = (ref App app, ref Geometry obj, float dt){
       auto p = obj.position;
-      obj.rotate([0.5f, 0.0f, 0.0f]);
+      obj.rotate([dt, 0.0f, 0.0f]);
       obj.position(p);
     };
 
@@ -66,8 +66,8 @@ void createScene(ref App app){
   app.objects[3].rotate([90.0f, 0.0f, 0.0f]);
   app.objects[3].position([5.0f, 2.0f, 2.0f]);
   app.objects[2].computeNormals();
-  app.objects[3].onFrame = (ref App app, ref Geometry obj){
-      obj.rotate([0.0f, 0.2f, 0.4f]);
+  app.objects[3].onFrame = (ref App app, ref Geometry obj, float dt){
+      obj.rotate([0.0f, 2 * dt, 4 * dt]);
     };
 
   SDL_Log("createScene: Add Wavefront");
@@ -91,14 +91,14 @@ void createScene(ref App app){
     }
   } */
 
-  SDL_Log("createScene: Add L-System");
+ /* SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
   app.objects[6].computeNormals();
-  app.objects[6].position([2.0f, 1.0f, -2.0f]);
+  app.objects[6].position([2.0f, 1.0f, -2.0f]); */
 
   SDL_Log("createScene: Add PDB object");
   auto protein = loadProteinCif("assets/objects/3kql.cif.gz");
-  uint i = 7;
+  uint i = 6;
   app.objects ~= new AtomCloud(protein.atoms());
   app.objects[i].scale([0.5f, 0.5f, 0.5f]);
   i++;
