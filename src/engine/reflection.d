@@ -84,10 +84,10 @@ void reflectShader(ref App app, ref Shader shader) {
       }
       if(!descr.count) descr.count = cast(uint)app.textures.length;
       shader.descriptors ~= descr;
-      //if(app.verbose){
+      if(app.verbose){
         SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
                 descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);
-      //}
+      }
     }
   }
 }
@@ -104,7 +104,7 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
         app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
-        if(strstr(shaders[s].descriptors[d].base, "currentFrame") != null) {
+        if(SDL_strstr(shaders[s].descriptors[d].base, "currentFrame") != null) {
           app.transferToSSBO(shaders[s].descriptors[d]);
         }
       }

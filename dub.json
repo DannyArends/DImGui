@@ -22,7 +22,7 @@
                               "-LIBPATH:./bin/", 
                               "-LIBPATH:./deps/libs/lib", 
                               "SDL2main.lib", "SDL2.lib", "SDL2_image.lib", "SDL2_mixer.lib", "SDL2_ttf.lib",
-                              "cimgui.lib", "vulkan-1.lib", "shaderc_shared.lib"],
+                              "cimgui.lib", "vulkan-1.lib", "shaderc_shared.lib", "spirv-cross-c-shared.lib"],
 		"dflags-linux": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
 		"lflags-linux": ["-L$PACKAGE_DIR"],
 		"copyFiles-windows-x86_64": [
