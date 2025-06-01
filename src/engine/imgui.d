@@ -25,7 +25,9 @@ struct GUI {
   bool showFPS = true;
   bool showObjects = false;
   bool showLights = false;
+  bool showSettings = false;
   bool showSFX = false;
+  bool showShaders = false;
   bool showTexture = false;
   float[2] pos = [-50.0, 50];
   float[2] col = [0.0, 2.0f];
@@ -198,6 +200,70 @@ void showSFXwindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+/** Show the GUI window with global settings
+ */
+void showSettingswindow(ref App app, bool* show, uint font = 0) {
+  igPushFont(app.gui.fonts[font]);
+  igPopFont();
+  if(igBegin("Settings", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+    igBeginTable("Settings_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+    igTableNextColumn();
+    igText("Total Frames", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igText(toStringz(format("%s", app.totalFramesRendered)), ImVec2(0.0f, 0.0f));
+
+    igTableNextColumn();
+    igText("Deletion Queues", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igText(toStringz(format("%d / %d / %d", app.bufferDeletionQueue.length, app.frameDeletionQueue.length, app.mainDeletionQueue.length)), ImVec2(0.0f, 0.0f));
+
+    igTableNextColumn();
+    igText("Verbose", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igCheckbox("##Verbose", &app.verbose);
+
+    igTableNextColumn();
+    igText("Volume", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igSliderScalar("##", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
+
+    igTableNextColumn();
+    igText("showBounds", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igCheckbox("##showBounds", &app.showBounds);
+
+    igTableNextColumn();
+    igText("Clear color", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igPushItemWidth(75);
+    igSliderScalar("##colR", ImGuiDataType_Float,  &app.clearValue[0].color.float32[0], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);igSameLine(0,5);
+    igPushItemWidth(75);
+    igSliderScalar("##colG", ImGuiDataType_Float,  &app.clearValue[0].color.float32[1], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);igSameLine(0,5);
+    igPushItemWidth(75);
+    igSliderScalar("##colB", ImGuiDataType_Float,  &app.clearValue[0].color.float32[2], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);
+
+    igEndTable();
+    igEnd();
+  }else { igEnd(); }
+}
+
+/** Show the GUI window for Shaders
+ */
+void showShaderwindow(ref App app, bool* show, uint font = 0) {
+  igPushFont(app.gui.fonts[font]);
+  igPopFont();
+  if(igBegin("Shaders", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+    igBeginTable("Shaders_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+    foreach(i, shader; (app.shaders ~ app.compute.shaders)) {
+      igPushID_Int(to!int(i));
+      igTableNextRow(0, 5.0f);
+      igTableNextColumn();
+      igText(toStringz(baseName(fromStringz(shader.path))), ImVec2(0.0f, 0.0f));
+      igTableNextColumn();
+      igText(toStringz(format("%s", shader.stage)), ImVec2(0.0f, 0.0f));
+      igTableNextColumn();
+      igText(toStringz(format("Descriptors: %s\nExecute as [%d, %d, %d]", shader.descriptors.length, shader.groupCount[0], shader.groupCount[1], shader.groupCount[2])), ImVec2(0.0f, 0.0f));
+      igPopID();
+    }
+    igEndTable();
+    igEnd();
+  }else { igEnd(); }
+}
+
 /** Show the GUI window which allows us to manipulate lighting
  */
 void showLightswindow(ref App app, bool* show, uint font = 0) {
@@ -261,6 +327,8 @@ void showMenu(ref App app, uint font = 0) {
       if(igMenuItem_Bool("Demo".toStringz,null, false, true)) {  app.gui.showDemo = !app.gui.showDemo; }
       if(igMenuItem_Bool("Objects".toStringz,null, false, true)) { app.gui.showObjects = !app.gui.showObjects; }
       if(igMenuItem_Bool("Sounds".toStringz,null, false, true)) { app.gui.showSFX = !app.gui.showSFX; }
+      if(igMenuItem_Bool("Shaders".toStringz,null, false, true)) { app.gui.showShaders = !app.gui.showShaders; }
+      if(igMenuItem_Bool("Settings".toStringz,null, false, true)) { app.gui.showSettings = !app.gui.showSettings; }
       if(igMenuItem_Bool("Lights".toStringz,null, false, true)) { app.gui.showLights = !app.gui.showLights; }
       if(igMenuItem_Bool("Textures".toStringz,null, false, true)) {  app.gui.showTexture = !app.gui.showTexture; }
       igEndMenu();
@@ -281,6 +349,8 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showFPS) app.showFPSwindow();
   if(app.gui.showObjects) app.showObjectswindow(&app.gui.showObjects);
   if(app.gui.showSFX) app.showSFXwindow(&app.gui.showSFX);
+  if(app.gui.showShaders) app.showShaderwindow(&app.gui.showShaders);
+  if(app.gui.showSettings) app.showSettingswindow(&app.gui.showSettings);
   if(app.gui.showLights) app.showLightswindow(&app.gui.showLights);
   if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture);
 

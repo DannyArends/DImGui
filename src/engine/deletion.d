@@ -6,6 +6,7 @@ import std.algorithm : remove, reverse;
 
 struct DeletionQueue {
   void delegate()[] queue;
+  alias queue this;
 
   void add(void delegate() fn){ queue ~= fn; }
   void flush(){
@@ -16,6 +17,7 @@ struct DeletionQueue {
 
 struct CheckedDeletionQueue {
   bool delegate()[] queue;
+  alias queue this;
 
   void add(bool delegate() fn){ queue ~= fn; }
   void flush(){

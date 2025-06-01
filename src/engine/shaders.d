@@ -17,6 +17,7 @@ struct Shader {
   VkShaderModule shaderModule;            /// Vulkan Shader Module
   VkPipelineShaderStageCreateInfo info;   /// Shader Stage Create Info Object
 
+  char[] source;                          /// Source code
   const(uint)* code;                      /// Compiled Code
   size_t codeSize;                        /// Size of the compiled code
   @property size_t nwords(){ return(codeSize / uint.sizeof); };
@@ -50,9 +51,9 @@ void createCompiler(ref App app) {
  */
 Shader createShaderModule(App app, const(char)* path, shaderc_shader_kind type = shaderc_glsl_vertex_shader) {
   auto source = readFile(path, app.verbose);
-  auto result = shaderc_compile_into_spv(app.compiler, &(cast(char[])source)[0], source.length, type, path, "main", app.options);
+  auto result = shaderc_compile_into_spv(app.compiler, &source[0], source.length, type, path, "main", app.options);
 
-  Shader shader = {path, convert(type)};
+  Shader shader = {path : path, stage : convert(type), source : source};
 
   if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
     SDL_Log("Shader '%s' compilation failed:\n%s", path, shaderc_result_get_error_message(result));
