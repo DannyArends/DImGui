@@ -15,19 +15,19 @@ import std.zlib : UnCompress;
 
 /** Read content of a file as a uint[]
  */
-uint[] readFile(const(char*) path, bool verbose = false) {
+char[] readFile(const(char*) path, bool verbose = false) {
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
 
-  uint[] content;
+  char[] content;
   content.length = cast(size_t)SDL_RWsize(fp);
 
   size_t readTotal = 0, nRead = 1;
-  uint* cPos = &content[0];
+  char* bPtr = &content[0];
   while (readTotal < content.length && nRead != 0) {
-    nRead = SDL_RWread(fp, cPos, 1, cast(size_t)(content.length - readTotal));
+    nRead = SDL_RWread(fp, bPtr, 1, cast(size_t)(content.length - readTotal));
     readTotal += nRead;
-    cPos += nRead;
+    bPtr += nRead;
   }
   SDL_RWclose(fp);
 
