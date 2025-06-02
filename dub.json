@@ -22,7 +22,9 @@
 		"lflags-windows-x86_64": ["/LIBPATH:C:/VulkanSDK/1.4.309.0/Lib", 
                               "/LIBPATH:./bin/", 
                               "/LIBPATH:./deps/libs/lib"],
-		"dflags-linux": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
+		"dflags-linux-dmd": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
+		"dflags-linux-ldc": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
+		"importPaths-gdc": ["/usr/include/SDL2/", "./deps/cimgui/", "./deps/cimgui/imgui/"],
 		"lflags-linux": ["-L$PACKAGE_DIR"],
 		"copyFiles-windows-x86_64": [
 			"deps/libs/lib/SDL2_image.dll",
