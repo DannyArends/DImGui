@@ -6,6 +6,7 @@
 import engine;
 import std.algorithm : min;
 import std.conv : to;
+import io : isfile;
 import std.path : baseName;
 import std.format : format;
 import std.string : toStringz, fromStringz;
@@ -40,7 +41,16 @@ void initializeImGui(ref App app){
   igCreateContext(null);
   app.gui.io = igGetIO_Nil();
   app.gui.fonts ~= ImFontAtlas_AddFontDefault(app.gui.io.Fonts, null);
-  app.gui.fonts ~= ImFontAtlas_AddFontFromFileTTF(app.gui.io.Fonts, "assets/fonts/FreeMono.ttf", 12, null, null);
+  const(char)* path = "data/fonts/FreeMono.ttf";
+  version(Android){ }else{
+    import std.string : toStringz, fromStringz;
+    import std.format : format;
+    path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); 
+  }
+  /*if(isfile(path)) {
+    SDL_Log("Font path exists: %s", path);
+    app.gui.fonts ~= ImFontAtlas_AddFontFromFileTTF(app.gui.io.Fonts, path, 12, null, null);
+  }*/
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
   igStyleColorsDark(null);
@@ -101,7 +111,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 
 /** Show the GUI window with FPS statistics
  */
-void showFPSwindow(ref App app, uint font = 1) {
+void showFPSwindow(ref App app, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
   igSetNextWindowPos(ImVec2(0.0f, 20.0f), 0, ImVec2(0.0f, 0.0f));
   auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;

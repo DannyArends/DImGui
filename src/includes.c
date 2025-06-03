@@ -2,7 +2,7 @@
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
-
+#undef __SIZEOF_INT128__
 #define SDLCALL
 #define DECLSPEC
 #define SDL_INIT_TIMER 0x00000001u
@@ -16,6 +16,7 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #include <SDL_video.h>
 #include <SDL_log.h>
 #include <SDL_render.h>
+#include <SDL_system.h>
 #include <SDL_timer.h>
 #include <SDL_version.h>
 #include <SDL_vulkan.h>
@@ -39,3 +40,6 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #include "cimgui.h"
 #include "cimgui_impl.h"
 
+#if defined(__ANDROID__)
+  #include <jni.h>
+#endif

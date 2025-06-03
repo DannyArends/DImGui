@@ -5,6 +5,7 @@
 
 import engine;
 
+import std.string : toStringz;
 import core.memory : GC;
 import std.algorithm : remove, reverse;
 
@@ -80,11 +81,15 @@ void handleEvents(ref App app) {
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 2500) {
     GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
-    if(app.verbose) SDL_Log("10 seconds: Frame: %d", app.totalFramesRendered);
-    foreach(object; app.objects) { if(object.onTick) object.onTick(app, object); }
+    if(app.verbose) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
+    foreach(object; app.objects) { 
+      if(app.verbose) SDL_Log("object: %s", toStringz(object.name()));
+      if(object.onTick) object.onTick(app, object); 
+    }
   }
 
   // Call all onFrame() handlers
+  if(app.verbose) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 

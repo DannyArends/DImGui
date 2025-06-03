@@ -20,3 +20,15 @@ cimgui.lib
 *.obj
 *.dll
 *.spv
+
+*.so
+*.o
+*.a
+
+.gradle
+.idea
+
+app/.cxx
+local.properties
+gradle/
+app/build/
