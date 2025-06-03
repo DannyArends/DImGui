@@ -21,5 +21,5 @@
 	path = deps/shaderc
 	url = https://github.com/google/shaderc.git
 [submodule "deps/spirv-cross"]
-	path = deps/spirv-cross
+	path = deps/spirv_cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
