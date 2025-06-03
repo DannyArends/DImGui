@@ -1,3 +1,22 @@
 [submodule "deps/cimgui"]
 	path = deps/cimgui
 	url = https://github.com/cimgui/cimgui.git
+[submodule "app/jni/SDL2"]
+	path = app/jni/SDL2
+	url = https://github.com/libsdl-org/SDL.git
+	branch = SDL2
+[submodule "app/jni/SDL_ttf"]
+	path = app/jni/SDL_ttf
+	url = https://github.com/libsdl-org/SDL_ttf.git
+	branch = SDL2
+[submodule "app/jni/SDL_image"]
+	path = app/jni/SDL_image
+	url = https://github.com/libsdl-org/SDL_image.git
+	branch = SDL2
+[submodule "app/jni/SDL_mixer"]
+	path = app/jni/SDL_mixer
+	url = https://github.com/libsdl-org/SDL_mixer.git
+	branch = SDL2
+[submodule "deps/shaderc"]
+	path = deps/shaderc
+	url = https://github.com/google/shaderc.git

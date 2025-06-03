@@ -33,7 +33,7 @@ struct Compute {
 
 /** Load shader modules for compute
  */
-void createComputeShaders(ref App app, const(char)*[] computePaths = ["assets/shaders/texture.glsl", "assets/shaders/particle.glsl"]) {
+void createComputeShaders(ref App app, const(char)*[] computePaths = ["data/shaders/texture.glsl", "data/shaders/particle.glsl"]) {
   app.compute.system = new ParticleSystem(50000);
   foreach(path; computePaths){
     app.compute.shaders ~= app.createShaderModule(path, shaderc_glsl_compute_shader);

@@ -71,13 +71,20 @@ void createScene(ref App app){
     };
 
   SDL_Log("createScene: Add Wavefront");
-  app.objects ~= app.loadWavefront("assets/objects/viking_room.obj");
+  const(char)* objPath = "data/objects/viking_room.obj";
+  version(Android){ }else{
+    import std.string : toStringz, fromStringz;
+    import std.format : format;
+    objPath = toStringz(format("app/src/main/assets/%s", fromStringz(objPath))); 
+  }
+
+  app.objects ~= app.loadWavefront(objPath);
   app.objects[4].texture(app.textures, "viking");
   app.objects[4].rotate([0.0f, 180.0f, 0.0f]);
   app.objects[4].position([2.0f, 0.0f, 0.0f]);
 
-  SDL_Log("createScene: Add ParticleSystem");
-  app.objects ~= app.compute.system;
+//  SDL_Log("createScene: Add ParticleSystem");
+//  app.objects ~= app.compute.system;
 
   /** Stress test with 20 x 20 instanced rendering of a 10k / 50k Particle system (50k x 400 = ~20mio particles) */
   /*
@@ -95,7 +102,7 @@ void createScene(ref App app){
   app.objects ~= new Turtle(createLSystem());
   app.objects[6].computeNormals();
   app.objects[6].position([2.0f, 1.0f, -2.0f]); */
-
+/*
   SDL_Log("createScene: Add PDB object");
   auto protein = loadProteinCif("assets/objects/3kql.cif.gz");
   uint i = 6;
@@ -111,7 +118,7 @@ void createScene(ref App app){
       app.objects[i].scale([0.5f, 0.5f, 0.5f]);
       i++;
     }
-  }
+  } */
   SDL_Log("createScene: Finished");
 }
 

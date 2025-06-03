@@ -41,7 +41,12 @@ void toRGBA(ref SDL_Surface* surface, bool verbose = false) {
 }
 
 // Load all texture files matching pattern in folder
-void loadTextures(ref App app, string folder = "./assets/textures/", string pattern = "*.{png,jpg}") {
+void loadTextures(ref App app, string folder = "data/textures/", string pattern = "*.{png,jpg}") {
+  version(Android){ }else{
+    import std.format : format;
+    folder = format("app/src/main/assets/%s", folder);
+  }
+
   immutable(char)*[] files = dir(folder, pattern, false);
   foreach(file; files){ app.loadTexture(file); }
 }

@@ -24,25 +24,47 @@ import sfx : loadAllSoundEffect;
 import textures : Texture, loadTextures, createSampler;
 import window: createOrResizeWindow, checkForResize;
 
+/* Main entry point to the program */
+version (Android) {
+  import core.memory;
+  import core.runtime : rt_init;
+  import std.format;
+  import std.stdio;
+
+  extern(C) int SDL_main(int argc, char* argv) { // Hijack the SDL main
+    int dRuntime = rt_init();
+    writeln("Runtime initialized");
+    GC.disable(); // The GC crashes on android
+    run(["android", format("--dRuntime=%s", dRuntime)]);
+    return(0);
+  }
+// Other OS can just call run() directly (No known issues with garbage collection)
+} else { 
+  int main (string[] args) {
+    run(args);  return(0); 
+  }
+}
+
 /** 
  * Main entry point for Windows and Linux
  */
-void main(string[] args) {
+void run(string[] args) {
+
   App app = initializeSDL();              /// Initialize SDL library and create a window
   app.createCompiler();                   /// Create the SPIR-V compiler
   app.createReflectionContext();          /// Create a SPIR-V reflection context
   app.loadGlyphAtlas();                   /// Load & parse the Glyph Atlas
-  app.loadAllSoundEffect();               /// Load all available sound effects
+  //app.loadAllSoundEffect();               /// Load all available sound effects
   app.createInstance();                   /// Create a Vulkan instance
   app.createDebugCallback();              /// Hook the debug callback to the validation layer
   app.createLogicalDevice();              /// Create a logical device for rendering
   app.createRenderShaders();              /// Load the vertex and fragment shaders
-  app.createComputeShaders();              /// Load the compute shader
+  //app.createComputeShaders();              /// Load the compute shader
   app.createCommandPool();                /// Create the rendering CommandPool
   app.createSampler();                    /// Create a texture sampler
   app.createImGuiDescriptorPool();        /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();   /// ImGui DescriptorSet layout
-  app.createFontTexture();                /// Create a Texture from the GlyphAtlas
+  //app.createFontTexture();                /// Create a Texture from the GlyphAtlas
   app.loadTextures();                     /// Transfer all textures to the GPU
   app.createSurface();                    /// Create Vulkan rendering surface
   app.createOrResizeWindow();             /// Create window (swapchain, renderpass, framebuffers, etc)

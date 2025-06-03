@@ -48,12 +48,12 @@ void createOrResizeWindow(ref App app) {
   app.createSyncObjects();
 
   // Do reflection on the compute shaders, and create the compute command buffers and pipelines
-  app.reflectShaders(app.compute.shaders);
-  app.createResources(app.compute.shaders, COMPUTE);
-  foreach(ref shader; app.compute.shaders) {
-    app.createComputeCommandBuffers(shader);
-    app.createComputePipeline(shader);
-  }
+  //app.reflectShaders(app.compute.shaders);
+  //app.createResources(app.compute.shaders, COMPUTE);
+  //foreach(ref shader; app.compute.shaders) {
+    //app.createComputeCommandBuffers(shader);
+    //app.createComputePipeline(shader);
+  //}
 
   // Do reflection on the render shaders
   app.reflectShaders(app.shaders);

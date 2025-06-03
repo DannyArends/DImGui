@@ -41,9 +41,11 @@ VkLayerProperties[] queryInstanceLayerProperties(ref App app) {
   VkLayerProperties[] layers;
 
   vkEnumerateInstanceLayerProperties(&nLayers, null);
-  layers.length = nLayers;
-  enforceVK(vkEnumerateInstanceLayerProperties(&nLayers, &layers[0]));
-  if(app.verbose) SDL_Log("Found %d layers", layers.length);
+  if(nLayers > 0) {
+    layers.length = nLayers;
+    enforceVK(vkEnumerateInstanceLayerProperties(&nLayers, &layers[0]));
+    if(app.verbose) SDL_Log("Found %d layers", layers.length);
+  }
   //if(app.verbose) foreach(i, layer; layers) { SDL_Log("-Layer[%d] %s", i, layer.layerName.ptr); }
   return(layers);
 }

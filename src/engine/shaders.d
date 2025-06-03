@@ -102,8 +102,14 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
 
 /** Load vertex and fragment shaders, and create the shaderStages array
  */
-void createRenderShaders(ref App app, const(char)* vertPath = "assets/shaders/vertex.glsl", 
-                                      const(char)* fragPath = "assets/shaders/fragment.glsl"){
+void createRenderShaders(ref App app, const(char)* vertPath = "data/shaders/vertex.glsl", 
+                                      const(char)* fragPath = "data/shaders/fragment.glsl") {
+  version(Android){ }else{
+    import std.string : toStringz, fromStringz;
+    import std.format : format;
+    vertPath = toStringz(format("app/src/main/assets/%s", fromStringz(vertPath))); 
+    fragPath = toStringz(format("app/src/main/assets/%s", fromStringz(fragPath))); 
+  }
   auto vShader = app.createShaderModule(vertPath, shaderc_glsl_vertex_shader);
   auto fShader = app.createShaderModule(fragPath, shaderc_glsl_fragment_shader);
 

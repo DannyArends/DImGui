@@ -6,7 +6,7 @@
 	"homepage": "http://www.dannyarends.nl",
 	"copyright": "Copyright © 2025, Danny Arends",
 	"license": "GPL-v3",
-	"preBuildCommands-linux": [ "make -j 8" ],
+	#"preBuildCommands-linux": [ "make -j 8" ],
 	"preBuildCommands-windows-x86_64": [ "compile.bat C:/VulkanSDK/1.4.309.0" ],
 	"configurations": [
 	{
@@ -43,6 +43,27 @@
 			"deps/libs/lib/optional/libxmp.dll",
 			"deps/libs/lib/optional/zlib1.dll"
 		],
+	},
+	{
+		"name": "android-64",
+		"targetType": "dynamicLibrary",
+		"targetPath": "app/src/main/jniLibs/arm64-v8a",
+		"targetName": "main",
+		"dflags-linux-ldc": ["-P-I$PACKAGE_DIR/deps/SDL2/include", 
+                         "-P-I$PACKAGE_DIR/deps/SDL_ttf", 
+                         "-P-I$PACKAGE_DIR/deps/SDL_image/include", 
+                         "-P-I$PACKAGE_DIR/deps/SDL_mixer/include", 
+                         "-P-I$PACKAGE_DIR/deps/shaderc/libshaderc/include/", 
+                         "-P-I$PACKAGE_DIR/deps/",
+                         "-P-I~/Android/Sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include", 
+                         "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
+		"lflags-linux": ["-L$PACKAGE_DIR", 
+                     "-L$PACKAGE_DIR/app/build/outputs/apk/debug", 
+                     "-L$PACKAGE_DIR/deps/sdl_aarch64/", 
+                     "-L$PACKAGE_DIR/deps/spirv_cross/build", 
+                     "-L$PACKAGE_DIR/app/src/main/jniLibs/arm64-v8a/", 
+                     "-L/home/rqdt9/Android/Sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24", 
+                     "-lSDL2","-lSDL2_image", "-lSDL2_mixer", "-lSDL2_ttf", "-lvulkan", "-lshaderc_shared", "-lspirv-cross-c-shared", "-lCIMG"],
 	}
 	]
 }

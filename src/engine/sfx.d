@@ -70,7 +70,7 @@ WavFMT loadWav(const(char)* path, float pitch = 1.0, float gain = 0.5, bool loop
 
 /** Load all CasualGameSounds WAV sound effects
  */
-void loadAllSoundEffect(ref App app, const(char)* path = "assets/sfx/CasualGameSounds", float pitch = 1.0, float gain = 0.5, bool looping = false, bool play = false) {
+void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSounds", float pitch = 1.0, float gain = 0.5, bool looping = false, bool play = false) {
   auto files = dir(to!string(path), "*.wav");
   foreach(file; files) {
     app.soundfx ~= loadWav(file, pitch, gain, looping);

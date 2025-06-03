@@ -19,8 +19,8 @@ void renderFrame(ref App app){
 
   // --- Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight ---
   if(app.verbose) SDL_Log("Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight");
-  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
-  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
+//  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
+//  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
 
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, uint.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
@@ -36,7 +36,7 @@ void renderFrame(ref App app){
 
   // --- Phase 2: Prepare & Submit Compute Work ---
   if(app.verbose) SDL_Log("Phase 2: Prepare & Submit Compute Work");
-  app.updateComputeUBO(app.syncIndex);
+/*  app.updateComputeUBO(app.syncIndex);
 
   VkCommandBuffer[] computeCommandBuffers = [];
   foreach(ref shader; app.compute.shaders){
@@ -53,7 +53,7 @@ void renderFrame(ref App app){
     pSignalSemaphores : &computeComplete
   };
 
-  enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
+  enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight)); */
 
   // --- Phase 3: Prepare & Submit Graphics & ImGui Work ---
   if(app.verbose) SDL_Log("Phase 3: Prepare & Submit Graphics & ImGui Work");
@@ -66,12 +66,13 @@ void renderFrame(ref App app){
 
   VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.syncIndex], app.imguiBuffers[app.syncIndex] ];
 
-  VkSemaphore[] waitSemaphores = [ computeComplete, imageAcquired ];
+  //VkSemaphore[] waitSemaphores = [ computeComplete, imageAcquired ];
+  VkSemaphore[] waitSemaphores = [ imageAcquired ];
   VkPipelineStageFlags[] waitStages = [ VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT ];
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    waitSemaphoreCount : 2,
+    waitSemaphoreCount : cast(uint)waitSemaphores.length,
     pWaitSemaphores : &waitSemaphores[0],
     pWaitDstStageMask : &waitStages[0],
 

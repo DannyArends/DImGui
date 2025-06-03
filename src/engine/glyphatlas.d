@@ -7,7 +7,8 @@ import engine;
 
 import std.datetime : MonoTime;
 import std.utf : isValidDchar;
-import std.string : toStringz;
+import std.string : toStringz, fromStringz;
+import std.format : format;
 import glyph: Glyph; 
 import textures : Texture, deAllocate, toRGBA, toGPU;
 import images : createImage, imageSize;
@@ -58,8 +59,14 @@ struct GlyphAtlas {
 
 /** Loads a GlyphAtlas from file */
 void loadGlyphAtlas(ref App app, 
-                    const(char)* filename = "./assets/fonts/FreeMono.ttf", 
-                    ubyte pointsize = 96, dchar to = '\U00000FFF', uint width = 2048, uint max_width = 2048) {
+                    const(char)* filename = "data/fonts/FreeMono.ttf", 
+                    ubyte pointsize = 96, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024) {
+  version(Android){ }else{
+    import std.string : toStringz, fromStringz;
+    import std.format : format;
+    filename = toStringz(format("app/src/main/assets/%s", fromStringz(filename))); 
+  }
+
   GlyphAtlas glyphatlas = GlyphAtlas(filename);
   glyphatlas.pointsize = (pointsize == 0)? 12 : pointsize;
   glyphatlas.ttf = TTF_OpenFont(filename, glyphatlas.pointsize);
@@ -72,7 +79,7 @@ void loadGlyphAtlas(ref App app,
 }
 
 /** Populates the GlyphAtlas with Glyphs to dchar in our atlas */
-ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', uint width = 2048, uint max_width = 2048, bool verbose = false) {
+ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024, bool verbose = false) {
   MonoTime sT = MonoTime.currTime;
   int i, atlasrow, atlasloc;
   ushort[] atlas = [];
@@ -114,6 +121,7 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
 
 /** Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray */
 void createFontTexture(ref App app) {
+  if(app.verbose) SDL_Log("createFontTexture");
   auto surface = TTF_RenderUNICODE_Blended_Wrapped(app.glyphAtlas.ttf, &app.glyphAtlas.atlas[0], SDL_Color(255, 255, 255, 255), app.glyphAtlas.width);
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   if(surface.format.BitsPerPixel != 32) surface.toRGBA();
