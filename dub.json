@@ -49,7 +49,7 @@
 		"targetType": "dynamicLibrary",
 		"targetPath": "app/src/main/jniLibs/arm64-v8a",
 		"targetName": "main",
-		"preBuildCommands-linux": [ "make -f Makefile.android clean", "make -f Makefile.android -j 8" ],
+		"preBuildCommands-linux": [ "make clean", "make -f Makefile.android clean", "make -f Makefile.android -j 8" ],
 		"dflags-linux-ldc": ["-P-I$PACKAGE_DIR/app/jni/SDL2/include", 
                          "-P-I$PACKAGE_DIR/app/jni/SDL_ttf", 
                          "-P-I$PACKAGE_DIR/app/jni/SDL_image/include", 
