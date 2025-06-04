@@ -16,7 +16,7 @@ import std.zlib : UnCompress;
 
 /** Read content of a file as a uint[]
  */
-char[] readFile(const(char*) path, bool verbose = false) {
+char[] readFile(const(char*) path, uint verbose = 0) {
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
 
@@ -59,7 +59,7 @@ version(Android) {
   immutable(char)*[] dir(string path, string pattern = "*", bool shallow = true) { return(listDirContent(path, pattern, shallow)); }
 
   // listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls
-  immutable(char)*[] listDirContent(string path = "", string pattern = "*", bool shallow = true, bool verbose = false) {
+  immutable(char)*[] listDirContent(string path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
     JNIEnv* env = cast(JNIEnv*)SDL_AndroidGetJNIEnv();
     jobject activity = cast(jobject)SDL_AndroidGetActivity();
     jclass activity_class = (*env).GetObjectClass(env, activity);
@@ -82,7 +82,7 @@ version(Android) {
         string filename = to!string(fn);
         string filepath =  (path ~ (path[($-1)] == '/' ? "" : "/") ~ filename);
         if (globMatch(filepath, pattern)) { 
-          SDL_Log("matching file: %s @ %s", toStringz(filename), toStringz(filepath));
+          //SDL_Log("matching file: %s @ %s", toStringz(filename), toStringz(filepath));
           files ~= toStringz(filepath);
         }
         if (!shallow && isDir(filepath)) files ~= listDirContent(filepath, pattern, shallow, verbose);

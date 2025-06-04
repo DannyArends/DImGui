@@ -68,7 +68,7 @@ void removeGeometry(ref App app) {
 /** Handles all ImGui IO and SDL events
  */
 void handleEvents(ref App app) {
-  if(app.verbose) SDL_Log("handleEvents");
+  if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     ImGui_ImplSDL2_ProcessEvent(&e);
@@ -81,15 +81,15 @@ void handleEvents(ref App app) {
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 2500) {
     GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
-    if(app.verbose) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
+    if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     foreach(object; app.objects) { 
-      if(app.verbose) SDL_Log("object: %s", toStringz(object.name()));
+      if(app.trace) SDL_Log("object: %s", toStringz(object.name()));
       if(object.onTick) object.onTick(app, object); 
     }
   }
 
   // Call all onFrame() handlers
-  if(app.verbose) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
+  if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 

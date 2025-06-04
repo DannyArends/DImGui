@@ -62,7 +62,7 @@ void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDev
 
   enforceVK(vkAllocateMemory(app.device, &allocInfo, null, bufferMemory));
   vkBindBufferMemory(app.device, (*buffer), (*bufferMemory), 0);
-  if(app.verbose) SDL_Log("Buffer %p [size=%d] created, allocated, and bound", (*buffer), size);
+  if(app.trace) SDL_Log("Buffer %p [size=%d] created, allocated, and bound", (*buffer), size);
 }
 
 void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size = VK_WHOLE_SIZE) {
@@ -73,7 +73,7 @@ void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
 }
 
 void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
-  if(app.verbose) SDL_Log("updateBuffer");
+  if(app.trace) SDL_Log("updateBuffer");
   VkBufferCopy copyRegion = { size : size };
   vkCmdCopyBuffer(app.renderBuffers[app.syncIndex], buffer.sb, buffer.vb, 1, &copyRegion);
 
@@ -120,7 +120,7 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
     imageExtent: imageExtent
   };
 
-  if(app.verbose) SDL_Log("copyBufferToImage buffer[%p] to image[%p] %dx%d", buffer, image, width, height);
+  if(app.trace) SDL_Log("copyBufferToImage buffer[%p] to image[%p] %dx%d", buffer, image, width, height);
   vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
   app.endSingleTimeCommands(commandBuffer);
 }
@@ -130,7 +130,7 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
 bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsageFlags usage, 
               VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
   uint size = cast(uint)(objects[0].sizeof * objects.length);
-  if(app.verbose) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, size);
+  if(app.trace) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, size);
 
   // Check if we need to allocate a new buffer or resize the current buffer
   if(size > buffer.size) {
@@ -153,7 +153,7 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsage
 
   app.updateBuffer(buffer, size);
 
-  if(app.verbose) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, size);
+  if(app.trace) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, size);
   return(true);
 }
 

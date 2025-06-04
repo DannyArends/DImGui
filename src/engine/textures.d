@@ -28,7 +28,7 @@ struct Texture {
 }
 
 // Convert an SDL-Surface to RGBA32 format
-void toRGBA(ref SDL_Surface* surface, bool verbose = false) {
+void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
   SDL_PixelFormat *fmt = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
   fmt.BitsPerPixel = 32;
   SDL_Surface* adapted = SDL_ConvertSurface(surface, fmt, 0);

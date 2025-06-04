@@ -29,8 +29,8 @@ void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
   app.objects[0].position([0.0f,-0.5f,0.0f]);
-  for(int x = -100; x < 100; x++) {
-    for(int z = -100; z < 100; z++) {
+  for(int x = -50; x < 50; x++) {
+    for(int z = -50; z < 50; z++) {
       mat4 instance;  // Add a instances of object 0
       auto scalefactor = 0.25f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);

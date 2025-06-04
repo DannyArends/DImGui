@@ -155,12 +155,12 @@ void createDescriptors(ref App app) {
 /** Update the DescriptorSet 
  */
 void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] dstSet, uint syncIndex = 0) {
-  if(app.verbose) SDL_Log("updateDescriptorSet");
+  if(app.trace) SDL_Log("updateDescriptorSet");
   VkWriteDescriptorSet[] descriptorWrites;
   for(uint s = 0; s < shaders.length; s++) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(app.verbose) SDL_Log("- Descriptor: %d %s %s", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
+      if(app.trace) SDL_Log("- Descriptor: %d %s %s", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         VkDescriptorImageInfo[] textureInfo;
@@ -230,6 +230,6 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
     }
   }
   vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null);
-  if(app.verbose) SDL_Log("updateComputeDescriptorSet DONE");
+  if(app.trace) SDL_Log("updateComputeDescriptorSet DONE");
 }
 

@@ -78,7 +78,7 @@ void initializeImGui(ref App app){
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
  */
 void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
-  if(app.verbose) SDL_Log("recordImGuiCommandBuffer");
+  if(app.trace) SDL_Log("recordImGuiCommandBuffer");
   enforceVK(vkResetCommandBuffer(app.imguiBuffers[syncIndex], 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = {
@@ -106,7 +106,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
   vkCmdEndRenderPass(app.imguiBuffers[syncIndex]);
 
   enforceVK(vkEndCommandBuffer(app.imguiBuffers[syncIndex]));
-  if(app.verbose) SDL_Log("Done recordImGuiCommandBuffer");
+  if(app.trace) SDL_Log("Done recordImGuiCommandBuffer");
 }
 
 /** Show the GUI window with FPS statistics
@@ -225,9 +225,9 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igText("Deletion Queues", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igText(toStringz(format("%d / %d / %d", app.bufferDeletionQueue.length, app.frameDeletionQueue.length, app.mainDeletionQueue.length)), ImVec2(0.0f, 0.0f));
 
-    igTableNextColumn();
+/*    igTableNextColumn();
     igText("Verbose", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igCheckbox("##Verbose", &app.verbose);
+    igCheckbox("##Verbose", &app.verbose); */
 
     igTableNextColumn();
     igText("Volume", ImVec2(0.0f, 0.0f)); igTableNextColumn();
