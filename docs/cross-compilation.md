@@ -52,6 +52,7 @@ Now we can are ready to build the dependancies:
 ### Compile shaderc using cmake
 ```
   cd deps/shaderc
+  utils/git-sync-deps
   rm -rf build
   mkdir build
   cd build
@@ -59,10 +60,12 @@ Now we can are ready to build the dependancies:
         -DCMAKE_TOOLCHAIN_FILE=/home/rqdt9/Android/Sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake \
         -DANDROID_PLATFORM=24 \
         -DANDROID_ABI=arm64-v8a \
-        -DBUILD_TESTING=OFF \
-        -DSHADERC_ENABLE_TESTS=FALSE \
+        -DSHADERC_SKIP_TESTS=TRUE \
+        -DSHADERC_SKIP_EXAMPLES=TRUE \
+        -DSHADERC_SKIP_INSTALL=TRUE \
         ../
   make -j8
+  mv libshaderc/libshaderc_shared.so ../../../app/src/main/jniLibs/arm64-v8a
 ```
 
 Move the compiled shared library from "libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs"
@@ -80,8 +83,16 @@ Move the compiled shared library from "libshaderc/libshaderc_shared.so" to "app/
         -DSPIRV_CROSS_SHARED=ON \
         ../
   make -j8
+  mv libspirv-cross-c-shared.so ../../../app/src/main/jniLibs/arm64-v8a
 ```
 Move the compiled shared library from "build/libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs"
+
+### Compile SDL2 & other related libraries
+
+For SDL_Mixer, set the support for libgme to false in the Android.mk file (line 34)
+```
+  SUPPORT_GME ?= false
+```
 
 ### Compile IMGUI & IMGUI into a shared library
 Make sure to update the paths to the NDK inside the Makefile before trying to build the libCImGui, then compile
@@ -92,6 +103,6 @@ Make sure to update the paths to the NDK inside the Makefile before trying to bu
 ### Compile the D code into libMAIN.so
 We can now use LDC to compile the shared library that will hook the sdl_main entry point, use importC to link to the dependancies, and the D code
 ```
-dub --compiler=ldc2 --arch=aarch64-*-linux-android --config=android-64 --force
+dub build --compiler=ldc2 --arch=aarch64-*-linux-android --config=android-64 --force
 ```
 
