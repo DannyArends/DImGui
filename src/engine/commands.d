@@ -10,14 +10,14 @@ import geometry : draw;
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
  */
 void recordRenderCommandBuffer(ref App app, uint syncIndex) {
-  if(app.verbose) SDL_Log("recordRenderCommandBuffer");
+  if(app.trace) SDL_Log("recordRenderCommandBuffer");
 
   VkCommandBufferBeginInfo beginInfo = {
     sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     pInheritanceInfo: null // Optional
   };
   enforceVK(vkBeginCommandBuffer(app.renderBuffers[syncIndex], &beginInfo));
-  if(app.verbose) SDL_Log("renderBuffer %d recording", syncIndex);
+  if(app.trace) SDL_Log("renderBuffer %d recording", syncIndex);
 
   VkRect2D renderArea = {
     offset: { x:0, y:0 },
@@ -35,22 +35,22 @@ void recordRenderCommandBuffer(ref App app, uint syncIndex) {
 
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isBuffered) { 
-      if(app.verbose) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
+      if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
       app.objects[x].buffer(app);
     }
   }
 
   vkCmdBeginRenderPass(app.renderBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-  if(app.verbose) SDL_Log("Render pass recording to buffer %d", syncIndex);
+  if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
 
-  if(app.verbose) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
+  if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
   for(size_t x = 0; x < app.objects.length; x++) {
   //  if(!app.objects[x].isBuffered) app.objects[x].buffer(app);
     if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
   }
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
   enforceVK(vkEndCommandBuffer(app.renderBuffers[syncIndex]));
-  if(app.verbose) SDL_Log("Render pass finished to %d", syncIndex);
+  if(app.trace) SDL_Log("Render pass finished to %d", syncIndex);
 
 }
 
@@ -68,7 +68,7 @@ void createCommandPool(ref App app) {
   if(app.verbose) SDL_Log("Commandpool %p at queue %d created", app.commandPool, poolInfo.queueFamilyIndex);
 }
 
-VkCommandBuffer[] createCommandBuffer(VkDevice device, VkCommandPool commandPool, uint nBuffers = 1, bool verbose = false) {
+VkCommandBuffer[] createCommandBuffer(VkDevice device, VkCommandPool commandPool, uint nBuffers = 1, uint verbose = 0) {
   VkCommandBuffer[] commandBuffer;
   commandBuffer.length = nBuffers;
 

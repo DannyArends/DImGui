@@ -86,7 +86,7 @@ void transitionImageLayout(ref App app, VkImage image, VkCommandBuffer commandBu
 
   if (isSingleTimeCommand) {
     commandBuffer = app.beginSingleTimeCommands();
-    if(app.verbose) SDL_Log(" - transitionImageLayout via single time CommandBuffer");
+    if(app.trace) SDL_Log(" - transitionImageLayout via single time CommandBuffer");
   }
 
   VkImageSubresourceRange subresourceRange = {
@@ -148,5 +148,5 @@ void transitionImageLayout(ref App app, VkImage image, VkCommandBuffer commandBu
   vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
 
   if (isSingleTimeCommand) app.endSingleTimeCommands(commandBuffer);
-  if(app.verbose) SDL_Log(" - transitionImageLayout finished for commandBuffer[%p]", commandBuffer);
+  if(app.trace) SDL_Log(" - transitionImageLayout finished for commandBuffer[%p]", commandBuffer);
 }

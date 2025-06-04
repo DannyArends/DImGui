@@ -12,13 +12,13 @@ import descriptor : updateDescriptorSet;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 
 void renderFrame(ref App app){
-  if(app.verbose) SDL_Log("renderFrame");
+  if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired    = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete   = app.sync[app.syncIndex].renderComplete;
 
   // --- Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight ---
-  if(app.verbose) SDL_Log("Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight");
+  if(app.trace) SDL_Log("Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight");
 //  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
 //  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
 
@@ -35,7 +35,7 @@ void renderFrame(ref App app){
   //SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
-  if(app.verbose) SDL_Log("Phase 2: Prepare & Submit Compute Work");
+  if(app.trace) SDL_Log("Phase 2: Prepare & Submit Compute Work");
 /*  app.updateComputeUBO(app.syncIndex);
 
   VkCommandBuffer[] computeCommandBuffers = [];
@@ -56,7 +56,7 @@ void renderFrame(ref App app){
   enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight)); */
 
   // --- Phase 3: Prepare & Submit Graphics & ImGui Work ---
-  if(app.verbose) SDL_Log("Phase 3: Prepare & Submit Graphics & ImGui Work");
+  if(app.trace) SDL_Log("Phase 3: Prepare & Submit Graphics & ImGui Work");
 
   app.updateRenderUBO(app.shaders, app.syncIndex);
   app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex);
@@ -83,11 +83,11 @@ void renderFrame(ref App app){
   };
   
   enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
-  if(app.verbose) SDL_Log("Done renderFrame");
+  if(app.trace) SDL_Log("Done renderFrame");
 }
 
 void presentFrame(ref App app) {
-  if(app.verbose) SDL_Log("presentFrame");
+  if(app.verbose > 1) SDL_Log("presentFrame");
   if(app.rebuild) return;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
   VkPresentInfoKHR info = {
@@ -103,6 +103,6 @@ void presentFrame(ref App app) {
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
   app.syncIndex = (app.syncIndex + 1) % app.sync.length; // Now we can use the next set of semaphores
-  if(app.verbose) SDL_Log("Done presentFrame");
+  if(app.trace) SDL_Log("Done presentFrame");
 }
 

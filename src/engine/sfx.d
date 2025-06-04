@@ -74,7 +74,7 @@ void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSou
   version(Android){ }else{
     import std.string : toStringz, fromStringz;
     import std.format : format;
-    filename = toStringz(format("app/src/main/assets/%s", fromStringz(filename))); 
+    path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); 
   }
   auto files = dir(to!string(path), "*.wav");
   foreach(file; files) {
