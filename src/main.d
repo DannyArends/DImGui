@@ -54,7 +54,7 @@ void run(string[] args) {
   app.createCompiler();                   /// Create the SPIR-V compiler
   app.createReflectionContext();          /// Create a SPIR-V reflection context
   app.loadGlyphAtlas();                   /// Load & parse the Glyph Atlas
-  //app.loadAllSoundEffect();               /// Load all available sound effects
+  app.loadAllSoundEffect();               /// Load all available sound effects
   app.createInstance();                   /// Create a Vulkan instance
   app.createDebugCallback();              /// Hook the debug callback to the validation layer
   app.createLogicalDevice();              /// Create a logical device for rendering
@@ -64,7 +64,7 @@ void run(string[] args) {
   app.createSampler();                    /// Create a texture sampler
   app.createImGuiDescriptorPool();        /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();   /// ImGui DescriptorSet layout
-  //app.createFontTexture();                /// Create a Texture from the GlyphAtlas
+  app.createFontTexture();                /// Create a Texture from the GlyphAtlas
   app.loadTextures();                     /// Transfer all textures to the GPU
   app.createSurface();                    /// Create Vulkan rendering surface
   app.createOrResizeWindow();             /// Create window (swapchain, renderpass, framebuffers, etc)

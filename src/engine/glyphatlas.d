@@ -60,13 +60,13 @@ struct GlyphAtlas {
 /** Loads a GlyphAtlas from file */
 void loadGlyphAtlas(ref App app, 
                     const(char)* filename = "data/fonts/FreeMono.ttf", 
-                    ubyte pointsize = 96, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024) {
+                    ubyte pointsize = 80, dchar to = '\U000000FF', uint width = 1024, uint max_width = 1024) {
   version(Android){ }else{
     import std.string : toStringz, fromStringz;
     import std.format : format;
     filename = toStringz(format("app/src/main/assets/%s", fromStringz(filename))); 
   }
-
+  SDL_Log("loadGlyphAtlas: %s", filename);
   GlyphAtlas glyphatlas = GlyphAtlas(filename);
   glyphatlas.pointsize = (pointsize == 0)? 12 : pointsize;
   glyphatlas.ttf = TTF_OpenFont(filename, glyphatlas.pointsize);
@@ -79,7 +79,8 @@ void loadGlyphAtlas(ref App app,
 }
 
 /** Populates the GlyphAtlas with Glyphs to dchar in our atlas */
-ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', uint width = 1024, uint max_width = 1024, bool verbose = false) {
+ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', uint width = 1024, uint max_width = 1024, bool verbose = false) {
+  SDL_Log("createGlyphAtlas");
   MonoTime sT = MonoTime.currTime;
   int i, atlasrow, atlasloc;
   ushort[] atlas = [];
@@ -106,9 +107,9 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U00000FFF', ui
     }
     c++;
   }
-  if(verbose) SDL_Log("%d unicode glyphs (%d unique ones)\n", atlas.length, glyphatlas.glyphs.length);
-  if(verbose) SDL_Log("FontAscent: %d\n", TTF_FontAscent(glyphatlas.ttf));
-  if(verbose) SDL_Log("FontAdvance: %d\n", glyphatlas.advance);
+  SDL_Log("%d unicode glyphs (%d unique ones)\n", atlas.length, glyphatlas.glyphs.length);
+  SDL_Log("FontAscent: %d\n", TTF_FontAscent(glyphatlas.ttf));
+  SDL_Log("FontAdvance: %d\n", glyphatlas.advance);
   glyphatlas.pointsize = glyphatlas.pointsize;
   glyphatlas.ascent = TTF_FontAscent(glyphatlas.ttf);
 
