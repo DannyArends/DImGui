@@ -6,6 +6,14 @@ To cross-compile for Android, you'll need:
 * Android Studio
 * Android NDK r27c (version: 27.2.12479018)
 
+### INstall Android Studio
+
+Make sure that after installation you set the ANDROID_HOME variable, as well as update your PATH environmental variable
+```
+  export ANDROID_HOME=~/Android/Sdk
+  export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools
+```
+
 ### Preparing the build environment:
 We need to make a single change in the NDK to prevent a compile issue with SDL2, in:
 ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/sys/types.h
