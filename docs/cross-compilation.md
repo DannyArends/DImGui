@@ -1,7 +1,7 @@
 ## Cross-compile for Android using Linux
 To cross-compile for Android, you'll need:
 * LDC2 version 1.40.1
-* LDC2 ANdroid 
+* LDC2 Android library: ldc2-1.40.1-beta1-android-aarch64.tar.xz
 * cmake version 3.27.0
 * Android Studio
 * Android NDK r27c (version: 27.2.12479018)
@@ -81,7 +81,7 @@ Make sure to update the paths to the NDK inside the Makefile before trying to bu
   make -f Makefile.android
 ```
 
-# LIBMAIN.so
+### Compile the D code into libMAIN.so
 We can now use LDC to compile the shared library that will hook the sdl_main entry point, use importC to link to the dependancies, and the D code
 ```
 dub --compiler=ldc2 --arch=aarch64-*-linux-android --config=android-64 --force
