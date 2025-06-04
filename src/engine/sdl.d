@@ -47,10 +47,10 @@ App initializeSDL() {
 
   // Log all SDL library return codes
   if(app.verbose) SDL_Log("INIT: [%d,%d,%d,%d]", init[MAIN], init[TTF], init[IMG], init[MIX]);
-/*
+
   // Open Audio
   openAudio();
-*/
+
   // Create SDL Window
   SDL_WindowFlags window_flags = cast(SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   app.window = SDL_CreateWindow(app.applicationName, SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
