@@ -41,10 +41,9 @@ $(OUTPUTNAME):$(OBJS)
 
 clean:
 	rm -f $(OBJS)
-
-fclean: clean
 	rm -f $(OUTPUTNAME)
 
-re: fclean all
 
-.PHONY: all clean fclean re static
+re: clean all
+
+.PHONY: all clean clean re static

@@ -18,7 +18,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S), Linux) #LINUX
 	ECHO_MESSAGE = "Linux"
 
-	OUTPUTNAME = libcimgui.so
+	OUTPUTNAME = libCImGui.so
 	CXXFLAGS += -I/usr/include/SDL2/
 	CXXFLAGS += -fno-threadsafe-statics
 	CXXFLAGS += -DCIMGUI_USE_SDL2 -DCIMGUI_USE_VULKAN -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API="extern \"C\" "
@@ -46,10 +46,8 @@ $(OUTPUTNAME):$(OBJS)
 
 clean:
 	rm -f $(OBJS)
-
-fclean: clean
 	rm -f $(OUTPUTNAME)
 
-re: fclean all
+re: clean all
 
-.PHONY: all clean fclean re static
+.PHONY: all clean re static
