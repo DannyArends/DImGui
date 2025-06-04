@@ -1,8 +1,8 @@
 ## DImGui
-Another SDL2 + Vulkan + ImGui renderer in the D Programming Language.
-![Screenshot](/assets/screenshots/example.png? "Screenshot")
+![Screenshot](/app/src/main/assets/data/screenshots/example.png? "Screenshot")
+Another SDL2 + Vulkan + ImGui renderer in the D Programming Language. However, this one will work on Windows, Linux, and even Android. The current 'engine' is based on the excellent vulkan-tutorial.com, and uses SDL2 for cross-platform support. This repository includes the SDL DLLs for x64 MS Windows, and is in itself a minimal SDL2 android_project. There are a lot of requirements to build the example (SDL, Vulkan, Android Studio, Android NDK). The software has been tested under x64 (Windows and Linux) and on arm64-v8a (Android 10).
 
-### Compilation [Linux & Windows]
+### (Cross-)Compilation
 
 For building DImGui on MS Windows and/or Linux, see the instruction in [compilation.md](./docs/compilation.md). Instructions 
 on how to cross-compile for Android using Linux, see: [cross-compilation.md](./docs/cross-compilation.md)
