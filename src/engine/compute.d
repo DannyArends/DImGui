@@ -34,6 +34,14 @@ struct Compute {
 /** Load shader modules for compute
  */
 void createComputeShaders(ref App app, const(char)*[] computePaths = ["data/shaders/texture.glsl", "data/shaders/particle.glsl"]) {
+  version(Android){ }else{
+    import std.string : toStringz, fromStringz;
+    import std.format : format;
+    for(uint i = 0; i < computePaths.length; i++) {
+      computePaths[i] = toStringz(format("app/src/main/assets/%s", fromStringz(computePaths[i]))); 
+    }
+  }
+
   app.compute.system = new ParticleSystem(50000);
   foreach(path; computePaths){
     app.compute.shaders ~= app.createShaderModule(path, shaderc_glsl_compute_shader);

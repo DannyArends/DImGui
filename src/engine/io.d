@@ -72,7 +72,7 @@ version(Android) {
     auto length = (*env).GetArrayLength(env, files_object);
 
     // List all files in the folder
-    SDL_Log("Path %s, mngr: %X, list_method: %X, nObjects: %d \n", toStringz(path), asset_manager, list_method, length);
+    //SDL_Log("Path %s, mngr: %X, list_method: %X, nObjects: %d \n", toStringz(path), asset_manager, list_method, length);
     const(char)*[] files;
     for (int i = 0; i < length; i++) {
       // Allocate the java string, and get the filename
