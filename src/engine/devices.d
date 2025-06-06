@@ -106,6 +106,9 @@ uint selectQueueFamily(VkPhysicalDevice physicalDevice) {
   queueProperties.length = nQueue;
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, &queueProperties[0]);
   foreach(i, queueProperty; queueProperties) {
+    if(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) SDL_Log("[%d] Graphic Queue, size: %d", i, queueProperty.queueCount);
+    if(queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT) SDL_Log("[%d] Compute Queue, size: %d", i, queueProperty.queueCount);
+    if(queueProperty.queueFlags & VK_QUEUE_TRANSFER_BIT) SDL_Log("[%d] Transfer Queue, size: %d", i, queueProperty.queueCount);
     if ((queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT)) return cast(uint)i;
   }
   assert(0);

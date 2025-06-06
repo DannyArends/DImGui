@@ -83,8 +83,8 @@ void createScene(ref App app){
   app.objects[4].rotate([0.0f, 180.0f, 0.0f]);
   app.objects[4].position([2.0f, 0.0f, 0.0f]);
 
-//  SDL_Log("createScene: Add ParticleSystem");
-//  app.objects ~= app.compute.system;
+  SDL_Log("createScene: Add ParticleSystem");
+  app.objects ~= app.compute.system;
 
   /** Stress test with 20 x 20 instanced rendering of a 10k / 50k Particle system (50k x 400 = ~20mio particles) */
   /*
