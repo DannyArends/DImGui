@@ -36,7 +36,7 @@ void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
   if (adapted) {
     SDL_FreeSurface(surface); // Free the SDL_Surface
     surface = adapted;
-    if(verbose) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+    if(verbose > 1) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   }
 }
 
@@ -47,9 +47,9 @@ void loadTextures(ref App app, const(char)* folder = "data/textures/", string pa
 }
 
 void loadTexture(ref App app, const(char)* path) {
-  if(app.verbose) SDL_Log("loadTexture '%s'", path);
+  if(app.trace) SDL_Log("loadTexture '%s'", path);
   auto surface = IMG_Load(path);
-  if(app.verbose) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+  if(app.trace) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
 
   // Adapt surface to 32 bit, and create structure
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
@@ -84,7 +84,7 @@ void toGPU(ref App app, ref Texture texture){
   app.textures ~= texture;
 
   // Cleanup
-  if(app.verbose) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));
+  if(app.trace) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));
   SDL_FreeSurface(texture.surface);
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
@@ -135,7 +135,7 @@ void createSampler(ref App app) {
 /** 'Register' a texture in the ImGui DescriptorSet
  */
 void registerTexture(ref App app, ref Texture texture) {
-  if(app.verbose) SDL_Log("Registering Texture %p with ImGui", texture.view);
+  if(app.trace) SDL_Log("Registering Texture %p with ImGui", texture.view);
   texture.imID = createDescriptorSet(app.device, app.pools[IMGUI], app.layouts[IMGUI], 1)[0];
 
   VkDescriptorImageInfo textureImage = {

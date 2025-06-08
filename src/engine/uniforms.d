@@ -67,11 +67,11 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
 
   // Adjust for screen orientation so that the world is always up
   if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) {
-    ubo.orientation = rotate(mat4.init, [-90.0f, 0.0f, 0.0f]);
+    ubo.orientation = rotate(mat4.init, [0.0f, -90.0f, 0.0f]);
   } else if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-    ubo.orientation = rotate(mat4.init, [90.0f, 0.0f, 0.0f]);
+    ubo.orientation = rotate(mat4.init, [0.0f, 90.0f, 0.0f]);
   } else if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR) {
-    ubo.orientation = rotate(mat4.init, [180.0f, 0.0f, 0.0f]);
+    ubo.orientation = rotate(mat4.init, [0.0f, 180.0f, 0.0f]);
   }
 
   for(uint s = 0; s < shaders.length; s++) {

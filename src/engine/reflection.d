@@ -21,7 +21,7 @@ enum spvc_resource_type[const(char)*] types = [
 ];
 
 void reflectShader(ref App app, ref Shader shader) {
-  SDL_Log("Reflect: %s", shader.path);
+  if(app.trace) SDL_Log("Reflect: %s", shader.path);
   shader.descriptors = [];
   spvc_parsed_ir ir = null;
   spvc_compiler compiler = null;
@@ -42,7 +42,7 @@ void reflectShader(ref App app, ref Shader shader) {
       shader.groupCount[0] = spvc_compiler_get_execution_mode_argument_by_index(compiler, SpvExecutionModeLocalSize, 0);
       shader.groupCount[1] = spvc_compiler_get_execution_mode_argument_by_index(compiler, SpvExecutionModeLocalSize, 1);
       shader.groupCount[2] = spvc_compiler_get_execution_mode_argument_by_index(compiler, SpvExecutionModeLocalSize, 2);
-      if(app.verbose) SDL_Log("*Compute Entry: [%d, %d, %d]", shader.groupCount[0], shader.groupCount[1], shader.groupCount[2]);
+      if(app.trace) SDL_Log("*Compute Entry: [%d, %d, %d]", shader.groupCount[0], shader.groupCount[1], shader.groupCount[2]);
     }
   }
 
@@ -79,7 +79,7 @@ StageInput reflectStage(ref App app, spvc_compiler compiler, const(char)* type, 
   uint rows = spvc_type_get_vector_size(type_handle);
   uint columns = spvc_type_get_columns(type_handle);
   StageInput s = {name, location, basetype, rows, columns};
-  SDL_Log("%s - loc: %d: %s %s:[%dx%d]", type, s.location, s.name, convert(s.basetype),  s.rows, s.columns);
+  if(app.trace) SDL_Log("%s - loc: %d: %s %s:[%dx%d]", type, s.location, s.name, convert(s.basetype),  s.rows, s.columns);
   return(s);
 }
 
@@ -117,7 +117,7 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
       }
     }
     if(!descr.count) descr.count = cast(uint)app.textures.length;
-    if(app.verbose){
+    if (app.trace) {
       SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
               descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);
     }
@@ -129,7 +129,7 @@ void reflectShaders(ref App app, ref Shader[] shaders) {
 }
 
 void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
-  if(app.verbose) SDL_Log("Creating Shader Resources: %d shaders at pool %s", app.shaders.length, poolID);
+  if(app.verbose) SDL_Log("Creating Shader Resources: %d shaders from pool %s", app.shaders.length, poolID);
   app.createDSPool(poolID, shaders);
   for(uint s = 0; s < shaders.length; s++) {
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {
