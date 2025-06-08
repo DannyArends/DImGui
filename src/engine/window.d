@@ -70,6 +70,7 @@ void createOrResizeWindow(ref App app) {
 
   app.createRenderCommandBuffers();
   foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
+  if(app.verbose) SDL_Log("Window Done");
 }
 
 /** 

@@ -121,8 +121,9 @@ struct App {
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?
   bool showBounds = true;                         /// TO IMPLEMENT: Show bounding boxes
-  uint verbose = 0;                           /// Be very verbose
+  uint verbose = 0;                               /// Be very verbose
   bool rebuild = false;                           /// Rebuild the swapChain?
+  bool isMinimized = false;                       /// isMinimized the swapChain?
 
   // Properties based on the SwapChain
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
@@ -148,6 +149,16 @@ void cleanUp(App app){
 
   SDL_DestroyWindow(app);
   SDL_Quit();
+}
+
+/** Resize the window
+ */
+void resize(ref App app, uint w, uint h) {
+  SDL_Log("Window ReSized");
+  SDL_SetWindowSize(app.window, w, h);
+  if (w == 0 || h == 0){ app.isMinimized = true; return; }
+  app.isMinimized = false;
+  app.rebuild = true;
 }
 
 /** Check result of vulkan call and print if an error occured

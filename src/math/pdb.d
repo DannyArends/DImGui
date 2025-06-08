@@ -15,7 +15,7 @@ import std.stdio, std.string;
 
 import color : atomToColor, Colors, residueToColor;
 import geometry : Instance, Geometry, addVertex;
-import io : loadGzfile, isfile;
+import io : readFile, isfile;
 import vertex : Vertex;
 
 enum : string { 
@@ -130,18 +130,18 @@ class Backbone : Geometry {
 /** loadProtein
  * See: PDB format description version 3.3, ftp://ftp.wwpdb.org/pub/pdb/doc/format_descriptions/Format_v33_A4.pdf
  */
-Protein loadProtein(string path, bool verbose = false) {
+Protein loadProtein(const(char)* path, bool verbose = false) {
   Protein protein;
   if (!isfile(path)) {
-    SDL_Log("Error: No such PDB file: %s\n", toStringz(path));
+    SDL_Log("Error: No such PDB file: %s\n", path);
     return protein;
   }
   size_t nAtoms = 0, nAminoAcids = 0, nPeptides = 0;
   string chainid;
   int residueid;
   string name, residue;
-  string[] content = loadGzfile(path).splitLines();
-  if(verbose) SDL_Log("Read: %d lines from '%s'\n", content.length, toStringz(path));
+  string[] content = to!string(readFile(path)).splitLines();
+  if(verbose) SDL_Log("Read: %d lines from '%s'\n", content.length, path);
   foreach (string l; content) {
     l = chomp(l);
     if(l.startsWith(ATOM)) {
@@ -172,15 +172,15 @@ Protein loadProtein(string path, bool verbose = false) {
 /** loadProteinCif
  * See: PDB mmCIF File Format, http://mmcif.wwpdb.org/pdbx-mmcif-home-page.html
  */
-Protein loadProteinCif(string path, string chain = "", bool verbose = false) {
+Protein loadProteinCif(const(char)* path, string chain = "", bool verbose = true) {
   Protein protein;
   if (!isfile(path)) {
-    SDL_Log("Error: No such CIF file: %s\n", toStringz(path));
+    SDL_Log("Error: No such CIF file: %s\n", path);
     return protein;
   }
   size_t nAtoms = 0, nAminoAcids = 0, nPeptides = 0;
-  string[] content = loadGzfile(path).splitLines();
-  if(verbose) SDL_Log("Read: %d lines from '%s'\n", content.length, toStringz(path));
+  string[] content = to!string(readFile(path)).splitLines();
+  if(verbose) SDL_Log("Read: %d lines from '%s'\n", content.length, path);
   auto r = regex(r"(\S+)[ ]+");
   foreach (string l; content) {
     l = chomp(l);
