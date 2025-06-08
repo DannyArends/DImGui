@@ -33,5 +33,7 @@ local.properties
 gradle/
 app/build/
 
+build/
+
 gradlew
 gradlew.bat

@@ -1,4 +1,4 @@
-# Makefile - For Linux and MacOS
+# Makefile - For Cross-Compiling on Linux/Linux for Android
 
 OBJS  = ./deps/cimgui/cimgui.o
 OBJS += ./deps/cimgui/cimgui_impl.o
@@ -14,28 +14,32 @@ CXXFLAGS  =-O2 -fno-exceptions -fno-rtti -Wall
 CXXFLAGS += -I./deps/cimgui/imgui/
 CXXFLAGS += -I./deps/cimgui/imgui/backends/
 UNAME_S := $(shell uname -s)
-NDK = /home/rqdt9/Android/Sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64
 
-ifeq ($(UNAME_S), Linux) #Cross compiler from LINUX to ANDROID
-	ECHO_MESSAGE = "Android"
-	OUTPUTNAME = ./app/src/main/jniLibs/arm64-v8a/libCImGui.so
-	CXXFLAGS += -I./deps/cimgui/imgui -I./deps/cimgui/imgui/backends/ -I./app/jni/SDL2/include
-	CXXFLAGS += -fno-threadsafe-statics -fPIC
-	CXXFLAGS += -DCIMGUI_USE_SDL2 -DSDL_VIDEO_DRIVER_ANDROID -DCIMGUI_USE_VULKAN -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API="extern \"C\" "
-	CFLAGS = $(CXXFLAGS)
+# Cross compiler from WINDOWS to ANDROID
+NDK = C:/Users/Danny/AppData/Local/Android/Sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/windows-x86_64
 
-  LINKSTATIC  = $(NDK)/lib/clang/18/lib/linux/libclang_rt.builtins-aarch64-android.a $(NDK)/sysroot/usr/lib/aarch64-linux-android/24/libc++.a
-  LINKSTATIC += $(NDK)/sysroot/usr/lib/aarch64-linux-android/24/crtend_so.o
-
-  LINKDYN = -L./app/build/intermediates/ndkBuild/debug/obj/local/arm64-v8a
-  LINKDYN += -ldl -lm -lSDL2 -lvulkan
+ifeq ($(UNAME_S), Linux) # Cross compiler from LINUX to ANDROID
+	NDK = /home/rqdt9/Android/Sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64
 endif
+
+ECHO_MESSAGE = "Android"
+OUTPUTNAME = ./app/src/main/jniLibs/arm64-v8a/libCImGui.so
+CXXFLAGS += -I./deps/cimgui/imgui -I./deps/cimgui/imgui/backends/ -I./app/jni/SDL2/include
+CXXFLAGS += -fno-threadsafe-statics -fPIC
+CXXFLAGS += -DCIMGUI_USE_SDL2 -DSDL_VIDEO_DRIVER_ANDROID -DCIMGUI_USE_VULKAN -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API="extern \"C\" "
+CFLAGS = $(CXXFLAGS)
+
+LINKSTATIC  = $(NDK)/lib/clang/18/lib/linux/libclang_rt.builtins-aarch64-android.a $(NDK)/sysroot/usr/lib/aarch64-linux-android/24/libc++.a
+LINKSTATIC += $(NDK)/sysroot/usr/lib/aarch64-linux-android/24/crtend_so.o
+
+LINKDYN = -L./app/build/intermediates/ndkBuild/debug/obj/local/arm64-v8a
+LINKDYN += -ldl -lm -lSDL2 -lvulkan
 
 .cpp.o:
 	$(NDK)/bin/aarch64-linux-android24-clang++ $(CXXFLAGS) -c -o $@ $<
 
 all:$(OUTPUTNAME)
-	@echo Build complete for $(ECHO_MESSAGE)
+	@echo libImGUI.so - Build complete for $(ECHO_MESSAGE) using $(UNAME_S)
 
 $(OUTPUTNAME):$(OBJS)
 	$(NDK)/bin/ld -EL --fix-cortex-a53-843419 --warn-shared-textrel -z now -z relro -z max-page-size=4096 --hash-style=gnu --hash-style=both -L/home/rqdt9/Github/DImGui -L/home/rqdt9/Software/ldc2-1.40.1-linux-x86_64/lib-android-aarch64  -L$(NDK)/sysroot/usr/lib/aarch64-linux-android/24/ -L$(NDK)/sysroot/usr/lib/aarch64-linux-android/ -L./deps/sdl_aarch64/ -L$(NDK)/bin/../sysroot/usr/lib --eh-frame-hdr -m aarch64linux -shared -o $(OUTPUTNAME) $(OBJS) $(LINKSTATIC) $(LINKDYN)
@@ -43,7 +47,6 @@ $(OUTPUTNAME):$(OBJS)
 clean:
 	rm -f $(OBJS)
 	rm -f $(OUTPUTNAME)
-
 
 re: clean all
 

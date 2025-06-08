@@ -1,12 +1,13 @@
 ## Cross-compile for Android using Linux
 To cross-compile for Android, you'll need:
 * LDC2 version 1.40.1
+* Python
 * LDC2 Android library: ldc2-1.40.1-beta1-android-aarch64.tar.xz
 * cmake version 3.27.0
 * Android Studio
 * Android NDK r27c (version: 27.2.12479018)
 
-### INstall Android Studio
+### Install Android Studio
 
 Make sure that after installation you set the ANDROID_HOME variable, as well as update your PATH environmental variable
 ```
@@ -52,7 +53,7 @@ Now we can are ready to build the dependancies:
 ### Compile shaderc using cmake
 ```
   cd deps/shaderc
-  utils/git-sync-deps
+  python utils/git-sync-deps
   rm -rf build
   mkdir build
   cd build
@@ -68,7 +69,8 @@ Now we can are ready to build the dependancies:
   mv libshaderc/libshaderc_shared.so ../../../app/src/main/jniLibs/arm64-v8a
 ```
 
-Move the compiled shared library from "libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs"
+Move the compiled shared library from "libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs" so 
+Android Studio will pick up the compiled library and include it inside the APK.
 
 ### Compile spirv_cross using cmake
 ```
@@ -85,7 +87,14 @@ Move the compiled shared library from "libshaderc/libshaderc_shared.so" to "app/
   make -j8
   mv libspirv-cross-c-shared.so ../../../app/src/main/jniLibs/arm64-v8a
 ```
-Move the compiled shared library from "build/libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs"
+Move the compiled shared library from "build/libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs" so 
+Android Studio will pick up the compiled library and include it inside the APK.
+
+### Compile IMGUI & IMGUI into a shared library
+Make sure to update the paths to the NDK inside the Makefile before trying to build the libCImGui, then compile
+```
+  make -f Makefile.android
+```
 
 ### Compile SDL2 & other related libraries
 
@@ -94,11 +103,8 @@ For SDL_Mixer, set the support for libgme to false in the Android.mk file (line 
   SUPPORT_GME ?= false
 ```
 
-### Compile IMGUI & IMGUI into a shared library
-Make sure to update the paths to the NDK inside the Makefile before trying to build the libCImGui, then compile
-```
-  make -f Makefile.android
-```
+After this, use Android Studio to compile the SDL libraries, we need to use the .SO files to build the libMAIN.so in the next step. 
+Find where the compiled .so files are located inside of: app/build/intermediates/
 
 ### Compile the D code into libMAIN.so
 We can now use LDC to compile the shared library that will hook the sdl_main entry point, use importC to link to the dependancies, and the D code

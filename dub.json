@@ -49,7 +49,7 @@
 		"targetType": "dynamicLibrary",
 		"targetPath": "app/src/main/jniLibs/arm64-v8a",
 		"targetName": "main",
-		"preBuildCommands-linux": [ "make clean", "make -f Makefile.android clean", "make -f Makefile.android -j 8" ],
+		"preBuildCommands": [ "make clean", "make -f Makefile.android clean", "make -f Makefile.android -j 8" ],
 		"dflags-linux-ldc": ["-P-I$PACKAGE_DIR/app/jni/SDL2/include", 
                          "-P-I$PACKAGE_DIR/app/jni/SDL_ttf", 
                          "-P-I$PACKAGE_DIR/app/jni/SDL_image/include", 
@@ -58,14 +58,20 @@
                          "-P-I$PACKAGE_DIR/deps/",
                          "-P-I~/Android/Sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include", 
                          "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
+		"dflags-windows-x86_64": ["-P-I$PACKAGE_DIR/app/jni/SDL2/include", 
+                         "-P-I$PACKAGE_DIR/app/jni/SDL_ttf", 
+                         "-P-I$PACKAGE_DIR/app/jni/SDL_image/include", 
+                         "-P-I$PACKAGE_DIR/app/jni/SDL_mixer/include", 
+                         "-P-I$PACKAGE_DIR/deps/shaderc/libshaderc/include/", 
+                         "-P-I$PACKAGE_DIR/deps/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/"],
 		"lflags-linux": ["-L$PACKAGE_DIR", 
                      "-L$PACKAGE_DIR/app/build/intermediates/ndkBuild/debug/obj/local/arm64-v8a", 
+                     "-L$PACKAGE_DIR/app/build/intermediates/cxx/Debug/5v1q0263/obj/local/arm64-v8a",
                      "-L$PACKAGE_DIR/deps/shaderc/build/libshaderc", 
                      "-L$PACKAGE_DIR/deps/spirv_cross/build", 
                      "-L$PACKAGE_DIR/app/src/main/jniLibs/arm64-v8a/", 
                      "-L/home/rqdt9/Android/Sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24", 
-                     "-lSDL2","-lSDL2_image", "-lSDL2_mixer", "-lSDL2_ttf", "-lvulkan", "-lshaderc_shared", "-lspirv-cross-c-shared", "-lCImGui"],
-	}
-	]
+                     "-lSDL2","-lSDL2_image", "-lSDL2_mixer", "-lSDL2_ttf", "-lvulkan", "-lshaderc_shared", "-lspirv-cross-c-shared", "-lCImGui"]
+	}]
 }
 
