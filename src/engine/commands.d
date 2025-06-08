@@ -17,7 +17,7 @@ void recordRenderCommandBuffer(ref App app, uint syncIndex) {
     pInheritanceInfo: null // Optional
   };
   enforceVK(vkBeginCommandBuffer(app.renderBuffers[syncIndex], &beginInfo));
-  if(app.trace) SDL_Log("renderBuffer %d recording", syncIndex);
+  if(app.trace) SDL_Log("renderBuffer %d recording to frame: %d/%d", syncIndex, app.frameIndex, app.swapChainFramebuffers.length);
 
   VkRect2D renderArea = {
     offset: { x:0, y:0 },
@@ -65,10 +65,10 @@ void createCommandPool(ref App app) {
   enforceVK(vkCreateCommandPool(app.device, &poolInfo, null, &app.commandPool));
   app.mainDeletionQueue.add((){ vkDestroyCommandPool(app.device, app.commandPool, app.allocator); });
 
-  if(app.verbose) SDL_Log("Commandpool %p at queue %d created", app.commandPool, poolInfo.queueFamilyIndex);
+  if(app.trace) SDL_Log("Commandpool %p at queue %d created", app.commandPool, poolInfo.queueFamilyIndex);
 }
 
-VkCommandBuffer[] createCommandBuffer(VkDevice device, VkCommandPool commandPool, uint nBuffers = 1, uint verbose = 0) {
+VkCommandBuffer[] createCommandBuffer(App app, VkCommandPool commandPool, uint nBuffers = 1) {
   VkCommandBuffer[] commandBuffer;
   commandBuffer.length = nBuffers;
 
@@ -78,13 +78,13 @@ VkCommandBuffer[] createCommandBuffer(VkDevice device, VkCommandPool commandPool
     level: VK_COMMAND_BUFFER_LEVEL_PRIMARY,
     commandBufferCount: nBuffers
   };
-  enforceVK(vkAllocateCommandBuffers(device, &allocInfo, &(commandBuffer[0])));
-  if(verbose) SDL_Log("%d CommandBuffer created for pool %p", allocInfo.commandBufferCount, commandPool);
+  enforceVK(vkAllocateCommandBuffers(app.device, &allocInfo, &(commandBuffer[0])));
+  if(app.trace) SDL_Log("%d CommandBuffer created for pool %p", allocInfo.commandBufferCount, commandPool);
   return(commandBuffer);
 }
 
 void createImGuiCommandBuffers(ref App app) { 
-  app.imguiBuffers = app.device.createCommandBuffer(app.commandPool, app.framesInFlight, app.verbose);
+  app.imguiBuffers = app.createCommandBuffer(app.commandPool, app.framesInFlight);
   app.frameDeletionQueue.add((){
     for (uint i = 0; i < app.framesInFlight; i++) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.imguiBuffers[i]);
@@ -93,7 +93,7 @@ void createImGuiCommandBuffers(ref App app) {
 }
 
 VkCommandBuffer beginSingleTimeCommands(ref App app) {
-  VkCommandBuffer[1] commandBuffer = app.device.createCommandBuffer(app.commandPool, 1, app.verbose);
+  VkCommandBuffer[1] commandBuffer = app.createCommandBuffer(app.commandPool, 1);
 
   VkCommandBufferBeginInfo beginInfo = {
     sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -119,8 +119,8 @@ void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer) {
 }
 
 void createRenderCommandBuffers(ref App app) { 
-  app.renderBuffers = app.device.createCommandBuffer(app.commandPool, app.framesInFlight, app.verbose);
-  if(app.verbose) SDL_Log("createRenderCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
+  app.renderBuffers = app.createCommandBuffer(app.commandPool, app.framesInFlight);
+  if(app.trace) SDL_Log("createRenderCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
   app.frameDeletionQueue.add((){
     for (uint i = 0; i < app.framesInFlight; i++) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.renderBuffers[i]);

@@ -41,16 +41,17 @@ void initializeImGui(ref App app){
   igCreateContext(null);
   app.gui.io = igGetIO_Nil();
   app.gui.fonts ~= ImFontAtlas_AddFontDefault(app.gui.io.Fonts, null);
+  /*
   const(char)* path = "data/fonts/FreeMono.ttf";
-  version(Android){ }else{
-    import std.string : toStringz, fromStringz;
-    import std.format : format;
-    path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); 
-  }
-  /*if(isfile(path)) {
+  if(isfile(path)) {
+    version(Android){ }else{
+      import std.string : toStringz, fromStringz;
+      import std.format : format;
+      path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); 
+    }
     SDL_Log("Font path exists: %s", path);
     app.gui.fonts ~= ImFontAtlas_AddFontFromFileTTF(app.gui.io.Fonts, path, 12, null, null);
-  }*/
+  } */
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
   igStyleColorsDark(null);
@@ -65,13 +66,17 @@ void initializeImGui(ref App app){
     Queue : app.queue,
     DescriptorPool : app.pools[IMGUI],
     Allocator : app.allocator,
-    MinImageCount : app.camera.minImageCount,
+    MinImageCount : app.imageCount,
     ImageCount : cast(uint)app.framesInFlight,
     RenderPass : app.imguipass,
     MSAASamples : app.getMSAASamples(),
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&imguiInit);
+  version(Android){ 
+    auto style = igGetStyle();
+    ImGuiStyle_ScaleAllSizes(style, 2.0f);
+  }
   if(app.verbose) SDL_Log("ImGui initialized");
 }
 
