@@ -10,7 +10,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   VkSwapchainCreateInfoKHR swapchainCreateInfo = { // SwapChain CreateInfo
     sType: VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
     surface: app.surface,
-    minImageCount: app.camera.minImageCount,
+    minImageCount: 2,//app.camera.minImageCount,
     imageFormat: app.surfaceformats[0].format,
     imageColorSpace: app.surfaceformats[0].colorSpace,
     imageExtent: app.camera.currentExtent,
@@ -25,7 +25,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   };
 
   enforceVK(vkCreateSwapchainKHR(app.device, &swapchainCreateInfo, app.allocator, &app.swapChain));
-  if(app.verbose) SDL_Log("Swapchain %p created, minImage:%d", app.swapChain, app.camera.minImageCount);
+  if(app.verbose) SDL_Log("Swapchain %p created, minImage:%d", app.swapChain, app.imageCount);
   if(oldChain) { vkDestroySwapchainKHR(app.device, oldChain, app.allocator); }
 }
 

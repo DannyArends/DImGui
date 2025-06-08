@@ -8,15 +8,16 @@ import includes;
 import std.algorithm : map, filter;
 import std.array : array;
 import std.conv : to;
+import std.format : format;
 import std.stdio : File;
 import std.path : globMatch;
 import std.file : exists, isFile, dirEntries, SpanMode;
 import std.string : toStringz, fromStringz;
-import std.zlib : UnCompress;
 
 /** Read content of a file as a uint[]
  */
-char[] readFile(const(char*) path, uint verbose = 0) {
+char[] readFile(const(char)* path, uint verbose = 0) {
+  version(Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
 
@@ -37,29 +38,15 @@ char[] readFile(const(char*) path, uint verbose = 0) {
   return content;
 }
 
-/** Load a gzip file
- */
-string loadGzfile (const string path, uint chunkSize = 1024) {
-  string content = "";
-  if (!path.isfile) { return(content); }
-
-  auto uc = new UnCompress();
-  foreach (chunk; File(path).byChunk(chunkSize)) {
-    auto uncompressed = uc.uncompress(chunk);
-    content ~= to!string(uncompressed);
-  }
-  content ~= to!string(uc.flush());  // flush the compression buffer
-  return(content);
-}
-
 version(Android) { 
-
   // SDL does not provide the ability to scan folders, and on android we need to use the jni
   // dir() is the wrapper function provided
-  immutable(char)*[] dir(string path, string pattern = "*", bool shallow = true) { return(listDirContent(path, pattern, shallow)); }
+  immutable(char)*[] dir(const(char)* path, string pattern = "*", bool shallow = true) { 
+    return(listDirContent(path, pattern, shallow)); 
+  }
 
   // listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls
-  immutable(char)*[] listDirContent(string path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
+  immutable(char)*[] listDirContent(const(char)* path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
     JNIEnv* env = cast(JNIEnv*)SDL_AndroidGetJNIEnv();
     jobject activity = cast(jobject)SDL_AndroidGetActivity();
     jclass activity_class = (*env).GetObjectClass(env, activity);
@@ -67,7 +54,7 @@ version(Android) {
 
     // Query the asset_manager for the list() method
     auto list_method = (*env).GetMethodID(env, (*env).GetObjectClass(env, asset_manager), "list", "(Ljava/lang/String;)[Ljava/lang/String;");
-    jstring path_object = (*env).NewStringUTF(env, toStringz(path));
+    jstring path_object = (*env).NewStringUTF(env, path);
     auto files_object = cast(jobjectArray)(*env).CallObjectMethod(env, asset_manager, list_method, path_object);
     auto length = (*env).GetArrayLength(env, files_object);
 
@@ -79,13 +66,13 @@ version(Android) {
       jstring jstr = cast(jstring)(*env).GetObjectArrayElement(env, files_object, i);
       const(char)* fn = (*env).GetStringUTFChars(env, jstr, null);
       if (fn) {
-        string filename = to!string(fn);
-        string filepath =  (path ~ (path[($-1)] == '/' ? "" : "/") ~ filename);
-        if (globMatch(filepath, pattern)) { 
+        string s = to!string(path);
+        fn = toStringz(format("%s%s%s", s, (s[$-1] == '/'? "": "/"), fromStringz(fn)));
+        if (globMatch(fn.fromStringz(), pattern)) { 
           //SDL_Log("matching file: %s @ %s", toStringz(filename), toStringz(filepath));
-          files ~= toStringz(filepath);
+          files ~= fn;
         }
-        if (!shallow && isDir(filepath)) files ~= listDirContent(filepath, pattern, shallow, verbose);
+        if (!shallow && isDir(fn)) files ~= listDirContent(fn, pattern, shallow, verbose);
       }
       (*env).DeleteLocalRef(env, jstr); // De-Allocate the java string
     }
@@ -95,8 +82,8 @@ version(Android) {
   }
 
   // We shim ontop of our listDir some functions on Android
-  bool isDir(string path){ return(dirExists(path)); }
-  bool dirExists(string path){ return(listDirContent(path).length > 0); }
+  bool isDir(const(char)* path){ return(dirExists(path)); }
+  bool dirExists(const(char)* path){ return(listDirContent(path).length > 0); }
 
   // isFile uses SDL on Android
   bool isfile (const(char)* path) {
@@ -106,16 +93,14 @@ version(Android) {
     return true;
   }
 
-  bool isfile(string path) { return(isfile(toStringz(path))); }
-
-  bool exists (string path) { return(isFile(path) | dirExists(path)); }
+  bool exists (const(char)* path) { return(isfile(path) | dirExists(path)); }
 
 }else{ // Version SDL/OS, just use D to get the dir() functionality
 
-
   /** Content of a directory
    */
-  immutable(char)*[] dir(string path, string pattern = "*", bool shallow = true) { 
+  immutable(char)*[] dir(const(char)* dirPath, string pattern = "*", bool shallow = true) { 
+    string path = format("app/src/main/assets/%s", fromStringz(dirPath));
     auto mode = SpanMode.shallow;
     if(!shallow) mode = SpanMode.depth;
     auto entries = dirEntries(path, pattern, mode).filter!(a => a.isFile).map!(a => a.name.toStringz).array;
@@ -124,13 +109,11 @@ version(Android) {
 
   /** Helper function to determine if a path is a file
    */
-  bool isfile(string path) {
+  bool isfile(const(char)* filePath) {
+    string path = format("app/src/main/assets/%s", fromStringz(filePath));
     try {
       if (path.exists() || path.isFile) return(true);
     } catch (Exception e) { SDL_Log("path %s was not a file", path.ptr); }
     return(false);
   }
-
-  bool isfile(const(char)* path) { return(isfile(to!string(path))); }
 }
-

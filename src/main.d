@@ -34,7 +34,7 @@ version (Android) {
   extern(C) int SDL_main(int argc, char* argv) { // Hijack the SDL main
     int dRuntime = rt_init();
     writeln("Runtime initialized");
-    GC.disable(); // The GC crashes on android
+    //GC.disable(); // The GC crashes on android
     run(["android", format("--dRuntime=%s", dRuntime)]);
     return(0);
   }
@@ -78,7 +78,7 @@ void run(string[] args) {
   while (!app.finished && app.totalFramesRendered < frames) { /// Event polling & rendering Loop
     app.handleEvents();
     app.time[FRAMESTART] = SDL_GetTicks();
-    if(SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) { SDL_Delay(10); continue; }
+    if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
 
     app.checkForResize();
     app.renderFrame();

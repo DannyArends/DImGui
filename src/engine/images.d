@@ -82,7 +82,7 @@ void transitionImageLayout(ref App app, VkImage image, VkCommandBuffer commandBu
                            VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
   bool isSingleTimeCommand = (commandBuffer == null); /// Check if a commandBuffer is provided
-  if(app.verbose) SDL_Log("transitionImageLayout %d", isSingleTimeCommand);
+  if(app.trace) SDL_Log("transitionImageLayout %d", isSingleTimeCommand);
 
   if (isSingleTimeCommand) {
     commandBuffer = app.beginSingleTimeCommands();

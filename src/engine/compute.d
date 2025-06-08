@@ -34,15 +34,7 @@ struct Compute {
 /** Load shader modules for compute
  */
 void createComputeShaders(ref App app, const(char)*[] computePaths = ["data/shaders/texture.glsl", "data/shaders/particle.glsl"]) {
-  version(Android){ }else{
-    import std.string : toStringz, fromStringz;
-    import std.format : format;
-    for(uint i = 0; i < computePaths.length; i++) {
-      computePaths[i] = toStringz(format("app/src/main/assets/%s", fromStringz(computePaths[i]))); 
-    }
-  }
-
-  app.compute.system = new ParticleSystem(50000);
+  app.compute.system = new ParticleSystem(1500);
   foreach(path; computePaths){
     app.compute.shaders ~= app.createShaderModule(path, shaderc_glsl_compute_shader);
   }
@@ -179,7 +171,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
 /** recordComputeCommandBuffer for syncIndex and the selected ComputeShader
  */
 void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) {
-  if(app.verbose) SDL_Log("Record Compute Command Buffer [%s]: %d", shader.path, syncIndex);
+  if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", shader.path, syncIndex);
   VkCommandBuffer cmdBuffer = app.compute.commands[shader.path][syncIndex];
   enforceVK(vkResetCommandBuffer(cmdBuffer, 0));
 
@@ -234,6 +226,6 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   }
 
   vkEndCommandBuffer(cmdBuffer);
-  if(app.verbose) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
+  if(app.trace) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
 }
 
