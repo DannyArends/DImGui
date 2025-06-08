@@ -10,7 +10,7 @@ import commands : createCommandPool;
 import compute : createComputeShaders;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
-import events : handleEvents;
+import events : handleEvents, sdlEventsFilter;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, createFontTexture;
 import scene : createScene;
@@ -49,8 +49,10 @@ version (Android) {
  * Main entry point for Windows and Linux
  */
 void run(string[] args) {
-
   App app = initializeSDL();              /// Initialize SDL library and create a window
+  version (Android) {
+    SDL_SetEventFilter(&sdlEventsFilter, &app);
+  }
   app.createCompiler();                   /// Create the SPIR-V compiler
   app.createReflectionContext();          /// Create a SPIR-V reflection context
   app.loadGlyphAtlas();                   /// Load & parse the Glyph Atlas

@@ -98,13 +98,20 @@ void createScene(ref App app){
     }
   } */
 
- /* SDL_Log("createScene: Add L-System");
+  SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
   app.objects[6].computeNormals();
-  app.objects[6].position([2.0f, 1.0f, -2.0f]); */
-/*
+  app.objects[6].position([2.0f, 1.0f, -2.0f]);
+
+
   SDL_Log("createScene: Add PDB object");
-  auto protein = loadProteinCif("assets/objects/3kql.cif.gz");
+  const(char)* pdbpath = "data/objects/3kql.cif";
+  version(Android){ }else{
+    import std.string : toStringz, fromStringz;
+    import std.format : format;
+    pdbpath = toStringz(format("app/src/main/assets/%s", fromStringz(pdbpath))); 
+  }
+  auto protein = loadProteinCif(pdbpath);
   uint i = 6;
   app.objects ~= new AtomCloud(protein.atoms());
   app.objects[i].scale([0.5f, 0.5f, 0.5f]);
@@ -118,7 +125,7 @@ void createScene(ref App app){
       app.objects[i].scale([0.5f, 0.5f, 0.5f]);
       i++;
     }
-  } */
+  }
   SDL_Log("createScene: Finished");
 }
 

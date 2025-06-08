@@ -52,7 +52,7 @@ void renderFrame(ref App app){
     signalSemaphoreCount : 1,
     pSignalSemaphores : &computeComplete
   };
-
+  if(app.trace) SDL_Log("Phase 2: Submit Compute");
   enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
 
   // --- Phase 3: Prepare & Submit Graphics & ImGui Work ---

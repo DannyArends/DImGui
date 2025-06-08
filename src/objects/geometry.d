@@ -4,6 +4,7 @@
  */
 
 import engine;
+import std.string : toStringz, fromStringz;
 
 import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
 import camera : Camera;
@@ -35,6 +36,7 @@ class Geometry {
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {
+    //SDL_Log("Buffering: %s", toStringz(name()));
     if(!buffers[VERTEX]) 
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) 

@@ -39,7 +39,7 @@ endif
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 all:$(OUTPUTNAME)
-	@echo Build complete for $(ECHO_MESSAGE)
+	@echo libImGUI.so - Build complete for $(ECHO_MESSAGE)
 
 $(OUTPUTNAME):$(OBJS)
 	$(CXX) -o $(OUTPUTNAME) $(OBJS) $(CXXFLAGS) $(LINKFLAGS)
