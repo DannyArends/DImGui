@@ -121,9 +121,9 @@ struct App {
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?
   bool showBounds = true;                         /// TO IMPLEMENT: Show bounding boxes
-  uint verbose = 0;                               /// Be very verbose
+  uint verbose = 1;                               /// Be very verbose
   bool rebuild = false;                           /// Rebuild the swapChain?
-  bool isMinimized = false;                       /// isMinimized the swapChain?
+  bool isMinimized = false;                       /// isMinimized?
 
   // Properties based on the SwapChain
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
@@ -134,19 +134,22 @@ struct App {
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance
  */
 void cleanUp(App app){
+  if(app.verbose) SDL_Log("Wait idle & frame deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
 
+  if(app.verbose) SDL_Log("Shutdown ImGui");
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
 
+  if(app.verbose) SDL_Log("Delete objects & main queue");
   // Delete objects and flush the main deletion queue
   foreach(object; app.objects) { app.cleanup(object); }
   app.mainDeletionQueue.flush();
 
   // Clear the ShaderC compiler and Quit SDL
-
+  if(app.verbose) SDL_Log("Destroy window");
   SDL_DestroyWindow(app);
   SDL_Quit();
 }

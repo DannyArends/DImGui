@@ -71,12 +71,7 @@ WavFMT loadWav(const(char)* path, float pitch = 1.0, float gain = 0.5, bool loop
 /** Load all CasualGameSounds WAV sound effects
  */
 void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSounds", float pitch = 1.0, float gain = 0.5, bool looping = false, bool play = false) {
-  version(Android){ }else{
-    import std.string : toStringz, fromStringz;
-    import std.format : format;
-    path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); 
-  }
-  auto files = dir(to!string(path), "*.wav");
+  auto files = dir(path, "*.wav");
   foreach(file; files) {
     app.soundfx ~= loadWav(file, pitch, gain, looping);
   }

@@ -71,14 +71,7 @@ void createScene(ref App app){
     };
 
   SDL_Log("createScene: Add Wavefront");
-  const(char)* objPath = "data/objects/viking_room.obj";
-  version(Android){ }else{
-    import std.string : toStringz, fromStringz;
-    import std.format : format;
-    objPath = toStringz(format("app/src/main/assets/%s", fromStringz(objPath))); 
-  }
-
-  app.objects ~= app.loadWavefront(objPath);
+  app.objects ~= app.loadWavefront("data/objects/viking_room.obj");
   app.objects[4].texture(app.textures, "viking");
   app.objects[4].rotate([0.0f, 180.0f, 0.0f]);
   app.objects[4].position([2.0f, 0.0f, 0.0f]);
@@ -105,13 +98,7 @@ void createScene(ref App app){
 
 
   SDL_Log("createScene: Add PDB object");
-  const(char)* pdbpath = "data/objects/3kql.cif";
-  version(Android){ }else{
-    import std.string : toStringz, fromStringz;
-    import std.format : format;
-    pdbpath = toStringz(format("app/src/main/assets/%s", fromStringz(pdbpath))); 
-  }
-  auto protein = loadProteinCif(pdbpath);
+  auto protein = loadProteinCif("data/objects/3kql.cif");
   uint i = 6;
   app.objects ~= new AtomCloud(protein.atoms());
   app.objects[i].scale([0.5f, 0.5f, 0.5f]);
