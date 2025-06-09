@@ -14,7 +14,7 @@ The following folders are interesting, if you're interested in how the repositor
 - [src/engine](./src/engine/) main folder for the engine objects
 - [src/math](./src/math/) math functions for vectors, matrices, particles, and the L-system
 - [src/objects](./src/objects) All geometric (renderable) objects are in here
-- [assets/](./assets/) All assets of the engine (font, objects, shaders, and textures)
+- [assets/](./app/src/main/assets/data/) All assets of the engine (font, objects, shaders, and textures)
 - [deps/](./deps/) CImGui source code as well as Windows 64bit runtime SDL2 DLLs for image,mixer and ttf
 
 Some noteworthy files:

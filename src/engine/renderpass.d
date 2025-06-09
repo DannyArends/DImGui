@@ -15,7 +15,7 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
   if(app.verbose) SDL_Log("Creating RenderPass");
 
   VkAttachmentDescription colorAttachment = {
-    format : app.surfaceformats[0].format,
+    format : app.surfaceformats[app.format].format,
     samples : app.getMSAASamples(),
     loadOp : loadOp,
     storeOp : VK_ATTACHMENT_STORE_OP_STORE,
@@ -24,7 +24,7 @@ VkRenderPass createRenderPass(ref App app, VkImageLayout initialLayout = VK_IMAG
   };
 
   VkAttachmentDescription colorAttachmentResolve = {
-    format : app.surfaceformats[0].format,
+    format : app.surfaceformats[app.format].format,
     samples : VK_SAMPLE_COUNT_1_BIT,
     loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
     storeOp : VK_ATTACHMENT_STORE_OP_STORE,

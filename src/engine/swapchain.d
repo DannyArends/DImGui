@@ -5,14 +5,21 @@
 
 import engine;
 
+import surface : isSupported;
+
 // Create a swapchain for IMGui
 void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
+  version (Android) {
+    auto x = app.isSupported(VK_FORMAT_R5G6B5_UNORM_PACK16);
+    if(x >= 0){ app.format = cast(uint)x; SDL_Log("Using format: %d", app.format); }
+  }
+
   VkSwapchainCreateInfoKHR swapchainCreateInfo = { // SwapChain CreateInfo
     sType: VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
     surface: app.surface,
     minImageCount: app.camera.minImageCount,
-    imageFormat: app.surfaceformats[0].format,
-    imageColorSpace: app.surfaceformats[0].colorSpace,
+    imageFormat: app.surfaceformats[app.format].format,
+    imageColorSpace: app.surfaceformats[app.format].colorSpace,
     imageExtent: app.camera.currentExtent,
     imageArrayLayers: 1,
     imageUsage: VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -74,7 +81,7 @@ void aquireSwapChainImages(ref App app) {
   // Allocate space for an imageview per image & create the imageviews
   app.swapChainImageViews.length = app.imageCount;
   for (uint i = 0; i < app.imageCount; i++) {
-    app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.surfaceformats[0].format);
+    app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.surfaceformats[app.format].format);
   }
   if(app.verbose) SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
   app.frameDeletionQueue.add((){
