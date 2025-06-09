@@ -21,6 +21,9 @@ void pickPhysicalDevice(ref App app, uint device = 0){
 }
 
 VkSampleCountFlagBits getMSAASamples(const App app) {
+  version (Android) {
+    return VK_SAMPLE_COUNT_2_BIT;
+  }
   VkSampleCountFlags counts = app.properties.limits.framebufferColorSampleCounts & app.properties.limits.framebufferDepthSampleCounts;
   if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
   if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }

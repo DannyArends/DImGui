@@ -78,7 +78,7 @@ void initializeImGui(ref App app){
     auto style = igGetStyle();
     ImGuiStyle_ScaleAllSizes(style, 2.0f);
   }
-  if(app.verbose) SDL_Log("ImGui initialized");
+  if(app.verbose) SDL_Log("ImGui initialized, MSAA: %d", app.getMSAASamples());
 }
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
