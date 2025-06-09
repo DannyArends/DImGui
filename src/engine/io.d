@@ -17,7 +17,7 @@ import std.string : toStringz, fromStringz;
 /** Read content of a file as a uint[]
  */
 char[] readFile(const(char)* path, uint verbose = 0) {
-  version(Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
+  version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
 
@@ -36,6 +36,26 @@ char[] readFile(const(char)* path, uint verbose = 0) {
   if(readTotal != content.length) SDL_Log("[ERROR] read %db, expected %db\n", readTotal, content.length);
   if(verbose) SDL_Log("readFile: loaded %d bytes\n", readTotal);
   return content;
+}
+
+void writeFile(const(char)* path, char[] content, uint verbose = 0) {
+  version (Android) {
+    path = toStringz(format("%s/%s", fromStringz(SDL_AndroidGetInternalStoragePath()), fromStringz(path)));
+  }
+  SDL_RWops* fp = SDL_RWFromFile(path, "w");
+  if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
+
+  size_t writeTotal = 0, nWrite = 1;
+  char* bPtr = &content[0];
+  while (writeTotal < content.length && nWrite != 0) {
+    nWrite = SDL_RWwrite(fp, bPtr, 1, cast(size_t)(content.length - writeTotal));
+    writeTotal += nWrite;
+    bPtr += nWrite;
+  }
+  SDL_RWclose(fp);
+
+  if(writeTotal != content.length) SDL_Log("[ERROR] write %db, expected %db\n", writeTotal, content.length);
+  if(verbose) SDL_Log("writeFile: wrote %d bytes\n", writeTotal);
 }
 
 version(Android) { 

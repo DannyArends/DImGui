@@ -6,7 +6,7 @@
 import engine;
 import std.algorithm : min;
 import std.conv : to;
-import io : isfile, readFile;
+import io : isfile, readFile, writeFile;
 import std.path : baseName;
 import std.format : format;
 import std.string : toStringz, fromStringz;
@@ -35,12 +35,38 @@ struct GUI {
   float[2] sound = [0.0, 1.0f];
 }
 
+/** Save ImGui settings to disk (or Android internal storage)
+ */
+void saveSettings() {
+  size_t ini_data_size = 0;
+  const(char)* ini_data = igSaveIniSettingsToMemory(&ini_data_size);
+  if (ini_data) {
+    char[] data = (to!string(ini_data)).dup;
+    writeFile("imgui.ini", data, true);
+    SDL_Log("Saved ImGui INI data (size: %zu bytes):\n", ini_data_size);
+  }
+}
+
+/** Load ImGui settings from disk (or Android internal storage)
+ */
+void loadSettings(const(char)* path = "imgui.ini") {
+  version (Android) {
+    path = toStringz(format("%s/%s", fromStringz(SDL_AndroidGetInternalStoragePath()), fromStringz(path)));
+  }
+  if(path.isfile()) {
+    SDL_Log("Loading ImGui settings from %s", path);
+    auto content = readFile(path);
+    auto s = (to!string(content));
+    igLoadIniSettingsFromMemory(toStringz(s), content.length);
+  }
+}
+
 /** Code to initialize the ImGui backend
  */
 void initializeImGui(ref App app){
   igCreateContext(null);
   app.gui.io = igGetIO_Nil();
-
+  loadSettings();
   // Load the Default font
   app.gui.fonts ~= ImFontAtlas_AddFontDefault(app.gui.io.Fonts, null);
 
@@ -223,7 +249,6 @@ void showSFXwindow(ref App app, bool* show, uint font = 0) {
  */
 void showSettingswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  igPopFont();
   if(igBegin("Settings", show, ImGuiWindowFlags_NoFocusOnAppearing)){
     igBeginTable("Settings_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     igTableNextColumn();
@@ -258,6 +283,7 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igEndTable();
     igEnd();
   }else { igEnd(); }
+  igPopFont();
 }
 
 /** Show the GUI window for Shaders
