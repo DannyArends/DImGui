@@ -86,7 +86,8 @@ struct App {
 
   // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;
-  VkSurfaceFormatKHR[] surfaceformats = null;
+  VkSurfaceFormatKHR[] surfaceformats = null;   /// Available formats
+  uint format = 0;                              /// selected format
   VkSwapchainKHR swapChain = null;
   VkCommandPool commandPool = null;
 

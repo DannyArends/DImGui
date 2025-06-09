@@ -32,7 +32,7 @@ void renderFrame(ref App app){
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
 
-  //SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
+  // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
   if(app.trace) SDL_Log("Phase 2: Prepare & Submit Compute Work");
