@@ -29,7 +29,7 @@ void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
   app.objects[0].position([0.0f,-0.5f,0.0f]);
-/*  for(int x = -50; x < 50; x++) {
+  for(int x = -50; x < 50; x++) {
     for(int z = -50; z < 50; z++) {
       mat4 instance;  // Add a instances of object 0
       auto scalefactor = 0.25f;
@@ -88,7 +88,7 @@ void createScene(ref App app){
     }
   } */
 
-/*
+
   SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
   app.objects[5].computeNormals();
@@ -110,7 +110,7 @@ void createScene(ref App app){
       app.objects[i].scale([0.5f, 0.5f, 0.5f]);
       i++;
     }
-  } */
+  }
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");
