@@ -51,6 +51,7 @@ version (Android) {
 void run(string[] args) {
   App app = initializeSDL();              /// Initialize SDL library and create a window
   version (Android) {
+    app.compute.enabled = false;
     SDL_SetEventFilter(&sdlEventsFilter, &app);
   }
   app.createCompiler();                   /// Create the SPIR-V compiler
@@ -61,7 +62,9 @@ void run(string[] args) {
   app.createDebugCallback();              /// Hook the debug callback to the validation layer
   app.createLogicalDevice();              /// Create a logical device for rendering
   app.createRenderShaders();              /// Load the vertex and fragment shaders
-  app.createComputeShaders();              /// Load the compute shader
+  if (app.compute.enabled) {
+    app.createComputeShaders();           /// Load the compute shader
+  }
   app.createCommandPool();                /// Create the rendering CommandPool
   app.createSampler();                    /// Create a texture sampler
   app.createImGuiDescriptorPool();        /// ImGui DescriptorPool

@@ -9,9 +9,11 @@ import surface : isSupported;
 
 // Create a swapchain for IMGui
 void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
+  VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   version (Android) {
     auto x = app.isSupported(VK_FORMAT_R5G6B5_UNORM_PACK16);
     if(x >= 0){ app.format = cast(uint)x; SDL_Log("Using format: %d", app.format); }
+    compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
   }
 
   VkSwapchainCreateInfoKHR swapchainCreateInfo = { // SwapChain CreateInfo
@@ -25,7 +27,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
     imageUsage: VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
     imageSharingMode: VK_SHARING_MODE_EXCLUSIVE,
     preTransform: app.camera.currentTransform,
-    compositeAlpha: VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+    compositeAlpha: compositeAlpha,
     presentMode: VK_PRESENT_MODE_FIFO_KHR, // VK_PRESENT_MODE_IMMEDIATE_KHR or VK_PRESENT_MODE_FIFO_KHR
     clipped: VK_TRUE,
     oldSwapchain: oldChain,
