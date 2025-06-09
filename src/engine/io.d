@@ -14,7 +14,7 @@ import std.path : globMatch;
 import std.file : exists, isFile, dirEntries, SpanMode;
 import std.string : toStringz, fromStringz;
 
-/** Read content of a file as a uint[]
+/** Read content of a file as a char[]
  */
 char[] readFile(const(char)* path, uint verbose = 0) {
   version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
@@ -38,6 +38,8 @@ char[] readFile(const(char)* path, uint verbose = 0) {
   return content;
 }
 
+/** Write content of a char[] to a file
+ */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   version (Android) {
     path = toStringz(format("%s/%s", fromStringz(SDL_AndroidGetInternalStoragePath()), fromStringz(path)));
