@@ -6,7 +6,7 @@
 import engine;
 import std.algorithm : min;
 import std.conv : to;
-import io : isfile;
+import io : isfile, readFile;
 import std.path : baseName;
 import std.format : format;
 import std.string : toStringz, fromStringz;
@@ -40,18 +40,19 @@ struct GUI {
 void initializeImGui(ref App app){
   igCreateContext(null);
   app.gui.io = igGetIO_Nil();
+
+  // Load the Default font
   app.gui.fonts ~= ImFontAtlas_AddFontDefault(app.gui.io.Fonts, null);
-  /*
-  const(char)* path = "data/fonts/FreeMono.ttf";
-  if(isfile(path)) {
-    version(Android){ }else{
-      import std.string : toStringz, fromStringz;
-      import std.format : format;
-      path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); 
-    }
-    SDL_Log("Font path exists: %s", path);
-    app.gui.fonts ~= ImFontAtlas_AddFontFromFileTTF(app.gui.io.Fonts, path, 12, null, null);
-  } */
+
+  // Load our FreeMono.ttf font
+  char[] data = readFile("data/fonts/FreeMono.ttf");
+  uint size = cast(uint)data.length;
+  ImFontConfig* font_cfg = ImFontConfig_ImFontConfig();
+  font_cfg.Name = "FreeMono";
+  font_cfg.SizePixels = 36.0f;
+  font_cfg.FontDataOwnedByAtlas = false;
+  app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&data[0], size, 36, font_cfg, null);
+
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
   igStyleColorsDark(null);
@@ -116,9 +117,12 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 
 /** Show the GUI window with FPS statistics
  */
-void showFPSwindow(ref App app, uint font = 0) {
+void showFPSwindow(ref App app, uint font = 1) {
   igPushFont(app.gui.fonts[font]);
-  igSetNextWindowPos(ImVec2(0.0f, 20.0f), 0, ImVec2(0.0f, 0.0f));
+  ImVec2 size;
+  igCalcTextSize(&size, "Hello", null, false, 0.0f);
+
+  igSetNextWindowPos(ImVec2(0.0f, size.y + 5.0f), 0, ImVec2(0.0f, 0.0f));
   auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
   igBegin("FPS", null, flags);
     igText("%s", app.properties.deviceName.ptr);
@@ -260,7 +264,6 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
  */
 void showShaderwindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  igPopFont();
   if(igBegin("Shaders", show, ImGuiWindowFlags_NoFocusOnAppearing)){
     igBeginTable("Shaders_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, shader; (app.shaders ~ app.compute.shaders)) {
@@ -277,6 +280,7 @@ void showShaderwindow(ref App app, bool* show, uint font = 0) {
     igEndTable();
     igEnd();
   }else { igEnd(); }
+  igPopFont();
 }
 
 /** Show the GUI window which allows us to manipulate lighting
@@ -336,6 +340,7 @@ void showLightswindow(ref App app, bool* show, uint font = 0) {
 /** Main Menu
  */
 void showMenu(ref App app, uint font = 0) {
+  igPushFont(app.gui.fonts[font]);
   if(igBeginMainMenuBar()) {
     if(igBeginMenu("File".toStringz, true)) {
       if(igMenuItem_Bool("FPS".toStringz,null, false, true)) {  app.gui.showFPS = !app.gui.showFPS; }
@@ -350,6 +355,7 @@ void showMenu(ref App app, uint font = 0) {
     }
     igEndMainMenuBar();
   }
+  igPopFont();
 }
 
 /** Render the GUI and return the ImDrawData*
@@ -359,15 +365,18 @@ ImDrawData* renderGUI(ref App app){
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplSDL2_NewFrame();
   igNewFrame();
-  app.showMenu();
+  uint font = 0;
+  version (Android) { font = 1; }
+
+  app.showMenu(font);
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
-  if(app.gui.showFPS) app.showFPSwindow();
-  if(app.gui.showObjects) app.showObjectswindow(&app.gui.showObjects);
-  if(app.gui.showSFX) app.showSFXwindow(&app.gui.showSFX);
-  if(app.gui.showShaders) app.showShaderwindow(&app.gui.showShaders);
-  if(app.gui.showSettings) app.showSettingswindow(&app.gui.showSettings);
-  if(app.gui.showLights) app.showLightswindow(&app.gui.showLights);
-  if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture);
+  if(app.gui.showFPS) app.showFPSwindow(font);
+  if(app.gui.showObjects) app.showObjectswindow(&app.gui.showObjects, font);
+  if(app.gui.showSFX) app.showSFXwindow(&app.gui.showSFX, font);
+  if(app.gui.showShaders) app.showShaderwindow(&app.gui.showShaders, font);
+  if(app.gui.showSettings) app.showSettingswindow(&app.gui.showSettings, font);
+  if(app.gui.showLights) app.showLightswindow(&app.gui.showLights, font);
+  if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture, font);
 
   igRender();
   return(igGetDrawData());
