@@ -51,7 +51,6 @@ version (Android) {
 void run(string[] args) {
   App app = initializeSDL();              /// Initialize SDL library and create a window
   version (Android) {
-    app.compute.enabled = false;
     SDL_SetEventFilter(&sdlEventsFilter, &app);
   }
   app.createCompiler();                   /// Create the SPIR-V compiler
@@ -90,5 +89,7 @@ void run(string[] args) {
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
-  app.cleanUp();
+  version (Android) {}else{
+    app.cleanUp();
+  }
 }

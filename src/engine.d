@@ -16,7 +16,7 @@ import lights : Light, Lights;
 import matrix : multiply, inverse;
 import pipeline : GraphicsPipeline;
 import images : ColorBuffer;
-import imgui : GUI;
+import imgui : GUI, saveSettings;
 import shaders : Shader;
 import vector : normalize;
 import uniforms : UBO;
@@ -135,6 +135,9 @@ struct App {
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance
  */
 void cleanUp(App app){
+  if(app.verbose) SDL_Log("Save ImGui Settings");
+  saveSettings();
+
   if(app.verbose) SDL_Log("Wait idle & frame deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
