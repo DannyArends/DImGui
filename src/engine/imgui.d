@@ -30,7 +30,10 @@ struct GUI {
   bool showSFX = false;
   bool showShaders = false;
   bool showTexture = false;
-  float[2] pos = [-50.0, 50];
+
+  uint size = 1;
+
+  float[2] pos = [-10.0, 10];
   float[2] col = [0.0, 2.0f];
   float[2] sound = [0.0, 1.0f];
 }
@@ -43,7 +46,7 @@ void saveSettings() {
   if (ini_data) {
     char[] data = (to!string(ini_data)).dup;
     writeFile("imgui.ini", data, true);
-    SDL_Log("Saved ImGui INI data (size: %zu bytes):\n", ini_data_size);
+    SDL_Log("Saved ImGui INI data (size: %zu bytes)", ini_data_size);
   }
 }
 
@@ -103,6 +106,7 @@ void initializeImGui(ref App app){
   version(Android){ 
     auto style = igGetStyle();
     ImGuiStyle_ScaleAllSizes(style, 2.0f);
+    app.gui.size = 2;
   }
   if(app.verbose) SDL_Log("ImGui initialized, MSAA: %d", app.getMSAASamples());
 }
@@ -153,8 +157,8 @@ void showFPSwindow(ref App app, uint font = 1) {
   igBegin("FPS", null, flags);
     igText("%s", app.properties.deviceName.ptr);
     igText("Vulkan v%d.%d.%d", VK_API_VERSION_MAJOR(app.properties.apiVersion),
-                     VK_API_VERSION_MINOR(app.properties.apiVersion),
-                     VK_API_VERSION_PATCH(app.properties.apiVersion));
+                               VK_API_VERSION_MINOR(app.properties.apiVersion),
+                               VK_API_VERSION_PATCH(app.properties.apiVersion));
     igText("%.1f FPS, %.1f ms %d objects, %d textures", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate, app.objects.length, app.textures.length);
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
@@ -181,15 +185,15 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
         if(igButton((app.objects[i].isVisible?"H":"S"), ImVec2(0.0f, 0.0f))) { app.objects[i].isVisible = !app.objects[i].isVisible; } igSameLine(0,5);
         if(igButton("X", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; }
       igTableNextColumn();
-        igPushItemWidth(100);
+        igPushItemWidth(100 * app.gui.size);
           igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
         igPopItemWidth();
       igTableNextColumn();
-        igPushItemWidth(100);
+        igPushItemWidth(100 * app.gui.size);
           igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
         igPopItemWidth();
       igTableNextColumn();
-        igPushItemWidth(100);
+        igPushItemWidth(100 * app.gui.size);
           igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
         igPopItemWidth();
       app.objects[i].position = p;
@@ -326,33 +330,33 @@ void showLightswindow(ref App app, bool* show, uint font = 0) {
         igTableNextColumn();
           igText("Position".toStringz, ImVec2(0.0f, 0.0f));
         igTableNextColumn();
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##pX", ImGuiDataType_Float,  &light.position[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##pY", ImGuiDataType_Float,  &light.position[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##pZ", ImGuiDataType_Float,  &light.position[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
 
         igTableNextRow(0, 5.0f);
         igTableNextColumn();
           igText("Intensity".toStringz, ImVec2(0.0f, 0.0f));
         igTableNextColumn();
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##I0", ImGuiDataType_Float,  &light.intensity[0], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##I1", ImGuiDataType_Float,  &light.intensity[1], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##I2", ImGuiDataType_Float,  &light.intensity[2], &app.gui.col[0], &app.gui.col[1], "%.2f", 0);
 
         igTableNextRow(0, 5.0f);
         igTableNextColumn();
           igText("Direction".toStringz, ImVec2(0.0f, 0.0f));
         igTableNextColumn();
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##D0", ImGuiDataType_Float,  &light.direction[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##D1", ImGuiDataType_Float,  &light.direction[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-          igPushItemWidth(75);
+          igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##D2", ImGuiDataType_Float,  &light.direction[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
         igEndTable();
       igPopID();

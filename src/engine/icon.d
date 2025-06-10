@@ -4,15 +4,22 @@
  */
 import includes;
 
+import std.format : format;
+import std.string : toStringz, fromStringz;
+
 import io : isfile;
 
 /** Set an icon for the SDL window
  */
-void setIcon(SDL_Window *window, const(char)* path = "assets/icons/icon.png") {
-  if (path.isfile()) {
-    SDL_Surface* surface = IMG_Load(path);
-    SDL_SetWindowIcon(window, surface);
-    SDL_FreeSurface(surface);
+void setIcon(SDL_Window *window, const(char)* path = "data/icons/icon.png") {
+  version(Android){ }else{
+    if (path.isfile()) {
+      path = toStringz(format("app/src/main/assets/%s", fromStringz(path)));
+      SDL_Surface* surface = IMG_Load(path);
+      SDL_SetWindowIcon(window, surface);
+      SDL_FreeSurface(surface);
+      SDL_Log("Icon loaded from: %s", path);
+    }
   }
 }
 

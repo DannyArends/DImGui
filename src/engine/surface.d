@@ -35,7 +35,7 @@ void querySurfaceCapabilities(ref App app) {
   uint formatCount;
   enforceVK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(app.physicalDevice, app.surface, &app.camera.capabilities));  // Capabilities
 
-  SDL_Log("Capablities: ImageCount: %d - %d", app.camera.capabilities.minImageCount, app.camera.capabilities.maxImageCount);
+  if(app.verbose) SDL_Log("Capablities: ImageCount: %d - %d", app.camera.capabilities.minImageCount, app.camera.capabilities.maxImageCount);
 
   // Surface formats
   enforceVK(vkGetPhysicalDeviceSurfaceFormatsKHR(app.physicalDevice, app.surface, &formatCount, null));

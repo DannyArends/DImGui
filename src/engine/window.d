@@ -83,6 +83,7 @@ void checkForResize(ref App app){
   SDL_GetWindowSize(app.window, &width, &height);
   if(width > 0 && height > 0 && (app.rebuild || app.camera.width != width || app.camera.height != height)) {
     ImGui_ImplVulkan_SetMinImageCount(app.camera.minImageCount);
+    app.gui.io.DisplaySize = ImVec2(cast(float)width, cast(float)height);
     app.createOrResizeWindow();
     app.syncIndex = app.frameIndex = 0;
     app.rebuild = false;
