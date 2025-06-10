@@ -33,8 +33,7 @@ version (Android) {
 
   extern(C) int SDL_main(int argc, char* argv) { // Hijack the SDL main
     int dRuntime = rt_init();
-    writeln("Runtime initialized");
-    //GC.disable(); // The GC crashes on android
+    writeln("D runtime initialized: %d", dRuntime);
     run(["android", format("--dRuntime=%s", dRuntime)]);
     return(0);
   }

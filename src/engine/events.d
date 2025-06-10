@@ -98,7 +98,6 @@ void handleEvents(ref App app) {
     if(e.type == SDL_QUIT) app.finished = true;
     if(e.type == SDL_WINDOWEVENT) { 
       if(e.window.event == SDL_WINDOWEVENT_CLOSE && e.window.windowID == SDL_GetWindowID(app)){ app.finished = true; }
-      if(e.window.event == SDL_WINDOWEVENT_RESIZED){ app.resize(e.window.data1, e.window.data2); }
       if(e.window.event == SDL_WINDOWEVENT_RESTORED){ app.isMinimized = false; }
       if(e.window.event == SDL_WINDOWEVENT_MINIMIZED){ app.isMinimized = true; }
     }
