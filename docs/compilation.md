@@ -5,7 +5,16 @@ Make sure the following (development) libraries are installed:
 * [SDL_mixer](https://www.libsdl.org/projects/SDL_mixer/)
 * [SDL_ttf](https://www.libsdl.org/projects/SDL_ttf/)
 * [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
+* [ShaderC](https://github.com/google/shaderc)
+* [SPIRV-Cross](https://https://github.com/KhronosGroup/SPIRV-Cross)
 * [DMD compiler](https://dlang.org/download.html) >2.110.0
+
+Often we can install all Linux dependancies by issuing the following commands:
+
+```
+  sudo apt install libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
+  sudo apt install shaderc spirv-cross-dev
+```
 
 ### Compilation [Linux & Windows]
 

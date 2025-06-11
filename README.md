@@ -15,13 +15,14 @@ The following folders are interesting, if you're interested in how the repositor
 - [src/math](./src/math/) math functions for vectors, matrices, particles, and the L-system
 - [src/objects](./src/objects) All geometric (renderable) objects are in here
 - [assets/](./app/src/main/assets/data/) All assets of the engine (font, objects, shaders, and textures)
-- [deps/](./deps/) CImGui source code as well as Windows 64bit runtime SDL2 DLLs for image,mixer and ttf
+- [deps/](./deps/) CImGui source code as well as Windows 64bit runtime SDL2 DLLs for image, mixer, and ttf
 
 Some noteworthy files:
 
 - [dub.json](./dub.json) contains the D language dependancies, and build instructions
 - [src/main.d](./src/main.d) contains the main entry function, and SDL event loop
-- [src/includes.c](./src/includes.c) the file holding the importC instructions
+- [src/scene.d](./src/scene.d) contains the code that sets up the example scene
+- [src/includes.c](./src/includes.c) contains the importC instructions
 
 ### Contributing
 
