@@ -12,8 +12,9 @@ import std.algorithm : remove, reverse;
 
 import boundingbox : computeBoundingBox;
 import commands : recordRenderCommandBuffer;
+import color : Colors;
 import camera : move, drag, castRay;
-import geometry : deAllocate;
+import geometry : deAllocate, setColor;
 import intersection : intersects;
 import line : createLine;
 import sdl : FRAMESTART, FRAMESTOP, LASTTICK;
@@ -64,7 +65,12 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       for(size_t x = 0; x < app.objects.length; x++) {
         if(app.objects[x].box is null) app.objects[x].computeBoundingBox(app.trace);
         auto intersection = ray.intersects(app.objects[x].box);
-        if(intersection.intersects) SDL_Log("Hit: %s", toStringz(app.objects[x].name()));
+        if(intersection.intersects) {
+          app.objects[x].box.setColor(Colors.yellowgreen);
+          SDL_Log("Hit: %s", toStringz(app.objects[x].name()));
+        }else{
+          app.objects[x].box.setColor();
+        }
       }
       app.objects ~= createLine(ray);
 
