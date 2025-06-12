@@ -5,6 +5,9 @@
 
 import includes;
 
+import std.format : format;
+import std.string : toStringz;
+
 import cube : Cube;
 import geometry : Instance, Geometry;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
@@ -53,24 +56,37 @@ class BoundingBox : Geometry {
 }
 
 /* Compute the bounding box for object */
-void computeBoundingBox(ref Geometry object) {
-  if(!object.box) object.box = new BoundingBox();
-  float[3][2] size = [[float.infinity, float.infinity, float.infinity], 
-                      [-float.infinity, -float.infinity, -float.infinity]];
-
-  for (size_t i = 0; i < object.vertices.length; i++) {
-    if (object.vertices[i].position[0] < size[0][0]) size[0][0] = object.vertices[i].position[0];
-    if (object.vertices[i].position[0] > size[1][0]) size[1][0] = object.vertices[i].position[0];
-
-    if (object.vertices[i].position[1] < size[0][1]) size[0][1] = object.vertices[i].position[1];
-    if (object.vertices[i].position[1] > size[1][1]) size[1][1] = object.vertices[i].position[1];
-
-    if (object.vertices[i].position[2] < size[0][2]) size[0][2] = object.vertices[i].position[2];
-    if (object.vertices[i].position[2] > size[1][2]) size[1][2] = object.vertices[i].position[2];
+void computeBoundingBox(ref Geometry object, bool verbose = false) {
+  bool initial = false;
+  if(object.box is null) {
+    if(verbose) SDL_Log("Computing new Bounding Box for %s", toStringz(object.name()));
+    object.box = new BoundingBox();
+    initial = true;
   }
-  object.box.setDimensions(size[0], size[1]);
-  object.box.instances[0].matrix = object.instances[0].matrix;
-  object.box.buffers[VERTEX] = false;
-  object.box.buffers[INSTANCE] = false;
+  object.box.name = (){ return("BoundingBox"); };
+
+  if(initial || !object.buffers[VERTEX]) { // The object vertex buffer is out of date, update the BoundingBox
+    if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.name()), toStringz(object.name()));
+    float[3][2] size = [[float.infinity, float.infinity, float.infinity], 
+                        [-float.infinity, -float.infinity, -float.infinity]];
+
+    for (size_t i = 0; i < object.vertices.length; i++) {
+      if (object.vertices[i].position[0] < size[0][0]) size[0][0] = object.vertices[i].position[0];
+      if (object.vertices[i].position[0] > size[1][0]) size[1][0] = object.vertices[i].position[0];
+
+      if (object.vertices[i].position[1] < size[0][1]) size[0][1] = object.vertices[i].position[1];
+      if (object.vertices[i].position[1] > size[1][1]) size[1][1] = object.vertices[i].position[1];
+
+      if (object.vertices[i].position[2] < size[0][2]) size[0][2] = object.vertices[i].position[2];
+      if (object.vertices[i].position[2] > size[1][2]) size[1][2] = object.vertices[i].position[2];
+    }
+    object.box.setDimensions(size[0], size[1]);
+    object.box.buffers[VERTEX] = false;
+  }
+  if(initial || !object.buffers[INSTANCE]) { // The object instance buffer is out of date, update the BoundingBox
+    if(verbose) SDL_Log("Updating %s(%s) INSTANCE", toStringz(object.box.name()), toStringz(object.name()));
+    object.box.instances[0].matrix = object.instances[0].matrix;
+    object.box.buffers[INSTANCE] = false;
+  }
 }
 

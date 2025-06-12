@@ -10,8 +10,8 @@ struct Particle {
   vec4 velocity;    /// Velocity
   float mass;       /// Mass
   float life;       /// Life
-  float random1;     /// Random number
-  float random2;     /// Random number
+  float random1;    /// Random number
+  float random2;    /// Random number
 };
 
 //size of a workgroup for compute
