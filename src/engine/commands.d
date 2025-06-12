@@ -38,15 +38,11 @@ void recordRenderCommandBuffer(ref App app, uint syncIndex) {
 
   for(size_t x = 0; x < app.objects.length; x++) {
     if(app.showBounds) {
-      if(app.objects[x].box is null) app.objects[x].computeBoundingBox(); 
-      if(!app.objects[x].box.isBuffered){
-        //SDL_Log("Buffering boundingbox %s", toStringz(app.objects[x].name()));
-        app.objects[x].box.buffer(app);
-      }
+      app.objects[x].computeBoundingBox(app.trace);
+      app.objects[x].box.buffer(app);
     }
     if(!app.objects[x].isBuffered) {
       if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
-      app.objects[x].computeBoundingBox(); 
       app.objects[x].buffer(app);
     }
   }

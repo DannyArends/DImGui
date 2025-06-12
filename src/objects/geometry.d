@@ -38,7 +38,7 @@ class Geometry {
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {
-    //SDL_Log("Buffering: %s", toStringz(name()));
+    if(app.trace) SDL_Log("Buffering: %s", toStringz(name()));
     if(!buffers[VERTEX])
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) 
@@ -52,10 +52,6 @@ class Geometry {
   bool[3] buffers = [false, false, false];        /// Boolean flag
   @property @nogc bool isBuffered() nothrow { 
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
-  }
-
-  void updateBox(){
-    box.instances[0].matrix = instances[0].matrix;
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
@@ -174,6 +170,7 @@ void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = f
 
 /** Render a Geometry to app.renderBuffers[i] */
 void draw(ref App app, Geometry object, size_t i) {
+  if(app.trace) SDL_Log("DRAW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
 
   vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[object.topology].graphicsPipeline);
@@ -185,7 +182,7 @@ void draw(ref App app, Geometry object, size_t i) {
   vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
                           app.pipelines[object.topology].pipelineLayout, 0, 1, &app.sets[RENDER][i], 0, null);
 
-  if(app.trace) SDL_Log("DRAW: %d instances", object.instances.length);
   vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
+  if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.name()));
 }
 
