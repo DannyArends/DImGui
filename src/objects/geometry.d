@@ -129,6 +129,13 @@ uint addVertex(ref Geometry geometry, const Vertex v) nothrow {
   return(cast(uint)(geometry.vertices.length-1));
 }
 
+void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
+  for (uint x = 0; x < geometry.vertices.length; x++) {
+    geometry.vertices[x].color = color;
+  }
+  geometry.buffers[VERTEX] = false;
+}
+
 /** Get all the triangle faces of a geometry */
 pure uint[3][] faces(const Geometry geometry) nothrow {
   uint[3][] fList;
