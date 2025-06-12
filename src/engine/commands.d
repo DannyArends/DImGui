@@ -5,6 +5,9 @@
 
 import engine;
 
+import std.string : toStringz;
+
+import boundingbox : computeBoundingBox;
 import geometry : draw;
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
@@ -34,8 +37,16 @@ void recordRenderCommandBuffer(ref App app, uint syncIndex) {
   };
 
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isBuffered) { 
+    if(app.showBounds) {
+      if(app.objects[x].box is null) app.objects[x].computeBoundingBox(); 
+      if(!app.objects[x].box.isBuffered){
+        //SDL_Log("Buffering boundingbox %s", toStringz(app.objects[x].name()));
+        app.objects[x].box.buffer(app);
+      }
+    }
+    if(!app.objects[x].isBuffered) {
       if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
+      app.objects[x].computeBoundingBox(); 
       app.objects[x].buffer(app);
     }
   }
@@ -45,8 +56,8 @@ void recordRenderCommandBuffer(ref App app, uint syncIndex) {
 
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
   for(size_t x = 0; x < app.objects.length; x++) {
-  //  if(!app.objects[x].isBuffered) app.objects[x].buffer(app);
     if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
+    if(app.showBounds) app.draw(app.objects[x].box, syncIndex);
   }
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
   enforceVK(vkEndCommandBuffer(app.renderBuffers[syncIndex]));
