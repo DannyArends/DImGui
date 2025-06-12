@@ -21,13 +21,13 @@ void renderFrame(ref App app){
   if(app.trace) SDL_Log("Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight");
   if (app.compute.enabled) {
     enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
-    app.bufferDeletionQueue.flush(); // Flush the Queue
     enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
   }
 
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, uint.max));
-  app.bufferDeletionQueue.flush(); // Flush the Queue
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
+
+  app.bufferDeletionQueue.flush(); // Flush the Queue
 
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;

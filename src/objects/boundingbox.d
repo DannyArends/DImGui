@@ -55,7 +55,8 @@ class BoundingBox : Geometry {
   }
 }
 
-/* Compute the bounding box for object */
+/**  Compute the bounding box for object
+ */
 void computeBoundingBox(ref Geometry object, bool verbose = false) {
   bool initial = false;
   if(object.box is null) {

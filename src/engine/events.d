@@ -10,9 +10,11 @@ import std.format : format;
 import core.memory : GC;
 import std.algorithm : remove, reverse;
 
+import boundingbox : computeBoundingBox;
 import commands : recordRenderCommandBuffer;
 import camera : move, drag, castRay;
 import geometry : deAllocate;
+import intersection : intersects;
 import line : createLine;
 import sdl : FRAMESTART, FRAMESTOP, LASTTICK;
 
@@ -58,7 +60,14 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_MOUSEBUTTONDOWN){
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
-      app.objects ~= createLine(app.camera.castRay(e.motion.x, e.motion.y));
+      auto ray = app.camera.castRay(e.motion.x, e.motion.y);
+      for(size_t x = 0; x < app.objects.length; x++) {
+        if(app.objects[x].box is null) app.objects[x].computeBoundingBox(app.trace);
+        auto intersection = ray.intersects(app.objects[x].box);
+        if(intersection.intersects) SDL_Log("Hit: %s", toStringz(app.objects[x].name()));
+      }
+      app.objects ~= createLine(ray);
+
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
   }
