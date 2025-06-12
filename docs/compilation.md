@@ -9,11 +9,17 @@ Make sure the following (development) libraries are installed:
 * [SPIRV-Cross](https://https://github.com/KhronosGroup/SPIRV-Cross)
 * [DMD compiler](https://dlang.org/download.html) >2.110.0
 
-Often we can install all Linux dependancies by issuing the following commands:
+Install all Linux dependancies (Ubuntu) by issuing the following commands:
 
 ```
   sudo apt install libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
   sudo apt install shaderc spirv-cross-dev
+```
+
+in Debian, the names of the ShaderC and SPIRV-Cross development libraries are slightly different
+
+```
+  sudo apt install libshaderc1 libspirv-cross-c-shared-dev
 ```
 
 ### Compilation [Linux & Windows]
