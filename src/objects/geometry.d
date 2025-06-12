@@ -7,6 +7,7 @@ import engine;
 import std.string : toStringz, fromStringz;
 
 import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
+import boundingbox : BoundingBox, computeBoundingBox;
 import camera : Camera;
 import matrix : mat4, position, translate, rotate, scale;
 import textures : Texture, idx;
@@ -33,15 +34,16 @@ class Geometry {
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
   alias instances this;
+  BoundingBox box = null;
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {
     //SDL_Log("Buffering: %s", toStringz(name()));
-    if(!buffers[VERTEX]) 
+    if(!buffers[VERTEX])
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) 
       buffers[INDEX] = app.toGPU(indices, indexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    if(!buffers[INSTANCE]) 
+    if(!buffers[INSTANCE])
       buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
   }
 
@@ -50,6 +52,10 @@ class Geometry {
   bool[3] buffers = [false, false, false];        /// Boolean flag
   @property @nogc bool isBuffered() nothrow { 
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
+  }
+
+  void updateBox(){
+    box.instances[0].matrix = instances[0].matrix;
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
@@ -107,6 +113,7 @@ void cleanup(ref App app, Geometry object) {
   app.destroyGeometryBuffers(object.vertexBuffer);
   app.destroyGeometryBuffers(object.indexBuffer);
   app.destroyGeometryBuffers(object.instanceBuffer);
+  if(object.box){ app.cleanup(object.box); }
 }
 
 /** deAllocate all GPU buffers after waiting for the object to not be in use anymore */

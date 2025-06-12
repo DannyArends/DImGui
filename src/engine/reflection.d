@@ -106,6 +106,7 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
         spvc_type_id element_id = spvc_type_get_member_type(type_handle, 0);
         spvc_type element_handle = spvc_compiler_get_type_handle(compiler, element_id);
         app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler, element_handle, &descr.bytes));
+        //descr.bytes = 48;
     }
 
     // Figure out the descriptor count in a round-about way
@@ -117,10 +118,10 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
       }
     }
     if(!descr.count) descr.count = cast(uint)app.textures.length;
-    if (app.trace) {
+//    if (app.trace) {
       SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
               descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);
-    }
+//    }
     return(descr);
 }
 

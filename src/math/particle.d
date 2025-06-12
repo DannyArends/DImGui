@@ -11,9 +11,10 @@ import quaternion : Quaternion;
 /** A single particle
  */
 struct Particle {
-  align(16) float[3] position;    /// Position
-  align(16) float[3] velocity;    /// Velocity
+  float[4] position;    /// Position
+  float[4] velocity;    /// Velocity
   float mass;           /// Mass
   float life;           /// Life
-  float random;         /// Random number
+  float random1;         /// Random number
+  float random2;         /// Random number
 }

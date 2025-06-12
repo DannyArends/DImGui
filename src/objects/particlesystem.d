@@ -12,6 +12,7 @@ import particle : Particle;
 import geometry : Instance, Geometry;
 import vector : Vector, vMul, vAdd, magnitude, normalize;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
+import quaternion : xyzw;
 
 /** ParticleSystem
  */
@@ -47,22 +48,23 @@ class ParticleSystem : Geometry {
     auto b = uniform(color[0][2], color[1][2]);
     vertices[i] = Vertex(position, [0.0f,0.0f], [r, g, b, 1.0f]);
 
-    particles[i].position = position;
+    particles[i].position = position.xyzw;
     indices[i] = i;
     particles[i].velocity = [uniform(impulse[0][0], impulse[1][0]),
                              uniform(impulse[0][1], impulse[1][1]),
-                             uniform(impulse[0][2], impulse[1][2])];
-    particles[i].velocity[].normalize;
-    particles[i].velocity[] = particles[i].velocity[].vMul(uniform(0.01f, 0.1f));
+                             uniform(impulse[0][2], impulse[1][2]), 0.0f];
+    particles[i].velocity[0..3].normalize;
+    particles[i].velocity[] = particles[i].velocity[0..3].vMul(uniform(0.01f, 0.1f)).xyzw;
     particles[i].life = uniform(0.1f, 1.0f);
     particles[i].mass = uniform(1.0f, 5.0f);
-    particles[i].random = uniform(0.0f, 0.1f);
+    particles[i].random1 = uniform(0.0f, 0.1f);
+    particles[i].random2 = uniform(0.0f, 0.1f);
   }
 
   /** Age all particles */
   void age() {
     for (uint i = 0; i < particles.length; i++) {
-      vertices[i].position[] = particles[i].position[];
+      vertices[i].position[] = particles[i].position[0..3];
     }
     buffers[VERTEX] = false;
   }

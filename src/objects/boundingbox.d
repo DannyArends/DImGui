@@ -7,7 +7,7 @@ import includes;
 
 import cube : Cube;
 import geometry : Instance, Geometry;
-import vertex : Vertex;
+import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
 /** BoundingBox
  */
@@ -53,8 +53,8 @@ class BoundingBox : Geometry {
 }
 
 /* Compute the bounding box for object */
-BoundingBox computeBoundingBox(Geometry object) {
-  BoundingBox box = new BoundingBox();
+void computeBoundingBox(ref Geometry object) {
+  if(!object.box) object.box = new BoundingBox();
   float[3][2] size = [[float.infinity, float.infinity, float.infinity], 
                       [-float.infinity, -float.infinity, -float.infinity]];
 
@@ -68,8 +68,9 @@ BoundingBox computeBoundingBox(Geometry object) {
     if (object.vertices[i].position[2] < size[0][2]) size[0][2] = object.vertices[i].position[2];
     if (object.vertices[i].position[2] > size[1][2]) size[1][2] = object.vertices[i].position[2];
   }
-  box.setDimensions(size[0], size[1]);
-  box.instances[0].matrix = object.instances[0].matrix;
-  return(box);
+  object.box.setDimensions(size[0], size[1]);
+  object.box.instances[0].matrix = object.instances[0].matrix;
+  object.box.buffers[VERTEX] = false;
+  object.box.buffers[INSTANCE] = false;
 }
 

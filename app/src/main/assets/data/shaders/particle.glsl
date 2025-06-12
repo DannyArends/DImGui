@@ -6,11 +6,12 @@
 #version 460
 
 struct Particle {
-  vec3 position;    /// Position
-  vec3 velocity;    /// Velocity
+  vec4 position;    /// Position
+  vec4 velocity;    /// Velocity
   float mass;       /// Mass
   float life;       /// Life
-  float random;     /// Random number
+  float random1;     /// Random number
+  float random2;     /// Random number
 };
 
 //size of a workgroup for compute
@@ -24,30 +25,32 @@ layout(set = 0, binding = 0) uniform ParticleUniformBuffer {
   float deltaTime;
 } ubo;
 
-layout(set = 0, binding = 1) buffer lastFrame {
+layout(std140, set = 0, binding = 1) buffer lastFrame {
    Particle pIn[];
 };
 
-layout(set = 0, binding = 2) buffer currentFrame {
+layout(std140, set = 0, binding = 2) buffer currentFrame {
    Particle pOut[];
 };
-
+  
 void main(){
   uint index = gl_GlobalInvocationID.x;
 
   Particle particleIn = pIn[index];
-  vec3 particleEnergy = particleIn.velocity * particleIn.mass;
-  pOut[index].life = particleIn.life - (particleIn.random);
-  vec3 totalEnergy = ubo.gravity.xyz * particleIn.mass + particleEnergy;
+  vec3 particleEnergy = particleIn.velocity.xyz * particleIn.mass;
+  pOut[index].life = particleIn.life - (particleIn.random1);
+  vec3 totalEnergy = (ubo.gravity.xyz * particleIn.mass) + particleEnergy;
   vec3 newVelocity = totalEnergy / particleIn.mass;
 
-  vec3 newPosition = particleIn.position + newVelocity;
+  vec3 newPosition = particleIn.position.xyz + newVelocity;
   if(newPosition[1] < ubo.floor) { // Bounce
     particleIn.position[1] = ubo.floor;
     newVelocity[1] = -newVelocity[1];
     newVelocity = newVelocity / (1.5 * particleIn.mass);
   }
-  pOut[index] = particleIn;
-  pOut[index].position = particleIn.position + newVelocity;
-  pOut[index].velocity = newVelocity;
+  pOut[index].position = vec4(particleIn.position.xyz + newVelocity, 0.0f);
+  pOut[index].velocity = vec4(newVelocity, 0.0f);
+  pOut[index].mass = particleIn.mass;
+  pOut[index].random1 =  particleIn.random1;
+  pOut[index].random2 =  particleIn.random2;
 }
