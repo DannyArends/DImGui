@@ -26,3 +26,4 @@ struct CheckedDeletionQueue {
     foreach(i; idx.reverse) { queue = queue.remove(i); }
   }
 }
+

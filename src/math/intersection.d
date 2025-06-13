@@ -11,6 +11,8 @@ import boundingbox : BoundingBox;
 import matrix : multiply;
 import vector : x,y,z, vAdd, vMul;
 
+/** Intersection structure
+ */
 struct Intersection{
   bool intersects = false;    /// Does it intersect
   float[3] intersection;      /// Point of intersection in
@@ -21,6 +23,8 @@ struct Intersection{
   alias intersects this;
 }
 
+/** Compute the intersection between a ray and a bounding box
+ */
 @nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box)  {
   Intersection i;
   float[3] bmin = box.instances[0].matrix.multiply(box.min);
@@ -58,3 +62,4 @@ struct Intersection{
   }
   return i;
 }
+

@@ -56,6 +56,8 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
   }
 }
 
+/** Get a list of intersections between the ray and the objects in the scene
+ */
 Intersection[] getHits(ref App app, SDL_Event e, bool showRay = true){
   auto ray = app.camera.castRay(e.motion.x, e.motion.y);
   Intersection[] hits;

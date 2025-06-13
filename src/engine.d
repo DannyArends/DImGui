@@ -69,9 +69,9 @@ struct App {
   CheckedDeletionQueue bufferDeletionQueue;                                     /// On each frame rendered
 
   // ShaderC & SPIR-V reflection
-  shaderc_compiler_t compiler;
-  shaderc_compile_options_t options;
-  spvc_context context;
+  shaderc_compiler_t compiler;                                                  /// ShaderC compiler
+  shaderc_compile_options_t options;                                            /// ShaderC compiler options
+  spvc_context context;                                                         /// SpirV context
 
   // Vulkan Instance related variables
   VkInstance instance = null;
