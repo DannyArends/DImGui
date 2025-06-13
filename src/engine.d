@@ -122,6 +122,7 @@ struct App {
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?
   bool showBounds = false;                        /// Show bounding boxes
+  bool showRays = false;                        /// Show bounding boxes
   uint verbose = 0;                               /// Be very verbose
   bool rebuild = false;                           /// Rebuild the swapChain?
   bool isMinimized = false;                       /// isMinimized?

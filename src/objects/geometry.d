@@ -34,7 +34,9 @@ class Geometry {
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
   alias instances this;
-  BoundingBox box = null;
+
+  BoundingBox box = null;                       /// Bounding Box
+  bool window = false;                          /// ImGui window displayed?
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app) {

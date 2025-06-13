@@ -4,7 +4,8 @@
  */
 
 import engine;
-
+import std.array : array;
+import std.algorithm : sort;
 import std.string : toStringz;
 import std.format : format;
 import core.memory : GC;
@@ -15,7 +16,7 @@ import commands : recordRenderCommandBuffer;
 import color : Colors;
 import camera : move, drag, castRay;
 import geometry : deAllocate, setColor;
-import intersection : intersects;
+import intersection : Intersection, intersects;
 import line : createLine;
 import sdl : FRAMESTART, FRAMESTOP, LASTTICK;
 
@@ -55,25 +56,37 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
   }
 }
 
+Intersection[] getHits(ref App app, SDL_Event e, bool showRay = true){
+  auto ray = app.camera.castRay(e.motion.x, e.motion.y);
+  Intersection[] hits;
+  for(size_t x = 0; x < app.objects.length; x++) {
+    if(app.objects[x].name() == "Line") continue; // Other lines should not generate hits
+    app.objects[x].computeBoundingBox(app.trace);
+    auto intersection = ray.intersects(app.objects[x].box);
+    app.objects[x].box.setColor();
+    app.objects[x].window = false;
+    if (intersection.intersects) {
+      intersection.idx = cast(uint)x;
+      hits ~= intersection;
+    }
+  }
+  if(showRay) app.objects ~= createLine(ray);
+  hits.sort!("a.tmin < b.tmin");
+  return(hits);
+}
+
 /** Handle mouse events
  */
 void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_MOUSEBUTTONDOWN){
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
-      auto ray = app.camera.castRay(e.motion.x, e.motion.y);
-      for(size_t x = 0; x < app.objects.length; x++) {
-        if(app.objects[x].box is null) app.objects[x].computeBoundingBox(app.trace);
-        auto intersection = ray.intersects(app.objects[x].box);
-        if(intersection.intersects) {
-          app.objects[x].box.setColor(Colors.yellowgreen);
-          SDL_Log("Hit: %s", toStringz(app.objects[x].name()));
-        }else{
-          app.objects[x].box.setColor();
-        }
+      auto hits = app.getHits(e, app.showRays);
+      if (hits.length > 0) {
+        if(app.verbose) SDL_Log("Clostest hit: %d = %s", hits[0].idx, toStringz(app.objects[hits[0].idx].name()));
+        app.objects[hits[0].idx].box.setColor(Colors.yellowgreen);
+        app.objects[hits[0].idx].window = true;
       }
-      app.objects ~= createLine(ray);
-
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
   }
