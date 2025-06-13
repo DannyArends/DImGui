@@ -16,13 +16,13 @@ struct DeletionQueue {
 }
 
 struct CheckedDeletionQueue {
-  bool delegate()[] queue;
+  bool delegate(bool)[] queue;
   alias queue this;
 
-  void add(bool delegate() fn){ queue ~= fn; }
-  void flush(){
+  void add(bool delegate(bool) fn){ queue ~= fn; }
+  void flush(bool force = false) {
     size_t[] idx;
-    foreach(i, fn; queue.reverse){ if(fn()) idx ~= i;}
+    foreach(i, fn; queue.reverse){ if(fn(force)) idx ~= i;}
     foreach(i; idx.reverse) { queue = queue.remove(i); }
   }
 }

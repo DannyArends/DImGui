@@ -253,6 +253,9 @@ void showObjectwindow(ref App app, ref Geometry obj, bool* show, uint font = 0) 
   igPushFont(app.gui.fonts[font]);
   if(igBegin(toStringz(obj.name()), show, ImGuiWindowFlags_NoFocusOnAppearing)){
     igText(toStringz(format("Vertices: %s", obj.vertices.length)), ImVec2(0.0f, 0.0f));
+    igText(toStringz(format("Indices: %s", obj.indices.length)), ImVec2(0.0f, 0.0f));
+    igText(toStringz(format("Instances: %s", obj.instances.length)), ImVec2(0.0f, 0.0f));
+    igText(toStringz(format("Topology: %s", obj.topology)), ImVec2(0.0f, 0.0f));
     auto p = obj.position;
     igBeginTable("Object_Tbl", 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       igTableNextColumn();
