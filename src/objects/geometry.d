@@ -117,9 +117,10 @@ void cleanup(ref App app, Geometry object) {
 /** deAllocate all GPU buffers after waiting for the object to not be in use anymore */
 void deAllocate(ref App app, Geometry object) {
   // We use the vertex buffer fence to wait until the buffers aren't in-use anymore
-  object.vertexBuffer.fence = app.fences[app.syncIndex].renderInFlight;
-  app.bufferDeletionQueue.add((){
-    if (vkGetFenceStatus(app.device, object.vertexBuffer.fence) == VK_SUCCESS){ app.cleanup(object); return(true); }
+  object.vertexBuffer.frame = app.totalFramesRendered + app.framesInFlight;
+  app.bufferDeletionQueue.add((bool force){
+    if (force || (app.totalFramesRendered >= object.vertexBuffer.frame)){ app.cleanup(object); return(true); }
+//    if (vkGetFenceStatus(app.device, object.vertexBuffer.fence) == VK_SUCCESS){ app.cleanup(object); return(true); }
     return(false);
   });
 }

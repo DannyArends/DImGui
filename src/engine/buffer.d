@@ -12,7 +12,7 @@ struct GeometryBuffer {
   VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
-  VkFence fence;                 /// Fence to complete before destoying the buffer
+  uint frame;                    /// Frame to complete before destoying the buffer
   uint size = 0;                 /// Size of the buffer
   void* data;                    /// Pointer to mapped data
 }
@@ -137,9 +137,9 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsage
     if(buffer.size != 0) {
       // Resize, the old buffer was not empty
       auto oldbuffer = buffer;
-      oldbuffer.fence = app.fences[app.syncIndex].renderInFlight;
-      app.bufferDeletionQueue.add((){ // Add the old buffer to the buffer deletion queue
-        if (vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS){ app.destroyGeometryBuffers(oldbuffer); return(true); }
+      oldbuffer.frame = app.totalFramesRendered + app.framesInFlight;
+      app.bufferDeletionQueue.add((bool force){ // Add the old buffer to the buffer deletion queue
+        if (force || (app.totalFramesRendered >= oldbuffer.frame)){ app.destroyGeometryBuffers(oldbuffer); return(true); }
         return(false);
       });
       buffer = GeometryBuffer();

@@ -60,14 +60,17 @@ Intersection[] getHits(ref App app, SDL_Event e, bool showRay = true){
   auto ray = app.camera.castRay(e.motion.x, e.motion.y);
   Intersection[] hits;
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(app.objects[x].name() == "Line") continue; // Other lines should not generate hits
-    app.objects[x].computeBoundingBox(app.trace);
-    auto intersection = ray.intersects(app.objects[x].box);
-    app.objects[x].box.setColor();
+    if(!app.objects[x].isVisible) continue;                   // invisible objects should not generate hits
+    if(app.objects[x].name() == "Line") continue;             // Other lines should not generate hits
+    app.objects[x].computeBoundingBox(app.trace);             // Make sure we compute the current Bounding Box
+    auto intersection = ray.intersects(app.objects[x].box);   // Compute the intersection
     app.objects[x].window = false;
     if (intersection.intersects) {
       intersection.idx = cast(uint)x;
+      app.objects[x].box.setColor(Colors.paleturquoise);
       hits ~= intersection;
+    }else{
+      app.objects[x].box.setColor();
     }
   }
   if(showRay) app.objects ~= createLine(ray);
