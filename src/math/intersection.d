@@ -12,9 +12,12 @@ import matrix : multiply;
 import vector : x,y,z, vAdd, vMul;
 
 struct Intersection{
-  bool intersects = false;
-  float[3] intersection;
-  float[3] intersectionOut;
+  bool intersects = false;    /// Does it intersect
+  float[3] intersection;      /// Point of intersection in
+  float[3] intersectionOut;   /// Point of intersection out
+  float tmin;                 /// Min Distance of intersection
+  float tmax;                 /// Max Distance of intersection
+  uint idx;                   /// Index of intersected object
   alias intersects this;
 }
 
@@ -23,34 +26,34 @@ struct Intersection{
   float[3] bmin = box.instances[0].matrix.multiply(box.min);
   float[3] bmax = box.instances[0].matrix.multiply(box.max);
 
-  float tmin = (bmin.x - ray[0].x) / ray[1].x;
-  float tmax = (bmax.x - ray[0].x) / ray[1].x; 
-  if (tmin > tmax) swap(tmin, tmax);
+  i.tmin = (bmin.x - ray[0].x) / ray[1].x;
+  i.tmax = (bmax.x - ray[0].x) / ray[1].x; 
+  if (i.tmin > i.tmax) swap(i.tmin, i.tmax);
 
   float tymin = (bmin.y - ray[0].y) / ray[1].y;
   float tymax = (bmax.y - ray[0].y) / ray[1].y; 
   if (tymin > tymax) swap(tymin, tymax);
 
-  if ((tmin > tymax) || (tymin > tmax)) return i;
+  if ((i.tmin > tymax) || (tymin > i.tmax)) return i;
 
-  if (tymin > tmin) tmin = tymin;
-  if (tymax < tmax) tmax = tymax;
+  if (tymin > i.tmin) i.tmin = tymin;
+  if (tymax < i.tmax) i.tmax = tymax;
 
   float tzmin = (bmin.z - ray[0].z) / ray[1].z;
   float tzmax = (bmax.z - ray[0].z) / ray[1].z; 
   if (tzmin > tzmax) swap(tzmin, tzmax);
 
-  if ((tmin > tzmax) || (tzmin > tmax)) return i;
-  if (tzmin > tmin) tmin = tzmin;
-  if (tzmax < tmax) tmax = tzmax;
+  if ((i.tmin > tzmax) || (tzmin > i.tmax)) return i;
+  if (tzmin > i.tmin) i.tmin = tzmin;
+  if (tzmax < i.tmax) i.tmax = tzmax;
 
-  if (tmax > -0.5f){
+  if (i.tmax > -0.5f){
    /* Debug for intercept calculation
-    writefln("tmin: %s, tmax: %s", tmin, tmax);
-    writefln("tymin: %s, tymax: %s", tymin, tymax);
-    writefln("tzmin: %s, tzmax: %s", tzmin, tzmax); */
-    i.intersection = ray[0].vAdd(ray[1].vMul(tmin));
-    i.intersectionOut = ray[0].vAdd(ray[1].vMul(tmax));
+    SDL_Log("tmin: %s, tmax: %s", tmin, tmax);
+    SDL_Log("tymin: %s, tymax: %s", tymin, tymax);
+    SDL_Log("tzmin: %s, tzmax: %s", tzmin, tzmax); */
+    i.intersection = ray[0].vAdd(ray[1].vMul(i.tmin));
+    i.intersectionOut = ray[0].vAdd(ray[1].vMul(i.tmax));
     i.intersects = true;
   }
   return i;

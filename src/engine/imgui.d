@@ -11,7 +11,7 @@ import std.path : baseName;
 import std.format : format;
 import std.string : toStringz, fromStringz;
 
-import geometry : position;
+import geometry : Geometry, position;
 import lights : Light;
 import devices : getMSAASamples;
 import sfx : play;
@@ -249,6 +249,34 @@ void showSFXwindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+void showObjectwindow(ref App app, ref Geometry obj, bool* show, uint font = 0) {
+  igPushFont(app.gui.fonts[font]);
+  if(igBegin(toStringz(obj.name()), show, ImGuiWindowFlags_NoFocusOnAppearing)){
+    igText(toStringz(format("Vertices: %s", obj.vertices.length)), ImVec2(0.0f, 0.0f));
+    auto p = obj.position;
+    igBeginTable("Object_Tbl", 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+      igTableNextColumn();
+        if(igButton((obj.isVisible?"H":"S"), ImVec2(0.0f, 0.0f))) { obj.isVisible = !obj.isVisible; } igSameLine(0,5);
+        if(igButton("X", ImVec2(0.0f, 0.0f))){ obj.deAllocate = true; }
+      igTableNextColumn();
+        igPushItemWidth(100 * app.gui.size);
+          igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+        igPopItemWidth();
+      igTableNextColumn();
+        igPushItemWidth(100 * app.gui.size);
+          igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+        igPopItemWidth();
+      igTableNextColumn();
+        igPushItemWidth(100 * app.gui.size);
+          igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+        igPopItemWidth();
+      obj.position = p;
+    igEndTable();
+    igEnd();
+  }else { igEnd(); }
+  igPopFont();
+}
+
 /** Show the GUI window with global settings
  */
 void showSettingswindow(ref App app, bool* show, uint font = 0) {
@@ -274,6 +302,10 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igTableNextColumn();
     igText("showBounds", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igCheckbox("##showBounds", &app.showBounds);
+
+    igTableNextColumn();
+    igText("showRays", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igCheckbox("##showRays", &app.showRays);
 
     igTableNextColumn();
     igText("Clear color", ImVec2(0.0f, 0.0f)); igTableNextColumn();
@@ -407,6 +439,9 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showSettings) app.showSettingswindow(&app.gui.showSettings, font);
   if(app.gui.showLights) app.showLightswindow(&app.gui.showLights, font);
   if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture, font);
+  foreach(ref obj; app.objects){
+    if(obj.window) app.showObjectwindow(obj, &obj.window, font);
+  }
 
   igRender();
   return(igGetDrawData());
