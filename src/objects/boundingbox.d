@@ -86,7 +86,10 @@ void computeBoundingBox(ref Geometry object, bool verbose = false) {
   }
   if(initial || !object.buffers[INSTANCE]) { // The object instance buffer is out of date, update the BoundingBox
     if(verbose) SDL_Log("Updating %s(%s) INSTANCE", toStringz(object.box.name()), toStringz(object.name()));
-    object.box.instances[0].matrix = object.instances[0].matrix;
+    object.box.instances.length = object.instances.length;
+    for(size_t x = 0; x < object.instances.length; x++) {
+      object.box.instances[x].matrix = object.instances[x].matrix;
+    }
     object.box.buffers[INSTANCE] = false;
   }
 }
