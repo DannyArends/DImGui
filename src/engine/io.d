@@ -14,6 +14,11 @@ import std.path : globMatch;
 import std.file : exists, isFile, dirEntries, SpanMode;
 import std.string : toStringz, fromStringz;
 
+size_t fread(SDL_RWops* fp, void* buffer, size_t n, size_t size) { return(SDL_RWread(fp, buffer, n, size)); }
+size_t fwrite(SDL_RWops* fp, void* buffer, size_t n, size_t size) { return(SDL_RWwrite(fp, buffer, n, size)); }
+ulong tell(SDL_RWops* fp){ return(SDL_RWtell(fp)); }
+ulong seek(SDL_RWops* fp, int offset, int whence){ return(SDL_RWseek(fp, offset, whence)); }
+
 /** Read content of a file as a char[]
  */
 char[] readFile(const(char)* path, uint verbose = 0) {
@@ -25,11 +30,11 @@ char[] readFile(const(char)* path, uint verbose = 0) {
   content.length = cast(size_t)SDL_RWsize(fp);
 
   size_t readTotal = 0, nRead = 1;
-  char* bPtr = &content[0];
+  char* buffer = &content[0];
   while (readTotal < content.length && nRead != 0) {
-    nRead = SDL_RWread(fp, bPtr, 1, cast(size_t)(content.length - readTotal));
+    nRead = fp.fread(buffer, 1, cast(size_t)(content.length - readTotal));
     readTotal += nRead;
-    bPtr += nRead;
+    buffer += nRead;
   }
   SDL_RWclose(fp);
 
@@ -48,17 +53,19 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
 
   size_t writeTotal = 0, nWrite = 1;
-  char* bPtr = &content[0];
+  char* buffer = &content[0];
   while (writeTotal < content.length && nWrite != 0) {
-    nWrite = SDL_RWwrite(fp, bPtr, 1, cast(size_t)(content.length - writeTotal));
+    nWrite = fp.fwrite(buffer,1, cast(size_t)(content.length - writeTotal));
     writeTotal += nWrite;
-    bPtr += nWrite;
+    buffer += nWrite;
   }
   SDL_RWclose(fp);
 
   if(writeTotal != content.length) SDL_Log("[ERROR] write %db, expected %db\n", writeTotal, content.length);
   if(verbose) SDL_Log("writeFile: wrote %d bytes\n", writeTotal);
 }
+
+
 
 version(Android) { 
   // SDL does not provide the ability to scan folders, and on android we need to use the jni

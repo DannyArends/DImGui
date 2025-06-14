@@ -170,7 +170,7 @@ void showFPSwindow(ref App app, uint font = 1) {
  */
 void showObjectswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  if(igBegin("Objects", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+  if(igBegin("Objects", show, 0)){
     igBeginTable("Object_Tbl", 5,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
     foreach(i, object; app.objects){
@@ -209,7 +209,7 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
  */
 void showTextureswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  if(igBegin("Textures", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+  if(igBegin("Textures", show, 0)){
     igBeginTable("Texture_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, texture; app.textures) {
       float ratio = cast(float)(texture.height) / texture.width;
@@ -231,7 +231,7 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
  */
 void showSFXwindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  if(igBegin("Sounds", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+  if(igBegin("Sounds", show, 0)){
     igSliderScalar("Volume", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
     igBeginTable("Sounds_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, sound; app.soundfx) {
@@ -251,7 +251,7 @@ void showSFXwindow(ref App app, bool* show, uint font = 0) {
 
 void showObjectwindow(ref App app, ref Geometry obj, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  if(igBegin(toStringz(obj.name()), show, ImGuiWindowFlags_NoFocusOnAppearing)){
+  if(igBegin(toStringz(obj.name()), show, 0)){
     igText(toStringz(format("Vertices: %s", obj.vertices.length)), ImVec2(0.0f, 0.0f));
     igText(toStringz(format("Indices: %s", obj.indices.length)), ImVec2(0.0f, 0.0f));
     igText(toStringz(format("Instances: %s", obj.instances.length)), ImVec2(0.0f, 0.0f));
@@ -284,7 +284,7 @@ void showObjectwindow(ref App app, ref Geometry obj, bool* show, uint font = 0) 
  */
 void showSettingswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  if(igBegin("Settings", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+  if(igBegin("Settings", show, 0)){
     igBeginTable("Settings_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     igTableNextColumn();
     igText("Total Frames", ImVec2(0.0f, 0.0f)); igTableNextColumn();
@@ -329,7 +329,7 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
  */
 void showShaderwindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  if(igBegin("Shaders", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+  if(igBegin("Shaders", show, 0)){
     igBeginTable("Shaders_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, shader; (app.shaders ~ app.compute.shaders)) {
       igPushID_Int(to!int(i));
@@ -352,7 +352,7 @@ void showShaderwindow(ref App app, bool* show, uint font = 0) {
  */
 void showLightswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  if(igBegin("Lights", show, ImGuiWindowFlags_NoFocusOnAppearing)){
+  if(igBegin("Lights", show, 0)){
     igBeginTable("Lights_Tbl", 2,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, ref Light light; app.lights) {
       igPushID_Int(to!int(i));
