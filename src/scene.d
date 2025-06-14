@@ -18,6 +18,7 @@ import particlesystem : ParticleSystem;
 import pdb : AtomCloud, Backbone, AminoAcidCloud, loadProteinCif;
 import square : Square;
 import text : Text;
+import obj3ds : loadFromFile;
 import turtle : Turtle;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 import wavefront : loadWavefront;
@@ -99,18 +100,27 @@ void createScene(ref App app){
   auto protein = loadProteinCif("data/objects/3kql.cif");
   uint i = 5;
   app.objects ~= new AtomCloud(protein.atoms());
-  app.objects[i].scale([0.5f, 0.5f, 0.5f]);
+  app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+  app.objects[i].position([15.0f, 1.0f, 15.0f]);
   i++;
   foreach (p; sort(protein.keys)) {
     if (protein[p].isAAChain()) {
       app.objects ~= new Backbone(protein[p]);
-      app.objects[i].scale([0.5f, 0.5f, 0.5f]);
+      app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+      app.objects[i].position([15.0f, 1.0f, 15.0f]);
       i++;
       app.objects ~= new AminoAcidCloud(protein[p]);
-      app.objects[i].scale([0.5f, 0.5f, 0.5f]);
+      app.objects[i].scale([0.1f, 0.1f, 0.1f]);
+      app.objects[i].position([15.0f, 1.0f, 15.0f]);
       i++;
     }
   }
+
+  SDL_Log("createScene: Add 3DS");
+  app.objects ~= loadFromFile("data/objects/dragon.3ds");
+  app.objects[($-1)].texture(app.textures, "Dragon");
+  app.objects[($-1)].computeNormals();
+  app.objects[($-1)].position([4.0f, -1.0f, -2.0f]);
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");
