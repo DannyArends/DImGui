@@ -95,6 +95,11 @@ class Geometry {
   object.buffers[INSTANCE] = false;
 }
 
+float scale(T)(T object, uint instance = 0) {
+  assert(instance <  object.instances.length, "No such instance");
+  return(scale(object.instances[instance]));
+}
+
 /** Set tid for instance from object.instances to Texture name */
 void texture(T)(T object, const Texture[] textures, const(char)* name, uint instance = 0) {
   assert(instance <  object.instances.length, "No such instance");

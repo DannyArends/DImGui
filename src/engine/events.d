@@ -70,6 +70,7 @@ Intersection[] getHits(ref App app, SDL_Event e, bool showRay = true){
     if (intersection.intersects) {
       intersection.idx = cast(uint)x;
       app.objects[x].box.setColor(Colors.paleturquoise);
+      app.gui.showObjects = true;
       hits ~= intersection;
     }else{
       app.objects[x].box.setColor();
@@ -86,18 +87,18 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_MOUSEBUTTONDOWN){
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
-      auto hits = app.getHits(e, app.showRays);
-      if (hits.length > 0) {
-        if(app.verbose) SDL_Log("Clostest hit: %d = %s", hits[0].idx, toStringz(app.objects[hits[0].idx].name()));
-        app.objects[hits[0].idx].box.setColor(Colors.yellowgreen);
-        app.objects[hits[0].idx].window = true;
-      }
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
   }
   if(e.type == SDL_MOUSEBUTTONUP){
     if (e.button.button == SDL_BUTTON_LEFT) { app.camera.isdrag[0] = false; }
-    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false;}
+    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
+    auto hits = app.getHits(e, app.showRays);
+    if (hits.length > 0) {
+      if(app.verbose) SDL_Log("Clostest hit: %d = %s", hits[0].idx, toStringz(app.objects[hits[0].idx].name()));
+      app.objects[hits[0].idx].box.setColor(Colors.yellowgreen);
+      app.objects[hits[0].idx].window = true;
+    }
   }
   if(e.type == SDL_MOUSEMOTION){
     if(app.camera.isdrag[1]) app.camera.drag(e.motion.xrel, e.motion.yrel);
