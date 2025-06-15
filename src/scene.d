@@ -117,7 +117,7 @@ void createScene(ref App app){
   }
 
   SDL_Log("createScene: Add 3DS");
-  app.objects ~= loadFromFile("data/objects/dragon.3ds");
+  app.objects ~= loadFromFile("data/objects/Dragon.3ds");
   app.objects[($-1)].texture(app.textures, "Dragon");
   app.objects[($-1)].computeNormals();
   app.objects[($-1)].position([4.0f, -1.0f, -2.0f]);

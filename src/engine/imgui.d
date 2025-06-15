@@ -50,6 +50,12 @@ void saveSettings() {
   }
 }
 
+void clearSettings() {
+  char[] data = (to!string(" ")).dup;
+  writeFile("imgui.ini", data, true);
+  SDL_Log("Cleared ImGui data");
+}
+
 /** Load ImGui settings from disk (or Android internal storage)
  */
 void loadSettings(const(char)* path = "imgui.ini") {
@@ -83,7 +89,10 @@ void initializeImGui(ref App app){
   app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&data[0], size, 36, font_cfg, null);
 
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
+  //app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
+  version(Android) {
+    app.gui.io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen ;         // Enable Docking Controls
+  }
   igStyleColorsDark(null);
   if(app.verbose) SDL_Log("ImGuiIO: %p", app.gui.io);
   ImGui_ImplSDL2_InitForVulkan(app.window);
@@ -159,7 +168,8 @@ void showFPSwindow(ref App app, uint font = 1) {
     igText("Vulkan v%d.%d.%d", VK_API_VERSION_MAJOR(app.properties.apiVersion),
                                VK_API_VERSION_MINOR(app.properties.apiVersion),
                                VK_API_VERSION_PATCH(app.properties.apiVersion));
-    igText("%.1f FPS, %.1f ms %d objects, %d textures", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate, app.objects.length, app.textures.length);
+    igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
+    igText("%d objects, %d textures", app.objects.length, app.textures.length);
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
   igEnd();
@@ -249,6 +259,8 @@ void showSFXwindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+/** Individual Object
+ */
 void showObjectwindow(ref App app, ref Geometry obj, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
   if(igBegin(toStringz(obj.name()), show, 0)){
@@ -297,6 +309,9 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
 /*    igTableNextColumn();
     igText("Verbose", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igCheckbox("##Verbose", &app.verbose); */
+
+    //igTableNextColumn();
+    //if(igButton("Clear GUI Settings", ImVec2(0.0f, 0.0f))){ clearSettings(); loadSettings(); }
 
     igTableNextColumn();
     igText("Volume", ImVec2(0.0f, 0.0f)); igTableNextColumn();
