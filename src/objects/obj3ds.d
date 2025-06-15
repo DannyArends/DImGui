@@ -51,7 +51,8 @@ const(char)* readString(SDL_RWops* fp) {
 
 enum cTypes {ambient = 0, specular = 1, diffuse = 2 }
 
-Obj3DS loadFromFile(const(char)* path, bool trace = false) {
+Obj3DS loadFromFile(const(char)* path, bool trace = true) {
+  if(trace) SDL_Log("Loading: %s", path);
   version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   ushort l_chunk_id;
   uint l_chunk_length;
@@ -59,7 +60,9 @@ Obj3DS loadFromFile(const(char)* path, bool trace = false) {
   Material[string] materials;
   const(char)* material;
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
+  if(trace) SDL_Log("Fp: %p", fp);
   long filesize = SDL_RWsize(fp);
+  if(trace) SDL_Log("fize: %d", filesize);
   cTypes cType;
   while (fp.tell() < filesize) {
     fp.fread(&l_chunk_id, 1, ushort.sizeof);         // Read the chunk id

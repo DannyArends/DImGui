@@ -47,10 +47,10 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
   }
   if(event.type == SDL_FINGERMOTION) {
     SDL_Log("TouchMotion: %f %f [%f %f] by %.1f [%d]\n", e.x, e.y, e.dx * app.camera.width, e.dy * app.camera.height, e.pressure, e.fingerId);
-    if(e.fingerId == 0) app.camera.drag(e.dx * app.camera.width, e.dy * app.camera.height);
+    if(e.fingerId == 0) app.camera.drag(e.dx * app.camera.width, e.dy * 0.5 * app.camera.height);
     if(e.fingerId == 1) {
-      if (e.dy < 0 && app.camera.distance  >= -30.0f) app.camera.distance -= 0.1f;
-      if (e.dy > 0 && app.camera.distance  <= -1.0f) app.camera.distance += 0.1f;
+      if (e.dy > 0 && app.camera.distance  >=  1.0f) app.camera.distance -= 0.4f;
+      if (e.dy < 0 && app.camera.distance  <= 30.0f) app.camera.distance += 0.4f;
       app.camera.move([ 0.0f,  0.0f,  0.0f]);
     }
   }
