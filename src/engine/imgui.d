@@ -11,7 +11,7 @@ import std.path : baseName;
 import std.format : format;
 import std.string : toStringz, fromStringz;
 
-import geometry : Geometry, position;
+import geometry : Geometry, position, scale, rotate;
 import lights : Light;
 import devices : getMSAASamples;
 import sfx : play;
@@ -32,9 +32,13 @@ struct GUI {
   bool showTexture = false;
 
   uint size = 1;
+  float scaleF = 1.0f;
+  float[3] rotF = [0.0f, 0.0f, 0.0f];
 
+  float[2] rot = [-360.0, 360];
   float[2] pos = [-10.0, 10];
   float[2] col = [0.0, 2.0f];
+  float[2] scale = [0.001, 4.0f];
   float[2] sound = [0.0, 1.0f];
 }
 
@@ -180,37 +184,35 @@ void showFPSwindow(ref App app, uint font = 1) {
  */
 void showObjectswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
-  if(igBegin("Objects", show, 0)){
-    igBeginTable("Object_Tbl", 5,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-
-    foreach(i, object; app.objects){
-      igPushID_Int(to!int(i));
-      auto p = app.objects[i].position;
-      igTableNextRow(0, 5.0f);
-      string text = to!string(i);
-      if(object.name) text = object.name() ~ " " ~ text;
-      igTableNextColumn();
-      igText(text.toStringz, ImVec2(0.0f, 0.0f));
-      igTableNextColumn();
-        if(igButton((app.objects[i].isVisible?"H":"S"), ImVec2(0.0f, 0.0f))) { app.objects[i].isVisible = !app.objects[i].isVisible; } igSameLine(0,5);
-        if(igButton("X", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; }
-      igTableNextColumn();
-        igPushItemWidth(100 * app.gui.size);
-          igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-        igPopItemWidth();
-      igTableNextColumn();
-        igPushItemWidth(100 * app.gui.size);
-          igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-        igPopItemWidth();
-      igTableNextColumn();
-        igPushItemWidth(100 * app.gui.size);
-          igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-        igPopItemWidth();
-      app.objects[i].position = p;
-      igPopID();
+  if(igBegin("Objects", show, 0)) {
+    bool list = true;
+    for(size_t x = 0; x < app.objects.length; x++) {
+      if(app.objects[x].window){
+        app.showObjectwindow(app.objects[x]);
+        list = false;
       }
-    igEndTable();
-    igEnd();
+    }
+    if(list){
+      igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+
+      foreach(i, object; app.objects){
+        igPushID_Int(to!int(i));
+        auto p = app.objects[i].position;
+        igTableNextRow(0, 5.0f);
+        string text = to!string(i);
+        if(object.name) text = object.name() ~ " " ~ text;
+        igTableNextColumn();
+          igText(text.toStringz, ImVec2(0.0f, 0.0f));
+        igTableNextColumn();
+          if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
+          if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) { app.objects[i].isVisible = !app.objects[i].isVisible; } igSameLine(0,5);
+          if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; } igSameLine(0,5);
+
+        igPopID();
+        }
+      igEndTable();
+      igEnd();
+    }
   }else { igEnd(); }
   igPopFont();
 }
@@ -261,35 +263,60 @@ void showSFXwindow(ref App app, bool* show, uint font = 0) {
 
 /** Individual Object
  */
-void showObjectwindow(ref App app, ref Geometry obj, bool* show, uint font = 0) {
-  igPushFont(app.gui.fonts[font]);
-  if(igBegin(toStringz(obj.name()), show, 0)){
-    igText(toStringz(format("Vertices: %s", obj.vertices.length)), ImVec2(0.0f, 0.0f));
-    igText(toStringz(format("Indices: %s", obj.indices.length)), ImVec2(0.0f, 0.0f));
-    igText(toStringz(format("Instances: %s", obj.instances.length)), ImVec2(0.0f, 0.0f));
-    igText(toStringz(format("Topology: %s", obj.topology)), ImVec2(0.0f, 0.0f));
-    auto p = obj.position;
-    igBeginTable("Object_Tbl", 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-      igTableNextColumn();
-        if(igButton((obj.isVisible?"H":"S"), ImVec2(0.0f, 0.0f))) { obj.isVisible = !obj.isVisible; } igSameLine(0,5);
-        if(igButton("X", ImVec2(0.0f, 0.0f))){ obj.deAllocate = true; }
-      igTableNextColumn();
-        igPushItemWidth(100 * app.gui.size);
-          igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-        igPopItemWidth();
-      igTableNextColumn();
-        igPushItemWidth(100 * app.gui.size);
-          igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-        igPopItemWidth();
-      igTableNextColumn();
-        igPushItemWidth(100 * app.gui.size);
-          igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-        igPopItemWidth();
-      obj.position = p;
-    igEndTable();
-    igEnd();
-  }else { igEnd(); }
-  igPopFont();
+void showObjectwindow(ref App app, ref Geometry obj) {
+  igText(toStringz(format("Name: %s", obj.name())), ImVec2(0.0f, 0.0f));
+  igText(toStringz(format("Vertices: %s", obj.vertices.length)), ImVec2(0.0f, 0.0f));
+  igText(toStringz(format("Indices: %s", obj.indices.length)), ImVec2(0.0f, 0.0f));
+  igText(toStringz(format("Instances: %s", obj.instances.length)), ImVec2(0.0f, 0.0f));
+  igText(toStringz(format("Topology: %s", obj.topology)), ImVec2(0.0f, 0.0f));
+  auto p = obj.position;
+  if(igButton("Overview", ImVec2(0.0f, 0.0f))) { obj.window = false; } igSameLine(0,5);
+  if(igButton((obj.isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) { obj.isVisible = !obj.isVisible; } igSameLine(0,5);
+  if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ obj.deAllocate = true; }
+  igBeginTable(toStringz(obj.name() ~ "_Tbl"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+    igTableNextColumn();
+      igText("Position", ImVec2(0.0f, 0.0f)); 
+    igTableNextColumn();
+      igPushItemWidth(100 * app.gui.size);
+        igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+      igPopItemWidth();
+    igTableNextColumn();
+      igPushItemWidth(100 * app.gui.size);
+        igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+      igPopItemWidth();
+    igTableNextColumn();
+      igPushItemWidth(100 * app.gui.size);
+        igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+      igPopItemWidth();
+
+    igTableNextColumn();
+      if(igButton("Scale", ImVec2(0.0f, 0.0f))){ obj.scale([app.gui.scaleF, app.gui.scaleF, app.gui.scaleF]); app.gui.scaleF = 1.0f; }
+    igTableNextColumn();
+      igPushItemWidth(100 * app.gui.size);
+        igSliderScalar("##zS", ImGuiDataType_Float, &app.gui.scaleF, &app.gui.scale[0], &app.gui.scale[1], "%.3f", 0); 
+      igPopItemWidth();
+    igTableNextColumn();
+    igTableNextColumn();
+
+
+    igTableNextColumn();
+      if(igButton("Rotate", ImVec2(0.0f, 0.0f))){ obj.rotate(app.gui.rotF); app.gui.rotF = [0.0f,0.0f,0.0f]; }
+    igTableNextColumn();
+      igPushItemWidth(100 * app.gui.size);
+        igSliderScalar("##xR", ImGuiDataType_Float,  &app.gui.rotF[0], &app.gui.rot[0], &app.gui.rot[1], "%.0f", 0);
+      igPopItemWidth();
+    igTableNextColumn();
+      igPushItemWidth(100 * app.gui.size);
+        igSliderScalar("##yR", ImGuiDataType_Float,  &app.gui.rotF[1], &app.gui.rot[0], &app.gui.rot[1], "%.0f", 0);
+      igPopItemWidth();
+    igTableNextColumn();
+      igPushItemWidth(100 * app.gui.size);
+        igSliderScalar("##zR", ImGuiDataType_Float,  &app.gui.rotF[2], &app.gui.rot[0], &app.gui.rot[1], "%.0f", 0);
+      igPopItemWidth();
+
+    obj.position = p;
+  igEndTable();
+  igEnd();
 }
 
 /** Show the GUI window with global settings
@@ -457,9 +484,6 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showSettings) app.showSettingswindow(&app.gui.showSettings, font);
   if(app.gui.showLights) app.showLightswindow(&app.gui.showLights, font);
   if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture, font);
-  foreach(ref obj; app.objects){
-    if(obj.window) app.showObjectwindow(obj, &obj.window, font);
-  }
 
   igRender();
   return(igGetDrawData());

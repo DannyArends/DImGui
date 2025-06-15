@@ -79,7 +79,7 @@ void loadGlyphAtlas(ref App app,
 }
 
 /** Populates the GlyphAtlas with Glyphs to dchar in our atlas */
-ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', uint width = 1024, uint max_width = 1024, bool verbose = false) {
+ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', uint width = 1024, uint max_width = 1024, bool verbose = true) {
   SDL_Log("createGlyphAtlas");
   MonoTime sT = MonoTime.currTime;
   int i, atlasrow, atlasloc;

@@ -2,6 +2,7 @@
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
+import includes;
 
 import std.math : PI, sin, cos, tan;
 import vector, quaternion;
@@ -83,6 +84,10 @@ alias Matrix mat4;
 }
 
 /** Matrix x Scale V(x, y, z) */
+float scale(const Matrix m) {
+  SDL_Log("Scale: %f", magnitude([m[0], m[1], m[2]]));
+  return(magnitude([m[0], m[1], m[2]]));
+}
 @nogc pure Matrix scale(ref Matrix m, const float[3] v) nothrow {
   Matrix scale;
   scale[0] = v[0]; scale[5] = v[1]; scale[10] = v[2];
