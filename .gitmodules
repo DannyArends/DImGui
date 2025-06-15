@@ -23,3 +23,6 @@
 [submodule "deps/spirv-cross"]
 	path = deps/spirv_cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "deps/assimp"]
+	path = deps/assimp
+	url =  https://github.com/assimp/assimp.git
