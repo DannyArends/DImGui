@@ -298,7 +298,6 @@ void showObjectwindow(ref App app, ref Geometry obj) {
     igTableNextColumn();
     igTableNextColumn();
 
-
     igTableNextColumn();
       if(igButton("Rotate", ImVec2(0.0f, 0.0f))){ obj.rotate(app.gui.rotF); app.gui.rotF = [0.0f,0.0f,0.0f]; }
     igTableNextColumn();
