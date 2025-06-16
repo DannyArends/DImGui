@@ -6,6 +6,7 @@
 import engine;
 
 import std.algorithm : sort;
+import std.format : format;
 import std.random : uniform;
 import std.string : toStringz;
 
@@ -18,11 +19,10 @@ import particlesystem : ParticleSystem;
 import pdb : AtomCloud, Backbone, AminoAcidCloud, loadProteinCif;
 import square : Square;
 import text : Text;
-import assimp : loadOpenAsset;
+import assimp : loadOpenAsset, getTexture;
 import obj3ds : loadFromFile;
 import turtle : Turtle;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
-import wavefront : loadWavefront;
 
 /** Create a scene for rendering
  */
@@ -46,7 +46,6 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube();
-  //app.objects[1].computeNormals();
   app.objects[1].position([3.0f, 0.0f, 3.0f]);
   app.objects[1].texture(app.textures, "image");
 
@@ -72,24 +71,10 @@ void createScene(ref App app){
       obj.rotate([0.0f, 2 * dt, 4 * dt]);
     };
 
-  SDL_Log("createScene: Add Wavefront");
-  app.objects ~= app.loadWavefront("data/objects/viking_room.obj");
+  SDL_Log("createScene: Add viking room OpenAsset");
+  app.objects ~= app.loadOpenAsset("data/objects/viking_room.obj");
   app.objects[4].texture(app.textures, "viking");
-  app.objects[4].rotate([0.0f, 180.0f, 0.0f]);
   app.objects[4].position([2.0f, 0.0f, 0.0f]);
-
-  /** Stress test with 20 x 20 instanced rendering of a 10k / 50k Particle system (50k x 400 = ~20mio particles) */
-  /*
-  for(int x = -10; x < 10; x++) {
-    for(int z = -10; z < 10; z++) {
-      mat4 instance;  // Add a instances of object 0
-      auto scalefactor = 0.25f;
-      instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
-      instance = translate(instance, [cast(float) x * 4, 2.0f, cast(float)z * 4]);
-      app.objects[5].instances ~= Instance(-1, instance);
-    }
-  } */
-
 
   SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
@@ -123,23 +108,16 @@ void createScene(ref App app){
   app.objects[($-1)].computeNormals();
   app.objects[($-1)].position([4.0f, -1.0f, -2.0f]);
 
-  SDL_Log("createScene: Add OpenAsset");
+  SDL_Log("createScene: Add cottage OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/cottage_fbx.fbx");
+  app.objects[($-1)].scale([1.0f, 0.5f, 1.0f]);
   app.objects[($-1)].texture(app.textures, "cottage");
-  app.objects[($-1)].scale([2.0f, 2.0f, 1.0f]);
-  app.objects[($-1)].computeNormals();
   app.objects[($-1)].position([2.0f, 0.0f, -7.0f]);
 
-  SDL_Log("createScene: Add OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/Dragon 2.5_fbx.fbx", 2);
+  SDL_Log("createScene: Add cottage OpenAsset");
+  app.objects ~= app.loadOpenAsset("data/objects/Dragon_Baked_Actions_fbx_7.4_binary.fbx", 1);
+  app.objects[($-1)].scale([0.1f, 0.1f, 0.1f]);
   app.objects[($-1)].texture(app.textures, "Dragon_ground");
-  app.objects[($-1)].scale([0.1f, 0.1f, 0.1f]);
-  app.objects[($-1)].position([9.0f, 0.0f, -7.0f]);
-
-  app.objects ~= app.loadOpenAsset("data/objects/Dragon 2.5_fbx.fbx", 0);
-  app.objects[($-1)].texture(app.textures, "Dragon_Bump");
-  app.objects[($-1)].scale([0.1f, 0.1f, 0.1f]);
-  app.objects[($-1)].position([9.0f, 0.0f, -7.0f]);
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");

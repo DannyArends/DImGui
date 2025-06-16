@@ -51,7 +51,7 @@ const(char)* readString(SDL_RWops* fp) {
 
 enum cTypes {ambient = 0, specular = 1, diffuse = 2 }
 
-Obj3DS loadFromFile(const(char)* path, bool trace = true) {
+Obj3DS loadFromFile(const(char)* path, bool trace = false) {
   if(trace) SDL_Log("Loading: %s", path);
   version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   ushort l_chunk_id;

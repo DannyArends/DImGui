@@ -14,12 +14,33 @@ import textures : Texture, idx;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
+enum aiColorType : const(char)* { DIFFUSE = "$clr.diffuse", AMBIENT = "$clr.ambient",  SPECULAR = "$clr.specular" };
+
 /** An instance of a Geometry
  */
 struct Instance {
   int tid = -1;
   mat4 matrix = mat4.init;
   alias matrix this;
+}
+
+struct Mesh {
+  uint[2] vertices;
+  uint material;
+}
+
+struct TexInfo {
+  string path;
+  uint channel;
+}
+
+struct Material {
+  uint id;
+  string path;
+  string name;
+  string base;
+  TexInfo[aiTextureType] textures;
+  float[4][aiColorType] colors;
 }
 
 /** A Geometry that can be rendered
@@ -33,6 +54,8 @@ class Geometry {
   Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
+  Mesh[] meshes;
+  Material[] materials;
   alias instances this;
 
   BoundingBox box = null;                       /// Bounding Box
