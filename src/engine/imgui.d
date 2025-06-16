@@ -353,11 +353,11 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
 
     igTableNextColumn();
     igText("Clear color", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igPushItemWidth(75);
+    igPushItemWidth(100 * app.gui.size);
     igSliderScalar("##colR", ImGuiDataType_Float,  &app.clearValue[0].color.float32[0], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);igSameLine(0,5);
-    igPushItemWidth(75);
+    igPushItemWidth(100 * app.gui.size);
     igSliderScalar("##colG", ImGuiDataType_Float,  &app.clearValue[0].color.float32[1], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);igSameLine(0,5);
-    igPushItemWidth(75);
+    igPushItemWidth(100 * app.gui.size);
     igSliderScalar("##colB", ImGuiDataType_Float,  &app.clearValue[0].color.float32[2], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);
 
     igEndTable();

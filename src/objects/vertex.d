@@ -17,6 +17,7 @@ struct Vertex {
   float[2] texCoord = [0.0f, 1.0f];           /// Vertex texture coordinates
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];  /// Vertex color
   float[3] normal = [0.0f, 1.0f, 0.0f];       /// Vertex normal
+  alias position this;
 
   @nogc static VkVertexInputBindingDescription[2] getBindingDescription() nothrow {
     VkVertexInputBindingDescription[2] bindingDescription = [
