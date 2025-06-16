@@ -7,7 +7,7 @@ import engine;
 
 import std.array : split, array;
 import vertex : Vertex;
-import geometry : Instance, Geometry, texture;
+import geometry : Instance, Geometry, Mesh, texture;
 import glyphatlas : GlyphAtlas;
 
 class Text : Geometry {
@@ -42,6 +42,7 @@ class Text : Geometry {
       nGlyhs++;
     }
     instances = [Instance()];
+    meshes = [Mesh([0, cast(uint)this.vertices.length])];
     this.texture(app.textures, app.glyphAtlas.path);
     name = (){ return(typeof(this).stringof); };
   }

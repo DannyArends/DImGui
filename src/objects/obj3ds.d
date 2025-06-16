@@ -8,7 +8,7 @@ import std.format : format;
 import std.conv : to;
 import std.string : toStringz, fromStringz;
 
-import geometry : Instance, Geometry, rotate, scale;
+import geometry : Instance, Geometry, Mesh, rotate, scale;
 import io : tell, fread, seek;
 import vertex : Vertex;
 
@@ -149,5 +149,6 @@ Obj3DS loadFromFile(const(char)* path, bool trace = false) {
       break;
     }
   }
+  object.meshes = [Mesh([0, cast(uint)object.vertices.length])];
   return(object);
 }

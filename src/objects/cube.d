@@ -3,7 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import geometry : Instance, Geometry;
+import geometry : Instance, Mesh, Geometry;
 import vertex : Vertex;
 
 /** Cube
@@ -48,6 +48,7 @@ class Cube : Geometry {
               16,17,18,  18,19,16,      // bottom
               20,21,22,  22,23,20];     // backside
     instances = [Instance()];
+    meshes = [Mesh([0, 24])];
     name = (){ return(typeof(this).stringof); };
   }
 }

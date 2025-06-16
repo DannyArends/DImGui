@@ -7,7 +7,7 @@ import includes;
 
 import std.math : PI, atan, sin, cos, tan, sqrt, atan2, asin;
 
-import geometry : Instance, Geometry, faces, addVertex;
+import geometry : Instance, Geometry, Mesh, faces, addVertex;
 import vector : midpoint, cross, vSub, normalize;
 import vertex : Vertex;
 
@@ -39,6 +39,7 @@ class Icosahedron : Geometry {
                3,  9, 4, 3,  4,  2,  3,  2,  6,  3, 6,  8, 3,  8,  9,
                4,  9, 5, 2,  4, 11,  6,  2, 10,  8, 6,  7, 9,  8,  1];
     instances = [Instance()];
+    meshes = [Mesh([0, 12])];
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     name = (){ return(typeof(this).stringof); };
   }
@@ -112,5 +113,6 @@ void refineIcosahedron(ref Geometry object, uint recursionLevel = 1) {
       }
     }
   }
+  object.meshes[0].vertices[1] = cast(uint)object.vertices.length;
 }
 
