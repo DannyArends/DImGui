@@ -40,6 +40,11 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #include "cimgui.h"
 #include "cimgui_impl.h"
 
+// Assimp includes
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #if defined(__ANDROID__)
   #include <jni.h>
 #endif

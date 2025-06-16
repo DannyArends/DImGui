@@ -18,6 +18,7 @@ import particlesystem : ParticleSystem;
 import pdb : AtomCloud, Backbone, AminoAcidCloud, loadProteinCif;
 import square : Square;
 import text : Text;
+import assimp : loadOpenAsset;
 import obj3ds : loadFromFile;
 import turtle : Turtle;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
@@ -118,9 +119,27 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add 3DS");
   app.objects ~= loadFromFile("data/objects/Dragon.3ds");
-  app.objects[($-1)].texture(app.textures, "Dragon");
+  app.objects[($-1)].texture(app.textures, "Dragon_ground");
   app.objects[($-1)].computeNormals();
   app.objects[($-1)].position([4.0f, -1.0f, -2.0f]);
+
+  SDL_Log("createScene: Add OpenAsset");
+  app.objects ~= app.loadOpenAsset("data/objects/cottage_fbx.fbx");
+  app.objects[($-1)].texture(app.textures, "cottage");
+  app.objects[($-1)].scale([2.0f, 2.0f, 1.0f]);
+  app.objects[($-1)].computeNormals();
+  app.objects[($-1)].position([2.0f, 0.0f, -7.0f]);
+
+  SDL_Log("createScene: Add OpenAsset");
+  app.objects ~= app.loadOpenAsset("data/objects/Dragon 2.5_fbx.fbx", 2);
+  app.objects[($-1)].texture(app.textures, "Dragon_ground");
+  app.objects[($-1)].scale([0.1f, 0.1f, 0.1f]);
+  app.objects[($-1)].position([9.0f, 0.0f, -7.0f]);
+
+  app.objects ~= app.loadOpenAsset("data/objects/Dragon 2.5_fbx.fbx", 0);
+  app.objects[($-1)].texture(app.textures, "Dragon_Bump");
+  app.objects[($-1)].scale([0.1f, 0.1f, 0.1f]);
+  app.objects[($-1)].position([9.0f, 0.0f, -7.0f]);
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");
