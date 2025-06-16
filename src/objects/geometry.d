@@ -19,7 +19,7 @@ enum aiColorType : const(char)* { DIFFUSE = "$clr.diffuse", AMBIENT = "$clr.ambi
 /** An instance of a Geometry
  */
 struct Instance {
-  int tid = -1;
+  //int tid = -1;
   mat4 matrix = mat4.init;
   alias matrix this;
 }
@@ -32,6 +32,7 @@ struct Mesh {
 struct TexInfo {
   string path;
   uint channel;
+  alias path this;
 }
 
 struct Material {
@@ -124,9 +125,13 @@ float scale(T)(T object, uint instance = 0) {
 }
 
 /** Set tid for instance from object.instances to Texture name */
-void texture(T)(T object, const Texture[] textures, const(char)* name, uint instance = 0) {
-  assert(instance <  object.instances.length, "No such instance");
-  object.instances[instance].tid = textures.idx(name);
+void texture(T)(T object, const Texture[] textures, const(char)* name, uint mesh = 0) {
+  assert(mesh <  object.meshes.length, "No such mesh");
+  int tid = textures.idx(name);
+  SDL_Log("Applying TextureID: %d from %d to %d", tid, object.meshes[mesh].vertices[0], object.meshes[mesh].vertices[1]);
+  for(size_t i = object.meshes[mesh].vertices[0]; i < object.meshes[mesh].vertices[1]; i++){
+    object.vertices[i].tid = tid;
+  }
 }
 
 /** Euclidean distance between Geometry and Camera */
@@ -148,7 +153,6 @@ void deAllocate(ref App app, Geometry object) {
   object.vertexBuffer.frame = app.totalFramesRendered + app.framesInFlight;
   app.bufferDeletionQueue.add((bool force){
     if (force || (app.totalFramesRendered >= object.vertexBuffer.frame)){ app.cleanup(object); return(true); }
-//    if (vkGetFenceStatus(app.device, object.vertexBuffer.fence) == VK_SUCCESS){ app.cleanup(object); return(true); }
     return(false);
   });
 }

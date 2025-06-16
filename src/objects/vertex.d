@@ -17,6 +17,7 @@ struct Vertex {
   float[2] texCoord = [0.0f, 1.0f];           /// Vertex texture coordinates
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];  /// Vertex color
   float[3] normal = [0.0f, 1.0f, 0.0f];       /// Vertex normal
+  int tid = -1;                               /// Texture ID
   alias position this;
 
   @nogc static VkVertexInputBindingDescription[2] getBindingDescription() nothrow {
@@ -33,8 +34,8 @@ struct Vertex {
       { binding: VERTEX, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.color.offsetof },
       { binding: VERTEX, location: 2, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.normal.offsetof },
       { binding: VERTEX, location: 3, format: VK_FORMAT_R32G32_SFLOAT, offset: Vertex.texCoord.offsetof },
+      { binding: VERTEX, location: 4, format: VK_FORMAT_R8_SINT, offset: Vertex.tid.offsetof },
 
-      { binding: INSTANCE, location: 4, format: VK_FORMAT_R8_SINT, offset: 0 },
       { binding: INSTANCE, location: 5, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof },
       { binding: INSTANCE, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 4 * float.sizeof },
       { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 8 * float.sizeof },

@@ -37,10 +37,10 @@ void createScene(ref App app){
       auto scalefactor = 0.25f;
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
       instance = translate(instance, [cast(float) x /4.0f, -1.0f, cast(float)z /4.0f]);
-      if(x <= 0 && z <= 0) app.objects[0].instances ~= Instance(-1, instance);
-      if(x > 0 && z > 0) app.objects[0].instances ~= Instance(-1, instance);
-      if(x > 0 && z <= 0) app.objects[0].instances ~= Instance(-1, instance);
-      if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(-1, instance);
+      if(x <= 0 && z <= 0) app.objects[0].instances ~= Instance(instance);
+      if(x > 0 && z > 0) app.objects[0].instances ~= Instance(instance);
+      if(x > 0 && z <= 0) app.objects[0].instances ~= Instance(instance);
+      if(x <= 0 && z > 0) app.objects[0].instances ~= Instance(instance);
     }
   }
 
@@ -51,8 +51,8 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add an Icosahedron");
   app.objects ~= new Icosahedron();
-  app.objects[2].texture(app.textures, "sun");
   app.objects[2].refineIcosahedron(3);
+  app.objects[2].texture(app.textures, "sun");
   app.objects[2].computeNormals();
   app.objects[2].scale([3.0f, 3.0f, 3.0f]);
   app.objects[2].position([10.0f, 2.0f, 2.0f]);
@@ -66,7 +66,7 @@ void createScene(ref App app){
   app.objects ~= new Text(app);
   app.objects[3].rotate([90.0f, 0.0f, 0.0f]);
   app.objects[3].position([5.0f, 2.0f, 2.0f]);
-  app.objects[2].computeNormals();
+  app.objects[3].computeNormals();
   app.objects[3].onFrame = (ref App app, ref Geometry obj, float dt){
       obj.rotate([0.0f, 2 * dt, 4 * dt]);
     };
@@ -115,9 +115,9 @@ void createScene(ref App app){
   app.objects[($-1)].position([2.0f, 0.0f, -7.0f]);
 
   SDL_Log("createScene: Add cottage OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/Dragon_Baked_Actions_fbx_7.4_binary.fbx", 1);
+  app.objects ~= app.loadOpenAsset("data/objects/Dragon_Baked_Actions_fbx_7.4_binary.fbx");
   app.objects[($-1)].scale([0.1f, 0.1f, 0.1f]);
-  app.objects[($-1)].texture(app.textures, "Dragon_ground");
+
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");
