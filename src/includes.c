@@ -43,6 +43,8 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 // Assimp includes
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
+#include <assimp/material.h>
+#include <assimp/types.h>
 #include <assimp/postprocess.h>
 
 #if defined(__ANDROID__)
