@@ -10,6 +10,8 @@ import std.conv : to;
 import std.traits : EnumMembers;
 import std.string : toStringz, lastIndexOf, fromStringz;
 
+import animation : loadAnimations;
+import matrix : Matrix;
 import geometry : aiColorType, Instance, Mesh, TexInfo, Material, Geometry, scale, rotate;
 import vertex : Vertex;
 import textures : idx;
@@ -24,11 +26,16 @@ class OpenAsset : Geometry {
   }
 }
 
+struct Bone {
+  Matrix offset;
+  float[uint] weights;   // Vertices influenced by this bone
+}
+
 TexInfo getTexture(aiMaterial* material, aiTextureType type = aiTextureType_DIFFUSE) {
   aiString texture_path;
   uint uvChannel;
   aiGetMaterialTexture(material, type, 0, &texture_path, null, &uvChannel, null, null, null, null);
-  return(TexInfo(to!string(fromStringz(texture_path.data)), uvChannel));
+  return(TexInfo(to!string(fromStringz(texture_path.data)), -1, uvChannel));
 }
 
 float[4] getMaterialColor(aiMaterial* material, aiColorType type = aiColorType.DIFFUSE ) {
@@ -51,18 +58,20 @@ Material create(aiMaterial* material, const(char)* path, uint id){
   return(mat);
 }
 
-OpenAsset loadOpenAsset(ref App app, const(char)* path =  "data/objects/cottage_fbx.fbx") {
-  version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
-  SDL_Log("Loading: %s", path);
-  OpenAsset object = new OpenAsset(); 
-  auto scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenUVCoords);
-  if (!scene || scene.mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene.mRootNode) {
-    SDL_Log("Error loading model '%s': %s", path, aiGetErrorString());
-    return object;
+TexInfo matchTexture(ref App app, ref OpenAsset object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE) {
+  TexInfo texInfo = {object.materials[materialIndex].name};
+  if (type in object.materials[materialIndex].textures) {
+    texInfo = object.materials[materialIndex].textures[type];
   }
-  SDL_Log("Model '%s' loaded successfully.", path);
+  auto idx = texInfo.path.lastIndexOf("\\");
+  if(idx >= 0) texInfo.path = stripExtension(texInfo.path[(idx+1)..($)]);
+  texInfo.tid = app.textures.idx(toStringz(texInfo.path));
+  SDL_Log(toStringz(format("  Material: %s -> %d at channel: %d", texInfo.path, texInfo.tid, texInfo.channel)));
+  return(texInfo);
+}
 
-  SDL_Log("%u materials in open asset", scene.mNumMaterials);
+Material[] loadMaterials(ref App app, const(char)* path, aiScene* scene){
+  Material[] materials;
   for(uint i = 0; i < scene.mNumMaterials; i++) {
     aiMaterial* material = scene.mMaterials[i];
     Material mat = material.create(path, i);
@@ -73,45 +82,72 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path =  "data/objects/cottage_
     foreach(type; EnumMembers!aiColorType) {
       mat.colors[type] = material.getMaterialColor(type);
     }
-    object.materials ~= mat;
+    materials ~= mat;
   }
-  foreach(material; object.materials) {
-    SDL_Log(toStringz(format("  Mat: %s", material)));
-  }
+  return(materials);
+}
 
+Bone[string] loadBones(aiMesh* mesh) {
+  Bone[string] bones;
+  for (uint b = 0; b < mesh.mNumBones; b++) {
+    auto aiBone = mesh.mBones[b];
+    string name = to!string(fromStringz(aiBone.mName.data));
+    bones[name] = Bone();
+    for (int r = 0; r < 4; r++) {
+      for (int c = 0; c < 4; c++) {
+        bones[name].offset = cast(float[16])aiBone.mOffsetMatrix;
+      }
+    }
+    for (uint w = 0; w < aiBone.mNumWeights; w++) {
+      auto aiWeight = aiBone.mWeights[w];
+      bones[name].weights[aiWeight.mVertexId] = aiWeight.mWeight;
+    }
+  }
+  return(bones);
+}
+
+OpenAsset loadOpenAsset(ref App app, const(char)* path) {
+  version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
+  SDL_Log("Loading: %s", path);
+  OpenAsset object = new OpenAsset(); 
+  auto scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+  if (!scene || scene.mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene.mRootNode) {
+    SDL_Log("Error loading model '%s': %s", path, aiGetErrorString());
+    return object;
+  }
+  SDL_Log("Model '%s' loaded successfully.", path);
   SDL_Log("%u meshes in open asset", scene.mNumMeshes);
+  SDL_Log("%u materials in open asset", scene.mNumMaterials);
+  SDL_Log("%u animations in open asset", scene.mNumAnimations);
+
+
+  object.materials = app.loadMaterials(path, scene);
+
   uint vert = 0;
   for(uint i = 0; i < scene.mNumMeshes; i++) {
     auto mesh = scene.mMeshes[i];
-    SDL_Log("--- Processing Mesh %d (%s) ---", i, toStringz(mesh.mName.data));
-    SDL_Log("  Number of vertices in this mesh: %u\n", mesh.mNumVertices);
-    SDL_Log("  Number of faces in this mesh: %u\n", mesh.mNumFaces);
-    SDL_Log("  Normals: %p, Color: %p, TexCoord: %p\n", mesh.mNormals, mesh.mColors[0], mesh.mTextureCoords[0]);
-    SDL_Log("  Material Index: %u / %u", mesh.mMaterialIndex, object.materials.length);
-    int tid = -1;
-    uint channel = 0;
-    if (aiTextureType_DIFFUSE in object.materials[mesh.mMaterialIndex].textures){
-      auto texinfo = object.materials[mesh.mMaterialIndex].textures[aiTextureType_DIFFUSE];
-      auto name = texinfo.path;
-      auto idx = name.lastIndexOf("\\");
-      if(idx >= 0) name = stripExtension(name[(idx+1)..($)]);
-      channel = texinfo.channel;
-      tid = app.textures.idx(toStringz(name));
-      SDL_Log(toStringz(format("  Material: %s -> %d at channel: %d", name, tid, channel)));
+    if(to!string(toStringz(mesh.mName.data)) == "Cube") continue; // Do not load in cubes or other nonsense
+    if (app.verbose) {
+      SDL_Log("--- Processing Mesh %d (%s) ---", i, toStringz(mesh.mName.data));
+      SDL_Log("  Number of vertices in this mesh: %u\n", mesh.mNumVertices);
+      SDL_Log("  Number of faces in this mesh: %u\n", mesh.mNumFaces);
+      SDL_Log("  Normals: %p, Color: %p, TexCoord: %p\n", mesh.mNormals, mesh.mColors[0], mesh.mTextureCoords[0]);
+      SDL_Log("  Material Index: %u / %u", mesh.mMaterialIndex, object.materials.length);
+      SDL_Log("  %u Bones", mesh.mNumBones); // New: Log bone count
     }
-    
+    auto texInfo = app.matchTexture(object, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
     for (size_t v = 0; v < mesh.mNumVertices; v++) { 
       object.vertices ~= Vertex([mesh.mVertices[v].x, mesh.mVertices[v].y, mesh.mVertices[v].z]);
       if (mesh.mNormals) {
-        object.vertices[v].normal = [mesh.mNormals[v].x, mesh.mNormals[v].y,mesh.mNormals[v].z];
+        object.vertices[($-1)].normal = [mesh.mNormals[v].x, mesh.mNormals[v].y,mesh.mNormals[v].z];
       }
-      if (mesh.mTextureCoords[channel]) {
-        object.vertices[v].texCoord = [mesh.mTextureCoords[channel][v].x, mesh.mTextureCoords[channel][v].y];
+      if (mesh.mTextureCoords[texInfo.channel]) {
+        object.vertices[($-1)].texCoord = [mesh.mTextureCoords[texInfo.channel][v].x, mesh.mTextureCoords[texInfo.channel][v].y];
       }
       if (mesh.mColors[0]) {
-        //object.vertices[v].color = [mesh.mColors[0][v].r, mesh.mColors[0][v].g, mesh.mColors[0][v].b, mesh.mColors[0][v].a];
+        object.vertices[($-1)].color = [mesh.mColors[0][v].r, mesh.mColors[0][v].g, mesh.mColors[0][v].b, mesh.mColors[0][v].a];
       }
-      object.vertices[v].tid = tid;
+      object.vertices[($-1)].tid = texInfo.tid;
     }
     for (size_t f = 0; f < mesh.mNumFaces; f++) {
       auto face = &mesh.mFaces[f];
@@ -119,9 +155,12 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path =  "data/objects/cottage_
         object.indices ~= (vert + face.mIndices[j]);
       }
     }
+    auto b = mesh.loadBones();
+
     object.meshes ~= Mesh([vert, vert + mesh.mNumVertices], mesh.mMaterialIndex);
     vert += mesh.mNumVertices;
   }
+  object.animations = app.loadAnimations(scene);
   object.rotate([180.0f, 0.0f, 90.0f]);
   aiReleaseImport(scene);
   return object;
