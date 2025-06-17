@@ -13,6 +13,7 @@ import matrix : mat4, position, translate, rotate, scale;
 import textures : Texture, idx;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
+import animation : Animation;
 
 enum aiColorType : const(char)* { DIFFUSE = "$clr.diffuse", AMBIENT = "$clr.ambient",  SPECULAR = "$clr.specular" };
 
@@ -31,6 +32,7 @@ struct Mesh {
 
 struct TexInfo {
   string path;
+  int tid;
   uint channel;
   alias path this;
 }
@@ -56,6 +58,7 @@ class Geometry {
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
   Mesh[] meshes;
+  Animation[] animations;
   Material[] materials;
   alias instances this;
 

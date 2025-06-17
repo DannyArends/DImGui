@@ -111,13 +111,11 @@ void createScene(ref App app){
   SDL_Log("createScene: Add cottage OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/cottage_fbx.fbx");
   app.objects[($-1)].scale([1.0f, 0.5f, 1.0f]);
-  app.objects[($-1)].texture(app.textures, "cottage");
   app.objects[($-1)].position([2.0f, 0.0f, -7.0f]);
 
-  SDL_Log("createScene: Add cottage OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/Dragon_Baked_Actions_fbx_7.4_binary.fbx");
-  app.objects[($-1)].scale([0.1f, 0.1f, 0.1f]);
-
+  SDL_Log("createScene: Add Spider OpenAsset");
+  app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
+  app.objects[($-1)].scale([0.05f, 0.05f, 0.05f]);
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");
