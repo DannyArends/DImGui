@@ -6,6 +6,7 @@
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
 
+import animation : Animation;
 import depthbuffer : DepthBuffer;
 import camera : Camera;
 import compute : Compute;
@@ -22,6 +23,7 @@ import vector : normalize;
 import uniforms : UBO;
 import sync : Sync, Fence;
 import ssbo : SSBO;
+import animation : Node;
 import sfx : WavFMT;
 import textures : Texture;
 
@@ -118,6 +120,10 @@ struct App {
   const(char)*[] instanceExtensions;              /// Enabled instance extensions
   const(char)*[] deviceExtensions;                /// Enabled device extensions
   const(char)*[] layers;                          /// Enabled layers
+
+  Node rootnode;  // TODO: Should be stored in OpenAsset
+  Animation[] animations;
+  uint animation = 1;
 
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?

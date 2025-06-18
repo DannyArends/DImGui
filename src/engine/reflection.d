@@ -135,10 +135,14 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
   for(uint s = 0; s < shaders.length; s++) {
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
-      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
-        app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
-        if(SDL_strstr(shaders[s].descriptors[d].base, "currentFrame") != null) {
-          app.transferToSSBO(shaders[s].descriptors[d]);
+      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+        if(SDL_strstr(shaders[s].descriptors[d].base, "BoneMatrices") != null) {
+          app.createSSBO(shaders[s].descriptors[d], cast(uint)(1024));
+        }else{
+          app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
+          if(SDL_strstr(shaders[s].descriptors[d].base, "currentFrame") != null) {
+            app.transferToSSBO(shaders[s].descriptors[d]);
+          }
         }
       }
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createUBO(shaders[s].descriptors[d]);

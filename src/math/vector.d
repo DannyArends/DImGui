@@ -37,8 +37,8 @@ struct Vector {
 
 /** Dot product between v1 and v2 */
 @nogc pure T dot(T)(const T[3] v1, const T[3] v2) nothrow {
-    T[3] vDot = v1[] * v2[];
-    return(sum(vDot));
+  T[3] vDot = v1[] * v2[];
+  return(sum(vDot));
 }
 
 /** Euclidean distance between v1 and v2 */
@@ -77,6 +77,12 @@ struct Vector {
     float invrt = 1.0f / sqrt(sqr);
     v[] *= invrt;
     return(v);
+}
+
+T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
+  T[3] result;
+  result[] = start[] + (end[] - start[]) * factor;
+  return(result);
 }
 
 /** Get the largest containing square of two vectors */

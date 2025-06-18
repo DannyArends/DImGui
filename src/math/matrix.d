@@ -5,7 +5,8 @@
 import includes;
 
 import std.math : PI, sin, cos, tan;
-import vector, quaternion;
+import vector : dot, sum, x, y, z, magnitude, xyz, vSub, cross, normalize;
+import quaternion;
 
 /** Matrix is a [4x4] 'structure' stored as float[16] (defaults to identity matrix).
  */
@@ -88,7 +89,7 @@ float scale(const Matrix m) {
   SDL_Log("Scale: %f", magnitude([m[0], m[1], m[2]]));
   return(magnitude([m[0], m[1], m[2]]));
 }
-@nogc pure Matrix scale(ref Matrix m, const float[3] v) nothrow {
+@nogc pure Matrix scale(Matrix m, const float[3] v) nothrow {
   Matrix scale;
   scale[0] = v[0]; scale[5] = v[1]; scale[10] = v[2];
   m = multiply(m, scale);
@@ -138,7 +139,7 @@ float scale(const Matrix m) {
 }
 
 /** lookAt function, looks from pos at "at" using the upvector (up) */
-@nogc pure Matrix lookAt(const float[3] pos, const float[3] at, const float[3] up) nothrow {
+@nogc pure Matrix lookAt(float[3] pos, float[3] at, float[3] up) nothrow {
   auto f = vSub(at, pos);
   normalize(f);
   auto s = cross(f, up);
@@ -239,3 +240,4 @@ float scale(const Matrix m) {
   inv[] = inv[] * det;
   return inv;
 }
+

@@ -4,18 +4,22 @@
  */
  
 import engine;
+import std.algorithm : map, sort;
+import std.array : array;
 import std.path : stripExtension;
 import std.format : format;
 import std.conv : to;
+
 import std.traits : EnumMembers;
 import std.string : toStringz, lastIndexOf, fromStringz;
 
-import animation : loadAnimations;
-import matrix : Matrix;
+import animation : loadNode, loadAnimations;
+import bone : Bone, loadBones;
+import matrix : Matrix, inverse;
 import geometry : aiColorType, Instance, Mesh, TexInfo, Material, Geometry, scale, rotate;
 import vertex : Vertex;
 import textures : idx;
-import vector : x, y, z;
+import vector : x, y, z, euclidean;
 
 /** OpenAsset using assimp
  */
@@ -24,11 +28,6 @@ class OpenAsset : Geometry {
     instances = [Instance()];
     name = (){ return(typeof(this).stringof); };
   }
-}
-
-struct Bone {
-  Matrix offset;
-  float[uint] weights;   // Vertices influenced by this bone
 }
 
 TexInfo getTexture(aiMaterial* material, aiTextureType type = aiTextureType_DIFFUSE) {
@@ -87,25 +86,6 @@ Material[] loadMaterials(ref App app, const(char)* path, aiScene* scene){
   return(materials);
 }
 
-Bone[string] loadBones(aiMesh* mesh) {
-  Bone[string] bones;
-  for (uint b = 0; b < mesh.mNumBones; b++) {
-    auto aiBone = mesh.mBones[b];
-    string name = to!string(fromStringz(aiBone.mName.data));
-    bones[name] = Bone();
-    for (int r = 0; r < 4; r++) {
-      for (int c = 0; c < 4; c++) {
-        bones[name].offset = cast(float[16])aiBone.mOffsetMatrix;
-      }
-    }
-    for (uint w = 0; w < aiBone.mNumWeights; w++) {
-      auto aiWeight = aiBone.mWeights[w];
-      bones[name].weights[aiWeight.mVertexId] = aiWeight.mWeight;
-    }
-  }
-  return(bones);
-}
-
 OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   SDL_Log("Loading: %s", path);
@@ -120,9 +100,11 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   SDL_Log("%u materials in open asset", scene.mNumMaterials);
   SDL_Log("%u animations in open asset", scene.mNumAnimations);
 
+  app.rootnode = loadNode(scene.mRootNode);
 
   object.materials = app.loadMaterials(path, scene);
 
+  Bone[string] bones;
   uint vert = 0;
   for(uint i = 0; i < scene.mNumMeshes; i++) {
     auto mesh = scene.mMeshes[i];
@@ -136,18 +118,36 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
       SDL_Log("  %u Bones", mesh.mNumBones); // New: Log bone count
     }
     auto texInfo = app.matchTexture(object, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-    for (size_t v = 0; v < mesh.mNumVertices; v++) { 
-      object.vertices ~= Vertex([mesh.mVertices[v].x, mesh.mVertices[v].y, mesh.mVertices[v].z]);
+    mesh.loadBones(bones);
+
+    for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {
+      size_t gIdx = vIdx + vert;
+      object.vertices ~= Vertex([mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z]);
       if (mesh.mNormals) {
-        object.vertices[($-1)].normal = [mesh.mNormals[v].x, mesh.mNormals[v].y,mesh.mNormals[v].z];
+        object.vertices[gIdx].normal = [mesh.mNormals[vIdx].x, mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z];
       }
       if (mesh.mTextureCoords[texInfo.channel]) {
-        object.vertices[($-1)].texCoord = [mesh.mTextureCoords[texInfo.channel][v].x, mesh.mTextureCoords[texInfo.channel][v].y];
+        object.vertices[gIdx].texCoord = [mesh.mTextureCoords[texInfo.channel][vIdx].x, mesh.mTextureCoords[texInfo.channel][vIdx].y];
       }
       if (mesh.mColors[0]) {
-        object.vertices[($-1)].color = [mesh.mColors[0][v].r, mesh.mColors[0][v].g, mesh.mColors[0][v].b, mesh.mColors[0][v].a];
+        object.vertices[gIdx].color = [mesh.mColors[0][vIdx].r, mesh.mColors[0][vIdx].g, mesh.mColors[0][vIdx].b, mesh.mColors[0][vIdx].a];
       }
-      object.vertices[($-1)].tid = texInfo.tid;
+      object.vertices[gIdx].tid = texInfo.tid;
+      float[string] distances;
+      foreach(name, bone; bones){
+        auto p = bone.bindPosition;
+        distances[name] = euclidean(object.vertices[gIdx].position, p);
+      }
+      auto sorted = distances.byKeyValue.array.sort!((a, b) => a.value < b.value);
+      uint n = 0;
+      foreach (s; sorted) {
+        if (n >= 4) break;
+        if (cast(uint)vIdx in bones[s.key].weights) { // Make sure the clostest bone is affecting the vertex
+          object.vertices[gIdx].bones[n] = bones[s.key].index;
+          object.vertices[gIdx].weights[n] = bones[s.key].weights[cast(uint)vIdx];
+          n++;
+        }
+      }
     }
     for (size_t f = 0; f < mesh.mNumFaces; f++) {
       auto face = &mesh.mFaces[f];
@@ -155,12 +155,12 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
         object.indices ~= (vert + face.mIndices[j]);
       }
     }
-    auto b = mesh.loadBones();
 
     object.meshes ~= Mesh([vert, vert + mesh.mNumVertices], mesh.mMaterialIndex);
     vert += mesh.mNumVertices;
   }
-  object.animations = app.loadAnimations(scene);
+  app.animations = app.loadAnimations(scene);
+  object.bones = bones;
   object.rotate([180.0f, 0.0f, 90.0f]);
   aiReleaseImport(scene);
   return object;
