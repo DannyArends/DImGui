@@ -65,7 +65,7 @@ void renderFrame(ref App app){
   app.updateRenderUBO(app.shaders, app.syncIndex);
   app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex);
 
-  app.recordRenderCommandBuffer(app.syncIndex);
+  app.recordRenderCommandBuffer(app.shaders, app.syncIndex);
   app.recordImGuiCommandBuffer(app.syncIndex);
 
   VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.syncIndex], app.imguiBuffers[app.syncIndex] ];

@@ -6,6 +6,7 @@
 import engine;
 import std.string : toStringz, fromStringz;
 
+import bone : Bone;
 import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
 import boundingbox : BoundingBox, computeBoundingBox;
 import camera : Camera;
@@ -58,7 +59,7 @@ class Geometry {
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
   Mesh[] meshes;
-  Animation[] animations;
+  Bone[string] bones;
   Material[] materials;
   alias instances this;
 
