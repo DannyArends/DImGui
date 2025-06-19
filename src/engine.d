@@ -5,6 +5,9 @@
 
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
+public import std.string : toStringz, fromStringz;
+public import std.conv : to;
+public import std.format : format;
 
 import animation : Animation;
 import depthbuffer : DepthBuffer;
@@ -15,6 +18,7 @@ import glyphatlas : GlyphAtlas;
 import geometry : Geometry, cleanup;
 import lights : Light, Lights;
 import matrix : multiply, inverse;
+import node : Node;
 import pipeline : GraphicsPipeline;
 import images : ColorBuffer;
 import imgui : GUI, saveSettings;
@@ -23,7 +27,6 @@ import vector : normalize;
 import uniforms : UBO;
 import sync : Sync, Fence;
 import ssbo : SSBO;
-import animation : Node;
 import sfx : WavFMT;
 import textures : Texture;
 
@@ -123,7 +126,7 @@ struct App {
 
   Node rootnode;  // TODO: Should be stored in OpenAsset
   Animation[] animations;
-  uint animation = 1;
+  uint animation = 0;
 
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?

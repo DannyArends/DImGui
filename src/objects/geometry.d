@@ -29,6 +29,7 @@ struct Instance {
 struct Mesh {
   uint[2] vertices;
   uint material;
+  Bone[string] bones;
 }
 
 struct TexInfo {
@@ -59,7 +60,6 @@ class Geometry {
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
   Mesh[] meshes;
-  Bone[string] bones;
   Material[] materials;
   alias instances this;
 
