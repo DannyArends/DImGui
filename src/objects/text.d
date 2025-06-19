@@ -42,7 +42,7 @@ class Text : Geometry {
       nGlyhs++;
     }
     instances = [Instance()];
-    meshes = [Mesh([0, cast(uint)this.vertices.length])];
+    meshes["Text"] = Mesh([0, cast(uint)this.vertices.length]);
     this.texture(app.textures, app.glyphAtlas.path);
     name = (){ return(typeof(this).stringof); };
   }

@@ -108,9 +108,10 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
 
   uint vertOff = 0;
   uint boneOff = 0;
+  Bone[string][string] allBones;
   for(uint i = 0; i < scene.mNumMeshes; i++) {
     auto mesh = scene.mMeshes[i];
-    if(name(mesh) == "Cube") continue; // Do not load in cubes or other nonsense
+   // if(name(mesh) == "Cube") continue; // Do not load in cubes or other nonsense
     if (app.verbose) {
       SDL_Log("--- Processing Mesh %d (%s) ---", i, toStringz(mesh.mName.data));
       SDL_Log("  Number of vertices in this mesh: %u\n", mesh.mNumVertices);
@@ -122,7 +123,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
     auto texInfo = app.matchTexture(object, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
     Bone[string] bones;
     mesh.loadBones(bones, boneOff);
-
+    allBones[mesh.name()] = bones;
     for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {
       size_t gIdx = vIdx + vertOff;
       object.vertices ~= Vertex([mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z]);
@@ -159,10 +160,11 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
       }
     }
 
-    object.meshes ~= Mesh([vertOff, vertOff + mesh.mNumVertices], mesh.mMaterialIndex, bones);
+    object.meshes[mesh.name()] = Mesh([vertOff, vertOff + mesh.mNumVertices], mesh.mMaterialIndex);
     vertOff += mesh.mNumVertices;
     boneOff += mesh.mNumBones;
   }
+  object.bones = allBones;
   app.animations = app.loadAnimations(scene);
   object.rotate([180.0f, 0.0f, 90.0f]);
   aiReleaseImport(scene);

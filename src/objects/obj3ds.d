@@ -149,6 +149,6 @@ Obj3DS loadFromFile(const(char)* path, bool trace = false) {
       break;
     }
   }
-  object.meshes = [Mesh([0, cast(uint)object.vertices.length])];
+  object.meshes["3DS"] = Mesh([0, cast(uint)object.vertices.length]);
   return(object);
 }

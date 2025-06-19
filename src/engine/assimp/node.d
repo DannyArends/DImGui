@@ -5,7 +5,7 @@
 
 import engine;
 
-import matrix : Matrix;
+import matrix : Matrix, transpose;
 
 struct Node {
   string name;
@@ -23,3 +23,4 @@ Node loadNode(aiNode* node, uint lvl = 0) {
   }
   return(n);
 }
+

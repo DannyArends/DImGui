@@ -29,7 +29,6 @@ struct Instance {
 struct Mesh {
   uint[2] vertices;
   uint material;
-  Bone[string] bones;
 }
 
 struct TexInfo {
@@ -59,7 +58,8 @@ class Geometry {
   Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
-  Mesh[] meshes;
+  Mesh[string] meshes;
+  Bone[string][string] bones;
   Material[] materials;
   alias instances this;
 
@@ -129,12 +129,12 @@ float scale(T)(T object, uint instance = 0) {
 }
 
 /** Set tid for instance from object.instances to Texture name */
-void texture(T)(T object, const Texture[] textures, const(char)* name, uint mesh = 0) {
-  assert(mesh <  object.meshes.length, "No such mesh");
+void texture(T)(T object, const Texture[] textures, const(char)* name, string mname = "") {
   int tid = textures.idx(name);
-  SDL_Log("Applying TextureID: %d from %d to %d", tid, object.meshes[mesh].vertices[0], object.meshes[mesh].vertices[1]);
-  for(size_t i = object.meshes[mesh].vertices[0]; i < object.meshes[mesh].vertices[1]; i++){
-    object.vertices[i].tid = tid;
+  foreach(mesh ; object.meshes){
+    for(size_t i = mesh.vertices[0]; i < mesh.vertices[1]; i++){
+      object.vertices[i].tid = tid;
+    }
   }
 }
 
