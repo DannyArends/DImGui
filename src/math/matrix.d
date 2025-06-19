@@ -241,3 +241,50 @@ float scale(const Matrix m) {
   return inv;
 }
 
+
+// Define simple structs for vec3 and quat for clarity
+import std.format : format;
+struct Vec3 {
+    float x, y, z;
+
+    // Helper for vector length (magnitude)
+    float length() const { // 'pure' and 'nogc' removed
+        return sqrt(x*x + y*y + z*z);
+    }
+    string toString() const {
+        return format("[%f, %f, %f]", x, y, z);
+    }
+}
+
+struct Quat {
+    float x, y, z, w;
+
+    // Helper for quaternion normalization
+    Quat normalize() const { // 'pure' and 'nogc' removed
+        float mag = sqrt(x*x + y*y + z*z + w*w);
+        if (mag == 0) return Quat(0,0,0,1); // Identity quaternion for zero magnitude
+        return Quat(x / mag, y / mag, z / mag, w / mag);
+    }
+
+    // For printing
+    string toString() const {
+        return format("[%f, %f, %f, %f]", x, y, z, w);
+    }
+}
+
+// Structure to hold decomposed components
+struct DecomposedTransform {
+    Vec3 translation;
+    Quat rotation;
+    Vec3 scale;
+
+    // For printing
+    string toString() const {
+        return format("Translation: %s\nRotation: %s\nScale: %s",
+                      translation.toString(),
+                      rotation.toString(),
+                      scale.toString());
+    }
+}
+
+

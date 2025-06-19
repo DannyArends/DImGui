@@ -12,6 +12,7 @@ import std.conv : to;
 import std.format : format;
 
 import bone : Bone;
+import node : Node;
 import vector : interpolate;
 import quaternion : slerp, rotate;
 import matrix : Matrix, inverse, scale, translate, transpose, multiply;
@@ -44,81 +45,8 @@ struct Animation {
     NodeAnimation[string] nodeAnimations;
 }
 
-struct Node {
-  string name;
-  Matrix offset;
-  Node[] children;
-}
-
-//  aiNode* node = scene.mRootNode;
-Node loadNode(aiNode* node, uint lvl = 0) {
-  Node n = Node();
-  n.name = to!string(fromStringz(node.mName.data));
-  n.offset = cast(float[16])node.mTransformation;
-//  n.offset = transpose(n.offset);
-
-  n.children.length = node.mNumChildren;
-  //SDL_Log("[%d] %s", lvl, toStringz(n.name));
-  for (uint i = 0; i < node.mNumChildren; ++i) {
-    n.children[i] = loadNode(node.mChildren[i], lvl+1);
-  }
-  return(n);
-}
-
-// Finds the index of a keyframe *before or at* the animation time.
-uint findKeyframeIndex(uint numKeys, double[] timeKeys, double animationTime) {
-  for (uint i = 0; i < numKeys - 1; ++i) {
-    if (animationTime < timeKeys[i + 1]) { return i; }
-  }
-  return numKeys - 1;
-}
-
-void readNodeAnimData(NodeAnimation anim, double animationTime, ref float[3] outPos, ref float[4] outRot, ref float[3] outScale) {
-    if (anim.positionKeys.length == 1) outPos = anim.positionKeys[0].value;
-    else {
-        uint p0Idx = findKeyframeIndex(cast(uint)anim.positionKeys.length, anim.positionKeys.map!(k => k.time).array, animationTime);
-        uint p1Idx = p0Idx + 1; if (p1Idx >= anim.positionKeys.length) p1Idx = p0Idx;
-        double t0 = anim.positionKeys[p0Idx].time, t1 = anim.positionKeys[p1Idx].time;
-        float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
-        outPos = interpolate(anim.positionKeys[p0Idx].value, anim.positionKeys[p1Idx].value, factor);
-    }
-
-    if (anim.rotationKeys.length == 1) outRot = anim.rotationKeys[0].value;
-    else {
-        uint r0Idx = findKeyframeIndex(cast(uint)anim.rotationKeys.length, anim.rotationKeys.map!(k => k.time).array, animationTime);
-        uint r1Idx = r0Idx + 1; if (r1Idx >= anim.rotationKeys.length) r1Idx = r0Idx;
-        double t0 = anim.rotationKeys[r0Idx].time, t1 = anim.rotationKeys[r1Idx].time;
-        float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
-        outRot = slerp(anim.rotationKeys[r0Idx].value, anim.rotationKeys[r1Idx].value, factor);
-    }
-
-    if (anim.scalingKeys.length == 1) outScale = anim.scalingKeys[0].value;
-    else {
-        uint s0Idx = findKeyframeIndex(cast(uint)anim.scalingKeys.length, anim.scalingKeys.map!(k => k.time).array, animationTime);
-        uint s1Idx = s0Idx + 1; if (s1Idx >= anim.scalingKeys.length) s1Idx = s0Idx;
-        double t0 = anim.scalingKeys[s0Idx].time, t1 = anim.scalingKeys[s1Idx].time;
-        float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
-        outScale = interpolate(anim.scalingKeys[s0Idx].value, anim.scalingKeys[s1Idx].value, factor);
-    }
-}
-
 void calculateGlobalTransform(Animation animation, Bone[string] bones, ref Matrix[] offsets, Node node, Matrix transform, double animationTime){
-  Matrix nodeTransform = node.offset;
-
-  if (node.name in animation.nodeAnimations) {
-    NodeAnimation nodeAnim = animation.nodeAnimations[node.name];
-    float[3] interpolatedPos; float[4] interpolatedRot; float[3] interpolatedScale;
-    readNodeAnimData(nodeAnim, animationTime, interpolatedPos, interpolatedRot, interpolatedScale);
-    Matrix translationM = translate(Matrix(), interpolatedPos);
-    Matrix rotationM = rotate(Matrix(), interpolatedRot);
-    Matrix scaleM = scale(Matrix(), interpolatedScale);
-    nodeTransform = translationM.multiply(rotationM).multiply(scaleM);
-  }
-
-  Matrix gOffset = transform.multiply(nodeTransform);
-  SDL_Log(toStringz(format("-----")));
-  SDL_Log(toStringz(format("Offset: %s", node.offset)));
-  SDL_Log(toStringz(format("Transformed: %s", nodeTransform)));
+  Matrix gOffset = transform.multiply(node.offset);
 
   if (node.name in bones) {
     offsets[bones[node.name].index] = gOffset.multiply(bones[node.name].offset);
@@ -148,7 +76,6 @@ Animation[] loadAnimations(ref App app, aiScene* scene) {
         auto aiNodeAnim = aiAnim.mChannels[j];
         NodeAnimation nodeAnim;
         string nodeName = to!string(fromStringz(aiNodeAnim.mNodeName.data));
-
 
         if (app.verbose) {
           SDL_Log("    Node Channel %u for '%s'", j, nodeName.ptr);

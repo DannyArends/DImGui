@@ -7,15 +7,14 @@ import engine;
 import std.algorithm : map, sort;
 import std.array : array;
 import std.path : stripExtension;
-import std.format : format;
-import std.conv : to;
 
 import std.traits : EnumMembers;
 import std.string : toStringz, lastIndexOf, fromStringz;
 
-import animation : loadNode, loadAnimations;
+import animation : loadAnimations;
 import bone : Bone, loadBones;
 import matrix : Matrix, inverse;
+import node : loadNode;
 import geometry : aiColorType, Instance, Mesh, TexInfo, Material, Geometry, scale, rotate;
 import vertex : Vertex;
 import textures : idx;
@@ -86,6 +85,8 @@ Material[] loadMaterials(ref App app, const(char)* path, aiScene* scene){
   return(materials);
 }
 
+string name(T)(T* obj){ return(to!string(toStringz(obj.mName.data))); }
+
 OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   SDL_Log("Loading: %s", path);
@@ -104,11 +105,12 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
 
   object.materials = app.loadMaterials(path, scene);
 
-  Bone[string] bones;
-  uint vert = 0;
+
+  uint vertOff = 0;
+  uint boneOff = 0;
   for(uint i = 0; i < scene.mNumMeshes; i++) {
     auto mesh = scene.mMeshes[i];
-    if(to!string(toStringz(mesh.mName.data)) == "Cube") continue; // Do not load in cubes or other nonsense
+    if(name(mesh) == "Cube") continue; // Do not load in cubes or other nonsense
     if (app.verbose) {
       SDL_Log("--- Processing Mesh %d (%s) ---", i, toStringz(mesh.mName.data));
       SDL_Log("  Number of vertices in this mesh: %u\n", mesh.mNumVertices);
@@ -118,10 +120,11 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
       SDL_Log("  %u Bones", mesh.mNumBones); // New: Log bone count
     }
     auto texInfo = app.matchTexture(object, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-    mesh.loadBones(bones);
+    Bone[string] bones;
+    mesh.loadBones(bones, boneOff);
 
     for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {
-      size_t gIdx = vIdx + vert;
+      size_t gIdx = vIdx + vertOff;
       object.vertices ~= Vertex([mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z]);
       if (mesh.mNormals) {
         object.vertices[gIdx].normal = [mesh.mNormals[vIdx].x, mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z];
@@ -152,15 +155,15 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
     for (size_t f = 0; f < mesh.mNumFaces; f++) {
       auto face = &mesh.mFaces[f];
       for (size_t j = 0; j < face.mNumIndices; j++) {
-        object.indices ~= (vert + face.mIndices[j]);
+        object.indices ~= (vertOff + face.mIndices[j]);
       }
     }
 
-    object.meshes ~= Mesh([vert, vert + mesh.mNumVertices], mesh.mMaterialIndex);
-    vert += mesh.mNumVertices;
+    object.meshes ~= Mesh([vertOff, vertOff + mesh.mNumVertices], mesh.mMaterialIndex, bones);
+    vertOff += mesh.mNumVertices;
+    boneOff += mesh.mNumBones;
   }
   app.animations = app.loadAnimations(scene);
-  object.bones = bones;
   object.rotate([180.0f, 0.0f, 90.0f]);
   aiReleaseImport(scene);
   return object;

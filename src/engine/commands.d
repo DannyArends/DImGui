@@ -20,7 +20,7 @@ void bonesToSSBO(ref App app, VkBuffer dst, uint syncIndex) {
   // Convert time to animation ticks and wrap it
   auto t = SDL_GetTicks() - app.time[STARTUP];
 
-  double timeInTicks = (t / 1000.0f) * app.animations[app.animation].ticksPerSecond;
+  double timeInTicks = (t / 5000.0f) * app.animations[app.animation].ticksPerSecond;
   double currentTick = fmod(timeInTicks, app.animations[app.animation].duration);
   //SDL_Log("%f = %f  %f", t/ 1000.0f, timeInTicks, currentTick);
   Matrix[] offsets = app.getBoneOffsets(0.0f);
