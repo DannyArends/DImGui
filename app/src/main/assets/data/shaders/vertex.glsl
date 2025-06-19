@@ -80,14 +80,14 @@ vec3 illuminate(Light light, vec4 position, vec3 normal) {
 
 void main() {
   vec4 finalPosition = vec4(inPosition, 1.0f);
- /* for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
     float weight = inWeights[i];
     if(weight >= 0.0f) {
       uint boneID = inBones[i];
       mat4 boneTransform = boneSSBO.transforms[boneID].offset;
       finalPosition += (boneTransform * vec4(inPosition, 1.0f)) * weight;
     }
-  } */
+  }
 
   mat4 model = ubo.scene * instance;
   mat4 nMatrix = transpose(inverse(instance));

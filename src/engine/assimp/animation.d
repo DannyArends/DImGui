@@ -49,7 +49,7 @@ void calculateGlobalTransform(Animation animation, Bone[string] bones, ref Matri
   Matrix gOffset = transform.multiply(node.offset);
 
   if (node.name in bones) {
-    offsets[bones[node.name].index] = gOffset.multiply(bones[node.name].offset);
+    offsets[bones[node.name].index] = gOffset;//.multiply(bones[node.name].offset);
   }
   foreach(cNode; node.children){
     animation.calculateGlobalTransform(bones, offsets, cNode, gOffset, animationTime);

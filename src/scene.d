@@ -66,7 +66,6 @@ void createScene(ref App app){
   app.objects ~= new Text(app);
   app.objects[3].rotate([90.0f, 0.0f, 0.0f]);
   app.objects[3].position([5.0f, 2.0f, 2.0f]);
-  app.objects[3].computeNormals();
   app.objects[3].onFrame = (ref App app, ref Geometry obj, float dt){
       obj.rotate([0.0f, 2 * dt, 4 * dt]);
     };

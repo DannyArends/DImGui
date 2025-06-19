@@ -26,7 +26,7 @@ struct Bone {
 void loadBones(aiMesh* mesh, ref Bone[string] bones, ref uint bone) {
   for (uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
-    string name = format("%s:%s", mesh.name(), aiBone.name());
+    string name = aiBone.name();
     bones[name] = Bone();
     bones[name].offset = cast(float[16])aiBone.mOffsetMatrix;
     bones[name].index = bone + b;
@@ -39,20 +39,19 @@ void loadBones(aiMesh* mesh, ref Bone[string] bones, ref uint bone) {
 
 Matrix[] getBoneOffsets(App app, double animationTime = 0.0f) {
   Matrix[] offsets;
+  offsets.length = 1024;
   foreach(obj; app.objects){
-    foreach(mesh; obj.meshes){
-      if(mesh.bones.length > 0) {
-        Matrix[] meshOffsets;
-        meshOffsets.length = mesh.bones.length;
-        app.animations[app.animation].calculateGlobalTransform(mesh.bones, meshOffsets, app.rootnode, Matrix(), animationTime);
-        offsets ~= meshOffsets;
+    if(obj.bones.length > 0) {
+      foreach(bone; obj.bones){
+        SDL_Log("offsets = %d", offsets.length);
+        app.animations[app.animation].calculateGlobalTransform(bone, offsets, app.rootnode, Matrix(), animationTime);
       }
     }
   }
-  //SDL_Log("Computed %d offsets", offsets.length);
-  for (uint o = 0; o < offsets.length; o++) {
-    offsets[o] = offsets[o].transpose();
-  }
+  SDL_Log("Computed %d offsets", offsets.length);
+  for (uint o = 0; o < offsets.length; o++) { 
+    SDL_Log(toStringz(format("%s", offsets[o])));
+    offsets[o] = offsets[o].transpose(); }
   return(offsets);
 }
 
