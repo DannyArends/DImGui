@@ -12,7 +12,7 @@
 		"targetType": "executable",
 		"targetPath": "bin",
 		"platforms": ["linux", "windows"],
-		"preBuildCommands-linux": [ "make clean", "make -j 8" ],
+		#"preBuildCommands-linux": [ "make clean", "make -j 8" ],
 		"preBuildCommands-windows-x86_64": [ "compile.bat C:/VulkanSDK/1.4.309.0" ],
 		"libs-linux": ["SDL2", "SDL2_image", "SDL2_mixer", "SDL2_ttf", "CImGui", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "assimp"],
 		"libs-windows": ["SDL2main", "SDL2", "SDL2_image", "SDL2_mixer", "SDL2_ttf", "CImGui", "vulkan-1", "shaderc_shared", "spirv-cross-c-shared"],
