@@ -75,7 +75,7 @@ void run(string[] args) {
   app.createScene();                      /// Create our scene with geometries
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
-  uint frames = 1;
+  uint frames = 3000;
   while (!app.finished && app.totalFramesRendered < frames) { /// Event polling & rendering Loop
     app.handleEvents();
     app.time[FRAMESTART] = SDL_GetTicks();
