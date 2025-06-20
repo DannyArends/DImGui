@@ -131,7 +131,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
       SDL_Log("  %u Bones", mesh.mNumBones); // New: Log bone count
     }
     auto texInfo = app.matchTexture(object, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-    mesh.loadBones(bones, boneOff, vertOff);
+    mesh.loadBones(bones);
     for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {
       size_t gIdx = vIdx + vertOff;
       object.vertices ~= Vertex([mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z]);

@@ -14,16 +14,14 @@ import animation : Node, calculateGlobalTransform;
 import assimp : name, toMatrix;
 
 struct Bone {
-  Matrix offset;
-  uint index;
-  float[uint] weights;   // Vertices influenced by this bone
+  Matrix offset;          /// Inverse bind pose matrix
+  uint index;             /// Bone index
+  float[uint] weights;    /// Weights of the vertices influenced by this bone
 
-  @property float[3] bindPosition() {
-    return offset.inverse().position();
-  }
+  @property float[3] bindPosition() { return offset.inverse().position(); }
 }
 
-void loadBones(aiMesh* mesh, ref Bone[string] bones, uint bone, uint vert) {
+void loadBones(aiMesh* mesh, ref Bone[string] bones) {
   for (uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
     string name = aiBone.name();

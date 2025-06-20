@@ -30,7 +30,7 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
-  app.objects[0].position([0.0f,-0.5f,0.0f]);
+  app.objects[0].position([0.0f,-0.9f,0.0f]);
   for(int x = -50; x < 50; x++) {
     for(int z = -50; z < 50; z++) {
       mat4 instance;  // Add a instances of object 0
@@ -114,7 +114,8 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add Spider OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
-  app.objects[($-1)].scale([0.05f, 0.05f, 0.05f]);
+  app.objects[($-1)].scale([0.01f, 0.01f, 0.01f]);
+  app.objects[($-1)].position([2.0f, -1.0f, 2.0f]);
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");

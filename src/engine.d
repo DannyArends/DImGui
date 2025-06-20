@@ -124,9 +124,9 @@ struct App {
   const(char)*[] deviceExtensions;                /// Enabled device extensions
   const(char)*[] layers;                          /// Enabled layers
 
-  Node rootnode;  // TODO: Should be stored in OpenAsset
-  Animation[] animations;
-  uint animation = 7;
+  Node rootnode;                                  /// TODO: Should be stored in OpenAsset
+  Animation[] animations;                         /// TODO: Should be stored in OpenAsset
+  uint animation = 14;                            /// TODO: Should be stored in OpenAsset
 
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?
