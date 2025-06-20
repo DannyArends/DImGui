@@ -13,6 +13,7 @@ import std.format : format;
 
 import bone : Bone;
 import node : Node;
+import assimp : name;
 import vector : interpolate;
 import quaternion : slerp, rotate;
 import matrix : Matrix, inverse, scale, translate, transpose, multiply;
@@ -45,15 +46,63 @@ struct Animation {
     NodeAnimation[string] nodeAnimations;
 }
 
+size_t findKeyframeIndex(double[] timeKeys, double animationTime) {
+  for (size_t i = 0; i < (timeKeys.length - 1); i++) {
+    if (animationTime < timeKeys[i + 1]) { return i; }
+  }
+  return timeKeys.length - 1;
+}
+
+float[3] getNodePosition(NodeAnimation anim, double animationTime) {
+  if (anim.positionKeys.length == 1) return(anim.positionKeys[0].value);
+
+  size_t i0 = findKeyframeIndex(anim.positionKeys.map!(k => k.time).array, animationTime);
+  size_t i1 = i0 + 1; if (i1 >= anim.positionKeys.length) i1 = i0;
+  double t0 = anim.positionKeys[i0].time, t1 = anim.positionKeys[i1].time;
+  float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
+  return(interpolate(anim.positionKeys[i0].value, anim.positionKeys[i1].value, factor));
+}
+
+float[4] getNodeRotation(NodeAnimation anim, double animationTime) {
+  if (anim.rotationKeys.length == 1) return(anim.rotationKeys[0].value);
+
+  size_t i0 = findKeyframeIndex(anim.rotationKeys.map!(k => k.time).array, animationTime);
+  size_t i1 = i0 + 1; if (i1 >= anim.rotationKeys.length) i1 = i0;
+  double t0 = anim.rotationKeys[i0].time, t1 = anim.rotationKeys[i1].time;
+  float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
+  return(slerp(anim.rotationKeys[i0].value, anim.rotationKeys[i1].value, factor));
+}
+
+float[3] getNodeScale(NodeAnimation anim, double animationTime) {
+  if (anim.scalingKeys.length == 1) return(anim.scalingKeys[0].value);
+
+  size_t i0 = findKeyframeIndex(anim.scalingKeys.map!(k => k.time).array, animationTime);
+  size_t i1 = i0 + 1; if (i1 >= anim.scalingKeys.length) i1 = i0;
+  double t0 = anim.scalingKeys[i0].time, t1 = anim.scalingKeys[i1].time;
+  float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
+  return(interpolate(anim.scalingKeys[i0].value, anim.scalingKeys[i1].value, factor));
+}
+
 void calculateGlobalTransform(Animation animation, Bone[string] bones, ref Matrix[] offsets, Node node, Matrix transform, double animationTime){
-  Matrix gOffset = transform.multiply(node.offset);
+  Matrix nodeTransform;
+
+  if (node.name in animation.nodeAnimations) {
+    auto p = getNodePosition(animation.nodeAnimations[node.name], animationTime);
+    auto r = getNodeRotation(animation.nodeAnimations[node.name], animationTime);
+    auto s = getNodeScale(animation.nodeAnimations[node.name], animationTime);
+    Matrix positionM = translate(Matrix(), p);
+    Matrix rotationM = rotate(Matrix(), r);
+    Matrix scaleM = scale(Matrix(), s);
+    nodeTransform = (transpose(positionM)).multiply(scaleM.multiply(rotationM));
+  }
+  Matrix gOffset = transform.multiply(nodeTransform);
 
   if (node.name in bones) {
-    offsets[bones[node.name].index] = gOffset;//.multiply(bones[node.name].offset);
+    offsets[bones[node.name].index] = gOffset.multiply(bones[node.name].offset).transpose();
   }
   foreach(cNode; node.children){
     animation.calculateGlobalTransform(bones, offsets, cNode, gOffset, animationTime);
-  } 
+  }
 }
 
 Animation[] loadAnimations(ref App app, aiScene* scene) {
@@ -63,7 +112,7 @@ Animation[] loadAnimations(ref App app, aiScene* scene) {
     for (uint i = 0; i < scene.mNumAnimations; i++) {
       auto aiAnim = scene.mAnimations[i];
       Animation anim;
-      anim.name = to!string(fromStringz(aiAnim.mName.data));
+      anim.name = aiAnim.name();
       anim.duration = aiAnim.mDuration;
       anim.ticksPerSecond = aiAnim.mTicksPerSecond != 0 ? aiAnim.mTicksPerSecond : 25.0; // Default to 25 if 0
 
@@ -84,30 +133,19 @@ Animation[] loadAnimations(ref App app, aiScene* scene) {
           SDL_Log("      Scaling Keys: %u", aiNodeAnim.mNumScalingKeys);
         }
 
-        // Extract Position Keys
-        for (uint k = 0; k < aiNodeAnim.mNumPositionKeys; k++) {
+        for (uint k = 0; k < aiNodeAnim.mNumPositionKeys; k++) {        // Extract Position Keys
           auto aiKey = aiNodeAnim.mPositionKeys[k];
-          PositionKey posKey;
-          posKey.time = aiKey.mTime / anim.ticksPerSecond; // Convert to seconds
-          posKey.value = [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z];
+          PositionKey posKey = { time : aiKey.mTime / anim.ticksPerSecond, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
           nodeAnim.positionKeys ~= posKey;
         }
-
-        // Extract Rotation Keys (Quaternions)
-        for (uint k = 0; k < aiNodeAnim.mNumRotationKeys; k++) {
+        for (uint k = 0; k < aiNodeAnim.mNumRotationKeys; k++) {        // Extract Rotation Keys (Quaternions)
           auto aiKey = aiNodeAnim.mRotationKeys[k];
-          RotationKey rotKey;
-          rotKey.time = aiKey.mTime / anim.ticksPerSecond; // Convert to seconds
-          rotKey.value = [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z, aiKey.mValue.w];
+          RotationKey rotKey = { time : aiKey.mTime / anim.ticksPerSecond, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z, aiKey.mValue.w] };
           nodeAnim.rotationKeys ~= rotKey;
         }
-
-        // Extract Scaling Keys
-        for (uint k = 0; k < aiNodeAnim.mNumScalingKeys; k++) {
+        for (uint k = 0; k < aiNodeAnim.mNumScalingKeys; k++) {        // Extract Scaling Keys
             auto aiKey = aiNodeAnim.mScalingKeys[k];
-            ScalingKey scaleKey;
-            scaleKey.time = aiKey.mTime / anim.ticksPerSecond; // Convert to seconds
-            scaleKey.value = [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z];
+            ScalingKey scaleKey = { time : aiKey.mTime / anim.ticksPerSecond, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
             nodeAnim.scalingKeys ~= scaleKey;
         }
         anim.nodeAnimations[nodeName] = nodeAnim;
@@ -117,3 +155,4 @@ Animation[] loadAnimations(ref App app, aiScene* scene) {
   }
   return(animations);
 }
+

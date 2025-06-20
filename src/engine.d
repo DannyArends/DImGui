@@ -126,7 +126,7 @@ struct App {
 
   Node rootnode;  // TODO: Should be stored in OpenAsset
   Animation[] animations;
-  uint animation = 0;
+  uint animation = 7;
 
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?

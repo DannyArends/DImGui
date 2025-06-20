@@ -59,7 +59,7 @@ class Geometry {
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
   Mesh[string] meshes;
-  Bone[string][string] bones;
+  Bone[string] bones;
   Material[] materials;
   alias instances this;
 

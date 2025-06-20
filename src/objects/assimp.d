@@ -29,6 +29,16 @@ class OpenAsset : Geometry {
   }
 }
 
+Matrix toMatrix(aiMatrix4x4 m){
+  float[16] myMatrixArray = [
+    m.a1, m.a2, m.a3, m.a4,
+    m.b1, m.b2, m.b3, m.b4,
+    m.c1, m.c2, m.c3, m.c4,
+    m.d1, m.d2, m.d3, m.d4
+  ];
+  return(Matrix(myMatrixArray));
+}
+
 TexInfo getTexture(aiMaterial* material, aiTextureType type = aiTextureType_DIFFUSE) {
   aiString texture_path;
   uint uvChannel;
@@ -108,10 +118,10 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
 
   uint vertOff = 0;
   uint boneOff = 0;
-  Bone[string][string] allBones;
+  Bone[string] bones;
   for(uint i = 0; i < scene.mNumMeshes; i++) {
     auto mesh = scene.mMeshes[i];
-   // if(name(mesh) == "Cube") continue; // Do not load in cubes or other nonsense
+    if(name(mesh) == "Cube") continue; // Do not load in cubes or other nonsense
     if (app.verbose) {
       SDL_Log("--- Processing Mesh %d (%s) ---", i, toStringz(mesh.mName.data));
       SDL_Log("  Number of vertices in this mesh: %u\n", mesh.mNumVertices);
@@ -121,9 +131,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
       SDL_Log("  %u Bones", mesh.mNumBones); // New: Log bone count
     }
     auto texInfo = app.matchTexture(object, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-    Bone[string] bones;
-    mesh.loadBones(bones, boneOff);
-    allBones[mesh.name()] = bones;
+    mesh.loadBones(bones, boneOff, vertOff);
     for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {
       size_t gIdx = vIdx + vertOff;
       object.vertices ~= Vertex([mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z]);
@@ -164,7 +172,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
     vertOff += mesh.mNumVertices;
     boneOff += mesh.mNumBones;
   }
-  object.bones = allBones;
+  object.bones = bones;
   app.animations = app.loadAnimations(scene);
   object.rotate([180.0f, 0.0f, 90.0f]);
   aiReleaseImport(scene);
