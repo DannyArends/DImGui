@@ -80,23 +80,23 @@ Matrix rotate(Matrix m, float[4] q) { // Quaternion (x, y, z, w)
   float wx = w * x2, wy = w * y2, wz = w * z2;
 
   m.data[0] = 1.0f - (yy + zz);  // m00
-  m.data[1] = xy - wz;           // m01
-  m.data[2] = xz + wy;           // m02
-  m.data[3] = 0.0f;              // m03
+  m.data[1] = xy + wz;           // m10
+  m.data[2] = xz - wy;           // m20
+  m.data[3] = 0.0f;              // m30
 
-  m.data[4] = xy + wz;           // m10
+  m.data[4] = xy - wz;           // m01
   m.data[5] = 1.0f - (xx + zz);  // m11
-  m.data[6] = yz - wx;           // m12
-  m.data[7] = 0.0f;              // m13
+  m.data[6] = yz + wx;           // m21
+  m.data[7] = 0.0f;              // m31
 
-  m.data[8] = xz - wy;           // m20
-  m.data[9] = yz + wx;           // m21
+  m.data[8] = xz + wy;           // m02
+  m.data[9] = yz - wx;           // m12
   m.data[10] = 1.0f - (xx + yy); // m22
-  m.data[11] = 0.0f;             // m23
+  m.data[11] = 0.0f;             // m32
 
-  m.data[12] = 0.0f;             // m30
-  m.data[13] = 0.0f;             // m31
-  m.data[14] = 0.0f;             // m32
+  m.data[12] = 0.0f;             // m03
+  m.data[13] = 0.0f;             // m13
+  m.data[14] = 0.0f;             // m23
   m.data[15] = 1.0f;             // m33
   return m;
 }

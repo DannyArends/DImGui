@@ -6,7 +6,9 @@
 import engine;
 
 import matrix : Matrix, transpose;
-import assimp : name, toMatrix;
+import assimp : OpenAsset, name, toMatrix, loadMesh;
+import bone : Bone;
+
 
 struct Node {
   string name;
@@ -15,11 +17,19 @@ struct Node {
   Node[] children;
 }
 
-Node loadNode(aiNode* node, uint lvl = 0) {
+Node loadNode(ref App app, ref OpenAsset asset, aiNode* node, aiScene* scene, ref Bone[string] bones, uint lvl = 0) {
   Node n = Node(node.name(), lvl, toMatrix(node.mTransformation));
+  SDL_Log(toStringz(format("%s.nodeTransform: %s", n.name, n.transform)));
+
+  for (uint i = 0; i < node.mNumMeshes; i++){
+    aiMesh* mesh = scene.mMeshes[node.mMeshes[i]];
+    if(mesh.name() == "Cube") continue;
+    app.loadMesh(mesh, asset, bones);
+  }
+
   n.children.length = node.mNumChildren;
   for (uint i = 0; i < node.mNumChildren; ++i) {
-    n.children[i] = loadNode(node.mChildren[i], lvl+1);
+    n.children[i] = app.loadNode(asset, node.mChildren[i], scene, bones, lvl+1);
   }
   return(n);
 }

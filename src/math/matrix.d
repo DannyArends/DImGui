@@ -27,15 +27,15 @@ alias Matrix mat4;
 /** Degree to radian, -180 .. 0 .. 180 */
 @nogc pure float radian(float deg) nothrow {return deg * (PI / 180.0f); }
 
-/** Matrix x Matrix */
 @nogc pure Matrix multiply(const Matrix m1, const Matrix m2) nothrow {
   Matrix res;
-  float[4] v1;
-  for (size_t row = 0; row < 4; ++row) {
-    size_t offset = row * 4;
-    v1 = m1[offset .. offset + 4];
-    for (size_t col = 0; col < 4; ++col) {
-      res[offset + col] = v1.vMul([ m2[col + 0], m2[col + 4], m2[col + 8], m2[col + 12] ]).sum();
+  for (size_t col = 0; col < 4; ++col) {
+    for (size_t row = 0; row < 4; ++row) {
+      float sum = 0.0f;
+      for (size_t k = 0; k < 4; ++k) {
+        sum += m1[k * 4 + row] * m2[col * 4 + k];
+      }
+      res[col * 4 + row] = sum;
     }
   }
   return res;
@@ -89,11 +89,10 @@ float scale(const Matrix m) {
   SDL_Log("Scale: %f", magnitude([m[0], m[1], m[2]]));
   return(magnitude([m[0], m[1], m[2]]));
 }
-@nogc pure Matrix scale(Matrix m, const float[3] v) nothrow {
+@nogc pure Matrix scale(const Matrix m, const float[3] v) nothrow {
   Matrix scale;
   scale[0] = v[0]; scale[5] = v[1]; scale[10] = v[2];
-  m = multiply(m, scale);
-  return(m);
+  return(multiply(m, scale));
 }
 
 /** Matrix x Translation V(x, y, z) */
