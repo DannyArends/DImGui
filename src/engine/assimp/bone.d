@@ -16,36 +16,41 @@ import assimp : name, toMatrix;
 struct Bone {
   Matrix offset;          /// Inverse bind pose matrix
   uint index;             /// Bone index
-  float[uint] weights;    /// Weights of the vertices influenced by this bone
 
   @property float[3] bindPosition() { return offset.inverse().position(); }
 }
 
-void loadBones(aiMesh* mesh, ref Bone[string] bones) {
+float[uint][string] loadBones(aiMesh* mesh, ref Bone[string] globalBones) {
+  float[uint][string] weights;
   for (uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
+    if(aiBone.mNumWeights == 0) continue;
     string name = aiBone.name();
-    bones[name] = Bone();
-    bones[name].offset = toMatrix(aiBone.mOffsetMatrix);
-    bones[name].index = b;
+    if(!(name in globalBones)){
+      globalBones[name] = Bone();
+      globalBones[name].offset = toMatrix(aiBone.mOffsetMatrix);
+      globalBones[name].index = cast(uint)(globalBones.length-1);
+    }
+    SDL_Log(toStringz(format("%s.bone: %d -> %d", name, globalBones[name].index, aiBone.mNumWeights)));
     for (uint w = 0; w < aiBone.mNumWeights; w++) {
       auto aiWeight = aiBone.mWeights[w];
-      bones[name].weights[aiWeight.mVertexId] = aiWeight.mWeight;
+      weights[name][aiWeight.mVertexId] = aiWeight.mWeight;
     }
   }
+  return(weights);
 }
 
 Matrix[] getBoneOffsets(App app, double animationTime = 0.0f) {
-  Matrix[] offsets;
-  offsets.length = 1024;
-  uint nOffsets = 0;
+  Matrix[] boneOffsets;
   foreach(obj; app.objects){
     if(obj.bones.length > 0) {
-      app.animations[app.animation].calculateGlobalTransform(obj.bones, offsets, app.rootnode, Matrix(), animationTime);
-      nOffsets += obj.bones.length;
+      Matrix[] offsets;
+      offsets.length = obj.bones.length;
+      app.calculateGlobalTransform(app.animations[app.animation], obj.bones, offsets, app.rootnode, Matrix(), animationTime);
+      boneOffsets ~= offsets;
     }
   }
   //SDL_Log("Computed: %d offsets", nOffsets);
-  return(offsets[0..nOffsets]);
+  return(boneOffsets);
 }
 

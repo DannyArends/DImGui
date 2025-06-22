@@ -83,9 +83,8 @@ float[3] getNodeScale(NodeAnimation anim, double animationTime) {
   return(interpolate(anim.scalingKeys[i0].value, anim.scalingKeys[i1].value, factor));
 }
 
-void calculateGlobalTransform(Animation animation, Bone[string] bones, ref Matrix[] offsets, Node node, Matrix transform, double animationTime){
-  Matrix nodeTransform;
-
+void calculateGlobalTransform(App app, Animation animation, Bone[string] bones, ref Matrix[] offsets, Node node, Matrix globalTransform, double animationTime){
+  Matrix localTransform = node.transform;
   if (node.name in animation.nodeAnimations) {
     auto p = getNodePosition(animation.nodeAnimations[node.name], animationTime);
     auto r = getNodeRotation(animation.nodeAnimations[node.name], animationTime);
@@ -93,15 +92,22 @@ void calculateGlobalTransform(Animation animation, Bone[string] bones, ref Matri
     Matrix positionM = translate(Matrix(), p);
     Matrix rotationM = rotate(Matrix(), r);
     Matrix scaleM = scale(Matrix(), s);
-    nodeTransform = (transpose(positionM)).multiply(scaleM.multiply(rotationM));
+    localTransform = scaleM.multiply(positionM.multiply(rotationM));
   }
-  Matrix gOffset = transform.multiply(nodeTransform);
+
+  Matrix globalOffset = globalTransform.multiply(localTransform);
 
   if (node.name in bones) {
-    offsets[bones[node.name].index] = gOffset.multiply(bones[node.name].offset).transpose();
+    offsets[bones[node.name].index] = globalOffset.multiply(bones[node.name].offset);
+    if(node.name == "Zahn_L"){
+      SDL_Log(toStringz(format("%s.nodeTransform: %s", node.name, node.transform)));
+      SDL_Log(toStringz(format("%s.localTransform: %s", node.name, localTransform)));
+      SDL_Log(toStringz(format("%s.gOffset: %s", node.name, globalOffset)));
+      SDL_Log(toStringz(format("%s.finalOffset: %s", node.name, offsets[bones[node.name].index])));
+    }
   }
   foreach(cNode; node.children){
-    animation.calculateGlobalTransform(bones, offsets, cNode, gOffset, animationTime);
+    app.calculateGlobalTransform(animation, bones, offsets, cNode, globalOffset, animationTime);
   }
 }
 
@@ -117,7 +123,7 @@ Animation[] loadAnimations(ref App app, aiScene* scene) {
       anim.ticksPerSecond = aiAnim.mTicksPerSecond != 0 ? aiAnim.mTicksPerSecond : 25.0; // Default to 25 if 0
 
       if (i == app.animation) {
-        SDL_Log("  Animation %u: %s (Duration: %.2f ticks, Ticks/Sec: %.2f)", i, anim.name.ptr, anim.duration, anim.ticksPerSecond);
+        SDL_Log("  Animation %u: %s (Duration: %.2f ticks, Ticks/Sec: %.2f)", i, toStringz(anim.name), anim.duration, anim.ticksPerSecond);
         SDL_Log("  %u animation channels", aiAnim.mNumChannels);
       }
 
@@ -127,7 +133,7 @@ Animation[] loadAnimations(ref App app, aiScene* scene) {
         string nodeName = to!string(fromStringz(aiNodeAnim.mNodeName.data));
 
         if (app.verbose) {
-          SDL_Log("    Node Channel %u for '%s'", j, nodeName.ptr);
+          SDL_Log("    Node Channel %u for '%s'", j, toStringz(nodeName));
           SDL_Log("      Position Keys: %u", aiNodeAnim.mNumPositionKeys);
           SDL_Log("      Rotation Keys: %u", aiNodeAnim.mNumRotationKeys);
           SDL_Log("      Scaling Keys: %u", aiNodeAnim.mNumScalingKeys);
