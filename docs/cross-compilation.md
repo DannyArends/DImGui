@@ -48,9 +48,13 @@ Make sure the %%ndkpath%% is either defined, or replace it with the absolute pat
   };
 ```
 
-Now we can are ready to build the dependancies:
 
-### Compile shaderc using cmake
+### dependancies
+We need to build shaderc, spirv_cross, and assimp using [cmake](https://cmake.org) scripts. 
+SDL2 and associated libraries are build using [Android Studio](https://developer.android.com/studio), 
+while the (c)ImGui library uses basic makefiles.
+
+#### Compile shaderc using cmake
 ```
   cd deps/shaderc
   python utils/git-sync-deps
@@ -72,7 +76,7 @@ Now we can are ready to build the dependancies:
 Move the compiled shared library from "libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs" so 
 Android Studio will pick up the compiled library and include it inside the APK.
 
-### Compile spirv_cross using cmake
+#### Compile spirv_cross using cmake
 ```
   cd deps/spirv_cross
   rm -rf build
@@ -90,14 +94,34 @@ Android Studio will pick up the compiled library and include it inside the APK.
 Move the compiled shared library from "build/libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs" so 
 Android Studio will pick up the compiled library and include it inside the APK.
 
-### Compile IMGUI & IMGUI into a shared library
+#### Compile assimp using cmake
+```
+  cd deps/assimp
+  rm -rf build
+  mkdir build
+  cd build
+  cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_TOOLCHAIN_FILE=C:/Users/Danny/AppData/Local/Android/Sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake \
+        -DANDROID_PLATFORM=24 \
+        -DANDROID_ABI=arm64-v8a \
+        -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF \
+        -DASSIMP_BUILD_FBX_IMPORTER=ON -DASSIMP_BUILD_3DS_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON \
+        -DASSIMP_NO_EXPORT=ON \
+        -DASSIMP_BUILD_TESTS=OFF \
+        ../
+  make -j8
+  mv bin/libassimp.so ../../../app/src/main/jniLibs/arm64-v8a
+```
+Move the compiled shared library from "build/libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs" so 
+Android Studio will pick up the compiled library and include it inside the APK.
+
+#### Compile IMGUI & IMGUI into a shared library
 Make sure to update the paths to the NDK inside the Makefile before trying to build the libCImGui, then compile
 ```
   make -f Makefile.android
 ```
 
-### Compile SDL2 & other related libraries
-
+#### Compile SDL2 & other related libraries
 For SDL_Mixer, set the support for libgme to false in the Android.mk file (line 34)
 ```
   SUPPORT_GME ?= false

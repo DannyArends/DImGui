@@ -277,6 +277,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             "shaderc_shared",
             "spirv-cross-c-shared",
             "CImGui",
+            "assimp",
             "main"
         };
     }

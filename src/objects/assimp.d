@@ -10,6 +10,7 @@ import bone : Bone, loadBones;
 import matrix : Matrix, inverse, transpose;
 import node : Node, loadNode;
 import mesh : Mesh;
+import io : readFile;
 import material : loadMaterials;
 import geometry : Instance, Geometry, scale, rotate;
 import vertex : Vertex;
@@ -28,10 +29,13 @@ class OpenAsset : Geometry {
 /** Load an OpenAsset 
  */
 OpenAsset loadOpenAsset(ref App app, const(char)* path) {
-  version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   SDL_Log("Loading: %s", path);
-  OpenAsset object = new OpenAsset(); 
-  auto scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |  aiProcess_ConvertToLeftHanded);
+  OpenAsset object = new OpenAsset();
+
+  auto content = readFile(path);
+  auto flags = aiProcess_Triangulate | aiProcess_FlipUVs |  aiProcess_ConvertToLeftHanded;
+  auto scene = aiImportFileFromMemory(&content[0], cast(uint)content.length, flags, toStringz(extension(to!string(path))));
+
   if (!scene || scene.mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene.mRootNode) {
     SDL_Log("Error loading model '%s': %s", path, aiGetErrorString());
     return object;
@@ -39,14 +43,11 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   object.mName = stripExtension(baseName(to!string(path)));
 
   SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));
-  SDL_Log("%u meshes in open asset", scene.mNumMeshes);
-  SDL_Log("%u materials in open asset", scene.mNumMaterials);
-  SDL_Log("%u animations in open asset", scene.mNumAnimations);
-
+  SDL_Log("%u meshes, %u materials, %u animations", scene.mNumMeshes, scene.mNumMaterials, scene.mNumAnimations);
   object.materials = app.loadMaterials(path, scene);
   object.rootnode = app.loadNode(object, scene.mRootNode, scene, app.bones);
   object.animations = app.loadAnimations(object, scene);
-
+  SDL_Log("%u vertices, %u indices loaded", object.vertices.length, object.indices.length);
   aiReleaseImport(scene);
   return object;
 }
