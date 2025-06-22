@@ -79,15 +79,19 @@ vec3 illuminate(Light light, vec4 position, vec3 normal) {
 }
 
 void main() {
-  vec4 finalPosition = vec4(inPosition, 1.0f);
+  bool hasbone = false;
+  vec4 bonepos = vec4(0.0f, 0.0f, 0.0f, 0.0f);
   for (int i = 0; i < 4; i++) {
     float weight = inWeights[i];
-    if(weight >= 0.0f) {
+    if(weight > 0.0f) {
       uint boneID = inBones[i];
       mat4 boneTransform = boneSSBO.transforms[boneID].offset;
-      finalPosition += (boneTransform * vec4(inPosition, 1.0f)) * weight;
+      bonepos += (boneTransform * vec4(inPosition, 1.0f)) * weight;
+      hasbone = true;
     }
   }
+  vec4 finalPosition = vec4(inPosition, 1.0f);
+  if(hasbone){ finalPosition = bonepos; }
 
   mat4 model = ubo.scene * instance;
   mat4 nMatrix = transpose(inverse(instance));

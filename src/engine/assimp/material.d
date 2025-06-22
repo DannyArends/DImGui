@@ -5,8 +5,6 @@
 
 import engine;
 
-import std.path : stripExtension;
-
 import assimp : OpenAsset;
 import textures : idx;
 
@@ -63,7 +61,7 @@ TexInfo matchTexture(ref App app, ref OpenAsset object, uint materialIndex, aiTe
   auto idx = texInfo.path.lastIndexOf("\\");
   if(idx >= 0) texInfo.path = stripExtension(texInfo.path[(idx+1)..($)]);
   texInfo.tid = app.textures.idx(toStringz(texInfo.path));
-  SDL_Log(toStringz(format("  Material: %s -> %d at channel: %d", texInfo.path, texInfo.tid, texInfo.channel)));
+  //SDL_Log(toStringz(format("  Material: %s -> %d at channel: %d", texInfo.path, texInfo.tid, texInfo.channel)));
   return(texInfo);
 }
 
