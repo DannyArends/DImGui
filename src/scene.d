@@ -31,12 +31,11 @@ void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
   app.objects[($-1)].position([0.0f, -1.0f,0.0f]);
-  for(int x = -50; x < 50; x++) {
-    for(int z = -50; z < 50; z++) {
+  for(int x = -75; x < 75; x++) {
+    for(int z = -75; z < 75; z++) {
       mat4 instance;  // Add a instances of object 0
-      auto scalefactor = 1.0f;
+      auto scalefactor = 0.5f;
       instance = translate(instance, [cast(float) x, -1.0f, cast(float)z]);
-      instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
       app.objects[($-1)].instances ~= Instance(instance);
     }
   }

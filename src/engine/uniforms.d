@@ -57,7 +57,7 @@ void createUBO(ref App app, Descriptor descriptor) {
 }
 
 void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
-  auto t = (SDL_GetTicks() - app.time[STARTUP]) / 10000f;
+  auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000f;
   app.lights[1].direction[0] = sin(t);
   app.lights[2].direction[0] = cos(t);
   app.lights[3].direction[0] = tan(t);
