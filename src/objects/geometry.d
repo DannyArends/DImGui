@@ -36,10 +36,14 @@ class Geometry {
   Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
   uint[] indices;                               /// Indices of type uint stored on the CPU
   Instance[] instances;                         /// Instance array
-  Mesh[string] meshes;
-  Bone[string] bones;
-  Material[] materials;
   alias instances this;
+
+  Node rootnode;                                /// OpenAsset Root
+  string mName;                                 /// OpenAsset name
+  Animation[] animations;                       /// Animations
+  uint animation = 0;                           /// Current Animation
+  Mesh[string] meshes;                          /// Meshes
+  Material[] materials;                         /// Materials
 
   BoundingBox box = null;                       /// Bounding Box
   bool window = false;                          /// ImGui window displayed?

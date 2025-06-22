@@ -6,9 +6,9 @@
 import engine;
 
 import animation : Node, calculateGlobalTransform;
-import assimp : name, toMatrix;
+import assimp : OpenAsset, name, toMatrix;
 import buffer : createBuffer;
-import matrix : Matrix, inverse, position, transpose;
+import matrix : Matrix, inverse, rotate, scale, position, transpose;
 import sdl : STARTUP;
 
 struct Bone {
@@ -18,13 +18,13 @@ struct Bone {
   @property float[3] bindPosition() { return offset.inverse().position(); }
 }
 
-float[uint][string] loadBones(aiMesh* mesh, ref Bone[string] globalBones) {
+float[uint][string] loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones) {
   float[uint][string] weights;
   for (uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
-    if(aiBone.mNumWeights == 0) continue;
-    string name = aiBone.name();
-    if(!(name in globalBones)){
+    if (aiBone.mNumWeights == 0) continue; // No weights, no effect, skip
+    string name = format("%s:%s", asset.mName, name(aiBone.mName));
+    if (!(name in globalBones)) { // New bone, add it to the global bones
       globalBones[name] = Bone();
       globalBones[name].offset = toMatrix(aiBone.mOffsetMatrix);
       globalBones[name].index = cast(uint)(globalBones.length-1);
@@ -38,14 +38,19 @@ float[uint][string] loadBones(aiMesh* mesh, ref Bone[string] globalBones) {
   return(weights);
 }
 
-Matrix[] getBoneOffsets(App app, double animationTime = 0.0f) {
+Matrix[] getBoneOffsets(App app) {
+  auto t = SDL_GetTicks() - app.time[STARTUP];
+
   Matrix[] boneOffsets;
+  boneOffsets.length = app.bones.length;
   foreach(obj; app.objects){
-    if(obj.bones.length > 0) {
-      Matrix[] offsets;
-      offsets.length = obj.bones.length;
-      app.calculateGlobalTransform(app.animations[app.animation], obj.bones, offsets, app.rootnode, Matrix(), animationTime);
-      boneOffsets ~= offsets;
+    if(obj.animations.length > 0) {
+
+      double timeInTicks = (t / 10000.0f) * obj.animations[obj.animation].ticksPerSecond;
+      double currentTick = fmod(timeInTicks, obj.animations[obj.animation].duration / obj.animations[obj.animation].ticksPerSecond);
+
+      Matrix root;
+      app.calculateGlobalTransform(obj, boneOffsets, obj.rootnode, root, currentTick);
     }
   }
   //SDL_Log("Computed: %d offsets", nOffsets);
@@ -53,13 +58,7 @@ Matrix[] getBoneOffsets(App app, double animationTime = 0.0f) {
 }
 
 void bonesToSSBO(ref App app, VkBuffer dst, uint syncIndex) {
-  // Convert time to animation ticks and wrap it
-  auto t = SDL_GetTicks() - app.time[STARTUP];
-
-  double timeInTicks = (t / 10000.0f) * app.animations[app.animation].ticksPerSecond;
-  double currentTick = fmod(timeInTicks, app.animations[app.animation].duration / app.animations[app.animation].ticksPerSecond);
-  //SDL_Log("%f = %f  %f", t/ 1000.0f, timeInTicks, currentTick);
-  Matrix[] offsets = app.getBoneOffsets(currentTick);
+  Matrix[] offsets = app.getBoneOffsets();
 
   uint size = cast(uint)(Matrix.sizeof * offsets.length);
 

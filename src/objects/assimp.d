@@ -31,23 +31,22 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   SDL_Log("Loading: %s", path);
   OpenAsset object = new OpenAsset(); 
-  auto scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+  auto scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |  aiProcess_ConvertToLeftHanded);
   if (!scene || scene.mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene.mRootNode) {
     SDL_Log("Error loading model '%s': %s", path, aiGetErrorString());
     return object;
   }
-  SDL_Log("Model '%s' loaded successfully.", path);
+  object.mName = stripExtension(baseName(to!string(path)));
+
+  SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));
   SDL_Log("%u meshes in open asset", scene.mNumMeshes);
   SDL_Log("%u materials in open asset", scene.mNumMaterials);
   SDL_Log("%u animations in open asset", scene.mNumAnimations);
 
   object.materials = app.loadMaterials(path, scene);
-  Bone[string] bones;
-  app.rootnode = app.loadNode(object, scene.mRootNode, scene, bones);
+  object.rootnode = app.loadNode(object, scene.mRootNode, scene, app.bones);
+  object.animations = app.loadAnimations(object, scene);
 
-  object.bones = bones;
-  app.animations = app.loadAnimations(scene);
-  if(app.animations.length == 0) object.rotate([0.0f, 180.0f, 90.0f]);
   aiReleaseImport(scene);
   return object;
 }
@@ -66,8 +65,8 @@ Matrix toMatrix(aiMatrix4x4 m){
 
 /** Get the name from a char[256]
  */
-string name(T)(T* obj) {
+string name(T)(T obj) {
   size_t idx = 0;
-  do { ++idx; } while (obj.mName.data[idx] != '\0');
-  return(to!string(toStringz(obj.mName.data[0 .. idx] ~ '\0'))); 
+  do { ++idx; } while (obj.data[idx] != '\0');
+  return(to!string(toStringz(obj.data[0 .. idx] ~ '\0'))); 
 }

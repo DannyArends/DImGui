@@ -9,10 +9,12 @@ public import std.algorithm : map, sort;
 public import std.array : array, split;
 public import std.conv : to;
 public import std.format : format;
+public import std.path : baseName, stripExtension;
 public import std.string : toStringz, fromStringz, lastIndexOf, startsWith, strip, chomp, splitLines;
 public import std.traits : EnumMembers;
 
 import animation : Animation;
+import bone : Bone;
 import depthbuffer : DepthBuffer;
 import camera : Camera;
 import compute : Compute;
@@ -56,6 +58,7 @@ struct App {
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
+  Bone[string] bones;
   Texture[] textures;                                                           /// Textures
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[const(char)*] buffers;                                                   /// SSBO buffers
@@ -126,10 +129,6 @@ struct App {
   const(char)*[] instanceExtensions;              /// Enabled instance extensions
   const(char)*[] deviceExtensions;                /// Enabled device extensions
   const(char)*[] layers;                          /// Enabled layers
-
-  Node rootnode;                                  /// TODO: Should be stored in OpenAsset
-  Animation[] animations;                         /// TODO: Should be stored in OpenAsset
-  uint animation = 14;                            /// TODO: Should be stored in OpenAsset
 
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?

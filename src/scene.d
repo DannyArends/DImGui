@@ -83,7 +83,7 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add PDB object");
   auto protein = loadProteinCif("data/objects/3kql.cif");
-  uint i = 5;
+  uint i = 6;
   app.objects ~= new AtomCloud(protein.atoms());
   app.objects[i].scale([0.1f, 0.1f, 0.1f]);
   app.objects[i].position([15.0f, 1.0f, 15.0f]);
@@ -114,8 +114,14 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add Spider OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
+  app.objects[($-1)].animation = 14;
+  app.objects[($-1)].position([1.0f, -9.0f, 3.0f]);
   app.objects[($-1)].scale([0.01f, 0.01f, 0.01f]);
-  app.objects[($-1)].position([1.0f, -8.0f, 3.0f]);
+
+  SDL_Log("createScene: Add Wolf OpenAsset");
+  app.objects ~= app.loadOpenAsset("data/objects/Wolf.fbx");
+  app.objects[($-1)].animation = 1;
+  app.objects[($-1)].scale([0.02f, 0.02f, 0.02f]);
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");

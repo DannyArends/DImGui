@@ -18,7 +18,7 @@ struct Mesh {
 
 void loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, ref Bone[string] globalBones) {
   if (app.verbose) {
-    SDL_Log("--- Processing Mesh (%s) ---", toStringz(mesh.mName.data));
+    SDL_Log("Processing Mesh (%s)", toStringz(name(mesh.mName)));
     SDL_Log("  Number of vertices in this mesh: %u\n", mesh.mNumVertices);
     SDL_Log("  Number of faces in this mesh: %u\n", mesh.mNumFaces);
     SDL_Log("  Normals: %p, Color: %p, TexCoord: %p\n", mesh.mNormals, mesh.mColors[0], mesh.mTextureCoords[0]);
@@ -27,12 +27,12 @@ void loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, ref Bone[string] g
   }
   uint vertOff = cast(uint)(asset.vertices.length);
   auto texInfo = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-  auto weights = mesh.loadBones(globalBones);
+  auto weights = asset.loadBones(mesh, globalBones);
   for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {
     size_t gIdx = vIdx + vertOff;
     asset.vertices ~= Vertex([mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z]);
     if (mesh.mNormals) {
-      asset.vertices[gIdx].normal = [mesh.mNormals[vIdx].x, mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z];
+      asset.vertices[gIdx].normal = [mesh.mNormals[vIdx].x, -mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z];
     }
     if (mesh.mTextureCoords[texInfo.channel]) {
       asset.vertices[gIdx].texCoord = [mesh.mTextureCoords[texInfo.channel][vIdx].x, mesh.mTextureCoords[texInfo.channel][vIdx].y];
@@ -63,5 +63,5 @@ void loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, ref Bone[string] g
       asset.indices ~= (vertOff + face.mIndices[j]);
     }
   }
-  asset.meshes[mesh.name()] = Mesh([vertOff, vertOff + mesh.mNumVertices], mesh.mMaterialIndex);
+  asset.meshes[name(mesh.mName)] = Mesh([vertOff, vertOff + mesh.mNumVertices], mesh.mMaterialIndex);
 }
