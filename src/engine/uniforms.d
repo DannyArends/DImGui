@@ -13,6 +13,7 @@ import descriptor : Descriptor;
 import buffer : createBuffer;
 import matrix : mat4, rotate, lookAt, perspective;
 import lights : Light, Lights;
+import sdl : STARTUP;
 
 struct UniformBufferObject {
   mat4 scene = mat4.init;
@@ -56,6 +57,10 @@ void createUBO(ref App app, Descriptor descriptor) {
 }
 
 void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
+  auto t = (SDL_GetTicks() - app.time[STARTUP]) / 10000f;
+  app.lights[1].direction[0] = sin(t);
+  app.lights[2].direction[0] = cos(t);
+  app.lights[3].direction[0] = tan(t);
   UniformBufferObject ubo = {
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,

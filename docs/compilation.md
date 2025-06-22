@@ -13,7 +13,7 @@ Install all Linux dependancies (Ubuntu) by issuing the following commands:
 
 ```
   sudo apt install libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
-  sudo apt install shaderc spirv-cross-dev
+  sudo apt install shaderc spirv-cross-dev libassimp-dev
 ```
 
 in Debian, the names of the ShaderC and SPIRV-Cross development libraries are slightly different
