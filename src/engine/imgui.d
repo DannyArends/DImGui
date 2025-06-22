@@ -5,11 +5,8 @@
 
 import engine;
 import std.algorithm : min;
-import std.conv : to;
 import io : isfile, readFile, writeFile;
 import std.path : baseName;
-import std.format : format;
-import std.string : toStringz, fromStringz;
 
 import geometry : Geometry, position, scale, rotate;
 import lights : Light;

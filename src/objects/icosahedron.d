@@ -7,7 +7,8 @@ import includes;
 
 import std.math : PI, atan, sin, cos, tan, sqrt, atan2, asin;
 
-import geometry : Instance, Geometry, Mesh, faces, addVertex;
+import geometry : Instance, Geometry, faces, addVertex;
+import mesh : Mesh;
 import vector : midpoint, cross, vSub, normalize;
 import vertex : Vertex;
 

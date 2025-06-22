@@ -5,10 +5,11 @@
 
 import engine;
 
-import std.array : split, array;
-import vertex : Vertex;
-import geometry : Instance, Geometry, Mesh, texture;
+
+import mesh : Mesh;
+import geometry : Instance, Geometry, texture;
 import glyphatlas : GlyphAtlas;
+import vertex : Vertex;
 
 class Text : Geometry {
   this(App app, string value = "Hellow World", float scale = 1.0f, bool verbose = false){

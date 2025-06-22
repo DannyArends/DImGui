@@ -5,9 +5,12 @@
 
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
-public import std.string : toStringz, fromStringz;
+public import std.algorithm : map, sort;
+public import std.array : array, split;
 public import std.conv : to;
 public import std.format : format;
+public import std.string : toStringz, fromStringz, lastIndexOf, startsWith, strip, chomp, splitLines;
+public import std.traits : EnumMembers;
 
 import animation : Animation;
 import depthbuffer : DepthBuffer;
@@ -126,7 +129,7 @@ struct App {
 
   Node rootnode;                                  /// TODO: Should be stored in OpenAsset
   Animation[] animations;                         /// TODO: Should be stored in OpenAsset
-  uint animation = 2;                            /// TODO: Should be stored in OpenAsset
+  uint animation = 14;                            /// TODO: Should be stored in OpenAsset
 
   // Global boolean flags
   bool finished = false;                          /// Is the main loop finished ?

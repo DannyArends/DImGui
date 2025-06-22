@@ -27,6 +27,7 @@ alias Matrix mat4;
 /** Degree to radian, -180 .. 0 .. 180 */
 @nogc pure float radian(float deg) nothrow {return deg * (PI / 180.0f); }
 
+/** Matrix x Matrix */
 @nogc pure Matrix multiply(const Matrix m1, const Matrix m2) nothrow {
   Matrix res;
   for (size_t col = 0; col < 4; ++col) {
