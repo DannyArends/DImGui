@@ -4,12 +4,10 @@
  */
 
 import engine;
-import std.format : format;
-import std.conv : to;
-import std.string : toStringz, fromStringz;
 
-import geometry : Instance, Geometry, Mesh, rotate, scale;
+import geometry : Instance, Geometry, rotate, scale;
 import io : tell, fread, seek;
+import mesh : Mesh;
 import vertex : Vertex;
 
 /** 3DS
@@ -119,7 +117,7 @@ Obj3DS loadFromFile(const(char)* path, bool trace = false) {
       case 0x4160:        // TRI_LOCAL
         for(size_t i = 0; i < 4; i++) { fp.fread(&object.instances[0][i*4], 3, float.sizeof); }
         object.scale([0.05f, 0.05f, 0.05f]);
-        object.rotate([65.0f, 0.0f, 90.0f]);
+        object.rotate([0.0f, 65.0f, 90.0f]);
       break;
       case 0xAFFF: break; // EDIT_MATERIAL
       case 0xA000:        // MAT_NAME01

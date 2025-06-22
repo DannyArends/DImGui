@@ -6,8 +6,6 @@
 import engine;
 
 import std.random : Random, uniform;
-import std.conv : to;
-import std.string : toStringz;
 
 import geometry : Instance, Geometry;
 import lsystem : LSystem, Symbols;

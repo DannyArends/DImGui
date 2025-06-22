@@ -4,10 +4,6 @@
  */
 
 import engine;
-import std.array : array;
-import std.algorithm : sort;
-import std.string : toStringz;
-import std.format : format;
 import core.memory : GC;
 import std.algorithm : remove, reverse;
 

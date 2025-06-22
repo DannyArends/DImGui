@@ -19,7 +19,7 @@ import particlesystem : ParticleSystem;
 import pdb : AtomCloud, Backbone, AminoAcidCloud, loadProteinCif;
 import square : Square;
 import text : Text;
-import assimp : loadOpenAsset, getTexture;
+import assimp : loadOpenAsset;
 import obj3ds : loadFromFile;
 import turtle : Turtle;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
@@ -30,12 +30,12 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
-  app.objects[0].position([0.0f, 1.0f,0.0f]);
+  app.objects[0].position([0.0f, -1.0f,0.0f]);
   for(int x = -50; x < 50; x++) {
     for(int z = -50; z < 50; z++) {
       mat4 instance;  // Add a instances of object 0
-      auto scalefactor = 0.5;
-      instance = translate(instance, [cast(float) x, -2.0f, cast(float)z]);
+      auto scalefactor = 0.95;
+      instance = translate(instance, [cast(float) x, -1.0f, cast(float)z]);
       instance = scale(instance, [scalefactor, scalefactor, scalefactor]);
       if(x <= 0 && z <= 0) app.objects[0].instances ~= Instance(instance);
       if(x > 0 && z > 0) app.objects[0].instances ~= Instance(instance);
@@ -109,12 +109,13 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add cottage OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/cottage_fbx.fbx");
+  app.objects[($-1)].scale([1.0f, 1.0f, 0.5f]);
   app.objects[($-1)].position([2.0f, 0.0f, -7.0f]);
 
   SDL_Log("createScene: Add Spider OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
   app.objects[($-1)].scale([0.01f, 0.01f, 0.01f]);
-  app.objects[($-1)].position([2.0f, 0.0f, 2.0f]);
+  app.objects[($-1)].position([1.0f, -8.0f, 3.0f]);
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");

@@ -5,12 +5,6 @@
 
 import engine;
 
-import std.array : array;
-import std.algorithm : map;
-import std.string : fromStringz, toStringz;
-import std.conv : to;
-import std.format : format;
-
 import bone : Bone;
 import node : Node;
 import assimp : name;
@@ -85,6 +79,7 @@ float[3] getNodeScale(NodeAnimation anim, double animationTime) {
 
 void calculateGlobalTransform(App app, Animation animation, Bone[string] bones, ref Matrix[] offsets, Node node, Matrix globalTransform, double animationTime){
   Matrix localTransform = node.transform;
+
   if (node.name in animation.nodeAnimations) {
     auto p = getNodePosition(animation.nodeAnimations[node.name], animationTime);
     auto r = getNodeRotation(animation.nodeAnimations[node.name], animationTime);
@@ -99,12 +94,6 @@ void calculateGlobalTransform(App app, Animation animation, Bone[string] bones, 
 
   if (node.name in bones) {
     offsets[bones[node.name].index] = globalOffset.multiply(bones[node.name].offset);
-    if(node.name == "Zahn_L"){
-      SDL_Log(toStringz(format("%s.nodeTransform: %s", node.name, node.transform)));
-      SDL_Log(toStringz(format("%s.localTransform: %s", node.name, localTransform)));
-      SDL_Log(toStringz(format("%s.gOffset: %s", node.name, globalOffset)));
-      SDL_Log(toStringz(format("%s.finalOffset: %s", node.name, offsets[bones[node.name].index])));
-    }
   }
   foreach(cNode; node.children){
     app.calculateGlobalTransform(animation, bones, offsets, cNode, globalOffset, animationTime);

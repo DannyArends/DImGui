@@ -5,70 +5,13 @@
 
 import engine;
 
-import std.string : toStringz;
-
-import bone : getBoneOffsets;
-import buffer : createBuffer;
+import bone : bonesToSSBO;
 import descriptor : Descriptor;
 import matrix : Matrix;
 import boundingbox : computeBoundingBox;
 import geometry : draw;
 import shaders : Shader;
-import sdl : STARTUP;
 
-void bonesToSSBO(ref App app, VkBuffer dst, uint syncIndex) {
-  // Convert time to animation ticks and wrap it
-  auto t = SDL_GetTicks() - app.time[STARTUP];
-
-  double timeInTicks = (t / 10000.0f) * app.animations[app.animation].ticksPerSecond;
-  double currentTick = fmod(timeInTicks, app.animations[app.animation].duration / app.animations[app.animation].ticksPerSecond);
-  //SDL_Log("%f = %f  %f", t/ 1000.0f, timeInTicks, currentTick);
-  Matrix[] offsets = app.getBoneOffsets(currentTick);
-
-  uint size = cast(uint)(Matrix.sizeof * offsets.length);
-
-  void* data;
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, size);
-  vkMapMemory(app.device, stagingBufferMemory, 0, size, 0, &data);
-  memcpy(data, &offsets[0], size);
-  vkUnmapMemory(app.device, stagingBufferMemory);
-
-  VkBufferCopy copyRegion = {
-    srcOffset : 0, // Offset in source buffer
-    dstOffset : 0, // Offset in destination buffer
-    size : size // Size to copy
-  };
-
-  vkCmdCopyBuffer(app.renderBuffers[syncIndex], stagingBuffer, dst, 1, &copyRegion);
-
-  VkBufferMemoryBarrier bufferBarrier = {
-      sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-      srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT, // Data was written by transfer
-      dstAccessMask : VK_ACCESS_SHADER_READ_BIT,    // Shader will read it
-      srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-      dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-      buffer : dst, // The SSBO buffer itself
-      offset : 0,
-      size : VK_WHOLE_SIZE // Barrier applies to the whole buffer
-  };
-
-  vkCmdPipelineBarrier(
-      app.renderBuffers[syncIndex],
-      VK_PIPELINE_STAGE_TRANSFER_BIT,    // Source stage: Transfer (copy)
-      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, // Destination stage: Vertex shader reads
-      0, // dependencyFlags
-      0, null, // memoryBarriers
-      1, &bufferBarrier, // bufferMemoryBarriers (our SSBO barrier)
-      0, null // imageMemoryBarriers
-  );
-  app.frameDeletionQueue.add((){
-    vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-    vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
-  });
-}
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
  */

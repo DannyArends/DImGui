@@ -7,9 +7,8 @@ import engine;
 
 import std.datetime : MonoTime;
 import std.utf : isValidDchar;
-import std.string : toStringz, fromStringz;
-import std.format : format;
-import glyph: Glyph; 
+
+import glyph: Glyph;
 import textures : Texture, deAllocate, toRGBA, toGPU;
 import images : createImage, imageSize;
 import swapchain : createImageView;
@@ -62,8 +61,6 @@ void loadGlyphAtlas(ref App app,
                     const(char)* filename = "data/fonts/FreeMono.ttf", 
                     ubyte pointsize = 80, dchar to = '\U000000FF', uint width = 1024, uint max_width = 1024) {
   version(Android){ }else{
-    import std.string : toStringz, fromStringz;
-    import std.format : format;
     filename = toStringz(format("app/src/main/assets/%s", fromStringz(filename))); 
   }
   SDL_Log("loadGlyphAtlas: %s", filename);
