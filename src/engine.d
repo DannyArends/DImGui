@@ -5,12 +5,13 @@
 
 public import includes;
 public import core.stdc.string : strcmp, memcpy;
-public import std.algorithm : map, sort;
+public import std.algorithm : map, sort, swap;
 public import std.array : array, split;
 public import std.conv : to;
 public import std.format : format;
+public import std.math : abs, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2;
 public import std.path : baseName, stripExtension, extension;
-public import std.random : uniform;
+public import std.random : Random, uniform;
 public import std.string : toStringz, fromStringz, lastIndexOf, startsWith, strip, chomp, splitLines;
 public import std.traits : EnumMembers;
 

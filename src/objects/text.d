@@ -5,7 +5,6 @@
 
 import engine;
 
-
 import mesh : Mesh;
 import geometry : Instance, Geometry, texture;
 import glyphatlas : GlyphAtlas;
