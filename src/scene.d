@@ -5,11 +5,6 @@
 
 import engine;
 
-import std.algorithm : sort;
-import std.format : format;
-import std.random : uniform;
-import std.string : toStringz;
-
 import cube : Cube;
 import geometry : Geometry, Instance, computeNormals, position, rotate, scale, texture;
 import icosahedron : Icosahedron, refineIcosahedron;
