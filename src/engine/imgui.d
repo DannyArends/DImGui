@@ -268,6 +268,12 @@ void showObjectwindow(ref App app, ref Geometry obj) {
   if(igButton("Overview", ImVec2(0.0f, 0.0f))) { obj.window = false; } igSameLine(0,5);
   if(igButton((obj.isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) { obj.isVisible = !obj.isVisible; } igSameLine(0,5);
   if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ obj.deAllocate = true; }
+  if(obj.animations.length > 0) {
+    igText("Animation:", ImVec2(0.0f, 0.0f)); igSameLine(0,5);
+    igPushItemWidth(100 * app.gui.size);
+      int[2] limits = [0, cast(uint)(obj.animations.length-1)];
+      igSliderScalar("##a", ImGuiDataType_U32,  &obj.animation, &limits[0], &limits[1], "%d", 0);
+  }
   igBeginTable(toStringz(obj.name() ~ "_Tbl"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     igTableNextColumn();
       igText("Position", ImVec2(0.0f, 0.0f)); 
