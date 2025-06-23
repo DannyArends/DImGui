@@ -39,7 +39,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   version (Android) {
     path = toStringz(format("%s/%s", fromStringz(SDL_AndroidGetInternalStoragePath()), fromStringz(path)));
-  }
+   }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   SDL_RWops* fp = SDL_RWFromFile(path, "w");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
 
