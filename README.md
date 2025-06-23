@@ -7,6 +7,18 @@ Another SDL2 + Vulkan + ImGui renderer in the D Programming Language. However, t
 For building DImGui on MS Windows and/or Linux, see the instruction in [compilation.md](./docs/compilation.md). Instructions 
 on how to cross-compile for Android using Linux, see: [cross-compilation.md](./docs/cross-compilation.md)
 
+### Features
+The engine has the following features:
+- Renders basic objects
+- Ability to play sounds
+- Instanced rendering of objects
+- Particle engine by compute shader
+- Texture generation by compute shader
+- Assimp object loader (fbx, 3DS, etc)
+- Skeletal (key-framed) animations
+- Basic shader reflection for UBO, SSBOs
+- GUI windows: Settings, Object, Textures, Lights, Sounds
+
 ### Structure
 The following folders are interesting, if you're interested in how the repository is structured:
 
