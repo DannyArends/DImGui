@@ -8,9 +8,6 @@
  */
 import engine;
 
-import std.regex : regex, matchAll;
-import std.stdio;
-
 import color : atomToColor, Colors, residueToColor;
 import geometry : Instance, Geometry, addVertex;
 import io : readFile, isfile;
