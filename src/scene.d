@@ -105,13 +105,13 @@ void createScene(ref App app){
   SDL_Log("createScene: Add Spider OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
   app.objects[($-1)].animation = 11;
-  app.objects[($-1)].position([1.0f, -8.5f, 3.0f]);
+  app.objects[($-1)].position([1.0f, -8.5f, -1.0f]);
   app.objects[($-1)].scale([0.01f, 0.01f, 0.01f]);
 
   SDL_Log("createScene: Add Wolf OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Wolf.fbx");
-  app.objects[($-1)].animation = 1;
-  app.objects[($-1)].position([0.0f, -0.5f, 0.0f]);
+  app.objects[($-1)].animation = 2;
+  app.objects[($-1)].position([1.0f, -0.5f, 2.5f]);
   app.objects[($-1)].scale([0.015f, 0.015f, 0.015f]);
 
   if (app.compute.enabled) {
