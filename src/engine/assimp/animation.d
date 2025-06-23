@@ -7,8 +7,9 @@ import engine;
 
 import bone : Bone;
 import node : Node;
+import geometry : Geometry;
 import assimp : OpenAsset, name;
-import vector : interpolate;
+import vector : interpolate, x, y, z;
 import quaternion : slerp, rotate;
 import matrix : Matrix, inverse, scale, translate, transpose, multiply;
 
@@ -40,7 +41,39 @@ struct Animation {
     NodeAnimation[string] nodeAnimations;
 }
 
-void calculateGlobalTransform(App app, Geometry obj, ref Matrix[] offsets, Node node, Matrix globalTransform, double animationTime){
+void update(ref Geometry obj, string[] mNames, Matrix gTransform) {
+  foreach (mName; mNames){   //node.meshes) {
+    auto mesh = obj.meshes[mName];
+
+    float[3] localMin = mesh.bounds.min;
+    float[3] localMax = mesh.bounds.max;
+
+    float[3][8] corners = [
+      localMin,
+      [localMax.x, localMin.y, localMin.z],
+      [localMin.x, localMax.y, localMin.z],
+      [localMin.x, localMin.y, localMax.z],
+      [localMax.x, localMax.y, localMin.z],
+      [localMax.x, localMin.y, localMax.z],
+      [localMin.x, localMax.y, localMax.z],
+      localMax
+    ];
+
+    foreach (corner; corners) {
+        float[3] transformedCorner = gTransform.multiply(corner);
+
+        obj.bounds.min[0] = fmin(obj.bounds.min[0], transformedCorner.x);
+        obj.bounds.min[1] = fmin(obj.bounds.min[1], transformedCorner.y);
+        obj.bounds.min[2] = fmin(obj.bounds.min[2], transformedCorner.z);
+
+        obj.bounds.max[0] = fmax(obj.bounds.max[0], transformedCorner.x);
+        obj.bounds.max[1] = fmax(obj.bounds.max[1], transformedCorner.y);
+        obj.bounds.max[2] = fmax(obj.bounds.max[2], transformedCorner.z);
+    }
+  }
+}
+
+void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, Node node, Matrix globalTransform, double animationTime){
   Animation animation = obj.animations[obj.animation];
   Matrix localTransform = node.transform;
 
@@ -55,6 +88,8 @@ void calculateGlobalTransform(App app, Geometry obj, ref Matrix[] offsets, Node 
   }
 
   Matrix globalOffset = globalTransform.multiply(localTransform);
+
+  obj.update(node.meshes, globalOffset); // Update the aiBB
 
   if (node.name in app.bones) {
     offsets[app.bones[node.name].index] = globalOffset.multiply(app.bones[node.name].offset);
@@ -75,10 +110,10 @@ Animation[] loadAnimations(ref App app, OpenAsset asset, aiScene* scene) {
       anim.duration = aiAnim.mDuration;
       anim.ticksPerSecond = aiAnim.mTicksPerSecond != 0 ? aiAnim.mTicksPerSecond : 25.0; // Default to 25 if 0
 
-      if (app.verbose) {
+      //if (app.verbose) {
         SDL_Log("  Animation %u: %s (Duration: %.2f ticks, Ticks/Sec: %.2f)", i, toStringz(anim.name), anim.duration, anim.ticksPerSecond);
         SDL_Log("  %u animation channels", aiAnim.mNumChannels);
-      }
+      //}
 
       for (uint j = 0; j < aiAnim.mNumChannels; j++) {
         auto aiNodeAnim = aiAnim.mChannels[j];
@@ -94,17 +129,17 @@ Animation[] loadAnimations(ref App app, OpenAsset asset, aiScene* scene) {
 
         for (uint k = 0; k < aiNodeAnim.mNumPositionKeys; k++) {        // Extract Position Keys
           auto aiKey = aiNodeAnim.mPositionKeys[k];
-          PositionKey posKey = { time : aiKey.mTime / anim.ticksPerSecond, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
+          PositionKey posKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
           nodeAnim.positionKeys ~= posKey;
         }
         for (uint k = 0; k < aiNodeAnim.mNumRotationKeys; k++) {        // Extract Rotation Keys (Quaternions)
           auto aiKey = aiNodeAnim.mRotationKeys[k];
-          RotationKey rotKey = { time : aiKey.mTime / anim.ticksPerSecond, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z, aiKey.mValue.w] };
+          RotationKey rotKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z, aiKey.mValue.w] };
           nodeAnim.rotationKeys ~= rotKey;
         }
         for (uint k = 0; k < aiNodeAnim.mNumScalingKeys; k++) {        // Extract Scaling Keys
             auto aiKey = aiNodeAnim.mScalingKeys[k];
-            ScalingKey scaleKey = { time : aiKey.mTime / anim.ticksPerSecond, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
+            ScalingKey scaleKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
             nodeAnim.scalingKeys ~= scaleKey;
         }
         anim.nodeAnimations[nodeName] = nodeAnim;

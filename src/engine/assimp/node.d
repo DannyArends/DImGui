@@ -15,20 +15,22 @@ struct Node {
   uint lvl = 0;
   Matrix transform;
   Node[] children;
+  string[] meshes;
 }
 
 Node loadNode(ref App app, ref OpenAsset asset, aiNode* node, aiScene* scene, ref Bone[string] bones, uint lvl = 0) {
   Node n = Node(format("%s:%s", asset.mName, name(node.mName)), lvl, toMatrix(node.mTransformation));
-  //SDL_Log(toStringz(format("%s.nodeTransform: %s", n.name, n.transform)));
+  SDL_Log(toStringz(format("%s.nodeTransform: %s", n.name, n.transform)));
 
   for (uint i = 0; i < node.mNumMeshes; i++){
     aiMesh* mesh = scene.mMeshes[node.mMeshes[i]];
     if(name(mesh.mName) == "Cube") continue;
-    app.loadMesh(mesh, asset, bones);
+    n.meshes ~= app.loadMesh(mesh, asset, bones);
   }
 
   n.children.length = node.mNumChildren;
   for (uint i = 0; i < node.mNumChildren; ++i) {
+
     n.children[i] = app.loadNode(asset, node.mChildren[i], scene, bones, lvl+1);
   }
   return(n);
