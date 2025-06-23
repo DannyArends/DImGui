@@ -5,8 +5,6 @@
 
 import engine;
 
-import std.random : Random, uniform;
-
 import geometry : Instance, Geometry;
 import lsystem : LSystem, Symbols;
 import vector : vAdd, vMul, normalize;

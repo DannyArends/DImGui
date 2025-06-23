@@ -5,8 +5,6 @@
 
 import engine;
 
-import std.algorithm.mutation: swap;
-
 import boundingbox : BoundingBox;
 import geometry : Instance, Geometry;
 import matrix : multiply;

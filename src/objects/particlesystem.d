@@ -5,9 +5,6 @@
 
 import engine;
 
-import std.random : uniform;
-import std.math : abs;
-
 import particle : Particle;
 import geometry : Instance, Geometry;
 import vector : Vector, vMul, vAdd, magnitude, normalize;
