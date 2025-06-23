@@ -18,7 +18,7 @@ struct StageBuffer {
 struct GeometryBuffer {
   VkBuffer vb = null;            /// Vulkan Buffer pointer
   VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
-  StageBuffer staging;
+  StageBuffer staging;           /// Staging buffer for the GeometryBuffer
   alias staging this;
 }
 
@@ -94,13 +94,13 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size = VK
   };
 
   vkCmdPipelineBarrier(
-      app.renderBuffers[app.syncIndex],
-      VK_PIPELINE_STAGE_TRANSFER_BIT,       // Source stage: Where the write occurred (copy)
-      VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,   // Destination stage: Where the read will occur (vertex shader input)
-      0, // dependencyFlags
-      0, null, // memoryBarriers
-      1, &bufferBarrier, // bufferMemoryBarriers
-      0, null // imageMemoryBarriers
+    app.renderBuffers[app.syncIndex],
+    VK_PIPELINE_STAGE_TRANSFER_BIT,       // Source stage: Where the write occurred (copy)
+    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,   // Destination stage: Where the read will occur (vertex shader input)
+    0,                                    // dependencyFlags
+    0, null,                              // memoryBarriers
+    1, &bufferBarrier,                    // bufferMemoryBarriers
+    0, null                               // imageMemoryBarriers
   );
 }
 

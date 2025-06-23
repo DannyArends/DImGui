@@ -50,9 +50,11 @@ void saveSettings() {
 }
 
 void clearSettings() {
-  char[] data = (to!string(" ")).dup;
-  writeFile("imgui.ini", data, true);
-  SDL_Log("Cleared ImGui data");
+  auto g = *igGetCurrentContext();
+  for (int i = 0; i < g.Windows.Size; i++) {
+    ImGuiWindow* window = g.Windows.Data[i];
+    igClearWindowSettings(window.Name);
+  }
 }
 
 /** Load ImGui settings from disk (or Android internal storage)
@@ -188,7 +190,7 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
       }
     }
     if(list){
-      igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+      igBeginTable("Object_Tbl", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
       foreach(i, object; app.objects){
         igPushID_Int(to!int(i));
@@ -198,6 +200,8 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
         if(object.name) text = object.name() ~ " " ~ text;
         igTableNextColumn();
           igText(text.toStringz, ImVec2(0.0f, 0.0f));
+        igTableNextColumn();
+          igText(object.mName.toStringz, ImVec2(0.0f, 0.0f));
         igTableNextColumn();
           if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
           if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) { app.objects[i].isVisible = !app.objects[i].isVisible; } igSameLine(0,5);
@@ -339,8 +343,9 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
       int[2] limits = [0, 2];
       igSliderScalar("##a", ImGuiDataType_U32,  &app.verbose, &limits[0], &limits[1], "%d", 0);
 
-    //igTableNextColumn();
-    //if(igButton("Clear GUI Settings", ImVec2(0.0f, 0.0f))){ clearSettings(); loadSettings(); }
+    igTableNextColumn();
+    igText("Clear Settings", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    if(igButton("RESET GUI", ImVec2(0.0f, 0.0f))){ clearSettings(); }
 
     igTableNextColumn();
     igText("Volume", ImVec2(0.0f, 0.0f)); igTableNextColumn();
