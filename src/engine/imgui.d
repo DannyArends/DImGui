@@ -333,9 +333,11 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igText("Deletion Queues", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igText(toStringz(format("%d / %d / %d", app.bufferDeletionQueue.length, app.frameDeletionQueue.length, app.mainDeletionQueue.length)), ImVec2(0.0f, 0.0f));
 
-/*    igTableNextColumn();
+    igTableNextColumn();
     igText("Verbose", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igCheckbox("##Verbose", &app.verbose); */
+    igPushItemWidth(100 * app.gui.size);
+      int[2] limits = [0, 2];
+      igSliderScalar("##a", ImGuiDataType_U32,  &app.verbose, &limits[0], &limits[1], "%d", 0);
 
     //igTableNextColumn();
     //if(igButton("Clear GUI Settings", ImVec2(0.0f, 0.0f))){ clearSettings(); loadSettings(); }

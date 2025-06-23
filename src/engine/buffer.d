@@ -7,14 +7,19 @@ import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 
-struct GeometryBuffer {
-  VkBuffer vb = null;            /// Vulkan Buffer pointer
-  VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
+struct StageBuffer {
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
   uint frame;                    /// Frame to complete before destoying the buffer
   uint size = 0;                 /// Size of the buffer
   void* data;                    /// Pointer to mapped data
+}
+
+struct GeometryBuffer {
+  VkBuffer vb = null;            /// Vulkan Buffer pointer
+  VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
+  StageBuffer staging;
+  alias staging this;
 }
 
 void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
