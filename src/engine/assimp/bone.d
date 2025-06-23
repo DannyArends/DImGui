@@ -7,7 +7,7 @@ import engine;
 
 import animation : Node, calculateGlobalTransform;
 import assimp : OpenAsset, name, toMatrix;
-import buffer : createBuffer;
+import buffer : createBuffer, StageBuffer;
 import matrix : Matrix, inverse, rotate, scale, position, transpose;
 import sdl : STARTUP;
 
@@ -60,24 +60,23 @@ Matrix[] getBoneOffsets(App app) {
 void bonesToSSBO(ref App app, VkBuffer dst, uint syncIndex) {
   Matrix[] offsets = app.getBoneOffsets();
 
-  uint size = cast(uint)(Matrix.sizeof * offsets.length);
+  StageBuffer buffer = {
+    size :  cast(uint)(Matrix.sizeof * offsets.length),
+    frame : app.totalFramesRendered + app.framesInFlight
+  };
 
-  void* data;
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, size);
-  vkMapMemory(app.device, stagingBufferMemory, 0, size, 0, &data);
-  memcpy(data, &offsets[0], size);
-  vkUnmapMemory(app.device, stagingBufferMemory);
+  app.createBuffer(&buffer.sb, &buffer.sbM, buffer.size);
+  vkMapMemory(app.device, buffer.sbM, 0, buffer.size, 0, &buffer.data);
+  memcpy(buffer.data, &offsets[0], buffer.size);
+  vkUnmapMemory(app.device, buffer.sbM);
 
   VkBufferCopy copyRegion = {
     srcOffset : 0, // Offset in source buffer
     dstOffset : 0, // Offset in destination buffer
-    size : size // Size to copy
+    size : buffer.size // Size to copy
   };
 
-  vkCmdCopyBuffer(app.renderBuffers[syncIndex], stagingBuffer, dst, 1, &copyRegion);
+  vkCmdCopyBuffer(app.renderBuffers[syncIndex], buffer.sb, dst, 1, &copyRegion);
 
   VkBufferMemoryBarrier bufferBarrier = {
       sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
@@ -99,9 +98,13 @@ void bonesToSSBO(ref App app, VkBuffer dst, uint syncIndex) {
       1, &bufferBarrier, // bufferMemoryBarriers (our SSBO barrier)
       0, null // imageMemoryBarriers
   );
-  app.frameDeletionQueue.add((){
-    vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-    vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+  app.bufferDeletionQueue.add((bool force){
+    if (force || (app.totalFramesRendered >= buffer.frame)){
+      vkDestroyBuffer(app.device, buffer.sb, app.allocator);
+      vkFreeMemory(app.device, buffer.sbM, app.allocator);
+      return(true);
+    }
+    return(false);
   });
 }
 
