@@ -63,8 +63,8 @@ App initializeSDL() {
   }
 
   version(Android) { }else{
-    app.window.setIcon();
     SDL_LogSetOutputFunction(&myLogFn, null); // replace NULL with some other
+    app.window.setIcon();
   }
   return(app);
 }

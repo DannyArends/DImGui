@@ -67,7 +67,7 @@ void calculateGlobalTransform(App app, Geometry obj, ref Matrix[] offsets, Node 
 Animation[] loadAnimations(ref App app, OpenAsset asset, aiScene* scene) {
   Animation[] animations;
   if (scene.mNumAnimations > 0) {
-    SDL_Log("Processing %u animations...", scene.mNumAnimations);
+    if(app.verbose) SDL_Log("Processing %u animations...", scene.mNumAnimations);
     for (uint i = 0; i < scene.mNumAnimations; i++) {
       auto aiAnim = scene.mAnimations[i];
       Animation anim;

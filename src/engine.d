@@ -67,7 +67,7 @@ struct App {
   VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
-  Bone[string] bones;
+  Bone[string] bones;                                                           /// All animation bones across all objects
   Texture[] textures;                                                           /// Textures
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[const(char)*] buffers;                                                   /// SSBO buffers
@@ -100,16 +100,16 @@ struct App {
   VkDevice device = null;
   VkQueue queue = null;
 
-  VkDescriptorPool[const(char)*] pools;         /// Descriptor pools (IMGUI, COMPUTE, RENDER)
-  VkDescriptorSetLayout[const(char)*] layouts;  /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
-  VkDescriptorSet[][const(char)*] sets;         /// Descriptor sets per Frames In FLight for (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorPool[const(char)*] pools;                                         /// Descriptor pools (IMGUI, COMPUTE, RENDER)
+  VkDescriptorSetLayout[const(char)*] layouts;                                  /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorSet[][const(char)*] sets;                                         /// Descriptor sets per Frames In Flight for (IMGUI, RENDER, N x computeShader.PATH)
 
   // Surface, Formats, SwapChain, and commandpool resources
-  VkSurfaceKHR surface = null;
-  VkSurfaceFormatKHR[] surfaceformats = null;   /// Available formats
-  uint format = 0;                              /// selected format
-  VkSwapchainKHR swapChain = null;
-  VkCommandPool commandPool = null;
+  VkSurfaceKHR surface = null;                                                  /// Vulkan Surface
+  VkSurfaceFormatKHR[] surfaceformats = null;                                   /// Available formats
+  uint format = 0;                                                              /// selected format
+  VkSwapchainKHR swapChain = null;                                              /// Our SwapChain
+  VkCommandPool commandPool = null;                                             /// Our CommandPool
 
   // Per frame resources (reset when rebuilding the swapchain)
   Sync[] sync = null;
@@ -128,24 +128,24 @@ struct App {
   VkDebugReportCallbackEXT debugCallback = null;
 
   // Sync and Frame Tracking
-  uint queueFamily = uint.max;                    /// Current queueFamily used
-  uint syncIndex = 0;                             /// Sync index (Semaphore)
-  uint frameIndex = 0;                            /// Current frame index (Fence)
-  float soundEffectGain = 0.8;                    /// Sound Effects Gain
-  ulong[5] time = [0, 0, 0, 0, 0];                /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK)
-  uint totalFramesRendered = 0;                   /// Total frames rendered so far
+  uint queueFamily = uint.max;                                                  /// Current queueFamily used
+  uint syncIndex = 0;                                                           /// Sync index (Semaphore)
+  uint frameIndex = 0;                                                          /// Current frame index (Fence)
+  float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
+  ulong[5] time = [0, 0, 0, 0, 0];                                              /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK)
+  uint totalFramesRendered = 0;                                                 /// Total frames rendered so far
 
-  const(char)*[] instanceExtensions;              /// Enabled instance extensions
-  const(char)*[] deviceExtensions;                /// Enabled device extensions
-  const(char)*[] layers;                          /// Enabled layers
+  const(char)*[] instanceExtensions;                                            /// Enabled instance extensions
+  const(char)*[] deviceExtensions;                                              /// Enabled device extensions
+  const(char)*[] layers;                                                        /// Enabled layers
 
   // Global boolean flags
-  bool finished = false;                          /// Is the main loop finished ?
-  bool showBounds = false;                        /// Show bounding boxes
-  bool showRays = false;                          /// Show rays
-  uint verbose = 0;                               /// Be very verbose
-  bool rebuild = false;                           /// Rebuild the swapChain?
-  bool isMinimized = false;                       /// isMinimized?
+  bool finished = false;                                                        /// Is the main loop finished ?
+  bool showBounds = false;                                                      /// Show bounding boxes
+  bool showRays = false;                                                        /// Show rays
+  uint verbose = 0;                                                             /// Be very verbose
+  bool rebuild = false;                                                         /// Rebuild the swapChain?
+  bool isMinimized = false;                                                     /// isMinimized?
 
   // Properties based on the SwapChain
   @property uint imageCount() { return(cast(uint)swapChainImages.length); }
