@@ -2,11 +2,10 @@
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
-import includes;
+import engine;
 
-import std.math : PI, sin, cos, tan;
 import vector : dot, sum, x, y, z, magnitude, xyz, vSub, cross, normalize;
-import quaternion;
+import quaternion : xyzw, vMul;
 
 /** Matrix is a [4x4] 'structure' stored as float[16] (defaults to identity matrix).
  */

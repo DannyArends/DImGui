@@ -17,3 +17,4 @@ struct Glyph {
   @property @nogc int gX() nothrow { return(advance - minx); }
   @property @nogc int gY() nothrow { return(maxy - miny); }
 }
+

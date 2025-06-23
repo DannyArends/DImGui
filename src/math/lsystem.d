@@ -5,8 +5,6 @@
 
 import engine;
 
-import std.random : uniform;
-
 /** Symbol
  */
 struct Symbol {

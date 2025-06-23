@@ -12,6 +12,7 @@ public import std.format : format;
 public import std.math : abs, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2;
 public import std.path : baseName, stripExtension, extension;
 public import std.random : Random, uniform;
+public import std.regex : regex, matchAll;
 public import std.string : toStringz, fromStringz, lastIndexOf, startsWith, strip, chomp, splitLines;
 public import std.traits : EnumMembers;
 

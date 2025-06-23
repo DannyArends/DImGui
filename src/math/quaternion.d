@@ -3,7 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import std.math : sqrt, sin, cos, acos;
+import engine;
 
 import vector : x,y,z, magnitude, normalize, vMul, sum;
 import matrix : Matrix, radian;
