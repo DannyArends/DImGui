@@ -4,7 +4,6 @@
  */
 
 import engine;
-import validation;
 
 import commands : createCommandPool;
 import compute : createComputeShaders;
@@ -22,6 +21,7 @@ import reflection : createReflectionContext;
 import surface : createSurface;
 import sfx : loadAllSoundEffect;
 import textures : Texture, loadTextures, createSampler;
+import validation : createDebugCallback;
 import window: createOrResizeWindow, checkForResize;
 
 /* Main entry point to the program */

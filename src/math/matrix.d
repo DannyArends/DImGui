@@ -85,9 +85,13 @@ alias Matrix mat4;
 }
 
 /** Matrix x Scale V(x, y, z) */
-float scale(const Matrix m) {
-  SDL_Log("Scale: %f", magnitude([m[0], m[1], m[2]]));
-  return(magnitude([m[0], m[1], m[2]]));
+float[3] scale(const Matrix m) {
+  float[3] s = [
+    magnitude([m[0], m[1], m[2]]),
+    magnitude([m[4], m[5], m[6]]),
+    magnitude([m[8], m[9], m[10]])
+  ];
+  return(s);
 }
 @nogc pure Matrix scale(const Matrix m, const float[3] v) nothrow {
   Matrix scale;
@@ -239,51 +243,4 @@ float scale(const Matrix m) {
   inv[] = inv[] * det;
   return inv;
 }
-
-
-// Define simple structs for vec3 and quat for clarity
-import std.format : format;
-struct Vec3 {
-    float x, y, z;
-
-    // Helper for vector length (magnitude)
-    float length() const { // 'pure' and 'nogc' removed
-        return sqrt(x*x + y*y + z*z);
-    }
-    string toString() const {
-        return format("[%f, %f, %f]", x, y, z);
-    }
-}
-
-struct Quat {
-    float x, y, z, w;
-
-    // Helper for quaternion normalization
-    Quat normalize() const { // 'pure' and 'nogc' removed
-        float mag = sqrt(x*x + y*y + z*z + w*w);
-        if (mag == 0) return Quat(0,0,0,1); // Identity quaternion for zero magnitude
-        return Quat(x / mag, y / mag, z / mag, w / mag);
-    }
-
-    // For printing
-    string toString() const {
-        return format("[%f, %f, %f, %f]", x, y, z, w);
-    }
-}
-
-// Structure to hold decomposed components
-struct DecomposedTransform {
-    Vec3 translation;
-    Quat rotation;
-    Vec3 scale;
-
-    // For printing
-    string toString() const {
-        return format("Translation: %s\nRotation: %s\nScale: %s",
-                      translation.toString(),
-                      rotation.toString(),
-                      scale.toString());
-    }
-}
-
 

@@ -6,7 +6,7 @@
 import engine;
 
 import bone : Bone;
-import mesh : Mesh;
+import mesh : Mesh, aiBB;
 import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
 import boundingbox : BoundingBox, computeBoundingBox;
 import camera : Camera;
@@ -40,6 +40,7 @@ class Geometry {
 
   Node rootnode;                                /// OpenAsset Root
   string mName;                                 /// OpenAsset name
+  aiBB bounds;                                  /// OpenAsset bounding box
   Animation[] animations;                       /// Animations
   uint animation = 0;                           /// Current Animation
   Mesh[string] meshes;                          /// Meshes

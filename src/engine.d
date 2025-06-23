@@ -196,7 +196,6 @@ void enforceSPIRV(App app, spvc_result err){
  */
 extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) {
   import std.stdio : writefln;
-  import std.string : fromStringz;
-  writefln("[INFO] %s", fromStringz(message));
+  writefln("[%s] %s", SDL_GetTicks(), fromStringz(message));
 }
 

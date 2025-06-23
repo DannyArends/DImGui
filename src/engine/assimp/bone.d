@@ -8,8 +8,10 @@ import engine;
 import animation : Node, calculateGlobalTransform;
 import assimp : OpenAsset, name, toMatrix;
 import buffer : createBuffer, StageBuffer;
-import matrix : Matrix, inverse, rotate, scale, position, transpose;
+import mesh : aiBB;
+import matrix : Matrix, multiply, inverse, rotate, scale, position, transpose, translate;
 import sdl : STARTUP;
+import vector : negate, x,y,z;
 
 struct Bone {
   Matrix offset;          /// Inverse bind pose matrix
@@ -38,22 +40,45 @@ float[uint][string] loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] gl
   return(weights);
 }
 
+double calculateCurrentTick(ulong t, double tps, double dur) {
+  return fmod((t / 1000.0f) * tps, dur);
+}
+
+Matrix computeSceneAdjustment(Geometry obj){
+  float[3] minP = [obj.bounds.min[0], obj.bounds.min[1], obj.bounds.min[2]];
+  float[3] maxP = [obj.bounds.max[0], obj.bounds.max[1], obj.bounds.max[2]];
+  float[3] center = (minP[] + maxP[]) / 2.0f;
+  center[] = -center[];
+  float[3] size = maxP[] - minP[];
+  float maxDim = fmax(size.x, fmax(size.y, size.z));
+  float scaleFactor = (maxDim > 0) ? 4.0f / maxDim : 4.0f; // Scale to unit cube
+
+  Matrix translateToOrigin = translate(Matrix(), center);
+  Matrix scaleToFit = scale(Matrix(), [scaleFactor, scaleFactor, scaleFactor]);
+  Matrix sceneAdjustmentMatrix = scaleToFit.multiply(translateToOrigin);
+  /*if(obj.mName == "Spider"){
+    SDL_Log(toStringz(format("bounds: %s", obj.bounds)));
+    SDL_Log(toStringz(format("center: %s", center)));
+    SDL_Log(toStringz(format("translateToOrigin: %s", translateToOrigin)));
+    SDL_Log(toStringz(format("scaleToFit: %s",scaleToFit)));
+    SDL_Log(toStringz(format("sceneAdjustmentMatrix: %s",sceneAdjustmentMatrix)));
+  }*/
+  return(scaleToFit);
+}
+
 Matrix[] getBoneOffsets(App app) {
-  auto t = SDL_GetTicks() - app.time[STARTUP];
+  ulong t = SDL_GetTicks() - app.time[STARTUP];
 
   Matrix[] boneOffsets;
   boneOffsets.length = app.bones.length;
-  foreach(obj; app.objects){
+  foreach(ref obj; app.objects){
     if(obj.animations.length > 0) {
-
-      double timeInTicks = (t / 10000.0f) * obj.animations[obj.animation].ticksPerSecond;
-      double currentTick = fmod(timeInTicks, obj.animations[obj.animation].duration / obj.animations[obj.animation].ticksPerSecond);
-
-      Matrix root;
-      app.calculateGlobalTransform(obj, boneOffsets, obj.rootnode, root, currentTick);
+      double cT = calculateCurrentTick(t, obj.animations[obj.animation].ticksPerSecond, obj.animations[obj.animation].duration);
+      Matrix root = obj.computeSceneAdjustment();
+      app.calculateGlobalTransform(obj, boneOffsets, obj.rootnode, root, cT);
     }
   }
-  //SDL_Log("Computed: %d offsets", nOffsets);
+
   return(boneOffsets);
 }
 
