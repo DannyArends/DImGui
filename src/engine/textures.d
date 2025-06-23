@@ -5,8 +5,6 @@
 
 import engine;
 
-import core.stdc.string : strstr;
-
 import io : dir;
 import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;

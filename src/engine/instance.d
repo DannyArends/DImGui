@@ -4,7 +4,8 @@
  */
 
 import engine;
-import extensions;
+
+import extensions : loadInstanceExtensions, queryInstanceLayerProperties, queryInstanceExtensionProperties, has;
 
 /** Load instance extensions and create the Vulkan instance
  */

@@ -12,7 +12,6 @@ import boundingbox : computeBoundingBox;
 import geometry : draw;
 import shaders : Shader;
 
-
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
  */
 void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {

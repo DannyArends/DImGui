@@ -4,13 +4,11 @@
  */
 
 import engine;
-import std.algorithm : min;
-import io : isfile, readFile, writeFile;
-import std.path : baseName;
 
-import geometry : Geometry, position, scale, rotate;
-import lights : Light;
 import devices : getMSAASamples;
+import geometry : Geometry, position, scale, rotate;
+import io : isfile, readFile, writeFile;
+import lights : Light;
 import sfx : play;
 
 /** Main GUI structure
