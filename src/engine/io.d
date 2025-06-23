@@ -5,11 +5,6 @@
 
 import engine;
 
-import std.algorithm : map, filter;
-import std.stdio : File;
-import std.path : globMatch;
-import std.file : exists, isFile, dirEntries, SpanMode;
-
 size_t fread(SDL_RWops* fp, void* buffer, size_t n, size_t size) { return(SDL_RWread(fp, buffer, n, size)); }
 size_t fwrite(SDL_RWops* fp, void* buffer, size_t n, size_t size) { return(SDL_RWwrite(fp, buffer, n, size)); }
 ulong tell(SDL_RWops* fp){ return(SDL_RWtell(fp)); }
@@ -60,8 +55,6 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   if(writeTotal != content.length) SDL_Log("[ERROR] write %db, expected %db\n", writeTotal, content.length);
   if(verbose) SDL_Log("writeFile: wrote %d bytes\n", writeTotal);
 }
-
-
 
 version(Android) { 
   // SDL does not provide the ability to scan folders, and on android we need to use the jni

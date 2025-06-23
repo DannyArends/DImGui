@@ -4,17 +4,23 @@
  */
 
 public import includes;
-public import core.stdc.string : strcmp, memcpy;
-public import std.algorithm : map, sort, swap;
+
+public import core.memory : GC;
+public import core.stdc.string : strcmp, memcpy, strstr;
+public import core.time : MonoTime;
+
+public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
 public import std.array : array, split;
 public import std.conv : to;
 public import std.format : format;
-public import std.math : abs, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2;
-public import std.path : baseName, stripExtension, extension;
+public import std.file : exists, isFile, dirEntries, SpanMode;
+public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2;
+public import std.path : baseName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform;
 public import std.regex : regex, matchAll;
 public import std.string : toStringz, fromStringz, lastIndexOf, startsWith, strip, chomp, splitLines;
 public import std.traits : EnumMembers;
+public import std.utf : isValidDchar;
 
 import animation : Animation;
 import bone : Bone;

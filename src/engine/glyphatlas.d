@@ -5,9 +5,6 @@
 
 import engine;
 
-import std.datetime : MonoTime;
-import std.utf : isValidDchar;
-
 import glyph: Glyph;
 import textures : Texture, deAllocate, toRGBA, toGPU;
 import images : createImage, imageSize;

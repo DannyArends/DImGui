@@ -5,9 +5,6 @@
 
 import engine;
 
-import std.algorithm : sort;
-import std.traits : EnumMembers;
-
 import compute: createComputeCommandBuffers, createComputePipeline;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptors;

@@ -2,8 +2,6 @@
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
-import std.math : ceil;
-import core.time : MonoTime;
 
 import engine;
 
@@ -21,6 +19,7 @@ import sync : insertWriteBarrier, insertReadBarrier;
 import textures : Texture, idx, registerTexture;
 import uniforms : ParticleUniformBuffer, UBO;
 import quaternion : xyzw;
+
 /** Compute structure with shaders, command buffer and pipelines
  */
 struct Compute {

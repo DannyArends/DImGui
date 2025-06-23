@@ -4,8 +4,6 @@
  */
 
 import engine;
-import core.memory : GC;
-import std.algorithm : remove, reverse;
 
 import boundingbox : computeBoundingBox;
 import commands : recordRenderCommandBuffer;

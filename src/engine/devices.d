@@ -4,7 +4,8 @@
  */
 
 import engine;
-import extensions;
+
+import extensions : queryDeviceExtensionProperties, has;
 
 // Creates a physicalDevice & associated Queue
 void pickPhysicalDevice(ref App app, uint device = 0){

@@ -5,10 +5,6 @@
 
 import engine;
 
-import core.time : MonoTime;
-import std.random : uniform;
-import std.conv : to;
-
 import descriptor : Descriptor;
 import buffer : createBuffer;
 import matrix : mat4, rotate, lookAt, perspective;

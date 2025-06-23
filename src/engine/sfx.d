@@ -5,7 +5,6 @@
 
 import engine;
 
-import std.conv : to;
 import io : dir;
 
 /** WAV format for sound effects
