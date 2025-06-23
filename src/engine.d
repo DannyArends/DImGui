@@ -10,6 +10,7 @@ public import std.array : array, split;
 public import std.conv : to;
 public import std.format : format;
 public import std.path : baseName, stripExtension, extension;
+public import std.random : uniform;
 public import std.string : toStringz, fromStringz, lastIndexOf, startsWith, strip, chomp, splitLines;
 public import std.traits : EnumMembers;
 
