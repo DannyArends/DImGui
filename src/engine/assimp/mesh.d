@@ -47,10 +47,11 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, ref Bone[string]
   auto weights = asset.loadBones(mesh, globalBones);
   for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {
     size_t gIdx = vIdx + vertOff;
-    asset.vertices ~= Vertex([mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z]);
+    float[3] position = [mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z];
+    asset.vertices ~= Vertex(position);
     bounds.update(asset.vertices[$-1]);
     if (mesh.mNormals) {
-      asset.vertices[gIdx].normal = [mesh.mNormals[vIdx].x, -mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z];
+      asset.vertices[gIdx].normal = [mesh.mNormals[vIdx].x, mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z];
     }
     if (mesh.mTextureCoords[texInfo.channel]) {
       asset.vertices[gIdx].texCoord = [mesh.mTextureCoords[texInfo.channel][vIdx].x, mesh.mTextureCoords[texInfo.channel][vIdx].y];

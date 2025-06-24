@@ -5,6 +5,7 @@
 
 import engine;
 
+import assimp : MetaData;
 import bone : Bone;
 import mesh : Mesh, aiBB;
 import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
@@ -40,6 +41,7 @@ class Geometry {
 
   Node rootnode;                                /// OpenAsset Root
   string mName;                                 /// OpenAsset name
+  MetaData mData;                               /// OpenAsset metaData
   aiBB bounds;                                  /// OpenAsset bounding box
   Animation[] animations;                       /// Animations
   uint animation = 0;                           /// Current Animation

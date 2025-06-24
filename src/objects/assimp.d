@@ -26,6 +26,13 @@ class OpenAsset : Geometry {
   }
 }
 
+struct MetaData {
+  int[4] upAxis;
+  int[2] frontAxis;
+  int[2] coordAxis;
+  double scalefactor;
+}
+
 /** Load an OpenAsset 
  */
 OpenAsset loadOpenAsset(ref App app, const(char)* path) {
@@ -40,6 +47,25 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
     SDL_Log("Error loading model '%s': %s", path, aiGetErrorString());
     return object;
   }
+
+  aiMetadata* mData = scene.mMetaData;
+  for (uint i = 0; i < mData.mNumProperties; ++i) {
+    auto key = name(mData.mKeys[i]);
+    if (key == "UpAxis") { object.mData.upAxis[0] = *cast(int*)(mData.mValues[i].mData); }
+    if (key == "UpAxisSign") { object.mData.upAxis[1] = *cast(int*)(mData.mValues[i].mData); }
+    if (key == "OriginalUpAxis") { object.mData.upAxis[2] = *cast(int*)(mData.mValues[i].mData); }
+    if (key == "OriginalUpAxisSign") { object.mData.upAxis[3] = *cast(int*)(mData.mValues[i].mData); }
+    if (key == "FrontAxis") { object.mData.frontAxis[0] = *cast(int*)(mData.mValues[i].mData); }
+    if (key == "FrontAxisSign") { object.mData.frontAxis[1] = *cast(int*)(mData.mValues[i].mData); }
+    if (key == "CoordAxis") { object.mData.coordAxis[0] = *cast(int*)(mData.mValues[i].mData); }
+    if (key == "CoordAxisSign") { object.mData.coordAxis[1] = *cast(int*)(mData.mValues[i].mData); }
+    if (key == "UnitScaleFactor") { object.mData.scalefactor = *cast(float*)(mData.mValues[i].mData); }
+  }
+  SDL_Log(toStringz(format("UP: %s", object.mData.upAxis)));
+  SDL_Log(toStringz(format("Front: %s", object.mData.frontAxis)));
+  SDL_Log(toStringz(format("Coord: %s", object.mData.coordAxis)));
+  SDL_Log(toStringz(format("Scale: %s", object.mData.scalefactor)));
+
   object.mName = stripExtension(baseName(to!string(path)));
 
   SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));
