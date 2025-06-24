@@ -110,10 +110,10 @@ Animation[] loadAnimations(ref App app, OpenAsset asset, aiScene* scene) {
       anim.duration = aiAnim.mDuration;
       anim.ticksPerSecond = aiAnim.mTicksPerSecond != 0 ? aiAnim.mTicksPerSecond : 25.0; // Default to 25 if 0
 
-      //if (app.verbose) {
+      if (app.verbose) {
         SDL_Log("  Animation %u: %s (Duration: %.2f ticks, Ticks/Sec: %.2f)", i, toStringz(anim.name), anim.duration, anim.ticksPerSecond);
         SDL_Log("  %u animation channels", aiAnim.mNumChannels);
-      //}
+      }
 
       for (uint j = 0; j < aiAnim.mNumChannels; j++) {
         auto aiNodeAnim = aiAnim.mChannels[j];

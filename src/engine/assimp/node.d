@@ -20,7 +20,7 @@ struct Node {
 
 Node loadNode(ref App app, ref OpenAsset asset, aiNode* node, aiScene* scene, ref Bone[string] bones, uint lvl = 0) {
   Node n = Node(format("%s:%s", asset.mName, name(node.mName)), lvl, toMatrix(node.mTransformation));
-  SDL_Log(toStringz(format("%s.nodeTransform: %s", n.name, n.transform)));
+  //SDL_Log(toStringz(format("%s.nodeTransform: %s", n.name, n.transform)));
 
   for (uint i = 0; i < node.mNumMeshes; i++){
     aiMesh* mesh = scene.mMeshes[node.mMeshes[i]];
