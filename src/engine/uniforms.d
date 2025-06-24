@@ -53,10 +53,14 @@ void createUBO(ref App app, Descriptor descriptor) {
 }
 
 void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
-  auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000f;
-  app.lights[1].direction[0] = sin(t);
-  app.lights[2].direction[0] = cos(t);
-  app.lights[3].direction[0] = tan(t);
+  if (app.disco) {
+    auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000f;
+    app.lights[1].direction[0] = sin(2 * t);
+    app.lights[1].direction[2] = tan(2 * t);
+    app.lights[2].direction[0] = cos(2 * t);
+    app.lights[2].direction[2] = atan(2 * t);
+    app.lights[3].direction[0] = tan(t);
+  }
   UniformBufferObject ubo = {
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,

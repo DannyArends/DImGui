@@ -143,6 +143,7 @@ struct App {
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showRays = false;                                                        /// Show rays
   uint verbose = 0;                                                             /// Be very verbose
+  bool disco = false;                                                             /// Be very verbose
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isMinimized = false;                                                     /// isMinimized?
 

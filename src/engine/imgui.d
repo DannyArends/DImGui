@@ -402,6 +402,10 @@ void showShaderwindow(ref App app, bool* show, uint font = 0) {
 void showLightswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
   if(igBegin("Lights", show, 0)){
+    igTableNextColumn();
+    igText("Disco", ImVec2(0.0f, 0.0f)); igSameLine(0,5);
+    igCheckbox("##disco", &app.disco);
+
     igBeginTable("Lights_Tbl", 2,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, ref Light light; app.lights) {
       igPushID_Int(to!int(i));
