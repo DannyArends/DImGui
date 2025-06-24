@@ -101,7 +101,7 @@ Android Studio will pick up the compiled library and include it inside the APK.
   mkdir build
   cd build
   cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_TOOLCHAIN_FILE=C:/Users/Danny/AppData/Local/Android/Sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake \
+        -DCMAKE_TOOLCHAIN_FILE=/home/rqdt9/Android/Sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake \
         -DANDROID_PLATFORM=24 \
         -DANDROID_ABI=arm64-v8a \
         -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF \
