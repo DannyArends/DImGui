@@ -31,7 +31,7 @@ The following folders are interesting, if you're interested in how the repositor
 
 Some noteworthy files:
 
-- [dub.json](./dub.json) contains the D language dependancies, and build instructions
+- [dub.json](./dub.json) contains the D language dependencies, and build instructions
 - [src/main.d](./src/main.d) contains the main entry function, and SDL event loop
 - [src/scene.d](./src/scene.d) contains the code that sets up the example scene
 - [src/includes.c](./src/includes.c) contains the importC instructions
