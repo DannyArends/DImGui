@@ -10,6 +10,7 @@ import bone : Bone, loadBones;
 import matrix : Matrix, inverse, transpose;
 import node : Node, loadNode;
 import mesh : Mesh;
+import meta : loadMetaData;
 import io : readFile;
 import material : loadMaterials;
 import geometry : Instance, Geometry, scale, rotate;
@@ -24,13 +25,6 @@ class OpenAsset : Geometry {
     instances = [Instance()];
     name = (){ return(typeof(this).stringof); };
   }
-}
-
-struct MetaData {
-  int[4] upAxis;
-  int[2] frontAxis;
-  int[2] coordAxis;
-  double scalefactor;
 }
 
 /** Load an OpenAsset 
@@ -48,46 +42,19 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
     return object;
   }
 
-  aiMetadata* mData = scene.mMetaData;
-  for (uint i = 0; i < mData.mNumProperties; ++i) {
-    auto key = name(mData.mKeys[i]);
-    if (key == "UpAxis") { object.mData.upAxis[0] = *cast(int*)(mData.mValues[i].mData); }
-    if (key == "UpAxisSign") { object.mData.upAxis[1] = *cast(int*)(mData.mValues[i].mData); }
-    if (key == "OriginalUpAxis") { object.mData.upAxis[2] = *cast(int*)(mData.mValues[i].mData); }
-    if (key == "OriginalUpAxisSign") { object.mData.upAxis[3] = *cast(int*)(mData.mValues[i].mData); }
-    if (key == "FrontAxis") { object.mData.frontAxis[0] = *cast(int*)(mData.mValues[i].mData); }
-    if (key == "FrontAxisSign") { object.mData.frontAxis[1] = *cast(int*)(mData.mValues[i].mData); }
-    if (key == "CoordAxis") { object.mData.coordAxis[0] = *cast(int*)(mData.mValues[i].mData); }
-    if (key == "CoordAxisSign") { object.mData.coordAxis[1] = *cast(int*)(mData.mValues[i].mData); }
-    if (key == "UnitScaleFactor") { object.mData.scalefactor = *cast(float*)(mData.mValues[i].mData); }
-  }
-  SDL_Log(toStringz(format("UP: %s", object.mData.upAxis)));
-  SDL_Log(toStringz(format("Front: %s", object.mData.frontAxis)));
-  SDL_Log(toStringz(format("Coord: %s", object.mData.coordAxis)));
-  SDL_Log(toStringz(format("Scale: %s", object.mData.scalefactor)));
-
   object.mName = stripExtension(baseName(to!string(path)));
+  object.mData = app.loadMetaData(scene);
+  object.materials = app.loadMaterials(path, scene);
+  object.rootnode = app.loadNode(object, scene, scene.mRootNode);
+  object.animations = app.loadAnimations(object, scene);
 
   SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));
-  SDL_Log("%u meshes, %u materials, %u animations", scene.mNumMeshes, scene.mNumMaterials, scene.mNumAnimations);
-  object.materials = app.loadMaterials(path, scene);
-  object.rootnode = app.loadNode(object, scene.mRootNode, scene, app.bones);
-  object.animations = app.loadAnimations(object, scene);
-  SDL_Log("%u vertices, %u indices loaded", object.vertices.length, object.indices.length);
+  if (app.verbose) {
+    SDL_Log("%u meshes, %u materials, %u animations", scene.mNumMeshes, scene.mNumMaterials, scene.mNumAnimations);
+    SDL_Log("%u vertices, %u indices loaded", object.vertices.length, object.indices.length);
+  }
   aiReleaseImport(scene);
   return object;
-}
-
-/** Convert from row-based aiMatrix to our column-based Matrix type
- */
-Matrix toMatrix(aiMatrix4x4 m){
-  float[16] myMatrixArray = [
-    m.a1, m.b1, m.c1, m.d1,
-    m.a2, m.b2, m.c2, m.d2,
-    m.a3, m.b3, m.c3, m.d3,
-    m.a4, m.b4, m.c4, m.d4
-  ];
-  return(Matrix(myMatrixArray));
 }
 
 /** Get the name from a char[256]

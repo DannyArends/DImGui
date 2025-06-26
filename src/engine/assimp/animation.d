@@ -6,6 +6,7 @@
 import engine;
 
 import bone : Bone;
+import bounds : update;
 import node : Node;
 import geometry : Geometry;
 import assimp : OpenAsset, name;
@@ -41,37 +42,7 @@ struct Animation {
     NodeAnimation[string] nodeAnimations;
 }
 
-void update(ref Geometry obj, string[] mNames, Matrix gTransform) {
-  foreach (mName; mNames){   //node.meshes) {
-    auto mesh = obj.meshes[mName];
-
-    float[3] localMin = mesh.bounds.min;
-    float[3] localMax = mesh.bounds.max;
-
-    float[3][8] corners = [
-      localMin,
-      [localMax.x, localMin.y, localMin.z],
-      [localMin.x, localMax.y, localMin.z],
-      [localMin.x, localMin.y, localMax.z],
-      [localMax.x, localMax.y, localMin.z],
-      [localMax.x, localMin.y, localMax.z],
-      [localMin.x, localMax.y, localMax.z],
-      localMax
-    ];
-
-    foreach (corner; corners) {
-        float[3] transformedCorner = gTransform.multiply(corner);
-
-        obj.bounds.min[0] = fmin(obj.bounds.min[0], transformedCorner.x);
-        obj.bounds.min[1] = fmin(obj.bounds.min[1], transformedCorner.y);
-        obj.bounds.min[2] = fmin(obj.bounds.min[2], transformedCorner.z);
-
-        obj.bounds.max[0] = fmax(obj.bounds.max[0], transformedCorner.x);
-        obj.bounds.max[1] = fmax(obj.bounds.max[1], transformedCorner.y);
-        obj.bounds.max[2] = fmax(obj.bounds.max[2], transformedCorner.z);
-    }
-  }
-}
+double calculateCurrentTick(ulong t, double tps, double dur) { return fmod((t / 1000.0f) * tps, dur); }
 
 void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, Node node, Matrix globalTransform, double animationTime){
   Animation animation = obj.animations[obj.animation];
@@ -89,7 +60,7 @@ void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, N
 
   Matrix globalOffset = globalTransform.multiply(localTransform);
 
-  obj.update(node.meshes, globalOffset); // Update the aiBB
+  obj.update(node.meshes, globalOffset); // Update the bounding boxes
 
   if (node.name in app.bones) {
     offsets[app.bones[node.name].index] = globalOffset.multiply(app.bones[node.name].offset);

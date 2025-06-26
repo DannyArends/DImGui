@@ -20,6 +20,18 @@ struct Matrix {
 
 alias Matrix mat4;
 
+/** Convert from row-based aiMatrix to our column-based Matrix type
+ */
+Matrix toMatrix(aiMatrix4x4 m){
+  float[16] myMatrixArray = [
+    m.a1, m.b1, m.c1, m.d1,
+    m.a2, m.b2, m.c2, m.d2,
+    m.a3, m.b3, m.c3, m.d3,
+    m.a4, m.b4, m.c4, m.d4
+  ];
+  return(Matrix(myMatrixArray));
+}
+
 /** Radian to degree, -180 .. 0 .. 180 */
 @nogc pure float degree(float rad) nothrow { return rad * (180.0f / PI); }
 

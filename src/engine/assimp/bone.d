@@ -5,11 +5,11 @@
 
 import engine;
 
-import animation : Node, calculateGlobalTransform;
-import assimp : OpenAsset, name, toMatrix;
+import animation : Node, calculateGlobalTransform, calculateCurrentTick;
+import assimp : OpenAsset, name;
 import buffer : createBuffer, StageBuffer;
-import mesh : aiBB;
-import matrix : Matrix, multiply, inverse, rotate, scale, position, transpose, translate;
+import bounds : Bounds;
+import matrix : Matrix, toMatrix, multiply, inverse, rotate, scale, position, transpose, translate;
 import sdl : STARTUP;
 import vector : negate, x,y,z;
 
@@ -20,8 +20,10 @@ struct Bone {
   @property float[3] bindPosition() { return offset.inverse().position(); }
 }
 
-float[uint][string] loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones) {
-  float[uint][string] weights;
+alias float[uint][string] BoneWeights;
+
+BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones) {
+  BoneWeights weights;
   for (uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
     if (aiBone.mNumWeights == 0) continue; // No weights, no effect, skip
@@ -38,10 +40,6 @@ float[uint][string] loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] gl
     }
   }
   return(weights);
-}
-
-double calculateCurrentTick(ulong t, double tps, double dur) {
-  return fmod((t / 1000.0f) * tps, dur);
 }
 
 Matrix computeSceneAdjustment(Geometry obj){
@@ -63,7 +61,7 @@ Matrix computeSceneAdjustment(Geometry obj){
     SDL_Log(toStringz(format("scaleToFit: %s",scaleToFit)));
     SDL_Log(toStringz(format("sceneAdjustmentMatrix: %s",sceneAdjustmentMatrix)));
   }*/
-  return(scaleToFit);
+  return(sceneAdjustmentMatrix);
 }
 
 Matrix[] getBoneOffsets(App app) {
