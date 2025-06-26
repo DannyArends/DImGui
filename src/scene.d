@@ -105,17 +105,16 @@ void createScene(ref App app){
   SDL_Log("createScene: Add Spider OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
   app.objects[($-1)].animation = 11;
-  app.objects[($-1)].position([1.0f, -4.5f, -1.0f]);
+  app.objects[($-1)].position([1.0f, -4.0f, -1.0f]);
 
   SDL_Log("createScene: Add Wolf OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Wolf.fbx");
   app.objects[($-1)].animation = 2;
-  app.objects[($-1)].position([1.0f, -0.5f, 2.5f]);
+  app.objects[($-1)].position([1.0f, 1.0f, 2.5f]);
 
-
-  SDL_Log("createScene: Add AlienAnimal OpenAsset");
+  SDL_Log("createScene: Add Sea Turtle OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Green_Sea_Turtle.fbx");
-  app.objects[($-1)].position([4.5f, -0.75f, -3.5f]);
+  app.objects[($-1)].position([4.5f, 0.0f, -3.5f]);
   app.objects[($-1)].animation = 0;
 
   if (app.compute.enabled) {
