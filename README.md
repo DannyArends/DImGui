@@ -1,11 +1,17 @@
 ## DImGui
 ![Screenshot](/app/src/main/assets/data/screenshots/example.png? "Screenshot")
-Another SDL2 + Vulkan + ImGui renderer in the D Programming Language. However, this one will work on Windows, Linux, and even Android. The current 'engine' is based on the excellent vulkan-tutorial.com, and uses SDL2 for cross-platform support. This repository includes the SDL DLLs for x64 MS Windows, and is in itself a minimal SDL2 android_project. There are a lot of requirements to build the example (SDL, Vulkan, Android Studio, Android NDK). The software has been tested under x64 (Windows and Linux) and on arm64-v8a (Android 10).
+
+Another SDL2 + Vulkan + ImGui renderer in the D Programming Language. However, this one will work on
+Windows, Linux, and Android. The current 'engine' is based on the excellent vulkan-tutorial.com, 
+and uses SDL2 for cross-platform support. This repository includes the SDL DLLs for x64 MS Windows, 
+and is in itself a minimal SDL2 android_project. There are a lot of requirements to build the 
+example (SDL, Vulkan, Android Studio, Android NDK). The software has been tested under x64 (Windows 
+and Linux) and on arm64-v8a (Android 10).
 
 ### (Cross-)Compilation
 
-For building DImGui on MS Windows and/or Linux, see the instruction in [compilation.md](./docs/compilation.md). Instructions 
-on how to cross-compile for Android using Linux, see: [cross-compilation.md](./docs/cross-compilation.md)
+For building DImGui on MS Windows and/or Linux, see the instruction in [compilation.md](./docs/compilation.md). 
+Instructions on how to cross-compile for Android using Linux, see: [cross-compilation.md](./docs/cross-compilation.md)
 
 ### Features
 The engine has the following features:
@@ -26,8 +32,8 @@ The following folders are interesting, if you're interested in how the repositor
 - [src/engine](./src/engine/) main folder for the engine objects
 - [src/math](./src/math/) math functions for vectors, matrices, particles, and the L-system
 - [src/objects](./src/objects) All geometric (renderable) objects are in here
-- [assets/](./app/src/main/assets/data/) All assets of the engine (font, objects, shaders, and textures)
-- [deps/](./deps/) CImGui source code as well as Windows 64bit runtime SDL2 DLLs for image, mixer, and ttf
+- [assets/](./app/src/main/assets/data/) Assets used (fonts, objects, shaders, and textures)
+- [deps/](./deps/) Dependencies and Windows 64bit runtime SDL2 DLLs for image, mixer, and ttf
 
 Some noteworthy files:
 
@@ -46,4 +52,5 @@ Or be a maintainer, and adopt (the documentation of) a function.
 
 ### License
 
-Written by Danny Arends and is released under the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3). See [LICENSE.txt](./LICENSE.txt).
+Written by Danny Arends and is released under the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3). 
+See [LICENSE.txt](./LICENSE.txt).
