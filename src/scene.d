@@ -22,7 +22,6 @@ import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 /** Create a scene for rendering
  */
 void createScene(ref App app){
-
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
   app.objects[($-1)].position([0.0f, -1.0f,0.0f]);
@@ -65,12 +64,13 @@ void createScene(ref App app){
   app.objects ~= app.loadOpenAsset("data/objects/viking_room.obj");
   app.objects[($-1)].texture(app.textures, "viking");
   app.objects[($-1)].rotate([180.0f, 0.0f, 90.0f]);
+  app.objects[($-1)].scale([0.5f, 0.5f, 0.5f]);
   app.objects[($-1)].position([3.0f,-0.5f, 1.0f]);
 
   SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
   app.objects[($-1)].computeNormals();
-  app.objects[($-1)].position([2.0f, 1.0f, -2.0f]);
+  app.objects[($-1)].position([0.5f, 2.5f, -2.0f]);
 
 
   SDL_Log("createScene: Add PDB object");
@@ -98,23 +98,25 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add cottage OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/cottage_fbx.fbx");
-  app.objects[($-1)].scale([1.0f, 0.5f, 1.0f]);
-  app.objects[($-1)].rotate([180.0f, 0.0f, 90.0f]);
-  app.objects[($-1)].position([4.75f, 0.0f, -0.75f]);
+  app.objects[($-1)].rotate([270.0f, 0.0f, 0.0f]);
+  app.objects[($-1)].position([5.5f, -1.0f, -5.75f]);
 
   SDL_Log("createScene: Add Spider OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
   app.objects[($-1)].animation = 11;
-  app.objects[($-1)].position([1.0f, -4.0f, -1.0f]);
+  app.objects[($-1)].position([1.0f, -1.0f, -1.0f]);
+  app.objects[($-1)].scale([0.25f, 0.25f, 0.25f]);
+  app.objects[($-1)].rotate([90.0f, 0.0f, 0.0f]);
 
   SDL_Log("createScene: Add Wolf OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Wolf.fbx");
   app.objects[($-1)].animation = 2;
-  app.objects[($-1)].position([1.0f, 1.0f, 2.5f]);
+  app.objects[($-1)].position([1.0f, -1.0f, 2.5f]);
 
   SDL_Log("createScene: Add Sea Turtle OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Green_Sea_Turtle.fbx");
-  app.objects[($-1)].position([4.5f, 0.0f, -3.5f]);
+  app.objects[($-1)].position([3.5f, -0.5f, -4.0f]);
+  app.objects[($-1)].scale([0.5f, 0.5f, 0.5f]);
   app.objects[($-1)].animation = 0;
 
   if (app.compute.enabled) {

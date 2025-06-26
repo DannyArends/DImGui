@@ -22,7 +22,7 @@ struct Bone {
 
 alias float[uint][string] BoneWeights;
 
-BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones) {
+BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones, Matrix pTransform) {
   BoneWeights weights;
   for (uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
@@ -30,7 +30,7 @@ BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBone
     string name = format("%s:%s", asset.mName, name(aiBone.mName));
     if (!(name in globalBones)) { // New bone, add it to the global bones
       globalBones[name] = Bone();
-      globalBones[name].offset = toMatrix(aiBone.mOffsetMatrix);
+      globalBones[name].offset = multiply(toMatrix(aiBone.mOffsetMatrix), pTransform.inverse());
       globalBones[name].index = cast(uint)(globalBones.length-1);
     }
     //SDL_Log(toStringz(format("%s.bone: %d -> %d", name, globalBones[name].index, aiBone.mNumWeights)));
@@ -42,41 +42,17 @@ BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBone
   return(weights);
 }
 
-Matrix computeSceneAdjustment(Geometry obj){
-  float[3] minP = [obj.bounds.min[0], obj.bounds.min[1], obj.bounds.min[2]];
-  float[3] maxP = [obj.bounds.max[0], obj.bounds.max[1], obj.bounds.max[2]];
-  float[3] center = (minP[] + maxP[]) / 2.0f;
-  center[] = -center[];
-  float[3] size = maxP[] - minP[];
-  float maxDim = fmax(size.x, fmax(size.y, size.z));
-  float scaleFactor = (maxDim > 0) ? 4.0f / maxDim : 4.0f; // Scale to unit cube
-
-  Matrix translateToOrigin = translate(Matrix(), center);
-  Matrix scaleToFit = scale(Matrix(), [scaleFactor, scaleFactor, scaleFactor]);
-  Matrix sceneAdjustmentMatrix = scaleToFit.multiply(translateToOrigin);
-  /*if(obj.mName == "Spider"){
-    SDL_Log(toStringz(format("bounds: %s", obj.bounds)));
-    SDL_Log(toStringz(format("center: %s", center)));
-    SDL_Log(toStringz(format("translateToOrigin: %s", translateToOrigin)));
-    SDL_Log(toStringz(format("scaleToFit: %s",scaleToFit)));
-    SDL_Log(toStringz(format("sceneAdjustmentMatrix: %s",sceneAdjustmentMatrix)));
-  }*/
-  return(sceneAdjustmentMatrix);
-}
-
 Matrix[] getBoneOffsets(App app) {
   ulong t = SDL_GetTicks() - app.time[STARTUP];
 
   Matrix[] boneOffsets;
   boneOffsets.length = app.bones.length;
-  foreach(ref obj; app.objects){
+  foreach(ref obj; app.objects) {
     if(obj.animations.length > 0) {
       double cT = calculateCurrentTick(t, obj.animations[obj.animation].ticksPerSecond, obj.animations[obj.animation].duration);
-      Matrix root = obj.computeSceneAdjustment();
-      app.calculateGlobalTransform(obj, boneOffsets, obj.rootnode, root, cT);
+      app.calculateGlobalTransform(obj, boneOffsets, obj.rootnode, Matrix(), cT);
     }
   }
-
   return(boneOffsets);
 }
 
