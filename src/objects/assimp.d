@@ -7,7 +7,8 @@ import engine;
 
 import animation : loadAnimations;
 import bone : Bone, loadBones;
-import matrix : Matrix, inverse, transpose;
+import bounds : calculateBounds, computeScaleAdjustment;
+import matrix : Matrix, toMatrix, multiply, inverse, transpose, rotate;
 import node : Node, loadNode;
 import mesh : Mesh;
 import meta : loadMetaData;
@@ -16,6 +17,7 @@ import material : loadMaterials;
 import geometry : Instance, Geometry, scale, rotate;
 import vertex : Vertex;
 import textures : idx;
+import matrix : translate;
 import vector : x, y, z, euclidean;
 
 /** OpenAsset using assimp
@@ -44,9 +46,22 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
 
   object.mName = stripExtension(baseName(to!string(path)));
   object.mData = app.loadMetaData(scene);
+
+  object.bounds.calculateBounds(scene, scene.mRootNode, Matrix());
+  SDL_Log(toStringz(format("BB: %s", object.bounds)));
+
+
   object.materials = app.loadMaterials(path, scene);
-  object.rootnode = app.loadNode(object, scene, scene.mRootNode);
   object.animations = app.loadAnimations(object, scene);
+
+  object.rootnode = app.loadNode(object, scene, scene.mRootNode, Matrix());
+
+  if (object.mName == "Spider") { // The Spider model is broken, it floats above
+     object.rootnode.transform = object.rootnode.transform.translate([0.0f, -775.0f, 0.0f]);
+  }
+
+//  object.rootnode.transform = object.rootnode.transform.translate([0.0f, -775.0f, 0.0f]);
+  object.instances[0] = object.bounds.computeScaleAdjustment();
 
   SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));
   if (app.verbose) {
@@ -64,3 +79,4 @@ string name(T)(T obj) {
   do { ++idx; } while (obj.data[idx] != '\0');
   return(to!string(toStringz(obj.data[0 .. idx] ~ '\0'))); 
 }
+
