@@ -49,8 +49,8 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
 
   object.bounds.calculateBounds(scene, scene.mRootNode, Matrix());
 
-  object.materials = app.loadMaterials(path, scene);
-  object.animations = app.loadAnimations(object, scene);
+  object.materials = app.loadMaterials(scene, path);
+  object.animations = app.loadAnimations(scene, object);
   object.rootnode = app.loadNode(object, scene, scene.mRootNode, Matrix());
 
   if (object.mName == "Spider") { // The Spider model is broken, it floats above

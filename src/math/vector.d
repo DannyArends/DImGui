@@ -80,8 +80,7 @@ struct Vector {
 }
 
 T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
-  T[3] result;
-  result[] = start[] + (end[] - start[]) * factor;
+  T[3] result = start[] + (end[] - start[]) * factor;
   return(result);
 }
 

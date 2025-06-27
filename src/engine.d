@@ -14,7 +14,7 @@ public import std.array : array, split;
 public import std.conv : to;
 public import std.format : format;
 public import std.file : exists, isFile, dirEntries, SpanMode;
-public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2;
+public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2, fmod;
 public import std.path : baseName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform;
 public import std.regex : regex, matchAll;
@@ -140,7 +140,7 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool showBounds = true;                                                       /// Show bounding boxes
+  bool showBounds = false;                                                      /// Show bounding boxes
   bool showRays = false;                                                        /// Show rays
   uint verbose = 0;                                                             /// Be very verbose
   bool disco = false;                                                           /// Disco mode

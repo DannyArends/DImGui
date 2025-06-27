@@ -25,7 +25,7 @@ void update(ref Bounds b, const float[3] v){
   if (v.z > b.max[2]) b.max[2] = v.z;
 }
 
-void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, Matrix pTransform) {
+void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, const Matrix pTransform) {
   Matrix gTransform = pTransform.multiply(toMatrix(node.mTransformation));
   for (uint i = 0; i < node.mNumMeshes; ++i) {
     aiMesh* mesh = scene.mMeshes[node.mMeshes[i]];
@@ -40,7 +40,7 @@ void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, Matrix pTr
   }
 }
 
-Matrix computeScaleAdjustment(Bounds bounds){
+Matrix computeScaleAdjustment(const Bounds bounds){
   float[3] minP = [bounds.min[0], bounds.min[1], bounds.min[2]];
   float[3] maxP = [bounds.max[0], bounds.max[1], bounds.max[2]];
   float[3] size = maxP[] - minP[];

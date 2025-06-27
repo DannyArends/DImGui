@@ -2,19 +2,19 @@
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
+import engine;
 
 import geometry : Instance, Geometry;
 import vector : x,y,z, magnitude, cross;
 import vertex : Vertex;
 import mesh : Mesh;
-import std.math : PI, sin, cos, sqrt;
 
 /** Cone
  * Defines a cone geometry with a specified radius, height, and number of segments for its approximation.
  * The base of the cone is centered at (0,0,0) and the apex is at (0, height, 0).
  */
 class Cone : Geometry {
-  this(float radius = 0.5f, float height = 1.0f, uint numSegments = 32, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
+  this(float radius = 0.5f, float height = 1.0f, uint numSegments = 128, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     if (numSegments < 3) { numSegments = 3; }
     float[3] apex = [0.0f, height, 0.0f];
 

@@ -13,7 +13,7 @@ import std.math : PI, sin, cos;
  * The lowest point of the torus (bottom of the inner curve) is at (0,0,0).
  */
 class Torus : Geometry {
-  this(float[2] radii = [0.1f, 0.4f], uint[2] segments = [16, 32], float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
+  this(float[2] radii = [0.1f, 0.4f], uint[2] segments = [32, 64], float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     if (segments[0] < 3) { segments[0] = 3; }
     if (segments[1] < 3) { segments[1] = 3; }
 

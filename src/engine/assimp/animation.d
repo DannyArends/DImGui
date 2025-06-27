@@ -42,9 +42,9 @@ struct Animation {
     NodeAnimation[string] nodeAnimations;
 }
 
-double calculateCurrentTick(ulong t, double tps, double dur) { return fmod((t / 1000.0f) * tps, dur); }
+@nogc double calculateCurrentTick(ulong t, double tps, double dur) nothrow { return fmod((t / 1000.0f) * tps, dur); }
 
-void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, Node node, Matrix pTransform, double animationTime){
+void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, const Node node, const Matrix pTransform, double animationTime){
   Animation animation = obj.animations[obj.animation];
   Matrix localTransform = node.transform;
 
@@ -68,7 +68,7 @@ void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, N
   }
 }
 
-Animation[] loadAnimations(ref App app, OpenAsset asset, aiScene* scene) {
+Animation[] loadAnimations(ref App app, aiScene* scene, const OpenAsset asset) {
   Animation[] animations;
   if (scene.mNumAnimations > 0) {
     if(app.verbose) SDL_Log("Processing %u animations...", scene.mNumAnimations);
@@ -119,14 +119,14 @@ Animation[] loadAnimations(ref App app, OpenAsset asset, aiScene* scene) {
   return(animations);
 }
 
-size_t findKeyframeIndex(double[] timeKeys, double animationTime) {
+@nogc pure size_t findKeyframeIndex(const double[] timeKeys, double animationTime) nothrow {
   for (size_t i = 0; i < (timeKeys.length - 1); i++) {
     if (animationTime < timeKeys[i + 1]) { return i; }
   }
-  return timeKeys.length - 1;
+  return(timeKeys.length - 1);
 }
 
-float[3] getNodePosition(NodeAnimation anim, double animationTime) {
+pure float[3] getNodePosition(const NodeAnimation anim, double animationTime) nothrow {
   if (anim.positionKeys.length == 1) return(anim.positionKeys[0].value);
 
   size_t i0 = findKeyframeIndex(anim.positionKeys.map!(k => k.time).array, animationTime);
@@ -136,7 +136,7 @@ float[3] getNodePosition(NodeAnimation anim, double animationTime) {
   return(interpolate(anim.positionKeys[i0].value, anim.positionKeys[i1].value, factor));
 }
 
-float[4] getNodeRotation(NodeAnimation anim, double animationTime) {
+pure float[4] getNodeRotation(NodeAnimation anim, double animationTime) nothrow {
   if (anim.rotationKeys.length == 1) return(anim.rotationKeys[0].value);
 
   size_t i0 = findKeyframeIndex(anim.rotationKeys.map!(k => k.time).array, animationTime);
@@ -146,7 +146,7 @@ float[4] getNodeRotation(NodeAnimation anim, double animationTime) {
   return(slerp(anim.rotationKeys[i0].value, anim.rotationKeys[i1].value, factor));
 }
 
-float[3] getNodeScale(NodeAnimation anim, double animationTime) {
+pure float[3] getNodeScale(NodeAnimation anim, double animationTime) nothrow {
   if (anim.scalingKeys.length == 1) return(anim.scalingKeys[0].value);
 
   size_t i0 = findKeyframeIndex(anim.scalingKeys.map!(k => k.time).array, animationTime);

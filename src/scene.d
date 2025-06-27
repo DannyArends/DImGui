@@ -27,35 +27,42 @@ import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
-  app.objects[($-1)].position([0.0f, -1.0f,0.0f]);
+  app.objects[($-1)].position([0.0f, -1.1f,0.0f]);
   for(int x = -75; x < 75; x++) {
     for(int z = -75; z < 75; z++) {
       mat4 instance;  // Add a instances of object 0
-      auto scalefactor = 0.5f;
-      instance = translate(instance, [cast(float) x, -1.0f, cast(float)z]);
+      auto scalefactor = 0.25f;
+      instance = instance.translate([0.0f, -1.0f, 0.0f]);
+      instance = instance.scale([scalefactor, scalefactor, scalefactor]);
+      instance = instance.translate([cast(float) x, 0.0f, cast(float)z]);
       app.objects[($-1)].instances ~= Instance(instance);
     }
   }
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
-  app.objects[($-1)].position([3.0f, 0.0f, 4.0f]);
+  app.objects[($-1)].position([3.0f, 2.5f, 1.0f]);
   app.objects[($-1)].texture(app.textures, "image");
 
   SDL_Log("createScene: Add a Cone");
   app.objects ~= new Cone(color : [1.0f, 0.0f, 0.0f, 1.0f]);
-  app.objects[($-1)].position([3.0f, 0.0f, 5.0f]);
+  app.objects[($-1)].position([3.0f, 2.0f, 2.0f]);
   app.objects[($-1)].texture(app.textures, "image");
   
   SDL_Log("createScene: Add a Cylinder");
   app.objects ~= new Cylinder(color : [0.0f, 1.0f, 0.0f, 1.0f]);
-  app.objects[($-1)].position([3.0f, 0.0f, 6.0f]);
+  app.objects[($-1)].position([3.0f, 1.5f, 3.0f]);
   app.objects[($-1)].texture(app.textures, "image");
 
   SDL_Log("createScene: Add a Torus");
   app.objects ~= new Torus(color : [0.0f, 0.0f, 1.0f, 1.0f]);
-  app.objects[($-1)].position([3.0f, 0.0f, 7.0f]);
+  app.objects[($-1)].position([3.0f, 1.0f, 4.0f]);
   app.objects[($-1)].texture(app.textures, "image");
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
+    auto p = obj.position;
+    obj.rotate([6 * dt, 20 * dt, 14 * dt]);
+    obj.position(p);
+  };
 
   SDL_Log("createScene: Add an Icosahedron");
   app.objects ~= new Icosahedron();
@@ -64,15 +71,16 @@ void createScene(ref App app){
   app.objects[($-1)].scale([3.0f, 3.0f, 3.0f]);
   app.objects[($-1)].position([10.0f, 2.0f, 2.0f]);
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-      auto p = obj.position;
-      obj.rotate([dt, 0.0f, 0.0f]);
-      obj.position(p);
-    };
+    auto p = obj.position;
+    obj.rotate([dt, 0.0f, 0.0f]);
+    obj.position(p);
+  };
 
   SDL_Log("createScene: Add Text");
   app.objects ~= new Text(app);
   app.objects[($-1)].rotate([90.0f, 0.0f, 0.0f]);
-  app.objects[($-1)].position([5.0f, 2.0f, 2.0f]);
+  app.objects[($-1)].position([5.0f, 1.0f, -2.0f]);
+  app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
       obj.rotate([0.0f, 2 * dt, 4 * dt]);
     };
@@ -119,15 +127,18 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add Spider OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
-  app.objects[($-1)].animation = 11;
-  app.objects[($-1)].position([1.0f, -1.0f, -1.0f]);
-  app.objects[($-1)].scale([0.25f, 0.25f, 0.25f]);
-  app.objects[($-1)].rotate([90.0f, 0.0f, 0.0f]);
+  app.objects[($-1)].animation = 14;
+  app.objects[($-1)].position([1.0f, -1.0f, 0.0f]);
+  app.objects[($-1)].scale([0.3f, 0.3f, 0.3f]);
+  app.objects[($-1)].rotate([27.0f, 0.0f, 0.0f]);
 
   SDL_Log("createScene: Add Wolf OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Wolf.fbx");
   app.objects[($-1)].animation = 2;
   app.objects[($-1)].position([1.0f, -1.0f, 2.5f]);
+  app.objects[($-1)].scale([0.75f, 0.75f, 0.75f]);
+  app.objects[($-1)].rotate([-12.0f, 0.0f, 0.0f]);
+
 
   SDL_Log("createScene: Add Sea Turtle OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Green_Sea_Turtle.fbx");

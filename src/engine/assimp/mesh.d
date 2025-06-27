@@ -7,7 +7,6 @@ import engine;
 
 import assimp : OpenAsset, name;
 import bone : Bone, BoneWeights, loadBones;
-import bounds : Bounds, update;
 import material : matchTexture;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean,x,y,z;
@@ -18,29 +17,26 @@ struct Mesh {
   uint material;          /// Mesh material index
 }
 
-string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, Matrix gTransform) {
-  SDL_Log("Processing Mesh (%s)", toStringz(name(mesh.mName)));
+string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform) {
   if (app.verbose) {
-    SDL_Log("  Number of vertices in this mesh: %u\n", mesh.mNumVertices);
-    SDL_Log("  Number of faces in this mesh: %u\n", mesh.mNumFaces);
-    SDL_Log("  Normals: %p, Color: %p, TexCoord: %p\n", mesh.mNormals, mesh.mColors[0], mesh.mTextureCoords[0]);
-    SDL_Log("  Material Index: %u / %u", mesh.mMaterialIndex, asset.materials.length);
-    SDL_Log("  %u Bones", mesh.mNumBones); // New: Log bone count
+    SDL_Log("Mesh: %s", toStringz(name(mesh.mName)));
+    SDL_Log(" - %u vertices, %u faces, %u bones", mesh.mNumVertices, mesh.mNumFaces, mesh.mNumBones);
+    SDL_Log(" - %u / %u material", mesh.mMaterialIndex, asset.materials.length);
   }
   Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(asset.vertices.length) + mesh.mNumVertices], mesh.mMaterialIndex);
 
-  // Load texture information and bone weight
+  // Vertex offset, load texture information,  bone weight, and normal matrix
+  size_t vOff = asset.vertices.length;
   auto texInfo = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
   auto weights = asset.loadBones(mesh, app.bones, gTransform);
+  auto normMatrix = gTransform.inverse().transpose();
 
-  // Load vertices
-  for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {
-    size_t gIdx = (mMesh.vertices[0] + vIdx);
+  for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {  // Load vertex information
+    size_t gIdx = (vOff + vIdx);
     asset.vertices ~= Vertex(gTransform.multiply([mesh.mVertices[vIdx].x, mesh.mVertices[vIdx].y, mesh.mVertices[vIdx].z]));
 
     if (mesh.mNormals) {
-      auto nM = gTransform.inverse().transpose();
-      asset.vertices[gIdx].normal = nM.multiply([mesh.mNormals[vIdx].x, mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z]);
+      asset.vertices[gIdx].normal = normMatrix.multiply([mesh.mNormals[vIdx].x, mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z]);
     }
     if (mesh.mTextureCoords[texInfo.channel]) {
       asset.vertices[gIdx].texCoord = [mesh.mTextureCoords[texInfo.channel][vIdx].x, mesh.mTextureCoords[texInfo.channel][vIdx].y];
@@ -53,11 +49,10 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, Matrix gTransfor
     asset.assignBoneWeight(gIdx, weights, vIdx, app.bones);
   }
 
-  // Load indices
-  for (size_t f = 0; f < mesh.mNumFaces; f++) {
+  for (size_t f = 0; f < mesh.mNumFaces; f++) {  // Load faces to indices
     auto face = &mesh.mFaces[f];
     for (size_t j = 0; j < face.mNumIndices; j++) {
-      asset.indices ~= (mMesh.vertices[0] + face.mIndices[j]);
+      asset.indices ~= cast(uint)(vOff + face.mIndices[j]);
     }
   }
   asset.meshes[name(mesh.mName)] = mMesh;

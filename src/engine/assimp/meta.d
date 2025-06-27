@@ -4,7 +4,8 @@
  */
 
 import engine;
-import assimp : OpenAsset, name;
+
+import assimp : name;
 
 struct MetaData {
   int[4] upAxis;
@@ -13,7 +14,7 @@ struct MetaData {
   double scalefactor;
 }
 
-MetaData loadMetaData(ref App app, aiScene* scene) {
+MetaData loadMetaData(const App app, aiScene* scene) {
   aiMetadata* mData = scene.mMetaData;
   MetaData meta;
   for (uint i = 0; i < mData.mNumProperties; ++i) {
