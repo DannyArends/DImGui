@@ -35,7 +35,7 @@ class Cone : Geometry {
       vertices ~= Vertex(positions[0], [0.0f, 1.0f], color, faceNormal);
       vertices ~= Vertex(positions[1], [1.0f, 1.0f], color, faceNormal);
 
-      indices ~= [vIdx, vIdx + 1, vIdx + 2];
+      indices ~= [vIdx+2, vIdx + 1, vIdx];
     }
     this.computeCap([0.0f, 0.0f, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color);
 
@@ -77,7 +77,7 @@ pure void computeCap(T)(T geometry, float[3] center, float[3] normal, float radi
     geometry.vertices ~= Vertex(center, [0.5f, 0.5f], color, normal);  // V2 relative to vIdx
 
     if (normal.y > 0.0f) {
-      geometry.indices ~= [vIdx+2, vIdx, vIdx+1];
+      geometry.indices ~= [vIdx+1, vIdx, vIdx+2];
     } else {
       geometry.indices ~= [vIdx, vIdx+1, vIdx+2];
     }

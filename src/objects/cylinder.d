@@ -31,7 +31,7 @@ class Cylinder : Geometry {
       vertices ~= Vertex([bottomPositions[1].x, height, bottomPositions[1].z], [1.0f, 1.0f], color, sideFaceNormal);
       vertices ~= Vertex([bottomPositions[0].x, height, bottomPositions[0].z], [0.0f, 1.0f], color, sideFaceNormal);
 
-      indices ~= [vIdx, vIdx + 1, vIdx + 2, vIdx + 2, vIdx + 3, vIdx];
+      indices ~= [vIdx+2, vIdx + 1, vIdx, vIdx, vIdx + 3, vIdx + 2];
     }
     this.computeCap([0.0f, height, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, color);
     this.computeCap([0.0f, 0.0f, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color);
