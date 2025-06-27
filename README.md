@@ -5,18 +5,6 @@ Another 3D renderer developed in the D Programming Language, designed for cross-
 across Windows, Linux, and Android. The core "engine" is inspired by the excellent vulkan-tutorial.com, 
 and leverages SDL2 for robust cross-platform support.
 
-This repository includes the necessary SDL2 DLLs for x64 MS Windows, and is in itself a minimal SDL2 
-android_project for Android Studio. Building the example requires several dependencies, including SDL, 
-Vulkan, ShaderC, SPIRV-Cross, and the Open Asset Import Library. To build the Android version Android 
-Studio and the Android NDK are required. The software has been tested under x64 systems (Windows and 
-Linux) and on arm64-v8a (Android 15).
-
-### (Cross-)Compilation ⚙️
-
-For building on MS Windows and/or Linux, please refer to the detailed instructions in 
-[compilation.md](./docs/compilation.md). If you're cross-compiling for Android arm64-v8a using 
-Linux, you'll find the relevant guide in [cross-compilation.md](./docs/cross-compilation.md).
-
 ### Features 🚀
 
 The engine boasts the following features:
@@ -26,6 +14,18 @@ The engine boasts the following features:
 - Shader reflection for UBOs, SSBOs, and textures
 - Instanced rendering of objects
 - GUI windows for settings, objects, textures, lights, and sounds
+
+### (Cross-)Compilation ⚙️
+
+This repository includes the necessary SDL2 DLLs for x64 MS Windows, and is in itself a minimal SDL2 
+android_project for Android Studio. Building the example requires several dependencies, including SDL, 
+Vulkan, ShaderC, SPIRV-Cross, and the Open Asset Import Library. To build the Android version Android 
+Studio and the Android NDK are required. The software has been tested under x64 systems (Windows and 
+Linux) and on arm64-v8a (Android 15).
+
+For building on MS Windows and/or Linux, please refer to the detailed instructions in 
+[compilation.md](./docs/compilation.md). If you're cross-compiling for Android arm64-v8a using 
+Linux, you'll find the relevant guide in [cross-compilation.md](./docs/cross-compilation.md).
 
 ### Build with 🛠️
 
