@@ -91,7 +91,7 @@ void createScene(ref App app){
   app.objects[($-1)].texture(app.textures, "viking");
   app.objects[($-1)].rotate([180.0f, 0.0f, 90.0f]);
   app.objects[($-1)].scale([0.5f, 0.5f, 0.5f]);
-  app.objects[($-1)].position([3.0f,-0.5f, 1.0f]);
+  app.objects[($-1)].position([3.5f,-0.5f, 1.0f]);
 
   SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
@@ -140,12 +140,12 @@ void createScene(ref App app){
   app.objects[($-1)].scale([0.75f, 0.75f, 0.75f]);
   app.objects[($-1)].rotate([-12.0f, 0.0f, 0.0f]);
 
-
+  /*
   SDL_Log("createScene: Add Sea Turtle OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Green_Sea_Turtle.fbx");
   app.objects[($-1)].position([3.5f, 1.0f, -4.0f]);
   app.objects[($-1)].scale([0.5f, 0.5f, 0.5f]);
-  app.objects[($-1)].animation = 0;
+  app.objects[($-1)].animation = 0; */
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");

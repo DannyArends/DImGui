@@ -40,12 +40,14 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
     app.camera.move(app.camera.forward());
   }
   if(event.type == SDL_FINGERMOTION) {
-    SDL_Log("TouchMotion: %f %f [%f %f] by %.1f [%d]\n", e.x, e.y, e.dx * app.camera.width, e.dy * app.camera.height, e.pressure, e.fingerId);
-    if(e.fingerId == 0) app.camera.drag(e.dx * app.camera.width, e.dy * 0.5 * app.camera.height);
+    if(app.verbose){
+      SDL_Log("TouchMotion: %f %f [%f %f] by %.1f [%d]\n", e.x, e.y, e.dx * app.camera.width, e.dy * app.camera.height, e.pressure, e.fingerId);
+    }
     if(e.fingerId == 1) {
-      if (e.dy > 0 && app.camera.distance  >=  1.0f) app.camera.distance -= 0.4f;
-      if (e.dy < 0 && app.camera.distance  <= 30.0f) app.camera.distance += 0.4f;
-      app.camera.move([ 0.0f,  0.0f,  0.0f]);
+      if (e.dy > 0 && app.camera.distance  <= 30.0f) app.camera.distance += 0.2f;
+      if (e.dy < 0 && app.camera.distance  >= 2.0f) app.camera.distance -= 0.2f;
+    }else{
+      if(e.fingerId == 0) app.camera.drag(-e.dx * 0.5 * app.camera.width, e.dy * 0.25 * app.camera.height);
     }
   }
 }
@@ -100,7 +102,6 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_MOUSEWHEEL){
     if (e.wheel.y < 0 && app.camera.distance <= 60.0f) app.camera.distance += 0.5f;
     if (e.wheel.y > 0 && app.camera.distance >=  2.0f) app.camera.distance -= 0.5f;
-    app.camera.move([ 0.0f,  0.0f,  0.0f]);
   }
 }
 
@@ -149,8 +150,7 @@ void handleEvents(ref App app) {
   float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 
-  // Wait and remove stale geometry
-//  enforceVK(vkDeviceWaitIdle(app.device));
+  // Remove stale geometry
   app.removeGeometry();
 }
 
