@@ -65,7 +65,7 @@ TexInfo matchTexture(ref App app, ref OpenAsset object, uint materialIndex, aiTe
   return(texInfo);
 }
 
-Material[] loadMaterials(ref App app, const(char)* path, aiScene* scene){
+Material[] loadMaterials(ref App app, aiScene* scene, const(char)* path){
   Material[] materials;
   for(uint i = 0; i < scene.mNumMaterials; i++) {
     aiMaterial* material = scene.mMaterials[i];

@@ -3,19 +3,20 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
+import engine;
+
 import geometry : Instance, Geometry;
 import vector : x,y,z, magnitude, cross;
 import vertex : Vertex;
 import mesh : Mesh;
 import cone : computeThetas, computeBasePositions, computeCap;
-import std.math : sin, cos;
 
 /** Cylinder
  * Defines a cylinder geometry with a specified radius, height, and number of segments.
  * The bottom base is centered at (0,0,0) and the top base is centered at (0, height, 0).
  */
 class Cylinder : Geometry {
-  this(float radius = 0.5f, float height = 1.0f, uint numSegments = 32, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
+  this(float radius = 0.5f, float height = 1.0f, uint numSegments = 128, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     if (numSegments < 3) { numSegments = 3; }
 
     for (uint i = 0; i < numSegments; ++i) {

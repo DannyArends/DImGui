@@ -5,9 +5,8 @@
 
 import engine;
 
-import matrix : Matrix, toMatrix, transpose, multiply;
+import matrix : Matrix, toMatrix, multiply;
 import assimp : OpenAsset, name;
-import bone : Bone;
 import mesh : loadMesh;
 
 struct Node {
@@ -18,7 +17,7 @@ struct Node {
   string[] meshes;
 }
 
-Node loadNode(ref App app, ref OpenAsset asset, aiScene* scene, aiNode* node, Matrix pTransform, uint lvl = 0) {
+Node loadNode(ref App app, ref OpenAsset asset, aiScene* scene, aiNode* node, const Matrix pTransform, uint lvl = 0) {
   Node n = Node(format("%s:%s", asset.mName, name(node.mName)), lvl, toMatrix(node.mTransformation));
   Matrix gTransform = pTransform.multiply(n.transform);
 
