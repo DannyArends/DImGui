@@ -27,9 +27,7 @@ struct Camera {
 
   // Move the camera forward
   @property @nogc float[3] forward() const nothrow { 
-    float[3] direction = rotation.direction();
-
-    direction.normalize();
+    float[3] direction = rotation.direction().normalize();
     direction = direction.vMul(-0.1f);
     return(direction);
   }
@@ -72,8 +70,7 @@ float[3][2] castRay(Camera camera, uint x, uint y) {
   float[4] eye = multiply(inverse(camera.proj), clip);                                      // Eye coordinates
   float[3] world = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz;     // World coordinates (offset to camera position)
   float[3] direction = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz; // Ray direction
-  direction.normalize();
-  return([camera.position.vAdd(world), direction]);
+  return([camera.position.vAdd(world), direction.normalize()]);
 }
 
 /* Get the normalized direction of the xy camera rotation (gimbal lock) */
@@ -83,9 +80,7 @@ float[3][2] castRay(Camera camera, uint x, uint y) {
       sin(radian(rotation[1])),
       cos(radian(rotation[1])) * sin(radian(rotation[0])),
   ];
-  direction.normalize();
-  direction.negate();
-  return(direction);
+  return(direction.normalize().negate());
 }
 
 @nogc void move(ref Camera camera, float[3] movement) nothrow {

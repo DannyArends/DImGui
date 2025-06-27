@@ -22,9 +22,9 @@ class Cone : Geometry {
       float[2] theta = computeThetas(i, numSegments);
       float[3][2] positions = computeBasePositions(radius, theta);
 
-      float[3] v1 = positions[0][] - apex[];
-      float[3] v2 = positions[1][] - apex[];
-      float[3] normal = cross(v2,v1);         // Compute the cross product (v1 x v2) to get the face normal.
+      float[3] v1 = positions[1][] - apex[];
+      float[3] v2 = positions[0][] - apex[];
+      float[3] normal = cross(v1, v2);         // Compute the cross product (v1 x v2) to get the face normal.
 
       // Normalize the calculated normal vector to unit length
       float invLength = (normal.magnitude == 0.0f) ? 0.0f : 1.0f / normal.magnitude;

@@ -5,6 +5,8 @@
 
 import engine;
 
+import std.math : pow;
+
 /** Vector, stored as float[3]
  */
 struct Vector { 
@@ -49,7 +51,7 @@ struct Vector {
 /** Compute the (normalized) mid-point between v1 and v2 */
 @nogc pure T[3] midpoint(T)(const T[3] v1, const T[3] v2, bool normalized = false) nothrow {
     T[3] vMean = (v1[] + v2[]) / 2.0f;
-    if(normalized) vMean.normalize();
+    if(normalized) vMean = vMean.normalize();
     return(vMean);
 }
 
@@ -59,19 +61,17 @@ struct Vector {
 }
 
 /** Sum of vector v */
-@nogc pure T sum(T)(const T[] v) nothrow { 
+@nogc pure T sum(T)(const T[] v, uint exp = 1) nothrow { 
     T sum = 0;
-    for (size_t i = 0; i < v.length; i++) { sum += v[i]; }
+    for (size_t i = 0; i < v.length; i++) { sum += pow(v[i], exp); }
     return(sum);
 }
 
 /** Square root of vector v magnitude */
-@nogc pure T magnitude(T)(T[3] v) nothrow {
-  return(sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]));
-}
+@nogc pure T magnitude(T)(const T[] v) nothrow { return(sqrt(v.sum(2))); }
 
 /** Returns the normalized vector of v */
-@nogc pure T[3] normalize(T)(ref T[3] v) nothrow {
+@nogc pure T[3] normalize(T)(T[3] v) nothrow {
     float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
     if(sqr == 1 || sqr == 0) return(v);
     float invrt = 1.0f / sqrt(sqr);
@@ -115,7 +115,7 @@ T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
 @nogc pure T[3] vSub(T)(const T[3] v1, const T[3] v2) nothrow {
     T[3] vSub = v1[] - v2[]; return(vSub);
 }
-@nogc pure T[3] negate(T)(ref T[3] v) nothrow {
+@nogc pure T[3] negate(T)(T[3] v) nothrow {
     v[] = -v[]; return(v);
 }
 @nogc pure T[3] vMul(T)(const T[3] v, const T[3] b) nothrow {

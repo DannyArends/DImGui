@@ -16,7 +16,7 @@ struct Quaternion {
 }
 
 /** Returns the normalized vector of v */
-@nogc pure T[4] normalize(T)(ref T[4] v) nothrow {
+@nogc pure T[4] normalize(T)(T[4] v) nothrow {
     float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3];
     if(sqr == 1 || sqr == 0) return(v);
     float invrt = 1.0f / sqrt(sqr);
