@@ -1,4 +1,4 @@
-## DImGui
+## DImGui ✨
 ![Screenshot](/app/src/main/assets/data/screenshots/June27_2025.png? "Screenshot")
 
 Another 3D renderer developed in the D Programming Language, designed for cross-platform compatibility 
@@ -11,13 +11,13 @@ Vulkan, ShaderC, SPIRV-Cross, and the Open Asset Import Library. To build the An
 Studio and the Android NDK are required. The software has been tested under x64 systems (Windows and 
 Linux) and on arm64-v8a (Android 15).
 
-### (Cross-)Compilation
+### (Cross-)Compilation ⚙️
 
 For building on MS Windows and/or Linux, please refer to the detailed instructions in 
 [compilation.md](./docs/compilation.md). If you're cross-compiling for Android arm64-v8a using 
 Linux, you'll find the relevant guide in [cross-compilation.md](./docs/cross-compilation.md).
 
-### Features
+### Features 🚀
 
 The engine boasts the following features:
 - Basic geometries (cube, cone, torus, etc.) and complex 3D objects (FBX, glTF, 3DS, etc.)
@@ -27,7 +27,7 @@ The engine boasts the following features:
 - Instanced rendering of objects
 - GUI windows for settings, objects, textures, lights, and sounds
 
-### Build with
+### Build with 🛠️
 
 DImGui is made possible by, and has the following dependencies on, excellent software:
 
@@ -38,7 +38,7 @@ DImGui is made possible by, and has the following dependencies on, excellent sof
 - [Dear ImGui](https://github.com/ocornut/imgui) & [cImGui api wrapper](https://github.com/cimgui/cimgui)
 - [Open Asset Import Library](https://github.com/assimp/assimp) 
 
-### Structure
+### Structure 📁
 
 The following folders are interesting, if you're interested in how the repository is structured:
 
@@ -56,15 +56,15 @@ Some noteworthy files:
 - [src/scene.d](./src/scene.d) contains the code that sets up the example scene
 - [src/includes.c](./src/includes.c) contains the importC instructions
 
-### Contributing
+### Contributing 🙌
 
-Want to contribute? Great! Contribute to this repo by starring or forking on Github, and feel 
+Want to contribute? Great! Contribute to this repo by starring ⭐ or forking 🍴, and feel 
 free to start an issue first to discuss idea's before sending a pull request. You're also 
 welcome to post comments on commits.
 
 Or be a maintainer, and adopt (the documentation of) a function.
 
-### License
+### License ⚖️
 
 Written by Danny Arends and is released under the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3). 
 See [LICENSE.txt](./LICENSE.txt).
