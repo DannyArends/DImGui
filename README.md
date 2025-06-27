@@ -6,7 +6,7 @@ and Android. The current 'engine' is based on the excellent vulkan-tutorial.com,
 for cross-platform support. This repository includes the SDL DLLs for x64 MS Windows, and is in 
 itself a minimal SDL2 android_project. There are a lot of requirements to build the example 
 (SDL, Vulkan, Android Studio, Android NDK). The software has been tested under x64 (Windows and 
-Linux) and on arm64-v8a (Android 10).
+Linux) and on arm64-v8a (Android 15).
 
 ### (Cross-)Compilation
 
@@ -15,7 +15,7 @@ for Android arm64-v8a (using Linux), see: [cross-compilation.md](./docs/cross-co
 
 ### Features
 The engine has the following features:
-- Basic geometries (cube, cone, torus, etc) & complex 3D objects (fbx, 3DS, etc)
+- Basic geometries (cube, cone, torus, etc) & complex 3D objects (fbx, gltf, 3ds, etc)
 - Skeletal and key-frame animations
 - Compute shader: Particle engine & Texture generation
 - Shader reflection for UBO, SSBOs, and textures
