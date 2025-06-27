@@ -1,5 +1,5 @@
 ## DImGui
-![Screenshot](/app/src/main/assets/data/screenshots/example.png? "Screenshot")
+![Screenshot](/app/src/main/assets/data/screenshots/June27_2025.png? "Screenshot")
 
 Another SDL2 + Vulkan + ImGui renderer in the D Programming Language. However, this one will work on
 Windows, Linux, and Android. The current 'engine' is based on the excellent vulkan-tutorial.com, 
