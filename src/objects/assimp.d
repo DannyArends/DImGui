@@ -36,7 +36,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   OpenAsset object = new OpenAsset();
 
   auto content = readFile(path);
-  auto flags = aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_ConvertToLeftHanded | aiProcess_GenBoundingBoxes;
+  auto flags = aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_ConvertToLeftHanded;
   auto scene = aiImportFileFromMemory(&content[0], cast(uint)content.length, flags, toStringz(extension(to!string(path))));
 
   if (!scene || scene.mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene.mRootNode) {
@@ -48,20 +48,16 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   object.mData = app.loadMetaData(scene);
 
   object.bounds.calculateBounds(scene, scene.mRootNode, Matrix());
-  SDL_Log(toStringz(format("BB: %s", object.bounds)));
-
 
   object.materials = app.loadMaterials(path, scene);
   object.animations = app.loadAnimations(object, scene);
-
   object.rootnode = app.loadNode(object, scene, scene.mRootNode, Matrix());
 
   if (object.mName == "Spider") { // The Spider model is broken, it floats above
-     object.rootnode.transform = object.rootnode.transform.translate([0.0f, -775.0f, 0.0f]);
+    object.rootnode.transform = object.rootnode.transform.translate([0.0f, -775.0f, 0.0f]);
   }
 
-//  object.rootnode.transform = object.rootnode.transform.translate([0.0f, -775.0f, 0.0f]);
-  object.instances[0] = object.bounds.computeScaleAdjustment();
+  object.instances[0] = object.bounds.computeScaleAdjustment(); // Adjust the scale to 4.0f
 
   SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));
   if (app.verbose) {

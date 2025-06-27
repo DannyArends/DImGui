@@ -87,7 +87,7 @@ void createScene(ref App app){
   SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
   app.objects[($-1)].computeNormals();
-  app.objects[($-1)].position([0.5f, 2.5f, -2.0f]);
+  app.objects[($-1)].position([4.5f, 2.5f, -2.0f]);
 
   SDL_Log("createScene: Add PDB object");
   auto protein = loadProteinCif("data/objects/3kql.cif");
@@ -113,7 +113,7 @@ void createScene(ref App app){
   app.objects[($-1)].position([10.0f, -1.0f, -4.0f]);
 
   SDL_Log("createScene: Add cottage OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/cottage_fbx.fbx");
+  app.objects ~= app.loadOpenAsset("data/objects/Cottage.fbx");
   app.objects[($-1)].rotate([270.0f, 0.0f, 0.0f]);
   app.objects[($-1)].position([5.5f, -1.0f, -5.75f]);
 
@@ -131,7 +131,7 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add Sea Turtle OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Green_Sea_Turtle.fbx");
-  app.objects[($-1)].position([3.5f, -0.5f, -4.0f]);
+  app.objects[($-1)].position([3.5f, 1.0f, -4.0f]);
   app.objects[($-1)].scale([0.5f, 0.5f, 0.5f]);
   app.objects[($-1)].animation = 0;
 
