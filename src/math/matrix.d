@@ -155,10 +155,8 @@ float[3] scale(const Matrix m) {
 
 /** lookAt function, looks from pos at "at" using the upvector (up) */
 @nogc pure Matrix lookAt(float[3] pos, float[3] at, float[3] up) nothrow {
-  auto f = vSub(at, pos);
-  normalize(f);
-  auto s = cross(f, up);
-  normalize(s);
+  auto f = vSub(at, pos).normalize();
+  auto s = cross(f, up).normalize();
   auto u = cross(s, f);
 
   return(Matrix([

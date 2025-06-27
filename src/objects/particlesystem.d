@@ -50,7 +50,7 @@ class ParticleSystem : Geometry {
     particles[i].velocity = [uniform(impulse[0][0], impulse[1][0]),
                              uniform(impulse[0][1], impulse[1][1]),
                              uniform(impulse[0][2], impulse[1][2]), 0.0f];
-    particles[i].velocity[0..3].normalize;
+    particles[i].velocity[0..3] = particles[i].velocity[0..3].normalize;
     particles[i].velocity[] = particles[i].velocity[0..3].vMul(uniform(0.01f, 0.1f)).xyzw;
     particles[i].life = uniform(0.1f, 1.0f);
     particles[i].mass = uniform(1.0f, 5.0f);
