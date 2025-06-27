@@ -41,27 +41,37 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
-  app.objects[($-1)].position([3.0f, 2.5f, 1.0f]);
+  app.objects[($-1)].position([3.0f, 0.5f, 1.5f]);
+  app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
   app.objects[($-1)].texture(app.textures, "image");
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
+    obj.rotate([20 * dt, 2 * dt, 14 * dt]);
+  };
 
   SDL_Log("createScene: Add a Cone");
   app.objects ~= new Cone(color : [1.0f, 0.0f, 0.0f, 1.0f]);
-  app.objects[($-1)].position([3.0f, 2.0f, 2.0f]);
+  app.objects[($-1)].position([3.0f, 0.7f, 0.5f]);
+  app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
   app.objects[($-1)].texture(app.textures, "image");
-  
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
+    obj.rotate([6 * dt, 6 * dt, 12 * dt]);
+  };
+
   SDL_Log("createScene: Add a Cylinder");
   app.objects ~= new Cylinder(color : [0.0f, 1.0f, 0.0f, 1.0f]);
-  app.objects[($-1)].position([3.0f, 1.5f, 3.0f]);
-  app.objects[($-1)].texture(app.textures, "image");
+  app.objects[($-1)].position([3.0f, 0.7f, -0.5f]);
+  app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
+    obj.rotate([6 * dt, 6 * dt, 10 * dt]);
+  };
 
   SDL_Log("createScene: Add a Torus");
   app.objects ~= new Torus(color : [0.0f, 0.0f, 1.0f, 1.0f]);
-  app.objects[($-1)].position([3.0f, 1.0f, 4.0f]);
+  app.objects[($-1)].position([3.0f, 0.5f, -1.5f]);
+  app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
   app.objects[($-1)].texture(app.textures, "image");
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-    auto p = obj.position;
     obj.rotate([6 * dt, 20 * dt, 14 * dt]);
-    obj.position(p);
   };
 
   SDL_Log("createScene: Add an Icosahedron");
