@@ -15,14 +15,11 @@ for Android arm64-v8a (using Linux), see: [cross-compilation.md](./docs/cross-co
 
 ### Features
 The engine has the following features:
-- Basic geometries (cube, cone, torus, etc)
-- Assimp 3D objects (fbx, 3DS, etc)
-- Skeletal (key-framed) animations
-- Plays sounds
-- Instanced rendering of objects
-- Particle engine via compute shader
-- Texture generation via compute shader
+- Basic geometries (cube, cone, torus, etc) & complex 3D objects (fbx, 3DS, etc)
+- Skeletal and key-frame animations
+- Compute shader: Particle engine & Texture generation
 - Shader reflection for UBO, SSBOs, and textures
+- Instanced rendering of objects
 - GUI windows: Settings, Object, Textures, Lights, Sounds
 
 ### Structure
