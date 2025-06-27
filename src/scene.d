@@ -6,6 +6,8 @@
 import engine;
 
 import cube : Cube;
+import cone : Cone;
+import cylinder : Cylinder;
 import geometry : Geometry, Instance, computeNormals, position, rotate, scale, texture;
 import icosahedron : Icosahedron, refineIcosahedron;
 import lsystem : createLSystem;
@@ -14,6 +16,7 @@ import particlesystem : ParticleSystem;
 import pdb : AtomCloud, Backbone, AminoAcidCloud, loadProteinCif;
 import square : Square;
 import text : Text;
+import torus : Torus;
 import assimp : loadOpenAsset;
 import obj3ds : loadFromFile;
 import turtle : Turtle;
@@ -36,7 +39,22 @@ void createScene(ref App app){
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube();
-  app.objects[($-1)].position([3.0f, 0.0f, 3.0f]);
+  app.objects[($-1)].position([3.0f, 0.0f, 4.0f]);
+  app.objects[($-1)].texture(app.textures, "image");
+
+  SDL_Log("createScene: Add a Cone");
+  app.objects ~= new Cone();
+  app.objects[($-1)].position([3.0f, 0.0f, 5.0f]);
+  app.objects[($-1)].texture(app.textures, "image");
+  
+  SDL_Log("createScene: Add a Cylinder");
+  app.objects ~= new Cylinder();
+  app.objects[($-1)].position([3.0f, 0.0f, 6.0f]);
+  app.objects[($-1)].texture(app.textures, "image");
+
+  SDL_Log("createScene: Add a Torus");
+  app.objects ~= new Torus();
+  app.objects[($-1)].position([3.0f, 0.0f, 7.0f]);
   app.objects[($-1)].texture(app.textures, "image");
 
   SDL_Log("createScene: Add an Icosahedron");
