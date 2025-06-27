@@ -38,7 +38,7 @@ class Torus : Geometry {
     }
 
     instances = [Instance()];
-    meshes["Torus"] = Mesh([0, cast(uint)vertices.length]); // Use indices.length for the count
+    meshes["Torus"] = Mesh([0, cast(uint)vertices.length]);
     name = (){ return(typeof(this).stringof); };
   }
 }
