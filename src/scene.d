@@ -44,46 +44,37 @@ void createScene(ref App app){
   app.objects[($-1)].position([3.0f, 0.5f, 1.5f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
   app.objects[($-1)].texture(app.textures, "image");
-  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-    obj.rotate([20 * dt, 2 * dt, 14 * dt]);
-  };
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){ obj.rotate([20 * dt, 2 * dt, 14 * dt]); };
 
   SDL_Log("createScene: Add a Cone");
   app.objects ~= new Cone(color : [1.0f, 0.0f, 0.0f, 1.0f]);
   app.objects[($-1)].position([3.0f, 0.7f, 0.5f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
   app.objects[($-1)].texture(app.textures, "image");
-  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-    obj.rotate([6 * dt, 6 * dt, 12 * dt]);
-  };
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){ obj.rotate([6 * dt, 6 * dt, 12 * dt]); };
 
   SDL_Log("createScene: Add a Cylinder");
   app.objects ~= new Cylinder(color : [0.0f, 1.0f, 0.0f, 1.0f]);
   app.objects[($-1)].position([3.0f, 0.7f, -0.5f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
-  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-    obj.rotate([6 * dt, 6 * dt, 10 * dt]);
-  };
+  app.objects[($-1)].texture(app.textures, "image");
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){ obj.rotate([6 * dt, 6 * dt, 10 * dt]); };
 
   SDL_Log("createScene: Add a Torus");
   app.objects ~= new Torus(color : [0.0f, 0.0f, 1.0f, 1.0f]);
   app.objects[($-1)].position([3.0f, 0.5f, -1.5f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
   app.objects[($-1)].texture(app.textures, "image");
-  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-    obj.rotate([6 * dt, 20 * dt, 14 * dt]);
-  };
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){ obj.rotate([6 * dt, 20 * dt, 14 * dt]); };
 
   SDL_Log("createScene: Add an Icosahedron");
   app.objects ~= new Icosahedron();
   app.objects[($-1)].refineIcosahedron(3);
-  app.objects[($-1)].texture(app.textures, "sun");
-  app.objects[($-1)].scale([3.0f, 3.0f, 3.0f]);
-  app.objects[($-1)].position([10.0f, 2.0f, 2.0f]);
+  app.objects[($-1)].texture(app.textures, "earth_day");
+  app.objects[($-1)].scale([2.0f, 2.0f, 2.0f]);
+  app.objects[($-1)].position([5.5f, 2.0f, 2.5f]);
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-    auto p = obj.position;
-    obj.rotate([dt, 0.0f, 0.0f]);
-    obj.position(p);
+    obj.rotate([4 * dt, 0.0f, 0.0f]);
   };
 
   SDL_Log("createScene: Add Text");
@@ -92,8 +83,8 @@ void createScene(ref App app){
   app.objects[($-1)].position([5.0f, 1.0f, -2.0f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-      obj.rotate([0.0f, 2 * dt, 4 * dt]);
-    };
+    obj.rotate([0.0f, 2 * dt, 4 * dt]);
+  };
 
   SDL_Log("createScene: Add viking room OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/viking_room.obj");
