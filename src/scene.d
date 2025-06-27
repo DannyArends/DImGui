@@ -38,22 +38,22 @@ void createScene(ref App app){
   }
 
   SDL_Log("createScene: Add a Cube");
-  app.objects ~= new Cube();
+  app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
   app.objects[($-1)].position([3.0f, 0.0f, 4.0f]);
   app.objects[($-1)].texture(app.textures, "image");
 
   SDL_Log("createScene: Add a Cone");
-  app.objects ~= new Cone();
+  app.objects ~= new Cone(color : [1.0f, 0.0f, 0.0f, 1.0f]);
   app.objects[($-1)].position([3.0f, 0.0f, 5.0f]);
   app.objects[($-1)].texture(app.textures, "image");
   
   SDL_Log("createScene: Add a Cylinder");
-  app.objects ~= new Cylinder();
+  app.objects ~= new Cylinder(color : [0.0f, 1.0f, 0.0f, 1.0f]);
   app.objects[($-1)].position([3.0f, 0.0f, 6.0f]);
   app.objects[($-1)].texture(app.textures, "image");
 
   SDL_Log("createScene: Add a Torus");
-  app.objects ~= new Torus();
+  app.objects ~= new Torus(color : [0.0f, 0.0f, 1.0f, 1.0f]);
   app.objects[($-1)].position([3.0f, 0.0f, 7.0f]);
   app.objects[($-1)].texture(app.textures, "image");
 
@@ -61,7 +61,6 @@ void createScene(ref App app){
   app.objects ~= new Icosahedron();
   app.objects[($-1)].refineIcosahedron(3);
   app.objects[($-1)].texture(app.textures, "sun");
-  app.objects[($-1)].computeNormals();
   app.objects[($-1)].scale([3.0f, 3.0f, 3.0f]);
   app.objects[($-1)].position([10.0f, 2.0f, 2.0f]);
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
@@ -89,7 +88,6 @@ void createScene(ref App app){
   app.objects ~= new Turtle(createLSystem());
   app.objects[($-1)].computeNormals();
   app.objects[($-1)].position([0.5f, 2.5f, -2.0f]);
-
 
   SDL_Log("createScene: Add PDB object");
   auto protein = loadProteinCif("data/objects/3kql.cif");
@@ -143,4 +141,3 @@ void createScene(ref App app){
   }
   SDL_Log("createScene: Finished");
 }
-

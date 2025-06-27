@@ -72,7 +72,7 @@ struct Vector {
 
 /** Returns the normalized vector of v */
 @nogc pure T[3] normalize(T)(T[3] v) nothrow {
-    float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+    float sqr = v.sum(2);
     if(sqr == 1 || sqr == 0) return(v);
     float invrt = 1.0f / sqrt(sqr);
     v[] *= invrt;
