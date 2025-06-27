@@ -22,6 +22,14 @@ The engine has the following features:
 - Instanced rendering of objects
 - GUI windows: Settings, Object, Textures, Lights, Sounds
 
+### Technology
+DImGui has the following dependencies:
+
+- [SDL2](https://www.libsdl.org/)
+- [Shaderc](https://github.com/google/shaderc) & [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross]
+- [Dear ImGui](https://github.com/ocornut/imgui) & [cImGui api wrapper](https://github.com/cimgui/cimgui)
+- [Open Asset Import Library](https://github.com/assimp/assimp) 
+
 ### Structure
 The following folders are interesting, if you're interested in how the repository is structured:
 
