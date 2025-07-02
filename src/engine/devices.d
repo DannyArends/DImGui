@@ -43,7 +43,7 @@ void createLogicalDevice(ref App app, uint device = 0){
   VkDeviceQueueCreateInfo[] createQueue = [{
     sType : VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
     queueFamilyIndex : app.queueFamily,
-    queueCount : 1,
+    queueCount : 2, // transfer and render queue
     pQueuePriorities : &queuePriority[0]
   }];
 
@@ -67,13 +67,15 @@ void createLogicalDevice(ref App app, uint device = 0){
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
   app.mainDeletionQueue.add((){ vkDestroyDevice(app.device, app.allocator); });
 
-  if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device );
+  if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device);
 
   vkGetPhysicalDeviceProperties(app.physicalDevice, &app.properties);
 
   // Get the Queue from the queueFamily
   vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
-  if(app.verbose) SDL_Log("vkGetDeviceQueue[family:%d]: %p", app.queueFamily, app.queue);
+  vkGetDeviceQueue(app.device, app.queueFamily, 1, &app.transfer);
+  SDL_Log("vkGetDeviceQueue[family:%d] queue: %p", app.queueFamily, app.queue);
+  SDL_Log("vkGetDeviceQueue[family:%d] transfer: %p", app.queueFamily, app.transfer);
 }
 
 void list(VkPhysicalDevice physicalDevice, size_t i) {
@@ -113,7 +115,7 @@ uint selectQueueFamily(VkPhysicalDevice physicalDevice) {
     if(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) SDL_Log("[%d] Graphic Queue, size: %d", i, queueProperty.queueCount);
     if(queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT) SDL_Log("[%d] Compute Queue, size: %d", i, queueProperty.queueCount);
     if(queueProperty.queueFlags & VK_QUEUE_TRANSFER_BIT) SDL_Log("[%d] Transfer Queue, size: %d", i, queueProperty.queueCount);
-    if ((queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT)) return cast(uint)i;
+    if((queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT)) return cast(uint)i;
   }
   assert(0);
 }

@@ -5,6 +5,8 @@
 
 import engine;
 
+import core.thread : Thread;
+
 import cube : Cube;
 import cone : Cone;
 import cylinder : Cylinder;
@@ -121,32 +123,39 @@ void createScene(ref App app){
   app.objects[($-1)].computeNormals();
   app.objects[($-1)].position([10.0f, -1.0f, -4.0f]);
 
-  SDL_Log("createScene: Add cottage OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/Cottage.fbx");
-  app.objects[($-1)].rotate([270.0f, 0.0f, 0.0f]);
-  app.objects[($-1)].position([5.5f, -1.0f, -5.75f]);
+  new Thread({
+    SDL_Log("createScene: Add cottage OpenAsset");
+    app.objects ~= app.loadOpenAsset("data/objects/Cottage.fbx");
+    app.objects[($-1)].rotate([270.0f, 0.0f, 0.0f]);
+    app.objects[($-1)].position([5.5f, -1.0f, -5.75f]);
+  }).start();
 
-  SDL_Log("createScene: Add Spider OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
-  app.objects[($-1)].animation = 14;
-  app.objects[($-1)].position([1.0f, -1.0f, 0.0f]);
-  app.objects[($-1)].scale([0.3f, 0.3f, 0.3f]);
-  app.objects[($-1)].rotate([27.0f, 0.0f, 0.0f]);
+  new Thread({
+    SDL_Log("createScene: Add Spider OpenAsset");
+    app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
+    app.objects[($-1)].animation = 14;
+    app.objects[($-1)].position([1.0f, -1.0f, 0.0f]);
+    app.objects[($-1)].scale([0.3f, 0.3f, 0.3f]);
+    app.objects[($-1)].rotate([27.0f, 0.0f, 0.0f]);
+  }).start();
 
+  new Thread({
   SDL_Log("createScene: Add Wolf OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/Wolf.fbx");
   app.objects[($-1)].animation = 2;
   app.objects[($-1)].position([1.0f, -1.0f, 2.5f]);
   app.objects[($-1)].scale([0.75f, 0.75f, 0.75f]);
   app.objects[($-1)].rotate([-12.0f, 0.0f, 0.0f]);
+  }).start();
 
-
+  new Thread({
   SDL_Log("createScene: Add Sea Turtle OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/MasterSnoo2025.fbx");
   app.objects[($-1)].rotate([210.0f, 0.0f, 0.0f]);
   app.objects[($-1)].position([0.5f, -1.0f, -2.0f]);
   app.objects[($-1)].scale([0.2f, 0.2f, 0.2f]);
   app.objects[($-1)].animation = 0;
+  }).start();
 
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");

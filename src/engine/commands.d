@@ -76,7 +76,14 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
 }
 
-void createCommandPool(ref App app) {
+void createCommandPools(ref App app){
+  app.commandPool = app.createCommandPool();
+  app.transferPool = app.createCommandPool();
+  SDL_Log("createCommandPool[family:%d] queue: %p", app.queueFamily, app.commandPool);
+  SDL_Log("createCommandPool[family:%d] transfer: %p", app.queueFamily, app.transferPool);
+}
+
+VkCommandPool createCommandPool(ref App app) {
   VkCommandPool commandPool;
 
   VkCommandPoolCreateInfo poolInfo = {
@@ -84,10 +91,11 @@ void createCommandPool(ref App app) {
     queueFamilyIndex: app.queueFamily,
     flags: VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
   };
-  enforceVK(vkCreateCommandPool(app.device, &poolInfo, null, &app.commandPool));
-  app.mainDeletionQueue.add((){ vkDestroyCommandPool(app.device, app.commandPool, app.allocator); });
+  enforceVK(vkCreateCommandPool(app.device, &poolInfo, null, &commandPool));
+  app.mainDeletionQueue.add((){ vkDestroyCommandPool(app.device, commandPool, app.allocator); });
 
-  if(app.trace) SDL_Log("Commandpool %p at queue %d created", app.commandPool, poolInfo.queueFamilyIndex);
+  if(app.trace) SDL_Log("Commandpool %p at queue %d created", commandPool, poolInfo.queueFamilyIndex);
+  return(commandPool);
 }
 
 VkCommandBuffer[] createCommandBuffer(App app, VkCommandPool commandPool, uint nBuffers = 1) {
@@ -114,8 +122,8 @@ void createImGuiCommandBuffers(ref App app) {
   });
 }
 
-VkCommandBuffer beginSingleTimeCommands(ref App app) {
-  VkCommandBuffer[1] commandBuffer = app.createCommandBuffer(app.commandPool, 1);
+VkCommandBuffer beginSingleTimeCommands(ref App app, VkCommandPool pool) {
+  VkCommandBuffer[1] commandBuffer = app.createCommandBuffer(pool, 1);
 
   VkCommandBufferBeginInfo beginInfo = {
     sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -125,7 +133,7 @@ VkCommandBuffer beginSingleTimeCommands(ref App app) {
   return commandBuffer[0];
 }
 
-void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer) {
+void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer, VkCommandPool pool, VkQueue queue) {
   vkEndCommandBuffer(commandBuffer);
 
   VkSubmitInfo submitInfo = {
@@ -134,10 +142,10 @@ void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer) {
     pCommandBuffers: &commandBuffer
   };
 
-  vkQueueSubmit(app.queue, 1, &submitInfo, null);
-  vkQueueWaitIdle(app.queue);
+  vkQueueSubmit(queue, 1, &submitInfo, null);
+  vkQueueWaitIdle(queue);
 
-  vkFreeCommandBuffers(app.device, app.commandPool, 1, &commandBuffer);
+  vkFreeCommandBuffers(app.device, pool, 1, &commandBuffer);
 }
 
 void createRenderCommandBuffers(ref App app) { 

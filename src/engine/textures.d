@@ -5,7 +5,11 @@
 
 import engine;
 
+import core.thread : Thread;
+import core.time : dur;
+
 import io : dir;
+import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
@@ -40,12 +44,19 @@ void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
 
 // Load all texture files matching pattern in folder
 void loadTextures(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}") {
-  immutable(char)*[] files = dir(folder, pattern, false);
-  foreach(file; files){ app.loadTexture(file); }
+  new Thread({
+    if(app.verbose) SDL_Log("Loading textures under %p", Thread.getThis());
+    app.createFontTexture();                /// Create a Texture from the GlyphAtlas
+    immutable(char)*[] files = dir(folder, pattern, false);
+    foreach(file; files){ 
+      app.loadTexture(file); 
+      Thread.sleep( dur!("msecs")( 50 ));
+    }
+  }).start();
 }
 
 void loadTexture(ref App app, const(char)* path) {
-  if(app.trace) SDL_Log("loadTexture '%s'", path);
+  if(app.verbose) SDL_Log("loadTexture '%s'", path);
   auto surface = IMG_Load(path);
   if(app.trace) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
 
@@ -53,6 +64,7 @@ void loadTexture(ref App app, const(char)* path) {
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
   Texture texture = { path : path, width: surface.w, height: surface.h, surface: surface };
   app.toGPU(texture);
+  if(app.verbose) SDL_Log("loadTexture '%s' DONE", path);
   app.mainDeletionQueue.add((){ app.deAllocate(texture); });
 }
 
@@ -70,16 +82,16 @@ void toGPU(ref App app, ref Texture texture){
 
   // Create an image, transition the layout
   app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory);
-  app.transitionImageLayout(texture.image, null, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  app.transitionImageLayout(texture.image, app.transferPool, app.transfer, null, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
   app.copyBufferToImage(stagingBuffer, texture.image, texture.surface.w, texture.surface.h);
-  app.transitionImageLayout(texture.image, null, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  app.transitionImageLayout(texture.image, app.transferPool, app.transfer, null, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   // Create an imageview on the image
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
   // Register Texture with ImGui, and store in texture array
   app.registerTexture(texture);
-  app.textures ~= texture;
+  app.loaded ~= texture;
 
   // Cleanup
   if(app.trace) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));

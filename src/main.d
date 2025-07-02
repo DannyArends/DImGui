@@ -5,7 +5,7 @@
 
 import engine;
 
-import commands : createCommandPool;
+import commands : createCommandPools;
 import compute : createComputeShaders;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
@@ -63,19 +63,21 @@ void run(string[] args) {
   if (app.compute.enabled) {
     app.createComputeShaders();           /// Load the compute shader
   }
-  app.createCommandPool();                /// Create the rendering CommandPool
+  app.createCommandPools();                /// Create the rendering CommandPool
   app.createSampler();                    /// Create a texture sampler
   app.createImGuiDescriptorPool();        /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();   /// ImGui DescriptorSet layout
-  app.createFontTexture();                /// Create a Texture from the GlyphAtlas
   app.loadTextures();                     /// Transfer all textures to the GPU
   app.createSurface();                    /// Create Vulkan rendering surface
   app.createOrResizeWindow();             /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                  /// Initialize ImGui (IO, Style, etc)
   app.createScene();                      /// Create our scene with geometries
+  import core.thread : Thread;
+  new Thread({
+  }).start();
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
-  uint frames = 150000;
+  uint frames = 1500;
   while (!app.finished && app.totalFramesRendered < frames) { /// Event polling & rendering Loop
     app.handleEvents();
     app.time[FRAMESTART] = SDL_GetTicks();

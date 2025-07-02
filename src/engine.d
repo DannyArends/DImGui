@@ -68,6 +68,7 @@ struct App {
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
   Texture[] textures;                                                           /// Textures
+  Texture[] loaded;                                                           /// Textures
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[const(char)*] buffers;                                                   /// SSBO buffers
   UBO[const(char)*] ubos;                                                       /// UBO buffers
@@ -98,6 +99,7 @@ struct App {
   VkPhysicalDeviceProperties properties;
   VkDevice device = null;
   VkQueue queue = null;
+  VkQueue transfer = null;
 
   VkDescriptorPool[const(char)*] pools;                                         /// Descriptor pools (IMGUI, COMPUTE, RENDER)
   VkDescriptorSetLayout[const(char)*] layouts;                                  /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
@@ -109,6 +111,7 @@ struct App {
   uint format = 0;                                                              /// selected format
   VkSwapchainKHR swapChain = null;                                              /// Our SwapChain
   VkCommandPool commandPool = null;                                             /// Our CommandPool
+  VkCommandPool transferPool = null;                                             /// Our CommandPool
 
   // Per frame resources (reset when rebuilding the swapchain)
   Sync[] sync = null;
