@@ -185,7 +185,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(app.textures[idx].image, cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+      app.transitionImageLayout(app.textures[idx].image, app.commandPool, app.queue, cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
       nJobs[0] = app.textures[idx].width;
       nJobs[1] = app.textures[idx].height;
     }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
@@ -221,7 +221,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(app.textures[idx].image, cmdBuffer, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      app.transitionImageLayout(app.textures[idx].image, app.commandPool, app.queue, cmdBuffer, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
   }
 

@@ -46,7 +46,7 @@ Matrix[] getBoneOffsets(App app) {
   ulong t = SDL_GetTicks() - app.time[STARTUP];
 
   Matrix[] boneOffsets;
-  boneOffsets.length = app.bones.length;
+  boneOffsets.length = 1024;//app.bones.length;
   foreach(ref obj; app.objects) {
     if(obj.animations.length > 0) {
       double cT = calculateCurrentTick(t, obj.animations[obj.animation].ticksPerSecond, obj.animations[obj.animation].duration);

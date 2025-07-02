@@ -117,9 +117,22 @@ float scale(T)(T object, uint instance = 0) {
 /** Set tid for instance from object.instances to Texture name */
 void texture(T)(T object, const Texture[] textures, const(char)* name, string mname = "") {
   int tid = textures.idx(name);
-  foreach(mesh ; object.meshes){
+  foreach(ref mesh ; object.meshes) {
+    mesh.tName = to!string(name);
     for(size_t i = mesh.vertices[0]; i < mesh.vertices[1]; i++){
       object.vertices[i].tid = tid;
+    }
+  }
+}
+
+void reTexture(T)(T object, const Texture[] textures) {
+  foreach(mesh ; object.meshes) {
+    int tid = textures.idx(toStringz(mesh.tName));
+    if(tid >= 0) {
+      for(size_t i = mesh.vertices[0]; i < mesh.vertices[1]; i++){
+        object.vertices[i].tid = tid;
+      }
+      object.buffers[VERTEX] = false;
     }
   }
 }
