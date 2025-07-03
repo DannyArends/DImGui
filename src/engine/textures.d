@@ -86,7 +86,7 @@ void loadTextures(ref App app, const(char)* folder = "data/textures/", string pa
     app.createFontTexture();                /// Create a Texture from the GlyphAtlas
     foreach(i, file; files){ 
       app.loadTexture(file, cast(uint)i);
-      Thread.sleep( dur!("msecs")( 50 ));
+      //Thread.sleep( dur!("msecs")( 50 ));
     }
   }).start();
 }
