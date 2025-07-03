@@ -223,6 +223,7 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
   if(igBegin("Textures", show, 0)){
     igBeginTable("Texture_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, texture; app.textures) {
+      if(fromStringz(texture.path) == "empty") continue;
       float ratio = cast(float)(texture.height) / texture.width;
       igTableNextRow(0, 5.0f);
       igTableNextColumn();

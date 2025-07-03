@@ -68,7 +68,6 @@ struct App {
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
   Texture[] textures;                                                           /// Textures
-  Texture[] loaded;                                                           /// Textures
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[const(char)*] buffers;                                                   /// SSBO buffers
   UBO[const(char)*] ubos;                                                       /// UBO buffers
@@ -136,6 +135,7 @@ struct App {
   float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
   ulong[5] time = [0, 0, 0, 0, 0];                                              /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK)
   uint totalFramesRendered = 0;                                                 /// Total frames rendered so far
+  uint maxTextures = 128;                                                       /// Maximum number of textures
 
   const(char)*[] instanceExtensions;                                            /// Enabled instance extensions
   const(char)*[] deviceExtensions;                                              /// Enabled device extensions

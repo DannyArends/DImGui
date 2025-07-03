@@ -5,12 +5,12 @@
 
 import engine;
 
-import commands : recordRenderCommandBuffer;
+import commands : recordRenderCommandBuffer, createRenderCommandBuffers;
 import imgui : recordImGuiCommandBuffer;
 import uniforms : updateRenderUBO;
 import geometry : reTexture;
 import window : createOrResizeWindow;
-import descriptor : updateDescriptorSet;
+import descriptor : updateDescriptorSet, createDescriptors;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 
 void renderFrame(ref App app){
@@ -18,8 +18,6 @@ void renderFrame(ref App app){
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired    = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete   = app.sync[app.syncIndex].renderComplete;
-
-
 
   // --- Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight ---
   if(app.trace) SDL_Log("Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight");
@@ -36,16 +34,6 @@ void renderFrame(ref App app){
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
-
-  if (app.loaded.length > 0) { // We loaded textures, so we need to rebuild the swapchain
-    app.textures ~= app.loaded;
-    app.loaded.length = 0;
-    app.rebuild = true;
-    for (size_t i = 0; i < app.objects.length; i++) {  // Load faces to indices
-      app.objects[i].reTexture(app.textures);
-    }
-    return;
-  }
 
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 

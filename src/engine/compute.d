@@ -16,7 +16,7 @@ import swapchain : createImageView;
 import shaders : Shader, createShaderModule;
 import ssbo : SSBO;
 import sync : insertWriteBarrier, insertReadBarrier;
-import textures : Texture, idx, registerTexture;
+import textures : Texture, idx, registerTexture, findTextureSlot;
 import uniforms : ParticleUniformBuffer, UBO;
 import quaternion : xyzw;
 
@@ -152,13 +152,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
   app.registerTexture(texture); // Register texture with ImGui
 
   // Update the Texture Array for rendering
-  int idx = app.textures.idx(descriptor.name);
-  if(idx < 0) {
-   app.textures ~= texture;
-  }else{
-   app.textures[idx] = texture;
-  }
-  if(app.verbose) SDL_Log("Compute texture at: %d", idx);
+  app.textures[app.findTextureSlot(to!string(descriptor.name))] = texture;
 
   app.frameDeletionQueue.add((){
     if(app.verbose) SDL_Log("Delete compute image");

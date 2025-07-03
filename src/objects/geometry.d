@@ -215,6 +215,7 @@ void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = f
 
 /** Render a Geometry to app.renderBuffers[i] */
 void draw(ref App app, Geometry object, size_t i) {
+  if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null) return;
   if(app.trace) SDL_Log("DRAW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
 
