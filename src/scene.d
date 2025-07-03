@@ -5,8 +5,6 @@
 
 import engine;
 
-import core.thread : Thread;
-
 import cube : Cube;
 import cone : Cone;
 import cylinder : Cylinder;

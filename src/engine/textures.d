@@ -5,9 +5,6 @@
 
 import engine;
 
-import core.thread : Thread;
-import core.time : dur;
-
 import io : dir;
 import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
@@ -83,11 +80,8 @@ void loadTextures(ref App app, const(char)* folder = "data/textures/", string pa
   for(uint x = 0; x < app.maxTextures; x++) { app.initDummyTexture(files, x); }
   new Thread({
     if(app.verbose) SDL_Log("Loading textures under %p", Thread.getThis());
-    app.createFontTexture();                /// Create a Texture from the GlyphAtlas
-    foreach(i, file; files){ 
-      app.loadTexture(file, cast(uint)i);
-      //Thread.sleep( dur!("msecs")( 50 ));
-    }
+    app.createFontTexture();
+    foreach(i, file; files) { app.loadTexture(file, cast(uint)i); }
   }).start();
 }
 

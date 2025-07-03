@@ -8,6 +8,7 @@ public import includes;
 public import core.memory : GC;
 public import core.stdc.string : strcmp, memcpy, strstr;
 public import core.time : MonoTime;
+public import core.thread : Thread;
 
 public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
 public import std.array : array, split;
