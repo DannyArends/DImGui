@@ -125,7 +125,7 @@ void toGPU(ref App app, ref Texture texture, uint i) {
 
   // Cleanup
   if(app.trace) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));
-  //SDL_FreeSurface(texture.surface);
+  SDL_FreeSurface(texture.surface);
   vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
   vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
 }
