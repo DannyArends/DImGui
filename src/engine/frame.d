@@ -8,7 +8,6 @@ import engine;
 import commands : recordRenderCommandBuffer, createRenderCommandBuffers;
 import imgui : recordImGuiCommandBuffer;
 import uniforms : updateRenderUBO;
-import geometry : reTexture;
 import window : createOrResizeWindow;
 import descriptor : updateDescriptorSet, createDescriptors;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
