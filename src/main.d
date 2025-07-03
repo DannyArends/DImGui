@@ -26,10 +26,8 @@ import window: createOrResizeWindow, checkForResize;
 
 /* Main entry point to the program */
 version (Android) {
-  import core.memory;
   import core.runtime : rt_init;
-  import std.format;
-  import std.stdio;
+  import std.stdio : writeln;
 
   extern(C) int SDL_main(int argc, char* argv) { // Hijack the SDL main
     int dRuntime = rt_init();
@@ -72,12 +70,9 @@ void run(string[] args) {
   app.createOrResizeWindow();             /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                  /// Initialize ImGui (IO, Style, etc)
   app.createScene();                      /// Create our scene with geometries
-  import core.thread : Thread;
-  new Thread({
-  }).start();
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
-  uint frames = 1500;
+  uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) { /// Event polling & rendering Loop
     app.handleEvents();
     app.time[FRAMESTART] = SDL_GetTicks();
