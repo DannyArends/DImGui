@@ -7,13 +7,14 @@ import engine;
 
 import compute: createComputeCommandBuffers, createComputePipeline;
 import depthbuffer : createDepthResources;
-import descriptor : createDescriptors;
+import descriptor : createDescriptors, updateDescriptorSet;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
 import pipeline : createGraphicsPipeline;
 import renderpass : createRenderPass;
 import surface : querySurfaceCapabilities;
+import shadowmap : createShadowMapGraphicsPipeline,   createShadowMapCommandBuffers;
 import reflection : reflectShaders, createResources;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
@@ -51,12 +52,23 @@ void createOrResizeWindow(ref App app) {
     foreach(ref shader; app.compute.shaders) {
       app.createComputeCommandBuffers(shader);
       app.createComputePipeline(shader);
+      for (uint i = 0; i < app.framesInFlight; i++) { app.updateDescriptorSet([shader], app.sets[shader.path], i); }
     }
+  }
+
+  // Do reflection on the shadow shaders 
+  // TODO: Could be done once inside the main deletion queue, but then UBO reflection needs to allow a custome deletion queue
+  app.reflectShaders(app.shadows.shaders);
+  app.createResources(app.shadows.shaders, SHADOWS);
+  app.createShadowMapGraphicsPipeline();
+  for (uint i = 0; i < app.framesInFlight; i++) {
+    app.updateDescriptorSet(app.shadows.shaders, app.sets[SHADOWS], i);
   }
 
   // Do reflection on the render shaders
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, RENDER);
+  app.createShadowMapCommandBuffers();
   app.createDescriptors();
 
   // ImGui resources

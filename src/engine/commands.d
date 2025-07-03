@@ -54,11 +54,11 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   for(size_t x = 0; x < app.objects.length; x++) {
     if(app.showBounds) {
       app.objects[x].computeBoundingBox(app.trace);
-      app.objects[x].box.buffer(app);
+      app.objects[x].box.buffer(app, app.renderBuffers[syncIndex]);
     }
     if(!app.objects[x].isBuffered) {
       if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
-      app.objects[x].buffer(app);
+      app.objects[x].buffer(app, app.renderBuffers[syncIndex]);
     }
   }
 

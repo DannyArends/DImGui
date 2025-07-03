@@ -41,12 +41,14 @@ import shaders : Shader;
 import uniforms : UBO;
 import sync : Sync, Fence;
 import ssbo : SSBO;
+import shadowmap : ShadowMap;
 import sfx : WavFMT;
 import textures : Texture;
 
 const(char)* IMGUI = "IMGUI"; 
 const(char)* COMPUTE = "COMPUTE";
 const(char)* RENDER = "RENDER";
+const(char)* SHADOWS = "SHADOWS";
 
 /** Main application structure
  */
@@ -76,6 +78,7 @@ struct App {
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
+  ShadowMap shadows;
 
   VkSampler sampler;
   Shader[] shaders;
@@ -125,6 +128,7 @@ struct App {
 
   VkCommandBuffer[] imguiBuffers = null;
   VkCommandBuffer[] renderBuffers = null;
+  VkCommandBuffer[] shadowBuffers = null;
 
   VkAllocationCallbacks* allocator = null;
   VkDebugReportCallbackEXT debugCallback = null;

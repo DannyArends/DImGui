@@ -77,10 +77,11 @@ void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
   app.endSingleTimeCommands(commandBuffer, app.commandPool, app.queue);
 }
 
-void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
+void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuffer, VkDeviceSize size = VK_WHOLE_SIZE) {
   if(app.trace) SDL_Log("updateBuffer");
   VkBufferCopy copyRegion = { size : size };
-  vkCmdCopyBuffer(app.renderBuffers[app.syncIndex], buffer.sb, buffer.vb, 1, &copyRegion);
+  //vkCmdCopyBuffer(app.renderBuffers[app.syncIndex], buffer.sb, buffer.vb, 1, &copyRegion);
+  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
 
   VkBufferMemoryBarrier bufferBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
@@ -94,7 +95,7 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkDeviceSize size = VK
   };
 
   vkCmdPipelineBarrier(
-    app.renderBuffers[app.syncIndex],
+    cmdBuffer,
     VK_PIPELINE_STAGE_TRANSFER_BIT,       // Source stage: Where the write occurred (copy)
     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,   // Destination stage: Where the read will occur (vertex shader input)
     0,                                    // dependencyFlags
@@ -132,7 +133,7 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
 
 /** Create Vulkan buffer and memory pointer and transfer the array of objects into the GPU memory
  */
-bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsageFlags usage, 
+bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage, 
               VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
   uint size = cast(uint)(objects[0].sizeof * objects.length);
   if(app.trace) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, size);
@@ -156,7 +157,7 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkBufferUsage
   }
   memcpy(buffer.data, cast(void*)objects, size);
 
-  app.updateBuffer(buffer, size);
+  app.updateBuffer(buffer, cmdBuffer, size);
 
   if(app.trace) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, size);
   return(true);

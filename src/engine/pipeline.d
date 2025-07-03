@@ -12,8 +12,8 @@ import vertex : Vertex;
 /** GraphicsPipeline
  */
 struct GraphicsPipeline {
-  VkPipelineLayout pipelineLayout;
-  VkPipeline graphicsPipeline;
+  VkPipelineLayout layout;
+  VkPipeline pipeline;
 }
 
 /** Create a GraphicsPipeline object for a specified topology
@@ -107,7 +107,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     setLayoutCount: 1, // Optional
     pSetLayouts: &app.layouts[RENDER], // Optional
   };
-  enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, null, &app.pipelines[topology].pipelineLayout));
+  enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, null, &app.pipelines[topology].layout));
   
   VkPipelineDepthStencilStateCreateInfo depthStencil = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -135,15 +135,15 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     pDepthStencilState: &depthStencil,                        // Optional
     pColorBlendState: &colorBlending,
     pDynamicState: null,                             // Optional
-    layout: app.pipelines[topology].pipelineLayout,
+    layout: app.pipelines[topology].layout,
     renderPass: app.renderpass,
     subpass: 0,
     basePipelineHandle: null,                                 // Optional
   };
 
-  enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.pipelines[topology].graphicsPipeline));
+  enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.pipelines[topology].pipeline));
   app.frameDeletionQueue.add((){
-    vkDestroyPipelineLayout(app.device, app.pipelines[topology].pipelineLayout, app.allocator);
-    vkDestroyPipeline(app.device, app.pipelines[topology].graphicsPipeline, app.allocator);
+    vkDestroyPipelineLayout(app.device, app.pipelines[topology].layout, app.allocator);
+    vkDestroyPipeline(app.device, app.pipelines[topology].pipeline, app.allocator);
   });
 }

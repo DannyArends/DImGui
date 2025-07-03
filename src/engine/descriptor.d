@@ -82,7 +82,7 @@ void createDSPool(ref App app, const(char)* poolID, VkDescriptorPoolSize[] poolS
     pPoolSizes : &poolSizes[0]
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.pools[poolID]));
-  if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", poolID, app.pools[poolID]);
+  SDL_Log("Created %s DescriptorPool: %p", poolID, app.pools[poolID]);
 }
 
 /** ImGui DescriptorPool (Images)

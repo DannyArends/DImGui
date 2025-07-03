@@ -41,20 +41,16 @@ void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
 
 // Function to create a 1x1 white SDL_Surface
 SDL_Surface* createDummySDLSurface() {
-  uint width = 1, height = 1;
-
-  SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_RGBA32);
-
-  if (!surface) {
+  SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA32);
+  if(!surface){
     SDL_Log("Failed to create dummy SDL_Surface: %s", SDL_GetError());
     return null;
   }
 
-  if (SDL_MUSTLOCK(surface)) { SDL_LockSurface(surface); }
+  if(SDL_MUSTLOCK(surface)) SDL_LockSurface(surface);
   auto whitePixel = SDL_MapRGBA(surface.format, 255, 255, 255, 255);
   memcpy(surface.pixels, &whitePixel, surface.format.BytesPerPixel);
-
-  if (SDL_MUSTLOCK(surface)) { SDL_UnlockSurface(surface); }
+  if(SDL_MUSTLOCK(surface)) SDL_UnlockSurface(surface);
   return surface;
 }
 
@@ -107,7 +103,9 @@ void toGPU(ref App app, ref Texture texture, uint i) {
   // Copy the image data to the StagingBuffer memory
   void* data;
   vkMapMemory(app.device, stagingBufferMemory, 0, texture.surface.imageSize, 0, &data);
+  if(SDL_MUSTLOCK(texture.surface)) SDL_LockSurface(texture.surface);
   memcpy(data, texture.surface.pixels, texture.surface.imageSize);
+  if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);
   vkUnmapMemory(app.device, stagingBufferMemory);
 
   // Create an image, transition the layout

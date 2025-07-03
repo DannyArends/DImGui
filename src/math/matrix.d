@@ -126,14 +126,16 @@ float[3] scale(const Matrix m) {
 }
 
 /** Orthogonal projection Matrix V4(l, r, b, t) */
-@nogc pure Matrix orthogonal(float left, float right, float bottom, float top) nothrow {
+@nogc pure Matrix orthogonal(float left, float right, float bottom, float top, float near, float far) nothrow {
   Matrix projection;
 
-  projection[0] = 2 / (right - left);
-  projection[5] = 2 / (top - bottom);
-  projection[10] = -1;
-  projection[12] = - (right + left) / (right - left);
-  projection[13] = - (top + bottom) / (top - bottom);
+  projection[0]  =  2.0f / (right - left);
+  projection[5]  = -2.0f / (top - bottom);
+  projection[10] =  1.0f / (far - near);
+
+  projection[12] = -(right + left) / (right - left);
+  projection[13] = -(top + bottom) / (top - bottom);
+  projection[14] =  -near / (far - near);
 
   return projection;
 }

@@ -1,0 +1,382 @@
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
+
+import engine;
+
+import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
+import images : createImage, transitionImageLayout;
+import lights : Light;
+import matrix : Matrix, orthogonal, multiply, lookAt;
+import pipeline : GraphicsPipeline;
+import geometry : shadow;
+import reflection : reflectShaders, createResources;
+import shaders : Shader, createStageInfo, createShaderModule;
+import swapchain : createImageView;
+import vector : normalize, vAdd;
+import vertex : Vertex;
+
+struct ShadowMap {
+  VkImage image;
+  VkImageView imageView;
+  VkDeviceMemory memory;
+  VkSampler sampler;
+  VkRenderPass renderPass;
+  VkFramebuffer framebuffer;
+  Shader[] shaders;
+  GraphicsPipeline pipeline;
+
+  VkFormat format = VK_FORMAT_D32_SFLOAT;
+  uint dimension = 2048; // Or 1024, 4096, etc. - resolution of your shadow map
+}
+
+void createShadowMap(ref App app) {
+  app.createShadowMapResources();
+  app.createShadowMapRenderPass();
+  app.createShadowMapFramebuffer();
+  app.createShadowShader();
+
+  app.mainDeletionQueue.add((){ 
+    vkDestroyDescriptorSetLayout(app.device, app.layouts[SHADOWS], app.allocator); 
+  });
+}
+
+/** 
+ * Shadow map resource creation
+ */
+void createShadowMapResources(ref App app) {
+  if(app.verbose) SDL_Log("Shadow map resources creation");
+
+  app.createImage(app.shadows.dimension, app.shadows.dimension,
+                  &app.shadows.image, &app.shadows.memory,
+                  app.shadows.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
+                  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+  if(app.verbose) SDL_Log(" - shadow map image created: %p", app.shadows.image);
+
+  app.shadows.imageView = app.createImageView(app.shadows.image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+  if(app.verbose) SDL_Log(" - shadow map image view created: %p", app.shadows.imageView);
+
+  VkSamplerCreateInfo samplerInfo = {
+    sType: VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+    magFilter: VK_FILTER_LINEAR, // For soft edges with PCF
+    minFilter: VK_FILTER_LINEAR,
+    addressModeU: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+    addressModeV: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+    addressModeW: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+    borderColor: VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE, // Important: white means 'outside shadow'
+    unnormalizedCoordinates: VK_FALSE,
+    compareEnable: VK_TRUE, // Enable hardware depth comparison
+    compareOp: VK_COMPARE_OP_LESS_OR_EQUAL, // For shadow mapping
+    mipmapMode: VK_SAMPLER_MIPMAP_MODE_NEAREST, // No mipmaps for single depth map
+    mipLodBias: 0.0f,
+    minLod: 0.0f,
+    maxLod: 0.0f,
+    anisotropyEnable: VK_FALSE, // Not typically used for depth maps
+    maxAnisotropy: 1.0f
+  };
+
+  enforceVK(vkCreateSampler(app.device, &samplerInfo, app.allocator, &app.shadows.sampler));
+  if(app.verbose) SDL_Log(" - shadow map sampler created: %p", app.shadows.sampler);
+
+  app.mainDeletionQueue.add((){
+      vkDestroySampler(app.device, app.shadows.sampler, app.allocator);
+      vkFreeMemory(app.device, app.shadows.memory, app.allocator);
+      vkDestroyImageView(app.device, app.shadows.imageView, app.allocator);
+      vkDestroyImage(app.device, app.shadows.image, app.allocator);
+  });
+}
+
+/** 
+ * Shadow map render pass  creation
+ */
+void createShadowMapRenderPass(ref App app) {
+  if(app.verbose) SDL_Log("Shadow map render pass creation");
+
+  VkAttachmentDescription depthAttachment = {
+    format: app.shadows.format,
+    samples: VK_SAMPLE_COUNT_1_BIT,
+    loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+    storeOp: VK_ATTACHMENT_STORE_OP_STORE,
+    stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+    initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+    finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+  };
+
+  VkAttachmentReference depthAttachmentRef = {
+    attachment: 0,
+    layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+  };
+
+  VkSubpassDescription subpass = {
+    pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
+    colorAttachmentCount: 0,
+    pDepthStencilAttachment: &depthAttachmentRef
+  };
+
+  VkSubpassDependency dependency = {
+    srcSubpass: VK_SUBPASS_EXTERNAL,
+    dstSubpass: 0,
+    srcStageMask: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+    dstStageMask: VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+    srcAccessMask: VK_ACCESS_SHADER_READ_BIT,
+    dstAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+    dependencyFlags: 0
+  };
+
+  VkRenderPassCreateInfo renderPassInfo = {
+    sType: VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+    attachmentCount: 1,
+    pAttachments: &depthAttachment,
+    subpassCount: 1,
+    pSubpasses: &subpass,
+    dependencyCount: 1,
+    pDependencies: &dependency
+  };
+
+  enforceVK(vkCreateRenderPass(app.device, &renderPassInfo, app.allocator, &app.shadows.renderPass));
+  if(app.verbose) SDL_Log("Shadow map render pass created.");
+
+  app.mainDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.shadows.renderPass, app.allocator); });
+}
+
+/** 
+ * Shadow map framebuffer creation
+ */
+void createShadowMapFramebuffer(ref App app) {
+  if(app.verbose) SDL_Log("Shadow map framebuffer creation");
+
+  VkImageView[] attachments = [ app.shadows.imageView ];
+
+  VkFramebufferCreateInfo framebufferInfo = {
+    sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+    renderPass: app.shadows.renderPass,
+    attachmentCount: cast(uint)attachments.length,
+    pAttachments: &attachments[0],
+    width: app.shadows.dimension,
+    height: app.shadows.dimension,
+    layers: 1
+  };
+
+  enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, app.allocator, &app.shadows.framebuffer));
+  if(app.verbose) SDL_Log("Shadow map framebuffer created.");
+
+  app.mainDeletionQueue.add((){ vkDestroyFramebuffer(app.device, app.shadows.framebuffer, app.allocator); });
+}
+
+/** Load vertex shadow shader
+ */
+void createShadowShader(ref App app, const(char)* vertPath = "data/shaders/shadow.glsl") {
+  auto vShader = app.createShaderModule(vertPath, shaderc_glsl_vertex_shader);
+
+  app.shadows.shaders = [ vShader ];
+
+  app.mainDeletionQueue.add(() {
+    for(uint i = 0; i < app.shadows.shaders.length; i++) {
+      vkDestroyShaderModule(app.device, app.shadows.shaders[i], app.allocator);
+    }
+  });
+}
+
+/** Create the shadow mapping pipeline
+ */
+void createShadowMapGraphicsPipeline(ref App app) {
+  if(app.verbose) SDL_Log("Shadow map graphics pipeline creation");
+  app.layouts[SHADOWS] = app.createDescriptorSetLayout(app.shadows.shaders);
+  app.sets[SHADOWS] = createDescriptorSet(app.device, app.pools[SHADOWS], app.layouts[SHADOWS], app.framesInFlight);
+
+  VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    setLayoutCount: 1,
+    pSetLayouts: &app.layouts[SHADOWS],
+  };
+
+  enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, app.allocator, &app.shadows.pipeline.layout));
+  if(app.verbose) SDL_Log(" - shadow map pipeline layout created: %p", app.shadows.pipeline.layout);
+
+  auto stages = createStageInfo(app.shadows.shaders);
+
+  VkVertexInputBindingDescription bindingDescription = {
+    binding: 0,
+    stride: cast(uint) Vertex.sizeof,
+    inputRate: VK_VERTEX_INPUT_RATE_VERTEX
+  };
+
+  VkVertexInputAttributeDescription[]  attributeDescriptions= [ {
+    binding: 0,
+    location: 0,
+    format: VK_FORMAT_R32G32B32_SFLOAT,
+    offset: Vertex.position.offsetof
+  } ];
+
+  VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+    vertexBindingDescriptionCount: 1,
+    pVertexBindingDescriptions: &bindingDescription,
+    vertexAttributeDescriptionCount: cast(uint)attributeDescriptions.length,
+    pVertexAttributeDescriptions: attributeDescriptions.ptr,
+  };
+
+  VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+    topology: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    primitiveRestartEnable: VK_FALSE,
+  };
+
+  VkViewport viewport = {
+    x: 0.0f, y: 0.0f,
+    width: cast(float)app.shadows.dimension,
+    height: cast(float)app.shadows.dimension,
+    minDepth: 0.0f, maxDepth: 1.0f,
+  };
+
+  VkRect2D scissor = {
+    offset: { x: 0, y: 0 },
+    extent: { width: app.shadows.dimension, height: app.shadows.dimension },
+  };
+
+  VkPipelineViewportStateCreateInfo viewportState = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+    viewportCount: 1,
+    pViewports: &viewport,
+    scissorCount: 1,
+    pScissors: &scissor
+  };
+
+  VkPipelineRasterizationStateCreateInfo rasterizer = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+    depthClampEnable: VK_FALSE,
+    polygonMode: VK_POLYGON_MODE_FILL,
+    lineWidth: 1.0f,
+    cullMode: VK_CULL_MODE_FRONT_BIT,
+    frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
+    depthBiasEnable: VK_TRUE,
+    depthBiasConstantFactor: 1.25f,
+    depthBiasClamp: 0.0f,
+    depthBiasSlopeFactor: 1.75f
+  };
+
+  VkPipelineMultisampleStateCreateInfo multisampling = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+    sampleShadingEnable: VK_FALSE,
+    rasterizationSamples: VK_SAMPLE_COUNT_1_BIT
+  };
+
+  VkPipelineDepthStencilStateCreateInfo depthStencil = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+    depthTestEnable: VK_TRUE,
+    depthWriteEnable: VK_TRUE,
+    depthCompareOp: VK_COMPARE_OP_LESS_OR_EQUAL,
+    depthBoundsTestEnable: VK_FALSE,
+    stencilTestEnable: VK_FALSE
+  };
+
+
+  VkGraphicsPipelineCreateInfo pipelineInfo = {
+    sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    stageCount: cast(uint)stages.length,
+    pStages: &stages[0],
+    pVertexInputState: &vertexInputInfo,
+    pInputAssemblyState: &inputAssembly,
+    pViewportState: &viewportState,
+    pRasterizationState: &rasterizer,
+    pMultisampleState: &multisampling,
+    pDepthStencilState: &depthStencil,
+    layout: app.shadows.pipeline.layout,
+    renderPass: app.shadows.renderPass,
+    subpass: 0
+  };
+
+  enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, app.allocator, &app.shadows.pipeline.pipeline));
+  if(app.verbose) SDL_Log("Shadow map graphics pipeline created: %p", app.shadows.pipeline.pipeline);
+
+  app.frameDeletionQueue.add((){
+    vkDestroyPipelineLayout(app.device, app.shadows.pipeline.layout, app.allocator);
+    vkDestroyPipeline(app.device, app.shadows.pipeline.pipeline, app.allocator);
+  });
+}
+
+void updateShadowMapUBO(ref App app, Light light, uint syncIndex) {
+  float[3] lightPos = light.position[0 .. 3];
+  float[3] lightDir = light.direction[0 .. 3].normalize();
+  float[3] lightTarget = lightPos.vAdd(lightDir);
+  float[3] upVector = [0.0f, 1.0f, 0.0f];
+
+  Matrix lightView = lookAt(lightPos, lightTarget, upVector);
+
+  float orthoSize = 10.0f;  // Represents half the width/height of the orthographic box
+  float nearPlane = 0.1f;   // TODO: Get from Camera
+  float farPlane = 100.0f;  // TODO: Get from Camera
+
+  Matrix lightProjection = orthogonal(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
+  Matrix lightSpaceMatrix = lightProjection.multiply(lightView);
+
+  for(uint s = 0; s < app.shadows.shaders.length; s++) {
+    auto shader = app.shadows.shaders[s];
+    for(uint d = 0; d < shader.descriptors.length; d++) {
+      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+        void* data;
+        vkMapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex], 0, shader.descriptors[d].bytes, 0, &data);
+        memcpy(data, &lightSpaceMatrix, shader.descriptors[d].bytes);
+        vkUnmapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex]);
+      }
+    }
+  }
+  if(app.verbose) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
+}
+
+void createShadowMapCommandBuffers(ref App app) {
+  SDL_Log("Creating %d shadow map command buffers", app.framesInFlight);
+  app.shadowBuffers.length = app.framesInFlight;
+  VkCommandBufferAllocateInfo allocInfo = {
+      sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      commandPool: app.commandPool, // Use your main graphics command pool
+      level: VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+      commandBufferCount: app.framesInFlight,
+  };
+
+  enforceVK(vkAllocateCommandBuffers(app.device, &allocInfo, &app.shadowBuffers[0]));
+  if(app.verbose) SDL_Log(" - shadow map command buffers allocated.");
+
+  // Add to main deletion queue for cleanup
+  app.mainDeletionQueue.add((){
+    vkFreeCommandBuffers(app.device, app.commandPool, cast(uint)app.shadowBuffers.length, &app.shadowBuffers[0]);
+  });
+}
+
+void recordShadowCommandBuffer(ref App app, uint syncIndex) {
+  vkResetCommandBuffer(app.shadowBuffers[app.syncIndex], 0); // Reset for recording
+
+  VkCommandBufferBeginInfo beginInfo = {
+      sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+      pInheritanceInfo: null
+  };
+  enforceVK(vkBeginCommandBuffer(app.shadowBuffers[app.syncIndex], &beginInfo));
+
+  if(app.verbose) SDL_Log("Beginning shadow map render pass");
+
+  VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
+
+  VkRenderPassBeginInfo renderPassInfo = {
+    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+    renderPass: app.shadows.renderPass,
+    framebuffer: app.shadows.framebuffer,
+    renderArea: {
+        offset: { x: 0, y: 0 },
+        extent: { width: app.shadows.dimension, height: app.shadows.dimension }
+    },
+    clearValueCount: 1,
+    pClearValues: &clearDepth,
+  };
+
+  vkCmdBeginRenderPass(app.shadowBuffers[app.syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBindPipeline(app.shadowBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
+
+  /*for(size_t x = 0; x < app.objects.length; x++) {
+    if(app.objects[x].isVisible) app.shadow(app.objects[x], syncIndex);
+  }*/
+  vkCmdEndRenderPass(app.shadowBuffers[app.syncIndex]);
+  enforceVK(vkEndCommandBuffer(app.shadowBuffers[app.syncIndex])); // End recording for shadow map buffer
+}
+
