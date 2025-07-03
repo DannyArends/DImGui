@@ -13,6 +13,7 @@ import events : handleEvents, sdlEventsFilter;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, createFontTexture;
 import scene : createScene;
+import shadowmap : createShadowMap;
 import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL, START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
@@ -61,7 +62,8 @@ void run(string[] args) {
   if (app.compute.enabled) {
     app.createComputeShaders();           /// Load the compute shader
   }
-  app.createCommandPools();                /// Create the rendering CommandPool
+  app.createCommandPools();               /// Create the rendering CommandPool
+  app.createShadowMap();
   app.createSampler();                    /// Create a texture sampler
   app.createImGuiDescriptorPool();        /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();   /// ImGui DescriptorSet layout

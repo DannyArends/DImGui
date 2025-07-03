@@ -51,30 +51,30 @@ void createComputeShaders(ref App app, const(char)*[] computePaths = ["data/shad
 void createComputePipeline(ref App app, Shader shader) {
   if(app.verbose) SDL_Log("createComputePipeline for Shader %s", shader.path);
   app.compute.pipelines[shader.path] = GraphicsPipeline();
-  VkDescriptorSetLayout pSetLayouts = app.createDescriptorSetLayout([shader]);
-  app.sets[shader.path] = createDescriptorSet(app.device, app.pools[COMPUTE], pSetLayouts,  app.framesInFlight);
+  app.layouts[shader.path] = app.createDescriptorSetLayout([shader]);
+  app.sets[shader.path] = createDescriptorSet(app.device, app.pools[COMPUTE], app.layouts[shader.path],  app.framesInFlight);
 
   VkPipelineLayoutCreateInfo computeLayout = {
     sType : VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-    pSetLayouts : &pSetLayouts,
+    pSetLayouts : &app.layouts[shader.path],
     setLayoutCount : 1,
     pNext : null
   };
-  enforceVK(vkCreatePipelineLayout(app.device, &computeLayout, null, &app.compute.pipelines[shader.path].pipelineLayout));
+  enforceVK(vkCreatePipelineLayout(app.device, &computeLayout, null, &app.compute.pipelines[shader.path].layout));
   
   VkComputePipelineCreateInfo computeInfo = {
     sType : VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-    layout : app.compute.pipelines[shader.path].pipelineLayout,
+    layout : app.compute.pipelines[shader.path].layout,
     stage : shader.info,
     pNext : null
   };
-  enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipelines[shader.path].graphicsPipeline));
-  if(app.verbose) SDL_Log("Compute pipeline [sel: %s] at: %p", shader.path, app.compute.pipelines[shader.path].graphicsPipeline);
+  enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipelines[shader.path].pipeline));
+  if(app.verbose) SDL_Log("Compute pipeline [sel: %s] at: %p", shader.path, app.compute.pipelines[shader.path].pipeline);
 
   app.frameDeletionQueue.add((){
-    vkDestroyDescriptorSetLayout(app.device, pSetLayouts, app.allocator);
-    vkDestroyPipelineLayout(app.device, app.compute.pipelines[shader.path].pipelineLayout, app.allocator);
-    vkDestroyPipeline(app.device, app.compute.pipelines[shader.path].graphicsPipeline, app.allocator);
+    vkDestroyDescriptorSetLayout(app.device, app.layouts[shader.path], app.allocator);
+    vkDestroyPipelineLayout(app.device, app.compute.pipelines[shader.path].layout, app.allocator);
+    vkDestroyPipeline(app.device, app.compute.pipelines[shader.path].pipeline, app.allocator);
   });
 }
 
@@ -201,11 +201,11 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   }
 
   // Bind the compute pipeline
-  vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].graphicsPipeline);
+  vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
 
   // Bind the descriptor set containing the compute resources for the compute pipeline
   vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, 
-                          app.compute.pipelines[shader.path].pipelineLayout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
+                          app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
 
   // Execute the compute pipeline dispatch
   vkCmdDispatch(app.compute.commands[shader.path][syncIndex], cast(uint)ceil(nJobs[0] / shader.groupCount[0])

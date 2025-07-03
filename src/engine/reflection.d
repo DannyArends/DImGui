@@ -118,10 +118,10 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
       }
     }
     if(!descr.count) descr.count = cast(uint)app.textures.length;
-    if (app.trace) {
+    //if (app.trace) {
       SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
               descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);
-    }
+    //}
     return(descr);
 }
 

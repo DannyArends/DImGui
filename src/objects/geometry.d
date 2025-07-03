@@ -53,14 +53,14 @@ class Geometry {
   bool window = false;                          /// ImGui window displayed?
 
   /** Allocate vertex, index, and instance buffers */
-  void buffer(ref App app) {
+  void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(name()));
     if(!buffers[VERTEX])
-      buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+      buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) 
-      buffers[INDEX] = app.toGPU(indices, indexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+      buffers[INDEX] = app.toGPU(indices, indexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     if(!buffers[INSTANCE])
-      buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+      buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
   }
 
   bool isVisible = true;                          /// Boolean flag
@@ -204,16 +204,32 @@ void draw(ref App app, Geometry object, size_t i) {
   if(app.trace) SDL_Log("DRAW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
 
-  vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[object.topology].graphicsPipeline);
+  vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[object.topology].pipeline);
 
   vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
   vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
   vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.pipelines[object.topology].pipelineLayout, 0, 1, &app.sets[RENDER][i], 0, null);
+                          app.pipelines[object.topology].layout, 0, 1, &app.sets[RENDER][i], 0, null);
 
   vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.name()));
 }
 
+/** Render a Geometry to app.renderBuffers[i] */
+void shadow(ref App app, Geometry object, size_t i) {
+  if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null) return;
+  if(app.trace) SDL_Log("SHADOW[%s]: %d instances", toStringz(object.name()), object.instances.length);
+  VkDeviceSize[] offsets = [0];
+
+  vkCmdBindVertexBuffers(app.shadowBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
+  vkCmdBindVertexBuffers(app.shadowBuffers[i], INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
+  vkCmdBindIndexBuffer(app.shadowBuffers[i], object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
+
+  vkCmdBindDescriptorSets(app.shadowBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                          app.shadows.pipeline.layout, 0, 1, &app.sets[SHADOWS][i], 0, null);
+
+  vkCmdDrawIndexed(app.shadowBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
+  if(app.trace) SDL_Log("SHADOW[%s]: DONE", toStringz(object.name()));
+}

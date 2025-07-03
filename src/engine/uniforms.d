@@ -33,7 +33,7 @@ struct UBO {
 }
 
 void createUBO(ref App app, Descriptor descriptor) {
-  if(app.verbose) SDL_Log("Create UBO at %s, size = %d", descriptor.base, descriptor.bytes);
+  SDL_Log("Create UBO at %s, size = %d", descriptor.base, descriptor.bytes);
 
   app.ubos[descriptor.base] = UBO();
   app.ubos[descriptor.base].buffer.length = app.framesInFlight;
@@ -41,7 +41,7 @@ void createUBO(ref App app, Descriptor descriptor) {
   for(uint i = 0; i < app.framesInFlight; i++) {
     app.createBuffer(&app.ubos[descriptor.base].buffer[i], &app.ubos[descriptor.base].memory[i], descriptor.bytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   }
-  if(app.verbose) SDL_Log("Created %d ComputeBuffers of size: %d bytes", app.imageCount, descriptor.bytes);
+  if(app.verbose) SDL_Log("Created %d UBO of size: %d bytes", app.imageCount, descriptor.bytes);
 
   app.frameDeletionQueue.add((){
     if(app.verbose) SDL_Log("Delete Compute UBO at %s", descriptor.base);
