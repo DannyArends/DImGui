@@ -74,8 +74,7 @@ void createLogicalDevice(ref App app, uint device = 0){
   // Get the Queue from the queueFamily
   vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
   vkGetDeviceQueue(app.device, app.queueFamily, 1, &app.transfer);
-  SDL_Log("vkGetDeviceQueue[family:%d] queue: %p", app.queueFamily, app.queue);
-  SDL_Log("vkGetDeviceQueue[family:%d] transfer: %p", app.queueFamily, app.transfer);
+  if(app.verbose) SDL_Log("vkGetDeviceQueue[family:%d] queue: %p, transfer: %p", app.queueFamily, app.queue, app.transfer);
 }
 
 void list(VkPhysicalDevice physicalDevice, size_t i) {

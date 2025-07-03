@@ -109,8 +109,8 @@ struct App {
   VkSurfaceFormatKHR[] surfaceformats = null;                                   /// Available formats
   uint format = 0;                                                              /// selected format
   VkSwapchainKHR swapChain = null;                                              /// Our SwapChain
-  VkCommandPool commandPool = null;                                             /// Our CommandPool
-  VkCommandPool transferPool = null;                                             /// Our CommandPool
+  VkCommandPool commandPool = null;                                             /// Our Rendering Command Pool
+  VkCommandPool transferPool = null;                                            /// Our Texture Transfer Pool
 
   // Per frame resources (reset when rebuilding the swapchain)
   Sync[] sync = null;

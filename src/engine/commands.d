@@ -79,8 +79,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 void createCommandPools(ref App app){
   app.commandPool = app.createCommandPool();
   app.transferPool = app.createCommandPool();
-  SDL_Log("createCommandPool[family:%d] queue: %p", app.queueFamily, app.commandPool);
-  SDL_Log("createCommandPool[family:%d] transfer: %p", app.queueFamily, app.transferPool);
+  SDL_Log("createCommandPool[family:%d] queue: %p,  transfer: %p", app.queueFamily, app.commandPool, app.transferPool);
 }
 
 VkCommandPool createCommandPool(ref App app) {

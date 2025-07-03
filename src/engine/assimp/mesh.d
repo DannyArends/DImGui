@@ -15,7 +15,6 @@ import vertex : Vertex;
 struct Mesh {
   uint[2] vertices;       /// Start .. End positions in Geometry.vertices array
   uint material;          /// Mesh material index
-  string tName;
 }
 
 string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform) {
@@ -29,7 +28,6 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
   // Vertex offset, load texture information,  bone weight, and normal matrix
   size_t vOff = asset.vertices.length;
   auto texInfo = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-  mMesh.tName = texInfo.path;
   auto weights = asset.loadBones(mesh, app.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
 
