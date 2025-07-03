@@ -6,7 +6,7 @@
 import engine;
 
 import glyph: Glyph;
-import textures : Texture, deAllocate, toRGBA, toGPU;
+import textures : Texture, deAllocate, toRGBA, toGPU, findTextureSlot;
 import images : createImage, imageSize;
 import swapchain : createImageView;
 
@@ -122,6 +122,6 @@ void createFontTexture(ref App app) {
   if(surface.format.BitsPerPixel != 32) surface.toRGBA();
 
   app.glyphAtlas.texture = Texture(app.glyphAtlas.path, surface.w, surface.h, surface);
-  app.toGPU(app.glyphAtlas.texture);
+  app.toGPU(app.glyphAtlas.texture, app.findTextureSlot());
   app.mainDeletionQueue.add((){ app.deAllocate(app.glyphAtlas.texture); });
 }

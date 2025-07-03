@@ -85,8 +85,6 @@ void createDSPool(ref App app, const(char)* poolID, VkDescriptorPoolSize[] poolS
   if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", poolID, app.pools[poolID]);
 }
 
-
-
 /** ImGui DescriptorPool (Images)
  */
 void createImGuiDescriptorPool(ref App app){
@@ -136,7 +134,6 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
     descriptorSetCount: size,
     pSetLayouts: &layouts[0]
   };
-
   enforceVK(vkAllocateDescriptorSets(device, &allocInfo, &set[0]));
   return(set);
 }
@@ -147,6 +144,7 @@ void createDescriptors(ref App app) {
   if(app.verbose) SDL_Log("createDescriptors for rendering pipeline");
   app.layouts[RENDER] = app.createDescriptorSetLayout(app.shaders);
   app.sets[RENDER] = createDescriptorSet(app.device, app.pools[RENDER], app.layouts[RENDER],  app.framesInFlight);
+
   app.frameDeletionQueue.add((){ 
     vkDestroyDescriptorSetLayout(app.device, app.layouts[RENDER], app.allocator); 
   });
@@ -160,12 +158,11 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
   for(uint s = 0; s < shaders.length; s++) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(app.trace) SDL_Log("- Descriptor: %d %s %s", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
+      if(app.trace) SDL_Log("- Descriptor[%d]: '%s' '%s'", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         VkDescriptorImageInfo[] textureInfo;
         textureInfo.length = app.textures.length;
-
         for (size_t i = 0; i < app.textures.length; i++) {
           VkDescriptorImageInfo textureImage = {
             imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
