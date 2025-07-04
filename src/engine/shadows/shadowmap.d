@@ -312,7 +312,7 @@ LightUbo computeLightSpace(ref App app, Light light){
 
   Matrix lightView = lookAt(lightPos, lightTarget, upVector);
 
-  float fovY = light.properties[2];
+  float fovY = 2 * light.properties[2];
   float nearPlane = 10.0f;
   float farPlane = 100.0f;
 
