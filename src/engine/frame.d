@@ -65,13 +65,13 @@ void renderFrame(ref App app){
   app.recordShadowCommandBuffer(app.syncIndex);
 
   if(app.trace) SDL_Log("Phase 4: Prepare & Submit Graphics & ImGui Work");
-  app.updateRenderUBO(app.shaders, app.syncIndex);
+  app.updateRenderUBO(app.shaders, app.lights[1], app.syncIndex);
   app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex); // Updated each frame, since we're loading textures a-sync
 
   app.recordRenderCommandBuffer(app.shaders, app.syncIndex);
   app.recordImGuiCommandBuffer(app.syncIndex);
 
-  VkCommandBuffer[] submitCommandBuffers = [ app.renderBuffers[app.syncIndex], app.imguiBuffers[app.syncIndex] ];
+  VkCommandBuffer[] submitCommandBuffers = [ app.shadowBuffers[app.syncIndex], app.renderBuffers[app.syncIndex], app.imguiBuffers[app.syncIndex] ];
 
   VkSemaphore[] waitSemaphores = [ imageAcquired ];
   if (app.compute.enabled) { waitSemaphores ~= computeComplete; }

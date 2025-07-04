@@ -16,7 +16,7 @@ struct Bone {
   mat4 offset;
 };
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(std140, binding = 0) uniform UniformBufferObject {
     mat4 scene;       // Scene Camera adjustment
     mat4 view;        // View matrix
     mat4 proj;        // Projection matrix
@@ -28,6 +28,10 @@ layout(binding = 0) uniform UniformBufferObject {
 layout (std140, binding = 1) readonly buffer BoneMatrices {
     Bone transforms[];
 } boneSSBO;
+
+layout(std140, binding = 3) uniform LightSpaceMatrices {
+    mat4 lightProjView;
+} lightUbo;
 
 
 // Per Vertex attributes
@@ -46,7 +50,9 @@ layout(location = 7) in mat4 instance;
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec3 fragNormal;
 layout(location = 2) out vec2 fragTexCoord;
-layout(location = 3) out int fragTid;
+layout(location = 3) flat out int fragTid;
+layout(location = 4) out vec3 fragPosWorld;
+layout(location = 5) out vec4 fragPosLightSpace;
 
 vec3 illuminate(Light light, vec4 position, vec3 normal) {
   float attenuation = 1.0;
@@ -95,17 +101,20 @@ void main() {
 
   mat4 model = ubo.scene * instance;
   mat4 nMatrix = transpose(inverse(instance));
-  vec4 pos = model * finalPosition;
+  vec4 worldPos = model * finalPosition;
   gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * finalPosition;
   gl_PointSize = 2.0f;
 
   vec3 transformedNormal = normalize(vec3(nMatrix * vec4(inNormal, 0.0)));
   vec3 fcol = vec3( 0 );
   for(int i=0; i < ubo.nlights; ++i) {
-    fcol += illuminate(ubo.lights[i], pos, transformedNormal);
+    fcol += illuminate(ubo.lights[i], worldPos, transformedNormal);
   }
   fragColor = vec4(fcol, 1.0f);
   fragNormal = inNormal;
   fragTexCoord = inTexCoord;
   fragTid = Tid;
+  fragPosWorld = worldPos.xyz; // Pass world position to fragment shader
+  fragPosLightSpace = lightUbo.lightProjView * worldPos;
+
 }
