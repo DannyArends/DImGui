@@ -310,7 +310,7 @@ LightUbo computeLightSpace(ref App app, Light light){
 
   Matrix lightView = lookAt(lightPos, lightTarget, upVector);
 
-  float fovY = light.properties[2]; // Assuming properties[2] is half-angle in degrees
+  float fovY = light.properties[2] * 2.0f; // Assuming properties[2] is half-angle in degrees
   float aspect = 1.0f; // Shadow map is typically square
   float nearPlane = 0.1f;
   float farPlane = 100.0f;
