@@ -5,6 +5,7 @@
 
 import engine;
 
+import color : Colors;
 import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, transitionImageLayout;
 import lights : Light;
@@ -14,6 +15,7 @@ import geometry : shadow, Instance;
 import reflection : reflectShaders, createResources;
 import shaders : Shader, createStageInfo, createShaderModule;
 import swapchain : createImageView;
+import validation : pushLabel, popLabel;
 import vector : normalize, vAdd;
 import vertex : Vertex, VERTEX, INSTANCE;
 
@@ -254,7 +256,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     depthClampEnable: VK_FALSE,
     polygonMode: VK_POLYGON_MODE_FILL,
     lineWidth: 1.0f,
-    cullMode: VK_CULL_MODE_FRONT_BIT,
+    cullMode: VK_CULL_MODE_NONE,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
     depthBiasConstantFactor: 1.25f,
@@ -310,12 +312,11 @@ LightUbo computeLightSpace(ref App app, Light light){
 
   Matrix lightView = lookAt(lightPos, lightTarget, upVector);
 
-  float fovY = light.properties[2] * 2.0f; // Assuming properties[2] is half-angle in degrees
-  float aspect = 1.0f; // Shadow map is typically square
-  float nearPlane = 0.1f;
+  float fovY = light.properties[2];
+  float nearPlane = 10.0f;
   float farPlane = 100.0f;
 
-  Matrix lightProjection = perspective(fovY, aspect, nearPlane, farPlane);
+  Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
   LightUbo ubo = {
     lightSpaceMatrix : lightProjection.multiply(lightView),
     scene : Matrix.init
@@ -384,20 +385,26 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     pClearValues: &clearDepth,
   };
 
+  pushLabel(app.shadowBuffers[app.syncIndex], "Shadow Buffering", Colors.lightslategray);
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isBuffered) {
       if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
       app.objects[x].buffer(app, app.shadowBuffers[syncIndex]);
     }
   }
+  popLabel(app.shadowBuffers[app.syncIndex]);
 
+  pushLabel(app.shadowBuffers[app.syncIndex], "Shadow RenderPass", Colors.lightgray);
   vkCmdBeginRenderPass(app.shadowBuffers[app.syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   vkCmdBindPipeline(app.shadowBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
-
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(app.objects[x].isVisible) app.shadow(app.objects[x], syncIndex);
+    if(app.objects[x].isVisible && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST){
+      app.shadow(app.objects[x], syncIndex);
+    }
   }
   vkCmdEndRenderPass(app.shadowBuffers[app.syncIndex]);
+  popLabel(app.shadowBuffers[app.syncIndex]);
+
   enforceVK(vkEndCommandBuffer(app.shadowBuffers[app.syncIndex])); // End recording for shadow map buffer
 }
 

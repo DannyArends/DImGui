@@ -132,7 +132,7 @@ void createScene(ref App app){
     SDL_Log("createScene: Add Spider OpenAsset");
     app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
     app.objects[($-1)].animation = 14;
-    app.objects[($-1)].position([1.0f, -1.0f, 0.0f]);
+    app.objects[($-1)].position([1.0f, 0.0f, 0.0f]);
     app.objects[($-1)].scale([0.3f, 0.3f, 0.3f]);
     app.objects[($-1)].rotate([27.0f, 0.0f, 0.0f]);
   }).start();

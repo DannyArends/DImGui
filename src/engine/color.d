@@ -277,7 +277,6 @@ enum Colors : float[4] {
     skyblue = [0.529f, 0.808f, 0.922f, 1.0f],
     slateblue = [0.416f, 0.353f, 0.804f, 1.0f],
     slategray = [0.439f, 0.502f, 0.565f, 1.0f],
-    slategrey = [0.439f, 0.502f, 0.565f, 1.0f],
     snow = [1.000f, 0.980f, 0.980f, 1.0f],
     springgreen = [0.000f, 1.000f, 0.498f, 1.0f],
     steelblue = [0.275f, 0.510f, 0.706f, 1.0f],
