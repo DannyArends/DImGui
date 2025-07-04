@@ -8,14 +8,14 @@ import engine;
 import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, transitionImageLayout;
 import lights : Light;
-import matrix : Matrix, orthogonal, multiply, lookAt;
+import matrix : Matrix, orthogonal, perspective, multiply, lookAt;
 import pipeline : GraphicsPipeline;
-import geometry : shadow;
+import geometry : shadow, Instance;
 import reflection : reflectShaders, createResources;
 import shaders : Shader, createStageInfo, createShaderModule;
 import swapchain : createImageView;
 import vector : normalize, vAdd;
-import vertex : Vertex;
+import vertex : Vertex, VERTEX, INSTANCE;
 
 struct ShadowMap {
   VkImage image;
@@ -30,6 +30,11 @@ struct ShadowMap {
   VkFormat format = VK_FORMAT_D32_SFLOAT;
   uint dimension = 2048; // Or 1024, 4096, etc. - resolution of your shadow map
 }
+
+struct LightUbo {
+  Matrix lightSpaceMatrix;
+  Matrix scene;
+};
 
 void createShadowMap(ref App app) {
   app.createShadowMapResources();
@@ -197,23 +202,23 @@ void createShadowMapGraphicsPipeline(ref App app) {
 
   auto stages = createStageInfo(app.shadows.shaders);
 
-  VkVertexInputBindingDescription bindingDescription = {
-    binding: 0,
-    stride: cast(uint) Vertex.sizeof,
-    inputRate: VK_VERTEX_INPUT_RATE_VERTEX
-  };
+  VkVertexInputBindingDescription[] bindingDescription = [
+    {binding: VERTEX, stride: cast(uint) Vertex.sizeof, inputRate: VK_VERTEX_INPUT_RATE_VERTEX },
+    {binding: INSTANCE, stride: Instance.sizeof, inputRate: VK_VERTEX_INPUT_RATE_INSTANCE }
+  ];
 
-  VkVertexInputAttributeDescription[]  attributeDescriptions= [ {
-    binding: 0,
-    location: 0,
-    format: VK_FORMAT_R32G32B32_SFLOAT,
-    offset: Vertex.position.offsetof
-  } ];
+  VkVertexInputAttributeDescription[]  attributeDescriptions= [ 
+    {binding: VERTEX, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.position.offsetof },
+    {binding: INSTANCE, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof },
+    {binding: INSTANCE, location: 2, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 4 * float.sizeof },
+    {binding: INSTANCE, location: 3, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 8 * float.sizeof },
+    {binding: INSTANCE, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 12 * float.sizeof }
+  ];
 
   VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-    vertexBindingDescriptionCount: 1,
-    pVertexBindingDescriptions: &bindingDescription,
+    vertexBindingDescriptionCount: cast(uint)bindingDescription.length,
+    pVertexBindingDescriptions: &bindingDescription[0],
     vertexAttributeDescriptionCount: cast(uint)attributeDescriptions.length,
     pVertexAttributeDescriptions: attributeDescriptions.ptr,
   };
@@ -297,7 +302,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
   });
 }
 
-void updateShadowMapUBO(ref App app, Light light, uint syncIndex) {
+LightUbo computeLightSpace(ref App app, Light light){
   float[3] lightPos = light.position[0 .. 3];
   float[3] lightDir = light.direction[0 .. 3].normalize();
   float[3] lightTarget = lightPos.vAdd(lightDir);
@@ -305,12 +310,21 @@ void updateShadowMapUBO(ref App app, Light light, uint syncIndex) {
 
   Matrix lightView = lookAt(lightPos, lightTarget, upVector);
 
-  float orthoSize = 10.0f;  // Represents half the width/height of the orthographic box
-  float nearPlane = 0.1f;   // TODO: Get from Camera
-  float farPlane = 100.0f;  // TODO: Get from Camera
+  float fovY = light.properties[2]; // Assuming properties[2] is half-angle in degrees
+  float aspect = 1.0f; // Shadow map is typically square
+  float nearPlane = 0.1f;
+  float farPlane = 100.0f;
 
-  Matrix lightProjection = orthogonal(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
-  Matrix lightSpaceMatrix = lightProjection.multiply(lightView);
+  Matrix lightProjection = perspective(fovY, aspect, nearPlane, farPlane);
+  LightUbo ubo = {
+    lightSpaceMatrix : lightProjection.multiply(lightView),
+    scene : Matrix.init
+  };
+  return(ubo);
+}
+
+void updateShadowMapUBO(ref App app, Light light, uint syncIndex) {
+  auto ubo = app.computeLightSpace(light);
 
   for(uint s = 0; s < app.shadows.shaders.length; s++) {
     auto shader = app.shadows.shaders[s];
@@ -318,7 +332,7 @@ void updateShadowMapUBO(ref App app, Light light, uint syncIndex) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
         void* data;
         vkMapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex], 0, shader.descriptors[d].bytes, 0, &data);
-        memcpy(data, &lightSpaceMatrix, shader.descriptors[d].bytes);
+        memcpy(data, &ubo, shader.descriptors[d].bytes);
         vkUnmapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex]);
       }
     }
@@ -370,12 +384,19 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     pClearValues: &clearDepth,
   };
 
+  for(size_t x = 0; x < app.objects.length; x++) {
+    if(!app.objects[x].isBuffered) {
+      if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
+      app.objects[x].buffer(app, app.shadowBuffers[syncIndex]);
+    }
+  }
+
   vkCmdBeginRenderPass(app.shadowBuffers[app.syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   vkCmdBindPipeline(app.shadowBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
 
-  /*for(size_t x = 0; x < app.objects.length; x++) {
+  for(size_t x = 0; x < app.objects.length; x++) {
     if(app.objects[x].isVisible) app.shadow(app.objects[x], syncIndex);
-  }*/
+  }
   vkCmdEndRenderPass(app.shadowBuffers[app.syncIndex]);
   enforceVK(vkEndCommandBuffer(app.shadowBuffers[app.syncIndex])); // End recording for shadow map buffer
 }

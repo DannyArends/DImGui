@@ -27,6 +27,12 @@ struct DescriptorLayoutBuilder {
   VkDescriptorSetLayoutBinding[] bindings;
 
   void add(uint binding, uint count, VkShaderStageFlags shaderStage, VkDescriptorType type){
+    foreach(ref b; bindings){
+      if(b.binding == binding){
+        b.stageFlags |= shaderStage;
+        return;
+      }
+    }
     VkDescriptorSetLayoutBinding layout = {
       binding: binding,
       stageFlags: shaderStage,
@@ -55,6 +61,7 @@ VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders){
   DescriptorLayoutBuilder builder;
   foreach(shader; shaders) {
     foreach(descriptor; shader.descriptors) {
+      SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
       builder.add(descriptor.binding, descriptor.count, shader.stage, descriptor.type);
     }
   }
@@ -141,7 +148,7 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
 void createDescriptors(ref App app) {
-  if(app.verbose) SDL_Log("createDescriptors for rendering pipeline");
+  SDL_Log("createDescriptors for rendering pipeline");
   app.layouts[RENDER] = app.createDescriptorSetLayout(app.shaders);
   app.sets[RENDER] = createDescriptorSet(app.device, app.pools[RENDER], app.layouts[RENDER],  app.framesInFlight);
 
@@ -161,26 +168,45 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
       if(app.trace) SDL_Log("- Descriptor[%d]: '%s' '%s'", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-        VkDescriptorImageInfo[] textureInfo;
-        textureInfo.length = app.textures.length;
-        for (size_t i = 0; i < app.textures.length; i++) {
-          VkDescriptorImageInfo textureImage = {
-            imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            imageView: app.textures[i].view,
-            sampler: app.sampler
+        if(to!string(shader.descriptors[d].name) == "texureSampler") {
+          VkDescriptorImageInfo[] textureInfo;
+          textureInfo.length = app.textures.length;
+          for (size_t i = 0; i < app.textures.length; i++) {
+            VkDescriptorImageInfo textureImage = {
+              imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              imageView: app.textures[i].view,
+              sampler: app.sampler
+            };
+            textureInfo[i] = textureImage;
+          }
+          VkWriteDescriptorSet set = {
+            sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            dstSet: dstSet[syncIndex],
+            dstBinding: shader.descriptors[d].binding,
+            dstArrayElement: 0,
+            descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            descriptorCount: cast(uint)app.textures.length,
+            pImageInfo: &textureInfo[0]
           };
-          textureInfo[i] = textureImage;
+          descriptorWrites ~= set;
         }
-        VkWriteDescriptorSet set = {
-          sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-          dstSet: dstSet[syncIndex],
-          dstBinding: shader.descriptors[d].binding,
-          dstArrayElement: 0,
-          descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-          descriptorCount: cast(uint)app.textures.length,
-          pImageInfo: &textureInfo[0]
-        };
-        descriptorWrites ~= set;
+        if(to!string(shader.descriptors[d].name) == "shadowMap"){
+          VkDescriptorImageInfo shadowMapInfo = { // Assign directly to the single info struct
+            imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            imageView: app.shadows.imageView, // Use the shadow map's image view
+            sampler: app.shadows.sampler     // Use the shadow map's sampler
+          };
+          VkWriteDescriptorSet set = {
+            sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            dstSet: dstSet[syncIndex],
+            dstBinding: shader.descriptors[d].binding,
+            dstArrayElement: 0,
+            descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            descriptorCount: 1, // Crucial: Only 1 descriptor for the single shadow map
+            pImageInfo: &shadowMapInfo // Point to the single info struct
+          };
+          descriptorWrites ~= set;
+        }
       }
       // Uniform Buffer Write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
