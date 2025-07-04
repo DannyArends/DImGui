@@ -6,6 +6,7 @@
 import engine;
 
 import buffer : createBuffer, copyBuffer;
+import color : Colors;
 import commands : createCommandBuffer;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet;
 import images : createImage, transitionImageLayout;
@@ -19,6 +20,7 @@ import sync : insertWriteBarrier, insertReadBarrier;
 import textures : Texture, idx, registerTexture, findTextureSlot;
 import uniforms : ParticleUniformBuffer, UBO;
 import quaternion : xyzw;
+import validation : pushLabel, popLabel;
 
 /** Compute structure with shaders, command buffer and pipelines
  */
@@ -171,6 +173,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
 
   VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
   enforceVK(vkBeginCommandBuffer(cmdBuffer, &commandBufferInfo));
+  pushLabel(cmdBuffer, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
 
   float[3] nJobs = [1, 1, 1];
   uint size;
@@ -218,7 +221,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
       app.transitionImageLayout(app.textures[idx].image, app.commandPool, app.queue, cmdBuffer, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
   }
-
+  popLabel(cmdBuffer);
   vkEndCommandBuffer(cmdBuffer);
   if(app.trace) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
 }

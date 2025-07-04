@@ -20,4 +20,5 @@ void main() {
   mat4 modelMatrix = lightUbo.scene * instance;
   vec4 worldPos = modelMatrix * vec4(inPosition, 1.0);
   gl_Position = lightUbo.lightProjView * worldPos;
+  gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5; // Strange, depth values seem to be from -1.0f to 1.0f
 }

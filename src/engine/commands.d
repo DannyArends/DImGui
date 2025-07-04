@@ -6,11 +6,13 @@
 import engine;
 
 import bone : bonesToSSBO;
+import color : Colors;
 import descriptor : Descriptor;
 import matrix : Matrix;
 import boundingbox : computeBoundingBox;
 import geometry : draw;
 import shaders : Shader;
+import validation : pushLabel, popLabel;
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
  */
@@ -62,6 +64,8 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     }
   }
 
+  pushLabel(app.renderBuffers[app.syncIndex], "Rendering", Colors.lightgray);
+
   vkCmdBeginRenderPass(app.renderBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
 
@@ -71,6 +75,9 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     if(app.showBounds) app.draw(app.objects[x].box, syncIndex);
   }
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
+
+  popLabel(app.renderBuffers[app.syncIndex]);
+
   enforceVK(vkEndCommandBuffer(app.renderBuffers[syncIndex]));
   if(app.trace) SDL_Log("Render pass finished to %d", syncIndex);
 

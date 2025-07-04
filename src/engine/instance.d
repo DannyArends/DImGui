@@ -6,6 +6,7 @@
 import engine;
 
 import extensions : loadInstanceExtensions, queryInstanceLayerProperties, queryInstanceExtensionProperties, has;
+import validation : createDebugUtils;
 
 /** Load instance extensions and create the Vulkan instance
  */
@@ -16,6 +17,7 @@ void createInstance(ref App app){
 
   if(layers.has("VK_LAYER_KHRONOS_validation")){ app.layers ~= "VK_LAYER_KHRONOS_validation"; }
   if(extensions.has("VK_EXT_debug_report")){ app.instanceExtensions ~= "VK_EXT_debug_report"; }
+  if(extensions.has("VK_EXT_debug_utils")){ app.instanceExtensions ~= "VK_EXT_debug_utils"; }
   if(extensions.has("VK_KHR_get_physical_device_properties2")){ app.instanceExtensions ~= "VK_KHR_get_physical_device_properties2"; }
 
   VkInstanceCreateInfo createInstance = { 
@@ -29,6 +31,6 @@ void createInstance(ref App app){
 
   enforceVK(vkCreateInstance(&createInstance, app.allocator, &app.instance));
   app.mainDeletionQueue.add((){ vkDestroyInstance(app.instance, app.allocator); });
-
+  app.createDebugUtils();
   if(app.verbose) SDL_Log("vkCreateInstance[layers:%d, extensions:%d]: %p", app.layers.length, app.instanceExtensions.length, app.instance );
 }

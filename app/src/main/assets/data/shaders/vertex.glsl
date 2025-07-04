@@ -116,5 +116,5 @@ void main() {
   fragTid = Tid;
   fragPosWorld = worldPos.xyz; // Pass world position to fragment shader
   fragPosLightSpace = lightUbo.lightProjView * worldPos;
-
 }
+

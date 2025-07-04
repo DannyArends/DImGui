@@ -25,7 +25,7 @@ layout(location = 0) out vec4 outColor;
 
 // Function to calculate the shadow factor
 float calculateShadow() {
-  vec3 projCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
+  vec3 projCoords = ((fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5) + 0.5;
 
   if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
       projCoords.y < 0.0 || projCoords.y > 1.0 ||
@@ -34,7 +34,7 @@ float calculateShadow() {
   }
 
   float bias = 0.005;
-  float shadow = texture(shadowMap, vec3(projCoords.xy, projCoords.z - bias));
+  float shadow = texture(shadowMap, vec3(projCoords.xy, projCoords.z));
   return shadow;
 }
 

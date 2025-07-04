@@ -5,11 +5,13 @@
 
 import engine;
 
+import color : Colors;
 import devices : getMSAASamples;
 import geometry : Geometry, position, scale, rotate;
 import io : isfile, readFile, writeFile;
 import lights : Light;
 import sfx : play;
+import validation : pushLabel, popLabel;
 
 /** Main GUI structure
  */
@@ -133,6 +135,8 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
   };
   enforceVK(vkBeginCommandBuffer(app.imguiBuffers[syncIndex], &commandBufferInfo));
 
+  pushLabel(app.imguiBuffers[app.syncIndex], "ImGui", Colors.lightgray);
+
   VkRect2D renderArea = { extent: { width: app.camera.width, height: app.camera.height } };
 
   VkRenderPassBeginInfo renderPassInfo = {
@@ -150,6 +154,8 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
   ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[syncIndex], null);
 
   vkCmdEndRenderPass(app.imguiBuffers[syncIndex]);
+
+  popLabel(app.imguiBuffers[app.syncIndex]);
 
   enforceVK(vkEndCommandBuffer(app.imguiBuffers[syncIndex]));
   if(app.trace) SDL_Log("Done recordImGuiCommandBuffer");

@@ -11,6 +11,7 @@ import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
 import descriptor : createDescriptorSet;
+import validation : nameVulkanObject;
 
 struct Texture {
   const(char)* path;
