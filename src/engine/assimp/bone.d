@@ -56,7 +56,7 @@ Matrix[] getBoneOffsets(App app) {
   return(boneOffsets);
 }
 
-void bonesToSSBO(ref App app, VkBuffer dst, uint syncIndex) {
+void bonesToSSBO(ref App app, VkCommandBuffer cmdBuffer, VkBuffer dst, uint syncIndex) {
   Matrix[] offsets = app.getBoneOffsets();
 
   StageBuffer buffer = {
@@ -75,7 +75,7 @@ void bonesToSSBO(ref App app, VkBuffer dst, uint syncIndex) {
     size : buffer.size // Size to copy
   };
 
-  vkCmdCopyBuffer(app.renderBuffers[syncIndex], buffer.sb, dst, 1, &copyRegion);
+  vkCmdCopyBuffer(cmdBuffer, buffer.sb, dst, 1, &copyRegion);
 
   VkBufferMemoryBarrier bufferBarrier = {
       sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
@@ -89,7 +89,7 @@ void bonesToSSBO(ref App app, VkBuffer dst, uint syncIndex) {
   };
 
   vkCmdPipelineBarrier(
-      app.renderBuffers[syncIndex],
+      cmdBuffer,
       VK_PIPELINE_STAGE_TRANSFER_BIT,    // Source stage: Transfer (copy)
       VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, // Destination stage: Vertex shader reads
       0, // dependencyFlags

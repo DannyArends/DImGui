@@ -47,7 +47,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) { 
           dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
-          app.bonesToSSBO(dst, syncIndex);
+          app.bonesToSSBO(app.renderBuffers[syncIndex], dst, syncIndex);
         }
       }
     }

@@ -5,6 +5,7 @@
 
 import engine;
 
+import bone : bonesToSSBO;
 import color : Colors;
 import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, transitionImageLayout;
@@ -211,10 +212,13 @@ void createShadowMapGraphicsPipeline(ref App app) {
 
   VkVertexInputAttributeDescription[]  attributeDescriptions= [ 
     {binding: VERTEX, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.position.offsetof },
-    {binding: INSTANCE, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof },
-    {binding: INSTANCE, location: 2, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 4 * float.sizeof },
-    {binding: INSTANCE, location: 3, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 8 * float.sizeof },
-    {binding: INSTANCE, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 12 * float.sizeof }
+    {binding: VERTEX, location: 1, format: VK_FORMAT_R32G32B32A32_UINT, offset: Vertex.bones.offsetof },
+    {binding: VERTEX, location: 2, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
+
+    {binding: INSTANCE, location: 3, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof },
+    {binding: INSTANCE, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 4 * float.sizeof },
+    {binding: INSTANCE, location: 5, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 8 * float.sizeof },
+    {binding: INSTANCE, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 12 * float.sizeof }
   ];
 
   VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
@@ -384,6 +388,19 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     clearValueCount: 1,
     pClearValues: &clearDepth,
   };
+  
+  VkBuffer dst;
+  uint size;
+  foreach(shader; app.shadows.shaders){
+    for(uint d = 0; d < shader.descriptors.length; d++) {
+      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+        if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) { 
+          dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
+          app.bonesToSSBO(app.shadowBuffers[app.syncIndex], dst, syncIndex);
+        }
+      }
+    }
+  }
 
   pushLabel(app.shadowBuffers[app.syncIndex], "Shadow Buffering", Colors.lightslategray);
   for(size_t x = 0; x < app.objects.length; x++) {

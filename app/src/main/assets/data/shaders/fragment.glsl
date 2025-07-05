@@ -33,7 +33,7 @@ float calculateShadow() {
     return 1.0; // Not in shadow
   }
 
-  float bias = 0.005;
+  float bias = 0.001;
   float shadow = texture(shadowMap, vec3(projCoords.xy, projCoords.z));
   return shadow;
 }
