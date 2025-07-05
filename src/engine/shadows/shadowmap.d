@@ -44,10 +44,6 @@ void createShadowMap(ref App app) {
   app.createShadowMapRenderPass();
   app.createShadowMapFramebuffer();
   app.createShadowShader();
-
-  app.mainDeletionQueue.add((){ 
-    vkDestroyDescriptorSetLayout(app.device, app.layouts[SHADOWS], app.allocator); 
-  });
 }
 
 /** 
@@ -283,7 +279,6 @@ void createShadowMapGraphicsPipeline(ref App app) {
     stencilTestEnable: VK_FALSE
   };
 
-
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
     stageCount: cast(uint)stages.length,
@@ -303,6 +298,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline created: %p", app.shadows.pipeline.pipeline);
 
   app.frameDeletionQueue.add((){
+    vkDestroyDescriptorSetLayout(app.device, app.layouts[SHADOWS], app.allocator);
     vkDestroyPipelineLayout(app.device, app.shadows.pipeline.layout, app.allocator);
     vkDestroyPipeline(app.device, app.shadows.pipeline.pipeline, app.allocator);
   });
@@ -359,7 +355,7 @@ void createShadowMapCommandBuffers(ref App app) {
   if(app.verbose) SDL_Log(" - shadow map command buffers allocated.");
 
   // Add to main deletion queue for cleanup
-  app.mainDeletionQueue.add((){
+  app.frameDeletionQueue.add((){
     vkFreeCommandBuffers(app.device, app.commandPool, cast(uint)app.shadowBuffers.length, &app.shadowBuffers[0]);
   });
 }

@@ -60,6 +60,7 @@ void createOrResizeWindow(ref App app) {
   // TODO: Could be done once inside the main deletion queue, but then UBO reflection needs to allow a custome deletion queue
   app.reflectShaders(app.shadows.shaders);
   app.createResources(app.shadows.shaders, SHADOWS);
+  app.createShadowMapCommandBuffers();
   app.createShadowMapGraphicsPipeline();
   for (uint i = 0; i < app.framesInFlight; i++) {
     app.updateDescriptorSet(app.shadows.shaders, app.sets[SHADOWS], i);
@@ -68,7 +69,6 @@ void createOrResizeWindow(ref App app) {
   // Do reflection on the render shaders
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, RENDER);
-  app.createShadowMapCommandBuffers();
   app.createDescriptors();
 
   // ImGui resources
