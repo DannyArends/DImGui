@@ -20,8 +20,8 @@ struct Vertex {
   float[3] tangent = [0.0f, 0.0f, 0.0f];            /// TODO: Compute vertex tangent
   uint[4] bones = [0, 0, 0, 0];                     /// 4 closest bones
   float[4] weights = [0.0f, 0.0f, 0.0f, 0.0f];      /// 4 closest bone weights
-  int tid = -1;                                     /// TODO: move Texture ID to instance
-  int nid = -1;                                     /// TODO: Move Normal ID to instance
+  int tid = -1;                                     /// TODO: move Texture ID to Material
+  int nid = -1;                                     /// TODO: Move Normal ID to Material
   alias position this;
 
   @nogc static VkVertexInputBindingDescription[2] getBindingDescription() nothrow {
