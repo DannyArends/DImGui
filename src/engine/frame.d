@@ -59,11 +59,12 @@ void renderFrame(ref App app){
     enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
   }
 
-  // --- Phase 3: Prepare & Submit Graphics & ImGui Work ---
+  // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
   app.updateShadowMapUBO(app.lights[1], app.syncIndex);
   app.recordShadowCommandBuffer(app.syncIndex);
 
+  // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Prepare & Submit Graphics & ImGui Work");
   app.updateRenderUBO(app.shaders, app.lights[1], app.syncIndex);
   app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex); // Updated each frame, since we're loading textures a-sync
