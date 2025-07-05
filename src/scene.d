@@ -35,7 +35,7 @@ void createScene(ref App app){
       instance = instance.translate([0.0f, -1.0f, 0.0f]);
       instance = instance.scale([scalefactor, scalefactor, scalefactor]);
       instance = instance.translate([cast(float) x, 0.0f, cast(float)z]);
-      app.objects[($-1)].instances ~= Instance(instance);
+      app.objects[($-1)].instances ~= Instance(matrix: instance);
     }
   }
 

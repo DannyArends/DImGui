@@ -157,7 +157,7 @@ void createSampler(ref App app) {
     maxAnisotropy: properties.limits.maxSamplerAnisotropy,
     borderColor: VK_BORDER_COLOR_INT_OPAQUE_BLACK,
     unnormalizedCoordinates: VK_FALSE,
-    compareEnable: VK_FALSE,
+    compareEnable: VK_TRUE,
     compareOp: VK_COMPARE_OP_ALWAYS,
     mipmapMode: VK_SAMPLER_MIPMAP_MODE_LINEAR,
     mipLodBias: 0.0f,
