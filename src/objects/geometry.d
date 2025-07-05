@@ -22,7 +22,8 @@ import animation : Animation;
 /** An instance of a Geometry
  */
 struct Instance {
-  //int tid = -1;
+  int tid = -1;                                     /// TODO: move Texture ID to instance
+  int nid = -1;                                     /// TODO: Move Normal ID to instance
   mat4 matrix = mat4.init;
   alias matrix this;
 }
@@ -116,7 +117,8 @@ float scale(T)(T object, uint instance = 0) {
 
 /** Set tid for instance from object.instances to Texture name */
 void texture(T)(T object, const Texture[] textures, const(char)* name, string mname = "") {
-  int tid = textures.idx(name);
+  //object.instances[0].tid = textures.idx(name);
+  auto tid = textures.idx(name);
   foreach(ref mesh ; object.meshes) {
     for(size_t i = mesh.vertices[0]; i < mesh.vertices[1]; i++) { object.vertices[i].tid = tid; }
   }

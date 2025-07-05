@@ -5,6 +5,8 @@
 
 import engine;
 
+import quaternion : xyzw;
+
 import descriptor : Descriptor;
 import buffer : createBuffer;
 import matrix : mat4, rotate, lookAt, perspective;
@@ -13,10 +15,11 @@ import shadowmap : computeLightSpace;
 import sdl : STARTUP;
 
 struct UniformBufferObject {
+  float[4] position;
   mat4 scene = mat4.init;
   mat4 view = mat4.init;
   mat4 proj = mat4.init;
-  mat4 orientation = mat4.init; // Screen orientation
+  mat4 orientation = mat4.init;   /// Screen orientation
   Light[4] lights;
   uint nlights = 4;
 }
@@ -63,6 +66,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, Light light, uint syncIndex)
     app.lights[3].direction[0] = tan(t);
   }
   UniformBufferObject ubo = {
+    position: app.camera.position.xyzw,
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,
     proj: app.camera.proj,
