@@ -22,8 +22,6 @@ import animation : Animation;
 /** An instance of a Geometry
  */
 struct Instance {
-  int tid = -1;                                     /// TODO: move Texture ID to instance
-  int nid = -1;                                     /// TODO: Move Normal ID to instance
   mat4 matrix = mat4.init;
   alias matrix this;
 }
