@@ -5,9 +5,13 @@
 
 import engine;
 
-import uniforms : UniformBufferObject, ParticleUniformBuffer;
+import compute : writeComputeImage;
+import sampler : writeTextureSampler;
 import shaders : Shader;
+import shadowmap : writeShadowMap;
+import ssbo : writeSSBO;
 import textures : Texture, idx;
+import uniforms : writeUniformBuffer;
 
 struct Descriptor {
   VkDescriptorType type;
@@ -169,86 +173,23 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         if(to!string(shader.descriptors[d].name) == "texureSampler") {
-          VkDescriptorImageInfo[] textureInfo;
-          textureInfo.length = app.textures.length;
-          for (size_t i = 0; i < app.textures.length; i++) {
-            VkDescriptorImageInfo textureImage = {
-              imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              imageView: app.textures[i].view,
-              sampler: app.sampler
-            };
-            textureInfo[i] = textureImage;
-          }
-          VkWriteDescriptorSet set = {
-            sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            dstSet: dstSet[syncIndex],
-            dstBinding: shader.descriptors[d].binding,
-            dstArrayElement: 0,
-            descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            descriptorCount: cast(uint)app.textures.length,
-            pImageInfo: &textureInfo[0]
-          };
-          descriptorWrites ~= set;
+          app.writeTextureSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex]);
         }
         if(to!string(shader.descriptors[d].name) == "shadowMap"){
-          VkDescriptorImageInfo shadowMapInfo = { // Assign directly to the single info struct
-            imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            imageView: app.shadows.imageView, // Use the shadow map's image view
-            sampler: app.shadows.sampler     // Use the shadow map's sampler
-          };
-          VkWriteDescriptorSet set = {
-            sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            dstSet: dstSet[syncIndex],
-            dstBinding: shader.descriptors[d].binding,
-            dstArrayElement: 0,
-            descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            descriptorCount: 1, // Crucial: Only 1 descriptor for the single shadow map
-            pImageInfo: &shadowMapInfo // Point to the single info struct
-          };
-          descriptorWrites ~= set;
+          app.writeShadowMap(descriptorWrites, shader.descriptors[d], dstSet[syncIndex]);
         }
       }
       // Uniform Buffer Write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        auto info = new VkDescriptorBufferInfo(app.ubos[shader.descriptors[d].base].buffer[syncIndex], 0, shader.descriptors[d].bytes);
-        VkWriteDescriptorSet set = {
-          sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-          dstSet: dstSet[syncIndex],
-          dstBinding: shader.descriptors[d].binding,
-          dstArrayElement: 0,
-          descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-          descriptorCount: 1,
-          pBufferInfo: info
-        };
-        descriptorWrites ~= set;
+        app.writeUniformBuffer(descriptorWrites, shader.descriptors[d], dstSet, syncIndex);
       }
       // SSBO Buffer Write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        auto bufferInfo = new VkDescriptorBufferInfo(app.buffers[shader.descriptors[d].base].buffers[syncIndex], 0, shader.descriptors[d].size);
-        VkWriteDescriptorSet set = {
-          sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-          dstSet: dstSet[syncIndex],
-          dstBinding: shader.descriptors[d].binding,
-          dstArrayElement: 0,
-          descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-          descriptorCount: 1,
-          pBufferInfo: bufferInfo
-        };
-        descriptorWrites ~= set;
+        app.writeSSBO(descriptorWrites, shader.descriptors[d], dstSet, syncIndex);
       }
       // Compute Stored Image
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-        auto imageInfo = new VkDescriptorImageInfo(null, app.textures[app.textures.idx(shader.descriptors[d].name)].view, VK_IMAGE_LAYOUT_GENERAL);
-        VkWriteDescriptorSet set = {
-          sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-          dstSet: dstSet[syncIndex],
-          dstBinding: shader.descriptors[d].binding,
-          dstArrayElement: 0,
-          descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-          descriptorCount: shader.descriptors[d].count,
-          pImageInfo: imageInfo
-        };
-        descriptorWrites ~= set;
+        app.writeComputeImage(descriptorWrites, shader.descriptors[d], dstSet, syncIndex);
       }
     }
   }

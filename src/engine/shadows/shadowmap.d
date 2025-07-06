@@ -5,15 +5,16 @@
 
 import engine;
 
-import bone : bonesToSSBO;
+import bone : getBoneOffsets;
 import color : Colors;
-import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
+import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, transitionImageLayout;
 import lights : Light;
 import matrix : Matrix, orthogonal, perspective, multiply, lookAt;
 import pipeline : GraphicsPipeline;
 import geometry : shadow, Instance;
 import reflection : reflectShaders, createResources;
+import ssbo : updateSSBO;
 import shaders : Shader, createStageInfo, createShaderModule;
 import swapchain : createImageView;
 import validation : pushLabel, popLabel;
@@ -341,6 +342,26 @@ void updateShadowMapUBO(ref App app, Light light, uint syncIndex) {
   if(app.verbose) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
 }
 
+void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst){
+  VkDescriptorImageInfo[] shadowMapInfo;
+  shadowMapInfo.length = 1;
+  shadowMapInfo[0] = VkDescriptorImageInfo( // Assign directly to the single info struct
+    imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    imageView: app.shadows.imageView, // Use the shadow map's image view
+    sampler: app.shadows.sampler     // Use the shadow map's sampler
+  );
+  VkWriteDescriptorSet set = {
+    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+    dstSet: dst,
+    dstBinding: descriptor.binding,
+    dstArrayElement: 0,
+    descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    descriptorCount: 1, // Crucial: Only 1 descriptor for the single shadow map
+    pImageInfo: &shadowMapInfo[0] // Point to the single info struct
+  }; 
+  write ~= set;
+}
+
 void createShadowMapCommandBuffers(ref App app) {
   SDL_Log("Creating %d shadow map command buffers", app.framesInFlight);
   app.shadowBuffers.length = app.framesInFlight;
@@ -392,7 +413,8 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) { 
           dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
-          app.bonesToSSBO(app.shadowBuffers[app.syncIndex], dst, syncIndex);
+          Matrix[] offsets = app.getBoneOffsets();
+          app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], offsets, dst, syncIndex);
         }
       }
     }

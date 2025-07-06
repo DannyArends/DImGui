@@ -25,17 +25,16 @@ layout(std140, binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
 
 // Per Vertex attributes
 layout(location = 0) in vec3 inPosition;          /// Vertex position
-layout(location = 1) in vec4 inColor;             /// Color
+layout(location = 1) in vec4 inColor;             /// TODO: get from materialSSB0.materials[] with meshSSBO.meshes[i].material
 layout(location = 2) in vec3 inNormal;            /// Normal
 layout(location = 3) in vec2 inTexCoord;          /// Texture coordinate
 layout(location = 4) in vec3 inTangent;           /// Tangent vector
 layout(location = 5) in uvec4 inBones;            /// assimp: BoneIDs
 layout(location = 6) in vec4 inWeights;           /// assimp: BoneWeights
-layout(location = 7) in int Tid;                  /// Texture ID
-layout(location = 8) in int Nid;                  /// Normal Map ID
 
 // Per Instance attributes
-layout(location = 9) in mat4 instance;
+layout(location = 7) in uvec2 meshdef;            /// Mesh start + stop
+layout(location = 8) in mat4 instance;            /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec3 fragPosWorld;       /// Fragment world position
@@ -54,7 +53,7 @@ void main() {
   /// Compute our model matrix
   mat4 model = ubo.scene * instance;
 
-  // Calculate the world-space normal and tangent
+  /// Calculate the world-space normal, bitangent, tangent, and normal matrix
   vec3 N = normalize(mat3(instance) * inNormal);
   vec3 T = normalize(mat3(instance) * inTangent);
   vec3 B = normalize(cross(N, T));
@@ -78,7 +77,13 @@ void main() {
   fragColor = vec4(fcol, 1.0f);
   fragNormal = inNormal;
   fragTexCoord = inTexCoord;
-  fragTid = Tid;
-  fragNid = Nid;
+  for (uint i = meshdef[0]; i < meshdef[1]; i++) {
+    if (meshSSBO.meshes[i].vertices[0] <= gl_VertexIndex && 
+        gl_VertexIndex < meshSSBO.meshes[i].vertices[1]) {
+      fragTid = meshSSBO.meshes[i].material;    // TODO: this uid should select from materialSSB0.materials[] (now it's just selecting the right texture)
+      fragNid = -1;                             // TODO: And this should come from material
+      break;
+    }
+  }
   fragTBN = mat3(T, B, N); 
 }

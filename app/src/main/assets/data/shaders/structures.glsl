@@ -6,39 +6,39 @@
 #ifndef STRUCTURES_GLSL
 #define STRUCTURES_GLSL
 
-// Uniform Buffer Objects
+/// Uniform Buffer Objects
 #define BINDING_SCENE_UBO         0
 #define BINDING_LIGHT_UBO         1
 
-// Shader Storage Buffer Objects
+/// Shader Storage Buffer Objects
 #define BINDING_BONES_SSBO        2
 #define BINDING_MESH_SSBO         3
 #define BINDING_MATERIALS_SSBO    4
 
-// Samplers/Images
+/// Samplers/Images
 #define BINDING_TEXTURES          5
 #define BINDING_SHADOWMAP         6
 
 struct Light {
-  vec4 position;
-  vec4 intensity;
-  vec4 direction;
-  vec4 properties;    // [ambient, attenuation, angle]
+  vec4 position;      /// Position of the light
+  vec4 intensity;     /// Light intensity (color)
+  vec4 direction;     /// Light direction
+  vec4 properties;    /// [ambient, attenuation, angle]
 };
 
 struct Bone {
-  mat4 offset;
+  mat4 offset;        /// Bone offset
 };
 
 struct Material {
-  vec4 color;
-  uint base;
-  uint normal;
+  vec4 color;         /// Material base color
+  uint base;          /// Texture (base color)
+  uint normal;        /// Texture (normal)
 };
 
 struct Mesh {
-  uvec2 vertices;     // Start & End vertex
-  uint material;      // Material ID
+  uvec2 vertices;     /// Start & End vertex
+  int material;      /// Material ID
 };
 
 #endif // STRUCTURES_GLSL

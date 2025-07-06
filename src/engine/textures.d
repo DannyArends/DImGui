@@ -136,41 +136,6 @@ void toGPU(ref App app, ref Texture texture, uint i) {
   return(-1);
 }
 
-/** Create a TextureSampler for sampling from a texture
- */
-void createSampler(ref App app) {
-  if(app.verbose) SDL_Log("Create texture sampler");
-  VkPhysicalDeviceProperties properties = {};
-  VkPhysicalDeviceFeatures supportedFeatures = {};
-
-  vkGetPhysicalDeviceProperties(app.physicalDevice, &properties);
-  vkGetPhysicalDeviceFeatures(app.physicalDevice, &supportedFeatures);
-
-  VkSamplerCreateInfo samplerInfo = {
-    sType: VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-    magFilter: VK_FILTER_LINEAR,
-    minFilter: VK_FILTER_LINEAR,
-    addressModeU: VK_SAMPLER_ADDRESS_MODE_REPEAT,
-    addressModeV: VK_SAMPLER_ADDRESS_MODE_REPEAT,
-    addressModeW: VK_SAMPLER_ADDRESS_MODE_REPEAT,
-    anisotropyEnable: ((supportedFeatures.samplerAnisotropy) ? VK_FALSE : VK_TRUE),
-    maxAnisotropy: properties.limits.maxSamplerAnisotropy,
-    borderColor: VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-    unnormalizedCoordinates: VK_FALSE,
-    compareEnable: VK_TRUE,
-    compareOp: VK_COMPARE_OP_ALWAYS,
-    mipmapMode: VK_SAMPLER_MIPMAP_MODE_LINEAR,
-    mipLodBias: 0.0f,
-    minLod: 0.0f,
-    maxLod: 0.0f
-  };
-
-  enforceVK(vkCreateSampler(app.device, &samplerInfo, null, &app.sampler));
-  app.mainDeletionQueue.add((){ vkDestroySampler(app.device, app.sampler, null); });
-
-  if(app.verbose) SDL_Log("Created TextureSampler: %p", app.sampler);
-}
-
 /** 'Register' a texture in the ImGui DescriptorSet
  */
 void registerTexture(ref App app, ref Texture texture) {

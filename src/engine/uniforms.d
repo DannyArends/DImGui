@@ -107,3 +107,16 @@ void updateRenderUBO(ref App app, Shader[] shaders, Light light, uint syncIndex)
   }
 }
 
+void writeUniformBuffer(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, uint syncIndex = 0){
+  auto info = new VkDescriptorBufferInfo(app.ubos[descriptor.base].buffer[syncIndex], 0, descriptor.bytes);
+  VkWriteDescriptorSet set = {
+    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+    dstSet: dst[syncIndex],
+    dstBinding: descriptor.binding,
+    dstArrayElement: 0,
+    descriptorType: VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+    descriptorCount: 1,
+    pBufferInfo: info
+  };
+  write ~= set;
+}
