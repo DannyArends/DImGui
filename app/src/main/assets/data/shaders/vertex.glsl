@@ -4,19 +4,12 @@
 // See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
 
 #version 460
+#extension GL_EXT_nonuniform_qualifier : enable
 
-struct Light {
-  vec4 position;
-  vec4 intensity;
-  vec4 direction;
-  vec4 properties;    // [ambient, attenuation, angle]
-};
+#include "structures.glsl"
+#include "functions.glsl"
 
-struct Bone {
-  mat4 offset;
-};
-
-layout(std140, binding = 0) uniform UniformBufferObject {
+layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
     vec4 position;    // Scene Camera Position
     mat4 scene;       // Scene Camera adjustment
     mat4 view;        // View matrix
@@ -26,19 +19,9 @@ layout(std140, binding = 0) uniform UniformBufferObject {
     uint nlights;     // Number of actual lights
 } ubo;
 
-layout (std140, binding = 1) readonly buffer BoneMatrices {
-    Bone transforms[];
-} boneSSBO;
-
-/*
-layout(binding = 2) uniform sampler2D texureSampler[];
-layout(binding = 3) uniform sampler2DShadow shadowMap;
-*/
-
-layout(std140, binding = 4) uniform LightSpaceMatrices {
+layout(std140, binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
     mat4 lightProjView;
 } lightUbo;
-
 
 // Per Vertex attributes
 layout(location = 0) in vec3 inPosition;          /// Vertex position
@@ -64,53 +47,13 @@ layout(location = 5) flat out int fragTid;        /// Texture ID
 layout(location = 6) flat out int fragNid;        /// Normal Map ID
 layout(location = 7) out mat3 fragTBN;            /// Tangent, Bitangent, Normal matrix
 
-vec3 illuminate(Light light, vec4 position, vec3 normal) {
-  float attenuation = 1.0;
-  vec3 s;
-  if (light.position.w == 0.0) {
-    // Directional lighting
-    s = normalize( light.position.xyz );
-  } else {
-    // Point lighting
-    s = normalize( light.position.xyz - position.xyz );
-    float l = abs(length( light.position.xyz - position.xyz ));
-    attenuation = 1.0 / (1.0 + light.properties[1] * pow(l, 2.0));
-
-    // Cone lighting
-    float lAngle = degrees(acos(dot(-s, normalize(light.direction.xyz))));
-    if (lAngle >= light.properties[2] - 1.0f) { attenuation = 0.3; }
-    if (lAngle >= light.properties[2]) { attenuation = 0.0; }
-  }
-  vec3 r = reflect( -s, normal );
-  float sDotN = max( dot( s, normal ), 0.0 );
-
-  vec3 ambientCol = light.intensity.rgb * inColor.rgb * light.properties[0];
-  vec3 diffuseCol = light.intensity.rgb * inColor.rgb * sDotN;
-  vec3 specularCol = vec3( 0.0 );
-  if (sDotN > 0.0 && light.position.w > 0.0) {
-    specularCol = light.intensity.rgb * inColor.rgb * pow(max(dot(s, r), 0.0), inColor[3]);
-  }
-  return ambientCol + attenuation * (diffuseCol + specularCol);
-}
-
 void main() {
   /// Compute bone effects on vertex
-  bool hasbone = false;
-  vec4 bonepos = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-  for (int i = 0; i < 4; i++) {
-    float weight = inWeights[i];
-    if(weight > 0.0f) {
-      uint boneID = inBones[i];
-      mat4 boneTransform = boneSSBO.transforms[boneID].offset;
-      bonepos += (boneTransform * vec4(inPosition, 1.0f)) * weight;
-      hasbone = true;
-    }
-  }
-  vec4 finalPosition = vec4(inPosition, 1.0f);
-  if(hasbone){ finalPosition = bonepos; }
+  vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
 
   /// Compute our model matrix
   mat4 model = ubo.scene * instance;
+
   // Calculate the world-space normal and tangent
   vec3 N = normalize(mat3(instance) * inNormal);
   vec3 T = normalize(mat3(instance) * inTangent);
@@ -118,21 +61,20 @@ void main() {
   mat4 nMatrix = transpose(inverse(instance));
 
   /// World position & point size
-  vec4 worldPos = model * finalPosition;
-  gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * finalPosition;
+  vec4 worldPos = model * position;
+  gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * position;
   gl_PointSize = 2.0f;
 
   /// Lighting
-  vec3 transformedNormal = normalize(vec3(nMatrix * vec4(inNormal, 0.0)));
-  vec3 fcol = vec3( 0 );
+  vec3 transformedNormal = normalize(vec3(nMatrix * vec4(inNormal, 0.0f)));
+  vec3 fcol = vec3( 0.0f );
   for(int i=0; i < ubo.nlights; ++i) {
-    fcol += illuminate(ubo.lights[i], worldPos, transformedNormal);
+    fcol += illuminate(ubo.lights[i], inColor, worldPos, transformedNormal);
   }
 
   /// Transfer data to fragment shader
   fragPosWorld = worldPos.xyz;
   fragPosLightSpace = lightUbo.lightProjView * worldPos;
-
   fragColor = vec4(fcol, 1.0f);
   fragNormal = inNormal;
   fragTexCoord = inTexCoord;
@@ -140,4 +82,3 @@ void main() {
   fragNid = Nid;
   fragTBN = mat3(T, B, N); 
 }
-

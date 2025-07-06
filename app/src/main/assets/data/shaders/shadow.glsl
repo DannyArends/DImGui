@@ -4,46 +4,28 @@
 // See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
 
 #version 460
+#extension GL_EXT_nonuniform_qualifier : enable
 
-struct Bone {
-  mat4 offset;
-};
+#include "structures.glsl"
+#include "functions.glsl"
 
-layout (std140, binding = 1) readonly buffer BoneMatrices {
-    Bone transforms[];
-} boneSSBO;
-
-
-layout(set = 0, binding = 0) uniform LightSpaceMatrices {
+layout(binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
   mat4 lightProjView; // Combined light's projection * light's view matrix
   mat4 scene;
 } lightUbo;
 
 // Per Vertex attributes
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in uvec4 inBones;
-layout(location = 2) in vec4 inWeights;
+layout(location = 5) in uvec4 inBones;
+layout(location = 6) in vec4 inWeights;
 
 // Per Instance attributes
-layout(location = 3) in mat4 instance;
+layout(location = 9) in mat4 instance;
 
 void main() {
-  bool hasbone = false;
-  vec4 bonepos = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-  for (int i = 0; i < 4; i++) {
-    float weight = inWeights[i];
-    if(weight > 0.0f) {
-      uint boneID = inBones[i];
-      mat4 boneTransform = boneSSBO.transforms[boneID].offset;
-      bonepos += (boneTransform * vec4(inPosition, 1.0f)) * weight;
-      hasbone = true;
-    }
-  }
-  vec4 finalPosition = vec4(inPosition, 1.0f);
-  if(hasbone){ finalPosition = bonepos; }
-
+  vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
   mat4 modelMatrix = lightUbo.scene * instance;
-  vec4 worldPos = modelMatrix * finalPosition;
+  vec4 worldPos = modelMatrix * position;
   gl_Position = lightUbo.lightProjView * worldPos;
   gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5; // Strange, depth values seem to be from -1.0f to 1.0f
 }

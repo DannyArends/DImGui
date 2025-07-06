@@ -25,6 +25,11 @@ struct Shader {
   alias shaderModule this;
 }
 
+struct IncluderContext {
+  char[][string] includedFiles;
+   bool verbose;
+}
+
 /** Create the ShaderC compiler
  */
 void createCompiler(ref App app) {
@@ -38,11 +43,46 @@ void createCompiler(ref App app) {
     abort();
   }
   shaderc_compile_options_set_generate_debug_info(app.options);
+  shaderc_compile_options_set_include_callbacks(app.options, &includeResolve, &includeRelease, cast(void*)&app.includeContext);
 
   app.mainDeletionQueue.add((){
     shaderc_compile_options_release(app.options);
     shaderc_compiler_release(app.compiler);
   });
+}
+
+/** Callback to resolve shader file includes using our own I/O
+ */
+extern (C) shaderc_include_result* includeResolve(void* userData, const(char)* source, int type, const(char)* reqSource, size_t depth){
+  auto context = cast(IncluderContext*)userData;
+  char[] code;
+  string path;
+
+  if (type == shaderc_include_type_relative) {
+    path = format("%s/%s", dirName(fromStringz(reqSource)), fromStringz(source));
+    SDL_Log(toStringz(format("Relative: %s", path)));
+    code = readFile(toStringz(path), context.verbose);
+  }
+  context.includedFiles[path] = code;
+  char[]* storedContentRef = &(context.includedFiles[path]); 
+
+  shaderc_include_result* result = cast(shaderc_include_result*) malloc(shaderc_include_result.sizeof);
+  result.source_name = toStringz(path);
+  result.source_name_length = path.length;
+  result.content = &((*storedContentRef)[0]);
+  result.content_length = context.includedFiles[path].length;
+  return(result);
+}
+
+/** Callback to release shader files included
+ */
+extern (C) void includeRelease(void* userData, shaderc_include_result* result) {
+  auto context = cast(IncluderContext*)userData;
+  if (result) {
+    string path = to!string(result.source_name[0..result.source_name_length]);
+    context.includedFiles.remove(path);
+    free(result);
+  }
 }
 
 /** Load GLSL, compile to SpirV, and create the vulkan shaderModule

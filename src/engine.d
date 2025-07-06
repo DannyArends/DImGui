@@ -16,7 +16,7 @@ public import std.conv : to;
 public import std.format : format;
 public import std.file : exists, isFile, dirEntries, SpanMode;
 public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2, fmod;
-public import std.path : baseName, extension, globMatch, stripExtension;
+public import std.path : baseName, dirName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform;
 public import std.regex : regex, matchAll;
 public import std.string : toStringz, fromStringz, lastIndexOf, startsWith, strip, chomp, splitLines;
@@ -37,7 +37,7 @@ import lights : Light, Lights;
 import matrix : multiply, inverse;
 import node : Node;
 import pipeline : GraphicsPipeline;
-import shaders : Shader;
+import shaders : Shader, IncluderContext;
 import uniforms : UBO;
 import sync : Sync, Fence;
 import ssbo : SSBO;
@@ -94,6 +94,7 @@ struct App {
   // ShaderC & SPIR-V reflection
   shaderc_compiler_t compiler;                                                  /// ShaderC compiler
   shaderc_compile_options_t options;                                            /// ShaderC compiler options
+  IncluderContext includeContext;
   spvc_context context;                                                         /// SpirV context
 
   // Vulkan Instance related variables
