@@ -5,13 +5,15 @@
 
 import engine;
 
-import bone : bonesToSSBO;
+import bone : getBoneOffsets;
 import color : Colors;
 import descriptor : Descriptor;
 import matrix : Matrix;
+import mesh : Mesh, getMeshes;
 import boundingbox : computeBoundingBox;
 import geometry : draw;
 import shaders : Shader;
+import ssbo : updateSSBO;
 import validation : pushLabel, popLabel;
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
@@ -45,10 +47,17 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   foreach(shader; shaders){
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) { 
-          dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
-          app.bonesToSSBO(app.renderBuffers[syncIndex], dst, syncIndex);
+        dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
+        if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) {
+          // Always update the bones for animation on each frame
+          Matrix[] offsets = app.getBoneOffsets();
+          app.updateSSBO!Matrix(app.renderBuffers[syncIndex], offsets, dst, syncIndex);
         }
+        if(SDL_strstr(shader.descriptors[d].base, "MeshMatrices") != null) {
+          // Todo: we should do this data transfer only when needed (a material changed)
+          Mesh[] meshes = app.getMeshes();
+          app.updateSSBO!Mesh(app.renderBuffers[syncIndex], meshes, dst, syncIndex);
+        } 
       }
     }
   }

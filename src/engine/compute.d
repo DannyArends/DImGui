@@ -137,6 +137,20 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
   }
 }
 
+void writeComputeImage(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, uint syncIndex = 0){
+  auto imageInfo = new VkDescriptorImageInfo(null, app.textures[app.textures.idx(descriptor.name)].view, VK_IMAGE_LAYOUT_GENERAL);
+  VkWriteDescriptorSet set = {
+    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+    dstSet: dst[syncIndex],
+    dstBinding: descriptor.binding,
+    dstArrayElement: 0,
+    descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+    descriptorCount: descriptor.count,
+    pImageInfo: imageInfo
+  };
+  write ~= set;
+}
+
 void createStorageImage(ref App app, Descriptor descriptor){
   VkImageUsageFlags usage;
   usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;

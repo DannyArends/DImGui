@@ -10,11 +10,25 @@ import bone : Bone, BoneWeights, loadBones;
 import material : matchTexture;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean,x,y,z;
-import vertex : Vertex;
+import vertex : Vertex, INSTANCE;
 
 struct Mesh {
-  uint[2] vertices;       /// Start .. End positions in Geometry.vertices array
-  uint material;          /// Mesh material index
+  align(16) int[2] vertices;    /// Start .. End positions in Geometry.vertices array
+  int material = -1;            /// Mesh material index
+}
+
+Mesh[] getMeshes(ref App app) {
+  Mesh[] meshes;
+  for (size_t o = 0; o < app.objects.length; o++) {  // Load faces to indices
+    uint size = cast(uint)app.objects[o].meshes.array.length;
+    for (size_t i = 0; i < app.objects[o].instances.length; i++) {  // Load faces to indices
+      app.objects[o].instances[i].meshdef = [cast(uint)meshes.length, cast(uint)meshes.length + size];
+    }
+    //SDL_Log("%s [%d, %d]", toStringz(app.objects[o].name()), app.objects[o].instances[0].meshdef[0], app.objects[o].instances[0].meshdef[1]);
+    app.objects[o].buffers[INSTANCE] = false;
+    meshes ~= app.objects[o].meshes.array;
+  }
+  return(meshes);
 }
 
 string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform) {
@@ -23,14 +37,16 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
     SDL_Log(" - %u vertices, %u faces, %u bones", mesh.mNumVertices, mesh.mNumFaces, mesh.mNumBones);
     SDL_Log(" - %u / %u material", mesh.mMaterialIndex, asset.materials.length);
   }
-  Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(asset.vertices.length) + mesh.mNumVertices], mesh.mMaterialIndex);
-
   // Vertex offset, load texture information,  bone weight, and normal matrix
   size_t vOff = asset.vertices.length;
   auto texInfo = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-  //asset.instances[0].tid = texInfo.tid;
+
   auto weights = asset.loadBones(mesh, app.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
+
+  // TODO first create a Material definition for the object => add to app.materials
+  // Then use OUR internal material index (app.materials)
+  Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(asset.vertices.length) + mesh.mNumVertices], texInfo.tid);
 
   for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {  // Load vertex information
     size_t gIdx = (vOff + vIdx);
@@ -46,7 +62,6 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
       auto color = mesh.mColors[texInfo.channel][vIdx];
       asset.vertices[gIdx].color = [color.r, color.g, color.b, color.a];
     }
-    asset.vertices[gIdx].tid = texInfo.tid;
     asset.assignBoneWeight(gIdx, weights, vIdx, app.bones);
   }
 
@@ -78,4 +93,3 @@ void assignBoneWeight(ref OpenAsset asset, size_t gIdx, BoneWeights weights, siz
     }
   }
 }
-

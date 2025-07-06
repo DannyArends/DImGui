@@ -7,6 +7,7 @@ import engine;
 
 import geometry : Instance, Geometry;
 import vertex : Vertex;
+import mesh : Mesh;
 
 class Square : Geometry {
    this(){
@@ -16,6 +17,7 @@ class Square : Geometry {
                  Vertex([-0.5f, 0.0f,  0.5f], [1.0f, 0.0f], [1.0f, 1.0f, 1.0f, 1.0f]) ];
     indices = [0, 2, 1, 0, 3, 2];
     instances = [Instance()];
+    meshes["Square"] = Mesh([0, cast(uint)vertices.length]);
     //topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     name = (){ return(typeof(this).stringof); };
   };

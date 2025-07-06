@@ -19,9 +19,10 @@ import instance : createInstance;
 import sdl : initializeSDL, START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
 import shaders : createCompiler, createRenderShaders;
 import reflection : createReflectionContext;
+import sampler : createSampler;
 import surface : createSurface;
 import sfx : loadAllSoundEffect;
-import textures : Texture, loadTextures, createSampler;
+import textures : Texture, loadTextures;
 import validation : createDebugCallback;
 import window: createOrResizeWindow, checkForResize;
 
