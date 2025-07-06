@@ -27,7 +27,7 @@ struct Shader {
 
 struct IncluderContext {
   char[][string] includedFiles;
-   bool verbose;
+   bool verbose = false;
 }
 
 /** Create the ShaderC compiler
@@ -60,7 +60,7 @@ extern (C) shaderc_include_result* includeResolve(void* userData, const(char)* s
 
   if (type == shaderc_include_type_relative) {
     path = format("%s/%s", dirName(fromStringz(reqSource)), fromStringz(source));
-    SDL_Log(toStringz(format("Relative: %s", path)));
+    if(context.verbose) SDL_Log(toStringz(format("Shader include: %s", path)));
     code = readFile(toStringz(path), context.verbose);
   }
   context.includedFiles[path] = code;
@@ -80,6 +80,7 @@ extern (C) void includeRelease(void* userData, shaderc_include_result* result) {
   auto context = cast(IncluderContext*)userData;
   if (result) {
     string path = to!string(result.source_name[0..result.source_name_length]);
+    if(context.verbose) SDL_Log(toStringz(format("Shader release: %s", path)));
     context.includedFiles.remove(path);
     free(result);
   }

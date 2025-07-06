@@ -16,11 +16,11 @@ layout(binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
 
 // Per Vertex attributes
 layout(location = 0) in vec3 inPosition;
-layout(location = 5) in uvec4 inBones;
-layout(location = 6) in vec4 inWeights;
+layout(location = 1) in uvec4 inBones;
+layout(location = 2) in vec4 inWeights;
 
 // Per Instance attributes
-layout(location = 9) in mat4 instance;
+layout(location = 3) in mat4 instance;
 
 void main() {
   vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
