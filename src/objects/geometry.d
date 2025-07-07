@@ -13,7 +13,7 @@ import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
 import boundingbox : BoundingBox, computeBoundingBox;
 import camera : Camera;
 import material : Material;
-import matrix : mat4, position, translate, rotate, scale;
+import matrix : mat4, position, transpose, translate, rotate, scale, inverse;
 import textures : Texture, idx;
 import vector : vSub, vAdd, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
@@ -22,8 +22,9 @@ import animation : Animation;
 /** An instance of a Geometry
  */
 struct Instance {
-  uint[3] meshdef = [0, 0, 0];  // Start, End, Valid
+  uint[2] meshdef = [0, 0];  // Start, End, Valid
   mat4 matrix = mat4.init;
+  mat4 nMatrix = mat4.init;
   alias matrix this;
 }
 
@@ -51,7 +52,6 @@ class Geometry {
 
   BoundingBox box = null;                       /// Bounding Box
   bool window = false;                          /// ImGui window displayed?
-  bool hasMeshDef = false;                          /// If the mesh is updated, we need to transfer
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
@@ -60,8 +60,10 @@ class Geometry {
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) 
       buffers[INDEX] = app.toGPU(indices, indexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    if(!buffers[INSTANCE])
+    if(!buffers[INSTANCE]){
+      this.computeNormalMatrices();
       buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    }
   }
 
   bool isVisible = true;                          /// Boolean flag
@@ -83,6 +85,12 @@ class Geometry {
   void function(ref App app, ref Geometry obj) onTick;
   string function() name;
 }
+
+  void computeNormalMatrices(T)(T object){
+    for (size_t i = 0; i < object.instances.length; i++) {
+      object.instances[i].nMatrix = transpose(inverse(object.instances[i]));
+    }
+  }
 
 /** Set position of instance from object.instances by p */
 @nogc void position(T)(T object, float[3] p, uint instance = 0) nothrow {

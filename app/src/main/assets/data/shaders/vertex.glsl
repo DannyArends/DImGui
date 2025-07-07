@@ -19,10 +19,6 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
     uint nlights;     // Number of actual lights
 } ubo;
 
-layout(std140, binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
-    mat4 lightProjView;
-} lightUbo;
-
 // Per Vertex attributes
 layout(location = 0) in vec3 inPosition;          /// Vertex position
 layout(location = 1) in vec4 inColor;             /// TODO: get from materialSSB0.materials[] with meshSSBO.meshes[i].material
@@ -35,16 +31,16 @@ layout(location = 6) in vec4 inWeights;           /// assimp: BoneWeights
 // Per Instance attributes
 layout(location = 7) in uvec3 meshdef;            /// Mesh start + stop
 layout(location = 8) in mat4 instance;            /// Instance matrix
+layout(location = 12) in mat4 nMatrix;            /// Normal matrix
 
 // Output to Fragment shader
-layout(location = 0) out vec3 fragPosWorld;       /// Fragment world position
-layout(location = 1) out vec4 fragPosLightSpace;  /// Fragment lightspace position
-layout(location = 2) out vec4 fragColor;          /// Fragment color
-layout(location = 3) out vec3 fragNormal;         /// Fragment normal
-layout(location = 4) out vec2 fragTexCoord;       /// Texture coordinate
-layout(location = 5) flat out int fragTid;        /// Texture ID
-layout(location = 6) flat out int fragNid;        /// Normal Map ID
-layout(location = 7) out mat3 fragTBN;            /// Tangent, Bitangent, Normal matrix
+layout(location = 0) out vec4 fragPosWorld;       /// Fragment world position
+layout(location = 1) out vec4 fragColor;          /// Fragment color
+layout(location = 2) out vec3 fragNormal;         /// Fragment normal
+layout(location = 3) out vec2 fragTexCoord;       /// Texture coordinate
+layout(location = 4) flat out int fragTid;        /// Texture ID
+layout(location = 5) flat out int fragNid;        /// Normal Map ID
+layout(location = 6) out mat3 fragTBN;            /// Tangent, Bitangent, Normal matrix
 
 void main() {
   /// Compute bone effects on vertex
@@ -57,25 +53,15 @@ void main() {
   vec3 N = normalize(mat3(instance) * inNormal);
   vec3 T = normalize(mat3(instance) * inTangent);
   vec3 B = normalize(cross(N, T));
-  mat4 nMatrix = transpose(inverse(instance));
 
   /// World position & point size
-  vec4 worldPos = model * position;
   gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * position;
   gl_PointSize = 2.0f;
 
-  /// Lighting
-  vec3 transformedNormal = normalize(vec3(nMatrix * vec4(inNormal, 0.0f)));
-  vec3 fcol = vec3( 0.0f );
-  for(int i=0; i < ubo.nlights; ++i) {
-    fcol += illuminate(ubo.lights[i], inColor, worldPos, transformedNormal);
-  }
-
   /// Transfer data to fragment shader
-  fragPosWorld = worldPos.xyz;
-  fragPosLightSpace = lightUbo.lightProjView * worldPos;
-  fragColor = vec4(fcol, 1.0f);
-  fragNormal = inNormal;
+  fragPosWorld = (model * position);
+  fragColor = inColor;
+  fragNormal = normalize(vec3(mat3(nMatrix) * inNormal));
   fragTexCoord = inTexCoord;
   uint mesh = meshdef[0];
   if(meshdef[0] != meshdef[1]) {

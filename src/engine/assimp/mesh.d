@@ -21,15 +21,10 @@ struct Mesh {
 Mesh[] getMeshes(ref App app) {
   Mesh[] meshes;
   for (size_t o = 0; o < app.objects.length; o++) {
-    if(!app.objects[o].hasMeshDef) {
-      uint size = cast(uint)app.objects[o].meshes.array.length;
-      for (size_t i = 0; i < app.objects[o].instances.length; i++) {  // Load faces to indices
-        if (!app.objects[o].instances[i].meshdef[2]) {
-          app.objects[o].instances[i].meshdef = [cast(uint)meshes.length, cast(uint)meshes.length + size, 1];
-          app.objects[o].buffers[INSTANCE] = false;
-        }
-      }
-      app.objects[o].hasMeshDef = true;
+    uint size = cast(uint)app.objects[o].meshes.array.length;
+    for (size_t i = 0; i < app.objects[o].instances.length; i++) {  // Load faces to indices
+      app.objects[o].instances[i].meshdef = [cast(uint)meshes.length, cast(uint)meshes.length + size];
+      app.objects[o].buffers[INSTANCE] = false;
     }
     meshes ~= app.objects[o].meshes.array;
   }
