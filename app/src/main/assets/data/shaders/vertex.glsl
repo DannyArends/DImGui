@@ -33,7 +33,7 @@ layout(location = 5) in uvec4 inBones;            /// assimp: BoneIDs
 layout(location = 6) in vec4 inWeights;           /// assimp: BoneWeights
 
 // Per Instance attributes
-layout(location = 7) in uvec2 meshdef;            /// Mesh start + stop
+layout(location = 7) in uvec3 meshdef;            /// Mesh start + stop
 layout(location = 8) in mat4 instance;            /// Instance matrix
 
 // Output to Fragment shader
@@ -77,13 +77,16 @@ void main() {
   fragColor = vec4(fcol, 1.0f);
   fragNormal = inNormal;
   fragTexCoord = inTexCoord;
-  for (uint i = meshdef[0]; i < meshdef[1]; i++) {
-    if (meshSSBO.meshes[i].vertices[0] <= gl_VertexIndex && 
-        gl_VertexIndex < meshSSBO.meshes[i].vertices[1]) {
-      fragTid = meshSSBO.meshes[i].material;    // TODO: this uid should select from materialSSB0.materials[] (now it's just selecting the right texture)
-      fragNid = -1;                             // TODO: And this should come from material
-      break;
+  uint mesh = meshdef[0];
+  if(meshdef[0] != meshdef[1]) {
+    for (uint i = meshdef[0]; i < meshdef[1]; i++) {
+      if (meshSSBO.meshes[i].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[i].vertices[1]) {
+        mesh = i;
+        break;
+      }
     }
   }
+  fragTid = meshSSBO.meshes[mesh].tid;
+  fragNid = meshSSBO.meshes[mesh].nid;
   fragTBN = mat3(T, B, N); 
 }

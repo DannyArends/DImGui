@@ -405,7 +405,8 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     clearValueCount: 1,
     pClearValues: &clearDepth,
   };
-  
+
+  pushLabel(app.shadowBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
   VkBuffer dst;
   uint size;
   foreach(shader; app.shadows.shaders){
@@ -419,8 +420,9 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       }
     }
   }
+  popLabel(app.shadowBuffers[app.syncIndex]);
 
-  pushLabel(app.shadowBuffers[app.syncIndex], "Shadow Buffering", Colors.lightslategray);
+  pushLabel(app.shadowBuffers[app.syncIndex], "Objects Buffering", Colors.lightgray);
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isBuffered) {
       if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);

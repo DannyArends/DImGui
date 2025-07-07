@@ -26,6 +26,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     pInheritanceInfo: null // Optional
   };
   enforceVK(vkBeginCommandBuffer(app.renderBuffers[syncIndex], &beginInfo));
+  pushLabel(app.renderBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("renderBuffer %d recording to frame: %d/%d", syncIndex, app.frameIndex, app.swapChainFramebuffers.length);
 
   VkRect2D renderArea = {
@@ -57,11 +58,13 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
           // Todo: we should do this data transfer only when needed (a material changed)
           Mesh[] meshes = app.getMeshes();
           app.updateSSBO!Mesh(app.renderBuffers[syncIndex], meshes, dst, syncIndex);
-        } 
+        }
       }
     }
   }
+  popLabel(app.renderBuffers[app.syncIndex]);
 
+  pushLabel(app.renderBuffers[app.syncIndex], "Objects Buffering", Colors.lightgray);
   for(size_t x = 0; x < app.objects.length; x++) {
     if(app.showBounds) {
       app.objects[x].computeBoundingBox(app.trace);
@@ -72,9 +75,9 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
       app.objects[x].buffer(app, app.renderBuffers[syncIndex]);
     }
   }
+  popLabel(app.renderBuffers[app.syncIndex]);
 
   pushLabel(app.renderBuffers[app.syncIndex], "Rendering", Colors.lightgray);
-
   vkCmdBeginRenderPass(app.renderBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
 
