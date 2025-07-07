@@ -150,6 +150,7 @@ struct App {
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
   bool showBounds = false;                                                      /// Show bounding boxes
+  bool showShadows = false;                                                      /// Show bounding boxes
   bool showRays = false;                                                        /// Show rays
   uint verbose = 0;                                                             /// Be very verbose
   bool disco = false;                                                           /// Disco mode

@@ -13,11 +13,10 @@
 /// Shader Storage Buffer Objects
 #define BINDING_BONES_SSBO        2
 #define BINDING_MESH_SSBO         3
-#define BINDING_MATERIALS_SSBO    4
 
 /// Samplers/Images
-#define BINDING_TEXTURES          5
-#define BINDING_SHADOWMAP         6
+#define BINDING_TEXTURES          4
+#define BINDING_SHADOWMAP         5
 
 struct Light {
   vec4 position;      /// Position of the light
@@ -30,15 +29,10 @@ struct Bone {
   mat4 offset;        /// Bone offset
 };
 
-struct Material {
-  vec4 color;         /// Material base color
-  uint base;          /// Texture (base color)
-  uint normal;        /// Texture (normal)
-};
-
 struct Mesh {
   uvec2 vertices;     /// Start & End vertex
-  int material;      /// Material ID
+  int tid;            /// Texture ID
+  int nid;            /// BumpMap ID
 };
 
 #endif // STRUCTURES_GLSL

@@ -13,19 +13,24 @@ import vector : euclidean,x,y,z;
 import vertex : Vertex, INSTANCE;
 
 struct Mesh {
-  align(16) int[2] vertices;    /// Start .. End positions in Geometry.vertices array
-  int material = -1;            /// Mesh material index
+  align(16) int[2] vertices;  /// Start .. End positions in Geometry.vertices array
+  int tid = -1;               /// Mesh texture ID
+  int nid = -1;               /// Mesh BumpMap ID
 }
 
 Mesh[] getMeshes(ref App app) {
   Mesh[] meshes;
-  for (size_t o = 0; o < app.objects.length; o++) {  // Load faces to indices
-    uint size = cast(uint)app.objects[o].meshes.array.length;
-    for (size_t i = 0; i < app.objects[o].instances.length; i++) {  // Load faces to indices
-      app.objects[o].instances[i].meshdef = [cast(uint)meshes.length, cast(uint)meshes.length + size];
+  for (size_t o = 0; o < app.objects.length; o++) {
+    if(!app.objects[o].hasMeshDef) {
+      uint size = cast(uint)app.objects[o].meshes.array.length;
+      for (size_t i = 0; i < app.objects[o].instances.length; i++) {  // Load faces to indices
+        if (!app.objects[o].instances[i].meshdef[2]) {
+          app.objects[o].instances[i].meshdef = [cast(uint)meshes.length, cast(uint)meshes.length + size, 1];
+          app.objects[o].buffers[INSTANCE] = false;
+        }
+      }
+      app.objects[o].hasMeshDef = true;
     }
-    //SDL_Log("%s [%d, %d]", toStringz(app.objects[o].name()), app.objects[o].instances[0].meshdef[0], app.objects[o].instances[0].meshdef[1]);
-    app.objects[o].buffers[INSTANCE] = false;
     meshes ~= app.objects[o].meshes.array;
   }
   return(meshes);
@@ -39,14 +44,15 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
   }
   // Vertex offset, load texture information,  bone weight, and normal matrix
   size_t vOff = asset.vertices.length;
-  auto texInfo = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
+  auto baseTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
+  auto normTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_NORMALS);
 
   auto weights = asset.loadBones(mesh, app.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
 
   // TODO first create a Material definition for the object => add to app.materials
   // Then use OUR internal material index (app.materials)
-  Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(asset.vertices.length) + mesh.mNumVertices], texInfo.tid);
+  Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(asset.vertices.length) + mesh.mNumVertices], baseTexture.tid, normTexture.tid);
 
   for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {  // Load vertex information
     size_t gIdx = (vOff + vIdx);
@@ -55,11 +61,11 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
     if (mesh.mNormals) {
       asset.vertices[gIdx].normal = normMatrix.multiply([mesh.mNormals[vIdx].x, mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z]);
     }
-    if (mesh.mTextureCoords[texInfo.channel]) {
-      asset.vertices[gIdx].texCoord = [mesh.mTextureCoords[texInfo.channel][vIdx].x, mesh.mTextureCoords[texInfo.channel][vIdx].y];
+    if (mesh.mTextureCoords[baseTexture.channel]) {
+      asset.vertices[gIdx].texCoord = [mesh.mTextureCoords[baseTexture.channel][vIdx].x, mesh.mTextureCoords[baseTexture.channel][vIdx].y];
     }
-    if (mesh.mColors[texInfo.channel]) {
-      auto color = mesh.mColors[texInfo.channel][vIdx];
+    if (mesh.mColors[baseTexture.channel]) {
+      auto color = mesh.mColors[baseTexture.channel][vIdx];
       asset.vertices[gIdx].color = [color.r, color.g, color.b, color.a];
     }
     asset.assignBoneWeight(gIdx, weights, vIdx, app.bones);

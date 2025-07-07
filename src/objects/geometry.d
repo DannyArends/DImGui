@@ -22,7 +22,7 @@ import animation : Animation;
 /** An instance of a Geometry
  */
 struct Instance {
-  uint[2] meshdef = [0, 0];
+  uint[3] meshdef = [0, 0, 0];  // Start, End, Valid
   mat4 matrix = mat4.init;
   alias matrix this;
 }
@@ -51,6 +51,7 @@ class Geometry {
 
   BoundingBox box = null;                       /// Bounding Box
   bool window = false;                          /// ImGui window displayed?
+  bool hasMeshDef = false;                          /// If the mesh is updated, we need to transfer
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
@@ -120,7 +121,7 @@ float scale(T)(T object, uint instance = 0) {
 void texture(T)(T object, const Texture[] textures, const(char)* name, string mname = "") {
   auto tid = textures.idx(name);
   foreach(ref mesh ; object.meshes) {
-    mesh.material = tid;
+    mesh.tid = tid;
   }
 }
 

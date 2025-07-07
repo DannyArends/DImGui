@@ -28,8 +28,8 @@ void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
   app.objects[($-1)].position([0.0f, -1.1f,0.0f]);
-  for(int x = -75; x < 75; x++) {
-    for(int z = -75; z < 75; z++) {
+  for(int x = -50; x < 50; x++) {
+    for(int z = -50; z < 50; z++) {
       mat4 instance;  // Add a instances of object 0
       auto scalefactor = 0.25f;
       instance = instance.translate([0.0f, -1.0f, 0.0f]);
@@ -116,10 +116,13 @@ void createScene(ref App app){
   }
 
   SDL_Log("createScene: Add 3DS");
-  app.objects ~= loadFromFile("data/objects/Dragon.3ds");
-  app.objects[($-1)].texture(app.textures, "Dragon_ground");
-  app.objects[($-1)].computeNormals();
-  app.objects[($-1)].position([10.0f, -1.0f, -4.0f]);
+  if(1 == 0){
+    app.objects ~= app.loadOpenAsset("data/objects/Dragon.fbx");
+    app.objects[($-1)].rotate([270.0f, 0.0f, 0.0f]);
+    app.objects[($-1)].scale([2.75f, 2.75f, 2.75f]);
+    app.objects[($-1)].computeNormals();
+    app.objects[($-1)].position([10.0f, -1.0f, -4.0f]);
+  }
 
   //new Thread({
     SDL_Log("createScene: Add cottage OpenAsset");

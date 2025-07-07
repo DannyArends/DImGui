@@ -72,7 +72,10 @@ Material[] loadMaterials(ref App app, aiScene* scene, const(char)* path){
     Material mat = material.create(path, i);
     foreach(type; EnumMembers!aiTextureType) {
       TexInfo value = material.getTexture(type);
-      if(value.path != "") mat.textures[type] = value;
+      if(value.path != "") {
+        //SDL_Log(toStringz(format("  textureType: %s = %s", type, value.path)));
+        mat.textures[type] = value;
+      }
     }
     foreach(type; EnumMembers!aiColorType) {
       mat.colors[type] = material.getMaterialColor(type);
