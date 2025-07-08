@@ -16,7 +16,7 @@ import material : Material;
 import matrix : mat4, position, transpose, translate, rotate, scale, inverse;
 import textures : Texture, idx;
 import vector : vSub, vAdd, cross, normalize, euclidean;
-import vertex : Vertex, VERTEX, INSTANCE, INDEX, NORMAL;
+import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 import animation : Animation;
 
 /** An instance of a Geometry
@@ -24,7 +24,6 @@ import animation : Animation;
 struct Instance {
   uint[2] meshdef = [0, 0];  // Start, End, Valid
   mat4 matrix = mat4.init;
-  mat4 nMatrix = mat4.init;
   alias matrix this;
 }
 
@@ -56,7 +55,6 @@ class Geometry {
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(name()));
-    if(!buffers[NORMAL]) this.computeNormalMatrices();
     if(!buffers[VERTEX])
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) 
@@ -68,7 +66,7 @@ class Geometry {
 
   bool isVisible = true;                            /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
-  bool[4] buffers = [false, false, false, false];   /// Boolean flag
+  bool[3] buffers = [false, false, false];   /// Boolean flag
   @property @nogc bool isBuffered() nothrow { 
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
   }
@@ -84,12 +82,6 @@ class Geometry {
   void function(ref App app, ref Geometry obj, float dt) onFrame;
   void function(ref App app, ref Geometry obj) onTick;
   string function() name;
-}
-
-@nogc pure void computeNormalMatrices(T)(T object) nothrow {
-  for (size_t i = 0; i < object.instances.length; i++) {
-    object.instances[i].nMatrix = transpose(inverse(object.instances[i]));
-  }
 }
 
 /** Set position of instance from object.instances by p */
@@ -120,7 +112,6 @@ class Geometry {
 
 float scale(T)(T object, uint instance = 0) {
   assert(instance <  object.instances.length, "No such instance");
-  object.buffers[NORMAL] = false;
   return(scale(object.instances[instance]));
 }
 
