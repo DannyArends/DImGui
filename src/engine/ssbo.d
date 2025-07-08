@@ -39,8 +39,8 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
   });
 }
 
-void writeSSBO(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, uint syncIndex = 0){
-  auto bufferInfo = new VkDescriptorBufferInfo(app.buffers[descriptor.base].buffers[syncIndex], 0, descriptor.size);
+void writeSSBO(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, ref VkDescriptorBufferInfo[] bufferInfos, uint syncIndex = 0){
+  bufferInfos ~= VkDescriptorBufferInfo(app.buffers[descriptor.base].buffers[syncIndex], 0, descriptor.size);
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
     dstSet: dst[syncIndex],
@@ -48,7 +48,7 @@ void writeSSBO(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor,
     dstArrayElement: 0,
     descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
     descriptorCount: 1,
-    pBufferInfo: bufferInfo
+    pBufferInfo: &bufferInfos[($-1)]
   };
   write ~= set;
 }

@@ -17,7 +17,9 @@ struct Bone {
   Matrix offset;          /// Inverse bind pose matrix
   uint index;             /// Bone index
 
-  @property float[3] bindPosition() { return offset.inverse().position(); }
+  @property float[3] bindPosition() {
+    return offset.inverse().position();
+  }
 }
 
 alias float[uint][string] BoneWeights;
