@@ -342,10 +342,8 @@ void updateShadowMapUBO(ref App app, Light light, uint syncIndex) {
   if(app.verbose) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
 }
 
-void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst){
-  VkDescriptorImageInfo[] shadowMapInfo;
-  shadowMapInfo.length = 1;
-  shadowMapInfo[0] = VkDescriptorImageInfo( // Assign directly to the single info struct
+void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
+  imageInfos ~= VkDescriptorImageInfo( // Assign directly to the single info struct
     imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     imageView: app.shadows.imageView, // Use the shadow map's image view
     sampler: app.shadows.sampler     // Use the shadow map's sampler
@@ -357,7 +355,7 @@ void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descri
     dstArrayElement: 0,
     descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
     descriptorCount: 1, // Crucial: Only 1 descriptor for the single shadow map
-    pImageInfo: &shadowMapInfo[0] // Point to the single info struct
+    pImageInfo: &imageInfos[($-1)] // Point to the single info struct
   }; 
   write ~= set;
 }

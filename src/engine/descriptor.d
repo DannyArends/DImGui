@@ -166,6 +166,9 @@ void createDescriptors(ref App app) {
 void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] dstSet, uint syncIndex = 0) {
   if(app.trace) SDL_Log("updateDescriptorSet");
   VkWriteDescriptorSet[] descriptorWrites;
+  VkDescriptorBufferInfo[] bufferInfos; // Holds all buffer infos for this update call
+  VkDescriptorImageInfo[] imageInfos; // Holds all buffer infos for this update call
+
   for(uint s = 0; s < shaders.length; s++) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
@@ -173,23 +176,23 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         if(to!string(shader.descriptors[d].name) == "texureSampler") {
-          app.writeTextureSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex]);
+          app.writeTextureSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
         if(to!string(shader.descriptors[d].name) == "shadowMap"){
-          app.writeShadowMap(descriptorWrites, shader.descriptors[d], dstSet[syncIndex]);
+          app.writeShadowMap(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
       }
       // Uniform Buffer Write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        app.writeUniformBuffer(descriptorWrites, shader.descriptors[d], dstSet, syncIndex);
+        app.writeUniformBuffer(descriptorWrites, shader.descriptors[d], dstSet, bufferInfos, syncIndex);
       }
       // SSBO Buffer Write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        app.writeSSBO(descriptorWrites, shader.descriptors[d], dstSet, syncIndex);
+        app.writeSSBO(descriptorWrites, shader.descriptors[d], dstSet, bufferInfos, syncIndex);
       }
       // Compute Stored Image
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-        app.writeComputeImage(descriptorWrites, shader.descriptors[d], dstSet, syncIndex);
+        app.writeComputeImage(descriptorWrites, shader.descriptors[d], dstSet, imageInfos, syncIndex);
       }
     }
   }
