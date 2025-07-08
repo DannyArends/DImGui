@@ -19,7 +19,7 @@ class Turtle : Geometry {
   float[3] origin = [0.0f, 0.0f, 0.0f];
   float[4][2] colors = [[0.5f, 0.5f, 0.0f, 1.0f],
                        [1.0f, 1.0f, 0.2f, 1.0f]];
-
+  uint frame = 0;
   this(LSystem system) {
     seed = uniform(0, 256);
     lsystem = system;
@@ -31,7 +31,11 @@ class Turtle : Geometry {
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
     /** onFrame handler aging the particles every frame */
-    onFrame = (ref App app, ref Geometry obj, float dt){ (cast(Turtle)obj).age(); };
+    onFrame = (ref App app, ref Geometry obj, float dt){ 
+      auto t =  (cast(Turtle)obj);
+      if(fmod(t.frame, 10) == 0) t.age();
+      t.frame++;
+    };
     name = (){ return(typeof(this).stringof); };
   }
 
@@ -44,18 +48,27 @@ class Turtle : Geometry {
     float[3] lpos = [0.0f, 0.0f, 0.0f];
     float[3] cpos = [0.0f, 0.0f, 0.0f];
     float[4] color = colors[0];
-    vertices = [Vertex(origin, [0.0f, 0.0f], colors[0]), Vertex([0.0f, 0.0f, 0.0f], [0.0f, 0.0f], colors[1])];
-    indices = [0, 1];
+    uint vTx = 2;
+    vertices.reserve(lsystem.max_length);
+    indices.reserve(lsystem.max_length);
     foreach (i, symbol; lsystem.state) {
       switch (symbol) {
         case Symbols.Origin: cpos = origin; break;
         case Symbols.Point: 
           if(cpos != lpos){
             //SDL_Log("%d %f %f %f -> %f %f %f", i,lpos[0],lpos[1],lpos[2],cpos[0],cpos[1],cpos[2]);
-            vertices ~= Vertex(lpos, [0.0f, 0.0f], color);
-            vertices ~= Vertex(cpos, [0.0f, 0.0f], color);
+            if((vTx+1) < vertices.length){
+              vertices[vTx]   = Vertex(lpos, [0.0f, 0.0f], color);
+              vertices[vTx+1] = Vertex(cpos, [0.0f, 0.0f], color);
+              indices[vTx] = vTx;
+              indices[vTx+1] = vTx+1;
+            }else{
+              vertices ~= Vertex(lpos, [0.0f, 0.0f], color);
+              vertices ~= Vertex(cpos, [0.0f, 0.0f], color);
+              indices ~= [cast(uint)indices.length, cast(uint)indices.length+1];
+            }
+            vTx += 2;
             lpos = cpos;
-            indices ~= [cast(uint)indices.length, cast(uint)indices.length+1];
           }
         break;
         case Symbols.Move:  cpos = cpos.vAdd(direction); break;

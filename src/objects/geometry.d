@@ -56,8 +56,7 @@ class Geometry {
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(name()));
-    if(!buffers[NORMAL])
-      this.computeNormalMatrices();
+    if(!buffers[NORMAL]) this.computeNormalMatrices();
     if(!buffers[VERTEX])
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     if(!buffers[INDEX]) 

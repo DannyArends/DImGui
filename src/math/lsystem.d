@@ -74,6 +74,7 @@ struct LSystem {
 
   bool iterate() {
     Symbol[] newstate;
+    newstate.reserve(state.length);
     if(state.length > max_length) return(false);
     for (size_t i = 0; i < state.length; i++) {
       newstate ~= replace(state[i]);
@@ -101,8 +102,8 @@ LSystem createLSystem() {
   foreach (s; [Symbols.Forward, Symbols.Backward, 
                Symbols.Left, Symbols.Right, 
                Symbols.Up, Symbols.Down] ) {
-   // test.rules[s] ~= Rule("O", 1);  // Super Speed, Ball Like
-   // test.rules[s] ~= Rule("RM", 3);
+    test.rules[s] ~= Rule("O", 1);  // Super Speed, Ball Like
+    test.rules[s] ~= Rule("RM", 3);
   }
 
   for(size_t i = 0; i < 5; i++){
