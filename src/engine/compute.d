@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, copyBuffer;
+import buffer : beginSingleTimeCommands, endSingleTimeCommands;
 import color : Colors;
 import commands : createCommandBuffer;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet;
@@ -15,7 +15,7 @@ import pipeline : GraphicsPipeline;
 import reflection : createResources;
 import swapchain : createImageView;
 import shaders : Shader, createShaderModule;
-import ssbo : SSBO;
+import ssbo : SSBO, updateSSBO;
 import sync : insertWriteBarrier, insertReadBarrier;
 import textures : Texture, idx, registerTexture, findTextureSlot;
 import uniforms : ParticleUniformBuffer, UBO;
@@ -91,21 +91,11 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
 }
 
 void transferToSSBO(ref App app, Descriptor descriptor) {
-  void* data;
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, descriptor.size);
-  vkMapMemory(app.device, stagingBufferMemory, 0, descriptor.size, 0, &data);
-  memcpy(data, &app.compute.system.particles[0], descriptor.size);
-  vkUnmapMemory(app.device, stagingBufferMemory);
-
+  VkCommandBuffer commandBuffer = app.beginSingleTimeCommands(app.commandPool);
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.copyBuffer(stagingBuffer, app.buffers[descriptor.base].buffers[i], descriptor.size);
+    app.updateSSBO(commandBuffer, app.compute.system.particles, descriptor,i);
   }
-
-  vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-  vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+  app.endSingleTimeCommands(commandBuffer, app.commandPool, app.queue);
 }
 
 void updateComputeUBO(ref App app, uint syncIndex = 0){
@@ -122,10 +112,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
         };
         app.compute.lastTick = now;
 
-        void* data;
-        vkMapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex], 0, ParticleUniformBuffer.sizeof, 0, &data);
-        memcpy(data, &buffer, ParticleUniformBuffer.sizeof);
-        vkUnmapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex]);
+        memcpy(app.ubos[shader.descriptors[d].base].data[syncIndex], &buffer, ParticleUniformBuffer.sizeof);
       }
       /* Copy data off the GPU to the CPU */
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){

@@ -332,10 +332,7 @@ void updateShadowMapUBO(ref App app, Light light, uint syncIndex) {
     auto shader = app.shadows.shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        void* data;
-        vkMapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex], 0, shader.descriptors[d].bytes, 0, &data);
-        memcpy(data, &ubo, shader.descriptors[d].bytes);
-        vkUnmapMemory(app.device, app.ubos[shader.descriptors[d].base].memory[syncIndex]);
+        memcpy(app.ubos[shader.descriptors[d].base].data[syncIndex], &ubo, shader.descriptors[d].bytes);
       }
     }
   }
