@@ -43,21 +43,18 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     pClearValues: &app.clearValue[0]
   };
 
-  VkBuffer dst;
-  uint size;
-  foreach(shader; shaders){
+  foreach(shader; shaders) {
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
         if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) {
           // Always update the bones for animation on each frame
           Matrix[] offsets = app.getBoneOffsets();
-          app.updateSSBO!Matrix(app.renderBuffers[syncIndex], offsets, dst, syncIndex);
+          app.updateSSBO!Matrix(app.renderBuffers[syncIndex], offsets, shader.descriptors[d], syncIndex);
         }
         if(SDL_strstr(shader.descriptors[d].base, "MeshMatrices") != null) {
           // Todo: we should do this data transfer only when needed (a material changed)
           Mesh[] meshes = app.getMeshes();
-          app.updateSSBO!Mesh(app.renderBuffers[syncIndex], meshes, dst, syncIndex);
+          app.updateSSBO!Mesh(app.renderBuffers[syncIndex], meshes, shader.descriptors[d], syncIndex);
         }
       }
     }
