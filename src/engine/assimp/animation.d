@@ -52,9 +52,9 @@ void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, c
     auto p = getNodePosition(animation.nodeAnimations[node.name], animationTime);
     auto r = getNodeRotation(animation.nodeAnimations[node.name], animationTime);
     auto s = getNodeScale(animation.nodeAnimations[node.name], animationTime);
-    Matrix positionM = translate(Matrix(), p);
-    Matrix rotationM = rotate(Matrix(), r);
-    Matrix scaleM = scale(Matrix(), s);
+    Matrix positionM = translate(p);
+    Matrix rotationM = rotate(r);
+    Matrix scaleM = scale(s);
     localTransform = scaleM.multiply(positionM.multiply(rotationM));
   }
 
