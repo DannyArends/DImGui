@@ -93,10 +93,11 @@ void createScene(ref App app){
   app.objects[($-1)].scale([0.5f, 0.5f, 0.5f]);
   app.objects[($-1)].position([3.5f,-0.5f, 1.0f]);
 
+/*
   SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
   app.objects[($-1)].computeNormals();
-  app.objects[($-1)].position([4.5f, 2.5f, -2.0f]);
+  app.objects[($-1)].position([4.5f, 2.5f, -2.0f]); */
 
   SDL_Log("createScene: Add PDB object");
   auto protein = loadProteinCif("data/objects/3kql.cif");
