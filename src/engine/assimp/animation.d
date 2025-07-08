@@ -119,17 +119,17 @@ Animation[] loadAnimations(ref App app, aiScene* scene, const OpenAsset asset) {
   return(animations);
 }
 
-@nogc pure size_t findKeyframeIndex(const double[] timeKeys, double animationTime) nothrow {
-  for (size_t i = 0; i < (timeKeys.length - 1); i++) {
-    if (animationTime < timeKeys[i + 1]) { return i; }
+@nogc pure size_t findKeyframeIndex(T)(const T[] keys, double animationTime) nothrow {
+  for (size_t i = 0; i < (keys.length - 1); i++) {
+    if (animationTime < keys[i + 1].time) { return i; }
   }
-  return(timeKeys.length - 1);
+  return(keys.length - 1);
 }
 
 pure float[3] getNodePosition(const NodeAnimation anim, double animationTime) nothrow {
   if (anim.positionKeys.length == 1) return(anim.positionKeys[0].value);
 
-  size_t i0 = findKeyframeIndex(anim.positionKeys.map!(k => k.time).array, animationTime);
+  size_t i0 = findKeyframeIndex(anim.positionKeys, animationTime);
   size_t i1 = i0 + 1; if (i1 >= anim.positionKeys.length) i1 = i0;
   double t0 = anim.positionKeys[i0].time, t1 = anim.positionKeys[i1].time;
   float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
@@ -139,7 +139,7 @@ pure float[3] getNodePosition(const NodeAnimation anim, double animationTime) no
 pure float[4] getNodeRotation(NodeAnimation anim, double animationTime) nothrow {
   if (anim.rotationKeys.length == 1) return(anim.rotationKeys[0].value);
 
-  size_t i0 = findKeyframeIndex(anim.rotationKeys.map!(k => k.time).array, animationTime);
+  size_t i0 = findKeyframeIndex(anim.rotationKeys, animationTime);
   size_t i1 = i0 + 1; if (i1 >= anim.rotationKeys.length) i1 = i0;
   double t0 = anim.rotationKeys[i0].time, t1 = anim.rotationKeys[i1].time;
   float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
@@ -149,7 +149,7 @@ pure float[4] getNodeRotation(NodeAnimation anim, double animationTime) nothrow 
 pure float[3] getNodeScale(NodeAnimation anim, double animationTime) nothrow {
   if (anim.scalingKeys.length == 1) return(anim.scalingKeys[0].value);
 
-  size_t i0 = findKeyframeIndex(anim.scalingKeys.map!(k => k.time).array, animationTime);
+  size_t i0 = findKeyframeIndex(anim.scalingKeys, animationTime);
   size_t i1 = i0 + 1; if (i1 >= anim.scalingKeys.length) i1 = i0;
   double t0 = anim.scalingKeys[i0].time, t1 = anim.scalingKeys[i1].time;
   float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
