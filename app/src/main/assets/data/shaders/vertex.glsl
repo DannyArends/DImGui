@@ -31,7 +31,6 @@ layout(location = 6) in vec4 inWeights;           /// assimp: BoneWeights
 // Per Instance attributes
 layout(location = 7) in uvec3 meshdef;            /// Mesh start + stop
 layout(location = 8) in mat4 instance;            /// Instance matrix
-layout(location = 12) in mat4 nMatrix;            /// Normal matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;       /// Fragment world position
@@ -45,6 +44,7 @@ layout(location = 6) out mat3 fragTBN;            /// Tangent, Bitangent, Normal
 void main() {
   /// Compute bone effects on vertex
   vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
+  mat3 normalMatrix = transpose(inverse(mat3(instance)));
 
   /// Compute our model matrix
   mat4 model = ubo.scene * instance;
@@ -61,7 +61,7 @@ void main() {
   /// Transfer data to fragment shader
   fragPosWorld = (model * position);
   fragColor = inColor;
-  fragNormal = normalize(vec3(mat3(nMatrix) * inNormal));
+  fragNormal = normalize(normalMatrix * inNormal);
   fragTexCoord = inTexCoord;
   uint mesh = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
