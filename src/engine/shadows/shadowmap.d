@@ -413,7 +413,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
         if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) { 
           dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
           Matrix[] offsets = app.getBoneOffsets();
-          app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], offsets, dst, syncIndex);
+          app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], offsets, shader.descriptors[d], syncIndex);
         }
       }
     }
