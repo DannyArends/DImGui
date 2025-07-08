@@ -34,15 +34,16 @@ layout(location = 6) in mat3 fragTBN;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-  vec3 baseColor = vec3( 0.0f );
-  for(int i=0; i < ubo.nlights; ++i) {
-    baseColor += illuminate(ubo.lights[i], fragColor, fragPosWorld, fragNormal);
+  vec3 baseColor = fragColor.rgb;
+  if(fragTid >= 0){ // Modify by the texture
+    vec4 texColor = pow(texture(texureSampler[fragTid], fragTexCoord).rgba, vec4(2.2));
+    if(texColor.a < 0.2f) discard;
+    baseColor = baseColor * texColor.rgb;
   }
 
-  if(fragTid >= 0){ // Modify by the texture
-    vec4 texColor = texture(texureSampler[fragTid], fragTexCoord).rgba;
-    if(texColor.a < 0.2f) discard;
-    baseColor = fragColor.rgb * texColor.rgb;
+  vec3 lightColor = vec3(0.0f);
+  for(int i = 0; i < ubo.nlights; ++i) {
+    lightColor += illuminate(ubo.lights[i], vec4(baseColor, 1.0f), fragPosWorld, fragNormal);
   }
 
   /// Bump map adjustment
@@ -53,5 +54,5 @@ void main() {
 
   /// Compute and apply shadow factor
   float shadowFactor = calculateShadow(lightUbo.lightProjView * fragPosWorld);
-  outColor = vec4(baseColor * adjustment * shadowFactor, 1.0);
+  outColor = vec4(pow(lightColor * adjustment * shadowFactor, vec3(1.0/2.2)), 1.0);
 }
