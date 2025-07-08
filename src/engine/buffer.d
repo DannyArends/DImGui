@@ -11,7 +11,8 @@ struct StageBuffer {
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
   uint frame;                    /// Frame to complete before destoying the buffer
-  uint size = 0;                 /// Size of the buffer
+  VkDeviceSize size = 0;         /// Current actual data size in bytes
+  VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
   void* data;                    /// Pointer to mapped data
 }
 
@@ -77,10 +78,9 @@ void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
   app.endSingleTimeCommands(commandBuffer, app.commandPool, app.queue);
 }
 
-void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuffer, VkDeviceSize size = VK_WHOLE_SIZE) {
+void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuffer) {
   if(app.trace) SDL_Log("updateBuffer");
-  VkBufferCopy copyRegion = { size : size };
-  //vkCmdCopyBuffer(app.renderBuffers[app.syncIndex], buffer.sb, buffer.vb, 1, &copyRegion);
+  VkBufferCopy copyRegion = { size : buffer.size };
   vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
 
   VkBufferMemoryBarrier bufferBarrier = {
@@ -91,7 +91,7 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuf
     dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
     buffer : buffer.vb,                                   // Block on this vulkan buffer
     offset : 0,
-    size : size                                           // size of the buffer
+    size : buffer.size                                           // size of the buffer
   };
 
   vkCmdPipelineBarrier(
@@ -135,31 +135,31 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
  */
 bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage, 
               VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-  uint size = cast(uint)(objects[0].sizeof * objects.length);
-  if(app.trace) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, size);
+  VkDeviceSize requiredSize = cast(uint)(objects[0].sizeof * objects.length);
+  if(app.trace) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, requiredSize);
 
   // Check if we need to allocate a new buffer or resize the current buffer
-  if(size > buffer.size) {
-    if(buffer.size != 0) {
-      // Resize, the old buffer was not empty
+  if(requiredSize > buffer.capacity) {
+    if (buffer.vb != null) { // The old buffer was not empty
       auto oldbuffer = buffer;
       oldbuffer.frame = app.totalFramesRendered + app.framesInFlight;
       app.bufferDeletionQueue.add((bool force){ // Add the old buffer to the buffer deletion queue
         if (force || (app.totalFramesRendered >= oldbuffer.frame)){ app.destroyGeometryBuffers(oldbuffer); return(true); }
         return(false);
       });
-      buffer = GeometryBuffer();
     }
-    app.createBuffer(&buffer.sb, &buffer.sbM, size);
-    app.createBuffer(&buffer.vb, &buffer.vbM, size, usage, properties);
-    vkMapMemory(app.device, buffer.sbM, 0, size, 0, &buffer.data);
-    buffer.size = size;
+    VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
+    buffer = GeometryBuffer();
+    app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
+    app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
+    vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data);
+    buffer.capacity = newCapacity;
   }
-  memcpy(buffer.data, cast(void*)objects, size);
+  memcpy(buffer.data, cast(void*)objects, requiredSize);
+  buffer.size = requiredSize;
+  app.updateBuffer(buffer, cmdBuffer);
 
-  app.updateBuffer(buffer, cmdBuffer, size);
-
-  if(app.trace) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, size);
+  if(app.trace) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, requiredSize);
   return(true);
 }
 
