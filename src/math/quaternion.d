@@ -71,7 +71,8 @@ T[4] slerp(T)(T[4] start, T[4] end, float factor) {
   return result;
 }
 
-Matrix rotate(Matrix m, float[4] q) { // Quaternion (x, y, z, w)
+Matrix rotate(float[4] q) { // Quaternion (x, y, z, w)
+  Matrix m;
   float x = q[0], y = q[1], z = q[2], w = q[3];
 
   float x2 = x + x, y2 = y + y, z2 = z + z;

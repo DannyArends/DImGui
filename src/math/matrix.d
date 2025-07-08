@@ -69,6 +69,10 @@ Matrix toMatrix(aiMatrix4x4 m){
 
 /** Matrix x Yaw, Pitch, Roll vector in degrees V(yaw, pitch, roll) - Applies rotations in local object space (Yaw -> Pitch -> Roll) */
 @nogc pure Matrix rotate(const Matrix m, const float[3] v) nothrow {
+  return m.multiply(rotate(v));
+}
+
+@nogc pure Matrix rotate(const float[3] v) nothrow {
   float yaw   = radian(v[0]); float pitch = radian(v[1]); float roll  = radian(v[2]);
 
   Matrix rotateYaw = Matrix([
@@ -93,10 +97,10 @@ Matrix toMatrix(aiMatrix4x4 m){
   ]);
 
   // Apply rotations in the order: Roll -> Pitch -> Yaw (local axes)
-  return m.multiply(rotateRoll.multiply(rotatePitch).multiply(rotateYaw));
+  return(rotateRoll.multiply(rotatePitch).multiply(rotateYaw));
 }
 
-/** Matrix x Scale V(x, y, z) */
+/** Scale from a matrix M */
 float[3] scale(const Matrix m) {
   float[3] s = [
     magnitude([m[0], m[1], m[2]]),
@@ -105,17 +109,27 @@ float[3] scale(const Matrix m) {
   ];
   return(s);
 }
+
 @nogc pure Matrix scale(const Matrix m, const float[3] v) nothrow {
+  return(multiply(m, scale(v)));
+}
+
+@nogc pure Matrix scale(const float[3] v) nothrow {
   Matrix scale;
   scale[0] = v[0]; scale[5] = v[1]; scale[10] = v[2];
-  return(multiply(m, scale));
+  return(scale);
 }
 
 /** Matrix x Translation V(x, y, z) */
 @nogc pure Matrix translate(const Matrix m, const float[3] v) nothrow {
+  return(multiply(m, translate(v)));
+}
+
+/** Translation V(x, y, z) */
+@nogc pure Matrix translate(const float[3] v) nothrow {
   Matrix translation;
   translation[12] = v[0]; translation[13] = v[1]; translation[14] = v[2];
-  return(multiply(m, translation));
+  return(translation);
 }
 
 /** getTranslation float[3] from a Matrix V4(l, r, b, t) */
