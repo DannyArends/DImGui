@@ -65,9 +65,8 @@ void main() {
   fragTexCoord = inTexCoord;
   uint mesh = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
-    for (uint i = meshdef[0]; i < meshdef[1]; i++) {
-      if (meshSSBO.meshes[i].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[i].vertices[1]) {
-        mesh = i;
+    for (; mesh < meshdef[1]; mesh++) {
+      if (meshSSBO.meshes[mesh].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[mesh].vertices[1]) {
         break;
       }
     }
