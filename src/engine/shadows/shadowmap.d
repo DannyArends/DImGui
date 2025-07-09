@@ -39,7 +39,6 @@ struct ShadowMap {
 
 struct LightUbo {
   Matrix scene;
-  uint clight;
   uint nlights;
 };
 
@@ -208,10 +207,18 @@ void createShadowMapGraphicsPipeline(ref App app) {
   app.layouts[SHADOWS] = app.createDescriptorSetLayout(app.shadows.shaders);
   app.sets[SHADOWS] = createDescriptorSet(app.device, app.pools[SHADOWS], app.layouts[SHADOWS], app.framesInFlight);
 
+  VkPushConstantRange pushConstantRange = {
+      stageFlags: VK_SHADER_STAGE_VERTEX_BIT,
+      offset: 0,
+      size: uint.sizeof // Size of 'clight' (4 bytes for a uint)
+  };
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     setLayoutCount: 1,
     pSetLayouts: &app.layouts[SHADOWS],
+    pushConstantRangeCount: 1,
+    pPushConstantRanges: &pushConstantRange,
   };
 
   enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, app.allocator, &app.shadows.pipeline.layout));
@@ -330,17 +337,17 @@ void computeLightSpace(ref App app, ref Light light){
 
   Matrix lightView = lookAt(lightPos, lightTarget, upVector);
 
-  float fovY = 2 * light.properties[2];
-  float nearPlane = 10.0f;
+  float fovY = (2 * light.properties[2]);
+  float nearPlane = 0.1f;
   float farPlane = 100.0f;
   Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
+  //SDL_Log(toStringz(format("%s, %s", lightProjection, lightView)));
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
 }
 
 void updateShadowMapUBO(ref App app, Shader[] shaders, uint clight, uint syncIndex) {
   LightUbo ubo = {
     scene : Matrix.init,
-    clight : clight,
     nlights : cast(uint)app.lights.length
   };
 
@@ -371,7 +378,7 @@ void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descri
     dstBinding: descriptor.binding,
     dstArrayElement: 0,
     descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    descriptorCount: 1, // Crucial: Only 1 descriptor for the single shadow map
+    descriptorCount: cast(uint)app.lights.length, // Crucial: Only 1 descriptor for the single shadow map
     pImageInfo: &imageInfos[startIndex] // Point to the single info struct
   }; 
   write ~= set;
@@ -463,6 +470,9 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
     vkCmdBeginRenderPass(app.shadowBuffers[app.syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(app.shadowBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
+    uint currentLightIndex = cast(uint)l;
+    vkCmdPushConstants(app.shadowBuffers[app.syncIndex], app.shadows.pipeline.layout,
+                       VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
       if(app.objects[x].isVisible && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST){
         app.shadow(app.objects[x], syncIndex);

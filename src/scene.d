@@ -158,6 +158,11 @@ void createScene(ref App app){
   app.objects[($-1)].animation = 0;
  // }).start(); */
 
+ /* SDL_Log("createScene: Add a Cube");
+  app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
+  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
+    obj.instances[0] = app.lights[1].lightSpaceMatrix;
+  }; */
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");
     app.objects ~= app.compute.system;
