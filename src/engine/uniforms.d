@@ -10,9 +10,7 @@ import quaternion : xyzw;
 import descriptor : Descriptor;
 import buffer : createBuffer;
 import matrix : mat4, rotate, lookAt, perspective;
-import lights : Light, Lights;
 import shadowmap : computeLightSpace;
-import sdl : STARTUP;
 
 struct UniformBufferObject {
   float[4] position;
@@ -20,8 +18,6 @@ struct UniformBufferObject {
   mat4 view = mat4.init;
   mat4 proj = mat4.init;
   mat4 orientation = mat4.init;   /// Screen orientation
-  Light[4] lights;
-  uint nlights = 4;
 }
 
 struct ParticleUniformBuffer {
@@ -61,22 +57,12 @@ void createUBO(ref App app, Descriptor descriptor) {
 }
 
 void updateRenderUBO(ref App app, Shader[] shaders, Light light, uint syncIndex) {
-  if (app.disco) {
-    auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000f;
-    app.lights[1].direction[0] = sin(2 * t);
-    app.lights[1].direction[2] = tan(2 * t);
-    app.lights[2].direction[0] = cos(2 * t);
-    app.lights[2].direction[2] = atan(2 * t);
-    app.lights[3].direction[0] = tan(t);
-  }
   UniformBufferObject ubo = {
     position: app.camera.position.xyzw,
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
     view: app.camera.view,
     proj: app.camera.proj,
     orientation: mat4.init,
-    lights : app.lights,
-    nlights : 4
   };
 
   // Adjust for screen orientation so that the world is always up

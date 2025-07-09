@@ -17,6 +17,10 @@ layout (std140, binding = BINDING_MESH_SSBO) readonly buffer MeshMatrices {
     Mesh meshes[];
 } meshSSBO;
 
+layout (std140, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatrices {
+    Light lights[];
+} lightSSBO;
+
 /// Samplers/Images
 layout(binding = BINDING_TEXTURES) uniform sampler2D texureSampler[];
 layout(binding = BINDING_SHADOWMAP) uniform sampler2DShadow shadowMap;

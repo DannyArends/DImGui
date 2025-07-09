@@ -74,7 +74,7 @@ struct App {
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[const(char)*] buffers;                                                   /// SSBO buffers
   UBO[const(char)*] ubos;                                                       /// UBO buffers
-  Light[4] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue];      /// Scene lighting
+  Light[] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue, Lights.Red];      /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
@@ -150,7 +150,7 @@ struct App {
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
   bool showBounds = false;                                                      /// Show bounding boxes
-  bool showShadows = false;                                                      /// Show bounding boxes
+  bool showShadows = false;                                                     /// TODO: Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
   uint verbose = 0;                                                             /// Be very verbose
   bool disco = false;                                                           /// Disco mode

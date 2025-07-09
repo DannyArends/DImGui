@@ -13,10 +13,11 @@
 /// Shader Storage Buffer Objects
 #define BINDING_BONES_SSBO        2
 #define BINDING_MESH_SSBO         3
+#define BINDING_LIGHT_SSBO        4
 
 /// Samplers/Images
-#define BINDING_TEXTURES          4
-#define BINDING_SHADOWMAP         5
+#define BINDING_TEXTURES          5
+#define BINDING_SHADOWMAP         6
 
 struct Light {
   vec4 position;      /// Position of the light

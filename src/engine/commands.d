@@ -9,6 +9,8 @@ import bone : getBoneOffsets;
 import color : Colors;
 import descriptor : Descriptor;
 import matrix : Matrix;
+import lights : Light, Lights;
+import sdl : STARTUP;
 import mesh : Mesh, getMeshes;
 import boundingbox : computeBoundingBox;
 import geometry : draw;
@@ -55,6 +57,17 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
           // Todo: we should do this data transfer only when needed (a material changed)
           Mesh[] meshes = app.getMeshes();
           app.updateSSBO!Mesh(app.renderBuffers[syncIndex], meshes, shader.descriptors[d], syncIndex);
+        }
+        if(SDL_strstr(shader.descriptors[d].base, "LightMatrices") != null) {
+          if (app.disco) {
+            auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000f;
+            app.lights[1].direction[0] = sin(2 * t);
+            app.lights[1].direction[2] = tan(2 * t);
+            app.lights[2].direction[0] = cos(2 * t);
+            app.lights[2].direction[2] = atan(2 * t);
+            app.lights[3].direction[0] = tan(t);
+          }
+          app.updateSSBO!Light(app.renderBuffers[syncIndex], app.lights, shader.descriptors[d], syncIndex);
         }
       }
     }
