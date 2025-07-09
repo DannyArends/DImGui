@@ -23,7 +23,7 @@ layout (std140, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatrices {
 
 /// Samplers/Images
 layout(binding = BINDING_TEXTURES) uniform sampler2D texureSampler[];
-layout(binding = BINDING_SHADOWMAP) uniform sampler2DShadow shadowMap;
+layout(binding = BINDING_SHADOWMAP) uniform sampler2DShadow shadowMap[];
 
 // Function to calculate vector position after animation
 vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
@@ -54,7 +54,7 @@ float calculateShadow(vec4 position) {
   }
 
   float bias = 0.001;
-  float shadow = texture(shadowMap, vec3(projCoords.xy, projCoords.z));
+  float shadow = texture(shadowMap[0], vec3(projCoords.xy, projCoords.z));
   return shadow;
 }
 

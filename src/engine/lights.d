@@ -5,7 +5,10 @@
 
 import includes;
 
+import matrix : Matrix;
+
 struct Light {
+  Matrix lightSpaceMatrix;
   float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light Position
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
@@ -13,9 +16,9 @@ struct Light {
 }
 
 enum Lights : Light {
-  White = Light([ 0.0f,  1.0f,  0.0f, 0.0f], [0.1f, 0.1f, 0.1f, 1.0f], [0.0f,   0.0f, 0.0f, 0.0f], [1.0f, 0.0f, 0.0f, 0.0f]),
-  Red   = Light([-10.0f,  15.0f, -10.0f, 1.0f], [4.0f, 2.0f, 0.0f, 1.0f], [1.0f, -0.95f, 1.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f]),
-  Green = Light([-10.0f,  15.0f, -10.0f, 1.0f], [0.0f, 4.0f, 2.0f, 1.0f], [0.0f, -0.95f, 1.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f]),
-  Blue  = Light([-10.0f,  15.0f, -10.0f, 1.0f], [2.0f, 0.0f, 4.0f, 1.0f], [1.0f, -0.95f, 0.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f])
+  White = Light(Matrix.init, [ 0.0f,  1.0f,  0.0f, 0.0f], [0.1f, 0.1f, 0.1f, 1.0f], [0.0f,   0.0f, 0.0f, 0.0f], [1.0f, 0.0f, 0.0f, 0.0f]),
+  Red   = Light(Matrix.init, [-10.0f,  15.0f, -10.0f, 1.0f], [4.0f, 2.0f, 0.0f, 1.0f], [1.0f, -0.95f, 1.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f]),
+  Green = Light(Matrix.init, [-10.0f,  15.0f, -10.0f, 1.0f], [0.0f, 4.0f, 2.0f, 1.0f], [0.0f, -0.95f, 1.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f]),
+  Blue  = Light(Matrix.init, [-10.0f,  15.0f, -10.0f, 1.0f], [2.0f, 0.0f, 4.0f, 1.0f], [1.0f, -0.95f, 0.0f, 0.0f], [0.0f, 0.01f, 45.0f, 0.0f])
 };
 

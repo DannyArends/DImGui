@@ -20,6 +20,7 @@
 #define BINDING_SHADOWMAP         6
 
 struct Light {
+  mat4 lightProjView; /// Combined light's projection * light's view matrix
   vec4 position;      /// Position of the light
   vec4 intensity;     /// Light intensity (color)
   vec4 direction;     /// Light direction

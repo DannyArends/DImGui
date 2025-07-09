@@ -56,7 +56,7 @@ void createUBO(ref App app, Descriptor descriptor) {
   });
 }
 
-void updateRenderUBO(ref App app, Shader[] shaders, Light light, uint syncIndex) {
+void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
   UniformBufferObject ubo = {
     position: app.camera.position.xyzw,
     scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
@@ -74,17 +74,12 @@ void updateRenderUBO(ref App app, Shader[] shaders, Light light, uint syncIndex)
     ubo.orientation = rotate(mat4.init, [0.0f, 180.0f, 0.0f]);
   }
 
-  auto lightUbo = app.computeLightSpace(light);
-
   for(uint s = 0; s < shaders.length; s++) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
         if(to!string(shader.descriptors[d].name) == "ubo") {
           memcpy(app.ubos[shader.descriptors[d].base].data[syncIndex], &ubo, shader.descriptors[d].bytes);
-        }
-        if(to!string(shader.descriptors[d].name) == "lightUbo") {
-          memcpy(app.ubos[shader.descriptors[d].base].data[syncIndex], &lightUbo, shader.descriptors[d].bytes);
         }
       }
     }
