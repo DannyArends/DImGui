@@ -17,8 +17,8 @@ struct Light {
 
 enum Lights : Light {
   White = Light(Matrix.init, [0.0f,   1.0f, 0.0f, 0.0f], [0.2f, 0.2f, 0.2f, 1.0f], [0.0f,   0.0f, 0.0f, 0.0f], [1.0f, 0.0f, 0.0f, 0.0f]),
-  Red   = Light(Matrix.init, [4.0f,  15.0f, 0.0f, 1.0f], [1.0f, 0.0f, 0.0f, 1.0f], [0.1f, -1.0f, 0.1f, 0.0f], [0.0f, 0.01f, 40.0f, 0.0f]),
-  Green = Light(Matrix.init, [0.0f,  15.0f, 4.0f, 1.0f], [0.0f, 1.0f, 0.0f, 1.0f], [0.1f, -1.0f, 0.1f, 0.0f], [0.0f, 0.01f, 40.0f, 0.0f]),
-  Blue  = Light(Matrix.init, [0.0f,  15.0f, 0.0f, 1.0f], [0.0f, 0.0f, 1.0f, 1.0f], [0.1f, -1.0f, 0.1f, 0.0f], [0.0f, 0.01f, 40.0f, 0.0f])
+  Red   = Light(Matrix.init, [4.0f,  15.0f, 0.0f, 1.0f], [4.0f, 0.0f, 0.0f, 1.0f], [0.1f, -1.0f, 0.1f, 0.0f], [0.0f, 0.01f, 40.0f, 0.0f]),
+  Green = Light(Matrix.init, [0.0f,  15.0f, 4.0f, 1.0f], [0.0f, 4.0f, 0.0f, 1.0f], [0.1f, -1.0f, 0.1f, 0.0f], [0.0f, 0.01f, 40.0f, 0.0f]),
+  Blue  = Light(Matrix.init, [0.0f,  15.0f, 0.0f, 1.0f], [0.0f, 0.0f, 4.0f, 1.0f], [0.1f, -1.0f, 0.1f, 0.0f], [0.0f, 0.01f, 40.0f, 0.0f])
 };
 
