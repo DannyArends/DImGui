@@ -10,8 +10,8 @@
 #include "functions.glsl"
 
 layout(binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
-  mat4 lightProjView;   /// Combined light's projection * light's view matrix
   mat4 scene;           /// Scene matrix (currently, just and Identity matrix)
+  uint clight;          /// Current light we're shadowing
   uint nlights;         /// Number of actual lights
 } lightUbo;
 
@@ -27,6 +27,6 @@ void main() {
   vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
   mat4 model = lightUbo.scene * instance;
   vec4 worldPos = model * position;
-  gl_Position = lightUbo.lightProjView * worldPos;
+  gl_Position = lightSSBO.lights[lightUbo.clight].lightProjView * worldPos;
   gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5; // Strange, depth values seem to be from -1.0f to 1.0f
 }

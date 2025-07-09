@@ -18,8 +18,8 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
 } ubo;
 
 layout(std140, binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
-    mat4 lightProjView;
     mat4 scene;           /// Scene matrix (currently, just and Identity matrix)
+    uint clight;          /// current light (unused, only used in shadow.glsl)
     uint nlights;         /// Number of actual lights
 } lightUbo;
 
@@ -43,7 +43,12 @@ void main() {
 
   vec3 lightColor = vec3(0.0f);
   for(int i = 0; i < lightUbo.nlights; ++i) {
-    lightColor += illuminate(lightSSBO.lights[i], vec4(baseColor, 1.0f), fragPosWorld, fragNormal);
+    vec3 lightContribution = illuminate(lightSSBO.lights[i], vec4(baseColor, 1.0f), fragPosWorld, fragNormal);
+    float shadowFactor = 1.0f;
+    if(i > 0){
+      shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld);
+    }
+    lightColor += lightContribution * shadowFactor;
   }
 
   /// Bump map adjustment
@@ -53,6 +58,9 @@ void main() {
   }
 
   /// Compute and apply shadow factor
-  float shadowFactor = calculateShadow(lightUbo.lightProjView * fragPosWorld);
-  outColor = vec4(pow(lightColor * adjustment * shadowFactor, vec3(1.0/2.2)), 1.0);
+
+  for(int i = 1; i < lightUbo.nlights; ++i) {
+
+  }
+  outColor = vec4(pow(lightColor * adjustment, vec3(1.0/2.2)), 1.0);
 }
