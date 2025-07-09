@@ -44,7 +44,7 @@ vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
 }
 
 // Function to calculate the shadow factor
-float calculateShadow(vec4 position) {
+float calculateShadow(vec4 position, uint i) {
   vec3 projCoords = ((position.xyz / position.w) * 0.5) + 0.5;
 
   if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
@@ -54,7 +54,7 @@ float calculateShadow(vec4 position) {
   }
 
   float bias = 0.001;
-  float shadow = texture(shadowMap[0], vec3(projCoords.xy, projCoords.z));
+  float shadow = texture(shadowMap[i], vec3(projCoords.xy, projCoords.z));
   return shadow;
 }
 

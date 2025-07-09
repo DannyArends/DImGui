@@ -18,6 +18,7 @@ struct UniformBufferObject {
   mat4 view = mat4.init;
   mat4 proj = mat4.init;
   mat4 orientation = mat4.init;   /// Screen orientation
+  uint nlights = 0;
 }
 
 struct ParticleUniformBuffer {
@@ -63,6 +64,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     view: app.camera.view,
     proj: app.camera.proj,
     orientation: mat4.init,
+    nlights: cast(uint)app.lights.length,
   };
 
   // Adjust for screen orientation so that the world is always up

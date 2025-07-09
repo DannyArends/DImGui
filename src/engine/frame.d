@@ -65,7 +65,6 @@ void renderFrame(ref App app){
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Prepare & Submit Graphics & ImGui Work");
-  app.updateShadowMapUBO(app.shaders, 0, app.syncIndex);
   app.updateRenderUBO(app.shaders, app.syncIndex);
   app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex); // Updated each frame, since we're loading textures a-sync
 

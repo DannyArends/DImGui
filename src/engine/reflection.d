@@ -117,7 +117,12 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
         descr.count *= spvc_type_get_array_dimension(type_handle, x);
       }
     }
-    if(!descr.count) descr.count = cast(uint)app.textures.length;
+    if(!descr.count){
+      descr.count = cast(uint)app.textures.length;
+      if(to!string(descr.name) == "shadowMap"){
+        descr.count = cast(uint)app.lights.length;
+      }
+    }
     //if (app.trace) {
       SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
               descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);

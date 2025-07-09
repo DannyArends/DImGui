@@ -10,11 +10,12 @@
 #include "functions.glsl"
 
 layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
-    vec4 position;    // Scene Camera Position
-    mat4 scene;       // Scene Camera adjustment
-    mat4 view;        // View matrix
-    mat4 proj;        // Projection matrix
-    mat4 ori;         // Screen orientation
+  vec4 position;    /// Scene Camera Position
+  mat4 scene;       /// Scene Camera adjustment
+  mat4 view;        /// View matrix
+  mat4 proj;        /// Projection matrix
+  mat4 ori;         /// Screen orientation
+  uint nlights;     /// Number of actual lights
 } ubo;
 
 // Per Vertex attributes
