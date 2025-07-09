@@ -15,8 +15,6 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
     mat4 view;        // View matrix
     mat4 proj;        // Projection matrix
     mat4 ori;         // Screen orientation
-    Light[4] lights;  // Scene lights
-    uint nlights;     // Number of actual lights
 } ubo;
 
 // Per Vertex attributes

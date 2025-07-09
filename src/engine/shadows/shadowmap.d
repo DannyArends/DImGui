@@ -38,6 +38,7 @@ struct ShadowMap {
 struct LightUbo {
   Matrix lightSpaceMatrix;
   Matrix scene;
+  uint nlights;
 };
 
 void createShadowMap(ref App app) {
@@ -316,11 +317,11 @@ LightUbo computeLightSpace(ref App app, Light light){
   float fovY = 2 * light.properties[2];
   float nearPlane = 10.0f;
   float farPlane = 100.0f;
-
   Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
   LightUbo ubo = {
     lightSpaceMatrix : lightProjection.multiply(lightView),
-    scene : Matrix.init
+    scene : Matrix.init,
+    nlights : cast(uint)app.lights.length
   };
   return(ubo);
 }

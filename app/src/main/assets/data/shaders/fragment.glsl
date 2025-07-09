@@ -15,12 +15,12 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
     mat4 view;        // View matrix
     mat4 proj;        // Projection matrix
     mat4 ori;         // Screen orientation
-    Light[4] lights;  // Scene lights
-    uint nlights;     // Number of actual lights
 } ubo;
 
 layout(std140, binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
     mat4 lightProjView;
+    mat4 scene;           /// Scene matrix (currently, just and Identity matrix)
+    uint nlights;         /// Number of actual lights
 } lightUbo;
 
 layout(location = 0) in vec4 fragPosWorld;
@@ -42,14 +42,14 @@ void main() {
   }
 
   vec3 lightColor = vec3(0.0f);
-  for(int i = 0; i < ubo.nlights; ++i) {
-    lightColor += illuminate(ubo.lights[i], vec4(baseColor, 1.0f), fragPosWorld, fragNormal);
+  for(int i = 0; i < lightUbo.nlights; ++i) {
+    lightColor += illuminate(lightSSBO.lights[i], vec4(baseColor, 1.0f), fragPosWorld, fragNormal);
   }
 
   /// Bump map adjustment
   vec3 adjustment = vec3(1.0f);
   if(fragNid >= 0) {
-    adjustment = calculateBump(ubo.lights[0], ubo.position.xyz, fragPosWorld.xyz, fragNid, fragTexCoord, fragTBN);
+    adjustment = calculateBump(lightSSBO.lights[0], ubo.position.xyz, fragPosWorld.xyz, fragNid, fragTexCoord, fragTBN);
   }
 
   /// Compute and apply shadow factor

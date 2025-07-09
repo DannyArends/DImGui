@@ -12,6 +12,7 @@
 layout(binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
   mat4 lightProjView;   /// Combined light's projection * light's view matrix
   mat4 scene;           /// Scene matrix (currently, just and Identity matrix)
+  uint nlights;         /// Number of actual lights
 } lightUbo;
 
 // Per Vertex attributes
