@@ -7,6 +7,7 @@ import engine;
 
 import particle : Particle;
 import geometry : Instance, Geometry;
+import mesh : Mesh;
 import vector : Vector, vMul, vAdd, magnitude, normalize;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 import quaternion : xyzw;
@@ -32,7 +33,7 @@ class ParticleSystem : Geometry {
     for(uint i = 0; i < nParticles; i++) { spawn(i); }
 
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-
+    meshes["ParticleSystem"] = Mesh([0, cast(uint)vertices.length]);
     /** onFrame handler aging the particles every frame */
     onFrame = (ref App app, ref Geometry obj, float dt){ (cast(ParticleSystem)obj).age(); };
     name = (){ return(typeof(this).stringof); };
