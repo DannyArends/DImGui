@@ -53,9 +53,19 @@ float calculateShadow(vec4 position, uint i) {
     return 1.0; // Not in shadow
   }
 
-  float bias = 0.001;
-  float shadow = texture(shadowMap[i], vec3(projCoords.xy, projCoords.z));
-  return shadow;
+  float shadowFactor = 0.0;
+  vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[i], 0));
+  int sampleCount = 2;
+  float range = 1.0;
+
+  // PCF sampling loop
+  for (int x = -sampleCount; x <= sampleCount; ++x) {
+    for (int y = -sampleCount; y <= sampleCount; ++y) {
+      vec2 offset = vec2(x, y) * texelSize * range;
+      shadowFactor += texture(shadowMap[i], vec3(projCoords.xy + offset, projCoords.z));
+    }
+  }
+  return shadowFactor / float((2 * sampleCount + 1) * (2 * sampleCount + 1));
 }
 
 // Our illumination function
