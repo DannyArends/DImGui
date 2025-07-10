@@ -116,14 +116,17 @@ float scale(T)(T object, uint instance = 0) {
 }
 
 /** Set tid for instance from object.instances to Texture name 
- *  TODO: Set a flag that the material ID has changed !
  */
 void texture(T)(T object, const Texture[] textures, const(char)* name, string mname = "") {
   auto tid = textures.idx(name);
-  foreach(ref mesh ; object.meshes) {
-    mesh.tid = tid;
-  }
+  foreach(ref mesh ; object.meshes) { mesh.tid = tid; }
 }
+
+void bumpmap(T)(T object, const Texture[] textures, const(char)* name, string mname = "") {
+  auto nid = textures.idx(name);
+  foreach(ref mesh ; object.meshes) { mesh.nid = nid; }
+}
+
 
 /** Euclidean distance between Geometry and Camera */
 @nogc float distance(T)(const T object, const Camera camera) nothrow { 

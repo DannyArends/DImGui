@@ -46,7 +46,6 @@ void main() {
   for(int i = 0; i < ubo.nlights; ++i) {
     vec3 lightContribution = illuminate(lightSSBO.lights[i], vec4(baseColor, 1.0f), fragPosWorld, normalForLighting);
     float shadowFactor = 1.0f;
-    vec3 adjustment = vec3(1.0f);
     if(i > 0){
       shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld, i);
     }

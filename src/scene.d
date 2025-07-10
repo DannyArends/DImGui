@@ -8,7 +8,7 @@ import engine;
 import cube : Cube;
 import cone : Cone;
 import cylinder : Cylinder;
-import geometry : Geometry, Instance, computeNormals, computeTangents, position, rotate, scale, texture;
+import geometry : Geometry, Instance, computeNormals, computeTangents, position, rotate, scale, texture, bumpmap;
 import icosahedron : Icosahedron, refineIcosahedron;
 import lsystem : createLSystem;
 import matrix : mat4, scale, translate, rotate;
@@ -39,6 +39,7 @@ void createScene(ref App app){
       app.objects[($-1)].instances ~= Instance(matrix: instance);
     }
   }
+  app.objects[($-1)].bumpmap(app.textures, "bump");
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
@@ -136,7 +137,7 @@ void createScene(ref App app){
     SDL_Log("createScene: Add Spider OpenAsset");
     app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
     app.objects[($-1)].animation = 13;
-    app.objects[($-1)].position([1.0f, 0.0f, 0.0f]);
+    app.objects[($-1)].position([1.0f, -0.5f, 0.0f]);
     app.objects[($-1)].scale([0.3f, 0.3f, 0.3f]);
     app.objects[($-1)].rotate([27.0f, 0.0f, 0.0f]);
   //}).start();
