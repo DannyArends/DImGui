@@ -8,7 +8,7 @@ import engine;
 import cube : Cube;
 import cone : Cone;
 import cylinder : Cylinder;
-import geometry : Geometry, Instance, computeNormals, position, rotate, scale, texture;
+import geometry : Geometry, Instance, computeNormals, computeTangents, position, rotate, scale, texture;
 import icosahedron : Icosahedron, refineIcosahedron;
 import lsystem : createLSystem;
 import matrix : mat4, scale, translate, rotate;
@@ -27,11 +27,12 @@ import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
+  app.objects[($-1)].computeTangents();
   app.objects[($-1)].position([0.0f, -1.1f,0.0f]);
   for(int x = -50; x < 50; x++) {
     for(int z = -50; z < 50; z++) {
       mat4 instance;  // Add a instances of object 0
-      auto scalefactor = 0.25f;
+      auto scalefactor = 5.0f;
       instance = instance.translate([0.0f, -1.0f, 0.0f]);
       instance = instance.scale([scalefactor, scalefactor, scalefactor]);
       instance = instance.translate([cast(float) x, 0.0f, cast(float)z]);

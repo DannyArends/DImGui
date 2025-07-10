@@ -15,7 +15,7 @@ import camera : Camera;
 import material : Material;
 import matrix : mat4, position, transpose, translate, rotate, scale, inverse;
 import textures : Texture, idx;
-import vector : vSub, vAdd, cross, normalize, euclidean;
+import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 import animation : Animation;
 
@@ -199,6 +199,87 @@ void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = f
   }
   geometry.buffers[VERTEX] = false;
   if(verbose) SDL_Log("computeNormals %d vertex normals computed\n", geometry.vertices.length);
+}
+
+void computeTangents(ref Geometry geometry, bool verbose = false) {
+  auto faces = geometry.faces;
+
+  if (faces.length == 0 || geometry.vertices.length == 0) {
+    SDL_Log("computeTangents: Geometry has no faces or vertices.");
+    return;
+  }
+
+  float[3][] tan1 = new float[3][geometry.vertices.length];
+  float[3][] tan2 = new float[3][geometry.vertices.length];
+  for (size_t i = 0; i < geometry.vertices.length; ++i) {
+    tan1[i] = [0.0f, 0.0f, 0.0f][]; // Vectorized zeroing
+    tan2[i] = [0.0f, 0.0f, 0.0f][]; // Vectorized zeroing
+  }
+
+  foreach (const uint[3] face; faces) {
+    if (face[0] >= geometry.vertices.length || face[1] >= geometry.vertices.length || face[2] >= geometry.vertices.length) {
+      SDL_Log("computeTangents: Invalid index found in face.");
+      continue;
+    }
+
+    // Get positions and UVs of the triangle vertices
+    auto v1 = geometry.vertices[face[0]].position;
+    auto v2 = geometry.vertices[face[1]].position;
+    auto v3 = geometry.vertices[face[2]].position;
+
+    auto w1 = geometry.vertices[face[0]].texCoord;
+    auto w2 = geometry.vertices[face[1]].texCoord;
+    auto w3 = geometry.vertices[face[2]].texCoord;
+
+    // Calculate edges of the triangle in 3D space
+    auto edge1 = v2.vSub(v1);
+    auto edge2 = v3.vSub(v1);
+
+    // Calculate UV differences
+    float x1 = w2[0] - w1[0];
+    float y1 = w2[1] - w1[1];
+    float x2 = w3[0] - w1[0];
+    float y2 = w3[1] - w1[1];
+
+    float det = (x1 * y2 - x2 * y1);
+    if (det == 0.0f) continue;
+    float r = 1.0f / det;
+    
+    if (!isFinite(r) || isNaN(r)) { // Ensure r is a valid finite number
+      SDL_Log("computeTangents: Non-finite or NaN determinant encountered.");
+      continue;
+    }
+
+    auto sdir = (edge1.vMul(y2)).vSub(edge2.vMul(y1)).vMul(r);
+    auto tdir = (edge2.vMul(x1)).vSub(edge1.vMul(x2)).vMul(r);
+
+
+    tan1[face[0]] = tan1[face[0]].vAdd(sdir);
+    tan1[face[1]] = tan1[face[1]].vAdd(sdir);
+    tan1[face[2]] = tan1[face[2]].vAdd(sdir);
+
+    tan2[face[0]] = tan2[face[0]].vAdd(tdir);
+    tan2[face[1]] = tan2[face[1]].vAdd(tdir);
+    tan2[face[2]] = tan2[face[2]].vAdd(tdir);
+  }
+
+  for (size_t i = 0; i < geometry.vertices.length; ++i) {
+    auto n = geometry.vertices[i].normal;
+
+    auto t = tan1[i]; // Accumulated tangent
+
+
+
+    float[3] finalTangent = (t.vSub(n.vMul(n.dot(t)))).normalize();
+
+    float[3] bitangent = tan2[i].normalize(); // Normalized accumulated bitangent
+    float handedness = (cross(n, finalTangent).dot(bitangent) < 0.0f) ? -1.0f : 1.0f;
+
+    geometry.vertices[i].tangent = finalTangent;
+  }
+
+  geometry.buffers[VERTEX] = false; // Mark vertex buffer as dirty, needs re-upload
+  SDL_Log("computeTangents %d vertex tangents computed", geometry.vertices.length);
 }
 
 /** Render a Geometry to app.renderBuffers[i] */
