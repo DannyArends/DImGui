@@ -134,7 +134,7 @@ void createScene(ref App app){
   //new Thread({
     SDL_Log("createScene: Add Spider OpenAsset");
     app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
-    app.objects[($-1)].animation = 14;
+    app.objects[($-1)].animation = 13;
     app.objects[($-1)].position([1.0f, 0.0f, 0.0f]);
     app.objects[($-1)].scale([0.3f, 0.3f, 0.3f]);
     app.objects[($-1)].rotate([27.0f, 0.0f, 0.0f]);
@@ -149,20 +149,15 @@ void createScene(ref App app){
   app.objects[($-1)].rotate([-12.0f, 0.0f, 0.0f]);
   //}).start();
 
- /*// new Thread({
+ // new Thread({
   SDL_Log("createScene: Add MasterSnoo2025 OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/MasterSnoo2025.fbx");
   app.objects[($-1)].rotate([210.0f, 0.0f, 0.0f]);
   app.objects[($-1)].position([0.5f, -1.0f, -2.0f]);
   app.objects[($-1)].scale([0.2f, 0.2f, 0.2f]);
   app.objects[($-1)].animation = 0;
- // }).start(); */
+ // }).start();
 
- /* SDL_Log("createScene: Add a Cube");
-  app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
-  app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){
-    obj.instances[0] = app.lights[1].lightSpaceMatrix;
-  }; */
   if (app.compute.enabled) {
     SDL_Log("createScene: Add ParticleSystem");
     app.objects ~= app.compute.system;

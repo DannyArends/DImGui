@@ -32,9 +32,10 @@ struct GUI {
   float scaleF = 1.0f;
   float[3] rotF = [0.0f, 0.0f, 0.0f];
 
-  float[2] rot = [-360.0, 360];
+  float[2] rot = [-360.0, 360.0f];
   float[2] pos = [-10.0, 10];
   float[2] col = [0.0, 2.0f];
+  float[2] cone = [0.0, 90.0f];
   float[2] scale = [0.001, 4.0f];
   float[2] sound = [0.0, 1.0f];
 }
@@ -459,6 +460,12 @@ void showLightswindow(ref App app, bool* show, uint font = 0) {
           igSliderScalar("##D1", ImGuiDataType_Float,  &light.direction[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
           igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##D2", ImGuiDataType_Float,  &light.direction[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+        igTableNextRow(0, 5.0f);
+        igTableNextColumn();
+          igText("Cone Angle".toStringz, ImVec2(0.0f, 0.0f));
+        igTableNextColumn();
+          igPushItemWidth(75 * app.gui.size);
+          igSliderScalar("##A0", ImGuiDataType_Float,  &light.properties[2], &app.gui.cone[0], &app.gui.cone[1], "%.2f", 0); igSameLine(0,5);
         igEndTable();
       igPopID();
     }
