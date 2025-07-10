@@ -65,7 +65,7 @@ VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders){
   DescriptorLayoutBuilder builder;
   foreach(shader; shaders) {
     foreach(descriptor; shader.descriptors) {
-      SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
+      if(app.verbose) SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
       builder.add(descriptor.binding, descriptor.count, shader.stage, descriptor.type);
     }
   }

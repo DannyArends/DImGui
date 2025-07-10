@@ -36,22 +36,23 @@ void main() {
     baseColor = baseColor * texColor.rgb;
   }
 
+  vec3 normalForLighting = fragNormal;
+  if(fragNid >= 0) { // If a normal map is active for this fragment
+    // Pass the bumpStrength uniform here if it's not a global constant
+    normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, fragNid, fragTexCoord, fragTBN);
+  }
+
   vec3 lightColor = vec3(0.0f);
   for(int i = 0; i < ubo.nlights; ++i) {
-    vec3 lightContribution = illuminate(lightSSBO.lights[i], vec4(baseColor, 1.0f), fragPosWorld, fragNormal);
+    vec3 lightContribution = illuminate(lightSSBO.lights[i], vec4(baseColor, 1.0f), fragPosWorld, normalForLighting);
     float shadowFactor = 1.0f;
+    vec3 adjustment = vec3(1.0f);
     if(i > 0){
       shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld, i);
     }
     lightColor += (lightContribution * shadowFactor);
   }
 
-  /// Bump map adjustment
-  vec3 adjustment = vec3(1.0f);
-  if(fragNid >= 0) {
-    adjustment = calculateBump(lightSSBO.lights[0], ubo.position.xyz, fragPosWorld.xyz, fragNid, fragTexCoord, fragTBN);
-  }
-
   /// Compute and apply adjustment
-  outColor = vec4(pow(lightColor * adjustment, vec3(1.0/2.2)), 1.0);
+  outColor = vec4(pow(lightColor, vec3(1.0/2.2)), 1.0);
 }

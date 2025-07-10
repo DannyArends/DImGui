@@ -15,7 +15,7 @@ public import std.array : array, split;
 public import std.conv : to;
 public import std.format : format;
 public import std.file : exists, isFile, dirEntries, SpanMode;
-public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2, fmod;
+public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2, fmod, isFinite, isNaN;
 public import std.path : baseName, dirName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform;
 public import std.regex : regex, matchAll;

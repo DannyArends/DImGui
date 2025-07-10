@@ -98,27 +98,13 @@ vec3 illuminate(Light light, vec4 baseColor, vec4 position, vec3 normal) {
   return ambientCol + attenuation * (diffuseCol + specularCol);
 }
 
-vec3 calculateBump(Light light, vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
-  // 1. Get the normal from the normal map
+vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
   vec3 normalFromMap = texture(texureSampler[fragNid], fragTexCoord).rgb;
   normalFromMap = normalize(normalFromMap * 2.0 - 1.0);
+  normalFromMap = vec3(normalFromMap.xy * 1.0f, normalFromMap.z);
+
   vec3 finalNormal = normalize(fragTBN * normalFromMap);
-
-  // 3. Simple Lambertian (diffuse) lighting with an ambient term
-  vec3 ambientColor = vec3(0.5);
-  vec3 lightDir = normalize(-light.direction.xyz); // Light direction points towards the light source
-
-  // Diffuse component
-  float diff = max(dot(finalNormal, lightDir), 0.0);
-  vec3 diffuseColor = light.intensity.xyz * diff;
-
-  // Specular component (Blinn-Phong for simplicity)
-  vec3 viewDir = normalize(cameraPos - fragPos);
-  vec3 halfVec = normalize(lightDir + viewDir);
-  float spec = pow(max(dot(finalNormal, halfVec), 0.0), 32.0); // 32.0 is shininess
-  vec3 specularColor = light.intensity.xyz * spec * 0.5; // Reduce specular intensity
-
-  return(ambientColor + diffuseColor + specularColor);
+  return(finalNormal);
 }
 
 #endif // FUNCTIONS_GLSL
