@@ -5,7 +5,7 @@
 
 import engine;
 
-import commands : recordRenderCommandBuffer, createRenderCommandBuffers;
+import commands : recordRenderCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
 import shadowmap : updateShadowMapUBO, recordShadowCommandBuffer;
 import uniforms : updateRenderUBO;
@@ -34,7 +34,6 @@ void renderFrame(ref App app){
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
-
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
@@ -66,12 +65,16 @@ void renderFrame(ref App app){
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Prepare & Submit Graphics & ImGui Work");
   app.updateRenderUBO(app.shaders, app.syncIndex);
-  app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex); // Updated each frame, since we're loading textures a-sync
+  app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex);    /// Updated each frame, since we're loading textures a-sync
 
   app.recordRenderCommandBuffer(app.shaders, app.syncIndex);
   app.recordImGuiCommandBuffer(app.syncIndex);
 
-  VkCommandBuffer[] submitCommandBuffers = [ app.shadowBuffers[app.syncIndex], app.renderBuffers[app.syncIndex], app.imguiBuffers[app.syncIndex] ];
+  VkCommandBuffer[] submitCommandBuffers = [
+    app.shadowBuffers[app.syncIndex],  /// Shadow command buffers
+    app.renderBuffers[app.syncIndex],  /// Scene rendering & Post Processing
+    app.imguiBuffers[app.syncIndex]    /// ImGui overlay
+  ];
 
   VkSemaphore[] waitSemaphores = [ imageAcquired ];
   if (app.compute.enabled) { waitSemaphores ~= computeComplete; }
@@ -95,8 +98,8 @@ void renderFrame(ref App app){
 }
 
 void presentFrame(ref App app) {
-  if(app.verbose > 1) SDL_Log("presentFrame");
-  if(app.rebuild) return;
+  if(app.trace) SDL_Log("presentFrame");
+//  if(app.rebuild) return;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
   VkPresentInfoKHR info = {
     sType : VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,

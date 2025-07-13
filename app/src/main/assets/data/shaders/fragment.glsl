@@ -22,26 +22,30 @@ layout(location = 0) in vec4 fragPosWorld;
 layout(location = 1) in vec4 fragColor;
 layout(location = 2) in vec3 fragNormal;
 layout(location = 3) in vec2 fragTexCoord;
-layout(location = 4) flat in int fragTid;
-layout(location = 5) flat in int fragNid;
-layout(location = 6) in mat3 fragTBN;
+layout(location = 4) flat in uint fragMesh;
+layout(location = 5) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
 void main() {
   vec3 baseColor = fragColor.rgb;
-  if(fragTid >= 0){ // Modify by the texture
-    vec4 texColor = pow(texture(texureSampler[fragTid], fragTexCoord).rgba, vec4(2.2));
-    if(texColor.a < 0.2f) discard;
-    baseColor = baseColor * texColor.rgb;
+  if(meshSSBO.meshes[fragMesh].oid >= 0) { // We have an opacity texture
+    float alpha = texture(texureSampler[meshSSBO.meshes[fragMesh].oid], fragTexCoord).a;
+    if(alpha < 0.2f) discard;
+  }
+
+  if(meshSSBO.meshes[fragMesh].tid >= 0){ // Modify by the texture
+    vec4 texSample = texture(texureSampler[meshSSBO.meshes[fragMesh].tid], fragTexCoord).rgba;
+    if(texSample.a < 0.2f) discard;
+    baseColor = baseColor * pow(texSample, vec4(2.2)).rgb;
   }
 
   vec3 normalForLighting = fragNormal;
-  if(fragNid >= 0) { // If a normal map is active for this fragment
-    // Pass the bumpStrength uniform here if it's not a global constant
-    normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, fragNid, fragTexCoord, fragTBN);
+  if(meshSSBO.meshes[fragMesh].nid >= 0) { // Bump if a normal map is active for this fragment
+    normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, meshSSBO.meshes[fragMesh].nid, fragTexCoord, fragTBN);
   }
 
+  // Compute lighting and shadows
   vec3 lightColor = vec3(0.0f);
   for(int i = 0; i < ubo.nlights; ++i) {
     vec3 lightContribution = illuminate(lightSSBO.lights[i], vec4(baseColor, 1.0f), fragPosWorld, normalForLighting);
@@ -52,6 +56,6 @@ void main() {
     lightColor += (lightContribution * shadowFactor);
   }
 
-  /// Compute and apply adjustment
+  /// ReAdjust output
   outColor = vec4(pow(lightColor, vec3(1.0/2.2)), 1.0);
 }

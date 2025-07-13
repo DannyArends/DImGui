@@ -36,7 +36,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   OpenAsset object = new OpenAsset();
 
   auto content = readFile(path);
-  auto flags = aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_ConvertToLeftHanded;
+  auto flags = aiProcess_Triangulate | aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_MaxQuality ;
   auto scene = aiImportFileFromMemory(&content[0], cast(uint)content.length, flags, toStringz(extension(to!string(path))));
 
   if (!scene || scene.mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene.mRootNode) {

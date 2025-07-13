@@ -155,3 +155,18 @@ void createRenderShaders(ref App app, const(char)* vertPath = "data/shaders/vert
   });
 }
 
+/** Load vertex and fragment post-process shaders
+ */
+void createPostShaders(ref App app, const(char)* vertPath = "data/shaders/postvertex.glsl", 
+                                      const(char)* fragPath = "data/shaders/postfragment.glsl") {
+  auto vShader = app.createShaderModule(vertPath, shaderc_glsl_vertex_shader);
+  auto fShader = app.createShaderModule(fragPath, shaderc_glsl_fragment_shader);
+
+  app.postProcess = [ vShader, fShader ];
+
+  app.mainDeletionQueue.add(() {
+    for(uint i = 0; i < app.postProcess.length; i++) {
+      vkDestroyShaderModule(app.device, app.postProcess[i], app.allocator);
+    }
+  });
+}

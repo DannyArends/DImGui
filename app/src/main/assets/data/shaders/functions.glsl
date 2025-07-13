@@ -79,11 +79,14 @@ vec3 illuminate(Light light, vec4 baseColor, vec4 position, vec3 normal) {
     // Point lighting
     s = normalize( light.position.xyz - position.xyz );
     float l = abs(length( light.position.xyz - position.xyz ));
-    attenuation = 1.0 / (1.0 + light.properties[1] * pow(l, 2.0));
+    attenuation = 1.0 / (light.properties[1] + pow(l, 2.0));
 
     // Cone lighting
     float lAngle = degrees(acos(dot(-s, normalize(light.direction.xyz))));
-    if (lAngle >= light.properties[2] - 1.0f) { attenuation = 0.3; }
+    float innerConeAngle = light.properties[2] / 2.0f;
+    float outerConeAngle = light.properties[2];
+    float coneFactor = smoothstep(outerConeAngle, innerConeAngle, lAngle);
+    attenuation *= coneFactor;
     if (lAngle >= light.properties[2]) { attenuation = 0.0; }
   }
   vec3 r = reflect( -s, normal );
@@ -93,7 +96,7 @@ vec3 illuminate(Light light, vec4 baseColor, vec4 position, vec3 normal) {
   vec3 diffuseCol = light.intensity.rgb * baseColor.rgb * sDotN;
   vec3 specularCol = vec3( 0.0 );
   if (sDotN > 0.0 && light.position.w > 0.0) {
-    specularCol = light.intensity.rgb * baseColor.rgb * pow(max(dot(s, r), 0.0), baseColor.a);
+    //specularCol = light.intensity.rgb * baseColor.rgb * pow(max(dot(s, r), 0.0), baseColor.a);
   }
   return ambientCol + attenuation * (diffuseCol + specularCol);
 }

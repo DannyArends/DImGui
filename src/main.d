@@ -17,10 +17,10 @@ import shadowmap : createShadowMap;
 import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL, START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
-import shaders : createCompiler, createRenderShaders;
+import shaders : createCompiler, createRenderShaders, createPostShaders;
 import reflection : createReflectionContext;
 import sampler : createSampler;
-import surface : createSurface;
+import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
 import textures : Texture, loadTextures;
 import validation : createDebugCallback;
@@ -59,7 +59,10 @@ void run(string[] args) {
   app.createInstance();                   /// Create a Vulkan instance
   app.createDebugCallback();              /// Hook the debug callback to the validation layer
   app.createLogicalDevice();              /// Create a logical device for rendering
+  app.getBestColorFormat();
   app.createRenderShaders();              /// Load the vertex and fragment shaders
+  app.createPostShaders();              /// Load the vertex and fragment shaders
+
   if (app.compute.enabled) {
     app.createComputeShaders();           /// Load the compute shader
   }

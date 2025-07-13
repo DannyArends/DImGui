@@ -35,6 +35,7 @@ struct Mesh {
   uvec2 vertices;     /// Start & End vertex
   int tid;            /// Texture ID
   int nid;            /// BumpMap ID
+  int oid;            /// OPACITY ID
 };
 
 #endif // STRUCTURES_GLSL

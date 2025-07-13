@@ -31,7 +31,7 @@ int isSupported(ref App app, VkFormat requested){
   return(s);
 }
 
-void querySurfaceCapabilities(ref App app) {
+void querySurfaceFormats(ref App app) {
   uint formatCount;
   enforceVK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(app.physicalDevice, app.surface, &app.camera.capabilities));  // Capabilities
 
@@ -48,6 +48,24 @@ void querySurfaceCapabilities(ref App app) {
       fmt.printSurfaceFormat();
     }
   }
+}
+
+bool queryDeviceFormats(ref App app, VkFormat requested = VK_FORMAT_R16G16B16A16_SFLOAT) {
+  VkFormatProperties formatProperties;
+  vkGetPhysicalDeviceFormatProperties(app.physicalDevice, requested, &formatProperties);
+  if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) {
+    return(true);
+  }
+  return(false);
+}
+
+VkFormat getBestColorFormat(ref App app){
+  foreach(format; [VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R8G8B8A8_UNORM]){
+    if(app.queryDeviceFormats(format)){
+      return(app.colorFormat = format);
+    }
+  }
+  assert(0, "No suitable format found");
 }
 
 void createSurface(ref App app) {

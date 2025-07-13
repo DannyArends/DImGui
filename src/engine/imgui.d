@@ -112,8 +112,8 @@ void initializeImGui(ref App app){
     Allocator : app.allocator,
     MinImageCount : app.imageCount,
     ImageCount : cast(uint)app.framesInFlight,
-    RenderPass : app.imguipass,
-    MSAASamples : app.getMSAASamples(),
+    RenderPass : app.imgui,
+    MSAASamples : VK_SAMPLE_COUNT_1_BIT,
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&imguiInit);
@@ -143,8 +143,8 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 
   VkRenderPassBeginInfo renderPassInfo = {
     sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass : app.imguipass,
-    framebuffer : app.swapChainFramebuffers[app.frameIndex],
+    renderPass : app.imgui,
+    framebuffer : app.framebuffers.imgui[app.frameIndex],
     renderArea : renderArea,
     clearValueCount : app.clearValue.length,
     pClearValues : &app.clearValue[0]
@@ -337,7 +337,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
   igEndTable();
   if(obj.meshes.length > 0) {
     igText("Mesh textures:", ImVec2(0.0f, 0.0f));
-    igBeginTable(toStringz(obj.name() ~ "_Textures"), 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+    igBeginTable(toStringz(obj.name() ~ "_Textures"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     int[2] limits = [-1, app.findTextureSlot()];
     foreach(name; obj.meshes.byKey()){
       igTableNextColumn();
@@ -349,6 +349,10 @@ void showObjectwindow(ref App app, ref Geometry obj) {
       igTableNextColumn();
         igPushItemWidth(100 * app.gui.size);
           igSliderScalar(toStringz(format("##nid:%s", name)), ImGuiDataType_S32,  &obj.meshes[name].nid, &limits[0], &limits[1], "%d", 0);
+        igPopItemWidth();
+      igTableNextColumn();
+        igPushItemWidth(100 * app.gui.size);
+          igSliderScalar(toStringz(format("##oid:%s", name)), ImGuiDataType_S32,  &obj.meshes[name].oid, &limits[0], &limits[1], "%d", 0);
         igPopItemWidth();
     }
     igEndTable();

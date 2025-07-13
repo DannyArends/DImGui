@@ -14,8 +14,9 @@ import vertex : Vertex, INSTANCE;
 
 struct Mesh {
   align(16) int[2] vertices;  /// Start .. End positions in Geometry.vertices array
-  int tid = -1;               /// Mesh texture ID
-  int nid = -1;               /// Mesh BumpMap ID
+  int tid = -1;               /// Mesh DIFFUSE ID
+  int nid = -1;               /// Mesh NORMALS ID
+  int oid = -1;               /// Mesh OPACITY ID
 }
 
 Mesh[] getMeshes(ref App app) {
@@ -41,13 +42,16 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
   size_t vOff = asset.vertices.length;
   auto baseTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
   auto normTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_NORMALS);
-
+  auto opacTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_OPACITY);
+  SDL_Log(" - %d / %d material", baseTexture.tid, normTexture.tid);
+  
   auto weights = asset.loadBones(mesh, app.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
 
   // TODO first create a Material definition for the object => add to app.materials
   // Then use OUR internal material index (app.materials)
-  Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(asset.vertices.length) + mesh.mNumVertices], baseTexture.tid, normTexture.tid);
+  Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(asset.vertices.length) + mesh.mNumVertices], 
+                     baseTexture.tid, normTexture.tid, opacTexture.tid);
 
   for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {  // Load vertex information
     size_t gIdx = (vOff + vIdx);
@@ -62,6 +66,9 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
     if (mesh.mColors[baseTexture.channel]) {
       auto color = mesh.mColors[baseTexture.channel][vIdx];
       asset.vertices[gIdx].color = [color.r, color.g, color.b, color.a];
+    }
+    if (mesh.mTangents) {
+      asset.vertices[gIdx].tangent = [mesh.mTangents[vIdx].x, mesh.mTangents[vIdx].y, mesh.mTangents[vIdx].z];
     }
     asset.assignBoneWeight(gIdx, weights, vIdx, app.bones);
   }
