@@ -378,8 +378,8 @@ void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descri
     dstBinding: descriptor.binding,
     dstArrayElement: 0,
     descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    descriptorCount: cast(uint)app.lights.length, // Crucial: Only 1 descriptor for the single shadow map
-    pImageInfo: &imageInfos[startIndex] // Point to the single info struct
+    descriptorCount: cast(uint)app.lights.length,
+    pImageInfo: &imageInfos[startIndex]
   }; 
   write ~= set;
 }

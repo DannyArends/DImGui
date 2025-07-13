@@ -5,29 +5,41 @@
 
 import engine;
 
-import devices : getMSAASamples;
 import buffer : findMemoryType, hasStencilComponent;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
-import swapchain : createImageView;
+import descriptor : Descriptor;
+import framebuffer : createOffscreenHDRImage, createResolvedHDRImage;
 
 VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * (surface.format.BitsPerPixel / 8)); }
 
-struct ColorBuffer {
+struct HDRBuffer {
   VkImage colorImage;
   VkDeviceMemory colorImageMemory;
-  VkImageView colorImageView;
+  VkImageView colorImageView;       /// MSAA color attachment view
 }
 
 void createColorResources(ref App app) {
-  app.createImage(app.camera.width, app.camera.height, &app.colorBuffer.colorImage, &app.colorBuffer.colorImageMemory,
-                  app.surfaceformats[app.format].format, app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
-                  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-  app.colorBuffer.colorImageView = app.createImageView(app.colorBuffer.colorImage, app.surfaceformats[app.format].format, 1);
-  app.frameDeletionQueue.add((){ 
-    vkFreeMemory(app.device, app.colorBuffer.colorImageMemory, app.allocator);
-    vkDestroyImageView(app.device, app.colorBuffer.colorImageView, app.allocator);
-    vkDestroyImage(app.device, app.colorBuffer.colorImage, app.allocator);
-  });
+  app.createOffscreenHDRImage();
+  app.createResolvedHDRImage();
+}
+
+void writeHDRSampler(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
+  imageInfos ~= VkDescriptorImageInfo( // Assign directly to the single info struct
+      imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+      imageView: app.resolvedHDR.colorImageView, // Use the shadow map's image view
+      sampler: app.sampler     // Use the shadow map's sampler
+  );
+
+  VkWriteDescriptorSet set = {
+    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+    dstSet: dst,
+    dstBinding: descriptor.binding,
+    dstArrayElement: 0,
+    descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    descriptorCount: cast(uint)1,
+    pImageInfo: &imageInfos[($-1)]
+  }; 
+  write ~= set;
 }
 
 void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceMemory* imageMemory, 

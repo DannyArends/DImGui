@@ -29,7 +29,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   };
   enforceVK(vkBeginCommandBuffer(app.renderBuffers[syncIndex], &beginInfo));
   pushLabel(app.renderBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("renderBuffer %d recording to frame: %d/%d", syncIndex, app.frameIndex, app.swapChainFramebuffers.length);
+  if(app.trace) SDL_Log("renderBuffer %d recording to frame: %d/%d", syncIndex, app.frameIndex, app.framebuffers.scene.length);
 
   VkRect2D renderArea = {
     offset: { x:0, y:0 },
@@ -38,8 +38,8 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
   VkRenderPassBeginInfo renderPassInfo = {
     sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass: app.renderpass,
-    framebuffer: app.swapChainFramebuffers[app.frameIndex],
+    renderPass: app.scene,
+    framebuffer: app.framebuffers.scene[app.frameIndex],
     renderArea: renderArea,
     clearValueCount: app.clearValue.length,
     pClearValues: &app.clearValue[0]
@@ -99,10 +99,28 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
 
   popLabel(app.renderBuffers[app.syncIndex]);
+  pushLabel(app.renderBuffers[app.syncIndex], "Post-processing", Colors.lightgray);
 
+  VkRenderPassBeginInfo postProcessRenderPassInfo = {
+    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+    renderPass: app.postprocess,                                        /// Use post-processing render pass
+    framebuffer: app.framebuffers.postprocess[app.frameIndex],          /// Use its dedicated framebuffer
+    renderArea: { offset: {0, 0}, extent: app.camera.currentExtent },
+    clearValueCount: 1,
+    pClearValues: &app.clearValue[0]
+  };
+
+  vkCmdBeginRenderPass(app.renderBuffers[app.syncIndex], &postProcessRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+  // Bind post-process pipeline & descriptor set (for sampling HDR texture)
+  vkCmdBindPipeline(app.renderBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline);
+  vkCmdBindDescriptorSets(app.renderBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                          app.postProcessPipeline.layout, 0, 1, &app.sets[POST][app.syncIndex], 0, null);
+
+  vkCmdDraw(app.renderBuffers[app.syncIndex], 3, 1, 0, 0);
+  vkCmdEndRenderPass(app.renderBuffers[app.syncIndex]);
+  popLabel(app.renderBuffers[app.syncIndex]);
   enforceVK(vkEndCommandBuffer(app.renderBuffers[syncIndex]));
-  if(app.trace) SDL_Log("Render pass finished to %d", syncIndex);
-
 }
 
 void createCommandPools(ref App app){

@@ -93,7 +93,7 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
 void transferToSSBO(ref App app, Descriptor descriptor) {
   VkCommandBuffer commandBuffer = app.beginSingleTimeCommands(app.commandPool);
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.updateSSBO(commandBuffer, app.compute.system.particles, descriptor,i);
+    app.updateSSBO(commandBuffer, app.compute.system.particles, descriptor, i);
   }
   app.endSingleTimeCommands(commandBuffer, app.commandPool, app.queue);
 }
@@ -197,12 +197,6 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
       }
     }
   }
-  if (src && dst) {
-    cmdBuffer.insertWriteBarrier(dst);
-    VkBufferCopy copyRegion = {size: size};
-    vkCmdCopyBuffer(cmdBuffer, src, dst, 1, &copyRegion);
-    cmdBuffer.insertReadBarrier(src);
-  }
 
   // Bind the compute pipeline
   vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
@@ -215,6 +209,13 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   vkCmdDispatch(app.compute.commands[shader.path][syncIndex], cast(uint)ceil(nJobs[0] / shader.groupCount[0])
                                                     , cast(uint)ceil(nJobs[1] / shader.groupCount[1])
                                                     , cast(uint)ceil(nJobs[2] / shader.groupCount[2]));
+
+  if (src && dst) {
+    cmdBuffer.insertWriteBarrier(dst);
+    VkBufferCopy copyRegion = {size: size};
+    vkCmdCopyBuffer(cmdBuffer, src, dst, 1, &copyRegion);
+    cmdBuffer.insertReadBarrier(src);
+  }
 
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image

@@ -29,9 +29,10 @@ import camera : Camera;
 import compute : Compute;
 import depthbuffer : DepthBuffer;
 import deletion : CheckedDeletionQueue, DeletionQueue;
+import framebuffer : FrameBuffer;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, cleanup;
-import images : ColorBuffer;
+import images : HDRBuffer;
 import imgui : GUI, saveSettings;
 import lights : Light, Lights;
 import matrix : multiply, inverse;
@@ -48,6 +49,7 @@ import textures : Texture;
 const(char)* IMGUI = "IMGUI"; 
 const(char)* COMPUTE = "COMPUTE";
 const(char)* RENDER = "RENDER";
+const(char)* POST = "POST";
 const(char)* SHADOWS = "SHADOWS";
 
 /** Main application structure
@@ -66,7 +68,11 @@ struct App {
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 2, 0 )
   };
 
-  VkClearValue[2] clearValue = [ {{ float32: [0.45f, 0.55f, 0.60f, 0.50f] }}, { depthStencil : VkClearDepthStencilValue(1.0f, 0) } ];
+  VkClearValue[3] clearValue = [ 
+    {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }}, 
+    {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }}, 
+    { depthStencil : VkClearDepthStencilValue(1.0f, 0) } 
+    ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
@@ -82,9 +88,13 @@ struct App {
 
   VkSampler sampler;
   Shader[] shaders;
+  Shader[] postProcess;
   GraphicsPipeline[VkPrimitiveTopology] pipelines;
+  GraphicsPipeline postProcessPipeline;
+
   DepthBuffer depthBuffer;
-  ColorBuffer colorBuffer;
+  HDRBuffer offscreenHDR;
+  HDRBuffer resolvedHDR;
 
   // Deletion queues for cleaning up resources
   DeletionQueue mainDeletionQueue;                                              /// On application shutdown
@@ -111,7 +121,8 @@ struct App {
 
   // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;                                                  /// Vulkan Surface
-  VkSurfaceFormatKHR[] surfaceformats = null;                                   /// Available formats
+  VkSurfaceFormatKHR[] surfaceformats = null;                                   /// Available Surface formats
+  VkFormat colorFormat;
   uint format = 0;                                                              /// selected format
   VkSwapchainKHR swapChain = null;                                              /// Our SwapChain
   VkCommandPool commandPool = null;                                             /// Our Rendering Command Pool
@@ -122,10 +133,11 @@ struct App {
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
-  VkFramebuffer[] swapChainFramebuffers = null;
+  FrameBuffer framebuffers;
 
-  VkRenderPass imguipass = null;
-  VkRenderPass renderpass = null;
+  VkRenderPass imgui = null;
+  VkRenderPass scene = null;
+  VkRenderPass postprocess = null;
 
   VkCommandBuffer[] imguiBuffers = null;
   VkCommandBuffer[] renderBuffers = null;

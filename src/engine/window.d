@@ -11,11 +11,11 @@ import descriptor : createDescriptors, updateDescriptorSet;
 import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
-import pipeline : createGraphicsPipeline;
-import renderpass : createRenderPass;
-import surface : querySurfaceCapabilities;
-import shadowmap : createShadowMapGraphicsPipeline,   createShadowMapCommandBuffers;
+import pipeline : createGraphicsPipeline, createPostProcessGraphicsPipeline;
+import renderpass : createSceneRenderPass, createPostProcessRenderPass, createImGuiRenderPass;
+import shadowmap : createShadowMapGraphicsPipeline, createShadowMapCommandBuffers;
 import reflection : reflectShaders, createResources;
+import surface : querySurfaceFormats;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 
@@ -38,7 +38,7 @@ void createOrResizeWindow(ref App app) {
   app.frameDeletionQueue.flush();
 
   // Query window settings then create a SwapChain, DepthBuffer, ColorBuffer, and Synchronization
-  app.querySurfaceCapabilities();
+  app.querySurfaceFormats();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
   app.createColorResources();
@@ -69,19 +69,30 @@ void createOrResizeWindow(ref App app) {
   // Do reflection on the render shaders
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, RENDER);
-  app.createDescriptors();
+  app.createDescriptors(app.shaders,RENDER);
+
+  // Do reflection on the post processing shaders
+  app.reflectShaders(app.postProcess);
+  app.createResources(app.postProcess, POST);
+  app.createDescriptors(app.postProcess, POST);
+  for (uint i = 0; i < app.framesInFlight; i++) {
+    app.updateDescriptorSet(app.postProcess, app.sets[POST], i);  /// TODO: Should just be updated on window resize
+  }
 
   // ImGui resources
   app.createImGuiCommandBuffers();
 
   // Create RenderPass, FrameBuffers, render command buffers and the render pipelines
-  app.renderpass = app.createRenderPass();
+  app.scene = app.createSceneRenderPass();
+  app.postprocess = app.createPostProcessRenderPass();
+  app.imgui = app.createImGuiRenderPass();
+
   app.createFramebuffers();
-  app.imguipass = app.createRenderPass(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
 
   app.createRenderCommandBuffers();
   foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
-  if(app.verbose) SDL_Log("Window Done");
+  app.createPostProcessGraphicsPipeline();
+  SDL_Log(" ---- Window Done ----");
 }
 
 /** 
@@ -96,5 +107,6 @@ void checkForResize(ref App app){
     app.createOrResizeWindow();
     app.syncIndex = app.frameIndex = 0;
     app.rebuild = false;
+    SDL_Log("Window: %d or %d == %d", app.rebuild, app.camera.width, width);
   }
 }

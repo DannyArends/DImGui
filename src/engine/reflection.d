@@ -119,9 +119,8 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     }
     if(!descr.count){
       descr.count = cast(uint)app.textures.length;
-      if(to!string(descr.name) == "shadowMap"){
-        descr.count = cast(uint)app.lights.length;
-      }
+      if(to!string(descr.name) == "shadowMap"){ descr.count = cast(uint)app.lights.length; }
+      if(to!string(descr.name) == "hdrSampler"){ descr.count = 1; }
     }
     if (app.trace) {
       SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
@@ -145,7 +144,7 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(1024));
         }else{
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
-          if(SDL_strstr(shaders[s].descriptors[d].base, "currentFrame") != null) {
+          if(SDL_strstr(shaders[s].descriptors[d].base, "lastFrame") != null) {
             app.transferToSSBO(shaders[s].descriptors[d]);
           }
         }

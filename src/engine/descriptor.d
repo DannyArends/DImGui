@@ -6,6 +6,7 @@
 import engine;
 
 import compute : writeComputeImage;
+import images : writeHDRSampler;
 import sampler : writeTextureSampler;
 import shaders : Shader;
 import shadowmap : writeShadowMap;
@@ -65,7 +66,7 @@ VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders){
   DescriptorLayoutBuilder builder;
   foreach(shader; shaders) {
     foreach(descriptor; shader.descriptors) {
-      if(app.verbose) SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
+      SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
       builder.add(descriptor.binding, descriptor.count, shader.stage, descriptor.type);
     }
   }
@@ -151,13 +152,13 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
 
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
-void createDescriptors(ref App app) {
-  SDL_Log("createDescriptors for rendering pipeline");
-  app.layouts[RENDER] = app.createDescriptorSetLayout(app.shaders);
-  app.sets[RENDER] = createDescriptorSet(app.device, app.pools[RENDER], app.layouts[RENDER],  app.framesInFlight);
+void createDescriptors(ref App app, Shader[] shaders, const(char)* set = RENDER) {
+  SDL_Log("createDescriptors for %s pipeline", set);
+  app.layouts[set] = app.createDescriptorSetLayout(shaders);
+  app.sets[set] = createDescriptorSet(app.device, app.pools[set], app.layouts[set],  app.framesInFlight);
 
   app.frameDeletionQueue.add((){ 
-    vkDestroyDescriptorSetLayout(app.device, app.layouts[RENDER], app.allocator); 
+    vkDestroyDescriptorSetLayout(app.device, app.layouts[set], app.allocator); 
   });
 }
 
@@ -180,6 +181,9 @@ void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] ds
         }
         if(to!string(shader.descriptors[d].name) == "shadowMap"){
           app.writeShadowMap(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
+        }
+        if(to!string(shader.descriptors[d].name) == "hdrSampler"){
+          app.writeHDRSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
       }
       // Uniform Buffer Write

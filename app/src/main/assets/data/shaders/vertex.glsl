@@ -36,9 +36,8 @@ layout(location = 0) out vec4 fragPosWorld;       /// Fragment world position
 layout(location = 1) out vec4 fragColor;          /// Fragment color
 layout(location = 2) out vec3 fragNormal;         /// Fragment normal
 layout(location = 3) out vec2 fragTexCoord;       /// Texture coordinate
-layout(location = 4) flat out int fragTid;        /// Texture ID
-layout(location = 5) flat out int fragNid;        /// Normal Map ID
-layout(location = 6) out mat3 fragTBN;            /// Tangent, Bitangent, Normal matrix
+layout(location = 4) flat out uint fragMesh;      /// MeshID
+layout(location = 5) out mat3 fragTBN;            /// Tangent, Bitangent, Normal matrix
 
 void main() {
   /// Compute bone effects on vertex
@@ -62,15 +61,13 @@ void main() {
   fragColor = inColor;
   fragNormal = normalize(normalMatrix * inNormal);
   fragTexCoord = inTexCoord;
-  uint mesh = meshdef[0];
+  fragMesh = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
-    for (; mesh < meshdef[1]; mesh++) {
-      if (meshSSBO.meshes[mesh].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[mesh].vertices[1]) {
+    for (; fragMesh < meshdef[1]; fragMesh++) {
+      if (meshSSBO.meshes[fragMesh].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[fragMesh].vertices[1]) {
         break;
       }
     }
   }
-  fragTid = meshSSBO.meshes[mesh].tid;
-  fragNid = meshSSBO.meshes[mesh].nid;
   fragTBN = mat3(T, B, N); 
 }
