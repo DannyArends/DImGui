@@ -11,6 +11,7 @@ import shadowmap : updateShadowMapUBO, recordShadowCommandBuffer;
 import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
 import descriptor : updateDescriptorSet, createDescriptors;
+import textures : updateTextures;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 
 void renderFrame(ref App app){
@@ -65,7 +66,7 @@ void renderFrame(ref App app){
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Prepare & Submit Graphics & ImGui Work");
   app.updateRenderUBO(app.shaders, app.syncIndex);
-  app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex);    /// Updated each frame, since we're loading textures a-sync
+  app.updateTextures();       /// Updated this frame, since a texture was loaded a-sync
 
   app.recordRenderCommandBuffer(app.shaders, app.syncIndex);
   app.recordImGuiCommandBuffer(app.syncIndex);

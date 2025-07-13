@@ -35,41 +35,31 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   // Input Assembly
   VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-    topology: topology,
-    primitiveRestartEnable: VK_FALSE
+    topology: topology
   };
 
   // Viewport
-  VkViewport viewport = { x: 0.0f, y: 0.0f,
+  VkViewport viewport = {
+    minDepth: 0.0f, maxDepth: 1.0f,
     width: cast(float) app.camera.width,
     height: cast(float) app.camera.height,
-    minDepth: 0.0f,
-    maxDepth: 1.0f
   };
 
   VkRect2D scissor = { offset: {0, 0}, extent: app.camera.currentExtent };
 
   VkPipelineViewportStateCreateInfo viewportState = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-    viewportCount: 1,
-    pViewports: &viewport,
-    scissorCount: 1,
-    pScissors: &scissor
+    viewportCount: 1, pViewports: &viewport,
+    scissorCount: 1, pScissors: &scissor
   };
 
   // Rasterizer (Point, Line, Fill)
   VkPipelineRasterizationStateCreateInfo rasterizer = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-    depthClampEnable: VK_FALSE,
-    rasterizerDiscardEnable: VK_FALSE,
     polygonMode: VK_POLYGON_MODE_FILL,                        // Point/Line/Fill
     lineWidth: 1.0f,
     cullMode: VK_CULL_MODE_NONE,                              //VK_CULL_MODE_BACK_BIT,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
-    depthBiasEnable: VK_FALSE,
-    depthBiasConstantFactor: 0.0f,                            // Optional
-    depthBiasClamp: 0.0f,                                     // Optional
-    depthBiasSlopeFactor: 0.0f                                // Optional
   };
 
   VkPipelineMultisampleStateCreateInfo multisampling = {
@@ -111,9 +101,6 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     depthTestEnable: VK_TRUE,
     depthWriteEnable: VK_TRUE,
     depthCompareOp: VK_COMPARE_OP_LESS,
-    depthBoundsTestEnable: VK_FALSE,
-    minDepthBounds: 0.0f,                                     // Optional
-    maxDepthBounds: 1.0f,                                     // Optional
   };
 
   auto stages = createStageInfo(app.shaders);
@@ -180,10 +167,6 @@ void createPostProcessGraphicsPipeline(ref App app) {
     lineWidth: 1.0f,
     cullMode: VK_CULL_MODE_NONE, // No culling
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
-    depthBiasEnable: VK_FALSE,
-    depthBiasConstantFactor: 0.0f,
-    depthBiasClamp: 0.0f,
-    depthBiasSlopeFactor: 0.0f
   };
 
   // Multisamping: Always 1 sample for post-process (output to swapchain)
@@ -193,8 +176,6 @@ void createPostProcessGraphicsPipeline(ref App app) {
     rasterizationSamples: VK_SAMPLE_COUNT_1_BIT, // Single sample
     minSampleShading: 1.0f,
     pSampleMask: null,
-    alphaToCoverageEnable: VK_FALSE,
-    alphaToOneEnable: VK_FALSE
   };
 
   VkPipelineColorBlendAttachmentState colorBlendAttachment = {
@@ -205,8 +186,7 @@ void createPostProcessGraphicsPipeline(ref App app) {
     sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
     logicOpEnable: VK_FALSE,
     attachmentCount: 1,
-    pAttachments: &colorBlendAttachment,
-    blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
+    pAttachments: &colorBlendAttachment
   };
 
   // Pipeline Layout: Needs a descriptor set for the sampled HDR texture

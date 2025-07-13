@@ -47,7 +47,8 @@ void createResolvedHDRImage(ref App app) {
   });
 }
 
-/** Create a framebuffer for each SwapChain ImageView with Color and Depth attachement
+/** Create framebuffers for Rendering, Post-processing, and ImGui, for each SwapChain ImageView 
+ * with appropriate Color and Depth attachements
  */
 void createFramebuffers(ref App app) {
   if(app.verbose) SDL_Log("createFramebuffers for %d images", app.imageCount);
@@ -75,7 +76,6 @@ void createFramebuffers(ref App app) {
       height: app.camera.height,
       layers: 1
     };
-
     enforceVK(vkCreateFramebuffer(app.device, &sceneFramebufferInfo, null, &app.framebuffers.scene[i]));
 
     // 2. Framebuffers for the POST-PROCESSING RENDER PASS (renders to swapchain, samples resolved HDR)
@@ -109,9 +109,11 @@ void createFramebuffers(ref App app) {
     enforceVK(vkCreateFramebuffer(app.device, &imguiFramebufferInfo, null, &app.framebuffers.imgui[i]));
   }
 
-  if(app.verbose) SDL_Log("%d Scene Framebuffers created", app.framebuffers.scene.length);
-  if(app.verbose) SDL_Log("%d Post-Process Framebuffers created", app.framebuffers.postprocess.length);
-  if(app.verbose) SDL_Log("%d ImGui Framebuffers created", app.framebuffers.imgui.length);
+  if(app.verbose) {
+    SDL_Log("%d Scene Framebuffers created", app.framebuffers.scene.length);
+    SDL_Log("%d Post-Process Framebuffers created", app.framebuffers.postprocess.length);
+    SDL_Log("%d ImGui Framebuffers created", app.framebuffers.imgui.length);
+  }
 
   app.frameDeletionQueue.add((){
     for (uint i = 0; i < app.imageCount; i++) {

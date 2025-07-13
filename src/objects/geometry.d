@@ -291,14 +291,14 @@ void draw(ref App app, Geometry object, size_t i) {
   if(app.trace) SDL_Log("DRAW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
 
+  // Todo: We might better iterate through pipeline topologies, instead of switching every draw
   vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[object.topology].pipeline);
+  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                          app.pipelines[object.topology].layout, 0, 1, &app.sets[RENDER][i], 0, null);
 
   vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
   vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
   vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
-
-  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.pipelines[object.topology].layout, 0, 1, &app.sets[RENDER][i], 0, null);
 
   vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.name()));

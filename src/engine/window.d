@@ -62,7 +62,7 @@ void createOrResizeWindow(ref App app) {
   app.createResources(app.shadows.shaders, SHADOWS);
   app.createShadowMapCommandBuffers();
   app.createShadowMapGraphicsPipeline();
-  for (uint i = 0; i < app.framesInFlight; i++) {
+  for (uint i = 0; i < app.framesInFlight; i++) { // Make it better loop through the app.sets[SHADOWS][SyncIndex]
     app.updateDescriptorSet(app.shadows.shaders, app.sets[SHADOWS], i);
   }
 
@@ -71,6 +71,9 @@ void createOrResizeWindow(ref App app) {
   app.createResources(app.shaders, RENDER);
   app.createDescriptors(app.shaders,RENDER);
   app.createRenderCommandBuffers();
+  for (uint i = 0; i < app.framesInFlight; i++) {
+    app.updateDescriptorSet(app.shaders, app.sets[RENDER], i);    /// Updated each frame, since we're loading textures a-sync
+  }
 
   // 4] Post-processing shaders reflection
   app.reflectShaders(app.postProcess);

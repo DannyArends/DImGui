@@ -89,7 +89,7 @@ VkRenderPass createPostProcessRenderPass(ref App app) {
 
   // This attachment is the swapchain image itself (LDR)
   VkAttachmentDescription colorAttachment = {
-    format : app.surfaceformats[app.format].format, // Use swapchain format (e.g., VK_FORMAT_B8G8R8A8_UNORM)
+    format : app.surfaceformats[app.format].format, // Use swapchain format
     samples : VK_SAMPLE_COUNT_1_BIT,                // No MSAA for the final output
     loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,       // We will fully overwrite this
     storeOp : VK_ATTACHMENT_STORE_OP_STORE,
@@ -105,8 +105,6 @@ VkRenderPass createPostProcessRenderPass(ref App app) {
     pipelineBindPoint : VK_PIPELINE_BIND_POINT_GRAPHICS,
     colorAttachmentCount : 1,
     pColorAttachments : &colorAttachmentRef,
-    pDepthStencilAttachment: null, // No depth attachment for post-processing
-    pResolveAttachments: null      // No resolve attachment
   };
 
   // Dependencies for this pass
