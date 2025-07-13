@@ -35,7 +35,7 @@ struct UBO {
 }
 
 void createUBO(ref App app, Descriptor descriptor) {
-  SDL_Log("Create UBO at %s, size = %d", descriptor.base, descriptor.bytes);
+  if(app.verbose) SDL_Log("Create UBO at %s, size = %d", descriptor.base, descriptor.bytes);
 
   app.ubos[descriptor.base] = UBO();
   app.ubos[descriptor.base].buffer.length = app.framesInFlight;

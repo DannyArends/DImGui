@@ -117,7 +117,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
       /* Copy data off the GPU to the CPU */
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
         if(SDL_strstr(shader.descriptors[d].base, "currentFrame") != null){
-          memcpy(&app.compute.system.particles[0], app.buffers[shader.descriptors[d].base].data[syncIndex], shader.descriptors[d].size);
+        //  memcpy(&app.compute.system.particles[0], app.buffers[shader.descriptors[d].base].data[syncIndex], shader.descriptors[d].size);
         }
       }
     }

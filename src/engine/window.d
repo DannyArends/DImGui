@@ -13,7 +13,7 @@ import framebuffer : createFramebuffers;
 import images : createColorResources;
 import pipeline : createGraphicsPipeline, createPostProcessGraphicsPipeline;
 import renderpass : createSceneRenderPass, createPostProcessRenderPass, createImGuiRenderPass;
-import shadowmap : createShadowMapGraphicsPipeline, createShadowMapCommandBuffers;
+import shadowmap : createShadowMapGraphicsPipeline, createShadowMapCommandBuffers, recordShadowCommandBuffer;
 import reflection : reflectShaders, createResources;
 import surface : querySurfaceFormats;
 import swapchain : createSwapChain, aquireSwapChainImages;
@@ -37,7 +37,7 @@ void createOrResizeWindow(ref App app) {
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush();
 
-  // Query window settings then create a SwapChain, DepthBuffer, ColorBuffer, and Synchronization
+  // 0] Query window settings then create a SwapChain, DepthBuffer, ColorBuffer, and Synchronization
   app.querySurfaceFormats();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
@@ -45,7 +45,7 @@ void createOrResizeWindow(ref App app) {
   app.createDepthResources();
   app.createSyncObjects();
 
-  // Do reflection on the compute shaders, and create the compute command buffers and pipelines
+  // 1] Compute shaders reflection
   if (app.compute.enabled) {
     app.reflectShaders(app.compute.shaders);
     app.createResources(app.compute.shaders, COMPUTE);
@@ -56,7 +56,7 @@ void createOrResizeWindow(ref App app) {
     }
   }
 
-  // Do reflection on the shadow shaders 
+  // 2] Shadow shaders reflection
   // TODO: Could be done once inside the main deletion queue, but then UBO reflection needs to allow a custome deletion queue
   app.reflectShaders(app.shadows.shaders);
   app.createResources(app.shadows.shaders, SHADOWS);
@@ -66,12 +66,13 @@ void createOrResizeWindow(ref App app) {
     app.updateDescriptorSet(app.shadows.shaders, app.sets[SHADOWS], i);
   }
 
-  // Do reflection on the render shaders
+  // 3] Render shaders reflection
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, RENDER);
   app.createDescriptors(app.shaders,RENDER);
+  app.createRenderCommandBuffers();
 
-  // Do reflection on the post processing shaders
+  // 4] Post-processing shaders reflection
   app.reflectShaders(app.postProcess);
   app.createResources(app.postProcess, POST);
   app.createDescriptors(app.postProcess, POST);
@@ -82,17 +83,20 @@ void createOrResizeWindow(ref App app) {
   // ImGui resources
   app.createImGuiCommandBuffers();
 
-  // Create RenderPass, FrameBuffers, render command buffers and the render pipelines
+  // Create RenderPasses [SCENE -> POST -> IMGUI]
   app.scene = app.createSceneRenderPass();
   app.postprocess = app.createPostProcessRenderPass();
   app.imgui = app.createImGuiRenderPass();
 
+  // Create Framebuffers
   app.createFramebuffers();
 
-  app.createRenderCommandBuffers();
-  foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
+  // Create the Pipelines (Post-processing and Rendering)
   app.createPostProcessGraphicsPipeline();
-  SDL_Log(" ---- Window Done ----");
+  foreach(member; supportedTopologies) { 
+    app.createGraphicsPipeline(member); 
+  }
+  if(app.verbose) SDL_Log(" ---- Window Done ----");
 }
 
 /** 
@@ -104,9 +108,8 @@ void checkForResize(ref App app){
   if(width > 0 && height > 0 && (app.rebuild || app.camera.width != width || app.camera.height != height)) {
     ImGui_ImplVulkan_SetMinImageCount(app.camera.minImageCount);
     app.gui.io.DisplaySize = ImVec2(cast(float)width, cast(float)height);
-    app.createOrResizeWindow();
-    app.syncIndex = app.frameIndex = 0;
-    app.rebuild = false;
-    SDL_Log("Window: %d or %d == %d", app.rebuild, app.camera.width, width);
+    app.createOrResizeWindow();                         // Resize the window
+    app.rebuild = app.syncIndex = app.frameIndex = 0;   // SwapChain is new, so reset syncronization
+    if(app.verbose) SDL_Log("Window: %d images of [%d == %d, %d == %d]", app.camera.minImageCount, app.camera.width, width, app.camera.height, height);
   }
 }

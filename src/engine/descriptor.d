@@ -66,7 +66,7 @@ VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders){
   DescriptorLayoutBuilder builder;
   foreach(shader; shaders) {
     foreach(descriptor; shader.descriptors) {
-      SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
+      if(app.verbose) SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
       builder.add(descriptor.binding, descriptor.count, shader.stage, descriptor.type);
     }
   }
@@ -94,7 +94,7 @@ void createDSPool(ref App app, const(char)* poolID, VkDescriptorPoolSize[] poolS
     pPoolSizes : &poolSizes[0]
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.pools[poolID]));
-  SDL_Log("Created %s DescriptorPool: %p", poolID, app.pools[poolID]);
+  if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", poolID, app.pools[poolID]);
 }
 
 /** ImGui DescriptorPool (Images)
@@ -153,7 +153,7 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
 void createDescriptors(ref App app, Shader[] shaders, const(char)* set = RENDER) {
-  SDL_Log("createDescriptors for %s pipeline", set);
+  if(app.verbose) SDL_Log("createDescriptors: %s pipeline", set);
   app.layouts[set] = app.createDescriptorSetLayout(shaders);
   app.sets[set] = createDescriptorSet(app.device, app.pools[set], app.layouts[set],  app.framesInFlight);
 

@@ -282,7 +282,7 @@ void computeTangents(ref Geometry geometry, bool verbose = false) {
   }
 
   geometry.buffers[VERTEX] = false; // Mark vertex buffer as dirty, needs re-upload
-  SDL_Log("computeTangents %d vertex tangents computed", geometry.vertices.length);
+  if(verbose) SDL_Log("computeTangents %d vertex tangents computed", geometry.vertices.length);
 }
 
 /** Render a Geometry to app.renderBuffers[i] */
@@ -313,9 +313,6 @@ void shadow(ref App app, Geometry object, size_t i) {
   vkCmdBindVertexBuffers(app.shadowBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
   vkCmdBindVertexBuffers(app.shadowBuffers[i], INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
   vkCmdBindIndexBuffer(app.shadowBuffers[i], object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
-
-  vkCmdBindDescriptorSets(app.shadowBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.shadows.pipeline.layout, 0, 1, &app.sets[SHADOWS][i], 0, null);
 
   vkCmdDrawIndexed(app.shadowBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("SHADOW[%s]: DONE", toStringz(object.name()));
