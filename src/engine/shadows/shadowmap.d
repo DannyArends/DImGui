@@ -384,7 +384,7 @@ void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descri
 }
 
 void createShadowMapCommandBuffers(ref App app) {
-  SDL_Log("Creating %d shadow map command buffers", app.framesInFlight);
+  if(app.verbose) SDL_Log("Creating %d shadow map command buffers", app.framesInFlight);
   app.shadowBuffers.length = app.framesInFlight;
   VkCommandBufferAllocateInfo allocInfo = {
       sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -449,6 +449,10 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   }
   popLabel(app.shadowBuffers[app.syncIndex]);
 
+  pushLabel(app.shadowBuffers[app.syncIndex], "Shadow Loop", Colors.lightgray);
+  vkCmdBindDescriptorSets(app.shadowBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                          app.shadows.pipeline.layout, 0, 1, &app.sets[SHADOWS][syncIndex], 0, null);
+
   for(size_t l = 0; l < app.lights.length; l++) {
     pushLabel(app.shadowBuffers[app.syncIndex], toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
     VkRenderPassBeginInfo renderPassInfo = {
@@ -477,6 +481,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdEndRenderPass(app.shadowBuffers[app.syncIndex]);
     popLabel(app.shadowBuffers[app.syncIndex]);
   }
+  popLabel(app.shadowBuffers[app.syncIndex]);
   enforceVK(vkEndCommandBuffer(app.shadowBuffers[app.syncIndex])); // End recording for shadow map buffer
 }
 

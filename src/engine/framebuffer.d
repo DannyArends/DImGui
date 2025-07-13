@@ -50,7 +50,7 @@ void createResolvedHDRImage(ref App app) {
 /** Create a framebuffer for each SwapChain ImageView with Color and Depth attachement
  */
 void createFramebuffers(ref App app) {
-  if(app.verbose) SDL_Log("createFramebuffers");
+  if(app.verbose) SDL_Log("createFramebuffers for %d images", app.imageCount);
 
   // Allocate arrays for all framebuffer types
   app.framebuffers.scene.length = app.imageCount;
@@ -59,7 +59,7 @@ void createFramebuffers(ref App app) {
 
   for (size_t i = 0; i < app.imageCount; i++) {
     // 1. Framebuffers for the MAIN SCENE RENDER PASS (renders to offscreen HDR)
-    SDL_Log("MAIN SCENE RENDER");
+    if(app.verbose) SDL_Log("Framebuffer - MAIN SCENE RENDER");
     VkImageView[] sceneAttachments = [
         app.offscreenHDR.colorImageView,    // 0: MSAA HDR Color buffer
         app.resolvedHDR.colorImageView,     // 1: Resolved single-sample HDR Color buffer
@@ -79,7 +79,7 @@ void createFramebuffers(ref App app) {
     enforceVK(vkCreateFramebuffer(app.device, &sceneFramebufferInfo, null, &app.framebuffers.scene[i]));
 
     // 2. Framebuffers for the POST-PROCESSING RENDER PASS (renders to swapchain, samples resolved HDR)
-    SDL_Log("POST-PROCESSING RENDER");
+    if(app.verbose) SDL_Log("Framebuffer - POST-PROCESSING RENDER");
     VkImageView[] postProcessAttachments = [app.swapChainImageViews[i]]; // Only the swapchain image view
 
     VkFramebufferCreateInfo postProcessFramebufferInfo = {
@@ -94,7 +94,7 @@ void createFramebuffers(ref App app) {
     enforceVK(vkCreateFramebuffer(app.device, &postProcessFramebufferInfo, null, &app.framebuffers.postprocess[i]));
 
     // 3. Framebuffers for the IMGUI RENDER PASS (renders to swapchain, overlays ImGui)
-    SDL_Log("IMGUI RENDER");
+    if(app.verbose) SDL_Log("Framebuffer - IMGUI RENDER");
     VkImageView[] imguiAttachments = [app.swapChainImageViews[i]]; // Only the swapchain image view
 
     VkFramebufferCreateInfo imguiFramebufferInfo = {

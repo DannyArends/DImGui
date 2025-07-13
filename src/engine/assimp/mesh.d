@@ -43,7 +43,7 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
   auto baseTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
   auto normTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_NORMALS);
   auto opacTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_OPACITY);
-  SDL_Log(" - %d / %d material", baseTexture.tid, normTexture.tid);
+  if (app.verbose) SDL_Log(" - %d | %d | %d texture.ids", baseTexture.tid, normTexture.tid, opacTexture.tid);
   
   auto weights = asset.loadBones(mesh, app.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
