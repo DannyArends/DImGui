@@ -10,7 +10,7 @@ import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
 import images : imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
-import descriptor : createDescriptorSet;
+import descriptor : createDescriptorSet, updateDescriptorSet;
 import validation : nameVulkanObject;
 
 struct Texture {
@@ -24,6 +24,7 @@ struct Texture {
   VkImageView view;
   VkDeviceMemory memory;
 
+  bool dirty = true;
   alias surface this;
 }
 
@@ -82,6 +83,18 @@ void loadTextures(ref App app, const(char)* folder = "data/textures/", string pa
   }).start();
 }
 
+void updateTextures(ref App app) {
+  bool needsUpdate = false;
+  for(uint i = 0; i < app.textures.length; i++) { 
+    if(app.textures[i].dirty){ needsUpdate = true; break; }
+  }
+  if(needsUpdate){ SDL_Log("Texture Loaded A-sync, updating");
+    for (uint i = 0; i < app.framesInFlight; i++) {
+      app.updateDescriptorSet(app.shaders, app.sets[RENDER], i);    /// Updated each frame, since we're loading textures a-sync
+    }
+  }
+}
+
 void loadTexture(ref App app, const(char)* path, uint i) {
   if(app.verbose) SDL_Log("loadTexture '%s'", path);
   auto surface = IMG_Load(path);
@@ -91,6 +104,7 @@ void loadTexture(ref App app, const(char)* path, uint i) {
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
   Texture texture = { path : path, width: surface.w, height: surface.h, surface: surface };
   app.toGPU(texture, i);
+  app.textures[i].dirty = true;
   if(app.verbose) SDL_Log("loadTexture '%s' DONE", path);
   app.mainDeletionQueue.add((){ app.deAllocate(texture); });
 }

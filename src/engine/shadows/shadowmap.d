@@ -251,28 +251,21 @@ void createShadowMapGraphicsPipeline(ref App app) {
 
   VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-    topology: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-    primitiveRestartEnable: VK_FALSE,
+    topology: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
   };
 
   VkViewport viewport = {
-    x: 0.0f, y: 0.0f,
     width: cast(float)app.shadows.dimension,
     height: cast(float)app.shadows.dimension,
     minDepth: 0.0f, maxDepth: 1.0f,
   };
 
-  VkRect2D scissor = {
-    offset: { x: 0, y: 0 },
-    extent: { width: app.shadows.dimension, height: app.shadows.dimension },
-  };
+  VkRect2D scissor = { extent: { width: app.shadows.dimension, height: app.shadows.dimension } };
 
   VkPipelineViewportStateCreateInfo viewportState = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-    viewportCount: 1,
-    pViewports: &viewport,
-    scissorCount: 1,
-    pScissors: &scissor
+    viewportCount: 1, pViewports: &viewport,
+    scissorCount: 1, pScissors: &scissor
   };
 
   VkPipelineRasterizationStateCreateInfo rasterizer = {
@@ -280,7 +273,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     depthClampEnable: VK_FALSE,
     polygonMode: VK_POLYGON_MODE_FILL,
     lineWidth: 1.0f,
-    cullMode: VK_CULL_MODE_NONE,
+    cullMode: VK_CULL_MODE_BACK_BIT,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
     depthBiasConstantFactor: 1.25f,

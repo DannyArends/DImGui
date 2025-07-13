@@ -42,7 +42,7 @@ void createSampler(ref App app) {
   if(app.verbose) SDL_Log("Created TextureSampler: %p", app.sampler);
 }
 
-void writeTextureSampler(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
+void writeTextureSampler(ref App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
   size_t startIndex = imageInfos.length;
 
   for (size_t i = 0; i < app.textures.length; i++) {
@@ -52,6 +52,7 @@ void writeTextureSampler(App app, ref VkWriteDescriptorSet[] write, Descriptor d
       sampler: app.sampler
     };
     imageInfos ~= textureImage;
+    app.textures[i].dirty = false;
   }
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

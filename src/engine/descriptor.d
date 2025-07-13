@@ -15,15 +15,15 @@ import textures : Texture, idx;
 import uniforms : writeUniformBuffer;
 
 struct Descriptor {
-  VkDescriptorType type;
-  const(char)* name;
-  const(char)* base;
-  size_t bytes;            /// Size  of the structure
-  size_t nObjects;        /// Number of objects stored
+  VkDescriptorType type;    /// Type of Descriptor
+  const(char)* name;        /// Name
+  const(char)* base;        /// Base / Struct Name
+  size_t bytes;             /// Size  of the structure
+  size_t nObjects;          /// Number of objects stored
 
-  uint set;
-  uint binding;
-  uint count;
+  uint set;                 /// DescriptorSet
+  uint binding;             /// DescriptorSet Binding
+  uint count;               /// Descriptor count
 
   @property uint size(){ return(cast(uint)(bytes * nObjects)); }
 }
@@ -162,13 +162,13 @@ void createDescriptors(ref App app, Shader[] shaders, const(char)* set = RENDER)
   });
 }
 
-/** Update the DescriptorSet 
+/** Update the DescriptorSet
  */
 void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] dstSet, uint syncIndex = 0) {
   if(app.trace) SDL_Log("updateDescriptorSet");
-  VkWriteDescriptorSet[] descriptorWrites;
-  VkDescriptorBufferInfo[] bufferInfos; // Holds all buffer infos for this update call
-  VkDescriptorImageInfo[] imageInfos; // Holds all buffer infos for this update call
+  VkWriteDescriptorSet[] descriptorWrites;  // DescriptorSet write commands
+  VkDescriptorBufferInfo[] bufferInfos;     // Buffer information for this update
+  VkDescriptorImageInfo[] imageInfos;       // Image information for this update
 
   for(uint s = 0; s < shaders.length; s++) {
     auto shader = shaders[s];

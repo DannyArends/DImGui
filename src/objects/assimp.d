@@ -59,7 +59,6 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
 
   object.instances[0] = object.bounds.computeScaleAdjustment(); // Adjust the scale to 4.0f
 
-  
   if (app.verbose) {
     SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));
     SDL_Log("%u meshes, %u materials, %u animations", scene.mNumMeshes, scene.mNumMaterials, scene.mNumAnimations);
