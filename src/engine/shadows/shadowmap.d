@@ -5,7 +5,6 @@
 
 import engine;
 
-import bone : getBoneOffsets;
 import color : Colors;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, transitionImageLayout;
@@ -417,15 +416,12 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
 
   pushLabel(app.shadowBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
-  VkBuffer dst;
-  uint size;
+
   foreach(shader; app.shadows.shaders){
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) { 
-          dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
-          Matrix[] offsets = app.getBoneOffsets();
-          app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], offsets, shader.descriptors[d], syncIndex);
+          app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], app.boneOffsets, shader.descriptors[d], syncIndex);
         }
         if(SDL_strstr(shader.descriptors[d].base, "LightMatrices") != null) {
           if (app.disco) {

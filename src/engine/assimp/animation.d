@@ -44,7 +44,7 @@ struct Animation {
 
 @nogc double calculateCurrentTick(ulong t, double tps, double dur) nothrow { return fmod((t / 1000.0f) * tps, dur); }
 
-void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, const Node node, const Matrix pTransform, double animationTime){
+void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform, double animationTime){
   Animation animation = obj.animations[obj.animation];
   Matrix localTransform = node.transform;
 
@@ -61,10 +61,10 @@ void calculateGlobalTransform(App app, ref Geometry obj, ref Matrix[] offsets, c
   Matrix gTransform = pTransform.multiply(localTransform);
 
   if (node.name in app.bones) {
-    offsets[app.bones[node.name].index] = gTransform.multiply(app.bones[node.name].offset);
+    app.boneOffsets[app.bones[node.name].index] = gTransform.multiply(app.bones[node.name].offset);
   }
   foreach(cNode; node.children){
-    app.calculateGlobalTransform(obj, offsets, cNode, gTransform, animationTime);
+    app.calculateGlobalTransform(obj, cNode, gTransform, animationTime);
   }
 }
 

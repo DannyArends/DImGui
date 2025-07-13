@@ -103,10 +103,9 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
 
     // SSBO: Get the size of the SSBO element
     if (types[type] == SPVC_RESOURCE_TYPE_STORAGE_BUFFER) {
-        spvc_type_id element_id = spvc_type_get_member_type(type_handle, 0);
-        spvc_type element_handle = spvc_compiler_get_type_handle(compiler, element_id);
-        app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler, element_handle, &descr.bytes));
-        //descr.bytes = 48;
+      spvc_type_id element_id = spvc_type_get_member_type(type_handle, 0);
+      spvc_type element_handle = spvc_compiler_get_type_handle(compiler, element_id);
+      app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler, element_handle, &descr.bytes));
     }
 
     // Figure out the descriptor count in a round-about way
@@ -142,6 +141,7 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         if(SDL_strstr(shaders[s].descriptors[d].base, "BoneMatrices") != null) {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(1024));
+          app.boneOffsets.length = 1024;
         }else{
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
           if(SDL_strstr(shaders[s].descriptors[d].base, "lastFrame") != null) {
