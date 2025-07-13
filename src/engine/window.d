@@ -52,7 +52,9 @@ void createOrResizeWindow(ref App app) {
     foreach(ref shader; app.compute.shaders) {
       app.createComputeCommandBuffers(shader);
       app.createComputePipeline(shader);
-      for (uint i = 0; i < app.framesInFlight; i++) { app.updateDescriptorSet([shader], app.sets[shader.path], i); }
+      for (uint i = 0; i < app.framesInFlight; i++) { 
+        app.updateDescriptorSet([shader], app.sets[shader.path], i);
+      }
     }
   }
 
