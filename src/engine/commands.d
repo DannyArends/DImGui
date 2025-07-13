@@ -5,7 +5,7 @@
 
 import engine;
 
-import bone : getBoneOffsets;
+import bone : updateBoneOffsets;
 import color : Colors;
 import descriptor : Descriptor;
 import matrix : Matrix;
@@ -36,6 +36,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     extent: { width: app.camera.width, height: app.camera.height }
   };
 
+  if(app.trace) SDL_Log("Starting Scene renderpass");
   VkRenderPassBeginInfo renderPassInfo = {
     sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
     renderPass: app.scene,
@@ -50,8 +51,8 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) {
           // Always update the bones for animation on each frame
-          Matrix[] offsets = app.getBoneOffsets();
-          app.updateSSBO!Matrix(app.renderBuffers[syncIndex], offsets, shader.descriptors[d], syncIndex);
+          app.updateBoneOffsets();
+          app.updateSSBO!Matrix(app.renderBuffers[syncIndex], app.boneOffsets, shader.descriptors[d], syncIndex);
         }
         if(SDL_strstr(shader.descriptors[d].base, "MeshMatrices") != null) {
           // Todo: we should do this data transfer only when needed (a material changed)
@@ -99,8 +100,9 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
 
   popLabel(app.renderBuffers[app.syncIndex]);
-  pushLabel(app.renderBuffers[app.syncIndex], "Post-processing", Colors.lightgray);
 
+  if(app.trace) SDL_Log("Starting Post-processing");
+  pushLabel(app.renderBuffers[app.syncIndex], "Post-processing", Colors.lightgray);
   VkRenderPassBeginInfo postProcessRenderPassInfo = {
     sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
     renderPass: app.postprocess,                                        /// Use post-processing render pass
@@ -120,6 +122,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   vkCmdDraw(app.renderBuffers[app.syncIndex], 3, 1, 0, 0);
   vkCmdEndRenderPass(app.renderBuffers[app.syncIndex]);
   popLabel(app.renderBuffers[app.syncIndex]);
+  if(app.trace) SDL_Log("Finished Post-processing");
   enforceVK(vkEndCommandBuffer(app.renderBuffers[syncIndex]));
 }
 

@@ -35,7 +35,7 @@ import geometry : Geometry, cleanup;
 import images : HDRBuffer;
 import imgui : GUI, saveSettings;
 import lights : Light, Lights;
-import matrix : multiply, inverse;
+import matrix : Matrix, multiply, inverse;
 import node : Node;
 import pipeline : GraphicsPipeline;
 import shaders : Shader, IncluderContext;
@@ -72,10 +72,11 @@ struct App {
     {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }}, 
     {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }}, 
     { depthStencil : VkClearDepthStencilValue(1.0f, 0) } 
-    ];
+  ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
+  Matrix[] boneOffsets;                                                         /// Current Animated BoneOffsets
   Texture[] textures;                                                           /// Textures
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[const(char)*] buffers;                                                   /// SSBO buffers
