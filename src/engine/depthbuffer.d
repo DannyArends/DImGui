@@ -9,12 +9,6 @@ import devices : getMSAASamples;
 import images : ImageBuffer, createImage,transitionImageLayout;
 import swapchain : createImageView;
 
-/*struct DepthBuffer {
-  VkImage depthImage;
-  VkDeviceMemory depthImageMemory;
-  VkImageView depthImageView;
-} */
-
 alias ImageBuffer DepthBuffer;
 
 VkFormat findSupportedFormat(ref App app, const VkFormat[] candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {

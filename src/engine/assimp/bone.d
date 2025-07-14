@@ -45,7 +45,6 @@ BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBone
 }
 
 void updateBoneOffsets(App app) {
-  if(app.syncIndex != 0) return; // Only update when syncIndex is 0 (so when tripple buffering, every 3rd frame)
   ulong t = SDL_GetTicks() - app.time[STARTUP];
   foreach(ref obj; app.objects) {
     if(obj.animations.length > 0) {
