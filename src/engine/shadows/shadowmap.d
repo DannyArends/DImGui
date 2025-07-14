@@ -25,12 +25,12 @@ struct ShadowMap {
   VkFramebuffer[] framebuffer;
 
   VkSampler sampler;
-  VkRenderPass renderPass;
   Shader[] shaders;
+  VkRenderPass renderPass;
   GraphicsPipeline pipeline;
 
-  VkFormat format = VK_FORMAT_D32_SFLOAT;
-  uint dimension = 2048; // Or 1024, 4096, etc. - resolution of your shadow map
+  VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
+  uint dimension = 2048;                    /// Shadowmap resolution
 }
 
 struct LightUbo {
