@@ -126,6 +126,8 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   });
 }
 
+/** Create a GraphicsPipeline object for Post-process
+ */
 void createPostProcessGraphicsPipeline(ref App app) {
   app.postProcessPipeline = GraphicsPipeline();
 
@@ -141,21 +143,18 @@ void createPostProcessGraphicsPipeline(ref App app) {
   };
 
   // Viewport and Scissor will match swapchain extent
-  VkViewport viewport = { x: 0.0f, y: 0.0f,
+  VkViewport viewport = {
+    minDepth: 0.0f, maxDepth: 1.0f,
     width: cast(float) app.camera.width,
     height: cast(float) app.camera.height,
-    minDepth: 0.0f,
-    maxDepth: 1.0f
   };
 
   VkRect2D scissor = { offset: {0, 0}, extent: app.camera.currentExtent };
 
   VkPipelineViewportStateCreateInfo viewportState = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-    viewportCount: 1,
-    pViewports: &viewport,
-    scissorCount: 1,
-    pScissors: &scissor
+    viewportCount: 1, pViewports: &viewport,
+    scissorCount: 1, pScissors: &scissor
   };
 
   // Rasterizer: No culling needed for fullscreen quad
