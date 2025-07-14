@@ -221,9 +221,9 @@ void createShadowMapGraphicsPipeline(ref App app) {
   };
 
   VkViewport viewport = {
+    minDepth: 0.0f, maxDepth: 1.0f,
     width: cast(float)app.shadows.dimension,
     height: cast(float)app.shadows.dimension,
-    minDepth: 0.0f, maxDepth: 1.0f,
   };
 
   VkRect2D scissor = { extent: { width: app.shadows.dimension, height: app.shadows.dimension } };
