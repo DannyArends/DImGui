@@ -6,14 +6,16 @@
 import engine;
 
 import devices : getMSAASamples;
-import images : createImage,transitionImageLayout;
+import images : ImageBuffer, createImage,transitionImageLayout;
 import swapchain : createImageView;
 
-struct DepthBuffer {
+/*struct DepthBuffer {
   VkImage depthImage;
   VkDeviceMemory depthImageMemory;
   VkImageView depthImageView;
-}
+} */
+
+alias ImageBuffer DepthBuffer;
 
 VkFormat findSupportedFormat(ref App app, const VkFormat[] candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
   foreach(VkFormat format; candidates) {
@@ -40,16 +42,16 @@ void createDepthResources(ref App app) {
   if(app.verbose) SDL_Log("Depth resources creation");
   VkFormat depthFormat = app.findDepthFormat();
   if(app.verbose) SDL_Log(" - depthFormat: %d", depthFormat);
-  app.createImage(app.camera.width, app.camera.height, &app.depthBuffer.depthImage, &app.depthBuffer.depthImageMemory, 
+  app.createImage(app.camera.width, app.camera.height, &app.depthBuffer.image, &app.depthBuffer.memory, 
                   depthFormat, app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-  if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.depthImage);
-  app.depthBuffer.depthImageView = app.createImageView(app.depthBuffer.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-  if(app.verbose) SDL_Log(" - image view created: %p", app.depthBuffer.depthImageView);
-  app.transitionImageLayout(app.depthBuffer.depthImage, app.commandPool, app.queue, null, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
+  if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.image);
+  app.depthBuffer.view = app.createImageView(app.depthBuffer.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+  if(app.verbose) SDL_Log(" - image view created: %p", app.depthBuffer.view);
+  app.transitionImageLayout(app.depthBuffer.image, app.commandPool, app.queue, null, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
   if(app.verbose) SDL_Log("Depth resources created");
   app.frameDeletionQueue.add((){
-    vkFreeMemory(app.device, app.depthBuffer.depthImageMemory, app.allocator);
-    vkDestroyImageView(app.device, app.depthBuffer.depthImageView, app.allocator);
-    vkDestroyImage(app.device, app.depthBuffer.depthImage, app.allocator);
+    vkFreeMemory(app.device, app.depthBuffer.memory, app.allocator);
+    vkDestroyImageView(app.device, app.depthBuffer.view, app.allocator);
+    vkDestroyImage(app.device, app.depthBuffer.image, app.allocator);
   });
 }

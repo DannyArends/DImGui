@@ -22,9 +22,7 @@ import vector : normalize, vAdd;
 import vertex : Vertex, VERTEX, INSTANCE;
 
 struct ShadowMap {
-  VkImage[] image;
-  VkImageView[] imageView;
-  VkDeviceMemory[] memory;
+  ImageBuffer[] images;
   VkFramebuffer[] framebuffer;
 
   VkSampler sampler;
@@ -53,38 +51,30 @@ void createShadowMap(ref App app) {
  */
 void createShadowMapResources(ref App app) {
   if(app.verbose) SDL_Log("Shadow map resources creation");
-  app.shadows.image.length = app.lights.length;
-  app.shadows.imageView.length = app.lights.length;
-  app.shadows.memory.length = app.lights.length;
+  app.shadows.images.length = app.lights.length;
 
   for(size_t x = 0; x < app.lights.length; x++) {
     app.createImage(app.shadows.dimension, app.shadows.dimension,
-                    &app.shadows.image[x], &app.shadows.memory[x],
+                    &app.shadows.images[x].image, &app.shadows.images[x].memory,
                     app.shadows.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-    if(app.verbose) SDL_Log(" - shadow map image created: %p", app.shadows.image[x]);
+    if(app.verbose) SDL_Log(" - shadow map image created: %p", app.shadows.images[x].image);
 
-    app.shadows.imageView[x] = app.createImageView(app.shadows.image[x], app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-    if(app.verbose) SDL_Log(" - shadow map image view created: %p", app.shadows.imageView[x]);
+    app.shadows.images[x].view = app.createImageView(app.shadows.images[x].image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+    if(app.verbose) SDL_Log(" - shadow map image view created: %p", app.shadows.images[x].view);
   }
 
   VkSamplerCreateInfo samplerInfo = {
     sType: VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-    magFilter: VK_FILTER_LINEAR, // For soft edges with PCF
-    minFilter: VK_FILTER_LINEAR,
+    magFilter: VK_FILTER_LINEAR,                            // For soft edges with PCF
+    minFilter: VK_FILTER_LINEAR,                            // For soft edges with PCF
     addressModeU: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
     addressModeV: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
     addressModeW: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-    borderColor: VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE, // Important: white means 'outside shadow'
-    unnormalizedCoordinates: VK_FALSE,
-    compareEnable: VK_TRUE, // Enable hardware depth comparison
-    compareOp: VK_COMPARE_OP_LESS_OR_EQUAL, // For shadow mapping
-    mipmapMode: VK_SAMPLER_MIPMAP_MODE_NEAREST, // No mipmaps for single depth map
-    mipLodBias: 0.0f,
-    minLod: 0.0f,
-    maxLod: 0.0f,
-    anisotropyEnable: VK_FALSE, // Not typically used for depth maps
-    maxAnisotropy: 1.0f
+    borderColor: VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+    compareEnable: VK_TRUE,                                 // Enable hardware depth comparison
+    compareOp: VK_COMPARE_OP_LESS_OR_EQUAL,                 // For shadow mapping
+    mipmapMode: VK_SAMPLER_MIPMAP_MODE_NEAREST,             // No mipmaps for single depth map
   };
 
   enforceVK(vkCreateSampler(app.device, &samplerInfo, app.allocator, &app.shadows.sampler));
@@ -92,9 +82,9 @@ void createShadowMapResources(ref App app) {
 
   app.mainDeletionQueue.add((){
     for(size_t x = 0; x < app.lights.length; x++) {
-      vkFreeMemory(app.device, app.shadows.memory[x], app.allocator);
-      vkDestroyImageView(app.device, app.shadows.imageView[x], app.allocator);
-      vkDestroyImage(app.device, app.shadows.image[x], app.allocator);
+      vkFreeMemory(app.device, app.shadows.images[x].memory, app.allocator);
+      vkDestroyImageView(app.device, app.shadows.images[x].view, app.allocator);
+      vkDestroyImage(app.device, app.shadows.images[x].image, app.allocator);
     }
     vkDestroySampler(app.device, app.shadows.sampler, app.allocator);
   });
@@ -117,10 +107,7 @@ void createShadowMapRenderPass(ref App app) {
     finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
   };
 
-  VkAttachmentReference depthAttachmentRef = {
-    attachment: 0,
-    layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-  };
+  VkAttachmentReference depthAttachmentRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
   VkSubpassDescription subpass = {
     pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -130,12 +117,10 @@ void createShadowMapRenderPass(ref App app) {
 
   VkSubpassDependency dependency = {
     srcSubpass: VK_SUBPASS_EXTERNAL,
-    dstSubpass: 0,
     srcStageMask: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
     dstStageMask: VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
     srcAccessMask: VK_ACCESS_SHADER_READ_BIT,
-    dstAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-    dependencyFlags: 0
+    dstAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
   };
 
   VkRenderPassCreateInfo renderPassInfo = {
@@ -162,7 +147,7 @@ void createShadowMapFramebuffer(ref App app) {
   app.shadows.framebuffer.length = app.lights.length;
 
   for(size_t x = 0; x < app.lights.length; x++) {
-    VkImageView[] attachments = [ app.shadows.imageView[x] ];
+    VkImageView[] attachments = [ app.shadows.images[x].view ];
 
     VkFramebufferCreateInfo framebufferInfo = {
       sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -173,7 +158,6 @@ void createShadowMapFramebuffer(ref App app) {
       height: app.shadows.dimension,
       layers: 1
     };
-
     enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, app.allocator, &app.shadows.framebuffer[x]));
     if(app.verbose) SDL_Log("Shadow map framebuffer created.");
   }
@@ -206,11 +190,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
   app.layouts[SHADOWS] = app.createDescriptorSetLayout(app.shadows.shaders);
   app.sets[SHADOWS] = createDescriptorSet(app.device, app.pools[SHADOWS], app.layouts[SHADOWS], app.framesInFlight);
 
-  VkPushConstantRange pushConstantRange = {
-      stageFlags: VK_SHADER_STAGE_VERTEX_BIT,
-      offset: 0,
-      size: uint.sizeof // Size of 'clight' (4 bytes for a uint)
-  };
+  VkPushConstantRange pushConstantRange = { stageFlags: VK_SHADER_STAGE_VERTEX_BIT, offset: 0, size: uint.sizeof };
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -319,7 +299,7 @@ void computeLightSpace(ref App app, ref Light light){
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
 }
 
-void updateShadowMapUBO(ref App app, Shader[] shaders, uint clight, uint syncIndex) {
+void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
   LightUbo ubo = {
     scene : Matrix.init,
     nlights : cast(uint)app.lights.length
@@ -342,7 +322,7 @@ void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descri
   for (size_t i = 0; i < app.lights.length; i++) {
     imageInfos ~= VkDescriptorImageInfo( // Assign directly to the single info struct
       imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-      imageView: app.shadows.imageView[i], // Use the shadow map's image view
+      imageView: app.shadows.images[i].view, // Use the shadow map's image view
       sampler: app.shadows.sampler     // Use the shadow map's sampler
     );
   }
@@ -440,7 +420,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       clearValueCount: 1,
       pClearValues: &clearDepth,
     };
-    app.updateShadowMapUBO(app.shadows.shaders, cast(uint)l, app.syncIndex);
+    app.updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
 
     vkCmdBeginRenderPass(app.shadowBuffers[app.syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(app.shadowBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
@@ -448,7 +428,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdPushConstants(app.shadowBuffers[app.syncIndex], app.shadows.pipeline.layout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(app.objects[x].isVisible && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST){
+      if(app.objects[x].isVisible && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
         app.shadow(app.objects[x], syncIndex);
       }
     }

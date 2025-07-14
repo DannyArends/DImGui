@@ -32,7 +32,7 @@ import deletion : CheckedDeletionQueue, DeletionQueue;
 import framebuffer : FrameBuffer;
 import glyphatlas : GlyphAtlas;
 import geometry : Geometry, cleanup;
-import images : HDRBuffer;
+import images : ImageBuffer;
 import imgui : GUI, saveSettings;
 import lights : Light, Lights;
 import matrix : Matrix, multiply, inverse;
@@ -94,8 +94,8 @@ struct App {
   GraphicsPipeline postProcessPipeline;
 
   DepthBuffer depthBuffer;
-  HDRBuffer offscreenHDR;
-  HDRBuffer resolvedHDR;
+  ImageBuffer offscreenHDR;
+  ImageBuffer resolvedHDR;
 
   // Deletion queues for cleaning up resources
   DeletionQueue mainDeletionQueue;                                              /// On application shutdown

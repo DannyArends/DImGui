@@ -7,27 +7,28 @@ import engine;
 
 import buffer : findMemoryType, hasStencilComponent;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
+import devices : getMSAASamples;
 import descriptor : Descriptor;
-import framebuffer : createOffscreenHDRImage, createResolvedHDRImage;
+import framebuffer : createHDRImage;
 
 VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * (surface.format.BitsPerPixel / 8)); }
 
-struct HDRBuffer {
-  VkImage colorImage;
-  VkDeviceMemory colorImageMemory;
-  VkImageView colorImageView;       /// MSAA color attachment view
+struct ImageBuffer {
+  VkImage image;
+  VkImageView view;       /// MSAA color attachment view
+  VkDeviceMemory memory;
 }
 
 void createColorResources(ref App app) {
-  app.createOffscreenHDRImage();
-  app.createResolvedHDRImage();
+  app.createHDRImage(app.offscreenHDR, app.getMSAASamples(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+  app.createHDRImage(app.resolvedHDR, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 }
 
 void writeHDRSampler(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
-  imageInfos ~= VkDescriptorImageInfo( // Assign directly to the single info struct
-      imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-      imageView: app.resolvedHDR.colorImageView, // Use the shadow map's image view
-      sampler: app.sampler     // Use the shadow map's sampler
+imageInfos ~= VkDescriptorImageInfo(
+    imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    imageView: app.resolvedHDR.view,
+    sampler: app.sampler
   );
 
   VkWriteDescriptorSet set = {
@@ -38,7 +39,7 @@ void writeHDRSampler(App app, ref VkWriteDescriptorSet[] write, Descriptor descr
     descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
     descriptorCount: cast(uint)1,
     pImageInfo: &imageInfos[($-1)]
-  }; 
+  };
   write ~= set;
 }
 
@@ -49,11 +50,7 @@ void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceM
                  VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
                  VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
 
-  VkExtent3D extent = {
-    width: width,
-    height: height,
-    depth: 1,
-  };
+  VkExtent3D extent = { width: width, height: height, depth: 1 };
 
   VkImageCreateInfo imageInfo = {
     sType: VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -69,7 +66,6 @@ void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceM
     samples: samples,
     flags: 0
   };
-  
   enforceVK(vkCreateImage(app.device, &imageInfo, null, image));
 
   VkMemoryRequirements memoryRequirements;
