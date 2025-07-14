@@ -225,21 +225,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
 
   auto stages = createStageInfo(app.shadows.shaders);
 
-  VkVertexInputBindingDescription[] bindingDescription = [
-    {binding: VERTEX, stride: cast(uint) Vertex.sizeof, inputRate: VK_VERTEX_INPUT_RATE_VERTEX },
-    {binding: INSTANCE, stride: Instance.sizeof, inputRate: VK_VERTEX_INPUT_RATE_INSTANCE }
-  ];
-
-  VkVertexInputAttributeDescription[]  attributeDescriptions= [ 
-    {binding: VERTEX, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.position.offsetof },
-    {binding: VERTEX, location: 1, format: VK_FORMAT_R32G32B32A32_UINT, offset: Vertex.bones.offsetof },
-    {binding: VERTEX, location: 2, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
-
-    {binding: INSTANCE, location: 3, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof },
-    {binding: INSTANCE, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 4 * float.sizeof },
-    {binding: INSTANCE, location: 5, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 8 * float.sizeof },
-    {binding: INSTANCE, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 12 * float.sizeof }
-  ];
+  VkVertexInputBindingDescription[2] bindingDescription = Vertex.getBindingDescription();
+  VkVertexInputAttributeDescription[7]  attributeDescriptions= Vertex.getShadowDescriptions();
 
   VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -277,13 +264,11 @@ void createShadowMapGraphicsPipeline(ref App app) {
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
     depthBiasConstantFactor: 1.25f,
-    depthBiasClamp: 0.0f,
     depthBiasSlopeFactor: 1.75f
   };
 
   VkPipelineMultisampleStateCreateInfo multisampling = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-    sampleShadingEnable: VK_FALSE,
     rasterizationSamples: VK_SAMPLE_COUNT_1_BIT
   };
 
@@ -291,9 +276,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
     depthTestEnable: VK_TRUE,
     depthWriteEnable: VK_TRUE,
-    depthCompareOp: VK_COMPARE_OP_LESS_OR_EQUAL,
-    depthBoundsTestEnable: VK_FALSE,
-    stencilTestEnable: VK_FALSE
+    depthCompareOp: VK_COMPARE_OP_LESS_OR_EQUAL
   };
 
   VkGraphicsPipelineCreateInfo pipelineInfo = {
@@ -333,7 +316,6 @@ void computeLightSpace(ref App app, ref Light light){
   float nearPlane = 0.1f;
   float farPlane = 100.0f;
   Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
-  //SDL_Log(toStringz(format("%s, %s", lightProjection, lightView)));
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
 }
 
@@ -389,7 +371,6 @@ void createShadowMapCommandBuffers(ref App app) {
   enforceVK(vkAllocateCommandBuffers(app.device, &allocInfo, &app.shadowBuffers[0]));
   if(app.verbose) SDL_Log(" - shadow map command buffers allocated.");
 
-  // Add to main deletion queue for cleanup
   app.frameDeletionQueue.add((){
     vkFreeCommandBuffers(app.device, app.commandPool, cast(uint)app.shadowBuffers.length, &app.shadowBuffers[0]);
   });
