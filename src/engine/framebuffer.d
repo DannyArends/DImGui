@@ -5,8 +5,7 @@
 
 import engine;
 
-import devices : getMSAASamples;
-import images : createImage;
+import images : createImage, ImageBuffer;
 import swapchain : createImageView;
 
 struct FrameBuffer {
@@ -15,35 +14,18 @@ struct FrameBuffer {
   VkFramebuffer[] imgui;
 }
 
-/** Function to create an offscreen HDR color image and its view (MSAA if enabled)
+/** Function to create an HDR color image and its view (MSAA if enabled)
  */
-void createOffscreenHDRImage(ref App app) {
+void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits flag, VkMemoryPropertyFlags properties) {
   if(app.verbose) SDL_Log("Creating Offscreen HDR Image");
 
-  app.createImage(app.camera.width, app.camera.height, &app.offscreenHDR.colorImage, &app.offscreenHDR.colorImageMemory,
-                  app.colorFormat, app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
-                  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-  app.offscreenHDR.colorImageView = app.createImageView(app.offscreenHDR.colorImage, app.colorFormat, 1);
-  app.frameDeletionQueue.add((){ 
-    vkFreeMemory(app.device, app.offscreenHDR.colorImageMemory, app.allocator);
-    vkDestroyImageView(app.device, app.offscreenHDR.colorImageView, app.allocator);
-    vkDestroyImage(app.device, app.offscreenHDR.colorImage, app.allocator);
-  });
-}
+  app.createImage(app.camera.width, app.camera.height, &buffer.image, &buffer.memory, app.colorFormat, flag, VK_IMAGE_TILING_OPTIMAL, properties);
+  buffer.view = app.createImageView(buffer.image, app.colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
-/** Function to create the resolved HDR image (non-MSAA, will be sampled by post-process)
- */
-void createResolvedHDRImage(ref App app) {
-  if(app.verbose) SDL_Log("Creating Resolved HDR Image");
-  
-  app.createImage(app.camera.width, app.camera.height, &app.resolvedHDR.colorImage, &app.resolvedHDR.colorImageMemory,
-                  app.colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
-                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-  app.resolvedHDR.colorImageView = app.createImageView(app.resolvedHDR.colorImage, app.colorFormat, 1);
-  app.frameDeletionQueue.add((){ 
-    vkFreeMemory(app.device, app.resolvedHDR.colorImageMemory, app.allocator);
-    vkDestroyImageView(app.device, app.resolvedHDR.colorImageView, app.allocator);
-    vkDestroyImage(app.device, app.resolvedHDR.colorImage, app.allocator);
+  app.frameDeletionQueue.add((){
+    vkFreeMemory(app.device, buffer.memory, app.allocator);
+    vkDestroyImageView(app.device, buffer.view, app.allocator);
+    vkDestroyImage(app.device, buffer.image, app.allocator);
   });
 }
 
@@ -62,9 +44,9 @@ void createFramebuffers(ref App app) {
     // 1. Framebuffers for the MAIN SCENE RENDER PASS (renders to offscreen HDR)
     if(app.verbose) SDL_Log("Framebuffer - MAIN SCENE RENDER");
     VkImageView[] sceneAttachments = [
-        app.offscreenHDR.colorImageView,    // 0: MSAA HDR Color buffer
-        app.resolvedHDR.colorImageView,     // 1: Resolved single-sample HDR Color buffer
-        app.depthBuffer.depthImageView      // 2: Depth buffer
+        app.offscreenHDR.view,    // 0: MSAA HDR Color buffer
+        app.resolvedHDR.view,     // 1: Resolved single-sample HDR Color buffer
+        app.depthBuffer.view      // 2: Depth buffer
     ];
 
     VkFramebufferCreateInfo sceneFramebufferInfo  = {

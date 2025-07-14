@@ -10,7 +10,7 @@ import core.time : dur;
 import io : dir;
 import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
-import images : imageSize, createImage, transitionImageLayout;
+import images : ImageBuffer, imageSize, createImage, transitionImageLayout;
 import swapchain : createImageView;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import validation : nameVulkanObject;
@@ -22,13 +22,11 @@ struct Texture {
   SDL_Surface* surface;
 
   VkDescriptorSet imID;
-  VkImage image;
-  VkImageView view;
-  VkDeviceMemory memory;
+  ImageBuffer buffer;
 
   bool dirty = true;
   int syncIndex = -1;
-  alias surface this;
+  alias buffer this;
 }
 
 // Convert an SDL-Surface to RGBA32 format
