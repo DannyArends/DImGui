@@ -53,7 +53,8 @@ void querySurfaceFormats(ref App app) {
 bool queryDeviceFormats(ref App app, VkFormat requested = VK_FORMAT_R16G16B16A16_SFLOAT) {
   VkFormatProperties formatProperties;
   vkGetPhysicalDeviceFormatProperties(app.physicalDevice, requested, &formatProperties);
-  if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) {
+  if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
+      formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT) {
     return(true);
   }
   return(false);

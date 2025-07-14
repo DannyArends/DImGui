@@ -52,7 +52,6 @@ void writeTextureSampler(ref App app, ref VkWriteDescriptorSet[] write, Descript
       sampler: app.sampler
     };
     imageInfos ~= textureImage;
-    app.textures[i].dirty = false;
   }
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
