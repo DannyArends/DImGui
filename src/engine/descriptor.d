@@ -164,7 +164,7 @@ void createDescriptors(ref App app, Shader[] shaders, const(char)* set = RENDER)
 
 /** Update the DescriptorSet
  */
-void updateDescriptorSet(ref App app, Shader[] shaders, ref VkDescriptorSet[] dstSet, uint syncIndex = 0) {
+void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet, uint syncIndex = 0) {
   if(app.trace) SDL_Log("updateDescriptorSet");
   VkWriteDescriptorSet[] descriptorWrites;  // DescriptorSet write commands
   VkDescriptorBufferInfo[] bufferInfos;     // Buffer information for this update
