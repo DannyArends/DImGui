@@ -171,14 +171,14 @@ struct App {
   bool isMinimized = false;                                                     /// isMinimized?
 
   // Properties based on the SwapChain
-  @property uint imageCount() { return(cast(uint)swapChainImages.length); }
-  @property bool trace() { return(verbose > 1); }
-  @property uint framesInFlight() { return(cast(uint)swapChainImages.length + 1); }
+  @property pure @nogc uint imageCount() nothrow { return(cast(uint)swapChainImages.length); }
+  @property pure @nogc bool trace() nothrow { return(verbose > 1); }
+  @property pure @nogc uint framesInFlight() nothrow { return(cast(uint)swapChainImages.length + 1); }
 }
 
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance
  */
-void cleanUp(App app){
+void cleanUp(App app) {
   if(app.verbose) SDL_Log("Save ImGui Settings");
   saveSettings();
 
@@ -210,7 +210,7 @@ extern(C) void enforceVK(VkResult err) {
   if (err < 0) abort();
 }
 
-void enforceSPIRV(App app, spvc_result err){
+void enforceSPIRV(App app, spvc_result err) {
   if(err == SPVC_SUCCESS) return;
   SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));
   abort();
