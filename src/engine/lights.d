@@ -3,9 +3,10 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import includes;
+import engine;
 
-import matrix : Matrix;
+import matrix : Matrix, orthogonal, perspective, multiply, lookAt;
+import vector : normalize, vAdd;
 
 struct Light {
   Matrix lightSpaceMatrix;
@@ -22,4 +23,22 @@ enum Lights : Light {
   Blue   = Light(Matrix.init, [ 0.0f, 10.0f, -3.5f, 1.0f], [ 2.5f, 0.0f, 15.0f, 1.0f], [ 0.5f,  -2.0f,  1.5f, 0.0f], [0.0f, 0.001f, 40.0f, 0.0f]),
   Bright = Light(Matrix.init, [-0.5f,  4.0f,  1.0f, 1.0f], [ 1.0f, 1.0f,  1.0f, 1.0f], [ 0.1f,  -1.0f,  0.1f, 0.0f], [0.0f, 0.001f, 75.0f, 0.0f])
 };
+
+/** 
+ * Compute lightspace for the provided light
+ */
+void computeLightSpace(const App app, ref Light light){
+  float[3] lightPos = light.position[0 .. 3];
+  float[3] lightDir = light.direction[0 .. 3].normalize();
+  float[3] lightTarget = lightPos.vAdd(lightDir);
+  float[3] upVector = [0.0f, 1.0f, 0.0f];
+
+  Matrix lightView = lookAt(lightPos, lightTarget, upVector);
+
+  float fovY = (2 * light.properties[2]);
+  float nearPlane = 0.1f;
+  float farPlane = 100.0f;
+  Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
+  light.lightSpaceMatrix = lightProjection.multiply(lightView);
+}
 

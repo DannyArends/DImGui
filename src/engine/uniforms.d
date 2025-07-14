@@ -10,7 +10,7 @@ import quaternion : xyzw;
 import descriptor : Descriptor;
 import buffer : createBuffer;
 import matrix : mat4, rotate, lookAt, perspective;
-import shadowmap : computeLightSpace;
+import lights : computeLightSpace;
 
 struct UniformBufferObject {
   float[4] position;
