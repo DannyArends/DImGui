@@ -101,7 +101,7 @@ void updateTextures(ref App app) {
       } // else:  // Dirty and in the process of update
     }
   }
-  if(needsUpdate){ SDL_Log("Texture Loaded A-sync, updating");
+  if(needsUpdate) { if(app.verbose) SDL_Log("Texture Loaded A-sync, updating");
     app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex);
   }
 }
