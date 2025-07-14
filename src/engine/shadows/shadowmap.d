@@ -8,8 +8,8 @@ import engine;
 import color : Colors;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, transitionImageLayout;
-import lights : Light;
-import matrix : Matrix, orthogonal, perspective, multiply, lookAt;
+import lights : Light, computeLightSpace;
+import matrix : Matrix;
 import pipeline : GraphicsPipeline;
 import geometry : shadow, Instance;
 import reflection : reflectShaders, createResources;
@@ -18,7 +18,6 @@ import ssbo : updateSSBO;
 import shaders : Shader, createStageInfo, createShaderModule;
 import swapchain : createImageView;
 import validation : pushLabel, popLabel;
-import vector : normalize, vAdd;
 import vertex : Vertex, VERTEX, INSTANCE;
 
 struct ShadowMap {
@@ -284,21 +283,6 @@ void createShadowMapGraphicsPipeline(ref App app) {
   });
 }
 
-void computeLightSpace(ref App app, ref Light light){
-  float[3] lightPos = light.position[0 .. 3];
-  float[3] lightDir = light.direction[0 .. 3].normalize();
-  float[3] lightTarget = lightPos.vAdd(lightDir);
-  float[3] upVector = [0.0f, 1.0f, 0.0f];
-
-  Matrix lightView = lookAt(lightPos, lightTarget, upVector);
-
-  float fovY = (2 * light.properties[2]);
-  float nearPlane = 0.1f;
-  float farPlane = 100.0f;
-  Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
-  light.lightSpaceMatrix = lightProjection.multiply(lightView);
-}
-
 void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
   LightUbo ubo = {
     scene : Matrix.init,
@@ -313,7 +297,7 @@ void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
       }
     }
   }
-  if(app.verbose) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
+  if(app.trace) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
 }
 
 void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
