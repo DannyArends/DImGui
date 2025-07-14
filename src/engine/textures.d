@@ -5,6 +5,8 @@
 
 import engine;
 
+import core.time : dur;
+
 import io : dir;
 import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
@@ -25,6 +27,7 @@ struct Texture {
   VkDeviceMemory memory;
 
   bool dirty = true;
+  int syncIndex = -1;
   alias surface this;
 }
 
@@ -79,19 +82,27 @@ void loadTextures(ref App app, const(char)* folder = "data/textures/", string pa
   new Thread({
     if(app.verbose) SDL_Log("Loading textures under %p", Thread.getThis());
     app.createFontTexture();
-    foreach(i, file; files) { app.loadTexture(file, cast(uint)i); }
+    foreach(i, file; files) { app.loadTexture(file, cast(uint)i); /*Thread.sleep(dur!("msecs")( 150 )); */ }
   }).start();
 }
 
 void updateTextures(ref App app) {
   bool needsUpdate = false;
   for(uint i = 0; i < app.textures.length; i++) { 
-    if(app.textures[i].dirty){ needsUpdate = true; break; }
+    if(app.textures[i].dirty) {
+      needsUpdate = true;
+      if(app.textures[i].syncIndex == app.syncIndex) {
+        // We are round, we updated all the descriptors for each Frame in Flight
+        app.textures[i].dirty = false;
+        app.textures[i].syncIndex = -1;
+        needsUpdate = false;
+      } else if(app.textures[i].syncIndex == -1) { // Dirty and not in the process of update
+        app.textures[i].syncIndex = app.syncIndex;
+      } // else:  // Dirty and in the process of update
+    }
   }
   if(needsUpdate){ SDL_Log("Texture Loaded A-sync, updating");
-    for (uint i = 0; i < app.framesInFlight; i++) {
-      app.updateDescriptorSet(app.shaders, app.sets[RENDER], i);    /// Updated each frame, since we're loading textures a-sync
-    }
+    app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex);
   }
 }
 
