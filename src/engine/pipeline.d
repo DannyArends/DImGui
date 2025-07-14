@@ -21,7 +21,7 @@ struct GraphicsPipeline {
 void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
   app.pipelines[topology] = GraphicsPipeline();
   auto bindingDescription = Vertex.getBindingDescription();
-  auto attributeDescriptions = Vertex.getAttributeDescriptions();
+  auto attributeDescriptions = Vertex.getRenderDescriptions();
 
   // Vertex input
   VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
