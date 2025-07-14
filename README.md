@@ -30,7 +30,7 @@ Linux, you'll find the relevant guide in [cross-compilation.md](./docs/cross-com
 
 ### Build with 🛠️
 
-DImGui is made possible by, and has the following dependencies on, excellent software:
+DImGui is made possible by, and has dependencies on, the following excellent software:
 
 - [D Programming Language](https://dlang.org/)
 - [Android Studio](https://developer.android.com/studio)
