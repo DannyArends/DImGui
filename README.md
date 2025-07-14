@@ -1,5 +1,5 @@
 ## DImGui ✨
-![Screenshot](/app/src/main/assets/data/screenshots/Juli10_2025.png? "Screenshot")
+![Screenshot](/app/src/main/assets/data/screenshots/July14_2025.png? "Screenshot")
 
 Another 3D renderer developed in the D Programming Language, designed for cross-platform compatibility 
 across Windows, Linux, and Android. The core "engine" is inspired by the excellent vulkan-tutorial.com, 
@@ -10,7 +10,7 @@ and leverages SDL2 for robust cross-platform support.
 The engine boasts the following features:
 - Basic geometries (cube, cone, torus, etc.) and complex 3D objects (FBX, glTF, 3DS, etc.)
 - Skeletal and key-frame animations
-- Lighting engine & normal mapping
+- HDR Lighting Engine, Shadows & Normal mapping
 - Compute shaders for particle engines and texture generation
 - Shader reflection for UBOs, SSBOs, and textures
 - Instanced rendering of objects

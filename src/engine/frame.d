@@ -100,7 +100,7 @@ void renderFrame(ref App app){
 
 void presentFrame(ref App app) {
   if(app.trace) SDL_Log("presentFrame");
-//  if(app.rebuild) return;
+  if(app.rebuild) return;
   VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
   VkPresentInfoKHR info = {
     sType : VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
