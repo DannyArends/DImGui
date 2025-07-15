@@ -5,7 +5,10 @@
 
 import engine;
 
+import descriptor : Descriptor;
 import matrix : Matrix, orthogonal, perspective, multiply, lookAt;
+import sdl : STARTUP;
+import ssbo : updateSSBO;
 import vector : normalize, vAdd;
 
 struct Light {
@@ -24,8 +27,12 @@ enum Lights : Light {
   Bright = Light(Matrix.init, [-0.5f,  4.0f,  1.0f, 1.0f], [ 1.0f, 1.0f,  1.0f, 1.0f], [ 0.1f,  -1.0f,  0.1f, 0.0f], [0.0f, 0.001f, 75.0f, 0.0f])
 };
 
-/** 
- * Compute lightspace for the provided light
+struct Lighting {
+  Light[] lights;
+  alias lights this;
+}
+
+/** Compute lightspace for the provided light
  */
 void computeLightSpace(const App app, ref Light light){
   float[3] lightPos = light.position[0 .. 3];
@@ -42,3 +49,17 @@ void computeLightSpace(const App app, ref Light light){
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
 }
 
+/** Transfer the lighting into the SSBO for buffer
+ */
+void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor){
+  if (app.disco) {
+    auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000f;
+    app.lights[1].direction[0] = sin(2 * t);
+    app.lights[1].direction[2] = tan(2 * t);
+    app.lights[2].direction[0] = cos(2 * t);
+    app.lights[2].direction[2] = atan(2 * t);
+    app.lights[3].direction[0] = tan(t);
+  }
+  foreach(ref light; app.lights) { app.computeLightSpace(light); }
+  app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
+}
