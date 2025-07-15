@@ -8,12 +8,11 @@ import engine;
 import color : Colors;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, transitionImageLayout;
-import lights : Light, computeLightSpace;
+import lights : updateLighting;
 import matrix : Matrix;
 import pipeline : GraphicsPipeline;
 import geometry : shadow, Instance;
 import reflection : reflectShaders, createResources;
-import sdl : STARTUP;
 import ssbo : updateSSBO;
 import shaders : Shader, createStageInfo, createShaderModule;
 import swapchain : createImageView;
@@ -362,16 +361,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
           app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], app.boneOffsets, shader.descriptors[d], syncIndex);
         }
         if(SDL_strstr(shader.descriptors[d].base, "LightMatrices") != null) {
-          if (app.disco) {
-            auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000f;
-            app.lights[1].direction[0] = sin(2 * t);
-            app.lights[1].direction[2] = tan(2 * t);
-            app.lights[2].direction[0] = cos(2 * t);
-            app.lights[2].direction[2] = atan(2 * t);
-            app.lights[3].direction[0] = tan(t);
-          }
-          foreach(ref light; app.lights){ app.computeLightSpace(light); }
-          app.updateSSBO!Light(app.shadowBuffers[syncIndex], app.lights, shader.descriptors[d], syncIndex);
+          app.updateLighting(app.shadowBuffers[app.syncIndex], shader.descriptors[d]);
         }
       }
     }

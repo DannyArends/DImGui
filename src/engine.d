@@ -34,8 +34,9 @@ import glyphatlas : GlyphAtlas;
 import geometry : Geometry, cleanup;
 import images : ImageBuffer;
 import imgui : GUI, saveSettings;
-import lights : Light, Lights;
+import lights : Lighting, Lights;
 import matrix : Matrix, multiply, inverse;
+import mesh : Mesh;
 import node : Node;
 import pipeline : GraphicsPipeline;
 import shaders : Shader, IncluderContext;
@@ -76,12 +77,13 @@ struct App {
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
-  Matrix[] boneOffsets;                                                         /// Current Animated BoneOffsets
+  Matrix[] boneOffsets;                                                         /// Animated BoneOffsets for GPU SSBO
+  Mesh[] meshInfo;                                                              /// Meshes for GPU SSBO
   Texture[] textures;                                                           /// Textures
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[const(char)*] buffers;                                                   /// SSBO buffers
   UBO[const(char)*] ubos;                                                       /// UBO buffers
-  Light[] lights = [Lights.White, Lights.Red, Lights.Green, Lights.Blue, Lights.Bright];                   /// Scene lighting
+  Lighting lights = {[Lights.White, Lights.Red, Lights.Green, Lights.Blue, Lights.Bright]};                   /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering

@@ -55,9 +55,7 @@ void nameVulkanObject(T)(ref App app, T object, const(char)* name, VkObjectType 
 void pushLabel(T)(T object, const(char)* name, Colors color = Colors.lightslategrey) {
   VkDebugUtilsLabelEXT labelInfo = {
     sType: VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-    pNext: null,
-    pLabelName: name,
-    color: color
+    pLabelName: name, color: color
   };
   if(vkCmdBeginDebugUtilsLabel) vkCmdBeginDebugUtilsLabel(object, &labelInfo);
 }

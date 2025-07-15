@@ -19,17 +19,16 @@ struct Mesh {
   int oid = -1;               /// Mesh OPACITY ID
 }
 
-Mesh[] getMeshes(ref App app) {
-  Mesh[] meshes;
+void updateMeshInfo(ref App app) {
+  app.meshInfo.length = 0;
   for (size_t o = 0; o < app.objects.length; o++) {
     uint size = cast(uint)app.objects[o].meshes.array.length;
     for (size_t i = 0; i < app.objects[o].instances.length; i++) {  // Load faces to indices
-      app.objects[o].instances[i].meshdef = [cast(uint)meshes.length, cast(uint)meshes.length + size];
+      app.objects[o].instances[i].meshdef = [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size];
       app.objects[o].buffers[INSTANCE] = false;
     }
-    meshes ~= app.objects[o].meshes.array;
+    app.meshInfo ~= app.objects[o].meshes.array;
   }
-  return(meshes);
 }
 
 string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform) {
