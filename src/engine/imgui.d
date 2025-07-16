@@ -8,7 +8,7 @@ import engine;
 import color : Colors;
 import devices : getMSAASamples;
 import geometry : Geometry, position, scale, rotate;
-import io : isfile, readFile, writeFile;
+import io : dir, isdir, isfile, readFile, writeFile;
 import lights : Light;
 import sfx : play;
 import textures : findTextureSlot;
@@ -28,6 +28,7 @@ struct GUI {
   bool showSFX = false;
   bool showShaders = false;
   bool showTexture = false;
+  bool showDirectory = false;
 
   uint size = 1;
   float scaleF = 1.0f;
@@ -242,6 +243,33 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
       igImage(cast(ImTextureID)texture.imID, ImVec2(100, min(100, cast(uint)(100 * ratio))), ImVec2(0, 0), ImVec2(1, 1));
     }
     igEndTable();
+    igEnd();
+  }else { igEnd(); }
+  igPopFont();
+}
+
+void listDirContent(const(char)* path) {
+  auto content = dir(path);
+  foreach(elem; content) {
+    auto ptr = toStringz(format("%s/%s", to!string(path), baseName(to!string(elem))));
+    if(ptr.isdir) {
+      auto flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+      bool node_open = igTreeNodeEx_Str(ptr, flags);
+      if (node_open) {
+        listDirContent(ptr);
+        igTreePop();
+      }
+    }else if(ptr.isfile) { // A file, just display as selectable text
+      igText(toStringz(baseName(to!string(elem))));
+      if (igIsItemClicked(ImGuiMouseButton_Left)) { SDL_Log("Clicked: %s", ptr); }
+    }
+  }
+}
+
+void showDirectoryWindow(ref App app, bool* show, const(char)* path =  "data", uint font = 0){
+  igPushFont(app.gui.fonts[font]);
+  if(igBegin("Directory", show, 0)) {
+    listDirContent(path);
     igEnd();
   }else { igEnd(); }
   igPopFont();
@@ -512,6 +540,7 @@ void showMenu(ref App app, uint font = 0) {
       if(igMenuItem_Bool("Settings".toStringz,null, false, true)) { app.gui.showSettings = !app.gui.showSettings; }
       if(igMenuItem_Bool("Lights".toStringz,null, false, true)) { app.gui.showLights = !app.gui.showLights; }
       if(igMenuItem_Bool("Textures".toStringz,null, false, true)) {  app.gui.showTexture = !app.gui.showTexture; }
+      if(igMenuItem_Bool("Directory".toStringz,null, false, true)) {  app.gui.showDirectory = !app.gui.showDirectory; }
       igEndMenu();
     }
     igEndMainMenuBar();
@@ -538,6 +567,7 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showSettings) app.showSettingswindow(&app.gui.showSettings, font);
   if(app.gui.showLights) app.showLightswindow(&app.gui.showLights, font);
   if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture, font);
+  if(app.gui.showDirectory) app.showDirectoryWindow(&app.gui.showDirectory, "data", font);
 
   igRender();
   return(igGetDrawData());
