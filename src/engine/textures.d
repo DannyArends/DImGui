@@ -89,8 +89,7 @@ void updateTextures(ref App app) {
   for(uint i = 0; i < app.textures.length; i++) { 
     if(app.textures[i].dirty) {
       needsUpdate = true;
-      if(app.textures[i].syncIndex == app.syncIndex) {
-        // We are round, we updated all the descriptors for each Frame in Flight
+      if(app.textures[i].syncIndex == app.syncIndex) { // We are round, we updated all the descriptors for each Frame in Flight
         app.textures[i].dirty = false;
         app.textures[i].syncIndex = -1;
         needsUpdate = false;

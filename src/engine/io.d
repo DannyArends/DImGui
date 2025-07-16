@@ -56,7 +56,7 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   if(verbose) SDL_Log("writeFile: wrote %d bytes\n", writeTotal);
 }
 
-version(Android) { 
+version(Android) {
   // SDL does not provide the ability to scan folders, and on android we need to use the jni
   // dir() is the wrapper function provided
   immutable(char)*[] dir(const(char)* path, string pattern = "*", bool shallow = true) { 
@@ -100,7 +100,7 @@ version(Android) {
   }
 
   // We shim ontop of our listDir some functions on Android
-  bool isDir(const(char)* path){ return(dirExists(path)); }
+  bool isdir(const(char)* path){ return(dirExists(path)); }
   bool dirExists(const(char)* path){ return(listDirContent(path).length > 0); }
 
   // isFile uses SDL on Android
@@ -121,7 +121,7 @@ version(Android) {
     string path = format("app/src/main/assets/%s", fromStringz(dirPath));
     auto mode = SpanMode.shallow;
     if(!shallow) mode = SpanMode.depth;
-    auto entries = dirEntries(path, pattern, mode).filter!(a => a.isFile).map!(a => a.name.toStringz).array;
+    auto entries = dirEntries(path, pattern, mode).map!(a => a.name.toStringz).array;
     return(entries);
   }
 
@@ -130,8 +130,18 @@ version(Android) {
   bool isfile(const(char)* filePath) {
     string path = format("app/src/main/assets/%s", fromStringz(filePath));
     try {
-      if (path.exists() || path.isFile) return(true);
+      if (path.exists() && path.isFile) return(true);
     } catch (Exception e) { SDL_Log("path %s was not a file", path.ptr); }
+    return(false);
+  }
+
+  /** Helper function to determine if a path is a file
+   */
+  bool isdir(const(char)* filePath) {
+    string path = format("app/src/main/assets/%s", fromStringz(filePath));
+    try {
+      if (path.exists() && path.isDir) return(true);
+    } catch (Exception e) { SDL_Log("path %s was not a directory", path.ptr); }
     return(false);
   }
 }
