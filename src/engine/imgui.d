@@ -8,7 +8,7 @@ import engine;
 import color : Colors;
 import devices : getMSAASamples;
 import geometry : Geometry, position, scale, rotate;
-import io : dir, isdir, isfile, readFile, writeFile;
+import io : dir, isdir, isfile, readFile, writeFile, fsize;
 import lights : Light;
 import sfx : play;
 import textures : findTextureSlot;
@@ -248,6 +248,12 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+ImVec2 textSize(const(char)* txt) {
+  ImVec2 textSize; 
+  igCalcTextSize(&textSize, txt, null, false, -1.0f);
+  return(textSize);
+}
+
 void listDirContent(const(char)* path) {
   auto content = dir(path);
   foreach(elem; content) {
@@ -260,8 +266,11 @@ void listDirContent(const(char)* path) {
         igTreePop();
       }
     }else if(ptr.isfile) { // A file, just display as selectable text
-      igText(toStringz(baseName(to!string(elem))));
-      if (igIsItemClicked(ImGuiMouseButton_Left)) { SDL_Log("Clicked: %s", ptr); }
+      ImVec2 size;
+      if(igSelectable_Bool(toStringz(baseName(to!string(elem))), false, 0, size)){ SDL_Log("Clicked: %s", ptr); }
+      auto txt = toStringz(format("%.2fkb", fsize(ptr) / 1024.0f));
+      igSameLine((igGetWindowWidth() - textSize(txt).x - 15.0f), 0);
+      igText(txt);
     }
   }
 }
