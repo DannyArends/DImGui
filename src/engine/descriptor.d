@@ -32,20 +32,16 @@ struct DescriptorLayoutBuilder {
   VkDescriptorSetLayoutBinding[] bindings;
 
   void add(uint binding, uint count, VkShaderStageFlags shaderStage, VkDescriptorType type){
-    foreach(ref b; bindings){
-      if(b.binding == binding){
-        b.stageFlags |= shaderStage;
+    foreach(ref b; bindings) { // Check if the binding already exists in another stage
+      if(b.binding == binding) {
+        b.stageFlags |= shaderStage;  // If yes, add the stageflag to the binding
         return;
       }
     }
-    VkDescriptorSetLayoutBinding layout = {
-      binding: binding,
-      stageFlags: shaderStage,
-      descriptorCount: count,
-      descriptorType: type
-    };
+    VkDescriptorSetLayoutBinding layout = { binding: binding, stageFlags: shaderStage, descriptorCount: count, descriptorType: type };
     bindings ~= layout;
   }
+
   void clear(){ bindings = []; }
 
   VkDescriptorSetLayout build(VkDevice device, VkDescriptorSetLayoutCreateFlags flags = 0, void* pNext = null){
@@ -125,7 +121,7 @@ void createDSPool(ref App app, const(char)* poolID, Shader[] shaders) {
   if(SDL_strstr(poolID, COMPUTE) != null){ nShaders = cast(uint)shaders.length; }
   if(app.verbose) SDL_Log("createDSPool by shader: %s, with %d shader size", poolID, nShaders);
   VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(shaders);
-  app.createDSPool(poolID, poolSizes, nShaders * app.framesInFlight); // TODO this should be based on the number of shaders
+  app.createDSPool(poolID, poolSizes, nShaders * app.framesInFlight);
   app.frameDeletionQueue.add((){ 
     vkDestroyDescriptorPool(app.device, app.pools[poolID], app.allocator); 
   });
