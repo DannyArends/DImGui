@@ -35,8 +35,8 @@ struct UBO {
 }
 
 void createUBO(ref App app, Descriptor descriptor) {
-  if(app.verbose) SDL_Log("Create UBO at %s, size = %d", descriptor.base, descriptor.bytes);
-
+  if(app.verbose) SDL_Log("Create UBO at %s, size = %d", toStringz(descriptor.base), descriptor.bytes);
+  if(descriptor.base in app.ubos) return;
   app.ubos[descriptor.base] = UBO();
   app.ubos[descriptor.base].buffer.length = app.framesInFlight;
   app.ubos[descriptor.base].memory.length = app.framesInFlight;
@@ -48,7 +48,7 @@ void createUBO(ref App app, Descriptor descriptor) {
   if(app.verbose) SDL_Log("Created %d UBO of size: %d bytes", app.imageCount, descriptor.bytes);
 
   app.frameDeletionQueue.add((){
-    if(app.verbose) SDL_Log("Delete Compute UBO at %s", descriptor.base);
+    if(app.verbose) SDL_Log("Delete Compute UBO at %s", toStringz(descriptor.base));
     for(uint i = 0; i < app.framesInFlight; i++) {
       vkUnmapMemory(app.device, app.ubos[descriptor.base].memory[i]);
       vkDestroyBuffer(app.device, app.ubos[descriptor.base].buffer[i], app.allocator);
@@ -80,7 +80,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        if(SDL_strstr(shader.descriptors[d].name, "ubo") != null) {
+        if(shader.descriptors[d].name == "ubo") {
           memcpy(app.ubos[shader.descriptors[d].base].data[syncIndex], &ubo, shader.descriptors[d].bytes);
         }
       }
@@ -89,6 +89,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
 }
 
 void writeUniformBuffer(ref App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, ref VkDescriptorBufferInfo[] bufferInfos, uint syncIndex = 0){
+  if(app.verbose) SDL_Log("writeUniformBuffer");
   bufferInfos ~= VkDescriptorBufferInfo(app.ubos[descriptor.base].buffer[syncIndex], 0, descriptor.bytes);
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

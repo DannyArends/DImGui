@@ -6,7 +6,7 @@
 import engine;
 
 import color : Colors;
-import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
+import descriptor : Descriptor, getDescriptors, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, deAllocate, transitionImageLayout;
 import lights : updateLighting;
 import matrix : Matrix;
@@ -232,6 +232,7 @@ void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
 }
 
 void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
+  if(app.verbose) SDL_Log("writeShadowMap");
   size_t startIndex = imageInfos.length;
 
   for (size_t i = 0; i < app.lights.length; i++) {
@@ -262,23 +263,19 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   };
   enforceVK(vkBeginCommandBuffer(app.shadowBuffers[app.syncIndex], &beginInfo));
 
-  if(app.verbose) SDL_Log("Beginning shadow map render pass");
+  if(app.trace) SDL_Log("Beginning shadow map render pass");
 
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
 
   pushLabel(app.shadowBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
 
-  foreach(shader; app.shadows.shaders){
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) { 
-          app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], app.boneOffsets, shader.descriptors[d], syncIndex);
-        }
-        if(SDL_strstr(shader.descriptors[d].base, "LightMatrices") != null) {
-          app.updateLighting(app.shadowBuffers[app.syncIndex], shader.descriptors[d]);
-        }
-      }
-    }
+  auto descriptors = app.shadows.shaders.getDescriptors(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+  if("BoneMatrices" in descriptors) {
+    app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], app.boneOffsets, descriptors["BoneMatrices"], syncIndex);
+  }
+  if("LightMatrices" in descriptors) {
+    app.updateLighting(app.shadowBuffers[app.syncIndex], descriptors["LightMatrices"]);
   }
   popLabel(app.shadowBuffers[app.syncIndex]);
 

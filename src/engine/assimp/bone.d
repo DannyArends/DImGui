@@ -44,7 +44,7 @@ BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBone
   return(weights);
 }
 
-void updateBoneOffsets(App app) {
+void updateBoneOffsets(App app, uint syncIndex) {
   ulong t = SDL_GetTicks() - app.time[STARTUP];
   foreach(ref obj; app.objects) {
     if(obj.animations.length > 0) {
@@ -52,5 +52,6 @@ void updateBoneOffsets(App app) {
       app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT);
     }
   }
+  app.buffers["BoneMatrices"].dirty[syncIndex] = true;
 }
 

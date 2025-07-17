@@ -88,8 +88,8 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     spvc_type_id type_id = list[i].type_id;
     spvc_type_id base_type_id = list[i].base_type_id;
 
-    descr.name      = spvc_compiler_get_name(compiler, list[i].id);
-    descr.base      = spvc_compiler_get_name(compiler, base_type_id);
+    descr.name      = to!string(spvc_compiler_get_name(compiler, list[i].id));
+    descr.base      = to!string(spvc_compiler_get_name(compiler, base_type_id));
     descr.set       = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationDescriptorSet);
     descr.binding   = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationBinding);
 
@@ -139,12 +139,12 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if(SDL_strstr(shaders[s].descriptors[d].base, "BoneMatrices") != null) {
+        if(shaders[s].descriptors[d].base == "BoneMatrices") {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(1024));
           app.boneOffsets.length = 1024;
         }else{
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
-          if(SDL_strstr(shaders[s].descriptors[d].base, "lastFrame") != null) {
+          if(shaders[s].descriptors[d].base == "lastFrame") {
             app.transferToSSBO(shaders[s].descriptors[d]);
           }
         }
@@ -174,7 +174,7 @@ VkDescriptorType convert(spvc_resource_type type) {
   }
 }
 
-const(char)* check(const(char)* inp){ return((strcmp(inp, "")==0?"(none)":inp)); }
+const(char)* check(string inp){ return(toStringz((inp == "")?"(none)":inp)); }
 
 void createReflectionContext(ref App app){
   spvc_result result = spvc_context_create(&app.context);

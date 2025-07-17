@@ -111,7 +111,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
       }
       /* Copy data off the GPU to the CPU */
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
-        if(SDL_strstr(shader.descriptors[d].base, "currentFrame") != null){
+        if(shader.descriptors[d].base == "currentFrame"){
         //  memcpy(&app.compute.system.particles[0], app.buffers[shader.descriptors[d].base].data[syncIndex], shader.descriptors[d].size);
         }
       }
@@ -179,10 +179,10 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
     }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
       nJobs[0] = shader.descriptors[d].nObjects; // Set based on the size of the SSBO and the Object being Send
       size = shader.descriptors[d].size;
-      if(SDL_strstr(shader.descriptors[d].base, "currentFrame") != null) { 
+      if(shader.descriptors[d].base == "currentFrame") { 
         src = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
       }
-      if(SDL_strstr(shader.descriptors[d].base, "lastFrame") != null) { 
+      if(shader.descriptors[d].base == "lastFrame") { 
         dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
       }
     }
