@@ -172,13 +172,13 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
       if(app.trace) SDL_Log("- Descriptor[%d]: '%s' '%s'", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-        if(to!string(shader.descriptors[d].name) == "texureSampler") {
+        if(SDL_strstr(shader.descriptors[d].name, "texureSampler") != null) {
           app.writeTextureSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
-        if(to!string(shader.descriptors[d].name) == "shadowMap"){
+        if(SDL_strstr(shader.descriptors[d].name, "shadowMap") != null){
           app.writeShadowMap(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
-        if(to!string(shader.descriptors[d].name) == "hdrSampler"){
+        if(SDL_strstr(shader.descriptors[d].name, "hdrSampler") != null){
           app.writeHDRSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
       }

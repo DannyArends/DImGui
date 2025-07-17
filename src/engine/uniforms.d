@@ -80,7 +80,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        if(to!string(shader.descriptors[d].name) == "ubo") {
+        if(SDL_strstr(shader.descriptors[d].name, "ubo") != null) {
           memcpy(app.ubos[shader.descriptors[d].base].data[syncIndex], &ubo, shader.descriptors[d].bytes);
         }
       }
