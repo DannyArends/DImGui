@@ -7,7 +7,7 @@ import engine;
 
 import commands : recordRenderCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
-import shadowmap : updateShadowMapUBO, recordShadowCommandBuffer;
+import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
 import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
 import descriptor : updateDescriptorSet, createDescriptors;

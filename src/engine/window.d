@@ -13,7 +13,7 @@ import framebuffer : createFramebuffers;
 import images : createColorResources;
 import pipeline : createGraphicsPipeline, createPostProcessGraphicsPipeline;
 import renderpass : createSceneRenderPass, createPostProcessRenderPass, createImGuiRenderPass;
-import shadowmap : createShadowMapGraphicsPipeline, createShadowMapCommandBuffers, recordShadowCommandBuffer;
+import shadow : createShadowMapGraphicsPipeline, createShadowMapCommandBuffers, recordShadowCommandBuffer;
 import reflection : reflectShaders, createResources;
 import surface : querySurfaceFormats;
 import swapchain : createSwapChain, aquireSwapChainImages;

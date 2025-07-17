@@ -9,7 +9,7 @@ import compute : writeComputeImage;
 import images : writeHDRSampler;
 import sampler : writeTextureSampler;
 import shaders : Shader;
-import shadowmap : writeShadowMap;
+import shadow : writeShadowMap;
 import ssbo : writeSSBO;
 import textures : Texture, idx;
 import uniforms : writeUniformBuffer;

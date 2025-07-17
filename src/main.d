@@ -13,7 +13,7 @@ import events : handleEvents, sdlEventsFilter;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, createFontTexture;
 import scene : createScene;
-import shadowmap : createShadowMap;
+import shadow : createShadowMap;
 import imgui : initializeImGui;
 import instance : createInstance;
 import sdl : initializeSDL, START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
