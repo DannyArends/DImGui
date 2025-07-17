@@ -10,7 +10,7 @@ import core.time : dur;
 import io : dir;
 import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
-import images : ImageBuffer, imageSize, createImage, transitionImageLayout;
+import images : ImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
 import swapchain : createImageView;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import validation : nameVulkanObject;
@@ -181,8 +181,3 @@ void registerTexture(ref App app, ref Texture texture) {
   vkUpdateDescriptorSets(app.device, 1, &descriptorWrites[0], 0, null);
 }
 
-void deAllocate(App app, Texture texture) {
-  vkDestroyImageView(app.device, texture.view, app.allocator);
-  vkDestroyImage(app.device, texture.image, app.allocator);
-  vkFreeMemory(app.device, texture.memory, app.allocator);
-}

@@ -6,8 +6,8 @@
 import engine;
 
 import glyph: Glyph;
-import textures : Texture, deAllocate, toRGBA, toGPU, findTextureSlot;
-import images : createImage, imageSize;
+import textures : Texture, toRGBA, toGPU, findTextureSlot;
+import images : createImage, deAllocate, imageSize;
 import swapchain : createImageView;
 
 /** The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas

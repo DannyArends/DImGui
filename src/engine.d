@@ -115,8 +115,8 @@ struct App {
   VkPhysicalDevice physicalDevice = null;
   VkPhysicalDeviceProperties properties;
   VkDevice device = null;
-  VkQueue queue = null;
-  VkQueue transfer = null;
+  VkQueue queue = null;                                                         /// Render Queue
+  VkQueue transfer = null;                                                      /// Transfer Queue
 
   VkDescriptorPool[const(char)*] pools;                                         /// Descriptor pools (IMGUI, COMPUTE, RENDER)
   VkDescriptorSetLayout[const(char)*] layouts;                                  /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
@@ -138,9 +138,9 @@ struct App {
   VkImageView[] swapChainImageViews = null;
   FrameBuffer framebuffers;
 
-  VkRenderPass imgui = null;
-  VkRenderPass scene = null;
-  VkRenderPass postprocess = null;
+  VkRenderPass imgui = null;                                                    /// ImGui renderpass
+  VkRenderPass scene = null;                                                    /// Main scene renderpass
+  VkRenderPass postprocess = null;                                              /// Post-processing renderpass
 
   VkCommandBuffer[] imguiBuffers = null;
   VkCommandBuffer[] renderBuffers = null;
@@ -184,7 +184,7 @@ void cleanUp(App app) {
   if(app.verbose) SDL_Log("Save ImGui Settings");
   saveSettings();
 
-  if(app.verbose) SDL_Log("Wait idle & frame deletion queue");
+  if(app.verbose) SDL_Log("Wait on device idle & frame deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
 
@@ -193,18 +193,16 @@ void cleanUp(App app) {
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
 
-  if(app.verbose) SDL_Log("Delete objects & main queue");
-  // Delete objects and flush the main deletion queue
+  if(app.verbose) SDL_Log("Delete objects & flush the main deletion queue");
   foreach(object; app.objects) { app.cleanup(object); }
   app.mainDeletionQueue.flush();
 
-  // Clear the ShaderC compiler and Quit SDL
-  if(app.verbose) SDL_Log("Destroy window");
+  if(app.verbose) SDL_Log("Destroying window & quit SDL");
   SDL_DestroyWindow(app);
   SDL_Quit();
 }
 
-/** Check result of vulkan call and print if an error occured
+/** Check result of Vulkan call and print if an error occured
  */
 extern(C) void enforceVK(VkResult err) {
   if (err == VK_SUCCESS) return;
@@ -212,16 +210,11 @@ extern(C) void enforceVK(VkResult err) {
   if (err < 0) abort();
 }
 
+/** Check result of SpirV-Compiler call and print if an error occured
+ */
 void enforceSPIRV(App app, spvc_result err) {
   if(err == SPVC_SUCCESS) return;
   SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));
   abort();
-}
-
-/** Log function to allow SDL_Log to be redirected to a file
- */
-extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) {
-  import std.stdio : writefln;
-  writefln("[%s] %s", SDL_GetTicks(), fromStringz(message));
 }
 

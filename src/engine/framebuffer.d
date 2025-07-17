@@ -5,7 +5,7 @@
 
 import engine;
 
-import images : createImage, ImageBuffer;
+import images : createImage, deAllocate, ImageBuffer;
 import swapchain : createImageView;
 
 struct FrameBuffer {
@@ -22,11 +22,7 @@ void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits f
   app.createImage(app.camera.width, app.camera.height, &buffer.image, &buffer.memory, app.colorFormat, flag, VK_IMAGE_TILING_OPTIMAL, properties);
   buffer.view = app.createImageView(buffer.image, app.colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
-  app.frameDeletionQueue.add((){
-    vkFreeMemory(app.device, buffer.memory, app.allocator);
-    vkDestroyImageView(app.device, buffer.view, app.allocator);
-    vkDestroyImage(app.device, buffer.image, app.allocator);
-  });
+  app.frameDeletionQueue.add((){ app.deAllocate(buffer); });
 }
 
 /** Create framebuffers for Rendering, Post-processing, and ImGui, for each SwapChain ImageView 
