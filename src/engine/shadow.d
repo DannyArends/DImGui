@@ -6,14 +6,12 @@
 import engine;
 
 import color : Colors;
-import descriptor : Descriptor, getDescriptors, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
+import descriptor : Descriptor, updateDescriptorData, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, deAllocate, transitionImageLayout;
-import lights : updateLighting;
 import matrix : Matrix;
 import pipeline : GraphicsPipeline;
 import geometry : shadow, Instance;
 import reflection : reflectShaders, createResources;
-import ssbo : updateSSBO;
 import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
 import validation : pushLabel, popLabel;
@@ -268,15 +266,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
 
   pushLabel(app.shadowBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
-
-  auto descriptors = app.shadows.shaders.getDescriptors(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-  if("BoneMatrices" in descriptors) {
-    app.updateSSBO!Matrix(app.shadowBuffers[syncIndex], app.boneOffsets, descriptors["BoneMatrices"], syncIndex);
-  }
-  if("LightMatrices" in descriptors) {
-    app.updateLighting(app.shadowBuffers[app.syncIndex], descriptors["LightMatrices"]);
-  }
+  app.updateDescriptorData(app.shadows.shaders, app.shadowBuffers, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
   popLabel(app.shadowBuffers[app.syncIndex]);
 
   pushLabel(app.shadowBuffers[app.syncIndex], "Objects Buffering", Colors.lightgray);

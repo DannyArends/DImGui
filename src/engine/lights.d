@@ -53,14 +53,14 @@ void computeLightSpace(const App app, ref Light light){
  */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor){
   if (app.disco) {
-    auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000f;
+    auto t = (SDL_GetTicks() - app.time[STARTUP]) / 5000.0f;
     app.lights[1].direction[0] = sin(2 * t);
     app.lights[1].direction[2] = tan(2 * t);
     app.lights[2].direction[0] = cos(2 * t);
     app.lights[2].direction[2] = atan(2 * t);
     app.lights[3].direction[0] = tan(t);
   }
-  app.buffers[descriptor.base].dirty[] = true;
+  app.buffers[descriptor.base].dirty[] = true;  // TODO: We only need to update lights when they change (imgui)
   foreach(ref light; app.lights) { app.computeLightSpace(light); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }

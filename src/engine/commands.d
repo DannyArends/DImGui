@@ -6,10 +6,7 @@
 import engine;
 
 import color : Colors;
-import descriptor : Descriptor, getDescriptors;
-import matrix : Matrix;
-import lights : updateLighting;
-import mesh : Mesh, updateMeshInfo;
+import descriptor : Descriptor, updateDescriptorData;
 import boundingbox : computeBoundingBox;
 import geometry : draw;
 import shaders : Shader;
@@ -29,18 +26,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
   pushLabel(app.renderBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("SSBO Buffering");
-
-  auto descriptors = shaders.getDescriptors(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-  if("BoneMatrices" in descriptors) {
-    app.updateSSBO!Matrix(app.renderBuffers[syncIndex], app.boneOffsets, descriptors["BoneMatrices"], syncIndex);
-  }
-  if("MeshMatrices" in descriptors) {
-    app.updateSSBO!Mesh(app.renderBuffers[syncIndex], app.meshInfo, descriptors["MeshMatrices"], syncIndex);
-  }
-  if("LightMatrices" in descriptors) {
-    app.updateLighting(app.renderBuffers[app.syncIndex], descriptors["LightMatrices"]);
-  }
+  app.updateDescriptorData(shaders, app.renderBuffers, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
   popLabel(app.renderBuffers[app.syncIndex]);
 
   pushLabel(app.renderBuffers[app.syncIndex], "Objects Buffering", Colors.lightgray);
