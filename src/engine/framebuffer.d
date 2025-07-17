@@ -10,6 +10,7 @@ import swapchain : createImageView;
 
 struct FrameBuffer {
   VkFramebuffer[] scene;
+  VkFramebuffer[] shadow;
   VkFramebuffer[] postprocess;
   VkFramebuffer[] imgui;
 }
@@ -34,6 +35,7 @@ void createFramebuffers(ref App app) {
   // Allocate arrays for all framebuffer types
   app.framebuffers.scene.length = app.imageCount;
   app.framebuffers.postprocess.length = app.imageCount;
+  app.framebuffers.imgui.length = app.imageCount;
   app.framebuffers.imgui.length = app.imageCount;
 
   for (size_t i = 0; i < app.imageCount; i++) {
@@ -87,8 +89,28 @@ void createFramebuffers(ref App app) {
     enforceVK(vkCreateFramebuffer(app.device, &imguiFramebufferInfo, null, &app.framebuffers.imgui[i]));
   }
 
+  if(app.verbose) SDL_Log("Shadow map framebuffer creation for %d lights", app.lights.length);
+  app.framebuffers.shadow.length = app.lights.length;
+
+  for(size_t l = 0; l < app.lights.length; l++) {
+    VkImageView[] attachments = [ app.shadows.images[l].view ];
+
+    VkFramebufferCreateInfo framebufferInfo = {
+      sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+      renderPass: app.shadows.renderPass,
+      attachmentCount: cast(uint)attachments.length,
+      pAttachments: &attachments[0],
+      width: app.shadows.dimension,
+      height: app.shadows.dimension,
+      layers: 1
+    };
+    enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, app.allocator, &app.framebuffers.shadow[l]));
+    if(app.verbose) SDL_Log("Shadow map framebuffer created.");
+  }
+
   if(app.verbose) {
     SDL_Log("%d Scene Framebuffers created", app.framebuffers.scene.length);
+    SDL_Log("%d Shadow Framebuffers created", app.framebuffers.shadow.length);
     SDL_Log("%d Post-Process Framebuffers created", app.framebuffers.postprocess.length);
     SDL_Log("%d ImGui Framebuffers created", app.framebuffers.imgui.length);
   }
@@ -98,6 +120,9 @@ void createFramebuffers(ref App app) {
       vkDestroyFramebuffer(app.device, app.framebuffers.scene[i], app.allocator);
       vkDestroyFramebuffer(app.device, app.framebuffers.postprocess[i], app.allocator);
       vkDestroyFramebuffer(app.device, app.framebuffers.imgui[i], app.allocator);
+    }
+    for(size_t l = 0; l < app.lights.length; l++) {
+      vkDestroyFramebuffer(app.device, app.framebuffers.shadow[l], app.allocator); 
     }
   });
 }

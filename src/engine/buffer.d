@@ -42,7 +42,7 @@ uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPr
 }
 
 @nogc bool hasStencilComponent(VkFormat format) nothrow {
-  return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+  return format == VK_FORMAT_D32_SFLOAT_S8_UINT  || format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D16_UNORM_S8_UINT;
 }
 
 void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDeviceSize size, 
@@ -90,8 +90,7 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuf
     srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
     dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
     buffer : buffer.vb,                                   // Block on this vulkan buffer
-    offset : 0,
-    size : buffer.size                                           // size of the buffer
+    size : buffer.size                                    // size of the buffer
   };
 
   vkCmdPipelineBarrier(

@@ -114,10 +114,10 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   enforceVK(vkEndCommandBuffer(app.renderBuffers[syncIndex]));
 }
 
-void createCommandPools(ref App app){
+void createCommandPools(ref App app) {
   app.commandPool = app.createCommandPool();
   app.transferPool = app.createCommandPool();
-  SDL_Log("createCommandPool[family:%d] queue: %p,  transfer: %p", app.queueFamily, app.commandPool, app.transferPool);
+  if(app.verbose) SDL_Log("createCommandPools[family:%d] Queue: %p, Transfer: %p", app.queueFamily, app.commandPool, app.transferPool);
 }
 
 VkCommandPool createCommandPool(ref App app) {
@@ -150,11 +150,12 @@ VkCommandBuffer[] createCommandBuffer(App app, VkCommandPool commandPool, uint n
   return(commandBuffer);
 }
 
-void createImGuiCommandBuffers(ref App app) { 
-  app.imguiBuffers = app.createCommandBuffer(app.commandPool, app.framesInFlight);
+void createCommandBuffers(ref App app, ref VkCommandBuffer[] dst) { 
+  dst = app.createCommandBuffer(app.commandPool, app.framesInFlight);
+  if(app.trace) SDL_Log("createRenderCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
   app.frameDeletionQueue.add((){
     for (uint i = 0; i < app.framesInFlight; i++) {
-      vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.imguiBuffers[i]);
+      vkFreeCommandBuffers(app.device, app.commandPool, 1, &dst[i]);
     }
   });
 }
@@ -185,13 +186,4 @@ void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer, VkCommand
   vkFreeCommandBuffers(app.device, pool, 1, &commandBuffer);
 }
 
-void createRenderCommandBuffers(ref App app) { 
-  app.renderBuffers = app.createCommandBuffer(app.commandPool, app.framesInFlight);
-  if(app.trace) SDL_Log("createRenderCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
-  app.frameDeletionQueue.add((){
-    for (uint i = 0; i < app.framesInFlight; i++) {
-      vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.renderBuffers[i]);
-    }
-  });
-}
 

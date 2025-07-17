@@ -46,3 +46,4 @@ void createDepthResources(ref App app) {
   if(app.verbose) SDL_Log("Depth resources created");
   app.frameDeletionQueue.add((){ app.deAllocate(app.depthBuffer); });
 }
+
