@@ -7,10 +7,13 @@ import engine;
 
 import compute : writeComputeImage;
 import images : writeHDRSampler;
+import lights : updateLighting;
+import matrix : Matrix;
+import mesh : Mesh;
 import sampler : writeTextureSampler;
 import shaders : Shader;
 import shadow : writeShadowMap;
-import ssbo : writeSSBO;
+import ssbo : writeSSBO, updateSSBO;
 import textures : Texture, idx;
 import uniforms : writeUniformBuffer;
 
@@ -146,14 +149,22 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
   return(set);
 }
 
-Descriptor[string] getDescriptors(Shader[] shaders, VkDescriptorType type) {
+void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, VkDescriptorType type, uint syncIndex) {
   Descriptor[string] elements;
   foreach(shader; shaders){
     for(uint d = 0; d < shader.descriptors.length; d++) {
       if(!(shader.descriptors[d].base in elements)) elements[shader.descriptors[d].base] = shader.descriptors[d];
     }
   }
-  return(elements);
+  if("BoneMatrices" in elements) {
+    app.updateSSBO!Matrix(cmdBuffer[syncIndex], app.boneOffsets, elements["BoneMatrices"], syncIndex);
+  }
+  if("MeshMatrices" in elements) {
+    app.updateSSBO!Mesh(cmdBuffer[syncIndex], app.meshInfo, elements["MeshMatrices"], syncIndex);
+  }
+  if("LightMatrices" in elements) {
+    app.updateLighting(cmdBuffer[app.syncIndex], elements["LightMatrices"]);
+  }
 }
 
 /** Create our DescriptorSet (UBO and Combined image sampler)
