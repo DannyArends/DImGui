@@ -14,7 +14,7 @@ import pipeline : GraphicsPipeline;
 import geometry : shadow, Instance;
 import reflection : reflectShaders, createResources;
 import ssbo : updateSSBO;
-import shaders : Shader, createStageInfo, createShaderModule;
+import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
 import validation : pushLabel, popLabel;
 import vertex : Vertex, VERTEX, INSTANCE;
@@ -38,7 +38,7 @@ struct LightUbo {
 void createShadowMap(ref App app) {
   app.createShadowMapResources();
   app.createShadowMapRenderPass();
-  app.createShadowShader();
+  app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
 /** 
@@ -111,20 +111,6 @@ void createShadowMapRenderPass(ref App app) {
   if(app.verbose) SDL_Log("Shadow map render pass created.");
 
   app.mainDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.shadows.renderPass, app.allocator); });
-}
-
-/** Load vertex shadow shader
- */
-void createShadowShader(ref App app, const(char)* vertPath = "data/shaders/shadow.glsl") {
-  auto vShader = app.createShaderModule(vertPath, shaderc_glsl_vertex_shader);
-
-  app.shadows.shaders = [ vShader ];
-
-  app.mainDeletionQueue.add(() {
-    for(uint i = 0; i < app.shadows.shaders.length; i++) {
-      vkDestroyShaderModule(app.device, app.shadows.shaders[i], app.allocator);
-    }
-  });
 }
 
 /** Create the shadow mapping pipeline

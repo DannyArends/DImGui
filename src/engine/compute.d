@@ -14,7 +14,7 @@ import particlesystem : ParticleSystem;
 import pipeline : GraphicsPipeline;
 import reflection : createResources;
 import swapchain : createImageView;
-import shaders : Shader, createShaderModule;
+import shaders : Shader, ShaderDef, loadShaders;
 import ssbo : SSBO, updateSSBO;
 import sync : insertWriteBarrier, insertReadBarrier;
 import textures : Texture, idx, registerTexture, findTextureSlot;
@@ -33,19 +33,14 @@ struct Compute {
   GraphicsPipeline[const(char)*] pipelines;   /// Pipelines
 }
 
+ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_glsl_compute_shader), 
+                              ShaderDef("data/shaders/particle.glsl", shaderc_glsl_compute_shader)];
+
 /** Load shader modules for compute
  */
-void createComputeShaders(ref App app, const(char)*[] computePaths = ["data/shaders/texture.glsl", "data/shaders/particle.glsl"]) {
+void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
-  foreach(path; computePaths){
-    app.compute.shaders ~= app.createShaderModule(path, shaderc_glsl_compute_shader);
-  }
-
-  app.mainDeletionQueue.add(() { 
-    for(uint i = 0; i < app.compute.shaders.length; i++) {
-      vkDestroyShaderModule(app.device, app.compute.shaders[i], app.allocator);
-    }
-  });
+  app.loadShaders(app.compute.shaders, ComputeShaders);
 }
 
 /** Create the compute pipeline specified by the selectedShader

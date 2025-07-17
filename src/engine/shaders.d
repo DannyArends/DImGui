@@ -25,9 +25,14 @@ struct Shader {
   alias shaderModule this;
 }
 
+struct ShaderDef {
+  const(char)* path;
+  shaderc_shader_kind type;
+}
+
 struct IncluderContext {
   char[][string] includedFiles;
-   bool verbose = false;
+  bool verbose = false;
 }
 
 /** Create the ShaderC compiler
@@ -139,34 +144,21 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
   return(info);
 }
 
-/** Load vertex and fragment shaders, and create the shaderStages array
- */
-void createRenderShaders(ref App app, const(char)* vertPath = "data/shaders/vertex.glsl", 
-                                      const(char)* fragPath = "data/shaders/fragment.glsl") {
-  auto vShader = app.createShaderModule(vertPath, shaderc_glsl_vertex_shader);
-  auto fShader = app.createShaderModule(fragPath, shaderc_glsl_fragment_shader);
 
-  app.shaders = [ vShader, fShader ];
+ShaderDef[] RenderShaders = [ShaderDef("data/shaders/vertex.glsl", shaderc_glsl_vertex_shader), 
+                             ShaderDef("data/shaders/fragment.glsl", shaderc_glsl_fragment_shader)];
+ShaderDef[] PostProcessShaders = [ShaderDef("data/shaders/postvertex.glsl", shaderc_glsl_vertex_shader), 
+                                  ShaderDef("data/shaders/postfragment.glsl", shaderc_glsl_fragment_shader)];
+
+/** Load shaders
+ */
+void loadShaders(ref App app, ref Shader[] dst, ShaderDef[] defs) {
+  foreach(def; defs) { dst ~= app.createShaderModule(def.path, def.type); }
 
   app.mainDeletionQueue.add(() {
-    for(uint i = 0; i < app.shaders.length; i++) {
-      vkDestroyShaderModule(app.device, app.shaders[i], app.allocator);
+    for(uint i = 0; i < dst.length; i++) {
+      vkDestroyShaderModule(app.device, dst[i], app.allocator);
     }
   });
 }
 
-/** Load vertex and fragment post-process shaders
- */
-void createPostShaders(ref App app, const(char)* vertPath = "data/shaders/postvertex.glsl", 
-                                      const(char)* fragPath = "data/shaders/postfragment.glsl") {
-  auto vShader = app.createShaderModule(vertPath, shaderc_glsl_vertex_shader);
-  auto fShader = app.createShaderModule(fragPath, shaderc_glsl_fragment_shader);
-
-  app.postProcess = [ vShader, fShader ];
-
-  app.mainDeletionQueue.add(() {
-    for(uint i = 0; i < app.postProcess.length; i++) {
-      vkDestroyShaderModule(app.device, app.postProcess[i], app.allocator);
-    }
-  });
-}
