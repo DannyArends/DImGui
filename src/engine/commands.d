@@ -5,9 +5,8 @@
 
 import engine;
 
-import bone : updateBoneOffsets;
 import color : Colors;
-import descriptor : Descriptor;
+import descriptor : Descriptor, getDescriptors;
 import matrix : Matrix;
 import lights : updateLighting;
 import mesh : Mesh, updateMeshInfo;
@@ -31,22 +30,16 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   pushLabel(app.renderBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("SSBO Buffering");
 
-  foreach(shader; shaders) {
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if(SDL_strstr(shader.descriptors[d].base, "BoneMatrices") != null) {
-          app.updateBoneOffsets();  // Always update the bones for animation on each frame
-          app.updateSSBO!Matrix(app.renderBuffers[syncIndex], app.boneOffsets, shader.descriptors[d], syncIndex);
-        }
-        if(SDL_strstr(shader.descriptors[d].base, "MeshMatrices") != null) {
-          app.updateMeshInfo();  // Always update the mesh info, since objects might have been deAllocated
-          app.updateSSBO!Mesh(app.renderBuffers[syncIndex], app.meshInfo, shader.descriptors[d], syncIndex);
-        }
-        if(SDL_strstr(shader.descriptors[d].base, "LightMatrices") != null) {
-          app.updateLighting(app.renderBuffers[syncIndex], shader.descriptors[d]);
-        }
-      }
-    }
+  auto descriptors = shaders.getDescriptors(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+  if("BoneMatrices" in descriptors) {
+    app.updateSSBO!Matrix(app.renderBuffers[syncIndex], app.boneOffsets, descriptors["BoneMatrices"], syncIndex);
+  }
+  if("MeshMatrices" in descriptors) {
+    app.updateSSBO!Mesh(app.renderBuffers[syncIndex], app.meshInfo, descriptors["MeshMatrices"], syncIndex);
+  }
+  if("LightMatrices" in descriptors) {
+    app.updateLighting(app.renderBuffers[app.syncIndex], descriptors["LightMatrices"]);
   }
   popLabel(app.renderBuffers[app.syncIndex]);
 

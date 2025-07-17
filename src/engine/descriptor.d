@@ -16,8 +16,8 @@ import uniforms : writeUniformBuffer;
 
 struct Descriptor {
   VkDescriptorType type;    /// Type of Descriptor
-  const(char)* name;        /// Name
-  const(char)* base;        /// Base / Struct Name
+  string name;        /// Name
+  string base;        /// Base / Struct Name
   size_t bytes;             /// Size  of the structure
   size_t nObjects;          /// Number of objects stored
 
@@ -146,6 +146,16 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
   return(set);
 }
 
+Descriptor[string] getDescriptors(Shader[] shaders, VkDescriptorType type) {
+  Descriptor[string] elements;
+  foreach(shader; shaders){
+    for(uint d = 0; d < shader.descriptors.length; d++) {
+      if(!(shader.descriptors[d].base in elements)) elements[shader.descriptors[d].base] = shader.descriptors[d];
+    }
+  }
+  return(elements);
+}
+
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
 void createDescriptors(ref App app, Shader[] shaders, const(char)* set = RENDER) {
@@ -169,16 +179,16 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
   for(uint s = 0; s < shaders.length; s++) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(app.trace) SDL_Log("- Descriptor[%d]: '%s' '%s'", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
+      //if(app.trace) SDL_Log("- Descriptor[%d]: '%s' '%s'", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-        if(SDL_strstr(shader.descriptors[d].name, "texureSampler") != null) {
+        if(shader.descriptors[d].name == "texureSampler") {
           app.writeTextureSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
-        if(SDL_strstr(shader.descriptors[d].name, "shadowMap") != null){
+        if(shader.descriptors[d].name == "shadowMap"){
           app.writeShadowMap(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
-        if(SDL_strstr(shader.descriptors[d].name, "hdrSampler") != null){
+        if(shader.descriptors[d].name == "hdrSampler"){
           app.writeHDRSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
       }

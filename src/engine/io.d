@@ -66,12 +66,12 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
 version(Android) {
   // SDL does not provide the ability to scan folders, and on android we need to use the jni
   // dir() is the wrapper function provided
-  immutable(char)*[] dir(const(char)* path, string pattern = "*", bool shallow = true) { 
+  string[] dir(const(char)* path, string pattern = "*", bool shallow = true) { 
     return(listDirContent(path, pattern, shallow)); 
   }
 
   // listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls
-  immutable(char)*[] listDirContent(const(char)* path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
+  string[] listDirContent(const(char)* path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
     JNIEnv* env = cast(JNIEnv*)SDL_AndroidGetJNIEnv();
     jobject activity = cast(jobject)SDL_AndroidGetActivity();
     jclass activity_class = (*env).GetObjectClass(env, activity);
@@ -85,14 +85,14 @@ version(Android) {
 
     // List all files in the folder
     //SDL_Log("Path %s, mngr: %X, list_method: %X, nObjects: %d \n", toStringz(path), asset_manager, list_method, length);
-    const(char)*[] files;
+    string[] files;
     for (int i = 0; i < length; i++) {
       // Allocate the java string, and get the filename
       jstring jstr = cast(jstring)(*env).GetObjectArrayElement(env, files_object, i);
-      const(char)* fn = (*env).GetStringUTFChars(env, jstr, null);
+      string fn = to!string((*env).GetStringUTFChars(env, jstr, null));
       if (fn) {
         string s = to!string(path);
-        fn = toStringz(format("%s%s%s", s, (s[$-1] == '/'? "": "/"), fromStringz(fn)));
+        fn = format("%s%s%s", s, (s[$-1] == '/'? "": "/"), fromStringz(fn));
         if (globMatch(fn.fromStringz(), pattern)) { 
           //SDL_Log("matching file: %s @ %s", toStringz(filename), toStringz(filepath));
           files ~= fn;
@@ -124,11 +124,11 @@ version(Android) {
 
   /** Content of a directory
    */
-  immutable(char)*[] dir(const(char)* dirPath, string pattern = "*", bool shallow = true) { 
+  string[] dir(const(char)* dirPath, string pattern = "*", bool shallow = true) { 
     string path = format("app/src/main/assets/%s", fromStringz(dirPath));
     auto mode = SpanMode.shallow;
     if(!shallow) mode = SpanMode.depth;
-    auto entries = dirEntries(path, pattern, mode).map!(a => a.name.toStringz).array;
+    auto entries = dirEntries(path, pattern, mode).map!(a => a.name).array;
     return(entries);
   }
 

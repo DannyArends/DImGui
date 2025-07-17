@@ -60,6 +60,8 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor){
     app.lights[2].direction[2] = atan(2 * t);
     app.lights[3].direction[0] = tan(t);
   }
+  app.buffers[descriptor.base].dirty[] = true;
   foreach(ref light; app.lights) { app.computeLightSpace(light); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
+

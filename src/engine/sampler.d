@@ -10,7 +10,7 @@ import descriptor : Descriptor;
 /** Create a TextureSampler for sampling from a texture
  */
 void createSampler(ref App app) {
-  if(app.verbose) SDL_Log("Create texture sampler");
+  if(app.verbose) SDL_Log("createSampler");
   VkPhysicalDeviceProperties properties = {};
   VkPhysicalDeviceFeatures supportedFeatures = {};
 

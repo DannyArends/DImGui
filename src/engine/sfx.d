@@ -10,7 +10,7 @@ import io : dir;
 /** WAV format for sound effects
  */
 struct WavFMT {
-  const(char)* path;
+  string path;
   Mix_Chunk* chunk;
   float pitch = 1.0;
   float gain = 0.5;
@@ -53,13 +53,13 @@ void openAudio(int rate = 44100, int size = 1024, bool verbose = false) {
 
 /** Load a WAV formatted file
  */
-WavFMT loadWav(const(char)* path, float pitch = 1.0, float gain = 0.5, bool looping = false) {
+WavFMT loadWav(string path, float pitch = 1.0, float gain = 0.5, bool looping = false) {
   WavFMT sfx = { path: path, 
-                 chunk: Mix_LoadWAV(path),
+                 chunk: Mix_LoadWAV(toStringz(path)),
                  pitch: pitch, gain: gain, loaded: false, looping: looping
                 };
   if (!sfx.chunk) {
-    SDL_Log("Unable to create buffer for '%s' cause '%s'\n", path, SDL_GetError());
+    SDL_Log("Unable to create buffer for '%s' cause '%s'", toStringz(path), SDL_GetError());
     return sfx;
   }
   sfx.loaded = true;

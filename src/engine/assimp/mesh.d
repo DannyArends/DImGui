@@ -21,14 +21,19 @@ struct Mesh {
 
 void updateMeshInfo(ref App app) {
   app.meshInfo.length = 0;
+  bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     uint size = cast(uint)app.objects[o].meshes.array.length;
-    for (size_t i = 0; i < app.objects[o].instances.length; i++) {  // Load faces to indices
-      app.objects[o].instances[i].meshdef = [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size];
-      app.objects[o].buffers[INSTANCE] = false;
+    for (size_t i = 0; i < app.objects[o].instances.length; i++) {
+      if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size]){
+        app.objects[o].instances[i].meshdef = [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size];
+        app.objects[o].buffers[INSTANCE] = false;
+        needsUpdate = true;
+      }
     }
     app.meshInfo ~= app.objects[o].meshes.array;
   }
+  if(needsUpdate) app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
 }
 
 string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform) {

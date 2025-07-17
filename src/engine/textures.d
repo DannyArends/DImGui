@@ -16,7 +16,7 @@ import descriptor : createDescriptorSet, updateDescriptorSet;
 import validation : nameVulkanObject;
 
 struct Texture {
-  const(char)* path;
+  string path;
   uint width = 0;
   uint height = 0;
   SDL_Surface* surface;
@@ -65,7 +65,7 @@ uint findTextureSlot(App app, string name = "empty"){
   assert(0, "No more texture slots");
 }
 
-void initDummyTexture(ref App app, immutable(char)*[] files, uint x){
+void initDummyTexture(ref App app, string[] files, uint x){
   Texture dummy = { path : "empty", width: 1, height: 1, surface: createDummySDLSurface() };
   if(x < files.length) dummy.path = files[x];
   app.toGPU(dummy, x);
@@ -74,7 +74,7 @@ void initDummyTexture(ref App app, immutable(char)*[] files, uint x){
 
 // Load all texture files matching pattern in folder
 void loadTextures(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}") {
-  immutable(char)*[] files = dir(folder, pattern, false);
+  string[] files = dir(folder, pattern, false);
   app.textures.length = app.maxTextures;
   for(uint x = 0; x < app.maxTextures; x++) { app.initDummyTexture(files, x); }
   new Thread({
@@ -103,17 +103,17 @@ void updateTextures(ref App app) {
   }
 }
 
-void loadTexture(ref App app, const(char)* path, uint i) {
-  if(app.verbose) SDL_Log("loadTexture '%s'", path);
-  auto surface = IMG_Load(path);
-  if(app.trace) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", path, surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+void loadTexture(ref App app, string path, uint i) {
+  if(app.verbose) SDL_Log("loadTexture '%s'", toStringz(path));
+  auto surface = IMG_Load(toStringz(path));
+  if(app.trace) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", toStringz(path), surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
 
   // Adapt surface to 32 bit, and create structure
   if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
   Texture texture = { path : path, width: surface.w, height: surface.h, surface: surface };
   app.toGPU(texture, i);
   app.textures[i].dirty = true;
-  if(app.verbose) SDL_Log("loadTexture '%s' DONE", path);
+  if(app.verbose) SDL_Log("loadTexture '%s' DONE", toStringz(path));
   app.mainDeletionQueue.add((){ app.deAllocate(texture); });
 }
 
@@ -153,8 +153,8 @@ void toGPU(ref App app, ref Texture texture, uint i) {
 
 /** Texture index
  */
-@nogc int idx(const Texture[] textures, const(char)* name) nothrow {
-  for(uint i = 0; i < textures.length; i++) { if(strstr(textures[i].path, name) != null) return(i); }
+@nogc int idx(const Texture[] textures, string name) nothrow {
+  for(uint i = 0; i < textures.length; i++) { if(textures[i].path.indexOf(name) >= 0) return(i); }
   return(-1);
 }
 

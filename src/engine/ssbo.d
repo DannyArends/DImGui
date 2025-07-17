@@ -7,30 +7,36 @@ import engine;
 
 import buffer : createBuffer, StageBuffer;
 import descriptor : Descriptor;
+import validation : nameVulkanObject;
 
 struct SSBO {
   VkBuffer[] buffers;
   VkDeviceMemory[] memory;
   void*[] data;
+  bool[] dirty;
 }
 
 void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
-  if(app.verbose) SDL_Log("createSSBO at %s, size = %d, objects: %d", descriptor.base, descriptor.bytes, nObjects);
+  if(app.verbose) SDL_Log("createSSBO at %s, size = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, nObjects);
+  descriptor.nObjects = nObjects;
+  if(descriptor.base in app.buffers) return;
   app.buffers[descriptor.base] = SSBO();
   app.buffers[descriptor.base].data.length = app.framesInFlight;
   app.buffers[descriptor.base].buffers.length = app.framesInFlight;
   app.buffers[descriptor.base].memory.length = app.framesInFlight;
+  app.buffers[descriptor.base].dirty.length = app.framesInFlight;
 
-  descriptor.nObjects = nObjects;
   for(uint i = 0; i < app.framesInFlight; i++) {
     app.createBuffer(&app.buffers[descriptor.base].buffers[i], &app.buffers[descriptor.base].memory[i], descriptor.size, 
                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    app.nameVulkanObject(app.buffers[descriptor.base].buffers[i], toStringz(descriptor.base), VK_OBJECT_TYPE_BUFFER);
     vkMapMemory(app.device, app.buffers[descriptor.base].memory[i], 0, descriptor.size, 0, &app.buffers[descriptor.base].data[i]);
+    app.buffers[descriptor.base].dirty[i] = true;
   }
 
   app.frameDeletionQueue.add((){
-    if(app.verbose) SDL_Log("Delete SSBO at %s", descriptor.base);
+    if(app.verbose) SDL_Log("Delete SSBO at %s", toStringz(descriptor.base));
     for(uint i = 0; i < app.framesInFlight; i++) {
       vkUnmapMemory(app.device, app.buffers[descriptor.base].memory[i]);
       vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
@@ -40,6 +46,7 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
 }
 
 void writeSSBO(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, ref VkDescriptorBufferInfo[] bufferInfos, uint syncIndex = 0){
+  if(app.verbose) SDL_Log("writeSSBO %s = %d (%d x %d)", toStringz(descriptor.base), descriptor.size, descriptor.bytes, descriptor.nObjects);
   bufferInfos ~= VkDescriptorBufferInfo(app.buffers[descriptor.base].buffers[syncIndex], 0, descriptor.size);
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -56,6 +63,7 @@ void writeSSBO(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor,
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * objects.length);
   if(size == 0) return;
+  if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);
 
   VkBufferMemoryBarrier bufferBarrier = {
@@ -77,5 +85,6 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descript
       1, &bufferBarrier,                      // bufferMemoryBarriers (our SSBO barrier)
       0, null                                 // imageMemoryBarriers
   );
+  app.buffers[descriptor.base].dirty[syncIndex] = false; // TODO: enable dirty
 }
 

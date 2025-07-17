@@ -5,6 +5,8 @@
 
 import engine;
 
+import bone : updateBoneOffsets;
+import mesh : updateMeshInfo;
 import commands : recordRenderCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
 import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
@@ -30,6 +32,9 @@ void renderFrame(ref App app){
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, uint.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
   app.bufferDeletionQueue.flush(); // Flush the Queue
+
+  app.updateMeshInfo();    // Check Mesh Information change
+  app.updateBoneOffsets(app.syncIndex); // Check BoneOffsets
 
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;

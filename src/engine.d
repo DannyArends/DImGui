@@ -19,7 +19,7 @@ public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, a
 public import std.path : baseName, dirName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform;
 public import std.regex : regex, matchAll;
-public import std.string : toStringz, fromStringz, lastIndexOf, startsWith, strip, chomp, splitLines;
+public import std.string : toStringz, fromStringz, lastIndexOf, indexOf, startsWith, strip, chomp, splitLines;
 public import std.traits : EnumMembers;
 public import std.utf : isValidDchar;
 
@@ -81,8 +81,8 @@ struct App {
   Mesh[] meshInfo;                                                              /// Meshes for GPU SSBO
   Texture[] textures;                                                           /// Textures
   WavFMT[] soundfx;                                                             /// Sound effects
-  SSBO[const(char)*] buffers;                                                   /// SSBO buffers
-  UBO[const(char)*] ubos;                                                       /// UBO buffers
+  SSBO[string] buffers;                                                   /// SSBO buffers
+  UBO[string] ubos;                                                       /// UBO buffers
   Lighting lights = {[Lights.White, Lights.Red, Lights.Green, Lights.Blue, Lights.Bright]};                   /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class

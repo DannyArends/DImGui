@@ -18,6 +18,7 @@ import textures : Texture, idx;
 import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 import animation : Animation;
+import validation : nameVulkanObject;
 
 /** An instance of a Geometry
  */
@@ -55,19 +56,24 @@ class Geometry {
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(name()));
-    if(!buffers[VERTEX])
+    if(!buffers[VERTEX]) {
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    if(!buffers[INDEX]) 
+      app.nameVulkanObject(vertexBuffer.vb, toStringz("[VTX] " ~ name()), VK_OBJECT_TYPE_BUFFER);
+    }
+    if(!buffers[INDEX]){
       buffers[INDEX] = app.toGPU(indices, indexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+      app.nameVulkanObject(indexBuffer.vb, toStringz("[IDX] " ~ name()), VK_OBJECT_TYPE_BUFFER);
+    }
     if(!buffers[INSTANCE]){
       buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+      app.nameVulkanObject(instanceBuffer.vb, toStringz("[INS] " ~ name()), VK_OBJECT_TYPE_BUFFER);
     }
   }
 
   bool isVisible = true;                            /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
   bool[3] buffers = [false, false, false];   /// Boolean flag
-  @property @nogc bool isBuffered() nothrow { 
+  @property @nogc bool isBuffered() nothrow {
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
   }
 
@@ -117,12 +123,12 @@ float scale(T)(T object, uint instance = 0) {
 
 /** Set tid for instance from object.instances to Texture name 
  */
-void texture(T)(T object, const Texture[] textures, const(char)* name, string mname = "") {
+void texture(T)(T object, const Texture[] textures, string name, string mname = "") {
   auto tid = textures.idx(name);
   foreach(ref mesh ; object.meshes) { mesh.tid = tid; }
 }
 
-void bumpmap(T)(T object, const Texture[] textures, const(char)* name, string mname = "") {
+void bumpmap(T)(T object, const Texture[] textures, string name, string mname = "") {
   auto nid = textures.idx(name);
   foreach(ref mesh ; object.meshes) { mesh.nid = nid; }
 }
@@ -268,16 +274,10 @@ void computeTangents(ref Geometry geometry, bool verbose = false) {
 
   for (size_t i = 0; i < geometry.vertices.length; ++i) {
     auto n = geometry.vertices[i].normal;
-
-    auto t = tan1[i]; // Accumulated tangent
-
-
-
+    auto t = tan1[i];
     float[3] finalTangent = (t.vSub(n.vMul(n.dot(t)))).normalize();
-
-    float[3] bitangent = tan2[i].normalize(); // Normalized accumulated bitangent
+    float[3] bitangent = tan2[i].normalize();
     float handedness = (cross(n, finalTangent).dot(bitangent) < 0.0f) ? -1.0f : 1.0f;
-
     geometry.vertices[i].tangent = finalTangent;
   }
 

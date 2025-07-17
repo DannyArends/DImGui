@@ -13,7 +13,7 @@ import swapchain : createImageView;
 /** The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas
  */
 struct GlyphAtlas {
-  const(char)* path;    /// Path of TTF file
+  string path;    /// Path of TTF file
   TTF_Font* ttf;        /// Pointer to the loaded TTF_Font
   ubyte pointsize;      /// Font pointsize size
   Glyph[dchar] glyphs;  /// Associative array couples Glyph and dchar
@@ -55,17 +55,17 @@ struct GlyphAtlas {
 
 /** Loads a GlyphAtlas from file */
 void loadGlyphAtlas(ref App app, 
-                    const(char)* filename = "data/fonts/FreeMono.ttf", 
+                    string filename = "data/fonts/FreeMono.ttf", 
                     ubyte pointsize = 80, dchar to = '\U000000FF', uint width = 1024, uint max_width = 1024) {
   version(Android){ }else{
-    filename = toStringz(format("app/src/main/assets/%s", fromStringz(filename))); 
+    filename = format("app/src/main/assets/%s", fromStringz(filename));
   }
-  SDL_Log("loadGlyphAtlas: %s", filename);
+  SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   GlyphAtlas glyphatlas = GlyphAtlas(filename);
   glyphatlas.pointsize = (pointsize == 0)? 12 : pointsize;
-  glyphatlas.ttf = TTF_OpenFont(filename, glyphatlas.pointsize);
+  glyphatlas.ttf = TTF_OpenFont(toStringz(filename), glyphatlas.pointsize);
   if (!glyphatlas.ttf) {
-    SDL_Log("Error by loading TTF_Font %s: %s\n", filename, SDL_GetError());
+    SDL_Log("Error by loading TTF_Font %s: %s\n", toStringz(filename), SDL_GetError());
     abort();
   }
   glyphatlas.atlas = glyphatlas.createGlyphAtlas(to, width, max_width);

@@ -59,7 +59,7 @@ TexInfo matchTexture(ref App app, ref OpenAsset object, uint materialIndex, aiTe
     texInfo = object.materials[materialIndex].textures[type];
     auto idx = texInfo.path.lastIndexOf("\\");
     if(idx >= 0) texInfo.path = stripExtension(texInfo.path[(idx+1)..($)]);
-    texInfo.tid = app.textures.idx(toStringz(texInfo.path));
+    texInfo.tid = app.textures.idx(texInfo.path);
     if(app.verbose) SDL_Log(toStringz(format("  Material: %s -> %d at channel: %d", texInfo.path, texInfo.tid, texInfo.channel)));
   }else{
     texInfo.tid = -1;
