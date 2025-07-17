@@ -8,14 +8,26 @@ import engine;
 import icon : setIcon;
 import sfx : openAudio;
 
+/** Check for SDL Errors
+ */
 void checkSDLError() {
   const(char)* err = SDL_GetError();
   if (err[0] != '\0') { SDL_Log("SDL_GetError: '%s'", err); SDL_ClearError(); }
 }
 
+/** Log function to allow SDL_Log to be redirected to a file
+ */
+extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) {
+  import std.stdio : writefln;
+  writefln("[%s] %s", SDL_GetTicks(), fromStringz(message));
+}
+
+
 enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };
 enum { START = 0, STARTUP = 1, FRAMESTART = 2, FRAMESTOP = 3, LASTTICK = 4 };
 
+/** Initialize SDL libraries (SDL2, SDL_TTF, SDL_IMG, SDL_Mixer)
+ */
 App initializeSDL() {
   int[4] init;
   App app;

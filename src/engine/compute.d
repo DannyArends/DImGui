@@ -9,7 +9,7 @@ import buffer : beginSingleTimeCommands, endSingleTimeCommands;
 import color : Colors;
 import commands : createCommandBuffer;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet;
-import images : createImage, transitionImageLayout;
+import images : createImage, deAllocate, transitionImageLayout;
 import particlesystem : ParticleSystem;
 import pipeline : GraphicsPipeline;
 import reflection : createResources;
@@ -157,12 +157,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
   // Update the Texture Array for rendering
   app.textures[app.findTextureSlot(to!string(descriptor.name))] = texture;
 
-  app.frameDeletionQueue.add((){
-    if(app.verbose) SDL_Log("Delete compute image");
-    vkDestroyImageView(app.device, texture.view, app.allocator);
-    vkDestroyImage(app.device, texture.image, app.allocator);
-    vkFreeMemory(app.device, texture.memory, app.allocator);
-  });
+  app.frameDeletionQueue.add((){ app.deAllocate(texture); });
 }
 
 /** recordComputeCommandBuffer for syncIndex and the selected ComputeShader

@@ -7,7 +7,7 @@ import engine;
 
 import color : Colors;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
-import images : createImage, transitionImageLayout;
+import images : createImage, deAllocate, transitionImageLayout;
 import lights : updateLighting;
 import matrix : Matrix;
 import pipeline : GraphicsPipeline;
@@ -79,11 +79,7 @@ void createShadowMapResources(ref App app) {
   if(app.verbose) SDL_Log(" - shadow map sampler created: %p", app.shadows.sampler);
 
   app.mainDeletionQueue.add((){
-    for(size_t x = 0; x < app.lights.length; x++) {
-      vkFreeMemory(app.device, app.shadows.images[x].memory, app.allocator);
-      vkDestroyImageView(app.device, app.shadows.images[x].view, app.allocator);
-      vkDestroyImage(app.device, app.shadows.images[x].image, app.allocator);
-    }
+    for(size_t x = 0; x < app.lights.length; x++) { app.deAllocate(app.shadows.images[x]); }
     vkDestroySampler(app.device, app.shadows.sampler, app.allocator);
   });
 }
