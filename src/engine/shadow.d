@@ -21,7 +21,6 @@ import vertex : Vertex, VERTEX, INSTANCE;
 
 struct ShadowMap {
   ImageBuffer[] images;
-  VkFramebuffer[] framebuffer;
 
   VkSampler sampler;
   Shader[] shaders;
@@ -40,7 +39,6 @@ struct LightUbo {
 void createShadowMap(ref App app) {
   app.createShadowMapResources();
   app.createShadowMapRenderPass();
-  app.createShadowMapFramebuffer();
   app.createShadowShader();
 }
 
@@ -131,36 +129,6 @@ void createShadowMapRenderPass(ref App app) {
   if(app.verbose) SDL_Log("Shadow map render pass created.");
 
   app.mainDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.shadows.renderPass, app.allocator); });
-}
-
-/** 
- * Shadow map framebuffer creation
- */
-void createShadowMapFramebuffer(ref App app) {
-  if(app.verbose) SDL_Log("Shadow map framebuffer creation");
-  app.shadows.framebuffer.length = app.lights.length;
-
-  for(size_t x = 0; x < app.lights.length; x++) {
-    VkImageView[] attachments = [ app.shadows.images[x].view ];
-
-    VkFramebufferCreateInfo framebufferInfo = {
-      sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-      renderPass: app.shadows.renderPass,
-      attachmentCount: cast(uint)attachments.length,
-      pAttachments: &attachments[0],
-      width: app.shadows.dimension,
-      height: app.shadows.dimension,
-      layers: 1
-    };
-    enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, app.allocator, &app.shadows.framebuffer[x]));
-    if(app.verbose) SDL_Log("Shadow map framebuffer created.");
-  }
-
-  app.mainDeletionQueue.add((){
-    for(size_t x = 0; x < app.lights.length; x++) {
-      vkDestroyFramebuffer(app.device, app.shadows.framebuffer[x], app.allocator); 
-    }
-  });
 }
 
 /** Load vertex shadow shader
@@ -317,24 +285,6 @@ void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descri
   write ~= set;
 }
 
-void createShadowMapCommandBuffers(ref App app) {
-  if(app.verbose) SDL_Log("Creating %d shadow map command buffers", app.framesInFlight);
-  app.shadowBuffers.length = app.framesInFlight;
-  VkCommandBufferAllocateInfo allocInfo = {
-      sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      commandPool: app.commandPool, // Use your main graphics command pool
-      level: VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-      commandBufferCount: app.framesInFlight,
-  };
-
-  enforceVK(vkAllocateCommandBuffers(app.device, &allocInfo, &app.shadowBuffers[0]));
-  if(app.verbose) SDL_Log(" - shadow map command buffers allocated.");
-
-  app.frameDeletionQueue.add((){
-    vkFreeCommandBuffers(app.device, app.commandPool, cast(uint)app.shadowBuffers.length, &app.shadowBuffers[0]);
-  });
-}
-
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   vkResetCommandBuffer(app.shadowBuffers[app.syncIndex], 0); // Reset for recording
 
@@ -382,7 +332,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
       renderPass: app.shadows.renderPass,
-      framebuffer: app.shadows.framebuffer[l],
+      framebuffer: app.framebuffers.shadow[l],
       renderArea: {
           offset: { x: 0, y: 0 },
           extent: { width: app.shadows.dimension, height: app.shadows.dimension }

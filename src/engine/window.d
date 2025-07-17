@@ -8,12 +8,12 @@ import engine;
 import compute: createComputeCommandBuffers, createComputePipeline;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptors, updateDescriptorSet;
-import commands : createImGuiCommandBuffers, createRenderCommandBuffers;
+import commands : createCommandBuffers;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
 import pipeline : createGraphicsPipeline, createPostProcessGraphicsPipeline;
 import renderpass : createSceneRenderPass, createPostProcessRenderPass, createImGuiRenderPass;
-import shadow : createShadowMapGraphicsPipeline, createShadowMapCommandBuffers, recordShadowCommandBuffer;
+import shadow : createShadowMapGraphicsPipeline, recordShadowCommandBuffer;
 import reflection : reflectShaders, createResources;
 import surface : querySurfaceFormats;
 import swapchain : createSwapChain, aquireSwapChainImages;
@@ -62,7 +62,7 @@ void createOrResizeWindow(ref App app) {
   // TODO: Could be done once inside the main deletion queue, but then UBO reflection needs to allow a custome deletion queue
   app.reflectShaders(app.shadows.shaders);
   app.createResources(app.shadows.shaders, SHADOWS);
-  app.createShadowMapCommandBuffers();
+  app.createCommandBuffers(app.shadowBuffers);
   app.createShadowMapGraphicsPipeline();
   for (uint i = 0; i < app.framesInFlight; i++) { // Make it better loop through the app.sets[SHADOWS][SyncIndex]
     app.updateDescriptorSet(app.shadows.shaders, app.sets[SHADOWS], i);
@@ -72,7 +72,7 @@ void createOrResizeWindow(ref App app) {
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, RENDER);
   app.createDescriptors(app.shaders,RENDER);
-  app.createRenderCommandBuffers();
+  app.createCommandBuffers(app.renderBuffers);
   for (uint i = 0; i < app.framesInFlight; i++) {
     app.updateDescriptorSet(app.shaders, app.sets[RENDER], i);    /// Updated each frame, since we're loading textures a-sync
   }
@@ -86,7 +86,7 @@ void createOrResizeWindow(ref App app) {
   }
 
   // ImGui resources
-  app.createImGuiCommandBuffers();
+  app.createCommandBuffers(app.imguiBuffers);
 
   // Create RenderPasses [SCENE -> POST -> IMGUI]
   app.scene = app.createSceneRenderPass();
