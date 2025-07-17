@@ -123,9 +123,7 @@ Shader createShaderModule(App app, const(char)* path, shaderc_shader_kind type =
   enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shader.shaderModule));
   shader.info = createShaderStageInfo(convert(type), shader);
 
-  app.mainDeletionQueue.add((){
-    shaderc_result_release(result); // Release the compilation result
-  });
+  app.mainDeletionQueue.add((){ shaderc_result_release(result); });
   return(shader);
 }
 
@@ -149,7 +147,7 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
   return(info);
 }
 
-/** Load shaders
+/** Load shaders to dst using the specified shader definitions
  */
 void loadShaders(ref App app, ref Shader[] dst, ShaderDef[] defs) {
   foreach(def; defs) { dst ~= app.createShaderModule(def.path, def.type); }

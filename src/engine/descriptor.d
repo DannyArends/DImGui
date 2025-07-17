@@ -196,7 +196,7 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
       }
       // Compute Stored Image
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-        app.writeComputeImage(descriptorWrites, shader.descriptors[d], dstSet, imageInfos, syncIndex);
+        app.writeComputeImage(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
       }
     }
   }
