@@ -30,6 +30,11 @@ struct ShaderDef {
   shaderc_shader_kind type;
 }
 
+ShaderDef[] RenderShaders = [ShaderDef("data/shaders/vertex.glsl", shaderc_glsl_vertex_shader), 
+                             ShaderDef("data/shaders/fragment.glsl", shaderc_glsl_fragment_shader)];
+ShaderDef[] PostProcessShaders = [ShaderDef("data/shaders/postvertex.glsl", shaderc_glsl_vertex_shader), 
+                                  ShaderDef("data/shaders/postfragment.glsl", shaderc_glsl_fragment_shader)];
+
 struct IncluderContext {
   char[][string] includedFiles;
   bool verbose = false;
@@ -143,12 +148,6 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
   foreach(shader; shaders){ info ~= shader.info; }
   return(info);
 }
-
-
-ShaderDef[] RenderShaders = [ShaderDef("data/shaders/vertex.glsl", shaderc_glsl_vertex_shader), 
-                             ShaderDef("data/shaders/fragment.glsl", shaderc_glsl_fragment_shader)];
-ShaderDef[] PostProcessShaders = [ShaderDef("data/shaders/postvertex.glsl", shaderc_glsl_vertex_shader), 
-                                  ShaderDef("data/shaders/postfragment.glsl", shaderc_glsl_fragment_shader)];
 
 /** Load shaders
  */
