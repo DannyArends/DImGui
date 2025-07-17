@@ -48,35 +48,35 @@ version (Android) {
  * Main entry point for Windows and Linux
  */
 void run(string[] args) {
-  App app = initializeSDL();              /// Initialize SDL library and create a window
+  App app = initializeSDL();                                    /// Initialize SDL library and create a window
   version (Android) {
-    SDL_SetEventFilter(&sdlEventsFilter, &app);
+    SDL_SetEventFilter(&sdlEventsFilter, &app);                 /// Handle immediate events on Android by callback
   }
-  app.createCompiler();                                     /// Create the SPIR-V compiler
-  app.createReflectionContext();                            /// Create a SPIR-V reflection context
-  app.loadGlyphAtlas();                                     /// Load & parse the Glyph Atlas
-  app.loadAllSoundEffect();                                 /// Load all available sound effects
-  app.createInstance();                                     /// Create a Vulkan instance
-  app.createDebugCallback();                                /// Hook the debug callback to the validation layer
-  app.createLogicalDevice();                                /// Create a logical device for rendering
-  app.getBestColorFormat();                                 /// Figure out the best available color format for HDR
-  app.loadShaders(app.shaders, RenderShaders);              /// Load the Rendering shaders
-  app.loadShaders(app.postProcess, PostProcessShaders);     /// Load the Post-processing shaders
-  if(app.compute.enabled) app.initializeCompute();          /// Load the compute shader
-  app.createShadowMap();                                    /// Create the shadow resources, renderpass, and shader
-  app.createCommandPools();                                 /// Create the rendering CommandPool
-  app.createSampler();                                      /// Create a texture sampler
-  app.createImGuiDescriptorPool();                          /// ImGui DescriptorPool
-  app.createImGuiDescriptorSetLayout();                     /// ImGui DescriptorSet layout
-  app.loadTextures();                                       /// Transfer all textures to the GPU
-  app.createSurface();                                      /// Create Vulkan rendering surface
-  app.createOrResizeWindow();                               /// Create window (swapchain, renderpass, framebuffers, etc)
-  app.initializeImGui();                                    /// Initialize ImGui (IO, Style, etc)
-  app.createScene();                                        /// Create our scene with geometries
+  app.createCompiler();                                         /// Create the SPIR-V compiler
+  app.createReflectionContext();                                /// Create a SPIR-V reflection context
+  app.loadGlyphAtlas();                                         /// Load & parse the Glyph Atlas
+  app.loadAllSoundEffect();                                     /// Load all available sound effects
+  app.createInstance();                                         /// Create a Vulkan instance
+  app.createDebugCallback();                                    /// Hook the debug callback to the validation layer
+  app.createLogicalDevice();                                    /// Create a logical device for rendering
+  app.getBestColorFormat();                                     /// Figure out the best available color format for HDR
+  app.loadShaders(app.shaders, RenderShaders);                  /// Load the Rendering shaders
+  app.loadShaders(app.postProcess, PostProcessShaders);         /// Load the Post-processing shaders
+  if(app.compute.enabled) app.initializeCompute();              /// Load the compute shader
+  app.createShadowMap();                                        /// Create the shadow resources, renderpass, and shader
+  app.createCommandPools();                                     /// Create the rendering CommandPool
+  app.createSampler();                                          /// Create a texture sampler
+  app.createImGuiDescriptorPool();                              /// ImGui DescriptorPool
+  app.createImGuiDescriptorSetLayout();                         /// ImGui DescriptorSet layout
+  app.loadTextures();                                           /// Transfer all textures to the GPU
+  app.createSurface();                                          /// Create Vulkan rendering surface
+  app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
+  app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
+  app.createScene();                                            /// Create our scene with geometries
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;
-  while (!app.finished && app.totalFramesRendered < frames) { /// Event polling & rendering Loop
+  while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
     app.handleEvents();
     app.time[FRAMESTART] = SDL_GetTicks();
     if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
@@ -92,3 +92,4 @@ void run(string[] args) {
     app.cleanUp();
   }
 }
+
