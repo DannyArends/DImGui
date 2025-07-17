@@ -22,7 +22,6 @@ import vertex : Vertex, VERTEX, INSTANCE;
 struct ShadowMap {
   ImageBuffer[] images;
 
-  VkSampler sampler;
   Shader[] shaders;
   VkRenderPass renderPass;
   GraphicsPipeline pipeline;
@@ -60,25 +59,8 @@ void createShadowMapResources(ref App app) {
     if(app.verbose) SDL_Log(" - shadow map image view created: %p", app.shadows.images[x].view);
   }
 
-  VkSamplerCreateInfo samplerInfo = {
-    sType: VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-    magFilter: VK_FILTER_LINEAR,                            // For soft edges with PCF
-    minFilter: VK_FILTER_LINEAR,                            // For soft edges with PCF
-    addressModeU: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-    addressModeV: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-    addressModeW: VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-    borderColor: VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-    compareEnable: VK_TRUE,                                 // Enable hardware depth comparison
-    compareOp: VK_COMPARE_OP_LESS_OR_EQUAL,                 // For shadow mapping
-    mipmapMode: VK_SAMPLER_MIPMAP_MODE_NEAREST,             // No mipmaps for single depth map
-  };
-
-  enforceVK(vkCreateSampler(app.device, &samplerInfo, app.allocator, &app.shadows.sampler));
-  if(app.verbose) SDL_Log(" - shadow map sampler created: %p", app.shadows.sampler);
-
   app.mainDeletionQueue.add((){
     for(size_t x = 0; x < app.lights.length; x++) { app.deAllocate(app.shadows.images[x]); }
-    vkDestroySampler(app.device, app.shadows.sampler, app.allocator);
   });
 }
 
@@ -270,7 +252,7 @@ void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descri
     imageInfos ~= VkDescriptorImageInfo( // Assign directly to the single info struct
       imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
       imageView: app.shadows.images[i].view, // Use the shadow map's image view
-      sampler: app.shadows.sampler     // Use the shadow map's sampler
+      sampler: app.sampler     // Use the shadow map's sampler
     );
   }
   VkWriteDescriptorSet set = {
