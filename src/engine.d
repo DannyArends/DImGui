@@ -43,7 +43,7 @@ import shaders : Shader, IncluderContext;
 import uniforms : UBO;
 import sync : Sync, Fence;
 import ssbo : SSBO;
-import shadowmap : ShadowMap;
+import shadow : ShadowMap;
 import sfx : WavFMT;
 import textures : Texture;
 
