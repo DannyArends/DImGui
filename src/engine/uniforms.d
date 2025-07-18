@@ -54,6 +54,7 @@ void createUBO(ref App app, Descriptor descriptor) {
       vkDestroyBuffer(app.device, app.ubos[descriptor.base].buffer[i], app.allocator);
       vkFreeMemory(app.device, app.ubos[descriptor.base].memory[i], app.allocator);
     }
+    app.ubos.remove(descriptor.base);
   });
 }
 

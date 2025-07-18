@@ -16,6 +16,14 @@ struct SSBO {
   bool[] dirty;
 }
 
+void deAllocate(ref App app, Descriptor descriptor){
+  for(uint i = 0; i < app.framesInFlight; i++) {
+    vkUnmapMemory(app.device, app.buffers[descriptor.base].memory[i]);
+    vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
+    vkDestroyBuffer(app.device, app.buffers[descriptor.base].buffers[i], app.allocator);
+  }
+}
+
 void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
   if(app.verbose) SDL_Log("createSSBO at %s, size = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, nObjects);
   descriptor.nObjects = nObjects;
@@ -42,6 +50,7 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
       vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
       vkDestroyBuffer(app.device, app.buffers[descriptor.base].buffers[i], app.allocator);
     }
+    app.buffers.remove(descriptor.base);
   });
 }
 

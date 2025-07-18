@@ -72,7 +72,9 @@ version(Android) {
 
   // listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls
   string[] listDirContent(const(char)* path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
+    //SDL_Log("listDirContent %s", path);
     JNIEnv* env = cast(JNIEnv*)SDL_AndroidGetJNIEnv();
+    //SDL_Log("JNIEnv %p", env);
     jobject activity = cast(jobject)SDL_AndroidGetActivity();
     jclass activity_class = (*env).GetObjectClass(env, activity);
     jobject asset_manager = (*env).CallObjectMethod(env, activity, (*env).GetMethodID(env, activity_class, "getAssets", "()Landroid/content/res/AssetManager;"));
@@ -84,26 +86,28 @@ version(Android) {
     auto length = (*env).GetArrayLength(env, files_object);
 
     // List all files in the folder
-    //SDL_Log("Path %s, mngr: %X, list_method: %X, nObjects: %d \n", toStringz(path), asset_manager, list_method, length);
+    //SDL_Log("Path %s, mngr: %X, list_method: %X, nObjects: %d \n", path, asset_manager, list_method, length);
     string[] files;
     for (int i = 0; i < length; i++) {
       // Allocate the java string, and get the filename
       jstring jstr = cast(jstring)(*env).GetObjectArrayElement(env, files_object, i);
       string fn = to!string((*env).GetStringUTFChars(env, jstr, null));
+      //SDL_Log("fn: %s", toStringz(fn));
       if (fn) {
         string s = to!string(path);
         fn = format("%s%s%s", s, (s[$-1] == '/'? "": "/"), fromStringz(fn));
         if (globMatch(fn.fromStringz(), pattern)) { 
-          //SDL_Log("matching file: %s @ %s", toStringz(filename), toStringz(filepath));
+          //SDL_Log("matching file: %s @ %s", toStringz(s), toStringz(fn));
           files ~= fn;
         }
-        if (!shallow && isDir(fn)) files ~= listDirContent(fn, pattern, shallow, verbose);
+        if (!shallow && isdir(toStringz(fn))) files ~= listDirContent(toStringz(fn), pattern, shallow, verbose);
       }
       (*env).DeleteLocalRef(env, jstr); // De-Allocate the java string
     }
     (*env).DeleteLocalRef(env, asset_manager);
     (*env).DeleteLocalRef(env, activity_class);
-    return(cast(immutable(char)*[])files);
+    //SDL_Log(toStringz(format("%s", files)));
+    return(files);
   }
 
   // We shim ontop of our listDir some functions on Android
