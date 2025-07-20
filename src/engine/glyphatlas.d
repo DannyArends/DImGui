@@ -122,6 +122,8 @@ void createFontTexture(ref App app) {
   if(surface.format.BitsPerPixel != 32) surface.toRGBA();
 
   app.glyphAtlas.texture = Texture(app.glyphAtlas.path, surface.w, surface.h, surface);
-  app.toGPU(app.glyphAtlas.texture, app.findTextureSlot());
+  app.toGPU(app.glyphAtlas.texture, 0);
+  app.textures ~= app.glyphAtlas.texture;
+  SDL_Log("Added Font Texture");
   app.mainDeletionQueue.add((){ app.deAllocate(app.glyphAtlas.texture); });
 }

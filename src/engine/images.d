@@ -14,9 +14,10 @@ import framebuffer : createHDRImage;
 VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * (surface.format.BitsPerPixel / 8)); }
 
 struct ImageBuffer {
-  VkImage image;
-  VkImageView view;       /// MSAA color attachment view
-  VkDeviceMemory memory;
+  VkImage image = null;
+  VkImageView view = null;       /// MSAA color attachment view
+  VkDeviceMemory memory = null;
+  uint frame;
 }
 
 /** DeAllocate an ImageBuffer / Texture

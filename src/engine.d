@@ -7,8 +7,9 @@ public import includes;
 
 public import core.memory : GC;
 public import core.stdc.string : strcmp, memcpy, strstr;
-public import core.time : MonoTime;
+public import core.time : MonoTime, dur;
 public import core.thread : Thread;
+public import std.concurrency : Tid, send, spawn, thisTid, receive, receiveTimeout;
 
 public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
 public import std.array : array, split;
@@ -80,9 +81,11 @@ struct App {
   Matrix[] boneOffsets;                                                         /// Animated BoneOffsets for GPU SSBO
   Mesh[] meshInfo;                                                              /// Meshes for GPU SSBO
   Texture[] textures;                                                           /// Textures
+  bool textureLoading = false;
+  uint currentTexture = 0;
   WavFMT[] soundfx;                                                             /// Sound effects
-  SSBO[string] buffers;                                                   /// SSBO buffers
-  UBO[string] ubos;                                                       /// UBO buffers
+  SSBO[string] buffers;                                                         /// SSBO buffers
+  UBO[string] ubos;                                                             /// UBO buffers
   Lighting lights = {[Lights.White, Lights.Red, Lights.Green, Lights.Blue, Lights.Bright]};                   /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class

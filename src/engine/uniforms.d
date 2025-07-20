@@ -8,7 +8,7 @@ import engine;
 import quaternion : xyzw;
 
 import descriptor : Descriptor;
-import buffer : createBuffer;
+import buffer : createBuffer, deAllocate;
 import matrix : mat4, rotate, lookAt, perspective;
 import lights : computeLightSpace;
 
@@ -29,7 +29,7 @@ struct ParticleUniformBuffer {
 };
 
 struct UBO {
-  VkBuffer[] buffer;
+  VkBuffer[] buffers;
   VkDeviceMemory[] memory;
   void*[] data;
 }
@@ -38,23 +38,18 @@ void createUBO(ref App app, Descriptor descriptor) {
   if(app.verbose) SDL_Log("Create UBO at %s, size = %d", toStringz(descriptor.base), descriptor.bytes);
   if(descriptor.base in app.ubos) return;
   app.ubos[descriptor.base] = UBO();
-  app.ubos[descriptor.base].buffer.length = app.framesInFlight;
+  app.ubos[descriptor.base].buffers.length = app.framesInFlight;
   app.ubos[descriptor.base].memory.length = app.framesInFlight;
   app.ubos[descriptor.base].data.length = app.framesInFlight;
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.ubos[descriptor.base].buffer[i], &app.ubos[descriptor.base].memory[i], descriptor.bytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    app.createBuffer(&app.ubos[descriptor.base].buffers[i], &app.ubos[descriptor.base].memory[i], descriptor.bytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     vkMapMemory(app.device, app.ubos[descriptor.base].memory[i], 0, descriptor.bytes, 0, &app.ubos[descriptor.base].data[i]);
   }
   if(app.verbose) SDL_Log("Created %d UBO of size: %d bytes", app.imageCount, descriptor.bytes);
 
   app.frameDeletionQueue.add((){
-    if(app.verbose) SDL_Log("Delete Compute UBO at %s", toStringz(descriptor.base));
-    for(uint i = 0; i < app.framesInFlight; i++) {
-      vkUnmapMemory(app.device, app.ubos[descriptor.base].memory[i]);
-      vkDestroyBuffer(app.device, app.ubos[descriptor.base].buffer[i], app.allocator);
-      vkFreeMemory(app.device, app.ubos[descriptor.base].memory[i], app.allocator);
-    }
-    app.ubos.remove(descriptor.base);
+    if(app.verbose) SDL_Log("Deleting UBO at %s", toStringz(descriptor.base));
+    app.deAllocate(app.ubos, descriptor); 
   });
 }
 
@@ -91,7 +86,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
 
 void writeUniformBuffer(ref App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, ref VkDescriptorBufferInfo[] bufferInfos, uint syncIndex = 0){
   if(app.verbose) SDL_Log("writeUniformBuffer");
-  bufferInfos ~= VkDescriptorBufferInfo(app.ubos[descriptor.base].buffer[syncIndex], 0, descriptor.bytes);
+  bufferInfos ~= VkDescriptorBufferInfo(app.ubos[descriptor.base].buffers[syncIndex], 0, descriptor.bytes);
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
     dstSet: dst[syncIndex],

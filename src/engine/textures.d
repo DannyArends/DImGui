@@ -5,8 +5,6 @@
 
 import engine;
 
-import core.time : dur;
-
 import io : dir;
 import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
@@ -58,7 +56,7 @@ SDL_Surface* createDummySDLSurface() {
 }
 
 uint findTextureSlot(App app, string name = "empty"){
-  for(uint x = 0; x < app.maxTextures; x++) { 
+  for(uint x = 0; x < app.textures.length; x++) { 
     string slot = to!string(app.textures[x].path);
     if(slot == "empty" || slot == name) return(x);
   }
@@ -69,19 +67,17 @@ void initDummyTexture(ref App app, string[] files, uint x){
   Texture dummy = { path : "empty", width: 1, height: 1, surface: createDummySDLSurface() };
   if(x < files.length) dummy.path = files[x];
   app.toGPU(dummy, x);
+  app.textures ~= dummy;
   app.mainDeletionQueue.add((){ app.deAllocate(dummy); });
 }
 
 // Load all texture files matching pattern in folder
-void loadTextures(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}") {
+void initTextures(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}") {
+  app.createFontTexture();
   string[] files = dir(folder, pattern, false);
-  app.textures.length = app.maxTextures;
-  for(uint x = 0; x < app.maxTextures; x++) { app.initDummyTexture(files, x); }
-  new Thread({
-    if(app.verbose) SDL_Log("Loading textures under %p", Thread.getThis());
-    app.createFontTexture();
-    foreach(i, file; files) { app.loadTexture(file, cast(uint)i); /*Thread.sleep(dur!("msecs")( 150 )); */ }
-  }).start();
+  for(uint x = 0; x < app.maxTextures; x++) { 
+    app.initDummyTexture(files, x); 
+  }
 }
 
 void updateTextures(ref App app) {
@@ -103,20 +99,6 @@ void updateTextures(ref App app) {
   }
 }
 
-void loadTexture(ref App app, string path, uint i) {
-  if(app.verbose) SDL_Log("loadTexture '%s'", toStringz(path));
-  auto surface = IMG_Load(toStringz(path));
-  if(app.trace) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", toStringz(path), surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
-
-  // Adapt surface to 32 bit, and create structure
-  if (surface.format.BitsPerPixel != 32) { surface.toRGBA(app.verbose); }
-  Texture texture = { path : path, width: surface.w, height: surface.h, surface: surface };
-  app.toGPU(texture, i);
-  app.textures[i].dirty = true;
-  if(app.verbose) SDL_Log("loadTexture '%s' DONE", toStringz(path));
-  app.mainDeletionQueue.add((){ app.deAllocate(texture); });
-}
-
 void toGPU(ref App app, ref Texture texture, uint i) {
   // Create a buffer to transfer the image to the GPU
   VkBuffer stagingBuffer;
@@ -126,10 +108,11 @@ void toGPU(ref App app, ref Texture texture, uint i) {
   // Copy the image data to the StagingBuffer memory
   void* data;
   vkMapMemory(app.device, stagingBufferMemory, 0, texture.surface.imageSize, 0, &data);
-  if(SDL_MUSTLOCK(texture.surface)) SDL_LockSurface(texture.surface);
   memcpy(data, texture.surface.pixels, texture.surface.imageSize);
-  if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);
   vkUnmapMemory(app.device, stagingBufferMemory);
+
+  // If we already had an image, view and memory, make sure to deAllocate it on shutdown
+  if(texture.image){ app.mainDeletionQueue.add((){ app.deAllocate(texture); }); }
 
   // Create an image, transition the layout
   app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory);
@@ -142,13 +125,14 @@ void toGPU(ref App app, ref Texture texture, uint i) {
 
   // Register Texture with ImGui, and store in texture array
   app.registerTexture(texture);
-  app.textures[i] = texture;
 
   // Cleanup
   if(app.trace) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));
-  SDL_FreeSurface(texture.surface);
-  vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-  vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+  app.mainDeletionQueue.add((){
+    vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
+    vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+    SDL_FreeSurface(texture.surface);
+  });
 }
 
 /** Texture index

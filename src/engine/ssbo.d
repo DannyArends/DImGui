@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, StageBuffer;
+import buffer : createBuffer, deAllocate, StageBuffer;
 import descriptor : Descriptor;
 import validation : nameVulkanObject;
 
@@ -14,14 +14,6 @@ struct SSBO {
   VkDeviceMemory[] memory;
   void*[] data;
   bool[] dirty;
-}
-
-void deAllocate(ref App app, Descriptor descriptor){
-  for(uint i = 0; i < app.framesInFlight; i++) {
-    vkUnmapMemory(app.device, app.buffers[descriptor.base].memory[i]);
-    vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
-    vkDestroyBuffer(app.device, app.buffers[descriptor.base].buffers[i], app.allocator);
-  }
 }
 
 void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
@@ -44,13 +36,8 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
   }
 
   app.frameDeletionQueue.add((){
-    if(app.verbose) SDL_Log("Delete SSBO at %s", toStringz(descriptor.base));
-    for(uint i = 0; i < app.framesInFlight; i++) {
-      vkUnmapMemory(app.device, app.buffers[descriptor.base].memory[i]);
-      vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
-      vkDestroyBuffer(app.device, app.buffers[descriptor.base].buffers[i], app.allocator);
-    }
-    app.buffers.remove(descriptor.base);
+    if(app.verbose) SDL_Log("Deleting SSBO at %s", toStringz(descriptor.base));
+    app.deAllocate(app.buffers, descriptor);
   });
 }
 
