@@ -96,9 +96,9 @@ void initializeImGui(ref App app){
   uint size = cast(uint)data.length;
   ImFontConfig* font_cfg = ImFontConfig_ImFontConfig();
   font_cfg.Name = "FreeMono";
-  font_cfg.SizePixels = 36.0f;
+  font_cfg.SizePixels = 42.0f;
   font_cfg.FontDataOwnedByAtlas = false;
-  app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&data[0], size, 36, font_cfg, null);
+  app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&data[0], size, 42, font_cfg, null);
 
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   //app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls

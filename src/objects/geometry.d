@@ -133,7 +133,6 @@ void bumpmap(T)(T object, const Texture[] textures, string name, string mname = 
   foreach(ref mesh ; object.meshes) { mesh.nid = nid; }
 }
 
-
 /** Euclidean distance between Geometry and Camera */
 @nogc float distance(T)(const T object, const Camera camera) nothrow { 
   return euclidean(object.instances[0].getTranslation(), camera.position); 

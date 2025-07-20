@@ -6,7 +6,8 @@
 import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
-
+import descriptor : Descriptor;
+  
 struct StageBuffer {
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
@@ -30,6 +31,15 @@ void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
 
   if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, null);
   if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, null);
+}
+
+void deAllocate(T)(ref App app, T dst, Descriptor descriptor){
+  for(uint i = 0; i < app.framesInFlight; i++) {
+    vkUnmapMemory(app.device, dst[descriptor.base].memory[i]);
+    vkFreeMemory(app.device, dst[descriptor.base].memory[i], app.allocator);
+    vkDestroyBuffer(app.device, dst[descriptor.base].buffers[i], app.allocator);
+  }
+  dst.remove(descriptor.base);
 }
 
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {

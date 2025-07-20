@@ -22,7 +22,8 @@ import reflection : createReflectionContext;
 import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
-import textures : Texture, loadTextures;
+import textures : Texture, initTextures;
+import threading : loadNextTexture;
 import validation : createDebugCallback;
 import window: createOrResizeWindow, checkForResize;
 
@@ -68,7 +69,7 @@ void run(string[] args) {
   app.createSampler();                                          /// Create a texture sampler
   app.createImGuiDescriptorPool();                              /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();                         /// ImGui DescriptorSet layout
-  app.loadTextures();                                           /// Transfer all textures to the GPU
+  app.initTextures();                                           /// Transfer all textures to the GPU
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
@@ -78,6 +79,7 @@ void run(string[] args) {
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
     app.handleEvents();
+    app.loadNextTexture();
     app.time[FRAMESTART] = SDL_GetTicks();
     if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
 
