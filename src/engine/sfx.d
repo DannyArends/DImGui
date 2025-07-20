@@ -31,10 +31,26 @@ struct Audio {
   @property int sampleSize(){ return((bits / 8) + audioChannels); }
 }
 
+string[] listAudioDevices() {
+  uint nDevices = SDL_GetNumAudioDevices(0); // 0 for output devices
+  if(nDevices == 0){ SDL_Log("Error: No audio output devices found"); return([]); }
+
+  string[] devices; devices.length = nDevices; // Create Devices
+
+  for (uint i = 0; i < nDevices; ++i) {
+    const char* device_name = SDL_GetAudioDeviceName(i, 0); // 0 for output device
+    if (device_name != null) {
+      devices[i] = to!string(fromStringz(device_name));
+    } else { SDL_Log("Error: Could not get device name for index %d, Error: %s", i, SDL_GetError()); }
+  }
+  return(devices);
+}
+
 /** Initialize audio and open an audio channel
  */
 void openAudio(int rate = 44100, int size = 1024, bool verbose = false) {
   Audio sfx;
+  auto devices = listAudioDevices();
 
   Mix_OpenAudio(rate, AUDIO_S32LSB, 2, size);
   int nChunk = Mix_GetNumChunkDecoders();
@@ -47,8 +63,11 @@ void openAudio(int rate = 44100, int size = 1024, bool verbose = false) {
   for(int i = 0; i < nMusic; ++i){ sfx.music[i] = Mix_GetMusicDecoder(i); } ;
 
   Mix_QuerySpec(&sfx.audioRate, &sfx.audioFmt, &sfx.audioChannels);
-  if(verbose) SDL_Log("Decoders chunks|music %d|%d", nChunk, nMusic);
-  if(verbose) SDL_Log("Audio @ %d Hz %d bit %s with %d bits audio buffer\n", sfx.audioRate, sfx.bits, sfx.audioChannels > 1?"stereo".ptr:"mono".ptr, size);
+  if(verbose) {
+    SDL_Log(toStringz(format("Audio Devices: %s", devices)));
+    SDL_Log("Audio @ %d Hz, Decoders chunks|music %d|%d", sfx.audioRate, nChunk, nMusic);
+    SDL_Log("Audio %d bit %s with %d bits audio buffer\n", sfx.bits, sfx.audioChannels > 1?"stereo".ptr:"mono".ptr, size);
+  }
 }
 
 /** Load a WAV formatted file

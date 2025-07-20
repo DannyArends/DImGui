@@ -26,11 +26,11 @@ struct GeometryBuffer {
 
 void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
   if(buffer.sbM) vkUnmapMemory(app.device, buffer.sbM);
-  if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, null);
-  if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, null);
+  if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
+  if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
 
-  if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, null);
-  if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, null);
+  if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, app.allocator);
+  if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, app.allocator);
 }
 
 void deAllocate(T)(ref App app, T dst, Descriptor descriptor){

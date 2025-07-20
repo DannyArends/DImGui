@@ -25,7 +25,11 @@ struct ShadowMap {
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  uint dimension = 2048;                    /// Shadowmap resolution
+  version (Android) {
+    uint dimension = 1024;                    /// Shadowmap resolution
+  }else{
+    uint dimension = 2048;                    /// Shadowmap resolution
+  }
 }
 
 struct LightUbo {

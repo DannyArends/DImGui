@@ -23,7 +23,7 @@ import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
 import textures : Texture, initTextures;
-import threading : loadNextTexture;
+import threading : loadNextTexture, loadGeometries;
 import validation : createDebugCallback;
 import window: createOrResizeWindow, checkForResize;
 
@@ -80,6 +80,8 @@ void run(string[] args) {
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
     app.handleEvents();
     app.loadNextTexture();
+    app.loadGeometries();
+
     app.time[FRAMESTART] = SDL_GetTicks();
     if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
 
