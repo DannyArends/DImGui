@@ -46,7 +46,7 @@ import sync : Sync, Fence;
 import ssbo : SSBO;
 import shadow : ShadowMap;
 import sfx : WavFMT;
-import textures : Texture;
+import textures : Textures;
 
 const(char)* IMGUI = "IMGUI"; 
 const(char)* COMPUTE = "COMPUTE";
@@ -80,9 +80,7 @@ struct App {
   Bone[string] bones;                                                           /// All animation bones across all objects
   Matrix[] boneOffsets;                                                         /// Animated BoneOffsets for GPU SSBO
   Mesh[] meshInfo;                                                              /// Meshes for GPU SSBO
-  Texture[] textures;                                                           /// Textures
-  bool textureLoading = false;
-  uint currentTexture = 0;
+  Textures textures;                                                            /// Textures
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[string] buffers;                                                         /// SSBO buffers
   UBO[string] ubos;                                                             /// UBO buffers
@@ -159,7 +157,6 @@ struct App {
   float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
   ulong[5] time = [0, 0, 0, 0, 0];                                              /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK)
   uint totalFramesRendered = 0;                                                 /// Total frames rendered so far
-  uint maxTextures = 128;                                                       /// Maximum number of textures
 
   const(char)*[] instanceExtensions;                                            /// Enabled instance extensions
   const(char)*[] deviceExtensions;                                              /// Enabled device extensions

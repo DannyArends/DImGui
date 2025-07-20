@@ -13,7 +13,7 @@ import swapchain : createImageView;
 /** The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas
  */
 struct GlyphAtlas {
-  string path;    /// Path of TTF file
+  string path;          /// Path of TTF file
   TTF_Font* ttf;        /// Pointer to the loaded TTF_Font
   ubyte pointsize;      /// Font pointsize size
   Glyph[dchar] glyphs;  /// Associative array couples Glyph and dchar
@@ -122,8 +122,8 @@ void createFontTexture(ref App app) {
   if(surface.format.BitsPerPixel != 32) surface.toRGBA();
 
   app.glyphAtlas.texture = Texture(app.glyphAtlas.path, surface.w, surface.h, surface);
-  app.toGPU(app.glyphAtlas.texture, 0);
-  app.textures ~= app.glyphAtlas.texture;
+  app.toGPU(app.glyphAtlas.texture);
+  app.textures[app.findTextureSlot(app.glyphAtlas.path)] = app.glyphAtlas.texture;
   SDL_Log("Added Font Texture");
   app.mainDeletionQueue.add((){ app.deAllocate(app.glyphAtlas.texture); });
 }

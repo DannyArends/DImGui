@@ -100,7 +100,7 @@ void renderFrame(ref App app){
   };
   
   enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
-  //SDL_Log("Done renderFrame: %d", app.syncIndex);
+  if(app.trace) SDL_Log("Done renderFrame: %d", app.syncIndex);
 }
 
 void presentFrame(ref App app) {

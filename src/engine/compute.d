@@ -150,8 +150,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
   app.registerTexture(texture); // Register texture with ImGui
 
   // Update the Texture Array for rendering
-  app.textures ~= texture;
-
+  app.textures[app.findTextureSlot(descriptor.name)] = texture;
   app.frameDeletionQueue.add((){ app.deAllocate(texture); });
 }
 

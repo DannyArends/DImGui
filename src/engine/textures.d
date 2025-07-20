@@ -27,6 +27,14 @@ struct Texture {
   alias buffer this;
 }
 
+struct Textures {
+  Texture[] textures;             /// Textures
+  bool busy = false;              /// Are we loading a texture a-sync ?
+  uint cur = 0;                   /// The current index of texture we're loading
+  uint max = 128;                 /// Maximum number of textures
+  alias textures this;
+}
+
 // Convert an SDL-Surface to RGBA32 format
 void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
   SDL_PixelFormat *fmt = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
@@ -40,7 +48,8 @@ void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
   }
 }
 
-// Function to create a 1x1 white SDL_Surface
+/** Create a 1x1 white SDL_Surface
+ */
 SDL_Surface* createDummySDLSurface() {
   SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA32);
   if(!surface){
@@ -55,6 +64,13 @@ SDL_Surface* createDummySDLSurface() {
   return surface;
 }
 
+/** Texture index
+ */
+@nogc int idx(const Texture[] textures, string name) nothrow {
+  for(uint i = 0; i < textures.length; i++) { if(textures[i].path.indexOf(name) >= 0) return(i); }
+  return(-1);
+}
+
 uint findTextureSlot(App app, string name = "empty"){
   for(uint x = 0; x < app.textures.length; x++) { 
     string slot = to!string(app.textures[x].path);
@@ -66,18 +82,16 @@ uint findTextureSlot(App app, string name = "empty"){
 void initDummyTexture(ref App app, string[] files, uint x){
   Texture dummy = { path : "empty", width: 1, height: 1, surface: createDummySDLSurface() };
   if(x < files.length) dummy.path = files[x];
-  app.toGPU(dummy, x);
+  app.toGPU(dummy);
   app.textures ~= dummy;
   app.mainDeletionQueue.add((){ app.deAllocate(dummy); });
 }
 
 // Load all texture files matching pattern in folder
 void initTextures(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}") {
-  app.createFontTexture();
   string[] files = dir(folder, pattern, false);
-  for(uint x = 0; x < app.maxTextures; x++) { 
-    app.initDummyTexture(files, x); 
-  }
+  for(uint x = 0; x < app.textures.max; x++) { app.initDummyTexture(files, x); }
+  app.createFontTexture();
 }
 
 void updateTextures(ref App app) {
@@ -99,7 +113,7 @@ void updateTextures(ref App app) {
   }
 }
 
-void toGPU(ref App app, ref Texture texture, uint i) {
+void toGPU(ref App app, ref Texture texture) {
   // Create a buffer to transfer the image to the GPU
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
@@ -108,7 +122,9 @@ void toGPU(ref App app, ref Texture texture, uint i) {
   // Copy the image data to the StagingBuffer memory
   void* data;
   vkMapMemory(app.device, stagingBufferMemory, 0, texture.surface.imageSize, 0, &data);
+  if(SDL_MUSTLOCK(texture.surface)) SDL_LockSurface(texture.surface);
   memcpy(data, texture.surface.pixels, texture.surface.imageSize);
+  if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);
   vkUnmapMemory(app.device, stagingBufferMemory);
 
   // If we already had an image, view and memory, make sure to deAllocate it on shutdown
@@ -120,26 +136,16 @@ void toGPU(ref App app, ref Texture texture, uint i) {
   app.copyBufferToImage(stagingBuffer, texture.image, texture.surface.w, texture.surface.h);
   app.transitionImageLayout(texture.image, app.transferPool, app.transfer, null, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-  // Create an imageview on the image
+  // Create an imageview and register the texture with ImGui
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
-
-  // Register Texture with ImGui, and store in texture array
   app.registerTexture(texture);
 
-  // Cleanup
-  if(app.trace) SDL_Log("Freeing surface: %p [%dx%d:%d]", texture.surface, texture.surface.w, texture.surface.h, (texture.surface.format.BitsPerPixel / 8));
+  // Cleanup to mainDeletionQueue
   app.mainDeletionQueue.add((){
     vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
     vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
     SDL_FreeSurface(texture.surface);
   });
-}
-
-/** Texture index
- */
-@nogc int idx(const Texture[] textures, string name) nothrow {
-  for(uint i = 0; i < textures.length; i++) { if(textures[i].path.indexOf(name) >= 0) return(i); }
-  return(-1);
 }
 
 /** 'Register' a texture in the ImGui DescriptorSet
