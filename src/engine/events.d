@@ -114,7 +114,7 @@ void removeGeometry(ref App app) {
       app.deAllocate(object); idx ~= i;
     }
   }
-  foreach(i; idx.reverse) { app.objects = app.objects.remove(i); }
+  foreach(i; idx.reverse) { app.objects.array = app.objects.array.remove(i); }
 }
 
 /** Handles all ImGui IO and SDL events

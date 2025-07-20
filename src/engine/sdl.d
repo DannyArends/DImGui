@@ -34,8 +34,10 @@ App initializeSDL() {
   SDL_version linked;
 
   // Initialize the SDL library for video
-  init[MAIN] = SDL_Init(SDL_INIT_VIDEO);
+  init[MAIN] = SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS);
   app.time[START] = SDL_GetTicks();
+
+  version(Android) { }else{ SDL_LogSetOutputFunction(&myLogFn, null); }
 
   // Make sure we know all versions (compiled and linked)
   SDL_GetVersion(&linked);
@@ -73,11 +75,8 @@ App initializeSDL() {
     checkSDLError();
     abort();
   }
+  version(Android) { }else{ app.window.setIcon(); }
 
-  version(Android) { }else{
-    SDL_LogSetOutputFunction(&myLogFn, null); // replace NULL with some other
-    app.window.setIcon();
-  }
   return(app);
 }
 

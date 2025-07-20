@@ -56,15 +56,15 @@ class Geometry {
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(name()));
-    if(!buffers[VERTEX]) {
+    if(!buffers[VERTEX] && vertices.length > 0) {
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
       app.nameVulkanObject(vertexBuffer.vb, toStringz("[VTX] " ~ name()), VK_OBJECT_TYPE_BUFFER);
     }
-    if(!buffers[INDEX]){
+    if(!buffers[INDEX] && indices.length > 0){
       buffers[INDEX] = app.toGPU(indices, indexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
       app.nameVulkanObject(indexBuffer.vb, toStringz("[IDX] " ~ name()), VK_OBJECT_TYPE_BUFFER);
     }
-    if(!buffers[INSTANCE]){
+    if(!buffers[INSTANCE] && instances.length > 0){
       buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
       app.nameVulkanObject(instanceBuffer.vb, toStringz("[INS] " ~ name()), VK_OBJECT_TYPE_BUFFER);
     }
@@ -72,7 +72,7 @@ class Geometry {
 
   bool isVisible = true;                            /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
-  bool[3] buffers = [false, false, false];   /// Boolean flag
+  bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow {
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
   }
@@ -88,6 +88,12 @@ class Geometry {
   void function(ref App app, ref Geometry obj, float dt) onFrame;
   void function(ref App app, ref Geometry obj) onTick;
   string function() name;
+}
+
+struct Geometries {
+  Geometry[] array;
+  bool loaded = false;              /// Are we loading a texture a-sync ?
+  alias array this;
 }
 
 /** Set position of instance from object.instances by p */

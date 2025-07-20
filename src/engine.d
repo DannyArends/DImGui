@@ -32,7 +32,7 @@ import depthbuffer : DepthBuffer;
 import deletion : CheckedDeletionQueue, DeletionQueue;
 import framebuffer : FrameBuffer;
 import glyphatlas : GlyphAtlas;
-import geometry : Geometry, cleanup;
+import geometry : Geometries, cleanup;
 import images : ImageBuffer;
 import imgui : GUI, saveSettings;
 import lights : Lighting, Lights;
@@ -76,7 +76,7 @@ struct App {
     { depthStencil : VkClearDepthStencilValue(1.0f, 0) } 
   ];
   Compute compute;                                                              /// Compute shaders
-  Geometry[] objects;                                                           /// All geometric objects for rendering
+  Geometries objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
   Matrix[] boneOffsets;                                                         /// Animated BoneOffsets for GPU SSBO
   Mesh[] meshInfo;                                                              /// Meshes for GPU SSBO

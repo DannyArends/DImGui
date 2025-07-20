@@ -96,12 +96,12 @@ void createScene(ref App app){
     obj.rotate([0.0f, 2 * dt, 4 * dt]);
   };
 
-  SDL_Log("createScene: Add viking room OpenAsset");
+/*  SDL_Log("createScene: Add viking room OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/viking_room.obj");
   app.objects[($-1)].texture(app.textures, "viking");
   app.objects[($-1)].rotate([180.0f, 0.0f, 90.0f]);
   app.objects[($-1)].scale([0.5f, 0.5f, 0.5f]);
-  app.objects[($-1)].position([3.5f,-0.85f, 1.0f]);
+  app.objects[($-1)].position([3.5f,-0.85f, 1.0f]); */
 
   /*SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
@@ -127,6 +127,7 @@ void createScene(ref App app){
     }
   }
 
+/*
   SDL_Log("createScene: Add 3DS");
   if(1 == 0){
     app.objects ~= app.loadOpenAsset("data/objects/Dragon.fbx");
@@ -162,7 +163,7 @@ void createScene(ref App app){
   app.objects[($-1)].rotate([-12.0f, 0.0f, 0.0f]);
   //}).start();
 
- /*// new Thread({
+ // new Thread({
   SDL_Log("createScene: Add MasterSnoo2025 OpenAsset");
   app.objects ~= app.loadOpenAsset("data/objects/MasterSnoo2025.fbx");
   app.objects[($-1)].rotate([210.0f, 0.0f, 0.0f]);
