@@ -73,9 +73,6 @@ void createOrResizeWindow(ref App app) {
   app.createResources(app.shaders, RENDER);
   app.createDescriptors(app.shaders,RENDER);
   app.createCommandBuffers(app.renderBuffers);
-  for (uint i = 0; i < app.framesInFlight; i++) {
-    app.updateDescriptorSet(app.shaders, app.sets[RENDER], i);    /// Updated each frame, since we're loading textures a-sync
-  }
 
   // 4] Post-processing shaders reflection
   app.reflectShaders(app.postProcess);

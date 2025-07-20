@@ -12,38 +12,39 @@ import textures: findTextureSlot, toRGBA, toGPU;
  */
 class textureLoader : Thread {
   private App* app;
-  private int tid;
   private string path;
   private Tid main;
 
-  this(App* a, int i, string p, Tid id) {
+  this(App* a, string p, Tid id) {
     this.app = a;
-    this.tid = i;
     this.path = p;
     this.main = id;
     super(&run);
   }
 
-  void run() {
+  void run() { // Load a single texture from path
     uint slot = (*app).findTextureSlot(path);
     if((*app).verbose) SDL_Log("loadTexture '%s' to %d", toStringz(path), slot);
     auto surface = IMG_Load(toStringz(path));
     if((*app).trace) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", toStringz(path), surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
     if (surface.format.BitsPerPixel != 32) { surface.toRGBA((*app).verbose); }  // Adapt surface to 32 bit
     (*app).textures[slot].surface = surface;
+    (*app).textures[slot].width = surface.w;
+    (*app).textures[slot].height = surface.h;
     if((*app).verbose) SDL_Log("loadTexture '%s' DONE", toStringz(path));
     main.send(format("%s", path));
   }
 }
 
-/** loadNextTexture when the previous one has finished
+/** loadNextTexture, when the previous texture has finished loading
+ * TODO: We could use multiple transfer queues to transfer several at once
  */
 void loadNextTexture(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}"){
   string[] files = dir(folder, pattern, false);
-  if(!app.textureLoading){
-    app.textureLoading = true;
-    if(app.currentTexture < files.length){
-      auto worker = new textureLoader(&app, app.currentTexture, files[app.currentTexture], thisTid);
+  if(!app.textures.busy){
+    app.textures.busy = true;
+    if(app.textures.cur < files.length){
+      auto worker = new textureLoader(&app, files[app.textures.cur], thisTid);
       worker.start();
     }
   }else{
@@ -51,10 +52,10 @@ void loadNextTexture(ref App app, const(char)* folder = "data/textures/", string
       (string message) {
         if(app.verbose) SDL_Log("%s", toStringz(message));
         uint slot = app.findTextureSlot(message);
-        app.toGPU(app.textures[slot], 0);
+        app.toGPU(app.textures[slot]);
         app.textures[slot].dirty = true;
-        app.currentTexture++;
-        app.textureLoading = false;
+        app.textures.cur++;
+        app.textures.busy = false;
       },
     );
   }
