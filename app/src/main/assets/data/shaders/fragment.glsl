@@ -48,7 +48,7 @@ void main() {
   // Compute lighting and shadows
   vec3 lightColor = vec3(0.0f);
   for(int i = 0; i < ubo.nlights; ++i) {
-    vec3 lightContribution = illuminate(lightSSBO.lights[i], vec4(baseColor, 1.0f), fragPosWorld, normalForLighting);
+    vec3 lightContribution = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting);
     float shadowFactor = 1.0f;
     if(i > 0){
       shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld, i);
