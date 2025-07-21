@@ -22,8 +22,7 @@ void renderFrame(ref App app){
   VkSemaphore imageAcquired    = app.sync[app.syncIndex].imageAcquired;
   VkSemaphore renderComplete   = app.sync[app.syncIndex].renderComplete;
 
-  // --- Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight ---
-  if(app.trace) SDL_Log("Phase 1: Acquire Image & Wait for CPU-GPU Sync for current frame in flight");
+  if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
   if (app.compute.enabled) {
     enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
     enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
@@ -33,20 +32,25 @@ void renderFrame(ref App app){
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
   app.bufferDeletionQueue.flush(); // Flush the Queue
 
-  app.updateMeshInfo();    // Check Mesh Information change
-  app.updateBoneOffsets(app.syncIndex); // Check BoneOffsets
-
+  if(app.trace) SDL_Log("Phase 1: Aquire the image");
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
   if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
+
+  if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
+
+  app.updateMeshInfo();    // Check Mesh Information change
+  app.updateBoneOffsets(app.syncIndex); // Check BoneOffsets
+  if(app.compute.enabled) app.updateComputeUBO(app.syncIndex);
+  app.updateRenderUBO(app.shaders, app.syncIndex);
+  app.updateTextures();                                         /// If a texture was loaded, update it
+
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
   if (app.compute.enabled) {
-    if(app.trace) SDL_Log("Phase 2: Prepare & Submit Compute Work");
-    app.updateComputeUBO(app.syncIndex);
-
+    if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
     VkCommandBuffer[] computeCommandBuffers = [];
     foreach(ref shader; app.compute.shaders){
       app.recordComputeCommandBuffer(shader, app.syncIndex);
@@ -60,7 +64,7 @@ void renderFrame(ref App app){
       signalSemaphoreCount : 1,
       pSignalSemaphores : &computeComplete
     };
-    if(app.trace) SDL_Log("Phase 2: Submit Compute");
+    if(app.trace) SDL_Log("Phase 2.2: Submit Compute work");
     enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
   }
 
@@ -70,9 +74,6 @@ void renderFrame(ref App app){
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Prepare & Submit Graphics & ImGui Work");
-  app.updateRenderUBO(app.shaders, app.syncIndex);
-  app.updateTextures();       /// Updated this frame, since a texture was loaded a-sync
-
   app.recordRenderCommandBuffer(app.shaders, app.syncIndex);
   app.recordImGuiCommandBuffer(app.syncIndex);
 
@@ -85,7 +86,10 @@ void renderFrame(ref App app){
   VkSemaphore[] waitSemaphores = [ imageAcquired ];
   if (app.compute.enabled) { waitSemaphores ~= computeComplete; }
 
-  VkPipelineStageFlags[] waitStages = [ VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT ];
+  VkPipelineStageFlags[] waitStages = [ 
+    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 
+    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT 
+  ];
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
