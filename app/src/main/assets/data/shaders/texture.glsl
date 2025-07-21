@@ -6,7 +6,7 @@
 #version 460
 
 layout(local_size_x = 16, local_size_y = 16) in;              // Size of a workgroup for compute
-layout(rgba16f, set = 0, binding = 0) uniform image2D image;  // Image
+layout(rgba8, set = 0, binding = 0) uniform image2D image;  // Image
 
 // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
 uint hash(uint x) {
@@ -36,5 +36,5 @@ float random(vec2 v) { return floatConstruct(hash(floatBitsToUint(v))); }
 void main(){
   ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
   float rand = random(texelCoord);
-  imageStore(image, texelCoord, vec4(vec3(rand), 1.0));
+  imageStore(image, texelCoord, vec4(vec3(rand), 1.0f));
 }

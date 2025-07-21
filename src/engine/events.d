@@ -145,7 +145,7 @@ void handleEvents(ref App app) {
   }
 
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 2500) {
-    GC.collect();
+    //GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     app.objects.mutex.lock(); // Lock
