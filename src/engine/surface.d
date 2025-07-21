@@ -61,7 +61,11 @@ bool queryDeviceFormats(ref App app, VkFormat requested = VK_FORMAT_R16G16B16A16
 }
 
 VkFormat getBestColorFormat(ref App app){
-  foreach(format; [VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R8G8B8A8_UNORM]){
+  auto ordering = [VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R8G8B8A8_UNORM];
+  version(Android){
+    ordering = [VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT];
+  }
+  foreach(format; ordering){
     if(app.queryDeviceFormats(format)){
       return(app.colorFormat = format);
     }
