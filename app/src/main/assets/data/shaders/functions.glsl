@@ -69,7 +69,7 @@ float calculateShadow(vec4 position, uint i) {
 }
 
 // Our illumination function
-vec3 illuminate(Light light, vec4 baseColor, vec4 position, vec3 normal) {
+vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal) {
   float attenuation = 1.0;
   vec3 s;
   if (light.position.w == 0.0) {
@@ -77,28 +77,23 @@ vec3 illuminate(Light light, vec4 baseColor, vec4 position, vec3 normal) {
     s = normalize( light.position.xyz );
   } else {
     // Point lighting
-    s = normalize( light.position.xyz - position.xyz );
-    float l = abs(length( light.position.xyz - position.xyz ));
+    s = normalize( light.position.xyz - position );
+    float l = length( light.position.xyz - position );
     attenuation = 1.0 / (light.properties[1] + pow(l, 2.0));
 
     // Cone lighting
     float lAngle = degrees(acos(dot(-s, normalize(light.direction.xyz))));
-    float innerConeAngle = light.properties[2] / 2.0f;
     float outerConeAngle = light.properties[2];
+    float innerConeAngle =outerConeAngle / 2.0f;
+
     float coneFactor = smoothstep(outerConeAngle, innerConeAngle, lAngle);
     attenuation *= coneFactor;
-    if (lAngle >= light.properties[2]) { attenuation = 0.0; }
   }
-  vec3 r = reflect( -s, normal );
   float sDotN = max( dot( s, normal ), 0.0 );
 
-  vec3 ambientCol = light.intensity.rgb * baseColor.rgb * light.properties[0];
-  vec3 diffuseCol = light.intensity.rgb * baseColor.rgb * sDotN;
-  vec3 specularCol = vec3( 0.0 );
-  if (sDotN > 0.0 && light.position.w > 0.0) {
-    //specularCol = light.intensity.rgb * baseColor.rgb * pow(max(dot(s, r), 0.0), baseColor.a);
-  }
-  return ambientCol + attenuation * (diffuseCol + specularCol);
+  vec3 ambientCol = light.intensity.rgb * baseColor * light.properties[0];
+  vec3 diffuseCol = light.intensity.rgb * baseColor * sDotN;
+  return ambientCol + attenuation * diffuseCol;
 }
 
 vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
