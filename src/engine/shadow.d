@@ -10,7 +10,7 @@ import descriptor : Descriptor, updateDescriptorData, createDescriptorSetLayout,
 import images : createImage, deAllocate, transitionImageLayout;
 import matrix : Matrix;
 import pipeline : GraphicsPipeline;
-import geometry : shadow, Instance;
+import geometry : shadow, Instance, bufferGeometries;
 import reflection : reflectShaders, createResources;
 import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
@@ -274,12 +274,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   popLabel(app.shadowBuffers[app.syncIndex]);
 
   pushLabel(app.shadowBuffers[app.syncIndex], "Objects Buffering", Colors.lightgray);
-  for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isBuffered) {
-      if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
-      app.objects[x].buffer(app, app.shadowBuffers[syncIndex]);
-    }
-  }
+  app.bufferGeometries(app.shadowBuffers[syncIndex]);
   popLabel(app.shadowBuffers[app.syncIndex]);
 
   pushLabel(app.shadowBuffers[app.syncIndex], "Shadow Loop", Colors.lightgray);

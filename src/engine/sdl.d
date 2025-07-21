@@ -22,7 +22,6 @@ extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, c
   writefln("[%s] %s", SDL_GetTicks(), fromStringz(message));
 }
 
-
 enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };
 enum { START = 0, STARTUP = 1, FRAMESTART = 2, FRAMESTOP = 3, LASTTICK = 4 };
 
@@ -31,6 +30,8 @@ enum { START = 0, STARTUP = 1, FRAMESTART = 2, FRAMESTOP = 3, LASTTICK = 4 };
 App initializeSDL() {
   int[4] init;
   App app;
+  app.objects.mutex = new Mutex();
+
   SDL_version linked;
 
   // Initialize the SDL library for video

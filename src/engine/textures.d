@@ -32,6 +32,7 @@ struct Textures {
   bool busy = false;              /// Are we loading a texture a-sync ?
   uint cur = 0;                   /// The current index of texture we're loading
   uint max = 128;                 /// Maximum number of textures
+
   alias textures this;
 }
 
