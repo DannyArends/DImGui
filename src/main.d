@@ -92,8 +92,6 @@ void run(string[] args) {
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
-  version (Android) {}else{
-    app.cleanUp();
-  }
+  version (Android) {}else{ app.cleanUp(); }
 }
 

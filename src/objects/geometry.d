@@ -93,7 +93,25 @@ class Geometry {
 struct Geometries {
   Geometry[] array;
   bool loaded = false;              /// Are we loading a texture a-sync ?
+  Mutex mutex;
+
   alias array this;
+}
+
+void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
+  app.objects.mutex.lock(); // Lock
+  try {
+    for(size_t x = 0; x < app.objects.length; x++) {
+      if(app.showBounds) {
+        app.objects[x].computeBoundingBox(app.trace);
+        app.objects[x].box.buffer(app, cmd);
+      }
+      if(!app.objects[x].isBuffered) {
+        if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
+        app.objects[x].buffer(app, cmd);
+      }
+    }
+  } finally { app.objects.mutex.unlock(); }
 }
 
 /** Set position of instance from object.instances by p */

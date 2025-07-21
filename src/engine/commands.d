@@ -8,7 +8,7 @@ import engine;
 import color : Colors;
 import descriptor : Descriptor, updateDescriptorData;
 import boundingbox : computeBoundingBox;
-import geometry : draw;
+import geometry : draw, bufferGeometries;
 import shaders : Shader;
 import ssbo : updateSSBO;
 import validation : pushLabel, popLabel;
@@ -31,16 +31,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
   pushLabel(app.renderBuffers[app.syncIndex], "Objects Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("Objects Buffering");
-  for(size_t x = 0; x < app.objects.length; x++) {
-    if(app.showBounds) {
-      app.objects[x].computeBoundingBox(app.trace);
-      app.objects[x].box.buffer(app, app.renderBuffers[syncIndex]);
-    }
-    if(!app.objects[x].isBuffered) {
-      if(app.trace) SDL_Log("Buffer object: %d %p", x, app.objects[x]);
-      app.objects[x].buffer(app, app.renderBuffers[syncIndex]);
-    }
-  }
+  app.bufferGeometries(app.renderBuffers[syncIndex]);
   popLabel(app.renderBuffers[app.syncIndex]);
 
   pushLabel(app.renderBuffers[app.syncIndex], "Rendering", Colors.lightgray);
@@ -59,11 +50,14 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   vkCmdBeginRenderPass(app.renderBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
 
-  if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
-  for(size_t x = 0; x < app.objects.length; x++) {
-    if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
-    if(app.showBounds) app.draw(app.objects[x].box, syncIndex);
-  }
+  app.objects.mutex.lock(); // Lock
+  try {
+    if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
+    for(size_t x = 0; x < app.objects.length; x++) {
+      if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
+      if(app.showBounds) app.draw(app.objects[x].box, syncIndex);
+    }
+  } finally { app.objects.mutex.unlock(); }
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
 
   popLabel(app.renderBuffers[app.syncIndex]);

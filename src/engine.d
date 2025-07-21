@@ -9,11 +9,13 @@ public import core.memory : GC;
 public import core.stdc.string : strcmp, memcpy, strstr;
 public import core.time : MonoTime, dur;
 public import core.thread : Thread;
-public import std.concurrency : Tid, send, spawn, thisTid, receive, receiveTimeout;
+public import core.sync.mutex : Mutex;
 
 public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
 public import std.array : array, split;
+public import std.concurrency : Tid, send, spawn, thisTid, receive, receiveTimeout;
 public import std.conv : to;
+public import std.typecons : RefCounted;
 public import std.format : format;
 public import std.file : exists, isFile, isDir, dirEntries, SpanMode;
 public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2, fmod, isFinite, isNaN;

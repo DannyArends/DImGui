@@ -31,6 +31,7 @@ class textureLoader : Thread {
     this.app = a;
     this.path = p;
     this.main = id;
+    this.isDaemon(true);
     super(&run);
   }
 
@@ -61,38 +62,38 @@ class geometryLoader : Thread {
     this.path = p;
     this.xpos = x;
     this.main = id;
+    this.isDaemon(true);
     super(&run);
   }
 
   void run() {
-    SDL_Log(toStringz(format("Loading: %s", path)));
     Geometry a = (*app).loadOpenAsset(toStringz(path));
     a.computeNormals();
     a.computeTangents();
     a.scale([0.15f, 0.15f, 0.15f]);
     a.position([1.5f, -0.9f, -2.5f + (xpos / 1.2f)]);
-    (*app).objects ~= a;
+    (*app).objects.mutex.lock();
+    try {
+      (*app).objects ~= a;
+    } finally { (*app).objects.mutex.unlock(); }
     main.send(geometryComplete(path));
   }
 }
 
-/** loadGeometries,
+/** loadGeometries on different threads
  */
 void loadGeometries(ref App app, const(char)* folder = "data/objects", string pattern = "*.{obj,fbx}"){
   string[] files = dir(folder, pattern, false);
   if(!app.objects.loaded){
-    SDL_Log(toStringz(format("Loading: %s", files)));
     foreach(i, file; files){
       auto worker = new geometryLoader(&app, format("%s/%s", fromStringz(folder), baseName(file)), cast(uint)i, thisTid);
-      SDL_Log(toStringz(format("worker: %s", worker)));
       worker.start();
-      
     }
     app.objects.loaded = true;
   }else{
     receiveTimeout(dur!"msecs"(-1),
       (geometryComplete message) {
-        SDL_Log("geometryComplete: %s", toStringz(message));
+        if(app.verbose) SDL_Log("Geometry loaded: %s", toStringz(message));
       },
     );
   }
@@ -105,14 +106,14 @@ void loadNextTexture(ref App app, const(char)* folder = "data/textures/", string
   string[] files = dir(folder, pattern, false);
   if(!app.textures.busy){
     app.textures.busy = true;
-    if(app.textures.cur < files.length){
+    if (app.textures.cur < files.length) {
       auto worker = new textureLoader(&app, files[app.textures.cur], thisTid);
       worker.start();
     }
   }else{
     receiveTimeout(dur!"msecs"(-1),
       (textureComplete message) {
-        if(app.verbose) SDL_Log("textureComplete: %s", toStringz(message));
+        if(app.verbose) SDL_Log("Texture loaded: %s", toStringz(message));
         uint slot = app.findTextureSlot(message);
         app.toGPU(app.textures[slot]);
         app.textures[slot].dirty = true;
