@@ -17,7 +17,7 @@ VkRenderPass createSceneRenderPass(ref App app) {
     format : app.colorFormat,
     samples : app.getMSAASamples(),
     loadOp : VK_ATTACHMENT_LOAD_OP_CLEAR,
-    storeOp : VK_ATTACHMENT_STORE_OP_STORE,
+    storeOp : VK_ATTACHMENT_STORE_OP_DONT_CARE,
     initialLayout : VK_IMAGE_LAYOUT_UNDEFINED,
     finalLayout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
   };

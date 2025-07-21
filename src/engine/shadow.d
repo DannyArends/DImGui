@@ -26,7 +26,7 @@ struct ShadowMap {
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
   version (Android) {
-    uint dimension = 1024;                    /// Shadowmap resolution
+    uint dimension = 256;                    /// Shadowmap resolution
   }else{
     uint dimension = 2048;                    /// Shadowmap resolution
   }

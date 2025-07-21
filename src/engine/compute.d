@@ -144,8 +144,8 @@ void createStorageImage(ref App app, Descriptor descriptor){
   Texture texture = { path : descriptor.name, width: app.camera.width, height: app.camera.height };
 
   app.createImage(texture.width, texture.height, &texture.image, &texture.memory, 
-                  VK_FORMAT_R16G16B16A16_SFLOAT, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
-  texture.view = app.createImageView(texture.image, VK_FORMAT_R16G16B16A16_SFLOAT);
+                  VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
+  texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_UNORM);
   if(app.verbose) SDL_Log("Create compute image %p, view: %p", texture.image, texture.view);
   app.registerTexture(texture); // Register texture with ImGui
 
