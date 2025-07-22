@@ -12,43 +12,43 @@ import mesh : Mesh;
  */
 class Cube : Geometry {
   this(float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
-    vertices = [
-      // Front face (Normal: Z+)
-      Vertex([  0.5f,  1.0f,  0.5f ], [  0.0f, 0.0f ], color, [ 0.0f,  0.0f,  1.0f ]),
-      Vertex([ -0.5f,  1.0f,  0.5f ], [  1.0f, 0.0f ], color, [ 0.0f,  0.0f,  1.0f ]),
-      Vertex([ -0.5f,  0.0f,  0.5f ], [  1.0f, 1.0f ], color, [ 0.0f,  0.0f,  1.0f ]),
-      Vertex([  0.5f,  0.0f,  0.5f ], [  0.0f, 1.0f ], color, [ 0.0f,  0.0f,  1.0f ]),
+  vertices = [
+    // Front face (Normal: Z+)
+    Vertex([  0.5f,  0.5f,  0.5f ], [  0.0f, 0.0f ], color, [ 0.0f,  0.0f,  1.0f ]),
+    Vertex([ -0.5f,  0.5f,  0.5f ], [  1.0f, 0.0f ], color, [ 0.0f,  0.0f,  1.0f ]),
+    Vertex([ -0.5f, -0.5f,  0.5f ], [  1.0f, 1.0f ], color, [ 0.0f,  0.0f,  1.0f ]),
+    Vertex([  0.5f, -0.5f,  0.5f ], [  0.0f, 1.0f ], color, [ 0.0f,  0.0f,  1.0f ]),
 
-      // Right face (Normal: X+)
-      Vertex([  0.5f,  1.0f,  0.5f ], [  0.0f, 0.0f ], color, [ 1.0f,  0.0f,  0.0f ]),
-      Vertex([  0.5f,  0.0f,  0.5f ], [  1.0f, 0.0f ], color, [ 1.0f,  0.0f,  0.0f ]),
-      Vertex([  0.5f,  0.0f, -0.5f ], [  1.0f, 1.0f ], color, [ 1.0f,  0.0f,  0.0f ]),
-      Vertex([  0.5f,  1.0f, -0.5f ], [  0.0f, 1.0f ], color, [ 1.0f,  0.0f,  0.0f ]),
+    // Right face (Normal: X+)
+    Vertex([  0.5f,  0.5f,  0.5f ], [  0.0f, 0.0f ], color, [ 1.0f,  0.0f,  0.0f ]),
+    Vertex([  0.5f, -0.5f,  0.5f ], [  1.0f, 0.0f ], color, [ 1.0f,  0.0f,  0.0f ]),
+    Vertex([  0.5f, -0.5f, -0.5f ], [  1.0f, 1.0f ], color, [ 1.0f,  0.0f,  0.0f ]),
+    Vertex([  0.5f,  0.5f, -0.5f ], [  0.0f, 1.0f ], color, [ 1.0f,  0.0f,  0.0f ]),
 
-      // Top face (Normal: Y+)
-      Vertex([  0.5f,  1.0f,  0.5f ], [  0.0f, 0.0f ], color, [ 0.0f,  1.0f,  0.0f ]),
-      Vertex([  0.5f,  1.0f, -0.5f ], [  1.0f, 0.0f ], color, [ 0.0f,  1.0f,  0.0f ]),
-      Vertex([ -0.5f,  1.0f, -0.5f ], [  1.0f, 1.0f ], color, [ 0.0f,  1.0f,  0.0f ]),
-      Vertex([ -0.5f,  1.0f,  0.5f ], [  0.0f, 1.0f ], color, [ 0.0f,  1.0f,  0.0f ]),
+    // Top face (Normal: Y+)
+    Vertex([  0.5f,  0.5f,  0.5f ], [  0.0f, 0.0f ], color, [ 0.0f,  1.0f,  0.0f ]),
+    Vertex([  0.5f,  0.5f, -0.5f ], [  1.0f, 0.0f ], color, [ 0.0f,  1.0f,  0.0f ]),
+    Vertex([ -0.5f,  0.5f, -0.5f ], [  1.0f, 1.0f ], color, [ 0.0f,  1.0f,  0.0f ]),
+    Vertex([ -0.5f,  0.5f,  0.5f ], [  0.0f, 1.0f ], color, [ 0.0f,  1.0f,  0.0f ]),
 
-      // Left face (Normal: X-)
-      Vertex([ -0.5f,  1.0f,  0.5f ], [  0.0f, 0.0f ], color, [ -1.0f,  0.0f,  0.0f ]),
-      Vertex([ -0.5f,  1.0f, -0.5f ], [  1.0f, 0.0f ], color, [ -1.0f,  0.0f,  0.0f ]),
-      Vertex([ -0.5f,  0.0f, -0.5f ], [  1.0f, 1.0f ], color, [ -1.0f,  0.0f,  0.0f ]),
-      Vertex([ -0.5f,  0.0f,  0.5f ], [  0.0f, 1.0f ], color, [ -1.0f,  0.0f,  0.0f ]),
+    // Left face (Normal: X-)
+    Vertex([ -0.5f,  0.5f,  0.5f ], [  0.0f, 0.0f ], color, [ -1.0f,  0.0f,  0.0f ]),
+    Vertex([ -0.5f,  0.5f, -0.5f ], [  1.0f, 0.0f ], color, [ -1.0f,  0.0f,  0.0f ]),
+    Vertex([ -0.5f, -0.5f, -0.5f ], [  1.0f, 1.0f ], color, [ -1.0f,  0.0f,  0.0f ]),
+    Vertex([ -0.5f, -0.5f,  0.5f ], [  0.0f, 1.0f ], color, [ -1.0f,  0.0f,  0.0f ]),
 
-      // Bottom face (Normal: Y-)
-      Vertex([ -0.5f,  0.0f, -0.5f ], [  0.0f, 0.0f ], color, [ 0.0f, -1.0f,  0.0f ]),
-      Vertex([  0.5f,  0.0f, -0.5f ], [  1.0f, 0.0f ], color, [ 0.0f, -1.0f,  0.0f ]),
-      Vertex([  0.5f,  0.0f,  0.5f ], [  1.0f, 1.0f ], color, [ 0.0f, -1.0f,  0.0f ]),
-      Vertex([ -0.5f,  0.0f,  0.5f ], [  0.0f, 1.0f ], color, [ 0.0f, -1.0f,  0.0f ]),
+    // Bottom face (Normal: Y-)
+    Vertex([ -0.5f, -0.5f, -0.5f ], [  0.0f, 0.0f ], color, [ 0.0f, -1.0f,  0.0f ]),
+    Vertex([  0.5f, -0.5f, -0.5f ], [  1.0f, 0.0f ], color, [ 0.0f, -1.0f,  0.0f ]),
+    Vertex([  0.5f, -0.5f,  0.5f ], [  1.0f, 1.0f ], color, [ 0.0f, -1.0f,  0.0f ]),
+    Vertex([ -0.5f, -0.5f,  0.5f ], [  0.0f, 1.0f ], color, [ 0.0f, -1.0f,  0.0f ]),
 
-      // Back face (Normal: Z-)
-      Vertex([  0.5f,  0.0f, -0.5f ], [  0.0f, 0.0f ], color, [ 0.0f,  0.0f, -1.0f ]),
-      Vertex([ -0.5f,  0.0f, -0.5f ], [  1.0f, 0.0f ], color, [ 0.0f,  0.0f, -1.0f ]),
-      Vertex([ -0.5f,  1.0f, -0.5f ], [  1.0f, 1.0f ], color, [ 0.0f,  0.0f, -1.0f ]),
-      Vertex([  0.5f,  1.0f, -0.5f ], [  0.0f, 1.0f ], color, [ 0.0f,  0.0f, -1.0f ])
-    ];
+    // Back face (Normal: Z-)
+    Vertex([  0.5f, -0.5f, -0.5f ], [  0.0f, 0.0f ], color, [ 0.0f,  0.0f, -1.0f ]),
+    Vertex([ -0.5f, -0.5f, -0.5f ], [  1.0f, 0.0f ], color, [ 0.0f,  0.0f, -1.0f ]),
+    Vertex([ -0.5f,  0.5f, -0.5f ], [  1.0f, 1.0f ], color, [ 0.0f,  0.0f, -1.0f ]),
+    Vertex([  0.5f,  0.5f, -0.5f ], [  0.0f, 1.0f ], color, [ 0.0f,  0.0f, -1.0f ])
+  ];
     indices = [0, 1, 2,   2, 3, 0,      // front
                4, 5, 6,   6, 7, 4,      // right
                8, 9,10,  10,11, 8,      // top

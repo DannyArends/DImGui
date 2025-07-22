@@ -30,7 +30,7 @@ void createScene(ref App app){
     SDL_Log("createScene: Add a Square");
     app.objects ~= new Square();
     app.objects[($-1)].computeTangents();
-    app.objects[($-1)].bumpmap(app.textures, "bump3");
+    app.objects[($-1)].bumpmap(app.textures, "bump1");
     app.objects[($-1)].position([0.0f, 1.0f, 0.0f]);
     for(int x = -5; x <= 5; x++) {
       for(int z = -5; z <= 5; z++) {

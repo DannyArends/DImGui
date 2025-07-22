@@ -16,7 +16,8 @@ import mesh : Mesh;
 class Cone : Geometry {
   this(float radius = 0.5f, float height = 1.0f, uint numSegments = 128, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     if (numSegments < 3) { numSegments = 3; }
-    float[3] apex = [0.0f, height, 0.0f];
+    float halfHeight = height / 2.0f;
+    float[3] apex = [0.0f, halfHeight, 0.0f];
 
     for (uint i = 0; i < numSegments; ++i) {
       float[2] theta = computeThetas(i, numSegments);
@@ -24,7 +25,7 @@ class Cone : Geometry {
 
       float[3] v1 = positions[1][] - apex[];
       float[3] v2 = positions[0][] - apex[];
-      float[3] normal = cross(v1, v2);         // Compute the cross product (v1 x v2) to get the face normal.
+      float[3] normal = cross(v1, v2);        // Compute the cross product (v1 x v2) to get the face normal.
 
       // Normalize the calculated normal vector to unit length
       float invLength = (normal.magnitude == 0.0f) ? 0.0f : 1.0f / normal.magnitude;
@@ -32,12 +33,13 @@ class Cone : Geometry {
 
       uint vIdx = cast(uint)vertices.length;
       vertices ~= Vertex(apex, [0.5f, 0.0f], color, faceNormal);
-      vertices ~= Vertex(positions[0], [0.0f, 1.0f], color, faceNormal);
-      vertices ~= Vertex(positions[1], [1.0f, 1.0f], color, faceNormal);
+      vertices ~= Vertex([positions[0].x, positions[0].y - halfHeight, positions[0].z], [0.0f, 1.0f], color, faceNormal);
+      vertices ~= Vertex([positions[1].x, positions[1].y - halfHeight, positions[1].z], [1.0f, 1.0f], color, faceNormal);
 
       indices ~= [vIdx+2, vIdx + 1, vIdx];
     }
-    this.computeCap([0.0f, 0.0f, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color);
+    // Adjust cap position by subtracting halfHeight
+    this.computeCap([0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color); // Bottom cap
 
     instances = [Instance()];
     meshes["Cone"] = Mesh([0, cast(uint)vertices.length]);
