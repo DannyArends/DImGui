@@ -23,7 +23,7 @@ import validation : nameVulkanObject;
 /** An instance of a Geometry
  */
 struct Instance {
-  uint[2] meshdef = [0, 0];  // Start, End, Valid
+  uint[2] meshdef = [0, 0];  // Start, End
   mat4 matrix = mat4.init;
   alias matrix this;
 }
