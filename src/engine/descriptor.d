@@ -174,6 +174,10 @@ void createDescriptors(ref App app, Shader[] shaders, const(char)* set = RENDER)
   app.layouts[set] = app.createDescriptorSetLayout(shaders);
   app.sets[set] = createDescriptorSet(app.device, app.pools[set], app.layouts[set],  app.framesInFlight);
 
+  for (uint i = 0; i < app.framesInFlight; i++) {
+    app.updateDescriptorSet(shaders, app.sets[set], i);
+  }
+
   app.frameDeletionQueue.add((){ 
     vkDestroyDescriptorSetLayout(app.device, app.layouts[set], app.allocator); 
   });
@@ -190,7 +194,7 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
   for(uint s = 0; s < shaders.length; s++) {
     auto shader = shaders[s];
     for(uint d = 0; d < shader.descriptors.length; d++) {
-      //if(app.trace) SDL_Log("- Descriptor[%d]: '%s' '%s'", shader.descriptors[d].binding, shader.descriptors[d].base, shader.descriptors[d].name);
+      if(app.trace) SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", shader.descriptors[d].binding, shader.descriptors[d])));
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         if(shader.descriptors[d].name == "texureSampler") {
@@ -218,6 +222,5 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
     }
   }
   vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null);
-  if(app.trace) SDL_Log("updateComputeDescriptorSet DONE");
 }
 

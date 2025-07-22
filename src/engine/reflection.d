@@ -142,11 +142,15 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
         if(shaders[s].descriptors[d].base == "BoneMatrices") {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(1024));
           app.boneOffsets.length = 1024;
-        }else{
+        }else if(shaders[s].descriptors[d].base == "LightMatrices") {
+          app.createSSBO(shaders[s].descriptors[d], cast(uint)app.lights.length);
+        }else if(shaders[s].descriptors[d].base == "MeshMatrices") {
+          app.createSSBO(shaders[s].descriptors[d]);
+        }else if(app.compute.enabled && shaders[s].descriptors[d].base == "lastFrame") {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
-          if(shaders[s].descriptors[d].base == "lastFrame") {
-            app.transferToSSBO(shaders[s].descriptors[d]);
-          }
+          app.transferToSSBO(shaders[s].descriptors[d]);
+        }else if(app.compute.enabled && shaders[s].descriptors[d].base == "currentFrame") {
+          app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
         }
       }
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createUBO(shaders[s].descriptors[d]);

@@ -26,9 +26,9 @@ struct ShadowMap {
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
   version (Android) {
-    uint dimension = 256;                    /// Shadowmap resolution
+    uint dimension = 512;                   /// Shadowmap resolution
   }else{
-    uint dimension = 2048;                    /// Shadowmap resolution
+    uint dimension = 2048;                  /// Shadowmap resolution
   }
 }
 
@@ -119,9 +119,6 @@ void createShadowMapRenderPass(ref App app) {
  */
 void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline creation");
-  app.layouts[SHADOWS] = app.createDescriptorSetLayout(app.shadows.shaders);
-  app.sets[SHADOWS] = createDescriptorSet(app.device, app.pools[SHADOWS], app.layouts[SHADOWS], app.framesInFlight);
-
   VkPushConstantRange pushConstantRange = { stageFlags: VK_SHADER_STAGE_VERTEX_BIT, offset: 0, size: uint.sizeof };
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
@@ -210,7 +207,6 @@ void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline created: %p", app.shadows.pipeline.pipeline);
 
   app.frameDeletionQueue.add((){
-    vkDestroyDescriptorSetLayout(app.device, app.layouts[SHADOWS], app.allocator);
     vkDestroyPipelineLayout(app.device, app.shadows.pipeline.layout, app.allocator);
     vkDestroyPipeline(app.device, app.shadows.pipeline.pipeline, app.allocator);
   });
@@ -294,8 +290,6 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       clearValueCount: 1,
       pClearValues: &clearDepth,
     };
-    app.updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
-
     vkCmdBeginRenderPass(app.shadowBuffers[app.syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(app.shadowBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
     uint currentLightIndex = cast(uint)l;
