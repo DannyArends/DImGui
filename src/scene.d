@@ -35,7 +35,7 @@ void createScene(ref App app){
     for(int x = -5; x <= 5; x++) {
       for(int z = -5; z <= 5; z++) {
         mat4 instance;  // Add a instances of object 0
-        auto scalefactor = 10.0f;
+        auto scalefactor = 5.0f;
         instance = instance.translate([0.0f, -1.0f, 0.0f]);
         instance = instance.scale([scalefactor, scalefactor, scalefactor]);
         instance = instance.translate([cast(float) x, 0.0f, cast(float)z]);
