@@ -23,7 +23,7 @@ class Torus : Geometry {
         float v = cast(float)j / segments[0] * 2.0f * PI;
         float s =(radii[1] + radii[0] * cos(v));
 
-        float[3] position = [s * cos(u), radii[0] * sin(v) + radii[0], s * sin(u)];
+        float[3] position = [s * cos(u), radii[0] * sin(v), s * sin(u)];
         float[3] normal = [cos(v) * cos(u), sin(v), cos(v) * sin(u)];
         vertices ~= Vertex(position, [i / cast(float)(segments[1]), j / cast(float)(segments[0])], color, normal);
 

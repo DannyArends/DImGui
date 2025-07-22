@@ -19,6 +19,9 @@ class Cylinder : Geometry {
   this(float radius = 0.5f, float height = 1.0f, uint numSegments = 128, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     if (numSegments < 3) { numSegments = 3; }
 
+    // Calculate half height for centering
+    float halfHeight = height / 2.0f;
+
     for (uint i = 0; i < numSegments; ++i) {
       float[2] thetas = computeThetas(i, numSegments);
       float[3][2] bottomPositions = computeBasePositions(radius, thetas);
@@ -27,15 +30,16 @@ class Cylinder : Geometry {
       float[3] sideFaceNormal = [cos(avgTheta), 0.0f, sin(avgTheta)];
 
       uint vIdx = cast(uint)vertices.length;
-      vertices ~= Vertex(bottomPositions[0], [0.0f, 0.0f], color, sideFaceNormal);
-      vertices ~= Vertex(bottomPositions[1], [1.0f, 0.0f], color, sideFaceNormal);
-      vertices ~= Vertex([bottomPositions[1].x, height, bottomPositions[1].z], [1.0f, 1.0f], color, sideFaceNormal);
-      vertices ~= Vertex([bottomPositions[0].x, height, bottomPositions[0].z], [0.0f, 1.0f], color, sideFaceNormal);
+      vertices ~= Vertex([bottomPositions[0].x, bottomPositions[0].y - halfHeight, bottomPositions[0].z], [0.0f, 0.0f], color, sideFaceNormal);
+      vertices ~= Vertex([bottomPositions[1].x, bottomPositions[1].y - halfHeight, bottomPositions[1].z], [1.0f, 0.0f], color, sideFaceNormal);
+      vertices ~= Vertex([bottomPositions[1].x, height - halfHeight, bottomPositions[1].z], [1.0f, 1.0f], color, sideFaceNormal);
+      vertices ~= Vertex([bottomPositions[0].x, height - halfHeight, bottomPositions[0].z], [0.0f, 1.0f], color, sideFaceNormal);
 
       indices ~= [vIdx+2, vIdx + 1, vIdx, vIdx, vIdx + 3, vIdx + 2];
     }
-    this.computeCap([0.0f, height, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, color);
-    this.computeCap([0.0f, 0.0f, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color);
+    // Adjust cap positions by subtracting halfHeight
+    this.computeCap([0.0f, halfHeight, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, color); // Top cap
+    this.computeCap([0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color); // Bottom cap
 
     instances = [Instance()];
     meshes["Cylinder"] = Mesh([0, cast(uint)vertices.length]);
