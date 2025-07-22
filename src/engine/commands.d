@@ -12,6 +12,7 @@ import geometry : draw, bufferGeometries;
 import shaders : Shader;
 import ssbo : updateSSBO;
 import validation : pushLabel, popLabel;
+import window: supportedTopologies;
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
  */
@@ -53,9 +54,17 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   app.objects.mutex.lock(); // Lock
   try {
     if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
-    for(size_t x = 0; x < app.objects.length; x++) {
-      if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
-      if(app.showBounds) app.draw(app.objects[x].box, syncIndex);
+    foreach(topology; supportedTopologies) {
+      pushLabel(app.renderBuffers[app.syncIndex], toStringz(format("T:%s", topology)), Colors.lightgray);
+      vkCmdBindPipeline(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline);
+      vkCmdBindDescriptorSets(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                          app.pipelines[topology].layout, 0, 1, &app.sets[RENDER][syncIndex], 0, null);
+      for(size_t x = 0; x < app.objects.length; x++) {
+        if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.draw(app.objects[x].box, syncIndex);
+        if(app.objects[x].topology != topology) continue;
+        if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
+      }
+      popLabel(app.renderBuffers[app.syncIndex]);
     }
   } finally { app.objects.mutex.unlock(); }
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);

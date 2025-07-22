@@ -43,6 +43,7 @@ void renderFrame(ref App app){
   app.updateMeshInfo();    // Check Mesh Information change
   app.updateBoneOffsets(app.syncIndex); // Check BoneOffsets
   if(app.compute.enabled) app.updateComputeUBO(app.syncIndex);
+  app.updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.updateRenderUBO(app.shaders, app.syncIndex);
   app.updateTextures();                                         /// If a texture was loaded, update it
 

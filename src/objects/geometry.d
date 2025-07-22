@@ -274,9 +274,9 @@ void computeTangents(ref Geometry geometry, bool verbose = false) {
     float y2 = w3[1] - w1[1];
 
     float det = (x1 * y2 - x2 * y1);
-    if (det == 0.0f) continue;
+    if (abs(det) < 0.001f) continue;
     float r = 1.0f / det;
-    
+
     if (!isFinite(r) || isNaN(r)) { // Ensure r is a valid finite number
       SDL_Log("computeTangents: Non-finite or NaN determinant encountered.");
       continue;
@@ -284,7 +284,6 @@ void computeTangents(ref Geometry geometry, bool verbose = false) {
 
     auto sdir = (edge1.vMul(y2)).vSub(edge2.vMul(y1)).vMul(r);
     auto tdir = (edge2.vMul(x1)).vSub(edge1.vMul(x2)).vMul(r);
-
 
     tan1[face[0]] = tan1[face[0]].vAdd(sdir);
     tan1[face[1]] = tan1[face[1]].vAdd(sdir);
@@ -313,11 +312,6 @@ void draw(ref App app, Geometry object, size_t i) {
   if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null) return;
   if(app.trace) SDL_Log("DRAW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
-
-  // Todo: We might better iterate through pipeline topologies, instead of switching every draw
-  vkCmdBindPipeline(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[object.topology].pipeline);
-  vkCmdBindDescriptorSets(app.renderBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.pipelines[object.topology].layout, 0, 1, &app.sets[RENDER][i], 0, null);
 
   vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
   vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);

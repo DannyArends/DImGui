@@ -37,7 +37,7 @@ void createOrResizeWindow(ref App app) {
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush();
 
-  // 0] Query window settings then create a SwapChain, DepthBuffer, ColorBuffer, and Synchronization
+  SDL_Log("0: Query window settings then create a SwapChain, DepthBuffer, ColorBuffer, and Synchronization");
   app.querySurfaceFormats();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
@@ -45,8 +45,8 @@ void createOrResizeWindow(ref App app) {
   app.createDepthResources();
   app.createSyncObjects();
 
-  // 1] Compute shaders reflection
   if (app.compute.enabled) {
+    SDL_Log("1: Compute shaders reflection");
     app.reflectShaders(app.compute.shaders);
     app.createResources(app.compute.shaders, COMPUTE);
     foreach(ref shader; app.compute.shaders) {
@@ -58,42 +58,39 @@ void createOrResizeWindow(ref App app) {
     }
   }
 
-  // 2] Shadow shaders reflection
-  // TODO: Could be done once inside the main deletion queue, but then UBO reflection needs to allow a custome deletion queue
+  SDL_Log("2: Shadow shaders reflection");
   app.reflectShaders(app.shadows.shaders);
   app.createResources(app.shadows.shaders, SHADOWS);
+  app.createDescriptors(app.shadows.shaders, SHADOWS);
   app.createCommandBuffers(app.shadowBuffers);
   app.createShadowMapGraphicsPipeline();
-  for (uint i = 0; i < app.framesInFlight; i++) { // Make it better loop through the app.sets[SHADOWS][SyncIndex]
-    app.updateDescriptorSet(app.shadows.shaders, app.sets[SHADOWS], i);
-  }
 
-  // 3] Render shaders reflection
+  SDL_Log("3: Render shaders reflection");
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, RENDER);
-  app.createDescriptors(app.shaders,RENDER);
+  app.createDescriptors(app.shaders, RENDER);
   app.createCommandBuffers(app.renderBuffers);
 
-  // 4] Post-processing shaders reflection
+  SDL_Log("4: Post-processing shaders reflection");
   app.reflectShaders(app.postProcess);
   app.createResources(app.postProcess, POST);
   app.createDescriptors(app.postProcess, POST);
   for (uint i = 0; i < app.framesInFlight; i++) {
-    app.updateDescriptorSet(app.postProcess, app.sets[POST], i);  /// TODO: Should just be updated on window resize
+    app.updateDescriptorSet(app.postProcess, app.sets[POST], i);
   }
 
-  // ImGui resources
+  SDL_Log("5: ImGui resources");
   app.createCommandBuffers(app.imguiBuffers);
 
-  // Create RenderPasses [SCENE -> POST -> IMGUI]
+  SDL_Log("6: Create RenderPasses [SCENE -> POST -> IMGUI]");
   app.scene = app.createSceneRenderPass();
   app.postprocess = app.createPostProcessRenderPass();
   app.imgui = app.createImGuiRenderPass();
 
-  // Create Framebuffers
+  SDL_Log("7: Create Framebuffers");
   app.createFramebuffers();
 
-  // Create the Pipelines (Post-processing and Rendering)
+  SDL_Log("8: Create the Pipelines (Post-processing and Rendering)");
   app.createPostProcessGraphicsPipeline();
   foreach(member; supportedTopologies) {
     app.createGraphicsPipeline(member);
