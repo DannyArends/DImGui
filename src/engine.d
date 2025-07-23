@@ -8,7 +8,7 @@ public import includes;
 public import core.memory : GC;
 public import core.stdc.string : strcmp, memcpy, strstr;
 public import core.time : MonoTime, dur;
-public import core.thread : Thread;
+public import core.thread : Thread, thread_joinAll;
 public import core.sync.mutex : Mutex;
 
 public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
@@ -172,7 +172,7 @@ struct App {
   bool disco = false;                                                           /// Disco mode
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isMinimized = false;                                                     /// isMinimized?
-
+  bool isImGuiInitialized = false;
   // Properties based on the SwapChain
   @property pure @nogc uint imageCount() nothrow { return(cast(uint)swapChainImages.length); }
   @property pure @nogc bool trace() nothrow { return(verbose > 1); }
@@ -197,7 +197,7 @@ void cleanUp(App app) {
   SDL_Log("Delete objects & flush the main deletion queue");
   foreach(object; app.objects) { app.cleanup(object); }
   app.mainDeletionQueue.flush();
-
+  thread_joinAll();
   SDL_Log("Destroying window & quit SDL");
   SDL_DestroyWindow(app);
   SDL_Quit();

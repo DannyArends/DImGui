@@ -72,11 +72,8 @@ class geometryLoader : Thread {
     a.computeTangents();
     a.scale([0.15f, 0.15f, 0.15f]);
     a.position([1.5f, -0.9f, -2.5f + (xpos / 1.2f)]);
-    (*app).objects.mutex.lock();
-    try {
-      (*app).objects ~= a;
-    } finally { (*app).objects.mutex.unlock(); }
-    main.send(geometryComplete(path));
+    immutable(Geometry) immutableA = cast(immutable)a;
+    main.send(immutableA);
   }
 }
 
@@ -92,8 +89,11 @@ void loadGeometries(ref App app, const(char)* folder = "data/objects", string pa
     app.objects.loaded = true;
   }else{
     receiveTimeout(dur!"msecs"(-1),
-      (geometryComplete message) {
-        if(app.verbose) SDL_Log("Geometry loaded: %s", toStringz(message));
+      (immutable(Geometry) message) {
+        app.objects.mutex.lock();
+        try {
+          app.objects ~= cast(Geometry)message;
+        } finally { app.objects.mutex.unlock(); }
       },
     );
   }

@@ -51,22 +51,22 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   vkCmdBeginRenderPass(app.renderBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
 
-  app.objects.mutex.lock(); // Lock
-  try {
-    if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
-    foreach(topology; supportedTopologies) {
-      pushLabel(app.renderBuffers[app.syncIndex], toStringz(format("T:%s", topology)), Colors.lightgray);
-      vkCmdBindPipeline(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline);
-      vkCmdBindDescriptorSets(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.pipelines[topology].layout, 0, 1, &app.sets[RENDER][syncIndex], 0, null);
+  if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
+  foreach(topology; supportedTopologies) {
+    pushLabel(app.renderBuffers[app.syncIndex], toStringz(format("T:%s", topology)), Colors.lightgray);
+    vkCmdBindPipeline(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline);
+    vkCmdBindDescriptorSets(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            app.pipelines[topology].layout, 0, 1, &app.sets[RENDER][syncIndex], 0, null);
+    app.objects.mutex.lock(); // Lock
+    try {
       for(size_t x = 0; x < app.objects.length; x++) {
         if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.draw(app.objects[x].box, syncIndex);
         if(app.objects[x].topology != topology) continue;
         if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
       }
+    } finally { app.objects.mutex.unlock(); }
       popLabel(app.renderBuffers[app.syncIndex]);
-    }
-  } finally { app.objects.mutex.unlock(); }
+  }
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
 
   popLabel(app.renderBuffers[app.syncIndex]);

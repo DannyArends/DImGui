@@ -13,6 +13,9 @@ import geometry : deAllocate, setColor;
 import intersection : Intersection, intersects;
 import line : createLine;
 import sdl : FRAMESTART, FRAMESTOP, LASTTICK;
+import surface : createSurface;
+import window: createOrResizeWindow;
+import imgui : initializeImGui;
 
 /** Handle keyboard events
  */
@@ -132,7 +135,7 @@ void handleEvents(ref App app) {
   if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
-    ImGui_ImplSDL2_ProcessEvent(&e);
+    if(app.isImGuiInitialized) ImGui_ImplSDL2_ProcessEvent(&e);
     if(e.type == SDL_QUIT) app.finished = true;
     if(e.type == SDL_WINDOWEVENT) { 
       if(e.window.event == SDL_WINDOWEVENT_CLOSE && e.window.windowID == SDL_GetWindowID(app)){ app.finished = true; }
@@ -196,11 +199,36 @@ extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
 
 // Immediate events to handle by the application
 void handleApp(ref App app, const SDL_Event e) { 
-  if(e.type == SDL_APP_WILLENTERBACKGROUND){ app.isMinimized = true; }
-  if(e.type == SDL_APP_DIDENTERBACKGROUND){ app.finished = true; }
-  if(e.type == SDL_APP_WILLENTERFOREGROUND){ }
+  if(e.type == SDL_APP_WILLENTERBACKGROUND){ 
+    SDL_Log("Suspending...");
+    enforceVK(vkDeviceWaitIdle(app.device));
+    app.frameDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
+    SDL_Log("Shutdown ImGui");
+    app.isImGuiInitialized = false;
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    igDestroyContext(null);
+
+    SDL_Log("Destroy swapChain and Surface");
+    vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator);
+    app.swapChain = null;
+    vkDestroySurfaceKHR(app.instance, app.surface, app.allocator); // Before destroying the Surface
+    app.surface = null;
+
+    app.isMinimized = true;
+  }
+  if(e.type == SDL_APP_DIDENTERBACKGROUND){ 
+    SDL_Log("Completely in background.");
+  }
+  if(e.type == SDL_APP_WILLENTERFOREGROUND){
+    SDL_Log("Resuming...");
+  }
   if(e.type == SDL_APP_DIDENTERFOREGROUND){ 
-    import main : run;
-    run(); 
+    SDL_Log("Back in foreground.");
+    app.gui.fonts.length = 0;
+    app.createSurface();                                          /// Create Vulkan rendering surface
+    app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
+    app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
+    app.isMinimized = false;
   }
 }
