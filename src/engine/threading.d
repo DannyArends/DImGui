@@ -90,10 +90,7 @@ void loadGeometries(ref App app, const(char)* folder = "data/objects", string pa
   }else{
     receiveTimeout(dur!"msecs"(-1),
       (immutable(Geometry) message) {
-        app.objects.mutex.lock();
-        try {
-          app.objects ~= cast(Geometry)message;
-        } finally { app.objects.mutex.unlock(); }
+        app.objects ~= cast(Geometry)message;
       },
     );
   }

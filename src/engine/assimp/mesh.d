@@ -22,20 +22,17 @@ struct Mesh {
 void updateMeshInfo(ref App app) {
   app.meshInfo.length = 0;
   bool needsUpdate = true;
-  app.objects.mutex.lock(); // Lock
-  try {
-    for (size_t o = 0; o < app.objects.length; o++) {
-      uint size = cast(uint)app.objects[o].meshes.array.length;
-      for (size_t i = 0; i < app.objects[o].instances.length; i++) {
-        if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size]){
-          app.objects[o].instances[i].meshdef = [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size];
-          app.objects[o].buffers[INSTANCE] = false;
-          needsUpdate = true;
-        }
+  for (size_t o = 0; o < app.objects.length; o++) {
+    uint size = cast(uint)app.objects[o].meshes.array.length;
+    for (size_t i = 0; i < app.objects[o].instances.length; i++) {
+      if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size]){
+        app.objects[o].instances[i].meshdef = [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size];
+        app.objects[o].buffers[INSTANCE] = false;
+        needsUpdate = true;
       }
-      app.meshInfo ~= app.objects[o].meshes.array;
     }
-  } finally { app.objects.mutex.unlock(); }
+    app.meshInfo ~= app.objects[o].meshes.array;
+  }
   if(needsUpdate) app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
 }
 

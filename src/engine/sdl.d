@@ -30,8 +30,6 @@ enum { START = 0, STARTUP = 1, FRAMESTART = 2, FRAMESTOP = 3, LASTTICK = 4 };
 App initializeSDL() {
   int[4] init;
   App app;
-  app.objects.mutex = new Mutex();
-
   SDL_version linked;
 
   // Initialize the SDL library for video
