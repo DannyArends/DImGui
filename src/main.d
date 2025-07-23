@@ -48,7 +48,7 @@ version (Android) {
 /** 
  * Main entry point for Windows and Linux
  */
-void run(string[] args) {
+void run(string[] args = null) {
   App app = initializeSDL();                                    /// Initialize SDL library and create a window
   version (Android) {
     SDL_SetEventFilter(&sdlEventsFilter, &app);                 /// Handle immediate events on Android by callback
@@ -79,8 +79,8 @@ void run(string[] args) {
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
     app.handleEvents();
-    app.loadNextTexture();
-    app.loadGeometries();
+    //app.loadNextTexture();
+    //app.loadGeometries();
 
     app.time[FRAMESTART] = SDL_GetTicks();
     if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
@@ -92,6 +92,6 @@ void run(string[] args) {
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
-  version (Android) {}else{ app.cleanUp(); }
+  app.cleanUp();
 }
 
