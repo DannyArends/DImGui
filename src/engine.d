@@ -182,23 +182,23 @@ struct App {
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance
  */
 void cleanUp(App app) {
-  if(app.verbose) SDL_Log("Save ImGui Settings");
-  saveSettings();
-
-  if(app.verbose) SDL_Log("Wait on device idle & frame deletion queue");
+  SDL_Log("Wait on device idle & frame deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
   app.frameDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
 
-  if(app.verbose) SDL_Log("Shutdown ImGui");
+  SDL_Log("Save ImGui Settings");
+  saveSettings();
+
+  SDL_Log("Shutdown ImGui");
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   igDestroyContext(null);
 
-  if(app.verbose) SDL_Log("Delete objects & flush the main deletion queue");
+  SDL_Log("Delete objects & flush the main deletion queue");
   foreach(object; app.objects) { app.cleanup(object); }
   app.mainDeletionQueue.flush();
 
-  if(app.verbose) SDL_Log("Destroying window & quit SDL");
+  SDL_Log("Destroying window & quit SDL");
   SDL_DestroyWindow(app);
   SDL_Quit();
 }

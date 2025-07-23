@@ -185,7 +185,7 @@ extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
       case SDL_APP_LOWMEMORY: 
       case SDL_APP_WILLENTERBACKGROUND: case SDL_APP_DIDENTERBACKGROUND:
       case SDL_APP_WILLENTERFOREGROUND: case SDL_APP_DIDENTERFOREGROUND:
-      SDL_Log("Android SDL immediate event hook: %s", toStringz(format("%s", event.type)));
+      SDL_Log(toStringz(format("Android SDL immediate event hook: %s", event.type)));
       (*app).handleApp(*event); return(0);
 
       default: return(1);
@@ -197,5 +197,10 @@ extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
 // Immediate events to handle by the application
 void handleApp(ref App app, const SDL_Event e) { 
   if(e.type == SDL_APP_WILLENTERBACKGROUND){ app.isMinimized = true; }
-  if(e.type == SDL_APP_DIDENTERBACKGROUND){ app.cleanUp(); app.finished = true; }
+  if(e.type == SDL_APP_DIDENTERBACKGROUND){ app.finished = true; }
+  if(e.type == SDL_APP_WILLENTERFOREGROUND){ }
+  if(e.type == SDL_APP_DIDENTERFOREGROUND){ 
+    import main : run;
+    run(); 
+  }
 }
