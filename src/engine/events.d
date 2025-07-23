@@ -60,25 +60,23 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
 Intersection[] getHits(ref App app, SDL_Event e, bool showRay = true){
   auto ray = app.camera.castRay(e.motion.x, e.motion.y);
   Intersection[] hits;
-  app.objects.mutex.lock(); // Lock
-  try {
-    for(size_t x = 0; x < app.objects.length; x++) {
-      if(!app.objects[x].isVisible) continue;                   // invisible objects should not generate hits
-      if(app.objects[x].name() == "Line") continue;             // Other lines should not generate hits
-      app.objects[x].computeBoundingBox(app.trace);             // Make sure we compute the current Bounding Box
-      auto intersection = ray.intersects(app.objects[x].box);   // Compute the intersection
-      app.objects[x].window = false;
-      if (intersection.intersects) {
-        intersection.idx = cast(uint)x;
-        app.objects[x].box.setColor(Colors.paleturquoise);
-        app.gui.showObjects = true;
-        hits ~= intersection;
-      }else{
-        app.objects[x].box.setColor();
-      }
+
+  for(size_t x = 0; x < app.objects.length; x++) {
+    if(!app.objects[x].isVisible) continue;                   // invisible objects should not generate hits
+    if(app.objects[x].name() == "Line") continue;             // Other lines should not generate hits
+    app.objects[x].computeBoundingBox(app.trace);             // Make sure we compute the current Bounding Box
+    auto intersection = ray.intersects(app.objects[x].box);   // Compute the intersection
+    app.objects[x].window = false;
+    if (intersection.intersects) {
+      intersection.idx = cast(uint)x;
+      app.objects[x].box.setColor(Colors.paleturquoise);
+      app.gui.showObjects = true;
+      hits ~= intersection;
+    }else{
+      app.objects[x].box.setColor();
     }
-    if(showRay) app.objects ~= createLine(ray);
-  } finally { app.objects.mutex.unlock(); }
+  }
+  if(showRay) app.objects ~= createLine(ray);
   hits.sort!("a.tmin < b.tmin");
   return(hits);
 }
@@ -97,12 +95,9 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
     auto hits = app.getHits(e, app.showRays);
     if (hits.length > 0) {
-      app.objects.mutex.lock(); // Lock
-      try {
-        if(app.verbose) SDL_Log("Clostest hit: %d = %s", hits[0].idx, toStringz(app.objects[hits[0].idx].name()));
-        app.objects[hits[0].idx].box.setColor(Colors.yellowgreen);
-        app.objects[hits[0].idx].window = true;
-      } finally { app.objects.mutex.unlock(); }
+      if(app.verbose) SDL_Log("Clostest hit: %d = %s", hits[0].idx, toStringz(app.objects[hits[0].idx].name()));
+      app.objects[hits[0].idx].box.setColor(Colors.yellowgreen);
+      app.objects[hits[0].idx].window = true;
     }
   }
   if(e.type == SDL_MOUSEMOTION){
@@ -118,15 +113,10 @@ void handleMouseEvents(ref App app, SDL_Event e) {
  */
 void removeGeometry(ref App app) {
   size_t[] idx;
-  app.objects.mutex.lock(); // Lock
-  try {
-    foreach(i, ref object; app.objects) {
-      if(object.deAllocate) { 
-        app.deAllocate(object); idx ~= i;
-      }
-    }
-    foreach(i; idx.reverse) { app.objects.array = app.objects.array.remove(i); }
-  } finally { app.objects.mutex.unlock(); }
+  foreach(i, ref object; app.objects) {
+    if(object.deAllocate) { app.deAllocate(object); idx ~= i; }
+  }
+  foreach(i; idx.reverse) { app.objects.array = app.objects.array.remove(i); }
 }
 
 /** Handles all ImGui IO and SDL events
@@ -151,22 +141,16 @@ void handleEvents(ref App app) {
     //GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    app.objects.mutex.lock(); // Lock
-    try {
-      foreach(object; app.objects) {
-        if(app.trace) SDL_Log("object: %s", toStringz(object.name()));
-        if(object.onTick) object.onTick(app, object); 
-      }
-    } finally { app.objects.mutex.unlock(); }
+    foreach(object; app.objects) {
+      if(app.trace) SDL_Log("object: %s", toStringz(object.name()));
+      if(object.onTick) object.onTick(app, object); 
+    }
   }
 
   // Call all onFrame() handlers
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
-  app.objects.mutex.lock(); // Lock
-  try {
-    foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
-  } finally { app.objects.mutex.unlock(); }
+  foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 
   // Remove stale geometry
   app.removeGeometry();

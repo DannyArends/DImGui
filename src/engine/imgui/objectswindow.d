@@ -12,45 +12,37 @@ import textures : findTextureSlot;
  */
 void showObjectswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font]);
+  if(igBegin("Objects", show, 0)) {
+    bool list = true;
+    for(size_t x = 0; x < app.objects.length; x++) {
+      if(app.objects[x].window){
+        app.showObjectwindow(app.objects[x]);
+        list = false;
+      }
+    }
+    if(list){
+      igBeginTable("Object_Tbl", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+      foreach(i, object; app.objects){
+        igPushID_Int(to!int(i));
+        auto p = app.objects[i].position;
+        igTableNextRow(0, 5.0f);
+        string text = to!string(i);
+        if(object.name) text = object.name() ~ " " ~ text;
+        igTableNextColumn();
+          igText(text.toStringz, ImVec2(0.0f, 0.0f));
+        igTableNextColumn();
+          igText(object.mName.toStringz, ImVec2(0.0f, 0.0f));
+        igTableNextColumn();
+          if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
+          if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) { app.objects[i].isVisible = !app.objects[i].isVisible; } igSameLine(0,5);
+          if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; } igSameLine(0,5);
 
-  app.objects.mutex.lock(); // Lock
-  try {
-
-    if(igBegin("Objects", show, 0)) {
-      bool list = true;
-      for(size_t x = 0; x < app.objects.length; x++) {
-        if(app.objects[x].window){
-          app.showObjectwindow(app.objects[x]);
-          list = false;
+        igPopID();
         }
-      }
-      if(list){
-        igBeginTable("Object_Tbl", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-
-        foreach(i, object; app.objects){
-          igPushID_Int(to!int(i));
-          auto p = app.objects[i].position;
-          igTableNextRow(0, 5.0f);
-          string text = to!string(i);
-          if(object.name) text = object.name() ~ " " ~ text;
-          igTableNextColumn();
-            igText(text.toStringz, ImVec2(0.0f, 0.0f));
-          igTableNextColumn();
-            igText(object.mName.toStringz, ImVec2(0.0f, 0.0f));
-          igTableNextColumn();
-            if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
-            if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) { app.objects[i].isVisible = !app.objects[i].isVisible; } igSameLine(0,5);
-            if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; } igSameLine(0,5);
-
-          igPopID();
-          }
-        igEndTable();
-        igEnd();
-      }
-    }else { igEnd(); }
-
-  } finally { app.objects.mutex.unlock(); }
-
+      igEndTable();
+      igEnd();
+    }
+  }else { igEnd(); }
   igPopFont();
 }
 

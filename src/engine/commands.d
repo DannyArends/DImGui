@@ -57,15 +57,13 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     vkCmdBindPipeline(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline);
     vkCmdBindDescriptorSets(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
                             app.pipelines[topology].layout, 0, 1, &app.sets[RENDER][syncIndex], 0, null);
-    app.objects.mutex.lock(); // Lock
-    try {
-      for(size_t x = 0; x < app.objects.length; x++) {
-        if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.draw(app.objects[x].box, syncIndex);
-        if(app.objects[x].topology != topology) continue;
-        if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
-      }
-    } finally { app.objects.mutex.unlock(); }
-      popLabel(app.renderBuffers[app.syncIndex]);
+    
+    for(size_t x = 0; x < app.objects.length; x++) {
+      if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.draw(app.objects[x].box, syncIndex);
+      if(app.objects[x].topology != topology) continue;
+      if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
+    }
+    popLabel(app.renderBuffers[app.syncIndex]);
   }
   vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
 
