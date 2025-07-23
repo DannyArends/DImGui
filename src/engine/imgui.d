@@ -124,11 +124,14 @@ void initializeImGui(ref App app){
     CheckVkResultFn : &enforceVK
   };
   ImGui_ImplVulkan_Init(&imguiInit);
+  ImGui_ImplVulkan_CreateFontsTexture();
+  vkDeviceWaitIdle(app.device);
   version(Android){ 
     auto style = igGetStyle();
     ImGuiStyle_ScaleAllSizes(style, 2.0f);
     app.gui.size = 2;
   }
+  app.isImGuiInitialized = true;
   if(app.verbose) SDL_Log("ImGui initialized, MSAA: %d", app.getMSAASamples());
 }
 

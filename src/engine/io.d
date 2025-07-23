@@ -91,8 +91,11 @@ version(Android) {
     for (int i = 0; i < length; i++) {
       // Allocate the java string, and get the filename
       jstring jstr = cast(jstring)(*env).GetObjectArrayElement(env, files_object, i);
-      string fn = to!string((*env).GetStringUTFChars(env, jstr, null));
-      //SDL_Log("fn: %s", toStringz(fn));
+      const(char)* cstr = (*env).GetStringUTFChars(env, jstr, null); // Get C string memory
+      if (cstr == null) { (*env).DeleteLocalRef(env, jstr); continue; }
+      string fn = to!string(cstr);
+      (*env).ReleaseStringUTFChars(env, jstr, cstr); // Release C string memory
+
       if (fn) {
         string s = to!string(path);
         fn = format("%s%s%s", s, (s[$-1] == '/'? "": "/"), fromStringz(fn));
@@ -104,9 +107,13 @@ version(Android) {
       }
       (*env).DeleteLocalRef(env, jstr); // De-Allocate the java string
     }
+    
+    (*env).DeleteLocalRef(env, files_object);  // Delete the array of files
+    (*env).DeleteLocalRef(env, path_object);   // Delete the path string
+    (*env).DeleteLocalRef(env, activity);      // Delete the activity object
+    
     (*env).DeleteLocalRef(env, asset_manager);
     (*env).DeleteLocalRef(env, activity_class);
-    //SDL_Log(toStringz(format("%s", files)));
     return(files);
   }
 

@@ -79,8 +79,8 @@ void run(string[] args = null) {
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
     app.handleEvents();
-    //app.loadNextTexture();
-    //app.loadGeometries();
+    app.loadNextTexture();
+    app.loadGeometries();
 
     app.time[FRAMESTART] = SDL_GetTicks();
     if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }

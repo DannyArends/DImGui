@@ -308,9 +308,10 @@ void computeTangents(ref Geometry geometry, bool verbose = false) {
 }
 
 /** Render a Geometry to app.renderBuffers[i] */
-void draw(ref App app, Geometry object, size_t i) {
-  if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null) return;
-  if(app.trace) SDL_Log("DRAW[%s]: %d instances", toStringz(object.name()), object.instances.length);
+void draw(T)(ref App app, ref T object, size_t i) {
+  if(!object.isBuffered()) return;
+  if(app.trace) SDL_Log("DRAW: %d instances", object.instances.length);
+
   VkDeviceSize[] offsets = [0];
 
   vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);

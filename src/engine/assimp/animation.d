@@ -90,10 +90,10 @@ Animation[] loadAnimations(ref App app, aiScene* scene, const OpenAsset asset) {
         string nodeName = format("%s:%s", asset.mName, name(aiNodeAnim.mNodeName));
 
         if (app.verbose) {
-          SDL_Log("    Node Channel %u for '%s'", j, toStringz(nodeName));
-          SDL_Log("      Position Keys: %u", aiNodeAnim.mNumPositionKeys);
-          SDL_Log("      Rotation Keys: %u", aiNodeAnim.mNumRotationKeys);
-          SDL_Log("      Scaling Keys: %u", aiNodeAnim.mNumScalingKeys);
+          //SDL_Log("    Node Channel %u for '%s'", j, toStringz(nodeName));
+          //SDL_Log("      Position Keys: %u", aiNodeAnim.mNumPositionKeys);
+          //SDL_Log("      Rotation Keys: %u", aiNodeAnim.mNumRotationKeys);
+          //SDL_Log("      Scaling Keys: %u", aiNodeAnim.mNumScalingKeys);
         }
 
         for (uint k = 0; k < aiNodeAnim.mNumPositionKeys; k++) {        // Extract Position Keys
