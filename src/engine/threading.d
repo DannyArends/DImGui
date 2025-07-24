@@ -112,7 +112,12 @@ void loadNextTexture(ref App app, const(char)* folder = "data/textures/", string
       (textureComplete message) {
         if(app.verbose) SDL_Log("Texture loaded: %s", toStringz(message));
         uint slot = app.findTextureSlot(message);
-        app.toGPU(app.textures[slot]);
+
+        import commands : beginSingleTimeCommands, endSingleTimeCommands;
+        auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
+        app.toGPU(commandBuffer, app.textures[slot]);
+        app.endSingleTimeCommands(commandBuffer, app.transferPool, app.transfer);
+
         app.textures[slot].dirty = true;
         app.textures.cur++;
         app.textures.busy = false;

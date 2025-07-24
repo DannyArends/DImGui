@@ -80,19 +80,24 @@ uint findTextureSlot(App app, string name = "empty"){
   assert(0, "No more texture slots");
 }
 
-void initDummyTexture(ref App app, string[] files, uint x){
+void initDummyTexture(ref App app, VkCommandBuffer cmdBuffer, string[] files, uint x){
   Texture dummy = { path : "empty", width: 1, height: 1, surface: createDummySDLSurface() };
   if(x < files.length) dummy.path = files[x];
-  app.toGPU(dummy);
+  app.toGPU(cmdBuffer, dummy);
   app.textures ~= dummy;
   app.mainDeletionQueue.add((){ app.deAllocate(dummy); });
 }
 
 // Load all texture files matching pattern in folder
 void initTextures(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}") {
+  SDL_Log("init texture");
   string[] files = dir(folder, pattern, false);
-  for(uint x = 0; x < app.textures.max; x++) { app.initDummyTexture(files, x); }
-  app.createFontTexture();
+  
+  import commands : beginSingleTimeCommands, endSingleTimeCommands;
+  auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
+  for(uint x = 0; x < app.textures.max; x++) { app.initDummyTexture(commandBuffer, files, x); }
+  app.createFontTexture(commandBuffer);
+  app.endSingleTimeCommands(commandBuffer, app.transferPool, app.transfer);
 }
 
 void updateTextures(ref App app) {
@@ -114,7 +119,7 @@ void updateTextures(ref App app) {
   }
 }
 
-void toGPU(ref App app, ref Texture texture) {
+void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
   // Create a buffer to transfer the image to the GPU
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
@@ -132,10 +137,11 @@ void toGPU(ref App app, ref Texture texture) {
   if(texture.image){ app.mainDeletionQueue.add((){ app.deAllocate(texture); }); }
 
   // Create an image, transition the layout
+  //, app.transferPool, app.transfer, null
   app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory);
-  app.transitionImageLayout(texture.image, app.transferPool, app.transfer, null, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  app.copyBufferToImage(stagingBuffer, texture.image, texture.surface.w, texture.surface.h);
-  app.transitionImageLayout(texture.image, app.transferPool, app.transfer, null, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  app.transitionImageLayout(cmdBuffer, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  app.copyBufferToImage(cmdBuffer, stagingBuffer, texture.image, texture.surface.w, texture.surface.h);
+  app.transitionImageLayout(cmdBuffer, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   // Create an imageview and register the texture with ImGui
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);

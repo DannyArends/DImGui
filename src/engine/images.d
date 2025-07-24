@@ -93,18 +93,10 @@ void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceM
 
 /** Transition Image Layout from old to new layout
  */
-void transitionImageLayout(ref App app, VkImage image, VkCommandPool pool, VkQueue queue, VkCommandBuffer commandBuffer = null,
+void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage image,
                            VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                            VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
-  bool isSingleTimeCommand = (commandBuffer == null); /// Check if a commandBuffer is provided
-  if(app.trace) SDL_Log("transitionImageLayout %d", isSingleTimeCommand);
-
-  if (isSingleTimeCommand) {
-    commandBuffer = app.beginSingleTimeCommands(pool);
-    if(app.trace) SDL_Log(" - transitionImageLayout via single time CommandBuffer");
-  }
-
   VkImageSubresourceRange subresourceRange = {
     aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
     baseMipLevel: 0,
@@ -162,7 +154,5 @@ void transitionImageLayout(ref App app, VkImage image, VkCommandPool pool, VkQue
   }
 
   vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, null, 0, null, 1, &barrier);
-
-  if (isSingleTimeCommand) app.endSingleTimeCommands(commandBuffer, pool, queue);
   if(app.trace) SDL_Log(" - transitionImageLayout finished for commandBuffer[%p]", commandBuffer);
 }
