@@ -38,32 +38,13 @@ class textureLoader : Thread {
 
   void run() { // Load a single texture from path, and upload to GPU A-Sync
     uint slot = (*app).findTextureSlot(path);
-    SDL_Log("loadTexture '%s' to %d", toStringz(path), slot);
+    if((*app).trace) SDL_Log("loadTexture '%s' to %d", toStringz(path), slot);
     auto surface = IMG_Load(toStringz(path));
     if((*app).trace) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", toStringz(path), surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
     if (surface.format.BitsPerPixel != 32) { surface.toRGBA((*app).verbose); }  // Adapt surface to 32 bit
     (*app).textures[slot].surface = surface;
     (*app).textures[slot].width = surface.w;
     (*app).textures[slot].height = surface.h;
-
-    auto commandBuffer = (*app).beginSingleTimeCommands((*app).transferPool, true);
-    (*app).toGPU(commandBuffer, (*app).textures[slot]);
-    vkEndCommandBuffer(commandBuffer);
-    VkSubmitInfo submitInfo = {
-      sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      commandBufferCount: 1,
-      pCommandBuffers: &commandBuffer.commandBuffer,
-    };
-    enforceVK(vkQueueSubmit((*app).transfer, 1, &submitInfo, commandBuffer.completionFence)); // Submit to the transfer queue
-
-    bool waiting = true;
-    while (waiting) {
-      VkResult result = vkGetFenceStatus(app.device, commandBuffer.completionFence);
-      if (result == VK_SUCCESS) { waiting = false; }else{ SDL_Delay(10); }
-    }
-    vkDestroyFence((*app).device, commandBuffer.completionFence, (*app).allocator);
-
-    (*app).textures[slot].dirty = true;
     if((*app).verbose) SDL_Log("loadTexture '%s' DONE", toStringz(path));
     main.send(textureComplete(path));
   }
@@ -121,20 +102,39 @@ void loadGeometries(ref App app, const(char)* folder = "data/objects", string pa
  */
 void loadNextTexture(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}"){
   string[] files = dir(folder, pattern, false);
-  if(!app.textures.busy){
-    app.textures.busy = true;
+  if(!app.textures.loading){
+    app.textures.loading = true;
     if (app.textures.cur < files.length) {
       auto worker = new textureLoader(&app, files[app.textures.cur], thisTid);
       worker.start();
     }
-  }else{
+  }
+  if(!app.textures.transfer){
     receiveTimeout(dur!"msecs"(-1),
       (textureComplete message) {
-        if(app.verbose) SDL_Log("Texture loaded: %s", toStringz(message));
-
+        app.textures.loading = false;
         app.textures.cur++;
-        app.textures.busy = false;
-      },
+        app.textures.transfer = true;
+        uint slot = app.findTextureSlot(message);
+
+        app.textures.cmdBuffer = app.beginSingleTimeCommands(app.transferPool, true);
+        app.toGPU(app.textures.cmdBuffer, app.textures[slot]);
+        vkEndCommandBuffer(app.textures.cmdBuffer);
+        VkSubmitInfo submitInfo = {
+          sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
+          commandBufferCount: 1,
+          pCommandBuffers: &app.textures.cmdBuffer.commands,
+        };
+        enforceVK(vkQueueSubmit(app.transfer, 1, &submitInfo, app.textures.cmdBuffer.fence)); // Submit to the transfer queue
+        app.textures[slot].dirty = true;
+      }
     );
+  }else{
+    VkResult result = vkGetFenceStatus(app.device, app.textures.cmdBuffer.fence);
+    if (result == VK_SUCCESS) { 
+      app.textures.transfer = false;
+      auto commands = app.textures.cmdBuffer.commands;
+
+    }
   }
 }
