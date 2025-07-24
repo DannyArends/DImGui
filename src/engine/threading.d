@@ -6,6 +6,7 @@
 import engine;
 
 import cube : Cube;
+import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import geometry : Instance, Geometry, computeNormals, computeTangents, position, rotate, scale;
 import io : dir;
 import textures: findTextureSlot, toRGBA, toGPU;
@@ -35,15 +36,34 @@ class textureLoader : Thread {
     super(&run);
   }
 
-  void run() { // Load a single texture from path
+  void run() { // Load a single texture from path, and upload to GPU A-Sync
     uint slot = (*app).findTextureSlot(path);
-    if((*app).verbose) SDL_Log("loadTexture '%s' to %d", toStringz(path), slot);
+    SDL_Log("loadTexture '%s' to %d", toStringz(path), slot);
     auto surface = IMG_Load(toStringz(path));
     if((*app).trace) SDL_Log("loadTexture '%s', Surface: %p [%dx%d:%d]", toStringz(path), surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
     if (surface.format.BitsPerPixel != 32) { surface.toRGBA((*app).verbose); }  // Adapt surface to 32 bit
     (*app).textures[slot].surface = surface;
     (*app).textures[slot].width = surface.w;
     (*app).textures[slot].height = surface.h;
+
+    auto commandBuffer = (*app).beginSingleTimeCommands((*app).transferPool, true);
+    (*app).toGPU(commandBuffer, (*app).textures[slot]);
+    vkEndCommandBuffer(commandBuffer);
+    VkSubmitInfo submitInfo = {
+      sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
+      commandBufferCount: 1,
+      pCommandBuffers: &commandBuffer.commandBuffer,
+    };
+    enforceVK(vkQueueSubmit((*app).transfer, 1, &submitInfo, commandBuffer.completionFence)); // Submit to the transfer queue
+
+    bool waiting = true;
+    while (waiting) {
+      VkResult result = vkGetFenceStatus(app.device, commandBuffer.completionFence);
+      if (result == VK_SUCCESS) { waiting = false; }else{ SDL_Delay(10); }
+    }
+    vkDestroyFence((*app).device, commandBuffer.completionFence, (*app).allocator);
+
+    (*app).textures[slot].dirty = true;
     if((*app).verbose) SDL_Log("loadTexture '%s' DONE", toStringz(path));
     main.send(textureComplete(path));
   }
@@ -111,14 +131,7 @@ void loadNextTexture(ref App app, const(char)* folder = "data/textures/", string
     receiveTimeout(dur!"msecs"(-1),
       (textureComplete message) {
         if(app.verbose) SDL_Log("Texture loaded: %s", toStringz(message));
-        uint slot = app.findTextureSlot(message);
 
-        import commands : beginSingleTimeCommands, endSingleTimeCommands;
-        auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
-        app.toGPU(commandBuffer, app.textures[slot]);
-        app.endSingleTimeCommands(commandBuffer, app.transferPool, app.transfer);
-
-        app.textures[slot].dirty = true;
         app.textures.cur++;
         app.textures.busy = false;
       },

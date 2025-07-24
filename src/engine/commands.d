@@ -140,7 +140,14 @@ void createCommandBuffers(ref App app, ref VkCommandBuffer[] dst) {
   });
 }
 
-VkCommandBuffer beginSingleTimeCommands(ref App app, VkCommandPool pool) {
+// New struct to return results of an async transfer submission
+struct AsyncTransferResultCPU {
+  VkFence completionFence;
+  VkCommandBuffer commandBuffer; // The command buffer used for this specific transfer
+  alias commandBuffer this;
+}
+
+AsyncTransferResultCPU beginSingleTimeCommands(ref App app, VkCommandPool pool, bool async = false) {
   VkCommandBuffer[1] commandBuffer = app.createCommandBuffer(pool, 1);
 
   VkCommandBufferBeginInfo beginInfo = {
@@ -148,7 +155,15 @@ VkCommandBuffer beginSingleTimeCommands(ref App app, VkCommandPool pool) {
     flags: VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
   };
   vkBeginCommandBuffer(commandBuffer[0], &beginInfo);
-  return commandBuffer[0];
+  VkFence completionFence;
+  if(async) {
+    VkFenceCreateInfo fenceInfo = {
+        sType: VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        flags: 0
+    };
+    enforceVK(vkCreateFence(app.device, &fenceInfo, app.allocator, &completionFence));
+  }
+  return AsyncTransferResultCPU(completionFence, commandBuffer[0]);
 }
 
 void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer, VkCommandPool pool, VkQueue queue) {
