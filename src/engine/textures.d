@@ -6,6 +6,7 @@
 import engine;
 
 import io : dir;
+import commands : SingleTimeCommand;
 import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
 import images : ImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
@@ -29,10 +30,12 @@ struct Texture {
 
 struct Textures {
   Texture[] textures;             /// Textures
-  bool busy = false;              /// Are we loading a texture a-sync ?
+  bool loading = false;           /// Are we loading a texture a-sync ?
+  bool transfer = false;          /// Are we loading a transfering a-sync ?
   uint cur = 0;                   /// The current index of texture we're loading
+  uint gpu = 0;                   /// The current index of texture we're transfering
   uint max = 128;                 /// Maximum number of textures
-
+  SingleTimeCommand cmdBuffer;    /// A-Sync single time command buffer
   alias textures this;
 }
 
@@ -97,7 +100,7 @@ void initTextures(ref App app, const(char)* folder = "data/textures/", string pa
   auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
   for(uint x = 0; x < app.textures.max; x++) { app.initDummyTexture(commandBuffer, files, x); }
   app.createFontTexture(commandBuffer);
-  app.endSingleTimeCommands(commandBuffer, app.transferPool, app.transfer);
+  app.endSingleTimeCommands(commandBuffer, app.transfer);
 }
 
 void updateTextures(ref App app) {

@@ -87,11 +87,11 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
 void transferToSSBO(ref App app, Descriptor descriptor) {
   import commands : beginSingleTimeCommands, endSingleTimeCommands;
 
-  VkCommandBuffer commandBuffer = app.beginSingleTimeCommands(app.commandPool);
+  auto commandBuffer = app.beginSingleTimeCommands(app.commandPool);
   for(uint i = 0; i < app.framesInFlight; i++) {
     app.updateSSBO(commandBuffer, app.compute.system.particles, descriptor, i);
   }
-  app.endSingleTimeCommands(commandBuffer, app.commandPool, app.queue);
+  app.endSingleTimeCommands(commandBuffer, app.queue);
 }
 
 void updateComputeUBO(ref App app, uint syncIndex = 0){

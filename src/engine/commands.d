@@ -141,13 +141,15 @@ void createCommandBuffers(ref App app, ref VkCommandBuffer[] dst) {
 }
 
 // New struct to return results of an async transfer submission
-struct AsyncTransferResultCPU {
-  VkFence completionFence;
-  VkCommandBuffer commandBuffer; // The command buffer used for this specific transfer
-  alias commandBuffer this;
+struct SingleTimeCommand {
+  bool async = false;
+  VkFence fence;
+  VkCommandPool pool;
+  VkCommandBuffer commands; // The command buffer used for this specific transfer
+  alias commands this;
 }
 
-AsyncTransferResultCPU beginSingleTimeCommands(ref App app, VkCommandPool pool, bool async = false) {
+SingleTimeCommand beginSingleTimeCommands(ref App app, VkCommandPool pool, bool async = false) {
   VkCommandBuffer[1] commandBuffer = app.createCommandBuffer(pool, 1);
 
   VkCommandBufferBeginInfo beginInfo = {
@@ -162,23 +164,25 @@ AsyncTransferResultCPU beginSingleTimeCommands(ref App app, VkCommandPool pool, 
         flags: 0
     };
     enforceVK(vkCreateFence(app.device, &fenceInfo, app.allocator, &completionFence));
+    app.mainDeletionQueue.add((){
+      vkDestroyFence(app.device, completionFence, app.allocator);
+      vkFreeCommandBuffers(app.device, pool, 1, &commandBuffer[0]);
+    });
   }
-  return AsyncTransferResultCPU(completionFence, commandBuffer[0]);
+  return SingleTimeCommand(async, completionFence, pool, commandBuffer[0]);
 }
 
-void endSingleTimeCommands(ref App app, VkCommandBuffer commandBuffer, VkCommandPool pool, VkQueue queue) {
-  vkEndCommandBuffer(commandBuffer);
+void endSingleTimeCommands(ref App app, SingleTimeCommand cmd, VkQueue queue) {
+  vkEndCommandBuffer(cmd.commands);
 
   VkSubmitInfo submitInfo = {
     sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
     commandBufferCount: 1,
-    pCommandBuffers: &commandBuffer
+    pCommandBuffers: &cmd.commands
   };
 
   vkQueueSubmit(queue, 1, &submitInfo, null);
   vkQueueWaitIdle(queue);
 
-  vkFreeCommandBuffers(app.device, pool, 1, &commandBuffer);
+  vkFreeCommandBuffers(app.device, cmd.pool, 1, &cmd.commands);
 }
-
-
