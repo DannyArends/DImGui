@@ -61,7 +61,7 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descript
   if(size == 0) return;
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);
-
+/*
   VkBufferMemoryBarrier bufferBarrier = {
       sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
       srcAccessMask : VK_ACCESS_HOST_WRITE_BIT,         // Data was written by Host
@@ -80,7 +80,7 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descript
       0, null,                                // memoryBarriers
       1, &bufferBarrier,                      // bufferMemoryBarriers (our SSBO barrier)
       0, null                                 // imageMemoryBarriers
-  );
+  ); */
   app.buffers[descriptor.base].dirty[syncIndex] = false; // TODO: enable dirty
 }
 
