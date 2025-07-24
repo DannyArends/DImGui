@@ -34,9 +34,10 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
           igText(object.mName.toStringz, ImVec2(0.0f, 0.0f));
         igTableNextColumn();
           if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
-          if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) { app.objects[i].isVisible = !app.objects[i].isVisible; } igSameLine(0,5);
+          if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) {
+            app.objects[i].isVisible = !app.objects[i].isVisible; 
+          } igSameLine(0,5);
           if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; } igSameLine(0,5);
-
         igPopID();
         }
       igEndTable();

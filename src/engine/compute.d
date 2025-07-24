@@ -25,7 +25,7 @@ import validation : pushLabel, popLabel;
 /** Compute structure with shaders, command buffer and pipelines
  */
 struct Compute {
-  bool enabled = true;
+  bool enabled = false;
   uint lastTick;
   ParticleSystem system;
   Shader[] shaders;                           /// Compute shader objects

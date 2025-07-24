@@ -81,18 +81,11 @@ void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDev
   if(app.trace) SDL_Log("Buffer %p [size=%d] created, allocated, and bound", (*buffer), size);
 }
 
-void copyBuffer(ref App app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size = VK_WHOLE_SIZE) {
-  VkCommandBuffer commandBuffer = app.beginSingleTimeCommands(app.commandPool);
-  VkBufferCopy copyRegion = { size : size };
-  vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-  app.endSingleTimeCommands(commandBuffer, app.commandPool, app.queue);
-}
-
 void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuffer) {
   if(app.trace) SDL_Log("updateBuffer");
   VkBufferCopy copyRegion = { size : buffer.size };
   vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
-
+/*
   VkBufferMemoryBarrier bufferBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
     srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,         // Data written by transfer operation
@@ -111,7 +104,7 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuf
     0, null,                              // memoryBarriers
     1, &bufferBarrier,                    // bufferMemoryBarriers
     0, null                               // imageMemoryBarriers
-  );
+  ); */
 }
 
 void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, uint height) {
