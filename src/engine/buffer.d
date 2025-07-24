@@ -107,8 +107,7 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuf
   ); */
 }
 
-void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, uint height) {
-  VkCommandBuffer commandBuffer = app.beginSingleTimeCommands(app.transferPool);
+void copyBufferToImage(ref App app, VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint width, uint height) {
   VkOffset3D imageOffset = { 0, 0, 0 };
   VkExtent3D imageExtent = { width, height, 1 };
 
@@ -130,7 +129,6 @@ void copyBufferToImage(ref App app, VkBuffer buffer, VkImage image, uint width, 
 
   if(app.trace) SDL_Log("copyBufferToImage buffer[%p] to image[%p] %dx%d", buffer, image, width, height);
   vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-  app.endSingleTimeCommands(commandBuffer, app.transferPool, app.transfer);
 }
 
 /** Create Vulkan buffer and memory pointer and transfer the array of objects into the GPU memory

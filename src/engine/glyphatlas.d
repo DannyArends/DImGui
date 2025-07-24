@@ -5,6 +5,7 @@
 
 import engine;
 
+import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import glyph: Glyph;
 import textures : Texture, toRGBA, toGPU, findTextureSlot;
 import images : createImage, deAllocate, imageSize;
@@ -115,14 +116,15 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', ui
 }
 
 /** Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray */
-void createFontTexture(ref App app) {
+void createFontTexture(ref App app, VkCommandBuffer cmdBuffer) {
   if(app.verbose) SDL_Log("createFontTexture");
   auto surface = TTF_RenderUNICODE_Blended_Wrapped(app.glyphAtlas.ttf, &app.glyphAtlas.atlas[0], SDL_Color(255, 255, 255, 255), app.glyphAtlas.width);
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   if(surface.format.BitsPerPixel != 32) surface.toRGBA();
 
   app.glyphAtlas.texture = Texture(app.glyphAtlas.path, surface.w, surface.h, surface);
-  app.toGPU(app.glyphAtlas.texture);
+  SDL_Log("Adding Font Texture");
+  app.toGPU(cmdBuffer, app.glyphAtlas.texture);
   app.textures[app.findTextureSlot(app.glyphAtlas.path)] = app.glyphAtlas.texture;
   SDL_Log("Added Font Texture");
   app.mainDeletionQueue.add((){ app.deAllocate(app.glyphAtlas.texture); });

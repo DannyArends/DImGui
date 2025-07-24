@@ -5,8 +5,9 @@
 
 import engine;
 
+import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
-import images : ImageBuffer, createImage, deAllocate,transitionImageLayout;
+import images : ImageBuffer, createImage, deAllocate, transitionImageLayout;
 import swapchain : createImageView;
 
 alias ImageBuffer DepthBuffer;
@@ -41,8 +42,10 @@ void createDepthResources(ref App app) {
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.image);
   app.depthBuffer.view = app.createImageView(app.depthBuffer.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
   if(app.verbose) SDL_Log(" - image view created: %p", app.depthBuffer.view);
-  app.transitionImageLayout(app.depthBuffer.image, app.commandPool, app.queue, null, 
-                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
+  auto commandBuffer = app.beginSingleTimeCommands(app.commandPool);
+  app.transitionImageLayout(commandBuffer, app.depthBuffer.image, 
+                             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
+  app.endSingleTimeCommands(commandBuffer, app.commandPool, app.queue);
   if(app.verbose) SDL_Log("Depth resources created");
   app.swapDeletionQueue.add((){ app.deAllocate(app.depthBuffer); });
 }
