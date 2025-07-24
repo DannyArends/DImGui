@@ -39,7 +39,7 @@ void createSyncObjects(ref App app) {
     enforceVK(vkCreateFence(app.device, &fenceInfo, null, &app.fences[i].computeInFlight));
   }
   if(app.verbose) SDL_Log("Done vkCreateFence");
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     app.bufferDeletionQueue.flush(true); // Make sure we flush the buffers using the old fences
     for (uint i = 0; i < app.framesInFlight; i++) {
       vkDestroySemaphore(app.device, app.sync[i].computeComplete, app.allocator);

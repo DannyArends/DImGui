@@ -35,7 +35,7 @@ VkPrimitiveTopology[] supportedTopologies =
 void createOrResizeWindow(ref App app) {
   if(app.verbose) SDL_Log("Window Created or ReSized, recreate SwapChain");
   enforceVK(vkDeviceWaitIdle(app.device));
-  app.frameDeletionQueue.flush();
+  app.swapDeletionQueue.flush();
 
   SDL_Log("0: Query window settings then create a SwapChain, DepthBuffer, ColorBuffer, and Synchronization");
   app.querySurfaceFormats();

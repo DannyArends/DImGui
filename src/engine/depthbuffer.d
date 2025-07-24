@@ -44,6 +44,6 @@ void createDepthResources(ref App app) {
   app.transitionImageLayout(app.depthBuffer.image, app.commandPool, app.queue, null, 
                             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
   if(app.verbose) SDL_Log("Depth resources created");
-  app.frameDeletionQueue.add((){ app.deAllocate(app.depthBuffer); });
+  app.swapDeletionQueue.add((){ app.deAllocate(app.depthBuffer); });
 }
 

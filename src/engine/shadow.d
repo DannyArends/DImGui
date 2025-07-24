@@ -206,7 +206,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, app.allocator, &app.shadows.pipeline.pipeline));
   if(app.verbose) SDL_Log("Shadow map graphics pipeline created: %p", app.shadows.pipeline.pipeline);
 
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     vkDestroyPipelineLayout(app.device, app.shadows.pipeline.layout, app.allocator);
     vkDestroyPipeline(app.device, app.shadows.pipeline.pipeline, app.allocator);
   });

@@ -35,7 +35,7 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
     app.buffers[descriptor.base].dirty[i] = true;
   }
 
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting SSBO at %s", toStringz(descriptor.base));
     app.deAllocate(app.buffers, descriptor);
   });

@@ -47,7 +47,7 @@ void createUBO(ref App app, Descriptor descriptor) {
   }
   if(app.verbose) SDL_Log("Created %d UBO of size: %d bytes", app.imageCount, descriptor.bytes);
 
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting UBO at %s", toStringz(descriptor.base));
     app.deAllocate(app.ubos, descriptor); 
   });

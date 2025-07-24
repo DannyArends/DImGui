@@ -103,7 +103,7 @@ struct App {
 
   // Deletion queues for cleaning up resources
   DeletionQueue mainDeletionQueue;                                              /// On application shutdown
-  DeletionQueue frameDeletionQueue;                                             /// When rebuilding the SwapChain
+  DeletionQueue swapDeletionQueue;                                            /// When rebuilding the SwapChain
   CheckedDeletionQueue bufferDeletionQueue;                                     /// On each frame rendered
 
   // ShaderC & SPIR-V reflection
@@ -173,6 +173,7 @@ struct App {
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isMinimized = false;                                                     /// isMinimized?
   bool isImGuiInitialized = false;
+
   // Properties based on the SwapChain
   @property pure @nogc uint imageCount() nothrow { return(cast(uint)swapChainImages.length); }
   @property pure @nogc bool trace() nothrow { return(verbose > 1); }
@@ -184,7 +185,7 @@ struct App {
 void cleanUp(App app) {
   SDL_Log("Wait on device idle & frame deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
-  app.frameDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
+  app.swapDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
 
   SDL_Log("Save ImGui Settings");
   saveSettings();

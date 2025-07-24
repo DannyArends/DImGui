@@ -120,7 +120,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.pipelines[topology].pipeline));
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     vkDestroyPipelineLayout(app.device, app.pipelines[topology].layout, app.allocator);
     vkDestroyPipeline(app.device, app.pipelines[topology].pipeline, app.allocator);
   });
@@ -213,7 +213,7 @@ void createPostProcessGraphicsPipeline(ref App app) {
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.postProcessPipeline.pipeline));
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     vkDestroyPipelineLayout(app.device, app.postProcessPipeline.layout, app.allocator);
     vkDestroyPipeline(app.device, app.postProcessPipeline.pipeline, app.allocator);
   });
