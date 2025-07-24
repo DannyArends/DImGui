@@ -184,7 +184,7 @@ extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
 // Immediate events to handle by the application
 void handleApp(ref App app, const SDL_Event e) { 
   if(e.type == SDL_APP_WILLENTERBACKGROUND){ 
-    SDL_Log("Suspending...");
+    SDL_Log("Suspending.");
     enforceVK(vkDeviceWaitIdle(app.device));
     app.swapDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
     SDL_Log("Shutdown ImGui");
@@ -201,14 +201,10 @@ void handleApp(ref App app, const SDL_Event e) {
 
     app.isMinimized = true;
   }
-  if(e.type == SDL_APP_DIDENTERBACKGROUND){ 
-    SDL_Log("Completely in background.");
-  }
-  if(e.type == SDL_APP_WILLENTERFOREGROUND){
-    SDL_Log("Resuming...");
-  }
+  if(e.type == SDL_APP_DIDENTERBACKGROUND){ SDL_Log("Completely in background."); }
+  if(e.type == SDL_APP_WILLENTERFOREGROUND){ SDL_Log("Resuming."); }
   if(e.type == SDL_APP_DIDENTERFOREGROUND){ 
-    SDL_Log("Back in foreground.");
+    SDL_Log("Back in foreground, recreate surface, swapchain, and imgui.");
     app.gui.fonts.length = 0;
     app.createSurface();                                          /// Create Vulkan rendering surface
     app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
