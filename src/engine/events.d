@@ -186,7 +186,7 @@ void handleApp(ref App app, const SDL_Event e) {
   if(e.type == SDL_APP_WILLENTERBACKGROUND){ 
     SDL_Log("Suspending...");
     enforceVK(vkDeviceWaitIdle(app.device));
-    app.frameDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
+    app.swapDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
     SDL_Log("Shutdown ImGui");
     app.isImGuiInitialized = false;
     ImGui_ImplVulkan_Shutdown();

@@ -68,7 +68,7 @@ void createComputePipeline(ref App app, Shader shader) {
   enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipelines[shader.path].pipeline));
   if(app.verbose) SDL_Log("Compute pipeline [sel: %s] at: %p", shader.path, app.compute.pipelines[shader.path].pipeline);
 
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     vkDestroyDescriptorSetLayout(app.device, app.layouts[shader.path], app.allocator);
     vkDestroyPipelineLayout(app.device, app.compute.pipelines[shader.path].layout, app.allocator);
     vkDestroyPipeline(app.device, app.compute.pipelines[shader.path].pipeline, app.allocator);
@@ -78,7 +78,7 @@ void createComputePipeline(ref App app, Shader shader) {
 void createComputeCommandBuffers(ref App app, Shader shader) {
   app.compute.commands[shader.path] = app.createCommandBuffer(app.commandPool, app.framesInFlight);
   if(app.verbose) SDL_Log("createComputeCommandBuffers: %d ComputeCommand, commandpool[%p]", app.framesInFlight, app.commandPool);
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     for (uint i = 0; i < app.framesInFlight; i++) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.compute.commands[shader.path][i]);
     }
@@ -151,7 +151,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
 
   // Update the Texture Array for rendering
   app.textures[app.findTextureSlot(descriptor.name)] = texture;
-  app.frameDeletionQueue.add((){ app.deAllocate(texture); });
+  app.swapDeletionQueue.add((){ app.deAllocate(texture); });
 }
 
 /** recordComputeCommandBuffer for syncIndex and the selected ComputeShader

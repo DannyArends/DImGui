@@ -23,7 +23,7 @@ void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits f
   app.createImage(app.camera.width, app.camera.height, &buffer.image, &buffer.memory, app.colorFormat, flag, VK_IMAGE_TILING_OPTIMAL, properties);
   buffer.view = app.createImageView(buffer.image, app.colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
-  app.frameDeletionQueue.add((){ app.deAllocate(buffer); });
+  app.swapDeletionQueue.add((){ app.deAllocate(buffer); });
 }
 
 /** Create framebuffers for Rendering, Post-processing, and ImGui, for each SwapChain ImageView 
@@ -115,7 +115,7 @@ void createFramebuffers(ref App app) {
     SDL_Log("%d ImGui Framebuffers created", app.framebuffers.imgui.length);
   }
 
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     for (uint i = 0; i < app.imageCount; i++) {
       vkDestroyFramebuffer(app.device, app.framebuffers.scene[i], app.allocator);
       vkDestroyFramebuffer(app.device, app.framebuffers.postprocess[i], app.allocator);

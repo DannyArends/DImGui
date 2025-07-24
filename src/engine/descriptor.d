@@ -125,7 +125,7 @@ void createDSPool(ref App app, const(char)* poolID, Shader[] shaders) {
   if(app.verbose) SDL_Log("createDSPool by shader: %s, with %d shader size", poolID, nShaders);
   VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(shaders);
   app.createDSPool(poolID, poolSizes, nShaders * app.framesInFlight);
-  app.frameDeletionQueue.add((){ 
+  app.swapDeletionQueue.add((){ 
     vkDestroyDescriptorPool(app.device, app.pools[poolID], app.allocator); 
   });
 }
@@ -178,7 +178,7 @@ void createDescriptors(ref App app, Shader[] shaders, const(char)* set = RENDER)
     app.updateDescriptorSet(shaders, app.sets[set], i);
   }
 
-  app.frameDeletionQueue.add((){ 
+  app.swapDeletionQueue.add((){ 
     vkDestroyDescriptorSetLayout(app.device, app.layouts[set], app.allocator); 
   });
 }

@@ -78,7 +78,7 @@ VkRenderPass createSceneRenderPass(ref App app) {
   VkRenderPass renderpass;
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
   if(app.verbose) SDL_Log("RenderPass created");
-  app.frameDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
+  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
   return(renderpass);
 }
 
@@ -143,7 +143,7 @@ VkRenderPass createPostProcessRenderPass(ref App app) {
   VkRenderPass renderpass;
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
   if(app.verbose) SDL_Log("Post-Process RenderPass created");
-  app.frameDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
+  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
   return(renderpass);
 }
 
@@ -198,6 +198,6 @@ VkRenderPass createImGuiRenderPass(ref App app) {
   VkRenderPass renderpass;
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
   if(app.verbose) SDL_Log("ImGui RenderPass created");
-  app.frameDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
+  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
   return(renderpass);
 }

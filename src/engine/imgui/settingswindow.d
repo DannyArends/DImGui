@@ -19,7 +19,7 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
 
     igTableNextColumn();
     igText("Deletion Queues", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igText(toStringz(format("%d / %d / %d", app.bufferDeletionQueue.length, app.frameDeletionQueue.length, app.mainDeletionQueue.length)), ImVec2(0.0f, 0.0f));
+    igText(toStringz(format("%d / %d / %d", app.bufferDeletionQueue.length, app.swapDeletionQueue.length, app.mainDeletionQueue.length)), ImVec2(0.0f, 0.0f));
 
     igTableNextColumn();
     igText("Verbose", ImVec2(0.0f, 0.0f)); igTableNextColumn();

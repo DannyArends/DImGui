@@ -133,7 +133,7 @@ VkCommandBuffer[] createCommandBuffer(App app, VkCommandPool commandPool, uint n
 void createCommandBuffers(ref App app, ref VkCommandBuffer[] dst) { 
   dst = app.createCommandBuffer(app.commandPool, app.framesInFlight);
   if(app.trace) SDL_Log("createRenderCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
-  app.frameDeletionQueue.add((){
+  app.swapDeletionQueue.add((){
     for (uint i = 0; i < app.framesInFlight; i++) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &dst[i]);
     }
