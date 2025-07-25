@@ -89,7 +89,7 @@ struct App {
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
-  ShadowMap shadows;
+  ShadowMap shadows;                                                            /// ShadowMap object
 
   VkSampler sampler;
   Shader[] shaders;
@@ -103,13 +103,13 @@ struct App {
 
   // Deletion queues for cleaning up resources
   DeletionQueue mainDeletionQueue;                                              /// On application shutdown
-  DeletionQueue swapDeletionQueue;                                            /// When rebuilding the SwapChain
+  DeletionQueue swapDeletionQueue;                                              /// When rebuilding the SwapChain
   CheckedDeletionQueue bufferDeletionQueue;                                     /// On each frame rendered
 
   // ShaderC & SPIR-V reflection
   shaderc_compiler_t compiler;                                                  /// ShaderC compiler
   shaderc_compile_options_t options;                                            /// ShaderC compiler options
-  IncluderContext includeContext;
+  IncluderContext includeContext;                                               /// ShaderC compiler includes
   spvc_context context;                                                         /// SpirV context
 
   // Vulkan Instance related variables
@@ -165,14 +165,14 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool showBounds = true;                                                      /// Show bounding boxes
+  bool showBounds = true;                                                       /// Show bounding boxes
   bool showShadows = false;                                                     /// TODO: Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
   uint verbose = 0;                                                             /// Be very verbose
-  bool disco = false;                                                           /// Disco mode
+  bool disco = false;                                                           /// TODO: ReAdd Disco mode
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isMinimized = false;                                                     /// isMinimized?
-  bool isImGuiInitialized = false;
+  bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
 
   // Properties based on the SwapChain
   @property pure @nogc uint imageCount() nothrow { return(cast(uint)swapChainImages.length); }
@@ -183,9 +183,9 @@ struct App {
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance
  */
 void cleanUp(App app) {
-  SDL_Log("Wait on device idle & frame deletion queue");
+  SDL_Log("Wait on device idle & swapchain deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
-  app.swapDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
+  app.swapDeletionQueue.flush();  // Delete SwapChain associated resources
 
   SDL_Log("Save ImGui Settings");
   saveSettings();
@@ -197,9 +197,9 @@ void cleanUp(App app) {
 
   SDL_Log("Delete objects & flush the main deletion queue");
   foreach(object; app.objects) { app.cleanup(object); }
-  app.mainDeletionQueue.flush();
+  app.mainDeletionQueue.flush();  // Delete permanent Vulkan resources
   thread_joinAll();
-  SDL_Log("Destroying window & quit SDL");
+  SDL_Log("Destroying Window & Quit SDL");
   SDL_DestroyWindow(app);
   SDL_Quit();
 }

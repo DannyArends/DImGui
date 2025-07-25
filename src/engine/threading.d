@@ -133,8 +133,6 @@ void loadNextTexture(ref App app, const(char)* folder = "data/textures/", string
     VkResult result = vkGetFenceStatus(app.device, app.textures.cmdBuffer.fence);
     if (result == VK_SUCCESS) { 
       app.textures.transfer = false;
-      auto commands = app.textures.cmdBuffer.commands;
-
     }
   }
 }

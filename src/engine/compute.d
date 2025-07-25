@@ -113,7 +113,8 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
       /* Copy data off the GPU to the CPU */
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
         if(shader.descriptors[d].base == "currentFrame"){
-        //  memcpy(&app.compute.system.particles[0], app.buffers[shader.descriptors[d].base].data[syncIndex], shader.descriptors[d].size);
+          // TODO: this needs to be smarter, we shouldn't need to download off the GPU and then upload into it
+          //  memcpy(&app.compute.system.particles[0], app.buffers[shader.descriptors[d].base].data[syncIndex], shader.descriptors[d].size);
         }
       }
     }

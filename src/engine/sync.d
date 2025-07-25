@@ -5,6 +5,8 @@
 
 import engine;
 
+import validation : nameVulkanObject;
+
 /** Sync
  */
 struct Sync {
@@ -30,6 +32,9 @@ void createSyncObjects(ref App app) {
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].computeComplete));
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].imageAcquired));
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].renderComplete));
+    app.nameVulkanObject(app.sync[i].computeComplete, toStringz(format("[SEMAPHORE] computeComplete #%d",i)), VK_OBJECT_TYPE_SEMAPHORE);
+    app.nameVulkanObject(app.sync[i].imageAcquired, toStringz(format("[SEMAPHORE] imageAcquired #%d",i)), VK_OBJECT_TYPE_SEMAPHORE);
+    app.nameVulkanObject(app.sync[i].renderComplete, toStringz(format("[SEMAPHORE] renderComplete #%d",i)), VK_OBJECT_TYPE_SEMAPHORE);
   }
   if(app.verbose) SDL_Log("Done vkCreateSemaphore");
 
@@ -37,6 +42,8 @@ void createSyncObjects(ref App app) {
     VkFenceCreateInfo fenceInfo = { sType: VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, flags: VK_FENCE_CREATE_SIGNALED_BIT };
     enforceVK(vkCreateFence(app.device, &fenceInfo, null, &app.fences[i].renderInFlight));
     enforceVK(vkCreateFence(app.device, &fenceInfo, null, &app.fences[i].computeInFlight));
+    app.nameVulkanObject(app.fences[i].renderInFlight, toStringz(format("[FENCE] renderInFlight #%d",i)), VK_OBJECT_TYPE_FENCE);
+    app.nameVulkanObject(app.fences[i].computeInFlight, toStringz(format("[FENCE] computeInFlight #%d",i)), VK_OBJECT_TYPE_FENCE);
   }
   if(app.verbose) SDL_Log("Done vkCreateFence");
   app.swapDeletionQueue.add((){
