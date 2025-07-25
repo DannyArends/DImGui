@@ -43,6 +43,8 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #include "cimgui.h"
 #include "cimgui_impl.h"
 
+#include "IconsFontAwesome.h"
+
 // Assimp includes
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
