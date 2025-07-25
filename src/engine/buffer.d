@@ -85,26 +85,6 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuf
   if(app.trace) SDL_Log("updateBuffer");
   VkBufferCopy copyRegion = { size : buffer.size };
   vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
-/*
-  VkBufferMemoryBarrier bufferBarrier = {
-    sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-    srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,         // Data written by transfer operation
-    dstAccessMask : VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,  // Data read by vertex attributes
-    srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-    dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-    buffer : buffer.vb,                                   // Block on this vulkan buffer
-    size : buffer.size                                    // size of the buffer
-  };
-
-  vkCmdPipelineBarrier(
-    cmdBuffer,
-    VK_PIPELINE_STAGE_TRANSFER_BIT,       // Source stage: Where the write occurred (copy)
-    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,   // Destination stage: Where the read will occur (vertex shader input)
-    0,                                    // dependencyFlags
-    0, null,                              // memoryBarriers
-    1, &bufferBarrier,                    // bufferMemoryBarriers
-    0, null                               // imageMemoryBarriers
-  ); */
 }
 
 void copyBufferToImage(ref App app, VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint width, uint height) {

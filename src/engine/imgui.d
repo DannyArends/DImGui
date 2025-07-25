@@ -92,9 +92,11 @@ void initializeImGui(ref App app){
   igCreateContext(null);
   app.gui.io = igGetIO_Nil();
   loadSettings();
+
   // Load the Default font
   app.gui.fonts ~= ImFontAtlas_AddFontDefault(app.gui.io.Fonts, null);
 
+  // Load & Merge FontAwesome into the default font
   ImFontConfig* merge_cfg = ImFontConfig_ImFontConfig();
   merge_cfg.Name = "FontAwesome";
   merge_cfg.MergeMode = true;
@@ -103,8 +105,7 @@ void initializeImGui(ref App app){
   char[] fa = readFile("data/fonts/FontAwesome.ttf");
   ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fa[0], cast(uint)fa.length, 13, merge_cfg, &icon_ranges[0]);
 
-
-  // Load our FreeMono.ttf font
+  // Load the FreeMono.ttf font & Merge in FontAwesome at 42px
   char[] fm = readFile("data/fonts/FreeMono.ttf");
   ImFontConfig* font_cfg = ImFontConfig_ImFontConfig();
   font_cfg.Name = "FreeMono";
@@ -114,9 +115,9 @@ void initializeImGui(ref App app){
   ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fa[0], cast(uint)fa.length, 42, merge_cfg, &icon_ranges[0]);
 
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  //app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking Controls
+  //app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;       // Enable Docking Controls
   version(Android) {
-    app.gui.io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen ;         // Enable Docking Controls
+    app.gui.io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen ;      // Enable TouchScreen
   }
   igStyleColorsDark(null);
   if(app.verbose) SDL_Log("ImGuiIO: %p", app.gui.io);
