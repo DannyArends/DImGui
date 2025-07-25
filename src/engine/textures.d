@@ -9,7 +9,7 @@ import io : dir;
 import commands : SingleTimeCommand;
 import glyphatlas : createFontTexture;
 import buffer : createBuffer, copyBufferToImage;
-import images : ImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
+import images : ImageBuffer, nameImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
 import swapchain : createImageView;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import validation : nameVulkanObject;
@@ -127,6 +127,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
   app.createBuffer(&stagingBuffer, &stagingBufferMemory, texture.surface.imageSize);
+  app.nameVulkanObject(stagingBuffer, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);
 
   // Copy the image data to the StagingBuffer memory
   void* data;
@@ -148,6 +149,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
 
   // Create an imageview and register the texture with ImGui
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+  app.nameImageBuffer(texture, texture.path);
   app.registerTexture(texture);
 
   // Cleanup to mainDeletionQueue

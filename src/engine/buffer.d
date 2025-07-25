@@ -7,7 +7,8 @@ import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : Descriptor;
-  
+import validation : nameVulkanObject;
+
 struct StageBuffer {
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
@@ -22,6 +23,13 @@ struct GeometryBuffer {
   VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
   StageBuffer staging;           /// Staging buffer for the GeometryBuffer
   alias staging this;
+}
+
+void nameGeometryBuffer(ref App app, GeometryBuffer buffer, string type, string name){
+  app.nameVulkanObject(buffer.vb, toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
+  app.nameVulkanObject(buffer.vbM, toStringz("["~type~"-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  app.nameVulkanObject(buffer.sb, toStringz("["~type~"-STAGE-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
+  app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
 }
 
 void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
@@ -46,13 +54,15 @@ uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPr
   VkPhysicalDeviceMemoryProperties memoryProperties;
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
   for (uint i = 0; i < memoryProperties.memoryTypeCount; i++) {
-    if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
+    if (typeFilter && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
   }
   assert(0, "Failed to find suitable memory type");
 }
 
 @nogc bool hasStencilComponent(VkFormat format) nothrow {
-  return format == VK_FORMAT_D32_SFLOAT_S8_UINT  || format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D16_UNORM_S8_UINT;
+  return format == VK_FORMAT_D32_SFLOAT_S8_UINT  || 
+         format == VK_FORMAT_D24_UNORM_S8_UINT || 
+         format == VK_FORMAT_D16_UNORM_S8_UINT;
 }
 
 void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDeviceSize size, 

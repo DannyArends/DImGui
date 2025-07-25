@@ -7,7 +7,7 @@ import engine;
 
 import color : Colors;
 import descriptor : Descriptor, updateDescriptorData, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
-import images : createImage, deAllocate, transitionImageLayout;
+import images : createImage, deAllocate, transitionImageLayout, nameImageBuffer;
 import matrix : Matrix;
 import pipeline : GraphicsPipeline;
 import geometry : shadow, Instance, bufferGeometries;
@@ -58,6 +58,7 @@ void createShadowMapResources(ref App app) {
     if(app.verbose) SDL_Log(" - shadow map image created: %p", app.shadows.images[x].image);
 
     app.shadows.images[x].view = app.createImageView(app.shadows.images[x].image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+    app.nameImageBuffer(app.shadows.images[x], format("ShadowImage #%d", x));
     if(app.verbose) SDL_Log(" - shadow map image view created: %p", app.shadows.images[x].view);
   }
 

@@ -140,12 +140,12 @@ void createCommandBuffers(ref App app, ref VkCommandBuffer[] dst) {
   });
 }
 
-// New struct to return results of an async transfer submission
+// Structure returned as result of an (async) SingleTimeCommand submission
 struct SingleTimeCommand {
-  bool async = false;
-  VkFence fence;
-  VkCommandPool pool;
-  VkCommandBuffer commands; // The command buffer used for this specific transfer
+  bool async = false;       /// Is the transfer happening async ?
+  VkFence fence;            /// If aSync the fence we need to wait for before data is on the GPU
+  VkCommandPool pool;       /// The command pool the buffer was allocated from
+  VkCommandBuffer commands; /// The command buffer used for this specific transfer
   alias commands this;
 }
 

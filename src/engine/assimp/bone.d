@@ -7,7 +7,6 @@ import engine;
 
 import animation : Node, calculateGlobalTransform, calculateCurrentTick;
 import assimp : OpenAsset, name;
-import buffer : createBuffer, StageBuffer;
 import bounds : Bounds;
 import matrix : Matrix, toMatrix, multiply, inverse, rotate, scale, position, transpose, translate;
 import sdl : STARTUP;

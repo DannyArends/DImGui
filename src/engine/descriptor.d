@@ -16,6 +16,7 @@ import shadow : writeShadowMap;
 import ssbo : writeSSBO, updateSSBO;
 import textures : Texture, idx;
 import uniforms : writeUniformBuffer;
+import validation : nameVulkanObject;
 
 struct Descriptor {
   VkDescriptorType type;    /// Type of Descriptor
@@ -93,6 +94,7 @@ void createDSPool(ref App app, const(char)* poolID, VkDescriptorPoolSize[] poolS
     pPoolSizes : &poolSizes[0]
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.pools[poolID]));
+  app.nameVulkanObject(app.pools[poolID], toStringz("[POOL] " ~ fromStringz(poolID)), VK_OBJECT_TYPE_DESCRIPTOR_POOL);
   if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", poolID, app.pools[poolID]);
 }
 

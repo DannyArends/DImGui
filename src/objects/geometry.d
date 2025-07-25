@@ -9,7 +9,7 @@ import meta : MetaData;
 import bone : Bone;
 import bounds : Bounds;
 import mesh : Mesh;
-import buffer : destroyGeometryBuffers, GeometryBuffer, toGPU;
+import buffer : destroyGeometryBuffers, nameGeometryBuffer, GeometryBuffer, toGPU;
 import boundingbox : BoundingBox, computeBoundingBox;
 import camera : Camera;
 import material : Material;
@@ -18,7 +18,6 @@ import textures : Texture, idx;
 import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 import animation : Animation;
-import validation : nameVulkanObject;
 
 /** An instance of a Geometry
  */
@@ -58,15 +57,15 @@ class Geometry {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(name()));
     if(!buffers[VERTEX] && vertices.length > 0) {
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-      app.nameVulkanObject(vertexBuffer.vb, toStringz("[VTX] " ~ name()), VK_OBJECT_TYPE_BUFFER);
+      app.nameGeometryBuffer(vertexBuffer, "VERTEX", name());
     }
     if(!buffers[INDEX] && indices.length > 0){
       buffers[INDEX] = app.toGPU(indices, indexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-      app.nameVulkanObject(indexBuffer.vb, toStringz("[IDX] " ~ name()), VK_OBJECT_TYPE_BUFFER);
+      app.nameGeometryBuffer(indexBuffer, "INDEX", name());
     }
     if(!buffers[INSTANCE] && instances.length > 0){
       buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-      app.nameVulkanObject(instanceBuffer.vb, toStringz("[INS] " ~ name()), VK_OBJECT_TYPE_BUFFER);
+      app.nameGeometryBuffer(instanceBuffer, "INSTANCE", name());
     }
   }
 

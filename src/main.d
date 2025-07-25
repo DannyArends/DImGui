@@ -51,7 +51,7 @@ version (Android) {
 void run(string[] args = null) {
   App app = initializeSDL();                                    /// Initialize SDL library and create a window
   version (Android) {
-    SDL_SetEventFilter(&sdlEventsFilter, &app);                 /// Handle immediate events on Android by callback
+    SDL_SetEventFilter(&sdlEventsFilter, &app);                 /// Handle Android immediate events by callback
   }
   app.createCompiler();                                         /// Create the SPIR-V compiler
   app.createReflectionContext();                                /// Create a SPIR-V reflection context
