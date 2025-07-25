@@ -23,8 +23,8 @@ void showLightswindow(ref App app, bool* show, uint font = 0) {
       igTableNextColumn();
       igText(format("light %d",i).toStringz, ImVec2(0.0f, 0.0f));
       igTableNextColumn();
-      igBeginTable("Light_Tbl", 2,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
-        igTableNextRow(0, 5.0f);
+      //igBeginTable("Light_Tbl", 2,  ImGuiTableFlags_Resizable, ImVec2(0.0f, 0.0f), 0.0f);
+        //igTableNextRow(0, 5.0f);
         igTableNextColumn();
           igText("Position".toStringz, ImVec2(0.0f, 0.0f));
         igTableNextColumn();
@@ -62,7 +62,7 @@ void showLightswindow(ref App app, bool* show, uint font = 0) {
         igTableNextColumn();
           igPushItemWidth(75 * app.gui.size);
           igSliderScalar("##A0", ImGuiDataType_Float,  &light.properties[2], &app.gui.cone[0], &app.gui.cone[1], "%.2f", 0); igSameLine(0,5);
-        igEndTable();
+        //igEndTable();
       igPopID();
     }
     igEndTable();
