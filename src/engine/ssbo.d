@@ -61,26 +61,6 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descript
   if(size == 0) return;
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);
-/*
-  VkBufferMemoryBarrier bufferBarrier = {
-      sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-      srcAccessMask : VK_ACCESS_HOST_WRITE_BIT,         // Data was written by Host
-      dstAccessMask : VK_ACCESS_SHADER_READ_BIT,        // Shader will read it
-      srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-      dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-      buffer : app.buffers[descriptor.base].buffers[syncIndex],
-      offset : 0,
-      size : VK_WHOLE_SIZE
-  };
-
-  vkCmdPipelineBarrier(cmdBuffer,
-      VK_PIPELINE_STAGE_HOST_BIT,             // Source stage: Host
-      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,    // Destination stage: Vertex shader reads
-      0,                                      // dependencyFlags
-      0, null,                                // memoryBarriers
-      1, &bufferBarrier,                      // bufferMemoryBarriers (our SSBO barrier)
-      0, null                                 // imageMemoryBarriers
-  ); */
   app.buffers[descriptor.base].dirty[syncIndex] = false; // TODO: enable dirty
 }
 
