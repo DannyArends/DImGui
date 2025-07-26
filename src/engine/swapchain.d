@@ -6,6 +6,7 @@
 import engine;
 
 import surface : isSupported;
+import validation : nameVulkanObject;
 
 // Create a swapchain for IMGui
 void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
@@ -34,8 +35,16 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   };
 
   enforceVK(vkCreateSwapchainKHR(app.device, &swapchainCreateInfo, app.allocator, &app.swapChain));
+
+  app.nameVulkanObject(app.swapChain, toStringz("[SWAPCHAIN]"), VK_OBJECT_TYPE_SWAPCHAIN_KHR);
+
   if(app.verbose) SDL_Log("Swapchain %p created, requested %d images", app.swapChain, app.camera.minImageCount);
   if(oldChain) { vkDestroySwapchainKHR(app.device, oldChain, app.allocator); }
+  app.mainDeletionQueue.add((){
+    if(app.swapChain != null){ if(app.verbose) SDL_Log("Destroy Swapchain: %p", app.swapChain);
+      vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator); // We need to destoy the SwapChain
+    }
+  });
 }
 
 // Create an ImageView to a VkImage
@@ -86,6 +95,7 @@ void aquireSwapChainImages(ref App app) {
     app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.surfaceformats[app.format].format);
   }
   if(app.verbose) SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
+  app.nameSwapChain();
   app.swapDeletionQueue.add((){
     for (uint i = 0; i < app.imageCount; i++) {
       vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
@@ -93,3 +103,9 @@ void aquireSwapChainImages(ref App app) {
   });
 }
 
+void nameSwapChain(ref App app){
+  for (uint i = 0; i < app.imageCount; i++) {
+    app.nameVulkanObject(app.swapChainImages[i], toStringz(format("[IMAGE] SwapChain #%d", i)), VK_OBJECT_TYPE_IMAGE);
+    app.nameVulkanObject(app.swapChainImageViews[i], toStringz(format("[VIEW] SwapChain #%d", i)), VK_OBJECT_TYPE_IMAGE_VIEW);
+  }
+}

@@ -9,9 +9,9 @@ import color : Colors;
 
 PFN_vkCreateDebugReportCallbackEXT  vkDebugCallback;
 PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugCallback;
-PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectName;
-PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabel;
-PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabel;
+PFN_vkSetDebugUtilsObjectNameEXT    vkSetDebugUtilsObjectName;
+PFN_vkCmdBeginDebugUtilsLabelEXT    vkCmdBeginDebugUtilsLabel;
+PFN_vkCmdEndDebugUtilsLabelEXT      vkCmdEndDebugUtilsLabel;
 
 extern(C) uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, 
                              size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) {
@@ -22,7 +22,6 @@ extern(C) uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTyp
 void createDebugCallback(ref App app){
   // Hook instance function
   vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkCreateDebugReportCallbackEXT");
-  vkDestroyDebugCallback = cast(PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkDestroyDebugReportCallbackEXT");
 
   // Create Debug callback
   VkDebugReportCallbackCreateInfoEXT createDebug = {
@@ -32,7 +31,11 @@ void createDebugCallback(ref App app){
     pUserData : null
   };
   vkDebugCallback(app.instance, &createDebug, app.allocator, &app.debugCallback);
-  app.mainDeletionQueue.add((){ vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator); });
+
+  app.mainDeletionQueue.add((){
+    vkDestroyDebugCallback = cast(PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkDestroyDebugReportCallbackEXT");
+    vkDestroyDebugCallback(app.instance, app.debugCallback, app.allocator);
+  });
 }
 
 void createDebugUtils(ref App app) {

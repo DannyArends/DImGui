@@ -10,7 +10,7 @@ struct DeletionQueue {
 
   void add(void delegate() fn){ queue ~= fn; }
   void flush(){
-    foreach(fn; queue.reverse){ fn(); }
+    foreach(i, fn; queue.reverse){ fn(); }
     queue = [];
   }
 }

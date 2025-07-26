@@ -30,7 +30,11 @@ void createInstance(ref App app){
   };
 
   enforceVK(vkCreateInstance(&createInstance, app.allocator, &app.instance));
-  app.mainDeletionQueue.add((){ vkDestroyInstance(app.instance, app.allocator); });
+  app.mainDeletionQueue.add((){
+    if(app.instance != null) { if(app.verbose) SDL_Log("Destroy instance: %p", app.instance);
+      vkDestroyInstance(app.instance, app.allocator);
+    }
+  });
   app.createDebugUtils();
   if(app.verbose) SDL_Log("vkCreateInstance[layers:%d, extensions:%d]: %p", app.layers.length, app.instanceExtensions.length, app.instance );
 }

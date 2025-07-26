@@ -14,7 +14,7 @@ import geometry : shadow, Instance, bufferGeometries;
 import reflection : reflectShaders, createResources;
 import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
-import validation : pushLabel, popLabel;
+import validation : pushLabel, popLabel, nameVulkanObject;
 import vertex : Vertex, VERTEX, INSTANCE;
 
 struct ShadowMap {
@@ -111,6 +111,8 @@ void createShadowMapRenderPass(ref App app) {
   };
 
   enforceVK(vkCreateRenderPass(app.device, &renderPassInfo, app.allocator, &app.shadows.renderPass));
+  app.nameVulkanObject(app.shadows.renderPass, toStringz("[RENDERPASS] Shadows"), VK_OBJECT_TYPE_RENDER_PASS);
+
   if(app.verbose) SDL_Log("Shadow map render pass created.");
 
   app.mainDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.shadows.renderPass, app.allocator); });
@@ -205,6 +207,9 @@ void createShadowMapGraphicsPipeline(ref App app) {
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, app.allocator, &app.shadows.pipeline.pipeline));
+  app.nameVulkanObject(app.shadows.pipeline.layout, toStringz("[LAYOUT] Shadows"), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+  app.nameVulkanObject(app.shadows.pipeline.pipeline, toStringz("[PIPELINE] Shadows"), VK_OBJECT_TYPE_PIPELINE);
+
   if(app.verbose) SDL_Log("Shadow map graphics pipeline created: %p", app.shadows.pipeline.pipeline);
 
   app.swapDeletionQueue.add((){
@@ -254,32 +259,33 @@ void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descri
 }
 
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
-  vkResetCommandBuffer(app.shadowBuffers[app.syncIndex], 0); // Reset for recording
+  vkResetCommandBuffer(app.shadowBuffers[syncIndex], 0); // Reset for recording
 
   VkCommandBufferBeginInfo beginInfo = {
       sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       pInheritanceInfo: null
   };
-  enforceVK(vkBeginCommandBuffer(app.shadowBuffers[app.syncIndex], &beginInfo));
+  enforceVK(vkBeginCommandBuffer(app.shadowBuffers[syncIndex], &beginInfo));
+  app.nameVulkanObject(app.shadowBuffers[syncIndex], toStringz(format("[COMMANDBUFFER] Shadow %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
   if(app.trace) SDL_Log("Beginning shadow map render pass");
 
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
 
-  pushLabel(app.shadowBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
+  pushLabel(app.shadowBuffers[syncIndex], "SSBO Buffering", Colors.lightgray);
   app.updateDescriptorData(app.shadows.shaders, app.shadowBuffers, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
-  popLabel(app.shadowBuffers[app.syncIndex]);
+  popLabel(app.shadowBuffers[syncIndex]);
 
-  pushLabel(app.shadowBuffers[app.syncIndex], "Objects Buffering", Colors.lightgray);
+  pushLabel(app.shadowBuffers[syncIndex], "Objects Buffering", Colors.lightgray);
   app.bufferGeometries(app.shadowBuffers[syncIndex]);
-  popLabel(app.shadowBuffers[app.syncIndex]);
+  popLabel(app.shadowBuffers[syncIndex]);
 
-  pushLabel(app.shadowBuffers[app.syncIndex], "Shadow Loop", Colors.lightgray);
+  pushLabel(app.shadowBuffers[syncIndex], "Shadow Loop", Colors.lightgray);
   vkCmdBindDescriptorSets(app.shadowBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
                           app.shadows.pipeline.layout, 0, 1, &app.sets[SHADOWS][syncIndex], 0, null);
 
   for(size_t l = 0; l < app.lights.length; l++) {
-    pushLabel(app.shadowBuffers[app.syncIndex], toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
+    pushLabel(app.shadowBuffers[syncIndex], toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
       renderPass: app.shadows.renderPass,
@@ -291,20 +297,20 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       clearValueCount: 1,
       pClearValues: &clearDepth,
     };
-    vkCmdBeginRenderPass(app.shadowBuffers[app.syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(app.shadowBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
+    vkCmdBeginRenderPass(app.shadowBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(app.shadowBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
     uint currentLightIndex = cast(uint)l;
-    vkCmdPushConstants(app.shadowBuffers[app.syncIndex], app.shadows.pipeline.layout,
+    vkCmdPushConstants(app.shadowBuffers[syncIndex], app.shadows.pipeline.layout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
       if(app.objects[x].isVisible && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
         app.shadow(app.objects[x], syncIndex);
       }
     }
-    vkCmdEndRenderPass(app.shadowBuffers[app.syncIndex]);
-    popLabel(app.shadowBuffers[app.syncIndex]);
+    vkCmdEndRenderPass(app.shadowBuffers[syncIndex]);
+    popLabel(app.shadowBuffers[syncIndex]);
   }
-  popLabel(app.shadowBuffers[app.syncIndex]);
-  enforceVK(vkEndCommandBuffer(app.shadowBuffers[app.syncIndex])); // End recording for shadow map buffer
+  popLabel(app.shadowBuffers[syncIndex]);
+  enforceVK(vkEndCommandBuffer(app.shadowBuffers[syncIndex])); // End recording for shadow map buffer
 }
 

@@ -114,8 +114,8 @@ struct App {
 
   // Vulkan Instance related variables
   VkInstance instance = null;
-  VkPhysicalDevice physicalDevice = null;
-  VkPhysicalDeviceProperties properties;
+  VkPhysicalDevice[] physicalDevices;
+
   VkDevice device = null;
   VkQueue queue = null;                                                         /// Render Queue
   VkQueue transfer = null;                                                      /// Transfer Queue
@@ -152,6 +152,7 @@ struct App {
   VkDebugReportCallbackEXT debugCallback = null;
 
   // Sync and Frame Tracking
+  uint selectedDevice = 0;
   uint queueFamily = uint.max;                                                  /// Current queueFamily used
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
@@ -178,6 +179,12 @@ struct App {
   @property pure @nogc uint imageCount() nothrow { return(cast(uint)swapChainImages.length); }
   @property pure @nogc bool trace() nothrow { return(verbose > 1); }
   @property pure @nogc uint framesInFlight() nothrow { return(cast(uint)swapChainImages.length + 1); }
+  @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
+  @property VkPhysicalDeviceProperties properties(){ 
+    VkPhysicalDeviceProperties p;
+    vkGetPhysicalDeviceProperties(physicalDevice(), &p);
+    return(p);
+  }
 }
 
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance
@@ -187,18 +194,24 @@ void cleanUp(App app) {
   enforceVK(vkDeviceWaitIdle(app.device));
   app.swapDeletionQueue.flush();  // Delete SwapChain associated resources
 
-  SDL_Log("Save ImGui Settings");
-  saveSettings();
+  if (app.isImGuiInitialized) {
+    SDL_Log("Save ImGui Settings");
+    saveSettings();
 
-  SDL_Log("Shutdown ImGui");
-  ImGui_ImplVulkan_Shutdown();
-  ImGui_ImplSDL2_Shutdown();
-  igDestroyContext(null);
-
-  SDL_Log("Delete objects & flush the main deletion queue");
+    SDL_Log("Shutdown ImGui");
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    igDestroyContext(null);
+  }
+  SDL_Log("Delete all Geometry objects");
   foreach(object; app.objects) { app.cleanup(object); }
+
+  SDL_Log("Flush the main deletion queue");
   app.mainDeletionQueue.flush();  // Delete permanent Vulkan resources
+
+  SDL_Log("Joining Threads");
   thread_joinAll();
+
   SDL_Log("Destroying Window & Quit SDL");
   SDL_DestroyWindow(app);
   SDL_Quit();

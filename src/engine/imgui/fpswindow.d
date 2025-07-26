@@ -4,7 +4,7 @@
  */
 
 import engine;
-
+import imgui : faIcon;
 /** Show the GUI window with FPS statistics
  */
 void showFPSwindow(ref App app, uint font = 1) {
@@ -15,7 +15,7 @@ void showFPSwindow(ref App app, uint font = 1) {
   igSetNextWindowPos(ImVec2(0.0f, size.y + 5.0f), 0, ImVec2(0.0f, 0.0f));
   auto flags = ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
   igBegin("FPS", null, flags);
-    igText("%s (v%d.%d.%d)", app.properties.deviceName.ptr,
+    igText("%s, %s (v%d.%d.%d)", faIcon(), app.properties.deviceName.ptr,
                              VK_API_VERSION_MAJOR(app.properties.apiVersion),
                              VK_API_VERSION_MINOR(app.properties.apiVersion),
                              VK_API_VERSION_PATCH(app.properties.apiVersion));

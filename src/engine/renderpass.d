@@ -7,6 +7,7 @@ import engine;
 
 import depthbuffer : findDepthFormat;
 import devices : getMSAASamples;
+import validation : nameVulkanObject;
 
 /** Create a RenderPass object using a specified initial Layout and loadOp
  */
@@ -77,6 +78,8 @@ VkRenderPass createSceneRenderPass(ref App app) {
 
   VkRenderPass renderpass;
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
+  app.nameVulkanObject(renderpass, toStringz("[RENDERPASS] Scene"), VK_OBJECT_TYPE_RENDER_PASS);
+
   if(app.verbose) SDL_Log("RenderPass created");
   app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
   return(renderpass);
@@ -142,6 +145,8 @@ VkRenderPass createPostProcessRenderPass(ref App app) {
 
   VkRenderPass renderpass;
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
+  app.nameVulkanObject(renderpass, toStringz("[RENDERPASS] Post-process"), VK_OBJECT_TYPE_RENDER_PASS);
+
   if(app.verbose) SDL_Log("Post-Process RenderPass created");
   app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
   return(renderpass);
@@ -197,6 +202,8 @@ VkRenderPass createImGuiRenderPass(ref App app) {
 
   VkRenderPass renderpass;
   enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
+  app.nameVulkanObject(renderpass, toStringz("[RENDERPASS] ImGui"), VK_OBJECT_TYPE_RENDER_PASS);
+
   if(app.verbose) SDL_Log("ImGui RenderPass created");
   app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
   return(renderpass);

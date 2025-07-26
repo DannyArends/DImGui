@@ -75,8 +75,9 @@ void createSurface(ref App app) {
   SDL_Vulkan_CreateSurface(app, app.instance, &app.surface);
 
   app.mainDeletionQueue.add((){
-    vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator); // We need to destoy the SwapChain
-    vkDestroySurfaceKHR(app.instance, app.surface, app.allocator); // Before destroying the Surface
+    if(app.surface != null){ if(app.verbose) SDL_Log("Destroy Surface: %p", app.surface);
+      vkDestroySurfaceKHR(app.instance, app.surface, app.allocator); // Before destroying the Surface
+    }
   });
   if(app.verbose) SDL_Log("SDL_Vulkan_CreateSurface: %p", app.surface);
 }
