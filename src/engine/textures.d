@@ -5,13 +5,16 @@
 
 import engine;
 
-import io : dir;
-import commands : SingleTimeCommand;
-import glyphatlas : createFontTexture;
+
 import buffer : createBuffer, copyBufferToImage;
-import images : ImageBuffer, nameImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
-import swapchain : createImageView;
+import commands : SingleTimeCommand, beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
+import geometry : Geometry;
+import glyphatlas : createFontTexture;
+import material : getTexture;
+import images : ImageBuffer, nameImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
+import io : dir;
+import swapchain : createImageView;
 import validation : nameVulkanObject;
 
 struct Texture {
@@ -30,11 +33,8 @@ struct Texture {
 
 struct Textures {
   Texture[] textures;             /// Textures
-  bool loading = false;           /// Are we loading a texture a-sync ?
+  bool loaded = false;           /// Are we loading a texture a-sync ?
   bool transfer = false;          /// Are we loading a transfering a-sync ?
-  uint cur = 0;                   /// The current index of texture we're loading
-  uint gpu = 0;                   /// The current index of texture we're transfering
-  uint max = 128;                 /// Maximum number of textures
   SingleTimeCommand cmdBuffer;    /// A-Sync single time command buffer
   alias textures this;
 }
@@ -70,37 +70,40 @@ SDL_Surface* createDummySDLSurface() {
 
 /** Texture index
  */
-@nogc int idx(const Texture[] textures, string name) nothrow {
-  for(uint i = 0; i < textures.length; i++) { if(textures[i].path.indexOf(name) >= 0) return(i); }
-  return(-1);
-}
-
-uint findTextureSlot(App app, string name = "empty"){
-  for(uint x = 0; x < app.textures.length; x++) { 
-    string slot = to!string(app.textures[x].path);
-    if(slot == "empty" || slot == name) return(x);
+@nogc pure int idx(const Texture[] textures, string name) nothrow {
+  int besthit = -1;
+  for(uint i = 0; i < textures.length; i++) {
+    if(stripExtension(baseName(textures[i].path)) == name) return(i);
+    if(textures[i].path.indexOf(name) >= 0) besthit = i;
   }
-  assert(0, "No more texture slots");
+  return(besthit);
 }
 
-void initDummyTexture(ref App app, VkCommandBuffer cmdBuffer, string[] files, uint x){
-  Texture dummy = { path : "empty", width: 1, height: 1, surface: createDummySDLSurface() };
-  if(x < files.length) dummy.path = files[x];
-  app.toGPU(cmdBuffer, dummy);
-  app.textures ~= dummy;
-  app.mainDeletionQueue.add((){ app.deAllocate(dummy); });
+void transferTextureAsync(ref App app, ref Texture texture){
+  app.textures.cmdBuffer = app.beginSingleTimeCommands(app.transferPool, true);
+  app.toGPU(app.textures.cmdBuffer, texture);
+  vkEndCommandBuffer(app.textures.cmdBuffer);
+  VkSubmitInfo submitInfo = {
+    sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
+    commandBufferCount: 1,
+    pCommandBuffers: &app.textures.cmdBuffer.commands,
+  };
+  app.nameVulkanObject(app.textures.cmdBuffer.fence, toStringz(format("[FENCE] %s", texture.path)), VK_OBJECT_TYPE_FENCE);
+  enforceVK(vkQueueSubmit(app.transfer, 1, &submitInfo, app.textures.cmdBuffer.fence)); // Submit to the transfer queue
+  app.textures ~= texture;
 }
 
-// Load all texture files matching pattern in folder
-void initTextures(ref App app, const(char)* folder = "data/textures/", string pattern = "*.{png,jpg}") {
-  SDL_Log("init texture");
-  string[] files = dir(folder, pattern, false);
-  
-  import commands : beginSingleTimeCommands, endSingleTimeCommands;
-  auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
-  for(uint x = 0; x < app.textures.max; x++) { app.initDummyTexture(commandBuffer, files, x); }
-  app.createFontTexture(commandBuffer);
-  app.endSingleTimeCommands(commandBuffer, app.transfer);
+void mapTextures(ref App app){
+  for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); }
+}
+
+void mapTextures(ref App app, ref Geometry object){
+  foreach (ref mesh; object.meshes) {
+    if(mesh.mid < 0) continue;
+    mesh.tid = app.getTexture(object, mesh.mid, aiTextureType_DIFFUSE);
+    mesh.nid = app.getTexture(object, mesh.mid, aiTextureType_NORMALS);
+    mesh.oid = app.getTexture(object, mesh.mid, aiTextureType_OPACITY);
+  }
 }
 
 void updateTextures(ref App app) {
@@ -141,7 +144,6 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
   if(texture.image){ app.mainDeletionQueue.add((){ app.deAllocate(texture); }); }
 
   // Create an image, transition the layout
-  //, app.transferPool, app.transfer, null
   app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory);
   app.transitionImageLayout(cmdBuffer, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
   app.copyBufferToImage(cmdBuffer, stagingBuffer, texture.image, texture.surface.w, texture.surface.h);

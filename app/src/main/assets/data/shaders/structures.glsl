@@ -33,6 +33,7 @@ struct Bone {
 
 struct Mesh {
   uvec2 vertices;     /// Start & End vertex
+  int mid;            /// Material ID
   int tid;            /// Texture ID
   int nid;            /// BumpMap ID
   int oid;            /// OPACITY ID

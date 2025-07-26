@@ -40,11 +40,6 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
 
   if(app.verbose) SDL_Log("Swapchain %p created, requested %d images", app.swapChain, app.camera.minImageCount);
   if(oldChain) { vkDestroySwapchainKHR(app.device, oldChain, app.allocator); }
-  app.mainDeletionQueue.add((){
-    if(app.swapChain != null){ if(app.verbose) SDL_Log("Destroy Swapchain: %p", app.swapChain);
-      vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator); // We need to destoy the SwapChain
-    }
-  });
 }
 
 // Create an ImageView to a VkImage

@@ -12,7 +12,7 @@ import mesh : Mesh;
 import buffer : destroyGeometryBuffers, nameGeometryBuffer, GeometryBuffer, toGPU;
 import boundingbox : BoundingBox, computeBoundingBox;
 import camera : Camera;
-import material : Material;
+import material : Material, TexureInfo;
 import matrix : mat4, position, transpose, translate, rotate, scale, inverse;
 import textures : Texture, idx;
 import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
@@ -142,13 +142,15 @@ float scale(T)(T object, uint instance = 0) {
 /** Set tid for instance from object.instances to Texture name 
  */
 void texture(T)(T object, const Texture[] textures, string name, string mname = "") {
-  auto tid = textures.idx(name);
-  foreach(ref mesh ; object.meshes) { mesh.tid = tid; }
+  object.materials.length = 1;
+  object.materials[0] = Material(name, [aiTextureType_DIFFUSE: TexureInfo(name) ]);
+  foreach(ref mesh ; object.meshes) { mesh.mid = 0; }
 }
 
 void bumpmap(T)(T object, const Texture[] textures, string name, string mname = "") {
-  auto nid = textures.idx(name);
-  foreach(ref mesh ; object.meshes) { mesh.nid = nid; }
+  object.materials.length = 1;
+  object.materials[0] = Material(name, [aiTextureType_NORMALS: TexureInfo(name) ]);
+  foreach(ref mesh ; object.meshes) { mesh.mid = 0; }
 }
 
 /** Euclidean distance between Geometry and Camera */

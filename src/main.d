@@ -22,7 +22,7 @@ import reflection : createReflectionContext;
 import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
-import textures : Texture, initTextures;
+import textures : Texture;
 import threading : loadNextTexture, loadGeometries;
 import validation : createDebugCallback;
 import window: createOrResizeWindow, checkForResize;
@@ -69,7 +69,7 @@ void run(string[] args = null) {
   app.createSampler();                                          /// Create a texture sampler
   app.createImGuiDescriptorPool();                              /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();                         /// ImGui DescriptorSet layout
-  app.initTextures();                                           /// Transfer all textures to the GPU
+  app.createFontTexture();                                      /// Load the Font Texture
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)

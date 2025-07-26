@@ -16,7 +16,7 @@ import swapchain : createImageView;
 import shaders : Shader, ShaderDef, loadShaders;
 import ssbo : SSBO, updateSSBO;
 import sync : insertWriteBarrier, insertReadBarrier;
-import textures : Texture, idx, registerTexture, findTextureSlot;
+import textures : Texture, idx, registerTexture;
 import uniforms : ParticleUniformBuffer, UBO;
 import quaternion : xyzw;
 import validation : pushLabel, popLabel, nameVulkanObject;
@@ -162,8 +162,8 @@ void createStorageImage(ref App app, Descriptor descriptor){
   app.registerTexture(texture); // Register texture with ImGui
 
   // Update the Texture Array for rendering
-  app.textures[app.findTextureSlot(descriptor.name)] = texture;
-  app.swapDeletionQueue.add((){ app.deAllocate(texture); });
+  app.textures ~= texture;
+  app.mainDeletionQueue.add((){ app.deAllocate(texture); });
 }
 
 /** recordComputeCommandBuffer for syncIndex and the selected ComputeShader
