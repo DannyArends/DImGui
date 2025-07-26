@@ -8,6 +8,7 @@ import engine;
 import shaders : createStageInfo;
 import devices : getMSAASamples;
 import vertex : Vertex;
+import validation : nameVulkanObject;
 
 /** GraphicsPipeline
  */
@@ -120,6 +121,10 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.pipelines[topology].pipeline));
+
+  app.nameVulkanObject(app.pipelines[topology].layout, toStringz(format("[LAYOUT] Render %s", topology)), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+  app.nameVulkanObject(app.pipelines[topology].pipeline, toStringz(format("[PIPELINE] Render %s", topology)), VK_OBJECT_TYPE_PIPELINE);
+
   app.swapDeletionQueue.add((){
     vkDestroyPipelineLayout(app.device, app.pipelines[topology].layout, app.allocator);
     vkDestroyPipeline(app.device, app.pipelines[topology].pipeline, app.allocator);
@@ -213,6 +218,10 @@ void createPostProcessGraphicsPipeline(ref App app) {
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.postProcessPipeline.pipeline));
+
+  app.nameVulkanObject(app.postProcessPipeline.layout, toStringz("[LAYOUT] Post-process"), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+  app.nameVulkanObject(app.postProcessPipeline.pipeline, toStringz("[PIPELINE] Post-process"), VK_OBJECT_TYPE_PIPELINE);
+
   app.swapDeletionQueue.add((){
     vkDestroyPipelineLayout(app.device, app.postProcessPipeline.layout, app.allocator);
     vkDestroyPipeline(app.device, app.postProcessPipeline.pipeline, app.allocator);

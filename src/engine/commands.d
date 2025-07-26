@@ -11,7 +11,7 @@ import boundingbox : computeBoundingBox;
 import geometry : draw, bufferGeometries;
 import shaders : Shader;
 import ssbo : updateSSBO;
-import validation : pushLabel, popLabel;
+import validation : pushLabel, popLabel, nameVulkanObject;
 import window: supportedTopologies;
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
@@ -24,6 +24,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     pInheritanceInfo: null // Optional
   };
   enforceVK(vkBeginCommandBuffer(app.renderBuffers[syncIndex], &beginInfo));
+  app.nameVulkanObject(app.renderBuffers[syncIndex], toStringz(format("[COMMANDBUFFER] Render %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
   pushLabel(app.renderBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("SSBO Buffering");
@@ -97,6 +98,10 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 void createCommandPools(ref App app) {
   app.commandPool = app.createCommandPool();
   app.transferPool = app.createCommandPool();
+
+  app.nameVulkanObject(app.commandPool, toStringz("[COMMANDPOOL] Render"), VK_OBJECT_TYPE_COMMAND_POOL);
+  app.nameVulkanObject(app.transferPool, toStringz("[COMMANDPOOL] Transfer"), VK_OBJECT_TYPE_COMMAND_POOL);
+
   if(app.verbose) SDL_Log("createCommandPools[family:%d] Queue: %p, Transfer: %p", app.queueFamily, app.commandPool, app.transferPool);
 }
 

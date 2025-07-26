@@ -94,7 +94,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
 }
 
 void writeUniformBuffer(ref App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, ref VkDescriptorBufferInfo[] bufferInfos, uint syncIndex = 0){
-  if(app.verbose) SDL_Log("writeUniformBuffer");
+  if(app.verbose) SDL_Log("writeUniformBuffer[%s] #%d", toStringz(descriptor.base), syncIndex);
   bufferInfos ~= VkDescriptorBufferInfo(app.ubos[descriptor.base].buffers[syncIndex], 0, descriptor.bytes);
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

@@ -10,6 +10,7 @@ import commands : recordRenderCommandBuffer;
 import color : Colors;
 import camera : move, drag, castRay;
 import geometry : deAllocate, setColor;
+import imgui : saveSettings;
 import intersection : Intersection, intersects;
 import line : createLine;
 import sdl : FRAMESTART, FRAMESTOP, LASTTICK;
@@ -185,8 +186,15 @@ extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
 void handleApp(ref App app, const SDL_Event e) { 
   if(e.type == SDL_APP_WILLENTERBACKGROUND){ 
     SDL_Log("Suspending.");
+    SDL_Log("Wait on device idle & swapchain deletion queue");
     enforceVK(vkDeviceWaitIdle(app.device));
     app.swapDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
+
+    SDL_Log("Save ImGui Settings");
+    saveSettings();
+  }
+  if(e.type == SDL_APP_DIDENTERBACKGROUND){ 
+    SDL_Log("Completely in background."); 
     SDL_Log("Shutdown ImGui");
     app.isImGuiInitialized = false;
     ImGui_ImplVulkan_Shutdown();
@@ -201,7 +209,6 @@ void handleApp(ref App app, const SDL_Event e) {
 
     app.isMinimized = true;
   }
-  if(e.type == SDL_APP_DIDENTERBACKGROUND){ SDL_Log("Completely in background."); }
   if(e.type == SDL_APP_WILLENTERFOREGROUND){ SDL_Log("Resuming."); }
   if(e.type == SDL_APP_DIDENTERFOREGROUND){ 
     SDL_Log("Back in foreground, recreate surface, swapchain, and imgui.");

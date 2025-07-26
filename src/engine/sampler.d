@@ -6,6 +6,7 @@
 import engine;
 
 import descriptor : Descriptor;
+import validation : nameVulkanObject;
 
 /** Create a TextureSampler for sampling from a texture
  */
@@ -34,6 +35,8 @@ void createSampler(ref App app) {
   };
 
   enforceVK(vkCreateSampler(app.device, &samplerInfo, null, &app.sampler));
+  app.nameVulkanObject(app.sampler, toStringz("[SAMPLER] Render"), VK_OBJECT_TYPE_SAMPLER);
+
   app.mainDeletionQueue.add((){ vkDestroySampler(app.device, app.sampler, null); });
 
   if(app.verbose) SDL_Log("Created TextureSampler: %p", app.sampler);

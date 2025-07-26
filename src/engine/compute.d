@@ -8,7 +8,7 @@ import engine;
 import color : Colors;
 import commands : createCommandBuffer;
 import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet;
-import images : createImage, deAllocate, transitionImageLayout;
+import images : createImage, nameImageBuffer, deAllocate, transitionImageLayout;
 import particlesystem : ParticleSystem;
 import pipeline : GraphicsPipeline;
 import reflection : createResources;
@@ -19,7 +19,7 @@ import sync : insertWriteBarrier, insertReadBarrier;
 import textures : Texture, idx, registerTexture, findTextureSlot;
 import uniforms : ParticleUniformBuffer, UBO;
 import quaternion : xyzw;
-import validation : pushLabel, popLabel;
+import validation : pushLabel, popLabel, nameVulkanObject;
 
 /** Compute structure with shaders, command buffer and pipelines
  */
@@ -48,8 +48,12 @@ void createComputePipeline(ref App app, Shader shader) {
   if(app.verbose) SDL_Log("createComputePipeline for Shader %s", shader.path);
   app.compute.pipelines[shader.path] = GraphicsPipeline();
   app.layouts[shader.path] = app.createDescriptorSetLayout([shader]);
-  app.sets[shader.path] = createDescriptorSet(app.device, app.pools[COMPUTE], app.layouts[shader.path],  app.framesInFlight);
+  app.nameVulkanObject(app.layouts[shader.path], toStringz(format("[DESCRIPTORLAYOUT] %s", fromStringz(shader.path))), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
 
+  app.sets[shader.path] = createDescriptorSet(app.device, app.pools[COMPUTE], app.layouts[shader.path],  app.framesInFlight);
+  for (uint i = 0; i < app.framesInFlight; i++) {
+    app.nameVulkanObject(app.sets[shader.path][i], toStringz(format("[DESCRIPTORSET] %s #%d", fromStringz(shader.path), i)), VK_OBJECT_TYPE_DESCRIPTOR_SET);
+  }
   VkPipelineLayoutCreateInfo computeLayout = {
     sType : VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     pSetLayouts : &app.layouts[shader.path],
@@ -65,6 +69,10 @@ void createComputePipeline(ref App app, Shader shader) {
     pNext : null
   };
   enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipelines[shader.path].pipeline));
+
+  app.nameVulkanObject(app.compute.pipelines[shader.path].layout, toStringz(format("[LAYOUT] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+  app.nameVulkanObject(app.compute.pipelines[shader.path].pipeline, toStringz(format("[PIPELINE] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE);
+
   if(app.verbose) SDL_Log("Compute pipeline [sel: %s] at: %p", shader.path, app.compute.pipelines[shader.path].pipeline);
 
   app.swapDeletionQueue.add((){
@@ -148,6 +156,8 @@ void createStorageImage(ref App app, Descriptor descriptor){
   app.createImage(texture.width, texture.height, &texture.image, &texture.memory, 
                   VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_UNORM);
+  app.nameImageBuffer(texture, "Compute Image");
+
   if(app.verbose) SDL_Log("Create compute image %p, view: %p", texture.image, texture.view);
   app.registerTexture(texture); // Register texture with ImGui
 
@@ -165,6 +175,8 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
 
   VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
   enforceVK(vkBeginCommandBuffer(cmdBuffer, &commandBufferInfo));
+  app.nameVulkanObject(cmdBuffer, toStringz(format("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+
   pushLabel(cmdBuffer, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
 
   float[3] nJobs = [1, 1, 1];

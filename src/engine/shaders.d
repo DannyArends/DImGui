@@ -8,6 +8,7 @@ import engine;
 import descriptor : Descriptor, DescriptorLayoutBuilder;
 import io : readFile;
 import reflection : convert, reflectShader;
+import validation : nameVulkanObject;
 
 struct Shader {
   const(char)* path;                      /// Path of the shader
@@ -121,6 +122,8 @@ Shader createShaderModule(App app, const(char)* path, shaderc_shader_kind type =
   };
 
   enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shader.shaderModule));
+  app.nameVulkanObject(shader.shaderModule, toStringz(format("[SHADER] %s", fromStringz(path))), VK_OBJECT_TYPE_SHADER_MODULE);
+
   shader.info = createShaderStageInfo(convert(type), shader);
 
   app.mainDeletionQueue.add((){ shaderc_result_release(result); });

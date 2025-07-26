@@ -6,22 +6,22 @@
 import engine;
 
 import extensions : queryDeviceExtensionProperties, has;
+import validation : nameVulkanObject;
 
 // Creates a physicalDevice & associated Queue
 void pickPhysicalDevice(ref App app, uint device = 0){
-  auto physicalDevices = app.queryPhysicalDevices();  // Query Physical Devices and pick 0
-  app.physicalDevice = physicalDevices[device];
-
+  app.queryPhysicalDevices();  // Query Physical Devices and pick 0
+  app.selectedDevice = device;
   auto extension = app.queryDeviceExtensionProperties();
 
   if(extension.has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
   if(extension.has("VK_KHR_maintenance3")){ app.deviceExtensions ~= "VK_KHR_maintenance3"; }
   if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
 
-  app.queueFamily = selectQueueFamily(app.physicalDevice);
+  app.queueFamily = selectQueueFamily(app.physicalDevice());
 }
 
-VkSampleCountFlagBits getMSAASamples(const App app) {
+VkSampleCountFlagBits getMSAASamples(ref App app) {
   version (Android) { return VK_SAMPLE_COUNT_4_BIT; }
   VkSampleCountFlags counts = app.properties.limits.framebufferColorSampleCounts & app.properties.limits.framebufferDepthSampleCounts;
   if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
@@ -63,22 +63,30 @@ void createLogicalDevice(ref App app, uint device = 0){
     pNext : &features
   };
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
-  app.mainDeletionQueue.add((){ vkDestroyDevice(app.device, app.allocator); });
+
+  app.mainDeletionQueue.add((){ if(app.verbose) SDL_Log("Destroy Device: %p", app.device);
+    vkDestroyDevice(app.device, app.allocator); 
+  });
 
   if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device);
-
-  vkGetPhysicalDeviceProperties(app.physicalDevice, &app.properties);
 
   // Get the Queue from the queueFamily
   vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
   vkGetDeviceQueue(app.device, app.queueFamily, 1, &app.transfer);
+
+  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
+  app.nameVulkanObject(app.physicalDevice, toStringz(format("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr))), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
+  app.nameVulkanObject(app.instance, toStringz("[INSTANCE]"), VK_OBJECT_TYPE_INSTANCE);
+  app.nameVulkanObject(app.queue, toStringz("[QUEUE] Render"), VK_OBJECT_TYPE_QUEUE);
+  app.nameVulkanObject(app.transfer, toStringz("[QUEUE] Transfer"), VK_OBJECT_TYPE_QUEUE);
+
   if(app.verbose) SDL_Log("vkGetDeviceQueue[family:%d] queue: %p, transfer: %p", app.queueFamily, app.queue, app.transfer);
 }
 
 void list(VkPhysicalDevice physicalDevice, size_t i) {
   VkPhysicalDeviceProperties properties;
   vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-  SDL_Log("-Physical Device[%d]: %s", i, properties.deviceName.ptr);
+  SDL_Log("-Physical Device[%d]: %p %s", i, physicalDevice, properties.deviceName.ptr);
   SDL_Log("|- API Version: %d.%d.%d", VK_API_VERSION_MAJOR(properties.apiVersion),
                                       VK_API_VERSION_MINOR(properties.apiVersion),
                                       VK_API_VERSION_PATCH(properties.apiVersion));
@@ -91,15 +99,13 @@ void list(VkPhysicalDevice physicalDevice, size_t i) {
   SDL_Log("|- Device type: %d", properties.deviceType);
 }
 
-VkPhysicalDevice[] queryPhysicalDevices(ref App app) {
+void queryPhysicalDevices(ref App app) {
   uint nPhysDevices = 0;
-  VkPhysicalDevice[] physicalDevices;
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, null);
   if(app.verbose) SDL_Log("Number of physical vulkan devices found: %d", nPhysDevices);
-  physicalDevices.length = nPhysDevices;
-  vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, &physicalDevices[0]);
-  if(app.verbose) foreach(i, physicalDevice; physicalDevices) { physicalDevice.list(i); }
-  return(physicalDevices);
+  app.physicalDevices.length = nPhysDevices;
+  vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, &app.physicalDevices[0]);
+  if(app.verbose) foreach(i, physicalDevice; app.physicalDevices) { physicalDevice.list(i); }
 }
 
 uint selectQueueFamily(VkPhysicalDevice physicalDevice) {

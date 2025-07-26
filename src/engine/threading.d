@@ -5,12 +5,13 @@
 
 import engine;
 
+import assimp : loadOpenAsset, OpenAsset;
 import cube : Cube;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import geometry : Instance, Geometry, computeNormals, computeTangents, position, rotate, scale;
 import io : dir;
 import textures: findTextureSlot, toRGBA, toGPU;
-import assimp : loadOpenAsset, OpenAsset;
+import validation : nameVulkanObject;
 
 struct textureComplete{
   string path;
@@ -125,6 +126,8 @@ void loadNextTexture(ref App app, const(char)* folder = "data/textures/", string
           commandBufferCount: 1,
           pCommandBuffers: &app.textures.cmdBuffer.commands,
         };
+        app.nameVulkanObject(app.textures.cmdBuffer.fence, toStringz(format("[FENCE] %s", message)), VK_OBJECT_TYPE_FENCE);
+
         enforceVK(vkQueueSubmit(app.transfer, 1, &submitInfo, app.textures.cmdBuffer.fence)); // Submit to the transfer queue
         app.textures[slot].dirty = true;
       }

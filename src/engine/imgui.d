@@ -18,7 +18,7 @@ import lightswindow : showLightswindow;
 import mainmenu : showMenu;
 import shaderswindow : showShaderwindow;
 import texturewindow : showTextureswindow;
-import validation : pushLabel, popLabel;
+import validation : nameVulkanObject, pushLabel, popLabel;
 
 /** Main GUI structure
  */
@@ -97,14 +97,14 @@ void initializeImGui(ref App app){
   app.gui.fonts ~= ImFontAtlas_AddFontDefault(app.gui.io.Fonts, null);
 
   // Load & Merge FontAwesome into the default font
-  /*ImFontConfig* merge_cfg = ImFontConfig_ImFontConfig();
-  merge_cfg.Name = "FontAwesome";
-  merge_cfg.MergeMode = true;
-  merge_cfg.FontDataOwnedByAtlas = false;
-  const(ImWchar)[] icon_ranges = [ICON_MIN_FA, ICON_MAX_FA, 0];
-  char[] fa = readFile("data/fonts/FontAwesome.ttf");
-  ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fa[0], cast(uint)fa.length, 13, merge_cfg, &icon_ranges[0]);
-  */
+  //ImFontConfig* merge_cfg = ImFontConfig_ImFontConfig();
+  //merge_cfg.Name = "FontAwesome";
+  //merge_cfg.MergeMode = false;
+  //merge_cfg.FontDataOwnedByAtlas = false;
+  //const(ImWchar)[] icon_ranges = [ICON_MIN_FA, ICON_MAX_FA, 0];
+  //char[] fa = readFile("data/fonts/FontAwesome.ttf");
+  //app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fa[0], cast(uint)fa.length, 13, merge_cfg, &icon_ranges[0]);
+
   // Load the FreeMono.ttf font & Merge in FontAwesome at 42px
   char[] fm = readFile("data/fonts/FreeMono.ttf");
   ImFontConfig* font_cfg = ImFontConfig_ImFontConfig();
@@ -112,7 +112,6 @@ void initializeImGui(ref App app){
   font_cfg.SizePixels = 42.0f;
   font_cfg.FontDataOwnedByAtlas = false;
   app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fm[0], cast(uint)fm.length, 42, font_cfg, null);
-//  ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fa[0], cast(uint)fa.length, 42, merge_cfg, &icon_ranges[0]);
 
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   //app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;       // Enable Docking Controls
@@ -160,6 +159,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
     flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
   };
   enforceVK(vkBeginCommandBuffer(app.imguiBuffers[syncIndex], &commandBufferInfo));
+  app.nameVulkanObject(app.imguiBuffers[syncIndex], toStringz(format("[COMMANDBUFFER] ImGui %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
   pushLabel(app.imguiBuffers[app.syncIndex], "ImGui", Colors.lightgray);
 

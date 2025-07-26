@@ -5,8 +5,9 @@
 
 import engine;
 
-import images : createImage, deAllocate, ImageBuffer;
+import images : createImage, nameImageBuffer, deAllocate, ImageBuffer;
 import swapchain : createImageView;
+import validation : nameVulkanObject;
 
 struct FrameBuffer {
   VkFramebuffer[] scene;
@@ -22,6 +23,7 @@ void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits f
 
   app.createImage(app.camera.width, app.camera.height, &buffer.image, &buffer.memory, app.colorFormat, flag, VK_IMAGE_TILING_OPTIMAL, properties);
   buffer.view = app.createImageView(buffer.image, app.colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+  app.nameImageBuffer(buffer, "Offscreen HDR Image");
 
   app.swapDeletionQueue.add((){ app.deAllocate(buffer); });
 }
@@ -57,6 +59,7 @@ void createFramebuffers(ref App app) {
       layers: 1
     };
     enforceVK(vkCreateFramebuffer(app.device, &sceneFramebufferInfo, null, &app.framebuffers.scene[i]));
+    app.nameVulkanObject(app.framebuffers.scene[i], toStringz(format("[FRAMEBUFFER] Render #%d", i)), VK_OBJECT_TYPE_FRAMEBUFFER);
 
     // 2. Framebuffers for the POST-PROCESSING RENDER PASS (renders to swapchain, samples resolved HDR)
     if(app.verbose) SDL_Log("Framebuffer - POST-PROCESSING RENDER");
@@ -72,6 +75,7 @@ void createFramebuffers(ref App app) {
       layers: 1
     };
     enforceVK(vkCreateFramebuffer(app.device, &postProcessFramebufferInfo, null, &app.framebuffers.postprocess[i]));
+    app.nameVulkanObject(app.framebuffers.postprocess[i], toStringz(format("[FRAMEBUFFER] Post-processing #%d", i)), VK_OBJECT_TYPE_FRAMEBUFFER);
 
     // 3. Framebuffers for the IMGUI RENDER PASS (renders to swapchain, overlays ImGui)
     if(app.verbose) SDL_Log("Framebuffer - IMGUI RENDER");
@@ -87,6 +91,7 @@ void createFramebuffers(ref App app) {
       layers: 1
     };
     enforceVK(vkCreateFramebuffer(app.device, &imguiFramebufferInfo, null, &app.framebuffers.imgui[i]));
+    app.nameVulkanObject(app.framebuffers.imgui[i], toStringz(format("[FRAMEBUFFER] ImGui #%d", i)), VK_OBJECT_TYPE_FRAMEBUFFER);
   }
 
   if(app.verbose) SDL_Log("Shadow map framebuffer creation for %d lights", app.lights.length);
@@ -105,6 +110,8 @@ void createFramebuffers(ref App app) {
       layers: 1
     };
     enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, app.allocator, &app.framebuffers.shadow[l]));
+    app.nameVulkanObject(app.framebuffers.shadow[l], toStringz(format("[FRAMEBUFFER] Shadow #%d", l)), VK_OBJECT_TYPE_FRAMEBUFFER);
+
     if(app.verbose) SDL_Log("Shadow map framebuffer created.");
   }
 
