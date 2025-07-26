@@ -7,13 +7,14 @@ import engine;
 
 import assimp : OpenAsset, name;
 import bone : Bone, BoneWeights, loadBones;
-import material : matchTexture;
+import material : getChannel;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean,x,y,z;
 import vertex : Vertex, INSTANCE;
 
 struct Mesh {
   align(16) int[2] vertices;  /// Start .. End positions in Geometry.vertices array
+  int mid = -1;               /// Mesh Material ID
   int tid = -1;               /// Mesh DIFFUSE ID
   int nid = -1;               /// Mesh NORMALS ID
   int oid = -1;               /// Mesh OPACITY ID
@@ -44,18 +45,13 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
   }
   // Vertex offset, load texture information,  bone weight, and normal matrix
   size_t vOff = asset.vertices.length;
-  auto baseTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-  auto normTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_NORMALS);
-  auto opacTexture = app.matchTexture(asset, mesh.mMaterialIndex, aiTextureType_OPACITY);
-  if (app.verbose) SDL_Log(" - %d | %d | %d texture.ids", baseTexture.tid, normTexture.tid, opacTexture.tid);
-  
+  auto channel = app.getChannel(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
   auto weights = asset.loadBones(mesh, app.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
 
   // TODO first create a Material definition for the object => add to app.materials
   // Then use OUR internal material index (app.materials)
-  Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(asset.vertices.length) + mesh.mNumVertices], 
-                     baseTexture.tid, normTexture.tid, opacTexture.tid);
+  Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(vOff) + mesh.mNumVertices],  mesh.mMaterialIndex);
 
   for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {  // Load vertex information
     size_t gIdx = (vOff + vIdx);
@@ -64,11 +60,11 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
     if (mesh.mNormals) {
       asset.vertices[gIdx].normal = normMatrix.multiply([mesh.mNormals[vIdx].x, mesh.mNormals[vIdx].y,mesh.mNormals[vIdx].z]);
     }
-    if (mesh.mTextureCoords[baseTexture.channel]) {
-      asset.vertices[gIdx].texCoord = [mesh.mTextureCoords[baseTexture.channel][vIdx].x, mesh.mTextureCoords[baseTexture.channel][vIdx].y];
+    if (mesh.mTextureCoords[channel]) {
+      asset.vertices[gIdx].texCoord = [mesh.mTextureCoords[channel][vIdx].x, mesh.mTextureCoords[channel][vIdx].y];
     }
-    if (mesh.mColors[baseTexture.channel]) {
-      auto color = mesh.mColors[baseTexture.channel][vIdx];
+    if (mesh.mColors[channel]) {
+      auto color = mesh.mColors[channel][vIdx];
       asset.vertices[gIdx].color = [color.r, color.g, color.b, color.a];
     }
     if (mesh.mTangents) {

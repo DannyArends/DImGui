@@ -6,7 +6,6 @@
 import engine;
 
 import geometry : Geometry, position, scale, rotate;
-import textures : findTextureSlot;
 
 /** Show the GUI window which allows us to manipulate 3D objects
  */
@@ -117,7 +116,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
   if(obj.meshes.length > 0) {
     igText("Mesh textures:", ImVec2(0.0f, 0.0f));
     igBeginTable(toStringz(obj.name() ~ "_Textures"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-    int[2] limits = [-1, app.findTextureSlot()];
+    int[2] limits = [-1, cast(int)app.textures.length];
     foreach(name; obj.meshes.byKey()){
       igTableNextColumn();
         igText(toStringz(format("%s", name)), ImVec2(0.0f, 0.0f)); igSameLine(0,5);

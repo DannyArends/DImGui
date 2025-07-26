@@ -10,74 +10,56 @@ import textures : idx;
 
 enum aiColorType : const(char)* { DIFFUSE = "$clr.diffuse", AMBIENT = "$clr.ambient",  SPECULAR = "$clr.specular" };
 
-struct TexInfo {
+struct TexureInfo {
   string path;
-  int tid;
   uint channel;
   alias path this;
 }
 
 struct Material {
-  uint id;
   string path;
-  string name;
-  string base;
-  TexInfo[aiTextureType] textures;
+  TexureInfo[aiTextureType] textures;
   float[4][aiColorType] colors;
 }
 
-TexInfo getTexture(aiMaterial* material, aiTextureType type = aiTextureType_DIFFUSE) {
-  aiString texture_path;
+TexureInfo getTextureInfo(aiMaterial* material, aiTextureType type = aiTextureType_DIFFUSE) {
+  aiString path;
   uint uvChannel;
-  aiGetMaterialTexture(material, type, 0, &texture_path, null, &uvChannel, null, null, null, null);
-  return(TexInfo(to!string(fromStringz(texture_path.data)), -1, uvChannel));
+  aiGetMaterialTexture(material, type, 0, &path, null, &uvChannel, null, null, null, null);
+  string p = to!string(fromStringz(path.data));
+  auto idx = p.lastIndexOf("\\");
+  if(idx >= 0) p = stripExtension(p[(idx+1)..($)]);
+  return(TexureInfo(p, uvChannel));
 }
 
 float[4] getMaterialColor(aiMaterial* material, aiColorType type = aiColorType.DIFFUSE ) {
   aiColor4D color;
   aiGetMaterialColor(material, type, 0, 0, &color);
-  return([color.r,color.g,color.b,color.a]);
+  return([color.r, color.g, color.b, color.a]);
 }
 
-Material create(aiMaterial* material, const(char)* path, uint id){
-  aiString name;
-  aiGetMaterialString(material, "?mat.name", 0, 0, &name);
-  aiString base;
-  aiGetMaterialString(material, "$tex.file", 0, 0, &base);
-  Material mat = {
-    id : id, 
-    path : to!string(fromStringz(path)), 
-    name : to!string(fromStringz(name.data)), 
-    base : to!string(fromStringz(base.data)) 
-  };
-  return(mat);
-}
-
-TexInfo matchTexture(ref App app, ref OpenAsset object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE) {
-  TexInfo texInfo = {object.materials[materialIndex].name};
+int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
   if (type in object.materials[materialIndex].textures) {
-    texInfo = object.materials[materialIndex].textures[type];
-    auto idx = texInfo.path.lastIndexOf("\\");
-    if(idx >= 0) texInfo.path = stripExtension(texInfo.path[(idx+1)..($)]);
-    texInfo.tid = app.textures.idx(texInfo.path);
-    if(app.verbose) SDL_Log(toStringz(format("  Material: %s -> %d at channel: %d", texInfo.path, texInfo.tid, texInfo.channel)));
-  }else{
-    texInfo.tid = -1;
+    return(idx(app.textures, object.materials[materialIndex].textures[type]));
   }
-  return(texInfo);
+  return(-1);
+}
+
+int getChannel(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE) {
+  if (type in object.materials[materialIndex].textures) {
+    return(object.materials[materialIndex].textures[type].channel);
+  }
+  return(0);
 }
 
 Material[] loadMaterials(ref App app, aiScene* scene, const(char)* path){
   Material[] materials;
   for(uint i = 0; i < scene.mNumMaterials; i++) {
     aiMaterial* material = scene.mMaterials[i];
-    Material mat = material.create(path, i);
+    Material mat =  { path : to!string(fromStringz(path)) };
     foreach(type; EnumMembers!aiTextureType) {
-      TexInfo value = material.getTexture(type);
-      if(value.path != "") {
-        if(app.verbose) SDL_Log(toStringz(format("  textureType: %s = %s", type, value.path)));
-        mat.textures[type] = value;
-      }
+      auto info = material.getTextureInfo(type);
+      if(info.path != "") mat.textures[type] = info;
     }
     foreach(type; EnumMembers!aiColorType) {
       mat.colors[type] = material.getMaterialColor(type);
