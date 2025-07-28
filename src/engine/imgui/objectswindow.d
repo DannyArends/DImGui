@@ -5,7 +5,24 @@
 
 import engine;
 
-import geometry : Geometry, position, scale, rotate;
+import geometry : Geometry, position, scale, rotate, texture, bumpmap, opacity;
+import textures : mapTextures;
+
+struct Slider(U, T) {
+  const(char)* name;
+  T val;
+  T[2] limits;
+  void delegate(ref App app, ref U object, T value) onSlide;
+  ImGuiDataType type = ImGuiDataType_S32;
+  const(char)* format = "%d";
+
+  void show(ref App app, ref U object){
+    igPushItemWidth(100 * app.gui.size);
+      igSliderScalar(name, type,  &val, &limits[0], &limits[1], format, 0);
+    igPopItemWidth();
+    this.onSlide(app, object, val);
+  }
+}
 
 /** Show the GUI window which allows us to manipulate 3D objects
  */
@@ -46,6 +63,23 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
   igPopFont();
 }
 
+struct DropdownItem {
+    const char* name;
+    ImTextureID texture_id; // This would be your actual loaded texture ID
+};
+
+extern(C) const(char)* MyComboItemDrawer(void* user_data, int idx) {
+  DropdownItem* items = cast(DropdownItem*)user_data;
+  if(idx >= 0){
+    DropdownItem* cItem = &items[idx];
+    ImVec2 size = {24.0f, 24.0f}; // Example size for the image
+
+    igImage(cItem.texture_id, ImVec2(24, 24), ImVec2(0, 0), ImVec2(1, 1)); igSameLine(0,5);
+    return cItem.name; // Indicate that the item was drawn
+  }else{
+    return "-- None Selected --"; // Indicate that the item was drawn
+  }
+}
 
 /** Individual Object
  */
@@ -59,12 +93,6 @@ void showObjectwindow(ref App app, ref Geometry obj) {
   if(igButton("Overview", ImVec2(0.0f, 0.0f))) { obj.window = false; } igSameLine(0,5);
   if(igButton((obj.isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) { obj.isVisible = !obj.isVisible; } igSameLine(0,5);
   if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ obj.deAllocate = true; }
-  /*if(app.textures.length > 0) {
-    igText("Texture:", ImVec2(0.0f, 0.0f)); igSameLine(0,5);
-    igPushItemWidth(100 * app.gui.size);
-      int[2] limits = [0, cast(uint)(obj.textures.length-1)];
-      igSliderScalar("##a", ImGuiDataType_U32,  &obj.tid, &limits[0], &limits[1], "%d", 0);
-  } */
   if(obj.animations.length > 0) {
     igText("Animation:", ImVec2(0.0f, 0.0f)); igSameLine(0,5);
     igPushItemWidth(100 * app.gui.size);
@@ -114,9 +142,28 @@ void showObjectwindow(ref App app, ref Geometry obj) {
     obj.position = p;
   igEndTable();
   if(obj.meshes.length > 0) {
+    int[2] limits = [-1, cast(int)(app.textures.length-1)];
+    string key0 = obj.meshes.keys[0];
+    int tid = obj.meshes[key0].tid;
+    int nid = obj.meshes[key0].nid;
+    int oid = obj.meshes[key0].oid;
+    DropdownItem[] items;
+    foreach(i, texture; app.textures){
+      items ~= DropdownItem(toStringz(stripExtension(baseName(texture.path))), cast(ulong)texture.imID);
+    }
+
+    igPushItemWidth(250 * app.gui.size);
+      igCombo_FnStrPtr("##tid:all", &tid, &MyComboItemDrawer, cast(void*)&items[0], cast(int)items.length, -1);
+    igPopItemWidth();
+    igPushItemWidth(250 * app.gui.size);
+      igCombo_FnStrPtr("##nid:all", &nid, &MyComboItemDrawer, cast(void*)&items[0], cast(int)items.length, -1);
+    igPopItemWidth();
+    igPushItemWidth(250 * app.gui.size);
+      igCombo_FnStrPtr("##oid:all", &oid, &MyComboItemDrawer, cast(void*)&items[0], cast(int)items.length, -1);
+    igPopItemWidth();
+
     igText("Mesh textures:", ImVec2(0.0f, 0.0f));
     igBeginTable(toStringz(obj.name() ~ "_Textures"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-    int[2] limits = [-1, cast(int)app.textures.length];
     foreach(name; obj.meshes.byKey()){
       igTableNextColumn();
         igText(toStringz(format("%s", name)), ImVec2(0.0f, 0.0f)); igSameLine(0,5);
@@ -134,6 +181,9 @@ void showObjectwindow(ref App app, ref Geometry obj) {
         igPopItemWidth();
     }
     igEndTable();
+    if(tid != -1){ obj.texture(app.textures[tid].path); app.mapTextures(obj); }
+    if(nid != -1){ obj.bumpmap(app.textures[nid].path); app.mapTextures(obj); }
+    if(oid != -1){ obj.opacity(app.textures[oid].path); app.mapTextures(obj); }
   }
   igEnd();
 }
