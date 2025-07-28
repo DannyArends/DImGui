@@ -220,7 +220,7 @@ pure uint[3][] faces(const Geometry geometry) nothrow {
 }
 
 /** Compute normal vectors of a Geometry */
-void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = false) {
+void computeNormals(T)(ref T geometry, bool invert = false, bool verbose = false) {
   auto faces = geometry.faces;
   float[3][] normals = new float[3][faces.length];
   auto cnt = 0;
@@ -247,7 +247,7 @@ void computeNormals(ref Geometry geometry, bool invert = false, bool verbose = f
   if(verbose) SDL_Log("computeNormals %d vertex normals computed\n", geometry.vertices.length);
 }
 
-void computeTangents(ref Geometry geometry, bool verbose = false) {
+void computeTangents(T)(ref T geometry, bool verbose = false) {
   auto faces = geometry.faces;
 
   if (faces.length == 0 || geometry.vertices.length == 0) {

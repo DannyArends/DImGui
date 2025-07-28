@@ -54,7 +54,7 @@ class BoundingBox : Geometry {
 
 /**  Compute the bounding box for object
  */
-void computeBoundingBox(ref Geometry object, bool verbose = false) {
+void computeBoundingBox(T)(ref T object, bool verbose = false) {
   bool initial = false;
   if(object.box is null) {
     if(verbose) SDL_Log("Computing new Bounding Box for %s", toStringz(object.name()));

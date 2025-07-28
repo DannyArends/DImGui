@@ -60,9 +60,10 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
                             app.pipelines[topology].layout, 0, 1, &app.sets[RENDER][syncIndex], 0, null);
     
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.draw(app.objects[x].box, syncIndex);
       if(app.objects[x].topology != topology) continue;
-      if(app.objects[x].isVisible) app.draw(app.objects[x], syncIndex);
+      if(!app.objects[x].isVisible) continue;
+      if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.draw(app.objects[x].box, syncIndex);
+      app.draw(app.objects[x], syncIndex);
     }
     popLabel(app.renderBuffers[app.syncIndex]);
   }

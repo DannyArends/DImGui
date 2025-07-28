@@ -30,7 +30,7 @@ void createScene(ref App app){
   app.objects[($-1)].computeTangents();
   app.objects[($-1)].texture("Bump_03_base");
   app.objects[($-1)].bumpmap("Bump_03_normal");
-  app.objects[($-1)].position([0.0f, 1.0f, 0.0f]);
+  app.objects[($-1)].position([0.0f, -0.5f, 0.0f]);
   for(int x = -5; x <= 5; x++) {
     for(int z = -5; z <= 5; z++) {
       mat4 instance;  // Add a instances of object 0

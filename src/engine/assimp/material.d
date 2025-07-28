@@ -40,7 +40,8 @@ float[4] getMaterialColor(aiMaterial* material, aiColorType type = aiColorType.D
 
 int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
   if (type in object.materials[materialIndex].textures) {
-    return(idx(app.textures, object.materials[materialIndex].textures[type]));
+    int index = idx(app.textures, object.materials[materialIndex].textures[type]);
+    return(index);
   }
   return(-1);
 }
@@ -59,7 +60,7 @@ Material[] loadMaterials(ref App app, aiScene* scene, const(char)* path){
     Material mat =  { path : to!string(fromStringz(path)) };
     foreach(type; EnumMembers!aiTextureType) {
       auto info = material.getTextureInfo(type);
-      if(info.path != "") mat.textures[type] = info;
+      if(info.path != ""){ mat.textures[type] = info; }
     }
     foreach(type; EnumMembers!aiColorType) {
       mat.colors[type] = material.getMaterialColor(type);
