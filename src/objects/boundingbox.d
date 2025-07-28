@@ -24,6 +24,8 @@ struct Bounds {
     if (v.y > max[1]) max[1] = v.y;
     if (v.z > max[2]) max[2] = v.z;
   }
+  
+  @property @nogc pure float[3] size() nothrow const { float[3] s = max[] - min[]; return(s); }
 }
 
 /** BoundingBox
@@ -80,17 +82,14 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   }
   object.box.name = (){ return("BoundingBox"); };
 
-  if(initial || !object.buffers[VERTEX]) { // The object vertex buffer is out of date, update the BoundingBox
+  if(initial || !object.buffers[VERTEX]) { // The object vertex buffer is out of date, update the BoundingBox vertices
     if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.name()), toStringz(object.name()));
-    float[3][2] size = [[float.infinity, float.infinity, float.infinity], 
-                        [-float.infinity, -float.infinity, -float.infinity]];
-
     Bounds bounds;
     for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
     object.box.setDimensions(bounds.min, bounds.max);
     object.box.buffers[VERTEX] = false;
   }
-  if(initial || !object.buffers[INSTANCE]) { // The object instance buffer is out of date, update the BoundingBox
+  if(initial || !object.buffers[INSTANCE]) { // The object instance buffer is out of date, update the BoundingBox instances
     if(verbose) SDL_Log("Updating %s(%s) INSTANCE", toStringz(object.box.name()), toStringz(object.name()));
     object.box.instances.length = object.instances.length;
     for(size_t x = 0; x < object.instances.length; x++) {
@@ -100,6 +99,8 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   }
 }
 
+/** Compute/Update the global scene bounds with an assimp node
+ */
 void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, const Matrix pTransform) {
   Matrix gTransform = pTransform.multiply(toMatrix(node.mTransformation));
   for (uint i = 0; i < node.mNumMeshes; ++i) {
@@ -112,10 +113,10 @@ void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, const Matr
   for (uint i = 0; i < node.mNumChildren; ++i) { bounds.calculateBounds(scene, node.mChildren[i], gTransform); }
 }
 
+/** Compute assimp scale adjustment based on global scene bounds
+ */
 Matrix computeScaleAdjustment(const Bounds bounds){
-  float[3] minP = [bounds.min[0], bounds.min[1], bounds.min[2]];
-  float[3] maxP = [bounds.max[0], bounds.max[1], bounds.max[2]];
-  float[3] size = maxP[] - minP[];
+  float[3] size = bounds.size();
   float maxDim = fmax(size.x, fmax(size.y, size.z));
   float scaleFactor = (maxDim > 0) ? 4.0f / maxDim : 4.0f; // Scale to unit cube
 
