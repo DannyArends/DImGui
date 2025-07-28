@@ -8,7 +8,7 @@ import engine;
 import cube : Cube;
 import cone : Cone;
 import cylinder : Cylinder;
-import geometry : Geometry, Instance, computeNormals, computeTangents, position, rotate, scale, texture, bumpmap;
+import geometry : Geometry, Instance, computeNormals, computeTangents, position, rotate, scale, texture, bumpmap, opacity;
 import icosahedron : Icosahedron, refineIcosahedron;
 import lsystem : createLSystem;
 import matrix : mat4, scale, translate, rotate;
@@ -28,7 +28,8 @@ void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
   app.objects[($-1)].computeTangents();
-  app.objects[($-1)].bumpmap(app.textures, "bump4");
+  app.objects[($-1)].texture("Bump_03_base");
+  app.objects[($-1)].bumpmap("Bump_03_normal");
   app.objects[($-1)].position([0.0f, 1.0f, 0.0f]);
   for(int x = -5; x <= 5; x++) {
     for(int z = -5; z <= 5; z++) {
@@ -46,7 +47,7 @@ void createScene(ref App app){
   app.objects[($-1)].computeTangents();
   app.objects[($-1)].position([3.0f, 0.5f, 1.5f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
-  app.objects[($-1)].texture(app.textures, "image");
+  app.objects[($-1)].texture("image");
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){ obj.rotate([20 * dt, 2 * dt, 14 * dt]); };
 
   SDL_Log("createScene: Add a Cone");
@@ -54,7 +55,7 @@ void createScene(ref App app){
   app.objects[($-1)].computeTangents();
   app.objects[($-1)].position([3.0f, 0.7f, 0.5f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
-  app.objects[($-1)].texture(app.textures, "image");
+  app.objects[($-1)].texture("image");
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){ obj.rotate([6 * dt, 6 * dt, 12 * dt]); };
 
   SDL_Log("createScene: Add a Cylinder");
@@ -62,7 +63,7 @@ void createScene(ref App app){
   app.objects[($-1)].computeTangents();
   app.objects[($-1)].position([3.0f, 0.7f, -0.5f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
-  app.objects[($-1)].texture(app.textures, "image");
+  app.objects[($-1)].texture("image");
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){ obj.rotate([6 * dt, 6 * dt, 10 * dt]); };
 
   SDL_Log("createScene: Add a Torus");
@@ -70,7 +71,7 @@ void createScene(ref App app){
   app.objects[($-1)].computeTangents();
   app.objects[($-1)].position([3.0f, 0.5f, -1.5f]);
   app.objects[($-1)].scale([0.35f, 0.35f, 0.35f]);
-  app.objects[($-1)].texture(app.textures, "image");
+  app.objects[($-1)].texture("image");
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){ obj.rotate([6 * dt, 20 * dt, 14 * dt]); };
 
   SDL_Log("createScene: Add an Icosahedron");
@@ -78,7 +79,7 @@ void createScene(ref App app){
   app.objects[($-1)].refineIcosahedron(3);
   app.objects[($-1)].computeNormals();
   app.objects[($-1)].computeTangents();
-  app.objects[($-1)].texture(app.textures, "earth_day");
+  app.objects[($-1)].texture("earth_day");
   app.objects[($-1)].scale([2.0f, 2.0f, 2.0f]);
   app.objects[($-1)].position([5.5f, 2.0f, 2.5f]);
   app.objects[($-1)].onFrame = (ref App app, ref Geometry obj, float dt){

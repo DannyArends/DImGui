@@ -69,7 +69,7 @@ class Geometry {
     }
   }
 
-  bool isVisible = true;                            /// Boolean flag
+  bool isVisible = true;                           /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
   bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow {
@@ -141,16 +141,34 @@ float scale(T)(T object, uint instance = 0) {
 
 /** Set tid for instance from object.instances to Texture name 
  */
-void texture(T)(T object, const Texture[] textures, string name, string mname = "") {
-  object.materials.length = 1;
-  object.materials[0] = Material(name, [aiTextureType_DIFFUSE: TexureInfo(name) ]);
+void texture(T)(T object, string name, string mname = "") {
+  if(object.materials.length == 0){
+    object.materials.length = 1;
+    object.materials[0] = Material(name, [aiTextureType_DIFFUSE: TexureInfo(name) ]);
+  }else{
+    object.materials[0].textures[aiTextureType_DIFFUSE] = TexureInfo(name);
+  }
   foreach(ref mesh ; object.meshes) { mesh.mid = 0; }
 }
 
-void bumpmap(T)(T object, const Texture[] textures, string name, string mname = "") {
-  object.materials.length = 1;
-  object.materials[0] = Material(name, [aiTextureType_NORMALS: TexureInfo(name) ]);
+void bumpmap(T)(T object, string name, string mname = "") {
+  if(object.materials.length == 0){
+    object.materials.length = 1;
+    object.materials[0] = Material(name, [aiTextureType_NORMALS: TexureInfo(name) ]);
+  }else{
+    object.materials[0].textures[aiTextureType_NORMALS] = TexureInfo(name);
+  }
   foreach(ref mesh ; object.meshes) { mesh.mid = 0; }
+}
+
+void opacity(T)(T object, string name, string mname = "") {
+  if(object.materials.length == 0){
+    object.materials.length = 1;
+    object.materials[0] = Material(name, [aiTextureType_OPACITY: TexureInfo(name) ]);
+  }else{
+    object.materials[0].textures[aiTextureType_OPACITY] = TexureInfo(name);
+  }
+  foreach(ref mesh ; object.meshes) { mesh.oid = 0; }
 }
 
 /** Euclidean distance between Geometry and Camera */
