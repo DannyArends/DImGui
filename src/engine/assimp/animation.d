@@ -6,7 +6,7 @@
 import engine;
 
 import bone : Bone;
-import bounds : update;
+import boundingbox : Bounds;
 import node : Node;
 import geometry : Geometry;
 import assimp : OpenAsset, name;

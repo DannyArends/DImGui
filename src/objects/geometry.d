@@ -7,10 +7,9 @@ import engine;
 
 import meta : MetaData;
 import bone : Bone;
-import bounds : Bounds;
 import mesh : Mesh;
 import buffer : destroyGeometryBuffers, nameGeometryBuffer, GeometryBuffer, toGPU;
-import boundingbox : BoundingBox, computeBoundingBox;
+import boundingbox : Bounds, BoundingBox, computeBoundingBox;
 import camera : Camera;
 import material : Material, TexureInfo;
 import matrix : mat4, position, transpose, translate, rotate, scale, inverse;

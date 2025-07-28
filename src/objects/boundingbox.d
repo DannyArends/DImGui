@@ -7,7 +7,24 @@ import engine;
 
 import cube : Cube;
 import geometry : Instance, Geometry;
+import matrix : Matrix, toMatrix, multiply, scale;
+import vector : x,y,z;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
+
+struct Bounds {
+  float[3] min = [ float.max, float.max, float.max];
+  float[3] max = [-float.max,-float.max,-float.max];
+
+  @nogc pure void update(const float[3] v) nothrow {
+    if (v.x < min[0]) min[0] = v.x;
+    if (v.y < min[1]) min[1] = v.y;
+    if (v.z < min[2]) min[2] = v.z;
+
+    if (v.x > max[0]) max[0] = v.x;
+    if (v.y > max[1]) max[1] = v.y;
+    if (v.z > max[2]) max[2] = v.z;
+  }
+}
 
 /** BoundingBox
  */
@@ -39,7 +56,7 @@ class BoundingBox : Geometry {
     return(scale);
   }
 
-  @nogc void setDimensions(float[3] min, float[3] max) nothrow {
+  @nogc pure void setDimensions(float[3] min, float[3] max) nothrow {
     vertices[0].position = [min[0], min[1], min[2]]; vertices[1].position = [max[0], min[1], min[2]];
     vertices[2].position = [max[0], max[1], min[2]]; vertices[3].position = [min[0], max[1], min[2]];
     vertices[4].position = [min[0], min[1], max[2]]; vertices[5].position = [max[0], min[1], max[2]];
@@ -68,17 +85,9 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
     float[3][2] size = [[float.infinity, float.infinity, float.infinity], 
                         [-float.infinity, -float.infinity, -float.infinity]];
 
-    for (size_t i = 0; i < object.vertices.length; i++) {
-      if (object.vertices[i].position[0] < size[0][0]) size[0][0] = object.vertices[i].position[0];
-      if (object.vertices[i].position[0] > size[1][0]) size[1][0] = object.vertices[i].position[0];
-
-      if (object.vertices[i].position[1] < size[0][1]) size[0][1] = object.vertices[i].position[1];
-      if (object.vertices[i].position[1] > size[1][1]) size[1][1] = object.vertices[i].position[1];
-
-      if (object.vertices[i].position[2] < size[0][2]) size[0][2] = object.vertices[i].position[2];
-      if (object.vertices[i].position[2] > size[1][2]) size[1][2] = object.vertices[i].position[2];
-    }
-    object.box.setDimensions(size[0], size[1]);
+    Bounds bounds;
+    for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
+    object.box.setDimensions(bounds.min, bounds.max);
     object.box.buffers[VERTEX] = false;
   }
   if(initial || !object.buffers[INSTANCE]) { // The object instance buffer is out of date, update the BoundingBox
@@ -91,3 +100,25 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   }
 }
 
+void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, const Matrix pTransform) {
+  Matrix gTransform = pTransform.multiply(toMatrix(node.mTransformation));
+  for (uint i = 0; i < node.mNumMeshes; ++i) {
+    aiMesh* mesh = scene.mMeshes[node.mMeshes[i]];
+    for (uint j = 0; j < mesh.mNumVertices; ++j) {
+      float[3] position = gTransform.multiply([mesh.mVertices[j].x, mesh.mVertices[j].y, mesh.mVertices[j].z]);
+      bounds.update(position);
+    }
+  }
+  for (uint i = 0; i < node.mNumChildren; ++i) { bounds.calculateBounds(scene, node.mChildren[i], gTransform); }
+}
+
+Matrix computeScaleAdjustment(const Bounds bounds){
+  float[3] minP = [bounds.min[0], bounds.min[1], bounds.min[2]];
+  float[3] maxP = [bounds.max[0], bounds.max[1], bounds.max[2]];
+  float[3] size = maxP[] - minP[];
+  float maxDim = fmax(size.x, fmax(size.y, size.z));
+  float scaleFactor = (maxDim > 0) ? 4.0f / maxDim : 4.0f; // Scale to unit cube
+
+  Matrix scaleToFit = scale(Matrix(), [scaleFactor, scaleFactor, scaleFactor]);
+  return(scaleToFit);
+}
