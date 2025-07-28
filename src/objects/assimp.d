@@ -8,13 +8,14 @@ import engine;
 import animation : loadAnimations;
 import bone : Bone, loadBones;
 import bounds : calculateBounds, computeScaleAdjustment;
+import boundingbox : computeBoundingBox;
 import matrix : Matrix, toMatrix, multiply, inverse, transpose, rotate;
 import node : Node, loadNode;
 import mesh : Mesh;
 import meta : loadMetaData;
 import io : readFile;
 import material : loadMaterials;
-import geometry : Instance, Geometry, scale, rotate;
+import geometry : Instance, Geometry, scale, rotate, computeNormals, computeTangents;
 import vertex : Vertex;
 import textures : idx;
 import matrix : translate;
@@ -25,7 +26,7 @@ import vector : x, y, z, euclidean;
 class OpenAsset : Geometry {
   this() {
     instances = [Instance()];
-    name = (){ return(typeof(this).stringof); };
+    name = (){ return(this.stringof); };
   }
 }
 
@@ -65,6 +66,11 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
     SDL_Log("%u vertices, %u indices loaded", object.vertices.length, object.indices.length);
   }
   aiReleaseImport(scene);
+  object.computeNormals();
+  object.computeTangents();
+  object.computeBoundingBox();
+  object.isVisible = false;
+  object.scale([0.5f, 0.5f, 0.5f]);
   return object;
 }
 

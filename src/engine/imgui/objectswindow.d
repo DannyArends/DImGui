@@ -8,22 +8,6 @@ import engine;
 import geometry : Geometry, position, scale, rotate, texture, bumpmap, opacity;
 import textures : mapTextures;
 
-struct Slider(U, T) {
-  const(char)* name;
-  T val;
-  T[2] limits;
-  void delegate(ref App app, ref U object, T value) onSlide;
-  ImGuiDataType type = ImGuiDataType_S32;
-  const(char)* format = "%d";
-
-  void show(ref App app, ref U object){
-    igPushItemWidth(100 * app.gui.size);
-      igSliderScalar(name, type,  &val, &limits[0], &limits[1], format, 0);
-    igPopItemWidth();
-    this.onSlide(app, object, val);
-  }
-}
-
 /** Show the GUI window which allows us to manipulate 3D objects
  */
 void showObjectswindow(ref App app, bool* show, uint font = 0) {
@@ -37,7 +21,7 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
       }
     }
     if(list){
-      igBeginTable("Object_Tbl", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+      igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       foreach(i, object; app.objects){
         igPushID_Int(to!int(i));
         auto p = app.objects[i].position;
@@ -45,9 +29,7 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
         string text = to!string(i);
         if(object.name) text = object.name() ~ " " ~ text;
         igTableNextColumn();
-          igText(text.toStringz, ImVec2(0.0f, 0.0f));
-        igTableNextColumn();
-          igText(object.mName.toStringz, ImVec2(0.0f, 0.0f));
+          igText(toStringz(format("%s: %s", text, object.mName)), ImVec2(0.0f, 0.0f));
         igTableNextColumn();
           if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
           if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) {
@@ -84,7 +66,7 @@ extern(C) const(char)* MyComboItemDrawer(void* user_data, int idx) {
 /** Individual Object
  */
 void showObjectwindow(ref App app, ref Geometry obj) {
-  igText(toStringz(format("Name: %s", obj.name())), ImVec2(0.0f, 0.0f));
+  igText(toStringz(format("Name: %s %s", obj.name(), obj.mName)), ImVec2(0.0f, 0.0f));
   igText(toStringz(format("Vertices: %s", obj.vertices.length)), ImVec2(0.0f, 0.0f));
   igText(toStringz(format("Indices: %s", obj.indices.length)), ImVec2(0.0f, 0.0f));
   igText(toStringz(format("Instances: %s", obj.instances.length)), ImVec2(0.0f, 0.0f));
@@ -181,9 +163,9 @@ void showObjectwindow(ref App app, ref Geometry obj) {
         igPopItemWidth();
     }
     igEndTable();
-    if(tid != -1){ obj.texture(app.textures[tid].path); app.mapTextures(obj); }
-    if(nid != -1){ obj.bumpmap(app.textures[nid].path); app.mapTextures(obj); }
-    if(oid != -1){ obj.opacity(app.textures[oid].path); app.mapTextures(obj); }
+    if(tid != obj.meshes[key0].tid){ obj.texture(app.textures[tid].path); app.mapTextures(obj); }
+    if(nid != obj.meshes[key0].nid){ obj.bumpmap(app.textures[nid].path); app.mapTextures(obj); }
+    if(oid != obj.meshes[key0].oid){ obj.opacity(app.textures[oid].path); app.mapTextures(obj); }
   }
   igEnd();
 }
