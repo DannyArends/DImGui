@@ -12,7 +12,7 @@ void showShaderwindow(ref App app, bool* show, uint font = 0) {
   if(igBegin("Shaders", show, 0)){
     igBeginTable("Shaders_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     auto shaders = (app.shadows.shaders ~ app.shaders ~ app.postProcess);
-    if(app.compute.enabled) shaders ~= app.compute.shaders;
+    if(app.hasCompute) shaders ~= app.compute.shaders;
     foreach(i, shader; shaders) {
       igPushID_Int(to!int(i));
       igTableNextRow(0, 5.0f);

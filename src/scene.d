@@ -173,7 +173,7 @@ void createScene(ref App app){
   app.objects[($-1)].animation = 0;
  // }).start(); */
 
-  if (app.compute.enabled) {
+  if (app.hasCompute) {
     SDL_Log("createScene: Add ParticleSystem");
     app.objects ~= app.compute.system;
   }

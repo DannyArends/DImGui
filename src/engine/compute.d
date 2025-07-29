@@ -24,7 +24,6 @@ import validation : pushLabel, popLabel, nameVulkanObject;
 /** Compute structure with shaders, command buffer and pipelines
  */
 struct Compute {
-  bool enabled = true;
   uint lastTick;
   ParticleSystem system;
   Shader[] shaders;                           /// Compute shader objects

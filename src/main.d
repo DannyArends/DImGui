@@ -63,7 +63,7 @@ void run(string[] args = null) {
   app.getBestColorFormat();                                     /// Figure out the best available color format for HDR
   app.loadShaders(app.shaders, RenderShaders);                  /// Load the Rendering shaders
   app.loadShaders(app.postProcess, PostProcessShaders);         /// Load the Post-processing shaders
-  if(app.compute.enabled) app.initializeCompute();              /// Load the compute shader
+  if(app.hasCompute) app.initializeCompute();                   /// Load the compute shader
   app.createShadowMap();                                        /// Create the shadow resources, renderpass, and shader
   app.createCommandPools();                                     /// Create the rendering CommandPool
   app.createSampler();                                          /// Create a texture sampler
