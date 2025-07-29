@@ -8,7 +8,7 @@ import engine;
 import compute: createComputeCommandBuffers, createComputePipeline;
 import depthbuffer : createDepthResources;
 import descriptor : createDescriptors, updateDescriptorSet;
-import commands : createCommandBuffers;
+import commands : createCommandBuffer;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
 import pipeline : createGraphicsPipeline, createPostProcessGraphicsPipeline;
@@ -62,14 +62,14 @@ void createOrResizeWindow(ref App app) {
   app.reflectShaders(app.shadows.shaders);
   app.createResources(app.shadows.shaders, SHADOWS);
   app.createDescriptors(app.shadows.shaders, SHADOWS);
-  app.createCommandBuffers(app.shadowBuffers);
+  app.createCommandBuffer(app.shadowBuffers, app.commandPool, app.framesInFlight);
   app.createShadowMapGraphicsPipeline();
 
   SDL_Log("3: Render shaders reflection");
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, RENDER);
   app.createDescriptors(app.shaders, RENDER);
-  app.createCommandBuffers(app.renderBuffers);
+  app.createCommandBuffer(app.renderBuffers, app.commandPool, app.framesInFlight);
 
   SDL_Log("4: Post-processing shaders reflection");
   app.reflectShaders(app.postProcess);
@@ -80,7 +80,7 @@ void createOrResizeWindow(ref App app) {
   }
 
   SDL_Log("5: ImGui resources");
-  app.createCommandBuffers(app.imguiBuffers);
+  app.createCommandBuffer(app.imguiBuffers, app.commandPool, app.framesInFlight);
 
   SDL_Log("6: Create RenderPasses [SCENE -> POST -> IMGUI]");
   app.scene = app.createSceneRenderPass();

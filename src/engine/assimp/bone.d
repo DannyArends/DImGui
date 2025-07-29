@@ -12,6 +12,8 @@ import matrix : Matrix, toMatrix, multiply, inverse, rotate, scale, position, tr
 import sdl : STARTUP;
 import vector : negate, x,y,z;
 
+/** Our Bone structure matching the GPU
+ */
 struct Bone {
   Matrix offset;          /// Inverse bind pose matrix
   uint index;             /// Bone index
@@ -23,7 +25,10 @@ struct Bone {
 
 alias float[uint][string] BoneWeights;
 
-BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones, Matrix pTransform) {
+/** loadBoneWeights
+ * TODO: Should actually not write to globalBones (tread safety issue with threading.d)
+ */
+BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones, Matrix pTransform) {
   BoneWeights weights;
   for (uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
@@ -43,6 +48,9 @@ BoneWeights loadBones(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBone
   return(weights);
 }
 
+/** updateBoneOffsets
+ * compute the new bone offsets for the current frame
+ */
 void updateBoneOffsets(App app, uint syncIndex) {
   ulong t = SDL_GetTicks() - app.time[STARTUP];
   foreach(ref obj; app.objects) {

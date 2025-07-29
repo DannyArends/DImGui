@@ -6,7 +6,6 @@
 import engine;
 
 import bone : Bone;
-import boundingbox : Bounds;
 import node : Node;
 import geometry : Geometry;
 import assimp : OpenAsset, name;
@@ -44,7 +43,10 @@ struct Animation {
 
 @nogc double calculateCurrentTick(ulong t, double tps, double dur) nothrow { return fmod((t / 1000.0f) * tps, dur); }
 
-void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform, double animationTime){
+/** calculateGlobalTransform
+ * Recursively apply all transformations at animationTime
+ */
+void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform, double animationTime) {
   Animation animation = obj.animations[obj.animation];
   Matrix localTransform = node.transform;
 
@@ -68,53 +70,58 @@ void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, co
   }
 }
 
+/** load all animations from aiScene*
+ */
 Animation[] loadAnimations(ref App app, aiScene* scene, const OpenAsset asset) {
   Animation[] animations;
-  if (scene.mNumAnimations > 0) {
-    if(app.verbose) SDL_Log("Processing %u animations...", scene.mNumAnimations);
-    for (uint i = 0; i < scene.mNumAnimations; i++) {
-      auto aiAnim = scene.mAnimations[i];
-      Animation anim;
-      anim.name = name(aiAnim.mName);
-      anim.duration = aiAnim.mDuration;
-      anim.ticksPerSecond = aiAnim.mTicksPerSecond != 0 ? aiAnim.mTicksPerSecond : 25.0; // Default to 25 if 0
+  animations.length = scene.mNumAnimations;
+  if(app.verbose) SDL_Log("Processing %u animations...", scene.mNumAnimations);
+  for (uint i = 0; i < scene.mNumAnimations; i++) {
+    auto aiAnim = scene.mAnimations[i];
+    Animation anim;
+    anim.name = name(aiAnim.mName);
+    anim.duration = aiAnim.mDuration;
+    anim.ticksPerSecond = aiAnim.mTicksPerSecond != 0 ? aiAnim.mTicksPerSecond : 24.0;
 
-      if (app.verbose) {
-        SDL_Log("  Animation %u: %s (Duration: %.2f ticks, Ticks/Sec: %.2f)", i, toStringz(anim.name), anim.duration, anim.ticksPerSecond);
-        SDL_Log("  %u animation channels", aiAnim.mNumChannels);
-      }
-
-      for (uint j = 0; j < aiAnim.mNumChannels; j++) {
-        auto aiNodeAnim = aiAnim.mChannels[j];
-        NodeAnimation nodeAnim;
-        string nodeName = format("%s:%s", asset.mName, name(aiNodeAnim.mNodeName));
-
-        if (app.verbose) {
-          //SDL_Log("    Node Channel %u for '%s'", j, toStringz(nodeName));
-          //SDL_Log("      Position Keys: %u", aiNodeAnim.mNumPositionKeys);
-          //SDL_Log("      Rotation Keys: %u", aiNodeAnim.mNumRotationKeys);
-          //SDL_Log("      Scaling Keys: %u", aiNodeAnim.mNumScalingKeys);
-        }
-
-        for (uint k = 0; k < aiNodeAnim.mNumPositionKeys; k++) {        // Extract Position Keys
-          auto aiKey = aiNodeAnim.mPositionKeys[k];
-          PositionKey posKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
-          nodeAnim.positionKeys ~= posKey;
-        }
-        for (uint k = 0; k < aiNodeAnim.mNumRotationKeys; k++) {        // Extract Rotation Keys (Quaternions)
-          auto aiKey = aiNodeAnim.mRotationKeys[k];
-          RotationKey rotKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z, aiKey.mValue.w] };
-          nodeAnim.rotationKeys ~= rotKey;
-        }
-        for (uint k = 0; k < aiNodeAnim.mNumScalingKeys; k++) {        // Extract Scaling Keys
-            auto aiKey = aiNodeAnim.mScalingKeys[k];
-            ScalingKey scaleKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
-            nodeAnim.scalingKeys ~= scaleKey;
-        }
-        anim.nodeAnimations[nodeName] = nodeAnim;
-      }
-      animations ~= anim;
+    if (app.verbose) {
+      SDL_Log("  Animation %u: %s (Duration: %.2f ticks, Ticks/Sec: %.2f)", i, toStringz(anim.name), anim.duration, anim.ticksPerSecond);
+      SDL_Log("  %u animation channels", aiAnim.mNumChannels);
     }
+
+    for (uint j = 0; j < aiAnim.mNumChannels; j++) {
+      auto aiNodeAnim = aiAnim.mChannels[j];
+      NodeAnimation nodeAnim;
+      string nodeName = format("%s:%s", asset.mName, name(aiNodeAnim.mNodeName));
+
+      if (app.trace) {
+        SDL_Log("    Node Channel %u for '%s'", j, toStringz(nodeName));
+        SDL_Log("      Position Keys: %u", aiNodeAnim.mNumPositionKeys);
+        SDL_Log("      Rotation Keys: %u", aiNodeAnim.mNumRotationKeys);
+        SDL_Log("      Scaling Keys: %u", aiNodeAnim.mNumScalingKeys);
+      }
+
+      nodeAnim.positionKeys.length = aiNodeAnim.mNumPositionKeys;
+      nodeAnim.rotationKeys.length = aiNodeAnim.mNumRotationKeys;
+      nodeAnim.scalingKeys.length = aiNodeAnim.mNumScalingKeys;
+
+      for (uint k = 0; k < aiNodeAnim.mNumPositionKeys; k++) {
+        auto aiKey = aiNodeAnim.mPositionKeys[k];
+        PositionKey posKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
+        nodeAnim.positionKeys[k] = posKey;
+      }
+      for (uint k = 0; k < aiNodeAnim.mNumRotationKeys; k++) {
+        auto aiKey = aiNodeAnim.mRotationKeys[k];
+        RotationKey rotKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z, aiKey.mValue.w] };
+        nodeAnim.rotationKeys[k] = rotKey;
+      }
+      for (uint k = 0; k < aiNodeAnim.mNumScalingKeys; k++) {
+          auto aiKey = aiNodeAnim.mScalingKeys[k];
+          ScalingKey scaleKey = { time : aiKey.mTime, value : [aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z] };
+          nodeAnim.scalingKeys[k] = scaleKey;
+      }
+      anim.nodeAnimations[nodeName] = nodeAnim;
+    }
+    animations[i] = anim;
   }
   return(animations);
 }
@@ -126,7 +133,7 @@ Animation[] loadAnimations(ref App app, aiScene* scene, const OpenAsset asset) {
   return(keys.length - 1);
 }
 
-pure float[3] getNodePosition(const NodeAnimation anim, double animationTime) nothrow {
+@nogc pure float[3] getNodePosition(const NodeAnimation anim, double animationTime) nothrow {
   if (anim.positionKeys.length == 1) return(anim.positionKeys[0].value);
 
   size_t i0 = findKeyframeIndex(anim.positionKeys, animationTime);
@@ -136,7 +143,7 @@ pure float[3] getNodePosition(const NodeAnimation anim, double animationTime) no
   return(interpolate(anim.positionKeys[i0].value, anim.positionKeys[i1].value, factor));
 }
 
-pure float[4] getNodeRotation(NodeAnimation anim, double animationTime) nothrow {
+@nogc pure float[4] getNodeRotation(NodeAnimation anim, double animationTime) nothrow {
   if (anim.rotationKeys.length == 1) return(anim.rotationKeys[0].value);
 
   size_t i0 = findKeyframeIndex(anim.rotationKeys, animationTime);
@@ -146,7 +153,7 @@ pure float[4] getNodeRotation(NodeAnimation anim, double animationTime) nothrow 
   return(slerp(anim.rotationKeys[i0].value, anim.rotationKeys[i1].value, factor));
 }
 
-pure float[3] getNodeScale(NodeAnimation anim, double animationTime) nothrow {
+@nogc pure float[3] getNodeScale(NodeAnimation anim, double animationTime) nothrow {
   if (anim.scalingKeys.length == 1) return(anim.scalingKeys[0].value);
 
   size_t i0 = findKeyframeIndex(anim.scalingKeys, animationTime);

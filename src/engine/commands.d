@@ -15,6 +15,7 @@ import validation : pushLabel, popLabel, nameVulkanObject;
 import window: supportedTopologies;
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
+ * SSBO Buffering -> Objects Buffering -> Rendering -> Post-processing
  */
 void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   if(app.trace) SDL_Log("recordRenderCommandBuffer %d recording to frame: %d/%d", syncIndex, app.frameIndex, app.framebuffers.scene.length);
@@ -121,29 +122,24 @@ VkCommandPool createCommandPool(ref App app) {
   return(commandPool);
 }
 
-VkCommandBuffer[] createCommandBuffer(App app, VkCommandPool commandPool, uint nBuffers = 1) {
+VkCommandBuffer[] createCommandBuffer(App app, VkCommandPool pool, uint nBuffers = 1) {
   VkCommandBuffer[] commandBuffer;
   commandBuffer.length = nBuffers;
 
   VkCommandBufferAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-    commandPool: commandPool,
+    commandPool: pool,
     level: VK_COMMAND_BUFFER_LEVEL_PRIMARY,
     commandBufferCount: nBuffers
   };
   enforceVK(vkAllocateCommandBuffers(app.device, &allocInfo, &(commandBuffer[0])));
-  if(app.trace) SDL_Log("%d CommandBuffer created for pool %p", allocInfo.commandBufferCount, commandPool);
+  if(app.trace) SDL_Log("%d CommandBuffer(s) created from pool %p", nBuffers, pool);
+  app.swapDeletionQueue.add((){ vkFreeCommandBuffers(app.device, pool, cast(uint)commandBuffer.length, &commandBuffer[0]); });
   return(commandBuffer);
 }
 
-void createCommandBuffers(ref App app, ref VkCommandBuffer[] dst) { 
-  dst = app.createCommandBuffer(app.commandPool, app.framesInFlight);
-  if(app.trace) SDL_Log("createRenderCommandBuffers: %d RenderBuffer, commandpool[%p]", app.renderBuffers.length, app.commandPool);
-  app.swapDeletionQueue.add((){
-    for (uint i = 0; i < app.framesInFlight; i++) {
-      vkFreeCommandBuffers(app.device, app.commandPool, 1, &dst[i]);
-    }
-  });
+void createCommandBuffer(ref App app, ref VkCommandBuffer[] dst, VkCommandPool pool, uint nBuffers = 1) { 
+  dst = app.createCommandBuffer(pool, nBuffers);
 }
 
 // Structure returned as result of an (async) SingleTimeCommand submission
@@ -155,14 +151,18 @@ struct SingleTimeCommand {
   alias commands this;
 }
 
+/** beginSingleTimeCommands() begins a commandbuffer using the VkCommandPool pool
+ * async: If true: add commands, submit to the correct queue. 
+          If false: add commands, the use endSingleTimeCommands to submit and WaitIdle for the Queue
+ */
 SingleTimeCommand beginSingleTimeCommands(ref App app, VkCommandPool pool, bool async = false) {
-  VkCommandBuffer[1] commandBuffer = app.createCommandBuffer(pool, 1);
+  VkCommandBuffer commandBuffer = app.createCommandBuffer(pool, 1)[0];
 
   VkCommandBufferBeginInfo beginInfo = {
     sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     flags: VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
   };
-  vkBeginCommandBuffer(commandBuffer[0], &beginInfo);
+  vkBeginCommandBuffer(commandBuffer, &beginInfo);
   VkFence completionFence;
   if(async) {
     VkFenceCreateInfo fenceInfo = {
@@ -172,13 +172,14 @@ SingleTimeCommand beginSingleTimeCommands(ref App app, VkCommandPool pool, bool 
     enforceVK(vkCreateFence(app.device, &fenceInfo, app.allocator, &completionFence));
     app.mainDeletionQueue.add((){
       vkDestroyFence(app.device, completionFence, app.allocator);
-      vkFreeCommandBuffers(app.device, pool, 1, &commandBuffer[0]);
+      vkFreeCommandBuffers(app.device, pool, 1, &commandBuffer);
     });
   }
-  return SingleTimeCommand(async, completionFence, pool, commandBuffer[0]);
+  return SingleTimeCommand(async, completionFence, pool, commandBuffer);
 }
 
 void endSingleTimeCommands(ref App app, SingleTimeCommand cmd, VkQueue queue) {
+  if(cmd.async) assert(0, "Never endSingleTimeCommands() on Async events");
   vkEndCommandBuffer(cmd.commands);
 
   VkSubmitInfo submitInfo = {

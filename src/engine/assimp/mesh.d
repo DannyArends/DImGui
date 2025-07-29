@@ -6,7 +6,7 @@
 import engine;
 
 import assimp : OpenAsset, name;
-import bone : Bone, BoneWeights, loadBones;
+import bone : Bone, BoneWeights, loadBoneWeights;
 import material : getChannel;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean,x,y,z;
@@ -46,7 +46,7 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
   // Vertex offset, load texture information,  bone weight, and normal matrix
   size_t vOff = asset.vertices.length;
   auto channel = app.getChannel(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-  auto weights = asset.loadBones(mesh, app.bones, gTransform);
+  auto weights = asset.loadBoneWeights(mesh, app.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
 
   // TODO first create a Material definition for the object => add to app.materials
