@@ -146,10 +146,10 @@ void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)app.lights.length);
         }else if(shaders[s].descriptors[d].base == "MeshMatrices") {
           app.createSSBO(shaders[s].descriptors[d]);
-        }else if(app.compute.enabled && shaders[s].descriptors[d].base == "lastFrame") {
+        }else if(app.hasCompute && shaders[s].descriptors[d].base == "lastFrame") {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
           app.transferToSSBO(shaders[s].descriptors[d]);
-        }else if(app.compute.enabled && shaders[s].descriptors[d].base == "currentFrame") {
+        }else if(app.hasCompute && shaders[s].descriptors[d].base == "currentFrame") {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
         }
       }

@@ -23,7 +23,7 @@ void renderFrame(ref App app){
   VkSemaphore renderComplete   = app.sync[app.syncIndex].renderComplete;
 
   if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
-  if (app.compute.enabled) {
+  if (app.hasCompute) {
     enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
     enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
   }
@@ -42,7 +42,7 @@ void renderFrame(ref App app){
 
   app.updateMeshInfo();    // Check Mesh Information change
   app.updateBoneOffsets(app.syncIndex); // Check BoneOffsets
-  if(app.compute.enabled) app.updateComputeUBO(app.syncIndex);
+  if(app.hasCompute) app.updateComputeUBO(app.syncIndex);
   app.updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.updateRenderUBO(app.shaders, app.syncIndex);
   app.updateTextures();                                         /// If a texture was loaded, update it
@@ -50,7 +50,7 @@ void renderFrame(ref App app){
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
-  if (app.compute.enabled) {
+  if (app.hasCompute) {
     if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
     VkCommandBuffer[] computeCommandBuffers = [];
     foreach(ref shader; app.compute.shaders){
@@ -85,7 +85,7 @@ void renderFrame(ref App app){
   ];
 
   VkSemaphore[] waitSemaphores = [ imageAcquired ];
-  if (app.compute.enabled) { waitSemaphores ~= computeComplete; }
+  if (app.hasCompute) { waitSemaphores ~= computeComplete; }
 
   VkPipelineStageFlags[] waitStages = [ 
     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 

@@ -45,7 +45,7 @@ void createOrResizeWindow(ref App app) {
   app.createDepthResources();
   app.createSyncObjects();
 
-  if (app.compute.enabled) {
+  if (app.hasCompute) {
     SDL_Log("1: Compute shaders reflection");
     app.reflectShaders(app.compute.shaders);
     app.createResources(app.compute.shaders, COMPUTE);
