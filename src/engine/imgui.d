@@ -36,7 +36,10 @@ struct GUI {
   bool showTexture = false;
   bool showDirectory = false;
 
-  uint size = 1;
+  uint uiscale = 1;
+  uint fontsize(){ 
+    version(Android){ return(20 * uiscale); }else{ return(16 * uiscale); }
+  }
   float scaleF = 1.0f;
   float[3] rotF = [0.0f, 0.0f, 0.0f];
 
@@ -93,25 +96,21 @@ void initializeImGui(ref App app){
   app.gui.io = igGetIO_Nil();
   loadSettings();
 
-  // Load the Default font
-  app.gui.fonts ~= ImFontAtlas_AddFontDefault(app.gui.io.Fonts, null);
-
-  // Load & Merge FontAwesome into the default font
-  //ImFontConfig* merge_cfg = ImFontConfig_ImFontConfig();
-  //merge_cfg.Name = "FontAwesome";
-  //merge_cfg.MergeMode = false;
-  //merge_cfg.FontDataOwnedByAtlas = false;
-  //const(ImWchar)[] icon_ranges = [ICON_MIN_FA, ICON_MAX_FA, 0];
-  //char[] fa = readFile("data/fonts/FontAwesome.ttf");
-  //app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fa[0], cast(uint)fa.length, 13, merge_cfg, &icon_ranges[0]);
-
-  // Load the FreeMono.ttf font & Merge in FontAwesome at 42px
-  char[] fm = readFile("data/fonts/FreeMono.ttf");
+  // Load the Roboto-Regular font
+  char[] fm = readFile("data/fonts/Roboto-Regular.ttf");
   ImFontConfig* font_cfg = ImFontConfig_ImFontConfig();
-  font_cfg.Name = "FreeMono";
-  font_cfg.SizePixels = 42.0f;
+  font_cfg.Name = "Roboto-Medium";
   font_cfg.FontDataOwnedByAtlas = false;
-  app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fm[0], cast(uint)fm.length, 42, font_cfg, null);
+  app.gui.fonts ~= ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fm[0], cast(uint)fm.length, 18, font_cfg, null);
+
+  // Load & Merge FontAwesome into the Roboto-Regular font
+  ImFontConfig* merge_cfg = ImFontConfig_ImFontConfig();
+  merge_cfg.Name = "FontAwesome";
+  merge_cfg.MergeMode = true;
+  merge_cfg.FontDataOwnedByAtlas = false;
+  const(ImWchar)[] icon_ranges = [ICON_MIN_FA, ICON_MAX_FA, 0];
+  char[] fa = readFile("data/fonts/FontAwesome.ttf");
+  ImFontAtlas_AddFontFromMemoryTTF(app.gui.io.Fonts, cast(void*)&fa[0], cast(uint)fa.length, 18, merge_cfg, &icon_ranges[0]);
 
   app.gui.io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   //app.gui.io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;       // Enable Docking Controls
@@ -119,7 +118,7 @@ void initializeImGui(ref App app){
     app.gui.io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen ;      // Enable TouchScreen
   }
   igStyleColorsDark(null);
-  if(app.verbose) SDL_Log("ImGuiIO: %p", app.gui.io);
+  SDL_Log("ImGuiIO: %p", app.gui.io);
   ImGui_ImplSDL2_InitForVulkan(app.window);
 
   ImGui_ImplVulkan_InitInfo imguiInit = {
@@ -136,13 +135,15 @@ void initializeImGui(ref App app){
     MSAASamples : VK_SAMPLE_COUNT_1_BIT,
     CheckVkResultFn : &enforceVK
   };
+
   ImGui_ImplVulkan_Init(&imguiInit);
-  ImGui_ImplVulkan_CreateFontsTexture();
-  vkDeviceWaitIdle(app.device);
+//  vkDeviceWaitIdle(app.device);
+
   version(Android){ 
+    app.gui.uiscale = 2;
     auto style = igGetStyle();
-    ImGuiStyle_ScaleAllSizes(style, 2.0f);
-    app.gui.size = 2;
+    ImGuiStyle_ScaleAllSizes(style, app.gui.uiscale);
+    style.ScrollbarSize = 40.0f;
   }
   app.isImGuiInitialized = true;
   if(app.verbose) SDL_Log("ImGui initialized, MSAA: %d", app.getMSAASamples());
@@ -195,7 +196,6 @@ ImDrawData* renderGUI(ref App app){
   ImGui_ImplSDL2_NewFrame();
   igNewFrame();
   uint font = 0;
-  version (Android) { font = 1; }
 
   app.showMenu(font);
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);

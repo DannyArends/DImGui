@@ -6,7 +6,7 @@
 import engine;
 
 import mesh : Mesh;
-import geometry : Instance, Geometry, texture;
+import geometry : Instance, Geometry, opacity;
 import glyphatlas : GlyphAtlas;
 import vertex : Vertex;
 
@@ -43,7 +43,7 @@ class Text : Geometry {
     }
     instances = [Instance()];
     meshes["Text"] = Mesh([0, cast(uint)this.vertices.length]);
-    this.texture(app.glyphAtlas.path);
+    this.opacity(app.glyphAtlas.path);
     name = (){ return(typeof(this).stringof); };
   }
 }

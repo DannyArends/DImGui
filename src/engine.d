@@ -153,7 +153,7 @@ struct App {
 
   // Sync and Frame Tracking
   uint selectedDevice = 0;
-  uint queueFamily = uint.max;                                                  /// Current queueFamily used
+  uint queueFamily = uint.max;                                                  /// Current GFX queueFamily used
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
   float soundEffectGain = 0.8;                                                  /// Sound Effects Gain

@@ -5,10 +5,12 @@
 
 import engine;
 
+import textures : ImTextureRefFromID;
+
 /** Show the GUI window which shows loaded Textures
  */
 void showTextureswindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.gui.fonts[font]);
+  igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(igBegin("Textures", show, 0)){
     igBeginTable("Texture_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     foreach(i, texture; app.textures) {
@@ -20,7 +22,7 @@ void showTextureswindow(ref App app, bool* show, uint font = 0) {
       igTableNextColumn();
       igText("%d x %d", texture.width, texture.height);
       igTableNextColumn();
-      igImage(cast(ImTextureID)texture.imID, ImVec2(100, min(100, cast(uint)(100 * ratio))), ImVec2(0, 0), ImVec2(1, 1));
+      igImage(ImTextureRefFromID(cast(ulong)texture.imID), ImVec2(100, min(100, cast(uint)(100 * ratio))), ImVec2(0, 0), ImVec2(1, 1));
     }
     igEndTable();
     igEnd();

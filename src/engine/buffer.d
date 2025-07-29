@@ -141,8 +141,9 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
     VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
     buffer = GeometryBuffer();
     app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
-    app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
     vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data);
+
+    app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
     buffer.capacity = newCapacity;
   }
   memcpy(buffer.data, cast(void*)objects, requiredSize);

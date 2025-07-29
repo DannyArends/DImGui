@@ -98,8 +98,8 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 }
 
 void createCommandPools(ref App app) {
-  app.commandPool = app.createCommandPool();
-  app.transferPool = app.createCommandPool();
+  app.commandPool = app.createCommandPool(app.queueFamily);
+  app.transferPool = app.createCommandPool(app.queueFamily);
 
   app.nameVulkanObject(app.commandPool, toStringz("[COMMANDPOOL] Render"), VK_OBJECT_TYPE_COMMAND_POOL);
   app.nameVulkanObject(app.transferPool, toStringz("[COMMANDPOOL] Transfer"), VK_OBJECT_TYPE_COMMAND_POOL);
@@ -107,12 +107,12 @@ void createCommandPools(ref App app) {
   if(app.verbose) SDL_Log("createCommandPools[family:%d] Queue: %p, Transfer: %p", app.queueFamily, app.commandPool, app.transferPool);
 }
 
-VkCommandPool createCommandPool(ref App app) {
+VkCommandPool createCommandPool(ref App app, uint queueFamilyIndex) {
   VkCommandPool commandPool;
 
   VkCommandPoolCreateInfo poolInfo = {
     sType: VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-    queueFamilyIndex: app.queueFamily,
+    queueFamilyIndex: queueFamilyIndex,
     flags: VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
   };
   enforceVK(vkCreateCommandPool(app.device, &poolInfo, null, &commandPool));

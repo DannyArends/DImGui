@@ -8,7 +8,7 @@ import engine;
 /** Main Menu
  */
 void showMenu(ref App app, uint font = 0) {
-  igPushFont(app.gui.fonts[font]);
+  igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(igBeginMainMenuBar()) {
     if(igBeginMenu("File".toStringz, true)) {
       if(igMenuItem_Bool("Load".toStringz,null, false, true)) {  app.gui.showDirectory = !app.gui.showDirectory; }
