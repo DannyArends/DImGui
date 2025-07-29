@@ -109,12 +109,6 @@ void queryPhysicalDevices(ref App app) {
   if(app.verbose) foreach(i, physicalDevice; app.physicalDevices) { physicalDevice.list(i); }
 }
 
-/*
-  VK_QUEUE_GRAPHICS_BIT = 0x00000001,
-  VK_QUEUE_COMPUTE_BIT = 0x00000002,
-  VK_QUEUE_TRANSFER_BIT = 0x00000004,
-*/
-
 void printQueues(ref App app){
   uint32_t nQueue;
   vkGetPhysicalDeviceQueueFamilyProperties(app.physicalDevice, &nQueue, null);
@@ -144,22 +138,22 @@ uint selectQueueFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits requeste
   // Find the best dedicated queue and the first available generic queue in a single pass
   foreach(i, ref queueProperty; queueProperties) {
     if (queueProperty.queueFlags & requested) {
-      if (!(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {      // Is it a DEDICATED queue? (flags match exactly)
+      if (!(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)) { // DEDICATED (non GFX) queue
         if (queueProperty.queueCount > maxDedicatedSize) {
           bestDedicatedIndex = cast(uint)i;
           maxDedicatedSize = queueProperty.queueCount;
         }
-      } else { // It's a GENERIC queue (supports requested flags + others)
+      } else { // GENERIC queue
         if (firstGenericIndex == uint.max) { firstGenericIndex = cast(uint)i; }
       }
     }
   }
   if (bestDedicatedIndex != uint.max){
-    SDL_Log("Selected dedicated queue family: %d with size %d", bestDedicatedIndex, maxDedicatedSize);
+    SDL_Log("Dedicated queue family: %d with size %d", bestDedicatedIndex, maxDedicatedSize);
     return bestDedicatedIndex;
   }
   if (firstGenericIndex != uint.max){
-    SDL_Log("No dedicated queue found. Selected generic queue family: %d", firstGenericIndex);
+    SDL_Log("Generic queue family: %d", firstGenericIndex);
     return firstGenericIndex;
   }
   assert(0, format("No suitable Queue Found for: %s", requested));
