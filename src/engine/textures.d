@@ -17,6 +17,11 @@ import io : dir;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
 
+ImTextureRef ImTextureRefFromID(ulong tex_id) { 
+  ImTextureRef tex_ref = { null, cast(ImTextureID)tex_id }; 
+  return tex_ref; 
+}
+
 struct Texture {
   string path;
   uint width = 0;
@@ -33,8 +38,8 @@ struct Texture {
 
 struct Textures {
   Texture[] textures;             /// Textures
-  bool loaded = false;           /// Are we loading a texture a-sync ?
-  bool transfer = false;          /// Are we loading a transfering a-sync ?
+  bool loaded = false;            /// Are we loading a texture a-sync ?
+  bool transfer = false;          /// Are we currently using the transfer queue for uploading & transitioning ?
   SingleTimeCommand cmdBuffer;    /// A-Sync single time command buffer
   alias textures this;
 }
@@ -138,7 +143,6 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
   if(SDL_MUSTLOCK(texture.surface)) SDL_LockSurface(texture.surface);
   memcpy(data, texture.surface.pixels, texture.surface.imageSize);
   if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);
-  vkUnmapMemory(app.device, stagingBufferMemory);
 
   // If we already had an image, view and memory, make sure to deAllocate it on shutdown
   if(texture.image){ app.mainDeletionQueue.add((){ app.deAllocate(texture); }); }
@@ -156,8 +160,9 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
 
   // Cleanup to mainDeletionQueue
   app.mainDeletionQueue.add((){
-    vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
+    vkUnmapMemory(app.device, stagingBufferMemory);
     vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
+    vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
     SDL_FreeSurface(texture.surface);
   });
 }

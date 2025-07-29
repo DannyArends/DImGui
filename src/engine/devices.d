@@ -18,6 +18,7 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   if(extension.has("VK_KHR_maintenance3")){ app.deviceExtensions ~= "VK_KHR_maintenance3"; }
   if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
 
+  app.printQueues();
   app.queueFamily = selectQueueFamily(app.physicalDevice());
 }
 
@@ -34,14 +35,14 @@ VkSampleCountFlagBits getMSAASamples(ref App app) {
 }
 
 // Create Logical Device (with 1 queue)
-void createLogicalDevice(ref App app, uint device = 0){
+void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   app.pickPhysicalDevice(device);
 
   float[] queuePriority = [1.0f];
   VkDeviceQueueCreateInfo[] createQueue = [{
     sType : VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
     queueFamilyIndex : app.queueFamily,
-    queueCount : 2, // transfer and render queue
+    queueCount : queueCount, // transfer and render queue
     pQueuePriorities : &queuePriority[0]
   }];
 
@@ -108,18 +109,59 @@ void queryPhysicalDevices(ref App app) {
   if(app.verbose) foreach(i, physicalDevice; app.physicalDevices) { physicalDevice.list(i); }
 }
 
-uint selectQueueFamily(VkPhysicalDevice physicalDevice) {
+/*
+  VK_QUEUE_GRAPHICS_BIT = 0x00000001,
+  VK_QUEUE_COMPUTE_BIT = 0x00000002,
+  VK_QUEUE_TRANSFER_BIT = 0x00000004,
+*/
+
+void printQueues(ref App app){
+  uint32_t nQueue;
+  vkGetPhysicalDeviceQueueFamilyProperties(app.physicalDevice, &nQueue, null);
+  VkQueueFamilyProperties[] queueProperties;
+  queueProperties.length = nQueue;
+  vkGetPhysicalDeviceQueueFamilyProperties(app.physicalDevice, &nQueue, &queueProperties[0]);
+  foreach(i, queueProperty; queueProperties) {
+    string[] capabilities;
+    if(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) capabilities ~= "Graphics";
+    if(queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT) capabilities ~= "Compute";
+    if(queueProperty.queueFlags & VK_QUEUE_TRANSFER_BIT) capabilities ~= "Transfer";
+    SDL_Log(toStringz(format("Queue[%d] size: %d: %s", i, queueProperty.queueCount, capabilities)));
+  }
+}
+
+uint selectQueueFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits requested = VK_QUEUE_GRAPHICS_BIT) {
   uint32_t nQueue;
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, null);
   VkQueueFamilyProperties[] queueProperties;
   queueProperties.length = nQueue;
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, &queueProperties[0]);
-  foreach(i, queueProperty; queueProperties) {
-    if(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) SDL_Log("[%d] Graphic Queue, size: %d", i, queueProperty.queueCount);
-    if(queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT) SDL_Log("[%d] Compute Queue, size: %d", i, queueProperty.queueCount);
-    if(queueProperty.queueFlags & VK_QUEUE_TRANSFER_BIT) SDL_Log("[%d] Transfer Queue, size: %d", i, queueProperty.queueCount);
-    if((queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT)) return cast(uint)i;
+
+  uint bestDedicatedIndex = uint.max;
+  uint maxDedicatedSize = 0;
+  uint firstGenericIndex = uint.max;
+
+  // Find the best dedicated queue and the first available generic queue in a single pass
+  foreach(i, ref queueProperty; queueProperties) {
+    if (queueProperty.queueFlags & requested) {
+      if (!(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {      // Is it a DEDICATED queue? (flags match exactly)
+        if (queueProperty.queueCount > maxDedicatedSize) {
+          bestDedicatedIndex = cast(uint)i;
+          maxDedicatedSize = queueProperty.queueCount;
+        }
+      } else { // It's a GENERIC queue (supports requested flags + others)
+        if (firstGenericIndex == uint.max) { firstGenericIndex = cast(uint)i; }
+      }
+    }
   }
-  assert(0);
+  if (bestDedicatedIndex != uint.max){
+    SDL_Log("Selected dedicated queue family: %d with size %d", bestDedicatedIndex, maxDedicatedSize);
+    return bestDedicatedIndex;
+  }
+  if (firstGenericIndex != uint.max){
+    SDL_Log("No dedicated queue found. Selected generic queue family: %d", firstGenericIndex);
+    return firstGenericIndex;
+  }
+  assert(0, format("No suitable Queue Found for: %s", requested));
 }
 

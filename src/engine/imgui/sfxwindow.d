@@ -10,7 +10,7 @@ import sfx : play;
 /** Show the GUI window for Sound Effects
  */
 void showSFXwindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.gui.fonts[font]);
+  igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(igBegin("Sounds", show, 0)){
     igSliderScalar("Volume", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
     igBeginTable("Sounds_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
