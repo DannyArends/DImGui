@@ -10,17 +10,25 @@ size_t fwrite(SDL_RWops* fp, void* buffer, size_t n, size_t size) { return(SDL_R
 ulong tell(SDL_RWops* fp){ return(SDL_RWtell(fp)); }
 ulong seek(SDL_RWops* fp, int offset, int whence){ return(SDL_RWseek(fp, offset, whence)); }
 ulong fsize(const(char)* path){
-  version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
+  path = fixPath(path);
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return 0; }
   uint size = cast(uint)SDL_RWsize(fp);
   SDL_RWclose(fp);
   return(size);
 }
+
+const(char)* fixPath(const(char)* path){
+  version (Android){ }else{ 
+    if(path.isfile){ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); } 
+  }
+  return(path);
+}
+
 /** Read content of a file as a char[]
  */
 char[] readFile(const(char)* path, uint verbose = 0) {
-  version (Android){ }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
+  path = fixPath(path);
   SDL_RWops* fp = SDL_RWFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
 

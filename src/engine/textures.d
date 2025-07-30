@@ -44,6 +44,12 @@ struct Textures {
   alias textures this;
 }
 
+bool isTexture(string path){
+  if(extension(path) == ".jpg") return(true);
+  if(extension(path) == ".png") return(true);
+  return(false);
+}
+
 // Convert an SDL-Surface to RGBA32 format
 void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
   SDL_PixelFormat *fmt = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);

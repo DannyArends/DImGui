@@ -23,7 +23,7 @@ import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
 import textures : Texture;
-import threading : loadNextTexture, loadGeometries;
+import threading : initializeAsync, checkAsync;
 import validation : createDebugCallback;
 import window: createOrResizeWindow, checkForResize;
 
@@ -74,13 +74,13 @@ void run(string[] args = null) {
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
   app.createScene();                                            /// Create our scene with geometries
+  app.initializeAsync();
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
+    app.checkAsync();
     app.handleEvents();
-    app.loadNextTexture();
-    app.loadGeometries();
 
     app.time[FRAMESTART] = SDL_GetTicks();
     if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
