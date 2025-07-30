@@ -13,22 +13,26 @@ ImVec2 textSize(const(char)* txt) {
   return(textSize);
 }
 
-void listDirContent(const(char)* path) {
+void listDirContent(ref App app, const(char)* path) {
   auto content = dir(path);
   foreach(elem; content) {
-    auto ptr = toStringz(format("%s/%s", to!string(path), baseName(to!string(elem))));
+    auto file = format("%s/%s", to!string(path), baseName(to!string(elem)));
+    auto ptr = toStringz(file);
     if(ptr.isdir) {
       auto flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
       bool node_open = igTreeNodeEx_Str(ptr, flags);
       if (node_open) {
-        listDirContent(ptr);
+        app.listDirContent(ptr);
         igTreePop();
       }
     }else if(ptr.isfile) { // A file, just display as selectable text
       ImVec2 size;
-      if(igSelectable_Bool(toStringz(baseName(to!string(elem))), false, 0, size)){ SDL_Log("Clicked: %s", ptr); }
+      if(igSelectable_Bool(toStringz(baseName(to!string(elem))), false, 0, size)){ 
+        SDL_Log("Clicked: %s", ptr);
+        app.concurrency.paths ~= file;
+      }
       auto txt = toStringz(format("%.2fkb", fsize(ptr) / 1024.0f));
-      igSameLine((igGetWindowWidth() - textSize(txt).x - 15.0f), 0);
+      igSameLine((igGetWindowWidth() - textSize(txt).x - 25.0f), 0);
       igText(txt);
     }
   }
@@ -37,7 +41,7 @@ void listDirContent(const(char)* path) {
 void showDirectoryWindow(ref App app, bool* show, const(char)* path =  "data", uint font = 0){
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(igBegin("Directory", show, 0)) {
-    listDirContent(path);
+    app.listDirContent(path);
     igEnd();
   }else { igEnd(); }
   igPopFont();

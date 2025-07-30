@@ -29,6 +29,12 @@ class OpenAsset : Geometry {
   }
 }
 
+bool isOpenAsset(string path){
+  if(extension(path) == ".obj") return(true);
+  if(extension(path) == ".fbx") return(true);
+  return(false);
+}
+
 /** Load an OpenAsset 
  */
 OpenAsset loadOpenAsset(ref App app, const(char)* path) {

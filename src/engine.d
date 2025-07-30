@@ -13,7 +13,7 @@ public import core.sync.mutex : Mutex;
 
 public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
 public import std.array : array, split;
-public import std.concurrency : Tid, send, spawn, thisTid, receive, receiveTimeout;
+public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, receiveOnly, receiveTimeout;
 public import std.conv : to;
 public import std.format : format;
 public import std.file : exists, isFile, isDir, dirEntries, SpanMode;
@@ -48,6 +48,7 @@ import ssbo : SSBO;
 import shadow : ShadowMap;
 import sfx : WavFMT;
 import textures : Textures;
+import threading : Threading;
 
 const(char)* IMGUI = "IMGUI"; 
 const(char)* COMPUTE = "COMPUTE";
@@ -150,6 +151,8 @@ struct App {
 
   VkAllocationCallbacks* allocator = null;
   VkDebugReportCallbackEXT debugCallback = null;
+
+  Threading concurrency;
 
   // Sync and Frame Tracking
   uint selectedDevice = 0;
