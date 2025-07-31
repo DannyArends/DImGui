@@ -30,7 +30,7 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
         string text = to!string(i);
         if(object.name) text = object.name() ~ " " ~ text;
         igTableNextColumn();
-          igText(toStringz(format("%s: %s", text, object.mName)), ImVec2(0.0f, 0.0f));
+          igText(toStringz(format("%s: %s (%d)", text, object.mName, object.uid)), ImVec2(0.0f, 0.0f));
         igTableNextColumn();
           if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
           if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) {

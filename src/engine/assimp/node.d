@@ -18,7 +18,7 @@ struct Node {
 }
 
 Node loadNode(ref App app, ref OpenAsset asset, aiScene* scene, aiNode* node, const Matrix pTransform, uint lvl = 0) {
-  Node n = Node(format("%s:%s", asset.mName, name(node.mName)), lvl, toMatrix(node.mTransformation));
+  Node n = Node(format("%s:%d:%s", asset.mName, asset.uid, name(node.mName)), lvl, toMatrix(node.mTransformation));
   Matrix gTransform = pTransform.multiply(n.transform);
 
   for (uint i = 0; i < node.mNumMeshes; i++){

@@ -5,6 +5,7 @@
 
 public import includes;
 
+public import core.atomic : atomicOp;
 public import core.memory : GC;
 public import core.stdc.string : strcmp, memcpy, strstr;
 public import core.time : MonoTime, dur;

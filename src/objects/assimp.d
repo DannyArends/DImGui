@@ -37,7 +37,7 @@ bool isOpenAsset(string path){
 
 /** Load an OpenAsset 
  */
-OpenAsset loadOpenAsset(ref App app, const(char)* path) {
+OpenAsset loadOpenAsset(ref App app, const(char)* path, bool isVisible = false) {
   SDL_Log("Loading: %s", path);
   OpenAsset object = new OpenAsset();
 
@@ -61,6 +61,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
 
   if (object.mName == "Spider") { // The Spider model is broken, it floats above
     object.rootnode.transform = object.rootnode.transform.translate([0.0f, -775.0f, 0.0f]);
+    isVisible = true;
   }
 
   object.instances[0] = object.bounds.computeScaleAdjustment(); // Adjust the scale to 4.0f
@@ -74,7 +75,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path) {
   object.computeNormals();
   object.computeTangents();
   object.computeBoundingBox();
-  object.isVisible = false;
+  object.isVisible = isVisible;
   object.scale([0.5f, 0.5f, 0.5f]);
   return object;
 }
