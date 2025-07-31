@@ -74,8 +74,11 @@ App initializeSDL() {
     checkSDLError();
     abort();
   }
-  version(Android) { }else{ app.window.setIcon(); }
-
+  version(Android) { 
+    SDL_SetEventFilter(&sdlEventsFilter, &app); /// Handle Android immediate events by callback
+  }else{ 
+    app.window.setIcon(); /// If not Android we can set an icon
+  }
   return(app);
 }
 
