@@ -8,7 +8,7 @@ import engine;
 import bone : Bone;
 import node : Node;
 import geometry : Geometry;
-import assimp : OpenAsset, name;
+import assimp : OpenAsset, name, nodeName;
 import vector : interpolate, x, y, z;
 import quaternion : slerp, rotate;
 import matrix : Matrix, inverse, scale, translate, transpose, multiply;
@@ -91,7 +91,7 @@ Animation[] loadAnimations(ref App app, aiScene* scene, const OpenAsset asset) {
     for (uint j = 0; j < aiAnim.mNumChannels; j++) {
       auto aiNodeAnim = aiAnim.mChannels[j];
       NodeAnimation nodeAnim;
-      string nodeName = format("%s:%d:%s", asset.mName, asset.uid, name(aiNodeAnim.mNodeName));
+      string nodeName = asset.nodeName(name(aiNodeAnim.mNodeName));
 
       if (app.trace) {
         SDL_Log("    Node Channel %u for '%s'", j, toStringz(nodeName));

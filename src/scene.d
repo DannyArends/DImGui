@@ -18,7 +18,6 @@ import square : Square;
 import text : Text;
 import torus : Torus;
 import assimp : loadOpenAsset;
-import obj3ds : loadFromFile;
 import turtle : Turtle;
 import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 

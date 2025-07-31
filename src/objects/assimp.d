@@ -88,3 +88,6 @@ string name(T)(T obj) {
   return(to!string(toStringz(obj.data[0 .. idx] ~ '\0'))); 
 }
 
+/** Construct a unique name for a node within an OpenAsset
+ */
+string nodeName(const OpenAsset asset, const string node){ return(format("%s:%d:%s", asset.mName, asset.uid, node)); }

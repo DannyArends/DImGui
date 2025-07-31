@@ -6,7 +6,7 @@
 import engine;
 
 import animation : Node, calculateGlobalTransform, calculateCurrentTick;
-import assimp : OpenAsset, name;
+import assimp : OpenAsset, name, nodeName;
 import boundingbox : Bounds;
 import matrix : Matrix, toMatrix, multiply, inverse, rotate, scale, position, transpose, translate;
 import sdl : STARTUP;
@@ -33,7 +33,7 @@ BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] glob
   for (uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
     if (aiBone.mNumWeights == 0) continue; // No weights, no effect, skip
-    string name = format("%s:%d:%s", asset.mName, asset.uid, name(aiBone.mName));
+    string name = asset.nodeName(name(aiBone.mName));
     if (!(name in globalBones)) { // New bone, add it to the global bones
       globalBones[name] = Bone();
       globalBones[name].offset = multiply(toMatrix(aiBone.mOffsetMatrix), pTransform.inverse());
