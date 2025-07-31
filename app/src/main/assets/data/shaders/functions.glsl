@@ -8,23 +8,6 @@
 
 #include "structures.glsl"
 
-/// Shader Storage Buffer Objects
-layout (std140, binding = BINDING_BONES_SSBO) readonly buffer BoneMatrices {
-    Bone transforms[];
-} boneSSBO;
-
-layout (std140, binding = BINDING_MESH_SSBO) readonly buffer MeshMatrices {
-    Mesh meshes[];
-} meshSSBO;
-
-layout (std140, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatrices {
-    Light lights[];
-} lightSSBO;
-
-/// Samplers/Images
-layout(binding = BINDING_TEXTURES) uniform sampler2D texureSampler[];
-layout(binding = BINDING_SHADOWMAP) uniform sampler2DShadow shadowMap[];
-
 // Function to calculate vector position after animation
 vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
   bool hasbone = false;

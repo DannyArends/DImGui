@@ -91,7 +91,7 @@ Animation[] loadAnimations(ref App app, aiScene* scene, const OpenAsset asset) {
     for (uint j = 0; j < aiAnim.mNumChannels; j++) {
       auto aiNodeAnim = aiAnim.mChannels[j];
       NodeAnimation nodeAnim;
-      string nodeName = format("%s:%s", asset.mName, name(aiNodeAnim.mNodeName));
+      string nodeName = format("%s:%d:%s", asset.mName, asset.uid, name(aiNodeAnim.mNodeName));
 
       if (app.trace) {
         SDL_Log("    Node Channel %u for '%s'", j, toStringz(nodeName));

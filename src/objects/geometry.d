@@ -26,6 +26,8 @@ struct Instance {
   alias matrix this;
 }
 
+shared uint guid = 1;
+
 /** A Geometry that can be rendered
  */
 class Geometry {
@@ -39,10 +41,12 @@ class Geometry {
   Instance[] instances;                         /// Instance array
   alias instances this;
 
+  uint uid;
   Node rootnode;                                /// OpenAsset Root
   string mName;                                 /// OpenAsset name
   MetaData mData;                               /// OpenAsset metaData
   Bounds bounds;                                /// OpenAsset bounding box
+
   Animation[] animations;                       /// Animations
   uint animation = 0;                           /// Current Animation
   Mesh[string] meshes;                          /// Meshes
@@ -50,6 +54,11 @@ class Geometry {
 
   BoundingBox box = null;                       /// Bounding Box
   bool window = false;                          /// ImGui window displayed?
+
+  @nogc this() nothrow {
+    uid = guid;
+    atomicOp!"+="(guid, 1);
+  }
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
