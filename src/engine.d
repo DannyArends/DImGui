@@ -73,9 +73,9 @@ struct App {
   VkQueue queue = null;                                                         /// Render Queue
   VkQueue transfer = null;                                                      /// Transfer Queue
 
-  VkDescriptorPool[string] pools;                                         /// Descriptor pools (IMGUI, COMPUTE, RENDER)
-  VkDescriptorSetLayout[string] layouts;                                  /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
-  VkDescriptorSet[][string] sets;                                         /// Descriptor sets per Frames In Flight for (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorPool[string] pools;                                               /// Descriptor pools (IMGUI, COMPUTE, RENDER)
+  VkDescriptorSetLayout[string] layouts;                                        /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorSet[][string] sets;                                               /// Descriptor sets per Frames In Flight for (IMGUI, RENDER, N x computeShader.PATH)
 
   // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;                                                  /// Vulkan Surface
