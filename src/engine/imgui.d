@@ -127,7 +127,7 @@ void initializeImGui(ref App app){
     Device : app.device,
     QueueFamily : app.queueFamily,
     Queue : app.queue,
-    DescriptorPool : app.pools[IMGUI],
+    DescriptorPool : app.pools[Stage.IMGUI],
     Allocator : app.allocator,
     MinImageCount : app.imageCount,
     ImageCount : cast(uint)app.framesInFlight,

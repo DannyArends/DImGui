@@ -48,7 +48,7 @@ void createOrResizeWindow(ref App app) {
   if (app.hasCompute) {
     SDL_Log("1: Compute shaders reflection");
     app.reflectShaders(app.compute.shaders);
-    app.createResources(app.compute.shaders, COMPUTE);
+    app.createResources(app.compute.shaders, Stage.COMPUTE);
     foreach(ref shader; app.compute.shaders) {
       app.createComputeCommandBuffers(shader);
       app.createComputePipeline(shader);
@@ -60,23 +60,23 @@ void createOrResizeWindow(ref App app) {
 
   SDL_Log("2: Shadow shaders reflection");
   app.reflectShaders(app.shadows.shaders);
-  app.createResources(app.shadows.shaders, SHADOWS);
-  app.createDescriptors(app.shadows.shaders, SHADOWS);
+  app.createResources(app.shadows.shaders, Stage.SHADOWS);
+  app.createDescriptors(app.shadows.shaders, Stage.SHADOWS);
   app.createCommandBuffer(app.shadowBuffers, app.commandPool, app.framesInFlight);
   app.createShadowMapGraphicsPipeline();
 
   SDL_Log("3: Render shaders reflection");
   app.reflectShaders(app.shaders);
-  app.createResources(app.shaders, RENDER);
-  app.createDescriptors(app.shaders, RENDER);
+  app.createResources(app.shaders, Stage.RENDER);
+  app.createDescriptors(app.shaders, Stage.RENDER);
   app.createCommandBuffer(app.renderBuffers, app.commandPool, app.framesInFlight);
 
   SDL_Log("4: Post-processing shaders reflection");
   app.reflectShaders(app.postProcess);
-  app.createResources(app.postProcess, POST);
-  app.createDescriptors(app.postProcess, POST);
+  app.createResources(app.postProcess, Stage.POST);
+  app.createDescriptors(app.postProcess, Stage.POST);
   for (uint i = 0; i < app.framesInFlight; i++) {
-    app.updateDescriptorSet(app.postProcess, app.sets[POST], i);
+    app.updateDescriptorSet(app.postProcess, app.sets[Stage.POST], i);
   }
 
   SDL_Log("5: ImGui resources");

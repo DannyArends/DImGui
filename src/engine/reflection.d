@@ -21,7 +21,7 @@ enum spvc_resource_type[const(char)*] types = [
 ];
 
 void reflectShader(ref App app, ref Shader shader) {
-  if(app.trace) SDL_Log("Reflect: %s", shader.path);
+  if(app.trace) SDL_Log("Reflect: %s", toStringz(shader.path));
   shader.descriptors = [];
   spvc_parsed_ir ir = null;
   spvc_compiler compiler = null;
@@ -132,8 +132,8 @@ void reflectShaders(ref App app, ref Shader[] shaders) {
   for(uint i = 0; i < shaders.length; i++) { app.reflectShader(shaders[i]); }
 }
 
-void createResources(ref App app, ref Shader[] shaders, const(char)* poolID) {
-  if(app.verbose) SDL_Log("Creating Shader Resources: %d shaders from pool %s", app.shaders.length, poolID);
+void createResources(ref App app, ref Shader[] shaders, string poolID) {
+  if(app.verbose) SDL_Log("Creating Shader Resources: %d shaders from pool %s", app.shaders.length, toStringz(poolID));
   app.createDSPool(poolID, shaders);
   for(uint s = 0; s < shaders.length; s++) {
     for(uint d = 0; d < shaders[s].descriptors.length; d++) {

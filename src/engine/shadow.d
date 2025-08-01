@@ -127,7 +127,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     setLayoutCount: 1,
-    pSetLayouts: &app.layouts[SHADOWS],
+    pSetLayouts: &app.layouts[Stage.SHADOWS],
     pushConstantRangeCount: 1,
     pPushConstantRanges: &pushConstantRange,
   };
@@ -282,7 +282,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
   pushLabel(app.shadowBuffers[syncIndex], "Shadow Loop", Colors.lightgray);
   vkCmdBindDescriptorSets(app.shadowBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.shadows.pipeline.layout, 0, 1, &app.sets[SHADOWS][syncIndex], 0, null);
+                          app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
   for(size_t l = 0; l < app.lights.length; l++) {
     pushLabel(app.shadowBuffers[syncIndex], toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
