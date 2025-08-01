@@ -8,7 +8,6 @@ import engine;
 import buffer : findMemoryType, hasStencilComponent;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
-import descriptor : Descriptor;
 import framebuffer : createHDRImage;
 import validation : nameVulkanObject;
 

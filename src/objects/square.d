@@ -5,10 +5,6 @@
 
 import engine;
 
-import geometry : Instance, Geometry;
-import vertex : Vertex;
-import mesh : Mesh;
-
 class Square : Geometry {
    this(){
     vertices = [ Vertex([-0.5f, 0.0f, -0.5f], [1.0f, 1.0f], [1.0f, 1.0f, 1.0f, 1.0f]), 

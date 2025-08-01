@@ -5,10 +5,8 @@
 
 import engine;
 
-import geometry : Instance, Geometry, faces, addVertex;
-import mesh : Mesh;
+import geometry : faces, addVertex;
 import vector : midpoint, cross, vSub, normalize;
-import vertex : Vertex;
 
 const float x = 0.426943;
 const float y = 0.904279;

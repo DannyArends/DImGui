@@ -5,11 +5,8 @@
 
 import engine;
 
-import boundingbox : BoundingBox;
-import geometry : Instance, Geometry;
 import matrix : multiply;
 import vector : vAdd, vSub, vMul, x, y, z;
-import vertex : Vertex;
 
 /** Line
  */

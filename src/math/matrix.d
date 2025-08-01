@@ -18,8 +18,6 @@ struct Matrix {
   alias data this;
 }
 
-alias Matrix mat4;
-
 /** Convert from row-based aiMatrix to our column-based Matrix type
  */
 Matrix toMatrix(aiMatrix4x4 m){

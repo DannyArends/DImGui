@@ -8,13 +8,10 @@ import engine;
 import compute : writeComputeImage;
 import images : writeHDRSampler;
 import lights : updateLighting;
-import matrix : Matrix;
-import mesh : Mesh;
 import sampler : writeTextureSampler;
-import shaders : Shader;
 import shadow : writeShadowMap;
 import ssbo : writeSSBO, updateSSBO;
-import textures : Texture, idx;
+import textures : idx;
 import uniforms : writeUniformBuffer;
 import validation : nameVulkanObject;
 

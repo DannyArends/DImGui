@@ -5,10 +5,8 @@
 
 import engine;
 
-import color : Colors;
 import devices : getMSAASamples;
 import io : isfile, readFile, writeFile;
-
 import settingswindow : showSettingswindow;
 import sfxwindow : showSFXwindow;
 import directorywindow : showDirectoryWindow;

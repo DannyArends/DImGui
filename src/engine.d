@@ -3,53 +3,8 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-public import includes;
-
-public import core.atomic : atomicOp;
-public import core.memory : GC;
-public import core.stdc.string : strcmp, memcpy, strstr;
-public import core.time : MonoTime, dur;
-public import core.thread : Thread, thread_joinAll;
-public import core.sync.mutex : Mutex;
-
-public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
-public import std.array : array, split;
-public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, receiveOnly, receiveTimeout;
-public import std.conv : to;
-public import std.format : format;
-public import std.file : exists, isFile, isDir, dirEntries, SpanMode;
-public import std.math : abs, ceil, sqrt, PI, cos, sin, tan, acos, asin, atan, atan2, fmod, isFinite, isNaN;
-public import std.path : baseName, dirName, extension, globMatch, stripExtension;
-public import std.random : Random, uniform;
-public import std.regex : regex, matchAll;
-public import std.string : toStringz, fromStringz, lastIndexOf, indexOf, startsWith, strip, chomp, splitLines;
-public import std.traits : EnumMembers;
-public import std.utf : isValidDchar;
-
-import animation : Animation;
-import bone : Bone;
-import camera : Camera;
-import compute : Compute;
-import depthbuffer : DepthBuffer;
-import deletion : CheckedDeletionQueue, DeletionQueue;
-import framebuffer : FrameBuffer;
-import glyphatlas : GlyphAtlas;
-import geometry : Geometries, cleanup;
-import images : ImageBuffer;
-import imgui : GUI, saveSettings;
-import lights : Lighting, Lights;
-import matrix : Matrix, multiply, inverse;
-import mesh : Mesh;
-import node : Node;
-import pipeline : GraphicsPipeline;
-import shaders : Shader, IncluderContext;
-import uniforms : UBO;
-import sync : Sync, Fence;
-import ssbo : SSBO;
-import shadow : ShadowMap;
-import sfx : WavFMT;
-import textures : Textures;
-import threading : Threading;
+public import phobos;
+public import structures;
 
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
 
@@ -186,36 +141,6 @@ struct App {
     vkGetPhysicalDeviceProperties(physicalDevice(), &p);
     return(p);
   }
-}
-
-/** Shutdown ImGui and deAllocate all vulkan related objects in existance
- */
-void cleanUp(App app) {
-  SDL_Log("Wait on device idle & swapchain deletion queue");
-  enforceVK(vkDeviceWaitIdle(app.device));
-  app.swapDeletionQueue.flush();  // Delete SwapChain associated resources
-
-  if (app.isImGuiInitialized) {
-    SDL_Log("Save ImGui Settings");
-    saveSettings();
-
-    SDL_Log("Shutdown ImGui");
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
-    igDestroyContext(null);
-  }
-  SDL_Log("Delete all Geometry objects");
-  foreach(object; app.objects) { app.cleanup(object); }
-
-  SDL_Log("Flush the main deletion queue");
-  app.mainDeletionQueue.flush();  // Delete permanent Vulkan resources
-
-  SDL_Log("Joining Threads");
-  thread_joinAll();
-
-  SDL_Log("Destroying Window & Quit SDL");
-  SDL_DestroyWindow(app);
-  SDL_Quit();
 }
 
 /** Check result of Vulkan call and print if an error occured

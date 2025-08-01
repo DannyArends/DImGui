@@ -16,7 +16,7 @@ import scene : createScene;
 import shadow : createShadowMap;
 import imgui : initializeImGui;
 import instance : createInstance;
-import sdl : initializeSDL, START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
+import sdl : initializeSDL;
 import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
 import reflection : createReflectionContext;
 import sampler : createSampler;
@@ -25,6 +25,7 @@ import sfx : loadAllSoundEffect;
 import textures : Texture;
 import threading : initializeAsync, checkAsync;
 import validation : createDebugCallback;
+import vulkan : cleanup;
 import window: createOrResizeWindow, checkForResize;
 
 /* Main entry point to the program */
@@ -50,6 +51,7 @@ version (Android) {
  */
 void run(string[] args = null) {
   App app = initializeSDL();                                    /// Initialize SDL library and create a window
+
   app.createCompiler();                                         /// Create the SPIR-V compiler
   app.createReflectionContext();                                /// Create a SPIR-V reflection context
   app.loadGlyphAtlas();                                         /// Load & parse the Glyph Atlas
@@ -89,6 +91,6 @@ void run(string[] args = null) {
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
-  app.cleanUp();
+  app.cleanup();
 }
 

@@ -5,8 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, deAllocate, StageBuffer;
-import descriptor : Descriptor;
+import buffer : createBuffer, deAllocate;
 import validation : nameVulkanObject;
 
 struct SSBO {

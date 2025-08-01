@@ -4,10 +4,7 @@
  */
 import engine;
 
-import geometry : Instance, Geometry;
 import vector : x,y,z, magnitude, cross;
-import vertex : Vertex;
-import mesh : Mesh;
 
 /** Cone
  * Defines a cone geometry with a specified radius, height, and number of segments for its approximation.

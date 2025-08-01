@@ -6,19 +6,17 @@
 import engine;
 
 import quaternion : xyzw;
-
-import descriptor : Descriptor;
 import buffer : createBuffer, deAllocate;
-import matrix : mat4, rotate, lookAt, perspective;
+import matrix : rotate, lookAt, perspective;
 import lights : computeLightSpace;
 import validation : nameVulkanObject;
 
 struct UniformBufferObject {
   float[4] position;
-  mat4 scene = mat4.init;
-  mat4 view = mat4.init;
-  mat4 proj = mat4.init;
-  mat4 orientation = mat4.init;   /// Screen orientation
+  Matrix scene;
+  Matrix view;
+  Matrix proj;
+  Matrix orientation;
   uint nlights = 0;
 }
 
@@ -65,20 +63,20 @@ void createUBO(ref App app, Descriptor descriptor) {
 void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
   UniformBufferObject ubo = {
     position: app.camera.position.xyzw,
-    scene: mat4.init, //rotate(mat4.init, [time, 0.0f , 0.0f]),
+    scene: Matrix.init,
     view: app.camera.view,
     proj: app.camera.proj,
-    orientation: mat4.init,
+    orientation: Matrix.init,
     nlights: cast(uint)app.lights.length,
   };
 
   // Adjust for screen orientation so that the world is always up
   if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) {
-    ubo.orientation = rotate(mat4.init, [0.0f, -90.0f, 0.0f]);
+    ubo.orientation = rotate(Matrix.init, [0.0f, -90.0f, 0.0f]);
   } else if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-    ubo.orientation = rotate(mat4.init, [0.0f, 90.0f, 0.0f]);
+    ubo.orientation = rotate(Matrix.init, [0.0f, 90.0f, 0.0f]);
   } else if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR) {
-    ubo.orientation = rotate(mat4.init, [0.0f, 180.0f, 0.0f]);
+    ubo.orientation = rotate(Matrix.init, [0.0f, 180.0f, 0.0f]);
   }
 
   for(uint s = 0; s < shaders.length; s++) {

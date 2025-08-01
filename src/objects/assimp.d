@@ -6,16 +6,13 @@
 import engine;
 
 import animation : loadAnimations;
-import bone : Bone;
 import boundingbox : computeBoundingBox, calculateBounds, computeScaleAdjustment;
-import matrix : Matrix, toMatrix, multiply, inverse, transpose, rotate;
-import node : Node, loadNode;
-import mesh : Mesh;
+import matrix : toMatrix, multiply, inverse, transpose, rotate;
+import node : loadNode;
 import meta : loadMetaData;
 import io : readFile;
 import material : loadMaterials;
-import geometry : Instance, Geometry, scale, rotate, computeNormals, computeTangents;
-import vertex : Vertex;
+import geometry : scale, rotate, computeNormals, computeTangents;
 import textures : idx;
 import matrix : translate;
 import vector : x, y, z, euclidean;

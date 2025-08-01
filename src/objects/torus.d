@@ -3,10 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import geometry : Instance, Geometry;
-import vertex : Vertex;
-import mesh : Mesh;
-import std.math : PI, sin, cos;
+import engine;
 
 /** Torus
  * Defines a torus geometry with a major radius, minor radius, and segment counts.

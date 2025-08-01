@@ -7,7 +7,6 @@ import engine;
 
 import shaders : createStageInfo;
 import devices : getMSAASamples;
-import vertex : Vertex;
 import validation : nameVulkanObject;
 
 /** GraphicsPipeline

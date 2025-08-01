@@ -5,10 +5,7 @@
 
 import engine;
 
-import geometry : Instance, Geometry;
-import lsystem : LSystem, Symbols;
 import vector : vAdd, vMul, normalize;
-import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
 /** Turtle
  */
