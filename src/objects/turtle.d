@@ -30,13 +30,13 @@ class Turtle : Geometry {
     /** onFrame handler aging the particles every frame */
     onFrame = (ref App app, ref Geometry obj, float dt){ 
       auto t =  (cast(Turtle)obj);
-      if(fmod(t.frame, 10) == 0) t.age();
+      if(fmod(t.frame, 10) == 0) t.age(app, obj, dt);
       t.frame++;
     };
     name = (){ return(typeof(this).stringof); };
   }
 
-  void age() {
+  void age(ref App app, ref Geometry obj, float dt) {
     if(!lsystem.iterate()){ return; }
     auto rnd = Random(this.seed);
     //SDL_Log("state: %s", to!string(lsystem.state).toStringz);

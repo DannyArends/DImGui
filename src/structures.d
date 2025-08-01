@@ -46,5 +46,6 @@ public import sfx : WavFMT;
 public import text : Text;
 public import textures : Texture, Textures;
 public import torus : Torus;
+public import turtle : Turtle;
 public import threading : Threading;
 public import vertex : Vertex, VERTEX, INSTANCE, INDEX;

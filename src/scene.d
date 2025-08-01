@@ -87,17 +87,10 @@ void createScene(ref App app){
     obj.rotate([0.0f, 2 * dt, 4 * dt]);
   };
 
-/*  SDL_Log("createScene: Add viking room OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/viking_room.obj");
-  app.objects[($-1)].texture(app.textures, "viking");
-  app.objects[($-1)].rotate([180.0f, 0.0f, 90.0f]);
-  app.objects[($-1)].scale([0.5f, 0.5f, 0.5f]);
-  app.objects[($-1)].position([3.5f,-0.85f, 1.0f]); */
-
-  /*SDL_Log("createScene: Add L-System");
+  SDL_Log("createScene: Add L-System");
   app.objects ~= new Turtle(createLSystem());
   app.objects[($-1)].computeNormals();
-  app.objects[($-1)].position([4.5f, 2.5f, -2.0f]); */
+  app.objects[($-1)].position([4.5f, 2.5f, -2.0f]);
 
   SDL_Log("createScene: Add PDB object");
   auto protein = loadProteinCif("data/objects/3kql.cif");
@@ -117,51 +110,6 @@ void createScene(ref App app){
       app.objects[($-1)].position([10.0f, 1.0f, -4.0f]);
     }
   }
-
-/*
-  SDL_Log("createScene: Add 3DS");
-  if(1 == 0){
-    app.objects ~= app.loadOpenAsset("data/objects/Dragon.fbx");
-    app.objects[($-1)].rotate([270.0f, 0.0f, 0.0f]);
-    app.objects[($-1)].scale([2.75f, 2.75f, 2.75f]);
-    app.objects[($-1)].computeNormals();
-    app.objects[($-1)].position([10.0f, -1.0f, -4.0f]);
-  }
-
-  //new Thread({
-    SDL_Log("createScene: Add cottage OpenAsset");
-    app.objects ~= app.loadOpenAsset("data/objects/Cottage.fbx");
-    app.objects[($-1)].texture(app.textures, "cottage_texture");
-    app.objects[($-1)].rotate([270.0f, 0.0f, 0.0f]);
-    app.objects[($-1)].position([5.5f, -1.0f, -5.75f]);
-  //}).start();
-
-  //new Thread({
-    SDL_Log("createScene: Add Spider OpenAsset");
-    app.objects ~= app.loadOpenAsset("data/objects/Spider.fbx");
-    app.objects[($-1)].animation = 11;
-    app.objects[($-1)].position([1.0f, -0.5f, -0.75f]);
-    app.objects[($-1)].scale([0.3f, 0.3f, 0.3f]);
-    app.objects[($-1)].rotate([27.0f, 0.0f, 0.0f]);
-  //}).start();
-
-  //new Thread({
-  SDL_Log("createScene: Add Wolf OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/Wolf.fbx");
-  app.objects[($-1)].animation = 2;
-  app.objects[($-1)].position([1.0f, -1.0f, 2.5f]);
-  app.objects[($-1)].scale([0.75f, 0.75f, 0.75f]);
-  app.objects[($-1)].rotate([-12.0f, 0.0f, 0.0f]);
-  //}).start();
-
- // new Thread({
-  SDL_Log("createScene: Add MasterSnoo2025 OpenAsset");
-  app.objects ~= app.loadOpenAsset("data/objects/MasterSnoo2025.fbx");
-  app.objects[($-1)].rotate([210.0f, 0.0f, 0.0f]);
-  app.objects[($-1)].position([0.5f, -1.0f, -2.0f]);
-  app.objects[($-1)].scale([0.2f, 0.2f, 0.2f]);
-  app.objects[($-1)].animation = 0;
- // }).start(); */
 
   if (app.hasCompute) {
     SDL_Log("createScene: Add ParticleSystem");
