@@ -6,10 +6,24 @@
 import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
-import glyph: Glyph;
-import textures : Texture, toRGBA, toGPU;
+import textures : toRGBA, toGPU;
 import images : createImage, deAllocate, imageSize;
 import swapchain : createImageView;
+
+/** Glyph stores SDL2_TTF glyph data
+ */
+struct Glyph {
+  int minx;
+  int maxx;
+  int miny;
+  int maxy;
+  int advance;
+  int atlasloc;
+  int atlasrow;
+
+  @property @nogc int gX() nothrow { return(advance - minx); }
+  @property @nogc int gY() nothrow { return(maxy - miny); }
+}
 
 /** The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas
  */

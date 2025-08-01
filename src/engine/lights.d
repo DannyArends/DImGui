@@ -5,9 +5,7 @@
 
 import engine;
 
-import descriptor : Descriptor;
-import matrix : Matrix, orthogonal, perspective, multiply, lookAt;
-import sdl : STARTUP;
+import matrix : orthogonal, perspective, multiply, lookAt;
 import ssbo : updateSSBO;
 import vector : normalize, vAdd;
 

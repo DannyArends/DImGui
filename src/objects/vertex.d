@@ -5,10 +5,7 @@
 
 import engine;
 
-import matrix : mat4;
-import geometry : Instance;
-
-enum { VERTEX = 0, INSTANCE = 1, INDEX = 2}
+enum { VERTEX = 0, INSTANCE = 1, INDEX = 2 }
 
 /** Vertex Structure
  */

@@ -5,21 +5,12 @@
 
 import engine;
 
-import cube : Cube;
-import cone : Cone;
-import cylinder : Cylinder;
-import geometry : Geometry, Instance, computeNormals, computeTangents, position, rotate, scale, texture, bumpmap, opacity;
-import icosahedron : Icosahedron, refineIcosahedron;
+import geometry : computeNormals, computeTangents, position, rotate, scale, texture, bumpmap, opacity;
+import icosahedron : refineIcosahedron;
 import lsystem : createLSystem;
-import matrix : mat4, scale, translate, rotate;
-import particlesystem : ParticleSystem;
-import pdb : AtomCloud, Backbone, AminoAcidCloud, loadProteinCif;
-import square : Square;
-import text : Text;
-import torus : Torus;
+import matrix : scale, translate, rotate;
+import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
-import turtle : Turtle;
-import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
 /** Create a scene for rendering
  */
@@ -32,7 +23,7 @@ void createScene(ref App app){
   app.objects[($-1)].position([0.0f, -0.5f, 0.0f]);
   for(int x = -5; x <= 5; x++) {
     for(int z = -5; z <= 5; z++) {
-      mat4 instance;  // Add a instances of object 0
+      Matrix instance;  // Add a instances of object 0
       auto scalefactor = 5.0f;
       instance = instance.translate([0.0f, -1.0f, 0.0f]);
       instance = instance.scale([scalefactor, scalefactor, scalefactor]);

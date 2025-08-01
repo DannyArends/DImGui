@@ -5,11 +5,10 @@
 
 import engine;
 
-import descriptor : Descriptor, createDSPool;
+import descriptor : createDSPool;
 import compute : createStorageImage, transferToSSBO;
 import ssbo : createSSBO;
 import uniforms : createUBO;
-import shaders : Shader;
 
 enum spvc_resource_type[const(char)*] types = [
   "Uniform Buffer" : SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,

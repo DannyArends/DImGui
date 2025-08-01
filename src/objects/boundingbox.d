@@ -5,11 +5,8 @@
 
 import engine;
 
-import cube : Cube;
-import geometry : Instance, Geometry;
-import matrix : Matrix, toMatrix, multiply, scale;
+import matrix : toMatrix, multiply, scale;
 import vector : x,y,z;
-import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 
 struct Bounds {
   float[3] min = [ float.max, float.max, float.max];

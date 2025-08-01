@@ -5,12 +5,10 @@
 
 import engine;
 
-import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
-import cube : Cube;
-import geometry : Instance, Geometry;
+import assimp : loadOpenAsset, isOpenAsset;
 import io : dir, fixPath;
 import images : deAllocate;
-import textures: Texture, isTexture, mapTextures, transferTextureAsync, toRGBA;
+import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
 
 class TaskThread : Thread {
   private App* app;

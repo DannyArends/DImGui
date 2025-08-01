@@ -5,10 +5,7 @@
 
 import engine;
 
-import geometry : Instance, Geometry;
 import vector : x,y,z, magnitude, cross;
-import vertex : Vertex;
-import mesh : Mesh;
 import cone : computeThetas, computeBasePositions, computeCap;
 
 /** Cylinder

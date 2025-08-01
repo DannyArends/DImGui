@@ -5,7 +5,6 @@
 
 import engine;
 
-import descriptor : Descriptor;
 import validation : nameVulkanObject;
 
 /** Create a TextureSampler for sampling from a texture

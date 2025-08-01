@@ -6,7 +6,7 @@
 import engine;
 
 import vector : x,y,z, magnitude, normalize, vMul, sum;
-import matrix : Matrix, radian;
+import matrix : radian;
 
 /** Quaternion, stored as float[4]
  */

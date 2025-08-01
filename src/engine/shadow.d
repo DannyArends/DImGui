@@ -5,17 +5,13 @@
 
 import engine;
 
-import color : Colors;
-import descriptor : Descriptor, updateDescriptorData, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
+import descriptor : updateDescriptorData, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, deAllocate, transitionImageLayout, nameImageBuffer;
-import matrix : Matrix;
-import pipeline : GraphicsPipeline;
-import geometry : shadow, Instance, bufferGeometries;
+import geometry : shadow, bufferGeometries;
 import reflection : reflectShaders, createResources;
 import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
 import validation : pushLabel, popLabel, nameVulkanObject;
-import vertex : Vertex, VERTEX, INSTANCE;
 
 struct ShadowMap {
   ImageBuffer[] images;

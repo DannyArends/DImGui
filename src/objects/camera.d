@@ -6,7 +6,7 @@
 import engine;
 
 import vector : normalize, vMul,vSub, vAdd, negate, xyz;
-import matrix : Matrix, multiply, inverse, rotate, radian, perspective, lookAt;
+import matrix : multiply, inverse, rotate, radian, perspective, lookAt;
 import quaternion : xyzw;
 
 /** Camera

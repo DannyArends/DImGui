@@ -5,8 +5,6 @@
 
 import engine;
 
-import color : Colors;
-
 PFN_vkCreateDebugReportCallbackEXT  vkDebugCallback;
 PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugCallback;
 PFN_vkSetDebugUtilsObjectNameEXT    vkSetDebugUtilsObjectName;

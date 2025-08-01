@@ -5,8 +5,6 @@
 
 import engine;
 
-import std.math : pow;
-
 /** Vector, stored as float[3]
  */
 struct Vector { 

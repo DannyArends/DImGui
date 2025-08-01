@@ -8,11 +8,9 @@
  */
 import engine;
 
-import color : atomToColor, Colors, residueToColor;
-import geometry : Instance, Geometry, addVertex;
+import color : atomToColor, residueToColor;
+import geometry : addVertex;
 import io : readFile, isfile;
-import vertex : Vertex;
-import mesh : Mesh;
 
 enum : string { 
   ATOM = "ATOM ",

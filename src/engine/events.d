@@ -7,14 +7,13 @@ import engine;
 
 import boundingbox : computeBoundingBox;
 import commands : recordRenderCommandBuffer;
-import color : Colors;
 import camera : move, drag, castRay;
 import geometry : deAllocate, setColor;
 import imgui : saveSettings;
-import intersection : Intersection, intersects;
+import intersection : intersects;
 import line : createLine;
-import sdl : FRAMESTART, FRAMESTOP, LASTTICK;
 import surface : createSurface;
+import vulkan : cleanup;
 import window: createOrResizeWindow;
 import imgui : initializeImGui;
 
@@ -168,7 +167,7 @@ extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
     App* app = cast(App*)(userdata);
     switch (event.type) {
       case SDL_APP_TERMINATING: case SDL_QUIT: 
-      (*app).cleanUp(); exit(0); // Run cleanup and exit
+      (*app).cleanup(); exit(0); // Run cleanup and exit
       break;
       case SDL_APP_LOWMEMORY: 
       case SDL_APP_WILLENTERBACKGROUND: case SDL_APP_DIDENTERBACKGROUND:

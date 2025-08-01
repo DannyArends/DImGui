@@ -6,7 +6,6 @@
 import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
-import descriptor : Descriptor;
 import validation : nameVulkanObject;
 
 struct StageBuffer {

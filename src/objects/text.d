@@ -5,10 +5,7 @@
 
 import engine;
 
-import mesh : Mesh;
-import geometry : Instance, Geometry, opacity;
-import glyphatlas : GlyphAtlas;
-import vertex : Vertex;
+import geometry : opacity;
 
 class Text : Geometry {
   this(App app, string value = "Hellow World", float scale = 1.0f, bool verbose = false){

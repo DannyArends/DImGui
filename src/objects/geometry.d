@@ -5,24 +5,17 @@
 
 import engine;
 
-import meta : MetaData;
-import bone : Bone;
-import mesh : Mesh;
-import buffer : destroyGeometryBuffers, nameGeometryBuffer, GeometryBuffer, toGPU;
-import boundingbox : Bounds, BoundingBox, computeBoundingBox;
-import camera : Camera;
-import material : Material, TexureInfo;
-import matrix : mat4, position, transpose, translate, rotate, scale, inverse;
-import textures : Texture, idx;
+import buffer : destroyGeometryBuffers, nameGeometryBuffer, toGPU;
+import boundingbox : computeBoundingBox;
+import matrix : position, transpose, translate, rotate, scale, inverse;
+import textures : idx;
 import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
-import vertex : Vertex, VERTEX, INSTANCE, INDEX;
-import animation : Animation;
 
 /** An instance of a Geometry
  */
 struct Instance {
   uint[2] meshdef = [0, 0];  // Start, End
-  mat4 matrix = mat4.init;
+  Matrix matrix;
   alias matrix this;
 }
 

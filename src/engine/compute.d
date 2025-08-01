@@ -5,19 +5,15 @@
 
 import engine;
 
-import color : Colors;
 import commands : createCommandBuffer;
-import descriptor : Descriptor, createDescriptorSetLayout, createDescriptorSet;
+import descriptor : createDescriptorSetLayout, createDescriptorSet;
 import images : createImage, nameImageBuffer, deAllocate, transitionImageLayout;
-import particlesystem : ParticleSystem;
-import pipeline : GraphicsPipeline;
 import reflection : createResources;
 import swapchain : createImageView;
-import shaders : Shader, ShaderDef, loadShaders;
-import ssbo : SSBO, updateSSBO;
+import shaders : loadShaders;
+import ssbo : updateSSBO;
 import sync : insertWriteBarrier, insertReadBarrier;
-import textures : Texture, idx, registerTexture;
-import uniforms : ParticleUniformBuffer, UBO;
+import textures : idx, registerTexture;
 import quaternion : xyzw;
 import validation : pushLabel, popLabel, nameVulkanObject;
 

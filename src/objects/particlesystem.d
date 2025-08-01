@@ -5,12 +5,19 @@
 
 import engine;
 
-import particle : Particle;
-import geometry : Instance, Geometry;
-import mesh : Mesh;
-import vector : Vector, vMul, vAdd, magnitude, normalize;
-import vertex : Vertex, VERTEX, INSTANCE, INDEX;
+import vector : vMul, vAdd, magnitude, normalize;
 import quaternion : xyzw;
+
+/** A single particle
+ */
+struct Particle {
+  float[4] position;    /// Position
+  float[4] velocity;    /// Velocity
+  float mass;           /// Mass
+  float life;           /// Life
+  float random1;        /// Random number
+  float random2;        /// Random number
+}
 
 /** ParticleSystem
  */

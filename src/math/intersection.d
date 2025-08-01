@@ -5,7 +5,6 @@
 
 import engine;
 
-import boundingbox : BoundingBox;
 import matrix : multiply;
 import vector : x,y,z, vAdd, vMul;
 

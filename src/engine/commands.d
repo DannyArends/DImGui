@@ -5,11 +5,9 @@
 
 import engine;
 
-import color : Colors;
-import descriptor : Descriptor, updateDescriptorData;
 import boundingbox : computeBoundingBox;
+import descriptor : updateDescriptorData;
 import geometry : draw, bufferGeometries;
-import shaders : Shader;
 import ssbo : updateSSBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import window: supportedTopologies;

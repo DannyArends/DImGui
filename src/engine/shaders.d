@@ -5,7 +5,6 @@
 
 import engine;
 
-import descriptor : Descriptor, DescriptorLayoutBuilder;
 import io : readFile;
 import reflection : convert, reflectShader;
 import validation : nameVulkanObject;
