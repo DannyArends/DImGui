@@ -93,7 +93,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     setLayoutCount: 1,
-    pSetLayouts: &app.layouts[RENDER],
+    pSetLayouts: &app.layouts[Stage.RENDER],
   };
   enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, null, &app.pipelines[topology].layout));
   
@@ -197,7 +197,7 @@ void createPostProcessGraphicsPipeline(ref App app) {
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     setLayoutCount: 1,
-    pSetLayouts: &app.layouts[POST]
+    pSetLayouts: &app.layouts[Stage.POST]
   };
   enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, null, &app.postProcessPipeline.layout));
   

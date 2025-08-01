@@ -27,8 +27,8 @@ struct Compute {
   uint lastTick;
   ParticleSystem system;
   Shader[] shaders;                           /// Compute shader objects
-  VkCommandBuffer[][const(char)*] commands;   /// Command buffers
-  GraphicsPipeline[const(char)*] pipelines;   /// Pipelines
+  VkCommandBuffer[][string] commands;   /// Command buffers
+  GraphicsPipeline[string] pipelines;   /// Pipelines
 }
 
 ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_glsl_compute_shader), 
@@ -44,12 +44,12 @@ void initializeCompute(ref App app) {
 /** Create the compute pipeline specified by the selectedShader
  */
 void createComputePipeline(ref App app, Shader shader) {
-  if(app.verbose) SDL_Log("createComputePipeline for Shader %s", shader.path);
+  if(app.verbose) SDL_Log("createComputePipeline for Shader %s", toStringz(shader.path));
   app.compute.pipelines[shader.path] = GraphicsPipeline();
   app.layouts[shader.path] = app.createDescriptorSetLayout([shader]);
   app.nameVulkanObject(app.layouts[shader.path], toStringz(format("[DESCRIPTORLAYOUT] %s", fromStringz(shader.path))), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
 
-  app.sets[shader.path] = createDescriptorSet(app.device, app.pools[COMPUTE], app.layouts[shader.path],  app.framesInFlight);
+  app.sets[shader.path] = createDescriptorSet(app.device, app.pools[Stage.COMPUTE], app.layouts[shader.path],  app.framesInFlight);
   for (uint i = 0; i < app.framesInFlight; i++) {
     app.nameVulkanObject(app.sets[shader.path][i], toStringz(format("[DESCRIPTORSET] %s #%d", fromStringz(shader.path), i)), VK_OBJECT_TYPE_DESCRIPTOR_SET);
   }
@@ -72,7 +72,7 @@ void createComputePipeline(ref App app, Shader shader) {
   app.nameVulkanObject(app.compute.pipelines[shader.path].layout, toStringz(format("[LAYOUT] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
   app.nameVulkanObject(app.compute.pipelines[shader.path].pipeline, toStringz(format("[PIPELINE] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE);
 
-  if(app.verbose) SDL_Log("Compute pipeline [sel: %s] at: %p", shader.path, app.compute.pipelines[shader.path].pipeline);
+  if(app.verbose) SDL_Log("Compute pipeline [sel: %s] at: %p", toStringz(shader.path), app.compute.pipelines[shader.path].pipeline);
 
   app.swapDeletionQueue.add((){
     vkDestroyDescriptorSetLayout(app.device, app.layouts[shader.path], app.allocator);
@@ -168,7 +168,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
 /** recordComputeCommandBuffer for syncIndex and the selected ComputeShader
  */
 void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) {
-  if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", shader.path, syncIndex);
+  if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", toStringz(shader.path), syncIndex);
   VkCommandBuffer cmdBuffer = app.compute.commands[shader.path][syncIndex];
   enforceVK(vkResetCommandBuffer(cmdBuffer, 0));
 

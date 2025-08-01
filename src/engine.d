@@ -51,11 +51,7 @@ import sfx : WavFMT;
 import textures : Textures;
 import threading : Threading;
 
-const(char)* IMGUI = "IMGUI"; 
-const(char)* COMPUTE = "COMPUTE";
-const(char)* RENDER = "RENDER";
-const(char)* POST = "POST";
-const(char)* SHADOWS = "SHADOWS";
+enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
 
 /** Main application structure
  */
@@ -122,9 +118,9 @@ struct App {
   VkQueue queue = null;                                                         /// Render Queue
   VkQueue transfer = null;                                                      /// Transfer Queue
 
-  VkDescriptorPool[const(char)*] pools;                                         /// Descriptor pools (IMGUI, COMPUTE, RENDER)
-  VkDescriptorSetLayout[const(char)*] layouts;                                  /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
-  VkDescriptorSet[][const(char)*] sets;                                         /// Descriptor sets per Frames In Flight for (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorPool[string] pools;                                         /// Descriptor pools (IMGUI, COMPUTE, RENDER)
+  VkDescriptorSetLayout[string] layouts;                                  /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorSet[][string] sets;                                         /// Descriptor sets per Frames In Flight for (IMGUI, RENDER, N x computeShader.PATH)
 
   // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;                                                  /// Vulkan Surface

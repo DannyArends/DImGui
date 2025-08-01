@@ -132,7 +132,7 @@ void updateTextures(ref App app) {
     }
   }
   if(needsUpdate) { if(app.verbose) SDL_Log("Texture Loaded A-sync, updating");
-    app.updateDescriptorSet(app.shaders, app.sets[RENDER], app.syncIndex);
+    app.updateDescriptorSet(app.shaders, app.sets[Stage.RENDER], app.syncIndex);
   }
 }
 
@@ -177,7 +177,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
  */
 void registerTexture(ref App app, ref Texture texture) {
   if(app.trace) SDL_Log("Registering Texture %p with ImGui", texture.view);
-  texture.imID = createDescriptorSet(app.device, app.pools[IMGUI], app.layouts[IMGUI], 1)[0];
+  texture.imID = createDescriptorSet(app.device, app.pools[Stage.IMGUI], app.layouts[Stage.IMGUI], 1)[0];
 
   VkDescriptorImageInfo textureImage = {
     imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

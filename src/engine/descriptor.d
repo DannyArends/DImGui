@@ -84,8 +84,8 @@ VkDescriptorPoolSize[] createPoolSizes(ref App app, Shader[] shaders){
   return(poolSizes);
 }
 
-void createDSPool(ref App app, const(char)* poolID, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
-  if(app.verbose) SDL_Log("Creating DescriptorPool[%s]", poolID);
+void createDSPool(ref App app, string poolID, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
+  if(app.verbose) SDL_Log("Creating DescriptorPool[%s]", toStringz(poolID));
   app.pools[poolID] = VkDescriptorPool();
   VkDescriptorPoolCreateInfo createPool = {
     sType : VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -96,7 +96,7 @@ void createDSPool(ref App app, const(char)* poolID, VkDescriptorPoolSize[] poolS
   };
   enforceVK(vkCreateDescriptorPool(app.device, &createPool, app.allocator, &app.pools[poolID]));
   app.nameVulkanObject(app.pools[poolID], toStringz("[POOL] " ~ fromStringz(poolID)), VK_OBJECT_TYPE_DESCRIPTOR_POOL);
-  if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", poolID, app.pools[poolID]);
+  if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", toStringz(poolID), app.pools[poolID]);
 }
 
 /** ImGui DescriptorPool (Images)
@@ -106,8 +106,8 @@ void createImGuiDescriptorPool(ref App app){
     type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
     descriptorCount : 1000 ///IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
   }];
-  app.createDSPool(IMGUI, poolSizes);
-  app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.pools[IMGUI], app.allocator); });
+  app.createDSPool(Stage.IMGUI, poolSizes);
+  app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.pools[Stage.IMGUI], app.allocator); });
 }
 
 /** ImGui DescriptorSetLayout (1000 * Combined Image Samplers)
@@ -116,18 +116,18 @@ void createImGuiDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating ImGui DescriptorSetLayout");
   DescriptorLayoutBuilder builder;
   builder.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  app.layouts[IMGUI] = builder.build(app.device);
-  app.nameVulkanObject(app.layouts[IMGUI], toStringz(format("[DESCRIPTOR] Layout %s", fromStringz(IMGUI))), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+  app.layouts[Stage.IMGUI] = builder.build(app.device);
+  app.nameVulkanObject(app.layouts[Stage.IMGUI], toStringz(format("[DESCRIPTOR] Layout %s", Stage.IMGUI)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
 
-  app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.layouts[IMGUI], app.allocator); });
+  app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.layouts[Stage.IMGUI], app.allocator); });
 }
 
 /** Create a descriptor pool based on the shaders provided
  */
-void createDSPool(ref App app, const(char)* poolID, Shader[] shaders) {
+void createDSPool(ref App app, string poolID, Shader[] shaders) {
   uint nShaders = 1;
-  if(SDL_strstr(poolID, COMPUTE) != null){ nShaders = cast(uint)shaders.length; }
-  if(app.verbose) SDL_Log("createDSPool by shader: %s, with %d shader size", poolID, nShaders);
+  if(poolID == Stage.COMPUTE){ nShaders = cast(uint)shaders.length; }
+  if(app.verbose) SDL_Log("createDSPool by shader: %s, with %d shader size", toStringz(poolID), nShaders);
   VkDescriptorPoolSize[] poolSizes = app.createPoolSizes(shaders);
   app.createDSPool(poolID, poolSizes, nShaders * app.framesInFlight);
   app.swapDeletionQueue.add((){ 
@@ -174,19 +174,19 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
 
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
-void createDescriptors(ref App app, Shader[] shaders, const(char)* set = RENDER) {
-  if(app.verbose) SDL_Log("createDescriptors: %s pipeline", set);
-  app.layouts[set] = app.createDescriptorSetLayout(shaders);
-  app.nameVulkanObject(app.layouts[set], toStringz(format("[DESCRIPTORLAYOUT] %s", fromStringz(set))), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
-  app.sets[set] = createDescriptorSet(app.device, app.pools[set], app.layouts[set],  app.framesInFlight);
+void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER) {
+  if(app.verbose) SDL_Log("createDescriptors: %s pipeline", stage);
+  app.layouts[stage] = app.createDescriptorSetLayout(shaders);
+  app.nameVulkanObject(app.layouts[stage], toStringz(format("[DESCRIPTORLAYOUT] %s", stage)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+  app.sets[stage] = createDescriptorSet(app.device, app.pools[stage], app.layouts[stage],  app.framesInFlight);
 
   for (uint i = 0; i < app.framesInFlight; i++) {
-    app.updateDescriptorSet(shaders, app.sets[set], i);
-    app.nameVulkanObject(app.sets[set][i], toStringz(format("[DESCRIPTORSET] %s #%d", fromStringz(set), i)), VK_OBJECT_TYPE_DESCRIPTOR_SET);
+    app.updateDescriptorSet(shaders, app.sets[stage], i);
+    app.nameVulkanObject(app.sets[stage][i], toStringz(format("[DESCRIPTORSET] %s #%d", stage, i)), VK_OBJECT_TYPE_DESCRIPTOR_SET);
   }
 
   app.swapDeletionQueue.add((){ 
-    vkDestroyDescriptorSetLayout(app.device, app.layouts[set], app.allocator); 
+    vkDestroyDescriptorSetLayout(app.device, app.layouts[stage], app.allocator); 
   });
 }
 

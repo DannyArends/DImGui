@@ -11,7 +11,7 @@ import reflection : convert, reflectShader;
 import validation : nameVulkanObject;
 
 struct Shader {
-  const(char)* path;                      /// Path of the shader
+  string path;                      /// Path of the shader
   VkShaderStageFlagBits stage;            /// Shader Stage (Vertex, Fragment, Compute)
   VkShaderModule shaderModule;            /// Vulkan Shader Module
   VkPipelineShaderStageCreateInfo info;   /// Shader Stage Create Info Object
@@ -27,7 +27,7 @@ struct Shader {
 }
 
 struct ShaderDef {
-  const(char)* path;
+  string path;
   shaderc_shader_kind type;
 }
 
@@ -99,14 +99,14 @@ extern (C) void includeRelease(void* userData, shaderc_include_result* result) {
 
 /** Load GLSL, compile to SpirV, and create the vulkan shaderModule
  */
-Shader createShaderModule(App app, const(char)* path, shaderc_shader_kind type = shaderc_glsl_vertex_shader) {
-  auto source = readFile(path, app.verbose);
-  auto result = shaderc_compile_into_spv(app.compiler, &source[0], source.length, type, path, "main", app.options);
+Shader createShaderModule(App app, string path, shaderc_shader_kind type = shaderc_glsl_vertex_shader) {
+  auto source = readFile(toStringz(path), app.verbose);
+  auto result = shaderc_compile_into_spv(app.compiler, &source[0], source.length, type, toStringz(path), "main", app.options);
 
   Shader shader = {path : path, stage : convert(type), source : source};
 
   if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
-    SDL_Log("Shader '%s' compilation failed:\n%s", path, shaderc_result_get_error_message(result));
+    SDL_Log("Shader '%s' compilation failed: '%s'", toStringz(path), shaderc_result_get_error_message(result));
     shaderc_result_release(result);
     shaderc_compile_options_release(app.options);
     shaderc_compiler_release(app.compiler);

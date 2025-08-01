@@ -58,7 +58,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     pushLabel(app.renderBuffers[app.syncIndex], toStringz(format("T:%s", topology)), Colors.lightgray);
     vkCmdBindPipeline(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline);
     vkCmdBindDescriptorSets(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                            app.pipelines[topology].layout, 0, 1, &app.sets[RENDER][syncIndex], 0, null);
+                            app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
     
     for(size_t x = 0; x < app.objects.length; x++) {
       if(!app.objects[x].isVisible) continue;
@@ -88,7 +88,7 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   // Bind post-process pipeline & descriptor set (for sampling HDR texture)
   vkCmdBindPipeline(app.renderBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline);
   vkCmdBindDescriptorSets(app.renderBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.postProcessPipeline.layout, 0, 1, &app.sets[POST][app.syncIndex], 0, null);
+                          app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][app.syncIndex], 0, null);
 
   vkCmdDraw(app.renderBuffers[app.syncIndex], 3, 1, 0, 0);
   vkCmdEndRenderPass(app.renderBuffers[app.syncIndex]);
