@@ -136,10 +136,8 @@ struct App {
   @property pure @nogc bool trace() nothrow { return(verbose > 1); }
   @property pure @nogc uint framesInFlight() nothrow { return(cast(uint)swapChainImages.length + 1); }
   @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
-  @property VkPhysicalDeviceProperties properties(){ 
-    VkPhysicalDeviceProperties p;
-    vkGetPhysicalDeviceProperties(physicalDevice(), &p);
-    return(p);
+  @property VkPhysicalDeviceProperties properties() {
+    VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p);
   }
 }
 
