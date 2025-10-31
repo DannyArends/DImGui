@@ -24,8 +24,8 @@
                               "/LIBPATH:./bin/", 
                               "/LIBPATH:./deps/libs/lib",
                               "/LIBPATH:./deps/assimp/build/lib/Debug"],
-		"dflags-linux-dmd": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/", "-P-I./deps/assimp/build/include/", "-P-I./deps/assimp/include/"],
-		"dflags-linux-ldc": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/cimgui/imgui/", "-P-I./deps/assimp/build/include/", "-P-I./deps/assimp/include/"],
+		"dflags-linux-dmd": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/libs/include/", "-P-I./deps/cimgui/imgui/", "-P-I./deps/assimp/build/include/", "-P-I./deps/assimp/include/"],
+		"dflags-linux-ldc": ["-P-I/usr/include/SDL2/", "-P-I./deps/cimgui/", "-P-I./deps/libs/include/", "-P-I./deps/cimgui/imgui/", "-P-I./deps/assimp/build/include/", "-P-I./deps/assimp/include/"],
 		"importPaths-gdc": ["/usr/include/SDL2/", "./deps/cimgui/", "./deps/cimgui/imgui/"],
 		"lflags-linux": ["-L$PACKAGE_DIR", "-L./deps/assimp/build/bin/"],
 		"copyFiles-windows-x86_64": [
