@@ -73,11 +73,15 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
 
   // Get the Queue from the queueFamily
   vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
+  if(app.verbose) SDL_Log("Queueues 0");
   vkGetDeviceQueue(app.device, app.queueFamily, 1, &app.transfer);
+  if(app.verbose) SDL_Log("Queueues 1");
 
-  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
+/*  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
   app.nameVulkanObject(app.physicalDevice, toStringz(format("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr))), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
+
   app.nameVulkanObject(app.instance, toStringz("[INSTANCE]"), VK_OBJECT_TYPE_INSTANCE);
+*/
   app.nameVulkanObject(app.queue, toStringz("[QUEUE] Render"), VK_OBJECT_TYPE_QUEUE);
   app.nameVulkanObject(app.transfer, toStringz("[QUEUE] Transfer"), VK_OBJECT_TYPE_QUEUE);
 

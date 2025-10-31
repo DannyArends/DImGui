@@ -125,7 +125,7 @@ struct App {
   bool showShadows = false;                                                     /// TODO: Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
   bool hasCompute = false;
-  uint verbose = 0;                                                             /// Be very verbose
+  uint verbose = 2;                                                             /// Be very verbose
   bool disco = false;                                                           /// TODO: ReAdd Disco mode
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isMinimized = false;                                                     /// isMinimized?

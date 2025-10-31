@@ -172,7 +172,7 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
 /** Create our DescriptorSet (UBO and Combined image sampler)
  */
 void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER) {
-  if(app.verbose) SDL_Log("createDescriptors: %s pipeline", stage);
+  if(app.verbose) SDL_Log("createDescriptors: %d pipeline", stage);
   app.layouts[stage] = app.createDescriptorSetLayout(shaders);
   app.nameVulkanObject(app.layouts[stage], toStringz(format("[DESCRIPTORLAYOUT] %s", stage)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
   app.sets[stage] = createDescriptorSet(app.device, app.pools[stage], app.layouts[stage],  app.framesInFlight);
