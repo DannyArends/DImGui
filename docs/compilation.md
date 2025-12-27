@@ -43,3 +43,17 @@ in Debian, the names of the ShaderC and SPIRV-Cross development libraries are sl
   * Check the paths in the [dub.json](./dub.json) file, and update the Vulkan version (1.4.309.0) to the version installed
   * Execute dub to compile the executable
     * `dub`
+
+### Building windows deps using cmake
+
+Assimp might need to be compiled (e.g. using Visual Studio 2019)
+
+```
+	cd deps/assimp
+	rm -rf build
+	mkdir build
+	cd build
+	call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+	cmake -DCMAKE_BUILD_TYPE=Release -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF -DASSIMP_BUILD_FBX_IMPORTER=ON -DASSIMP_BUILD_3DS_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON -DASSIMP_NO_EXPORT=ON -DASSIMP_BUILD_TESTS=OFF ../
+	msbuild Assimp.sln
+```
