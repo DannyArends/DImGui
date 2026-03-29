@@ -12,6 +12,7 @@ import events : sdlEventsFilter;
 enum SDL_WINDOW_VULKAN = 0x0000000010000000;
 enum SDL_WINDOW_RESIZABLE = 0x0000000000000020;
 enum SDL_WINDOW_HIGH_PIXEL_DENSITY = 0x0000000000002000;
+enum SDL_WINDOW_MINIMIZED = 0x0000000000000040;
 
 /** Check for SDL Errors
  */
@@ -23,7 +24,7 @@ void checkSDLError() {
 /** Log function to allow SDL_Log to be redirected to a file
  */
 extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) {
-  SDL_Log("[%s] %s", SDL_GetTicks(), message);
+  printf("[%llu] %s\n", SDL_GetTicks(), message);
 }
 
 enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };

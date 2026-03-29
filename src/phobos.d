@@ -13,6 +13,7 @@ public import core.time : MonoTime, dur;
 public import core.thread : Thread, thread_joinAll;
 
 public import core.stdc.stdlib : abort, exit, malloc, free;
+public import core.stdc.stdio : printf;
 
 public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
 public import std.array : array, split;

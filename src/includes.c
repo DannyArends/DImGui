@@ -21,8 +21,7 @@
 #include <shaderc/shaderc.h>
 #include <spirv_cross/spirv_cross_c.h>
 
-#define IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE   (1)     // Minimum per atlas
-
+#define IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE (1) // Minimum per atlas
 #define CIMGUI_USE_SDL3
 #define CIMGUI_USE_VULKAN
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
