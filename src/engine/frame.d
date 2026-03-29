@@ -19,8 +19,7 @@ import compute : recordComputeCommandBuffer, updateComputeUBO;
 void renderFrame(ref App app){
   if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
-  VkSemaphore imageAcquired    = app.sync[app.syncIndex].imageAcquired;
-  VkSemaphore renderComplete   = app.renderComplete[app.frameIndex];
+  VkSemaphore imageAcquired = app.sync[app.syncIndex].imageAcquired;
 
   if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
   if (app.hasCompute) {
@@ -36,6 +35,8 @@ void renderFrame(ref App app){
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) { app.rebuild = true; return; }
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
+  if(app.trace) SDL_Log("Phase 1: Aquired %d", app.frameIndex);
+  VkSemaphore renderComplete = app.renderComplete[app.frameIndex];
 
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
