@@ -5,10 +5,6 @@
 	path = app/jni/SDL_ttf
 	url = https://github.com/libsdl-org/SDL_ttf.git
 	branch = SDL2
-[submodule "app/jni/SDL_image"]
-	path = app/jni/SDL_image
-	url = https://github.com/libsdl-org/SDL_image.git
-	branch = SDL2
 [submodule "app/jni/SDL_mixer"]
 	path = app/jni/SDL_mixer
 	url = https://github.com/libsdl-org/SDL_mixer.git
@@ -25,3 +21,6 @@
 [submodule "app/jni/SDL"]
 	path = app/jni/SDL
 	url = https://github.com/libsdl-org/SDL
+[submodule "app/jni/SDL_image"]
+	path = app/jni/SDL_image
+	url = https://github.com/libsdl-org/SDL_image
