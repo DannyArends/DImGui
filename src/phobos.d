@@ -12,6 +12,8 @@ public import core.sync.mutex : Mutex;
 public import core.time : MonoTime, dur;
 public import core.thread : Thread, thread_joinAll;
 
+public import core.stdc.stdlib : abort, exit, malloc, free;
+
 public import std.algorithm : filter, map, min, remove, reverse, sort, swap;
 public import std.array : array, split;
 public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, receiveOnly, receiveTimeout;

@@ -7,6 +7,7 @@ import engine;
 
 import icon : setIcon;
 import sfx : openAudio;
+import events : sdlEventsFilter;
 
 enum SDL_WINDOW_VULKAN = 0x0000000010000000;
 enum SDL_WINDOW_RESIZABLE = 0x0000000000000020;
@@ -22,8 +23,7 @@ void checkSDLError() {
 /** Log function to allow SDL_Log to be redirected to a file
  */
 extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) {
-  import std.stdio : writefln;
-  writefln("[%s] %s", SDL_GetTicks(), fromStringz(message));
+  SDL_Log("[%s] %s", SDL_GetTicks(), message);
 }
 
 enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };

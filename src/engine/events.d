@@ -159,7 +159,7 @@ void handleEvents(ref App app) {
    shutdown on enter background, since we should properly ask for permission from the Android OS to 
    run in the background.
 */
-extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
+extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
   if(!event) return(0);
   try {
     App* app = cast(App*)(userdata);
