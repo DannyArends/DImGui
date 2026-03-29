@@ -28,6 +28,8 @@ import validation : createDebugCallback;
 import vulkan : cleanup;
 import window: createOrResizeWindow, checkForResize;
 
+enum SDL_WINDOW_MINIMIZED = 0x0000000000000040;
+
 /* Main entry point to the program */
 version (Android) {
   import core.runtime : rt_init;

@@ -11,7 +11,7 @@ import devices : getMSAASamples;
 import framebuffer : createHDRImage;
 import validation : nameVulkanObject;
 
-VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * (surface.format.BitsPerPixel / 8)); }
+VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * SDL_GetPixelFormatDetails(surface.format).bits_per_pixel / 8); }
 
 struct ImageBuffer {
   VkImage image = null;             /// Image

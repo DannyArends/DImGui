@@ -27,7 +27,7 @@
 
 #define IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE   (1)     // Minimum per atlas
 
-#define CIMGUI_USE_SDL2
+#define CIMGUI_USE_SDL3
 #define CIMGUI_USE_VULKAN
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "cimgui.h"

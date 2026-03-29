@@ -1,7 +1,7 @@
 ## Compile for MS Windows 10 / 11
 Compile Open Asset Import Library (assimp):
 ```
-rd /s /q app\jni\assimp\build
+rm -rf app\jni\assimp\build
 cd app/jni/assimp
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
@@ -21,18 +21,22 @@ cd ../../../../
 ```
 Compile C-api for Dear ImGui:
 ```
-rd /s /q app\jni\build
+rm -rf app\jni\build
 cd app/jni/
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
 cd build
-cmake -DVULKAN_DIR="C:/VulkanSDK/1.4.335.0" -DSDL3_DIR="../SDL/" ../
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
+  -DCIMGUI_USE_SDL3=ON -DCIMGUI_USE_SDL2=OFF ^
+  -DVULKAN_DIR="C:/VulkanSDK/1.4.335.0" ^
+  -DSDL3_DIR="%CD%/../SDL3/build" ^
+  ../
 cmake --build . --config Release -j10
 cd ../../../
 ```
 Compile Simple DirectMedia Layer (SDL3):
 ```
-rd /s /q app\jni\SDL\build
+rm -rf app\jni\SDL\build
 cd app/jni/SDL
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
@@ -46,7 +50,7 @@ cd ../../../../
 ```
 Compile SDL_image:
 ```
-rd /s /q app\jni\SDL_image\build
+rm -rf app\jni\SDL_image\build
 cd app/jni/SDL_image
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
@@ -59,8 +63,9 @@ cd ../../../../
 ```
 Compile SDL_mixer:
 ```
-rd /s /q app/jni/SDL_mixer/Release
+rm -rf app/jni/SDL_mixer/Release
 cd app/jni/SDL_mixer
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir Release
 cd Release
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
@@ -72,7 +77,7 @@ cd ../../../../
 ```
 Compile SDL_ttf:
 ```
-rd /s /q app\jni\SDL_ttf\libtool
+rm -rf app\jni\SDL_ttf\libtool
 cd app/jni/SDL_ttf
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir libtool
@@ -85,7 +90,7 @@ cd ../../../../
 ```
 Compile ShaderC:
 ```
-rd /s /q app\jni\shaderc\build
+rm -rf app\jni\shaderc\build
 cd app/jni/shaderc
 python utils/git-sync-deps
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
@@ -100,7 +105,7 @@ cd ../../../../
 ```
 Compile spriv_cross:
 ```
-rd /s /q app\jni\spirv_cross\build
+rm -rf app\jni\spirv_cross\build
 cd app/jni/spirv_cross
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build

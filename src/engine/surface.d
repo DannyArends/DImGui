@@ -72,7 +72,7 @@ VkFormat getBestColorFormat(ref App app){
 }
 
 void createSurface(ref App app) {
-  SDL_Vulkan_CreateSurface(app, app.instance, &app.surface);
+  SDL_Vulkan_CreateSurface(app.window, app.instance, null, &app.surface);
 
   app.mainDeletionQueue.add((){
     if(app.swapChain != null){ if(app.verbose) SDL_Log("Destroy Swapchain: %p", app.swapChain);

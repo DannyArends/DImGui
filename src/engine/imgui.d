@@ -117,7 +117,7 @@ void initializeImGui(ref App app){
   }
   igStyleColorsDark(null);
   SDL_Log("ImGuiIO: %p", app.gui.io);
-  ImGui_ImplSDL2_InitForVulkan(app.window);
+  ImGui_ImplSDL3_InitForVulkan(app.window);
 
   ImGui_ImplVulkan_InitInfo imguiInit = {
     Instance : app.instance,
@@ -191,7 +191,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 ImDrawData* renderGUI(ref App app){
   // Start ImGui frame
   ImGui_ImplVulkan_NewFrame();
-  ImGui_ImplSDL2_NewFrame();
+  ImGui_ImplSDL3_NewFrame();
   igNewFrame();
   uint font = 0;
 
