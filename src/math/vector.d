@@ -54,11 +54,9 @@ struct Vector {
 }
 
 /** Mean of vector v */
-@nogc pure T mean(T)(const T[] v) nothrow {
-    return(sum(v) / cast(T)(v.length));
-}
+@nogc pure T mean(T)(const T[] v) nothrow { return(sum(v) / cast(T)(v.length)); }
 
-/** Sum of vector v */
+/** Sum of vector v, to the power of exp */
 @nogc pure T sum(T)(const T[] v, uint exp = 1) nothrow { 
     T sum = 0;
     for (size_t i = 0; i < v.length; i++) { sum += pow(v[i], exp); }
@@ -71,7 +69,8 @@ struct Vector {
 /** Returns the normalized vector of v */
 @nogc pure T[3] normalize(T)(T[3] v) nothrow {
     float sqr = v.sum(2);
-    if(sqr == 1 || sqr == 0) return(v);
+    if(sqr == 0) return(v);
+    if(abs(sqr - 1.0f) < 1e-6f) return(v);
     float invrt = 1.0f / sqrt(sqr);
     v[] *= invrt;
     return(v);

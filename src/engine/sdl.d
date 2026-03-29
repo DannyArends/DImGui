@@ -71,7 +71,7 @@ App initializeSDL() {
 
   // Create SDL Window
   SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-  app.window = SDL_CreateWindow(app.applicationName, 1280, 720, window_flags);  
+  app.window = SDL_CreateWindow(app.applicationName, 1280, 720, window_flags);
   if(app.verbose) SDL_Log("SDL_CreateWindow: %p", app.window);
 
   if(!app.window) {
@@ -79,11 +79,9 @@ App initializeSDL() {
     checkSDLError();
     abort();
   }
-  version(Android) { 
+  version(Android) {
     SDL_SetEventFilter(&sdlEventsFilter, &app); /// Handle Android immediate events by callback
-  }else{ 
-    app.window.setIcon(); /// If not Android we can set an icon
-  }
+  } else { app.window.setIcon(); } /// If not Android we can set an icon
   return(app);
 }
 

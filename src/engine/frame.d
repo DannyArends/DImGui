@@ -16,7 +16,10 @@ import descriptor : updateDescriptorSet, createDescriptors;
 import textures : updateTextures;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 
-void renderFrame(ref App app){
+/** Main Frame rendering loop a 3D Frame:
+ * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui
+ */
+void renderFrame(ref App app) {
   if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired = app.sync[app.syncIndex].imageAcquired;

@@ -133,6 +133,6 @@ Find where the compiled .so files are located inside of: app/build/intermediates
 ### Compile the D code into libMAIN.so
 We can now use LDC to compile the shared library that will hook the sdl_main entry point, use importC to link to the dependancies, and the D code
 ```
-dub build --compiler=ldc2 --arch=aarch64-*-linux-android --config=android-64 --force
+dub build --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force
 ```
 
