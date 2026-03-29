@@ -20,7 +20,7 @@ void renderFrame(ref App app){
   if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired    = app.sync[app.syncIndex].imageAcquired;
-  VkSemaphore renderComplete   = app.sync[app.syncIndex].renderComplete;
+  VkSemaphore renderComplete   = app.renderComplete[app.frameIndex];
 
   if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
   if (app.hasCompute) {
@@ -34,8 +34,7 @@ void renderFrame(ref App app){
 
   if(app.trace) SDL_Log("Phase 1: Aquire the image");
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
-  if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
+  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) { app.rebuild = true; return; }
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
 
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
@@ -111,7 +110,7 @@ void renderFrame(ref App app){
 void presentFrame(ref App app) {
   if(app.trace) SDL_Log("presentFrame");
   if(app.rebuild) return;
-  VkSemaphore renderComplete = app.sync[app.syncIndex].renderComplete;
+  VkSemaphore renderComplete = app.renderComplete[app.frameIndex];
   VkPresentInfoKHR info = {
     sType : VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
     waitSemaphoreCount : 1,

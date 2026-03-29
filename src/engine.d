@@ -89,6 +89,7 @@ struct App {
 
   // Per frame resources (reset when rebuilding the swapchain)
   Sync[] sync = null;
+  VkSemaphore[] renderComplete;
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
