@@ -66,7 +66,7 @@ struct Camera {
 }
 
 /* Create a position/rotation matrix through 3D space starting from xy */
-float[3][2] castRay(Camera camera, uint x, uint y) {
+float[3][2] castRay(Camera camera, float x, float y) {
   float[2] ndc = [(2.0f * x) / cast(float) camera.width  - 1.0f,                            // Normalized device X
                   (2.0f * y) / cast(float) camera.height - 1.0f];                           // Normalized device Y
   float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];                                            // Homogeneous clip coordinates

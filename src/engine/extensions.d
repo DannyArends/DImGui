@@ -10,9 +10,8 @@ import engine;
 void loadInstanceExtensions(ref App app) {
   if(app.verbose) SDL_Log("loadInstanceExtensions");
   uint nExtensions;
-  SDL_Vulkan_GetInstanceExtensions(app.window, &nExtensions, null);
-  app.instanceExtensions.length = nExtensions;
-  SDL_Vulkan_GetInstanceExtensions(app.window, &nExtensions, &app.instanceExtensions[0]);
+  auto exts = SDL_Vulkan_GetInstanceExtensions(&nExtensions);
+  app.instanceExtensions = exts[0..nExtensions].dup;
   if(app.verbose) SDL_Log("Found %d instance extensions", app.instanceExtensions.length);
   //if(app.verbose) for(uint i = 0; i < app.instanceExtensions.length; i++){ SDL_Log("- %s", app.instanceExtensions[i]); }
 }

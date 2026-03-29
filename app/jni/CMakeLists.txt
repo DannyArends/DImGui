@@ -3,8 +3,8 @@ project(cimgui)
 
 # Options
 option(CIMGUI_STATIC     "Build as static library"  OFF)
-option(CIMGUI_USE_SDL2   "Enable SDL2 backend"      ON)
-option(CIMGUI_USE_SDL3   "Enable SDL3 backend"      OFF)
+option(CIMGUI_USE_SDL2   "Enable SDL2 backend"      OFF)
+option(CIMGUI_USE_SDL3   "Enable SDL3 backend"      ON)
 option(CIMGUI_USE_VULKAN "Enable Vulkan backend"    ON)
 
 # Paths — override with -DVULKAN_DIR=... and -DSDL3_DIR=...

@@ -35,6 +35,7 @@ struct App {
   Matrix[] boneOffsets;                                                         /// Animated BoneOffsets for GPU SSBO
   Mesh[] meshInfo;                                                              /// Meshes for GPU SSBO
   Textures textures;                                                            /// Textures
+  Audio audio;
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[string] buffers;                                                         /// SSBO buffers
   UBO[string] ubos;                                                             /// UBO buffers

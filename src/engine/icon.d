@@ -15,7 +15,7 @@ void setIcon(SDL_Window *window, const(char)* path = "data/icons/icon.png") {
       path = toStringz(format("app/src/main/assets/%s", fromStringz(path)));
       SDL_Surface* surface = IMG_Load(path);
       SDL_SetWindowIcon(window, surface);
-      SDL_FreeSurface(surface);
+      SDL_DestroySurface(surface);
       SDL_Log("Icon loaded from: %s", path);
     }
   }
