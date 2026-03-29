@@ -61,10 +61,10 @@ cd ../../../../
 ```
 Compile SDL_mixer:
 ```
-rd /s /q app/jni/SDL_mixer/build
+rd /s /q app/jni/SDL_mixer/Release
 cd app/jni/SDL_mixer
-mkdir build
-cd build
+mkdir Release
+cd Release
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
       -DSDL2MIXER_SAMPLES=OFF -DSDL2MIXER_MOD=OFF ^
       -DSDL2_DIR="%CD%/../../SDL2/build/install/cmake" ^
@@ -76,11 +76,11 @@ cd ../../../../
 ```
 Compile SDL_ttf:
 ```
-rd /s /q app\jni\SDL_ttf\build
+rd /s /q app\jni\SDL_ttf\libtool
 cd app/jni/SDL_ttf
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
-mkdir build
-cd build
+mkdir libtool
+cd libtool
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
       -DSDL2TTF_SAMPLES=OFF -DSDL2TTF_SAMPLES=OFF -DSDL2TTF_VENDORED=ON ^
       -DSDL2_DIR="%CD%/../../SDL2/install/cmake" ^
