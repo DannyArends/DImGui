@@ -37,13 +37,9 @@
 													"$PACKAGE_DIR/app/jni/SDL_image/build/SDL3_image.dll",
 													"$PACKAGE_DIR/app/jni/SDL_ttf/libtool/SDL3_ttf.dll",
 													"$PACKAGE_DIR/app/jni/SDL_mixer/Release/SDL3_mixer.dll",
-													"$PACKAGE_DIR/app/jni/SDL_mixer/Release/external/libmpg123-build/ports/cmake/src/libmpg123/mpg123-0.dll",
-													"$PACKAGE_DIR/app/jni/SDL_mixer/Release/external/libgme-build/gme/gme.dll",
-													"$PACKAGE_DIR/app/jni/SDL_mixer/Release/external/wavpack-build/wavpackdll.dll",
 													"$PACKAGE_DIR/app/jni/build/cimgui.dll",
 													"$PACKAGE_DIR/app/jni/assimp/build/bin/assimp-vc142-mt.dll",
 													"$PACKAGE_DIR/app/jni/shaderc/build/libshaderc/shaderc_shared.dll",
-													"$PACKAGE_DIR/app/jni/shaderc/build/third_party/glslang/glslang/glslang.dll",
 													"$PACKAGE_DIR/app/jni/shaderc/build/third_party/spirv-tools/source/SPIRV-Tools.dll",
 													"$PACKAGE_DIR/app/jni/shaderc/build/third_party/spirv-tools/source/opt/SPIRV-Tools-opt.dll"],
 
