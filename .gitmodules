@@ -1,10 +1,6 @@
 [submodule "deps/cimgui"]
 	path = app/jni/cimgui
 	url = https://github.com/cimgui/cimgui.git
-[submodule "app/jni/SDL2"]
-	path = app/jni/SDL2
-	url = https://github.com/libsdl-org/SDL.git
-	branch = SDL2
 [submodule "app/jni/SDL_ttf"]
 	path = app/jni/SDL_ttf
 	url = https://github.com/libsdl-org/SDL_ttf.git
@@ -26,3 +22,6 @@
 [submodule "deps/assimp"]
 	path = app/jni/assimp
 	url =  https://github.com/assimp/assimp.git
+[submodule "app/jni/SDL"]
+	path = app/jni/SDL
+	url = https://github.com/libsdl-org/SDL
