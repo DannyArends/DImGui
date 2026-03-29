@@ -16,7 +16,7 @@ import scene : createScene;
 import shadow : createShadowMap;
 import imgui : initializeImGui;
 import instance : createInstance;
-import sdl : initializeSDL;
+import sdl : initializeSDL, SDL_WINDOW_MINIMIZED;
 import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
 import reflection : createReflectionContext;
 import sampler : createSampler;
@@ -28,12 +28,9 @@ import validation : createDebugCallback;
 import vulkan : cleanup;
 import window: createOrResizeWindow, checkForResize;
 
-enum SDL_WINDOW_MINIMIZED = 0x0000000000000040;
-
 /* Main entry point to the program */
 version (Android) {
   import core.runtime : rt_init;
-  import core.stdc.stdio : printf;
 
   extern(C) int SDL_main(int argc, char* argv) { // Hijack the SDL main
     int dRuntime = rt_init();
