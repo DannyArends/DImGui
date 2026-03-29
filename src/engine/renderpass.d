@@ -9,7 +9,8 @@ import depthbuffer : findDepthFormat;
 import devices : getMSAASamples;
 import validation : nameVulkanObject;
 
-/** Create a RenderPass object using a specified initial Layout and loadOp
+/** Create a Scene RenderPass object
+ * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment
  */
 VkRenderPass createSceneRenderPass(ref App app) {
   if(app.verbose) SDL_Log("Creating RenderPass");
@@ -85,7 +86,8 @@ VkRenderPass createSceneRenderPass(ref App app) {
   return(renderpass);
 }
 
-/** Create the Post-Processing RenderPass (samples HDR texture, renders to swapchain)
+/** Create the Post-Processing RenderPass 
+ * This VkRenderPass samples the HDR texture, renders and to the SwapChain image
  */
 VkRenderPass createPostProcessRenderPass(ref App app) {
   if(app.verbose) SDL_Log("Creating Post-Process RenderPass");
@@ -153,7 +155,7 @@ VkRenderPass createPostProcessRenderPass(ref App app) {
 }
 
 /** Create the ImGui RenderPass
- * This pass typically loads the contents of the swapchain image and overlays ImGui.
+ * This VkRenderPass loads the contents of the swapchain image and overlays ImGui.
  */
 VkRenderPass createImGuiRenderPass(ref App app) {
   if(app.verbose) SDL_Log("Creating ImGui RenderPass");

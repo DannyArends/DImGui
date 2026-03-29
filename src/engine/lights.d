@@ -31,7 +31,7 @@ struct Lighting {
 
 /** Compute lightspace for the provided light
  */
-void computeLightSpace(const App app, ref Light light){
+void computeLightSpace(const App app, ref Light light, float nearPlane = 0.1f, float farPlane = 100.0f) {
   float[3] lightPos = light.position[0 .. 3];
   float[3] lightDir = light.direction[0 .. 3].normalize();
   float[3] lightTarget = lightPos.vAdd(lightDir);
@@ -40,15 +40,13 @@ void computeLightSpace(const App app, ref Light light){
   Matrix lightView = lookAt(lightPos, lightTarget, upVector);
 
   float fovY = (2 * light.properties[2]);
-  float nearPlane = 0.1f;
-  float farPlane = 100.0f;
   Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
 }
 
 /** Transfer the lighting into the SSBO for buffer
  */
-void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor){
+void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   app.buffers[descriptor.base].dirty[] = true;  // TODO: We only need to update lights when they change (imgui)
   foreach(ref light; app.lights) { app.computeLightSpace(light); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);

@@ -11,6 +11,14 @@ if(ANDROID)
     add_subdirectory(SDL SDL_build)
     set(SDL3_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SDL)
 
+    # spirv_cross
+    cmake_policy(SET CMP0077 NEW)
+    set(SPIRV_CROSS_ENABLE_TESTS OFF)
+    set(SPIRV_CROSS_CLI OFF)
+    set(SPIRV_CROSS_ENABLE_MSL OFF)
+    set(SPIRV_CROSS_SHARED ON)
+    add_subdirectory(spirv_cross spirv_cross_build)
+
     # assimp
     set(ASSIMP_BUILD_TESTS OFF)
     add_compile_definitions("FOPEN_FUNC(filename,mode)=fopen(filename,mode)")
@@ -22,14 +30,6 @@ if(ANDROID)
     set(ASSIMP_BUILD_3DS_IMPORTER ON)
     set(ASSIMP_BUILD_OBJ_IMPORTER ON)
     add_subdirectory(assimp assimp_build)
-
-    # spirv_cross
-    cmake_policy(SET CMP0077 NEW)
-    set(SPIRV_CROSS_ENABLE_TESTS OFF)
-    set(SPIRV_CROSS_CLI OFF)
-    set(SPIRV_CROSS_ENABLE_MSL OFF)
-    set(SPIRV_CROSS_SHARED ON)
-    add_subdirectory(spirv_cross spirv_cross_build)
 
     # shaderc
     set(SHADERC_SKIP_TESTS ON)
