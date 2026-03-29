@@ -33,11 +33,11 @@ enum SDL_WINDOW_MINIMIZED = 0x0000000000000040;
 /* Main entry point to the program */
 version (Android) {
   import core.runtime : rt_init;
-  import std.stdio : writeln;
+  import core.stdc.stdio : printf;
 
   extern(C) int SDL_main(int argc, char* argv) { // Hijack the SDL main
     int dRuntime = rt_init();
-    writeln("D runtime initialized: %d", dRuntime);
+    printf("D runtime initialized: %d", dRuntime);
     run(["android", format("--dRuntime=%s", dRuntime)]);
     return(0);
   }

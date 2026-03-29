@@ -4,22 +4,18 @@
  */
 #undef __SIZEOF_INT128__
 
-#if defined(__ANDROID__)
-  #define __ADDR_BND_PKEY_PAD 8
-  #include <jni.h>
-#endif
-
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL_vulkan.h>
 #include <SDL3_image/SDL_image.h>
-
-#define SDL_h_
-#undef SDL_DEPRECATED
-#define SDL_DEPRECATED
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_mixer/SDL_mixer.h>
+
+#if defined(__ANDROID__)
+  #include <jni.h>
+  #include <SDL3/SDL_system.h>
+#endif
 
 #include <vulkan/vulkan.h>
 #include <shaderc/shaderc.h>
@@ -41,7 +37,3 @@
 #include <assimp/material.h>
 #include <assimp/types.h>
 #include <assimp/postprocess.h>
-
-#if defined(__ANDROID__)
-  #include <jni.h>
-#endif

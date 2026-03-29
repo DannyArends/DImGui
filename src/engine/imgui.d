@@ -73,7 +73,7 @@ void clearSettings() {
  */
 void loadSettings(const(char)* path = "imgui.ini") {
   version (Android) {
-    path = toStringz(format("%s/%s", fromStringz(SDL_AndroidGetInternalStoragePath()), fromStringz(path)));
+    path = toStringz(format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path)));
   }
   if(path.isfile()) {
     SDL_Log("Loading ImGui settings from %s", path);
@@ -85,7 +85,7 @@ void loadSettings(const(char)* path = "imgui.ini") {
 
 /** FontAwesome icon as const(char)*
  */
-const(char)* faIcon(char[] s = ICON_FA_SEARCH){ return(toStringz(format("%s", s))); }
+const(char)* faIcon(string s = ICON_FA_SEARCH){ return(toStringz(format("%s", s))); }
 
 /** Code to initialize the ImGui backend
  */

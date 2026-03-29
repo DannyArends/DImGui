@@ -53,7 +53,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
  */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   version (Android) {
-    path = toStringz(format("%s/%s", fromStringz(SDL_AndroidGetInternalStoragePath()), fromStringz(path)));
+    path = toStringz(format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path)));
    }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
   SDL_IOStream* fp = SDL_IOFromFile(path, "w");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
@@ -81,9 +81,9 @@ version(Android) {
   // listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls
   string[] listDirContent(const(char)* path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
     //SDL_Log("listDirContent %s", path);
-    JNIEnv* env = cast(JNIEnv*)SDL_AndroidGetJNIEnv();
+    JNIEnv* env = cast(JNIEnv*)SDL_GetAndroidJNIEnv();
     //SDL_Log("JNIEnv %p", env);
-    jobject activity = cast(jobject)SDL_AndroidGetActivity();
+    jobject activity = cast(jobject)SDL_GetAndroidActivity();
     jclass activity_class = (*env).GetObjectClass(env, activity);
     jobject asset_manager = (*env).CallObjectMethod(env, activity, (*env).GetMethodID(env, activity_class, "getAssets", "()Landroid/content/res/AssetManager;"));
 
@@ -130,10 +130,10 @@ version(Android) {
   bool dirExists(const(char)* path){ return(listDirContent(path).length > 0); }
 
   // isFile uses SDL on Android
-  bool isfile (const(char)* path) {
-    SDL_RWops *rw = SDL_RWFromFile(path, "rb");
+  bool isfile(const(char)* path) {
+    SDL_IOStream *rw = SDL_IOFromFile(path, "rb");
     if (rw == null) return false;
-    SDL_RWclose(rw);
+    SDL_CloseIO(rw);
     return true;
   }
 
