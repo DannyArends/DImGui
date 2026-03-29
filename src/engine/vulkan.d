@@ -21,7 +21,7 @@ void cleanup(App app) {
 
     SDL_Log("Shutdown ImGui");
     ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
     igDestroyContext(null);
   }
   SDL_Log("Delete all Geometry objects");

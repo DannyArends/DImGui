@@ -110,7 +110,7 @@ int play(ref App app, WavFMT sfx) {
   if(!track) return(-1);
   MIX_SetTrackGain(track, sfx.gain * app.soundEffectGain);
   MIX_SetTrackAudio(track, sfx.chunk);
-  MIX_PlayTrack(track, 0, 0);
-  return(MIX_PlayTrack(track, 0, 0) ? 0 : -1);
+  MIX_PlayTrack(track, 0);
+  return(MIX_PlayTrack(track, 0) ? 0 : -1);
 }
 

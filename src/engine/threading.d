@@ -33,7 +33,7 @@ class TaskThread : Thread {
           if(path.isTexture()){
             auto fp = fixPath(toStringz(path));
             auto surface = IMG_Load(fp);
-            if (surface.format.BitsPerPixel != 32) { surface.toRGBA((*app).verbose); }
+            if (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) { surface.toRGBA((*app).verbose); }
             auto t = Texture(path, surface.w, surface.h, surface);
             auto immutableT = cast(immutable)t;
             main.send(immutableT, mytid);

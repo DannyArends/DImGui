@@ -50,29 +50,26 @@ bool isTexture(string path){
 
 // Convert an SDL-Surface to RGBA32 format
 void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
-  SDL_PixelFormat *fmt = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
-  fmt.BitsPerPixel = 32;
-  SDL_Surface* adapted = SDL_ConvertSurface(surface, fmt, 0);
-  SDL_FreeFormat(fmt); // Free the SDL_PixelFormat
+  SDL_Surface* adapted = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
   if (adapted) {
-    SDL_FreeSurface(surface); // Free the SDL_Surface
+    SDL_DestroySurface(surface); // Free the SDL_Surface
     surface = adapted;
-    if(verbose > 1) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
+    if(verbose > 1) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel / 8));
   }
 }
 
 /** Create a 1x1 white SDL_Surface
  */
 SDL_Surface* createDummySDLSurface() {
-  SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA32);
+  SDL_Surface* surface = SDL_CreateSurface(1, 1, SDL_PIXELFORMAT_RGBA32);
   if(!surface){
     SDL_Log("Failed to create dummy SDL_Surface: %s", SDL_GetError());
     return null;
   }
 
   if(SDL_MUSTLOCK(surface)) SDL_LockSurface(surface);
-  auto whitePixel = SDL_MapRGBA(surface.format, 255, 255, 255, 255);
-  memcpy(surface.pixels, &whitePixel, surface.format.BytesPerPixel);
+  auto whitePixel = SDL_MapRGBA(SDL_GetPixelFormatDetails(surface.format), null, 255, 255, 255, 255);
+  memcpy(surface.pixels, &whitePixel, SDL_GetPixelFormatDetails(surface.format).bits_per_pixel);
   if(SDL_MUSTLOCK(surface)) SDL_UnlockSurface(surface);
   return surface;
 }
@@ -167,7 +164,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
     vkUnmapMemory(app.device, stagingBufferMemory);
     vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
     vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-    SDL_FreeSurface(texture.surface);
+    SDL_DestroySurface(texture.surface);
   });
 }
 

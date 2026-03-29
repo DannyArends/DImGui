@@ -125,7 +125,7 @@ void handleEvents(ref App app) {
   if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
-    if(app.isImGuiInitialized) ImGui_ImplSDL2_ProcessEvent(&e);
+    if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
     if(e.type == SDL_EVENT_QUIT) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
     if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.isMinimized = false; }
@@ -195,7 +195,7 @@ void handleApp(ref App app, const SDL_Event e) {
     SDL_Log("Shutdown ImGui");
     app.isImGuiInitialized = false;
     ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
     igDestroyContext(null);
 
     SDL_Log("Destroy swapChain and Surface");
