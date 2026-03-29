@@ -12,7 +12,6 @@ import validation : nameVulkanObject;
 struct Sync {
   VkSemaphore computeComplete;
   VkSemaphore imageAcquired;
-  VkSemaphore renderComplete;
 }
 
 struct Fence {
@@ -25,16 +24,19 @@ struct Fence {
 void createSyncObjects(ref App app) {
   app.sync.length = app.framesInFlight;
   app.fences.length = app.framesInFlight;
+  app.renderComplete.length = app.imageCount;
   if(app.verbose) SDL_Log("createSyncObjects: Semaphores:%d, Fences: %d", app.sync.length, app.fences.length);
 
   VkSemaphoreCreateInfo semaphoreInfo = { sType: VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+  for (size_t i = 0; i < app.imageCount; i++) {
+    enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.renderComplete[i]));
+    app.nameVulkanObject(app.renderComplete[i], toStringz(format("[SEMAPHORE] renderComplete #%d", i)), VK_OBJECT_TYPE_SEMAPHORE);
+  }
   for (size_t i = 0; i < app.sync.length; i++) {
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].computeComplete));
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].imageAcquired));
-    enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].renderComplete));
     app.nameVulkanObject(app.sync[i].computeComplete, toStringz(format("[SEMAPHORE] computeComplete #%d",i)), VK_OBJECT_TYPE_SEMAPHORE);
     app.nameVulkanObject(app.sync[i].imageAcquired, toStringz(format("[SEMAPHORE] imageAcquired #%d",i)), VK_OBJECT_TYPE_SEMAPHORE);
-    app.nameVulkanObject(app.sync[i].renderComplete, toStringz(format("[SEMAPHORE] renderComplete #%d",i)), VK_OBJECT_TYPE_SEMAPHORE);
   }
   if(app.verbose) SDL_Log("Done vkCreateSemaphore");
 
@@ -51,10 +53,12 @@ void createSyncObjects(ref App app) {
     for (uint i = 0; i < app.framesInFlight; i++) {
       vkDestroySemaphore(app.device, app.sync[i].computeComplete, app.allocator);
       vkDestroySemaphore(app.device, app.sync[i].imageAcquired, app.allocator);
-      vkDestroySemaphore(app.device, app.sync[i].renderComplete, app.allocator);
 
       vkDestroyFence(app.device, app.fences[i].renderInFlight, app.allocator);
       vkDestroyFence(app.device, app.fences[i].computeInFlight, app.allocator);
+    }
+    for (size_t i = 0; i < app.imageCount; i++) {
+      vkDestroySemaphore(app.device, app.renderComplete[i], app.allocator);
     }
   });
 }
