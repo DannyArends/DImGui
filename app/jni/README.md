@@ -7,7 +7,7 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-      -DASSIMP_BUILD_TESTS=OFF -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ^
+      -DASSIMP_BUILD_TESTS=OFF -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_ASSIMP_TOOLS=OFF -DASSIMP_BUILD_ZLIB=ON ^
       -DASSIMP_NO_EXPORT=ON -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF ^
       -DASSIMP_BUILD_FBX_IMPORTER=ON -DASSIMP_BUILD_3DS_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON ^
       ../
@@ -37,7 +37,7 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DSDL_SHARED=ON ^
-      -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF ^
+      -DSDL_TESTS=OFF -DSDL_TEST_LIBRARY=OFF -DSDL_EXAMPLES=OFF ^
       ../
 cmake --build . --config Release -j10
 cmake --install . --prefix ./install
@@ -52,6 +52,9 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
       -DSDL3_DIR="%CD%/../../SDL/build" ^
+      -DSDLIMAGE_AVIF=OFF -DSDLIMAGE_WEBP=OFF -DSDLIMAGE_TIF=OFF -DSDLIMAGE_XCF=OFF -DSDLIMAGE_XPM=OFF -DSDLIMAGE_XV=OFF -DSDLIMAGE_LBM=OFF ^
+      -DSDLIMAGE_PCX=OFF -DSDLIMAGE_PNM=OFF -DSDLIMAGE_QOI=OFF -DSDLIMAGE_SVG=OFF -DSDLIMAGE_TGA=OFF -DSDLIMAGE_GIF=OFF -DSDLIMAGE_ANI=OFF ^
+      -DSDLIMAGE_SAMPLES=OFF -DSDLIMAGE_TESTS=OFF ^
       ../
 cmake --build . --config Release -j10
 cd ../../../../
@@ -74,13 +77,13 @@ cd ../../../../
 ```
 Compile SDL_ttf:
 ```
-rm -rf app\jni\SDL_ttf\libtool
+rm -rf app\jni\SDL_ttf\build
 cd app/jni/SDL_ttf
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
-mkdir libtool
-cd libtool
+mkdir build
+cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-      -DSDL3_DIR="%CD%/../../SDL/build" ^
+      -DSDL3_DIR="%CD%/../../SDL/build" -DSDLTTF_SAMPLES=OFF ^
       ../
 cmake --build . --config Release -j10
 cd ../../../../
@@ -95,7 +98,8 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
       -DSHADERC_SKIP_TESTS=ON -DSHADERC_SKIP_EXAMPLES=ON -DSHADERC_ENABLE_WGSL_OUTPUT=OFF ^
-      -DSPIRV_TOOLS_BUILD_STATIC=OFF -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+      -DSPIRV_TOOLS_BUILD_STATIC=OFF -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON -DSHADERC_SKIP_COPYRIGHT_CHECK=ON ^
+      -DENABLE_GLSLANG_BINARIES=OFF ^
       ../
 cmake --build . --config Release -j10
 cd ../../../../
