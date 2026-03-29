@@ -1,5 +1,5 @@
 [submodule "deps/cimgui"]
-	path = deps/cimgui
+	path = app/jni/cimgui
 	url = https://github.com/cimgui/cimgui.git
 [submodule "app/jni/SDL2"]
 	path = app/jni/SDL2
@@ -18,11 +18,11 @@
 	url = https://github.com/libsdl-org/SDL_mixer.git
 	branch = SDL2
 [submodule "deps/shaderc"]
-	path = deps/shaderc
+	path = app/jni/shaderc
 	url = https://github.com/google/shaderc.git
 [submodule "deps/spirv-cross"]
-	path = deps/spirv_cross
+	path = app/jni/spirv_cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
 [submodule "deps/assimp"]
-	path = deps/assimp
+	path = app/jni/assimp
 	url =  https://github.com/assimp/assimp.git

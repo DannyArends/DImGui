@@ -1,21 +1,181 @@
-### SDL Folder
-
-Download and extract the SDL2 source zip-files: 
-- [SDL2](https://www.libsdl.org/download-2.0.php), 
-- [SDL2_image](https://www.libsdl.org/projects/SDL_image/), 
-- [SDL_net](https://www.libsdl.org/projects/SDL_net/), 
-- [SDL_ttf](https://www.libsdl.org/projects/SDL_ttf/), 
-- [SDL_mixer](https://www.libsdl.org/projects/SDL_mixer/)
-
-Create symlinks (e.g. using mklink for windows, or ln -s in linux) into 
-this folder and link to the extracted SDL source packages. 
-Change PATHTO to where your cloned CalderaD, and PATHSDL to where the 
-downloaded the SDL libraries are:
-
+## Compile for MS Windows 10 / 11
+Compile Open Asset Import Library (assimp):
 ```
-mklink /d "PATHTO\CalderaD\app\jni\SDL" "PATHSDL\SDL2-2.0.14"
-mklink /d "PATHTO\CalderaD\app\jni\SDL2_image" "PATHSDL\SDL2_image-2.0.5"
-mklink /d "PATHTO\CalderaD\app\jni\SDL2_net" "PATHSDL\SDL2_net-2.0.1"
-mklink /d "PATHTO\CalderaD\app\jni\SDL2_ttf" "PATHSDL\SDL2_ttf-2.0.15"
-mklink /d "PATHTO\CalderaD\app\jni\SDL2_mixer" "PATHSDL\SDL2_mixer-2.0.4"
+rd /s /q app\jni\assimp\build
+cd app/jni/assimp
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DASSIMP_BUILD_TESTS=OFF -DASSIMP_NO_EXPORT=ON -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF -DASSIMP_BUILD_FBX_IMPORTER=ON -DASSIMP_BUILD_3DS_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON ../
+cmake --build . --config Release -j10
+cd ../../../../
 ```
+Compile C-api for Dear ImGui:
+```
+rd /s /q app\jni\build
+cd app/jni/
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+mkdir build
+cd build
+cmake -DVULKAN_DIR="C:/VulkanSDK/1.4.335.0" -DSDL2_DIR="../SDL2/" ../
+cmake --build . --config Release -j10
+cd ../../../
+```
+Compile Simple DirectMedia Layer (SDL2):
+```
+rd /s /q app\jni\SDL\build
+cd app/jni/SDL2
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DSDL_SHARED=ON ../
+cmake --build . --config Release -j10
+cmake --install . --prefix ../../SDL2/install
+cd ../../../../
+```
+Compile SDL_image:
+```
+rd /s /q app\jni\SDL_image\build
+cd app/jni/SDL_image
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
+  -DCMAKE_PREFIX_PATH="%CD%/../../SDL2/build" ^
+  -DSDL2_MAIN_LIBRARY="%CD%/../../SDL2/build/SDL2main.lib" ^
+  -DSDL2_LIBRARY="%CD%/../../SDL2/build/SDL2.lib" ^
+  -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/include/" ^
+  ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
+Compile SDL_mixer:
+```
+rd /s /q app/jni/SDL_mixer/build
+cd app/jni/SDL_mixer
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
+  -DSDL2_DIR="%CD%/../../SDL2/install/cmake" ^
+  -DSDL2MAIN_LIBRARY="%CD%/../../SDL2/build/SDL2main.lib" ^
+  -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/build/include" ^
+  ..
+cmake --build . --config Release -j10
+cd ../../../../
+```
+Compile SDL_ttf:
+```
+rd /s /q app\jni\SDL_ttf\build
+cd app/jni/SDL_ttf
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
+  -DSDL2_DIR="%CD%/../../SDL2/install/cmake" ^
+  -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/include/" ^
+  ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
+Compile ShaderC:
+```
+rd /s /q app\jni\shaderc\build
+cd app/jni/shaderc
+python utils/git-sync-deps
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
+      -DSPIRV_TOOLS_BUILD_STATIC=OFF ^
+      -DSHADERC_SKIP_TESTS=ON ^
+      -DSHADERC_SKIP_EXAMPLES=ON ^
+      -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+      ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
+Compile spriv_cross:
+```
+rd /s /q app\jni\spirv_cross\build
+cd app/jni/spirv_cross
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
+      -DSPIRV_CROSS_ENABLE_TESTS=OFF ^
+      ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
+
+## Compile for Linux
+Compile Simple DirectMedia Layer (SDL3):
+```
+rm -rf app/jni/SDL/build
+cd app/jni/SDL
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DSDL_X11_XTEST=OFF -DBUILD_SHARED_LIBS=ON ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
+Compile SDL_image:
+```
+rm -rf app/jni/SDL_image/build
+cd app/jni/SDL_image
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_PREFIX_PATH=$(realpath ../../SDL/build) ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
+
+Compile Open Asset Import Library (assimp):
+```
+rm -rf app/jni/assimp/build
+cd app/jni/assimp
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_SHARED_LIBS=ON \
+      -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF \
+      -DASSIMP_BUILD_FBX_IMPORTER=ON \
+      -DASSIMP_BUILD_3DS_IMPORTER=ON \
+      -DASSIMP_BUILD_OBJ_IMPORTER=ON \
+      -DASSIMP_NO_EXPORT=ON \
+      -DASSIMP_BUILD_TESTS=OFF \
+      ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
+Compile ShaderC:
+```
+rm -rf app/jni/shaderc/build
+cd app/jni/shaderc
+python utils/git-sync-deps
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_SHARED_LIBS=ON \
+      -DSPIRV_TOOLS_BUILD_STATIC=OFF \
+      -DSHADERC_SKIP_TESTS=ON \
+      -DSHADERC_SKIP_EXAMPLES=ON \
+      -DSHADERC_SKIP_COPYRIGHT_CHECK=ON \
+      ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
+Compile C-api for Dear ImGui:
+```
+rm -rf app/jni/build
+cd app/jni/
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DVULKAN_DIR="/usr" \
+      -DSDL3_DIR="../SDL" \
+      ../
+cmake --build . --config Release -j10
+cd ../../../
+```
+
