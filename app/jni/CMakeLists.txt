@@ -40,7 +40,6 @@ if(ANDROID)
     set(ENABLE_CTEST OFF)
     add_subdirectory(shaderc shaderc_build)
 
-
     # SDL_image
     set(SDLIMAGE_AVIF OFF) 
     set(SDLIMAGE_WEBP OFF)
@@ -83,15 +82,12 @@ if(ANDROID)
 endif()
 # Options
 option(CIMGUI_STATIC     "Build as static library"  OFF)
-option(CIMGUI_USE_SDL2   "Enable SDL2 backend"      OFF)
 option(CIMGUI_USE_SDL3   "Enable SDL3 backend"      ON)
 option(CIMGUI_USE_VULKAN "Enable Vulkan backend"    ON)
 
 # Paths — override with -DVULKAN_DIR=... and -DSDL3_DIR=...
 set(VULKAN_DIR "" CACHE PATH "Vulkan SDK root (Windows: C:/VulkanSDK/x.x.x.x, Linux: /usr)")
 set(SDL3_DIR   "" CACHE PATH "SDL3 root (e.g. ../app/jni/SDL)")
-set(SDL2_DIR   "" CACHE PATH "SDL2 root (e.g. ../app/jni/SDL2)")
-
 set(IMGUI_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/cimgui/imgui)
 set(CIMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cimgui)
 
@@ -128,16 +124,6 @@ if(CIMGUI_USE_SDL3)
     endif()
     list(APPEND SOURCES  ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp)
     list(APPEND DEFINES  CIMGUI_USE_SDL3)
-endif()
-
-# SDL2 backend
-if(CIMGUI_USE_SDL2)
-    if(SDL2_DIR STREQUAL "")
-        message(FATAL_ERROR "SDL2_DIR not set — pass -DSDL2_DIR=path/to/SDL2")
-    endif()
-    list(APPEND SOURCES  ${IMGUI_DIR}/backends/imgui_impl_sdl2.cpp)
-    list(APPEND INCLUDES ${SDL2_DIR}/include)
-    list(APPEND DEFINES  CIMGUI_USE_SDL2)
 endif()
 
 # Vulkan backend
@@ -188,16 +174,6 @@ if(CIMGUI_USE_SDL3)
     else()
         target_link_directories(cimgui PRIVATE ${SDL3_DIR}/build)
         target_link_libraries(cimgui PRIVATE SDL3)
-    endif()
-endif()
-
-if(CIMGUI_USE_SDL2)
-    if(WIN32)
-        target_link_directories(cimgui PRIVATE ${SDL2_DIR}/../build/Release)
-        target_link_libraries(cimgui PRIVATE SDL2)
-    else()
-        target_link_directories(cimgui PRIVATE ${SDL2_DIR}/build)
-        target_link_libraries(cimgui PRIVATE SDL2)
     endif()
 endif()
 

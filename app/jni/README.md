@@ -22,9 +22,7 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-  -DCIMGUI_USE_SDL3=ON -DCIMGUI_USE_SDL2=OFF ^
-  -DVULKAN_DIR="C:/VulkanSDK/1.4.335.0" ^
-  -DSDL3_DIR="%CD%/../SDL3/build" ^
+  -DCIMGUI_USE_SDL3=ON -DVULKAN_DIR="C:/VulkanSDK/1.4.335.0" -DSDL3_DIR="%CD%/../SDL3/build" ^
   ../
 cmake --build . --config Release -j10
 cd ../../../
