@@ -20,14 +20,14 @@ import imgui : initializeImGui;
 /** Handle keyboard events
  */
 void handleKeyEvents(ref App app, SDL_Event e) {
-  if(e.type == SDL_KEYDOWN) {
-    auto symbol = e.key.keysym.sym;
+  if(e.type == SDL_EVENT_KEY_DOWN) {
+    auto symbol = e.key.key;
     if(symbol == SDLK_PAGEUP){ app.camera.move([ 0.0f,  1.0f, 0.0f]); }
     if(symbol == SDLK_PAGEDOWN){ app.camera.move([ 0.0f,  -1.0f, 0.0f]); }
-    if(symbol == SDLK_w || symbol == SDLK_UP){ app.camera.move(app.camera.forward()); }
-    if(symbol == SDLK_s || symbol == SDLK_DOWN){ app.camera.move(app.camera.back());  }
-    if(symbol == SDLK_a || symbol == SDLK_LEFT){ app.camera.move(app.camera.left());  }
-    if(symbol == SDLK_d || symbol == SDLK_RIGHT){ app.camera.move(app.camera.right());  }
+    if(symbol == SDLK_W || symbol == SDLK_UP){ app.camera.move(app.camera.forward()); }
+    if(symbol == SDLK_S || symbol == SDLK_DOWN){ app.camera.move(app.camera.back());  }
+    if(symbol == SDLK_A || symbol == SDLK_LEFT){ app.camera.move(app.camera.left());  }
+    if(symbol == SDLK_D || symbol == SDLK_RIGHT){ app.camera.move(app.camera.right());  }
   }
 }
 
@@ -35,22 +35,22 @@ void handleKeyEvents(ref App app, SDL_Event e) {
  */
 void handleTouchEvents(ref App app, const SDL_Event event) {
   SDL_TouchFingerEvent e = event.tfinger;
-  if(event.type == SDL_FINGERDOWN) {
-    if(e.fingerId == 0) app.camera.isdrag[0] = true;
+  if(event.type == SDL_EVENT_FINGER_DOWN) {
+    if(e.fingerID == 0) app.camera.isdrag[0] = true;
   }
-  if(event.type == SDL_FINGERUP) {
-    if(e.fingerId == 0) app.camera.isdrag[0] = false;
+  if(event.type == SDL_EVENT_FINGER_UP) {
+    if(e.fingerID == 0) app.camera.isdrag[0] = false;
     app.camera.move(app.camera.forward());
   }
-  if(event.type == SDL_FINGERMOTION) {
+  if(event.type == SDL_EVENT_FINGER_MOTION) {
     if(app.verbose){
-      SDL_Log("TouchMotion: %f %f [%f %f] by %.1f [%d]\n", e.x, e.y, e.dx * app.camera.width, e.dy * app.camera.height, e.pressure, e.fingerId);
+      SDL_Log("TouchMotion: %f %f [%f %f] by %.1f [%d]\n", e.x, e.y, e.dx * app.camera.width, e.dy * app.camera.height, e.pressure, e.fingerID);
     }
-    if(e.fingerId == 1) {
+    if(e.fingerID == 1) {
       if (e.dy > 0 && app.camera.distance  <= 30.0f) app.camera.distance += 0.2f;
       if (e.dy < 0 && app.camera.distance  >= 2.0f) app.camera.distance -= 0.2f;
     }else{
-      if(e.fingerId == 0) app.camera.drag(-e.dx * 0.5 * app.camera.width, e.dy * 0.25 * app.camera.height);
+      if(e.fingerID == 0) app.camera.drag(-e.dx * 0.5 * app.camera.width, e.dy * 0.25 * app.camera.height);
     }
   }
 }
@@ -84,13 +84,13 @@ Intersection[] getHits(ref App app, SDL_Event e, bool showRay = true){
 /** Handle mouse events
  */
 void handleMouseEvents(ref App app, SDL_Event e) {
-  if(e.type == SDL_MOUSEBUTTONDOWN){
+  if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN){
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
   }
-  if(e.type == SDL_MOUSEBUTTONUP){
+  if(e.type == SDL_EVENT_MOUSE_BUTTON_UP){
     if (e.button.button == SDL_BUTTON_LEFT) { app.camera.isdrag[0] = false; }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
     auto hits = app.getHits(e, app.showRays);
@@ -100,10 +100,10 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       app.objects[hits[0].idx].window = true;
     }
   }
-  if(e.type == SDL_MOUSEMOTION){
+  if(e.type == SDL_EVENT_MOUSE_MOTION){
     if(app.camera.isdrag[1]) app.camera.drag(e.motion.xrel, e.motion.yrel);
   }
-  if(e.type == SDL_MOUSEWHEEL){
+  if(e.type == SDL_EVENT_MOUSE_WHEEL){
     if (e.wheel.y < 0 && app.camera.distance <= 60.0f) app.camera.distance += 0.5f;
     if (e.wheel.y > 0 && app.camera.distance >=  2.0f) app.camera.distance -= 0.5f;
   }
@@ -126,12 +126,10 @@ void handleEvents(ref App app) {
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     if(app.isImGuiInitialized) ImGui_ImplSDL2_ProcessEvent(&e);
-    if(e.type == SDL_QUIT) app.finished = true;
-    if(e.type == SDL_WINDOWEVENT) { 
-      if(e.window.event == SDL_WINDOWEVENT_CLOSE && e.window.windowID == SDL_GetWindowID(app)){ app.finished = true; }
-      if(e.window.event == SDL_WINDOWEVENT_RESTORED){ app.isMinimized = false; }
-      if(e.window.event == SDL_WINDOWEVENT_MINIMIZED){ app.isMinimized = true; }
-    }
+    if(e.type == SDL_EVENT_QUIT) app.finished = true;
+    if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
+    if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.isMinimized = false; }
+    if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.isMinimized = true; }
     if(!app.gui.io.WantCaptureKeyboard) app.handleKeyEvents(e);
     if(!app.gui.io.WantCaptureMouse) app.handleMouseEvents(e);
     if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
@@ -166,12 +164,12 @@ extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
   try {
     App* app = cast(App*)(userdata);
     switch (event.type) {
-      case SDL_APP_TERMINATING: case SDL_QUIT: 
+      case SDL_EVENT_TERMINATING: case SDL_EVENT_QUIT: 
       (*app).cleanup(); exit(0); // Run cleanup and exit
       break;
-      case SDL_APP_LOWMEMORY: 
-      case SDL_APP_WILLENTERBACKGROUND: case SDL_APP_DIDENTERBACKGROUND:
-      case SDL_APP_WILLENTERFOREGROUND: case SDL_APP_DIDENTERFOREGROUND:
+      case SDL_EVENT_LOW_MEMORY:
+      case SDL_EVENT_WILL_ENTER_BACKGROUND: case SDL_EVENT_DID_ENTER_BACKGROUND:
+      case SDL_EVENT_WILL_ENTER_FOREGROUND: case SDL_EVENT_DID_ENTER_FOREGROUND:
       SDL_Log(toStringz(format("Android SDL immediate event hook: %s", event.type)));
       (*app).handleApp(*event); return(0);
 
@@ -183,7 +181,7 @@ extern(C) int sdlEventsFilter(void* userdata, SDL_Event* event) {
 
 // Immediate events to handle by the application
 void handleApp(ref App app, const SDL_Event e) { 
-  if(e.type == SDL_APP_WILLENTERBACKGROUND){ 
+  if(e.type == SDL_EVENT_WILL_ENTER_BACKGROUND){ 
     SDL_Log("Suspending.");
     SDL_Log("Wait on device idle & swapchain deletion queue");
     enforceVK(vkDeviceWaitIdle(app.device));
@@ -192,7 +190,7 @@ void handleApp(ref App app, const SDL_Event e) {
     SDL_Log("Save ImGui Settings");
     saveSettings();
   }
-  if(e.type == SDL_APP_DIDENTERBACKGROUND){ 
+  if(e.type == SDL_EVENT_DID_ENTER_BACKGROUND){ 
     SDL_Log("Completely in background."); 
     SDL_Log("Shutdown ImGui");
     app.isImGuiInitialized = false;
@@ -208,8 +206,8 @@ void handleApp(ref App app, const SDL_Event e) {
 
     app.isMinimized = true;
   }
-  if(e.type == SDL_APP_WILLENTERFOREGROUND){ SDL_Log("Resuming."); }
-  if(e.type == SDL_APP_DIDENTERFOREGROUND){ 
+  if(e.type == SDL_EVENT_WILL_ENTER_FOREGROUND){ SDL_Log("Resuming."); }
+  if(e.type == SDL_EVENT_DID_ENTER_FOREGROUND){ 
     SDL_Log("Back in foreground, recreate surface, swapchain, and imgui.");
     app.gui.fonts.length = 0;
     app.createSurface();                                          /// Create Vulkan rendering surface

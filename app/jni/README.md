@@ -26,18 +26,20 @@ cd app/jni/
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
 cd build
-cmake -DVULKAN_DIR="C:/VulkanSDK/1.4.335.0" -DSDL2_DIR="../SDL2/" ../
+cmake -DVULKAN_DIR="C:/VulkanSDK/1.4.335.0" -DSDL3_DIR="../SDL/" ../
 cmake --build . --config Release -j10
 cd ../../../
 ```
-Compile Simple DirectMedia Layer (SDL2):
+Compile Simple DirectMedia Layer (SDL3):
 ```
 rd /s /q app\jni\SDL\build
-cd app/jni/SDL2
+cd app/jni/SDL
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DSDL_SHARED=ON ../
+cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DSDL_SHARED=ON ^
+      -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF ^
+      ../
 cmake --build . --config Release -j10
 cmake --install . --prefix ./install
 cd ../../../../
@@ -50,11 +52,7 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-      -DSDL2IMAGE_SAMPLES=OFF -DSDL2IMAGE_TESTS=OFF ^
-      -DSDL2_DIR="%CD%/../../SDL2/build/install/cmake" ^
-      -DCMAKE_PREFIX_PATH="%CD%/../../SDL2/build" ^
-      -DSDL2_MAIN_LIBRARY="%CD%/../../SDL2/build/SDL2main.lib" ^
-      -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/include/" ^
+      -DSDL3_DIR="%CD%/../../SDL/build" ^
       ../
 cmake --build . --config Release -j10
 cd ../../../../
@@ -66,10 +64,8 @@ cd app/jni/SDL_mixer
 mkdir Release
 cd Release
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-      -DSDL2MIXER_SAMPLES=OFF -DSDL2MIXER_MOD=OFF ^
-      -DSDL2_DIR="%CD%/../../SDL2/build/install/cmake" ^
-      -DSDL2MAIN_LIBRARY="%CD%/../../SDL2/build/SDL2main.lib" ^
-      -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/build/include" ^
+      -DSDL3MIXER_SAMPLES=OFF -DSDL3MIXER_MOD=OFF ^
+      -DSDL3_DIR="%CD%/../../SDL/build" ^
       ../
 cmake --build . --config Release -j10
 cd ../../../../
@@ -82,10 +78,7 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir libtool
 cd libtool
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-      -DSDL2TTF_SAMPLES=OFF -DSDL2TTF_SAMPLES=OFF -DSDL2TTF_VENDORED=ON ^
-      -DSDL2_DIR="%CD%/../../SDL2/install/cmake" ^
-      -DSDL2_LIBRARY="%CD%/../../SDL2/build/SDL2.lib" ^
-      -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/include/" ^
+      -DSDL3_DIR="%CD%/../../SDL/build" ^
       ../
 cmake --build . --config Release -j10
 cd ../../../../

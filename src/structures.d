@@ -42,7 +42,7 @@ public import sdl : STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
 public import sync : Sync, Fence;
 public import ssbo : SSBO;
 public import shadow : ShadowMap;
-public import sfx : WavFMT;
+public import sfx : Audio, WavFMT;
 public import text : Text;
 public import textures : Texture, Textures;
 public import torus : Torus;

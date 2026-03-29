@@ -8,6 +8,10 @@ import engine;
 import icon : setIcon;
 import sfx : openAudio;
 
+enum SDL_WINDOW_VULKAN = 0x0000000010000000;
+enum SDL_WINDOW_RESIZABLE = 0x0000000000000020;
+enum SDL_WINDOW_HIGH_PIXEL_DENSITY = 0x0000000000002000;
+
 /** Check for SDL Errors
  */
 void checkSDLError() {
@@ -30,33 +34,33 @@ enum { START = 0, STARTUP = 1, FRAMESTART = 2, FRAMESTOP = 3, LASTTICK = 4 };
 App initializeSDL() {
   int[4] init;
   App app;
-  SDL_version linked;
+  int  linked;
 
   // Initialize the SDL library for video
   init[MAIN] = SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS);
   app.time[START] = SDL_GetTicks();
 
-  version(Android) { }else{ SDL_LogSetOutputFunction(&myLogFn, null); }
+  version(Android) { }else{ SDL_SetLogOutputFunction(&myLogFn, null); }
 
   // Make sure we know all versions (compiled and linked)
-  SDL_GetVersion(&linked);
-  if(app.verbose) SDL_Log("SDL[C] v%u.%u.%u", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
-  if(app.verbose) SDL_Log("SDL[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+  linked = SDL_GetVersion();
+  if(app.verbose) SDL_Log("SDL[C] v%u.%u.%u", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
+  if(app.verbose) SDL_Log("SDL[L] v%u.%u.%u", SDL_VERSIONNUM_MAJOR(linked), SDL_VERSIONNUM_MINOR(linked), SDL_VERSIONNUM_MICRO(linked));
 
   init[TTF] = TTF_Init(); checkSDLError();
-  linked = *TTF_Linked_Version();
-  if(app.verbose) SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_PATCHLEVEL);
-  if(app.verbose) SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+  linked = TTF_Version();
+  if(app.verbose) SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_MICRO_VERSION);
+  if(app.verbose) SDL_Log("TTF[L] v%u.%u.%u", SDL_VERSIONNUM_MAJOR(linked), SDL_VERSIONNUM_MINOR(linked), SDL_VERSIONNUM_MICRO(linked));
 
-  init[IMG] = IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF); checkSDLError();
-  linked = *IMG_Linked_Version();
-  if(app.verbose) SDL_Log("TTF[C] v%u.%u.%u", SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_PATCHLEVEL);
-  if(app.verbose) SDL_Log("TTF[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+  init[IMG] = IMG_Version();
+  linked = IMG_Version();
+  if(app.verbose) SDL_Log("TTF[C] v%u.%u.%u", SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_MICRO_VERSION);
+  if(app.verbose) SDL_Log("TTF[L] v%u.%u.%u", SDL_VERSIONNUM_MAJOR(linked), SDL_VERSIONNUM_MINOR(linked), SDL_VERSIONNUM_MICRO(linked));
 
-  init[MIX] = Mix_Init(MIX_INIT_MP3 | MIX_INIT_OGG | MIX_INIT_MID); checkSDLError();
-  linked = *Mix_Linked_Version();
-  if(app.verbose) SDL_Log("MIX[C] v%u.%u.%u", SDL_MIXER_MAJOR_VERSION, SDL_MIXER_MINOR_VERSION, SDL_MIXER_PATCHLEVEL);
-  if(app.verbose) SDL_Log("MIX[L] v%u.%u.%u", linked.major, linked.minor, linked.patch);
+  init[MIX] = MIX_Init(); checkSDLError();
+  linked = MIX_Version();
+  if(app.verbose) SDL_Log("MIX[C] v%u.%u.%u", SDL_MIXER_MAJOR_VERSION, SDL_MIXER_MINOR_VERSION, SDL_MIXER_MICRO_VERSION);
+  if(app.verbose) SDL_Log("MIX[L] v%u.%u.%u", SDL_VERSIONNUM_MAJOR(linked), SDL_VERSIONNUM_MINOR(linked), SDL_VERSIONNUM_MICRO(linked));
 
   // Log all SDL library return codes
   if(app.verbose) SDL_Log("INIT: [%d,%d,%d,%d]", init[MAIN], init[TTF], init[IMG], init[MIX]);
@@ -65,8 +69,8 @@ App initializeSDL() {
   openAudio();
 
   // Create SDL Window
-  SDL_WindowFlags window_flags = cast(SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-  app.window = SDL_CreateWindow(app.applicationName, SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), SDL_WINDOWPOS_UNDEFINED_DISPLAY(0), 1280, 720, window_flags);
+  SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+  app.window = SDL_CreateWindow(app.applicationName, 1280, 720, window_flags);  
   if(app.verbose) SDL_Log("SDL_CreateWindow: %p", app.window);
 
   if(!app.window) {

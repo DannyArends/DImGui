@@ -3,33 +3,23 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 #undef __SIZEOF_INT128__
-#define SDLCALL
-#define DECLSPEC
-#define SDL_INIT_TIMER  0x00000001u
-#define SDL_INIT_AUDIO  0x00000010u
-#define SDL_INIT_VIDEO  0x00000020u
-#define SDL_INIT_EVENTS 0x00004000u
 
-#define SDL_INIT_GAMECONTROLLER 0x00002000u
-extern DECLSPEC int SDLCALL SDL_Init(Uint32 flags);
-extern DECLSPEC void SDLCALL SDL_Quit(void);
+#if defined(__ANDROID__)
+  #define __ADDR_BND_PKEY_PAD 8
+  #include <jni.h>
+#endif
 
-#include <SDL_audio.h>
-#include <SDL_events.h>
-#include <SDL_video.h>
-#include <SDL_log.h>
-#include <SDL_render.h>
-#include <SDL_system.h>
-#include <SDL_timer.h>
-#include <SDL_version.h>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_video.h>
+#include <SDL3/SDL_vulkan.h>
+#include <SDL3_image/SDL_image.h>
 
 #define SDL_h_
 #undef SDL_DEPRECATED
 #define SDL_DEPRECATED
-#include <SDL_ttf.h>
-#include <SDL_image.h>
-#include <SDL_mixer.h>
+#include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3_image/SDL_image.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include <vulkan/vulkan.h>
 #include <shaderc/shaderc.h>

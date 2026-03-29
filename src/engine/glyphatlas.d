@@ -96,9 +96,9 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', ui
   dchar c = '\U00000000';
   glyphatlas.width = (width > max_width)? max_width : width;
   while (c <= to) {
-    if (isValidDchar(c) && TTF_GlyphIsProvided(glyphatlas.ttf, cast(ushort)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
+    if (isValidDchar(c) && TTF_FontHasGlyph(glyphatlas.ttf, cast(ushort)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
       Glyph glyph = Glyph();
-      TTF_GlyphMetrics(glyphatlas.ttf, cast(ushort)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
+      TTF_GetGlyphMetrics(glyphatlas.ttf, cast(ushort)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
       if (atlasloc + glyph.advance >= glyphatlas.width) {
         atlas ~= cast(ushort)('\n');
         i = 0;
@@ -117,10 +117,10 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', ui
     c++;
   }
   SDL_Log("%d unicode glyphs (%d unique ones)\n", atlas.length, glyphatlas.glyphs.length);
-  SDL_Log("FontAscent: %d\n", TTF_FontAscent(glyphatlas.ttf));
+  SDL_Log("FontAscent: %d\n", TTF_GetFontAscent(glyphatlas.ttf));
   SDL_Log("FontAdvance: %d\n", glyphatlas.advance);
   glyphatlas.pointsize = glyphatlas.pointsize;
-  glyphatlas.ascent = TTF_FontAscent(glyphatlas.ttf);
+  glyphatlas.ascent = TTF_GetFontAscent(glyphatlas.ttf);
 
   auto time = (MonoTime.currTime - sT).total!"msecs"();  // Update the current time
   if(verbose) {
@@ -132,7 +132,7 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', ui
 /** Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray */
 void createFontTexture(ref App app) {
   if(app.verbose) SDL_Log("createFontTexture");
-  auto surface = TTF_RenderUNICODE_Blended_Wrapped(app.glyphAtlas.ttf, &app.glyphAtlas.atlas[0], SDL_Color(255, 255, 255, 255), app.glyphAtlas.width);
+  auto surface = TTF_RenderText_Blended_Wrapped(app.glyphAtlas.ttf, &app.glyphAtlas.atlas[0], SDL_Color(255, 255, 255, 255), app.glyphAtlas.width);
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (surface.format.BitsPerPixel / 8));
   if(surface.format.BitsPerPixel != 32) surface.toRGBA();
 

@@ -5,16 +5,16 @@
 
 import engine;
 
-size_t fread(SDL_RWops* fp, void* buffer, size_t n, size_t size) { return(SDL_RWread(fp, buffer, n, size)); }
-size_t fwrite(SDL_RWops* fp, void* buffer, size_t n, size_t size) { return(SDL_RWwrite(fp, buffer, n, size)); }
-ulong tell(SDL_RWops* fp){ return(SDL_RWtell(fp)); }
-ulong seek(SDL_RWops* fp, int offset, int whence){ return(SDL_RWseek(fp, offset, whence)); }
+size_t fread(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_ReadIO(fp, buffer, n * size)); }
+size_t fwrite(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_WriteIO(fp, buffer, n * size)); }
+ulong tell(SDL_IOStream* fp){ return(SDL_TellIO(fp)); }
+ulong seek(SDL_IOStream* fp, int offset, SDL_IOWhence whence){ return(SDL_SeekIO(fp, offset, whence)); }
 ulong fsize(const(char)* path){
   path = fixPath(path);
-  SDL_RWops* fp = SDL_RWFromFile(path, "rb");
+  SDL_IOStream* fp = SDL_IOFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return 0; }
-  uint size = cast(uint)SDL_RWsize(fp);
-  SDL_RWclose(fp);
+  uint size = cast(uint)SDL_GetIOSize(fp);
+  SDL_CloseIO(fp);
   return(size);
 }
 
@@ -29,11 +29,11 @@ const(char)* fixPath(const(char)* path){
  */
 char[] readFile(const(char)* path, uint verbose = 0) {
   path = fixPath(path);
-  SDL_RWops* fp = SDL_RWFromFile(path, "rb");
+  SDL_IOStream* fp = SDL_IOFromFile(path, "rb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
 
   char[] content;
-  content.length = cast(size_t)SDL_RWsize(fp);
+  content.length = cast(size_t)SDL_GetIOSize(fp);
 
   size_t readTotal = 0, nRead = 1;
   char* buffer = &content[0];
@@ -42,7 +42,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
     readTotal += nRead;
     buffer += nRead;
   }
-  SDL_RWclose(fp);
+  SDL_CloseIO(fp);
 
   if(readTotal != content.length) SDL_Log("[ERROR] read %db, expected %db\n", readTotal, content.length);
   if(verbose) SDL_Log("readFile: loaded %d bytes\n", readTotal);
@@ -55,7 +55,7 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   version (Android) {
     path = toStringz(format("%s/%s", fromStringz(SDL_AndroidGetInternalStoragePath()), fromStringz(path)));
    }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
-  SDL_RWops* fp = SDL_RWFromFile(path, "w");
+  SDL_IOStream* fp = SDL_IOFromFile(path, "w");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
 
   size_t writeTotal = 0, nWrite = 1;
@@ -65,7 +65,7 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
     writeTotal += nWrite;
     buffer += nWrite;
   }
-  SDL_RWclose(fp);
+  SDL_CloseIO(fp);
 
   if(writeTotal != content.length) SDL_Log("[ERROR] write %db, expected %db\n", writeTotal, content.length);
   if(verbose) SDL_Log("writeFile: wrote %d bytes\n", writeTotal);
