@@ -6,7 +6,16 @@ cd app/jni/assimp
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DASSIMP_BUILD_TESTS=OFF -DASSIMP_NO_EXPORT=ON -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF -DASSIMP_BUILD_FBX_IMPORTER=ON -DASSIMP_BUILD_3DS_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON ../
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
+      -DASSIMP_BUILD_TESTS=OFF ^
+      -DASSIMP_INSTALL=OFF ^
+      -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ^
+      -DASSIMP_NO_EXPORT=ON ^
+      -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF ^
+      -DASSIMP_BUILD_FBX_IMPORTER=ON ^
+      -DASSIMP_BUILD_3DS_IMPORTER=ON ^
+      -DASSIMP_BUILD_OBJ_IMPORTER=ON ^
+      ../
 cmake --build . --config Release -j10
 cd ../../../../
 ```
@@ -30,7 +39,7 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DSDL_SHARED=ON ../
 cmake --build . --config Release -j10
-cmake --install . --prefix ../../SDL2/install
+cmake --install . --prefix ./install
 cd ../../../../
 ```
 Compile SDL_image:
@@ -41,11 +50,12 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-  -DCMAKE_PREFIX_PATH="%CD%/../../SDL2/build" ^
-  -DSDL2_MAIN_LIBRARY="%CD%/../../SDL2/build/SDL2main.lib" ^
-  -DSDL2_LIBRARY="%CD%/../../SDL2/build/SDL2.lib" ^
-  -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/include/" ^
-  ../
+      -DSDL2IMAGE_SAMPLES=OFF -DSDL2IMAGE_TESTS=OFF ^
+      -DSDL2_DIR="%CD%/../../SDL2/build/install/cmake" ^
+      -DCMAKE_PREFIX_PATH="%CD%/../../SDL2/build" ^
+      -DSDL2_MAIN_LIBRARY="%CD%/../../SDL2/build/SDL2main.lib" ^
+      -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/include/" ^
+      ../
 cmake --build . --config Release -j10
 cd ../../../../
 ```
@@ -56,10 +66,11 @@ cd app/jni/SDL_mixer
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-  -DSDL2_DIR="%CD%/../../SDL2/install/cmake" ^
-  -DSDL2MAIN_LIBRARY="%CD%/../../SDL2/build/SDL2main.lib" ^
-  -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/build/include" ^
-  ..
+      -DSDL2MIXER_SAMPLES=OFF -DSDL2MIXER_MOD=OFF ^
+      -DSDL2_DIR="%CD%/../../SDL2/build/install/cmake" ^
+      -DSDL2MAIN_LIBRARY="%CD%/../../SDL2/build/SDL2main.lib" ^
+      -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/build/include" ^
+      ../
 cmake --build . --config Release -j10
 cd ../../../../
 ```
@@ -71,9 +82,11 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-  -DSDL2_DIR="%CD%/../../SDL2/install/cmake" ^
-  -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/include/" ^
-  ../
+      -DSDL2TTF_SAMPLES=OFF -DSDL2TTF_SAMPLES=OFF -DSDL2TTF_VENDORED=ON ^
+      -DSDL2_DIR="%CD%/../../SDL2/install/cmake" ^
+      -DSDL2_LIBRARY="%CD%/../../SDL2/build/SDL2.lib" ^
+      -DSDL2_INCLUDE_DIR="%CD%/../../SDL2/include/" ^
+      ../
 cmake --build . --config Release -j10
 cd ../../../../
 ```
@@ -86,10 +99,8 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-      -DSPIRV_TOOLS_BUILD_STATIC=OFF ^
-      -DSHADERC_SKIP_TESTS=ON ^
-      -DSHADERC_SKIP_EXAMPLES=ON ^
-      -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+      -DSHADERC_SKIP_TESTS=ON -DSHADERC_SKIP_EXAMPLES=ON -DSHADERC_ENABLE_WGSL_OUTPUT=OFF ^
+      -DSPIRV_TOOLS_BUILD_STATIC=OFF -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
       ../
 cmake --build . --config Release -j10
 cd ../../../../
@@ -102,7 +113,7 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliar
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-      -DSPIRV_CROSS_ENABLE_TESTS=OFF ^
+      -DSPIRV_CROSS_ENABLE_TESTS=OFF -DSPIRV_CROSS_CLI=OFF -DSPIRV_CROSS_ENABLE_MSL=OFF ^
       ../
 cmake --build . --config Release -j10
 cd ../../../../
