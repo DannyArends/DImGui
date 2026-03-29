@@ -85,8 +85,11 @@ void loadSettings(const(char)* path = "imgui.ini") {
 
 /** FontAwesome icon as const(char)*
  */
-const(char)* faIcon(string s = ICON_FA_SEARCH){ return(toStringz(format("%s", s))); }
-
+version(Android){
+  const(char)* faIcon(string s = ICON_FA_SEARCH){ return(toStringz(format("%s", s))); }
+}else{
+  const(char)* faIcon(char[] s = ICON_FA_SEARCH){ return(toStringz(format("%s", s))); }
+}
 /** Code to initialize the ImGui backend
  */
 void initializeImGui(ref App app){
