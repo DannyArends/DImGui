@@ -16,7 +16,7 @@ if(ANDROID)
     set(SPIRV_CROSS_ENABLE_TESTS OFF)
     set(SPIRV_CROSS_CLI OFF)
     set(SPIRV_CROSS_ENABLE_MSL OFF)
-    set(SPIRV_CROSS_SHARED ON)
+    set(SPIRV_CROSS_SHARED ON CACHE BOOL "" FORCE)
     add_subdirectory(spirv_cross spirv_cross_build)
 
     # assimp
