@@ -20,6 +20,12 @@ struct Mesh {
   int oid = -1;               /// Mesh OPACITY ID
 }
 
+void logMesh(uint i, ref const Mesh m, const(char)* prefix = "meshInfo") {
+  SDL_Log("%s[%d] v=[%d,%d] mid=%d tid=%d nid=%d oid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid, m.tid, m.nid, m.oid);
+}
+
+void printMeshInfo(const App app) { if(!app.verbose){ return; } foreach(i, ref m; app.meshInfo) logMesh(cast(uint)i, m); }
+
 void updateMeshInfo(ref App app) {
   app.meshInfo.length = 0;
   bool needsUpdate = true;
@@ -33,9 +39,7 @@ void updateMeshInfo(ref App app) {
       }
     }
     app.meshInfo ~= app.objects[o].meshes.array;
-    foreach(ref m; app.objects[o].meshes.array) {
-      if(m.tid > 0 || m.nid > 0 || m.oid > 0) SDL_Log("updateMeshInfo: object[%d] tid=%d nid=%d oid=%d mid=%d", cast(int)o, m.tid, m.nid, m.oid, m.mid);
-    }
+    app.printMeshInfo();
   }
   if(needsUpdate) app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
 }
