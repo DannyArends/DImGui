@@ -100,7 +100,7 @@ void checkAsync(ref App app) {
     VkResult result = vkGetFenceStatus(app.device, app.textures.cmdBuffer.fence);
     if (result == VK_SUCCESS) {
       app.textures.transfer = false;
-      app.mapTextures();
+      //app.mapTextures();
     }
   }
 }

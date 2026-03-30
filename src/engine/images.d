@@ -38,27 +38,6 @@ void createColorResources(ref App app) {
   app.createHDRImage(app.resolvedHDR, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 }
 
-/** writeHDRSampler
- */
-void writeHDRSampler(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
-  imageInfos ~= VkDescriptorImageInfo(
-    imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    imageView: app.resolvedHDR.view,
-    sampler: app.sampler
-  );
-
-  VkWriteDescriptorSet set = {
-    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-    dstSet: dst,
-    dstBinding: descriptor.binding,
-    dstArrayElement: 0,
-    descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    descriptorCount: cast(uint)1,
-    pImageInfo: &imageInfos[($-1)]
-  };
-  write ~= set;
-}
-
 /** Create & bind an Image on GPU backed with memory
  */
 void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceMemory* imageMemory, 

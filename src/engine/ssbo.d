@@ -37,6 +37,7 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     vkMapMemory(app.device, app.buffers[descriptor.base].memory[i], 0, descriptor.size, 0, &app.buffers[descriptor.base].data[i]);
+    if(app.trace) SDL_Log("createSSBO: %s, nObjects=%d, size=%d", toStringz(descriptor.base), nObjects, descriptor.size);
     app.buffers[descriptor.base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[descriptor.base], descriptor.base);
@@ -47,25 +48,11 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
   });
 }
 
-void writeSSBO(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, ref VkDescriptorBufferInfo[] bufferInfos, uint syncIndex = 0){
-  if(app.verbose) SDL_Log("writeSSBO %s = %d (%d x %d)", toStringz(descriptor.base), descriptor.size, descriptor.bytes, descriptor.nObjects);
-  bufferInfos ~= VkDescriptorBufferInfo(app.buffers[descriptor.base].buffers[syncIndex], 0, descriptor.size);
-  VkWriteDescriptorSet set = {
-    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-    dstSet: dst[syncIndex],
-    dstBinding: descriptor.binding,
-    dstArrayElement: 0,
-    descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-    descriptorCount: 1,
-    pBufferInfo: &bufferInfos[($-1)]
-  };
-  write ~= set;
-}
-
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * objects.length);
   if(size == 0) return;
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
+  if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)objects.length);
   memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);
   app.buffers[descriptor.base].dirty[syncIndex] = false; // TODO: enable dirty
 }

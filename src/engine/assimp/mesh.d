@@ -13,12 +13,18 @@ import vector : euclidean,x,y,z;
 import vertex : Vertex, INSTANCE;
 
 struct Mesh {
-  align(16) int[2] vertices;  /// Start .. End positions in Geometry.vertices array
+  int[2] vertices;  /// Start .. End positions in Geometry.vertices array
   int mid = -1;               /// Mesh Material ID
   int tid = -1;               /// Mesh DIFFUSE ID
   int nid = -1;               /// Mesh NORMALS ID
   int oid = -1;               /// Mesh OPACITY ID
 }
+
+void logMesh(uint i, ref const Mesh m, const(char)* prefix = "meshInfo") {
+  SDL_Log("%s[%d] v=[%d,%d] mid=%d tid=%d nid=%d oid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid, m.tid, m.nid, m.oid);
+}
+
+void printMeshInfo(const App app) { if(!app.verbose){ return; } foreach(i, ref m; app.meshInfo) logMesh(cast(uint)i, m); }
 
 void updateMeshInfo(ref App app) {
   app.meshInfo.length = 0;
@@ -33,6 +39,7 @@ void updateMeshInfo(ref App app) {
       }
     }
     app.meshInfo ~= app.objects[o].meshes.array;
+    app.printMeshInfo();
   }
   if(needsUpdate) app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
 }
