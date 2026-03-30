@@ -52,6 +52,7 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     runtimeDescriptorArray : VK_TRUE,
     shaderSampledImageArrayNonUniformIndexing : VK_TRUE,
     shaderStorageBufferArrayNonUniformIndexing : VK_TRUE,
+    descriptorBindingPartiallyBound : VK_TRUE,
     pNext : null
   };
 
