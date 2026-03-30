@@ -34,6 +34,7 @@ gradle/
 app/build/
 
 build/
+bin/
 
 gradlew
 gradlew.bat
