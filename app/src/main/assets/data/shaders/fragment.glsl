@@ -30,12 +30,12 @@ layout(location = 0) out vec4 outColor;
 void main() {
   vec3 baseColor = fragColor.rgb;
   if(meshSSBO.meshes[fragMesh].oid >= 0) { // We have an opacity texture
-    float alpha = texture(texureSampler[meshSSBO.meshes[fragMesh].oid], fragTexCoord).a;
+    float alpha = texture(textureSampler[meshSSBO.meshes[fragMesh].oid], fragTexCoord).a;
     if(alpha < 0.2f) discard;
   }
 
   if(meshSSBO.meshes[fragMesh].tid >= 0){ // Modify by the texture
-    vec4 texSample = texture(texureSampler[meshSSBO.meshes[fragMesh].tid], fragTexCoord).rgba;
+    vec4 texSample = texture(textureSampler[meshSSBO.meshes[fragMesh].tid], fragTexCoord).rgba;
     if(texSample.a < 0.2f) discard;
     baseColor = baseColor * pow(texSample, vec4(2.2)).rgb;
   }

@@ -80,7 +80,7 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal) {
 }
 
 vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
-  vec3 normalFromMap = texture(texureSampler[fragNid], fragTexCoord).rgb;
+  vec3 normalFromMap = texture(textureSampler[fragNid], fragTexCoord).rgb;
   normalFromMap = normalize(normalFromMap * 2.0 - 1.0);
   normalFromMap = vec3(normalFromMap.xy * 2.0f, normalFromMap.z);
 

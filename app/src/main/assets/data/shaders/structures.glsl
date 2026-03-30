@@ -53,7 +53,7 @@ layout (std140, set = 0, binding = BINDING_BONES_SSBO) readonly buffer BoneMatri
 } boneSSBO;
 
 /// Samplers/Images
-layout(binding = BINDING_TEXTURES) uniform sampler2D texureSampler[];
+layout(binding = BINDING_TEXTURES) uniform sampler2D textureSampler[];
 layout(binding = BINDING_SHADOWMAP) uniform sampler2DShadow shadowMap[];
 
 #endif // STRUCTURES_GLSL

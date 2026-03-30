@@ -201,7 +201,7 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
       if(app.trace) SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", shader.descriptors[d].binding, shader.descriptors[d])));
       // Image sampler write
       if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-        if(shader.descriptors[d].name == "texureSampler") {
+        if(shader.descriptors[d].name == "textureSampler") {
           app.writeTextureSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
         }
         if(shader.descriptors[d].name == "shadowMap"){
