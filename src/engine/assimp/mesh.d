@@ -13,7 +13,7 @@ import vector : euclidean,x,y,z;
 import vertex : Vertex, INSTANCE;
 
 struct Mesh {
-  align(16) int[2] vertices;  /// Start .. End positions in Geometry.vertices array
+  int[2] vertices;  /// Start .. End positions in Geometry.vertices array
   int mid = -1;               /// Mesh Material ID
   int tid = -1;               /// Mesh DIFFUSE ID
   int nid = -1;               /// Mesh NORMALS ID
@@ -33,6 +33,9 @@ void updateMeshInfo(ref App app) {
       }
     }
     app.meshInfo ~= app.objects[o].meshes.array;
+    foreach(ref m; app.objects[o].meshes.array) {
+      if(m.tid > 0 || m.nid > 0 || m.oid > 0) SDL_Log("updateMeshInfo: object[%d] tid=%d nid=%d oid=%d mid=%d", cast(int)o, m.tid, m.nid, m.oid, m.mid);
+    }
   }
   if(needsUpdate) app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
 }

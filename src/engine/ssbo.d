@@ -37,6 +37,7 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     vkMapMemory(app.device, app.buffers[descriptor.base].memory[i], 0, descriptor.size, 0, &app.buffers[descriptor.base].data[i]);
+    SDL_Log("createSSBO: %s, nObjects=%d, size=%d", toStringz(descriptor.base), nObjects, descriptor.size);
     app.buffers[descriptor.base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[descriptor.base], descriptor.base);
@@ -66,6 +67,7 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descript
   uint size = cast(uint)(T.sizeof * objects.length);
   if(size == 0) return;
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
+  SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)objects.length);
   memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);
   app.buffers[descriptor.base].dirty[syncIndex] = false; // TODO: enable dirty
 }
