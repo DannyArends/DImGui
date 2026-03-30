@@ -48,21 +48,6 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
   });
 }
 
-void writeSSBO(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet[] dst, ref VkDescriptorBufferInfo[] bufferInfos, uint syncIndex = 0){
-  if(app.verbose) SDL_Log("writeSSBO %s = %d (%d x %d)", toStringz(descriptor.base), descriptor.size, descriptor.bytes, descriptor.nObjects);
-  bufferInfos ~= VkDescriptorBufferInfo(app.buffers[descriptor.base].buffers[syncIndex], 0, descriptor.size);
-  VkWriteDescriptorSet set = {
-    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-    dstSet: dst[syncIndex],
-    dstBinding: descriptor.binding,
-    dstArrayElement: 0,
-    descriptorType: VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-    descriptorCount: 1,
-    pBufferInfo: &bufferInfos[($-1)]
-  };
-  write ~= set;
-}
-
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * objects.length);
   if(size == 0) return;

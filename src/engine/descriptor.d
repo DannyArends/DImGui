@@ -5,20 +5,18 @@
 
 import engine;
 
-import compute : writeComputeImage;
-import images : writeHDRSampler;
 import lights : updateLighting;
-import sampler : writeTextureSampler;
-import shadow : writeShadowMap;
-import ssbo : writeSSBO, updateSSBO;
+import ssbo : updateSSBO;
 import textures : idx;
-import uniforms : writeUniformBuffer;
 import validation : nameVulkanObject;
+
+enum DescriptorTarget { None, Textures, Shadow, HDR, Compute }
 
 struct Descriptor {
   VkDescriptorType type;    /// Type of Descriptor
-  string name;        /// Name
-  string base;        /// Base / Struct Name
+  string name;              /// Name
+  string base;              /// Base / Struct Name
+  DescriptorTarget target;  /// Image target (resolved at load time, avoids per-frame string dispatch)
   size_t bytes;             /// Size  of the structure
   size_t nObjects;          /// Number of objects stored
 
@@ -200,6 +198,71 @@ void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER
   });
 }
 
+/** Helper to assemble a VkWriteDescriptorSet
+ */
+VkWriteDescriptorSet makeWrite(VkDescriptorSet dst, uint binding, VkDescriptorType type,
+                               VkDescriptorImageInfo* img, VkDescriptorBufferInfo* buf) {
+  VkWriteDescriptorSet set = {
+    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+    dstSet: dst, dstBinding: binding, dstArrayElement: 0,
+    descriptorType: type, descriptorCount: 1,
+    pImageInfo: img, pBufferInfo: buf
+  };
+  return set;
+}
+
+/** Populate imageInfos for a given descriptor target
+ */
+void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descriptor d) {
+  final switch(d.target) {
+    case DescriptorTarget.Textures:
+      if(app.trace) SDL_Log("writeImageInfos(Textures): syncIndex=%d writing %d textures to binding=%d", app.syncIndex, cast(uint)app.textures.length, d.binding);
+      foreach(ref t; app.textures.textures)
+        imageInfos ~= VkDescriptorImageInfo(imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageView: t.view, sampler: app.sampler);
+      break;
+    case DescriptorTarget.Shadow:
+      if(app.verbose) SDL_Log("writeImageInfos(Shadow)");
+      foreach(i; 0 .. app.lights.length)
+        imageInfos ~= VkDescriptorImageInfo(imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageView: app.shadows.images[i].view, sampler: app.sampler);
+      break;
+    case DescriptorTarget.HDR:
+      imageInfos ~= VkDescriptorImageInfo(imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageView: app.resolvedHDR.view, sampler: app.sampler);
+      break;
+    case DescriptorTarget.Compute:
+      imageInfos ~= VkDescriptorImageInfo(imageView: app.textures[app.textures.idx(d.name)].view, imageLayout: VK_IMAGE_LAYOUT_GENERAL);
+      break;
+    case DescriptorTarget.None: break;
+  }
+}
+
+/** Write a single descriptor (buffer or image) into the write + info arrays
+ */
+void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write,
+                     ref VkDescriptorBufferInfo[] bufferInfos,
+                     ref VkDescriptorImageInfo[] imageInfos,
+                     Descriptor d, VkDescriptorSet dst, uint syncIndex) {
+  size_t start = imageInfos.length;
+  // SSBO Buffer Write
+  if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+    if(app.verbose) SDL_Log("writeDescriptor SSBO %s = %d (%d x %d)", toStringz(d.base), d.size, d.bytes, d.nObjects);
+    bufferInfos ~= VkDescriptorBufferInfo(app.buffers[d.base].buffers[syncIndex], 0, d.size);
+    write ~= makeWrite(dst, d.binding, d.type, null, &bufferInfos[$-1]);
+  }
+  // Uniform Buffer Write
+  if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+    if(app.verbose) SDL_Log("writeDescriptor UBO[%s] #%d", toStringz(d.base), syncIndex);
+    bufferInfos ~= VkDescriptorBufferInfo(app.ubos[d.base].buffers[syncIndex], 0, d.bytes);
+    write ~= makeWrite(dst, d.binding, d.type, null, &bufferInfos[$-1]);
+  }
+  // Image sampler / Compute Stored Image Write
+  if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+    app.writeImageInfos(imageInfos, d);
+    VkWriteDescriptorSet set = makeWrite(dst, d.binding, d.type, &imageInfos[start], null);
+    set.descriptorCount = cast(uint)(imageInfos.length - start);
+    write ~= set;
+  }
+}
+
 /** Update the DescriptorSet
  */
 void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet, uint syncIndex = 0) {
@@ -208,34 +271,10 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
   VkDescriptorBufferInfo[] bufferInfos;     // Buffer information for this update
   VkDescriptorImageInfo[] imageInfos;       // Image information for this update
 
-  for(uint s = 0; s < shaders.length; s++) {
-    auto shader = shaders[s];
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(app.trace) SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", shader.descriptors[d].binding, shader.descriptors[d])));
-      // Image sampler write
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-        if(shader.descriptors[d].name == "textureSampler") {
-          app.writeTextureSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
-        }
-        if(shader.descriptors[d].name == "shadowMap"){
-          app.writeShadowMap(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
-        }
-        if(shader.descriptors[d].name == "hdrSampler"){
-          app.writeHDRSampler(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
-        }
-      }
-      // Uniform Buffer Write
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        app.writeUniformBuffer(descriptorWrites, shader.descriptors[d], dstSet, bufferInfos, syncIndex);
-      }
-      // SSBO Buffer Write
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        app.writeSSBO(descriptorWrites, shader.descriptors[d], dstSet, bufferInfos, syncIndex);
-      }
-      // Compute Stored Image
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-        app.writeComputeImage(descriptorWrites, shader.descriptors[d], dstSet[syncIndex], imageInfos);
-      }
+  foreach(shader; shaders) {
+    foreach(d; shader.descriptors) {
+      if(app.trace) SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", d.binding, d)));
+      app.writeDescriptor(descriptorWrites, bufferInfos, imageInfos, d, dstSet[syncIndex], syncIndex);
     }
   }
   vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null);
