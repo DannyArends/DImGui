@@ -14,9 +14,10 @@ enum DescriptorTarget { None, Textures, Shadow, HDR, Compute }
 
 struct Descriptor {
   VkDescriptorType type;    /// Type of Descriptor
+  DescriptorTarget target;  /// Image target (resolved at load time, avoids per-frame string dispatch)
+
   string name;              /// Name
   string base;              /// Base / Struct Name
-  DescriptorTarget target;  /// Image target (resolved at load time, avoids per-frame string dispatch)
   size_t bytes;             /// Size  of the structure
   size_t nObjects;          /// Number of objects stored
 
@@ -70,7 +71,7 @@ struct DescriptorLayoutBuilder {
   }
 };
 
-VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders){
+VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders) {
   DescriptorLayoutBuilder builder;
   foreach(shader; shaders) {
     foreach(descriptor; shader.descriptors) {
@@ -82,7 +83,7 @@ VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders){
   return(layout);
 }
 
-VkDescriptorPoolSize[] createPoolSizes(ref App app, Shader[] shaders){
+VkDescriptorPoolSize[] createPoolSizes(ref App app, Shader[] shaders) {
   VkDescriptorPoolSize[] poolSizes;
   foreach(shader; shaders) {
     foreach(descriptor; shader.descriptors) {
@@ -92,7 +93,7 @@ VkDescriptorPoolSize[] createPoolSizes(ref App app, Shader[] shaders){
   return(poolSizes);
 }
 
-void createDSPool(ref App app, string poolID, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024){
+void createDSPool(ref App app, string poolID, VkDescriptorPoolSize[] poolSizes, uint maxSets = 1024) {
   if(app.verbose) SDL_Log("Creating DescriptorPool[%s]", toStringz(poolID));
   app.pools[poolID] = VkDescriptorPool();
   VkDescriptorPoolCreateInfo createPool = {
@@ -109,7 +110,7 @@ void createDSPool(ref App app, string poolID, VkDescriptorPoolSize[] poolSizes, 
 
 /** ImGui DescriptorPool (Images)
  */
-void createImGuiDescriptorPool(ref App app){
+void createImGuiDescriptorPool(ref App app) {
   VkDescriptorPoolSize[] poolSizes = [{
     type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
     descriptorCount : 1000 ///IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
@@ -200,8 +201,7 @@ void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER
 
 /** Helper to assemble a VkWriteDescriptorSet
  */
-VkWriteDescriptorSet makeWrite(VkDescriptorSet dst, uint binding, VkDescriptorType type,
-                               VkDescriptorImageInfo* img, VkDescriptorBufferInfo* buf) {
+VkWriteDescriptorSet makeWrite(VkDescriptorSet dst, uint binding, VkDescriptorType type, VkDescriptorImageInfo* img, VkDescriptorBufferInfo* buf) {
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
     dstSet: dst, dstBinding: binding, dstArrayElement: 0,
@@ -216,20 +216,39 @@ VkWriteDescriptorSet makeWrite(VkDescriptorSet dst, uint binding, VkDescriptorTy
 void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descriptor d) {
   final switch(d.target) {
     case DescriptorTarget.Textures:
-      if(app.trace) SDL_Log("writeImageInfos(Textures): syncIndex=%d writing %d textures to binding=%d", app.syncIndex, cast(uint)app.textures.length, d.binding);
-      foreach(ref t; app.textures.textures)
-        imageInfos ~= VkDescriptorImageInfo(imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageView: t.view, sampler: app.sampler);
+      foreach(ref img; app.textures.textures) {
+        VkDescriptorImageInfo info = {
+          imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          imageView: img.view,
+          sampler: app.sampler
+        };
+        imageInfos ~= info;
+      }
       break;
     case DescriptorTarget.Shadow:
-      if(app.verbose) SDL_Log("writeImageInfos(Shadow)");
-      foreach(i; 0 .. app.lights.length)
-        imageInfos ~= VkDescriptorImageInfo(imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageView: app.shadows.images[i].view, sampler: app.sampler);
+      foreach(ref img; app.shadows.images) {
+        VkDescriptorImageInfo info = {
+          imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          imageView: img.view,
+          sampler: app.sampler
+        };
+        imageInfos ~= info;
+      }
       break;
     case DescriptorTarget.HDR:
-      imageInfos ~= VkDescriptorImageInfo(imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageView: app.resolvedHDR.view, sampler: app.sampler);
+      VkDescriptorImageInfo info = {
+        imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        imageView: app.resolvedHDR.view,
+        sampler: app.sampler
+      };
+      imageInfos ~= info;
       break;
     case DescriptorTarget.Compute:
-      imageInfos ~= VkDescriptorImageInfo(imageView: app.textures[app.textures.idx(d.name)].view, imageLayout: VK_IMAGE_LAYOUT_GENERAL);
+      VkDescriptorImageInfo info = {
+        imageLayout: VK_IMAGE_LAYOUT_GENERAL,
+        imageView: app.textures[app.textures.idx(d.name)].view,
+      };
+      imageInfos ~= info;
       break;
     case DescriptorTarget.None: break;
   }
