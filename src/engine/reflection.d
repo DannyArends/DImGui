@@ -115,7 +115,7 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
         descr.count *= spvc_type_get_array_dimension(type_handle, x);
       }
     }
-    if(!descr.count){
+    if(!descr.count) {
       descr.count = cast(uint)512;
       if(to!string(descr.name) == "shadowMap"){ descr.count = cast(uint)app.lights.length; }
       if(to!string(descr.name) == "hdrSampler"){ descr.count = 1; }
@@ -184,9 +184,9 @@ VkDescriptorType convert(spvc_resource_type type) {
   }
 }
 
-const(char)* check(string inp){ return(toStringz((inp == "")?"(none)":inp)); }
+const(char)* check(string inp) { return(toStringz((inp == "")? "(none)" : inp)); }
 
-void createReflectionContext(ref App app){
+void createReflectionContext(ref App app) {
   spvc_result result = spvc_context_create(&app.context);
   if(result != SPVC_SUCCESS) {
     SDL_Log("Failed to create SPIRV-Cross context: %s", spvc_context_get_last_error_string(app.context));
@@ -216,3 +216,4 @@ const(char)* convert(spvc_basetype basetype) {
         default: return "unhandled_basetype";
     }
 }
+
