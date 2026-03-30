@@ -231,29 +231,6 @@ void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
   if(app.trace) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
 }
 
-void writeShadowMap(App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
-  if(app.verbose) SDL_Log("writeShadowMap");
-  size_t startIndex = imageInfos.length;
-
-  for (size_t i = 0; i < app.lights.length; i++) {
-    imageInfos ~= VkDescriptorImageInfo( // Assign directly to the single info struct
-      imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-      imageView: app.shadows.images[i].view, // Use the shadow map's image view
-      sampler: app.sampler     // Use the shadow map's sampler
-    );
-  }
-  VkWriteDescriptorSet set = {
-    sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-    dstSet: dst,
-    dstBinding: descriptor.binding,
-    dstArrayElement: 0,
-    descriptorType: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    descriptorCount: cast(uint)app.lights.length,
-    pImageInfo: &imageInfos[startIndex]
-  }; 
-  write ~= set;
-}
-
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   vkResetCommandBuffer(app.shadowBuffers[syncIndex], 0); // Reset for recording
 

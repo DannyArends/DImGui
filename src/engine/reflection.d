@@ -5,7 +5,7 @@
 
 import engine;
 
-import descriptor : createDSPool;
+import descriptor : createDSPool, DescriptorTarget;
 import compute : createStorageImage, transferToSSBO;
 import ssbo : createSSBO;
 import uniforms : createUBO;
@@ -120,6 +120,13 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
       if(to!string(descr.name) == "shadowMap"){ descr.count = cast(uint)app.lights.length; }
       if(to!string(descr.name) == "hdrSampler"){ descr.count = 1; }
     }
+    // Resolve image target once at load time (avoids per-frame string dispatch in updateDescriptorSet)
+    if(descr.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+      if(to!string(descr.name) == "textureSampler")  descr.target = DescriptorTarget.Textures;
+      else if(to!string(descr.name) == "shadowMap")  descr.target = DescriptorTarget.Shadow;
+      else if(to!string(descr.name) == "hdrSampler") descr.target = DescriptorTarget.HDR;
+    }
+    if(descr.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) descr.target = DescriptorTarget.Compute;
     if (app.trace) {
       SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
               descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);
