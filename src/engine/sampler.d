@@ -42,6 +42,7 @@ void createSampler(ref App app) {
 }
 
 void writeTextureSampler(ref App app, ref VkWriteDescriptorSet[] write, Descriptor descriptor, VkDescriptorSet dst, ref VkDescriptorImageInfo[] imageInfos){
+  SDL_Log("writeTextureSampler: syncIndex=%d writing %d textures to binding=%d", app.syncIndex, cast(uint)app.textures.length, descriptor.binding);
   size_t startIndex = imageInfos.length;
 
   for (size_t i = 0; i < app.textures.length; i++) {

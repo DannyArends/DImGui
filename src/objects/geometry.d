@@ -327,6 +327,16 @@ void draw(T)(ref App app, ref T object, size_t i) {
   if(!object.isBuffered()) return;
   if(app.trace) SDL_Log("DRAW: %d instances", object.instances.length);
 
+  foreach(ref inst; object.instances) {
+    for(uint m = inst.meshdef[0]; m < inst.meshdef[1]; m++) {
+      if(m < app.meshInfo.length) {
+        auto mesh = app.meshInfo[m];
+        SDL_Log("DRAW[%s] mesh[%d] tid=%d nid=%d oid=%d textures=%d", 
+                toStringz(object.name()), m, mesh.tid, mesh.nid, mesh.oid, cast(uint)app.textures.length);
+      }
+    }
+  }
+
   VkDeviceSize[] offsets = [0];
 
   vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
