@@ -106,9 +106,7 @@ void mapTextures(ref App app){
 void mapTextures(ref App app, ref Geometry object){
   foreach (ref mesh; object.meshes) {
     if(mesh.mid < 0) continue;
-    int oldTid = mesh.tid;
     mesh.tid = app.getTexture(object, mesh.mid, aiTextureType_DIFFUSE);
-   if(mesh.tid != oldTid) SDL_Log("mapTextures: tid changed %d -> %d (textures.length=%d)", oldTid, mesh.tid, cast(uint)app.textures.length);
     mesh.nid = app.getTexture(object, mesh.mid, aiTextureType_NORMALS);
     mesh.oid = app.getTexture(object, mesh.mid, aiTextureType_OPACITY);
   }
@@ -119,8 +117,9 @@ void updateTextures(ref App app) {
   for(uint i = 0; i < app.textures.length; i++) { 
     if(app.textures[i].dirty) {
       needsUpdate = true;
-      SDL_Log("updateTextures: syncIndex=%d texture[%d].syncIndex=%d transfer=%d", app.syncIndex, i, app.textures[i].syncIndex, app.textures.transfer);
-
+      if(app.trace) {
+        SDL_Log("updateTextures: syncIndex=%d texture[%d].syncIndex=%d transfer=%d", app.syncIndex, i, app.textures[i].syncIndex, app.textures.transfer);
+      }
       if(app.textures[i].syncIndex == app.syncIndex) { // We are round, we updated all the descriptors for each Frame in Flight
         app.textures[i].dirty = false;
         app.textures[i].syncIndex = -1;
@@ -132,7 +131,7 @@ void updateTextures(ref App app) {
     }
   }
   if(needsUpdate) {
-    SDL_Log("updateTextures: updating descriptor set syncIndex=%d textures.length=%d", app.syncIndex, app.textures.length);
+    if(app.trace) SDL_Log("updateTextures: updating descriptor set syncIndex=%d textures.length=%d", app.syncIndex, app.textures.length);
     app.updateDescriptorSet(app.shaders, app.sets[Stage.RENDER], app.syncIndex);
   }
 }

@@ -46,13 +46,26 @@ struct DescriptorLayoutBuilder {
   void clear(){ bindings = []; }
 
   VkDescriptorSetLayout build(VkDevice device, VkDescriptorSetLayoutCreateFlags flags = 0, void* pNext = null){
+    VkDescriptorBindingFlags[] bindingFlags;
+    bindingFlags.length = bindings.length;
+    foreach(i, ref b; bindings) { 
+      bindingFlags[i] = (b.descriptorCount > 1) ? VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
+    }
+
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {
+      sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+      bindingCount: cast(uint)bindingFlags.length,
+      pBindingFlags: &bindingFlags[0]
+    };
+
     VkDescriptorSetLayoutCreateInfo info = {
       sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
       pBindings: &bindings[0],
       bindingCount: cast(uint)bindings.length,
       flags: flags,
-      pNext: pNext
+      pNext: &bindingFlagsInfo
     };
+
     VkDescriptorSetLayout set;
     enforceVK(vkCreateDescriptorSetLayout(device, &info, null, &set));
     return set;
