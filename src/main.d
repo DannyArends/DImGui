@@ -40,9 +40,7 @@ version (Android) {
   }
 // Other OS can just call run() directly (No known issues with garbage collection)
 } else { 
-  int main (string[] args) {
-    run(args);  return(0); 
-  }
+  int main (string[] args) { run(args); return(0); }
 }
 
 /** 
@@ -72,7 +70,7 @@ void run(string[] args = null) {
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
   app.createScene();                                            /// Create our scene with geometries
-  app.initializeAsync();
+  app.initializeAsync();                                        /// Start Async loading objects and textures
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;

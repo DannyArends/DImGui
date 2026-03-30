@@ -3,7 +3,7 @@
 
 Another 3D renderer developed in the D Programming Language, designed for cross-platform compatibility 
 across Windows, Linux, and Android. The core "engine" is inspired by the excellent vulkan-tutorial.com, 
-and leverages SDL2 for robust cross-platform support.
+and leverages SDL3 for robust cross-platform support.
 
 ### Features 🚀
 
@@ -18,8 +18,8 @@ The engine boasts the following features:
 
 ### (Cross-)Compilation ⚙️
 
-This repository includes the necessary SDL2 DLLs for x64 MS Windows, and is in itself a minimal SDL2 
-android_project for Android Studio. Building the example requires several dependencies, including SDL, 
+This repository includes the necessary SDL3 DLLs for x64 MS Windows, and is in itself a minimal SDL3 
+android_project for Android Studio. Building the example requires several dependencies, including SDL3, 
 Vulkan, ShaderC, SPIRV-Cross, and the Open Asset Import Library. To build the Android version Android 
 Studio and the Android NDK are required. The software has been tested under x64 systems (Windows and 
 Linux) and on arm64-v8a (Android 15).
@@ -34,7 +34,7 @@ DImGui is made possible by, and has dependencies on, the following excellent sof
 
 - [D Programming Language](https://dlang.org/)
 - [Android Studio](https://developer.android.com/studio)
-- [SDL2](https://www.libsdl.org/)
+- [SDL3](https://www.libsdl.org/)
 - [Shaderc](https://github.com/google/shaderc) & [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross)
 - [Dear ImGui](https://github.com/ocornut/imgui) & [cImGui api wrapper](https://github.com/cimgui/cimgui)
 - [Open Asset Import Library](https://github.com/assimp/assimp) 
@@ -45,10 +45,11 @@ The following folders are interesting, if you're interested in how the repositor
 
 - [src/](./src/) which stores the D source code 
 - [src/engine](./src/engine/) main folder for the engine objects
+- [src/engine/assimp](./src/engine/assimp/) Open Asset Import Library (assimp) folder
+- [src/engine/imgui](./src/engine/imgui/) Dear ImGui UI folder
 - [src/math](./src/math/) math functions for vectors, matrices, particles, and the L-system
 - [src/objects](./src/objects) All geometric (renderable) objects are in here
 - [assets/](./app/src/main/assets/data/) Assets used (fonts, objects, shaders, and textures)
-- [deps/](./deps/) Dependencies and Windows 64bit runtime SDL2 DLLs for image, mixer, and ttf
 
 Some noteworthy files:
 
