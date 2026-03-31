@@ -53,7 +53,7 @@ uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPr
   VkPhysicalDeviceMemoryProperties memoryProperties;
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
   for (uint i = 0; i < memoryProperties.memoryTypeCount; i++) {
-    if (typeFilter && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
+    if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
   }
   assert(0, "Failed to find suitable memory type");
 }
