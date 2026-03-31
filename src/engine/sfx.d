@@ -51,7 +51,7 @@ string[] listAudioDevices() {
 
 /** Initialize audio and open an audio channel
  */
-void openAudio(int rate = 44100, int size = 1024, bool verbose = false) {
+void openAudio(ref App app, int rate = 44100, int size = 1024, bool verbose = false) {
   Audio sfx;
   auto devices = listAudioDevices();
   MIX_Init();
@@ -59,21 +59,21 @@ void openAudio(int rate = 44100, int size = 1024, bool verbose = false) {
   spec.freq = rate;
   spec.format = SDL_AUDIO_S32LE;
   spec.channels = 2;
-  sfx.mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec);
-  if(sfx.mixer == null){ SDL_Log("Error: MIX_CreateMixerDevice failed: %s", SDL_GetError()); return; }
+  app.audio.mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec);
+  if(app.audio.mixer == null){ SDL_Log("Error: MIX_CreateMixerDevice failed: %s", SDL_GetError()); return; }
   int nDecoders = MIX_GetNumAudioDecoders();
-  sfx.chunk.length = nDecoders; // chunk/music merged in SDL3
-  sfx.music.length = 0;
-  for(int i = 0; i < nDecoders; ++i){ sfx.chunk[i] = MIX_GetAudioDecoder(i); }
+  app.audio.chunk.length = nDecoders; // chunk/music merged in SDL3
+  app.audio.music.length = 0;
+  for(int i = 0; i < nDecoders; ++i){ app.audio.chunk[i] = MIX_GetAudioDecoder(i); }
   SDL_AudioSpec actual;
-  MIX_GetMixerFormat(sfx.mixer, &actual);
-  sfx.audioRate = actual.freq;
-  sfx.audioFmt = actual.format;
-  sfx.audioChannels = actual.channels;
+  MIX_GetMixerFormat(app.audio.mixer, &actual);
+  app.audio.audioRate = actual.freq;
+  app.audio.audioFmt = actual.format;
+  app.audio.audioChannels = actual.channels;
   if(verbose) {
     SDL_Log(toStringz(format("Audio Devices: %s", devices)));
-    SDL_Log("Audio @ %d Hz, Decoders: %d", sfx.audioRate, nDecoders);
-    SDL_Log("Audio %d bit %s with %d bits audio buffer\n", sfx.bits, sfx.audioChannels > 1?"stereo".ptr:"mono".ptr, size);
+    SDL_Log("Audio @ %d Hz, Decoders: %d", app.audio.audioRate, nDecoders);
+    SDL_Log("Audio %d bit %s with %d bits audio buffer\n", app.audio.bits, app.audio.audioChannels > 1?"stereo".ptr:"mono".ptr, size);
   }
 }
 
@@ -110,7 +110,6 @@ int play(ref App app, WavFMT sfx) {
   if(!track) return(-1);
   MIX_SetTrackGain(track, sfx.gain * app.soundEffectGain);
   MIX_SetTrackAudio(track, sfx.chunk);
-  MIX_PlayTrack(track, 0);
   return(MIX_PlayTrack(track, 0) ? 0 : -1);
 }
 
