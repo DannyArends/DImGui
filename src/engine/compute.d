@@ -15,6 +15,7 @@ import ssbo : updateSSBO;
 import sync : insertWriteBarrier, insertReadBarrier;
 import textures : idx, registerTexture;
 import quaternion : xyzw;
+import uniforms : forEachUBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
 
 /** Compute structure with shaders, command buffer and pipelines
@@ -98,30 +99,15 @@ void transferToSSBO(ref App app, Descriptor descriptor) {
 }
 
 void updateComputeUBO(ref App app, uint syncIndex = 0){
-  for(uint s = 0; s < app.compute.shaders.length; s++) {
-    auto shader = app.compute.shaders[s];
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){
-        size_t now = SDL_GetTicks();
-        ParticleUniformBuffer buffer = {
-          position: app.compute.system.position.xyzw,
-          gravity: app.compute.system.gravity.xyzw,
-          floor: app.compute.system.floor,
-          deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
-        };
-        app.compute.lastTick = now;
-
-        memcpy(app.ubos[shader.descriptors[d].base].data[syncIndex], &buffer, ParticleUniformBuffer.sizeof);
-      }
-      /* Copy data off the GPU to the CPU */
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){
-        if(shader.descriptors[d].base == "currentFrame"){
-          // TODO: this needs to be smarter, we shouldn't need to download off the GPU and then upload into it
-          //  memcpy(&app.compute.system.particles[0], app.buffers[shader.descriptors[d].base].data[syncIndex], shader.descriptors[d].size);
-        }
-      }
-    }
-  }
+  size_t now = SDL_GetTicks();
+  ParticleUniformBuffer buffer = {
+    position:  app.compute.system.position.xyzw,
+    gravity:   app.compute.system.gravity.xyzw,
+    floor:     app.compute.system.floor,
+    deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
+  };
+  app.compute.lastTick = now;
+  app.compute.shaders.forEachUBO((d) { memcpy(app.ubos[d.base].data[syncIndex], &buffer, d.bytes); });
 }
 
 void createStorageImage(ref App app, Descriptor descriptor){
