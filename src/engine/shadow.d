@@ -27,6 +27,8 @@ struct ShadowMap {
   }else{
     uint dimension = 2048;                  /// Shadowmap resolution
   }
+  VkFramebuffer[] framebuffers;             /// Per-light framebuffers
+  VkCommandBuffer[] commands;               /// Command buffers
 }
 
 struct LightUbo {
@@ -226,58 +228,58 @@ void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
 }
 
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
-  vkResetCommandBuffer(app.shadowBuffers[syncIndex], 0); // Reset for recording
+  auto cmd = app.shadows.commands[syncIndex];
+  vkResetCommandBuffer(cmd, 0); // Reset for recording
 
   VkCommandBufferBeginInfo beginInfo = {
       sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       pInheritanceInfo: null
   };
-  enforceVK(vkBeginCommandBuffer(app.shadowBuffers[syncIndex], &beginInfo));
-  app.nameVulkanObject(app.shadowBuffers[syncIndex], toStringz(format("[COMMANDBUFFER] Shadow %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  enforceVK(vkBeginCommandBuffer(cmd, &beginInfo));
+  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Shadow %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
   if(app.trace) SDL_Log("Beginning shadow map render pass");
 
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
 
-  pushLabel(app.shadowBuffers[syncIndex], "SSBO Buffering", Colors.lightgray);
-  app.updateDescriptorData(app.shadows.shaders, app.shadowBuffers, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
-  popLabel(app.shadowBuffers[syncIndex]);
+  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
+  app.updateDescriptorData(app.shadows.shaders, app.shadows.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
+  popLabel(cmd);
 
-  pushLabel(app.shadowBuffers[syncIndex], "Objects Buffering", Colors.lightgray);
-  app.bufferGeometries(app.shadowBuffers[syncIndex]);
-  popLabel(app.shadowBuffers[syncIndex]);
+  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
+  app.bufferGeometries(cmd);
+  popLabel(cmd);
 
-  pushLabel(app.shadowBuffers[syncIndex], "Shadow Loop", Colors.lightgray);
-  vkCmdBindDescriptorSets(app.shadowBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+  pushLabel(cmd, "Shadow Loop", Colors.lightgray);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
                           app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
+  auto shadowExtent = VkExtent2D(app.shadows.dimension, app.shadows.dimension);
   for(size_t l = 0; l < app.lights.length; l++) {
-    pushLabel(app.shadowBuffers[syncIndex], toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
+    pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
+
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
       renderPass: app.shadows.renderPass,
-      framebuffer: app.framebuffers.shadow[l],
-      renderArea: {
-          offset: { x: 0, y: 0 },
-          extent: { width: app.shadows.dimension, height: app.shadows.dimension }
-      },
+      framebuffer: app.shadows.framebuffers[l],
+      renderArea: { extent: shadowExtent },
       clearValueCount: 1,
       pClearValues: &clearDepth,
     };
-    vkCmdBeginRenderPass(app.shadowBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(app.shadowBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
+    vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
     uint currentLightIndex = cast(uint)l;
-    vkCmdPushConstants(app.shadowBuffers[syncIndex], app.shadows.pipeline.layout,
+    vkCmdPushConstants(cmd, app.shadows.pipeline.layout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
       if(app.objects[x].isVisible && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
         app.shadow(app.objects[x], syncIndex);
       }
     }
-    vkCmdEndRenderPass(app.shadowBuffers[syncIndex]);
-    popLabel(app.shadowBuffers[syncIndex]);
+    vkCmdEndRenderPass(cmd);
+    popLabel(cmd);
   }
-  popLabel(app.shadowBuffers[syncIndex]);
-  enforceVK(vkEndCommandBuffer(app.shadowBuffers[syncIndex])); // End recording for shadow map buffer
+  popLabel(cmd);
+  enforceVK(vkEndCommandBuffer(cmd)); // End recording for shadow map buffer
 }
 

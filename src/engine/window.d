@@ -62,14 +62,14 @@ void createOrResizeWindow(ref App app) {
   app.reflectShaders(app.shadows.shaders);
   app.createResources(app.shadows.shaders, Stage.SHADOWS);
   app.createDescriptors(app.shadows.shaders, Stage.SHADOWS);
-  app.createCommandBuffer(app.shadowBuffers, app.commandPool, app.framesInFlight);
+  app.createCommandBuffer(app.shadows.commands, app.commandPool, app.framesInFlight);
   app.createShadowMapGraphicsPipeline();
 
   SDL_Log("3: Render shaders reflection");
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, Stage.RENDER);
   app.createDescriptors(app.shaders, Stage.RENDER);
-  app.createCommandBuffer(app.renderBuffers, app.commandPool, app.framesInFlight);
+  app.createCommandBuffer(app.scenePass.commands, app.commandPool, app.framesInFlight);
 
   SDL_Log("4: Post-processing shaders reflection");
   app.reflectShaders(app.postProcess);
@@ -80,12 +80,13 @@ void createOrResizeWindow(ref App app) {
   }
 
   SDL_Log("5: ImGui resources");
-  app.createCommandBuffer(app.imguiBuffers, app.commandPool, app.framesInFlight);
+  app.createCommandBuffer(app.postPass.commands, app.commandPool, app.framesInFlight);
+  app.createCommandBuffer(app.imguiPass.commands, app.commandPool, app.framesInFlight);
 
   SDL_Log("6: Create RenderPasses [SCENE -> POST -> IMGUI]");
-  app.scene = app.createSceneRenderPass();
-  app.postprocess = app.createPostProcessRenderPass();
-  app.imgui = app.createImGuiRenderPass();
+  app.createSceneRenderPass();
+  app.createPostProcessRenderPass();
+  app.createImGuiRenderPass();
 
   SDL_Log("7: Create Framebuffers");
   app.createFramebuffers();

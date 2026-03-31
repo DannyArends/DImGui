@@ -93,15 +93,9 @@ struct App {
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
-  FrameBuffer framebuffers;
-
-  VkRenderPass imgui = null;                                                    /// ImGui renderpass
-  VkRenderPass scene = null;                                                    /// Main scene renderpass
-  VkRenderPass postprocess = null;                                              /// Post-processing renderpass
-
-  VkCommandBuffer[] imguiBuffers = null;
-  VkCommandBuffer[] renderBuffers = null;
-  VkCommandBuffer[] shadowBuffers = null;
+  RenderPass scenePass;                                                         /// Scene renderpass + framebuffers + commands
+  RenderPass postPass;                                                          /// Post-process renderpass + framebuffers + commands
+  RenderPass imguiPass;                                                         /// ImGui renderpass + framebuffers + commands
 
   VkAllocationCallbacks* allocator = null;
   VkDebugReportCallbackEXT debugCallback = null;

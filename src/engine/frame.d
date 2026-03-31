@@ -7,7 +7,7 @@ import engine;
 
 import bone : updateBoneOffsets;
 import mesh : updateMeshInfo;
-import commands : recordRenderCommandBuffer;
+import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
 import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
 import uniforms : updateRenderUBO;
@@ -77,14 +77,17 @@ void renderFrame(ref App app) {
   app.recordShadowCommandBuffer(app.syncIndex);
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
-  if(app.trace) SDL_Log("Phase 4: Prepare & Submit Graphics & ImGui Work");
-  app.recordRenderCommandBuffer(app.shaders, app.syncIndex);
+  if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
+  app.recordSceneCommandBuffer(app.shaders, app.syncIndex);
+  app.recordPostCommandBuffer(app.syncIndex);
   app.recordImGuiCommandBuffer(app.syncIndex);
 
+  if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers = [
-    app.shadowBuffers[app.syncIndex],  /// Shadow command buffers
-    app.renderBuffers[app.syncIndex],  /// Scene rendering & Post Processing
-    app.imguiBuffers[app.syncIndex]    /// ImGui overlay
+    app.shadows.commands[app.syncIndex],   /// Shadow command buffers
+    app.scenePass.commands[app.syncIndex], /// Scene rendering
+    app.postPass.commands[app.syncIndex],  /// Post Processing
+    app.imguiPass.commands[app.syncIndex]  /// ImGui overlay
   ];
 
   VkSemaphore[] waitSemaphores = [ imageAcquired ];

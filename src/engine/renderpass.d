@@ -9,10 +9,30 @@ import depthbuffer : findDepthFormat;
 import devices : getMSAASamples;
 import validation : nameVulkanObject;
 
+struct RenderPass {
+  VkRenderPass pass;
+  VkFramebuffer[] framebuffers;
+  VkCommandBuffer[] commands;
+
+  void begin(VkCommandBuffer cmd, uint frameIdx, VkExtent2D extent, VkClearValue[] clears) {
+    VkRenderPassBeginInfo info = {
+      sType:           VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+      renderPass:      pass,
+      framebuffer:     framebuffers[frameIdx],
+      renderArea:      { extent: extent },
+      clearValueCount: cast(uint)clears.length,
+      pClearValues:    &clears[0]
+    };
+    vkCmdBeginRenderPass(cmd, &info, VK_SUBPASS_CONTENTS_INLINE);
+  }
+
+  void end(VkCommandBuffer cmd) { vkCmdEndRenderPass(cmd); }
+}
+
 /** Create a Scene RenderPass object
  * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment
  */
-VkRenderPass createSceneRenderPass(ref App app) {
+void createSceneRenderPass(ref App app) {
   if(app.verbose) SDL_Log("Creating RenderPass");
 
   VkAttachmentDescription colorAttachment = {
@@ -78,18 +98,16 @@ VkRenderPass createSceneRenderPass(ref App app) {
   };
 
   VkRenderPass renderpass;
-  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
-  app.nameVulkanObject(renderpass, toStringz("[RENDERPASS] Scene"), VK_OBJECT_TYPE_RENDER_PASS);
-
+  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &app.scenePass.pass));
+  app.nameVulkanObject(app.scenePass.pass, toStringz("[RENDERPASS] Scene"), VK_OBJECT_TYPE_RENDER_PASS);
   if(app.verbose) SDL_Log("RenderPass created");
-  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
-  return(renderpass);
+  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.scenePass.pass, app.allocator); });
 }
 
 /** Create the Post-Processing RenderPass 
  * This VkRenderPass samples the HDR texture, renders and to the SwapChain image
  */
-VkRenderPass createPostProcessRenderPass(ref App app) {
+void createPostProcessRenderPass(ref App app) {
   if(app.verbose) SDL_Log("Creating Post-Process RenderPass");
 
   // This attachment is the swapchain image itself (LDR)
@@ -146,18 +164,16 @@ VkRenderPass createPostProcessRenderPass(ref App app) {
   };
 
   VkRenderPass renderpass;
-  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
-  app.nameVulkanObject(renderpass, toStringz("[RENDERPASS] Post-process"), VK_OBJECT_TYPE_RENDER_PASS);
-
+  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &app.postPass.pass));
+  app.nameVulkanObject(app.postPass.pass, toStringz("[RENDERPASS] Post-process"), VK_OBJECT_TYPE_RENDER_PASS);
   if(app.verbose) SDL_Log("Post-Process RenderPass created");
-  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
-  return(renderpass);
+  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.postPass.pass, app.allocator); });
 }
 
 /** Create the ImGui RenderPass
  * This VkRenderPass loads the contents of the swapchain image and overlays ImGui.
  */
-VkRenderPass createImGuiRenderPass(ref App app) {
+void createImGuiRenderPass(ref App app) {
   if(app.verbose) SDL_Log("Creating ImGui RenderPass");
 
   VkAttachmentDescription colorAttachment = {
@@ -203,10 +219,8 @@ VkRenderPass createImGuiRenderPass(ref App app) {
   };
 
   VkRenderPass renderpass;
-  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &renderpass));
-  app.nameVulkanObject(renderpass, toStringz("[RENDERPASS] ImGui"), VK_OBJECT_TYPE_RENDER_PASS);
-
+  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &app.imguiPass.pass));
+  app.nameVulkanObject(app.imguiPass.pass, toStringz("[RENDERPASS] ImGui"), VK_OBJECT_TYPE_RENDER_PASS);
   if(app.verbose) SDL_Log("ImGui RenderPass created");
-  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, renderpass, app.allocator); });
-  return(renderpass);
+  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.imguiPass.pass, app.allocator); });
 }
