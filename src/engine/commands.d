@@ -12,50 +12,40 @@ import ssbo : updateSSBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import window: supportedTopologies;
 
-/** Record Vulkan render command buffer by rendering all objects to all render buffers
- * SSBO Buffering -> Objects Buffering -> Rendering -> Post-processing
+/** Record scene command buffer: SSBO -> Objects -> Rendering
  */
-void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
-  if(app.trace) SDL_Log("recordRenderCommandBuffer %d recording to frame: %d/%d", syncIndex, app.frameIndex, app.framebuffers.scene.length);
+void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
+  auto cmd = app.scenePass.commands[syncIndex];
+  if(app.trace) SDL_Log("recordSceneCommandBuffer %d recording to frame: %d/%d", syncIndex, app.frameIndex, app.scenePass.framebuffers.length);
 
   VkCommandBufferBeginInfo beginInfo = {
     sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    pInheritanceInfo: null // Optional
+    pInheritanceInfo: null
   };
-  enforceVK(vkBeginCommandBuffer(app.renderBuffers[syncIndex], &beginInfo));
-  app.nameVulkanObject(app.renderBuffers[syncIndex], toStringz(format("[COMMANDBUFFER] Render %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  enforceVK(vkBeginCommandBuffer(cmd, &beginInfo));
+  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Render %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  pushLabel(app.renderBuffers[app.syncIndex], "SSBO Buffering", Colors.lightgray);
+  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("SSBO Buffering");
-  app.updateDescriptorData(shaders, app.renderBuffers, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
-  popLabel(app.renderBuffers[app.syncIndex]);
+  app.updateDescriptorData(shaders, app.scenePass.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
+  popLabel(cmd);
 
-  pushLabel(app.renderBuffers[app.syncIndex], "Objects Buffering", Colors.lightgray);
+  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("Objects Buffering");
-  app.bufferGeometries(app.renderBuffers[syncIndex]);
-  popLabel(app.renderBuffers[app.syncIndex]);
+  app.bufferGeometries(cmd);
+  popLabel(cmd);
 
-  pushLabel(app.renderBuffers[app.syncIndex], "Rendering", Colors.lightgray);
+  pushLabel(cmd, "Rendering", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Scene renderpass");
 
-  VkRect2D renderArea = { extent: { width: app.camera.width, height: app.camera.height } };
-
-  VkRenderPassBeginInfo renderPassInfo = {
-    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass: app.scene,
-    framebuffer: app.framebuffers.scene[app.frameIndex],
-    renderArea: renderArea,
-    clearValueCount: app.clearValue.length,
-    pClearValues: &app.clearValue[0]
-  };
-  vkCmdBeginRenderPass(app.renderBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  app.scenePass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
 
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
   foreach(topology; supportedTopologies) {
-    pushLabel(app.renderBuffers[app.syncIndex], toStringz(format("T:%s", topology)), Colors.lightgray);
-    vkCmdBindPipeline(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline);
-    vkCmdBindDescriptorSets(app.renderBuffers[syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+    pushLabel(cmd, toStringz(format("T:%s", topology)), Colors.lightgray);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
                             app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
     
     for(size_t x = 0; x < app.objects.length; x++) {
@@ -64,35 +54,41 @@ void recordRenderCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
       if(app.objects[x].topology != topology) continue;
       app.draw(app.objects[x], syncIndex);
     }
-    popLabel(app.renderBuffers[app.syncIndex]);
+    popLabel(cmd);
   }
-  vkCmdEndRenderPass(app.renderBuffers[syncIndex]);
+  app.scenePass.end(cmd);
+  popLabel(cmd);
 
-  popLabel(app.renderBuffers[app.syncIndex]);
+  enforceVK(vkEndCommandBuffer(cmd));
+}
 
-  if(app.trace) SDL_Log("Starting Post-processing");
-  pushLabel(app.renderBuffers[app.syncIndex], "Post-processing", Colors.lightgray);
-  VkRenderPassBeginInfo postProcessRenderPassInfo = {
-    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass: app.postprocess,                                        /// Use post-processing render pass
-    framebuffer: app.framebuffers.postprocess[app.frameIndex],          /// Use its dedicated framebuffer
-    renderArea: { offset: {0, 0}, extent: app.camera.currentExtent },
-    clearValueCount: 1,
-    pClearValues: &app.clearValue[0]
+/** Record post-process command buffer
+ */
+void recordPostCommandBuffer(ref App app, uint syncIndex) {
+  auto cmd = app.postPass.commands[syncIndex];
+  if(app.trace) SDL_Log("recordPostCommandBuffer %d", syncIndex);
+
+  VkCommandBufferBeginInfo beginInfo = {
+    sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    pInheritanceInfo: null
   };
+  enforceVK(vkBeginCommandBuffer(cmd, &beginInfo));
+  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Post %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  vkCmdBeginRenderPass(app.renderBuffers[app.syncIndex], &postProcessRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  pushLabel(cmd, "Post-processing", Colors.lightgray);
+  if(app.trace) SDL_Log("Starting Post-processing");
 
-  // Bind post-process pipeline & descriptor set (for sampling HDR texture)
-  vkCmdBindPipeline(app.renderBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline);
-  vkCmdBindDescriptorSets(app.renderBuffers[app.syncIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][app.syncIndex], 0, null);
+  app.postPass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[0..1]);
 
-  vkCmdDraw(app.renderBuffers[app.syncIndex], 3, 1, 0, 0);
-  vkCmdEndRenderPass(app.renderBuffers[app.syncIndex]);
-  popLabel(app.renderBuffers[app.syncIndex]);
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                          app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][syncIndex], 0, null);
+
+  vkCmdDraw(cmd, 3, 1, 0, 0);
+  app.postPass.end(cmd);
+  popLabel(cmd);
   if(app.trace) SDL_Log("Finished Post-processing");
-  enforceVK(vkEndCommandBuffer(app.renderBuffers[syncIndex]));
+  enforceVK(vkEndCommandBuffer(cmd));
 }
 
 void createCommandPools(ref App app) {

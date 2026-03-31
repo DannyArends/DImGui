@@ -330,31 +330,33 @@ void computeTangents(T)(ref T geometry, bool verbose = false) {
   if(verbose) SDL_Log("computeTangents %d vertex tangents computed", geometry.vertices.length);
 }
 
-/** Render a Geometry to app.renderBuffers[i] */
+/** Render a Geometry to app.scenePass.commands[i] */
 void draw(T)(ref App app, ref T object, size_t i) {
   if(!object.isBuffered()) return;
   app.logDraw(object);
 
   VkDeviceSize[] offsets = [0];
+  auto cmd = app.scenePass.commands[i];
 
-  vkCmdBindVertexBuffers(app.renderBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
-  vkCmdBindVertexBuffers(app.renderBuffers[i], INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
-  vkCmdBindIndexBuffer(app.renderBuffers[i], object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
+  vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(app.renderBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.name()));
 }
 
-/** Render a Geometry to app.renderBuffers[i] */
+/** Render a Geometry to app.shadows.commands[i] */
 void shadow(ref App app, Geometry object, size_t i) {
   if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null) return;
   if(app.trace) SDL_Log("SHADOW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
+  auto cmd = app.shadows.commands[i];
 
-  vkCmdBindVertexBuffers(app.shadowBuffers[i], VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
-  vkCmdBindVertexBuffers(app.shadowBuffers[i], INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
-  vkCmdBindIndexBuffer(app.shadowBuffers[i], object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
+  vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(app.shadowBuffers[i], cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("SHADOW[%s]: DONE", toStringz(object.name()));
 }

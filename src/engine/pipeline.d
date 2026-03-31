@@ -116,7 +116,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     pDepthStencilState: &depthStencil,
     pColorBlendState: &colorBlending,
     layout: app.pipelines[topology].layout,
-    renderPass: app.scene
+    renderPass: app.scenePass.pass
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.pipelines[topology].pipeline));
@@ -213,7 +213,7 @@ void createPostProcessGraphicsPipeline(ref App app) {
     pMultisampleState: &multisampling,
     pColorBlendState: &colorBlending,
     layout: app.postProcessPipeline.layout,
-    renderPass: app.postprocess
+    renderPass: app.postPass.pass
   };
 
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, null, &app.postProcessPipeline.pipeline));

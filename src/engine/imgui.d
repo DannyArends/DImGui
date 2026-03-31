@@ -129,7 +129,7 @@ void initializeImGui(ref App app){
     Allocator : app.allocator,
     MinImageCount : app.imageCount,
     ImageCount : cast(uint)app.framesInFlight,
-    RenderPass : app.imgui,
+    RenderPass : app.imguiPass.pass,
     MSAASamples : VK_SAMPLE_COUNT_1_BIT,
     CheckVkResultFn : &enforceVK
   };
@@ -151,38 +151,27 @@ void initializeImGui(ref App app){
  */
 void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
   if(app.trace) SDL_Log("recordImGuiCommandBuffer");
-  enforceVK(vkResetCommandBuffer(app.imguiBuffers[syncIndex], 0));
-
+  auto cmd = app.imguiPass.commands[syncIndex];
   VkCommandBufferBeginInfo commandBufferInfo = {
     sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
   };
-  enforceVK(vkBeginCommandBuffer(app.imguiBuffers[syncIndex], &commandBufferInfo));
-  app.nameVulkanObject(app.imguiBuffers[syncIndex], toStringz(format("[COMMANDBUFFER] ImGui %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
+  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] ImGui %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  pushLabel(app.imguiBuffers[app.syncIndex], "ImGui", Colors.lightgray);
+  pushLabel(cmd, "ImGui", Colors.lightgray);
 
-  VkRect2D renderArea = { extent: { width: app.camera.width, height: app.camera.height } };
-
-  VkRenderPassBeginInfo renderPassInfo = {
-    sType : VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass : app.imgui,
-    framebuffer : app.framebuffers.imgui[app.frameIndex],
-    renderArea : renderArea,
-    clearValueCount : app.clearValue.length,
-    pClearValues : &app.clearValue[0]
-  };
-  vkCmdBeginRenderPass(app.imguiBuffers[syncIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  app.imguiPass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
 
   // Render UI
   ImDrawData* drawData = app.renderGUI();
-  ImGui_ImplVulkan_RenderDrawData(drawData, app.imguiBuffers[syncIndex], null);
+  ImGui_ImplVulkan_RenderDrawData(drawData, cmd, null);
 
-  vkCmdEndRenderPass(app.imguiBuffers[syncIndex]);
+  app.imguiPass.end(cmd);
 
-  popLabel(app.imguiBuffers[app.syncIndex]);
+  popLabel(cmd);
 
-  enforceVK(vkEndCommandBuffer(app.imguiBuffers[syncIndex]));
+  enforceVK(vkEndCommandBuffer(cmd));
   if(app.trace) SDL_Log("Done recordImGuiCommandBuffer");
 }
 

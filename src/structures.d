@@ -18,7 +18,7 @@ public import cylinder : Cylinder;
 public import descriptor : Descriptor, DescriptorLayoutBuilder;
 public import depthbuffer : DepthBuffer;
 public import deletion : CheckedDeletionQueue, DeletionQueue;
-public import framebuffer : FrameBuffer;
+public import renderpass : RenderPass;
 public import glyphatlas : Glyph, GlyphAtlas;
 public import geometry : Geometries, Geometry, Instance;
 public import icosahedron : Icosahedron;

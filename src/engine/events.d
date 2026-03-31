@@ -6,7 +6,6 @@
 import engine;
 
 import boundingbox : computeBoundingBox;
-import commands : recordRenderCommandBuffer;
 import camera : move, drag, castRay;
 import geometry : deAllocate, setColor;
 import imgui : saveSettings;
