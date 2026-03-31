@@ -88,12 +88,12 @@ void renderFrame(ref App app) {
   ];
 
   VkSemaphore[] waitSemaphores = [ imageAcquired ];
-  if (app.hasCompute) { waitSemaphores ~= computeComplete; }
+  VkPipelineStageFlags[] waitStages = [ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT ];
 
-  VkPipelineStageFlags[] waitStages = [ 
-    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 
-    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT 
-  ];
+  if (app.hasCompute) {
+    waitSemaphores ~= computeComplete;
+    waitStages ~= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+  }
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -112,8 +112,8 @@ void renderFrame(ref App app) {
 }
 
 void presentFrame(ref App app) {
-  if(app.trace) SDL_Log("presentFrame");
-  if(app.rebuild) return;
+  if (app.trace) SDL_Log("presentFrame");
+  if (app.rebuild) return;
   VkSemaphore renderComplete = app.renderComplete[app.frameIndex];
   VkPresentInfoKHR info = {
     sType : VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,

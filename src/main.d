@@ -32,7 +32,7 @@ import window: createOrResizeWindow, checkForResize;
 version (Android) {
   import core.runtime : rt_init;
 
-  extern(C) int SDL_main(int argc, char* argv) { // Hijack the SDL main
+  extern(C) int SDL_main(int argc, char** argv) { // Hijack the SDL main
     int dRuntime = rt_init();
     printf("D runtime initialized: %d", dRuntime);
     run(["android", format("--dRuntime=%s", dRuntime)]);
