@@ -40,6 +40,10 @@ void nameUBO(ref App app, UBO ubo, string name){
   }
 }
 
+void forEachUBO(Shader[] shaders, void delegate(Descriptor) fn) {
+  foreach(shader; shaders) { foreach(d; shader.descriptors) { if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) fn(d); } }
+}
+
 void createUBO(ref App app, Descriptor descriptor) {
   if(app.verbose) SDL_Log("Create UBO at %s, size = %d", toStringz(descriptor.base), descriptor.bytes);
   if(descriptor.base in app.ubos) return;
@@ -79,16 +83,9 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     ubo.orientation = rotate(Matrix.init, [0.0f, 180.0f, 0.0f]);
   }
 
-  for(uint s = 0; s < shaders.length; s++) {
-    auto shader = shaders[s];
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        if(shader.descriptors[d].name == "ubo") {
-          memcpy(app.ubos[shader.descriptors[d].base].data[syncIndex], &ubo, shader.descriptors[d].bytes);
-        }
-      }
-    }
-  }
+  shaders.forEachUBO((d) {
+    if(d.name == "ubo") { memcpy(app.ubos[d.base].data[syncIndex], &ubo, d.bytes); }
+  });
 }
 
 
