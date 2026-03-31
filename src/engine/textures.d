@@ -54,7 +54,7 @@ void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
   if (adapted) {
     SDL_DestroySurface(surface); // Free the SDL_Surface
     surface = adapted;
-    if(verbose > 1) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel / 8));
+    if(verbose > 1) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel));
   }
 }
 
