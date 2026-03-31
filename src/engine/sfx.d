@@ -54,7 +54,6 @@ string[] listAudioDevices() {
 void openAudio(ref App app, int rate = 44100, int size = 1024, bool verbose = false) {
   Audio sfx;
   auto devices = listAudioDevices();
-  MIX_Init();
   SDL_AudioSpec spec;
   spec.freq = rate;
   spec.format = SDL_AUDIO_S32LE;

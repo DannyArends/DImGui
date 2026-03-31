@@ -69,7 +69,7 @@ SDL_Surface* createDummySDLSurface() {
 
   if(SDL_MUSTLOCK(surface)) SDL_LockSurface(surface);
   auto whitePixel = SDL_MapRGBA(SDL_GetPixelFormatDetails(surface.format), null, 255, 255, 255, 255);
-  memcpy(surface.pixels, &whitePixel, SDL_GetPixelFormatDetails(surface.format).bits_per_pixel);
+  memcpy(surface.pixels, &whitePixel, SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel);
   if(SDL_MUSTLOCK(surface)) SDL_UnlockSurface(surface);
   return surface;
 }
