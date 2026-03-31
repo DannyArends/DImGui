@@ -67,10 +67,11 @@ App initializeSDL() {
   if(app.verbose) SDL_Log("INIT: [%d,%d,%d,%d]", init[MAIN], init[TTF], init[IMG], init[MIX]);
 
   // Open Audio
-  openAudio();
+  app.openAudio();
 
   // Create SDL Window
   SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+  version(Android) { window_flags |= SDL_WINDOW_FULLSCREEN; }
   app.window = SDL_CreateWindow(app.applicationName, 1280, 720, window_flags);
   if(app.verbose) SDL_Log("SDL_CreateWindow: %p", app.window);
 
