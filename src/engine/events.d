@@ -36,21 +36,20 @@ void handleKeyEvents(ref App app, SDL_Event e) {
 void handleTouchEvents(ref App app, const SDL_Event event) {
   SDL_TouchFingerEvent e = event.tfinger;
   if(event.type == SDL_EVENT_FINGER_DOWN) {
-    if(e.fingerID == 0) app.camera.isdrag[0] = true;
+    if(app.camera.fingerIDs[0] == -1) app.camera.fingerIDs[0] = e.fingerID;
+    else if(app.camera.fingerIDs[1] == -1) app.camera.fingerIDs[1] = e.fingerID;
+    if(e.fingerID == app.camera.fingerIDs[0]) app.camera.isdrag[0] = true;
   }
   if(event.type == SDL_EVENT_FINGER_UP) {
-    if(e.fingerID == 0) app.camera.isdrag[0] = false;
-    app.camera.move(app.camera.forward());
+    if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.isdrag[0] = false; app.camera.fingerIDs[0] = -1; app.camera.move(app.camera.forward()); }
+    if(e.fingerID == app.camera.fingerIDs[1]) { app.camera.fingerIDs[1] = -1; }
   }
   if(event.type == SDL_EVENT_FINGER_MOTION) {
-    if(app.verbose){
-      SDL_Log("TouchMotion: %f %f [%f %f] by %.1f [%d]\n", e.x, e.y, e.dx * app.camera.width, e.dy * app.camera.height, e.pressure, e.fingerID);
-    }
-    if(e.fingerID == 1) {
-      if (e.dy > 0 && app.camera.distance  <= 30.0f) app.camera.distance += 0.2f;
-      if (e.dy < 0 && app.camera.distance  >= 2.0f) app.camera.distance -= 0.2f;
-    }else{
-      if(e.fingerID == 0) app.camera.drag(-e.dx * 0.5 * app.camera.width, e.dy * 0.25 * app.camera.height);
+    if(e.fingerID == app.camera.fingerIDs[1]) {
+      if (e.dy > 0 && app.camera.distance <= 30.0f) app.camera.distance += 0.2f;
+      if (e.dy < 0 && app.camera.distance >=  2.0f) app.camera.distance -= 0.2f;
+    } else if(e.fingerID == app.camera.fingerIDs[0]) {
+      app.camera.drag(-e.dx * 0.5 * app.camera.width, e.dy * 0.25 * app.camera.height);
     }
   }
 }
