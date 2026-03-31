@@ -15,18 +15,15 @@ struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
 
-  float[3]     lookat      = [0.0f, 0.0f, 0.0f];    // Position in the middle of the screen
-  float[2]     nearfar     = [0.1f, 100.0f];        // View distances, near [0], far [1]
-  float[3]     up          = [0.0f, 1.0f, 0.0f];    // Defined up vector
-  float        fov         = 45.0f;                 // Field of view
+  float[3]        lookat      = [0.0f, 0.0f, 0.0f];    /// Position in the middle of the screen
+  float[2]        nearfar     = [0.1f, 100.0f];        /// View distances, near [0], far [1]
+  float[3]        up          = [0.0f, 1.0f, 0.0f];    /// Defined up vector
+  float           fov         = 45.0f;                 /// Field of view
 
-  float[3]     rotation    = [0.0f, 0.0f, 0.0f];    // Horizontal [0], Vertical [1]
-  version (Android) {
-    float        distance    = 10.0f;               // Distance of camera to lookat
-  }else{
-    float        distance    = 3.0f;                // Distance of camera to lookat
-  }
-  bool[2]      isdrag        = [false, false];
+  float[3]        rotation    = [0.0f, 0.0f, 0.0f];    /// Horizontal [0], Vertical [1]
+  float           distance    = 3.0f;                  /// Distance of camera to lookat
+  bool[2]         isdrag      = [false, false];        /// Mouse dragging
+  SDL_FingerID[2] fingerIDs   = [-1, -1];             /// Android FingerIDs
 
   // Move the camera forward
   @property @nogc float[3] forward() const nothrow { 
