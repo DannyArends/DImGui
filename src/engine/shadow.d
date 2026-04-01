@@ -229,12 +229,12 @@ void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
 
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   auto cmd = app.shadows.commands[syncIndex];
-  vkResetCommandBuffer(cmd, 0); // Reset for recording
 
   VkCommandBufferBeginInfo beginInfo = {
       sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
       pInheritanceInfo: null
   };
+  enforceVK(vkResetCommandBuffer(cmd, 0)); // Reset for recording
   enforceVK(vkBeginCommandBuffer(cmd, &beginInfo));
   app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Shadow %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
