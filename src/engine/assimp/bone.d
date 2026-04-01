@@ -25,8 +25,7 @@ struct Bone {
 
 alias float[uint][string] BoneWeights;
 
-/** loadBoneWeights
- * TODO: Should actually not write to globalBones (tread safety issue with threading.d)
+/** loadBoneWeights - writes to asset-local bones, merged into app.bones on main thread
  */
 BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones, Matrix pTransform) {
   BoneWeights weights;
