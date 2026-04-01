@@ -61,3 +61,18 @@ void updateBoneOffsets(App app, uint syncIndex) {
   app.buffers["BoneMatrices"].dirty[syncIndex] = true;
 }
 
+void mergeBones(ref App app, ref OpenAsset obj) {
+  uint[uint] indexMap;
+  foreach(boneName, ref bone; obj.bones) {
+    if(!(boneName in app.bones)) {
+      uint newIndex = cast(uint)app.bones.length;
+      indexMap[bone.index] = newIndex;
+      bone.index = newIndex;
+      app.bones[boneName] = bone;
+    } else { indexMap[bone.index] = app.bones[boneName].index; }
+  }
+  foreach(ref v; obj.vertices) {
+    for(uint i = 0; i < v.bones.length; i++) { if(v.bones[i] in indexMap) v.bones[i] = indexMap[v.bones[i]]; }
+  }
+}
+
