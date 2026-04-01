@@ -156,6 +156,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
     sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
   };
+  enforceVK(vkResetCommandBuffer(cmd, 0)); // Reset for recording
   enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
   app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] ImGui %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
