@@ -86,7 +86,7 @@ void checkAsync(ref App app) {
   });
   receiveTimeout(dur!"msecs"(-1), (immutable(OpenAsset) message, Tid tid) {
     app.concurrency.workers[tid] = false;
-    auto obj = cast(OpenAsset)cast(Geometry)message;
+    auto obj = cast(OpenAsset)message;
     app.mergeBones(obj);
     app.objects ~= obj;
     app.mapTextures(app.objects[($-1)]);
