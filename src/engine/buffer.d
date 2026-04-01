@@ -94,6 +94,18 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuf
   if(app.trace) SDL_Log("updateBuffer");
   VkBufferCopy copyRegion = { size : buffer.size };
   vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
+
+  VkBufferMemoryBarrier barrier = {
+    sType: VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+    srcAccessMask: VK_ACCESS_TRANSFER_WRITE_BIT,
+    dstAccessMask: VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT,
+    srcQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
+    dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
+    buffer: buffer.vb,
+    offset: 0,
+    size: VK_WHOLE_SIZE
+  };
+  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 0, null, 1, &barrier, 0, null);
 }
 
 void copyBufferToImage(ref App app, VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint width, uint height) {
