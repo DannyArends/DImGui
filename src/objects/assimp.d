@@ -6,6 +6,7 @@
 import engine;
 
 import animation : loadAnimations;
+import bone : Bone;
 import boundingbox : computeBoundingBox, calculateBounds, computeScaleAdjustment;
 import matrix : toMatrix, multiply, inverse, transpose, rotate;
 import node : loadNode;
@@ -20,6 +21,7 @@ import vector : x, y, z, euclidean;
 /** OpenAsset using assimp
  */
 class OpenAsset : Geometry {
+  Bone[string] bones;   /// Local bone map, merged into app.bones on main thread
   this() {
     instances = [Instance()];
     name = (){ return(this.stringof); };
