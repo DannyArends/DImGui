@@ -7,6 +7,7 @@ import engine;
 
 import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
 import io : dir, fixPath;
+import bone : mergeBones;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
 
@@ -86,23 +87,7 @@ void checkAsync(ref App app) {
   receiveTimeout(dur!"msecs"(-1), (immutable(OpenAsset) message, Tid tid) {
     app.concurrency.workers[tid] = false;
     auto obj = cast(OpenAsset)cast(Geometry)message;
-    // Build local->global index map, then remap all vertices at once
-    uint[uint] indexMap;
-    foreach(boneName, ref bone; obj.bones) {
-      if(!(boneName in app.bones)) {
-        uint newIndex = cast(uint)app.bones.length;
-        indexMap[bone.index] = newIndex;
-        bone.index = newIndex;
-        app.bones[boneName] = bone;
-      } else {
-        indexMap[bone.index] = app.bones[boneName].index;
-      }
-    }
-    foreach(ref v; obj.vertices) {
-      foreach(i; 0..4) {
-        if(v.bones[i] in indexMap) v.bones[i] = indexMap[v.bones[i]];
-      }
-    }
+    app.mergeBones(obj);
     app.objects ~= obj;
     app.mapTextures(app.objects[($-1)]);
   });
