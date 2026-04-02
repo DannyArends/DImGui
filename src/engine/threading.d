@@ -30,19 +30,17 @@ class TaskThread : Thread {
     while (active) {
       receiveTimeout(dur!"msecs"(250),
         (string path) {
-          if(verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
-          if(path.isTexture()){
+          if (verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
+          if (path.isTexture()) {
             auto fp = fixPath(toStringz(path));
             auto surface = IMG_Load(fp);
             if (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) { surface.toRGBA(verbose); }
-            auto t = Texture(path, surface.w, surface.h, surface);
-            auto immutableT = cast(immutable)t;
-            main.send(immutableT, mytid);
-          }else if(path.isOpenAsset()){
-            auto g = loadOpenAsset(toStringz(path));
-            auto immutableG = cast(immutable)g;
-            main.send(immutableG, mytid);
-          }else{ main.send("Unknown file", mytid); }
+            auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);
+            main.send(texture, mytid);
+          } else if(path.isOpenAsset()) {
+            auto openasset = cast(immutable(OpenAsset))loadOpenAsset(toStringz(path), verbose);
+            main.send(openasset, mytid);
+          } else { main.send("Unknown file", mytid); }
         }
       );
       SDL_Delay(10);
