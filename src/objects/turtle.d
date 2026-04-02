@@ -33,6 +33,7 @@ class Turtle : Geometry {
       if(fmod(t.frame, 10) == 0) t.age(app, obj, dt);
       t.frame++;
     };
+    meshes["Turtle"] = Mesh([0, cast(uint)vertices.length]);
     name = (){ return(typeof(this).stringof); };
   }
 
@@ -96,6 +97,7 @@ class Turtle : Geometry {
         default: break;
       }
     }
+    meshes["Turtle"].vertices[1] = cast(uint)vertices.length;
     buffers[VERTEX] = false;
     buffers[INDEX] = false;
   }

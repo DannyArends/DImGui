@@ -67,12 +67,12 @@ void insertWriteBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDevice
   VkBufferMemoryBarrier writeBarrier = {
       sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
       srcAccessMask : VK_ACCESS_SHADER_WRITE_BIT, // Previous stage (e.g., compute shader writing to pOut)
-      dstAccessMask : VK_ACCESS_TRANSFER_READ_BIT,  // Access for the copy operation
+      dstAccessMask : VK_ACCESS_SHADER_READ_BIT,  // Access for the copy operation
       buffer : buffer,
       size : size                    // Size of the affected region
   };
 
-  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, null, 1, &writeBarrier, 0, null);
+  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, null, 1, &writeBarrier, 0, null);
 }
 
 void insertReadBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {

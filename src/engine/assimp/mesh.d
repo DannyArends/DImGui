@@ -44,16 +44,16 @@ void updateMeshInfo(ref App app) {
   if(needsUpdate) app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
 }
 
-string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform) {
-  if (app.verbose) {
+string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool verbose = false) {
+  if (verbose) {
     SDL_Log("Mesh: %s", toStringz(name(mesh.mName)));
     SDL_Log(" - %u vertices, %u faces, %u bones", mesh.mNumVertices, mesh.mNumFaces, mesh.mNumBones);
     SDL_Log(" - %u / %u material", mesh.mMaterialIndex, asset.materials.length);
   }
   // Vertex offset, load texture information,  bone weight, and normal matrix
   size_t vOff = asset.vertices.length;
-  auto channel = app.getChannel(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
-  auto weights = asset.loadBoneWeights(mesh, app.bones, gTransform);
+  auto channel = getChannel(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
+  auto weights = asset.loadBoneWeights(mesh, asset.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
 
   // TODO first create a Material definition for the object => add to app.materials
@@ -77,7 +77,7 @@ string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTr
     if (mesh.mTangents) {
       asset.vertices[gIdx].tangent = [mesh.mTangents[vIdx].x, mesh.mTangents[vIdx].y, mesh.mTangents[vIdx].z];
     }
-    asset.assignBoneWeight(gIdx, weights, vIdx, app.bones);
+    asset.assignBoneWeight(gIdx, weights, vIdx, asset.bones);
   }
 
   for (size_t f = 0; f < mesh.mNumFaces; f++) {  // Load faces to indices

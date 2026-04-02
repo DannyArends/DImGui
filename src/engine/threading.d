@@ -5,43 +5,42 @@
 
 import engine;
 
-import assimp : loadOpenAsset, isOpenAsset;
+import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
 import io : dir, fixPath;
+import bone : mergeBones;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
 
 class TaskThread : Thread {
-  private App* app;
-  private bool active = true;
   private Tid main;
   private Tid mytid;
+  private bool verbose = false;
+  private bool active = true;
 
-  this(App* a, Tid id) {
-    this.app = a;
+  this(Tid id, bool verbose = false) {
     this.main = id;
+    this.verbose = verbose;
     this.isDaemon(true);
     super(&run);
   }
 
-  void run() { if(app.verbose) SDL_Log("Worker spawned: %p", thisTid);
+  void run() { if(verbose) SDL_Log("Worker spawned: %p", thisTid);
     mytid = thisTid();
     main.send(mytid);
-    while(active){
+    while (active) {
       receiveTimeout(dur!"msecs"(250),
         (string path) {
-          if(app.verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
-          if(path.isTexture()){
+          if (verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
+          if (path.isTexture()) {
             auto fp = fixPath(toStringz(path));
             auto surface = IMG_Load(fp);
-            if (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) { surface.toRGBA((*app).verbose); }
-            auto t = Texture(path, surface.w, surface.h, surface);
-            auto immutableT = cast(immutable)t;
-            main.send(immutableT, mytid);
-          }else if(path.isOpenAsset()){
-            auto g = (*app).loadOpenAsset(toStringz(path));
-            auto immutableG = cast(immutable)g;
-            main.send(immutableG, mytid);
-          }else{ main.send("Unknown file", mytid); }
+            if (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) { surface.toRGBA(verbose); }
+            auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);
+            main.send(texture, mytid);
+          } else if(path.isOpenAsset()) {
+            auto openasset = cast(immutable(OpenAsset))loadOpenAsset(toStringz(path), verbose);
+            main.send(openasset, mytid);
+          } else { main.send("Unknown file", mytid); }
         }
       );
       SDL_Delay(10);
@@ -58,7 +57,7 @@ void initializeAsync(ref App app, uint numWorkers = 8){
   app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
-    auto worker = new TaskThread(&app, thisTid);
+    auto worker = new TaskThread(thisTid, app.verbose > 0);
     worker.start();
     auto id = receiveOnly!Tid();
     app.concurrency.workers[id] = false;
@@ -85,22 +84,26 @@ void checkAsync(ref App app) {
   });
   receiveTimeout(dur!"msecs"(-1), (immutable(OpenAsset) message, Tid tid) {
     app.concurrency.workers[tid] = false;
-    app.objects ~= cast(Geometry)message;
+    auto obj = cast(OpenAsset)message;
+    app.mergeBones(obj);
+    app.objects ~= obj;
     app.mapTextures(app.objects[($-1)]);
   });
-  if(!app.textures.transfer) {
-    receiveTimeout(dur!"msecs"(-1), (immutable(Texture) message, Tid tid) {
-      app.concurrency.workers[tid] = false;
-      Texture texture = cast(Texture)message;
-      app.textures.transfer = true;
-      app.transferTextureAsync(texture);
-      app.mainDeletionQueue.add((){ app.deAllocate(texture); });
-    });
-  }else{
-    VkResult result = vkGetFenceStatus(app.device, app.textures.cmdBuffer.fence);
-    if (result == VK_SUCCESS) {
-      app.textures.transfer = false;
-      //app.mapTextures();
-    }
+  // Accept any incoming texture transfers
+  receiveTimeout(dur!"msecs"(-1), (immutable(Texture) message, Tid tid) {
+    app.concurrency.workers[tid] = false;
+    Texture texture = cast(Texture)message;
+    app.transferTextureAsync(texture);
+    app.mainDeletionQueue.add((){ app.deAllocate(texture); });
+  });
+  // Check all pending texture transfers; promote to app.textures once GPU is done
+  size_t i = 0;
+  while(i < app.textures.pending.length) {
+    if(vkGetFenceStatus(app.device, app.textures.pending[i].cmdBuffer.fence) == VK_SUCCESS) {
+      app.textures ~= app.textures.pending[i].texture;
+      app.textures.pending = app.textures.pending.remove(i);
+      app.mapTextures();
+    } else { i++; }
   }
 }
+

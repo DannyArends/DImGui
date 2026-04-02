@@ -17,19 +17,19 @@ struct Node {
   string[] meshes;
 }
 
-Node loadNode(ref App app, ref OpenAsset asset, aiScene* scene, aiNode* node, const Matrix pTransform, uint lvl = 0) {
+Node loadNode(ref OpenAsset asset, aiScene* scene, aiNode* node, const Matrix pTransform, uint lvl = 0) {
   Node n = Node(asset.nodeName(name(node.mName)), lvl, toMatrix(node.mTransformation));
   Matrix gTransform = pTransform.multiply(n.transform);
 
   for (uint i = 0; i < node.mNumMeshes; i++){
     aiMesh* mesh = scene.mMeshes[node.mMeshes[i]];
     if(name(mesh.mName) == "Cube") continue;
-    n.meshes ~= app.loadMesh(mesh, asset, gTransform);
+    n.meshes ~= loadMesh(mesh, asset, gTransform);
   }
 
   n.children.length = node.mNumChildren;
   for (uint i = 0; i < node.mNumChildren; ++i) {
-    n.children[i] = app.loadNode(asset, scene, node.mChildren[i], gTransform, lvl+1);
+    n.children[i] = loadNode(asset, scene, node.mChildren[i], gTransform, lvl+1);
   }
   return(n);
 }
