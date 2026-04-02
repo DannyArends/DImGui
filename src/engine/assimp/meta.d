@@ -14,7 +14,7 @@ struct MetaData {
   double scalefactor;
 }
 
-MetaData loadMetaData(const App app, aiScene* scene) {
+MetaData loadMetaData(aiScene* scene, bool verbose = false) {
   aiMetadata* mData = scene.mMetaData;
   MetaData meta;
   for (uint i = 0; i < mData.mNumProperties; ++i) {
@@ -29,7 +29,7 @@ MetaData loadMetaData(const App app, aiScene* scene) {
     if (key == "CoordAxisSign") { meta.coordAxis[1] = *cast(int*)(mData.mValues[i].mData); }
     if (key == "UnitScaleFactor") { meta.scalefactor = *cast(float*)(mData.mValues[i].mData); }
   }
-  if (app.verbose) {
+  if (verbose) {
     SDL_Log(toStringz(format("MetaData UP: %s", meta.upAxis)));
     SDL_Log(toStringz(format("MetaData Front: %s", meta.frontAxis)));
     SDL_Log(toStringz(format("MetaData Coord: %s", meta.coordAxis)));
