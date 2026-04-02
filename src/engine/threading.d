@@ -12,34 +12,34 @@ import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
 
 class TaskThread : Thread {
-  private App* app;
-  private bool active = true;
   private Tid main;
   private Tid mytid;
+  private bool verbose = false;
+  private bool active = true;
 
-  this(App* a, Tid id) {
-    this.app = a;
+  this(Tid id, bool verbose = false) {
     this.main = id;
+    this.verbose = verbose;
     this.isDaemon(true);
     super(&run);
   }
 
-  void run() { if(app.verbose) SDL_Log("Worker spawned: %p", thisTid);
+  void run() { if(verbose) SDL_Log("Worker spawned: %p", thisTid);
     mytid = thisTid();
     main.send(mytid);
-    while(active){
+    while (active) {
       receiveTimeout(dur!"msecs"(250),
         (string path) {
-          if(app.verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
+          if(verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
           if(path.isTexture()){
             auto fp = fixPath(toStringz(path));
             auto surface = IMG_Load(fp);
-            if (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) { surface.toRGBA((*app).verbose); }
+            if (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) { surface.toRGBA(verbose); }
             auto t = Texture(path, surface.w, surface.h, surface);
             auto immutableT = cast(immutable)t;
             main.send(immutableT, mytid);
           }else if(path.isOpenAsset()){
-            auto g = (*app).loadOpenAsset(toStringz(path));
+            auto g = loadOpenAsset(toStringz(path));
             auto immutableG = cast(immutable)g;
             main.send(immutableG, mytid);
           }else{ main.send("Unknown file", mytid); }
@@ -59,7 +59,7 @@ void initializeAsync(ref App app, uint numWorkers = 8){
   app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
-    auto worker = new TaskThread(&app, thisTid);
+    auto worker = new TaskThread(thisTid, app.verbose > 0);
     worker.start();
     auto id = receiveOnly!Tid();
     app.concurrency.workers[id] = false;

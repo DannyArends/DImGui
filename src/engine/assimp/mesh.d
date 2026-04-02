@@ -44,15 +44,15 @@ void updateMeshInfo(ref App app) {
   if(needsUpdate) app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
 }
 
-string loadMesh(ref App app, aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform) {
-  if (app.verbose) {
+string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool verbose = false) {
+  if (verbose) {
     SDL_Log("Mesh: %s", toStringz(name(mesh.mName)));
     SDL_Log(" - %u vertices, %u faces, %u bones", mesh.mNumVertices, mesh.mNumFaces, mesh.mNumBones);
     SDL_Log(" - %u / %u material", mesh.mMaterialIndex, asset.materials.length);
   }
   // Vertex offset, load texture information,  bone weight, and normal matrix
   size_t vOff = asset.vertices.length;
-  auto channel = app.getChannel(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
+  auto channel = getChannel(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
   auto weights = asset.loadBoneWeights(mesh, asset.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
 

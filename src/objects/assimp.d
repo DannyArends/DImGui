@@ -36,7 +36,7 @@ bool isOpenAsset(string path){
 
 /** Load an OpenAsset 
  */
-OpenAsset loadOpenAsset(ref App app, const(char)* path, bool isVisible = false) {
+OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible = false) {
   SDL_Log("Loading: %s", path);
   OpenAsset object = new OpenAsset();
 
@@ -50,13 +50,13 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path, bool isVisible = false) 
   }
 
   object.mName = stripExtension(baseName(to!string(path)));
-  object.mData = app.loadMetaData(scene);
+  object.mData = loadMetaData(scene, verbose);
 
   object.bounds.calculateBounds(scene, scene.mRootNode, Matrix());
 
-  object.materials = app.loadMaterials(scene, path);
-  object.animations = app.loadAnimations(scene, object);
-  object.rootnode = app.loadNode(object, scene, scene.mRootNode, Matrix());
+  object.materials = loadMaterials(scene, path);
+  object.animations = loadAnimations(scene, object, verbose);
+  object.rootnode = loadNode(object, scene, scene.mRootNode, Matrix(), verbose);
 
   if (object.mName == "Spider") { // The Spider model is broken, it floats above
     object.rootnode.transform = object.rootnode.transform.translate([0.0f, -775.0f, 0.0f]);
@@ -65,7 +65,7 @@ OpenAsset loadOpenAsset(ref App app, const(char)* path, bool isVisible = false) 
 
   object.instances[0] = object.bounds.computeScaleAdjustment(); // Adjust the scale to 4.0f
 
-  if (app.verbose) {
+  if (verbose) {
     SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));
     SDL_Log("%u meshes, %u materials, %u animations", scene.mNumMeshes, scene.mNumMaterials, scene.mNumAnimations);
     SDL_Log("%u vertices, %u indices loaded", object.vertices.length, object.indices.length);

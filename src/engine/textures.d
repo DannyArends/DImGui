@@ -9,7 +9,6 @@ import buffer : createBuffer, copyBufferToImage;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import glyphatlas : createFontTexture;
-import material : getTexture;
 import images : nameImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
 import io : dir;
 import swapchain : createImageView;
@@ -101,6 +100,14 @@ void transferTextureAsync(ref App app, ref Texture texture){
 
 void mapTextures(ref App app){
   for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); }
+}
+
+int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
+  if (type in object.materials[materialIndex].textures) {
+    int index = idx(app.textures, object.materials[materialIndex].textures[type]);
+    return(index);
+  }
+  return(-1);
 }
 
 void mapTextures(ref App app, ref Geometry object){

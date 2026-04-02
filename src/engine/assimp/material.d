@@ -38,22 +38,14 @@ float[4] getMaterialColor(aiMaterial* material, aiColorType type = aiColorType.D
   return([color.r, color.g, color.b, color.a]);
 }
 
-int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
-  if (type in object.materials[materialIndex].textures) {
-    int index = idx(app.textures, object.materials[materialIndex].textures[type]);
-    return(index);
-  }
-  return(-1);
-}
-
-int getChannel(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE) {
+int getChannel(T)(T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE) {
   if (type in object.materials[materialIndex].textures) {
     return(object.materials[materialIndex].textures[type].channel);
   }
   return(0);
 }
 
-Material[] loadMaterials(ref App app, aiScene* scene, const(char)* path){
+Material[] loadMaterials(aiScene* scene, const(char)* path){
   Material[] materials;
   for(uint i = 0; i < scene.mNumMaterials; i++) {
     aiMaterial* material = scene.mMaterials[i];
