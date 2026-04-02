@@ -9,7 +9,6 @@ import buffer : createBuffer, copyBufferToImage;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import glyphatlas : createFontTexture;
-import material : getTexture;
 import images : nameImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
 import io : dir;
 import swapchain : createImageView;
@@ -34,11 +33,15 @@ struct Texture {
   alias buffer this;
 }
 
+struct PendingTexture {
+  Texture texture;
+  SingleTimeCommand cmdBuffer;
+}
+
 struct Textures {
-  Texture[] textures;             /// Textures
-  bool loaded = false;            /// Are we loading a texture a-sync ?
-  bool transfer = false;          /// Are we currently using the transfer queue for uploading & transitioning ?
-  SingleTimeCommand cmdBuffer;    /// A-Sync single time command buffer
+  Texture[] textures;                         /// Textures
+  PendingTexture[] pending;                   /// Textures submitted to GPU but not yet confirmed ready
+  bool loaded = false;                        /// Are we loading a texture a-sync ?
   alias textures this;
 }
 
@@ -85,22 +88,30 @@ SDL_Surface* createDummySDLSurface() {
   return(besthit);
 }
 
-void transferTextureAsync(ref App app, ref Texture texture){
-  app.textures.cmdBuffer = app.beginSingleTimeCommands(app.transferPool, true);
-  app.toGPU(app.textures.cmdBuffer, texture);
-  vkEndCommandBuffer(app.textures.cmdBuffer);
+void transferTextureAsync(ref App app, ref Texture texture) {
+  SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(app.transferPool, true);
+  app.toGPU(cmdBuffer, texture);
+  vkEndCommandBuffer(cmdBuffer);
   VkSubmitInfo submitInfo = {
     sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
     commandBufferCount: 1,
-    pCommandBuffers: &app.textures.cmdBuffer.commands,
+    pCommandBuffers: &cmdBuffer.commands,
   };
-  app.nameVulkanObject(app.textures.cmdBuffer.fence, toStringz(format("[FENCE] %s", texture.path)), VK_OBJECT_TYPE_FENCE);
-  enforceVK(vkQueueSubmit(app.transfer, 1, &submitInfo, app.textures.cmdBuffer.fence)); // Submit to the transfer queue
-  app.textures ~= texture;
+  app.nameVulkanObject(cmdBuffer.fence, toStringz(format("[FENCE] %s", texture.path)), VK_OBJECT_TYPE_FENCE);
+  enforceVK(vkQueueSubmit(app.transfer, 1, &submitInfo, cmdBuffer.fence));
+  app.textures.pending ~= PendingTexture(texture, cmdBuffer);
 }
 
 void mapTextures(ref App app){
   for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); }
+}
+
+int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
+  if (type in object.materials[materialIndex].textures) {
+    int index = idx(app.textures, object.materials[materialIndex].textures[type]);
+    return(index);
+  }
+  return(-1);
 }
 
 void mapTextures(ref App app, ref Geometry object){
@@ -114,24 +125,21 @@ void mapTextures(ref App app, ref Geometry object){
 
 void updateTextures(ref App app) {
   bool needsUpdate = false;
-  for(uint i = 0; i < app.textures.length; i++) { 
-    if(app.textures[i].dirty) {
+  size_t nPending = app.textures.pending.length;
+  foreach(ref texture; app.textures) {
+    if(texture.dirty) {
       needsUpdate = true;
-      if(app.trace) {
-        SDL_Log("updateTextures: syncIndex=%d texture[%d].syncIndex=%d transfer=%d", app.syncIndex, i, app.textures[i].syncIndex, app.textures.transfer);
-      }
-      if(app.textures[i].syncIndex == app.syncIndex) { // We are round, we updated all the descriptors for each Frame in Flight
-        app.textures[i].dirty = false;
-        app.textures[i].syncIndex = -1;
+      if(app.trace) { SDL_Log("updateTextures: syncIndex=%d texture.syncIndex=%d pending=%d", app.syncIndex, texture.syncIndex, nPending); }
+      if(texture.syncIndex == app.syncIndex) {
+        texture.dirty = false;
+        texture.syncIndex = -1;
         app.mapTextures();
         needsUpdate = false;
-      } else if(app.textures[i].syncIndex == -1) { // Dirty and not in the process of update
-        app.textures[i].syncIndex = app.syncIndex;
-      } // else:  // Dirty and in the process of update
+      } else if(texture.syncIndex == -1) { texture.syncIndex = app.syncIndex; }
     }
   }
   if(needsUpdate) {
-    if(app.trace) SDL_Log("updateTextures: updating descriptor set syncIndex=%d textures.length=%d", app.syncIndex, app.textures.length);
+    if(app.trace) SDL_Log("updateTextures -> updateDescriptorSet (syncIndex=%d textures.length=%d)", app.syncIndex, app.textures.length);
     app.updateDescriptorSet(app.shaders, app.sets[Stage.RENDER], app.syncIndex);
   }
 }
