@@ -45,8 +45,8 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
   }
   if(event.type == SDL_EVENT_FINGER_MOTION) {
     if(e.fingerID == app.camera.fingerIDs[1]) {
-      if (e.dy > 0 && app.camera.distance <= 30.0f) app.camera.distance += 0.2f;
-      if (e.dy < 0 && app.camera.distance >=  2.0f) app.camera.distance -= 0.2f;
+      if (e.dy > 0 && app.camera.distance <= 30.0f) app.camera.distance -= 0.2f;
+      if (e.dy < 0 && app.camera.distance >=  2.0f) app.camera.distance += 0.2f;
     } else if(e.fingerID == app.camera.fingerIDs[0]) {
       app.camera.drag(-e.dx * 0.5 * app.camera.width, e.dy * 0.25 * app.camera.height);
     }
@@ -180,8 +180,7 @@ extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
 // Immediate events to handle by the application
 void handleApp(ref App app, const SDL_Event e) {
   if(e.type == SDL_EVENT_WILL_ENTER_BACKGROUND){
-    SDL_Log("Suspending.");
-    SDL_Log("Wait on device idle & swapchain deletion queue");
+    SDL_Log("Suspending, wait on device idle & swapchain deletion queue");
     enforceVK(vkDeviceWaitIdle(app.device));
     app.swapDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
 
@@ -189,8 +188,7 @@ void handleApp(ref App app, const SDL_Event e) {
     saveSettings();
   }
   if(e.type == SDL_EVENT_DID_ENTER_BACKGROUND){
-    SDL_Log("Completely in background.");
-    SDL_Log("Shutdown ImGui");
+    SDL_Log("Completely in background, shutdown ImGui...");
     app.isImGuiInitialized = false;
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();
