@@ -91,19 +91,21 @@ void checkAsync(ref App app) {
     app.objects ~= obj;
     app.mapTextures(app.objects[($-1)]);
   });
-  if(!app.textures.transfer) {
-    receiveTimeout(dur!"msecs"(-1), (immutable(Texture) message, Tid tid) {
-      app.concurrency.workers[tid] = false;
-      Texture texture = cast(Texture)message;
-      app.textures.transfer = true;
-      app.transferTextureAsync(texture);
-      app.mainDeletionQueue.add((){ app.deAllocate(texture); });
-    });
-  }else{
-    VkResult result = vkGetFenceStatus(app.device, app.textures.cmdBuffer.fence);
-    if (result == VK_SUCCESS) {
-      app.textures.transfer = false;
-      //app.mapTextures();
-    }
+  // Accept any incoming texture transfers
+  receiveTimeout(dur!"msecs"(-1), (immutable(Texture) message, Tid tid) {
+    app.concurrency.workers[tid] = false;
+    Texture texture = cast(Texture)message;
+    app.transferTextureAsync(texture);
+    app.mainDeletionQueue.add((){ app.deAllocate(texture); });
+  });
+  // Check all pending texture transfers; promote to app.textures once GPU is done
+  size_t i = 0;
+  while(i < app.textures.pending.length) {
+    if(vkGetFenceStatus(app.device, app.textures.pending[i].cmdBuffer.fence) == VK_SUCCESS) {
+      app.textures ~= app.textures.pending[i].texture;
+      app.textures.pending = app.textures.pending.remove(i);
+      app.mapTextures();
+    } else { i++; }
   }
 }
+
