@@ -36,7 +36,8 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 1: Aquire the image");
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) { app.rebuild = true; return; }
+  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
+  if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
   if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
   if(app.trace) SDL_Log("Phase 1: Aquired %d", app.frameIndex);
   VkSemaphore renderComplete = app.renderComplete[app.frameIndex];

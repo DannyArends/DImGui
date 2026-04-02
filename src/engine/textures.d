@@ -34,10 +34,10 @@ struct Texture {
 }
 
 struct Textures {
-  Texture[] textures;             /// Textures
-  bool loaded = false;            /// Are we loading a texture a-sync ?
-  bool transfer = false;          /// Are we currently using the transfer queue for uploading & transitioning ?
-  SingleTimeCommand cmdBuffer;    /// A-Sync single time command buffer
+  Texture[] textures;                         /// Textures
+  bool loaded = false;                        /// Are we loading a texture a-sync ?
+  bool transfer = false;                      /// Are we currently using the transfer queue for uploading & transitioning ?
+  SingleTimeCommand cmdBuffer;                /// A-Sync single time command buffer
   alias textures this;
 }
 
@@ -84,7 +84,7 @@ SDL_Surface* createDummySDLSurface() {
   return(besthit);
 }
 
-void transferTextureAsync(ref App app, ref Texture texture){
+void transferTextureAsync(ref App app, ref Texture texture) {
   app.textures.cmdBuffer = app.beginSingleTimeCommands(app.transferPool, true);
   app.toGPU(app.textures.cmdBuffer, texture);
   vkEndCommandBuffer(app.textures.cmdBuffer);
