@@ -37,21 +37,12 @@ Add the Android target to `ldc2-1.40.1-linux-x86_64/etc/ldc2.conf`:
     rpath = "";
 };
 ```
- 
-### Sync shaderc dependencies
- 
-```
-cd app/jni/shaderc
-python utils/git-sync-deps
-cd ../../..
-```
- 
+
 ### Build Android libraries
  
 All dependencies (SDL3, SDL3_image, SDL3_mixer, SDL3_ttf, shaderc, spirv_cross, assimp, cimgui) are built together by 
 Android Studio via `app/jni/CMakeLists.txt`. Open the project in Android Studio and build, or use:
 ```
-cd app
 ./gradlew assembleDebug
 ```
  
