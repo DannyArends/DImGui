@@ -36,7 +36,7 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
     app.createBuffer(&app.buffers[descriptor.base].buffers[i], &app.buffers[descriptor.base].memory[i], descriptor.size, 
                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    vkMapMemory(app.device, app.buffers[descriptor.base].memory[i], 0, descriptor.size, 0, &app.buffers[descriptor.base].data[i]);
+    enforceVK(vkMapMemory(app.device, app.buffers[descriptor.base].memory[i], 0, descriptor.size, 0, &app.buffers[descriptor.base].data[i]));
     if(app.trace) SDL_Log("createSSBO: %s, nObjects=%d, size=%d", toStringz(descriptor.base), nObjects, descriptor.size);
     app.buffers[descriptor.base].dirty[i] = true;
   }
@@ -51,6 +51,10 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * objects.length);
   if(size == 0) return;
+  if(size > descriptor.size) {
+    SDL_Log("updateSSBO: overflow! %s needs %d bytes, buffer has %d", toStringz(descriptor.base), size, descriptor.size);
+    return; // or reallocate
+  }
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)objects.length);
   memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);

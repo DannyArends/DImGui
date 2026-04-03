@@ -39,9 +39,11 @@ void updateMeshInfo(ref App app) {
       }
     }
     app.meshInfo ~= app.objects[o].meshes.array;
+  }
+  if(needsUpdate){
+    app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
     app.printMeshInfo();
   }
-  if(needsUpdate) app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
 }
 
 string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool verbose = false) {

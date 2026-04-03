@@ -26,11 +26,11 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
   if (app.hasCompute) {
-    enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, uint.max));
+    enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, ulong.max));
     enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
   }
 
-  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, uint.max));
+  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
   app.bufferDeletionQueue.flush(); // Flush the Queue
 
@@ -110,7 +110,8 @@ void renderFrame(ref App app) {
     signalSemaphoreCount : 1,
     pSignalSemaphores : &renderComplete
   };
-  
+
+  //SDL_Log("vkQueueSubmit: frame=%d sync=%d frameIndex=%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
   enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
   if(app.trace) SDL_Log("Done renderFrame: %d", app.syncIndex);
 }

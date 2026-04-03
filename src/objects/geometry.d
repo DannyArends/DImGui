@@ -195,10 +195,9 @@ void cleanup(ref App app, Geometry object) {
 
 /** deAllocate all GPU buffers after waiting for the object to not be in use anymore */
 void deAllocate(ref App app, Geometry object) {
-  // We use the vertex buffer fence to wait until the buffers aren't in-use anymore
-  object.vertexBuffer.frame = app.totalFramesRendered + app.framesInFlight;
+  object.fence = app.fences[app.syncIndex].renderInFlight;
   app.bufferDeletionQueue.add((bool force){
-    if (force || (app.totalFramesRendered >= object.vertexBuffer.frame)){ app.cleanup(object); return(true); }
+    if(force || vkGetFenceStatus(app.device, object.fence) == VK_SUCCESS) { app.cleanup(object); return(true); }
     return(false);
   });
 }
@@ -342,7 +341,7 @@ void draw(T)(ref App app, ref T object, size_t i) {
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
   vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(cmd, cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, cast(uint)object.indexBuffer.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.name()));
 }
 
@@ -357,6 +356,6 @@ void shadow(ref App app, Geometry object, size_t i) {
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
   vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(cmd, cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, cast(uint)object.indexBuffer.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("SHADOW[%s]: DONE", toStringz(object.name()));
 }
