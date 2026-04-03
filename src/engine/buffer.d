@@ -11,7 +11,7 @@ import validation : nameVulkanObject;
 struct StageBuffer {
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
-  uint frame;                    /// Frame to complete before destoying the buffer
+  VkFence fence;                 /// Fence to complete before destoying the buffer
   VkDeviceSize size = 0;         /// Current actual data size in bytes
   VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
   void* data;                    /// Pointer to mapped data
@@ -140,9 +140,10 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
     if (buffer.vb != null) { // The old buffer was not empty
       //SDL_Log("toGPU realloc: frame=%d sync=%d old=%p new capacity=%d", app.totalFramesRendered, app.syncIndex, buffer.vb, newCapacity);
       auto oldbuffer = buffer;
-      oldbuffer.frame = app.totalFramesRendered + app.framesInFlight;
-      app.bufferDeletionQueue.add((bool force){ // Add the old buffer to the buffer deletion queue
-        if (force || (app.totalFramesRendered >= oldbuffer.frame)){ app.destroyGeometryBuffers(oldbuffer); return(true); }
+      
+      oldbuffer.fence = app.fences[app.syncIndex].renderInFlight;
+      app.bufferDeletionQueue.add((bool force){
+        if(force || vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS) { app.destroyGeometryBuffers(oldbuffer); return(true); }
         return(false);
       });
     }
@@ -152,6 +153,7 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
 
     app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
     buffer.capacity = newCapacity;
+    SDL_Log("toGPU realloc: new vb=%p vbM=%p capacity=%d frame=%d", buffer.vb, buffer.vbM, newCapacity, app.totalFramesRendered);
   }
   memcpy(buffer.data, cast(void*)objects, requiredSize);
   buffer.size = requiredSize;
