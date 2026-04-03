@@ -11,7 +11,7 @@ import validation : nameVulkanObject;
 struct StageBuffer {
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
-  uint frame;                    /// Frame to complete before destoying the buffer
+  VkFence fence;                 /// Fence to complete before destoying the buffer
   VkDeviceSize size = 0;         /// Current actual data size in bytes
   VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
   void* data;                    /// Pointer to mapped data
@@ -136,18 +136,19 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
 
   // Check if we need to allocate a new buffer or resize the current buffer
   if(requiredSize > buffer.capacity) {
+    VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
     if (buffer.vb != null) { // The old buffer was not empty
       auto oldbuffer = buffer;
-      oldbuffer.frame = app.totalFramesRendered + app.framesInFlight;
-      app.bufferDeletionQueue.add((bool force){ // Add the old buffer to the buffer deletion queue
-        if (force || (app.totalFramesRendered >= oldbuffer.frame)){ app.destroyGeometryBuffers(oldbuffer); return(true); }
+      oldbuffer.fence = app.fences[app.syncIndex].renderInFlight;
+      app.bufferDeletionQueue.add((bool force){
+        if(force || vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS) { 
+        app.destroyGeometryBuffers(oldbuffer); return(true); }
         return(false);
       });
     }
-    VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
     buffer = GeometryBuffer();
     app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
-    vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data);
+    enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
 
     app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
     buffer.capacity = newCapacity;
@@ -159,4 +160,3 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
   if(app.trace) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, requiredSize);
   return(true);
 }
-

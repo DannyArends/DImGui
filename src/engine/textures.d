@@ -153,7 +153,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
 
   // Copy the image data to the StagingBuffer memory
   void* data;
-  vkMapMemory(app.device, stagingBufferMemory, 0, texture.surface.imageSize, 0, &data);
+  enforceVK(vkMapMemory(app.device, stagingBufferMemory, 0, texture.surface.imageSize, 0, &data));
   if(SDL_MUSTLOCK(texture.surface)) SDL_LockSurface(texture.surface);
   memcpy(data, texture.surface.pixels, texture.surface.imageSize);
   if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);

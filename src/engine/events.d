@@ -181,7 +181,7 @@ extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
 void handleApp(ref App app, const SDL_Event e) {
   if(e.type == SDL_EVENT_WILL_ENTER_BACKGROUND){
     SDL_Log("Suspending, wait on device idle & swapchain deletion queue");
-    enforceVK(vkDeviceWaitIdle(app.device));
+    //enforceVK(vkDeviceWaitIdle(app.device));
     app.swapDeletionQueue.flush(); // Frame deletion queue, flushes the buffers
 
     SDL_Log("Save ImGui Settings");
