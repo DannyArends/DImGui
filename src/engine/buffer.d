@@ -138,13 +138,10 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
   if(requiredSize > buffer.capacity) {
     VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
     if (buffer.vb != null) { // The old buffer was not empty
-      //SDL_Log("toGPU realloc: frame=%d sync=%d old=%p", app.totalFramesRendered, app.syncIndex, buffer.vb);
       auto oldbuffer = buffer;
-
       oldbuffer.fence = app.fences[app.syncIndex].renderInFlight;
       app.bufferDeletionQueue.add((bool force){
         if(force || vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS) { 
-        //SDL_Log("toGPU delete: frame=%d sync=%d old=%p", app.totalFramesRendered, app.syncIndex, oldbuffer.vb);
         app.destroyGeometryBuffers(oldbuffer); return(true); }
         return(false);
       });
@@ -155,7 +152,6 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
 
     app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
     buffer.capacity = newCapacity;
-    //SDL_Log("toGPU realloc: new vb=%p vbM=%p capacity=%d frame=%d", buffer.vb, buffer.vbM, newCapacity, app.totalFramesRendered);
   }
   memcpy(buffer.data, cast(void*)objects, requiredSize);
   buffer.size = requiredSize;
@@ -164,4 +160,3 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
   if(app.trace) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, requiredSize);
   return(true);
 }
-
