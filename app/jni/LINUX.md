@@ -1,7 +1,7 @@
 ## Compile for Linux
 Compile Simple DirectMedia Layer (SDL3):
 ```
-rm -rf app\jni\SDL\build
+rm -rf app/jni/SDL/build
 cd app/jni/SDL
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
@@ -15,7 +15,7 @@ cd ../../../../
 ```
 Compile SDL_image:
 ```
-rm -rf app\jni\SDL_image\build
+rm -rf app/jni/SDL_image/build
 cd app/jni/SDL_image
 mkdir build
 cd build
@@ -45,7 +45,7 @@ cd ../../../../
 ```
 Compile SDL_ttf:
 ```
-rm -rf app\jni\SDL_ttf\build
+rm -rf app/jni/SDL_ttf/build
 cd app/jni/SDL_ttf
 mkdir build
 cd build
@@ -71,7 +71,7 @@ cd ../../../../
 ```
 Compile C-api for Dear ImGui:
 ```
-rm -rf app\jni\build
+rm -rf app/jni/build
 cd app/jni/
 mkdir build
 cd build
@@ -83,7 +83,7 @@ cd ../../../
 ```
 Compile ShaderC:
 ```
-rm -rf app\jni\shaderc\build
+rm -rf app/jni/shaderc/build
 cd app/jni/shaderc
 python utils/git-sync-deps
 mkdir build
@@ -98,7 +98,7 @@ cd ../../../../
 ```
 Compile spriv_cross:
 ```
-rm -rf app\jni\spirv_cross\build
+rm -rf app/jni/spirv_cross/build
 cd app/jni/spirv_cross
 mkdir build
 cd build
