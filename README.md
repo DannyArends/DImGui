@@ -18,15 +18,16 @@ The engine boasts the following features:
 
 ### (Cross-)Compilation ⚙️
 
+For building on Windows and/or Linux, please refer to the detailed instructions in 
+[compilation.md](./docs/compilation.md). 
+
 This repository is in itself a minimal SDL3 android_project for Android Studio. Building the example 
 requires several dependencies, including SDL3, Vulkan, ShaderC, SPIRV-Cross, and the Open Asset 
 Import Library. All dependencies are found in the [app/jni](./app/jni) folder. To build the Android 
 version Android Studio and the Android NDK are required. The software has been tested under x64 
-systems (Windows and Linux) and on arm64-v8a (Android 16) using a Google Pixel 9 Pro.
-
-For building on MS Windows and/or Linux, please refer to the detailed instructions in 
-[compilation.md](./docs/compilation.md). If you're cross-compiling for Android arm64-v8a using 
-Linux, you'll find the relevant guide in [cross-compilation.md](./docs/cross-compilation.md).
+systems (Windows and Linux) and on arm64-v8a (Android 16) using a Google Pixel 9 Pro. If you're 
+cross-compiling for Android arm64-v8a using either Linux or Windows, you'll find the relevant guide 
+in [cross-compilation.md](./docs/cross-compilation.md).
 
 ### Build with 🛠️
 
