@@ -51,6 +51,10 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * objects.length);
   if(size == 0) return;
+  if(size > descriptor.size) {
+    SDL_Log("updateSSBO: overflow! %s needs %d bytes, buffer has %d", toStringz(descriptor.base), size, descriptor.size);
+    return; // or reallocate
+  }
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)objects.length);
   memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);
