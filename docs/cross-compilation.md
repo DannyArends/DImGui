@@ -1,137 +1,76 @@
-## Cross-compile for Android using Linux
-To cross-compile for Android, you'll need:
-* LDC2 version 1.40.1
-* Python
-* LDC2 Android library: ldc2-1.40.1-beta1-android-aarch64.tar.xz
-* cmake version 3.27.0
-* Android Studio
+## Cross-compile for Android
+ 
+All dependencies are included as submodules in `app/jni/` and are built together via the Android CMakeLists.txt.
+ 
+### Requirements
+ 
+* [LDC2](https://github.com/ldc-developers/ldc/releases) version 1.40.1+
+* [Android Studio](https://developer.android.com/studio)
 * Android NDK r27c (version: 27.2.12479018)
-
+* Python (for shaderc dependency sync)
+ 
 ### Install Android Studio
-
-Make sure that after installation you set the ANDROID_HOME variable, as well as update your PATH environmental variable
+ 
+After installation, set the required environment variables:
 ```
-  export ANDROID_HOME=~/Android/Sdk
-  export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools
+export ANDROID_HOME=~/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools
 ```
-
-### Preparing the build environment:
-We need to make a single change in the NDK to prevent a compile issue with SDL2, in:
+ 
+### NDK fix for SDL3
+ 
+In the NDK, comment out line 119 of:
+```
 ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/sys/types.h
-
-Comment out L119, to prevent recursive definition of variadic arguments:
 ```
-  //typedef __builtin_va_list __va_list;
+```c
+//typedef __builtin_va_list __va_list;
 ```
-
-### Setup LDC2 for cross compilation:
-
-Get the android libraries by downloading: ldc2-1.40.1-beta1-android-aarch64.tar.xz
-Extract the lib folder in the archive, rename it to "lib-android-aarch64" then copy it in the directory where you installed LDC 1.40.1
-
-Inside the ldc2-1.40.1-linux-x86_64/etc/ folder open the ldc2.conf file and add the android target:
-
-Make sure the %%ndkpath%% is either defined, or replace it with the absolute path to the NDK
-
+ 
+### Setup LDC2 for Android cross-compilation
+ 
+Download `ldc2-1.40.1-beta1-android-aarch64.tar.xz`, extract the `lib` folder, rename it to `lib-android-aarch64`, and place it in your LDC2 installation directory.
+ 
+Add the Android target to `ldc2-1.40.1-linux-x86_64/etc/ldc2.conf`:
 ```
-  "aarch64-.*-linux-android":
-  {
-      switches = [
-          "-defaultlib=phobos2-ldc,druntime-ldc",
-          "-link-defaultlib-shared=false",
-          "-gcc=%%ndkpath%%/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang",
-      ];
-      lib-dirs = [
-          "%%ldcbinarypath%%/../lib-android-aarch64",
-      ];
-      rpath = "";
-  };
+"aarch64-.*-linux-android":
+{
+    switches = [
+        "-defaultlib=phobos2-ldc,druntime-ldc",
+        "-link-defaultlib-shared=false",
+        "-gcc=%%ndkpath%%/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang",
+    ];
+    lib-dirs = [
+        "%%ldcbinarypath%%/../lib-android-aarch64",
+    ];
+    rpath = "";
+};
 ```
-
-
-### dependancies
-We need to build shaderc, spirv_cross, and assimp using [cmake](https://cmake.org) scripts. 
-SDL2 and associated libraries are build using [Android Studio](https://developer.android.com/studio), 
-while the (c)ImGui library uses basic makefiles.
-
-#### Compile shaderc using cmake
+ 
+### Sync shaderc dependencies
+ 
 ```
-  cd deps/shaderc
-  python utils/git-sync-deps
-  rm -rf build
-  mkdir build
-  cd build
-  cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_TOOLCHAIN_FILE=/home/rqdt9/Android/Sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake \
-        -DANDROID_PLATFORM=24 \
-        -DANDROID_ABI=arm64-v8a \
-        -DSHADERC_SKIP_TESTS=TRUE \
-        -DSHADERC_SKIP_EXAMPLES=TRUE \
-        -DSHADERC_SKIP_INSTALL=TRUE \
-        ../
-  make -j8
-  mv libshaderc/libshaderc_shared.so ../../../app/src/main/jniLibs/arm64-v8a
+cd app/jni/shaderc
+python utils/git-sync-deps
+cd ../../..
 ```
-
-Move the compiled shared library from "libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs" so 
-Android Studio will pick up the compiled library and include it inside the APK.
-
-#### Compile spirv_cross using cmake
+ 
+### Build Android libraries
+ 
+All dependencies (SDL3, SDL3_image, SDL3_mixer, SDL3_ttf, shaderc, spirv_cross, assimp, cimgui) are built together by Android Studio via `app/jni/CMakeLists.txt`. Open the project in Android Studio and build, or use:
 ```
-  cd deps/spirv_cross
-  rm -rf build
-  mkdir build
-  cd build
-  cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_TOOLCHAIN_FILE=/home/rqdt9/Android/Sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake \
-        -DANDROID_PLATFORM=24 \
-        -DANDROID_ABI=arm64-v8a \
-        -DSPIRV_CROSS_SHARED=ON \
-        ../
-  make -j8
-  mv libspirv-cross-c-shared.so ../../../app/src/main/jniLibs/arm64-v8a
+cd app
+./gradlew assembleDebug
 ```
-Move the compiled shared library from "build/libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs" so 
-Android Studio will pick up the compiled library and include it inside the APK.
-
-#### Compile assimp using cmake
-```
-  cd deps/assimp
-  rm -rf build
-  mkdir build
-  cd build
-  cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_TOOLCHAIN_FILE=/home/rqdt9/Android/Sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake \
-        -DANDROID_PLATFORM=24 \
-        -DANDROID_ABI=arm64-v8a \
-        -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF \
-        -DASSIMP_BUILD_FBX_IMPORTER=ON -DASSIMP_BUILD_3DS_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON \
-        -DASSIMP_NO_EXPORT=ON \
-        -DASSIMP_BUILD_TESTS=OFF \
-        ../
-  make -j8
-  mv bin/libassimp.so ../../../app/src/main/jniLibs/arm64-v8a
-```
-Move the compiled shared library from "build/libshaderc/libshaderc_shared.so" to "app/src/main/jniLibs" so 
-Android Studio will pick up the compiled library and include it inside the APK.
-
-#### Compile IMGUI & IMGUI into a shared library
-Make sure to update the paths to the NDK inside the Makefile before trying to build the libCImGui, then compile
-```
-  make -f Makefile.android
-```
-
-#### Compile SDL2 & other related libraries
-For SDL_Mixer, set the support for libgme to false in the Android.mk file (line 34)
-```
-  SUPPORT_GME ?= false
-```
-
-After this, use Android Studio to compile the SDL libraries, we need to use the .SO files to build the libMAIN.so in the next step. 
-Find where the compiled .so files are located inside of: app/build/intermediates/
-
-### Compile the D code into libMAIN.so
-We can now use LDC to compile the shared library that will hook the sdl_main entry point, use importC to link to the dependancies, and the D code
+ 
+### Compile D code into libmain.so
+ 
 ```
 dub build --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force
+```
+ 
+### Install on device
+ 
+```
+adb install app/build/outputs/apk/debug/app-debug.apk
 ```

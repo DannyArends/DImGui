@@ -1,59 +1,49 @@
 ### Prerequisites
-Make sure the following (development) libraries are installed:
-* [SDL2](https://www.libsdl.org/)
-* [SDL2_image](https://www.libsdl.org/projects/SDL_image/)
-* [SDL_mixer](https://www.libsdl.org/projects/SDL_mixer/)
-* [SDL_ttf](https://www.libsdl.org/projects/SDL_ttf/)
-* [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
+You will need a D compiler
+* [DMD or LDC2 compiler](https://dlang.org/download.html) >2.110.0
+
+All dependencies are included as submodules in `app/jni/`:
+* [SDL3](https://www.libsdl.org/)
+* [SDL3_image](https://www.libsdl.org/projects/SDL_image/)
+* [SDL3_mixer](https://www.libsdl.org/projects/SDL_mixer/)
+* [SDL3_ttf](https://www.libsdl.org/projects/SDL_ttf/)
 * [ShaderC](https://github.com/google/shaderc)
-* [SPIRV-Cross](https://https://github.com/KhronosGroup/SPIRV-Cross)
-* [DMD compiler](https://dlang.org/download.html) >2.110.0
+* [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross)
+* [Assimp](https://github.com/assimp/assimp)
+* [cImGui](https://github.com/cimgui/cimgui)
 
-Install all Linux dependancies (Ubuntu) by issuing the following commands:
-
+### Clone the repository
+ 
 ```
-  sudo apt install libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
-  sudo apt install shaderc spirv-cross-dev libassimp-dev
+git clone --recursive https://github.com/DannyArends/DImGui.git
+git submodule update --init --recursive  # if already cloned
 ```
-
-in Debian, the names of the ShaderC and SPIRV-Cross development libraries are slightly different
-
+ 
+### Compilation [Linux]
+ 
+Build all dependencies from `app/jni/` using cmake, then compile with dub.
+See [app/jni/LINUX.md](../app/jni/LINUX.md) for the full Linux build commands for each dependency.
+ 
+Once dependencies are built:
 ```
-  sudo apt install libshaderc1 libspirv-cross-c-shared-dev
+dub
 ```
-
-### Compilation [Linux & Windows]
-
-* Clone the repository
-  * `git clone --recursive https://github.com/DannyArends/DImGui.git`
-  * `git submodule update --init --recursive` (If already cloned)
-* Compile [Linux]
-  * Make sure the `SDL2`, `SDL2_image`, `SDL2_mixer`, `SDL2_ttf` development libraries are installed
-    * [SDL2](https://www.libsdl.org/)
-    * [SDL2_image](https://www.libsdl.org/projects/SDL_image/)
-    * [SDL_mixer](https://www.libsdl.org/projects/SDL_mixer/)
-    * [SDL_ttf](https://www.libsdl.org/projects/SDL_ttf/)
-  * Execute dub to compile the executable and run the engine:
-    * `dub`
-  * For some linux distributions, the dynamic loader never checks the current directory for shared libs, which can be fixed by:
-    * `$LD_LIBRARY_PATH=. dub`
-* Compile [MS windows (x64)]
-  * Install the [Visual Studio 2019 Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) with **MSVC v142** and the **Windows 10 SDK**
-  * Install the [LunarG Vulkan SDK](https://vulkan.lunarg.com/) and make sure to **install the SDL2 Component**
-  * Check the paths in the [dub.json](./dub.json) file, and update the Vulkan version (1.4.309.0) to the version installed
-  * Execute dub to compile the executable
-    * `dub`
-
-### Building windows deps using cmake
-
-Assimp might need to be compiled (e.g. using Visual Studio 2019)
-
+ 
+For some Linux distributions, the dynamic loader never checks the current directory for shared libs:
 ```
-	cd deps/assimp
-	rm -rf build
-	mkdir build
-	cd build
-	call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
-	cmake -DCMAKE_BUILD_TYPE=Release -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF -DASSIMP_BUILD_FBX_IMPORTER=ON -DASSIMP_BUILD_3DS_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON -DASSIMP_NO_EXPORT=ON -DASSIMP_BUILD_TESTS=OFF ../
-	msbuild Assimp.sln
+LD_LIBRARY_PATH=. dub
+```
+ 
+### Compilation [MS Windows x64]
+ 
+* Install [Visual Studio 2019 Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) with **MSVC v142** and the **Windows 10 SDK**
+* Install the [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
+* Check the Vulkan SDK version in [dub.json](../dub.json) and update if needed
+ 
+Build all dependencies from `app/jni/` using cmake.
+See [app/jni/WINDOWS.md](../app/jni/WINDOWS.md) for the full Windows build commands for each dependency.
+ 
+Once dependencies are built:
+```
+dub
 ```
