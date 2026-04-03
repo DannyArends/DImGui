@@ -2,16 +2,6 @@
 You will need a D compiler
 * [DMD or LDC2 compiler](https://dlang.org/download.html) >2.110.0
 
-All dependencies are included as submodules in `app/jni/`:
-* [SDL3](https://www.libsdl.org/)
-* [SDL3_image](https://www.libsdl.org/projects/SDL_image/)
-* [SDL3_mixer](https://www.libsdl.org/projects/SDL_mixer/)
-* [SDL3_ttf](https://www.libsdl.org/projects/SDL_ttf/)
-* [ShaderC](https://github.com/google/shaderc)
-* [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross)
-* [Assimp](https://github.com/assimp/assimp)
-* [cImGui](https://github.com/cimgui/cimgui)
-
 ### Clone the repository
  
 ```
