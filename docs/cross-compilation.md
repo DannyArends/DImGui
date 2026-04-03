@@ -135,4 +135,3 @@ We can now use LDC to compile the shared library that will hook the sdl_main ent
 ```
 dub build --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force
 ```
-
