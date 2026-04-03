@@ -56,12 +56,17 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     pNext : null
   };
 
+  VkPhysicalDeviceFeatures deviceFeatures = {
+    robustBufferAccess: VK_TRUE,
+  };
+
   VkDeviceCreateInfo createDevice = {
     sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
     queueCreateInfoCount : cast(uint)createQueue.length,
     pQueueCreateInfos : &createQueue[0],
     enabledExtensionCount : cast(uint)app.deviceExtensions.length,
     ppEnabledExtensionNames : &app.deviceExtensions[0],
+    pEnabledFeatures : &deviceFeatures,
     pNext : &features
   };
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
