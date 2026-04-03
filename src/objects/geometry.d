@@ -356,6 +356,6 @@ void shadow(ref App app, Geometry object, size_t i) {
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
   vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(cmd, cast(uint)object.indices.length, cast(uint)object.instances.length, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, cast(uint)object.indexBuffer.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("SHADOW[%s]: DONE", toStringz(object.name()));
 }
