@@ -184,8 +184,7 @@ void endSingleTimeCommands(ref App app, SingleTimeCommand cmd, VkQueue queue) {
     pCommandBuffers: &cmd.commands
   };
 
-  vkQueueSubmit(queue, 1, &submitInfo, null);
-  vkQueueWaitIdle(queue);
-
+  enforceVK(vkQueueSubmit(queue, 1, &submitInfo, null));
+  enforceVK(vkQueueWaitIdle(queue));
   vkFreeCommandBuffers(app.device, cmd.pool, 1, &cmd.commands);
 }

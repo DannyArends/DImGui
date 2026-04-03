@@ -53,7 +53,7 @@ void createUBO(ref App app, Descriptor descriptor) {
   app.ubos[descriptor.base].data.length = app.framesInFlight;
   for(uint i = 0; i < app.framesInFlight; i++) {
     app.createBuffer(&app.ubos[descriptor.base].buffers[i], &app.ubos[descriptor.base].memory[i], descriptor.bytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    vkMapMemory(app.device, app.ubos[descriptor.base].memory[i], 0, descriptor.bytes, 0, &app.ubos[descriptor.base].data[i]);
+    enforceVK(vkMapMemory(app.device, app.ubos[descriptor.base].memory[i], 0, descriptor.bytes, 0, &app.ubos[descriptor.base].data[i]));
   }
   app.nameUBO(app.ubos[descriptor.base], descriptor.base);
   if(app.verbose) SDL_Log("Created %d UBO of size: %d bytes", app.imageCount, descriptor.bytes);
