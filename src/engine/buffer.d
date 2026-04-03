@@ -136,7 +136,10 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
 
   // Check if we need to allocate a new buffer or resize the current buffer
   if(requiredSize > buffer.capacity) {
+    VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
     if (buffer.vb != null) { // The old buffer was not empty
+      vkDeviceWaitIdle(app.device);
+      SDL_Log("toGPU realloc: frame=%d sync=%d old=%p new capacity=%d", app.totalFramesRendered, app.syncIndex, buffer.vb, newCapacity);
       auto oldbuffer = buffer;
       oldbuffer.frame = app.totalFramesRendered + app.framesInFlight;
       app.bufferDeletionQueue.add((bool force){ // Add the old buffer to the buffer deletion queue
@@ -144,10 +147,9 @@ bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuff
         return(false);
       });
     }
-    VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
     buffer = GeometryBuffer();
     app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
-    vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data);
+    enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
 
     app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
     buffer.capacity = newCapacity;
