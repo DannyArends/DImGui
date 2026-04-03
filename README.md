@@ -8,26 +8,25 @@ and leverages SDL3 for robust cross-platform support.
 ### Features 🚀
 
 The engine boasts the following features:
-- Basic geometries (cube, cone, torus, etc.) and complex 3D objects (FBX, glTF, 3DS, etc.)
+- Basic geometries (cube, cone, torus, etc.) and complex 3D objects (FBX, 3DS, etc.)
 - Skeletal and key-frame animations
-- HDR Lighting Engine, Shadows & Normal mapping
+- HDR Lighting Engine, Shadow maps & Normal mapping
+- Bindless textures with async GPU upload
 - Compute shaders for particle engines and texture generation
 - Shader reflection for UBOs, SSBOs, and textures
-- Instanced rendering of objects
+- Instanced rendering of objects with dynamic vertex/index buffers
+- L-system procedural geometry
+- PDB protein structure viewer
 - GUI windows for settings, objects, textures, lights, and sounds
 
 ### (Cross-)Compilation ⚙️
 
-For building on Windows and/or Linux, please refer to the detailed instructions in 
-[compilation.md](./docs/compilation.md). 
+All dependencies are included as git submodules in `app/jni/`, making this repository 
+self-contained. It is also a minimal SDL3 android_project ready for Android Studio. 
+The software has been tested on x64 Windows, x64 Linux, and arm64-v8a Android 15.
 
-This repository is in itself a minimal SDL3 android_project for Android Studio. Building the example 
-requires several dependencies, including SDL3, Vulkan, ShaderC, SPIRV-Cross, and the Open Asset 
-Import Library. All dependencies are found in the [app/jni](./app/jni) folder. To build the Android 
-version Android Studio and the Android NDK are required. The software has been tested under x64 
-systems (Windows and Linux) and on arm64-v8a (Android 16) using a Google Pixel 9 Pro. If you're 
-cross-compiling for Android arm64-v8a using either Linux or Windows, you'll find the relevant guide 
-in [cross-compilation.md](./docs/cross-compilation.md).
+For building on MS Windows and/or Linux, see [compilation.md](./docs/compilation.md).  
+For cross-compiling for Android arm64-v8a, see [cross-compilation.md](./docs/cross-compilation.md).
 
 ### Build with 🛠️
 
@@ -51,6 +50,7 @@ The following folders are interesting, if you're interested in how the repositor
 - [src/math](./src/math/) math functions for vectors, matrices, particles, and the L-system
 - [src/objects](./src/objects) All geometric (renderable) objects are in here
 - [assets/](./app/src/main/assets/data/) Assets used (fonts, objects, shaders, and textures)
+- [app/jni/](./app/jni/) all dependencies as git submodules (SDL3, shaderc, spirv_cross, assimp, cimgui)
 
 Some noteworthy files:
 
