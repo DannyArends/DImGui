@@ -111,7 +111,7 @@ void renderFrame(ref App app) {
     pSignalSemaphores : &renderComplete
   };
 
-  SDL_Log("vkQueueSubmit: frame=%d sync=%d frameIndex=%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
+  //SDL_Log("vkQueueSubmit: frame=%d sync=%d frameIndex=%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
   enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
   if(app.trace) SDL_Log("Done renderFrame: %d", app.syncIndex);
 }
