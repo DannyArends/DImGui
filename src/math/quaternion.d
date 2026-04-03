@@ -15,6 +15,16 @@ struct Quaternion {
   alias data this;
 }
 
+/** Quaternion multiplication */
+@nogc pure float[4] qMul(const float[4] a, const float[4] b) nothrow {
+  return [
+    a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
+    a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],
+    a[3]*b[2] + a[0]*b[1] - a[1]*b[0] + a[2]*b[3],
+    a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2]
+  ];
+}
+
 /** Returns the normalized vector of v */
 @nogc pure T[4] normalize(T)(T[4] v) nothrow {
     float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3];

@@ -6,8 +6,8 @@
 import engine;
 
 import vector : normalize, vMul,vSub, vAdd, negate, xyz;
-import matrix : multiply, inverse, rotate, radian, perspective, lookAt;
-import quaternion : xyzw;
+import matrix : multiply, inverse, rotate, radian, perspective, transpose, lookAt;
+import quaternion : xyzw, normalize, rotate, qMul, angleAxis;
 
 /** Camera
  */
@@ -15,77 +15,46 @@ struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
 
-  float[3]        lookat      = [0.0f, 0.0f, 0.0f];    /// Position in the middle of the screen
-  float[2]        nearfar     = [0.1f, 100.0f];        /// View distances, near [0], far [1]
-  float[3]        up          = [0.0f, 1.0f, 0.0f];    /// Defined up vector
-  float           fov         = 45.0f;                 /// Field of view
-
-  float[3]        rotation    = [0.0f, 0.0f, 0.0f];    /// Horizontal [0], Vertical [1]
+  float[3]        lookat      = [0.0f, 0.0f, 0.0f];     /// Position in the middle of the screen
+  float[2]        nearfar     = [0.1f, 100.0f];         /// View distances, near [0], far [1]
+  float[3]        up          = [0.0f, 1.0f, 0.0f];     /// Defined up vector
+  float           fov         = 45.0f;                  /// Field of view
+  float           speed       =  0.1f;                  /// Movement speed
+  float[3]        rotation    = [0.0f, 0.0f, 0.0f];     /// Horizontal [0], Vertical [1]
   float           distance    = 15.0f;                  /// Distance of camera to lookat
-  bool[2]         isdrag      = [false, false];        /// Mouse dragging
-  SDL_FingerID[2] fingerIDs   = [-1, -1];             /// Android FingerIDs
+  bool[2]         isdrag      = [false, false];         /// Mouse dragging
+  SDL_FingerID[2] fingerIDs   = [-1, -1];               /// Android FingerIDs
 
-  // Move the camera forward
-  @property @nogc float[3] forward() const nothrow { 
-    float[3] direction = rotation.direction().normalize();
-    direction = direction.vMul(-0.1f);
-    return(direction);
+  @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -speed]); }
+  @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
+  @property @nogc float[3] right() const nothrow { return orientation.multiply([ speed, 0.0f, 0.0f]); }
+  @property @nogc float[3] left() const nothrow { return orientation.multiply([-speed, 0.0f, 0.0f]); }
+
+  @property uint width() const nothrow { return(currentExtent.width); };
+  @property uint height() const nothrow { return(currentExtent.height); };
+  @property float aspectRatio() const nothrow { return(this.width / cast(float) this.height); }
+  @nogc Matrix orientation() const nothrow {
+    float[4] qYaw = angleAxis!float(rotation[0] + 90.0f, [0.0f, 1.0f, 0.0f]);
+    float[4] qPitch = angleAxis!float(-rotation[1], [1.0f, 0.0f, 0.0f]);
+    return qMul(qPitch, qYaw).normalize().rotate().transpose();
   }
-
-  // Move the camera backward
-  @property @nogc float[3] back() const nothrow { 
-    float[3] back = -forward()[];
-    return(back);
-  }
-
-  @property uint width() { return(currentExtent.width); };
-  @property uint height() { return(currentExtent.height); };
-  @property float aspectRatio() { return(this.width / cast(float) this.height); }
-
-  @property Matrix proj() { return(perspective(fov, aspectRatio, nearfar[0], nearfar[1])); }
-
-  @property @nogc Matrix view() nothrow { return(lookAt(position, lookat, up)); }
-
-  // Move the camera to the left of the view direction
-  @property @nogc float[3] left() const nothrow {
-    float[3] left = -right()[];
-    return(left);
-  }
-
-  // Move the camera to the right of the view direction
-  @property @nogc float[3] right() const nothrow { 
-    float[3] direction = forward();
-    direction[1] = 0.0f;
-    return(multiply(rotate(Matrix.init, [90.0f, 0.0f, 0.0f]), direction.xyzw()).xyz);
-  }
-
-  @nogc float[3] position() const nothrow { return(vAdd(lookat, vMul(rotation.direction(), distance))); }
+  @property Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
+  @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
+  @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
 }
 
 /* Create a position/rotation matrix through 3D space starting from xy */
-float[3][2] castRay(Camera camera, float x, float y) {
-  float[2] ndc = [(2.0f * x) / cast(float) camera.width  - 1.0f,                            // Normalized device X
-                  (2.0f * y) / cast(float) camera.height - 1.0f];                           // Normalized device Y
-  float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];                                            // Homogeneous clip coordinates
-  float[4] eye = multiply(inverse(camera.proj), clip);                                      // Eye coordinates
-  float[3] world = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz;     // World coordinates (offset to camera position)
-  float[3] direction = multiply(inverse(camera.view), [ eye[0], eye[1], eye[2], 0.0f]).xyz; // Ray direction
-  return([camera.position.vAdd(world), direction.normalize()]);
+float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
+  float[2] ndc = [(2.0f * x) / cast(float)camera.width  - 1.0f,
+                  (2.0f * y) / cast(float)camera.height - 1.0f];
+  float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];
+  float[4] eye  = multiply(camera.proj().inverse(), clip);
+  float[3] dir  = multiply(camera.view.inverse(), [eye[0], eye[1], eye[2], 0.0f]).xyz;
+  return [camera.position.vAdd(dir), dir.normalize()];
 }
 
-/* Get the normalized direction of the xy camera rotation (gimbal lock) */
-@nogc float[3] direction(const float[3] rotation) nothrow {
-  float[3] direction = [
-      cos(radian(rotation[1])) * cos(radian(rotation[0])),
-      sin(radian(rotation[1])),
-      cos(radian(rotation[1])) * sin(radian(rotation[0])),
-  ];
-  return(direction.normalize().negate());
-}
-
-@nogc void move(ref Camera camera, float[3] movement) nothrow {
-  camera.lookat = vAdd(camera.lookat, movement);
-}
+/* Move the position the camera looks at */
+@nogc void move(ref Camera camera, float[3] movement) nothrow { camera.lookat = vAdd(camera.lookat, movement); }
 
 /* Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
