@@ -14,19 +14,27 @@ struct SupportedFeatures {
  VkPhysicalDevice16BitStorageFeatures vk16;
 }
 
-SupportedFeatures querySupportedFeatures(VkPhysicalDevice physicalDevice) {
-  SupportedFeatures s;
-  s.vk12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-  s.vk16.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
-  s.vk12.pNext = &s.vk16;
+/** query Supported Vulkan Features & enforce minimal feature set required
+ */
+void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
+  app.supported.vk12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  app.supported.vk16.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+  app.supported.vk12.pNext = &app.supported.vk16;
 
   VkPhysicalDeviceFeatures2 f2 = {
     sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-    pNext: &s.vk12
+    pNext: &app.supported.vk12
   };
   vkGetPhysicalDeviceFeatures2(physicalDevice, &f2);
-  s.base = f2.features;
-  return s;
+  app.supported.base = f2.features;
+
+  /// Minimal features
+  if(!app.supported.base.robustBufferAccess) assert(0, "Vulkan 1.0 feature not supported: robustBufferAccess");
+  if(!app.supported.vk12.descriptorIndexing) assert(0, "Vulkan 1.2 feature not supported: descriptorIndexing");
+  if(!app.supported.vk12.runtimeDescriptorArray) assert(0, "Vulkan 1.2 feature not supported: runtimeDescriptorArray");
+  if(!app.supported.vk12.shaderSampledImageArrayNonUniformIndexing) assert(0, "Vulkan 1.2 feature not supported: shaderSampledImageArrayNonUniformIndexing");
+  if(!app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing) assert(0, "Vulkan 1.2 feature not supported: shaderStorageBufferArrayNonUniformIndexing");
+  if(!app.supported.vk12.descriptorBindingPartiallyBound) assert(0, "Vulkan 1.2 feature not supported: descriptorBindingPartiallyBound");
 }
 
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance

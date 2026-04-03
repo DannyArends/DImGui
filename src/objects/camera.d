@@ -21,7 +21,7 @@ struct Camera {
   float           fov         = 45.0f;                 /// Field of view
 
   float[3]        rotation    = [0.0f, 0.0f, 0.0f];    /// Horizontal [0], Vertical [1]
-  float           distance    = 3.0f;                  /// Distance of camera to lookat
+  float           distance    = 15.0f;                  /// Distance of camera to lookat
   bool[2]         isdrag      = [false, false];        /// Mouse dragging
   SDL_FingerID[2] fingerIDs   = [-1, -1];             /// Android FingerIDs
 

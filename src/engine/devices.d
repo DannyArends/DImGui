@@ -47,27 +47,18 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     pQueuePriorities : &queuePriority[0]
   }];
 
-  auto s = querySupportedFeatures(app.physicalDevice);
-
-  VkPhysicalDevice16BitStorageFeatures storage16 = {
-    sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
-    storageBuffer16BitAccess : s.vk16.storageBuffer16BitAccess,
-    pNext : null
-  };
+  app.querySupportedFeatures(app.physicalDevice);
 
   VkPhysicalDeviceVulkan12Features features = { 
     sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-    descriptorIndexing : s.vk12.descriptorIndexing,
-    runtimeDescriptorArray : s.vk12.runtimeDescriptorArray,
-    shaderSampledImageArrayNonUniformIndexing : s.vk12.shaderSampledImageArrayNonUniformIndexing,
-    shaderStorageBufferArrayNonUniformIndexing : s.vk12.shaderStorageBufferArrayNonUniformIndexing,
-    descriptorBindingPartiallyBound : s.vk12.descriptorBindingPartiallyBound,
-    pNext : &storage16
+    descriptorIndexing : VK_TRUE,
+    runtimeDescriptorArray : VK_TRUE,
+    shaderSampledImageArrayNonUniformIndexing : VK_TRUE,
+    shaderStorageBufferArrayNonUniformIndexing : VK_TRUE,
+    descriptorBindingPartiallyBound : VK_TRUE
   };
 
-  VkPhysicalDeviceFeatures deviceFeatures = {
-    robustBufferAccess: VK_TRUE,
-  };
+  VkPhysicalDeviceFeatures deviceFeatures = { robustBufferAccess: VK_TRUE };
 
   VkDeviceCreateInfo createDevice = {
     sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
