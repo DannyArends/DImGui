@@ -26,7 +26,7 @@ void createInstance(ref App app){
     ppEnabledLayerNames : (app.layers? &app.layers[0] : null),
     enabledExtensionCount : cast(uint)app.instanceExtensions.length,
     ppEnabledExtensionNames : (app.instanceExtensions? &app.instanceExtensions[0] : null),
-    pApplicationInfo: &app.applicationInfo
+    pApplicationInfo: &app.applicationInfo,
   };
 
   enforceVK(vkCreateInstance(&createInstance, app.allocator, &app.instance));

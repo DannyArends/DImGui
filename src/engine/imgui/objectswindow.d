@@ -6,7 +6,7 @@
 import engine;
 
 import mesh : Mesh;
-import geometry : Geometry, position, scale, rotate, texture, bumpmap, opacity;
+import geometry;
 import textures : mapTextures, ImTextureRefFromID;
 
 /** Show the GUI window which allows us to manipulate 3D objects
