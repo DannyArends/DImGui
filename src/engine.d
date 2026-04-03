@@ -68,6 +68,7 @@ struct App {
 
   // Vulkan Instance related variables
   VkInstance instance = null;
+  SupportedFeatures supported;
   VkPhysicalDevice[] physicalDevices;
 
   VkDevice device = null;
