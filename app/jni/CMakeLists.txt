@@ -167,7 +167,7 @@ endif()
 # Link dependencies
 if(CIMGUI_USE_SDL3)
     if(WIN32)
-        target_link_directories(cimgui PRIVATE ${SDL3_DIR}/../build/Release)
+        target_link_directories(cimgui PRIVATE ${SDL3_DIR}/build)
         target_link_libraries(cimgui PRIVATE SDL3)
     elseif(ANDROID)
         target_link_libraries(cimgui PRIVATE SDL3-shared)
