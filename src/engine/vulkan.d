@@ -8,6 +8,27 @@ import engine;
 import imgui : saveSettings;
 import geometry : cleanup;
 
+struct SupportedFeatures {
+ VkPhysicalDeviceFeatures base;
+ VkPhysicalDeviceVulkan12Features vk12;
+ VkPhysicalDevice16BitStorageFeatures vk16;
+}
+
+SupportedFeatures querySupportedFeatures(VkPhysicalDevice physicalDevice) {
+  SupportedFeatures s;
+  s.vk12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  s.vk16.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+  s.vk12.pNext = &s.vk16;
+
+  VkPhysicalDeviceFeatures2 f2 = {
+    sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+    pNext: &s.vk12
+  };
+  vkGetPhysicalDeviceFeatures2(physicalDevice, &f2);
+  s.base = f2.features;
+  return s;
+}
+
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance
  */
 void cleanup(App app) {
