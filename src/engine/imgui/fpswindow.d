@@ -8,11 +8,18 @@ import imgui : faIcon;
 /** Show the GUI window with FPS statistics
  */
 void showFPSwindow(ref App app, uint font = 1) {
-  igPushFont(app.gui.fonts[font], app.gui.fontsize);
+  version(Android){
+    igPushFont(app.gui.fonts[font], app.gui.fontsize(.8f));
+  }else{
+    igPushFont(app.gui.fonts[font], app.gui.fontsize());
+  }
   ImVec2 size;
   igCalcTextSize(&size, "Hello", null, false, 0.0f);
-
-  igSetNextWindowPos(ImVec2(0.0f, size.y + 5.0f), 0, ImVec2(0.0f, 0.0f));
+  version(Android){
+    igSetNextWindowPos(ImVec2(60.0f, size.y + 5.0f), 0, ImVec2(0.0f, 0.0f));
+  }else{
+    igSetNextWindowPos(ImVec2(0.0f, size.y + 5.0f), 0, ImVec2(0.0f, 0.0f));
+  }
   auto flags = ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
   igBegin("FPS", null, flags);
     igText("%s %s (v%d.%d.%d)", faIcon(), app.properties.deviceName.ptr,

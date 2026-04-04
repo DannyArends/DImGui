@@ -35,8 +35,8 @@ struct GUI {
   bool showDirectory = false;
 
   float uiscale = 1;
-  uint fontsize(){ 
-    version(Android){ return(cast(uint)(20 * uiscale)); }else{ return(cast(uint)(16 * uiscale)); }
+  uint fontsize(float scale = 1.0f){ 
+    version(Android){ return(cast(uint)(20 * scale * uiscale)); }else{ return(cast(uint)(16 * scale * uiscale)); }
   }
   float scaleF = 1.0f;
   float[3] rotF = [0.0f, 0.0f, 0.0f];
