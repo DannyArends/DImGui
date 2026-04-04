@@ -74,5 +74,10 @@ void mergeBones(ref App app, ref OpenAsset obj) {
   foreach(ref v; obj.vertices) {
     for(uint i = 0; i < v.bones.length; i++) { if(v.bones[i] in indexMap) v.bones[i] = indexMap[v.bones[i]]; }
   }
+  // Grow boneOffsets and trigger SSBO rebuild if needed
+  if(app.bones.length > app.boneOffsets.length) {
+    while(app.boneOffsets.length < app.bones.length){ app.boneOffsets.length *= 2; }
+    app.rebuild = true; // triggers createOrResizeWindow -> recreates SSBO at new size
+  }
 }
 

@@ -29,7 +29,7 @@ public import lights : Lighting, Lights;
 public import lsystem : LSystem, Symbols;
 public import material : Material, TexureInfo;
 public import matrix : Matrix;
-public import mesh : Mesh;
+public import mesh : Mesh, MeshList;
 public import meta : MetaData;
 public import node : Node;
 public import particlesystem : ParticleSystem;

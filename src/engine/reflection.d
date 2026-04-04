@@ -146,12 +146,12 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
       if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         if(shaders[s].descriptors[d].base == "BoneMatrices") {
-          app.createSSBO(shaders[s].descriptors[d], cast(uint)(1024));
-          app.boneOffsets.length = 1024;
+          if(app.boneOffsets.length == 0){ app.boneOffsets.length = 1024; } // Default to room for 1024 bones
+          app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.boneOffsets.length));
         }else if(shaders[s].descriptors[d].base == "LightMatrices") {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)app.lights.length);
         }else if(shaders[s].descriptors[d].base == "MeshMatrices") {
-          app.createSSBO(shaders[s].descriptors[d]);
+          app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.meshes.capacity));
         }else if(app.hasCompute && shaders[s].descriptors[d].base == "lastFrame") {
           app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
           app.transferToSSBO(shaders[s].descriptors[d]);
