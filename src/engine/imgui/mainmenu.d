@@ -10,6 +10,7 @@ import engine;
 void showMenu(ref App app, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(igBeginMainMenuBar()) {
+    version(Android) { igSetCursorPosX(60.0f * app.gui.uiscale); } // Nudge the start position on Android
     if(igBeginMenu("File".toStringz, true)) {
       if(igMenuItem_Bool("Load".toStringz,null, false, true)) {  app.gui.showDirectory = !app.gui.showDirectory; }
       if(igMenuItem_Bool("Demo".toStringz,null, false, true)) {  app.gui.showDemo = !app.gui.showDemo; }
