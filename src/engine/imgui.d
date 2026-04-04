@@ -34,9 +34,9 @@ struct GUI {
   bool showTexture = false;
   bool showDirectory = false;
 
-  uint uiscale = 1;
+  float uiscale = 1;
   uint fontsize(){ 
-    version(Android){ return(20 * uiscale); }else{ return(16 * uiscale); }
+    version(Android){ return(cast(uint)(20 * uiscale)); }else{ return(cast(uint)(16 * uiscale)); }
   }
   float scaleF = 1.0f;
   float[3] rotF = [0.0f, 0.0f, 0.0f];
@@ -135,10 +135,9 @@ void initializeImGui(ref App app){
   };
 
   ImGui_ImplVulkan_Init(&imguiInit);
-//  vkDeviceWaitIdle(app.device);
 
   version(Android){ 
-    app.gui.uiscale = 2;
+    app.gui.uiscale = 2.5;
     auto style = igGetStyle();
     ImGuiStyle_ScaleAllSizes(style, app.gui.uiscale);
     style.ScrollbarSize = 40.0f;
