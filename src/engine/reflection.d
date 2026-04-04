@@ -197,23 +197,23 @@ void createReflectionContext(ref App app) {
 
 // Helper to convert spvc_basetype to a string (or a custom enum)
 const(char)* convert(spvc_basetype basetype) {
-    switch (basetype) {
-        case SPVC_BASETYPE_UNKNOWN: return "unknown";
-        case SPVC_BASETYPE_VOID: return "void";
-        case SPVC_BASETYPE_BOOLEAN: return "bool";
-        case SPVC_BASETYPE_INT8: return "int8";
-        case SPVC_BASETYPE_UINT8: return "uint8";
-        case SPVC_BASETYPE_INT16: return "int16";
-        case SPVC_BASETYPE_UINT16: return "uint16";
-        case SPVC_BASETYPE_INT32: return "int";
-        case SPVC_BASETYPE_UINT32: return "uint";
-        case SPVC_BASETYPE_INT64: return "int64";
-        case SPVC_BASETYPE_UINT64: return "uint64";
-        case SPVC_BASETYPE_FP16: return "float16";
-        case SPVC_BASETYPE_FP32: return "float";
-        case SPVC_BASETYPE_FP64: return "double";
-        case SPVC_BASETYPE_STRUCT: return "struct";
-        default: return "unhandled_basetype";
-    }
+  switch (basetype) {
+    case SPVC_BASETYPE_UNKNOWN: return "unknown";
+    case SPVC_BASETYPE_VOID: return "void";
+    case SPVC_BASETYPE_BOOLEAN: return "bool";
+    case SPVC_BASETYPE_INT8: return "int8";
+    case SPVC_BASETYPE_UINT8: return "uint8";
+    case SPVC_BASETYPE_INT16: return "int16";
+    case SPVC_BASETYPE_UINT16: return "uint16";
+    case SPVC_BASETYPE_INT32: return "int";
+    case SPVC_BASETYPE_UINT32: return "uint";
+    case SPVC_BASETYPE_INT64: return "int64";
+    case SPVC_BASETYPE_UINT64: return "uint64";
+    case SPVC_BASETYPE_FP16: return "float16";
+    case SPVC_BASETYPE_FP32: return "float";
+    case SPVC_BASETYPE_FP64: return "double";
+    case SPVC_BASETYPE_STRUCT: return "struct";
+    default: return "unhandled_basetype";
+  }
 }
 
