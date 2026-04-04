@@ -174,7 +174,7 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
     app.updateSSBO!Matrix(cmdBuffer[syncIndex], app.boneOffsets, elements["BoneMatrices"], syncIndex);
   }
   if("MeshMatrices" in elements) {
-    app.updateSSBO!Mesh(cmdBuffer[syncIndex], app.meshInfo, elements["MeshMatrices"], syncIndex);
+    app.updateSSBO!Mesh(cmdBuffer[syncIndex], app.meshes, elements["MeshMatrices"], syncIndex);
   }
   if("LightMatrices" in elements) {
     app.updateLighting(cmdBuffer[syncIndex], elements["LightMatrices"]);

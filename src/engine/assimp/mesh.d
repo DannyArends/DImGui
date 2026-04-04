@@ -20,25 +20,36 @@ struct Mesh {
   int oid = -1;               /// Mesh OPACITY ID
 }
 
+struct MeshList {
+  Mesh[] meshInfo;            /// Meshes for GPU SSBO
+  ulong capacity = 256;       /// GPU SSBO capacity
+  alias meshInfo this;
+}
+
 void logMesh(uint i, ref const Mesh m, const(char)* prefix = "meshInfo") {
   SDL_Log("%s[%d] v=[%d,%d] mid=%d tid=%d nid=%d oid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid, m.tid, m.nid, m.oid);
 }
 
-void printMeshInfo(const App app) { if(!app.verbose){ return; } foreach(i, ref m; app.meshInfo) logMesh(cast(uint)i, m); }
+void printMeshInfo(const App app) { if(!app.verbose){ return; } foreach(i, ref m; app.meshes) logMesh(cast(uint)i, m); }
 
 void updateMeshInfo(ref App app) {
-  app.meshInfo.length = 0;
+  app.meshes.length = 0;
   bool needsUpdate = true;
   for (size_t o = 0; o < app.objects.length; o++) {
     uint size = cast(uint)app.objects[o].meshes.array.length;
     for (size_t i = 0; i < app.objects[o].instances.length; i++) {
-      if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size]){
-        app.objects[o].instances[i].meshdef = [cast(uint)app.meshInfo.length, cast(uint)app.meshInfo.length + size];
+      if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size]){
+        app.objects[o].instances[i].meshdef = [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size];
         app.objects[o].buffers[INSTANCE] = false;
         needsUpdate = true;
       }
     }
-    app.meshInfo ~= app.objects[o].meshes.array;
+    app.meshes ~= app.objects[o].meshes.array;
+  }
+  if(app.meshes.length > app.meshes.capacity) {
+    while(app.meshes.capacity < app.meshes.length) app.meshes.capacity *= 2;
+    app.meshes.length = app.meshes.capacity;
+    app.rebuild = true;
   }
   if(needsUpdate){
     app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes

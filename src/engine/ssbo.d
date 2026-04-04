@@ -22,7 +22,7 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
   }
 }
 
-void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1000) {
+void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
   if(app.verbose) SDL_Log("createSSBO at %s, size = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, nObjects);
   descriptor.nObjects = nObjects;
   if(descriptor.base in app.buffers) return;
@@ -52,7 +52,7 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descript
   uint size = cast(uint)(T.sizeof * objects.length);
   if(size == 0) return;
   if(size > descriptor.size) {
-    SDL_Log("updateSSBO: overflow! %s needs %d bytes, buffer has %d", toStringz(descriptor.base), size, descriptor.size);
+    if(app.trace) SDL_Log("updateSSBO: overflow! %s needs %d bytes, buffer has %d", toStringz(descriptor.base), size, descriptor.size);
     return; // or reallocate
   }
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;

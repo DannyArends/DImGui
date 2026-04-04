@@ -28,6 +28,8 @@ void showFPSwindow(ref App app, uint font = 1) {
                                 VK_API_VERSION_PATCH(app.properties.apiVersion));
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
+    igText("%d/%d bones", app.bones.length, app.boneOffsets.length);
+    igText("%d/%d meshes", app.meshes.length, app.meshes.capacity);
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
   igEnd();
