@@ -216,10 +216,6 @@ ImDrawData* renderGUI(ref App app){
   // Start ImGui frame
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplSDL3_NewFrame();
-  version(Android) {
-    app.gui.io.DisplaySize = ImVec2(cast(float)app.camera.currentExtent.width, cast(float)app.camera.currentExtent.height);
-    app.gui.io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-  }
   igNewFrame();
   uint font = 0;
 
