@@ -22,10 +22,11 @@ struct Intersection{
 
 /** Compute the intersection between a ray and a bounding box
  */
-@nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box)  {
+@nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box, size_t instance = 0) {
   Intersection i;
-  float[3] bmin = box.instances[0].matrix.multiply(box.min);
-  float[3] bmax = box.instances[0].matrix.multiply(box.max);
+  if (instance >= box.instances.length){ assert(0, "No BoundingBox Instance"); return i; }
+  float[3] bmin = box.instances[instance].matrix.multiply(box.min);
+  float[3] bmax = box.instances[instance].matrix.multiply(box.max);
 
   i.tmin = (bmin.x - ray[0].x) / ray[1].x;
   i.tmax = (bmax.x - ray[0].x) / ray[1].x; 
