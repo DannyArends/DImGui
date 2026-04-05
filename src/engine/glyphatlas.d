@@ -113,7 +113,6 @@ string createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', bool
     }
     c++;
   }
-  glyphatlas.pointsize = glyphatlas.pointsize;
   glyphatlas.ascent = TTF_GetFontAscent(glyphatlas.ttf);
   glyphatlas.lineHeight = TTF_GetFontHeight(glyphatlas.ttf);
   glyphatlas.height = (atlasrow + 1) * glyphatlas.lineHeight;
