@@ -16,7 +16,7 @@ struct TileT {
 }
  
 enum TileType : TileT {
-  None   = TileT("Stone_01", false, 0.0f),
+  None   = TileT("", false, 0.0f),
   Lava   = TileT("Lava_01", false, 0.0f),
   Water  = TileT("Water_01", false, 0.0f),
   Sand   = TileT("Sand_01", true,  1.5f),
@@ -25,7 +25,7 @@ enum TileType : TileT {
   Forest = TileT("Forest_Ground_01", true,  1.5f),
   Stone  = TileT("Stone_01", true,  1.8f),
   Ice    = TileT("Ice_01", true,  1.0f),
-  Snow   = TileT("Stone_03", true,  1.6f),
+  Snow   = TileT("Ice_03", true,  1.6f),
 }
  
 @nogc pure TileType heightToTile(float h) nothrow {
@@ -44,7 +44,7 @@ struct TileAtlas {
   uint size;
 }
 
-float[2] tileUV(ref TileAtlas ta, string name, bool right, bool bottom) nothrow {
+float[2] tileUV(const TileAtlas ta, string name, bool right, bool bottom) nothrow {
   if (!(name in ta.uv)) return [right ? 1.0f : 0.0f, bottom ? 1.0f : 0.0f];
   float u = (right  ? ta.uv[name][0][1] : ta.uv[name][0][0]) / cast(float)(ta.size);
   float v = (bottom ? ta.uv[name][1][1] : ta.uv[name][1][0]) / cast(float)(ta.size);
