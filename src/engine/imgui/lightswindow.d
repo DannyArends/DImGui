@@ -12,6 +12,7 @@ import lights : Light;
 void showLightswindow(ref App app, bool* show, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(igBegin("Lights", show, 0)){
+    auto lightsBefore = app.lights.lights.dup;
     igTableNextColumn();
     igText("Disco", ImVec2(0.0f, 0.0f)); igSameLine(0,5);
     igCheckbox("##disco", &app.disco);
@@ -67,6 +68,7 @@ void showLightswindow(ref App app, bool* show, uint font = 0) {
     }
     igEndTable();
     igEnd();
+    if(app.lights.lights != lightsBefore) { app.buffers["LightMatrices"].dirty[] = true; }
   }else { igEnd(); }
   igPopFont();
 }
