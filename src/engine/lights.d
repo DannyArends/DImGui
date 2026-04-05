@@ -47,6 +47,7 @@ void computeLightSpace(const App app, ref Light light, float nearPlane = 0.1f, f
 /** Transfer the lighting into the SSBO for buffer
  */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
+  if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
   foreach(ref light; app.lights) { app.computeLightSpace(light); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
