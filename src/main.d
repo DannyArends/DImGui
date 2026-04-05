@@ -11,7 +11,7 @@ import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : handleEvents, sdlEventsFilter;
 import frame : presentFrame, renderFrame;
-import glyphatlas : loadGlyphAtlas, createFontTexture;
+import glyphatlas : loadGlyphAtlas, uploadFont;
 import scene : createScene;
 import shadow : createShadowMap;
 import imgui : initializeImGui;
@@ -65,7 +65,7 @@ void run(string[] args = null) {
   app.createSampler();                                          /// Create a texture sampler
   app.createImGuiDescriptorPool();                              /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();                         /// ImGui DescriptorSet layout
-  app.createFontTexture();                                      /// Load the Font Texture
+  app.uploadFont();                                             /// Upload the Font Texture to GPU
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
