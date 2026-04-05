@@ -17,23 +17,21 @@ class Text : Geometry {
     uint nGlyhs = 0;
     foreach(i, dchar c; value.array) {
       if(c == '\n'){ line[0]++; col = 0; continue; }
+      if(c == ' ') { col++; continue; }
       auto cChar = atlas.getGlyph(c);
 
       // Convert everything to Glyphscale (based on the chosen fontsize)
       float pX = atlas.pX(cChar, col) /  glyphscale;
       float pY = atlas.pY(cChar, line) /  glyphscale;
       float w = cChar.gX / glyphscale;
-      float h = cChar.gY / glyphscale;
+      float h = atlas.lineHeight / glyphscale;
       float tXo = cChar.gX / cast(float)(atlas.width);
-      float tYo = cChar.gY / cast(float)(atlas.height);
+      float tYo = atlas.lineHeight / cast(float)(atlas.height);
 
-      vertices ~=
-               [ Vertex([   pX,   pY, 0.0f], [atlas.tX(cChar), atlas.tY(cChar)+ tYo], [1.0f, 1.0f, 1.0f, 1.0f]), 
-                 Vertex([ w+pX,   pY, 0.0f], [atlas.tX(cChar)+ tXo, atlas.tY(cChar)+ tYo], [1.0f, 1.0f, 1.0f, 1.0f]),
-                 Vertex([ w+pX, h+pY, 0.0f], [atlas.tX(cChar)+ tXo, atlas.tY(cChar)], [1.0f, 1.0f, 1.0f, 1.0f]),
-                 Vertex([   pX, h+pY, 0.0f], [atlas.tX(cChar), atlas.tY(cChar)], [1.0f, 1.0f, 1.0f, 1.0f])
-               ];
-
+      vertices ~= [ Vertex([   pX,   pY, 0.0f], [atlas.tX(cChar), atlas.tY(cChar)+ tYo], [1.0f, 1.0f, 1.0f, 1.0f]), 
+                    Vertex([ w+pX,   pY, 0.0f], [atlas.tX(cChar)+ tXo, atlas.tY(cChar)+ tYo], [1.0f, 1.0f, 1.0f, 1.0f]),
+                    Vertex([ w+pX, h+pY, 0.0f], [atlas.tX(cChar)+ tXo, atlas.tY(cChar)], [1.0f, 1.0f, 1.0f, 1.0f]),
+                    Vertex([   pX, h+pY, 0.0f], [atlas.tX(cChar), atlas.tY(cChar)], [1.0f, 1.0f, 1.0f, 1.0f])];
       indices ~= [(nGlyhs*4)+0, (nGlyhs*4)+2, (nGlyhs*4)+1, (nGlyhs*4)+0, (nGlyhs*4)+3, (nGlyhs*4)+2];
       col++;
       nGlyhs++;
