@@ -43,6 +43,7 @@ struct App {
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
+  TileAtlas tileAtlas;                                                          /// TileAtlas for terrain rendering
   ShadowMap shadows;                                                            /// ShadowMap object
 
   VkSampler sampler;

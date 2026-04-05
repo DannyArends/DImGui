@@ -11,11 +11,13 @@ import lsystem : createLSystem;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
+import tilemap : applyHeightmap;
 
 /** Create a scene for rendering
  */
 void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
+  /*
   app.objects ~= new Square();
   app.objects[($-1)].computeTangents();
   app.objects[($-1)].texture("Bump_03_base");
@@ -30,7 +32,12 @@ void createScene(ref App app){
       instance = instance.translate([cast(float) x, 0.0f, cast(float)z]);
       app.objects[($-1)].instances ~= Instance(matrix: instance);
     }
-  }
+  }*/
+
+  app.objects ~= new TileMap(app, 16, 16, 8, 4.0f);
+  app.objects[($-1)].texture("3DTextures");
+  app.objects[($-1)].position([0.0f, -1.5f, 0.0f]);
+  app.applyHeightmap(cast(TileMap)app.objects[($-1)], "data/textures/heightmap.png");
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);

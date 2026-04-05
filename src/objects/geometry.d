@@ -296,7 +296,7 @@ void computeTangents(T)(ref T geometry, bool verbose = false) {
     float y2 = w3[1] - w1[1];
 
     float det = (x1 * y2 - x2 * y1);
-    if (abs(det) < 0.001f) continue;
+    if (abs(det) < 1e-6f) continue;
     float r = 1.0f / det;
 
     if (!isFinite(r) || isNaN(r)) { // Ensure r is a valid finite number

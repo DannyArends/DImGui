@@ -23,6 +23,7 @@ import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
 import textures : Texture;
+import tileatlas : createTileAtlas;
 import threading : initializeAsync, checkAsync;
 import validation : createDebugCallback;
 import vulkan : cleanup;
@@ -65,6 +66,7 @@ void run(string[] args = null) {
   app.createSampler();                                          /// Create a texture sampler
   app.createImGuiDescriptorPool();                              /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();                         /// ImGui DescriptorSet layout
+  app.createTileAtlas();                                        /// before creating TileMap
   app.uploadFont();                                             /// Upload the Font Texture to GPU
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
