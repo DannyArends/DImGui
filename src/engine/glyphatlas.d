@@ -71,7 +71,7 @@ struct GlyphAtlas {
 /** Loads a GlyphAtlas from file */
 void loadGlyphAtlas(ref App app, string filename = "data/fonts/FreeMono.ttf", ubyte pointsize = 40, dchar to = '\U000000FF', uint dim = 1024) {
   version(Android){ }else{ filename = format("app/src/main/assets/%s", fromStringz(filename)); }
-  SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
+  if(app.verbose) SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   app.glyphAtlas = GlyphAtlas(filename);
   app.glyphAtlas.pointsize = (pointsize == 0)? 12 : pointsize;
   app.glyphAtlas.ttf = TTF_OpenFont(toStringz(filename), cast(float)app.glyphAtlas.pointsize);
@@ -79,61 +79,55 @@ void loadGlyphAtlas(ref App app, string filename = "data/fonts/FreeMono.ttf", ub
     SDL_Log("Error by loading TTF_Font %s: %s\n", toStringz(filename), SDL_GetError());
     abort();
   }
-  app.glyphAtlas.createGlyphAtlas(to, dim, app.verbose > 0);
+  app.createGlyphAtlas(to, dim);
 }
 
 /** Populates the GlyphAtlas with Glyphs to dchar in our atlas */
-void createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', uint dim = 1024, bool verbose = true) {
-  if(verbose) SDL_Log("createGlyphAtlas");
+void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
+  if(app.trace) SDL_Log("createGlyphAtlas");
   MonoTime sT = MonoTime.currTime;
-  glyphatlas.ascent = TTF_GetFontAscent(glyphatlas.ttf);
-  glyphatlas.lineHeight = TTF_GetFontHeight(glyphatlas.ttf);
+  app.glyphAtlas.ascent = TTF_GetFontAscent(app.glyphAtlas.ttf);
+  app.glyphAtlas.lineHeight = TTF_GetFontHeight(app.glyphAtlas.ttf);
 
-  TTF_SetFontSDF(glyphatlas.ttf, false);
-  glyphatlas.texture = Texture(glyphatlas.path, dim, dim, SDL_CreateSurface(dim, dim, SDL_PIXELFORMAT_RGBA32));
-  SDL_FillSurfaceRect(glyphatlas.surface, null, 0);
-  SDL_SetSurfaceBlendMode(glyphatlas.surface, SDL_BLENDMODE_NONE);
+  TTF_SetFontSDF(app.glyphAtlas.ttf, false);
+  app.glyphAtlas.texture = Texture(app.glyphAtlas.path, dim, dim, SDL_CreateSurface(dim, dim, SDL_PIXELFORMAT_RGBA32));
+  SDL_SetSurfaceBlendMode(app.glyphAtlas.surface, SDL_BLENDMODE_NONE);
+  app.glyphAtlas.width = app.glyphAtlas.height = dim;
 
-  int i, atlasrow, atlasloc;
-  glyphatlas.atlas = [];
+  uint i, atlasrow, atlasloc = 0;
+  app.glyphAtlas.atlas = [];
   dchar c = '\U00000000';
   while (c <= to) {
-    if (isValidDchar(c) && TTF_FontHasGlyph(glyphatlas.ttf, cast(uint)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
+    if (isValidDchar(c) && TTF_FontHasGlyph(app.glyphAtlas.ttf, cast(uint)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
       Glyph glyph = Glyph();
-      TTF_GetGlyphMetrics(glyphatlas.ttf, cast(uint)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
-      auto gs = TTF_RenderGlyph_Blended(glyphatlas.ttf, cast(uint)(c), SDL_Color(255, 255, 255, 255));
+      TTF_GetGlyphMetrics(app.glyphAtlas.ttf, cast(uint)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
+      auto gs = TTF_RenderGlyph_Blended(app.glyphAtlas.ttf, cast(uint)(c), SDL_Color(255, 255, 255, 255));
       if (!gs) { c++; continue; }
-      if (atlasloc + gs.w >= glyphatlas.width) {
-        glyphatlas.atlas ~= '\n';
-        i = 0;
-        atlasloc = 0;
-        atlasrow++;
-      }
-      if (glyphatlas.advance < glyph.advance) glyphatlas.advance = glyph.advance;
-      if (glyphatlas.miny > glyph.miny) glyphatlas.miny = glyph.miny;
+      if (atlasloc + gs.w >= app.glyphAtlas.width) { i = atlasloc = 0; atlasrow++; }
+      if (app.glyphAtlas.advance < glyph.advance) app.glyphAtlas.advance = glyph.advance;
+      if (app.glyphAtlas.miny > glyph.miny) app.glyphAtlas.miny = glyph.miny;
       glyph.atlasloc = atlasloc;
       glyph.atlasrow = atlasrow;
-      glyphatlas.glyphs[c] = glyph;
-      glyphatlas.atlas ~= c;
-      SDL_Rect dst = { atlasloc, atlasrow * glyphatlas.lineHeight, gs.w, gs.h };
-      SDL_BlitSurface(gs, null, glyphatlas.surface, &dst);
-      SDL_DestroySurface(gs);
+      app.glyphAtlas.glyphs[c] = glyph;
+      app.glyphAtlas.atlas ~= c;
+      SDL_Rect dst = { atlasloc, atlasrow * app.glyphAtlas.lineHeight, gs.w, gs.h };
+      SDL_BlitSurface(gs, null, app.glyphAtlas.surface, &dst);
       atlasloc += gs.w;
+      SDL_DestroySurface(gs);
       i++;
     }
     c++;
   }
-
   auto time = (MonoTime.currTime - sT).total!"msecs"();
-  if (verbose) {
-    SDL_Log("%d/%d Glyphs on %d lines [%d x %d] in %d msecs\n", glyphatlas.glyphs.length, c, ++atlasrow, glyphatlas.width, glyphatlas.height, time);
-    SDL_Log("%d unicode glyphs (%d unique ones)", glyphatlas.atlas.length, glyphatlas.glyphs.length);
-    SDL_Log("FontAscent: %d, FontAdvance: %d", glyphatlas.ascent, glyphatlas.advance);
+  if (app.verbose) {
+    SDL_Log("%d unicode glyphs (%d unique ones)", app.glyphAtlas.atlas.length, app.glyphAtlas.glyphs.length);
+    SDL_Log("FontAscent: %d, FontAdvance: %d", app.glyphAtlas.ascent, app.glyphAtlas.advance);
   }
+  SDL_Log("%d/%d Glyphs on %d lines [%d x %d] in %d msecs\n", app.glyphAtlas.glyphs.length, c, ++atlasrow, dim, dim, time);
 }
 
 /** Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray */
-void createFontTexture(ref App app) {
+void uploadFont(ref App app) {
   if(app.verbose) SDL_Log("Uploading Font Texture to GPU");
   auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
   app.toGPU(commandBuffer, app.glyphAtlas.texture);

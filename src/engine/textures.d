@@ -8,7 +8,6 @@ import engine;
 import buffer : createBuffer, copyBufferToImage;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
-import glyphatlas : createFontTexture;
 import images : nameImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
 import io : dir;
 import swapchain : createImageView;
@@ -31,6 +30,13 @@ struct Texture {
   bool dirty = true;
   int syncIndex = -1;
   alias buffer this;
+  
+  this(string path, uint width = 0, uint height = 0, SDL_Surface* surface = null){
+    this.path = path;
+    this.width = width;
+    this.height = height;
+    this.surface = surface;
+  }
 }
 
 struct PendingTexture {
