@@ -31,8 +31,9 @@ struct GlyphAtlas {
   string path;          /// Path of TTF file
   TTF_Font* ttf;        /// Pointer to the loaded TTF_Font
   ubyte pointsize;      /// Font pointsize size
+  int lineHeight;       /// Full line height (ascent + descent)
   Glyph[dchar] glyphs;  /// Associative array couples Glyph and dchar
-  string atlas;         /// ushort array of chars which were valid and stored into the atlas (\n for linebreaks)
+  string atlas;         /// UTF-8 string of chars stored in the atlas
   Texture texture;      /// Holds the Texture structure containing the SDL surface and Vulkan buffers
   int ascent;           /// Font ascent
   int miny;             /// Font miny
@@ -51,7 +52,7 @@ struct GlyphAtlas {
 
   /** Glyph texture Y postion */
   @property  float tY(Glyph glyph) {
-    int lineHsum = (this.pointsize) * glyph.atlasrow;
+    int lineHsum = this.lineHeight * glyph.atlasrow;
     return((lineHsum + (this.ascent - glyph.maxy)) / cast(float)(texture.height));
   }
 
@@ -62,7 +63,7 @@ struct GlyphAtlas {
 
   /** Y postion of the glyph, when on line[0] out of line[1] */
   @property float pY(Glyph glyph, size_t[2] line) {
-    return(cast(float)(line[1] - line[0]) * (this.pointsize) + glyph.miny - this.miny);
+    return(cast(float)(line[1] - line[0]) * this.lineHeight + glyph.miny - this.miny);
   }
 
   alias texture this;
@@ -121,18 +122,13 @@ string createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', uint
   SDL_Log("FontAdvance: %d\n", glyphatlas.advance);
   glyphatlas.pointsize = glyphatlas.pointsize;
   glyphatlas.ascent = TTF_GetFontAscent(glyphatlas.ttf);
-
-SDL_Log("Glyph 'A': atlasloc=%d atlasrow=%d minx=%d maxx=%d miny=%d maxy=%d advance=%d",
-  glyphatlas.glyphs['A'].atlasloc, glyphatlas.glyphs['A'].atlasrow,
-  glyphatlas.glyphs['A'].minx, glyphatlas.glyphs['A'].maxx,
-  glyphatlas.glyphs['A'].miny, glyphatlas.glyphs['A'].maxy,
-  glyphatlas.glyphs['A'].advance);
-  glyphatlas.height = (atlasrow + 1) * TTF_GetFontLineSkip(glyphatlas.ttf);
+  glyphatlas.lineHeight = TTF_GetFontHeight(glyphatlas.ttf);
+  glyphatlas.height = (atlasrow + 1) * glyphatlas.lineHeight;
 
   auto time = (MonoTime.currTime - sT).total!"msecs"();  // Update the current time
-  //if(verbose) {
+  if(verbose) {
     SDL_Log("%d/%d Glyphs on %d lines [%d x %d] in %d msecs\n", glyphatlas.glyphs.length, c, ++atlasrow, glyphatlas.width, glyphatlas.height, time);
-  //}
+  }
   return(atlas);
 }
 
@@ -148,12 +144,12 @@ void createFontTexture(ref App app) {
     auto glyphSurface = TTF_RenderGlyph_Blended(atlas.ttf, cast(uint)c, SDL_Color(255, 255, 255, 255));
     if(!glyphSurface) continue;
     int dstX = glyph.atlasloc + glyph.minx;
-    int dstY = atlas.pointsize * glyph.atlasrow + (atlas.ascent - glyph.maxy);
+    int dstY = atlas.lineHeight * glyph.atlasrow + (atlas.ascent - glyph.maxy);
     SDL_Rect dst = { dstX, dstY, glyphSurface.w, glyphSurface.h };
     SDL_BlitSurface(glyphSurface, null, surface, &dst);
     SDL_DestroySurface(glyphSurface);
   }
-  SDL_SaveBMP(surface, toStringz("atlas.bmp"));
+
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel / 8));
   if(SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) surface.toRGBA();
 
