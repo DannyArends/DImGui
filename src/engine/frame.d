@@ -6,15 +6,16 @@
 import engine;
 
 import bone : updateBoneOffsets;
-import mesh : updateMeshInfo;
+import descriptor : updateDescriptorSet, createDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
+import compute : recordComputeCommandBuffer, updateComputeUBO;
 import imgui : recordImGuiCommandBuffer;
+import lights : updateDisco;
+import mesh : updateMeshInfo;
 import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
+import textures : updateTextures;
 import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
-import descriptor : updateDescriptorSet, createDescriptors;
-import textures : updateTextures;
-import compute : recordComputeCommandBuffer, updateComputeUBO;
 
 /** Main Frame rendering loop a 3D Frame:
  * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui
@@ -44,8 +45,9 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
-  app.updateMeshInfo();    // Check Mesh Information change
-  app.updateBoneOffsets(app.syncIndex); // Check BoneOffsets
+  app.updateMeshInfo();                   /// Check for Mesh Information change
+  app.updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
+  app.updateDisco();                      /// Update when disco mode 🕺 🪩 💃
   if(app.hasCompute) app.updateComputeUBO(app.syncIndex);
   app.updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.updateRenderUBO(app.shaders, app.syncIndex);
