@@ -58,6 +58,6 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descript
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)objects.length);
   memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);
-  app.buffers[descriptor.base].dirty[syncIndex] = false; // TODO: enable dirty
+  app.buffers[descriptor.base].dirty[syncIndex] = false;
 }
 

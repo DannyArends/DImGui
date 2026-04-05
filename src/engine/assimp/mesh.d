@@ -34,7 +34,7 @@ void printMeshInfo(const App app) { if(!app.verbose){ return; } foreach(i, ref m
 
 void updateMeshInfo(ref App app) {
   app.meshes.length = 0;
-  bool needsUpdate = true;
+  bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     uint size = cast(uint)app.objects[o].meshes.array.length;
     for (size_t i = 0; i < app.objects[o].instances.length; i++) {
@@ -51,7 +51,7 @@ void updateMeshInfo(ref App app) {
     app.meshes.length = app.meshes.capacity;
     app.rebuild = true;
   }
-  if(needsUpdate){
+  if(needsUpdate) {
     app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
     app.printMeshInfo();
   }
