@@ -11,7 +11,6 @@ import lsystem : createLSystem;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
-import tilemap : applyHeightmap;
 
 /** Create a scene for rendering
  */
@@ -34,10 +33,9 @@ void createScene(ref App app){
     }
   }*/
 
-  app.objects ~= new TileMap(app, 16, 16, 8, 2.0f);
+  app.objects ~= new TileMap(app.tileAtlas, "data/textures/heightmap.png", 16, 16, 8, 2.0f);
   app.objects[($-1)].texture("3DTextures");
   app.objects[($-1)].position([0.0f, -1.5f, 0.0f]);
-  app.applyHeightmap(cast(TileMap)app.objects[($-1)], "data/textures/heightmap.png");
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);

@@ -14,7 +14,7 @@ class TileMap : Geometry {
   uint cols, rows, layers;
   float tileSize, layerHeight;
  
-  this(ref App app, uint cols = 32, uint rows = 32, uint layers = 1, float tileSize = 1.0f, float layerHeight = 0.1f) {
+  this(const TileAtlas tileAtlas, string path, uint cols = 32, uint rows = 32, uint layers = 1, float tileSize = 1.0f, float layerHeight = 0.1f) {
     this.cols     = cols;
     this.rows     = rows;
     this.layers   = layers;
@@ -32,31 +32,62 @@ class TileMap : Geometry {
           float wx = (x - cols * 0.5f) * tileSize;
           float wy = z * layerHeight;
           float wz = (y - rows * 0.5f) * tileSize;
-          writeTile(app, vi, ii, wx, wy, wz, TileType.None);
+          writeTile(tileAtlas, vi, ii, wx, wy, wz, TileType.None);
           vi += 4; ii += 6;
         }
       }
     }
+    applyHeightmap(tileAtlas, path);
 
     instances = [Instance()];
     meshes["TileMap"] = Mesh([0, cast(uint)vertices.length]);
     name = (){ return(typeof(this).stringof); };
   }
- 
+
   /** Get vertex index for grid position */
-  uint tileIndex(uint x, uint y, uint z = 0) nothrow {
-    return ((z * rows + y) * cols + x) * 4;
+  uint tileIndex(uint x, uint y, uint z = 0) nothrow { return ((z * rows + y) * cols + x) * 4; }
+
+  void applyHeightmap(const TileAtlas tileAtlas, string heightmapPath) {
+    SDL_Surface* hmap = IMG_Load(fixPath(toStringz(heightmapPath)));
+    if (!hmap) { SDL_Log("applyHeightmap: failed %s", toStringz(heightmapPath)); return; }
+
+    for (uint y = 0; y < rows; y++) {
+      for (uint x = 0; x < cols; x++) {
+        float nx = x / cast(float)(cols);
+        float ny = y / cast(float)(rows);
+        float h = sampleAlpha(hmap, nx, ny);
+        uint top = cast(uint)(h * (layers - 1));
+
+        for (uint z = 0; z <= top; z++) {
+          TileType tile;
+          if (z == top)       tile = heightToTile(h);    /// surface tile
+          else if (z == 0)    tile = TileType.Lava;      /// bottom always lava
+          else                tile = TileType.Stone;     /// fill with stone
+
+          uint vi = tileIndex(x, y, z);
+          uint ii = (vi / 4) * 6;
+          float wx = (x - cols * 0.5f) * tileSize;
+          float wy = z * layerHeight;
+          float wz = (y - rows * 0.5f) * tileSize;
+          writeTile(tileAtlas, vi, ii, wx, wy, wz, tile);
+        }
+      }
+    }
+
+    SDL_DestroySurface(hmap);
+    buffers[VERTEX] = false;
+    buffers[INDEX]  = false;
   }
- 
+
   /** Write a single tile's 4 vertices + 6 indices in-place */
-  void writeTile(ref App app, uint vi, uint ii, float wx, float wy, float wz, TileType tile) {
+  void writeTile(const TileAtlas tileAtlas, uint vi, uint ii, float wx, float wy, float wz, TileType tile) {
     if (tile == TileType.None) { indices[ii+0..ii+6] = vi; return; }
 
     float hs = tileSize * 0.5f;
-    float[2] uvTR = app.tileAtlas.tileUV(tile.name, true,  false);
-    float[2] uvBR = app.tileAtlas.tileUV(tile.name, true,  true);
-    float[2] uvBL = app.tileAtlas.tileUV(tile.name, false, true);
-    float[2] uvTL = app.tileAtlas.tileUV(tile.name, false, false);
+    float[2] uvTR = tileAtlas.tileUV(tile.name, true,  false);
+    float[2] uvBR = tileAtlas.tileUV(tile.name, true,  true);
+    float[2] uvBL = tileAtlas.tileUV(tile.name, false, true);
+    float[2] uvTL = tileAtlas.tileUV(tile.name, false, false);
  
     // Flat quad in XZ plane, Y is height — matches Square winding
     vertices[vi+0] = Vertex([wx+hs, wy, wz-hs], uvTR, [1.0f, 1.0f, 1.0f, 1.0f]);
@@ -69,39 +100,6 @@ class TileMap : Geometry {
   }
 }
 
-
-void applyHeightmap(ref App app, TileMap map, string heightmapPath) {
-  SDL_Surface* hmap = IMG_Load(fixPath(toStringz(heightmapPath)));
-  if (!hmap) { SDL_Log("applyHeightmap: failed %s", toStringz(heightmapPath)); return; }
- 
-  for (uint y = 0; y < map.rows; y++) {
-    for (uint x = 0; x < map.cols; x++) {
-      float nx = x / cast(float)(map.cols);
-      float ny = y / cast(float)(map.rows);
-      float h = sampleAlpha(hmap, nx, ny);
-      uint  top = cast(uint)(h * (map.layers - 1));
-
-      for (uint z = 0; z <= top; z++) {
-        TileType tile;
-        if (z == top)       tile = heightToTile(h);    /// surface tile
-        else if (z == 0)    tile = TileType.Lava;      /// bottom always lava
-        else                tile = TileType.Stone;     /// fill with stone
-
-        uint vi = map.tileIndex(x, y, z);
-        uint ii = (vi / 4) * 6;
-        float wx = (x - map.cols * 0.5f) * map.tileSize;
-        float wy = z * map.layerHeight;
-        float wz = (y - map.rows * 0.5f) * map.tileSize;
-        map.writeTile(app, vi, ii, wx, wy, wz, tile);
-      }
-    }
-  }
- 
-  SDL_DestroySurface(hmap);
-  map.buffers[VERTEX] = false;
-  map.buffers[INDEX]  = false;
-}
- 
 private ubyte* samplePixel(SDL_Surface* s, float nx, float nz) {
   if (!s) return null;
   int px = cast(int)(nx * (s.w - 1));
