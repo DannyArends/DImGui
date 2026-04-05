@@ -25,6 +25,7 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
       igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       foreach(i, object; app.objects){
         igPushID_Int(to!int(i));
+        if (app.objects[i].instances.length == 0) { igPopID(); continue; }
         auto p = app.objects[i].position;
         igTableNextRow(0, 5.0f);
         string text = to!string(i);
