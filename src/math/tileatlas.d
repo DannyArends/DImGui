@@ -40,22 +40,21 @@ enum TileType : TileT {
 }
 
 struct TileAtlas {
-  int[2][string] x;
-  int[2][string] y;
+  int[2][2][string] uv;
   string[] names;
   string path;
   uint atlasW;
   uint atlasH;
 }
 
-@nogc pure float[2] tileUV(ref TileAtlas ta, string name, bool right, bool bottom) nothrow {
-  if (!(name in ta.x)) assert(0);
-  float u = (right  ? ta.x[name][1] : ta.x[name][0]) / cast(float)(ta.atlasW);
-  float v = (bottom ? ta.y[name][1] : ta.y[name][0]) / cast(float)(ta.atlasH);
+float[2] tileUV(ref TileAtlas ta, string name, bool right, bool bottom) nothrow {
+  if (!(name in ta.uv)) return [right ? 1.0f : 0.0f, bottom ? 1.0f : 0.0f];
+  float u = (right  ? ta.uv[name][0][1] : ta.uv[name][0][0]) / cast(float)(ta.atlasW);
+  float v = (bottom ? ta.uv[name][1][1] : ta.uv[name][1][0]) / cast(float)(ta.atlasH);
   return [u, v];
 }
 
-void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me", int atlasW = 1024, int atlasH = 1024, int tileSize = 128) {
+void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me", int atlasW = 512, int atlasH = 512, int tileSize = 64) {
   folder = cast(string)fromStringz(fixPath(toStringz(folder)));
   if (app.verbose) SDL_Log("createTileAtlas: %s", toStringz(folder));
  
@@ -85,8 +84,7 @@ void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me",
     s = scaled;
 
     if (tx + s.w > atlasW) { ty += rowH; rowH = 0; tx = 0; }
-    ta.x[tname] = [tx, tx + s.w];
-    ta.y[tname] = [ty, ty + s.h];
+    ta.uv[tname] = [[tx, tx + s.w], [ty, ty + s.h]];
     if (s.h > rowH) rowH = s.h;
     tx += s.w;
     ta.names ~= tname;
@@ -96,7 +94,7 @@ void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me",
   auto atlas = SDL_CreateSurface(atlasW, atlasH, SDL_PIXELFORMAT_RGBA32);
   SDL_SetSurfaceBlendMode(atlas, SDL_BLENDMODE_NONE);
   foreach (tname; ta.names) {
-    SDL_Rect dst = { ta.x[tname][0], ta.y[tname][0], ta.x[tname][1] - ta.x[tname][0], ta.y[tname][1] - ta.y[tname][0] };
+    SDL_Rect dst = { ta.uv[tname][0][0], ta.uv[tname][1][0], ta.uv[tname][0][1] - ta.uv[tname][0][0], ta.uv[tname][1][1] - ta.uv[tname][1][0] };
     SDL_BlitSurface(surfaces[tname], null, atlas, &dst);
     SDL_DestroySurface(surfaces[tname]);
   }
@@ -104,6 +102,7 @@ void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me",
   //SDL_SaveBMP(atlas, "atlas_debug.bmp");
   auto texture = Texture(folder, atlasW, atlasH, atlas);
   app.transferTextureAsync(texture);
+  SDL_DestroySurface(atlas);
   app.mainDeletionQueue.add((){ app.deAllocate(texture); });
   app.tileAtlas = ta;
   if (app.verbose) SDL_Log("createTileAtlas: %d tiles [%dx%d]", ta.names.length, atlasW, atlasH);
