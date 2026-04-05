@@ -44,6 +44,8 @@ public import ssbo : SSBO;
 public import shadow : ShadowMap;
 public import sfx : Audio, WavFMT;
 public import text : Text;
+public import tileatlas : TileType, TileAtlas;
+public import tilemap : TileMap;
 public import textures : Texture, Textures;
 public import torus : Torus;
 public import turtle : Turtle;
