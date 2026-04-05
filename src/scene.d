@@ -34,7 +34,7 @@ void createScene(ref App app){
     }
   }*/
 
-  app.objects ~= new TileMap(app, 16, 16, 8, 4.0f);
+  app.objects ~= new TileMap(app, 16, 16, 8, 2.0f);
   app.objects[($-1)].texture("3DTextures");
   app.objects[($-1)].position([0.0f, -1.5f, 0.0f]);
   app.applyHeightmap(cast(TileMap)app.objects[($-1)], "data/textures/heightmap.png");
