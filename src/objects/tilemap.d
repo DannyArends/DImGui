@@ -37,7 +37,7 @@ class TileMap : Geometry {
         }
       }
     }
- 
+
     instances = [Instance()];
     meshes["TileMap"] = Mesh([0, cast(uint)vertices.length]);
     name = (){ return(typeof(this).stringof); };
