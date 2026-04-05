@@ -122,19 +122,38 @@ string createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', uint
   glyphatlas.pointsize = glyphatlas.pointsize;
   glyphatlas.ascent = TTF_GetFontAscent(glyphatlas.ttf);
 
+SDL_Log("Glyph 'A': atlasloc=%d atlasrow=%d minx=%d maxx=%d miny=%d maxy=%d advance=%d",
+  glyphatlas.glyphs['A'].atlasloc, glyphatlas.glyphs['A'].atlasrow,
+  glyphatlas.glyphs['A'].minx, glyphatlas.glyphs['A'].maxx,
+  glyphatlas.glyphs['A'].miny, glyphatlas.glyphs['A'].maxy,
+  glyphatlas.glyphs['A'].advance);
+  glyphatlas.height = (atlasrow + 1) * TTF_GetFontLineSkip(glyphatlas.ttf);
+
   auto time = (MonoTime.currTime - sT).total!"msecs"();  // Update the current time
-  if(verbose) {
+  //if(verbose) {
     SDL_Log("%d/%d Glyphs on %d lines [%d x %d] in %d msecs\n", glyphatlas.glyphs.length, c, ++atlasrow, glyphatlas.width, glyphatlas.height, time);
-  }
+  //}
   return(atlas);
 }
 
 /** Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray */
 void createFontTexture(ref App app) {
   TTF_SetFontSDF(app.glyphAtlas.ttf, false); // disable SDF, use normal alpha
-  if(app.verbose) SDL_Log("createFontTexture");
-  auto surface = TTF_RenderText_Blended_Wrapped(app.glyphAtlas.ttf, cast(const(char)*)&app.glyphAtlas.atlas[0], 0, SDL_Color(255, 255, 255, 255), app.glyphAtlas.width);
-  SDL_Log("createFontTexture surface: %p [%dx%d]", surface, surface ? surface.w : 0, surface ? surface.h : 0);
+  auto atlas = &app.glyphAtlas;
+  // Create blank RGBA surface
+  auto surface = SDL_CreateSurface(atlas.width, atlas.height, SDL_PIXELFORMAT_RGBA32);
+  SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
+
+  foreach(c, ref glyph; atlas.glyphs) {
+    auto glyphSurface = TTF_RenderGlyph_Blended(atlas.ttf, cast(uint)c, SDL_Color(255, 255, 255, 255));
+    if(!glyphSurface) continue;
+    int dstX = glyph.atlasloc + glyph.minx;
+    int dstY = atlas.pointsize * glyph.atlasrow + (atlas.ascent - glyph.maxy);
+    SDL_Rect dst = { dstX, dstY, glyphSurface.w, glyphSurface.h };
+    SDL_BlitSurface(glyphSurface, null, surface, &dst);
+    SDL_DestroySurface(glyphSurface);
+  }
+  SDL_SaveBMP(surface, toStringz("atlas.bmp"));
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel / 8));
   if(SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) surface.toRGBA();
 
