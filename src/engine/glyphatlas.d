@@ -32,7 +32,7 @@ struct GlyphAtlas {
   TTF_Font* ttf;        /// Pointer to the loaded TTF_Font
   ubyte pointsize;      /// Font pointsize size
   Glyph[dchar] glyphs;  /// Associative array couples Glyph and dchar
-  ushort[] atlas;       /// ushort array of chars which were valid and stored into the atlas (\n for linebreaks)
+  string atlas;         /// ushort array of chars which were valid and stored into the atlas (\n for linebreaks)
   Texture texture;      /// Holds the Texture structure containing the SDL surface and Vulkan buffers
   int ascent;           /// Font ascent
   int miny;             /// Font miny
@@ -78,7 +78,7 @@ void loadGlyphAtlas(ref App app,
   SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   GlyphAtlas glyphatlas = GlyphAtlas(filename);
   glyphatlas.pointsize = (pointsize == 0)? 12 : pointsize;
-  glyphatlas.ttf = TTF_OpenFont(toStringz(filename), glyphatlas.pointsize);
+  glyphatlas.ttf = TTF_OpenFont(toStringz(filename), cast(float)glyphatlas.pointsize);
   if (!glyphatlas.ttf) {
     SDL_Log("Error by loading TTF_Font %s: %s\n", toStringz(filename), SDL_GetError());
     abort();
@@ -88,19 +88,19 @@ void loadGlyphAtlas(ref App app,
 }
 
 /** Populates the GlyphAtlas with Glyphs to dchar in our atlas */
-ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', uint width = 1024, uint max_width = 1024, bool verbose = true) {
+string createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', uint width = 1024, uint max_width = 1024, bool verbose = true) {
   SDL_Log("createGlyphAtlas");
   MonoTime sT = MonoTime.currTime;
   int i, atlasrow, atlasloc;
-  ushort[] atlas = [];
+  string atlas = [];
   dchar c = '\U00000000';
   glyphatlas.width = (width > max_width)? max_width : width;
   while (c <= to) {
-    if (isValidDchar(c) && TTF_FontHasGlyph(glyphatlas.ttf, cast(ushort)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
+    if (isValidDchar(c) && TTF_FontHasGlyph(glyphatlas.ttf, cast(uint)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
       Glyph glyph = Glyph();
-      TTF_GetGlyphMetrics(glyphatlas.ttf, cast(ushort)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
+      TTF_GetGlyphMetrics(glyphatlas.ttf, cast(uint)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
       if (atlasloc + glyph.advance >= glyphatlas.width) {
-        atlas ~= cast(ushort)('\n');
+        atlas ~= '\n';
         i = 0;
         atlasloc = 0;
         atlasrow++;
@@ -110,7 +110,7 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', ui
       glyph.atlasloc = atlasloc;
       glyph.atlasrow = atlasrow;
       glyphatlas.glyphs[c] = glyph;
-      atlas ~= cast(ushort)(c);
+      atlas ~= c;
       atlasloc += glyph.advance;
       i++;
     }
@@ -131,8 +131,10 @@ ushort[] createGlyphAtlas(ref GlyphAtlas glyphatlas, dchar to = '\U000000FF', ui
 
 /** Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray */
 void createFontTexture(ref App app) {
+  TTF_SetFontSDF(app.glyphAtlas.ttf, false); // disable SDF, use normal alpha
   if(app.verbose) SDL_Log("createFontTexture");
   auto surface = TTF_RenderText_Blended_Wrapped(app.glyphAtlas.ttf, cast(const(char)*)&app.glyphAtlas.atlas[0], 0, SDL_Color(255, 255, 255, 255), app.glyphAtlas.width);
+  SDL_Log("createFontTexture surface: %p [%dx%d]", surface, surface ? surface.w : 0, surface ? surface.h : 0);
   if(app.verbose) SDL_Log("createTextureImage: Surface obtained: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel / 8));
   if(SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) surface.toRGBA();
 
