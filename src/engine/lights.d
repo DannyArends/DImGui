@@ -7,7 +7,7 @@ import engine;
 
 import matrix : orthogonal, perspective, multiply, lookAt;
 import ssbo : updateSSBO;
-import vector : normalize, vAdd, negate, vMul;
+import vector : normalize, vAdd, vSub, negate, vMul;
 
 struct Light {
   Matrix lightSpaceMatrix;
