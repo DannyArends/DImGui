@@ -34,9 +34,9 @@ import engine;
 @nogc pure float fbm(float x, float y, float z, int octaves = 4, float lacunarity = 2.0f, float gain = 0.5f, int seed = 0) nothrow {
   float value = 0.0f, amplitude = 0.5f, frequency = 1.0f;
   for (int i = 0; i < octaves; i++) {
-    value     += amplitude * smoothNoise(x * frequency, y * frequency, z * frequency, seed + i);
+    value += amplitude * smoothNoise(x * frequency, y * frequency, z * frequency, seed + i);
     amplitude *= gain;
     frequency *= lacunarity;
   }
-  return value;
+  return(clamp(value, 0.0f, 1.0f));
 }
