@@ -10,12 +10,9 @@ import noise : fbm;
 import geometry : Geometry, position, texture, deAllocate, computeNormals;
 import textures : mapTextures;
 
-enum CHUNK_SIZE = 8;
-enum CHUNK_HEIGHT = 8;
-
-@nogc pure TileType worldTile(int wx, int wy, int wz, int seed = 0) nothrow {
+@nogc pure TileType worldTile(const World world, int wx, int wy, int wz, int seed = 0) nothrow {
   float h = fbm(wx * 0.05f, wz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed);
-  int surface = cast(int)(h * (CHUNK_HEIGHT-1));
+  int surface = cast(int)(h * (world.chunkHeight-1));
   if (wy > surface) return TileType.None;
   if (wy == surface) return heightToTile(h);
   if (wy == 0) return TileType.Lava;
@@ -47,18 +44,18 @@ void writeTile(ref Chunk chunk, const ref TileAtlas ta, float wx, float wy, floa
   chunk.geometry.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
 }
 
-Chunk generateChunk(ref App app, int cx, int cy, int cz, float tileSize = 1.0f, float tileHeight = 0.2f, int seed = 0) {
+Chunk generateChunk(ref App app, const World world, int cx, int cy, int cz, float tileSize = 1.0f, float tileHeight = 0.2f, int seed = 0) {
   Chunk chunk;
   chunk.coord = [cx, cy, cz];
   chunk.geometry = new Geometry();
 
-  for (int z = 0; z < CHUNK_SIZE; z++) {
-    for (int y = 0; y < CHUNK_HEIGHT; y++) {
-      for (int x = 0; x < CHUNK_SIZE; x++) {
-        int wx = cx * CHUNK_SIZE + x;
-        int wy = cy * CHUNK_HEIGHT + y;
-        int wz = cz * CHUNK_SIZE + z;
-        TileType tile = worldTile(wx, wy, wz, seed);
+  for (int z = 0; z < world.chunkSize; z++) {
+    for (int y = 0; y < world.chunkHeight; y++) {
+      for (int x = 0; x < world.chunkSize; x++) {
+        int wx = cx * world.chunkSize + x;
+        int wy = cy * world.chunkHeight + y;
+        int wz = cz * world.chunkSize + z;
+        TileType tile = world.worldTile(wx, wy, wz, seed);
         if (tile == TileType.None) continue;
         float px = wx * tileSize;
         float py = wy * tileHeight;
@@ -76,6 +73,7 @@ Chunk generateChunk(ref App app, int cx, int cy, int cz, float tileSize = 1.0f, 
   app.objects ~= chunk.geometry;
   app.objects[($-1)].texture("3DTextures");
   app.objects[($-1)].computeNormals(true);
+  app.objects[($-1)].isSelectable = false;
   app.objects[($-1)].position([0.0f, -6.0f, 0.0f]);
   app.mapTextures(app.objects[($-1)]);
   return chunk;
@@ -83,20 +81,22 @@ Chunk generateChunk(ref App app, int cx, int cy, int cz, float tileSize = 1.0f, 
 
 struct World {
   Chunk[int[3]] chunks;
-  int seed = 12345;
-  int renderDistance = 1;
+  int seed = 67;
+  int renderDistance = 6;
   float tileSize = 1.0f;
   float tileHeight = 0.2f;
+  int chunkSize = 8;
+  int chunkHeight = 8;
 
   void update(ref App app, float[3] playerPos) {
-    int[3] pc = [ cast(int)(floor(playerPos[0] / (CHUNK_SIZE * tileSize))),0, cast(int)(floor(playerPos[2] / (CHUNK_SIZE * tileSize))) ];
+    int[3] pc = [ cast(int)(floor(playerPos[0] / (chunkSize * tileSize))),0, cast(int)(floor(playerPos[2] / (chunkSize * tileSize))) ];
 
     // Load new chunks within render distance
     for (int cz = pc[2]- renderDistance; cz <= pc[2]+ renderDistance; cz++) {
       for (int cx = pc[0]- renderDistance; cx <= pc[0]+ renderDistance; cx++) {
         int[3] coord = [cx, 0, cz];
         if (coord !in chunks) {
-          chunks[coord] = app.generateChunk(cx, 0, cz, tileSize, tileHeight, seed);
+          chunks[coord] = app.generateChunk(this, cx, 0, cz, tileSize, tileHeight, seed);
         }
       }
     }
@@ -115,4 +115,67 @@ struct World {
       }
     }
   }
+
+  void clear(ref App app) {
+    foreach (coord; chunks.keys) {
+      auto g = chunks[coord].geometry;
+      if (g !is null && g.isBuffered()) {
+        Geometry[] remaining;
+        foreach (obj; app.objects.array) if (obj !is g) remaining ~= obj;
+        app.objects.array = remaining;
+        app.deAllocate(g);
+      }
+    }
+    chunks.clear();
+  }
+}
+
+void showWorldwindow(ref App app, bool* show, uint font = 0) {
+  igPushFont(app.gui.fonts[font], app.gui.fontsize);
+  if(igBegin("World", show, 0)) {
+    igBeginTable("World_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+
+    igTableNextColumn(); igText("Seed", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igPushItemWidth(150 * app.gui.uiscale);
+    int[2] seedLimits = [0, 99999];
+    if(igSliderScalar("##seed", ImGuiDataType_S32, &app.world.seed, &seedLimits[0], &seedLimits[1], "%d", 0)) { app.world.clear(app); }
+
+    igTableNextColumn(); igText("Render Distance", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igPushItemWidth(150 * app.gui.uiscale);
+    int[2] rdLimits = [1, 16];
+    igSliderScalar("##rd", ImGuiDataType_S32, &app.world.renderDistance, &rdLimits[0], &rdLimits[1], "%d", 0);
+
+    igTableNextColumn(); igText("Tile Size", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igPushItemWidth(150 * app.gui.uiscale);
+    float[2] tsLimits = [0.1f, 5.0f];
+    igSliderScalar("##ts", ImGuiDataType_Float, &app.world.tileSize, &tsLimits[0], &tsLimits[1], "%.2f", 0);
+
+    igTableNextColumn(); igText("Tile Height", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igPushItemWidth(150 * app.gui.uiscale);
+    float[2] thLimits = [0.05f, 2.0f];
+    igSliderScalar("##th", ImGuiDataType_Float, &app.world.tileHeight, &thLimits[0], &thLimits[1], "%.2f", 0);
+
+    igTableNextColumn(); igText("Chunk Size", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igPushItemWidth(150 * app.gui.uiscale);
+    int[2] csLimits = [4, 32];
+    if(igSliderScalar("##cs", ImGuiDataType_S32, &app.world.chunkSize, &csLimits[0], &csLimits[1], "%d", 0)){ app.world.clear(app); }
+
+    igTableNextColumn(); igText("Chunk Height", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igPushItemWidth(150 * app.gui.uiscale);
+    int[2] chLimits = [2, 32];
+    if(igSliderScalar("##ch", ImGuiDataType_S32, &app.world.chunkHeight, &chLimits[0], &chLimits[1], "%d", 0)){ app.world.clear(app); }
+
+    igTableNextColumn(); igText("Chunks loaded", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igText(toStringz(format("%d", app.world.chunks.length)), ImVec2(0.0f, 0.0f));
+
+    igTableNextColumn(); igTableNextColumn();
+    if(igButton("Regenerate", ImVec2(0.0f, 0.0f))) {
+      
+      app.world.update(app, app.camera.position);
+    }
+
+    igEndTable();
+    igEnd();
+  } else { igEnd(); }
+  igPopFont();
 }

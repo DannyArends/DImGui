@@ -61,6 +61,7 @@ Intersection[] getHits(ref App app, SDL_Event e, bool showRay = true){
 
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isVisible) continue;                   // invisible objects should not generate hits
+    if(!app.objects[x].isSelectable) continue;                // Not selectable objects should not generate hits
     if(app.objects[x].name() == "Line") continue;             // Other lines should not generate hits
     app.objects[x].computeBoundingBox(app.trace);             // Make sure we compute the current Bounding Box
     auto intersection = ray.intersects(app.objects[x].box);   // Compute the intersection

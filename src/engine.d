@@ -9,6 +9,8 @@ public import world : World;
 
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
 
+version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
+
 /** Main application structure
  */
 struct App {
@@ -122,7 +124,7 @@ struct App {
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
   bool showBounds = true;                                                       /// Show bounding boxes
-  bool showShadows = true;                                                      /// Allow shadows to be disabled
+  bool showShadows = !isAndroid;                                                /// Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
   bool hasCompute = true;
   uint verbose = 0;                                                             /// Be very verbose

@@ -21,6 +21,7 @@ import window : createOrResizeWindow;
  * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui
  */
 void renderFrame(ref App app) {
+  bool shadowsThisFrame = app.showShadows;
   if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired = app.sync[app.syncIndex].imageAcquired;
@@ -78,7 +79,7 @@ void renderFrame(ref App app) {
 
   // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
-  if(app.showShadows) app.recordShadowCommandBuffer(app.syncIndex);
+  if(shadowsThisFrame) app.recordShadowCommandBuffer(app.syncIndex);
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
@@ -87,11 +88,12 @@ void renderFrame(ref App app) {
   app.recordImGuiCommandBuffer(app.syncIndex);
 
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
-  VkCommandBuffer[] submitCommandBuffers = [
-    app.shadows.commands[app.syncIndex],   /// Shadow command buffers
-    app.scenePass.commands[app.syncIndex], /// Scene rendering
-    app.postPass.commands[app.syncIndex],  /// Post Processing
-    app.imguiPass.commands[app.syncIndex]  /// ImGui overlay
+  VkCommandBuffer[] submitCommandBuffers = [];
+  if (shadowsThisFrame) submitCommandBuffers ~= app.shadows.commands[app.syncIndex];
+  submitCommandBuffers ~= [
+    app.scenePass.commands[app.syncIndex],
+    app.postPass.commands[app.syncIndex],
+    app.imguiPass.commands[app.syncIndex]
   ];
 
   VkSemaphore[] waitSemaphores = [ imageAcquired ];

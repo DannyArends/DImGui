@@ -24,6 +24,7 @@ void showMenu(ref App app, uint font = 0) {
       igEndMenu();
     }
     if(igMenuItem_Bool("Settings".toStringz,null, false, true)) { app.gui.showSettings = !app.gui.showSettings; }
+    if(igMenuItem_Bool("World".toStringz,null, false, true)) { app.gui.showWorldSettings = !app.gui.showWorldSettings; }
     if(igMenuItem_Bool("FPS".toStringz,null, false, true)) {  app.gui.showFPS = !app.gui.showFPS; }
     if(igBeginMenu("?".toStringz, true)) {
       if(igMenuItem_Bool("Shaders".toStringz,null, false, true)) { app.gui.showShaders = !app.gui.showShaders; }
