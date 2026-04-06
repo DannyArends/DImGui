@@ -9,15 +9,6 @@
 #include "structures.glsl"
 #include "functions.glsl"
 
-layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
-  vec4 position;    /// Scene Camera Position
-  mat4 scene;       /// Scene Camera adjustment
-  mat4 view;        /// View matrix
-  mat4 proj;        /// Projection matrix
-  mat4 ori;         /// Screen orientation
-  uint nlights;     /// Number of actual lights
-} ubo;
-
 // Per Vertex attributes
 layout(location = 0) in vec3 inPosition;          /// Vertex position
 layout(location = 1) in vec4 inColor;             /// TODO: get from materialSSB0.materials[] with meshSSBO.meshes[i].material

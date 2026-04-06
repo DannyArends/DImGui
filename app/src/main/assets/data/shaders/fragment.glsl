@@ -9,15 +9,6 @@
 #include "structures.glsl"
 #include "functions.glsl"
 
-layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
-  vec4 position;    /// Scene Camera Position
-  mat4 scene;       /// Scene Camera adjustment
-  mat4 view;        /// View matrix
-  mat4 proj;        /// Projection matrix
-  mat4 ori;         /// Screen orientation
-  uint nlights;     /// Number of actual lights
-} ubo;
-
 layout(location = 0) in vec4 fragPosWorld;
 layout(location = 1) in vec4 fragColor;
 layout(location = 2) in vec3 fragNormal;
@@ -46,11 +37,18 @@ void main() {
   }
 
   // Compute lighting and shadows
-  vec3 lightColor = vec3(0.0f);
-  for(int i = 0; i < ubo.nlights; ++i) {
-    vec3 lightContribution = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting);
-    float shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld, i);
-    lightColor += (lightContribution * shadowFactor);
+  vec3 lightColor = vec3(0.0);
+  if (ubo.globalIllumination == 1u) {
+    lightColor = baseColor * 0.8;
+  } else {
+    vec3 lightColor = vec3(0.0);
+  }
+  if (ubo.showShadows == 1u) {
+    for(int i = 0; i < ubo.nlights; ++i) {
+      vec3 lightContribution = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting);
+      float shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld, i);
+      lightColor += (lightContribution * shadowFactor);
+    }
   }
 
   /// ReAdjust output

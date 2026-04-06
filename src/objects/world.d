@@ -10,12 +10,12 @@ import noise : fbm;
 import geometry : Geometry, position, texture, deAllocate, computeNormals;
 import textures : mapTextures;
 
-enum CHUNK_SIZE = 12;
-enum CHUNK_HEIGHT = 32;
+enum CHUNK_SIZE = 8;
+enum CHUNK_HEIGHT = 8;
 
 @nogc pure TileType worldTile(int wx, int wy, int wz, int seed = 0) nothrow {
   float h = fbm(wx * 0.05f, wz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed);
-  int surface = cast(int)(h * CHUNK_HEIGHT);
+  int surface = cast(int)(h * (CHUNK_HEIGHT-1));
   if (wy > surface) return TileType.None;
   if (wy == surface) return heightToTile(h);
   if (wy == 0) return TileType.Lava;
@@ -84,7 +84,7 @@ Chunk generateChunk(ref App app, int cx, int cy, int cz, float tileSize = 1.0f, 
 struct World {
   Chunk[int[3]] chunks;
   int seed = 12345;
-  int renderDistance = 4;
+  int renderDistance = 1;
   float tileSize = 1.0f;
   float tileHeight = 0.2f;
 
