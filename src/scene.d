@@ -33,9 +33,7 @@ void createScene(ref App app){
     }
   }*/
 
-  app.objects ~= new TileMap(app.tileAtlas, "data/textures/heightmap.png", 16, 16, 8, 2.0f);
-  app.objects[($-1)].texture("3DTextures");
-  app.objects[($-1)].position([0.0f, -1.5f, 0.0f]);
+  app.world.update(app, app.camera.lookat);
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);

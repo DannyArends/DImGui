@@ -45,6 +45,7 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
+  app.world.update(app, app.camera.lookat);
   app.updateMeshInfo();                   /// Check for Mesh Information change
   app.updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
   app.updateDisco();                      /// Update when disco mode 🕺 🪩 💃
