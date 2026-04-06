@@ -78,7 +78,7 @@ void renderFrame(ref App app) {
 
   // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
-  app.recordShadowCommandBuffer(app.syncIndex);
+  if(app.showShadows) app.recordShadowCommandBuffer(app.syncIndex);
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
