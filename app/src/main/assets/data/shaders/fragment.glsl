@@ -38,17 +38,14 @@ void main() {
 
   // Compute lighting and shadows
   vec3 lightColor = vec3(0.0);
-  if (ubo.globalIllumination == 1u) {
-    lightColor = baseColor * 0.8;
-  } else {
-    vec3 lightColor = vec3(0.0);
-  }
   if (ubo.showShadows == 1u) {
     for(int i = 0; i < ubo.nlights; ++i) {
       vec3 lightContribution = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting);
       float shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld, i);
       lightColor += (lightContribution * shadowFactor);
     }
+  } else {
+    lightColor = baseColor * 0.4;
   }
 
   /// ReAdjust output

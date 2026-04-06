@@ -122,7 +122,6 @@ struct App {
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
   bool showBounds = true;                                                       /// Show bounding boxes
-  bool globalIllumination = false;                                              /// Global illumination ?
   bool showShadows = true;                                                      /// Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
   bool hasCompute = true;

@@ -48,10 +48,6 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igCheckbox("##showShadows", &app.showShadows);
 
     igTableNextColumn();
-    igText("Global Illumination", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igCheckbox("##globalIllumination", &app.globalIllumination);
-
-    igTableNextColumn();
     igText("Clear color", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(100 * app.gui.uiscale);
     igSliderScalar("##colR", ImGuiDataType_Float,  &app.clearValue[0].color.float32[0], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);igSameLine(0,5);
