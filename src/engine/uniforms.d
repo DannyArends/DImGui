@@ -18,7 +18,6 @@ struct UniformBufferObject {
   Matrix proj;
   Matrix orientation;
   uint nlights = 0;
-  uint globalIllumination = 0;
   uint showShadows = 0;
 }
 
@@ -74,7 +73,6 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     proj: app.camera.proj,
     orientation: Matrix.init,
     nlights: cast(uint)app.lights.length,
-    globalIllumination: cast(uint)app.globalIllumination,
     showShadows: cast(uint)app.showShadows
   };
 
