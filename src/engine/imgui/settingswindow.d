@@ -36,12 +36,20 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igSliderScalar("##", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
 
     igTableNextColumn();
-    igText("showBounds", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igText("Show Bounds", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igCheckbox("##showBounds", &app.showBounds);
 
     igTableNextColumn();
-    igText("showRays", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igText("Show Rays", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igCheckbox("##showRays", &app.showRays);
+
+    igTableNextColumn();
+    igText("Show Shadows", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igCheckbox("##showShadows", &app.showShadows);
+
+    igTableNextColumn();
+    igText("Global Illumination", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igCheckbox("##globalIllumination", &app.globalIllumination);
 
     igTableNextColumn();
     igText("Clear color", ImVec2(0.0f, 0.0f)); igTableNextColumn();

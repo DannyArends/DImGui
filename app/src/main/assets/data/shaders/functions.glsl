@@ -88,4 +88,11 @@ vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoor
   return(finalNormal);
 }
 
+vec3 applyFog(vec3 color, vec3 fragPos, vec3 cameraPos, float fogStart, float fogEnd, vec3 fogColor) {
+  vec2 horizDist = fragPos.xz - cameraPos.xz;  // XZ only, ignore height
+  float dist = length(horizDist);
+  float fogFactor = clamp((fogEnd - dist) / (fogEnd - fogStart), 0.0, 1.0);
+  return mix(fogColor, color, fogFactor);
+}
+
 #endif // FUNCTIONS_GLSL

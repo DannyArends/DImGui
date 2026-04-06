@@ -18,6 +18,8 @@ struct UniformBufferObject {
   Matrix proj;
   Matrix orientation;
   uint nlights = 0;
+  uint globalIllumination = 0;
+  uint showShadows = 0;
 }
 
 struct ParticleUniformBuffer {
@@ -45,7 +47,7 @@ void forEachUBO(Shader[] shaders, void delegate(Descriptor) fn) {
 }
 
 void createUBO(ref App app, Descriptor descriptor) {
-  if(app.verbose) SDL_Log("Create UBO at %s, size = %d", toStringz(descriptor.base), descriptor.bytes);
+  SDL_Log("Create UBO at %s, size = %d, D struct size = %d", toStringz(descriptor.base), descriptor.bytes, UniformBufferObject.sizeof);
   if(descriptor.base in app.ubos) return;
   app.ubos[descriptor.base] = UBO();
   app.ubos[descriptor.base].buffers.length = app.framesInFlight;
@@ -72,6 +74,8 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     proj: app.camera.proj,
     orientation: Matrix.init,
     nlights: cast(uint)app.lights.length,
+    globalIllumination: cast(uint)app.globalIllumination,
+    showShadows: cast(uint)app.showShadows
   };
 
   // Adjust for screen orientation so that the world is always up

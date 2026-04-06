@@ -122,11 +122,12 @@ struct App {
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
   bool showBounds = true;                                                       /// Show bounding boxes
-  bool showShadows = false;                                                     /// TODO: Allow shadows to be disabled
+  bool globalIllumination = false;                                              /// Global illumination ?
+  bool showShadows = true;                                                      /// Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
   bool hasCompute = true;
   uint verbose = 0;                                                             /// Be very verbose
-  bool disco = false;                                                           /// TODO: ReAdd Disco mode
+  bool disco = false;                                                           /// Disco mode
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isMinimized = false;                                                     /// isMinimized?
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android

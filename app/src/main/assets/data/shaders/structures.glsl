@@ -52,6 +52,18 @@ layout (std430, set = 0, binding = BINDING_BONES_SSBO) readonly buffer BoneMatri
     Bone transforms[];
 } boneSSBO;
 
+/// UBO
+layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
+  vec4 position;              /// Scene Camera Position
+  mat4 scene;                 /// Scene Camera adjustment
+  mat4 view;                  /// View matrix
+  mat4 proj;                  /// Projection matrix
+  mat4 ori;                   /// Screen orientation
+  uint nlights;               /// Number of actual lights
+  uint globalIllumination;    /// Global illumination
+  uint showShadows;           /// Show shadows ?
+} ubo;
+
 /// Samplers/Images
 layout(binding = BINDING_TEXTURES) uniform sampler2D textureSampler[];
 layout(binding = BINDING_SHADOWMAP) uniform sampler2DShadow shadowMap[];
