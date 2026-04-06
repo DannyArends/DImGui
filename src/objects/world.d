@@ -34,16 +34,16 @@ void writeTile(ref Chunk chunk, const ref TileAtlas ta, float wx, float wy, floa
   float[2] uvBL = ta.tileUV(tile.name, false, true);
   float[2] uvTL = ta.tileUV(tile.name, false, false);
 
-  uint vi = cast(uint)chunk.geometry.vertices.length;
-  uint ii = cast(uint)chunk.geometry.indices.length;
+  uint vi = cast(uint)chunk.vertices.length;
+  uint ii = cast(uint)chunk.indices.length;
 
-  chunk.geometry.vertices ~= [
+  chunk.vertices ~= [
     Vertex([wx+hs, wy, wz-hs], uvTR, [1.0f, 1.0f, 1.0f, 1.0f]),
     Vertex([wx-hs, wy, wz-hs], uvTL, [1.0f, 1.0f, 1.0f, 1.0f]),
     Vertex([wx-hs, wy, wz+hs], uvBL, [1.0f, 1.0f, 1.0f, 1.0f]),
     Vertex([wx+hs, wy, wz+hs], uvBR, [1.0f, 1.0f, 1.0f, 1.0f]),
   ];
-  chunk.geometry.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
+  chunk.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
 }
 
 Chunk generateChunk(ref App app, const World world, int cx, int cy, int cz, float tileSize = 1.0f, float tileHeight = 0.2f, int seed = 0) {
@@ -84,11 +84,11 @@ Chunk generateChunk(ref App app, const World world, int cx, int cy, int cz, floa
 struct World {
   Chunk[int[3]] chunks;
   int seed = 67;
-  int renderDistance = 6;
+  int renderDistance = 4;
   float tileSize = 1.0f;
   float tileHeight = 0.2f;
   int chunkSize = 8;
-  int chunkHeight = 8;
+  int chunkHeight = 16;
 
   void update(ref App app, float[3] playerPos) {
     int[3] pc = [ cast(int)(floor(playerPos[0] / (chunkSize * tileSize))),0, cast(int)(floor(playerPos[2] / (chunkSize * tileSize))) ];

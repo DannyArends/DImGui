@@ -45,7 +45,7 @@ void main() {
       lightColor += (lightContribution * shadowFactor);
     }
   } else {
-    lightColor = baseColor * 0.4;
+    lightColor = baseColor * 0.1;
   }
 
   /// ReAdjust output
