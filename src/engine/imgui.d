@@ -17,6 +17,7 @@ import mainmenu : showMenu;
 import shaderswindow : showShaderwindow;
 import texturewindow : showTextureswindow;
 import validation : nameVulkanObject, pushLabel, popLabel;
+import world: showWorldwindow;
 
 /** Main GUI structure
  */
@@ -29,6 +30,7 @@ struct GUI {
   bool showObjects = false;
   bool showLights = false;
   bool showSettings = false;
+  bool showWorldSettings = false;
   bool showSFX = false;
   bool showShaders = false;
   bool showTexture = false;
@@ -225,6 +227,7 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showSFX) app.showSFXwindow(&app.gui.showSFX, font);
   if(app.gui.showShaders) app.showShaderwindow(&app.gui.showShaders, font);
   if(app.gui.showSettings) app.showSettingswindow(&app.gui.showSettings, font);
+  if(app.gui.showWorldSettings) app.showWorldwindow(&app.gui.showWorldSettings, font);
   if(app.gui.showLights) app.showLightswindow(&app.gui.showLights, font);
   if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture, font);
   if(app.gui.showDirectory) app.showDirectoryWindow(&app.gui.showDirectory, "data", font);
