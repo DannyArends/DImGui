@@ -12,10 +12,12 @@ import textures : mapTextures;
 
 @nogc pure TileType worldTile(const World world, int wx, int wy, int wz, int seed = 0) nothrow {
   float h = fbm(wx * 0.05f, wz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed);
+  float t = fbm(wx * 0.1f,  wz * 0.1f,  0.0f, 4, 2.0f, 0.5f, seed + 1337); // tile variation field
   int surface = cast(int)(h * (world.chunkHeight-1));
   if (wy > surface) return TileType.None;
-  if (wy == surface) return heightToTile(h);
   if (wy == 0) return TileType.Lava;
+  if (wy < surface)  return TileType.Stone;
+  if (wy == surface) return heightToTile(h, t);
   return TileType.Stone;
 }
 
@@ -143,17 +145,17 @@ void showWorldwindow(ref App app, bool* show, uint font = 0) {
     igTableNextColumn(); igText("Render Distance", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     int[2] rdLimits = [1, 16];
-    igSliderScalar("##rd", ImGuiDataType_S32, &app.world.renderDistance, &rdLimits[0], &rdLimits[1], "%d", 0);
+    if(igSliderScalar("##rd", ImGuiDataType_S32, &app.world.renderDistance, &rdLimits[0], &rdLimits[1], "%d", 0)) { app.world.clear(app); };
 
     igTableNextColumn(); igText("Tile Size", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     float[2] tsLimits = [0.1f, 5.0f];
-    igSliderScalar("##ts", ImGuiDataType_Float, &app.world.tileSize, &tsLimits[0], &tsLimits[1], "%.2f", 0);
+    if(igSliderScalar("##ts", ImGuiDataType_Float, &app.world.tileSize, &tsLimits[0], &tsLimits[1], "%.2f", 0)) { app.world.clear(app); };
 
     igTableNextColumn(); igText("Tile Height", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     float[2] thLimits = [0.05f, 2.0f];
-    igSliderScalar("##th", ImGuiDataType_Float, &app.world.tileHeight, &thLimits[0], &thLimits[1], "%.2f", 0);
+    if(igSliderScalar("##th", ImGuiDataType_Float, &app.world.tileHeight, &thLimits[0], &thLimits[1], "%.2f", 0)) { app.world.clear(app); };
 
     igTableNextColumn(); igText("Chunk Size", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
@@ -167,12 +169,6 @@ void showWorldwindow(ref App app, bool* show, uint font = 0) {
 
     igTableNextColumn(); igText("Chunks loaded", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igText(toStringz(format("%d", app.world.chunks.length)), ImVec2(0.0f, 0.0f));
-
-    igTableNextColumn(); igTableNextColumn();
-    if(igButton("Regenerate", ImVec2(0.0f, 0.0f))) {
-      
-      app.world.update(app, app.camera.position);
-    }
 
     igEndTable();
     igEnd();
