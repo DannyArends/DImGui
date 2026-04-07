@@ -118,6 +118,7 @@ void checkAsync(ref App app) {
     auto p = app.textures.pending[i];
     if(vkGetFenceStatus(app.device, app.textures.pending[i].cmdBuffer.fence) == VK_SUCCESS) {
       app.destroyStagingBuffer(p.staging);
+      SDL_DestroySurface(p.texture.surface);
       vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
       vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
       app.textures ~= p.texture;
