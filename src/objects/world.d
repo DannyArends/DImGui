@@ -8,8 +8,37 @@ import engine;
 import geometry : position, texture, deAllocate, computeNormals;
 import noise : fbm;
 import textures : mapTextures;
-import tileatlas : tileUV, heightToTile;
+import tileatlas : TileT, tileUV;
 import vector : vAdd, vMul;
+
+enum TileType : TileT {
+  None = TileT("None", false, 0.0f),
+  Lava = TileT("Lava_01", false, 0.0f),
+  Water = TileT("Water_01", false, 0.0f),
+  Sand01 = TileT("Sand_01", true,  1.5f),
+  Sand02 = TileT("Sand_02", true,  1.5f),
+  Gravel = TileT("Gravel_01", true,  1.6f),
+  Grass01 = TileT("Grass_01", true,  1.2f),
+  Grass02 = TileT("Grass_02", true,  1.2f),
+  Grass03 = TileT("Grass_03", true,  1.2f),
+  Forest01 = TileT("Forest_Ground_01", true,  1.5f),
+  Forest02 = TileT("Hedge_01", true,  1.5f),
+  Stone = TileT("Stone_01", true,  1.8f),
+  Ice01 = TileT("Ice_01", true,  1.0f),
+  Snow = TileT("Ice_03", true,  1.6f),
+}
+ 
+@nogc pure TileType heightToTile(float h, float t) nothrow {
+  if (h < 0.05f) return TileType.Lava;
+  if (h < 0.15f){ TileType[2] variants = [TileType.Stone, TileType.Gravel]; return variants[cast(uint)(t * 2) % 2]; }
+  if (h < 0.25f){ TileType[2] variants = [TileType.Sand01, TileType.Sand02]; return variants[cast(uint)(t * 2) % 2]; }
+  if (h < 0.35f){ TileType[3] variants = [TileType.Gravel, TileType.Sand02, TileType.Grass01]; return variants[cast(uint)(t * 3) % 3]; }
+  if (h < 0.50f){ TileType[3] variants = [TileType.Grass01, TileType.Grass02, TileType.Grass03]; return variants[cast(uint)(t * 3) % 3]; }
+  if (h < 0.65f){ TileType[2] variants = [TileType.Forest01, TileType.Forest02]; return variants[cast(uint)(t * 2) % 2]; }
+  if (h < 0.80f) return TileType.Stone;
+  if (h < 0.90f) return TileType.Ice01;
+  return TileType.Snow;
+}
 
 @nogc pure TileType getTile(immutable(WorldData) wd, const int[3] wc, const int[2] seed = [0,0]) nothrow {
   float h = fbm(wc[0] * 0.05f, wc[2] * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
@@ -73,8 +102,7 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
 
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.vertices.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
-  Chunk chunk;
-  chunk.coord = data.coord;
+  Chunk chunk = Chunk(data.coord);
   chunk.geometry = new Geometry();
   chunk.geometry.vertices = data.vertices;
   chunk.geometry.indices  = data.indices;
