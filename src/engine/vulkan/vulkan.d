@@ -74,7 +74,13 @@ void cleanup(App app) {
   app.stopWorkers();
   thread_joinAll();
 
+  SDL_Log("Destroying active tracks and audio.mixer");
+  foreach(track; app.audio.activeTracks) { MIX_DestroyTrack(track); }
+  app.audio.activeTracks = [];
+  if(app.audio.mixer) MIX_DestroyMixer(app.audio.mixer);
+
   SDL_Log("Destroying Window & Quit SDL");
   SDL_DestroyWindow(app);
+
   SDL_Quit();
 }
