@@ -14,7 +14,7 @@ layout(location = 0) in vec3 inPosition;          /// Vertex position
 layout(location = 1) in vec4 inColor;             /// TODO: get from materialSSB0.materials[] with meshSSBO.meshes[i].material
 layout(location = 2) in vec3 inNormal;            /// Normal
 layout(location = 3) in vec2 inTexCoord;          /// Texture coordinate
-layout(location = 4) in vec3 inTangent;           /// Tangent vector
+layout(location = 4) in vec4 inTangent;           /// Tangent vector
 layout(location = 5) in uvec4 inBones;            /// assimp: BoneIDs
 layout(location = 6) in vec4 inWeights;           /// assimp: BoneWeights
 
@@ -40,8 +40,8 @@ void main() {
 
   /// Calculate the world-space normal, bitangent, tangent, and normal matrix
   vec3 N = normalize(mat3(instance) * inNormal);
-  vec3 T = normalize(mat3(instance) * inTangent);
-  vec3 B = normalize(cross(N, T));
+  vec3 T = normalize(mat3(instance) * inTangent.xyz);
+  vec3 B = normalize(cross(N, T)) * inTangent.w;
 
   /// World position & point size
   gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * position;

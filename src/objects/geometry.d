@@ -323,7 +323,7 @@ void computeTangents(T)(ref T geometry, bool verbose = false) {
     float[3] finalTangent = (t.vSub(n.vMul(n.dot(t)))).normalize();
     float[3] bitangent = tan2[i].normalize();
     float handedness = (cross(n, finalTangent).dot(bitangent) < 0.0f) ? -1.0f : 1.0f;
-    geometry.vertices[i].tangent = finalTangent;
+    geometry.vertices[i].tangent = [finalTangent[0], finalTangent[1], finalTangent[2], handedness];
   }
 
   geometry.buffers[VERTEX] = false; // Mark vertex buffer as dirty, needs re-upload
