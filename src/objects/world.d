@@ -21,8 +21,8 @@ import textures : mapTextures;
   return TileType.Stone;
 }
 
-@nogc pure int[3] worldCoord(immutable(WorldData) wd, int cx, int cy, int cz, int x, int y, int z) nothrow {
-  return [cx * wd.chunkSize + x, cy * wd.chunkHeight + y, cz * wd.chunkSize + z];
+@nogc pure int[3] worldCoord(immutable(WorldData) wd, int[3] coord, int x, int y, int z) nothrow {
+  return [coord[0] * wd.chunkSize + x, coord[1] * wd.chunkHeight + y, coord[2] * wd.chunkSize + z];
 }
 
 @nogc pure float[3] worldPos(immutable(WorldData) wd, int[3] wc) nothrow {
@@ -47,7 +47,7 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int y = 0; y < wd.chunkHeight; y++) {
       for (int x = 0; x < wd.chunkSize; x++) {
-        int[3] wc = wd.worldCoord(cx, cy, cz, x, y, z);
+        int[3] wc = wd.worldCoord(data.coord, x, y, z);
         TileType tile = wd.getTile(wc, wd.seed);
         if (tile == TileType.None) continue;
         float[3] p = wd.worldPos(wc);
