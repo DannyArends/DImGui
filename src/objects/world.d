@@ -9,6 +9,7 @@ import tileatlas : tileUV, heightToTile, TileType, TileAtlas;
 import noise : fbm;
 import geometry : Geometry, position, texture, deAllocate, computeNormals;
 import textures : mapTextures;
+import vector : vAdd, vMul;
 
 @nogc pure TileType getTile(immutable(WorldData) wd, const int[3] wc, const int[2] seed = [0,0]) nothrow {
   float h = fbm(wc[0] * 0.05f, wc[2] * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
@@ -21,8 +22,8 @@ import textures : mapTextures;
   return TileType.Stone;
 }
 
-@nogc pure int[3] worldCoord(immutable(WorldData) wd, int[3] coord, int x, int y, int z) nothrow {
-  return [coord[0] * wd.chunkSize + x, coord[1] * wd.chunkHeight + y, coord[2] * wd.chunkSize + z];
+@nogc pure int[3] worldCoord(immutable(WorldData) wd, int[3] coord, int[3] local) nothrow {
+  return coord.vMul([wd.chunkSize, wd.chunkHeight, wd.chunkSize]).vAdd(local);
 }
 
 @nogc pure float[3] worldPos(immutable(WorldData) wd, int[3] wc) nothrow {
@@ -47,7 +48,7 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int y = 0; y < wd.chunkHeight; y++) {
       for (int x = 0; x < wd.chunkSize; x++) {
-        int[3] wc = wd.worldCoord(data.coord, x, y, z);
+        int[3] wc = wd.worldCoord(data.coord, [x, y, z]);
         TileType tile = wd.getTile(wc, wd.seed);
         if (tile == TileType.None) continue;
         float[3] p = wd.worldPos(wc);

@@ -10,7 +10,7 @@ import io : dir, fixPath;
 import bone : mergeBones;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
-import world : WorldData, ChunkData, buildChunkData, finalizeChunk;
+import world : buildChunkData, finalizeChunk;
 
 
 class TaskThread : Thread {
