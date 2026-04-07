@@ -17,7 +17,7 @@ import mainmenu : showMenu;
 import shaderswindow : showShaderwindow;
 import texturewindow : showTextureswindow;
 import validation : nameVulkanObject, pushLabel, popLabel;
-import world: showWorldwindow;
+import worldwindow: showWorldwindow;
 
 /** Main GUI structure
  */
