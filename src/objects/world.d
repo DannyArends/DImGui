@@ -140,37 +140,39 @@ void showWorldwindow(ref App app, bool* show, uint font = 0) {
     igTableNextColumn(); igText("Seed", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     int[2] seedLimits = [0, 99999];
-    if(igSliderScalar("##seed", ImGuiDataType_S32, &app.world.seed, &seedLimits[0], &seedLimits[1], "%d", 0)) { app.world.clear(app); }
+    igSliderScalar("##seed", ImGuiDataType_S32, &app.world.seed, &seedLimits[0], &seedLimits[1], "%d", 0);
 
     igTableNextColumn(); igText("Render Distance", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     int[2] rdLimits = [1, 16];
-    if(igSliderScalar("##rd", ImGuiDataType_S32, &app.world.renderDistance, &rdLimits[0], &rdLimits[1], "%d", 0)) { app.world.clear(app); };
+    igSliderScalar("##rd", ImGuiDataType_S32, &app.world.renderDistance, &rdLimits[0], &rdLimits[1], "%d", 0);
 
     igTableNextColumn(); igText("Tile Size", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     float[2] tsLimits = [0.1f, 5.0f];
-    if(igSliderScalar("##ts", ImGuiDataType_Float, &app.world.tileSize, &tsLimits[0], &tsLimits[1], "%.2f", 0)) { app.world.clear(app); };
+    igSliderScalar("##ts", ImGuiDataType_Float, &app.world.tileSize, &tsLimits[0], &tsLimits[1], "%.2f", 0);
 
     igTableNextColumn(); igText("Tile Height", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     float[2] thLimits = [0.05f, 2.0f];
-    if(igSliderScalar("##th", ImGuiDataType_Float, &app.world.tileHeight, &thLimits[0], &thLimits[1], "%.2f", 0)) { app.world.clear(app); };
+    igSliderScalar("##th", ImGuiDataType_Float, &app.world.tileHeight, &thLimits[0], &thLimits[1], "%.2f", 0);
 
     igTableNextColumn(); igText("Chunk Size", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     int[2] csLimits = [4, 32];
-    if(igSliderScalar("##cs", ImGuiDataType_S32, &app.world.chunkSize, &csLimits[0], &csLimits[1], "%d", 0)){ app.world.clear(app); }
+    igSliderScalar("##cs", ImGuiDataType_S32, &app.world.chunkSize, &csLimits[0], &csLimits[1], "%d", 0);
 
     igTableNextColumn(); igText("Chunk Height", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igPushItemWidth(150 * app.gui.uiscale);
     int[2] chLimits = [2, 32];
-    if(igSliderScalar("##ch", ImGuiDataType_S32, &app.world.chunkHeight, &chLimits[0], &chLimits[1], "%d", 0)){ app.world.clear(app); }
+    igSliderScalar("##ch", ImGuiDataType_S32, &app.world.chunkHeight, &chLimits[0], &chLimits[1], "%d", 0);
 
     igTableNextColumn(); igText("Chunks loaded", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igText(toStringz(format("%d", app.world.chunks.length)), ImVec2(0.0f, 0.0f));
-
     igEndTable();
+
+    if(igButton("Regenerate", ImVec2(0.0f, 0.0f))) { app.world.clear(app); }
+
     igEnd();
   } else { igEnd(); }
   igPopFont();
