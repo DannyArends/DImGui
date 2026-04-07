@@ -13,9 +13,11 @@ import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, LMode;
 import mesh : updateMeshInfo;
 import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
+import sfx : updateTracks;
 import textures : updateTextures;
 import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
+import world : updateWorld;
 
 /** Main Frame rendering loop a 3D Frame:
  * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui
@@ -46,7 +48,8 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
-  app.world.update(app, app.camera.lookat);
+  app.updateTracks();                     /// Check for sound effects that have finished
+  app.updateWorld();                      /// Check for updates to the world
   app.updateMeshInfo();                   /// Check for Mesh Information change
   app.updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
   app.updateDisco();                      /// Update when disco mode 🕺 🪩 💃

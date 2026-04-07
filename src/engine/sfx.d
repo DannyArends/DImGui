@@ -25,6 +25,7 @@ struct Audio {
   const(char)*[] music;
 
   MIX_Mixer* mixer;
+  MIX_Track*[] activeTracks;
 
   SDL_AudioFormat audioFmt;
   int audioRate, audioChannels;
@@ -109,8 +110,18 @@ int play(ref App app, WavFMT sfx) {
   if(!track) return(-1);
   MIX_SetTrackGain(track, sfx.gain * app.soundEffectGain);
   MIX_SetTrackAudio(track, sfx.chunk);
-  auto r = MIX_PlayTrack(track, 0) ? 0 : -1;
-  MIX_DestroyTrack(track);
-  return(r);
+  if(!MIX_PlayTrack(track, 0)) { MIX_DestroyTrack(track); return(-1); }
+  app.audio.activeTracks ~= track;
+  return(0);
+}
+
+/** Check sound effects for completion
+ */
+void updateTracks(ref App app) {
+  size_t[] done;
+  foreach(i, track; app.audio.activeTracks) {
+    if(!MIX_TrackPlaying(track)) { MIX_DestroyTrack(track); done ~= i; }
+  }
+  foreach_reverse(i; done) { app.audio.activeTracks = app.audio.activeTracks.remove(i); }
 }
 

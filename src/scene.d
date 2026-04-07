@@ -33,8 +33,6 @@ void createScene(ref App app){
     }
   }*/
 
-  app.world.update(app, app.camera.lookat);
-
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
   app.objects[($-1)].computeTangents();
