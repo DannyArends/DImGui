@@ -7,6 +7,7 @@ import engine;
 
 import imgui : saveSettings;
 import geometry : cleanup;
+import threading : stopWorkers;
 
 struct SupportedFeatures {
  VkPhysicalDeviceFeatures base;
@@ -60,6 +61,7 @@ void cleanup(App app) {
   app.mainDeletionQueue.flush();  // Delete permanent Vulkan resources
 
   SDL_Log("Joining Threads");
+  app.stopWorkers();
   thread_joinAll();
 
   SDL_Log("Destroying Window & Quit SDL");

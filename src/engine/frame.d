@@ -10,7 +10,7 @@ import descriptor : updateDescriptorSet, createDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 import imgui : recordImGuiCommandBuffer;
-import lights : updateDisco;
+import lights : updateDisco, LMode;
 import mesh : updateMeshInfo;
 import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
 import textures : updateTextures;
@@ -21,7 +21,7 @@ import window : createOrResizeWindow;
  * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui
  */
 void renderFrame(ref App app) {
-  bool shadowsThisFrame = app.showShadows;
+  bool shadowsThisFrame = app.lMode == LMode.LightsAndShadows;
   if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired = app.sync[app.syncIndex].imageAcquired;

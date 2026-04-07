@@ -6,6 +6,7 @@
 public import phobos;
 public import structures;
 public import world : World;
+public import lights : LMode;
 
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
 
@@ -124,7 +125,7 @@ struct App {
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
   bool showBounds = true;                                                       /// Show bounding boxes
-  bool showShadows = !isAndroid;                                                /// Allow shadows to be disabled
+  LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
   bool hasCompute = true;
   uint verbose = 0;                                                             /// Be very verbose

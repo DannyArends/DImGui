@@ -41,7 +41,8 @@ class TaskThread : Thread {
             auto openasset = cast(immutable(OpenAsset))loadOpenAsset(toStringz(path), verbose);
             main.send(openasset, mytid);
           } else { main.send("Unknown file", mytid); }
-        }
+        },
+        (bool active) { this.active = active; }  // shutdown signal
       );
       SDL_Delay(10);
     }
@@ -64,6 +65,8 @@ void initializeAsync(ref App app, uint numWorkers = 8){
   }
   if(app.verbose) SDL_Log(toStringz(format("Workers %s", app.concurrency.workers)));
 }
+
+void stopWorkers(ref App app) { foreach(tid; app.concurrency.workers.keys) { tid.send(false); } }
 
 void checkAsync(ref App app) {
   //if(app.trace) SDL_Log("Checking Async, jobs: %d", app.concurrency.paths.length);

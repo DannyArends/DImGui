@@ -9,6 +9,8 @@ import matrix : orthogonal, perspective, multiply, lookAt;
 import ssbo : updateSSBO;
 import vector : normalize, vAdd, vSub, negate, vMul;
 
+enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
+
 struct Light {
   Matrix lightSpaceMatrix;
   float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light Position
