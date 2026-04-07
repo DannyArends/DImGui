@@ -21,6 +21,10 @@ import textures : mapTextures;
   return TileType.Stone;
 }
 
+float[3] worldPos(immutable(WorldData) wd, int cx, int cy, int cz, int x, int y, int z) nothrow {
+  return([(cx * wd.chunkSize + x) * wd.tileSize, (cy * wd.chunkHeight + y) * wd.tileHeight, (cz * wd.chunkSize + z) * wd.tileSize]);
+}
+
 struct ChunkData {
   int[3] coord;
   Vertex[] vertices;
@@ -39,14 +43,9 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int c
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int y = 0; y < wd.chunkHeight; y++) {
       for (int x = 0; x < wd.chunkSize; x++) {
-        int wx = cx * wd.chunkSize + x;
-        int wy = cy * wd.chunkHeight + y;
-        int wz = cz * wd.chunkSize + z;
-        TileType tile = wd.getTile(wx, wy, wz, wd.seed);
+        TileType tile = wd.getTile(cx * wd.chunkSize + x, cy * wd.chunkHeight + y, cz * wd.chunkSize + z, wd.seed);
         if (tile == TileType.None) continue;
-        float px = wx * wd.tileSize;
-        float py = wy * wd.tileHeight;
-        float pz = wz * wd.tileSize;
+        float[3] p = wd.worldPos(cx, cy, cz, x, y, z);
         float hs = wd.tileSize * 0.5f;
         float[2] uvTR = ta.tileUV(tile.name, true,  false);
         float[2] uvBR = ta.tileUV(tile.name, true,  true);
@@ -54,10 +53,10 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int c
         float[2] uvTL = ta.tileUV(tile.name, false, false);
         uint vi = cast(uint)data.vertices.length;
         data.vertices ~= [
-          Vertex([px+hs, py, pz-hs], uvTR, [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([px-hs, py, pz-hs], uvTL, [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([px-hs, py, pz+hs], uvBL, [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([px+hs, py, pz+hs], uvBR, [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]+hs, p[1], p[2]-hs], uvTR, [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]-hs, p[1], p[2]-hs], uvTL, [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]-hs, p[1], p[2]+hs], uvBL, [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]+hs, p[1], p[2]+hs], uvBR, [1.0f, 1.0f, 1.0f, 1.0f]),
         ];
         data.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
       }
