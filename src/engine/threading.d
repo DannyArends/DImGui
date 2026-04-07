@@ -106,7 +106,7 @@ void checkAsync(ref App app) {
     app.mainDeletionQueue.add((){ app.deAllocate(texture); });
   });
   receiveTimeout(dur!"msecs"(-1), (immutable(ChunkData) data, Tid tid) {
-    SDL_Log("Received chunk [%d, %d] verts=%d", data.coord[0], data.coord[2], data.vertices.length);
+    if(app.trace) SDL_Log("Received chunk [%d, %d] verts=%d", data.coord[0], data.coord[2], data.vertices.length);
     app.concurrency.workers[tid] = false;
     app.finalizeChunk(cast(ChunkData)data);
   });
