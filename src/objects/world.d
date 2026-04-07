@@ -120,19 +120,10 @@ struct World {
     }
   }
 
-  void evictChunks(ref App app, int[3] pc){
+  void evictChunks(ref App app, int[3] pc) {
     foreach (coord; chunks.keys.dup) {
       if (abs(coord[0] - pc[0]) > renderDistance || abs(coord[2] - pc[2]) > renderDistance) {
-        if (chunks[coord].geometry !is null) {
-          foreach (i, obj; app.objects.array) {
-            if (obj is chunks[coord].geometry) {
-              app.objects.array[i] = app.objects.array[$-1];
-              app.objects.array = app.objects.array[0..$-1];
-              break;
-            }
-          }
-          if (chunks[coord].geometry.isBuffered()) app.deAllocate(chunks[coord].geometry);
-        }
+        if (chunks[coord].geometry !is null) { chunks[coord].geometry.deAllocate = true; }
         chunks.remove(coord);
       }
     }
@@ -146,15 +137,10 @@ struct World {
 
   void clear(ref App app) {
     foreach (coord; chunks.keys) {
-      auto g = chunks[coord].geometry;
-      if (g !is null && g.isBuffered()) {
-        Geometry[] remaining;
-        foreach (obj; app.objects.array) if (obj !is g) remaining ~= obj;
-        app.objects.array = remaining;
-        app.deAllocate(g);
-      }
+      if (chunks[coord].geometry !is null) { chunks[coord].geometry.deAllocate = true; }
     }
     chunks.clear();
+    pendingChunks.clear();
   }
 }
 
