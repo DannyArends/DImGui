@@ -134,12 +134,6 @@ struct World {
     }
   }
 
-  void update(ref App app, float[3] playerPos) {
-    int[3] pc = [ cast(int)(floor(playerPos[0] / (chunkSize * tileSize))),0, cast(int)(floor(playerPos[2] / (chunkSize * tileSize))) ];
-    loadChunks(app, pc); // Load new chunks within render distance
-    evictChunks(app, pc); // Evict chunks outside render distance
-  }
-
   void clear(ref App app) {
     foreach (coord; chunks.keys) {
       if (chunks[coord].geometry !is null) { chunks[coord].geometry.deAllocate = true; }
@@ -147,5 +141,12 @@ struct World {
     chunks.clear();
     pendingChunks.clear();
   }
+}
+
+void updateWorld(ref App app) {
+  int[3] pc = [ cast(int)(floor(app.camera.lookat[0] / (app.world.chunkSize * app.world.tileSize))), 
+                0, cast(int)(floor(app.camera.lookat[2] / (app.world.chunkSize * app.world.tileSize))) ];
+  app.world.loadChunks(app, pc); // Load new chunks within render distance
+  app.world.evictChunks(app, pc); // Evict chunks outside render distance
 }
 
