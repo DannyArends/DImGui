@@ -104,6 +104,11 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       auto gs = TTF_RenderGlyph_Blended(app.glyphAtlas.ttf, cast(uint)(c), SDL_Color(255, 255, 255, 255));
       if (!gs) { c++; continue; }
       if (atlasloc + gs.w >= app.glyphAtlas.width) { i = atlasloc = 0; atlasrow++; }
+      if (atlasrow * app.glyphAtlas.lineHeight + app.glyphAtlas.lineHeight > app.glyphAtlas.height) {
+        SDL_DestroySurface(gs);
+        SDL_Log("WARNING: GlyphAtlas overflow at (and after) character %d", c);
+        break;
+      }
       if (app.glyphAtlas.advance < glyph.advance) app.glyphAtlas.advance = glyph.advance;
       if (app.glyphAtlas.miny > glyph.miny) app.glyphAtlas.miny = glyph.miny;
       glyph.atlasloc = atlasloc;
