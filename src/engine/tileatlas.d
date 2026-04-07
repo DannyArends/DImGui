@@ -100,7 +100,6 @@ void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me",
 
   auto texture = Texture(folder, size, size, atlas);
   app.transferTextureAsync(texture);
-  SDL_DestroySurface(atlas);
   app.mainDeletionQueue.add((){ app.deAllocate(texture); });
   app.tileAtlas = ta;
   if (app.verbose) SDL_Log("createTileAtlas: %d tiles [%dx%d]", ta.uv.keys.length, size, size);
