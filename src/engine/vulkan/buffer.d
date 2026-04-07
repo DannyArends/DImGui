@@ -31,10 +31,14 @@ void nameGeometryBuffer(ref App app, GeometryBuffer buffer, string type, string 
   app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
 }
 
+void destroyStagingBuffer(ref App app, StageBuffer staging) {
+  if(staging.sbM) vkUnmapMemory(app.device, staging.sbM);
+  if(staging.sb)  vkDestroyBuffer(app.device, staging.sb, app.allocator);
+  if(staging.sbM) vkFreeMemory(app.device, staging.sbM, app.allocator);
+}
+
 void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
-  if(buffer.sbM) vkUnmapMemory(app.device, buffer.sbM);
-  if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
-  if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
+  app.destroyStagingBuffer(buffer.staging);
 
   if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, app.allocator);
   if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, app.allocator);
