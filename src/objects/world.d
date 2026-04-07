@@ -10,19 +10,23 @@ import noise : fbm;
 import geometry : Geometry, position, texture, deAllocate, computeNormals;
 import textures : mapTextures;
 
-@nogc pure TileType getTile(immutable(WorldData) wd, int wx, int wy, int wz, int[2] seed = [0,0]) nothrow {
-  float h = fbm(wx * 0.05f, wz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
-  float t = fbm(wx * 0.05f, wz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[1]);
+@nogc pure TileType getTile(immutable(WorldData) wd, const int[3] wc, const int[2] seed = [0,0]) nothrow {
+  float h = fbm(wc[0] * 0.05f, wc[2] * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
+  float t = fbm(wc[0] * 0.05f, wc[2] * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[1]);
   int surface = cast(int)(h * (wd.chunkHeight-1));
-  if (wy > surface) return TileType.None;
-  if (wy == 0) return TileType.Lava;
-  if (wy < surface)  return TileType.Stone;
-  if (wy == surface) return heightToTile(h, t);
+  if (wc[1] > surface) return TileType.None;
+  if (wc[1] == 0) return TileType.Lava;
+  if (wc[1] < surface)  return TileType.Stone;
+  if (wc[1] == surface) return heightToTile(h, t);
   return TileType.Stone;
 }
 
-float[3] worldPos(immutable(WorldData) wd, int cx, int cy, int cz, int x, int y, int z) nothrow {
-  return([(cx * wd.chunkSize + x) * wd.tileSize, (cy * wd.chunkHeight + y) * wd.tileHeight, (cz * wd.chunkSize + z) * wd.tileSize]);
+@nogc pure int[3] worldCoord(immutable(WorldData) wd, int cx, int cy, int cz, int x, int y, int z) nothrow {
+  return [cx * wd.chunkSize + x, cy * wd.chunkHeight + y, cz * wd.chunkSize + z];
+}
+
+@nogc pure float[3] worldPos(immutable(WorldData) wd, int[3] wc) nothrow {
+  return [wc[0] * wd.tileSize, wc[1] * wd.tileHeight, wc[2] * wd.tileSize];
 }
 
 struct ChunkData {
@@ -37,15 +41,16 @@ struct Chunk {
   alias geometry this;
 }
 
-ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int cx, int cy, int cz) {
+pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int cx, int cy, int cz) nothrow {
   ChunkData data;
   data.coord = [cx, cy, cz];
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int y = 0; y < wd.chunkHeight; y++) {
       for (int x = 0; x < wd.chunkSize; x++) {
-        TileType tile = wd.getTile(cx * wd.chunkSize + x, cy * wd.chunkHeight + y, cz * wd.chunkSize + z, wd.seed);
+        int[3] wc = wd.worldCoord(cx, cy, cz, x, y, z);
+        TileType tile = wd.getTile(wc, wd.seed);
         if (tile == TileType.None) continue;
-        float[3] p = wd.worldPos(cx, cy, cz, x, y, z);
+        float[3] p = wd.worldPos(wc);
         float hs = wd.tileSize * 0.5f;
         float[2] uvTR = ta.tileUV(tile.name, true,  false);
         float[2] uvBR = ta.tileUV(tile.name, true,  true);
