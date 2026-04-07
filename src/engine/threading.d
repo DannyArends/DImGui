@@ -75,10 +75,10 @@ void initializeAsync(ref App app, uint numWorkers = 8){
 void stopWorkers(ref App app) { foreach(tid; app.concurrency.workers.keys) { tid.send(false); } }
 
 void checkAsync(ref App app) {
-  //if(app.trace) SDL_Log("Checking Async, jobs: %d", app.concurrency.paths.length);
+  if(app.trace) SDL_Log("Checking Async, jobs: %d", app.concurrency.paths.length);
   if(app.concurrency.paths.length > 0){
     foreach(tid; app.concurrency.workers.keys) {
-      //if(app.trace) SDL_Log("Checking Worker %p (status: %d)", tid, app.concurrency.workers[tid]);
+      if(app.trace) SDL_Log("Checking Worker %p (status: %d)", tid, app.concurrency.workers[tid]);
       if(app.concurrency.paths.length > 0 && !app.concurrency.workers[tid]){
         auto idx = uniform(0, app.concurrency.paths.length);
         tid.send(app.concurrency.paths[idx]);
@@ -91,6 +91,7 @@ void checkAsync(ref App app) {
     app.concurrency.workers[tid] = false;
     SDL_Log("Received back: %s", toStringz(message));
   });
+  // Accept any incoming assimp objects, merge bones with the global array when received
   receiveTimeout(dur!"msecs"(-1), (immutable(OpenAsset) message, Tid tid) {
     app.concurrency.workers[tid] = false;
     auto obj = cast(OpenAsset)message;
@@ -105,6 +106,7 @@ void checkAsync(ref App app) {
     app.transferTextureAsync(texture);
     app.mainDeletionQueue.add((){ app.deAllocate(texture); });
   });
+  // Accept any incoming chunks, and submit for finalization on GPU
   receiveTimeout(dur!"msecs"(-1), (immutable(ChunkData) data, Tid tid) {
     if(app.trace) SDL_Log("Received chunk [%d, %d] verts=%d", data.coord[0], data.coord[2], data.vertices.length);
     app.concurrency.workers[tid] = false;
