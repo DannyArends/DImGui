@@ -166,10 +166,6 @@ SingleTimeCommand beginSingleTimeCommands(ref App app, VkCommandPool pool, bool 
         flags: 0
     };
     enforceVK(vkCreateFence(app.device, &fenceInfo, app.allocator, &completionFence));
-    app.mainDeletionQueue.add((){
-      vkDestroyFence(app.device, completionFence, app.allocator);
-      vkFreeCommandBuffers(app.device, pool, 1, &commandBuffer);
-    });
   }
   return SingleTimeCommand(async, completionFence, pool, commandBuffer);
 }

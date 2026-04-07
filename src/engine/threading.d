@@ -6,12 +6,12 @@
 import engine;
 
 import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
-import io : dir, fixPath;
 import bone : mergeBones;
+import buffer : destroyStagingBuffer;
+import io : dir, fixPath;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
 import world : buildChunkData, finalizeChunk;
-
 
 class TaskThread : Thread {
   private Tid main;
@@ -115,8 +115,12 @@ void checkAsync(ref App app) {
   // Check all pending texture transfers; promote to app.textures once GPU is done
   size_t i = 0;
   while(i < app.textures.pending.length) {
+    auto p = app.textures.pending[i];
     if(vkGetFenceStatus(app.device, app.textures.pending[i].cmdBuffer.fence) == VK_SUCCESS) {
-      app.textures ~= app.textures.pending[i].texture;
+      app.destroyStagingBuffer(p.staging);
+      vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
+      vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
+      app.textures ~= p.texture;
       app.textures.pending = app.textures.pending.remove(i);
       app.mapTextures();
     } else { i++; }

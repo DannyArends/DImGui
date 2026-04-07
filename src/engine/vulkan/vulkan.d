@@ -5,6 +5,7 @@
 
 import engine;
 
+import buffer : destroyStagingBuffer;
 import imgui : saveSettings;
 import geometry : cleanup;
 import threading : stopWorkers;
@@ -44,6 +45,14 @@ void cleanup(App app) {
   SDL_Log("Wait on device idle & swapchain deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
   app.swapDeletionQueue.flush();  // Delete SwapChain associated resources
+
+  // Free any staging buffers still pending (GPU is idle, all fences signaled)
+  foreach(ref p; app.textures.pending) {
+    app.destroyStagingBuffer(p.staging);
+    vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
+    vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
+  }
+  app.textures.pending = [];
 
   if (app.isImGuiInitialized) {
     SDL_Log("Save ImGui Settings");

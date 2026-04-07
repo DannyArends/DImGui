@@ -5,7 +5,7 @@
 
 import engine;
 
-import commands : createCommandBuffer;
+import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSetLayout, createDescriptorSet;
 import images : createImage, nameImageBuffer, deAllocate, transitionImageLayout;
 import reflection : createResources;
@@ -125,6 +125,10 @@ void createStorageImage(ref App app, Descriptor descriptor){
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_UNORM);
   app.nameImageBuffer(texture, "Compute Image");
 
+  auto cmd = app.beginSingleTimeCommands(app.commandPool);
+  app.transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  app.endSingleTimeCommands(cmd, app.queue);
+
   if(app.verbose) SDL_Log("Create compute image %p, view: %p", texture.image, texture.view);
   app.registerTexture(texture); // Register texture with ImGui
 
@@ -153,7 +157,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(cmdBuffer, app.textures[idx].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+      app.transitionImageLayout(cmdBuffer, app.textures[idx].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
       nJobs[0] = app.textures[idx].width;
       nJobs[1] = app.textures[idx].height;
     }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {

@@ -42,6 +42,7 @@ struct Texture {
 struct PendingTexture {
   Texture texture;
   SingleTimeCommand cmdBuffer;
+  StageBuffer staging;
 }
 
 struct Textures {
@@ -96,7 +97,8 @@ SDL_Surface* createDummySDLSurface() {
 
 void transferTextureAsync(ref App app, ref Texture texture) {
   SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(app.transferPool, true);
-  app.toGPU(cmdBuffer, texture);
+  StageBuffer staging;
+  app.toGPU(cmdBuffer, texture, staging);
   vkEndCommandBuffer(cmdBuffer);
   VkSubmitInfo submitInfo = {
     sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -105,7 +107,7 @@ void transferTextureAsync(ref App app, ref Texture texture) {
   };
   app.nameVulkanObject(cmdBuffer.fence, toStringz(format("[FENCE] %s", texture.path)), VK_OBJECT_TYPE_FENCE);
   enforceVK(vkQueueSubmit(app.transfer, 1, &submitInfo, cmdBuffer.fence));
-  app.textures.pending ~= PendingTexture(texture, cmdBuffer);
+  app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }
 
 void mapTextures(ref App app){
@@ -150,16 +152,14 @@ void updateTextures(ref App app) {
   }
 }
 
-void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
+void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out StageBuffer staging) {
   // Create a buffer to transfer the image to the GPU
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-  app.createBuffer(&stagingBuffer, &stagingBufferMemory, texture.surface.imageSize);
-  app.nameVulkanObject(stagingBuffer, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);
+  app.createBuffer(&staging.sb, &staging.sbM, texture.surface.imageSize);
+  app.nameVulkanObject(staging.sb, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);
 
   // Copy the image data to the StagingBuffer memory
   void* data;
-  enforceVK(vkMapMemory(app.device, stagingBufferMemory, 0, texture.surface.imageSize, 0, &data));
+  enforceVK(vkMapMemory(app.device, staging.sbM, 0, texture.surface.imageSize, 0, &data));
   if(SDL_MUSTLOCK(texture.surface)) SDL_LockSurface(texture.surface);
   memcpy(data, texture.surface.pixels, texture.surface.imageSize);
   if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);
@@ -170,21 +170,13 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture) {
   // Create an image, transition the layout
   app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory);
   app.transitionImageLayout(cmdBuffer, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  app.copyBufferToImage(cmdBuffer, stagingBuffer, texture.image, texture.surface.w, texture.surface.h);
+  app.copyBufferToImage(cmdBuffer, staging.sb, texture.image, texture.surface.w, texture.surface.h);
   app.transitionImageLayout(cmdBuffer, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   // Create an imageview and register the texture with ImGui
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
   app.nameImageBuffer(texture, texture.path);
   app.registerTexture(texture);
-
-  // Cleanup to mainDeletionQueue
-  app.mainDeletionQueue.add((){
-    vkUnmapMemory(app.device, stagingBufferMemory);
-    vkFreeMemory(app.device, stagingBufferMemory, app.allocator);
-    vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
-    SDL_DestroySurface(texture.surface);
-  });
 }
 
 /** 'Register' a texture in the ImGui DescriptorSet
