@@ -9,7 +9,7 @@ import assimp : OpenAsset, name;
 import bone : Bone, BoneWeights, loadBoneWeights;
 import material : getChannel;
 import matrix : Matrix, multiply, inverse, transpose;
-import vector : euclidean,x,y,z;
+import vector : euclidean, cross, dot, x, y, z;
 import vertex : Vertex, INSTANCE;
 
 struct Mesh {
@@ -87,8 +87,12 @@ string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool
       auto color = mesh.mColors[channel][vIdx];
       asset.vertices[gIdx].color = [color.r, color.g, color.b, color.a];
     }
-    if (mesh.mTangents) {
-      asset.vertices[gIdx].tangent = [mesh.mTangents[vIdx].x, mesh.mTangents[vIdx].y, mesh.mTangents[vIdx].z];
+    if (mesh.mTangents && mesh.mBitangents) {
+      float[3] T = [mesh.mTangents[vIdx].x, mesh.mTangents[vIdx].y, mesh.mTangents[vIdx].z];
+      float[3] B = [mesh.mBitangents[vIdx].x, mesh.mBitangents[vIdx].y, mesh.mBitangents[vIdx].z];
+      float[3] N = asset.vertices[gIdx].normal;
+      float w = (cross(N, T).dot(B) < 0.0f) ? -1.0f : 1.0f;
+      asset.vertices[gIdx].tangent = [T[0], T[1], T[2], w];
     }
     asset.assignBoneWeight(gIdx, weights, vIdx, asset.bones);
   }
