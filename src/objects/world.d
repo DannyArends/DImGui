@@ -5,10 +5,10 @@
 
 import engine;
 
-import tileatlas : tileUV, heightToTile, TileType, TileAtlas;
+import geometry : position, texture, deAllocate, computeNormals;
 import noise : fbm;
-import geometry : Geometry, position, texture, deAllocate, computeNormals;
 import textures : mapTextures;
+import tileatlas : tileUV, heightToTile;
 import vector : vAdd, vMul;
 
 @nogc pure TileType getTile(immutable(WorldData) wd, const int[3] wc, const int[2] seed = [0,0]) nothrow {
