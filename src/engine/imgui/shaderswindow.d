@@ -21,7 +21,7 @@ void showShaderwindow(ref App app, bool* show, uint font = 0) {
       igTableNextColumn();
       igText(toStringz(format("%s", shader.stage)), ImVec2(0.0f, 0.0f));
       igTableNextColumn();
-      igText(toStringz(format("Descriptors: %s\nExecute as [%d, %d, %d]", shader.descriptors.length, shader.groupCount[0], shader.groupCount[1], shader.groupCount[2])), ImVec2(0.0f, 0.0f));
+      igText(toStringz(format("Descriptors: %s\nExecute as %s", shader.descriptors.length, shader.groupCount)), ImVec2(0.0f, 0.0f));
       igPopID();
     }
     igEndTable();
