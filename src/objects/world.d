@@ -10,15 +10,21 @@ import noise : fbm;
 import geometry : Geometry, position, texture, deAllocate, computeNormals;
 import textures : mapTextures;
 
-@nogc pure TileType worldTile(const World world, int wx, int wy, int wz, int seed = 0) nothrow {
-  float h = fbm(wx * 0.05f, wz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed);
-  float t = fbm(wx * 0.1f,  wz * 0.1f,  0.0f, 4, 2.0f, 0.5f, seed + 1337); // tile variation field
-  int surface = cast(int)(h * (world.chunkHeight-1));
+@nogc pure TileType getTile(immutable(WorldData) wd, int wx, int wy, int wz, int[2] seed = [0,0]) nothrow {
+  float h = fbm(wx * 0.05f, wz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
+  float t = fbm(wx * 0.05f, wz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[1]);
+  int surface = cast(int)(h * (wd.chunkHeight-1));
   if (wy > surface) return TileType.None;
   if (wy == 0) return TileType.Lava;
   if (wy < surface)  return TileType.Stone;
   if (wy == surface) return heightToTile(h, t);
   return TileType.Stone;
+}
+
+struct ChunkData {
+  int[3] coord;
+  Vertex[] vertices;
+  uint[] indices;
 }
 
 struct Chunk {
@@ -27,48 +33,46 @@ struct Chunk {
   alias geometry this;
 }
 
-void writeTile(ref Chunk chunk, const ref TileAtlas ta, float wx, float wy, float wz, TileType tile, float tileSize, float tileHeight) {
-  float hs = tileSize * 0.5f;
-  float[2] uvTR = ta.tileUV(tile.name, true,  false);
-  float[2] uvBR = ta.tileUV(tile.name, true,  true);
-  float[2] uvBL = ta.tileUV(tile.name, false, true);
-  float[2] uvTL = ta.tileUV(tile.name, false, false);
-
-  uint vi = cast(uint)chunk.vertices.length;
-  uint ii = cast(uint)chunk.indices.length;
-
-  chunk.vertices ~= [
-    Vertex([wx+hs, wy, wz-hs], uvTR, [1.0f, 1.0f, 1.0f, 1.0f]),
-    Vertex([wx-hs, wy, wz-hs], uvTL, [1.0f, 1.0f, 1.0f, 1.0f]),
-    Vertex([wx-hs, wy, wz+hs], uvBL, [1.0f, 1.0f, 1.0f, 1.0f]),
-    Vertex([wx+hs, wy, wz+hs], uvBR, [1.0f, 1.0f, 1.0f, 1.0f]),
-  ];
-  chunk.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
-}
-
-Chunk generateChunk(ref App app, const World world, int cx, int cy, int cz, float tileSize = 1.0f, float tileHeight = 0.2f, int seed = 0) {
-  Chunk chunk;
-  chunk.coord = [cx, cy, cz];
-  chunk.geometry = new Geometry();
-
-  for (int z = 0; z < world.chunkSize; z++) {
-    for (int y = 0; y < world.chunkHeight; y++) {
-      for (int x = 0; x < world.chunkSize; x++) {
-        int wx = cx * world.chunkSize + x;
-        int wy = cy * world.chunkHeight + y;
-        int wz = cz * world.chunkSize + z;
-        TileType tile = world.worldTile(wx, wy, wz, seed);
+ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int cx, int cy, int cz) {
+  ChunkData data;
+  data.coord = [cx, cy, cz];
+  for (int z = 0; z < wd.chunkSize; z++) {
+    for (int y = 0; y < wd.chunkHeight; y++) {
+      for (int x = 0; x < wd.chunkSize; x++) {
+        int wx = cx * wd.chunkSize + x;
+        int wy = cy * wd.chunkHeight + y;
+        int wz = cz * wd.chunkSize + z;
+        TileType tile = wd.getTile(wx, wy, wz, wd.seed);
         if (tile == TileType.None) continue;
-        float px = wx * tileSize;
-        float py = wy * tileHeight;
-        float pz = wz * tileSize;
-        chunk.writeTile(app.tileAtlas, px, py, pz, tile, tileSize, tileHeight);
+        float px = wx * wd.tileSize;
+        float py = wy * wd.tileHeight;
+        float pz = wz * wd.tileSize;
+        float hs = wd.tileSize * 0.5f;
+        float[2] uvTR = ta.tileUV(tile.name, true,  false);
+        float[2] uvBR = ta.tileUV(tile.name, true,  true);
+        float[2] uvBL = ta.tileUV(tile.name, false, true);
+        float[2] uvTL = ta.tileUV(tile.name, false, false);
+        uint vi = cast(uint)data.vertices.length;
+        data.vertices ~= [
+          Vertex([px+hs, py, pz-hs], uvTR, [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([px-hs, py, pz-hs], uvTL, [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([px-hs, py, pz+hs], uvBL, [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([px+hs, py, pz+hs], uvBR, [1.0f, 1.0f, 1.0f, 1.0f]),
+        ];
+        data.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
       }
     }
   }
+  return data;
+}
 
-  if (chunk.geometry.vertices.length == 0) return chunk;  // empty chunk
-
+void finalizeChunk(ref App app, ChunkData data) {
+  if (data.vertices.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
+  Chunk chunk;
+  chunk.coord = data.coord;
+  chunk.geometry = new Geometry();
+  chunk.geometry.vertices = data.vertices;
+  chunk.geometry.indices  = data.indices;
   chunk.geometry.instances = [Instance()];
   chunk.geometry.meshes["Chunk"] = Mesh([0, cast(uint)chunk.geometry.vertices.length]);
   chunk.geometry.name = (){ return "Chunk"; };
@@ -78,17 +82,24 @@ Chunk generateChunk(ref App app, const World world, int cx, int cy, int cz, floa
   app.objects[($-1)].isSelectable = false;
   app.objects[($-1)].position([0.0f, -6.0f, 0.0f]);
   app.mapTextures(app.objects[($-1)]);
-  return chunk;
+  app.world.chunks[data.coord] = chunk;
+  app.world.pendingChunks.remove(data.coord);
+}
+
+struct WorldData {
+  int[2] seed        = [42, 67];  // [height seed, tile seed]
+  int renderDistance = 4;
+  float tileSize     = 1.0f;
+  float tileHeight   = 0.2f;
+  int chunkSize      = 8;
+  int chunkHeight    = 16;
 }
 
 struct World {
-  Chunk[int[3]] chunks;
-  int seed = 67;
-  int renderDistance = 4;
-  float tileSize = 1.0f;
-  float tileHeight = 0.2f;
-  int chunkSize = 8;
-  int chunkHeight = 16;
+  Chunk[int[3]] chunks;           /// Current chunks
+  bool[int[3]]  pendingChunks;    /// Chunks being generated async
+  WorldData data;
+  alias data this;
 
   void update(ref App app, float[3] playerPos) {
     int[3] pc = [ cast(int)(floor(playerPos[0] / (chunkSize * tileSize))),0, cast(int)(floor(playerPos[2] / (chunkSize * tileSize))) ];
@@ -97,21 +108,34 @@ struct World {
     for (int cz = pc[2]- renderDistance; cz <= pc[2]+ renderDistance; cz++) {
       for (int cx = pc[0]- renderDistance; cx <= pc[0]+ renderDistance; cx++) {
         int[3] coord = [cx, 0, cz];
-        if (coord !in chunks) {
-          chunks[coord] = app.generateChunk(this, cx, 0, cz, tileSize, tileHeight, seed);
+        if (coord !in chunks && coord !in pendingChunks) {
+          SDL_Log("Requesting chunk [%d, %d]", cx, cz);
+          pendingChunks[coord] = true;
+          auto wd = cast(immutable(WorldData))data;
+          auto ta = cast(immutable(TileAtlas))app.tileAtlas;
+          foreach(tid; app.concurrency.workers.keys) {
+            if (!app.concurrency.workers[tid]) {
+              app.concurrency.workers[tid] = true;
+              tid.send(wd, ta, cx, 0, cz);
+              break;
+            }
+          }
         }
       }
     }
 
     // Evict chunks outside render distance
     foreach (coord; chunks.keys) {
-      if (abs(coord[0] - pc[0]) >  renderDistance || abs(coord[2] - pc[2]) >  renderDistance) {
-        auto g = chunks[coord].geometry;
-        if (g !is null && g.isBuffered()) {
-          Geometry[] remaining;
-          foreach (obj; app.objects.array) if (obj !is g) remaining ~= obj;
-          app.objects.array = remaining;
-          app.deAllocate(g);
+      if (abs(coord[0] - pc[0]) > renderDistance || abs(coord[2] - pc[2]) > renderDistance) {
+        if (chunks[coord].geometry !is null && chunks[coord].geometry.isBuffered()) {
+          foreach (i, obj; app.objects.array) {
+            if (obj is chunks[coord].geometry) {
+              app.objects.array[i] = app.objects.array[$-1];
+              app.objects.array = app.objects.array[0..$-1];
+              break;
+            }
+          }
+          app.deAllocate(chunks[coord].geometry);
         }
         chunks.remove(coord);
       }
@@ -132,48 +156,3 @@ struct World {
   }
 }
 
-void showWorldwindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.gui.fonts[font], app.gui.fontsize);
-  if(igBegin("World", show, 0)) {
-    igBeginTable("World_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-
-    igTableNextColumn(); igText("Seed", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igPushItemWidth(150 * app.gui.uiscale);
-    int[2] seedLimits = [0, 99999];
-    igSliderScalar("##seed", ImGuiDataType_S32, &app.world.seed, &seedLimits[0], &seedLimits[1], "%d", 0);
-
-    igTableNextColumn(); igText("Render Distance", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igPushItemWidth(150 * app.gui.uiscale);
-    int[2] rdLimits = [1, 16];
-    igSliderScalar("##rd", ImGuiDataType_S32, &app.world.renderDistance, &rdLimits[0], &rdLimits[1], "%d", 0);
-
-    igTableNextColumn(); igText("Tile Size", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igPushItemWidth(150 * app.gui.uiscale);
-    float[2] tsLimits = [0.1f, 5.0f];
-    igSliderScalar("##ts", ImGuiDataType_Float, &app.world.tileSize, &tsLimits[0], &tsLimits[1], "%.2f", 0);
-
-    igTableNextColumn(); igText("Tile Height", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igPushItemWidth(150 * app.gui.uiscale);
-    float[2] thLimits = [0.05f, 2.0f];
-    igSliderScalar("##th", ImGuiDataType_Float, &app.world.tileHeight, &thLimits[0], &thLimits[1], "%.2f", 0);
-
-    igTableNextColumn(); igText("Chunk Size", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igPushItemWidth(150 * app.gui.uiscale);
-    int[2] csLimits = [4, 32];
-    igSliderScalar("##cs", ImGuiDataType_S32, &app.world.chunkSize, &csLimits[0], &csLimits[1], "%d", 0);
-
-    igTableNextColumn(); igText("Chunk Height", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igPushItemWidth(150 * app.gui.uiscale);
-    int[2] chLimits = [2, 32];
-    igSliderScalar("##ch", ImGuiDataType_S32, &app.world.chunkHeight, &chLimits[0], &chLimits[1], "%d", 0);
-
-    igTableNextColumn(); igText("Chunks loaded", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igText(toStringz(format("%d", app.world.chunks.length)), ImVec2(0.0f, 0.0f));
-    igEndTable();
-
-    if(igButton("Regenerate", ImVec2(0.0f, 0.0f))) { app.world.clear(app); }
-
-    igEnd();
-  } else { igEnd(); }
-  igPopFont();
-}
