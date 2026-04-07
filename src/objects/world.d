@@ -101,33 +101,29 @@ struct World {
   WorldData data;
   alias data this;
 
-  void update(ref App app, float[3] playerPos) {
-    int[3] pc = [ cast(int)(floor(playerPos[0] / (chunkSize * tileSize))),0, cast(int)(floor(playerPos[2] / (chunkSize * tileSize))) ];
 
-    // Load new chunks within render distance
+  void loadChunks(ref App app, int[3] pc) {
     for (int cz = pc[2]- renderDistance; cz <= pc[2]+ renderDistance; cz++) {
       for (int cx = pc[0]- renderDistance; cx <= pc[0]+ renderDistance; cx++) {
         int[3] coord = [cx, 0, cz];
         if (coord !in chunks && coord !in pendingChunks) {
-          SDL_Log("Requesting chunk [%d, %d]", cx, cz);
-          pendingChunks[coord] = true;
-          auto wd = cast(immutable(WorldData))data;
-          auto ta = cast(immutable(TileAtlas))app.tileAtlas;
           foreach(tid; app.concurrency.workers.keys) {
             if (!app.concurrency.workers[tid]) {
               app.concurrency.workers[tid] = true;
-              tid.send(wd, ta, cx, 0, cz);
+              tid.send(cast(immutable(WorldData))data, cast(immutable(TileAtlas))app.tileAtlas, cx, 0, cz);
+              pendingChunks[coord] = true;
               break;
             }
           }
         }
       }
     }
+  }
 
-    // Evict chunks outside render distance
-    foreach (coord; chunks.keys) {
+  void evictChunks(ref App app, int[3] pc){
+    foreach (coord; chunks.keys.dup) {
       if (abs(coord[0] - pc[0]) > renderDistance || abs(coord[2] - pc[2]) > renderDistance) {
-        if (chunks[coord].geometry !is null && chunks[coord].geometry.isBuffered()) {
+        if (chunks[coord].geometry !is null) {
           foreach (i, obj; app.objects.array) {
             if (obj is chunks[coord].geometry) {
               app.objects.array[i] = app.objects.array[$-1];
@@ -135,11 +131,17 @@ struct World {
               break;
             }
           }
-          app.deAllocate(chunks[coord].geometry);
+          if (chunks[coord].geometry.isBuffered()) app.deAllocate(chunks[coord].geometry);
         }
         chunks.remove(coord);
       }
     }
+  }
+
+  void update(ref App app, float[3] playerPos) {
+    int[3] pc = [ cast(int)(floor(playerPos[0] / (chunkSize * tileSize))),0, cast(int)(floor(playerPos[2] / (chunkSize * tileSize))) ];
+    loadChunks(app, pc); // Load new chunks within render distance
+    evictChunks(app, pc); // Evict chunks outside render distance
   }
 
   void clear(ref App app) {
