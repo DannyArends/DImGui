@@ -8,7 +8,7 @@ import engine;
 import quaternion : xyzw;
 import buffer : createBuffer, deAllocate;
 import matrix : rotate, lookAt, perspective;
-import lights : computeLightSpace;
+import lights : computeLightSpace, LMode;
 import validation : nameVulkanObject;
 
 struct UniformBufferObject {
@@ -18,7 +18,7 @@ struct UniformBufferObject {
   Matrix proj;
   Matrix orientation;
   uint nlights = 0;
-  uint showShadows = 0;
+  LMode lMode = LMode.LightsAndShadows;
 }
 
 struct ParticleUniformBuffer {
@@ -73,7 +73,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     proj: app.camera.proj,
     orientation: Matrix.init,
     nlights: cast(uint)app.lights.length,
-    showShadows: cast(uint)app.showShadows
+    lMode: cast(LMode)app.lMode,
   };
 
   // Adjust for screen orientation so that the world is always up

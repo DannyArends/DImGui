@@ -43,9 +43,12 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igText("Show Rays", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igCheckbox("##showRays", &app.showRays);
 
-    igTableNextColumn();
-    igText("Show Shadows", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-    igCheckbox("##showShadows", &app.showShadows);
+    igTableNextColumn(); igText("Lighting Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igPushItemWidth(200 * app.gui.uiscale);
+    const(char)*[3] modes = ["Global Illumination", "Lights", "Lights + Shadows"];
+    int lm = cast(int)app.lMode;
+    if(igCombo_Str_arr("##lm", &lm, &modes[0], 3, -1)) app.lMode = cast(LMode)lm;
+    igPopItemWidth();
 
     igTableNextColumn();
     igText("Clear color", ImVec2(0.0f, 0.0f)); igTableNextColumn();
