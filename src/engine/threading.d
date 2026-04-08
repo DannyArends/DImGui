@@ -44,8 +44,8 @@ class TaskThread : Thread {
             main.send(openasset, mytid);
           } else { main.send("Unknown file", mytid); }
         },
-        (immutable(WorldData) wd, immutable(TileAtlas) ta, int cx, int cy, int cz) {
-          auto data = buildChunkData(wd, ta, cx, cy, cz);
+        (immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
+          auto data = buildChunkData(wd, ta, coord);
           main.send(cast(immutable(ChunkData))data, mytid);
         },
         (bool active) { this.active = active; }  // shutdown signal

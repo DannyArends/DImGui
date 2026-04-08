@@ -14,7 +14,24 @@ struct TileT {
   bool traversable  = false;
   float cost = 0.0f;
 }
- 
+
+enum TileType : TileT {
+  None = TileT("None", false, 0.0f),
+  Lava = TileT("Lava_01", false, 0.0f),
+  Water = TileT("Water_01", false, 0.0f),
+  Sand01 = TileT("Sand_01", true,  1.5f),
+  Sand02 = TileT("Sand_02", true,  1.5f),
+  Gravel = TileT("Gravel_01", true,  1.6f),
+  Grass01 = TileT("Grass_01", true,  1.2f),
+  Grass02 = TileT("Grass_02", true,  1.2f),
+  Grass03 = TileT("Grass_03", true,  1.2f),
+  Forest01 = TileT("Forest_Ground_01", true,  1.5f),
+  Forest02 = TileT("Hedge_01", true,  1.5f),
+  Stone = TileT("Stone_01", true,  1.8f),
+  Ice01 = TileT("Ice_01", true,  1.0f),
+  Snow = TileT("Ice_03", true,  1.6f),
+}
+
 struct TileAtlas {
   int[2][2][string] uv;
   uint size;
