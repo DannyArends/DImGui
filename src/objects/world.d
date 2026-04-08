@@ -146,11 +146,6 @@ struct World {
 
     if(highlight is null) {
       highlight = new Outline();
-      highlight.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-      highlight.isSelectable = false;
-      highlight.onFrame = (ref App app, ref Geometry obj, float dt) {
-        obj.setColor([1.0f, (sin(SDL_GetTicks() / 200.0f) + 1.0f) * 0.5f, 0.0f, 1.0f]);
-      };
       app.objects ~= highlight;
     }
     highlight.position([p[0], p[1] + yOffset + 0.01f, p[2]]);

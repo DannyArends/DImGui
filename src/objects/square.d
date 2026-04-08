@@ -4,6 +4,7 @@
  */
 
 import engine;
+import geometry : setColor;
 
 class Square : Geometry {
    this() {
@@ -23,6 +24,10 @@ class Outline : Square {
    this() { super();
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
     indices  = [0, 1, 2, 3, 0];
+    isSelectable = false;
+    onFrame = (ref App app, ref Geometry obj, float dt) {
+      obj.setColor([1.0f, (sin(SDL_GetTicks() / 200.0f) + 1.0f) * 0.5f, 0.0f, 1.0f]);
+    };
   };
 }
 
