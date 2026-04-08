@@ -5,7 +5,7 @@
 
 import engine;
 
-import geometry : position, texture, deAllocate, computeNormals;
+import geometry : setColor,position, texture, deAllocate, computeNormals;
 import noise : fbm;
 import textures : mapTextures;
 import tileatlas : TileT, tileUV;
@@ -155,26 +155,29 @@ struct World {
     }
   }
 
-  int[3] pickTile(float[3] rayOrigin, float[3] rayDir, Intersection[] hits) {
-    foreach(hit; hits) {
-      float[3] entry = rayOrigin.vAdd(rayDir.vMul(hit.tmin));
-      int tx = cast(int)floor(entry[0] / tileSize + 0.5f);
-      int tz = cast(int)floor(entry[2] / tileSize + 0.5f);
+  int[3] pickTile(float[3] rayOrigin, float[3] rayDir) {
+    // Project ray to base plane Y=yOffset
+    float t = (yOffset - rayOrigin[1]) / rayDir[1];
+    float wx = rayOrigin[0] + rayDir[0] * t;
+    float wz = rayOrigin[2] + rayDir[2] * t;
+
+    // Iterate to converge on actual surface
+    for(int i = 0; i < 4; i++) {
+      int tx = cast(int)round(wx / tileSize);
+      int tz = cast(int)round(wz / tileSize);
       float h = fbm(tx * 0.05f, tz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
       int ty = cast(int)(h * (chunkHeight - 1));
       float surfaceY = ty * tileHeight + yOffset;
-
-      // Check if ray actually hits this tile's surface
-      float t = (surfaceY - rayOrigin[1]) / rayDir[1];
-      int fx = cast(int)floor((rayOrigin[0] + rayDir[0] * t) / tileSize + 0.5f);
-      int fz = cast(int)floor((rayOrigin[2] + rayDir[2] * t) / tileSize + 0.5f);
-
-      // Verify the reprojected tile falls within this chunk
-      float[3] chunkMin = rayOrigin.vAdd(rayDir.vMul(hit.tmin));
-      float[3] chunkMax = rayOrigin.vAdd(rayDir.vMul(hit.tmax));
-      if(fx >= min(chunkMin[0], chunkMax[0]) / tileSize && fx <= max(chunkMin[0], chunkMax[0]) / tileSize) { return [fx, ty, fz]; }
+      t = (surfaceY - rayOrigin[1]) / rayDir[1];
+      wx = rayOrigin[0] + rayDir[0] * t;
+      wz = rayOrigin[2] + rayDir[2] * t;
     }
-    return [int.min, int.min, int.min];
+
+    int tx = cast(int)round(wx / tileSize);
+    int tz = cast(int)round(wz / tileSize);
+    float h = fbm(tx * 0.05f, tz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
+    int ty = cast(int)(h * (chunkHeight - 1));
+    return [tx, ty, tz];
   }
 
   void selectTile(ref App app, int[3] tile) {
@@ -198,6 +201,10 @@ struct World {
       Vertex([p[0]+hs, y, p[2]+hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
       Vertex([p[0]-hs, y, p[2]+hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
     ];
+    highlight.onFrame = (ref App app, ref Geometry obj, float dt) {
+      float pulse = (sin(SDL_GetTicks() / 200.0f) + 1.0f) * 0.5f;
+      obj.setColor([0.0f, pulse, 0.0f, 1.0f]);
+    };
     highlight.buffers[VERTEX] = false;
     highlight.buffers[INDEX]  = false;
   }
