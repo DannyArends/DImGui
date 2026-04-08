@@ -13,6 +13,7 @@ import intersection : intersects;
 import line : createLine;
 import surface : createSurface;
 import vulkan : cleanup;
+import vector : vMul;
 import window: createOrResizeWindow;
 import imgui : initializeImGui;
 
@@ -30,26 +31,33 @@ void handleKeyEvents(ref App app, SDL_Event e) {
   }
 }
 
-/** Handle touch events
+/** Handle (Android) touch events
  */
 void handleTouchEvents(ref App app, const SDL_Event event) {
   SDL_TouchFingerEvent e = event.tfinger;
-  if(event.type == SDL_EVENT_FINGER_DOWN) {
-    if(app.camera.fingerIDs[0] == -1) app.camera.fingerIDs[0] = e.fingerID;
-    else if(app.camera.fingerIDs[1] == -1) app.camera.fingerIDs[1] = e.fingerID;
-    if(e.fingerID == app.camera.fingerIDs[0]) app.camera.isdrag[0] = true;
+  if (event.type == SDL_EVENT_FINGER_DOWN) {
+    if(app.camera.fingerIDs[0] == -1) { app.camera.fingerIDs[0] = e.fingerID; app.camera.fingerPos[0] = [e.x, e.y]; }
+    else if(app.camera.fingerIDs[1] == -1) { app.camera.fingerIDs[1] = e.fingerID; app.camera.fingerPos[1] = [e.x, e.y]; app.camera.lastPinchDist = -1.0f; }
   }
-  if(event.type == SDL_EVENT_FINGER_UP) {
-    if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.isdrag[0] = false; app.camera.fingerIDs[0] = -1; app.camera.move(app.camera.forward()); }
-    if(e.fingerID == app.camera.fingerIDs[1]) { app.camera.fingerIDs[1] = -1; }
+  if (event.type == SDL_EVENT_FINGER_UP) {
+    if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.fingerIDs[0] = -1; app.camera.lastPinchDist = -1.0f; }
+    if(e.fingerID == app.camera.fingerIDs[1]) { app.camera.fingerIDs[1] = -1; app.camera.lastPinchDist = -1.0f; }
   }
-  if(event.type == SDL_EVENT_FINGER_MOTION) {
-    if(e.fingerID == app.camera.fingerIDs[1]) {
-      if (e.dy > 0 && app.camera.distance <= 60.0f) app.camera.distance += 0.25f;
-      if (e.dy < 0 && app.camera.distance >=  2.0f) app.camera.distance -= 0.25f;
-    } else if(e.fingerID == app.camera.fingerIDs[0]) {
-      app.camera.drag(-e.dx * 0.5 * app.camera.width, e.dy * 0.25 * app.camera.height);
-    }
+  if (event.type == SDL_EVENT_FINGER_MOTION) {
+    if(e.fingerID == app.camera.fingerIDs[0]) app.camera.fingerPos[0] = [e.x, e.y];
+    if(e.fingerID == app.camera.fingerIDs[1]) app.camera.fingerPos[1] = [e.x, e.y];
+    bool twoFingers = app.camera.fingerIDs[0] != -1 && app.camera.fingerIDs[1] != -1;
+    if (twoFingers) {
+      float dx = app.camera.fingerPos[1][0] - app.camera.fingerPos[0][0];
+      float dy = app.camera.fingerPos[1][1] - app.camera.fingerPos[0][1];
+      float dist = sqrt(dx*dx + dy*dy);
+
+      if(app.camera.lastPinchDist > 0.0f) {
+        float delta = (app.camera.lastPinchDist - dist) * 60.0f;
+        app.camera.distance = clamp(app.camera.distance + delta, 2.0f, 60.0f);
+      }
+      app.camera.lastPinchDist = dist;
+    } else if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.drag(-e.dx * 200.0f, e.dy * 200.0f); }
   }
 }
 

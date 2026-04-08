@@ -15,15 +15,17 @@ struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
 
-  float[3]        lookat      = [0.0f, 0.0f, 0.0f];     /// Position in the middle of the screen
-  float[2]        nearfar     = [0.1f, 1000.0f];         /// View distances, near [0], far [1]
-  float[3]        up          = [0.0f, 1.0f, 0.0f];     /// Defined up vector
-  float           fov         = 45.0f;                  /// Field of view
-  float           speed       =  0.5f;                  /// Movement speed
-  float[3]        rotation    = [0.0f, 0.0f, 0.0f];     /// Horizontal [0], Vertical [1]
-  float           distance    = 15.0f;                  /// Distance of camera to lookat
-  bool[2]         isdrag      = [false, false];         /// Mouse dragging
-  SDL_FingerID[2] fingerIDs   = [-1, -1];               /// Android FingerIDs
+  float[3]        lookat        = [0.0f, 0.0f, 0.0f];     /// Position in the middle of the screen
+  float[2]        nearfar       = [0.1f, 1000.0f];         /// View distances, near [0], far [1]
+  float[3]        up            = [0.0f, 1.0f, 0.0f];     /// Defined up vector
+  float           fov           = 45.0f;                  /// Field of view
+  float           speed         =  0.5f;                  /// Movement speed
+  float[3]        rotation      = [0.0f, 0.0f, 0.0f];     /// Horizontal [0], Vertical [1]
+  float           distance      = 15.0f;                  /// Distance of camera to lookat
+  bool[2]         isdrag        = [false, false];         /// Mouse dragging
+  SDL_FingerID[2] fingerIDs     = [-1, -1];               /// Android FingerIDs
+  float[2][2]     fingerPos     = [[0,0],[0,0]];          /// normalized positions of finger 0 and 1
+  float           lastPinchDist = -1.0f;                  /// -1 = no active pinch
 
   @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -speed]); }
   @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
