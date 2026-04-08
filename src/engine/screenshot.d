@@ -40,7 +40,7 @@ void saveScreenshot(ref App app) {
 
   // Save as PNG
   auto ts = SDL_GetTicks();
-  string path = cast(string)fromStringz(fixPath(toStringz(format("data/screenshots/%d.png", ts))));
+  string path = fixPath(format("data/screenshots/%d.png", ts));
   SDL_Surface* surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_RGBA32, data, w * 4);
   IMG_SavePNG(surface, toStringz(path));
   SDL_DestroySurface(surface);
