@@ -112,6 +112,7 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.objects ~= chunk.geometry;
   app.objects[($-1)].texture("3DTextures");
   app.objects[($-1)].computeNormals(true);
+  app.objects[($-1)].isSelectable = false;
   app.objects[($-1)].position([0.0f, app.world.yOffset, 0.0f]);
   app.mapTextures(app.objects[($-1)]);
   app.world.chunks[data.coord] = chunk;
@@ -188,10 +189,16 @@ struct World {
 
     if(highlight is null) {
       highlight = new Geometry();
-      highlight.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-      highlight.indices  = [0, 1, 2, 3, 0];
+      highlight.topology  = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+      highlight.indices   = [0, 1, 2, 3, 0];
       highlight.instances = [Instance()];
+      highlight.isSelectable = false;
+      highlight.meshes["Highlight"] = Mesh([0, 4]);
       highlight.name = (){ return "TileHighlight"; };
+      highlight.onFrame = (ref App app, ref Geometry obj, float dt) {
+        float pulse = (sin(SDL_GetTicks() / 200.0f) + 1.0f) * 0.5f;
+        obj.setColor([1.0f, pulse, 0.0f, 1.0f]);
+      };
       app.objects ~= highlight;
     }
 
@@ -201,10 +208,6 @@ struct World {
       Vertex([p[0]+hs, y, p[2]+hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
       Vertex([p[0]-hs, y, p[2]+hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
     ];
-    highlight.onFrame = (ref App app, ref Geometry obj, float dt) {
-      float pulse = (sin(SDL_GetTicks() / 200.0f) + 1.0f) * 0.5f;
-      obj.setColor([0.0f, pulse, 0.0f, 1.0f]);
-    };
     highlight.buffers[VERTEX] = false;
     highlight.buffers[INDEX]  = false;
   }

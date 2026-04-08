@@ -69,6 +69,7 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
 
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isVisible) continue;                   // invisible objects should not generate hits
+    if(!app.objects[x].isSelectable) continue;                // Non-selectable objects should not generate hits
     if(app.objects[x].name() == "Line") continue;             // Other lines should not generate hits
     app.objects[x].computeBoundingBox(app.trace);             // Make sure we compute the current Bounding Box
     auto intersection = ray.intersects(app.objects[x].box);   // Compute the intersection
@@ -103,12 +104,10 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     auto hits = app.getHits(ray, app.showRays);
     if (hits.length > 0) {
       auto obj = app.objects[hits[0].idx];
-      if(obj.name() == "Chunk") {
-        app.world.selectTile(app, app.world.pickTile(ray[0], ray[1]));
-      } else {
-        obj.box.setColor(Colors.yellowgreen);
-        obj.window = true;
-      }
+      obj.box.setColor(Colors.yellowgreen);
+      obj.window = true;
+    }else{
+      app.world.selectTile(app, app.world.pickTile(ray[0], ray[1]));
     }
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){
