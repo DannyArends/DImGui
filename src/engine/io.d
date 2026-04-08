@@ -19,12 +19,7 @@ ulong fsize(const(char)* path){
 }
 
 string fixPath(string path){
-  version(Android) {
-    string prefix = format("%s/", fromStringz(SDL_GetAndroidInternalStoragePath()));
-    if(!path.startsWith(prefix)) return prefix ~ path;
-  } else {
-    if(!path.startsWith("app/src/main/assets/")) return "app/src/main/assets/" ~ path;
-  }
+  version(Android) { } else { if(!path.startsWith("app/src/main/assets/")) return "app/src/main/assets/" ~ path; }
   return path;
 }
 
@@ -58,6 +53,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
  */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   path = fixPath(path);
+  version (Android) { path = toStringz(format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path))); }
   SDL_IOStream* fp = SDL_IOFromFile(path, "w");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
 
