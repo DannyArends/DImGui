@@ -5,11 +5,13 @@
 
 import engine;
 
-import geometry : setColor,position, texture, deAllocate, computeNormals;
+import geometry;
 import noise : fbm;
 import textures : mapTextures;
 import tileatlas : TileT, tileUV;
 import vector : vAdd, vMul;
+
+enum float NOISE_SCALE = 0.05f;
 
 enum TileType : TileT {
   None = TileT("None", false, 0.0f),
@@ -40,15 +42,18 @@ enum TileType : TileT {
   return TileType.Snow;
 }
 
-@nogc pure TileType getTile(immutable(WorldData) wd, const int[3] wc, const int[2] seed = [0,0]) nothrow {
-  float h = fbm(wc[0] * 0.05f, wc[2] * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
-  float t = fbm(wc[0] * 0.05f, wc[2] * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[1]);
-  int surface = cast(int)(h * (wd.chunkHeight-1));
-  if (wc[1] > surface) return TileType.None;
-  if (wc[1] == 0) return TileType.Lava;
+@nogc pure float[2] noiseHT(int x, int z, const int[2] seed) nothrow {
+  return [fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[0]),
+          fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[1])];
+}
+
+@nogc pure TileType getTile(immutable(WorldData) wd, const int[3] wc) nothrow {
+  auto ht = noiseHT(wc[0], wc[2], wd.seed);
+  int surface = cast(int)(ht[0] * (wd.chunkHeight - 1));
+  if (wc[1] > surface)  return TileType.None;
+  if (wc[1] == 0)       return TileType.Lava;
   if (wc[1] < surface)  return TileType.Stone;
-  if (wc[1] == surface) return heightToTile(h, t);
-  return TileType.Stone;
+  return heightToTile(ht[0], ht[1]);
 }
 
 @nogc pure int[3] worldCoord(immutable(WorldData) wd, int[3] coord, int[3] local) nothrow {
@@ -78,20 +83,15 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
     for (int y = 0; y < wd.chunkHeight; y++) {
       for (int x = 0; x < wd.chunkSize; x++) {
         int[3] wc = wd.worldCoord(data.coord, [x, y, z]);
-        TileType tile = wd.getTile(wc, wd.seed);
+        TileType tile = wd.getTile(wc);
         if (tile == TileType.None) continue;
         float[3] p = wd.worldPos(wc);
-        float hs = wd.tileSize * 0.5f;
-        float[2] uvTR = ta.tileUV(tile.name, true,  false);
-        float[2] uvBR = ta.tileUV(tile.name, true,  true);
-        float[2] uvBL = ta.tileUV(tile.name, false, true);
-        float[2] uvTL = ta.tileUV(tile.name, false, false);
         uint vi = cast(uint)data.vertices.length;
         data.vertices ~= [
-          Vertex([p[0]+hs, p[1], p[2]-hs], uvTR, [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([p[0]-hs, p[1], p[2]-hs], uvTL, [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([p[0]-hs, p[1], p[2]+hs], uvBL, [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([p[0]+hs, p[1], p[2]+hs], uvBR, [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]+wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tile.name, true,  false), [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]-wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tile.name, true,  true), [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]-wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tile.name, false, true), [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]+wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tile.name, false, false), [1.0f, 1.0f, 1.0f, 1.0f]),
         ];
         data.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
       }
@@ -126,17 +126,18 @@ struct WorldData {
   float tileHeight   = 0.2f;
   int chunkSize      = 8;
   int chunkHeight    = 16;
+
+  @property pure @nogc float halfTile() const nothrow { return tileSize * 0.5f; }
+  @property pure @nogc float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
 }
 
 struct World {
   Chunk[int[3]] chunks;           /// Current chunks
-  bool[int[3]]  pendingChunks;    /// Chunks being generated async
-  int[3]        selectedTile = [int.min, int.min, int.min];
-  Geometry      highlight = null;
-  float         yOffset = -6.0f;
+  bool[int[3]] pendingChunks;     /// Chunks being generated async
+  Geometry highlight = null;
+  float yOffset = -6.0f;
   WorldData data;
   alias data this;
-
 
   void loadChunks(ref App app, int[3] pc) {
     for (int cz = pc[2]- renderDistance; cz <= pc[2]+ renderDistance; cz++) {
@@ -156,60 +157,37 @@ struct World {
     }
   }
 
+  int[3] surfaceTile(int tx, int tz) { return [tx, cast(int)(noiseHT(tx, tz, seed)[0] * (chunkHeight - 1)), tz]; }
+
   int[3] pickTile(float[3] rayOrigin, float[3] rayDir) {
-    // Project ray to base plane Y=yOffset
-    float t = (yOffset - rayOrigin[1]) / rayDir[1];
+    float t  = (yOffset - rayOrigin[1]) / rayDir[1];
     float wx = rayOrigin[0] + rayDir[0] * t;
     float wz = rayOrigin[2] + rayDir[2] * t;
-
-    // Iterate to converge on actual surface
+    int[3] tile;
     for(int i = 0; i < 4; i++) {
-      int tx = cast(int)round(wx / tileSize);
-      int tz = cast(int)round(wz / tileSize);
-      float h = fbm(tx * 0.05f, tz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
-      int ty = cast(int)(h * (chunkHeight - 1));
-      float surfaceY = ty * tileHeight + yOffset;
-      t = (surfaceY - rayOrigin[1]) / rayDir[1];
+      tile = surfaceTile(cast(int)round(wx / tileSize), cast(int)round(wz / tileSize));
+      float surfY = tile[1] * tileHeight + yOffset;
+      t  = (surfY - rayOrigin[1]) / rayDir[1];
       wx = rayOrigin[0] + rayDir[0] * t;
       wz = rayOrigin[2] + rayDir[2] * t;
     }
-
-    int tx = cast(int)round(wx / tileSize);
-    int tz = cast(int)round(wz / tileSize);
-    float h = fbm(tx * 0.05f, tz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
-    int ty = cast(int)(h * (chunkHeight - 1));
-    return [tx, ty, tz];
+    return tile;
   }
 
-  void selectTile(ref App app, int[3] tile) {
-    selectedTile = tile;
+  void updateHighlight(ref App app, int[3] tile) {
     float[3] p = worldPos(cast(immutable(WorldData))data, tile);
-    float hs = tileSize * 0.5f;
-    float y  = p[1] + yOffset + 0.01f;
 
     if(highlight is null) {
-      highlight = new Geometry();
-      highlight.topology  = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-      highlight.indices   = [0, 1, 2, 3, 0];
-      highlight.instances = [Instance()];
+      highlight = new Square();
+      highlight.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
       highlight.isSelectable = false;
-      highlight.meshes["Highlight"] = Mesh([0, 4]);
-      highlight.name = (){ return "TileHighlight"; };
       highlight.onFrame = (ref App app, ref Geometry obj, float dt) {
-        float pulse = (sin(SDL_GetTicks() / 200.0f) + 1.0f) * 0.5f;
-        obj.setColor([1.0f, pulse, 0.0f, 1.0f]);
+        obj.setColor([1.0f, (sin(SDL_GetTicks() / 200.0f) + 1.0f) * 0.5f, 0.0f, 1.0f]);
       };
       app.objects ~= highlight;
     }
-
-    highlight.vertices = [
-      Vertex([p[0]-hs, y, p[2]-hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
-      Vertex([p[0]+hs, y, p[2]-hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
-      Vertex([p[0]+hs, y, p[2]+hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
-      Vertex([p[0]-hs, y, p[2]+hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
-    ];
-    highlight.buffers[VERTEX] = false;
-    highlight.buffers[INDEX]  = false;
+    highlight.position([p[0], p[1] + yOffset + 0.01f, p[2]]);
+    highlight.scale([tileSize, tileSize, tileSize]);
   }
 
   void evictChunks(ref App app, int[3] pc) {
@@ -222,17 +200,14 @@ struct World {
   }
 
   void clear(ref App app) {
-    foreach (coord; chunks.keys) {
-      if (chunks[coord].geometry !is null) { chunks[coord].geometry.deAllocate = true; }
-    }
+    foreach (coord; chunks.keys) { if (chunks[coord].geometry !is null) { chunks[coord].geometry.deAllocate = true; } }
     chunks.clear();
     pendingChunks.clear();
   }
 }
 
-void updateWorld(ref App app) {
-  int[3] pc = [ cast(int)(floor(app.camera.lookat[0] / (app.world.chunkSize * app.world.tileSize))), 
-                0, cast(int)(floor(app.camera.lookat[2] / (app.world.chunkSize * app.world.tileSize))) ];
+void updateWorld(ref App app, float[3] lookat) {
+  int[3] pc = [ cast(int)(floor(lookat[0] / (app.world.chunkWorldSize))), 0, cast(int)(floor(lookat[2] / (app.world.chunkWorldSize))) ];
   app.world.loadChunks(app, pc); // Load new chunks within render distance
   app.world.evictChunks(app, pc); // Evict chunks outside render distance
 }

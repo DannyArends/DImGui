@@ -49,7 +49,7 @@ void renderFrame(ref App app) {
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
   app.updateTracks();                     /// Check for sound effects that have finished
-  app.updateWorld();                      /// Check for updates to the world
+  app.updateWorld(app.camera.lookat);     /// Check for updates to the world
   app.updateMeshInfo();                   /// Check for Mesh Information change
   app.updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
   app.updateDisco();                      /// Update when disco mode 🕺 🪩 💃
