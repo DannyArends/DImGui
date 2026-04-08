@@ -10,7 +10,7 @@ struct DeletionQueue {
 
   void add(void delegate() fn){ queue ~= fn; }
   void flush(){
-    foreach(i, fn; queue.reverse){ fn(); }
+    foreach_reverse(fn; queue){ fn(); }
     queue = [];
   }
 }
@@ -22,8 +22,8 @@ struct CheckedDeletionQueue {
   void add(bool delegate(bool) fn){ queue ~= fn; }
   void flush(bool force = false) {
     size_t[] idx;
-    foreach(i, fn; queue.reverse){ if(fn(force)) idx ~= i;}
-    foreach(i; idx.reverse) { queue = queue.remove(i); }
+    foreach_reverse(i, fn; queue){ if(fn(force)) idx ~= i;}
+    foreach(i; idx) { queue = queue.remove(i); }
   }
 }
 
