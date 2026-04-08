@@ -25,7 +25,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
     imageColorSpace: app.surfaceformats[app.format].colorSpace,
     imageExtent: app.camera.currentExtent,
     imageArrayLayers: 1,
-    imageUsage: VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    imageUsage: VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
     imageSharingMode: VK_SHARING_MODE_EXCLUSIVE,
     preTransform: app.camera.currentTransform,
     compositeAlpha: compositeAlpha,

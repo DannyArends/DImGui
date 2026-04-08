@@ -25,6 +25,8 @@ cimgui.lib
 *.o
 *.a
 
+*.png
+
 .gradle
 .idea
 
