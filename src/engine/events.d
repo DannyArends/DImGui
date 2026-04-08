@@ -14,7 +14,7 @@ import line : createLine;
 import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
-import vector : vMul;
+import vector : vAdd, vMul;
 import window: createOrResizeWindow;
 
 /** Handle keyboard events
@@ -64,13 +64,11 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
 
 /** Get a list of intersections between the ray and the objects in the scene
  */
-Intersection[] getHits(ref App app, SDL_Event e, bool showRay = true){
-  auto ray = app.camera.castRay(e.motion.x, e.motion.y);
+Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
   Intersection[] hits;
 
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isVisible) continue;                   // invisible objects should not generate hits
-    if(!app.objects[x].isSelectable) continue;                // Not selectable objects should not generate hits
     if(app.objects[x].name() == "Line") continue;             // Other lines should not generate hits
     app.objects[x].computeBoundingBox(app.trace);             // Make sure we compute the current Bounding Box
     auto intersection = ray.intersects(app.objects[x].box);   // Compute the intersection
@@ -101,11 +99,17 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP){
     if (e.button.button == SDL_BUTTON_LEFT) { app.camera.isdrag[0] = false; }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
-    auto hits = app.getHits(e, app.showRays);
+    auto ray = app.camera.castRay(e.button.x, e.button.y);
+    auto hits = app.getHits(ray, app.showRays);
     if (hits.length > 0) {
-      if(app.verbose) SDL_Log("Clostest hit: %d = %s", hits[0].idx, toStringz(app.objects[hits[0].idx].name()));
-      app.objects[hits[0].idx].box.setColor(Colors.yellowgreen);
-      app.objects[hits[0].idx].window = true;
+      auto chunkHits = hits.filter!(h => app.objects[h.idx].name() == "Chunk").array;
+      if(chunkHits.length > 0) {
+        app.world.selectTile(app, app.world.pickTile(ray[0], ray[1], chunkHits));
+      } else {
+        auto obj = app.objects[hits[0].idx];
+        obj.box.setColor(Colors.yellowgreen);
+        obj.window = true;
+      }
     }
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){
