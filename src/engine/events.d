@@ -107,7 +107,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       obj.box.setColor(Colors.yellowgreen);
       obj.window = true;
     }else{
-      app.world.selectTile(app, app.world.pickTile(ray[0], ray[1]));
+      app.world.updateHighlight(app, app.world.pickTile(ray[0], ray[1]));
     }
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){
