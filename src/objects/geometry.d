@@ -111,7 +111,7 @@ void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
       app.objects[x].computeBoundingBox(app.trace);
       app.objects[x].box.buffer(app, cmd);
     }
-    app.objects[x].buffer(app, cmd);  // always call, buffer() checks each dirty flag internally
+    app.objects[x].buffer(app, cmd);
   }
 }
 
