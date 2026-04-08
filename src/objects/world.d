@@ -112,8 +112,7 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.objects ~= chunk.geometry;
   app.objects[($-1)].texture("3DTextures");
   app.objects[($-1)].computeNormals(true);
-  app.objects[($-1)].isSelectable = false;
-  app.objects[($-1)].position([0.0f, -6.0f, 0.0f]);
+  app.objects[($-1)].position([0.0f, app.world.yOffset, 0.0f]);
   app.mapTextures(app.objects[($-1)]);
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
@@ -131,6 +130,9 @@ struct WorldData {
 struct World {
   Chunk[int[3]] chunks;           /// Current chunks
   bool[int[3]]  pendingChunks;    /// Chunks being generated async
+  int[3]        selectedTile = [int.min, int.min, int.min];
+  Geometry      highlight = null;
+  float         yOffset = -6.0f;
   WorldData data;
   alias data this;
 
@@ -151,6 +153,53 @@ struct World {
         }
       }
     }
+  }
+
+  int[3] pickTile(float[3] rayOrigin, float[3] rayDir, Intersection[] hits) {
+    foreach(hit; hits) {
+      float[3] entry = rayOrigin.vAdd(rayDir.vMul(hit.tmin));
+      int tx = cast(int)floor(entry[0] / tileSize + 0.5f);
+      int tz = cast(int)floor(entry[2] / tileSize + 0.5f);
+      float h = fbm(tx * 0.05f, tz * 0.05f, 0.0f, 4, 2.0f, 0.5f, seed[0]);
+      int ty = cast(int)(h * (chunkHeight - 1));
+      float surfaceY = ty * tileHeight + yOffset;
+
+      // Check if ray actually hits this tile's surface
+      float t = (surfaceY - rayOrigin[1]) / rayDir[1];
+      int fx = cast(int)floor((rayOrigin[0] + rayDir[0] * t) / tileSize + 0.5f);
+      int fz = cast(int)floor((rayOrigin[2] + rayDir[2] * t) / tileSize + 0.5f);
+
+      // Verify the reprojected tile falls within this chunk
+      float[3] chunkMin = rayOrigin.vAdd(rayDir.vMul(hit.tmin));
+      float[3] chunkMax = rayOrigin.vAdd(rayDir.vMul(hit.tmax));
+      if(fx >= min(chunkMin[0], chunkMax[0]) / tileSize && fx <= max(chunkMin[0], chunkMax[0]) / tileSize) { return [fx, ty, fz]; }
+    }
+    return [int.min, int.min, int.min];
+  }
+
+  void selectTile(ref App app, int[3] tile) {
+    selectedTile = tile;
+    float[3] p = worldPos(cast(immutable(WorldData))data, tile);
+    float hs = tileSize * 0.5f;
+    float y  = p[1] + yOffset + 0.01f;
+
+    if(highlight is null) {
+      highlight = new Geometry();
+      highlight.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+      highlight.indices  = [0, 1, 2, 3, 0];
+      highlight.instances = [Instance()];
+      highlight.name = (){ return "TileHighlight"; };
+      app.objects ~= highlight;
+    }
+
+    highlight.vertices = [
+      Vertex([p[0]-hs, y, p[2]-hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
+      Vertex([p[0]+hs, y, p[2]-hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
+      Vertex([p[0]+hs, y, p[2]+hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
+      Vertex([p[0]-hs, y, p[2]+hs], [0,0], [1.0f, 1.0f, 0.0f, 1.0f]),
+    ];
+    highlight.buffers[VERTEX] = false;
+    highlight.buffers[INDEX]  = false;
   }
 
   void evictChunks(ref App app, int[3] pc) {
