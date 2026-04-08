@@ -8,14 +8,14 @@ import engine;
 import boundingbox : computeBoundingBox;
 import camera : move, drag, castRay;
 import geometry : deAllocate, setColor;
-import imgui : saveSettings;
+import imgui : initializeImGui, saveSettings;
 import intersection : intersects;
 import line : createLine;
+import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
 import vector : vMul;
 import window: createOrResizeWindow;
-import imgui : initializeImGui;
 
 /** Handle keyboard events
  */
@@ -28,6 +28,7 @@ void handleKeyEvents(ref App app, SDL_Event e) {
     if(symbol == SDLK_S || symbol == SDLK_DOWN){ app.camera.move(app.camera.back());  }
     if(symbol == SDLK_A || symbol == SDLK_LEFT){ app.camera.move(app.camera.left());  }
     if(symbol == SDLK_D || symbol == SDLK_RIGHT){ app.camera.move(app.camera.right());  }
+    if(symbol == SDLK_F12) app.saveScreenshot();
   }
 }
 

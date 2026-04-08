@@ -108,27 +108,26 @@ void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuf
 }
 
 void copyBufferToImage(ref App app, VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint width, uint height) {
-  VkOffset3D imageOffset = { 0, 0, 0 };
-  VkExtent3D imageExtent = { width, height, 1 };
-
-  VkImageSubresourceLayers imageSubresource = {
-    aspectMask: VK_IMAGE_ASPECT_COLOR_BIT,
-    mipLevel: 0,
-    baseArrayLayer: 0,
-    layerCount: 1
-  };
-  
   VkBufferImageCopy region = {
-    bufferOffset: 0,
-    bufferRowLength: 0,
-    bufferImageHeight: 0,
-    imageSubresource: imageSubresource,
-    imageOffset: imageOffset,
-    imageExtent: imageExtent
+    bufferOffset: 0, bufferRowLength: 0, bufferImageHeight: 0,
+    imageSubresource: { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
+    imageOffset: { 0, 0, 0 },
+    imageExtent: { width, height, 1 }
   };
 
   if(app.trace) SDL_Log("copyBufferToImage buffer[%p] to image[%p] %dx%d", buffer, image, width, height);
   vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+}
+
+void copyImageToBuffer(ref App app, VkCommandBuffer commandBuffer, VkImage image, VkBuffer buffer, uint width, uint height) {
+  VkBufferImageCopy region = {
+    bufferOffset: 0, bufferRowLength: 0, bufferImageHeight: 0,
+    imageSubresource: { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
+    imageOffset: { 0, 0, 0 },
+    imageExtent: { width, height, 1 }
+  };
+  if(app.trace) SDL_Log("copyImageToBuffer image[%p] to buffer[%p] %dx%d", image, buffer, width, height);
+  vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
 }
 
 /** Create Vulkan buffer and memory pointer and transfer the array of objects into the GPU memory

@@ -14,7 +14,7 @@ struct TileT {
   bool traversable  = false;
   float cost = 0.0f;
 }
-
+ 
 struct TileAtlas {
   int[2][2][string] uv;
   uint size;
@@ -28,7 +28,6 @@ struct TileAtlas {
 }
 
 void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me", int size = 512, int tileSize = 64) {
-  folder = cast(string)fromStringz(fixPath(toStringz(folder)));
   if (app.verbose) SDL_Log("createTileAtlas: %s", toStringz(folder));
  
   TileAtlas ta;

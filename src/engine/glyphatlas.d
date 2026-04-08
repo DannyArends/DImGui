@@ -9,6 +9,7 @@ import buffer : destroyStagingBuffer;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import textures : toRGBA, toGPU;
 import images : createImage, deAllocate, imageSize;
+import io : fixPath;
 import swapchain : createImageView;
 
 /** Glyph stores SDL2_TTF glyph data
@@ -71,7 +72,7 @@ struct GlyphAtlas {
 
 /** Loads a GlyphAtlas from file */
 void loadGlyphAtlas(ref App app, string filename = "data/fonts/FreeMono.ttf", ubyte pointsize = 40, dchar to = '\U000000FF', uint dim = 1024) {
-  version(Android){ }else{ filename = format("app/src/main/assets/%s", fromStringz(filename)); }
+  filename = fixPath(filename);
   if(app.verbose) SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   app.glyphAtlas = GlyphAtlas(filename);
   app.glyphAtlas.pointsize = (pointsize == 0)? 12 : pointsize;

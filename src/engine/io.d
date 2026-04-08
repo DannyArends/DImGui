@@ -18,12 +18,17 @@ ulong fsize(const(char)* path){
   return(size);
 }
 
-const(char)* fixPath(const(char)* path){
-  version (Android){ }else{ 
-    if(path.isfile){ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); } 
+string fixPath(string path){
+  version(Android) {
+    string prefix = format("%s/", fromStringz(SDL_GetAndroidInternalStoragePath()));
+    if(!path.startsWith(prefix)) return prefix ~ path;
+  } else {
+    if(!path.startsWith("app/src/main/assets/")) return "app/src/main/assets/" ~ path;
   }
-  return(path);
+  return path;
 }
+
+const(char)* fixPath(const(char)* path){ return toStringz(fixPath(cast(string)fromStringz(path))); }
 
 /** Read content of a file as a char[]
  */
@@ -52,9 +57,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
 /** Write content of a char[] to a file
  */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
-  version (Android) {
-    path = toStringz(format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path)));
-   }else{ path = toStringz(format("app/src/main/assets/%s", fromStringz(path))); }
+  path = fixPath(path);
   SDL_IOStream* fp = SDL_IOFromFile(path, "w");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
 
@@ -144,7 +147,7 @@ version(Android) {
   /** Content of a directory
    */
   string[] dir(const(char)* dirPath, string pattern = "*", bool shallow = true) { 
-    string path = format("app/src/main/assets/%s", fromStringz(dirPath));
+    string path = cast(string)fromStringz(fixPath(dirPath));
     auto mode = SpanMode.shallow;
     if(!shallow) mode = SpanMode.depth;
     auto entries = dirEntries(path, pattern, mode).map!(a => a.name).array;
@@ -154,7 +157,7 @@ version(Android) {
   /** Helper function to determine if a path is a file
    */
   bool isfile(const(char)* filePath) {
-    string path = format("app/src/main/assets/%s", fromStringz(filePath));
+    string path = cast(string)fromStringz(fixPath(filePath));
     try {
       if (path.exists() && path.isFile) return(true);
     } catch (Exception e) { SDL_Log("path %s was not a file", path.ptr); }
@@ -163,8 +166,8 @@ version(Android) {
 
   /** Helper function to determine if a path is a file
    */
-  bool isdir(const(char)* filePath) {
-    string path = format("app/src/main/assets/%s", fromStringz(filePath));
+  bool isdir(const(char)* dirPath) {
+    string path = cast(string)fromStringz(fixPath(dirPath));
     try {
       if (path.exists() && path.isDir) return(true);
     } catch (Exception e) { SDL_Log("path %s was not a directory", path.ptr); }

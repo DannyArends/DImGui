@@ -6,7 +6,7 @@
 import engine;
 
 import devices : getMSAASamples;
-import io : isfile, readFile, writeFile;
+import io : fixPath, isfile, readFile, writeFile;
 import settingswindow : showSettingswindow;
 import sfxwindow : showSFXwindow;
 import directorywindow : showDirectoryWindow;
@@ -74,9 +74,7 @@ void clearSettings() {
 /** Load ImGui settings from disk (or Android internal storage)
  */
 void loadSettings(const(char)* path = "imgui.ini") {
-  version (Android) {
-    path = toStringz(format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path)));
-  }
+  path = fixPath(path);
   if(path.isfile()) {
     SDL_Log("Loading ImGui settings from %s", path);
     auto content = readFile(path);
