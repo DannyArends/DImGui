@@ -102,11 +102,10 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     auto ray = app.camera.castRay(e.button.x, e.button.y);
     auto hits = app.getHits(ray, app.showRays);
     if (hits.length > 0) {
-      auto chunkHits = hits.filter!(h => app.objects[h.idx].name() == "Chunk").array;
-      if(chunkHits.length > 0) {
-        app.world.selectTile(app, app.world.pickTile(ray[0], ray[1], chunkHits));
+      auto obj = app.objects[hits[0].idx];
+      if(obj.name() == "Chunk") {
+        app.world.selectTile(app, app.world.pickTile(ray[0], ray[1]));
       } else {
-        auto obj = app.objects[hits[0].idx];
         obj.box.setColor(Colors.yellowgreen);
         obj.window = true;
       }
