@@ -11,7 +11,7 @@ import buffer : destroyStagingBuffer;
 import io : dir, fixPath;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
-import world : buildChunkData, finalizeChunk;
+import world : buildChunkData, loadChunkTiles, finalizeChunk;
 
 class TaskThread : Thread {
   private Tid main;
@@ -44,7 +44,8 @@ class TaskThread : Thread {
             main.send(openasset, mytid);
           } else { main.send("Unknown file", mytid); }
         },
-        (immutable(WorldData) wd, immutable(TileAtlas) ta, immutable(TileType[]) saved, int[3] coord) {
+        (immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
+          TileType[] saved = wd.loadChunkTiles(coord);
           auto data = buildChunkData(wd, ta, saved, coord);
           main.send(cast(immutable(ChunkData))data, mytid);
         },
