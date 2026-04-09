@@ -6,7 +6,7 @@
 import engine;
 
 import geometry;
-import io : ensureWorldDir,writeFile, fsize, readFile, fixPath;
+import io : ensureWorldDir, writeFile, fixPath, readFile, fsize;
 import noise : fbm;
 import textures : mapTextures;
 import tileatlas : TileT, tileUV;
@@ -61,14 +61,14 @@ struct Chunk {
   alias geometry this;
 }
 
-pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, immutable(TileType[]) saved = null, int[3] coord) nothrow {
+pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileType[] saved = null, int[3] coord) nothrow {
   ChunkData data = ChunkData(coord);
   int i = 0;
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int y = 0; y < wd.chunkHeight; y++) {
       for (int x = 0; x < wd.chunkSize; x++, i++) {
         auto wc = wd.worldCoord(coord, [x,y,z]);
-        TileType tile = saved ? saved[i] : wd.getTile(wc);
+        TileType tile = (saved.length > 0) ? saved[i] : wd.getTile(wc);
         if (tile == TileType.None) continue;
         float[3] p = wd.worldPos(wc);
         uint vi = cast(uint)data.vertices.length;
@@ -119,9 +119,9 @@ void saveChunk(ref App app, int[3] coord) {
   writeFile(app.world.chunkPath(coord), cast(char[])tiles);
 }
 
-TileType[] loadChunkTiles(ref App app, int[3] coord) {
-  auto path = app.world.chunkPath(coord);
-  if(!fsize(path, false)) return null;
+TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
+  auto path = wd.chunkPath(coord);
+  if(!fsize(path, false)) return [];
   return cast(TileType[])readFile(path);
 }
 
@@ -134,7 +134,7 @@ struct WorldData {
   int chunkHeight    = 16;        /// Number of tiles (Y) in a chunk
 
 
-  const(char)* chunkPath(int[3] coord) {
+  const(char)* chunkPath(int[3] coord) const {
     return(toStringz(fixPath(format("data/world/%d_%d/%d_%d.bin", seed[0], seed[1], coord[0], coord[2]))));
   }
   @property pure @nogc float halfTile() const nothrow { return tileSize * 0.5f; }
@@ -187,11 +187,10 @@ struct World {
 }
 
 void loadChunk(ref App app, int[3] coord){
-  auto saved = app.loadChunkTiles(coord);
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, cast(immutable(TileType[]))saved, coord);
+      tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, coord);
       app.world.pendingChunks[coord] = true;
       break;
     }

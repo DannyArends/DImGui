@@ -12,7 +12,10 @@ ulong seek(SDL_IOStream* fp, int offset, SDL_IOWhence whence){ return(SDL_SeekIO
 ulong fsize(const(char)* path, bool verbose = true){
   path = fixPath(path);
   SDL_IOStream* fp = SDL_IOFromFile(path, "rb");
-  if(fp == null && verbose) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return 0; }
+  if(fp == null) {
+    if(verbose) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); }
+    return 0;
+  }
   uint size = cast(uint)SDL_GetIOSize(fp);
   SDL_CloseIO(fp);
   return(size);
