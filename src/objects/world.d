@@ -9,7 +9,7 @@ import geometry;
 import io : ensureWorldDir, writeFile, fixPath, readFile, fsize;
 import noise : fbm;
 import textures : mapTextures;
-import tileatlas : TileT, tileUV;
+import tileatlas : TileT, tileData, tileUV;
 import vector : vAdd, vMul;
 
 enum float NOISE_SCALE = 0.05f;
@@ -77,10 +77,10 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
         float[3] p = wd.worldPos(wc);
         uint vi = cast(uint)data.vertices.length;
         data.vertices ~= [
-          Vertex([p[0]+wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tile.name, true,  false), [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([p[0]-wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tile.name, true,  true), [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([p[0]-wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tile.name, false, true), [1.0f, 1.0f, 1.0f, 1.0f]),
-          Vertex([p[0]+wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tile.name, false, false), [1.0f, 1.0f, 1.0f, 1.0f]),
+          Vertex([p[0]+wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tileData[tile].name, true,  false), [1,1,1,1]),
+          Vertex([p[0]-wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tileData[tile].name, true,  true),  [1,1,1,1]),
+          Vertex([p[0]-wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tileData[tile].name, false, true),  [1,1,1,1]),
+          Vertex([p[0]+wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tileData[tile].name, false, false), [1,1,1,1]),
         ];
         data.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
       }
@@ -90,6 +90,9 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
 }
 
 void finalizeChunk(ref App app, ChunkData data) {
+  if(data.coord in app.world.chunks) {
+    app.world.chunks[data.coord].geometry.deAllocate = true;  // out with the old
+  }
   if (data.vertices.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
   Chunk chunk = Chunk(data.coord, data.tiles);
   chunk.geometry = new Geometry();
@@ -109,11 +112,6 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.world.pendingChunks.remove(data.coord);
 }
 
-void saveChunk(ref App app, int[3] coord) {
-  writeFile(app.world.chunkPath(coord), cast(char[])app.world.chunks[coord].tiles);
-}
-
-
 void setTile(ref App app, int[3] tile, TileType newType) {
   int[3] coord = [cast(int)floor(tile[0] / cast(float)app.world.chunkSize), 0, cast(int)floor(tile[2] / cast(float)app.world.chunkSize)];
   if(coord !in app.world.chunks) return;
@@ -126,9 +124,23 @@ void setTile(ref App app, int[3] tile, TileType newType) {
   app.saveChunk(coord);
 
   // Trigger remesh
-  app.world.chunks[coord].geometry.deAllocate = true;
-  app.world.chunks.remove(coord);
+  app.world.pendingChunks[coord] = true;  // mark as rebuilding
   app.loadChunk(coord);
+}
+
+void saveChunk(ref App app, int[3] coord) {
+  writeFile(app.world.chunkPath(coord), cast(char[])app.world.chunks[coord].tiles);
+}
+
+void loadChunk(ref App app, int[3] coord){
+  foreach(tid; app.concurrency.workers.keys) {
+    if (!app.concurrency.workers[tid]) {
+      app.concurrency.workers[tid] = true;
+      tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, coord);
+      app.world.pendingChunks[coord] = true;
+      break;
+    }
+  }
 }
 
 TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
@@ -197,17 +209,6 @@ struct World {
     foreach (coord; chunks.keys) { if (chunks[coord].geometry !is null) { chunks[coord].geometry.deAllocate = true; } }
     chunks.clear();
     pendingChunks.clear();
-  }
-}
-
-void loadChunk(ref App app, int[3] coord){
-  foreach(tid; app.concurrency.workers.keys) {
-    if (!app.concurrency.workers[tid]) {
-      app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, coord);
-      app.world.pendingChunks[coord] = true;
-      break;
-    }
   }
 }
 

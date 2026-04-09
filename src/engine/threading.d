@@ -45,8 +45,7 @@ class TaskThread : Thread {
           } else { main.send("Unknown file", mytid); }
         },
         (immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
-          TileType[] saved = wd.loadChunkTiles(coord);
-          auto data = buildChunkData(wd, ta, saved, coord);
+          auto data = buildChunkData(wd, ta, wd.loadChunkTiles(coord), coord);
           main.send(cast(immutable(ChunkData))data, mytid);
         },
         (bool active) { this.active = active; }  // shutdown signal
