@@ -58,7 +58,7 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
         app.camera.distance = clamp(app.camera.distance + delta, 2.0f, 60.0f);
       }
       app.camera.lastPinchDist = dist;
-    } else if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.drag(-e.dx * 200.0f, e.dy * 200.0f); }
+    } else if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.drag(e.dx * 200.0f, e.dy * 200.0f); }
   }
 }
 
