@@ -9,10 +9,10 @@ size_t fread(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL
 size_t fwrite(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_WriteIO(fp, buffer, n * size)); }
 ulong tell(SDL_IOStream* fp){ return(SDL_TellIO(fp)); }
 ulong seek(SDL_IOStream* fp, int offset, SDL_IOWhence whence){ return(SDL_SeekIO(fp, offset, whence)); }
-ulong fsize(const(char)* path){
+ulong fsize(const(char)* path, bool verbose = true){
   path = fixPath(path);
   SDL_IOStream* fp = SDL_IOFromFile(path, "rb");
-  if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return 0; }
+  if(fp == null && verbose) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return 0; }
   uint size = cast(uint)SDL_GetIOSize(fp);
   SDL_CloseIO(fp);
   return(size);
@@ -21,6 +21,12 @@ ulong fsize(const(char)* path){
 string fixPath(string path){
   version(Android) { } else { if(!path.startsWith("app/src/main/assets/")) return "app/src/main/assets/" ~ path; }
   return path;
+}
+
+void ensureWorldDir(ref App app) {
+  string path = fixPath(format("data/world/%d_%d", app.world.seed[0], app.world.seed[1]));
+  version (Android) { path = format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), path); }
+  SDL_CreateDirectory(toStringz(path));
 }
 
 const(char)* fixPath(const(char)* path){ return toStringz(fixPath(cast(string)fromStringz(path))); }
