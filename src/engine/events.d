@@ -16,6 +16,7 @@ import surface : createSurface;
 import vulkan : cleanup;
 import vector : vAdd, vMul;
 import window: createOrResizeWindow;
+import world: setTile;
 
 /** Handle keyboard events
  */
@@ -29,6 +30,10 @@ void handleKeyEvents(ref App app, SDL_Event e) {
     if(symbol == SDLK_A || symbol == SDLK_LEFT){ app.camera.move(app.camera.left());  }
     if(symbol == SDLK_D || symbol == SDLK_RIGHT){ app.camera.move(app.camera.right());  }
     if(symbol == SDLK_F12) app.saveScreenshot();
+if(symbol == SDLK_F) {
+  if(app.world.selectedTile[0] != int.min)
+    app.setTile(app.world.selectedTile, TileType.Lava);
+}
   }
 }
 

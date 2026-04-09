@@ -113,6 +113,24 @@ void saveChunk(ref App app, int[3] coord) {
   writeFile(app.world.chunkPath(coord), cast(char[])app.world.chunks[coord].tiles);
 }
 
+
+void setTile(ref App app, int[3] tile, TileType newType) {
+  int[3] coord = [cast(int)floor(tile[0] / cast(float)app.world.chunkSize), 0, cast(int)floor(tile[2] / cast(float)app.world.chunkSize)];
+  if(coord !in app.world.chunks) return;
+
+  int[3] local = [tile[0] - coord[0] * app.world.chunkSize, tile[1], tile[2] - coord[2] * app.world.chunkSize];
+  int idx = local[2] * app.world.chunkHeight * app.world.chunkSize + local[1] * app.world.chunkSize + local[0];
+
+  app.world.chunks[coord].tiles[idx] = newType;
+  app.world.chunks[coord].dirty = true;
+  app.saveChunk(coord);
+
+  // Trigger remesh
+  app.world.chunks[coord].geometry.deAllocate = true;
+  app.world.chunks.remove(coord);
+  app.loadChunk(coord);
+}
+
 TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
   auto path = wd.chunkPath(coord);
   if(!fsize(path, false)) return [];
@@ -138,6 +156,7 @@ struct WorldData {
 struct World {
   Chunk[int[3]] chunks;           /// Current chunks
   bool[int[3]] pendingChunks;     /// Chunks being generated async
+  int[3] selectedTile = [int.min, int.min, int.min];
   Geometry highlight = null;      /// Highlighted tile
   float yOffset = -6.0f;          /// Global world Y-offset
   WorldData data;
@@ -171,6 +190,7 @@ struct World {
     }
     highlight.position([p[0], p[1] + yOffset + 0.01f, p[2]]);
     highlight.scale([tileSize, tileSize, tileSize]);
+    selectedTile = tile;
   }
 
   void clear(ref App app) {
