@@ -40,11 +40,12 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
     if (data.tiles[i] == TileType.None) continue;
     float[3] p = wd.worldPos(wc);
     uint vi = cast(uint)data.vertices.length;
+    string name = tileData[data.tiles[i]].name;
     data.vertices ~= [
-      Vertex([p[0]+wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tileData[data.tiles[i]].name, true,  false), [1,1,1,1]),
-      Vertex([p[0]-wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tileData[data.tiles[i]].name, true,  true),  [1,1,1,1]),
-      Vertex([p[0]-wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tileData[data.tiles[i]].name, false, true),  [1,1,1,1]),
-      Vertex([p[0]+wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tileData[data.tiles[i]].name, false, false), [1,1,1,1]),
+      Vertex([p[0]+wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(name, true, false)),
+      Vertex([p[0]-wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(name, true, true)),
+      Vertex([p[0]-wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(name, false, true)),
+      Vertex([p[0]+wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(name, false, false))
     ];
     data.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
   }

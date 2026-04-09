@@ -7,7 +7,7 @@ import engine;
 
 import geometry;
 import intersection : rayAtY;
-import io : ensureWorldDir, writeFile, fixPath;
+import io : writeFile, fixPath;
 import noise : noiseHT;
 import tileatlas : tileData, tileUV, heightToTile;
 import vector : vAdd, vMul, x, y, z;
@@ -53,17 +53,17 @@ struct WorldData {
 }
 
 struct World {
-  Chunk[int[3]] chunks;           /// Current chunks
-  bool[int[3]] pendingChunks;     /// Chunks being generated async
-  int[3] selectedTile = [int.min, int.min, int.min];
-  Geometry highlight = null;      /// Highlighted tile
-  float yOffset = -6.0f;          /// Global world Y-offset
+  Chunk[int[3]] chunks;                                     /// Current chunks
+  bool[int[3]] pendingChunks;                               /// Chunks being generated async
+  int[3] selectedTile = [int.min, int.min, int.min];        /// Currently selected Tile
+  Geometry highlight = null;                                /// Highlighted tile
+  float yOffset = -6.0f;                                    /// Global world Y-offset
   WorldData data;
   alias data this;
 
   int[3] surfaceTile(int tx, int tz) { return [tx, cast(int)(noiseHT(tx, tz, seed)[0] * (chunkHeight - 1)), tz]; }
 
-  // Fixed-point iteration: project ray to estimated surface Y, refine X/Z, repeat.
+  // Pick a tile by fixed-point iteration: project ray to estimated surface Y, refine X/Z, repeat.
   // Converges because terrain height varies smoothly — 4 iterations is sufficient.
   int[3] pickTile(float[3][2] ray) {
     float[3] p = rayAtY(ray, yOffset);
@@ -77,12 +77,11 @@ struct World {
 
   void updateHighlight(ref App app, int[3] tile) {
     float[3] p = data.worldPos(tile);
-
     if(highlight is null) {
       highlight = new Outline();
       app.objects ~= highlight;
     }
-    highlight.position([p[0], p[1] + yOffset + 0.01f, p[2]]);
+    highlight.position([p.x, p.y + yOffset + 0.01f, p.z]);
     highlight.scale([tileSize, tileSize, tileSize]);
     selectedTile = tile;
   }
@@ -104,12 +103,8 @@ void setTile(ref App app, int[3] tile, TileType newType) {
   app.world.chunks[coord].tiles[idx] = newType;
   app.world.chunks[coord].dirty = true;
   app.world.saveChunk(coord);
-
-  app.world.pendingChunks[coord] = true;  /// Trigger remesh
   app.loadChunk(coord);
 }
-
-
 
 void loadChunk(ref App app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
