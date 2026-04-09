@@ -34,7 +34,7 @@ struct App {
     { depthStencil : VkClearDepthStencilValue(1.0f, 0) } 
   ];
   Compute compute;                                                              /// Compute shaders
-  Geometries objects;                                                           /// All geometric objects for rendering
+  Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
   Matrix[] boneOffsets;                                                         /// Animated BoneOffsets for GPU SSBO
   MeshList meshes;                                                              /// Meshes for GPU SSBO

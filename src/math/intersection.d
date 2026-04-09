@@ -20,6 +20,12 @@ struct Intersection{
   alias intersects this;
 }
 
+/** Compute the XZ position where a ray intersects a horizontal plane at height y */
+float[3] rayAtY(float[3][2] ray, float y) {
+  float t = (y - ray[0].y) / ray[1].y;
+  return [ray[0].x + ray[1].x * t, y, ray[0].z + ray[1].z * t];
+}
+
 /** Compute the intersection between a ray and a bounding box
  */
 @nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box, size_t instance = 0) {
