@@ -36,7 +36,7 @@ class TaskThread : Thread {
           if (path.isTexture()) {
             auto fp = fixPath(toStringz(path));
             auto surface = IMG_Load(fp);
-            if (SDL_GetPixelFormatDetails(surface.format).bits_per_pixel != 32) { surface.toRGBA(verbose); }
+            if (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel < 4) { surface.toRGBA(verbose); }
             auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);
             main.send(texture, mytid);
           } else if(path.isOpenAsset()) {
