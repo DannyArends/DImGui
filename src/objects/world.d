@@ -50,12 +50,14 @@ enum float NOISE_SCALE = 0.05f;
 
 struct ChunkData {
   int[3] coord;
+  TileType[] tiles;
   Vertex[] vertices;
   uint[] indices;
 }
 
 struct Chunk {
   int[3] coord;
+  TileType[] tiles;
   bool dirty = false;
   Geometry geometry;
   alias geometry this;
@@ -63,12 +65,14 @@ struct Chunk {
 
 pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileType[] saved = null, int[3] coord) nothrow {
   ChunkData data = ChunkData(coord);
+  data.tiles.length = wd.chunkSize * wd.chunkHeight * wd.chunkSize;
   int i = 0;
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int y = 0; y < wd.chunkHeight; y++) {
       for (int x = 0; x < wd.chunkSize; x++, i++) {
         auto wc = wd.worldCoord(coord, [x,y,z]);
         TileType tile = (saved.length > 0) ? saved[i] : wd.getTile(wc);
+        data.tiles[i] = tile;
         if (tile == TileType.None) continue;
         float[3] p = wd.worldPos(wc);
         uint vi = cast(uint)data.vertices.length;
@@ -87,7 +91,7 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
 
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.vertices.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
-  Chunk chunk = Chunk(data.coord);
+  Chunk chunk = Chunk(data.coord, data.tiles);
   chunk.geometry = new Geometry();
   chunk.geometry.vertices = data.vertices;
   chunk.geometry.indices  = data.indices;
@@ -106,17 +110,7 @@ void finalizeChunk(ref App app, ChunkData data) {
 }
 
 void saveChunk(ref App app, int[3] coord) {
-  TileType[] tiles;
-  tiles.length = app.world.chunkSize * app.world.chunkHeight * app.world.chunkSize;
-  int i = 0;
-  for (int z = 0; z < app.world.chunkSize; z++) {
-    for (int y = 0; y < app.world.chunkHeight; y++) {
-      for (int x = 0; x < app.world.chunkSize; x++) {
-        tiles[i++] = getTile(cast(immutable(WorldData))app.world.data, app.world.worldCoord([coord[0],0,coord[2]], [x,y,z]));
-      }
-    }
-  }
-  writeFile(app.world.chunkPath(coord), cast(char[])tiles);
+  writeFile(app.world.chunkPath(coord), cast(char[])app.world.chunks[coord].tiles);
 }
 
 TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
