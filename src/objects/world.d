@@ -6,163 +6,50 @@
 import engine;
 
 import geometry;
-import io : ensureWorldDir, writeFile, fixPath, readFile, fsize;
-import noise : fbm;
-import textures : mapTextures;
-import tileatlas : TileT, tileData, tileUV;
-import vector : vAdd, vMul;
-
-enum float NOISE_SCALE = 0.05f;
-
-@nogc pure TileType heightToTile(float h, float t) nothrow {
-  if (h < 0.05f) return TileType.Lava;
-  if (h < 0.15f){ TileType[2] variants = [TileType.Stone, TileType.Gravel]; return variants[cast(uint)(t * 2) % 2]; }
-  if (h < 0.25f){ TileType[2] variants = [TileType.Sand01, TileType.Sand02]; return variants[cast(uint)(t * 2) % 2]; }
-  if (h < 0.35f){ TileType[3] variants = [TileType.Gravel, TileType.Sand02, TileType.Grass01]; return variants[cast(uint)(t * 3) % 3]; }
-  if (h < 0.50f){ TileType[3] variants = [TileType.Grass01, TileType.Grass02, TileType.Grass03]; return variants[cast(uint)(t * 3) % 3]; }
-  if (h < 0.65f){ TileType[2] variants = [TileType.Forest01, TileType.Forest02]; return variants[cast(uint)(t * 2) % 2]; }
-  if (h < 0.80f) return TileType.Stone;
-  if (h < 0.90f) return TileType.Ice01;
-  return TileType.Snow;
-}
-
-@nogc pure float[2] noiseHT(int x, int z, const int[2] seed) nothrow {
-  return [fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[0]),
-          fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[1])];
-}
-
-@nogc pure TileType getTile(immutable(WorldData) wd, const int[3] wc) nothrow {
-  auto ht = noiseHT(wc[0], wc[2], wd.seed);
-  int surface = cast(int)(ht[0] * (wd.chunkHeight - 1));
-  if (wc[1] > surface) return TileType.None;
-  if (wc[1] == 0) return TileType.Lava;
-  if (wc[1] < surface) return TileType.Stone;
-  return heightToTile(ht[0], ht[1]);
-}
-
-@nogc pure int[3] worldCoord(immutable(WorldData) wd, int[3] coord, int[3] local) nothrow {
-  return coord.vMul([wd.chunkSize, wd.chunkHeight, wd.chunkSize]).vAdd(local);
-}
-
-@nogc pure float[3] worldPos(immutable(WorldData) wd, int[3] wc) nothrow {
-  return [wc[0] * wd.tileSize, wc[1] * wd.tileHeight, wc[2] * wd.tileSize];
-}
-
-struct ChunkData {
-  int[3] coord;
-  TileType[] tiles;
-  Vertex[] vertices;
-  uint[] indices;
-}
-
-struct Chunk {
-  int[3] coord;
-  TileType[] tiles;
-  bool dirty = false;
-  Geometry geometry;
-  alias geometry this;
-}
-
-pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileType[] saved = null, int[3] coord) nothrow {
-  ChunkData data = ChunkData(coord);
-  data.tiles.length = wd.chunkSize * wd.chunkHeight * wd.chunkSize;
-  int i = 0;
-  for (int z = 0; z < wd.chunkSize; z++) {
-    for (int y = 0; y < wd.chunkHeight; y++) {
-      for (int x = 0; x < wd.chunkSize; x++, i++) {
-        auto wc = wd.worldCoord(coord, [x,y,z]);
-        TileType tile = (saved.length > 0) ? saved[i] : wd.getTile(wc);
-        data.tiles[i] = tile;
-        if (tile == TileType.None) continue;
-        float[3] p = wd.worldPos(wc);
-        uint vi = cast(uint)data.vertices.length;
-        data.vertices ~= [
-          Vertex([p[0]+wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tileData[tile].name, true,  false), [1,1,1,1]),
-          Vertex([p[0]-wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(tileData[tile].name, true,  true),  [1,1,1,1]),
-          Vertex([p[0]-wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tileData[tile].name, false, true),  [1,1,1,1]),
-          Vertex([p[0]+wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(tileData[tile].name, false, false), [1,1,1,1]),
-        ];
-        data.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
-      }
-    }
-  }
-  return data;
-}
-
-void finalizeChunk(ref App app, ChunkData data) {
-  if(data.coord in app.world.chunks) {
-    app.world.chunks[data.coord].geometry.deAllocate = true;  // out with the old
-  }
-  if (data.vertices.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
-  Chunk chunk = Chunk(data.coord, data.tiles);
-  chunk.geometry = new Geometry();
-  chunk.geometry.vertices = data.vertices;
-  chunk.geometry.indices  = data.indices;
-  chunk.geometry.instances = [Instance()];
-  chunk.geometry.meshes["Chunk"] = Mesh([0, cast(uint)chunk.geometry.vertices.length]);
-  chunk.geometry.name = (){ return "Chunk"; };
-  chunk.geometry.texture("3DTextures");
-  chunk.geometry.computeNormals(true);
-  chunk.geometry.isSelectable = false;
-  chunk.geometry.position([0.0f, app.world.yOffset, 0.0f]);
-  app.mapTextures(chunk.geometry);
-
-  app.objects ~= chunk.geometry;
-  app.world.chunks[data.coord] = chunk;
-  app.world.pendingChunks.remove(data.coord);
-}
-
-void setTile(ref App app, int[3] tile, TileType newType) {
-  int[3] coord = [cast(int)floor(tile[0] / cast(float)app.world.chunkSize), 0, cast(int)floor(tile[2] / cast(float)app.world.chunkSize)];
-  if(coord !in app.world.chunks) return;
-
-  int[3] local = [tile[0] - coord[0] * app.world.chunkSize, tile[1], tile[2] - coord[2] * app.world.chunkSize];
-  int idx = local[2] * app.world.chunkHeight * app.world.chunkSize + local[1] * app.world.chunkSize + local[0];
-
-  app.world.chunks[coord].tiles[idx] = newType;
-  app.world.chunks[coord].dirty = true;
-  app.saveChunk(coord);
-
-  // Trigger remesh
-  app.world.pendingChunks[coord] = true;  // mark as rebuilding
-  app.loadChunk(coord);
-}
-
-void saveChunk(ref App app, int[3] coord) {
-  writeFile(app.world.chunkPath(coord), cast(char[])app.world.chunks[coord].tiles);
-}
-
-void loadChunk(ref App app, int[3] coord){
-  foreach(tid; app.concurrency.workers.keys) {
-    if (!app.concurrency.workers[tid]) {
-      app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, coord);
-      app.world.pendingChunks[coord] = true;
-      break;
-    }
-  }
-}
-
-TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
-  auto path = wd.chunkPath(coord);
-  if(!fsize(path, false)) return [];
-  return cast(TileType[])readFile(path);
-}
+import intersection : rayAtY;
+import io : ensureWorldDir, writeFile, fixPath;
+import noise : noiseHT;
+import tileatlas : tileData, tileUV, heightToTile;
+import vector : vAdd, vMul, x, y, z;
 
 struct WorldData {
   int[2] seed        = [42, 67];  /// [height seed, tile seed]
-  int renderDistance = 4;         /// Render distance used to load / evict chunks
+  int renderDistance = 2;         /// Render distance used to load / evict chunks
   float tileSize     = 1.0f;      /// Size (X & Z) of a tile
   float tileHeight   = 0.2f;      /// Y-spacing between tiles
-  int chunkSize      = 8;         /// Number of tiles (X & Z) in a chunk
+  int chunkSize      = 32;        /// Number of tiles (X & Z) in a chunk
   int chunkHeight    = 16;        /// Number of tiles (Y) in a chunk
 
-
   const(char)* chunkPath(int[3] coord) const {
-    return(toStringz(fixPath(format("data/world/%d_%d/%d_%d.bin", seed[0], seed[1], coord[0], coord[2]))));
+    return(toStringz(fixPath(format("data/world/%d_%d/%d_%d.bin", seed[0], seed[1], coord.x, coord.z))));
   }
+  int[3] localCoord(int[3] tile) const {
+    auto coord = chunkCoord(tile);
+    return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
+  }
+  int[3][] visibleChunks(int[3] pc) const {
+    int[3][] coords;
+    for (int cz = pc.z - renderDistance; cz <= pc.z + renderDistance; cz++) {
+      for (int cx = pc.x - renderDistance; cx <= pc.x + renderDistance; cx++) { coords ~= [cx, 0, cz]; }
+    }
+    return coords;
+  }
+  @nogc pure TileType getTile(const int[3] wc) const nothrow {
+    auto ht = noiseHT(wc.x, wc.z, seed);
+    int surface = cast(int)(ht[0] * (chunkHeight - 1));
+    if (wc.y > surface) return TileType.None;
+    if (wc.y == 0) return TileType.Lava;
+    if (wc.y < surface) return TileType.Stone;
+    return heightToTile(ht[0], ht[1]);
+  }
+  @nogc pure int tileIndex(int[3] local) const nothrow { return(local.z * chunkHeight * chunkSize + local.y * chunkSize + local.x); }
+  @nogc pure int[3] tileCoord(int i) const nothrow { return [i % chunkSize, (i / chunkSize) % chunkHeight, i / (chunkSize * chunkHeight)];}
+  @property pure @nogc int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property pure @nogc float halfTile() const nothrow { return tileSize * 0.5f; }
   @property pure @nogc float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
+  int[3] chunkCoord(int[3] tile) const { return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; }
+  @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
+  @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
 }
 
 struct World {
@@ -176,25 +63,20 @@ struct World {
 
   int[3] surfaceTile(int tx, int tz) { return [tx, cast(int)(noiseHT(tx, tz, seed)[0] * (chunkHeight - 1)), tz]; }
 
-  int[3] pickTile(float[3] rayOrigin, float[3] rayDir) {
-    float t  = (yOffset - rayOrigin[1]) / rayDir[1];
-    float wx = rayOrigin[0] + rayDir[0] * t;
-    float wz = rayOrigin[2] + rayDir[2] * t;
+  // Fixed-point iteration: project ray to estimated surface Y, refine X/Z, repeat.
+  // Converges because terrain height varies smoothly — 4 iterations is sufficient.
+  int[3] pickTile(float[3][2] ray) {
+    float[3] p = rayAtY(ray, yOffset);
     int[3] tile;
-    // Fixed-point iteration: project ray to estimated surface Y, refine X/Z, repeat.
-    // Converges because terrain height varies smoothly — 4 iterations is sufficient.
     for(int i = 0; i < 4; i++) {
-      tile = surfaceTile(cast(int)round(wx / tileSize), cast(int)round(wz / tileSize));
-      float surfY = tile[1] * tileHeight + yOffset;
-      t = (surfY - rayOrigin[1]) / rayDir[1];
-      wx = rayOrigin[0] + rayDir[0] * t;
-      wz = rayOrigin[2] + rayDir[2] * t;
+      tile = surfaceTile(cast(int)round(p[0] / tileSize), cast(int)round(p[2] / tileSize));
+      p = rayAtY(ray, tile[1] * tileHeight + yOffset);
     }
     return tile;
   }
 
   void updateHighlight(ref App app, int[3] tile) {
-    float[3] p = worldPos(cast(immutable(WorldData))data, tile);
+    float[3] p = data.worldPos(tile);
 
     if(highlight is null) {
       highlight = new Outline();
@@ -205,28 +87,54 @@ struct World {
     selectedTile = tile;
   }
 
+  void saveChunk(int[3] coord) { writeFile(chunkPath(coord), cast(char[])chunks[coord].tiles); }
+
   void clear(ref App app) {
-    foreach (coord; chunks.keys) { if (chunks[coord].geometry !is null) { chunks[coord].geometry.deAllocate = true; } }
+    foreach (coord; chunks.keys) { if (chunks[coord] !is null) { chunks[coord].deAllocate = true; } }
     chunks.clear();
     pendingChunks.clear();
   }
 }
 
-void updateWorld(ref App app, float[3] lookat) {
-  app.ensureWorldDir();
-  int[3] pc = [ cast(int)(floor(lookat[0] / (app.world.chunkWorldSize))), 0, cast(int)(floor(lookat[2] / (app.world.chunkWorldSize))) ];
-  // Load new chunks within render distance
-  for (int cz = pc[2]- app.world.renderDistance; cz <= pc[2]+ app.world.renderDistance; cz++) {
-    for (int cx = pc[0]- app.world.renderDistance; cx <= pc[0]+ app.world.renderDistance; cx++) {
-      int[3] coord = [cx, 0, cz];
-      if (coord !in app.world.chunks && coord !in app.world.pendingChunks) { app.loadChunk(coord); }
+void setTile(ref App app, int[3] tile, TileType newType) {
+  int[3] coord = app.world.chunkCoord(tile);
+  if(coord !in app.world.chunks) return;
+
+  int idx = app.world.tileIndex(app.world.localCoord(tile));
+  app.world.chunks[coord].tiles[idx] = newType;
+  app.world.chunks[coord].dirty = true;
+  app.world.saveChunk(coord);
+
+  app.world.pendingChunks[coord] = true;  /// Trigger remesh
+  app.loadChunk(coord);
+}
+
+
+
+void loadChunk(ref App app, int[3] coord){
+  foreach(tid; app.concurrency.workers.keys) {
+    if (!app.concurrency.workers[tid]) {
+      app.concurrency.workers[tid] = true;
+      tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, coord);
+      app.world.pendingChunks[coord] = true;
+      break;
     }
   }
+}
+
+void updateWorld(ref App app, float[3] lookat) {
+  int[3] pc = app.world.chunkCoord([cast(int)floor(lookat[0] / app.world.tileSize), 0, cast(int)floor(lookat[2] / app.world.tileSize)]);
+
+  // Load new chunks within render distance
+  foreach(coord; app.world.visibleChunks(pc)) {
+    if (coord !in app.world.chunks && coord !in app.world.pendingChunks) app.loadChunk(coord);
+  }
+
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > app.world.renderDistance || abs(coord[2] - pc[2]) > app.world.renderDistance) {
-      if (app.world.chunks[coord].dirty) app.saveChunk(coord);
-      if (app.world.chunks[coord].geometry !is null) { app.world.chunks[coord].geometry.deAllocate = true; }
+      if (app.world.chunks[coord].dirty) app.world.saveChunk(coord);
+      if (app.world.chunks[coord] !is null) { app.world.chunks[coord].deAllocate = true; }
       app.world.chunks.remove(coord);
     }
   }

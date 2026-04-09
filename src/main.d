@@ -12,11 +12,12 @@ import devices : createLogicalDevice;
 import events : handleEvents, sdlEventsFilter;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
-import scene : createScene;
-import shadow : createShadowMap;
+import io: ensureWorldDir;
 import imgui : initializeImGui;
 import instance : createInstance;
+import scene : createScene;
 import sdl : initializeSDL, SDL_WINDOW_MINIMIZED;
+import shadow : createShadowMap;
 import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
 import reflection : createReflectionContext;
 import sampler : createSampler;
@@ -71,6 +72,7 @@ void run(string[] args = null) {
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
+  app.ensureWorldDir();                                         /// Ensure the world directory exists
   app.createScene();                                            /// Create our scene with geometries
   app.initializeAsync();                                        /// Start Async loading objects and textures
 

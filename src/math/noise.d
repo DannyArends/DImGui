@@ -40,3 +40,10 @@ import engine;
   }
   return(clamp(value, 0.0f, 1.0f));
 }
+
+enum float NOISE_SCALE = 0.05f;
+
+@nogc pure float[2] noiseHT(int x, int z, const int[2] seed) nothrow {
+  return [fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[0]), fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[1])];
+}
+

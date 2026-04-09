@@ -39,6 +39,18 @@ shared static this() {
   ];
 }
 
+@nogc pure TileType heightToTile(float h, float t) nothrow {
+  if (h < 0.05f) return TileType.Lava;
+  if (h < 0.15f){ TileType[2] variants = [TileType.Stone, TileType.Gravel]; return variants[cast(uint)(t * 2) % 2]; }
+  if (h < 0.25f){ TileType[2] variants = [TileType.Sand01, TileType.Sand02]; return variants[cast(uint)(t * 2) % 2]; }
+  if (h < 0.35f){ TileType[3] variants = [TileType.Gravel, TileType.Sand02, TileType.Grass01]; return variants[cast(uint)(t * 3) % 3]; }
+  if (h < 0.50f){ TileType[3] variants = [TileType.Grass01, TileType.Grass02, TileType.Grass03]; return variants[cast(uint)(t * 3) % 3]; }
+  if (h < 0.65f){ TileType[2] variants = [TileType.Forest01, TileType.Forest02]; return variants[cast(uint)(t * 2) % 2]; }
+  if (h < 0.80f) return TileType.Stone;
+  if (h < 0.90f) return TileType.Ice01;
+  return TileType.Snow;
+}
+
 struct TileAtlas {
   int[2][2][string] uv;
   uint size;

@@ -92,12 +92,6 @@ class Geometry {
   string function() name;
 }
 
-struct Geometries {
-  Geometry[] array;
-  bool loaded = false; /// Are we loading a texture a-sync ?
-  alias array this;
-}
-
 void logDraw(T)(ref App app, ref T object) {
   if(!app.trace) return;
   foreach(ref inst; object.instances) {

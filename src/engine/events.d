@@ -112,7 +112,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       obj.box.setColor(Colors.yellowgreen);
       obj.window = true;
     }else{
-      app.world.updateHighlight(app, app.world.pickTile(ray[0], ray[1]));
+      app.world.updateHighlight(app, app.world.pickTile(ray));
     }
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){
@@ -131,7 +131,7 @@ void removeGeometry(ref App app) {
   foreach(i, ref object; app.objects) {
     if(object.deAllocate) { app.deAllocate(object); idx ~= i; }
   }
-  foreach(i; idx.reverse) { app.objects.array = app.objects.array.remove(i); }
+  foreach(i; idx.reverse) { app.objects = app.objects.remove(i); }
 }
 
 /** Handles all ImGui IO and SDL events

@@ -8,10 +8,10 @@ import engine;
 import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
 import bone : mergeBones;
 import buffer : destroyStagingBuffer;
+import chunk : buildChunkData, loadChunkTiles, finalizeChunk;
 import io : dir, fixPath;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
-import world : buildChunkData, loadChunkTiles, finalizeChunk;
 
 class TaskThread : Thread {
   private Tid main;
