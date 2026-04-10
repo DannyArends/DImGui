@@ -57,8 +57,11 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
 
     // Skip fully buried blocks
     bool buried = true;
-    foreach (n; wd.tileNeighbours(wc)) { if (wd.getTile(n) == TileType.None) { buried = false; break; } }
-    if (buried) continue;
+    foreach (n; wd.tileNeighbours(wc)) {
+      int[3] nc = wd.chunkCoord(n);
+      if (nc != coord) { buried = false; break; }  // always show cross-chunk faces
+      if (wd.getTile(n) == TileType.None) { buried = false; break; }
+    }
 
     float[3] p = wd.worldPos(wc);
     float ts = wd.tileSize, th = wd.tileHeight;
