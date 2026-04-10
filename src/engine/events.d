@@ -92,25 +92,27 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
 /** Handle mouse events
  */
 void handleMouseEvents(ref App app, SDL_Event e) {
-  if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN){
-    if (e.button.button == SDL_BUTTON_LEFT) { 
+  if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+    if (e.button.button == SDL_BUTTON_LEFT) {
       app.camera.isdrag[0] = true;
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
   }
-  if(e.type == SDL_EVENT_MOUSE_BUTTON_UP){
-    if (e.button.button == SDL_BUTTON_LEFT) { app.camera.isdrag[0] = false; }
-    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
-    auto ray = app.camera.castRay(e.button.x, e.button.y);
-    auto hits = app.getHits(ray, app.showRays);
-    if (hits.length > 0) {
-      auto best = app.pickWorld(hits, ray);
-      if (!best.intersects) {
-        auto obj = app.objects[hits[0].idx[0]];
-        obj.box.setColor(Colors.yellowgreen);
-        obj.window = true;
+  if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+    if (e.button.button == SDL_BUTTON_LEFT) {
+      app.camera.isdrag[0] = false; 
+      auto ray = app.camera.castRay(e.button.x, e.button.y);
+      auto hits = app.getHits(ray, app.showRays);
+      if (hits.length > 0) {
+        auto best = app.pickWorld(hits, ray);
+        if (!best.intersects) {
+          auto obj = app.objects[hits[0].idx[0]];
+          obj.box.setColor(Colors.yellowgreen);
+          obj.window = true;
+        }
       }
     }
+    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){
     if(app.camera.isdrag[1]) app.camera.drag(e.motion.xrel, e.motion.yrel);
@@ -161,9 +163,6 @@ void handleEvents(ref App app) {
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
-
-  // Remove stale geometry
-  app.removeGeometry();
 }
 
 /* sdlEventsFilter returns 1 will have the event go into the SDL_PollEvent queue, 0 if have handled 
