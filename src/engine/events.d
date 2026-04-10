@@ -80,7 +80,7 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
     auto intersection = ray.intersects(app.objects[x].box);   // Compute the intersection
     app.objects[x].window = false;
     if (intersection.intersects) {
-      intersection.idx = cast(uint)x;
+      intersection.idx[0] = x;
       app.objects[x].box.setColor(Colors.paleturquoise);
       app.gui.showObjects = true;
       hits ~= intersection;
@@ -108,7 +108,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     auto ray = app.camera.castRay(e.button.x, e.button.y);
     auto hits = app.getHits(ray, app.showRays);
     if (hits.length > 0) {
-      auto obj = app.objects[hits[0].idx];
+      auto obj = app.objects[hits[0].idx[0]];
       obj.box.setColor(Colors.yellowgreen);
       obj.window = true;
     }else{
