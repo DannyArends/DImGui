@@ -15,9 +15,7 @@ import line : createLine;
 import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
-import vector : vAdd, vMul;
 import window: createOrResizeWindow;
-import world: setTile;
 
 /** Handle keyboard events
  */

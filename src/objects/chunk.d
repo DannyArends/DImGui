@@ -4,13 +4,14 @@
  */
 import engine;
 
-import geometry : texture, position, computeBoundingBox;
+import geometry : texture, computeBoundingBox;
 import io : readFile, fsize;
 import intersection : intersects;
 import textures : mapTextures;
-import tileatlas : tileData, tileUVTransform, heightToTile;
+import tileatlas : tileData, tileUVTransform;
 import matrix : translate, scale, multiply;
-import world:setTile;
+import world : setTile;
+
 /** Holds raw tile data and instanced rendering data for a chunk
  */
 struct ChunkData {
