@@ -47,11 +47,22 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     data.tiles[i] = (saved.length > 0) ? saved[i] : wd.getTile(wc);
     if (data.tiles[i] == TileType.None) continue;
+
+    // Skip fully buried blocks
+    int[3][6] neighbours = [
+      [wc[0]+1, wc[1], wc[2]], [wc[0]-1, wc[1], wc[2]],
+      [wc[0], wc[1]+1, wc[2]], [wc[0], wc[1]-1, wc[2]],
+      [wc[0], wc[1], wc[2]+1], [wc[0], wc[1], wc[2]-1]
+    ];
+    bool buried = true;
+    foreach (n; neighbours) { if (wd.getTile(n) == TileType.None) { buried = false; break; } }
+    if (buried) continue;
+
     float[3] p = wd.worldPos(wc);
     float ts = wd.tileSize, th = wd.tileHeight;
     Instance inst;
     inst.uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
-    inst.matrix = translate([p[0], p[1] + wd.yOffset, p[2]]).multiply(scale([ts, th, ts]));
+    inst.matrix = translate([p[0], p[1] + wd.yOffset - th * 0.5f, p[2]]).multiply(scale([ts, th, ts]));
     data.tileInstances ~= inst;
     data.tileIndices ~= i;
   }

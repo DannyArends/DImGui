@@ -15,11 +15,11 @@ import vector : vAdd, vMul, x, y, z;
 struct WorldData {
   int[2] seed        = [42, 67];  /// [height seed, tile seed]
   int renderDistance = 2;         /// Render distance used to load / evict chunks
-  float tileSize     = 1.0f;      /// Size (X & Z) of a tile
-  float tileHeight   = 0.2f;      /// Y-spacing between tiles
+  float tileSize     = 0.5f;      /// Size (X & Z) of a tile
+  float tileHeight   = 0.5f;      /// Y-spacing between tiles
   int chunkSize      = 32;        /// Number of tiles (X & Z) in a chunk
   int chunkHeight    = 16;        /// Number of tiles (Y) in a chunk
-  float yOffset = -6.0f;          /// Global world Y-offset
+  float yOffset      = -8.0f;     /// Global world Y-offset
 
   const(char)* chunkPath(int[3] coord) const {
     return(toStringz(fixPath(format("data/world/%d_%d/%d_%d.bin", seed[0], seed[1], coord.x, coord.z))));
@@ -65,7 +65,8 @@ struct World {
       highlight = new Outline();
       app.objects ~= highlight;
     }
-    highlight.position([p.x, p.y + yOffset + tileHeight + 0.01f, p.z]);
+    highlight.instances[0].matrix = Matrix();  // reset to identity first
+    highlight.position([p.x, p.y + yOffset, p.z]);
     highlight.scale([tileSize, tileSize, tileSize]);
     selectedTile = tile;
   }
