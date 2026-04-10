@@ -16,7 +16,7 @@ struct Intersection{
   float[3] intersectionOut;   /// Point of intersection out
   float tmin;                 /// Min Distance of intersection
   float tmax;                 /// Max Distance of intersection
-  uint idx;                   /// Index of intersected object
+  size_t[2] idx;                /// Index & Instance of intersected object
   alias intersects this;
 }
 
@@ -64,9 +64,14 @@ float[3] rayAtY(float[3][2] ray, float y) {
   return(i);
 }
 
-@nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box, size_t instance = 0) {
-  Intersection i;
-  if (instance >= box.instances.length){ assert(0, "No BoundingBox Instance"); return i; }
-  return(ray.intersects(box.bmin(instance), box.bmax(instance)));
+@nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box) {
+  for(size_t i = 0; i < box.instances.length; i++) {
+    auto intersection = ray.intersects(box.bmin(i), box.bmax(i));
+    if(intersection.intersects){
+      intersection.idx[1] = i;
+      return(intersection);
+    }
+  }
+  return(Intersection.init);
 }
 

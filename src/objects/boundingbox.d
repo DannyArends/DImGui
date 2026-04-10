@@ -47,9 +47,6 @@ class BoundingBox : Geometry {
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
   };
 
-  @property @nogc pure float[3] lmin() nothrow const { return(vertices[0].position); }
-  @property @nogc pure float[3] lmax() nothrow const { return(vertices[6].position); }
-
   @property @nogc pure float[3] scale() nothrow const {
     float[3] scale = vertices[0].position[] - vertices[6].position[];
     return(scale);
@@ -78,10 +75,10 @@ class BoundingBox : Geometry {
   }
 
   @nogc pure void setDimensions(float[3] min, float[3] max) nothrow {
-    vertices[0].position = [lmin[0], lmin[1], lmin[2]]; vertices[1].position = [lmax[0], lmin[1], lmin[2]];
-    vertices[2].position = [lmax[0], lmax[1], lmin[2]]; vertices[3].position = [lmin[0], lmax[1], lmin[2]];
-    vertices[4].position = [lmin[0], lmin[1], lmax[2]]; vertices[5].position = [lmax[0], lmin[1], lmax[2]];
-    vertices[6].position = [lmax[0], lmax[1], lmax[2]]; vertices[7].position = [lmin[0], lmax[1], lmax[2]];
+    vertices[0].position = [min[0], min[1], min[2]]; vertices[1].position = [max[0], min[1], min[2]];
+    vertices[2].position = [max[0], max[1], min[2]]; vertices[3].position = [min[0], max[1], min[2]];
+    vertices[4].position = [min[0], min[1], max[2]]; vertices[5].position = [max[0], min[1], max[2]];
+    vertices[6].position = [max[0], max[1], max[2]]; vertices[7].position = [min[0], max[1], max[2]];
   }
 
   @property @nogc pure float[3] center() nothrow const {
