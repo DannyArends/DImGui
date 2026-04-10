@@ -15,9 +15,9 @@ import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
 /** An instance of a Geometry
  */
 struct Instance {
-  uint[2] meshdef = [0, 0];  // Start, End
-  Matrix matrix;
-  float[4] uvTransform = [0.0f, 0.0f, 1.0f, 1.0f];  // [offsetU, offsetV, scaleU, scaleV]
+  uint[2] meshdef = [0, 0];                     /// Mesh Definition
+  float[4] uvT = [0.0f, 0.0f, 1.0f, 1.0f];      /// UV transform
+  Matrix matrix = Matrix.init;                  /// Instance matrix
   alias matrix this;
 }
 
