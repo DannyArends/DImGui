@@ -24,17 +24,13 @@ import world: setTile;
 void handleKeyEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_KEY_DOWN) {
     auto symbol = e.key.key;
-    if(symbol == SDLK_PAGEUP){ app.camera.move([ 0.0f,  1.0f, 0.0f]); }
-    if(symbol == SDLK_PAGEDOWN){ app.camera.move([ 0.0f,  -1.0f, 0.0f]); }
-    if(symbol == SDLK_W || symbol == SDLK_UP){ app.camera.move(app.camera.forward()); }
-    if(symbol == SDLK_S || symbol == SDLK_DOWN){ app.camera.move(app.camera.back());  }
-    if(symbol == SDLK_A || symbol == SDLK_LEFT){ app.camera.move(app.camera.left());  }
-    if(symbol == SDLK_D || symbol == SDLK_RIGHT){ app.camera.move(app.camera.right());  }
-    if(symbol == SDLK_F12) app.saveScreenshot();
-if(symbol == SDLK_F) {
-  if(app.world.selectedTile[0] != int.min)
-    app.setTile(app.world.selectedTile, TileType.Lava);
-}
+    if(symbol == SDLK_PAGEUP) { app.camera.move([ 0.0f,  1.0f, 0.0f]); }
+    if(symbol == SDLK_PAGEDOWN) { app.camera.move([ 0.0f,  -1.0f, 0.0f]); }
+    if(symbol == SDLK_W || symbol == SDLK_UP) { app.camera.move(app.camera.forward()); }
+    if(symbol == SDLK_S || symbol == SDLK_DOWN) { app.camera.move(app.camera.back());  }
+    if(symbol == SDLK_A || symbol == SDLK_LEFT) { app.camera.move(app.camera.left());  }
+    if(symbol == SDLK_D || symbol == SDLK_RIGHT) { app.camera.move(app.camera.right());  }
+    if(symbol == SDLK_F12) { app.saveScreenshot(); }
   }
 }
 
