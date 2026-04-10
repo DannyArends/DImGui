@@ -108,7 +108,7 @@ void checkAsync(ref App app) {
   });
   // Accept any incoming chunks, and submit for finalization on GPU
   receiveTimeout(dur!"msecs"(-1), (immutable(ChunkData) data, Tid tid) {
-    if(app.trace) SDL_Log("Received chunk [%d, %d] verts=%d", data.coord[0], data.coord[2], data.vertices.length);
+    SDL_Log("Received chunk [%d, %d] tiles=%d", data.coord[0], data.coord[2], data.tileInstances.length);
     app.concurrency.workers[tid] = false;
     app.finalizeChunk(cast(ChunkData)data);
   });

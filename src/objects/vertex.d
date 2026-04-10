@@ -27,8 +27,8 @@ struct Vertex {
     return bindingDescription;
   }
 
-  @nogc static VkVertexInputAttributeDescription[12] getRenderDescriptions() nothrow {
-    VkVertexInputAttributeDescription[12] attributeDescriptions = [
+  @nogc static VkVertexInputAttributeDescription[13] getRenderDescriptions() nothrow {
+    VkVertexInputAttributeDescription[13] attributeDescriptions = [
       { binding: VERTEX, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.position.offsetof },
       { binding: VERTEX, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.color.offsetof },
       { binding: VERTEX, location: 2, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.normal.offsetof },
@@ -38,10 +38,11 @@ struct Vertex {
       { binding: VERTEX, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
 
       { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32_UINT, offset: Instance.meshdef.offsetof },
-      { binding: INSTANCE, location: 8, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof },
-      { binding: INSTANCE, location: 9, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 4 * float.sizeof },
-      { binding: INSTANCE, location: 10, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 8 * float.sizeof },
-      { binding: INSTANCE, location: 11, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 12 * float.sizeof },
+      { binding: INSTANCE, location: 8, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.uvT.offsetof },
+      { binding: INSTANCE, location: 9, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof },
+      { binding: INSTANCE, location: 10, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 4 * float.sizeof },
+      { binding: INSTANCE, location: 11, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 8 * float.sizeof },
+      { binding: INSTANCE, location: 12, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Instance.matrix.offsetof + 12 * float.sizeof }
     ];
     return attributeDescriptions;
   }

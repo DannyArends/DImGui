@@ -4,29 +4,36 @@
  */
 import engine;
 
-import geometry : texture, computeNormals, position;
+import geometry : texture, position;
 import io : readFile, fsize;
 import textures : mapTextures;
-import tileatlas : tileData, tileUV, heightToTile;
+import tileatlas : tileData, tileUVTransform, heightToTile;
+import matrix : translate, scale, multiply;
+import square : Square;
 
 struct ChunkData {
   int[3] coord;
   TileType[] tiles;
-  Vertex[] vertices;
-  uint[] indices;
+  Instance[] tileInstances;
+  int[] tileIndices;
 }
 
-class Chunk : Geometry {
+class Block : Cube {
+  this() { super(); name = (){ return "Block"; }; }
+}
+
+class Chunk : Cube {
   ChunkData data;
+  Geometry block;
   bool dirty = false;
   alias data this;
 
   this(ChunkData cd) {
+    super();
     data = cd;
-    vertices = cd.vertices;
-    indices = cd.indices;
     instances = [Instance()];
-    meshes["Chunk"] = Mesh([0, cast(uint)vertices.length]);
+    block = new Block();
+    block.instances = cd.tileInstances;
     name = (){ return "Chunk"; };
   }
 }
@@ -39,15 +46,12 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
     data.tiles[i] = (saved.length > 0) ? saved[i] : wd.getTile(wc);
     if (data.tiles[i] == TileType.None) continue;
     float[3] p = wd.worldPos(wc);
-    uint vi = cast(uint)data.vertices.length;
-    string name = tileData[data.tiles[i]].name;
-    data.vertices ~= [
-      Vertex([p[0]+wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(name, true, false)),
-      Vertex([p[0]-wd.halfTile, p[1], p[2]-wd.halfTile], ta.tileUV(name, true, true)),
-      Vertex([p[0]-wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(name, false, true)),
-      Vertex([p[0]+wd.halfTile, p[1], p[2]+wd.halfTile], ta.tileUV(name, false, false))
-    ];
-    data.indices ~= [vi+0, vi+2, vi+1, vi+0, vi+3, vi+2];
+    float ts = wd.tileSize, th = wd.tileHeight;
+    Instance inst;
+    inst.uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
+    inst.matrix = translate([p[0], p[1], p[2]]).multiply(scale([ts, th, ts]));
+    data.tileInstances ~= inst;
+    data.tileIndices ~= i;
   }
   return data;
 }
@@ -60,15 +64,28 @@ TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
 
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
-  if (data.coord in app.world.chunks) { app.world.chunks[data.coord].deAllocate = true; }
-  if (data.vertices.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
-  Geometry chunk = new Chunk(data);
-  chunk.texture("3DTextures");
-  chunk.computeNormals(true);
-  chunk.position([0.0f, app.world.yOffset, 0.0f]);
-  app.mapTextures(chunk);
+  if (data.coord in app.world.chunks) {
+    app.world.chunks[data.coord].block.deAllocate = true;
+    app.world.chunks[data.coord].deAllocate = true;
+  }
+  if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
 
+  Chunk chunk = new Chunk(data);
+
+  float sx = app.world.chunkWorldSize;
+  float sy = app.world.chunkHeight * app.world.tileHeight;
+  float cx = data.coord[0] * sx + sx * 0.5f;
+  float cz = data.coord[2] * sx + sx * 0.5f;
+  float cy = sy * 0.5f + app.world.yOffset;
+  chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
+
+  chunk.block.texture("3DTextures");
+  chunk.block.position([0.0f, app.world.yOffset, 0.0f]);
+  app.mapTextures(chunk.block);
+
+  app.objects ~= chunk.block;
   app.objects ~= chunk;
-  app.world.chunks[data.coord] = cast(Chunk)(chunk);
+  app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
 }
+

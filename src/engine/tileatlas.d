@@ -67,6 +67,12 @@ struct TileAtlas {
   return [u, v];
 }
 
+@nogc pure float[4] tileUVTransform(const TileAtlas ta, string name) nothrow {
+  float[2] tl = ta.tileUV(name, false, false);
+  float[2] br = ta.tileUV(name, true,  true);
+  return [tl[0], tl[1], br[0] - tl[0], br[1] - tl[1]];
+}
+
 void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me", int size = 512, int tileSize = 64) {
   if (app.verbose) SDL_Log("createTileAtlas: %s", toStringz(folder));
  
