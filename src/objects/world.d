@@ -9,7 +9,7 @@ import geometry;
 import intersection : rayAtY;
 import io : writeFile, fixPath;
 import noise : noiseHT;
-import tileatlas : tileData, tileUV, heightToTile;
+import tileatlas : tileData, heightToTile;
 import vector : vAdd, vMul, x, y, z;
 
 struct WorldData {
@@ -39,7 +39,6 @@ struct WorldData {
   @nogc pure int tileIndex(int[3] local) const nothrow { return(local.z * chunkHeight * chunkSize + local.y * chunkSize + local.x); }
   @nogc pure int[3] tileCoord(int i) const nothrow { return [i % chunkSize, (i / chunkSize) % chunkHeight, i / (chunkSize * chunkHeight)];}
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
-  @property @nogc pure float halfTile() const nothrow { return tileSize * 0.5f; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
   @nogc pure int[3] chunkCoord(int[3] tile) const nothrow { 
     return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
