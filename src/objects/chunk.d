@@ -10,7 +10,6 @@ import intersection : intersects;
 import textures : mapTextures;
 import tileatlas : tileData, tileUVTransform, heightToTile;
 import matrix : translate, scale, multiply;
-import square : Square;
 
 struct ChunkData {
   int[3] coord;
@@ -112,7 +111,6 @@ void finalizeChunk(ref App app, ChunkData data) {
   chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
 
   chunk.block.texture("3DTextures");
-  chunk.block.position([0.0f, app.world.yOffset, 0.0f]);
   chunk.block.computeBoundingBox();
   app.mapTextures(chunk.block);
 
