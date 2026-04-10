@@ -4,7 +4,7 @@
  */
 import engine;
 
-import geometry : texture, position;
+import geometry : texture, position, computeBoundingBox;
 import io : readFile, fsize;
 import intersection : intersects;
 import textures : mapTextures;
@@ -51,7 +51,7 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
     float ts = wd.tileSize, th = wd.tileHeight;
     Instance inst;
     inst.uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
-    inst.matrix = translate([p[0], p[1], p[2]]).multiply(scale([ts, th, ts]));
+    inst.matrix = translate([p[0], p[1] + wd.yOffset, p[2]]).multiply(scale([ts, th, ts]));
     data.tileInstances ~= inst;
     data.tileIndices ~= i;
   }
@@ -64,19 +64,23 @@ TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
   return cast(TileType[])readFile(path);
 }
 
-void pickBlock(ref App app, Chunk chunk, float[3][2] ray, size_t objIdx) {
+Intersection pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
   Intersection best;
-  for (size_t j = 0; j < chunk.block.instances.length; j++) {
-    auto i = ray.intersects(chunk.block.instances[j].matrix.multiply([-0.5f, -0.5f, -0.5f]),
-                            chunk.block.instances[j].matrix.multiply([ 0.5f,  0.5f,  0.5f]),
-                            objIdx, j);
-    if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
+  foreach (ref hit; hits) {
+    auto chunk = cast(Chunk)app.objects[hit.idx[0]];
+    if (chunk is null) continue;
+    for (size_t j = 0; j < chunk.block.instances.length; j++) {
+      auto i = ray.intersects(chunk.block.box.bmin(j), chunk.block.box.bmax(j), hit.idx[0], j);
+      if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
+    }
   }
   if (best.intersects) {
+    auto chunk = cast(Chunk)app.objects[best.idx[0]];
     auto local = app.world.tileCoord(chunk.tileIndices[best.idx[1]]);
     auto wc = app.world.worldCoord(chunk.coord, local);
     app.world.updateHighlight(app, wc);
   }
+  return best;
 }
 
 void finalizeChunk(ref App app, ChunkData data) {
@@ -98,6 +102,7 @@ void finalizeChunk(ref App app, ChunkData data) {
 
   chunk.block.texture("3DTextures");
   chunk.block.position([0.0f, app.world.yOffset, 0.0f]);
+  chunk.block.computeBoundingBox();
   app.mapTextures(chunk.block);
 
   app.objects ~= chunk.block;
