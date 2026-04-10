@@ -103,8 +103,8 @@ void logDraw(T)(ref App app, ref T object) {
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
   for(size_t x = 0; x < app.objects.length; x++) {
     if(app.showBounds) {
-      app.objects[x].computeBoundingBox(app.trace);
-      app.objects[x].box.buffer(app, cmd);
+      if(app.objects[x].box is null || !app.objects[x].box.isBuffered) app.objects[x].computeBoundingBox(app.trace);
+      if(!app.objects[x].box.isBuffered) app.objects[x].box.buffer(app, cmd);
     }
     if(!app.objects[x].isBuffered) app.objects[x].buffer(app, cmd);
   }
