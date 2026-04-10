@@ -7,7 +7,7 @@ import engine;
 
 import descriptor : updateDescriptorData, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
 import images : createImage, deAllocate, transitionImageLayout, nameImageBuffer;
-import geometry : shadow, bufferGeometries;
+import geometry : shadow;
 import reflection : reflectShaders, createResources;
 import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
@@ -245,10 +245,6 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
   app.updateDescriptorData(app.shadows.shaders, app.shadows.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
   popLabel(cmd);
-
-  /*pushLabel(cmd, "Objects Buffering", Colors.lightgray);
-  app.bufferGeometries(cmd);
-  popLabel(cmd); */
 
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 

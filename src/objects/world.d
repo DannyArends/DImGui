@@ -5,11 +5,9 @@
 
 import engine;
 
-import geometry;
-import intersection : rayAtY;
 import io : writeFile, fixPath;
 import noise : noiseHT;
-import tileatlas : tileData, heightToTile;
+import tileatlas : heightToTile;
 import vector : vAdd, vMul, x, y, z;
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable

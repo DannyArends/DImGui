@@ -20,16 +20,3 @@ class Square : Geometry {
   };
 }
 
-class Outline : Square {
-  float highlightTime = 0.0f;
-
-   this() { super();
-    topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-    indices  = [0, 1, 2, 3, 0];
-    onFrame = (ref App app, ref Geometry obj, float dt) {
-      auto t = (cast(Outline)obj).highlightTime += dt;
-      obj.setColor([1.0f, (sin(t) + 1.0f) * 0.5f, 0.0f, 1.0f]);
-    };
-  };
-}
-
