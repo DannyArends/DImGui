@@ -59,6 +59,7 @@ TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
 }
 
 void finalizeChunk(ref App app, ChunkData data) {
+  if (data.coord !in app.world.pendingChunks) return;
   if (data.coord in app.world.chunks) { app.world.chunks[data.coord].deAllocate = true; }
   if (data.vertices.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
   Geometry chunk = new Chunk(data);

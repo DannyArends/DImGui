@@ -86,14 +86,11 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
     object.box.setDimensions(bounds.min, bounds.max);
     object.box.buffers[VERTEX] = false;
   }
-  if(initial || !object.buffers[INSTANCE]) { // The object instance buffer is out of date, update the BoundingBox instances
-    if(verbose) SDL_Log("Updating %s(%s) INSTANCE", toStringz(object.box.name()), toStringz(object.name()));
-    object.box.instances.length = object.instances.length;
-    for(size_t x = 0; x < object.instances.length; x++) {
-      object.box.instances[x].matrix = object.instances[x].matrix;
-    }
-    object.box.buffers[INSTANCE] = false;
+  object.box.instances.length = object.instances.length;
+  for(size_t x = 0; x < object.instances.length; x++) {
+    object.box.instances[x].matrix = object.instances[x].matrix;
   }
+  object.box.buffers[INSTANCE] = false;
 }
 
 /** Compute/Update the global scene bounds with an assimp node
