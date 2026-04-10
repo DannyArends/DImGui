@@ -73,6 +73,7 @@ class Geometry {
   }
 
   bool isVisible = true;                            /// Boolean flag
+  bool isSelectable = true;                         /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
   bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow {
