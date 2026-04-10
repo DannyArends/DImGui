@@ -156,7 +156,10 @@ void updateWorld(ref App app, float[3] lookat) {
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > app.world.renderDistance || abs(coord[2] - pc[2]) > app.world.renderDistance) {
       if (app.world.chunks[coord].dirty) app.world.saveChunk(coord);
-      if (app.world.chunks[coord] !is null) { app.world.chunks[coord].deAllocate = true; }
+      if (app.world.chunks[coord] !is null) {
+        app.world.chunks[coord].block.deAllocate = true;
+        app.world.chunks[coord].deAllocate = true; 
+      }
       app.world.chunks.remove(coord);
     }
   }

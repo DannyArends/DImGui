@@ -10,6 +10,7 @@ import io : fixPath, isfile, readFile, writeFile;
 import settingswindow : showSettingswindow;
 import sfxwindow : showSFXwindow;
 import directorywindow : showDirectoryWindow;
+import joystickwindow : showJoystickwindow;
 import fpswindow : showFPSwindow;
 import objectswindow : showObjectswindow, showObjectwindow;
 import lightswindow : showLightswindow;
@@ -217,6 +218,8 @@ ImDrawData* renderGUI(ref App app){
   ImGui_ImplSDL3_NewFrame();
   igNewFrame();
   uint font = 0;
+
+  version(Android) { app.showJoystickwindow(font); }
 
   app.showMenu(font);
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
