@@ -21,7 +21,7 @@ public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, re
 public import std.conv : to;
 public import std.format : format;
 public import std.file : exists, isFile, isDir, dirEntries, SpanMode;
-public import std.math : abs, ceil, sqrt, pow, PI, cos, sin, tan, acos, asin, atan, atan2, fmod, isFinite, isNaN;
+public import std.math : abs, ceil, sqrt, pow, PI, cos, sin, tan, acos, asin, atan, atan2, floor, fmod, isFinite, isNaN;
 public import std.path : baseName, dirName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform;
 public import std.regex : regex, matchAll;

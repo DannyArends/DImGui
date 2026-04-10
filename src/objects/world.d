@@ -27,13 +27,6 @@ struct WorldData {
     auto coord = chunkCoord(tile);
     return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
   }
-  int[3][] visibleChunks(int[3] pc) const {
-    int[3][] coords;
-    for (int cz = pc.z - renderDistance; cz <= pc.z + renderDistance; cz++) {
-      for (int cx = pc.x - renderDistance; cx <= pc.x + renderDistance; cx++) { coords ~= [cx, 0, cz]; }
-    }
-    return coords;
-  }
   @nogc pure TileType getTile(const int[3] wc) const nothrow {
     auto ht = noiseHT(wc.x, wc.z, seed);
     int surface = cast(int)(ht[0] * (chunkHeight - 1));
@@ -47,7 +40,7 @@ struct WorldData {
   @property pure @nogc int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property pure @nogc float halfTile() const nothrow { return tileSize * 0.5f; }
   @property pure @nogc float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
-  int[3] chunkCoord(int[3] tile) const { return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; }
+  pure @nogc int[3] chunkCoord(int[3] tile) const nothrow { return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; }
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
   @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
 }
@@ -102,8 +95,6 @@ void setTile(ref App app, int[3] tile, TileType newType) {
   int idx = app.world.tileIndex(app.world.localCoord(tile));
   app.world.chunks[coord].tiles[idx] = newType;
   app.world.chunks[coord].dirty = true;
-  app.world.saveChunk(coord);
-  app.loadChunk(coord);
 }
 
 void loadChunk(ref App app, int[3] coord){
@@ -121,8 +112,11 @@ void updateWorld(ref App app, float[3] lookat) {
   int[3] pc = app.world.chunkCoord([cast(int)floor(lookat[0] / app.world.tileSize), 0, cast(int)floor(lookat[2] / app.world.tileSize)]);
 
   // Load new chunks within render distance
-  foreach(coord; app.world.visibleChunks(pc)) {
-    if (coord !in app.world.chunks && coord !in app.world.pendingChunks) app.loadChunk(coord);
+  for (int cz = pc.z - app.world.renderDistance; cz <= pc.z + app.world.renderDistance; cz++) {
+    for (int cx = pc.x - app.world.renderDistance; cx <= pc.x + app.world.renderDistance; cx++) {
+      int[3] coord = [cx, 0, cz];
+      if (coord !in app.world.chunks && coord !in app.world.pendingChunks) app.loadChunk(coord);
+    }
   }
 
   // Evict chunks outside render distance
@@ -131,6 +125,15 @@ void updateWorld(ref App app, float[3] lookat) {
       if (app.world.chunks[coord].dirty) app.world.saveChunk(coord);
       if (app.world.chunks[coord] !is null) { app.world.chunks[coord].deAllocate = true; }
       app.world.chunks.remove(coord);
+    }
+  }
+
+  // Rebuild dirty chunks
+  foreach (coord; app.world.chunks.keys) {
+    if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
+      app.world.saveChunk(coord);
+      app.loadChunk(coord);
+      app.world.chunks[coord].dirty = false;
     }
   }
 }
