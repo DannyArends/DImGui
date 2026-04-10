@@ -7,7 +7,7 @@ import engine;
 
 import buffer : destroyGeometryBuffers, nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
-import matrix : position, transpose, translate, rotate, scale, inverse;
+import matrix : position, translate, rotate, scale;
 import textures : idx;
 import mesh : logMesh;
 import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
@@ -106,7 +106,7 @@ void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
       app.objects[x].computeBoundingBox(app.trace);
       app.objects[x].box.buffer(app, cmd);
     }
-    app.objects[x].buffer(app, cmd);
+    if(!app.objects[x].isBuffered) app.objects[x].buffer(app, cmd);
   }
 }
 
