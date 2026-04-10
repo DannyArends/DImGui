@@ -28,20 +28,8 @@ float[3] rayAtY(float[3][2] ray, float y) {
 
 /** Compute the intersection between a ray and a bounding box
  */
-@nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box, size_t instance = 0) {
+@nogc pure Intersection intersects(const float[3][2] ray, const float[3] bmin, const float[3] bmax) {
   Intersection i;
-  if (instance >= box.instances.length){ assert(0, "No BoundingBox Instance"); return i; }
-  float[3] bmin = [ float.max,  float.max,  float.max];
-  float[3] bmax = [-float.max, -float.max, -float.max];
-  foreach(v; box.vertices) {
-    float[3] p = box.instances[0].matrix.multiply(v.position);
-    if (p.x < bmin[0]) bmin[0] = p.x;
-    if (p.y < bmin[1]) bmin[1] = p.y;
-    if (p.z < bmin[2]) bmin[2] = p.z;
-    if (p.x > bmax[0]) bmax[0] = p.x;
-    if (p.y > bmax[1]) bmax[1] = p.y;
-    if (p.z > bmax[2]) bmax[2] = p.z;
-  }
 
   i.tmin = (bmin.x - ray[0].x) / ray[1].x;
   i.tmax = (bmax.x - ray[0].x) / ray[1].x; 
@@ -73,6 +61,23 @@ float[3] rayAtY(float[3][2] ray, float y) {
     i.intersectionOut = ray[0].vAdd(ray[1].vMul(i.tmax));
     i.intersects = true;
   }
-  return i;
+  return(i);
+}
+
+@nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box, size_t instance = 0) {
+  Intersection i;
+  if (instance >= box.instances.length){ assert(0, "No BoundingBox Instance"); return i; }
+  float[3] bmin = [ float.max,  float.max,  float.max];
+  float[3] bmax = [-float.max, -float.max, -float.max];
+  foreach(v; box.vertices) {
+    float[3] p = box.instances[instance].matrix.multiply(v.position);
+    if (p.x < bmin[0]) bmin[0] = p.x;
+    if (p.y < bmin[1]) bmin[1] = p.y;
+    if (p.z < bmin[2]) bmin[2] = p.z;
+    if (p.x > bmax[0]) bmax[0] = p.x;
+    if (p.y > bmax[1]) bmax[1] = p.y;
+    if (p.z > bmax[2]) bmax[2] = p.z;
+  }
+  return(ray.intersects(bmin, bmax));
 }
 
