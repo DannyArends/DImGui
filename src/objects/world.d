@@ -36,6 +36,16 @@ struct WorldData {
     return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
   }
 
+  /** Get tile neighbours
+   */
+  @nogc pure int[3][6] tileNeighbours(const int[3] wc) const nothrow {
+    return [
+      [wc[0]+1, wc[1], wc[2]], [wc[0]-1, wc[1], wc[2]],
+      [wc[0], wc[1]+1, wc[2]], [wc[0], wc[1]-1, wc[2]],
+      [wc[0], wc[1], wc[2]+1], [wc[0], wc[1], wc[2]-1]
+    ];
+  }
+
   /** Determine the tile type at a world coordinate from noise, no chunk data required
    */
   @nogc pure TileType getTile(const int[3] wc) const nothrow {
@@ -78,29 +88,12 @@ struct WorldData {
 struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks being generated async
-  int[3] selectedTile = [int.min, int.min, int.min];        /// Currently selected Tile
-  Geometry highlight = null;                                /// Highlighted tile
-
   WorldData data;
   alias data this;
 
   /** Returns the surface tile coordinate at (tx, tz) based on noise height
    */
   int[3] surfaceTile(int tx, int tz) { return [tx, cast(int)(noiseHT(tx, tz, seed)[0] * (chunkHeight - 1)), tz]; }
-
-  /** Update the highlight geometry to the selected tile position, create it if needed
-   */
-  void updateHighlight(ref App app, int[3] tile) {
-    float[3] p = data.worldPos(tile);
-    if(highlight is null) {
-      highlight = new Outline();
-      app.objects ~= highlight;
-    }
-    highlight.instances[0].matrix = Matrix();  // reset to identity first
-    highlight.position([p.x, p.y + yOffset, p.z]);
-    highlight.scale([tileSize, tileSize, tileSize]);
-    selectedTile = tile;
-  }
 
   /** Save chunk tile data to disk
    */
@@ -117,13 +110,19 @@ struct World {
 
 /** Set a tile type in a chunk and mark the chunk dirty for rebuild
  */
-void setTile(ref App app, int[3] tile, TileType newType) {
+void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.chunks) return;
 
   int idx = app.world.tileIndex(app.world.localCoord(tile));
   app.world.chunks[coord].tiles[idx] = newType;
   app.world.chunks[coord].dirty = true;
+
+  // Mark neighbouring chunks dirty if tile is on a chunk boundary
+  foreach (n; app.world.tileNeighbours(tile)) {
+    int[3] nc = app.world.chunkCoord(n);
+    if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
+  }
 }
 
 /** Dispatch a chunk build job to the next available worker thread

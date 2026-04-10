@@ -10,7 +10,7 @@ import intersection : intersects;
 import textures : mapTextures;
 import tileatlas : tileData, tileUVTransform, heightToTile;
 import matrix : translate, scale, multiply;
-
+import world:setTile;
 /** Holds raw tile data and instanced rendering data for a chunk
  */
 struct ChunkData {
@@ -56,13 +56,8 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
     if (data.tiles[i] == TileType.None) continue;
 
     // Skip fully buried blocks
-    int[3][6] neighbours = [
-      [wc[0]+1, wc[1], wc[2]], [wc[0]-1, wc[1], wc[2]],
-      [wc[0], wc[1]+1, wc[2]], [wc[0], wc[1]-1, wc[2]],
-      [wc[0], wc[1], wc[2]+1], [wc[0], wc[1], wc[2]-1]
-    ];
     bool buried = true;
-    foreach (n; neighbours) { if (wd.getTile(n) == TileType.None) { buried = false; break; } }
+    foreach (n; wd.tileNeighbours(wc)) { if (wd.getTile(n) == TileType.None) { buried = false; break; } }
     if (buried) continue;
 
     float[3] p = wd.worldPos(wc);
@@ -100,7 +95,7 @@ Intersection pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
     auto chunk = cast(Chunk)app.objects[best.idx[0]];
     auto local = app.world.tileCoord(chunk.tileIndices[best.idx[1]]);
     auto wc = app.world.worldCoord(chunk.coord, local);
-    app.world.updateHighlight(app, wc);
+    app.setTile(wc);
   }
   return best;
 }
