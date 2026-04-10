@@ -101,7 +101,12 @@ struct World {
   /** Mark all chunks for deallocation and clear the chunk and pending maps
    */
   void clear(ref App app) {
-    foreach (coord; chunks.keys) { if (chunks[coord] !is null) { chunks[coord].deAllocate = true; } }
+    foreach (coord; chunks.keys) {
+      if (chunks[coord] !is null) {
+        chunks[coord].block.deAllocate = true;
+        chunks[coord].deAllocate = true;
+      }
+    }
     chunks.clear();
     pendingChunks.clear();
   }
