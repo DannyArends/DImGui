@@ -17,6 +17,7 @@ import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
 struct Instance {
   uint[2] meshdef = [0, 0];  // Start, End
   Matrix matrix;
+  float[4] uvTransform = [0.0f, 0.0f, 1.0f, 1.0f];  // [offsetU, offsetV, scaleU, scaleV]
   alias matrix this;
 }
 
@@ -339,7 +340,7 @@ void draw(T)(ref App app, ref T object, size_t i) {
 
 /** Render a Geometry to app.shadows.commands[i] */
 void shadow(ref App app, Geometry object, size_t i) {
-  if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null) return;
+  if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null || object.indexBuffer.vb == null) return;
   if(app.trace) SDL_Log("SHADOW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
   auto cmd = app.shadows.commands[i];
