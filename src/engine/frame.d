@@ -50,13 +50,13 @@ void renderFrame(ref App app) {
 
   app.updateTracks();                     /// Check for sound effects that have finished
   app.updateWorld(app.camera.lookat);     /// Check for updates to the world
+  app.updateTextures();                   /// If a texture was loaded, update it
   app.updateMeshInfo();                   /// Check for Mesh Information change
   app.updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
   app.updateDisco();                      /// Update when disco mode 🕺 🪩 💃
   if(app.hasCompute) app.updateComputeUBO(app.syncIndex);
   app.updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.updateRenderUBO(app.shaders, app.syncIndex);
-  app.updateTextures();                                         /// If a texture was loaded, update it
 
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
@@ -82,7 +82,10 @@ void renderFrame(ref App app) {
 
   // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
-  if(shadowsThisFrame) app.recordShadowCommandBuffer(app.syncIndex);
+  if(shadowsThisFrame && app.shadowsDirty) {
+    app.recordShadowCommandBuffer(app.syncIndex);
+    app.shadowsDirty = false;
+  }
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");

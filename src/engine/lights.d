@@ -76,4 +76,6 @@ void updateDisco(ref App app) {
     app.lights[i].properties[2] = 25.0f + sin(t * speeds[i]) * 10.0f;
   }
   app.buffers["LightMatrices"].dirty[] = true;
+  app.shadowsDirty = true;
 }
+

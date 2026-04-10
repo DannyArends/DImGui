@@ -89,7 +89,7 @@ Intersection pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
   Intersection best;
   foreach (ref hit; hits) {
     auto chunk = cast(Chunk)app.objects[hit.idx[0]];
-    if (chunk is null) continue;
+    if (chunk is null) return best;
     for (size_t j = 0; j < chunk.block.instances.length; j++) {
       auto i = ray.intersects(chunk.block.box.bmin(j), chunk.block.box.bmax(j), hit.idx[0], j);
       if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
