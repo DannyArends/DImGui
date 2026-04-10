@@ -11,6 +11,8 @@ import textures : mapTextures;
 import tileatlas : tileData, tileUVTransform, heightToTile;
 import matrix : translate, scale, multiply;
 
+/** Holds raw tile data and instanced rendering data for a chunk
+ */
 struct ChunkData {
   int[3] coord;
   TileType[] tiles;
@@ -18,10 +20,14 @@ struct ChunkData {
   int[] tileIndices;
 }
 
+/** Renderable cube geometry for individual blocks within a chunk, not selectable
+ */
 class Block : Cube {
   this() { super(); isSelectable = false; name = (){ return "Block"; }; }
 }
 
+/** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block
+ */
 class Chunk : Cube {
   ChunkData data;
   Geometry block;
@@ -39,6 +45,8 @@ class Chunk : Cube {
   }
 }
 
+/** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
+ */
 pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileType[] saved = null, int[3] coord) nothrow {
   ChunkData data = ChunkData(coord);
   data.tiles.length = wd.tileCount;
@@ -68,12 +76,16 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
   return data;
 }
 
+/** Load saved tile types from disk for a chunk, returns empty array if file is missing or corrupt
+ */
 TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
   auto path = wd.chunkPath(coord);
   if(fsize(path, false) != wd.tileCount * TileType.sizeof) { SDL_RemovePath(path); return []; }
   return cast(TileType[])readFile(path);
 }
 
+/** Two-phase world pick: broad phase via chunk BBs, narrow phase per block instance, updates highlight
+ */
 Intersection pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
   Intersection best;
   foreach (ref hit; hits) {
@@ -93,6 +105,8 @@ Intersection pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
   return best;
 }
 
+/** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene
+ */
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
   if (data.coord in app.world.chunks) {
