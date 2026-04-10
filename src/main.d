@@ -9,7 +9,7 @@ import commands : createCommandPools;
 import compute : initializeCompute;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
-import events : handleEvents, sdlEventsFilter;
+import events : handleEvents, sdlEventsFilter, removeGeometry;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
 import io: ensureWorldDir;
@@ -85,9 +85,10 @@ void run(string[] args = null) {
     app.time[FRAMESTART] = SDL_GetTicks();
     if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
 
-    app.checkForResize();
-    app.renderFrame();
-    app.presentFrame();
+    app.checkForResize();     // Check for resize
+    app.renderFrame();        // Reder frame
+    app.removeGeometry();     // Remove stale geometry
+    app.presentFrame();       // Show frame
     app.totalFramesRendered++;
     app.time[FRAMESTOP] = SDL_GetTicks();
   }

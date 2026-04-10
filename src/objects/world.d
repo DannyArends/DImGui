@@ -88,6 +88,7 @@ struct WorldData {
 struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks being generated async
+  Chunk[] pendingDealloc;                                   /// Chunks waiting one frame before deallocation
   WorldData data;
   alias data this;
 
