@@ -65,7 +65,6 @@ void finalizeChunk(ref App app, ChunkData data) {
   Geometry chunk = new Chunk(data);
   chunk.texture("3DTextures");
   chunk.computeNormals(true);
-  chunk.isSelectable = false;
   chunk.position([0.0f, app.world.yOffset, 0.0f]);
   app.mapTextures(chunk);
 
