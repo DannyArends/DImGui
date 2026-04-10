@@ -20,7 +20,8 @@ layout(location = 6) in vec4 inWeights;           /// assimp: BoneWeights
 
 // Per Instance attributes
 layout(location = 7) in uvec3 meshdef;            /// Mesh start + stop
-layout(location = 8) in mat4 instance;            /// Instance matrix
+layout(location = 8) in vec4 uvT;                 /// [offsetU, offsetV, scaleU, scaleV]
+layout(location = 9) in mat4 instance;            /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;       /// Fragment world position
@@ -51,7 +52,7 @@ void main() {
   fragPosWorld = (model * position);
   fragColor = inColor;
   fragNormal = normalize(normalMatrix * inNormal);
-  fragTexCoord = inTexCoord;
+  fragTexCoord = inTexCoord * uvT.zw + uvT.xy;
   fragMesh = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
     for (; fragMesh < meshdef[1]; fragMesh++) {
