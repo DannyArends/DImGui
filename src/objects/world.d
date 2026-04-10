@@ -19,7 +19,7 @@ struct WorldData {
   int renderDistance = 2;         /// Render distance used to load / evict chunks
   float tileSize     = 0.5f;      /// Size (X & Z) of a tile
   float tileHeight   = 0.5f;      /// Y-spacing between tiles
-  int chunkSize      = 32;        /// Number of tiles (X & Z) in a chunk
+  int chunkSize      = 16;        /// Number of tiles (X & Z) in a chunk
   int chunkHeight    = 16;        /// Number of tiles (Y) in a chunk
   float yOffset      = -8.0f;     /// Global world Y-offset
 
@@ -111,6 +111,8 @@ struct World {
 /** Set a tile type in a chunk and mark the chunk dirty for rebuild
  */
 void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
+  if(app.world.getTile(tile) == TileType.Lava) return;  // cannot remove lava
+
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.chunks) return;
 
@@ -169,6 +171,7 @@ void updateWorld(ref App app, float[3] lookat) {
       app.world.saveChunk(coord);
       app.loadChunk(coord);
       app.world.chunks[coord].dirty = false;
+      break;  // only one per frame
     }
   }
 }
