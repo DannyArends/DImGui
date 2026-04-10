@@ -82,7 +82,7 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
     app.objects[x].window = false;
     if (intersections.any!(i => i.intersects)) {
       app.objects[x].box.setColor(Colors.paleturquoise);
-      app.gui.showObjects = true;
+      version(Android) {} else { app.gui.showObjects = true; }
       hits ~= intersections;
     } else {
       app.objects[x].box.setColor();
