@@ -7,7 +7,7 @@ import engine;
 
 import boundingbox : computeBoundingBox;
 import camera : move, drag, castRay;
-import chunk : pickBlock;
+import chunk : pickWorld;
 import geometry : deAllocate, setColor;
 import imgui : initializeImGui, saveSettings;
 import intersection : intersects;
@@ -108,10 +108,8 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     auto ray = app.camera.castRay(e.button.x, e.button.y);
     auto hits = app.getHits(ray, app.showRays);
     if (hits.length > 0) {
-      auto chunk = cast(Chunk)app.objects[hits[0].idx[0]];
-      if (chunk !is null) {
-        app.pickBlock(chunk, ray, hits[0].idx[0]);
-      } else {
+      auto best = app.pickWorld(hits, ray);
+      if (!best.intersects) {
         auto obj = app.objects[hits[0].idx[0]];
         obj.box.setColor(Colors.yellowgreen);
         obj.window = true;

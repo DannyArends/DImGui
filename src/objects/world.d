@@ -19,6 +19,7 @@ struct WorldData {
   float tileHeight   = 0.2f;      /// Y-spacing between tiles
   int chunkSize      = 32;        /// Number of tiles (X & Z) in a chunk
   int chunkHeight    = 16;        /// Number of tiles (Y) in a chunk
+  float yOffset = -6.0f;          /// Global world Y-offset
 
   const(char)* chunkPath(int[3] coord) const {
     return(toStringz(fixPath(format("data/world/%d_%d/%d_%d.bin", seed[0], seed[1], coord.x, coord.z))));
@@ -37,10 +38,12 @@ struct WorldData {
   }
   @nogc pure int tileIndex(int[3] local) const nothrow { return(local.z * chunkHeight * chunkSize + local.y * chunkSize + local.x); }
   @nogc pure int[3] tileCoord(int i) const nothrow { return [i % chunkSize, (i / chunkSize) % chunkHeight, i / (chunkSize * chunkHeight)];}
-  @property pure @nogc int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
-  @property pure @nogc float halfTile() const nothrow { return tileSize * 0.5f; }
-  @property pure @nogc float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
-  pure @nogc int[3] chunkCoord(int[3] tile) const nothrow { return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; }
+  @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
+  @property @nogc pure float halfTile() const nothrow { return tileSize * 0.5f; }
+  @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
+  @nogc pure int[3] chunkCoord(int[3] tile) const nothrow { 
+    return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
+  }
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
   @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
 }
@@ -50,23 +53,11 @@ struct World {
   bool[int[3]] pendingChunks;                               /// Chunks being generated async
   int[3] selectedTile = [int.min, int.min, int.min];        /// Currently selected Tile
   Geometry highlight = null;                                /// Highlighted tile
-  float yOffset = -6.0f;                                    /// Global world Y-offset
+
   WorldData data;
   alias data this;
 
   int[3] surfaceTile(int tx, int tz) { return [tx, cast(int)(noiseHT(tx, tz, seed)[0] * (chunkHeight - 1)), tz]; }
-
-  // Pick a tile by fixed-point iteration: project ray to estimated surface Y, refine X/Z, repeat.
-  // Converges because terrain height varies smoothly — 4 iterations is sufficient.
-  int[3] pickTile(float[3][2] ray) {
-    float[3] p = rayAtY(ray, yOffset);
-    int[3] tile;
-    for(int i = 0; i < 4; i++) {
-      tile = surfaceTile(cast(int)round(p[0] / tileSize), cast(int)round(p[2] / tileSize));
-      p = rayAtY(ray, tile[1] * tileHeight + yOffset);
-    }
-    return tile;
-  }
 
   void updateHighlight(ref App app, int[3] tile) {
     float[3] p = data.worldPos(tile);
@@ -74,7 +65,7 @@ struct World {
       highlight = new Outline();
       app.objects ~= highlight;
     }
-    highlight.position([p.x, p.y + yOffset + 0.01f, p.z]);
+    highlight.position([p.x, p.y + yOffset + tileHeight + 0.01f, p.z]);
     highlight.scale([tileSize, tileSize, tileSize]);
     selectedTile = tile;
   }
