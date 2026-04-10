@@ -73,18 +73,17 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
   Intersection[] hits;
 
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isVisible) continue;                   // invisible objects should not generate hits
-    if(!app.objects[x].isSelectable) continue;                // Non-selectable objects should not generate hits
-    if(app.objects[x].name() == "Line") continue;             // Other lines should not generate hits
-    app.objects[x].computeBoundingBox(app.trace);             // Make sure we compute the current Bounding Box
-    auto intersection = ray.intersects(app.objects[x].box);   // Compute the intersection
+    if(!app.objects[x].isVisible) continue;                       // invisible objects should not generate hits
+    if(!app.objects[x].isSelectable) continue;                    // Non-selectable objects should not generate hits
+    if(app.objects[x].name() == "Line") continue;                 // Other lines should not generate hits
+    app.objects[x].computeBoundingBox(app.trace);                 // Make sure we compute the current Bounding Box
+    auto intersections = ray.intersects(app.objects[x].box, x);   // Compute the intersection
     app.objects[x].window = false;
-    if (intersection.intersects) {
-      intersection.idx[0] = x;
+    if (intersections.any!(i => i.intersects)) {
       app.objects[x].box.setColor(Colors.paleturquoise);
       app.gui.showObjects = true;
-      hits ~= intersection;
-    }else{
+      hits ~= intersections;
+    } else {
       app.objects[x].box.setColor();
     }
   }

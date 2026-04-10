@@ -28,7 +28,7 @@ float[3] rayAtY(float[3][2] ray, float y) {
 
 /** Compute the intersection between a ray and a bounding box
  */
-@nogc pure Intersection intersects(const float[3][2] ray, const float[3] bmin, const float[3] bmax) {
+@nogc pure Intersection intersects(const float[3][2] ray, const float[3] bmin, const float[3] bmax, size_t index, size_t instance) {
   Intersection i;
 
   i.tmin = (bmin.x - ray[0].x) / ray[1].x;
@@ -60,18 +60,17 @@ float[3] rayAtY(float[3][2] ray, float y) {
     i.intersection = ray[0].vAdd(ray[1].vMul(i.tmin));
     i.intersectionOut = ray[0].vAdd(ray[1].vMul(i.tmax));
     i.intersects = true;
+    i.idx = [index, instance];
   }
   return(i);
 }
 
-@nogc pure Intersection intersects(const float[3][2] ray, const BoundingBox box) {
-  for(size_t i = 0; i < box.instances.length; i++) {
-    auto intersection = ray.intersects(box.bmin(i), box.bmax(i));
-    if(intersection.intersects){
-      intersection.idx[1] = i;
-      return(intersection);
-    }
+pure Intersection[] intersects(const float[3][2] ray, const BoundingBox box, size_t index) {
+  Intersection[] intersections;
+  for(size_t instance = 0; instance < box.instances.length; instance++) {
+    auto intersection = ray.intersects(box.bmin(instance), box.bmax(instance), index, instance);
+    if(intersection.intersects){ intersections ~= intersection; }
   }
-  return(Intersection.init);
+  return(intersections);
 }
 
