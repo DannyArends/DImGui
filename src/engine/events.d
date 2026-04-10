@@ -7,6 +7,7 @@ import engine;
 
 import boundingbox : computeBoundingBox;
 import camera : move, drag, castRay;
+import chunk : pickBlock;
 import geometry : deAllocate, setColor;
 import imgui : initializeImGui, saveSettings;
 import intersection : intersects;
@@ -73,7 +74,8 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
   Intersection[] hits;
 
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isVisible) continue;                       // invisible objects should not generate hits
+    if(!app.objects[x].isVisible) continue;                       // Invisible objects should not generate hits
+    if(!app.objects[x].isSelectable) continue;                    // Non-selectable objects should not generate hits
     if(app.objects[x].name() == "Line") continue;                 // Other lines should not generate hits
     app.objects[x].computeBoundingBox(app.trace);                 // Make sure we compute the current Bounding Box
     auto intersections = ray.intersects(app.objects[x].box, x);   // Compute the intersection
@@ -106,11 +108,14 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     auto ray = app.camera.castRay(e.button.x, e.button.y);
     auto hits = app.getHits(ray, app.showRays);
     if (hits.length > 0) {
-      auto obj = app.objects[hits[0].idx[0]];
-      obj.box.setColor(Colors.yellowgreen);
-      obj.window = true;
-    }else{
-      app.world.updateHighlight(app, app.world.pickTile(ray));
+      auto chunk = cast(Chunk)app.objects[hits[0].idx[0]];
+      if (chunk !is null) {
+        app.pickBlock(chunk, ray, hits[0].idx[0]);
+      } else {
+        auto obj = app.objects[hits[0].idx[0]];
+        obj.box.setColor(Colors.yellowgreen);
+        obj.window = true;
+      }
     }
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){

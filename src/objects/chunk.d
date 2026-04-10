@@ -6,6 +6,7 @@ import engine;
 
 import geometry : texture, position;
 import io : readFile, fsize;
+import intersection : intersects;
 import textures : mapTextures;
 import tileatlas : tileData, tileUVTransform, heightToTile;
 import matrix : translate, scale, multiply;
@@ -19,7 +20,7 @@ struct ChunkData {
 }
 
 class Block : Cube {
-  this() { super(); name = (){ return "Block"; }; }
+  this() { super(); isSelectable = false; name = (){ return "Block"; }; }
 }
 
 class Chunk : Cube {
@@ -31,6 +32,7 @@ class Chunk : Cube {
   this(ChunkData cd) {
     super();
     data = cd;
+    indices = [];
     instances = [Instance()];
     block = new Block();
     block.instances = cd.tileInstances;
@@ -60,6 +62,21 @@ TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
   auto path = wd.chunkPath(coord);
   if(fsize(path, false) != wd.tileCount * TileType.sizeof) { SDL_RemovePath(path); return []; }
   return cast(TileType[])readFile(path);
+}
+
+void pickBlock(ref App app, Chunk chunk, float[3][2] ray, size_t objIdx) {
+  Intersection best;
+  for (size_t j = 0; j < chunk.block.instances.length; j++) {
+    auto i = ray.intersects(chunk.block.instances[j].matrix.multiply([-0.5f, -0.5f, -0.5f]),
+                            chunk.block.instances[j].matrix.multiply([ 0.5f,  0.5f,  0.5f]),
+                            objIdx, j);
+    if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
+  }
+  if (best.intersects) {
+    auto local = app.world.tileCoord(chunk.tileIndices[best.idx[1]]);
+    auto wc = app.world.worldCoord(chunk.coord, local);
+    app.world.updateHighlight(app, wc);
+  }
 }
 
 void finalizeChunk(ref App app, ChunkData data) {
