@@ -5,6 +5,7 @@
 
 import engine;
 
+import camera : cullFrustum;
 import boundingbox : computeBoundingBox;
 import descriptor : updateDescriptorData;
 import geometry : draw, bufferGeometries;
@@ -42,6 +43,8 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   app.scenePass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
 
+  if (app.camera.isDirty) {app.cullFrustum(app.camera); app.camera.isDirty = false; }
+
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
   foreach(topology; supportedTopologies) {
     pushLabel(cmd, toStringz(format("T:%s", topology)), Colors.lightgray);
@@ -50,6 +53,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
                             app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
     
     for(size_t x = 0; x < app.objects.length; x++) {
+      if(!app.objects[x].inFrustum) continue;
       if(!app.objects[x].isVisible) continue;
       if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.draw(app.objects[x].box, syncIndex);
       if(app.objects[x].topology != topology) continue;

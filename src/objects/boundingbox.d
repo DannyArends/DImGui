@@ -28,6 +28,10 @@ struct Bounds {
 /** BoundingBox
  */
 class BoundingBox : Geometry {
+  float[3][] cachedBmin;
+  float[3][] cachedBmax;
+  bool isComputed = false;
+
   this(){
    vertices = [
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
@@ -109,6 +113,13 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   for(size_t x = 0; x < object.instances.length; x++) {
     object.box.instances[x].matrix = object.instances[x].matrix;
   }
+  object.box.cachedBmin.length = object.instances.length;
+  object.box.cachedBmax.length = object.instances.length;
+  for (size_t x = 0; x < object.instances.length; x++) {
+    object.box.cachedBmin[x] = object.box.bmin(x);
+    object.box.cachedBmax[x] = object.box.bmax(x);
+  }
+  object.box.isComputed = true;
   object.box.buffers[INSTANCE] = false;
 }
 

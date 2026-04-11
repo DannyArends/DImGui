@@ -6,7 +6,7 @@
 import engine;
 
 import boundingbox : computeBoundingBox;
-import camera : move, drag, castRay;
+import camera : move, drag, zoom, castRay;
 import chunk : pickWorld;
 import geometry : deAllocate, setColor;
 import imgui : initializeImGui, saveSettings;
@@ -53,10 +53,7 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
       float dy = app.camera.fingerPos[1][1] - app.camera.fingerPos[0][1];
       float dist = sqrt(dx*dx + dy*dy);
 
-      if(app.camera.lastPinchDist > 0.0f) {
-        float delta = (app.camera.lastPinchDist - dist) * 60.0f;
-        app.camera.distance = clamp(app.camera.distance + delta, 2.0f, 60.0f);
-      }
+      if(app.camera.lastPinchDist > 0.0f) { app.camera.zoom((app.camera.lastPinchDist - dist) * 60.0f); }
       app.camera.lastPinchDist = dist;
     } else if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.drag(e.dx * 200.0f, e.dy * 200.0f); }
   }
@@ -115,10 +112,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_MOTION){
     if(app.camera.isdrag[1]) app.camera.drag(e.motion.xrel, e.motion.yrel);
   }
-  if(e.type == SDL_EVENT_MOUSE_WHEEL){
-    if (e.wheel.y < 0 && app.camera.distance <= 60.0f) app.camera.distance += 0.5f;
-    if (e.wheel.y > 0 && app.camera.distance >=  2.0f) app.camera.distance -= 0.5f;
-  }
+  if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.camera.zoom(-e.wheel.y); }
 }
 
 /** Deallocate and removes stale Geometry from the app.objects array
