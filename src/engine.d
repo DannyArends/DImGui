@@ -126,7 +126,6 @@ struct App {
   bool finished = false;                                                        /// Is the main loop finished ?
   bool showBounds = false;                                                      /// Show bounding boxes
   LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
-  bool shadowsDirty = true;                                                     /// Re-record shadow command buffer
   bool showRays = false;                                                        /// Show rays
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint verbose = 0;                                                             /// Be very verbose
