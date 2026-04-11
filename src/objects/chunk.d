@@ -52,11 +52,24 @@ bool isBuried(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, int[3]
   foreach (n; wd.tileNeighbours(wc)) {
     int[3] nc = wd.chunkCoord(n);
     if (nc != coord) return false;
-    int ni = wd.tileIndex(wd.localCoord(n));
+    int[3] ln = wd.localCoord(n);
+    if (ln[1] < 0) continue; // below world = solid, keep checking
+    if (ln[1] >= wd.chunkHeight) return false; // above world = sky, not buried
+    int ni = wd.tileIndex(ln);
     if (ni < 0 || ni >= cast(int)tiles.length) return false;
     if (tiles[ni] == TileType.None) return false;
   }
   return true;
+}
+
+bool isFaceExposed(immutable(WorldData) wd, const TileType[] tiles, int[3] neighbour, int[3] coord) {
+  if (wd.chunkCoord(neighbour) != coord) return wd.getTile(neighbour) == TileType.None;
+  int[3] ln = wd.localCoord(neighbour);
+  if (ln[1] < 0) return false;
+  if (ln[1] >= wd.chunkHeight) return true;
+  int ni = wd.tileIndex(ln);
+  if (ni < 0 || ni >= cast(int)tiles.length) return true;
+  return tiles[ni] == TileType.None;
 }
 
 void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, int[3] coord,
@@ -77,17 +90,7 @@ void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, 
   ];
 
   for (int f = 0; f < 6; f++) {
-    int[3] fnc = wd.chunkCoord(neighbours[f]);
-    bool faceExposed;
-    if (fnc != coord) {
-      faceExposed = wd.getTile(neighbours[f]) == TileType.None;
-    } else {
-      int ni = wd.tileIndex(wd.localCoord(neighbours[f]));
-      if (ni < 0 || ni >= cast(int)tiles.length) { faceExposed = true; }
-      else { faceExposed = tiles[ni] == TileType.None; }
-    }
-    if (!faceExposed) continue;
-
+    if (!isFaceExposed(wd, tiles, neighbours[f], coord)) continue;
     Instance inst;
     inst.uvT = uvT;
     inst.matrix = Matrix([
