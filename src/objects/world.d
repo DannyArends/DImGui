@@ -133,22 +133,11 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
 
 /** Dispatch a chunk build job to the next available worker thread
  */
-void loadChunk(ref App app, int[3] coord) {
-  int[3][4] neighbourCoords = [
-    [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]],
-    [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]
-  ];
-  TileType[][int[3]] neighbourTiles;
-  foreach (nc; neighbourCoords) {
-    if (nc in app.world.chunks) { neighbourTiles[nc] = app.world.chunks[nc].tiles.dup; }
-  }
-  foreach (tid; app.concurrency.workers.keys) {
+void loadChunk(ref App app, int[3] coord){
+  foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, 
-               cast(immutable(TileAtlas))app.tileAtlas,
-               cast(immutable(TileType[int[3]]))neighbourTiles,
-               coord);
+      tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, coord);
       app.world.pendingChunks[coord] = true;
       break;
     }
