@@ -17,6 +17,9 @@ import world : setTile;
 struct ChunkData {
   int[3] coord;
   TileType[] tiles;
+  float[3][] tileBmin;
+  float[3][] tileBmax;
+  int[] pickIndices;
   Instance[] tileInstances;
   int[] tileIndices;
   float[3] bmin = [ float.max,  float.max,  float.max];
@@ -51,10 +54,10 @@ class Chunk : Cube {
 bool isBuried(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, int[3] coord) {
   foreach (n; wd.tileNeighbours(wc)) {
     int[3] nc = wd.chunkCoord(n);
-    if (nc != coord) return false;
+    if (nc != coord) { return false; }
     int[3] ln = wd.localCoord(n);
-    if (ln[1] < 0) continue; // below world = solid, keep checking
-    if (ln[1] >= wd.chunkHeight) return false; // above world = sky, not buried
+    if (ln[1] < 0) continue;
+    if (ln[1] >= wd.chunkHeight) return false;
     int ni = wd.tileIndex(ln);
     if (ni < 0 || ni >= cast(int)tiles.length) return false;
     if (tiles[ni] == TileType.None) return false;
@@ -127,7 +130,16 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileT
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     if (isBuried(wd, data.tiles, wc, coord)) continue;
     auto uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
+    size_t faceStart = data.tileInstances.length;
     buildTileFaces(wd, data.tiles, wc, coord, uvT, data.tileInstances, data.tileIndices, i, data.bmin, data.bmax);
+    if (data.tileInstances.length > faceStart) {
+      float ts = wd.tileSize, th = wd.tileHeight;
+      float[3] p = wd.worldPos(wc);
+      float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
+      data.tileBmin ~= [px - ts/2, py - th/2, pz - ts/2];
+      data.tileBmax ~= [px + ts/2, py + th/2, pz + ts/2];
+      data.pickIndices ~= i;
+    }
   }
   return data;
 }
@@ -147,14 +159,14 @@ void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
   foreach (ref hit; hits) {
     auto chunk = cast(Chunk)app.objects[hit.idx[0]];
     if (chunk is null) return;
-    for (size_t j = 0; j < chunk.block.instances.length; j++) {
-      auto i = ray.intersects(chunk.block.box.bmin(j), chunk.block.box.bmax(j), hit.idx[0], j);
+    for (size_t j = 0; j < chunk.tileBmin.length; j++) {
+      auto i = ray.intersects(chunk.tileBmin[j], chunk.tileBmax[j], hit.idx[0], j);
       if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
     }
   }
   if (best.intersects) {
     auto chunk = cast(Chunk)app.objects[best.idx[0]];
-    auto local = app.world.tileCoord(chunk.tileIndices[best.idx[1]]);
+    auto local = app.world.tileCoord(chunk.pickIndices[best.idx[1]]);
     auto wc = app.world.worldCoord(chunk.coord, local);
     app.setTile(wc);
   }
