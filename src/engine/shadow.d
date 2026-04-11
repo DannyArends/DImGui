@@ -27,7 +27,6 @@ struct ShadowMap {
 
   VkFramebuffer[] framebuffers;             /// Per-light framebuffers
   VkCommandBuffer[] commands;               /// Command buffers
-  bool recorded = false;
   bool dirty = true;
 
   uint lastShadowInstances = 0;
