@@ -40,10 +40,10 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   pushLabel(cmd, "Rendering", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Scene renderpass");
 
+  if(app.camera.isDirty) {app.cullFrustum(app.camera); app.camera.isDirty = false; }
+
   app.scenePass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
-
-  if (app.camera.isDirty) {app.cullFrustum(app.camera); app.camera.isDirty = false; }
 
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
   foreach(topology; supportedTopologies) {

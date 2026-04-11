@@ -28,10 +28,6 @@ struct Bounds {
 /** BoundingBox
  */
 class BoundingBox : Geometry {
-  float[3][] cachedBmin;
-  float[3][] cachedBmax;
-  bool isComputed = false;
-
   this(){
    vertices = [
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
@@ -57,25 +53,10 @@ class BoundingBox : Geometry {
   }
 
   @nogc pure float[3] bmin(size_t instance = 0) nothrow const {
-    float[3] result = [float.max, float.max, float.max];
-    foreach(v; vertices) {
-      float[3] p = instances[instance].matrix.multiply(v.position);
-      if (p.x < result[0]) result[0] = p.x;
-      if (p.y < result[1]) result[1] = p.y;
-      if (p.z < result[2]) result[2] = p.z;
-    }
-    return result;
+    return instances[instance].matrix.multiply(vertices[0].position);
   }
-
   @nogc pure float[3] bmax(size_t instance = 0) nothrow const {
-    float[3] result = [-float.max, -float.max, -float.max];
-    foreach(v; vertices) {
-      float[3] p = instances[instance].matrix.multiply(v.position);
-      if (p.x > result[0]) result[0] = p.x;
-      if (p.y > result[1]) result[1] = p.y;
-      if (p.z > result[2]) result[2] = p.z;
-    }
-    return result;
+    return instances[instance].matrix.multiply(vertices[6].position);
   }
 
   @nogc pure void setDimensions(float[3] min, float[3] max) nothrow {
@@ -113,13 +94,6 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   for(size_t x = 0; x < object.instances.length; x++) {
     object.box.instances[x].matrix = object.instances[x].matrix;
   }
-  object.box.cachedBmin.length = object.instances.length;
-  object.box.cachedBmax.length = object.instances.length;
-  for (size_t x = 0; x < object.instances.length; x++) {
-    object.box.cachedBmin[x] = object.box.bmin(x);
-    object.box.cachedBmax[x] = object.box.bmax(x);
-  }
-  object.box.isComputed = true;
   object.box.buffers[INSTANCE] = false;
 }
 

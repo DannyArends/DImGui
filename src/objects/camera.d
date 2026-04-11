@@ -52,7 +52,7 @@ struct Camera {
     if (app.objects[x].box is null) continue;
     app.objects[x].inFrustum = false;
     for (size_t i = 0; i < app.objects[x].box.instances.length; i++) {
-      if (aabbInFrustum(frustum, app.objects[x].box.cachedBmin[i], app.objects[x].box.cachedBmax[i])) {
+      if (aabbInFrustum(frustum, app.objects[x].box.bmin(i), app.objects[x].box.bmax(i))) {
         app.objects[x].inFrustum = true; break;
       }
     }
