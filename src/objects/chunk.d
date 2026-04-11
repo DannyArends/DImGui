@@ -139,11 +139,11 @@ TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
 
 /** Two-phase world pick: broad phase via chunk BBs, narrow phase per block instance, updates highlight
  */
-Intersection pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
+void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
   Intersection best;
   foreach (ref hit; hits) {
     auto chunk = cast(Chunk)app.objects[hit.idx[0]];
-    if (chunk is null) return best;
+    if (chunk is null) return;
     for (size_t j = 0; j < chunk.block.instances.length; j++) {
       auto i = ray.intersects(chunk.block.box.bmin(j), chunk.block.box.bmax(j), hit.idx[0], j);
       if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
@@ -155,7 +155,6 @@ Intersection pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
     auto wc = app.world.worldCoord(chunk.coord, local);
     app.setTile(wc);
   }
-  return best;
 }
 
 /** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene

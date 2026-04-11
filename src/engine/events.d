@@ -98,12 +98,13 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       app.camera.isdrag[0] = false; 
       auto ray = app.camera.castRay(e.button.x, e.button.y);
       auto hits = app.getHits(ray, app.showRays);
-      if (hits.length > 0) {
-        auto best = app.pickWorld(hits, ray);
-        if (!best.intersects) {
-          auto obj = app.objects[hits[0].idx[0]];
+      if (hits.length > 0) { app.pickWorld(hits, ray); }
+      foreach (ref hit; hits) {
+        auto obj = app.objects[hit.idx[0]];
+        if (cast(Chunk)obj is null) {
           obj.box.setColor(Colors.yellowgreen);
           obj.window = true;
+          break;
         }
       }
     }

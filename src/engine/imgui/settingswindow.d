@@ -36,6 +36,10 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igSliderScalar("##", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
 
     igTableNextColumn();
+    igText("Disco Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    igCheckbox("##disco", &app.disco);
+
+    igTableNextColumn();
     igText("Show Bounds", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igCheckbox("##showBounds", &app.showBounds);
 
