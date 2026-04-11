@@ -17,7 +17,6 @@ import world : setTile;
 struct ChunkData {
   int[3] coord;
   TileType[] tiles;
-  TileType[][int[3]] neighbourTiles;
   Instance[] tileInstances;
   int[] tileIndices;
   float[3] bmin = [ float.max,  float.max,  float.max];
@@ -63,14 +62,8 @@ bool isBuried(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, int[3]
   return true;
 }
 
-bool isFaceExposed(immutable(WorldData) wd, const TileType[] tiles, const TileType[][int[3]] neighbourTiles, int[3] neighbour, int[3] coord) {
-  int[3] nc = wd.chunkCoord(neighbour);
-  if (nc != coord) {
-    if (nc !in neighbourTiles) return true;  // neighbour not loaded, show face
-    int[3] ln = wd.localCoord(neighbour);
-    int ni = wd.tileIndex(ln);
-    return neighbourTiles[nc][ni] == TileType.None;
-  }
+bool isFaceExposed(immutable(WorldData) wd, const TileType[] tiles, int[3] neighbour, int[3] coord) {
+  if (wd.chunkCoord(neighbour) != coord) return wd.getTile(neighbour) == TileType.None;
   int[3] ln = wd.localCoord(neighbour);
   if (ln[1] < 0) return false;
   if (ln[1] >= wd.chunkHeight) return true;
@@ -79,9 +72,7 @@ bool isFaceExposed(immutable(WorldData) wd, const TileType[] tiles, const TileTy
   return tiles[ni] == TileType.None;
 }
 
-void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles, 
-                     const TileType[][int[3]] neighbourTiles,
-                    int[3] wc, int[3] coord,
+void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, int[3] coord,
                     float[4] uvT, ref Instance[] instances, ref int[] indices, int tileIdx,
                     ref float[3] bmin, ref float[3] bmax) {
   float[3] p = wd.worldPos(wc);
@@ -99,7 +90,7 @@ void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles,
   ];
 
   for (int f = 0; f < 6; f++) {
-    if (!isFaceExposed(wd, tiles, neighbourTiles, neighbours[f], coord)) continue;
+    if (!isFaceExposed(wd, tiles, neighbours[f], coord)) continue;
     Instance inst;
     inst.uvT = uvT;
     inst.matrix = Matrix([
@@ -122,9 +113,7 @@ void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles,
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
  */
-ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
-                         TileType[] saved, immutable(TileType[][int[3]]) neighbourTiles,
-                         int[3] coord) {
+ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileType[] saved = null, int[3] coord) {
   ChunkData data = ChunkData(coord);
   data.tiles.length = wd.tileCount;
 
@@ -138,7 +127,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta,
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     if (isBuried(wd, data.tiles, wc, coord)) continue;
     auto uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
-    buildTileFaces(wd, data.tiles, neighbourTiles, wc, coord, uvT, data.tileInstances, data.tileIndices, i, data.bmin, data.bmax);
+    buildTileFaces(wd, data.tiles, wc, coord, uvT, data.tileInstances, data.tileIndices, i, data.bmin, data.bmax);
   }
   return data;
 }
