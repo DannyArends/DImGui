@@ -34,7 +34,7 @@ int isSupported(ref App app, VkFormat requested){
 void querySurfaceFormats(ref App app) {
   uint formatCount;
   enforceVK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(app.physicalDevice, app.surface, &app.camera.capabilities));  // Capabilities
-
+  app.camera.isDirty = true;
   if(app.verbose) SDL_Log("Capablities: ImageCount: %d - %d", app.camera.capabilities.minImageCount, app.camera.capabilities.maxImageCount);
 
   // Surface formats
