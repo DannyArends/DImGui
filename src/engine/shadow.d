@@ -13,6 +13,7 @@ import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
 import uniforms : forEachUBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
+import frustum : cullFrustum, extractFrustum;
 
 struct ShadowMap {
   ImageBuffer[] images;
@@ -254,6 +255,8 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   for(size_t l = 0; l < app.lights.length; l++) {
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
 
+    app.cullFrustum(extractFrustum(app.lights[l].lightSpaceMatrix));
+
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
       renderPass: app.shadows.renderPass,
@@ -268,7 +271,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdPushConstants(cmd, app.shadows.pipeline.layout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(app.objects[x].isVisible && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
+      if(app.objects[x].isVisible && app.objects[x].inFrustum && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
         app.shadow(app.objects[x], syncIndex);
       }
     }

@@ -27,29 +27,22 @@ struct Quaternion {
 
 /** Returns the normalized vector of v */
 @nogc pure T[4] normalize(T)(T[4] v) nothrow {
-    float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3];
-    if(sqr == 0) return(v);
-    if(abs(sqr - 1.0f) < 1e-6f) return(v);
-    float invrt = 1.0f / sqrt(sqr);
-    v[] *= invrt;
-    return(v);
+  float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3];
+  if(sqr == 0) return(v);
+  if(abs(sqr - 1.0f) < 1e-6f) return(v);
+  float invrt = 1.0f / sqrt(sqr);
+  v[] *= invrt;
+  return(v);
 }
 
 /** Create a T[3], w as a T[4] */
-@nogc pure T[4] xyzw(T)(const T[3] v, T w = 1.0f) nothrow {
-    return([v.x, v.y, v.z, w]);
-}
+@nogc pure T[4] xyzw(T)(const T[3] v, T w = 1.0f) nothrow { return([v.x, v.y, v.z, w]); }
 
 /** Create a T[3], alpha as a T[4] */
-@nogc pure T[4] rgba(T)(const T[3] v, T a = 1.0f) nothrow {
-    return([v.red, v.green, v.blue, a]);
-}
+@nogc pure T[4] rgba(T)(const T[3] v, T a = 1.0f) nothrow { return([v.red, v.green, v.blue, a]); }
 
 /** Dot product between v1 and v2 */
-@nogc pure T dot(T)(const T[4] v1, const T[4] v2) nothrow {
-  T[4] vDot = v1[] * v2[];
-  return(sum(vDot));
-}
+@nogc pure T dot(T)(const T[4] v1, const T[4] v2) nothrow { T[4] vDot = v1[] * v2[]; return(sum(vDot)); }
 
 T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
   T[4] result;
@@ -97,10 +90,12 @@ T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
 
 /** angleAxis */
 @nogc pure T[4] angleAxis(T)(T angle, T[3] axis) nothrow {
-  if (axis.magnitude == 0.0f) return( Quaternion.init);
-  axis.normalize();
-  axis = axis.vMul(sin(angle.radian / 2.0f));
-  T[4] result = [axis.x, axis.y, axis.z, cos(angle.radian / 2.0f)];
+  float sqr = axis[0]*axis[0] + axis[1]*axis[1] + axis[2]*axis[2];
+  if (sqr == 0.0f) return(Quaternion.init);
+  axis[] *= 1.0f / sqrt(sqr);
+  float halfRad = angle.radian / 2.0f;
+  axis = axis.vMul(sin(halfRad));
+  T[4] result = [axis.x, axis.y, axis.z, cos(halfRad)];
   return(result.normalize());
 }
 

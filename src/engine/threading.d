@@ -60,7 +60,7 @@ struct Threading {
   bool[Tid] workers;
 }
 
-void initializeAsync(ref App app, uint numWorkers = 8){
+void initializeAsync(ref App app, uint numWorkers = 16){
   app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
@@ -108,7 +108,7 @@ void checkAsync(ref App app) {
   });
   // Accept any incoming chunks, and submit for finalization on GPU
   receiveTimeout(dur!"msecs"(-1), (immutable(ChunkData) data, Tid tid) {
-    SDL_Log("Received chunk [%d, %d] tiles=%d", data.coord[0], data.coord[2], data.tileInstances.length);
+    //SDL_Log("Received chunk [%d, %d] tiles=%d", data.coord[0], data.coord[2], data.tileInstances.length);
     app.concurrency.workers[tid] = false;
     app.finalizeChunk(cast(ChunkData)data);
   });

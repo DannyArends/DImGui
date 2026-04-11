@@ -19,6 +19,8 @@ struct ChunkData {
   TileType[] tiles;
   Instance[] tileInstances;
   int[] tileIndices;
+  float[3] bmin = [ float.max,  float.max,  float.max];
+  float[3] bmax = [-float.max, -float.max, -float.max];
 }
 
 /** Renderable cube geometry for individual blocks within a chunk, not selectable
@@ -72,6 +74,15 @@ pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, 
     data.tileInstances ~= inst;
     data.tileIndices ~= i;
   }
+  foreach (ref inst; data.tileInstances) {
+    float[3] p = [inst.matrix[12], inst.matrix[13], inst.matrix[14]];
+    if (p[0] < data.bmin[0]) data.bmin[0] = p[0];
+    if (p[1] < data.bmin[1]) data.bmin[1] = p[1];
+    if (p[2] < data.bmin[2]) data.bmin[2] = p[2];
+    if (p[0] > data.bmax[0]) data.bmax[0] = p[0];
+    if (p[1] > data.bmax[1]) data.bmax[1] = p[1];
+    if (p[2] > data.bmax[2]) data.bmax[2] = p[2];
+  }
   return data;
 }
 
@@ -124,7 +135,9 @@ void finalizeChunk(ref App app, ChunkData data) {
   chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
 
   chunk.block.texture("3DTextures");
-  chunk.block.computeBoundingBox();
+  chunk.block.box = new BoundingBox();
+  chunk.block.box.setDimensions(data.bmin, data.bmax);
+  chunk.block.box.instances = [Instance()]; // single instance, identity matrix
   app.mapTextures(chunk.block);
 
   app.objects ~= chunk.block;

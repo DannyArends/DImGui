@@ -46,19 +46,6 @@ struct Camera {
   @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
 }
 
-@nogc void cullFrustum(ref App app, const Camera camera) nothrow {
-  auto frustum = extractFrustum(camera.proj.multiply(camera.view));
-  for (size_t x = 0; x < app.objects.length; x++) {
-    if (app.objects[x].box is null) continue;
-    app.objects[x].inFrustum = false;
-    for (size_t i = 0; i < app.objects[x].box.instances.length; i++) {
-      if (aabbInFrustum(frustum, app.objects[x].box.bmin(i), app.objects[x].box.bmax(i))) {
-        app.objects[x].inFrustum = true; break;
-      }
-    }
-  }
-}
-
 /* Create a position/rotation matrix through 3D space starting from xy */
 float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
   float[2] ndc = [(2.0f * x) / cast(float)camera.width  - 1.0f, (2.0f * y) / cast(float)camera.height - 1.0f];
