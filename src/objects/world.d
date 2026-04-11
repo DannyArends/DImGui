@@ -15,9 +15,9 @@ import vector : vAdd, vMul, x, y, z;
 struct WorldData {
   int[2] seed        = [42, 67];  /// [height seed, tile seed]
   int renderDistance =   4;       /// Render distance used to load / evict chunks
-  float tileSize     =   1.5f;    /// Size (X & Z) of a tile
-  float tileHeight   =   1.5f;    /// Y-spacing between tiles
-  int chunkSize      =  16;       /// Number of tiles (X & Z) in a chunk
+  float tileSize     =   2.0f;    /// Size (X & Z) of a tile
+  float tileHeight   =   2.0f;    /// Y-spacing between tiles
+  int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  16;       /// Number of tiles (Y) in a chunk
   float yOffset      = -14.0f;    /// Global world Y-offset
 
@@ -147,11 +147,12 @@ void loadChunk(ref App app, int[3] coord){
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks
  */
 void updateWorld(ref App app, float[3] lookat) {
+  int effectiveRD = min(app.world.renderDistance, cast(int)(app.camera.nearfar[1] / app.world.chunkWorldSize));
   int[3] pc = app.world.chunkCoord([cast(int)floor(lookat[0] / app.world.tileSize), 0, cast(int)floor(lookat[2] / app.world.tileSize)]);
 
   // Load new chunks within render distance
-  for (int cz = pc.z - app.world.renderDistance; cz <= pc.z + app.world.renderDistance; cz++) {
-    for (int cx = pc.x - app.world.renderDistance; cx <= pc.x + app.world.renderDistance; cx++) {
+  for (int cz = pc.z - effectiveRD ; cz <= pc.z + effectiveRD ; cz++) {
+    for (int cx = pc.x - effectiveRD ; cx <= pc.x + effectiveRD ; cx++) {
       int[3] coord = [cx, 0, cz];
       if (coord !in app.world.chunks && coord !in app.world.pendingChunks) app.loadChunk(coord);
     }
@@ -159,7 +160,7 @@ void updateWorld(ref App app, float[3] lookat) {
 
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
-    if (abs(coord[0] - pc[0]) > app.world.renderDistance || abs(coord[2] - pc[2]) > app.world.renderDistance) {
+    if (abs(coord[0] - pc[0]) > effectiveRD  || abs(coord[2] - pc[2]) > effectiveRD ) {
       if (app.world.chunks[coord].dirty) app.world.saveChunk(coord);
       if (app.world.chunks[coord] !is null) {
         app.world.chunks[coord].block.deAllocate = true;

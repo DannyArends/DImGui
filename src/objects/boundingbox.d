@@ -52,6 +52,9 @@ class BoundingBox : Geometry {
     return(scale);
   }
 
+  /** Compute world-space AABB from object-space bounds and instance matrix.
+   * Uses OBB projection: transforms center, then sums absolute column extents.
+   */
   @nogc pure private float[3][2] boundsWorld(size_t instance = 0) nothrow const {
     auto m = instances[instance].matrix;
     float[3] lo = vertices[0].position;
