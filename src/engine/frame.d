@@ -85,8 +85,7 @@ void renderFrame(ref App app) {
   if(shadowsThisFrame && app.shadows.dirty) {
     app.recordShadowCommandBuffer(app.syncIndex);
     app.shadows.dirty = false;
-    app.shadows.recorded = true;
-  }
+  }else{ shadowsThisFrame = false; }
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
@@ -96,7 +95,7 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers = [];
-  if (shadowsThisFrame & app.shadows.recorded) submitCommandBuffers ~= app.shadows.commands[app.syncIndex];
+  if (shadowsThisFrame){ submitCommandBuffers ~= app.shadows.commands[app.syncIndex]; }
   submitCommandBuffers ~= [
     app.scenePass.commands[app.syncIndex],
     app.postPass.commands[app.syncIndex],
