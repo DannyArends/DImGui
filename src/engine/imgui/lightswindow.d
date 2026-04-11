@@ -67,7 +67,7 @@ void showLightswindow(ref App app, bool* show, uint font = 0) {
       igPopID();
     }
     igEndTable();
-    if(igIsAnyItemActive()) app.shadowsDirty = true;
+    if(igIsAnyItemActive()) app.shadows.dirty = true;
     igEnd();
     if(app.lights.lights != lightsBefore) { app.buffers["LightMatrices"].dirty[] = true; }
   }else { igEnd(); }
