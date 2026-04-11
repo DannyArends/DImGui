@@ -13,9 +13,7 @@ struct Vector {
 }
 
 /** Convert a T[4] to a T[3] */
-@nogc pure T[3] xyz(T)(const T[4] v) nothrow { 
-    return([v[0], v[1], v[2]]);
-}
+@nogc pure T[3] xyz(T)(const T[4] v) nothrow { return([v[0], v[1], v[2]]); }
 
 /** Positional shortcuts for arrays */
 @nogc pure T x(T)(const T[] v) nothrow { assert(v.length > 0); return(v[0]); }
@@ -43,24 +41,31 @@ struct Vector {
 
 /** Euclidean distance between v1 and v2 */
 @nogc pure T euclidean(T)(const T[3] v1, const T[3] v2) nothrow {
-    return sqrt( (v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]) + (v1[2] - v2[2]) * (v1[2] - v2[2]) );
+  return sqrt( (v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]) + (v1[2] - v2[2]) * (v1[2] - v2[2]) );
 }
 
 /** Compute the (normalized) mid-point between v1 and v2 */
 @nogc pure T[3] midpoint(T)(const T[3] v1, const T[3] v2, bool normalized = false) nothrow {
-    T[3] vMean = (v1[] + v2[]) / 2.0f;
-    if(normalized) vMean = vMean.normalize();
-    return(vMean);
+  T[3] vMean = (v1[] + v2[]) / 2.0f;
+  if(normalized) vMean = vMean.normalize();
+  return(vMean);
 }
 
 /** Mean of vector v */
 @nogc pure T mean(T)(const T[] v) nothrow { return(sum(v) / cast(T)(v.length)); }
 
+/** Sum of vector v */
+@nogc pure T sum(T)(const T[] v) nothrow { 
+  T s = 0;
+  for (size_t i = 0; i < v.length; i++) { s += v[i]; }
+  return s;
+}
+
 /** Sum of vector v, to the power of exp */
-@nogc pure T sum(T)(const T[] v, uint exp = 1) nothrow { 
-    T sum = 0;
-    for (size_t i = 0; i < v.length; i++) { sum += pow(v[i], exp); }
-    return(sum);
+@nogc pure T sum(T)(const T[] v, uint exp) nothrow { 
+  T s = 0;
+  for (size_t i = 0; i < v.length; i++) { s += pow(v[i], exp); }
+  return s;
 }
 
 /** Square root of vector v magnitude */
@@ -68,12 +73,12 @@ struct Vector {
 
 /** Returns the normalized vector of v */
 @nogc pure T[3] normalize(T)(T[3] v) nothrow {
-    float sqr = v.sum(2);
-    if(sqr == 0) return(v);
-    if(abs(sqr - 1.0f) < 1e-6f) return(v);
-    float invrt = 1.0f / sqrt(sqr);
-    v[] *= invrt;
-    return(v);
+  float sqr = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+  if(sqr == 0) return(v);
+  if(abs(sqr - 1.0f) < 1e-6f) return(v);
+  float invrt = 1.0f / sqrt(sqr);
+  v[] *= invrt;
+  return(v);
 }
 
 T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
@@ -83,46 +88,46 @@ T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
 
 /** Get the largest containing square of two vectors */
 @nogc pure T[3] containingSquare(T)(const T[3] v1, const T[3] v2) nothrow { 
-    T[3] res = [ 0.0f, 0.0f, 0.0f ];
-    res[0] = (v1[0] > v2[0])? v1[0] : v2[0];
-    res[1] = (v1[1] > v2[1])? v1[1] : v2[1];
-    res[2] = (v1[2] > v2[2])? v1[2] : v2[2];
-    return res;
+  T[3] res = [ 0.0f, 0.0f, 0.0f ];
+  res[0] = (v1[0] > v2[0])? v1[0] : v2[0];
+  res[1] = (v1[1] > v2[1])? v1[1] : v2[1];
+  res[2] = (v1[2] > v2[2])? v1[2] : v2[2];
+  return res;
 }
 
 /** Cross product between vectors */
 @nogc pure T[3] cross(T)(const T[3] v1, const T[3] v2) nothrow {
-    T[3] res = [ 0.0f, 0.0f, 0.0f ];
-    res[0] = v1[1]*v2[2] - v1[2]*v2[1];
-    res[1] = v1[2]*v2[0] - v1[0]*v2[2];
-    res[2] = v1[0]*v2[1] - v1[1]*v2[0];
-    return res;
+  T[3] res = [ 0.0f, 0.0f, 0.0f ];
+  res[0] = v1[1]*v2[2] - v1[2]*v2[1];
+  res[1] = v1[2]*v2[0] - v1[0]*v2[2];
+  res[2] = v1[0]*v2[1] - v1[1]*v2[0];
+  return res;
 }
 
 /** T[3] pass through vectorized functions for +,-,*,^
  * vAdd: a + v(1) | v(1) + v(2)
  * vMul, vDiv, vPow: b * v(1), b / v(1), v(1) * v(1) */
 @nogc pure T[3] vAdd(T)(const T[3] v1, const T[3] v2) nothrow {
-    T[3] vAdd = v1[] + v2[]; return(vAdd);
+  T[3] vAdd = v1[] + v2[]; return(vAdd);
 }
 @nogc pure T[3] vAdd(T)(const T[3] v, const T a) nothrow {
-    T[3] vAdd = v[] + a; return(vAdd);
+  T[3] vAdd = v[] + a; return(vAdd);
 }
 @nogc pure T[3] vSub(T)(const T[3] v1, const T[3] v2) nothrow {
-    T[3] vSub = v1[] - v2[]; return(vSub);
+  T[3] vSub = v1[] - v2[]; return(vSub);
 }
 @nogc pure T[3] negate(T)(T[3] v) nothrow {
-    v[] = -v[]; return(v);
+  v[] = -v[]; return(v);
 }
 @nogc pure T[3] vMul(T)(const T[3] v, const T[3] b) nothrow {
-    T[3] vMul = v[] * b[]; return(vMul);
+  T[3] vMul = v[] * b[]; return(vMul);
 }
 @nogc pure T[3] vMul(T)(const T[3] v, const T b) nothrow {
-    T[3] vMul = v[] * b; return(vMul);
+  T[3] vMul = v[] * b; return(vMul);
 }
 @nogc pure T[3] vDiv(T)(const T[3] v, const T b) nothrow {
-    T[3] vDiv = v[] / b; return(vDiv);
+  T[3] vDiv = v[] / b; return(vDiv);
 }
 @nogc pure T[3] vPow(T)(const T[3] v) nothrow {
-    T[3] vPow = v[] * v[]; return(vPow);
+  T[3] vPow = v[] * v[]; return(vPow);
 }

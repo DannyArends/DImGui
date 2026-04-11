@@ -4,7 +4,7 @@
  */
 import engine;
 
-import vector : dot, sum, x, y, z, magnitude, xyz, vSub, cross, normalize;
+import vector : dot, sum, x, y, z, magnitude, xyz, vMul, vSub, cross, normalize;
 import quaternion : xyzw, vMul;
 
 /** Matrix is a [4x4] 'structure' stored as float[16] (defaults to identity matrix).
@@ -53,7 +53,11 @@ Matrix toMatrix(aiMatrix4x4 m){
 
 /** Matrix x V3 */
 @nogc pure float[3] multiply(const Matrix m, const float[3] v) nothrow {
-  return(m.multiply(v.xyzw()).xyz());
+  float[3] res;
+  for (size_t i = 0; i < 3; ++i) {
+    res[i] = v.vMul([ m[i + 0], m[i + 4], m[i + 8]]).sum() + m[i+12];
+  }
+  return res;
 }
 
 /** Matrix x V4 */
