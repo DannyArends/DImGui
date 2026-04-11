@@ -9,7 +9,7 @@ public import bone : Bone;
 public import boundingbox : Bounds, BoundingBox;
 public import buffer : GeometryBuffer, StageBuffer;
 public import camera : Camera;
-public import chunk : Chunk, ChunkData;
+public import chunk : Block, Chunk, ChunkData;
 public import compute : Compute;
 public import color : Colors;
 public import commands : SingleTimeCommand;
