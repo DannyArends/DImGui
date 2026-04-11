@@ -52,12 +52,21 @@ class BoundingBox : Geometry {
     return(scale);
   }
 
-  @nogc pure float[3] bmin(size_t instance = 0) nothrow const {
-    return instances[instance].matrix.multiply(vertices[0].position);
+  @nogc pure private float[3][2] boundsWorld(size_t instance = 0) nothrow const {
+    auto m = instances[instance].matrix;
+    float[3] lo = vertices[0].position;
+    float[3] hi = vertices[6].position;
+    float[3] c = m.multiply([(lo[0]+hi[0])*0.5f, (lo[1]+hi[1])*0.5f, (lo[2]+hi[2])*0.5f]);
+    float[3] h = [(hi[0]-lo[0])*0.5f, (hi[1]-lo[1])*0.5f, (hi[2]-lo[2])*0.5f];
+    float[3] e = [abs(m[0])*h[0] + abs(m[4])*h[1] + abs(m[8])*h[2],
+                  abs(m[1])*h[0] + abs(m[5])*h[1] + abs(m[9])*h[2],
+                  abs(m[2])*h[0] + abs(m[6])*h[1] + abs(m[10])*h[2]];
+    return [[c[0]-e[0], c[1]-e[1], c[2]-e[2]],
+            [c[0]+e[0], c[1]+e[1], c[2]+e[2]]];
   }
-  @nogc pure float[3] bmax(size_t instance = 0) nothrow const {
-    return instances[instance].matrix.multiply(vertices[6].position);
-  }
+
+  @nogc pure float[3] bmin(size_t instance = 0) nothrow const { return boundsWorld(instance)[0]; }
+  @nogc pure float[3] bmax(size_t instance = 0) nothrow const { return boundsWorld(instance)[1]; }
 
   @nogc pure void setDimensions(float[3] min, float[3] max) nothrow {
     vertices[0].position = [min[0], min[1], min[2]]; vertices[1].position = [max[0], min[1], min[2]];
