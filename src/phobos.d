@@ -15,7 +15,7 @@ public import core.thread : Thread, thread_joinAll;
 public import core.stdc.stdlib : abort, exit, malloc, free;
 public import core.stdc.stdio : printf;
 
-public import std.algorithm : any, clamp, filter, map, max, min, remove, reverse, sort, swap;
+public import std.algorithm : any, clamp, filter, map, max, min, remove, reverse, sort, sum, swap;
 public import std.array : array, split;
 public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, receiveOnly, receiveTimeout;
 public import std.conv : to;

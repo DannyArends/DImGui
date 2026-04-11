@@ -8,6 +8,7 @@ import engine;
 import vector : normalize, vMul,vSub, vAdd, negate, xyz;
 import matrix : multiply, inverse, rotate, radian, perspective, transpose, lookAt;
 import quaternion : xyzw, normalize, rotate, qMul, angleAxis;
+import frustum : extractFrustum, aabbInFrustum;
 
 /** Camera
  */
@@ -26,23 +27,36 @@ struct Camera {
   SDL_FingerID[2] fingerIDs     = [-1, -1];               /// Android FingerIDs
   float[2][2]     fingerPos     = [[0,0],[0,0]];          /// normalized positions of finger 0 and 1
   float           lastPinchDist = -1.0f;                  /// -1 = no active pinch
+  bool            isDirty       = true;                   /// Camera moved/rotated this frame
 
   @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -speed]); }
   @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
   @property @nogc float[3] right() const nothrow { return orientation.multiply([ speed, 0.0f, 0.0f]); }
   @property @nogc float[3] left() const nothrow { return orientation.multiply([-speed, 0.0f, 0.0f]); }
-
-  @property uint width() const nothrow { return(currentExtent.width); };
-  @property uint height() const nothrow { return(currentExtent.height); };
+  @property @nogc uint width() const nothrow { return(currentExtent.width); };
+  @property @nogc uint height() const nothrow { return(currentExtent.height); };
   @property float aspectRatio() const nothrow { return(this.width / cast(float) this.height); }
   @nogc Matrix orientation() const nothrow {
     float[4] qYaw = angleAxis!float(rotation[0] + 90.0f, [0.0f, 1.0f, 0.0f]);
     float[4] qPitch = angleAxis!float(-rotation[1], [1.0f, 0.0f, 0.0f]);
     return qMul(qPitch, qYaw).normalize().rotate().transpose();
   }
-  @property Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
+  @property @nogc Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
   @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
   @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
+}
+
+@nogc void cullFrustum(ref App app, const Camera camera) nothrow {
+  auto frustum = extractFrustum(camera.proj.multiply(camera.view));
+  for (size_t x = 0; x < app.objects.length; x++) {
+    if (app.objects[x].box is null) continue;
+    app.objects[x].inFrustum = false;
+    for (size_t i = 0; i < app.objects[x].box.instances.length; i++) {
+      if (aabbInFrustum(frustum, app.objects[x].box.cachedBmin[i], app.objects[x].box.cachedBmax[i])) {
+        app.objects[x].inFrustum = true; break;
+      }
+    }
+  }
 }
 
 /* Create a position/rotation matrix through 3D space starting from xy */
@@ -56,7 +70,7 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 }
 
 /* Move the position the camera looks at */
-@nogc void move(ref Camera camera, float[3] movement) nothrow { camera.lookat = vAdd(camera.lookat, movement); }
+@nogc void move(ref Camera camera, float[3] movement) nothrow { camera.lookat = vAdd(camera.lookat, movement); camera.isDirty = true; }
 
 /* Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
@@ -67,5 +81,10 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
   camera.rotation[1] -= yrel;
   if(camera.rotation[1]  > 65) camera.rotation[1] = 65;
   if(camera.rotation[1]  < -65) camera.rotation[1] = -65;
-}
 
+  camera.isDirty = true;
+}
+@nogc void zoom(ref Camera camera, float delta) nothrow {
+  camera.distance = clamp(camera.distance + delta, 2.0f, 60.0f);
+  camera.isDirty = true;
+}

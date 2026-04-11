@@ -4,7 +4,23 @@
  */
 
 import engine;
+
 import imgui : faIcon;
+
+size_t vertexCount(Geometry o, bool showBounds) {
+  return o.vertices.length * o.instances.length + (showBounds && o.box ? o.box.vertices.length * o.box.instances.length : 0);
+}
+
+size_t indexCount(Geometry o, bool showBounds) {
+  return o.indices.length * o.instances.length + (showBounds && o.box ? o.box.indices.length * o.box.instances.length : 0);
+}
+
+string humanCount(size_t n) {
+  if (n >= 1_000_000) return format("%.1fM", n / 1_000_000.0);
+  if (n >= 1_000) return format("%.1fK", n / 1_000.0);
+  return format("%d", n);
+}
+
 /** Show the GUI window with FPS statistics
  */
 void showFPSwindow(ref App app, uint font = 1) {
@@ -28,8 +44,12 @@ void showFPSwindow(ref App app, uint font = 1) {
                                 VK_API_VERSION_PATCH(app.properties.apiVersion));
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
-    igText("%d/%d bones", app.bones.length, app.boneOffsets.length);
-    igText("%d/%d meshes", app.meshes.length, app.meshes.capacity);
+    igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
+    auto iV = app.objects.map!(o => o.vertexCount(app.showBounds)).sum();
+    auto iI = app.objects.map!(o => o.indexCount(app.showBounds)).sum();
+    auto hV = app.objects.filter!(o => !o.isVisible || !o.inFrustum).map!(o => o.vertexCount(app.showBounds)).sum();
+    auto hI = app.objects.filter!(o => !o.isVisible || !o.inFrustum).map!(o => o.indexCount(app.showBounds)).sum();
+    igText(toStringz(format("Shown: %s vertices, %s indices", humanCount(iV - hV), humanCount(iI - hI))));
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
   igEnd();

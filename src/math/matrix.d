@@ -18,7 +18,7 @@ struct Matrix {
   alias data this;
 }
 
-/** Convert from row-based aiMatrix to our column-based Matrix type
+/** Convert from row-major aiMatrix to our column-major Matrix type
  */
 Matrix toMatrix(aiMatrix4x4 m){
   float[16] myMatrixArray = [
