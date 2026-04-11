@@ -73,10 +73,7 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 
 /* Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
-  camera.rotation[0] -= xrel; 
-  if(camera.rotation[0]  > 360) camera.rotation[0] = 0;
-  if(camera.rotation[0]  < 0) camera.rotation[0] = 360;
-
+  camera.rotation[0] = fmod(camera.rotation[0] - xrel + 360.0f, 360.0f);
   camera.rotation[1] = clamp(camera.rotation[1] -= yrel, -65.0f, 65.0f);
   camera.isDirty = true;
 }
