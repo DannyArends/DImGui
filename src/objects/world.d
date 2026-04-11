@@ -14,12 +14,12 @@ import vector : vAdd, vMul, x, y, z;
  */
 struct WorldData {
   int[2] seed        = [42, 67];  /// [height seed, tile seed]
-  int renderDistance = 2;         /// Render distance used to load / evict chunks
-  float tileSize     = 0.5f;      /// Size (X & Z) of a tile
-  float tileHeight   = 0.5f;      /// Y-spacing between tiles
-  int chunkSize      = 16;        /// Number of tiles (X & Z) in a chunk
-  int chunkHeight    = 16;        /// Number of tiles (Y) in a chunk
-  float yOffset      = -8.0f;     /// Global world Y-offset
+  int renderDistance =   2;         /// Render distance used to load / evict chunks
+  float tileSize     =   1.5f;      /// Size (X & Z) of a tile
+  float tileHeight   =   1.5f;      /// Y-spacing between tiles
+  int chunkSize      =  32;        /// Number of tiles (X & Z) in a chunk
+  int chunkHeight    =  16;        /// Number of tiles (Y) in a chunk
+  float yOffset      = -10.0f;     /// Global world Y-offset
 
   /** Returns the filesystem path for a chunk's binary tile data file
    */
