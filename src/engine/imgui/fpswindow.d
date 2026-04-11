@@ -50,6 +50,7 @@ void showFPSwindow(ref App app, uint font = 1) {
     auto hV = app.objects.filter!(o => !o.isVisible || !o.inFrustum).map!(o => o.vertexCount(app.showBounds)).sum();
     auto hI = app.objects.filter!(o => !o.isVisible || !o.inFrustum).map!(o => o.indexCount(app.showBounds)).sum();
     igText(toStringz(format("Shown: %s vertices, %s indices", humanCount(iV - hV), humanCount(iI - hI))));
+    igText(toStringz(format("Shadow objects: %s / %s", humanCount(app.shadows.lastShadowInstances), humanCount(app.shadows.totalShadowInstances))));
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
   igEnd();

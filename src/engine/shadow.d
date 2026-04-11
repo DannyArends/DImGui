@@ -13,7 +13,7 @@ import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
 import uniforms : forEachUBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
-import frustum : cullFrustum, extractFrustum;
+import frustum : aabbInFrustum, extractFrustum;
 
 struct ShadowMap {
   ImageBuffer[] images;
@@ -23,13 +23,12 @@ struct ShadowMap {
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  version (Android) {
-    uint dimension = 512;                   /// Shadowmap resolution
-  }else{
-    uint dimension = 2048;                  /// Shadowmap resolution
-  }
+  uint dimension = isAndroid ? 512 : 1024;  /// Allow shadows to be disabled
+
   VkFramebuffer[] framebuffers;             /// Per-light framebuffers
   VkCommandBuffer[] commands;               /// Command buffers
+  uint lastShadowInstances = 0;
+  uint totalShadowInstances = 0;
 }
 
 struct LightUbo {
@@ -252,10 +251,12 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
                           app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
   auto shadowExtent = VkExtent2D(app.shadows.dimension, app.shadows.dimension);
+  app.shadows.lastShadowInstances = 0;
+  app.shadows.totalShadowInstances = 0;
   for(size_t l = 0; l < app.lights.length; l++) {
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
 
-    app.cullFrustum(extractFrustum(app.lights[l].lightSpaceMatrix));
+    auto lightFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
 
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -271,9 +272,17 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdPushConstants(cmd, app.shadows.pipeline.layout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(app.objects[x].isVisible && app.objects[x].inFrustum && app.objects[x].topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
-        app.shadow(app.objects[x], syncIndex);
-      }
+      if(!app.objects[x].isVisible || !app.objects[x].inFrustum) continue;
+      if(cast(Block)app.objects[x] !is null) continue;  // skip blocks, handled via chunk
+      auto chunk = cast(Chunk)app.objects[x];
+      uint inst = cast(uint)(chunk !is null ? chunk.block.instances.length : app.objects[x].instances.length);
+      app.shadows.totalShadowInstances += inst;
+      if(app.objects[x].topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
+      if(app.objects[x].box !is null && !aabbInFrustum(lightFrustum, app.objects[x].box.bmin(0), app.objects[x].box.bmax(0))) continue;
+      app.shadows.lastShadowInstances += inst;
+      if(chunk !is null) {
+        app.shadow(chunk.block, syncIndex);
+      } else { app.shadow(app.objects[x], syncIndex); }
     }
     vkCmdEndRenderPass(cmd);
     popLabel(cmd);

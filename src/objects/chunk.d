@@ -25,7 +25,7 @@ struct ChunkData {
 
 /** Renderable cube geometry for individual blocks within a chunk, not selectable
  */
-class Block : Cube {
+class Block : Square {
   this() { super(); isSelectable = false; name = (){ return "Block"; }; }
 }
 
@@ -50,38 +50,77 @@ class Chunk : Cube {
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
  */
-pure ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileType[] saved = null, int[3] coord) nothrow {
+ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileType[] saved = null, int[3] coord) {
   ChunkData data = ChunkData(coord);
   data.tiles.length = wd.tileCount;
+
+  // Pass 1: populate all tiles
   for (int i = 0; i < wd.tileCount; i++) {
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     data.tiles[i] = (saved.length > 0) ? saved[i] : wd.getTile(wc);
-    if (data.tiles[i] == TileType.None) continue;
+  }
 
-    // Skip fully buried blocks
+  // Pass 2: generate face instances
+  for (int i = 0; i < wd.tileCount; i++) {
+    if (data.tiles[i] == TileType.None) continue;
+    auto wc = wd.worldCoord(coord, wd.tileCoord(i));
+    auto neighbours = wd.tileNeighbours(wc);
+
+    // Skip fully buried tiles
     bool buried = true;
-    foreach (n; wd.tileNeighbours(wc)) {
+    foreach (n; neighbours) {
       int[3] nc = wd.chunkCoord(n);
-      if (nc != coord) { buried = false; break; }  // always show cross-chunk faces
-      if (wd.getTile(n) == TileType.None) { buried = false; break; }
+      if (nc != coord) { buried = false; break; }
+      int ni = wd.tileIndex(wd.localCoord(n));
+      if (ni < 0 || ni >= cast(int)data.tiles.length) { buried = false; break; }
+      if (data.tiles[ni] == TileType.None) { buried = false; break; }
     }
+    if (buried) continue;
 
     float[3] p = wd.worldPos(wc);
     float ts = wd.tileSize, th = wd.tileHeight;
-    Instance inst;
-    inst.uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
-    inst.matrix = translate([p[0], p[1] + wd.yOffset - th * 0.5f, p[2]]).multiply(scale([ts, th, ts]));
-    data.tileInstances ~= inst;
-    data.tileIndices ~= i;
-  }
-  foreach (ref inst; data.tileInstances) {
-    float[3] p = [inst.matrix[12], inst.matrix[13], inst.matrix[14]];
-    if (p[0] < data.bmin[0]) data.bmin[0] = p[0];
-    if (p[1] < data.bmin[1]) data.bmin[1] = p[1];
-    if (p[2] < data.bmin[2]) data.bmin[2] = p[2];
-    if (p[0] > data.bmax[0]) data.bmax[0] = p[0];
-    if (p[1] > data.bmax[1]) data.bmax[1] = p[1];
-    if (p[2] > data.bmax[2]) data.bmax[2] = p[2];
+    float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
+    auto uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
+
+    float[12][6] faces = [
+      [  0,  0,  ts,   1,  0,  0,   0,  th,  0,   px+ts/2, py,      pz      ],  // +X right
+      [  0,  0, -ts,  -1,  0,  0,   0,  th,  0,   px-ts/2, py,      pz      ],  // -X left
+      [ ts,  0,   0,   0,  1,  0,   0,   0, ts,   px,      py+th/2, pz      ],  // +Y top
+      [ ts,  0,   0,   0, -1,  0,   0,   0,-ts,   px,      py-th/2, pz      ],  // -Y bottom
+      [-ts,  0,   0,   0,  0,  1,   0,  th,  0,   px,      py,      pz+ts/2 ],  // +Z front
+      [ ts,  0,   0,   0,  0, -1,   0,  th,  0,   px,      py,      pz-ts/2 ],  // -Z back
+    ];
+
+    for (int f = 0; f < 6; f++) {
+      int[3] fnc = wd.chunkCoord(neighbours[f]);
+      bool faceExposed;
+      if (fnc != coord) {
+        faceExposed = wd.getTile(neighbours[f]) == TileType.None;
+      } else {
+        int ni = wd.tileIndex(wd.localCoord(neighbours[f]));
+        if (ni < 0 || ni >= cast(int)data.tiles.length) { faceExposed = true; }
+        else { faceExposed = data.tiles[ni] == TileType.None; }
+      }
+      if (!faceExposed) continue;
+
+      Instance inst;
+      inst.uvT = uvT;
+      inst.matrix = Matrix([
+        faces[f][0], faces[f][1], faces[f][2], 0,
+        faces[f][3], faces[f][4], faces[f][5], 0,
+        faces[f][6], faces[f][7], faces[f][8], 0,
+        faces[f][9], faces[f][10],faces[f][11],1
+      ]);
+      data.tileInstances ~= inst;
+      data.tileIndices ~= i;
+
+      if (faces[f][9]  < data.bmin[0]) data.bmin[0] = faces[f][9];
+      if (faces[f][10] < data.bmin[1]) data.bmin[1] = faces[f][10];
+      if (faces[f][11] < data.bmin[2]) data.bmin[2] = faces[f][11];
+      if (faces[f][9]  > data.bmax[0]) data.bmax[0] = faces[f][9];
+      if (faces[f][10] > data.bmax[1]) data.bmax[1] = faces[f][10];
+      if (faces[f][11] > data.bmax[2]) data.bmax[2] = faces[f][11];
+    }
   }
   return data;
 }
@@ -126,7 +165,15 @@ void finalizeChunk(ref App app, ChunkData data) {
   if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
 
   Chunk chunk = new Chunk(data);
-
+  SDL_Log("finalizeChunk: coord=[%d,%d] instances=%d block_class=%s", 
+    data.coord[0], data.coord[2], 
+    cast(int)chunk.block.instances.length,
+    toStringz(chunk.block.name()));
+if (chunk.block.instances.length > 0) {
+  auto m = chunk.block.instances[0].matrix;
+  SDL_Log("  first instance matrix[0,12,13,14]: %.2f %.2f %.2f %.2f", m[0], m[12], m[13], m[14]);
+}
+SDL_Log("  block vertices=%d indices=%d", chunk.block.vertices.length, chunk.block.indices.length);
   float sx = app.world.chunkWorldSize;
   float sy = app.world.chunkHeight * app.world.tileHeight;
   float cx = data.coord[0] * sx + sx * 0.5f;
