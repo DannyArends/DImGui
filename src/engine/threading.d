@@ -8,7 +8,7 @@ import engine;
 import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
 import bone : mergeBones;
 import buffer : destroyStagingBuffer;
-import chunk : buildChunkData, loadChunkTiles, finalizeChunk;
+import chunk : buildChunkData, finalizeChunk;
 import io : dir, fixPath;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
@@ -45,7 +45,7 @@ class TaskThread : Thread {
           } else { main.send("Unknown file", mytid); }
         },
         (immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
-          auto data = buildChunkData(wd, ta, wd.loadChunkTiles(coord), coord);
+          auto data = buildChunkData(wd, ta, coord);
           main.send(cast(immutable(ChunkData))data, mytid);
         },
         (bool active) { this.active = active; }  // shutdown signal
