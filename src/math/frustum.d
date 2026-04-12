@@ -36,7 +36,7 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
 @nogc void cullFrustum(ref App app, const Plane[6] frustum) nothrow {
   for (size_t x = 0; x < app.objects.length; x++) {
     if (app.objects[x].box is null) continue;
-    if(cast(Block)app.objects[x] !is null) continue;
+    if(cast(Tiles)app.objects[x] !is null) continue;
     app.objects[x].inFrustum = false;
     for (size_t i = 0; i < app.objects[x].box.instances.length; i++) {
       if (aabbInFrustum(frustum, app.objects[x].box.bmin(i), app.objects[x].box.bmax(i))) {
@@ -44,8 +44,8 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
         break;
       }
     }
-    // If this is a Chunk, propagate to its block
+    // If this is a Chunk, propagate to its tiles
     auto chunk = cast(Chunk)app.objects[x];
-    if (chunk !is null) chunk.block.inFrustum = app.objects[x].inFrustum;
+    if (chunk !is null) chunk.tiles.inFrustum = app.objects[x].inFrustum;
   }
 }

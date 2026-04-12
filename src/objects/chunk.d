@@ -16,7 +16,7 @@ import world : setTile;
  */
 struct ChunkData {
   int[3] coord;
-  TileType[] tiles;
+  TileType[] tileTypes;
   float[3][] tileBmin;
   float[3][] tileBmax;
   int[] pickIndices;
@@ -28,15 +28,15 @@ struct ChunkData {
 
 /** Renderable cube geometry for individual blocks within a chunk, not selectable
  */
-class Block : Square {
-  this() { super(); isSelectable = false; name = (){ return "Block"; }; }
+class Tiles : Square {
+  this() { super(); isSelectable = false; name = (){ return "Tiles"; }; }
 }
 
 /** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block
  */
 class Chunk : Cube {
   ChunkData data;
-  Geometry block;
+  Geometry tiles;
   bool dirty = false;
   alias data this;
 
@@ -45,8 +45,8 @@ class Chunk : Cube {
     data = cd;
     indices = [];
     instances = [Instance()];
-    block = new Block();
-    block.instances = cd.tileInstances;
+    tiles = new Tiles();
+    tiles.instances = cd.tileInstances;
     name = (){ return "Chunk"; };
   }
 }
@@ -85,13 +85,13 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3
 
   TileType[][int[3]] tileCache = wd.loadTileCache(coord);
 
-  data.tiles = tileCache[coord];
+  data.tileTypes = tileCache[coord];
 
   float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
-    if (data.tiles[i] == TileType.None) continue;
+    if (data.tileTypes[i] == TileType.None) continue;
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
-    auto uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
+    auto uvT = ta.tileUVTransform(tileData[data.tileTypes[i]].name);
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
     float[12][6] faces = [
@@ -156,7 +156,7 @@ void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
   if (data.coord in app.world.chunks) {
-    app.world.chunks[data.coord].block.deAllocate = true;
+    app.world.chunks[data.coord].tiles.deAllocate = true;
     app.world.chunks[data.coord].deAllocate = true;
   }
   if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
@@ -169,13 +169,13 @@ void finalizeChunk(ref App app, ChunkData data) {
   float cy = sy * 0.5f + app.world.yOffset;
   chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
 
-  chunk.block.texture("3DTextures");
-  chunk.block.box = new BoundingBox();
-  chunk.block.box.setDimensions(data.bmin, data.bmax);
-  chunk.block.box.instances = [Instance()]; // single instance, identity matrix
-  app.mapTextures(chunk.block);
+  chunk.tiles.texture("3DTextures");
+  chunk.tiles.box = new BoundingBox();
+  chunk.tiles.box.setDimensions(data.bmin, data.bmax);
+  chunk.tiles.box.instances = [Instance()]; // single instance, identity matrix
+  app.mapTextures(chunk.tiles);
 
-  app.objects ~= chunk.block;
+  app.objects ~= chunk.tiles;
   app.objects ~= chunk;
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
