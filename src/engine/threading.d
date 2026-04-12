@@ -23,7 +23,7 @@ class TaskThread : Thread {
     this.main = id;
     this.verbose = verbose;
     this.isDaemon(true);
-    super(&run);
+    super(&run, 8 * 1024 * 1024);  // 8MB stack
   }
 
   void run() { if(verbose) SDL_Log("Worker spawned: %p", thisTid);
