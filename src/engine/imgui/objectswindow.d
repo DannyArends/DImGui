@@ -24,8 +24,6 @@ void showObjectswindow(ref App app, bool* show, uint font = 0) {
     if(list){
       igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       foreach(i, object; app.objects){
-        if(cast(Block)object !is null) continue;  // Skip blocks
-        if(cast(Chunk)object !is null) continue;  // Skip chunks
         igPushID_Int(to!int(i));
         if (app.objects[i].instances.length == 0) { igPopID(); continue; }
         auto p = app.objects[i].position;

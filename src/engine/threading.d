@@ -8,7 +8,6 @@ import engine;
 import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
 import bone : mergeBones;
 import buffer : destroyStagingBuffer;
-import chunk : buildChunkData, finalizeChunk;
 import io : dir, fixPath;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
@@ -43,10 +42,6 @@ class TaskThread : Thread {
             auto openasset = cast(immutable(OpenAsset))loadOpenAsset(toStringz(path), verbose);
             main.send(openasset, mytid);
           } else { main.send("Unknown file", mytid); }
-        },
-        (immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
-          auto data = buildChunkData(wd, ta, coord);
-          main.send(cast(immutable(ChunkData))data, mytid);
         },
         (bool active) { this.active = active; }  // shutdown signal
       );
@@ -105,12 +100,6 @@ void checkAsync(ref App app) {
     Texture texture = cast(Texture)message;
     app.transferTextureAsync(texture);
     app.mainDeletionQueue.add((){ app.deAllocate(texture); });
-  });
-  // Accept any incoming chunks, and submit for finalization on GPU
-  receiveTimeout(dur!"msecs"(-1), (immutable(ChunkData) data, Tid tid) {
-    //SDL_Log("Received chunk [%d, %d] tiles=%d", data.coord[0], data.coord[2], data.tileInstances.length);
-    app.concurrency.workers[tid] = false;
-    app.finalizeChunk(cast(ChunkData)data);
   });
   // Check all pending texture transfers; promote to app.textures once GPU is done
   size_t i = 0;

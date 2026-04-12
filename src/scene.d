@@ -16,7 +16,7 @@ import assimp : loadOpenAsset;
  */
 void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
-  /*
+
   app.objects ~= new Square();
   app.objects[($-1)].computeTangents();
   app.objects[($-1)].texture("Bump_03_base");
@@ -31,7 +31,7 @@ void createScene(ref App app){
       instance = instance.translate([cast(float) x, 0.0f, cast(float)z]);
       app.objects[($-1)].instances ~= Instance(matrix: instance);
     }
-  }*/
+  }
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);

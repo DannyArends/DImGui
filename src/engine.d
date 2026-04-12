@@ -5,7 +5,6 @@
 
 public import phobos;
 public import structures;
-public import world : World;
 public import lights : LMode;
 
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
@@ -48,7 +47,6 @@ struct App {
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
   TileAtlas tileAtlas;                                                          /// TileAtlas for terrain rendering
-  World world;                                                                  /// The game world
   ShadowMap shadows;                                                            /// ShadowMap object
 
   VkSampler sampler;

@@ -5,9 +5,10 @@
 
 import engine;
 
-/** Show the GUI window for the World
- */
+
+
 void showWorldwindow(ref App app, bool* show, uint font = 0) {
+  /** Show the GUI window for the World
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(igBegin("World", show, 0)) {
     igBeginTable("World_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
@@ -56,4 +57,5 @@ void showWorldwindow(ref App app, bool* show, uint font = 0) {
     igEnd();
   } else { igEnd(); }
   igPopFont();
+   */
 }
