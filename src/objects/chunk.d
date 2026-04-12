@@ -51,20 +51,6 @@ class Chunk : Cube {
   }
 }
 
-bool isBuried(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, int[3] coord) {
-  foreach (n; wd.tileNeighbours(wc)) {
-    int[3] nc = wd.chunkCoord(n);
-    if (nc != coord) { return false; }
-    int[3] ln = wd.localCoord(n);
-    if (ln[1] < 0) continue;
-    if (ln[1] >= wd.chunkHeight) return false;
-    int ni = wd.tileIndex(ln);
-    if (ni < 0 || ni >= cast(int)tiles.length) return false;
-    if (tiles[ni] == TileType.None) return false;
-  }
-  return true;
-}
-
 bool isFaceExposed(immutable(WorldData) wd, const TileType[] tiles, int[3] neighbour, int[3] coord) {
   if (wd.chunkCoord(neighbour) != coord) return true;
   int[3] ln = wd.localCoord(neighbour);
@@ -128,7 +114,6 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileT
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tiles[i] == TileType.None) continue;
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
-    if (isBuried(wd, data.tiles, wc, coord)) continue;
     auto uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
     size_t faceStart = data.tileInstances.length;
     buildTileFaces(wd, data.tiles, wc, coord, uvT, data.tileInstances, data.tileIndices, i, data.bmin, data.bmax);
