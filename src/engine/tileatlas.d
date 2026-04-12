@@ -107,6 +107,7 @@ void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me",
   }
 
   auto atlas = SDL_CreateSurface(size, size, SDL_PIXELFORMAT_RGBA32);
+  SDL_FillSurfaceRect(atlas, null, SDL_MapRGBA(SDL_GetPixelFormatDetails(atlas.format), null, 0, 0, 0, 255));
   SDL_SetSurfaceBlendMode(atlas, SDL_BLENDMODE_NONE);
   foreach (tname; ta.uv.keys) {
     SDL_Rect dst = { ta.uv[tname][0][0], ta.uv[tname][1][0], ta.uv[tname][0][1] - ta.uv[tname][0][0], ta.uv[tname][1][1] - ta.uv[tname][1][0] };
