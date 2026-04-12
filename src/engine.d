@@ -29,7 +29,7 @@ struct App {
   };
 
   VkClearValue[3] clearValue = [ 
-    {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }}, 
+    {{ float32: [0.5f, 0.2f, 0.1f, 1.0f] }}, 
     {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }}, 
     { depthStencil : VkClearDepthStencilValue(1.0f, 0) } 
   ];
