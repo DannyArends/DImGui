@@ -51,8 +51,10 @@ class Chunk : Cube {
   }
 }
 
-bool isFaceExposed(immutable(WorldData) wd, const TileType[] tiles, int[3] neighbour, int[3] coord) {
-  if (wd.chunkCoord(neighbour) != coord) return true;
+bool isFaceExposed(immutable(WorldData) wd, const TileType[][int[3]] tileCache, int[3] neighbour, int[3] coord) {
+  int[3] nc = wd.chunkCoord(neighbour);
+  auto tiles = (nc in tileCache) ? tileCache[nc] : null;
+  if (tiles is null) return true;
   int[3] ln = wd.localCoord(neighbour);
   if (ln[1] < 0) return false;
   if (ln[1] >= wd.chunkHeight) return true;
@@ -61,7 +63,7 @@ bool isFaceExposed(immutable(WorldData) wd, const TileType[] tiles, int[3] neigh
   return tiles[ni] == TileType.None;
 }
 
-void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, int[3] coord,
+void buildTileFaces(immutable(WorldData) wd, const TileType[][int[3]] tileCache, int[3] wc, int[3] coord,
                     float[4] uvT, ref Instance[] instances, ref int[] indices, int tileIdx,
                     ref float[3] bmin, ref float[3] bmax) {
   float[3] p = wd.worldPos(wc);
@@ -79,7 +81,7 @@ void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, 
   ];
 
   for (int f = 0; f < 6; f++) {
-    if (!isFaceExposed(wd, tiles, neighbours[f], coord)) continue;
+    if (!isFaceExposed(wd, tileCache, neighbours[f], coord)) continue;
     Instance inst;
     inst.uvT = uvT;
     inst.matrix = Matrix([
@@ -104,27 +106,26 @@ void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, 
  */
 ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
   ChunkData data = ChunkData(coord);
-  data.tiles.length = wd.tileCount;
-  TileType[] saved = [];
+  TileType[][int[3]] tileCache;
 
-  auto path = wd.chunkPath(coord);
-  if(fsize(path, false) != wd.tileCount * TileType.sizeof) { 
-    SDL_RemovePath(path);
-  } else {
-    saved = cast(TileType[])readFile(path);
+  foreach (c; [coord, [coord[0]+1,0,coord[2]], [coord[0]-1,0,coord[2]], [coord[0],0,coord[2]+1], [coord[0],0,coord[2]-1]]) {
+    auto path = wd.chunkPath(c);
+    if (fsize(path, false) == wd.tileCount * TileType.sizeof) {
+      tileCache [c] = cast(TileType[])readFile(path);
+    } else {
+      SDL_RemovePath(path);
+      tileCache [c].length = wd.tileCount;
+      for (int i = 0; i < wd.tileCount; i++){ tileCache [c][i] = wd.getTile(wd.worldCoord(c, wd.tileCoord(i))); }
+    }
   }
-
-  for (int i = 0; i < wd.tileCount; i++) {
-    auto wc = wd.worldCoord(coord, wd.tileCoord(i));
-    data.tiles[i] = (saved.length > 0) ? saved[i] : wd.getTile(wc);
-  }
+  data.tiles = tileCache[coord];
 
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tiles[i] == TileType.None) continue;
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     auto uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
     size_t faceStart = data.tileInstances.length;
-    buildTileFaces(wd, data.tiles, wc, coord, uvT, data.tileInstances, data.tileIndices, i, data.bmin, data.bmax);
+    buildTileFaces(wd, tileCache, wc, coord, uvT, data.tileInstances, data.tileIndices, i, data.bmin, data.bmax);
     if (data.tileInstances.length > faceStart) {
       float ts = wd.tileSize, th = wd.tileHeight;
       float[3] p = wd.worldPos(wc);
