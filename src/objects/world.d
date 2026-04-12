@@ -128,7 +128,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
 
 /** Dispatch a chunk build job to the next available worker thread
  */
-void loadChunk(ref App app, int[3] coord){
+void dispatchWorker(ref App app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
@@ -149,7 +149,7 @@ void updateWorld(ref App app, float[3] lookat) {
   for (int cz = pc.z - effectiveRD ; cz <= pc.z + effectiveRD ; cz++) {
     for (int cx = pc.x - effectiveRD ; cx <= pc.x + effectiveRD ; cx++) {
       int[3] coord = [cx, 0, cz];
-      if (coord !in app.world.chunks && coord !in app.world.pendingChunks) app.loadChunk(coord);
+      if (coord !in app.world.chunks && coord !in app.world.pendingChunks) app.dispatchWorker(coord);
     }
   }
 
@@ -169,7 +169,7 @@ void updateWorld(ref App app, float[3] lookat) {
   foreach (coord; app.world.chunks.keys) {
     if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
       app.world.saveChunk(coord);
-      app.loadChunk(coord);
+      app.dispatchWorker(coord);
       app.world.chunks[coord].dirty = false;
     }
   }
