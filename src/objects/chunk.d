@@ -10,20 +10,21 @@ import intersection : intersects;
 import textures : mapTextures;
 import tileatlas : tileData, tileUVTransform;
 import matrix : translate, scale, multiply;
+import vector : expandBounds;
 import world : setTile;
 
 /** Holds raw tile data and instanced rendering data for a chunk
  */
 struct ChunkData {
-  int[3] coord;
-  TileType[] tileTypes;
-  float[3][] tileBmin;
-  float[3][] tileBmax;
-  int[] pickIndices;
-  Instance[] tileInstances;
-  int[] tileIndices;
-  float[3] bmin = [ float.max,  float.max,  float.max];
-  float[3] bmax = [-float.max, -float.max, -float.max];
+  int[3] coord;                                             /// Chunk coordinate in chunk-space
+  TileType[] tileTypes;                                     /// Tile type for each tile in the chunk
+  float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
+  float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
+  int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
+  Instance[] tileInstances;                                 /// GPU instances for all visible tile faces
+  int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
+  float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
+  float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
 
 /** Renderable cube geometry for individual blocks within a chunk, not selectable
@@ -115,12 +116,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3
       ]);
       data.tileInstances ~= inst;
       data.tileIndices ~= i;
-      if (faces[f][9]  < data.bmin[0]) data.bmin[0] = faces[f][9];
-      if (faces[f][10] < data.bmin[1]) data.bmin[1] = faces[f][10];
-      if (faces[f][11] < data.bmin[2]) data.bmin[2] = faces[f][11];
-      if (faces[f][9]  > data.bmax[0]) data.bmax[0] = faces[f][9];
-      if (faces[f][10] > data.bmax[1]) data.bmax[1] = faces[f][10];
-      if (faces[f][11] > data.bmax[2]) data.bmax[2] = faces[f][11];
+      expandBounds(data.bmin, data.bmax, [faces[f][9], faces[f][10], faces[f][11]]);
     }
     if (data.tileInstances.length > faceStart) {
       data.tileBmin ~= [px - ts/2, py - th/2, pz - ts/2];

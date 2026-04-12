@@ -44,6 +44,16 @@ struct Vector {
   return sqrt( (v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]) + (v1[2] - v2[2]) * (v1[2] - v2[2]) );
 }
 
+/** Expand a bounding box */
+@nogc pure void expandBounds(ref float[3] bmin, ref float[3] bmax, float[3] p) nothrow {
+  if (p[0] < bmin[0]) bmin[0] = p[0];
+  if (p[1] < bmin[1]) bmin[1] = p[1];
+  if (p[2] < bmin[2]) bmin[2] = p[2];
+  if (p[0] > bmax[0]) bmax[0] = p[0];
+  if (p[1] > bmax[1]) bmax[1] = p[1];
+  if (p[2] > bmax[2]) bmax[2] = p[2];
+}
+
 /** Compute the (normalized) mid-point between v1 and v2 */
 @nogc pure T[3] midpoint(T)(const T[3] v1, const T[3] v2, bool normalized = false) nothrow {
   T[3] vMean = (v1[] + v2[]) / 2.0f;
