@@ -86,13 +86,8 @@ struct WorldData {
 struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks being generated async
-  Chunk[] pendingDealloc;                                   /// Chunks waiting one frame before deallocation
   WorldData data;
   alias data this;
-
-  /** Returns the surface tile coordinate at (tx, tz) based on noise height
-   */
-  int[3] surfaceTile(int tx, int tz) { return [tx, cast(int)(noiseHT(tx, tz, seed)[0] * (chunkHeight - 1)), tz]; }
 
   /** Save chunk tile data to disk
    */
