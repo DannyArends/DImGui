@@ -102,9 +102,17 @@ void buildTileFaces(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, 
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
  */
-ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileType[] saved = null, int[3] coord) {
+ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
   ChunkData data = ChunkData(coord);
   data.tiles.length = wd.tileCount;
+  TileType[] saved = [];
+
+  auto path = wd.chunkPath(coord);
+  if(fsize(path, false) != wd.tileCount * TileType.sizeof) { 
+    SDL_RemovePath(path);
+  } else {
+    saved = cast(TileType[])readFile(path);
+  }
 
   for (int i = 0; i < wd.tileCount; i++) {
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
@@ -127,14 +135,6 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, TileT
     }
   }
   return data;
-}
-
-/** Load saved tile types from disk for a chunk, returns empty array if file is missing or corrupt
- */
-TileType[] loadChunkTiles(immutable(WorldData) wd, int[3] coord) {
-  auto path = wd.chunkPath(coord);
-  if(fsize(path, false) != wd.tileCount * TileType.sizeof) { SDL_RemovePath(path); return []; }
-  return cast(TileType[])readFile(path);
 }
 
 /** Two-phase world pick: broad phase via chunk BBs, narrow phase per block instance, updates highlight
