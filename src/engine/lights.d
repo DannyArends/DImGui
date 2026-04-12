@@ -5,9 +5,11 @@
 
 import engine;
 
+import geometry;
 import matrix : orthogonal, perspective, multiply, lookAt;
 import ssbo : updateSSBO;
-import vector : normalize, vAdd, vSub, negate, vMul;
+import vector : normalize, vAdd, vSub, negate, vMul, xyz;
+import matrix : degree, translate;
 
 enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
 
@@ -17,12 +19,21 @@ struct Light {
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
   float[4] properties = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light properties [ambient, attenuation, angle, unused]
+  
+  float pitch(){ 
+    auto d = [direction[0], direction[1], direction[2]].normalize();
+    return degree(asin(-d[1])); 
+  }
+  float yaw(){ 
+    auto d = [direction[0], direction[1], direction[2]].normalize();
+    return degree(atan2(d[0], d[2])); 
+  }
 }
 
 enum Lights : Light {
-  Red    = Light(Matrix.init, [ 4.0f, 10.0f,-10.0f, 1.0f], [15.0f, 2.5f,  0.0f, 1.0f], [ 2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 40.0f, 0.0f]),
-  Green  = Light(Matrix.init, [ 3.0f,  6.0f, -5.0f, 1.0f], [ 0.0f,15.0f,  2.5f, 1.0f], [-3.0f,  -9.0f,  3.0f, 0.0f], [0.0f, 0.001f, 40.0f, 0.0f]),
-  Blue   = Light(Matrix.init, [ 0.0f, 10.0f, -3.5f, 1.0f], [ 2.5f, 0.0f, 15.0f, 1.0f], [ 0.5f,  -2.0f,  1.5f, 0.0f], [0.0f, 0.001f, 40.0f, 0.0f]),
+  Red    = Light(Matrix.init, [ 4.0f, 10.0f,10.0f, 1.0f], [15.0f, 2.5f,  0.0f, 1.0f], [ 2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 40.0f, 0.0f]),
+  Green  = Light(Matrix.init, [ 3.0f,  6.0f, 5.0f, 1.0f], [ 0.0f,15.0f,  2.5f, 1.0f], [-3.0f,  -9.0f,  3.0f, 0.0f], [0.0f, 0.001f, 40.0f, 0.0f]),
+  Blue   = Light(Matrix.init, [ 0.0f, 10.0f, 3.5f, 1.0f], [ 2.5f, 0.0f, 15.0f, 1.0f], [ 0.5f,  -2.0f,  1.5f, 0.0f], [0.0f, 0.001f, 40.0f, 0.0f]),
   Bright = Light(Matrix.init, [ 0.0f, 20.0f,  0.0f, 1.0f], [50.0f,50.0f, 50.0f, 1.0f], [ 0.1f,  -1.0f,  0.1f, 0.0f], [0.0f, 0.001f, 75.0f, 0.0f])
 };
 
@@ -44,6 +55,24 @@ void computeLightSpace(const App app, ref Light light, float nearPlane = 0.1f, f
   float fovY = (2 * light.properties[2]);
   Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
+}
+
+
+/** Show Lights as cones
+ */
+void toggleLightGeometries(ref App app) {
+  foreach (o; app.objects) {
+    if (cast(Cone)o !is null && o.name() == "LightCone") o.deAllocate = true;
+  }
+  if (!app.showLights) return;
+  foreach (ref light; app.lights) {
+    app.objects ~= new Cone();
+    SDL_Log("direction: %f %f %f", light.direction[0], light.direction[1], light.direction[2]);
+    app.objects[$-1].name = (){ return "LightCone"; };
+    app.objects[$-1].rotate([light.yaw(), 1.0f, light.pitch()]);
+    app.objects[$-1].position(light.position[0..3]);
+    app.objects[$-1].setColor(light.intensity);
+  }
 }
 
 /** Transfer the lighting into the SSBO for buffer

@@ -6,6 +6,7 @@
 import engine;
 
 import imgui : clearSettings;
+import lights : toggleLightGeometries;
 
 /** Show the GUI window with global settings
  */
@@ -34,6 +35,10 @@ void showSettingswindow(ref App app, bool* show, uint font = 0) {
     igTableNextColumn();
     igText("Volume", ImVec2(0.0f, 0.0f)); igTableNextColumn();
     igSliderScalar("##", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
+
+    igTableNextColumn();
+    igText("Show Lights", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+    if (igCheckbox("##showLights", &app.showLights)) app.toggleLightGeometries();
 
     igTableNextColumn();
     igText("Disco Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();

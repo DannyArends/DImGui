@@ -52,6 +52,9 @@ class Chunk : Cube {
   }
 }
 
+/** Check if a face is exposed / uncovered
+ * TODO: should use TileType[][int[3]] (coordinate as index) but that doesn't work on Android
+ */
 bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
   int[3] nc = wd.chunkCoord(neighbour);
   if (nc == coord) { /// Same chunk
@@ -74,6 +77,9 @@ bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const
   return true;
 }
 
+/** Load the TileCache, 
+ * TODO: should use TileType[][int[3]] (coordinate as index) but that doesn't work on Android
+ */
 TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
   TileType[][5] tileCache;
   foreach (ci; 0 .. 5) {
@@ -171,7 +177,7 @@ void finalizeChunk(ref App app, ChunkData data) {
   float sy = app.world.chunkHeight * app.world.tileHeight;
   float cx = data.coord[0] * sx + sx * 0.5f;
   float cz = data.coord[2] * sx + sx * 0.5f;
-  float cy = sy * 0.5f + app.world.yOffset;
+  float cy = sy * 0.5f;
   chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
 
   chunk.tiles.texture("3DTextures");
