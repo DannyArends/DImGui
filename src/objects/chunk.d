@@ -52,41 +52,50 @@ class Chunk : Cube {
   }
 }
 
-bool isFaceExposed(immutable(WorldData) wd, const TileType[][int[3]] tileCache, int[3] neighbour, int[3] coord) {
+bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
   int[3] nc = wd.chunkCoord(neighbour);
-  auto tiles = (nc in tileCache) ? tileCache[nc] : null;
-  if (tiles is null) return true;
-  int[3] ln = wd.localCoord(neighbour);
-  if (ln[1] < 0) return false;
-  if (ln[1] >= wd.chunkHeight) return true;
-  int ni = wd.tileIndex(ln);
-  if (ni < 0 || ni >= cast(int)tiles.length) return true;
-  return tiles[ni] == TileType.None;
+  if (nc == coord) { /// Same chunk
+    int[3] ln = wd.localCoord(neighbour);
+    if (ln[1] < 0) return false;
+    if (ln[1] >= wd.chunkHeight) return true;
+    int ni = wd.tileIndex(ln);
+    if (ni < 0 || ni >= cast(int)tileCache[0].length) return true;
+    return tileCache[0][ni] == TileType.None;
+  }
+  foreach (ci; 1 .. 5) { /// Check all neighbouring chunks
+    if (coords[ci] != nc) continue;
+    int[3] ln = wd.localCoord(neighbour);
+    if (ln[1] < 0) return false;
+    if (ln[1] >= wd.chunkHeight) return true;
+    int ni = wd.tileIndex(ln);
+    if (ni < 0 || ni >= cast(int)tileCache[ci].length) return true;
+    return tileCache[ci][ni] == TileType.None;
+  }
+  return true;
 }
 
-TileType[][int[3]] loadTileCache(immutable(WorldData) wd, int[3] coord){
-  TileType[][int[3]] tileCache;
-  foreach (c; [coord, [coord[0]+1,0,coord[2]], [coord[0]-1,0,coord[2]], [coord[0],0,coord[2]+1], [coord[0],0,coord[2]-1]]) {
-    auto path = wd.chunkPath(c);
+TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
+  TileType[][5] tileCache;
+  foreach (ci; 0 .. 5) {
+    auto path = wd.chunkPath(coords[ci]);
     if (fsize(path, false) == wd.tileCount * TileType.sizeof) {
-      tileCache[c] = cast(TileType[])readFile(path);
+      tileCache[ci] = cast(TileType[])readFile(path);
     } else {
       SDL_RemovePath(path);
-      tileCache[c].length = wd.tileCount;
-      for (int i = 0; i < wd.tileCount; i++) { tileCache[c][i] = wd.getTile(wd.worldCoord(c, wd.tileCoord(i))); }
+      tileCache[ci] = (cast(TileType*)malloc(wd.tileCount * TileType.sizeof))[0 .. wd.tileCount];
+      for (int i = 0; i < wd.tileCount; i++) tileCache[ci][i] = wd.getTile(wd.worldCoord(coords[ci], wd.tileCoord(i)));
     }
   }
-  return(tileCache);
+  return tileCache;
 }
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
  */
 ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
-  ChunkData data = ChunkData(coord);
+  int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
+  TileType[][5] tileCache = wd.loadTileCache(coords, coord);
 
-  TileType[][int[3]] tileCache = wd.loadTileCache(coord);
-
-  data.tileTypes = tileCache[coord];
+  ChunkData data = ChunkData(coord, tileCache[0]);
 
   float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
@@ -105,7 +114,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3
     ];
     size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
-      if (!isFaceExposed(wd, tileCache, wd.tileNeighbours(wc)[f], coord)) continue;
+      if (!wd.isFaceExposed(tileCache, coords, wd.tileNeighbours(wc)[f], coord)) continue;
       Instance inst;
       inst.uvT = uvT;
       inst.matrix = Matrix([
