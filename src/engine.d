@@ -127,6 +127,7 @@ struct App {
   bool showBounds = false;                                                      /// Show bounding boxes
   LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
+  bool showLights = false;                                                      /// Show lights
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint verbose = 0;                                                             /// Be very verbose
   bool disco = false;                                                           /// Disco mode
