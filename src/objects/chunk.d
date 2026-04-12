@@ -66,7 +66,7 @@ bool isBuried(immutable(WorldData) wd, const TileType[] tiles, int[3] wc, int[3]
 }
 
 bool isFaceExposed(immutable(WorldData) wd, const TileType[] tiles, int[3] neighbour, int[3] coord) {
-  if (wd.chunkCoord(neighbour) != coord) return wd.getTile(neighbour) == TileType.None;
+  if (wd.chunkCoord(neighbour) != coord) return true;
   int[3] ln = wd.localCoord(neighbour);
   if (ln[1] < 0) return false;
   if (ln[1] >= wd.chunkHeight) return true;
