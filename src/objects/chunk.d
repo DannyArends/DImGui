@@ -169,10 +169,11 @@ void finalizeChunk(ref App app, ChunkData data) {
   chunk.tiles.box = new BoundingBox();
   chunk.tiles.box.setDimensions(data.bmin, data.bmax);
   chunk.tiles.box.instances = [Instance()]; // single instance, identity matrix
-  app.mapTextures(chunk.tiles);
 
   app.objects ~= chunk.tiles;
   app.objects ~= chunk;
+  app.mapTextures(chunk.tiles);
+
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
   app.camera.isDirty = true;
