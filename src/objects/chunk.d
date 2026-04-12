@@ -63,73 +63,66 @@ bool isFaceExposed(immutable(WorldData) wd, const TileType[][int[3]] tileCache, 
   return tiles[ni] == TileType.None;
 }
 
-void buildTileFaces(immutable(WorldData) wd, const TileType[][int[3]] tileCache, int[3] wc, int[3] coord,
-                    float[4] uvT, ref Instance[] instances, ref int[] indices, int tileIdx,
-                    ref float[3] bmin, ref float[3] bmax) {
-  float[3] p = wd.worldPos(wc);
-  float ts = wd.tileSize, th = wd.tileHeight;
-  float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
-  auto neighbours = wd.tileNeighbours(wc);
-
-  float[12][6] faces = [
-    [  0,  0,  ts,   1,  0,  0,   0,  th,  0,   px+ts/2, py,      pz      ],
-    [  0,  0, -ts,  -1,  0,  0,   0,  th,  0,   px-ts/2, py,      pz      ],
-    [ ts,  0,   0,   0,  1,  0,   0,   0, ts,   px,      py+th/2, pz      ],
-    [ ts,  0,   0,   0, -1,  0,   0,   0,-ts,   px,      py-th/2, pz      ],
-    [-ts,  0,   0,   0,  0,  1,   0,  th,  0,   px,      py,      pz+ts/2 ],
-    [ ts,  0,   0,   0,  0, -1,   0,  th,  0,   px,      py,      pz-ts/2 ],
-  ];
-
-  for (int f = 0; f < 6; f++) {
-    if (!isFaceExposed(wd, tileCache, neighbours[f], coord)) continue;
-    Instance inst;
-    inst.uvT = uvT;
-    inst.matrix = Matrix([
-      faces[f][0], faces[f][1], faces[f][2], 0,
-      faces[f][3], faces[f][4], faces[f][5], 0,
-      faces[f][6], faces[f][7], faces[f][8], 0,
-      faces[f][9], faces[f][10],faces[f][11],1
-    ]);
-    instances ~= inst;
-    indices ~= tileIdx;
-
-    if (faces[f][9]  < bmin[0]) bmin[0] = faces[f][9];
-    if (faces[f][10] < bmin[1]) bmin[1] = faces[f][10];
-    if (faces[f][11] < bmin[2]) bmin[2] = faces[f][11];
-    if (faces[f][9]  > bmax[0]) bmax[0] = faces[f][9];
-    if (faces[f][10] > bmax[1]) bmax[1] = faces[f][10];
-    if (faces[f][11] > bmax[2]) bmax[2] = faces[f][11];
+TileType[][int[3]] loadTileCache(immutable(WorldData) wd, int[3] coord){
+  TileType[][int[3]] tileCache;
+  foreach (c; [coord, [coord[0]+1,0,coord[2]], [coord[0]-1,0,coord[2]], [coord[0],0,coord[2]+1], [coord[0],0,coord[2]-1]]) {
+    auto path = wd.chunkPath(c);
+    if (fsize(path, false) == wd.tileCount * TileType.sizeof) {
+      tileCache[c] = cast(TileType[])readFile(path);
+    } else {
+      SDL_RemovePath(path);
+      tileCache[c].length = wd.tileCount;
+      for (int i = 0; i < wd.tileCount; i++) { tileCache[c][i] = wd.getTile(wd.worldCoord(c, wd.tileCoord(i))); }
+    }
   }
+  return(tileCache);
 }
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
  */
 ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
   ChunkData data = ChunkData(coord);
-  TileType[][int[3]] tileCache;
 
-  foreach (c; [coord, [coord[0]+1,0,coord[2]], [coord[0]-1,0,coord[2]], [coord[0],0,coord[2]+1], [coord[0],0,coord[2]-1]]) {
-    auto path = wd.chunkPath(c);
-    if (fsize(path, false) == wd.tileCount * TileType.sizeof) {
-      tileCache [c] = cast(TileType[])readFile(path);
-    } else {
-      SDL_RemovePath(path);
-      tileCache [c].length = wd.tileCount;
-      for (int i = 0; i < wd.tileCount; i++){ tileCache [c][i] = wd.getTile(wd.worldCoord(c, wd.tileCoord(i))); }
-    }
-  }
+  TileType[][int[3]] tileCache = wd.loadTileCache(coord);
+
   data.tiles = tileCache[coord];
 
+  float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tiles[i] == TileType.None) continue;
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     auto uvT = ta.tileUVTransform(tileData[data.tiles[i]].name);
+    float[3] p = wd.worldPos(wc);
+    float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
+    float[12][6] faces = [
+      [  0,  0,  ts,   1,  0,  0,   0,  th,  0,   px+ts/2, py,      pz      ],
+      [  0,  0, -ts,  -1,  0,  0,   0,  th,  0,   px-ts/2, py,      pz      ],
+      [ ts,  0,   0,   0,  1,  0,   0,   0, ts,   px,      py+th/2, pz      ],
+      [ ts,  0,   0,   0, -1,  0,   0,   0,-ts,   px,      py-th/2, pz      ],
+      [-ts,  0,   0,   0,  0,  1,   0,  th,  0,   px,      py,      pz+ts/2 ],
+      [ ts,  0,   0,   0,  0, -1,   0,  th,  0,   px,      py,      pz-ts/2 ],
+    ];
     size_t faceStart = data.tileInstances.length;
-    buildTileFaces(wd, tileCache, wc, coord, uvT, data.tileInstances, data.tileIndices, i, data.bmin, data.bmax);
+    foreach (f; 0 .. 6) {
+      if (!isFaceExposed(wd, tileCache, wd.tileNeighbours(wc)[f], coord)) continue;
+      Instance inst;
+      inst.uvT = uvT;
+      inst.matrix = Matrix([
+        faces[f][0], faces[f][1], faces[f][2], 0,
+        faces[f][3], faces[f][4], faces[f][5], 0,
+        faces[f][6], faces[f][7], faces[f][8], 0,
+        faces[f][9], faces[f][10],faces[f][11],1
+      ]);
+      data.tileInstances ~= inst;
+      data.tileIndices ~= i;
+      if (faces[f][9]  < data.bmin[0]) data.bmin[0] = faces[f][9];
+      if (faces[f][10] < data.bmin[1]) data.bmin[1] = faces[f][10];
+      if (faces[f][11] < data.bmin[2]) data.bmin[2] = faces[f][11];
+      if (faces[f][9]  > data.bmax[0]) data.bmax[0] = faces[f][9];
+      if (faces[f][10] > data.bmax[1]) data.bmax[1] = faces[f][10];
+      if (faces[f][11] > data.bmax[2]) data.bmax[2] = faces[f][11];
+    }
     if (data.tileInstances.length > faceStart) {
-      float ts = wd.tileSize, th = wd.tileHeight;
-      float[3] p = wd.worldPos(wc);
-      float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
       data.tileBmin ~= [px - ts/2, py - th/2, pz - ts/2];
       data.tileBmax ~= [px + ts/2, py + th/2, pz + ts/2];
       data.pickIndices ~= i;
