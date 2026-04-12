@@ -91,14 +91,14 @@ struct World {
 
   /** Save chunk tile data to disk
    */
-  void saveChunk(int[3] coord) { writeFile(chunkPath(coord), cast(char[])chunks[coord].tiles); }
+  void saveChunk(int[3] coord) { writeFile(chunkPath(coord), cast(char[])chunks[coord].tileTypes); }
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps
    */
   void clear(ref App app) {
     foreach (coord; chunks.keys) {
       if (chunks[coord] !is null) {
-        chunks[coord].block.deAllocate = true;
+        chunks[coord].tiles.deAllocate = true;
         chunks[coord].deAllocate = true;
       }
     }
@@ -116,7 +116,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(coord !in app.world.chunks) return;
 
   int idx = app.world.tileIndex(app.world.localCoord(tile));
-  app.world.chunks[coord].tiles[idx] = newType;
+  app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.chunks[coord].dirty = true;
 
   // Mark neighbouring chunks dirty if tile is on a chunk boundary
@@ -158,7 +158,7 @@ void updateWorld(ref App app, float[3] lookat) {
     if (abs(coord[0] - pc[0]) > effectiveRD  || abs(coord[2] - pc[2]) > effectiveRD ) {
       if (app.world.chunks[coord].dirty) app.world.saveChunk(coord);
       if (app.world.chunks[coord] !is null) {
-        app.world.chunks[coord].block.deAllocate = true;
+        app.world.chunks[coord].tiles.deAllocate = true;
         app.world.chunks[coord].deAllocate = true; 
       }
       app.world.chunks.remove(coord);
