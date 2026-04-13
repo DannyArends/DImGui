@@ -136,9 +136,9 @@ struct App {
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
 
   // Properties based on the SwapChain
-  @property pure @nogc uint imageCount() nothrow { return(cast(uint)swapChainImages.length); }
-  @property pure @nogc bool trace() nothrow { return(verbose > 1); }
-  @property pure @nogc uint framesInFlight() nothrow { return(cast(uint)swapChainImages.length + 1); }
+  @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }
+  @property pure @nogc bool trace() nothrow const { return(verbose > 1); }
+  @property pure @nogc uint framesInFlight() nothrow const { return(cast(uint)swapChainImages.length + 1); }
   @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
   @property VkPhysicalDeviceProperties properties() {
     VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p);
