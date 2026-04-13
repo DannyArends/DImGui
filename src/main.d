@@ -79,6 +79,7 @@ void run(string[] args = null) {
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
+    app.removeGeometry();     // Remove stale geometry
     app.checkAsync();
     app.handleEvents();
 
@@ -87,7 +88,6 @@ void run(string[] args = null) {
 
     app.checkForResize();     // Check for resize
     app.renderFrame();        // Reder frame
-    app.removeGeometry();     // Remove stale geometry
     app.presentFrame();       // Show frame
     app.totalFramesRendered++;
     app.time[FRAMESTOP] = SDL_GetTicks();

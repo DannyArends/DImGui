@@ -4,7 +4,7 @@
  */
 import engine;
 
-import geometry : texture;
+import geometry : texture, deAllocate;
 import io : readFile, fsize;
 import intersection : intersects;
 import textures : mapTextures;
@@ -52,6 +52,9 @@ class Chunk : Cube {
   }
 }
 
+/** Check if a face is exposed / uncovered
+ * TODO: should use TileType[][int[3]] (coordinate as index) but that doesn't work on Android
+ */
 bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
   int[3] nc = wd.chunkCoord(neighbour);
   if (nc == coord) { /// Same chunk
@@ -74,6 +77,9 @@ bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const
   return true;
 }
 
+/** Load the TileCache, 
+ * TODO: should use TileType[][int[3]] (coordinate as index) but that doesn't work on Android
+ */
 TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
   TileType[][5] tileCache;
   foreach (ci; 0 .. 5) {
@@ -125,8 +131,10 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3
       ]);
       data.tileInstances ~= inst;
       data.tileIndices ~= i;
-      expandBounds(data.bmin, data.bmax, [faces[f][9], faces[f][10], faces[f][11]]);
     }
+    // Always expand chunk AABB with full tile extents, regardless of face culling
+    expandBounds(data.bmin, data.bmax, [px - ts/2, py - th/2, pz - ts/2]);
+    expandBounds(data.bmin, data.bmax, [px + ts/2, py + th/2, pz + ts/2]);
     if (data.tileInstances.length > faceStart) {
       data.tileBmin ~= [px - ts/2, py - th/2, pz - ts/2];
       data.tileBmax ~= [px + ts/2, py + th/2, pz + ts/2];
@@ -142,7 +150,7 @@ void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
   Intersection best;
   foreach (ref hit; hits) {
     auto chunk = cast(Chunk)app.objects[hit.idx[0]];
-    if (chunk is null) return;
+    if (chunk is null) continue;
     for (size_t j = 0; j < chunk.tileBmin.length; j++) {
       auto i = ray.intersects(chunk.tileBmin[j], chunk.tileBmax[j], hit.idx[0], j);
       if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
@@ -160,10 +168,6 @@ void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
  */
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
-  if (data.coord in app.world.chunks) {
-    app.world.chunks[data.coord].tiles.deAllocate = true;
-    app.world.chunks[data.coord].deAllocate = true;
-  }
   if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
 
   Chunk chunk = new Chunk(data);
@@ -179,12 +183,27 @@ void finalizeChunk(ref App app, ChunkData data) {
   chunk.tiles.box.setDimensions(data.bmin, data.bmax);
   chunk.tiles.box.instances = [Instance()]; // single instance, identity matrix
 
-  app.objects ~= chunk.tiles;
-  app.objects ~= chunk;
+  // Replace old chunk objects in-place within app.objects to preserve mesh slot indices.
+  // Appending new objects would shift meshdef for all subsequent objects, causing a one-frame
+  // mismatch between the SSBO (updated immediately) and instance buffers (updated next frame).
+  if (data.coord in app.world.chunks) {
+    auto old = app.world.chunks[data.coord];
+    foreach(ref o; app.objects) {
+      if(o is old.tiles) { o = chunk.tiles; continue; }
+      if(o is old) { o = chunk; continue; }
+    }
+    app.deAllocate(old.tiles);
+    app.deAllocate(old);
+  } else {
+    app.objects ~= chunk.tiles;
+    app.objects ~= chunk;
+  }
   app.mapTextures(chunk.tiles);
 
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
   app.camera.isDirty = true;
+  app.shadows.dirty = true;
+  app.buffers["MeshMatrices"].dirty[] = true;
 }
 

@@ -9,24 +9,18 @@ import textures : ImTextureRefFromID;
 
 /** Show the GUI window which shows loaded Textures
  */
-void showTextureswindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.gui.fonts[font], app.gui.fontsize);
-  if(igBegin("Textures", show, 0)){
-    igBeginTable("Texture_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-    foreach(i, texture; app.textures) {
-      if(fromStringz(texture.path) == "empty") continue;
-      float ratio = cast(float)(texture.height) / texture.width;
-      igTableNextRow(0, 5.0f);
-      igTableNextColumn();
-      igText(toStringz(baseName(fromStringz(texture.path))), ImVec2(0.0f, 0.0f));
-      igTableNextColumn();
-      igText("%d x %d", texture.width, texture.height);
-      igTableNextColumn();
-      igImage(ImTextureRefFromID(cast(ulong)texture.imID), ImVec2(100, min(100, cast(uint)(100 * ratio))), ImVec2(0, 0), ImVec2(1, 1));
-    }
-    igEndTable();
-    igEnd();
-  }else { igEnd(); }
-  igPopFont();
+void showTexturesContent(ref App app, uint font = 0) {
+  const(char)*[] names;
+  foreach(texture; app.textures) {
+    if(fromStringz(texture.path) == "empty") continue;
+    names ~= toStringz(baseName(fromStringz(texture.path)));
+  }
+
+  igCombo_Str_arr("##texture", &app.gui.selectedTexture, names.ptr, cast(int)names.length, -1);
+
+  auto t = app.textures[app.gui.selectedTexture];
+  float ratio = cast(float)(t.height) / t.width;
+  igText("%d x %d", t.width, t.height);
+  igImage(ImTextureRefFromID(cast(ulong)t.imID), ImVec2(app.gui.panelW - 20, min(app.gui.panelW - 20, (app.gui.panelW - 20) * ratio)), ImVec2(0, 0), ImVec2(1, 1));
 }
 

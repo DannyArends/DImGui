@@ -127,6 +127,7 @@ struct App {
   bool showBounds = false;                                                      /// Show bounding boxes
   LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool showRays = false;                                                        /// Show rays
+  bool showLights = false;                                                      /// Show lights
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint verbose = 0;                                                             /// Be very verbose
   bool disco = false;                                                           /// Disco mode
@@ -135,9 +136,9 @@ struct App {
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
 
   // Properties based on the SwapChain
-  @property pure @nogc uint imageCount() nothrow { return(cast(uint)swapChainImages.length); }
-  @property pure @nogc bool trace() nothrow { return(verbose > 1); }
-  @property pure @nogc uint framesInFlight() nothrow { return(cast(uint)swapChainImages.length + 1); }
+  @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }
+  @property pure @nogc bool trace() nothrow const { return(verbose > 1); }
+  @property pure @nogc uint framesInFlight() nothrow const { return(cast(uint)swapChainImages.length + 1); }
   @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
   @property VkPhysicalDeviceProperties properties() {
     VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p);

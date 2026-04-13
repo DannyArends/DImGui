@@ -7,25 +7,20 @@ import engine;
 
 /** Show the GUI window for Shaders
  */
-void showShaderwindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.gui.fonts[font], app.gui.fontsize);
-  if(igBegin("Shaders", show, 0)){
-    igBeginTable("Shaders_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-    auto shaders = (app.shadows.shaders ~ app.shaders ~ app.postProcess);
-    if(app.hasCompute) shaders ~= app.compute.shaders;
-    foreach(i, shader; shaders) {
-      igPushID_Int(to!int(i));
-      igTableNextRow(0, 5.0f);
-      igTableNextColumn();
-      igText(toStringz(baseName(fromStringz(shader.path))), ImVec2(0.0f, 0.0f));
-      igTableNextColumn();
-      igText(toStringz(format("%s", shader.stage)), ImVec2(0.0f, 0.0f));
-      igTableNextColumn();
-      igText(toStringz(format("Descriptors: %s\nExecute as %s", shader.descriptors.length, shader.groupCount)), ImVec2(0.0f, 0.0f));
-      igPopID();
-    }
-    igEndTable();
-    igEnd();
-  }else { igEnd(); }
-  igPopFont();
+void showShaderContent(ref App app, uint font = 0) {
+  igBeginTable("Shaders_Tbl", 3,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+  auto shaders = (app.shadows.shaders ~ app.shaders ~ app.postProcess);
+  if(app.hasCompute) shaders ~= app.compute.shaders;
+  foreach(i, shader; shaders) {
+    igPushID_Int(to!int(i));
+    igTableNextRow(0, 5.0f);
+    igTableNextColumn();
+    igText(toStringz(baseName(fromStringz(shader.path))), ImVec2(0.0f, 0.0f));
+    igTableNextColumn();
+    igText(toStringz(format("%s", shader.stage).replace("VK_SHADER_STAGE_", "").replace("_BIT", "")), ImVec2(0.0f, 0.0f));
+    igTableNextColumn();
+    igText(toStringz(format("Descriptors: %s\nExecute as %s", shader.descriptors.length, shader.groupCount)), ImVec2(0.0f, 0.0f));
+    igPopID();
+  }
+  igEndTable();
 }

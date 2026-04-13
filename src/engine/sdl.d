@@ -73,7 +73,7 @@ App initializeSDL() {
   // Create SDL Window
   SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
   version(Android) { window_flags |= SDL_WINDOW_FULLSCREEN; }
-  app.window = SDL_CreateWindow(app.applicationName, 1280, 720, window_flags);
+  app.window = SDL_CreateWindow(app.applicationName, 1500, 720, window_flags);
   if(app.verbose) SDL_Log("SDL_CreateWindow: %p", app.window);
 
   if(!app.window) {
