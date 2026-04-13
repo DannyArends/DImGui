@@ -26,6 +26,13 @@ void showSettingsContent(ref App app, uint font = 0) {
   int[2] limits = [0, 2];
   igSliderScalar("##a", ImGuiDataType_U32,  &app.verbose, &limits[0], &limits[1], "%d", 0);
 
+  igTableNextColumn(); igText("Lighting Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+  igPushItemWidth(200 * app.gui.uiscale);
+  const(char)*[3] modes = ["Global Illumination", "Lights", "Lights + Shadows"];
+  int lm = cast(int)app.lMode;
+  if(igCombo_Str_arr("##lm", &lm, &modes[0], 3, -1)) app.lMode = cast(LMode)lm;
+  igPopItemWidth();
+
   igTableNextColumn();
   igText("Clear Settings", ImVec2(0.0f, 0.0f)); igTableNextColumn();
   if(igButton("RESET GUI", ImVec2(0.0f, 0.0f))){ clearSettings(); }
@@ -50,21 +57,9 @@ void showSettingsContent(ref App app, uint font = 0) {
   igText("Show Rays", ImVec2(0.0f, 0.0f)); igTableNextColumn();
   igCheckbox("##showRays", &app.showRays);
 
-  igTableNextColumn(); igText("Lighting Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igPushItemWidth(200 * app.gui.uiscale);
-  const(char)*[3] modes = ["Global Illumination", "Lights", "Lights + Shadows"];
-  int lm = cast(int)app.lMode;
-  if(igCombo_Str_arr("##lm", &lm, &modes[0], 3, -1)) app.lMode = cast(LMode)lm;
-  igPopItemWidth();
-
   igTableNextColumn();
   igText("Clear color", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igPushItemWidth(100 * app.gui.uiscale);
-  igSliderScalar("##colR", ImGuiDataType_Float,  &app.clearValue[0].color.float32[0], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);igSameLine(0,5);
-  igPushItemWidth(100 * app.gui.uiscale);
-  igSliderScalar("##colG", ImGuiDataType_Float,  &app.clearValue[0].color.float32[1], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);igSameLine(0,5);
-  igPushItemWidth(100 * app.gui.uiscale);
-  igSliderScalar("##colB", ImGuiDataType_Float,  &app.clearValue[0].color.float32[2], &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);
+  igColorEdit3("##clearcolor", app.clearValue[0].color.float32.ptr, 0);
 
   igEndTable();
 }

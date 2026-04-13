@@ -27,7 +27,7 @@ struct GUI {
   ImGuiIO* io;
   ImFont*[] fonts;
 
-  float panelW = 400.0f;
+  float panelW = 375.0f;
   float menuH = 20.0f;
   int selectedSound = 0;
   int selectedTexture = 0;
