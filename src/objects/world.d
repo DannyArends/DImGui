@@ -91,7 +91,10 @@ struct World {
 
   /** Save chunk tile data to disk
    */
-  void saveChunk(int[3] coord) { writeFile(chunkPath(coord), cast(char[])chunks[coord].tileTypes); }
+  void saveChunk(int[3] coord, bool verbose = false) {
+    if(verbose) SDL_Log(toStringz(format("saveChunk%s: %s tileTypes", coord, chunks[coord].tileTypes.length)));
+    writeFile(chunkPath(coord), cast(char[])chunks[coord].tileTypes); 
+  }
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps
    */
@@ -111,6 +114,7 @@ struct World {
  */
 void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(app.world.getTile(tile) == TileType.Lava) return;  // cannot remove lava
+  if(app.verbose) SDL_Log(toStringz(format("setTile: %s", tile)));
 
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.chunks) return;
@@ -134,6 +138,7 @@ void dispatchWorker(ref App app, int[3] coord){
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, coord);
       app.world.pendingChunks[coord] = true;
+      if(app.verbose) SDL_Log(toStringz(format("Loading chunk: %s A-sync", coord)));
       break;
     }
   }
@@ -156,7 +161,7 @@ void updateWorld(ref App app, float[3] lookat) {
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > effectiveRD  || abs(coord[2] - pc[2]) > effectiveRD ) {
-      if (app.world.chunks[coord].dirty) app.world.saveChunk(coord);
+      if (app.world.chunks[coord].dirty) app.world.saveChunk(coord, app.verbose > 0);
       if (app.world.chunks[coord] !is null) {
         app.world.chunks[coord].tiles.deAllocate = true;
         app.world.chunks[coord].deAllocate = true; 
@@ -168,7 +173,7 @@ void updateWorld(ref App app, float[3] lookat) {
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
     if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
-      app.world.saveChunk(coord);
+      app.world.saveChunk(coord, app.verbose > 0);
       app.dispatchWorker(coord);
       app.world.chunks[coord].dirty = false;
     }

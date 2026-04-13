@@ -24,13 +24,13 @@ void showSidepanel(ref App app, uint font = 0) {
   igSetNextWindowSize(ImVec2(app.gui.panelW, app.gui.io.DisplaySize.y - app.gui.menuH), ImGuiCond_Always);
   igBegin("##sidepanel", null, flags);
 
-  if(igCollapsingHeader_TreeNodeFlags("Objects",   0)) app.showObjectsContent(font); 
-  if(igCollapsingHeader_TreeNodeFlags("Lights",    0)) app.showLightsContent(font); 
-  if(igCollapsingHeader_TreeNodeFlags("Settings",  0)) app.showSettingsContent(font); 
-  if(igCollapsingHeader_TreeNodeFlags("World",     0)) app.showWorldContent(font); 
-  if(igCollapsingHeader_TreeNodeFlags("Sounds",    0)) app.showSFXContent(font); 
-  if(igCollapsingHeader_TreeNodeFlags("Textures",  0)) app.showTexturesContent(font); 
-  if(igCollapsingHeader_TreeNodeFlags("Shaders",   0)) app.showShaderContent(font); 
+  if(igCollapsingHeader_TreeNodeFlags("Objects", 0)) app.showObjectsContent(font); 
+  if(igCollapsingHeader_TreeNodeFlags("Lights", 0)) app.showLightsContent(font); 
+  if(igCollapsingHeader_TreeNodeFlags("Settings", 0)) app.showSettingsContent(font); 
+  if(igCollapsingHeader_TreeNodeFlags("World", 0)) app.showWorldContent(font); 
+  if(igCollapsingHeader_TreeNodeFlags("Sounds", 0)) app.showSFXContent(font); 
+  if(igCollapsingHeader_TreeNodeFlags("Textures", 0)) app.showTexturesContent(font); 
+  if(igCollapsingHeader_TreeNodeFlags("Shaders", 0)) app.showShaderContent(font); 
   igEnd();
   igPopFont();
 }
