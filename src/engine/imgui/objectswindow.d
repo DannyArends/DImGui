@@ -11,42 +11,37 @@ import textures : mapTextures, ImTextureRefFromID;
 
 /** Show the GUI window which allows us to manipulate 3D objects
  */
-void showObjectswindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.gui.fonts[font], app.gui.fontsize);
-  if(igBegin("Objects", show, 0)) {
-    bool list = true;
-    for(size_t x = 0; x < app.objects.length; x++) {
-      if(app.objects[x].window){
-        app.showObjectwindow(app.objects[x]);
-        list = false;
-      }
+void showObjectsContent(ref App app, uint font = 0) {
+  bool list = true;
+  for(size_t x = 0; x < app.objects.length; x++) {
+    if(app.objects[x].window){
+      app.showObjectwindow(app.objects[x]);
+      list = false;
     }
-    if(list){
-      igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-      foreach(i, object; app.objects){
-        if(cast(Tiles)object !is null) continue;  // Skip tiles
-        if(cast(Chunk)object !is null) continue;  // Skip chunks
-        igPushID_Int(to!int(i));
-        if (app.objects[i].instances.length == 0) { igPopID(); continue; }
-        auto p = app.objects[i].position;
-        igTableNextRow(0, 5.0f);
-        string text = to!string(i);
-        if(object.name) text = object.name() ~ " " ~ text;
-        igTableNextColumn();
-          igText(toStringz(format("%s: %s (%d)", text, object.mName, object.uid)), ImVec2(0.0f, 0.0f));
-        igTableNextColumn();
-          if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
-          if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) {
-            app.objects[i].isVisible = !app.objects[i].isVisible; 
-          } igSameLine(0,5);
-          //if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; } igSameLine(0,5);
-        igPopID();
-        }
-      igEndTable();
-      igEnd();
+  }
+  if(list){
+    igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+    foreach(i, object; app.objects) {
+      if(cast(Tiles)object !is null) continue;  // Skip tiles
+      if(cast(Chunk)object !is null) continue;  // Skip chunks
+      igPushID_Int(to!int(i));
+      if (app.objects[i].instances.length == 0) { igPopID(); continue; }
+      auto p = app.objects[i].position;
+      igTableNextRow(0, 5.0f);
+      string text = to!string(i);
+      if(object.name) text = object.name() ~ " " ~ text;
+      igTableNextColumn();
+        igText(toStringz(format("%s: %s (%d)", text, object.mName, object.uid)), ImVec2(0.0f, 0.0f));
+      igTableNextColumn();
+        if(igButton("Info", ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
+        if(igButton((app.objects[i].isVisible?"Hide":"Show"), ImVec2(0.0f, 0.0f))) {
+          app.objects[i].isVisible = !app.objects[i].isVisible; 
+        } igSameLine(0,5);
+        //if(igButton("DeAllocate", ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; } igSameLine(0,5);
+      igPopID();
     }
-  }else { igEnd(); }
-  igPopFont();
+    igEndTable();
+  }
 }
 
 struct DropdownItem {
@@ -215,6 +210,5 @@ void showObjectwindow(ref App app, ref Geometry obj) {
       igTreePop();
     }
   }
-  igEnd();
 }
 

@@ -9,22 +9,15 @@ import sfx : play;
 
 /** Show the GUI window for Sound Effects
  */
-void showSFXwindow(ref App app, bool* show, uint font = 0) {
-  igPushFont(app.gui.fonts[font], app.gui.fontsize);
-  if(igBegin("Sounds", show, 0)){
-    igSliderScalar("Volume", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
-    igBeginTable("Sounds_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-    foreach(i, sound; app.soundfx) {
-      igPushID_Int(to!int(i));
-      igTableNextRow(0, 5.0f);
-      igTableNextColumn();
-      igText(toStringz(baseName(fromStringz(sound.path))), ImVec2(0.0f, 0.0f));
-      igTableNextColumn();
-      if(igButton("Play", ImVec2(0.0f, 0.0f))){ app.play(sound); }
-      igPopID();
-    }
-    igEndTable();
-    igEnd();
-  }else { igEnd(); }
-  igPopFont();
+void showSFXContent(ref App app, uint font = 0) {
+  igSliderScalar("Volume", ImGuiDataType_Float, &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);
+
+  // Build names array for combo
+  const(char)*[] names;
+  foreach(sound; app.soundfx) names ~= toStringz(baseName(fromStringz(sound.path)));
+
+  igCombo_Str_arr("##sound", &app.gui.selectedSound, names.ptr, cast(int)names.length, -1);
+  igSameLine(0, 5);
+  if(igButton("Play", ImVec2(0.0f, 0.0f))) app.play(app.soundfx[app.gui.selectedSound]);
 }
+
