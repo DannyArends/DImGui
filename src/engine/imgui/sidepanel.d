@@ -5,7 +5,7 @@
 
 import engine;
 
-import imgui : faIcon;
+import imgui : iconText;
 import directorywindow : showDirectoryContent;
 import settingswindow : showSettingsContent;
 import sfxwindow : showSFXContent;
@@ -14,10 +14,6 @@ import lightswindow : showLightsContent;
 import shaderswindow : showShaderContent;
 import texturewindow : showTexturesContent;
 import worldwindow : showWorldContent;
-
-const(char)* iconText(string icon, string text){
-  return(toStringz(format("%s %s", fromStringz(faIcon(icon)), text)));
-}
 
 /** Single docked side panel with collapsible sections
  */
