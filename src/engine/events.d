@@ -110,7 +110,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel); }
-  if(e.type == SDL_EVENT_MOUSE_WHEEL){ if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y); }
+  if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.tryZoom(-e.wheel.y); }
 }
 
 /** Deallocate and removes stale Geometry from the app.objects array
