@@ -11,7 +11,6 @@ import lights : Light;
  */
 void showLightsContent(ref App app, uint font = 0) {
   auto lightsBefore = app.lights.lights.dup;
-  igTableNextColumn();
   igText("Disco", ImVec2(0.0f, 0.0f)); igSameLine(0,5);
   igCheckbox("##disco", &app.disco);
 

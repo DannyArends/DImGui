@@ -9,7 +9,7 @@ import devices : getMSAASamples;
 import io : fixPath, isfile, readFile, writeFile;
 import settingswindow : showSettingsContent;
 import sfxwindow : showSFXContent;
-import directorywindow : showDirectoryWindow;
+import directorywindow : showDirectoryContent;
 import joystickwindow : showJoystickwindow;
 import fpswindow : showFPSwindow;
 import objectswindow : showObjectsContent;
@@ -246,8 +246,7 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, &showTexturesContent);
   if(app.gui.showWorldSettings) app.makeWindow("World", &app.gui.showWorldSettings, font, &showWorldContent);
   if(app.gui.showLights) app.makeWindow("Lighting", &app.gui.showLights, font, &showLightsContent);
-  if(app.gui.showDirectory) app.showDirectoryWindow(&app.gui.showDirectory, "data", font);
-
+  if(app.gui.showDirectory) app.makeWindow("Directory", &app.gui.showDirectory, font, &showDirectoryContent);
 
   igRender();
   auto drawData = igGetDrawData();
