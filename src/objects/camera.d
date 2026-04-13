@@ -9,6 +9,7 @@ import vector : normalize, vMul,vSub, vAdd, negate, xyz;
 import matrix : multiply, inverse, rotate, radian, perspective, transpose, lookAt;
 import quaternion : xyzw, normalize, rotate, qMul, angleAxis;
 import frustum : extractFrustum, aabbInFrustum;
+import world : canMoveTo;
 
 /** Camera
  */
@@ -16,7 +17,7 @@ struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
 
-  float[3]        lookat        = [0.0f, 0.0f, 0.0f];     /// Position in the middle of the screen
+  float[3]        lookat        = [0.0f, 5.0f, 0.0f];     /// Position in the middle of the screen
   float[2]        nearfar       = [0.1f, 500.0f];         /// View distances, near [0], far [1]
   float[3]        up            = [0.0f, 1.0f, 0.0f];     /// Defined up vector
   float           fov           = 45.0f;                  /// Field of view
@@ -44,6 +45,24 @@ struct Camera {
   @property @nogc Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
   @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
   @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
+}
+
+void tryMove(ref App app, float[3] direction) {
+  auto old = app.camera.lookat;
+  app.camera.move(direction);
+  if(!app.canMoveTo(app.camera.position)) app.camera.lookat = old;
+}
+
+void tryDrag(ref App app, float xrel, float yrel) {
+  auto old = app.camera.rotation;
+  app.camera.drag(xrel, yrel);
+  if(!app.canMoveTo(app.camera.position)) app.camera.rotation = old;
+}
+
+void tryZoom(ref App app, float delta) {
+  auto old = app.camera.distance;
+  app.camera.zoom(delta);
+  if(!app.canMoveTo(app.camera.position)) app.camera.distance = old;
 }
 
 /* Create a position/rotation matrix through 3D space starting from xy */
