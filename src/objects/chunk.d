@@ -168,10 +168,6 @@ void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
  */
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
-  if (data.coord in app.world.chunks) {
-    app.world.chunks[data.coord].tiles.deAllocate = true;
-    app.world.chunks[data.coord].deAllocate = true;
-  }
   if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
 
   Chunk chunk = new Chunk(data);
@@ -191,8 +187,14 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.objects ~= chunk;
   app.mapTextures(chunk.tiles);
 
+  if (data.coord in app.world.chunks) {
+    app.world.chunks[data.coord].tiles.deAllocate = true;
+    app.world.chunks[data.coord].deAllocate = true;
+  }
+
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
   app.camera.isDirty = true;
+  app.shadows.dirty = true;
 }
 
