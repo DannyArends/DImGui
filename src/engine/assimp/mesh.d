@@ -30,7 +30,7 @@ void logMesh(uint i, ref const Mesh m, const(char)* prefix = "meshInfo") {
   SDL_Log("%s[%d] v=[%d,%d] mid=%d tid=%d nid=%d oid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid, m.tid, m.nid, m.oid);
 }
 
-void printMeshInfo(const App app) { if(!app.verbose){ return; } foreach(i, ref m; app.meshes) logMesh(cast(uint)i, m); }
+void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; app.meshes) logMesh(cast(uint)i, m); }
 
 void updateMeshInfo(ref App app) {
   app.meshes.length = 0;

@@ -16,7 +16,7 @@ struct TileT {
 }
 
 enum TileType : ubyte {
-  None, Lava, Water, Path08, Sand01, Sand02, Sand03, Sand05, Gravel, Moss01, Grass01, Grass02, Grass03, Forest01, Forest02, Stone, Ice01, Snow
+  None, Lava, Water, Path08, Sand01, Sand02, Sand03, Sand05, Gravel, Moss01, Ground08, Grass01, Grass02, Grass03, Forest01, Forest02, Stone, Ice01, Snow
 }
 
 immutable TileT[TileType] tileData;
@@ -32,6 +32,7 @@ shared static this() {
     TileType.Sand05: TileT("Sand_05", true,  1.5f),
     TileType.Gravel: TileT("Gravel_01", true,  1.6f),
     TileType.Moss01: TileT("Moss_01", true,  1.2f),
+    TileType.Ground08: TileT("Ground_08", true,  1.2f),
     TileType.Grass01: TileT("Grass_01", true,  1.2f),
     TileType.Grass02: TileT("Grass_02", true,  1.2f),
     TileType.Grass03: TileT("Grass_03", true,  1.2f),
@@ -47,7 +48,7 @@ shared static this() {
   if (h < 0.05f) return TileType.Lava;
   if (h < 0.15f){ TileType[2] variants = [TileType.Stone, TileType.Gravel]; return variants[cast(uint)(t * 2) % 2]; }
   if (h < 0.25f){ TileType[4] variants = [TileType.Sand01, TileType.Sand02, TileType.Sand03, TileType.Sand05]; return variants[cast(uint)(t * 4) % 4]; }
-  if (h < 0.35f){ TileType[4] variants = [TileType.Gravel, TileType.Sand02, TileType.Grass01, TileType.Path08]; return variants[cast(uint)(t * 4) % 4]; }
+  if (h < 0.35f){ TileType[5] variants = [TileType.Gravel, TileType.Sand02, TileType.Grass01, TileType.Path08, TileType.Grass02]; return variants[cast(uint)(t * 5) % 5]; }
   if (h < 0.50f){ TileType[3] variants = [TileType.Grass01, TileType.Grass02, TileType.Grass03]; return variants[cast(uint)(t * 3) % 3]; }
   if (h < 0.65f){ TileType[3] variants = [TileType.Moss01, TileType.Forest01, TileType.Forest02]; return variants[cast(uint)(t * 3) % 3]; }
   if (h < 0.80f) return TileType.Stone;
@@ -73,7 +74,7 @@ struct TileAtlas {
   return [tl[0], tl[1], br[0] - tl[0], br[1] - tl[1]];
 }
 
-void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me", int size = 512, int tileSize = 64) {
+void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me", int size = 1024, int tileSize = 128) {
   if (app.verbose) SDL_Log("createTileAtlas: %s", toStringz(folder));
  
   TileAtlas ta;
@@ -82,7 +83,7 @@ void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me",
   string[] files = dir(toStringz(folder), "*_base*");
   SDL_Surface*[string] surfaces;
  
-  int tx = 0, ty = 0, rowH = 0;
+  int tx = 0, ty = 0, rowH = 0, padding = 1;
   foreach (file; files) {
     string bname = stripExtension(baseName(file));
     auto sidx = bname.lastIndexOf("_base");
@@ -99,10 +100,10 @@ void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me",
     SDL_DestroySurface(s);
     s = scaled;
 
-    if (tx + s.w > size) { ty += rowH; rowH = 0; tx = 0; }
-    ta.uv[tname] = [[tx, tx + s.w], [ty, ty + s.h]];
-    if (s.h > rowH) rowH = s.h;
-    tx += s.w;
+    if (tx + s.w + padding > size) { ty += rowH; rowH = 0; tx = 0; }
+    ta.uv[tname] = [[tx+ padding, tx + s.w- padding], [ty+ padding, ty + s.h- padding]];
+    if (s.h + padding > rowH) rowH = s.h + padding;
+    tx += s.w + padding;
     surfaces[tname] = s;
   }
 
@@ -110,7 +111,8 @@ void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me",
   SDL_FillSurfaceRect(atlas, null, SDL_MapRGBA(SDL_GetPixelFormatDetails(atlas.format), null, 0, 0, 0, 255));
   SDL_SetSurfaceBlendMode(atlas, SDL_BLENDMODE_NONE);
   foreach (tname; ta.uv.keys) {
-    SDL_Rect dst = { ta.uv[tname][0][0], ta.uv[tname][1][0], ta.uv[tname][0][1] - ta.uv[tname][0][0], ta.uv[tname][1][1] - ta.uv[tname][1][0] };
+    SDL_Rect dst = { ta.uv[tname][0][0] - padding, ta.uv[tname][1][0] - padding, 
+                     ta.uv[tname][0][1] - ta.uv[tname][0][0] + padding * 2, ta.uv[tname][1][1] - ta.uv[tname][1][0] + padding * 2 };
     SDL_BlitSurface(surfaces[tname], null, atlas, &dst);
     SDL_DestroySurface(surfaces[tname]);
   }
