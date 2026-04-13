@@ -5,6 +5,7 @@
 
 import engine;
 
+import imgui : faIcon;
 import sfx : play;
 
 /** Show the GUI window for Sound Effects
@@ -18,6 +19,6 @@ void showSFXContent(ref App app, uint font = 0) {
 
   igCombo_Str_arr("##sound", &app.gui.selectedSound, names.ptr, cast(int)names.length, -1);
   igSameLine(0, 5);
-  if(igButton("Play", ImVec2(0.0f, 0.0f))) app.play(app.soundfx[app.gui.selectedSound]);
+  if(igButton(faIcon(cast(string)ICON_FA_PLAY), ImVec2(0.0f, 0.0f))) app.play(app.soundfx[app.gui.selectedSound]);
 }
 

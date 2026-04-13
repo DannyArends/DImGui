@@ -38,12 +38,5 @@ void listDirContent(ref App app, const(char)* path) {
   }
 }
 
-void showDirectoryWindow(ref App app, bool* show, const(char)* path =  "data", uint font = 0){
-  igPushFont(app.gui.fonts[font], app.gui.fontsize);
-  if(igBegin("Directory", show, 0)) {
-    app.listDirContent(path);
-    igEnd();
-  }else { igEnd(); }
-  igPopFont();
-}
+void showDirectoryContent(ref App app, uint font = 0) { app.listDirContent("data"); }
 
