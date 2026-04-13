@@ -236,7 +236,9 @@ ImDrawData* renderGUI(ref App app){
   version(Android) { app.showJoystickwindow(font); }
 
   app.showMenu(font);
-  app.showSidepanel(font);
+  version(Android){ }else{ 
+    app.showSidepanel(font);
+  }
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
   if(app.gui.showFPS) app.showFPSwindow(font);
   if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, &showObjectsContent);
