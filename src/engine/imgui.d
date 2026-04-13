@@ -7,24 +7,30 @@ import engine;
 
 import devices : getMSAASamples;
 import io : fixPath, isfile, readFile, writeFile;
-import settingswindow : showSettingswindow;
-import sfxwindow : showSFXwindow;
+import settingswindow : showSettingsContent;
+import sfxwindow : showSFXContent;
 import directorywindow : showDirectoryWindow;
 import joystickwindow : showJoystickwindow;
 import fpswindow : showFPSwindow;
-import objectswindow : showObjectswindow, showObjectwindow;
-import lightswindow : showLightswindow;
+import objectswindow : showObjectsContent;
+import lightswindow : showLightsContent;
 import mainmenu : showMenu;
-import shaderswindow : showShaderwindow;
-import texturewindow : showTextureswindow;
+import sidepanel : showSidepanel;
+import shaderswindow : showShaderContent;
+import texturewindow : showTexturesContent;
 import validation : nameVulkanObject, pushLabel, popLabel;
-import worldwindow: showWorldwindow;
+import worldwindow: showWorldContent;
 
 /** Main GUI structure
  */
 struct GUI {
   ImGuiIO* io;
   ImFont*[] fonts;
+
+  float panelW = 400.0f;
+  float menuH = 20.0f;
+  int selectedSound = 0;
+  int selectedTexture = 0;
 
   bool showDemo = false;
   bool showFPS = true;
@@ -64,6 +70,14 @@ void saveSettings() {
   }
 }
 
+void makeWindow(ref App app, const(char)* title, bool* show, uint font, void function(ref App, uint) content) {
+  igPushFont(app.gui.fonts[font], app.gui.fontsize);
+  if(igBegin(title, show, 0)) { content(app, font); igEnd(); } else { igEnd(); }
+  igPopFont();
+}
+
+/** Clear ImGui settings on disk (or Android internal storage)
+ */
 void clearSettings() {
   auto g = *igGetCurrentContext();
   for (int i = 0; i < g.Windows.Size; i++) {
@@ -222,16 +236,18 @@ ImDrawData* renderGUI(ref App app){
   version(Android) { app.showJoystickwindow(font); }
 
   app.showMenu(font);
+  app.showSidepanel(font);
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
   if(app.gui.showFPS) app.showFPSwindow(font);
-  if(app.gui.showObjects) app.showObjectswindow(&app.gui.showObjects, font);
-  if(app.gui.showSFX) app.showSFXwindow(&app.gui.showSFX, font);
-  if(app.gui.showShaders) app.showShaderwindow(&app.gui.showShaders, font);
-  if(app.gui.showSettings) app.showSettingswindow(&app.gui.showSettings, font);
-  if(app.gui.showWorldSettings) app.showWorldwindow(&app.gui.showWorldSettings, font);
-  if(app.gui.showLights) app.showLightswindow(&app.gui.showLights, font);
-  if(app.gui.showTexture) app.showTextureswindow(&app.gui.showTexture, font);
+  if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, &showObjectsContent);
+  if(app.gui.showShaders) app.makeWindow("Shader", &app.gui.showShaders, font, &showShaderContent);
+  if(app.gui.showSFX) app.makeWindow("SFX", &app.gui.showSFX, font, &showSFXContent);
+  if(app.gui.showSettings) app.makeWindow("Settings", &app.gui.showSettings, font, &showSettingsContent);
+  if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, &showTexturesContent);
+  if(app.gui.showWorldSettings) app.makeWindow("World", &app.gui.showWorldSettings, font, &showWorldContent);
+  if(app.gui.showLights) app.makeWindow("Lighting", &app.gui.showLights, font, &showLightsContent);
   if(app.gui.showDirectory) app.showDirectoryWindow(&app.gui.showDirectory, "data", font);
+
 
   igRender();
   auto drawData = igGetDrawData();
