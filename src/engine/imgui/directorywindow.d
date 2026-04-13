@@ -5,6 +5,7 @@
 
 import engine;
 
+import imgui : iconText;
 import io : dir, isdir, isfile, fsize;
 
 ImVec2 textSize(const(char)* txt) {
@@ -20,14 +21,14 @@ void listDirContent(ref App app, const(char)* path) {
     auto ptr = toStringz(file);
     if(ptr.isdir) {
       auto flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-      bool node_open = igTreeNodeEx_Str(ptr, flags);
+      bool node_open = igTreeNodeEx_Str(iconText(cast(string)ICON_FA_FOLDER, baseName(to!string(elem))), flags);
       if (node_open) {
         app.listDirContent(ptr);
         igTreePop();
       }
-    }else if(ptr.isfile) { // A file, just display as selectable text
+    } else if(ptr.isfile) {
       ImVec2 size;
-      if(igSelectable_Bool(toStringz(baseName(to!string(elem))), false, 0, size)){ 
+      if(igSelectable_Bool(iconText(cast(string)ICON_FA_FILE_O, baseName(to!string(elem))), false, 0, size)) { 
         SDL_Log("Clicked: %s", ptr);
         app.concurrency.paths ~= file;
       }

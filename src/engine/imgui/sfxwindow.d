@@ -11,7 +11,7 @@ import sfx : play;
 /** Show the GUI window for Sound Effects
  */
 void showSFXContent(ref App app, uint font = 0) {
-  igSliderScalar("Volume", ImGuiDataType_Float, &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);
+  igSliderScalar(faIcon(cast(string)ICON_FA_VOLUME_UP), ImGuiDataType_Float, &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);
 
   // Build names array for combo
   const(char)*[] names;
