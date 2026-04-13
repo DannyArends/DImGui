@@ -83,7 +83,7 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 
-float beam(float t, float speed, float freq, float phase) { return abs(sin(t * speed * freq + phase)) * 15.0f; }
+float beam(float t, float speed, float freq, float phase) { return abs(sin(t * speed * freq + phase)) * 55.0f; }
 
 /** Disco mode 🕺 🪩 💃
  */
@@ -91,8 +91,8 @@ void updateDisco(ref App app) {
   if(!app.disco || app.lights.length < 4) return;
   float t = (SDL_GetTicks() - app.time[STARTUP]) / 1000.0f;
   float[4] speeds = [1.3f, 0.7f, 1.7f, 2.3f];
-  float[4] radii = [20.0f, 15.0f, 25.0f, 18.0f];
-  float[4] heights = [15.0f, 12.0f, 20.0f, 10.0f];
+  float[4] radii = [30.0f, 15.0f, 25.0f, 18.0f];
+  float[4] heights = [35.0f, 22.0f, 20.0f, 15.0f];
   float[4] phases = [0.0f, PI/2, PI, 3*PI/2];
   foreach(i; 0..min(4, app.lights.length)) {
     float a = t * speeds[i] + phases[i];
