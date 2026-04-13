@@ -6,7 +6,7 @@
 import engine;
 
 import boundingbox : computeBoundingBox;
-import camera : move, drag, zoom, castRay;
+import camera : move, drag, zoom, castRay, tryMove, tryDrag, tryZoom;
 import chunk : pickWorld;
 import geometry : deAllocate, setColor;
 import imgui : initializeImGui, saveSettings;
@@ -22,12 +22,12 @@ import window: createOrResizeWindow;
 void handleKeyEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_KEY_DOWN) {
     auto symbol = e.key.key;
-    if(symbol == SDLK_PAGEUP) { app.camera.move([ 0.0f,  1.0f, 0.0f]); }
-    if(symbol == SDLK_PAGEDOWN) { app.camera.move([ 0.0f,  -1.0f, 0.0f]); }
-    if(symbol == SDLK_W || symbol == SDLK_UP) { app.camera.move(app.camera.forward()); }
-    if(symbol == SDLK_S || symbol == SDLK_DOWN) { app.camera.move(app.camera.back());  }
-    if(symbol == SDLK_A || symbol == SDLK_LEFT) { app.camera.move(app.camera.left());  }
-    if(symbol == SDLK_D || symbol == SDLK_RIGHT) { app.camera.move(app.camera.right());  }
+    if(symbol == SDLK_PAGEUP) app.tryMove([ 0.0f,  1.0f, 0.0f]);
+    if(symbol == SDLK_PAGEDOWN) app.tryMove([ 0.0f, -1.0f, 0.0f]);
+    if(symbol == SDLK_W || symbol == SDLK_UP) app.tryMove(app.camera.forward());
+    if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
+    if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
+    if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
   }
 }
@@ -109,10 +109,8 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
   }
-  if(e.type == SDL_EVENT_MOUSE_MOTION){
-    if(app.camera.isdrag[1]) app.camera.drag(e.motion.xrel, e.motion.yrel);
-  }
-  if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.camera.zoom(-e.wheel.y); }
+  if(e.type == SDL_EVENT_MOUSE_MOTION){ if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel); }
+  if(e.type == SDL_EVENT_MOUSE_WHEEL){ if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y); }
 }
 
 /** Deallocate and removes stale Geometry from the app.objects array

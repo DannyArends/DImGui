@@ -131,8 +131,10 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3
       ]);
       data.tileInstances ~= inst;
       data.tileIndices ~= i;
-      expandBounds(data.bmin, data.bmax, [faces[f][9], faces[f][10], faces[f][11]]);
     }
+    // Always expand chunk AABB with full tile extents, regardless of face culling
+    expandBounds(data.bmin, data.bmax, [px - ts/2, py - th/2, pz - ts/2]);
+    expandBounds(data.bmin, data.bmax, [px + ts/2, py + th/2, pz + ts/2]);
     if (data.tileInstances.length > faceStart) {
       data.tileBmin ~= [px - ts/2, py - th/2, pz - ts/2];
       data.tileBmax ~= [px + ts/2, py + th/2, pz + ts/2];
@@ -148,7 +150,7 @@ void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
   Intersection best;
   foreach (ref hit; hits) {
     auto chunk = cast(Chunk)app.objects[hit.idx[0]];
-    if (chunk is null) return;
+    if (chunk is null) continue;
     for (size_t j = 0; j < chunk.tileBmin.length; j++) {
       auto i = ray.intersects(chunk.tileBmin[j], chunk.tileBmax[j], hit.idx[0], j);
       if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
@@ -177,7 +179,7 @@ void finalizeChunk(ref App app, ChunkData data) {
   float sy = app.world.chunkHeight * app.world.tileHeight;
   float cx = data.coord[0] * sx + sx * 0.5f;
   float cz = data.coord[2] * sx + sx * 0.5f;
-  float cy = sy * 0.5f;
+  float cy = sy * 0.5f + app.world.yOffset;
   chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
 
   chunk.tiles.texture("3DTextures");

@@ -110,6 +110,28 @@ struct World {
   }
 }
 
+bool canMoveTo(ref App app, float[3] pos) {
+  int[3][] toCheck;
+  foreach(dx; -1..2) foreach(dy; -1..2) foreach(dz; -1..2) {
+    int tx = cast(int)floor((pos[0] + dx * app.world.tileSize * 0.5f) / app.world.tileSize);
+    int ty = cast(int)floor((pos[1] - app.world.yOffset + dy * app.world.tileHeight * 0.5f) / app.world.tileHeight);
+    int tz = cast(int)floor((pos[2] + dz * app.world.tileSize * 0.5f) / app.world.tileSize);
+    toCheck ~= [tx, ty, tz];
+  }
+  foreach(wc; toCheck) {
+    if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) continue;
+    auto coord = app.world.chunkCoord(wc);
+    if(coord in app.world.chunks) {
+      auto local = app.world.localCoord(wc);
+      auto idx = app.world.tileIndex(local);
+      if(app.world.chunks[coord].tileTypes[idx] != TileType.None) return false;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
 /** Set a tile type in a chunk and mark the chunk dirty for rebuild
  */
 void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
@@ -117,6 +139,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(app.verbose) SDL_Log(toStringz(format("setTile: %s", tile)));
 
   int[3] coord = app.world.chunkCoord(tile);
+  SDL_Log(toStringz(format("setTile: tile %s coord %s inChunks %d", tile, coord, coord in app.world.chunks ? 1 : 0)));
   if(coord !in app.world.chunks) return;
 
   int idx = app.world.tileIndex(app.world.localCoord(tile));
