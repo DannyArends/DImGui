@@ -139,7 +139,6 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(app.verbose) SDL_Log(toStringz(format("setTile: %s", tile)));
 
   int[3] coord = app.world.chunkCoord(tile);
-  SDL_Log(toStringz(format("setTile: tile %s coord %s inChunks %d", tile, coord, coord in app.world.chunks ? 1 : 0)));
   if(coord !in app.world.chunks) return;
 
   int idx = app.world.tileIndex(app.world.localCoord(tile));
