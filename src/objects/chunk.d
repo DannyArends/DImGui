@@ -4,7 +4,7 @@
  */
 import engine;
 
-import geometry : texture;
+import geometry : texture, deAllocate;
 import io : readFile, fsize;
 import intersection : intersects;
 import textures : mapTextures;
@@ -183,18 +183,24 @@ void finalizeChunk(ref App app, ChunkData data) {
   chunk.tiles.box.setDimensions(data.bmin, data.bmax);
   chunk.tiles.box.instances = [Instance()]; // single instance, identity matrix
 
-  app.objects ~= chunk.tiles;
-  app.objects ~= chunk;
-  app.mapTextures(chunk.tiles);
-
   if (data.coord in app.world.chunks) {
-    app.world.chunks[data.coord].tiles.deAllocate = true;
-    app.world.chunks[data.coord].deAllocate = true;
+    auto old = app.world.chunks[data.coord];
+    foreach(ref o; app.objects) {
+      if(o is old.tiles) { o = chunk.tiles; continue; }
+      if(o is old) { o = chunk; continue; }
+    }
+    app.deAllocate(old.tiles);
+    app.deAllocate(old);
+  } else {
+    app.objects ~= chunk.tiles;
+    app.objects ~= chunk;
   }
+  app.mapTextures(chunk.tiles);
 
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
   app.camera.isDirty = true;
   app.shadows.dirty = true;
+  app.buffers["MeshMatrices"].dirty[] = true;
 }
 
