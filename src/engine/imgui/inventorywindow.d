@@ -25,7 +25,7 @@ void drawCenteredText(ImDrawList* drawList, ImVec2 min, ImVec2 max, const(char)*
 }
 
 void showInventoryContent(ref App app, uint font = 0) {
-  if(app.world.inventory.length == 0) {
+  if(app.inventory.length == 0) {
     igText("Empty", ImVec2(0.0f, 0.0f));
     return;
   }
@@ -38,7 +38,7 @@ void showInventoryContent(ref App app, uint font = 0) {
   int cols = cast(int)((app.gui.panelW - 20) / (cellSize + 4));
   int col = 0;
 
-  foreach(tileType, count; app.world.inventory) {
+  foreach(tileType, count; app.inventory) {
     if(count <= 0) continue;
     auto name = tileData[tileType].name;
     if(name !in app.tileAtlas.uv) continue;
@@ -46,10 +46,10 @@ void showInventoryContent(ref App app, uint font = 0) {
     ImVec2 uv0 = ImVec2(uv[0][0] / atlasSize, uv[1][0] / atlasSize);
     ImVec2 uv1 = ImVec2(uv[0][1] / atlasSize, uv[1][1] / atlasSize);
 
-    bool selected = app.gui.selectedTile == tileType;
+    bool selected = app.inventory.selectedTile == tileType;
     if(selected) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.4f, 0.6f, 0.4f, 1.0f));
     igImageButton(toStringz(format("##inv_%d", tileType)), atlasID, ImVec2(cellSize, cellSize), uv0, uv1, ImVec4(0,0,0,0), ImVec4(1,1,1,1));
-    if(igIsItemClicked(0)) app.gui.selectedTile = selected ? TileType.None : tileType;
+    if(igIsItemClicked(0)) app.inventory.selectedTile = selected ? TileType.None : tileType;
     if(selected) igPopStyleColor(1);
 
     ImVec2 pos, posMax;

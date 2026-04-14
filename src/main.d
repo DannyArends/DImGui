@@ -28,6 +28,7 @@ import tileatlas : createTileAtlas;
 import threading : initializeAsync, checkAsync;
 import validation : createDebugCallback;
 import vulkan : cleanup;
+import inventory : loadInventory;
 import window: createOrResizeWindow, checkForResize;
 
 /* Main entry point to the program */
@@ -73,7 +74,7 @@ void run(string[] args = null) {
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
   app.ensureWorldDir();                                         /// Ensure the world directory exists
-  app.world.loadInventory();
+  app.loadInventory();
   app.createScene();                                            /// Create our scene with geometries
   app.initializeAsync();                                        /// Start Async loading objects and textures
 
