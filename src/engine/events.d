@@ -17,7 +17,7 @@ import surface : createSurface;
 import vulkan : cleanup;
 import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
-import world : placeTile;
+import inventory : placeTile;
 
 /** Handle keyboard events
  */
@@ -95,8 +95,8 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
     app.camera.isdrag[0] = false; 
     if (e.button.button == SDL_BUTTON_LEFT) {
-      if(app.gui.ghostTile[0] != int.min) {
-        app.placeTile(app.gui.ghostTile);
+      if(app.inventory.ghostTile[0] != int.min) {
+        app.placeTile(app.inventory.ghostTile);
       } else {
         auto ray = app.camera.castRay(e.button.x, e.button.y);
         auto hits = app.getHits(ray, app.showRays);

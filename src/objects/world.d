@@ -9,6 +9,7 @@ import io : isdir, isfile, dir, readFile, writeFile, fixPath, ensureWorldDir;
 import noise : noiseHT;
 import tileatlas : heightToTile;
 import vector : vAdd, vMul, x, y, z;
+import inventory : saveInventory;
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable
  */
@@ -20,8 +21,6 @@ struct WorldData {
   int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  32;       /// Number of tiles (Y) in a chunk
   float yOffset      = -14.0f;    /// Global world Y-offset
-
-  int[TileType] inventory;
 
   /** Returns the filesystem path for a chunk's binary tile data file
    */
@@ -93,10 +92,10 @@ struct World {
 
   /** Save chunk tile data to disk
    */
-  void saveChunk(int[3] coord, bool verbose = false) {
+  void saveChunk(ref App app, int[3] coord, bool verbose = false) {
     if(verbose) SDL_Log(toStringz(format("saveChunk%s: %s tileTypes", coord, chunks[coord].tileTypes.length)));
     writeFile(chunkPath(coord), cast(char[])chunks[coord].tileTypes);
-    saveInventory();
+    app.saveInventory();
   }
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps
@@ -122,25 +121,6 @@ struct World {
     if(app.verbose) SDL_Log("Deleted world chunks at %s", p);
     app.ensureWorldDir();
     clear();
-  }
-
-  const(char)* inventoryPath() const { return(fixPath(toStringz(format("data/world/%d_%d/inventory.bin", seed[0], seed[1])))); }
-
-  void saveInventory() {
-    int[] data;
-    foreach(tileType, count; inventory) {
-      data ~= cast(int)tileType;
-      data ~= count;
-    }
-    if(data.length == 0) data ~= 0; // prevent empty write
-    writeFile(inventoryPath(), cast(char[])data, false);
-  }
-
-  void loadInventory() {
-    auto path = inventoryPath();
-    if(!path.isfile()) return;
-    auto raw = cast(int[])readFile(path);
-    for(int i = 0; i + 1 < raw.length; i += 2) { inventory[cast(TileType)raw[i]] = raw[i+1]; }
   }
 }
 
@@ -178,7 +158,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   int idx = app.world.tileIndex(app.world.localCoord(tile));
   auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type
   if(newType == TileType.None && mined != TileType.None) {
-    app.world.inventory[mined] = app.world.inventory.get(mined, 0) + 1;
+    app.inventory[mined] = app.inventory.get(mined, 0) + 1;
   }
 
   app.world.chunks[coord].tileTypes[idx] = newType;
@@ -188,19 +168,6 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   foreach (n; app.world.tileNeighbours(tile)) {
     int[3] nc = app.world.chunkCoord(n);
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
-  }
-}
-
-void placeTile(ref App app, int[3] wc) {
-  if(app.gui.selectedTile != TileType.None && app.world.inventory.get(app.gui.selectedTile, 0) > 0) {
-    app.setTile(wc, app.gui.selectedTile);
-    app.world.inventory[app.gui.selectedTile]--;
-    if(app.world.inventory[app.gui.selectedTile] <= 0) {
-      app.world.inventory.remove(app.gui.selectedTile);
-      app.gui.selectedTile = TileType.None;
-    }
-  } else {
-    app.setTile(wc);
   }
 }
 
@@ -235,7 +202,7 @@ void updateWorld(ref App app, float[3] lookat) {
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > effectiveRD  || abs(coord[2] - pc[2]) > effectiveRD ) {
-      if (app.world.chunks[coord].dirty) app.world.saveChunk(coord, app.verbose > 0);
+      if (app.world.chunks[coord].dirty) app.world.saveChunk(app, coord, app.verbose > 0);
       if (app.world.chunks[coord] !is null) {
         app.world.chunks[coord].tiles.deAllocate = true;
         app.world.chunks[coord].deAllocate = true; 
@@ -247,7 +214,7 @@ void updateWorld(ref App app, float[3] lookat) {
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
     if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
-      app.world.saveChunk(coord, app.verbose > 0);
+      app.world.saveChunk(app, coord, app.verbose > 0);
       app.dispatchWorker(coord);
       app.world.chunks[coord].dirty = false;
     }

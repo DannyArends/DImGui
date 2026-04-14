@@ -32,11 +32,6 @@ struct GUI {
   int selectedSound = 0;
   int selectedTexture = 0;
 
-  // inventory related
-  TileType selectedTile = TileType.None;
-  int[3] ghostTile = [int.min, 0, 0];
-  Geometry ghostCube;
-
   bool showDemo = false;
   bool showFPS = true;
   bool showObjects = false;

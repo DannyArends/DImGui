@@ -25,6 +25,7 @@ public import geometry : Geometry, Instance;
 public import icosahedron : Icosahedron;
 public import images : ImageBuffer;
 public import imgui : GUI, saveSettings;
+public import inventory : Inventory;
 public import intersection : Intersection;
 public import lights : Lighting, Lights;
 public import lsystem : LSystem, Symbols;

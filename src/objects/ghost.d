@@ -34,24 +34,24 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
 }
 
 void updateGhostTile(ref App app) {
-  if(app.gui.selectedTile != TileType.None) {
+  if(app.inventory.selectedTile != TileType.None) {
     auto ray = app.camera.castRay(app.gui.io.MousePos.x, app.gui.io.MousePos.y);
     auto ghost = app.getGhostTile(ray);
-    app.gui.ghostTile = ghost;
+    app.inventory.ghostTile = ghost;
     if(ghost[0] != int.min) {
       auto wp = app.world.worldPos(ghost);
-      app.gui.ghostCube.position([wp[0], wp[1] + app.world.yOffset, wp[2]]);
-      auto name = tileData[app.gui.selectedTile].name;
+      app.inventory.ghostCube.position([wp[0], wp[1] + app.world.yOffset, wp[2]]);
+      auto name = tileData[app.inventory.selectedTile].name;
       auto uvT = app.tileAtlas.tileUVTransform(name);
-      foreach(ref inst; app.gui.ghostCube.instances) inst.uvT = uvT;
-      app.gui.ghostCube.buffers[INSTANCE] = false;
-      app.gui.ghostCube.isVisible = true;
+      foreach(ref inst; app.inventory.ghostCube.instances) inst.uvT = uvT;
+      app.inventory.ghostCube.buffers[INSTANCE] = false;
+      app.inventory.ghostCube.isVisible = true;
     } else {
-      app.gui.ghostCube.isVisible = false;
+      app.inventory.ghostCube.isVisible = false;
     }
   } else {
-    app.gui.ghostTile = [int.min, 0, 0];
-    app.gui.ghostCube.isVisible = false;
+    app.inventory.ghostTile = [int.min, 0, 0];
+    app.inventory.ghostCube.isVisible = false;
   }
 }
 

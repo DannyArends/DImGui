@@ -12,7 +12,8 @@ import textures : mapTextures;
 import tileatlas : tileData, tileUVTransform;
 import matrix : translate, scale, multiply;
 import vector : expandBounds;
-import world : placeTile, setTile;
+import world : setTile;
+import inventory : placeTile;
 
 /** Holds raw tile data and instanced rendering data for a chunk
  */

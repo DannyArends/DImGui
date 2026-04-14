@@ -49,6 +49,7 @@ struct App {
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
   TileAtlas tileAtlas;                                                          /// TileAtlas for terrain rendering
   World world;                                                                  /// The game world
+  Inventory inventory;                                                          /// Inventory
   ShadowMap shadows;                                                            /// ShadowMap object
 
   VkSampler sampler;
