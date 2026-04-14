@@ -37,12 +37,11 @@ void updateMeshInfo(ref App app) {
   bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     uint size = cast(uint)app.objects[o].meshes.array.length;
-    for (size_t i = 0; i < app.objects[o].instances.length; i++) {
-      if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size]){
-        app.objects[o].instances[i].meshdef = [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size];
-        app.objects[o].buffers[INSTANCE] = false;
-        needsUpdate = true;
-      }
+    uint[2] expected = [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size];
+    if(app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
+      foreach(ref inst; app.objects[o].instances) inst.meshdef = expected;
+      app.objects[o].buffers[INSTANCE] = false;
+      needsUpdate = true;
     }
     app.meshes ~= app.objects[o].meshes.array;
   }
