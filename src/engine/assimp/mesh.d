@@ -46,6 +46,13 @@ void updateMeshInfo(ref App app) {
     }
     app.meshes ~= app.objects[o].meshes.array;
   }
+  // Grow SSBO capacity if needed
+  if(app.meshes.length > app.meshes.capacity) {
+    while(app.meshes.capacity < app.meshes.length) app.meshes.capacity *= 2;
+    app.meshes.length = app.meshes.capacity;
+    app.rebuild = true;
+  }
+  // Update SSBO
   if(needsUpdate) {
     uint msize = cast(uint)(Mesh.sizeof * app.meshes.length);
     if(msize > 0) {
