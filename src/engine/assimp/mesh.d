@@ -46,6 +46,7 @@ void updateMeshInfo(ref App app) {
     }
     app.meshes ~= app.objects[o].meshes.array;
   }
+  uint msize = cast(uint)(Mesh.sizeof * app.meshes.length);
   // Grow SSBO capacity if needed
   if(app.meshes.length > app.meshes.capacity) {
     while(app.meshes.capacity < app.meshes.length) app.meshes.capacity *= 2;
@@ -53,16 +54,10 @@ void updateMeshInfo(ref App app) {
     app.rebuild = true;
   }
   // Update SSBO
-  if(needsUpdate) {
-    uint msize = cast(uint)(Mesh.sizeof * app.meshes.length);
-    if(msize > 0) {
-      foreach(si; 0..app.framesInFlight) {
-        if(si == app.syncIndex) continue;
-        vkWaitForFences(app.device, 1, &app.fences[si].renderInFlight, true, ulong.max);
-      }
-      foreach(si; 0..app.framesInFlight) {
-        memcpy(app.buffers["MeshMatrices"].data[si], &app.meshes[0], msize);
-      }
+  if(needsUpdate && msize > 0) {
+    foreach(si; 0..app.framesInFlight) {
+      if(si == app.syncIndex) continue;
+      vkWaitForFences(app.device, 1, &app.fences[si].renderInFlight, true, ulong.max);
     }
     app.buffers["MeshMatrices"].dirty[] = true;
     app.printMeshInfo();
