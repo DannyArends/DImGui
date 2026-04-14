@@ -29,6 +29,7 @@ struct Camera {
   float[2][2]     fingerPos     = [[0,0],[0,0]];          /// normalized positions of finger 0 and 1
   float           lastPinchDist = -1.0f;                  /// -1 = no active pinch
   bool            isDirty       = true;                   /// Camera moved/rotated this frame
+  bool            godMode       = false;
 
   @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -speed]); }
   @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
@@ -50,19 +51,19 @@ struct Camera {
 void tryMove(ref App app, float[3] direction) {
   auto old = app.camera.lookat;
   app.camera.move(direction);
-  if(!app.canMoveTo(app.camera.position)) app.camera.lookat = old;
+  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.lookat = old;
 }
 
 void tryDrag(ref App app, float xrel, float yrel) {
   auto old = app.camera.rotation;
   app.camera.drag(xrel, yrel);
-  if(!app.canMoveTo(app.camera.position)) app.camera.rotation = old;
+  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.rotation = old;
 }
 
 void tryZoom(ref App app, float delta) {
   auto old = app.camera.distance;
   app.camera.zoom(delta);
-  if(!app.canMoveTo(app.camera.position)) app.camera.distance = old;
+  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.distance = old;
 }
 
 /* Create a position/rotation matrix through 3D space starting from xy */
