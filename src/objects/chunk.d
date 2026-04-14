@@ -184,27 +184,15 @@ void finalizeChunk(ref App app, ChunkData data) {
   chunk.tiles.box.setDimensions(data.bmin, data.bmax);
   chunk.tiles.box.instances = [Instance()]; // single instance, identity matrix
 
-  // Replace old chunk objects in-place within app.objects to preserve mesh slot indices.
-  // Appending new objects would shift meshdef for all subsequent objects, causing a one-frame
-  // mismatch between the SSBO (updated immediately) and instance buffers (updated next frame).
   if (data.coord in app.world.chunks) {
-    auto old = app.world.chunks[data.coord];
-    foreach(ref o; app.objects) {
-      if(o is old.tiles) { o = chunk.tiles; continue; }
-      if(o is old) { o = chunk; continue; }
-    }
-    app.deAllocate(old.tiles);
-    app.deAllocate(old);
-  } else {
-    app.objects ~= chunk.tiles;
-    app.objects ~= chunk;
+    app.world.chunks[data.coord].tiles.deAllocate = true;
+    app.world.chunks[data.coord].deAllocate = true;
   }
+  app.objects ~= chunk.tiles;
+  app.objects ~= chunk;
   app.mapTextures(chunk.tiles);
 
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
-  app.camera.isDirty = true;
-  app.shadows.dirty = true;
-  app.buffers["MeshMatrices"].dirty[] = true;
 }
 

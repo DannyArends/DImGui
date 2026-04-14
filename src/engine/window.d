@@ -44,8 +44,6 @@ void createOrResizeWindow(ref App app) {
   app.createColorResources();
   app.createDepthResources();
   app.createSyncObjects();
-  app.meshes.length = app.framesInFlight;
-
 
   if (app.hasCompute) {
     SDL_Log("1: Compute shaders reflection");

@@ -30,25 +30,35 @@ void logMesh(uint i, const Mesh m, const(char)* prefix = "meshInfo") {
   SDL_Log("%s[%d] v=[%d,%d] mid=%d tid=%d nid=%d oid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid, m.tid, m.nid, m.oid);
 }
 
-void printMeshInfo(const App app, uint syncIndex) { if(!app.trace){ return; } foreach(i, ref m; app.meshes[syncIndex]) logMesh(cast(uint)i, m); }
+void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; app.meshes) logMesh(cast(uint)i, m); }
 
-void updateMeshInfo(ref App app, uint syncIndex) {
-  app.meshes[syncIndex].length = 0;
-  bool needsUpdate = true;
+void updateMeshInfo(ref App app) {
+  app.meshes.length = 0;
+  bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     uint size = cast(uint)app.objects[o].meshes.array.length;
     for (size_t i = 0; i < app.objects[o].instances.length; i++) {
-      if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshes[syncIndex].length, cast(uint)app.meshes[syncIndex].length + size]){
-        app.objects[o].instances[i].meshdef = [cast(uint)app.meshes[syncIndex].length, cast(uint)app.meshes[syncIndex].length + size];
+      if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size]){
+        app.objects[o].instances[i].meshdef = [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size];
         app.objects[o].buffers[INSTANCE] = false;
         needsUpdate = true;
       }
     }
-    app.meshes[syncIndex] ~= app.objects[o].meshes.array;
+    app.meshes ~= app.objects[o].meshes.array;
   }
   if(needsUpdate) {
-    app.buffers["MeshMatrices"].dirty[syncIndex] = true;
-    app.printMeshInfo(syncIndex);
+    uint msize = cast(uint)(Mesh.sizeof * app.meshes.length);
+    if(msize > 0) {
+      foreach(si; 0..app.framesInFlight) {
+        if(si == app.syncIndex) continue;
+        vkWaitForFences(app.device, 1, &app.fences[si].renderInFlight, true, ulong.max);
+      }
+      foreach(si; 0..app.framesInFlight) {
+        memcpy(app.buffers["MeshMatrices"].data[si], &app.meshes[0], msize);
+      }
+    }
+    app.buffers["MeshMatrices"].dirty[] = true;
+    app.printMeshInfo();
   }
 }
 
