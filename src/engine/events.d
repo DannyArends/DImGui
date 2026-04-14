@@ -7,7 +7,7 @@ import engine;
 
 import boundingbox : computeBoundingBox;
 import camera : move, drag, zoom, castRay, tryMove, tryDrag, tryZoom;
-import chunk : pickWorld;
+import chunk : getBestTile, setTile;
 import geometry : deAllocate, setColor;
 import imgui : initializeImGui, saveSettings;
 import intersection : intersects;
@@ -100,7 +100,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       } else {
         auto ray = app.camera.castRay(e.button.x, e.button.y);
         auto hits = app.getHits(ray, app.showRays);
-        if (hits.length > 0) { app.pickWorld(ray); }
+        if (hits.length > 0) { int[3] wc; if(app.getBestTile(ray, wc)) app.setTile(wc); }
         foreach (ref hit; hits) {
           auto obj = app.objects[hit.idx[0]];
           if (cast(Chunk)obj is null) {

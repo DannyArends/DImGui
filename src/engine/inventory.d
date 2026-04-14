@@ -9,11 +9,11 @@ import tileatlas : TileType;
 import world : setTile;
 
 struct Inventory {
-  int[TileType] inventory;
+  int[TileType] items;
   TileType selectedTile = TileType.None;
   int[3] ghostTile = [int.min, 0, 0];
   Geometry ghostCube;
-  alias inventory this;
+  alias items this;
 }
 
 const(char)* inventoryPath(int[2] seed) { return(fixPath(toStringz(format("data/world/%d_%d/inventory.bin", seed[0], seed[1])))); }
@@ -41,7 +41,7 @@ void placeTile(ref App app, int[3] wc) {
     app.setTile(wc, app.inventory.selectedTile);
     app.inventory[app.inventory.selectedTile]--;
     if(app.inventory[app.inventory.selectedTile] <= 0) {
-      app.inventory.inventory.remove(app.inventory.selectedTile);
+      app.inventory.items.remove(app.inventory.selectedTile);
       app.inventory.selectedTile = TileType.None;
     }
     app.saveInventory();
