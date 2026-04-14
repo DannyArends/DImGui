@@ -5,7 +5,7 @@
 
 import engine;
 
-import io : isdir, dir, writeFile, fixPath, ensureWorldDir;
+import io : isdir, isfile, dir, readFile, writeFile, fixPath, ensureWorldDir;
 import noise : noiseHT;
 import tileatlas : heightToTile;
 import vector : vAdd, vMul, x, y, z;
@@ -20,6 +20,8 @@ struct WorldData {
   int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  32;       /// Number of tiles (Y) in a chunk
   float yOffset      = -14.0f;    /// Global world Y-offset
+
+  int[TileType] inventory;
 
   /** Returns the filesystem path for a chunk's binary tile data file
    */
@@ -93,7 +95,8 @@ struct World {
    */
   void saveChunk(int[3] coord, bool verbose = false) {
     if(verbose) SDL_Log(toStringz(format("saveChunk%s: %s tileTypes", coord, chunks[coord].tileTypes.length)));
-    writeFile(chunkPath(coord), cast(char[])chunks[coord].tileTypes); 
+    writeFile(chunkPath(coord), cast(char[])chunks[coord].tileTypes);
+    saveInventory();
   }
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps
@@ -119,6 +122,25 @@ struct World {
     if(app.verbose) SDL_Log("Deleted world chunks at %s", p);
     app.ensureWorldDir();
     clear();
+  }
+
+  const(char)* inventoryPath() const { return(fixPath(toStringz(format("data/world/%d_%d/inventory.bin", seed[0], seed[1])))); }
+
+  void saveInventory() {
+    int[] data;
+    foreach(tileType, count; inventory) {
+      data ~= cast(int)tileType;
+      data ~= count;
+    }
+    if(data.length == 0) data ~= 0; // prevent empty write
+    writeFile(inventoryPath(), cast(char[])data, false);
+  }
+
+  void loadInventory() {
+    auto path = inventoryPath();
+    if(!path.isfile()) return;
+    auto raw = cast(int[])readFile(path);
+    for(int i = 0; i + 1 < raw.length; i += 2) { inventory[cast(TileType)raw[i]] = raw[i+1]; }
   }
 }
 
@@ -154,6 +176,11 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(coord !in app.world.chunks) return;
 
   int idx = app.world.tileIndex(app.world.localCoord(tile));
+  auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type
+  if(newType == TileType.None && mined != TileType.None) {
+    app.world.inventory[mined] = app.world.inventory.get(mined, 0) + 1;
+  }
+
   app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.chunks[coord].dirty = true;
 
@@ -161,6 +188,19 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   foreach (n; app.world.tileNeighbours(tile)) {
     int[3] nc = app.world.chunkCoord(n);
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
+  }
+}
+
+void placeTile(ref App app, int[3] wc) {
+  if(app.gui.selectedTile != TileType.None && app.world.inventory.get(app.gui.selectedTile, 0) > 0) {
+    app.setTile(wc, app.gui.selectedTile);
+    app.world.inventory[app.gui.selectedTile]--;
+    if(app.world.inventory[app.gui.selectedTile] <= 0) {
+      app.world.inventory.remove(app.gui.selectedTile);
+      app.gui.selectedTile = TileType.None;
+    }
+  } else {
+    app.setTile(wc);
   }
 }
 
