@@ -165,13 +165,6 @@ bool getBestTile(ref App app, float[3][2] ray, out int[3] wc) {
   return true;
 }
 
-/** Two-phase world pick: broad phase via chunk BBs, narrow phase per block instance, updates highlight
- */
-void pickWorld(ref App app, float[3][2] ray) {
-  int[3] wc;
-  if(app.getBestTile(ray, wc)) app.setTile(wc);
-}
-
 /** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene
  */
 void finalizeChunk(ref App app, ChunkData data) {
