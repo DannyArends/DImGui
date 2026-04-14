@@ -16,7 +16,7 @@ import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
 import window: createOrResizeWindow;
-import chunk : getGhostTile, updateGhostTile;
+import ghost : getGhostTile, updateGhostTile;
 import world : placeTile;
 
 /** Handle keyboard events
@@ -100,7 +100,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       } else {
         auto ray = app.camera.castRay(e.button.x, e.button.y);
         auto hits = app.getHits(ray, app.showRays);
-        if (hits.length > 0) { app.pickWorld(hits, ray); }
+        if (hits.length > 0) { app.pickWorld(ray); }
         foreach (ref hit; hits) {
           auto obj = app.objects[hit.idx[0]];
           if (cast(Chunk)obj is null) {
