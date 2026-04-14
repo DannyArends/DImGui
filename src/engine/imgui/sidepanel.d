@@ -6,6 +6,7 @@
 import engine;
 
 import imgui : iconText;
+import dwarfwindow : showDwarfContent;
 import directorywindow : showDirectoryContent;
 import settingswindow : showSettingsContent;
 import sfxwindow : showSFXContent;
@@ -33,6 +34,7 @@ void showSidepanel(ref App app, uint font = 0) {
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_LIGHTBULB_O, "Lights"), 0)) app.showLightsContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_COG, "Settings"), 0)) app.showSettingsContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_GLOBE, "World"), 0)) app.showWorldContent(font);
+  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_USER, "Dwarfs"), 0)) app.showDwarfContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_VOLUME_UP, "Sounds"), 0)) app.showSFXContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_PICTURE_O, "Textures"), 0)) app.showTexturesContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_CODE, "Shaders"), 0)) app.showShaderContent(font);
