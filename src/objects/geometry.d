@@ -97,7 +97,7 @@ class Geometry {
 void logDraw(T)(ref App app, ref T object) {
   if(!app.trace) return;
   foreach(ref inst; object.instances) {
-    for(uint m = inst.meshdef[0]; m < inst.meshdef[1]; m++) { if(m < app.meshes.length){ logMesh(m, app.meshes[app.syncIndex][m], toStringz(object.name())); } }
+    for(uint m = inst.meshdef[0]; m < inst.meshdef[1]; m++) { if(m < app.meshes.length){ logMesh(m, app.meshes[m], toStringz(object.name())); } }
   }
 }
 
