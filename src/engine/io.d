@@ -5,6 +5,8 @@
 
 import engine;
 
+import std.file : exists, isFile, isDir, dirEntries, SpanMode;
+
 size_t fread(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_ReadIO(fp, buffer, n * size)); }
 size_t fwrite(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_WriteIO(fp, buffer, n * size)); }
 ulong tell(SDL_IOStream* fp){ return(SDL_TellIO(fp)); }
