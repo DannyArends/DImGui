@@ -49,6 +49,6 @@ void showWorldContent(ref App app, uint font = 0) {
   igText(toStringz(format("%d", app.world.chunks.length)), ImVec2(0.0f, 0.0f));
   igEndTable();
 
-  if(igButton("Regenerate", ImVec2(0.0f, 0.0f))) { app.world.clear(app); }
+  if(igButton("Regenerate", ImVec2(0.0f, 0.0f))) { app.world.deleteChunks(app); }
 }
 
