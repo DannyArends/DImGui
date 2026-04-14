@@ -5,7 +5,7 @@
 
 import engine;
 
-import io : writeFile, fixPath;
+import io : dir, writeFile, fixPath, ensureWorldDir;
 import noise : noiseHT;
 import tileatlas : heightToTile;
 import vector : vAdd, vMul, x, y, z;
@@ -98,7 +98,7 @@ struct World {
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps
    */
-  void clear(ref App app) {
+  void clear() {
     foreach (coord; chunks.keys) {
       if (chunks[coord] !is null) {
         chunks[coord].tiles.deAllocate = true;
@@ -107,6 +107,18 @@ struct World {
     }
     chunks.clear();
     pendingChunks.clear();
+  }
+
+  void deleteChunks(ref App app, string path = "data/world/") {
+    auto p = fixPath(toStringz(path));
+    foreach(file; dir(p)) {
+      if(file.isDir()) { deleteChunks(app, file); }
+      SDL_RemovePath(toStringz(file));
+    }
+    SDL_RemovePath(p);
+    if(app.verbose) SDL_Log("Deleted world chunks at %s", p);
+    app.ensureWorldDir();
+    clear();
   }
 }
 
