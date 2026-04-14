@@ -4,7 +4,8 @@
  */
 import engine;
 
-import geometry : texture, deAllocate, position;
+import events : getHits;
+import geometry : texture, deAllocate;
 import io : readFile, fsize;
 import intersection : intersects;
 import textures : mapTextures;
@@ -12,8 +13,6 @@ import tileatlas : tileData, tileUVTransform;
 import matrix : translate, scale, multiply;
 import vector : expandBounds;
 import world : placeTile, setTile;
-import events : getHits;
-import camera : castRay;
 
 /** Holds raw tile data and instanced rendering data for a chunk
  */
@@ -97,63 +96,6 @@ TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] co
   return tileCache;
 }
 
-int[3] getGhostTile(ref App app, float[3][2] ray) {
-  Intersection best;
-  foreach (ref hit; app.getHits(ray, false)) {
-    auto chunk = cast(Chunk)app.objects[hit.idx[0]];
-    if (chunk is null) continue;
-    for (size_t j = 0; j < chunk.tileBmin.length; j++) {
-      auto i = ray.intersects(chunk.tileBmin[j], chunk.tileBmax[j], hit.idx[0], j);
-      if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
-    }
-  }
-  if (!best.intersects) return [int.min, 0, 0];
-  auto chunk = cast(Chunk)app.objects[best.idx[0]];
-  auto local = app.world.tileCoord(chunk.pickIndices[best.idx[1]]);
-  auto wc = app.world.worldCoord(chunk.coord, local);
-  // Find which neighbour face was hit using ray direction
-  float[3] dir = ray[1];
-  int[3][6] neighbours = app.world.tileNeighbours(wc);
-  float[3][6] normals = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-  float bestDot = float.max;
-  int bestFace = 0;
-  foreach(f; 0..6) {
-    float dot = dir[0]*normals[f][0] + dir[1]*normals[f][1] + dir[2]*normals[f][2];
-    if(dot < bestDot) { bestDot = dot; bestFace = f; }
-  }
-  auto target = neighbours[bestFace];
-  auto coord = app.world.chunkCoord(target);
-  if(coord in app.world.chunks) {
-    auto idx = app.world.tileIndex(app.world.localCoord(target));
-    if(app.world.chunks[coord].tileTypes[idx] == TileType.None) return target;
-  } else {
-    if(app.world.getTile(target) == TileType.None) return target;
-  }
-  return [int.min, 0, 0];
-}
-
-void updateGhostTile(ref App app) {
-  if(app.gui.selectedTile != TileType.None) {
-    auto ray = app.camera.castRay(app.gui.io.MousePos.x, app.gui.io.MousePos.y);
-    auto ghost = app.getGhostTile(ray);
-    app.gui.ghostTile = ghost;
-    if(ghost[0] != int.min) {
-      auto wp = app.world.worldPos(ghost);
-      app.gui.ghostCube.position([wp[0], wp[1] + app.world.yOffset, wp[2]]);
-      auto name = tileData[app.gui.selectedTile].name;
-      auto uvT = app.tileAtlas.tileUVTransform(name);
-      foreach(ref inst; app.gui.ghostCube.instances) inst.uvT = uvT;
-      app.gui.ghostCube.buffers[INSTANCE] = false;
-      app.gui.ghostCube.isVisible = true;
-    } else {
-      app.gui.ghostCube.isVisible = false;
-    }
-  } else {
-    app.gui.ghostTile = [int.min, 0, 0];
-    app.gui.ghostCube.isVisible = false;
-  }
-}
-
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
  */
 ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
@@ -203,11 +145,11 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3
   return data;
 }
 
-/** Two-phase world pick: broad phase via chunk BBs, narrow phase per block instance, updates highlight
+/** Find the best intersecting tile in the world given a ray, returns world coord or [int.min,0,0] 
  */
-void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
+bool getBestTile(ref App app, float[3][2] ray, out int[3] wc) {
   Intersection best;
-  foreach (ref hit; hits) {
+  foreach (ref hit; app.getHits(ray, false)) {
     auto chunk = cast(Chunk)app.objects[hit.idx[0]];
     if (chunk is null) continue;
     for (size_t j = 0; j < chunk.tileBmin.length; j++) {
@@ -215,12 +157,18 @@ void pickWorld(ref App app, Intersection[] hits, float[3][2] ray) {
       if (i.intersects && (!best.intersects || i.tmin < best.tmin)) best = i;
     }
   }
-  if (best.intersects) {
-    auto chunk = cast(Chunk)app.objects[best.idx[0]];
-    auto local = app.world.tileCoord(chunk.pickIndices[best.idx[1]]);
-    auto wc = app.world.worldCoord(chunk.coord, local);
-    app.setTile(wc);
-  }
+  if (!best.intersects) return false;
+  auto chunk = cast(Chunk)app.objects[best.idx[0]];
+  auto local = app.world.tileCoord(chunk.pickIndices[best.idx[1]]);
+  wc = app.world.worldCoord(chunk.coord, local);
+  return true;
+}
+
+/** Two-phase world pick: broad phase via chunk BBs, narrow phase per block instance, updates highlight
+ */
+void pickWorld(ref App app, float[3][2] ray) {
+  int[3] wc;
+  if(app.getBestTile(ray, wc)) app.setTile(wc);
 }
 
 /** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene
