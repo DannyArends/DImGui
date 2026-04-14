@@ -112,6 +112,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       }
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
+    app.updateGhostTile();
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 
     if(app.camera.isdrag[1]) { app.tryDrag(e.motion.xrel, e.motion.yrel); }

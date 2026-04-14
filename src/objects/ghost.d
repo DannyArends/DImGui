@@ -25,7 +25,7 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
   order[].sort!((a,b) => dots[a] < dots[b]);
 
   foreach(f; order) {
-    if(dots[order[0]] < 0 && dots[f] > -0.1f) break; // skip near-perpendicular faces
+    if(dots[order[0]] < 0.0f && dots[f] > 0.0f) break; // skip near-perpendicular faces
     auto target = neighbours[f];
     auto coord = app.world.chunkCoord(target);
     if(coord in app.world.chunks) {

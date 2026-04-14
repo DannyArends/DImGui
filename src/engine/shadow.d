@@ -244,12 +244,12 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
 
-  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  app.updateDescriptorData(app.shadows.shaders, app.shadows.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
-  popLabel(cmd);
-
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   app.bufferGeometries(cmd);
+  popLabel(cmd);
+
+  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
+  app.updateDescriptorData(app.shadows.shaders, app.shadows.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);

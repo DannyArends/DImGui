@@ -28,14 +28,14 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   enforceVK(vkBeginCommandBuffer(cmd, &beginInfo));
   app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Render %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("SSBO Buffering");
-  app.updateDescriptorData(shaders, app.scenePass.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
-  popLabel(cmd);
-
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("Objects Buffering");
   app.bufferGeometries(cmd);
+  popLabel(cmd);
+
+  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
+  if(app.trace) SDL_Log("SSBO Buffering");
+  app.updateDescriptorData(shaders, app.scenePass.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Rendering", Colors.lightgray);

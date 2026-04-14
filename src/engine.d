@@ -37,7 +37,7 @@ struct App {
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
   Matrix[] boneOffsets;                                                         /// Animated BoneOffsets for GPU SSBO
-  MeshList meshes;                                                              /// Meshes for GPU SSBO
+  MeshList[] meshes;                                                            /// Meshes for GPU SSBO
   Textures textures;                                                            /// Textures
   Audio audio;
   WavFMT[] soundfx;                                                             /// Sound effects
