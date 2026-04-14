@@ -16,6 +16,8 @@ import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
 import window: createOrResizeWindow;
+import chunk : getGhostTile, updateGhostTile;
+import world : placeTile;
 
 /** Handle keyboard events
  */
@@ -87,29 +89,34 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
  */
 void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-    if (e.button.button == SDL_BUTTON_LEFT) {
-      app.camera.isdrag[0] = true;
-    }
+    if (e.button.button == SDL_BUTTON_LEFT) { app.camera.isdrag[0] = true; }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
   }
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+    app.camera.isdrag[0] = false; 
     if (e.button.button == SDL_BUTTON_LEFT) {
-      app.camera.isdrag[0] = false; 
-      auto ray = app.camera.castRay(e.button.x, e.button.y);
-      auto hits = app.getHits(ray, app.showRays);
-      if (hits.length > 0) { app.pickWorld(hits, ray); }
-      foreach (ref hit; hits) {
-        auto obj = app.objects[hit.idx[0]];
-        if (cast(Chunk)obj is null) {
-          obj.box.setColor(Colors.yellowgreen);
-          obj.window = true;
-          break;
+      if(app.gui.ghostTile[0] != int.min) {
+        app.placeTile(app.gui.ghostTile);
+      } else {
+        auto ray = app.camera.castRay(e.button.x, e.button.y);
+        auto hits = app.getHits(ray, app.showRays);
+        if (hits.length > 0) { app.pickWorld(hits, ray); }
+        foreach (ref hit; hits) {
+          auto obj = app.objects[hit.idx[0]];
+          if (cast(Chunk)obj is null) {
+            obj.box.setColor(Colors.yellowgreen);
+            obj.window = true;
+            break;
+          }
         }
       }
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
   }
-  if(e.type == SDL_EVENT_MOUSE_MOTION){ if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel); }
+  if(e.type == SDL_EVENT_MOUSE_MOTION){ 
+    if(app.camera.isdrag[1]) { app.tryDrag(e.motion.xrel, e.motion.yrel); }
+    app.updateGhostTile();
+  }
   if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.tryZoom(-e.wheel.y); }
 }
 

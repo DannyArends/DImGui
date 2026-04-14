@@ -33,6 +33,11 @@ void createScene(ref App app){
     }
   }*/
 
+  app.gui.ghostCube = new Cube(color: [1.0f, 1.0f, 1.0f, 0.3f]);
+  app.gui.ghostCube.isVisible = false;
+  app.gui.ghostCube.texture("3DTextures");
+  app.objects ~= app.gui.ghostCube;
+
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
   app.objects[($-1)].computeTangents();
