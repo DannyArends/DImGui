@@ -5,7 +5,7 @@
 
 import engine;
 
-import io : dir, writeFile, fixPath, ensureWorldDir;
+import io : isdir, dir, writeFile, fixPath, ensureWorldDir;
 import noise : noiseHT;
 import tileatlas : heightToTile;
 import vector : vAdd, vMul, x, y, z;
@@ -109,11 +109,11 @@ struct World {
     pendingChunks.clear();
   }
 
-  void deleteChunks(ref App app, string path = "data/world/") {
-    auto p = fixPath(toStringz(path));
-    foreach(file; dir(p)) {
-      if(file.isDir()) { deleteChunks(app, file); }
-      SDL_RemovePath(toStringz(file));
+  void deleteChunks(ref App app, const(char)* path = "data/world/") {
+    auto p = fixPath(path);
+    foreach(entry; dir(p)) {
+      if(isdir(toStringz(entry))) { deleteChunks(app, toStringz(entry)); }
+      SDL_RemovePath(toStringz(entry));
     }
     SDL_RemovePath(p);
     if(app.verbose) SDL_Log("Deleted world chunks at %s", p);

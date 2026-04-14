@@ -20,7 +20,6 @@ public import std.array : array, split, replace;
 public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, receiveOnly, receiveTimeout;
 public import std.conv : to;
 public import std.format : format;
-public import std.file : exists, isFile, isDir, dirEntries, SpanMode;
 public import std.math : abs, ceil, sqrt, pow, PI, cos, sin, tan, acos, asin, atan, atan2, floor, fmod, isFinite, isNaN;
 public import std.path : baseName, dirName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform;
