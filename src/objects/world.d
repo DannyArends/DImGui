@@ -8,7 +8,7 @@ import engine;
 import io : isdir, isfile, dir, readFile, writeFile, fixPath, ensureWorldDir;
 import noise : noiseHT;
 import tileatlas : heightToTile;
-import vector : euclidean, vAdd, vMul, x, y, z;
+import vector : vAdd, vMul, x, y, z;
 import inventory : saveInventory;
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable

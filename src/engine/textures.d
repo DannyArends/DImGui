@@ -117,6 +117,10 @@ void mapTextures(ref App app){
 int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
   if (type in object.materials[materialIndex].textures) {
     int index = idx(app.textures, object.materials[materialIndex].textures[type]);
+    if (index >= 0) {
+      object.buffers[INSTANCE] = false;
+      app.buffers["MeshMatrices"].dirty[] = true;
+    }
     return(index);
   }
   return(-1);
