@@ -140,37 +140,22 @@ float scale(T)(T object, uint instance = 0) {
   return(scale(object.instances[instance]));
 }
 
+
 /** Set tid for instance from object.instances to Texture name 
  */
-void texture(T)(T object, string name, string mname = "") {
-  if(object.materials.length == 0){
+void setTexture(T)(T object, string name, aiTextureType tt, bool isNormal = false) {
+  if(object.materials.length == 0) {
     object.materials.length = 1;
-    object.materials[0] = Material(name, [aiTextureType_DIFFUSE: TexureInfo(name) ]);
-  }else{
-    object.materials[0].textures[aiTextureType_DIFFUSE] = TexureInfo(name);
+    object.materials[0] = Material(name, [tt: TexureInfo(name)]);
+  } else {
+    object.materials[0].textures[tt] = TexureInfo(name);
   }
-  foreach(ref mesh ; object.meshes) { mesh.mid = 0; }
+  foreach(ref mesh; object.meshes) { mesh.mid = 0; }
 }
 
-void bumpmap(T)(T object, string name, string mname = "") {
-  if(object.materials.length == 0){
-    object.materials.length = 1;
-    object.materials[0] = Material(name, [aiTextureType_NORMALS: TexureInfo(name) ]);
-  }else{
-    object.materials[0].textures[aiTextureType_NORMALS] = TexureInfo(name);
-  }
-  foreach(ref mesh ; object.meshes) { mesh.mid = 0; }
-}
-
-void opacity(T)(T object, string name, string mname = "") {
-  if(object.materials.length == 0){
-    object.materials.length = 1;
-    object.materials[0] = Material(name, [aiTextureType_OPACITY: TexureInfo(name) ]);
-  }else{
-    object.materials[0].textures[aiTextureType_OPACITY] = TexureInfo(name);
-  }
-  foreach(ref mesh ; object.meshes) { mesh.oid = 0; }
-}
+void texture(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_DIFFUSE); }
+void bumpmap(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_NORMALS); }
+void opacity(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_OPACITY); }
 
 /** Euclidean distance between Geometry and Camera */
 @nogc float distance(T)(const T object, const Camera camera) nothrow { 
