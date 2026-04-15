@@ -116,12 +116,7 @@ void mapTextures(ref App app){
 
 int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
   if (type in object.materials[materialIndex].textures) {
-    int index = idx(app.textures, object.materials[materialIndex].textures[type]);
-    if (index >= 0) {
-      object.buffers[INSTANCE] = false;
-      app.buffers["MeshMatrices"].dirty[] = true;
-    }
-    return(index);
+    return(idx(app.textures, object.materials[materialIndex].textures[type]));
   }
   return(-1);
 }
@@ -129,9 +124,14 @@ int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type 
 void mapTextures(ref App app, ref Geometry object){
   foreach (ref mesh; object.meshes) {
     if(mesh.mid < 0) continue;
-    mesh.tid = app.getTexture(object, mesh.mid, aiTextureType_DIFFUSE);
-    mesh.nid = app.getTexture(object, mesh.mid, aiTextureType_NORMALS);
-    mesh.oid = app.getTexture(object, mesh.mid, aiTextureType_OPACITY);
+    auto tid = app.getTexture(object, mesh.mid, aiTextureType_DIFFUSE);
+    auto nid = app.getTexture(object, mesh.mid, aiTextureType_NORMALS);
+    auto oid = app.getTexture(object, mesh.mid, aiTextureType_OPACITY);
+    if(tid != mesh.tid || nid != mesh.nid || oid != mesh.oid) {
+      object.buffers[INSTANCE] = false;
+      app.buffers["MeshMatrices"].dirty[] = true;
+    }
+    mesh.tid = tid; mesh.nid = nid; mesh.oid = oid;
   }
 }
 
