@@ -192,8 +192,7 @@ void updateWorld(ref App app, float[3] lookat) {
   for (int cz = pc.z - effectiveRD; cz <= pc.z + effectiveRD; cz++) {
     for (int cx = pc.x - effectiveRD; cx <= pc.x + effectiveRD; cx++) {
       int[3] coord = [cx, 0, cz];
-      if (coord !in app.world.chunks && coord !in app.world.pendingChunks)
-        toLoad ~= coord;
+      if (coord !in app.world.chunks && coord !in app.world.pendingChunks) { toLoad ~= coord; }
     }
   }
   auto sqDist = (int[3] a) => (a[0]-pc[0])^^2 + (a[2]-pc[2])^^2;
