@@ -143,7 +143,7 @@ float scale(T)(T object, uint instance = 0) {
 
 /** Set tid for instance from object.instances to Texture name 
  */
-void setTexture(T)(T object, string name, aiTextureType tt, bool isNormal = false) {
+void setTexture(T)(T object, string name, aiTextureType tt) {
   if(object.materials.length == 0) {
     object.materials.length = 1;
     object.materials[0] = Material(name, [tt: TexureInfo(name)]);
