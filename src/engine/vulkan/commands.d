@@ -11,22 +11,14 @@ import descriptor : updateDescriptorData;
 import geometry : draw, bufferGeometries;
 import ssbo : updateSSBO;
 import matrix : multiply;
+import renderpass : beginRecording, endRecording;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import window: supportedTopologies;
 
 /** Record scene command buffer: SSBO -> Objects -> Rendering
  */
 void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
-  auto cmd = app.scenePass.commands[syncIndex];
-  if(app.trace) SDL_Log("recordSceneCommandBuffer %d recording to frame: %d/%d", syncIndex, app.frameIndex, app.scenePass.framebuffers.length);
-
-  VkCommandBufferBeginInfo beginInfo = {
-    sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    pInheritanceInfo: null
-  };
-  enforceVK(vkResetCommandBuffer(cmd, 0)); // Reset for recording
-  enforceVK(vkBeginCommandBuffer(cmd, &beginInfo));
-  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Render %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  auto cmd = app.scenePass.beginRecording(app, syncIndex, "Render");
 
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("Objects Buffering");
@@ -65,22 +57,13 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   app.scenePass.end(cmd);
   popLabel(cmd);
 
-  enforceVK(vkEndCommandBuffer(cmd));
+  app.scenePass.endRecording(syncIndex);
 }
 
 /** Record post-process command buffer
  */
 void recordPostCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.postPass.commands[syncIndex];
-  if(app.trace) SDL_Log("recordPostCommandBuffer %d", syncIndex);
-
-  VkCommandBufferBeginInfo beginInfo = {
-    sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    pInheritanceInfo: null
-  };
-  enforceVK(vkResetCommandBuffer(cmd, 0)); // Reset for recording
-  enforceVK(vkBeginCommandBuffer(cmd, &beginInfo));
-  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Post %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  auto cmd = app.postPass.beginRecording(app, syncIndex, "Post");
 
   pushLabel(cmd, "Post-processing", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Post-processing");
@@ -95,7 +78,7 @@ void recordPostCommandBuffer(ref App app, uint syncIndex) {
   app.postPass.end(cmd);
   popLabel(cmd);
   if(app.trace) SDL_Log("Finished Post-processing");
-  enforceVK(vkEndCommandBuffer(cmd));
+  app.postPass.endRecording(syncIndex);
 }
 
 void createCommandPools(ref App app) {
