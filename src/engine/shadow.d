@@ -19,14 +19,12 @@ struct ShadowMap {
   ImageBuffer[] images;
 
   Shader[] shaders;
-  VkRenderPass renderPass;
+  RenderPass renderPass;
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
   uint dimension = isAndroid ? 512 : 1024;  /// Allow shadows to be disabled
 
-  VkFramebuffer[] framebuffers;             /// Per-light framebuffers
-  VkCommandBuffer[] commands;               /// Command buffers
   bool dirty = true;
 
   uint lastShadowInstances = 0;
@@ -72,51 +70,32 @@ void createShadowMapResources(ref App app) {
  * Shadow map render pass  creation
  */
 void createShadowMapRenderPass(ref App app) {
-  if(app.verbose) SDL_Log("Shadow map render pass creation");
+  VkAttachmentReference depthRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
-  VkAttachmentDescription depthAttachment = {
-    format: app.shadows.format,
-    samples: VK_SAMPLE_COUNT_1_BIT,
-    loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
-    storeOp: VK_ATTACHMENT_STORE_OP_STORE,
-    stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-    finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+  RenderPassInfo info = {
+    attachments: [{
+      format:        app.shadows.format,
+      samples:       VK_SAMPLE_COUNT_1_BIT,
+      loadOp:        VK_ATTACHMENT_LOAD_OP_CLEAR,
+      storeOp:       VK_ATTACHMENT_STORE_OP_STORE,
+      stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+      initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+      finalLayout:   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    }],
+    subpasses: [{
+      pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
+      colorAttachmentCount:    0,
+      pDepthStencilAttachment: &depthRef
+    }],
+    dependencies: [{
+      srcSubpass:    VK_SUBPASS_EXTERNAL,
+      srcStageMask:  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+      dstStageMask:  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+      srcAccessMask: VK_ACCESS_SHADER_READ_BIT,
+      dstAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+    }],
   };
-
-  VkAttachmentReference depthAttachmentRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-
-  VkSubpassDescription subpass = {
-    pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
-    colorAttachmentCount: 0,
-    pDepthStencilAttachment: &depthAttachmentRef
-  };
-
-  VkSubpassDependency dependency = {
-    srcSubpass: VK_SUBPASS_EXTERNAL,
-    srcStageMask: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-    dstStageMask: VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-    srcAccessMask: VK_ACCESS_SHADER_READ_BIT,
-    dstAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
-  };
-
-  VkRenderPassCreateInfo renderPassInfo = {
-    sType: VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-    attachmentCount: 1,
-    pAttachments: &depthAttachment,
-    subpassCount: 1,
-    pSubpasses: &subpass,
-    dependencyCount: 1,
-    pDependencies: &dependency
-  };
-
-  enforceVK(vkCreateRenderPass(app.device, &renderPassInfo, app.allocator, &app.shadows.renderPass));
-  app.nameVulkanObject(app.shadows.renderPass, toStringz("[RENDERPASS] Shadows"), VK_OBJECT_TYPE_RENDER_PASS);
-
-  if(app.verbose) SDL_Log("Shadow map render pass created.");
-
-  app.mainDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.shadows.renderPass, app.allocator); });
+  app.shadows.renderPass.create(app, info, "Shadows", app.mainDeletionQueue);
 }
 
 /** Create the shadow mapping pipeline
@@ -230,7 +209,7 @@ void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
 }
 
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.shadows.commands[syncIndex];
+  auto cmd = app.shadows.renderPass.commands[syncIndex];
 
   VkCommandBufferBeginInfo beginInfo = {
       sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -249,7 +228,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   popLabel(cmd);
 
   pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  app.updateDescriptorData(app.shadows.shaders, app.shadows.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
+  app.updateDescriptorData(app.shadows.shaders, app.shadows.renderPass.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
@@ -267,7 +246,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
       renderPass: app.shadows.renderPass,
-      framebuffer: app.shadows.framebuffers[l],
+      framebuffer: app.shadows.renderPass.framebuffers[l],
       renderArea: { extent: shadowExtent },
       clearValueCount: 1,
       pClearValues: &clearDepth,

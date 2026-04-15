@@ -38,7 +38,7 @@ public import particlesystem : ParticleSystem;
 public import pdb : AtomCloud, Backbone, AminoAcidCloud;
 public import pipeline : GraphicsPipeline;
 public import quaternion : Quaternion;
-public import renderpass : RenderPass;
+public import renderpass : RenderPassInfo, RenderPass;
 public import shaders : Shader, ShaderDef, IncluderContext;
 public import square : Square;
 public import sdl : STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
