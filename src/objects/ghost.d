@@ -27,6 +27,7 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
   foreach(f; order) {
     if(dots[order[0]] < 0.0f && dots[f] > 0.0f) break; // skip near-perpendicular faces
     auto target = neighbours[f];
+    if(target[1] < 0 || target[1] >= app.world.chunkHeight) continue;
     auto coord = app.world.chunkCoord(target);
     if(coord in app.world.chunks) {
       auto idx = app.world.tileIndex(app.world.localCoord(target));
@@ -44,7 +45,13 @@ void updateGhostTile(ref App app) {
     app.inventory.ghostCube.isVisible = false;
     return;
   }
-  auto ray = app.camera.castRay(app.gui.io.MousePos.x, app.gui.io.MousePos.y);
+  auto mx = app.gui.io.MousePos.x;
+  auto my = app.gui.io.MousePos.y;
+  auto dx = mx - app.camera.lastMousePos[0];
+  auto dy = my - app.camera.lastMousePos[1];
+  if (dx*dx + dy*dy < 4.0f) return;  /// ~2px threshold
+  app.camera.lastMousePos = [mx, my];
+  auto ray = app.camera.castRay(mx, my);
   auto ghost = app.getGhostTile(ray);
   app.inventory.ghostTile = ghost;
   app.inventory.ghostCube.isVisible = ghost[0] != int.min;

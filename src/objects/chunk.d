@@ -6,13 +6,14 @@ import engine;
 
 import events : getHits;
 import geometry : texture, deAllocate;
-import io : readFile, fsize;
+import io : exists, readFile, fsize;
 import intersection : intersects;
 import textures : mapTextures;
 import tileatlas : tileData, tileUVTransform;
 import matrix : translate, scale, multiply;
 import vector : expandBounds;
 import world : setTile;
+import ghost: updateGhostTile;
 import inventory : placeTile;
 
 /** Holds raw tile data and instanced rendering data for a chunk
@@ -89,8 +90,8 @@ TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] co
     if (fsize(path, false) == wd.tileCount * TileType.sizeof) {
       tileCache[ci] = cast(TileType[])readFile(path);
     } else {
-      SDL_RemovePath(path);
-      tileCache[ci] = (cast(TileType*)malloc(wd.tileCount * TileType.sizeof))[0 .. wd.tileCount];
+      if(path.exists)SDL_RemovePath(path);
+      tileCache[ci].length = wd.tileCount;
       for (int i = 0; i < wd.tileCount; i++) tileCache[ci][i] = wd.getTile(wd.worldCoord(coords[ci], wd.tileCoord(i)));
     }
   }
@@ -194,5 +195,9 @@ void finalizeChunk(ref App app, ChunkData data) {
 
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
+  if (app.inventory.pendingGhostUpdate) {
+    app.inventory.pendingGhostUpdate = false;
+    app.updateGhostTile();
+  }
 }
 

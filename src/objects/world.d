@@ -8,7 +8,7 @@ import engine;
 import io : isdir, isfile, dir, readFile, writeFile, fixPath, ensureWorldDir;
 import noise : noiseHT;
 import tileatlas : heightToTile;
-import vector : vAdd, vMul, x, y, z;
+import vector : euclidean, vAdd, vMul, x, y, z;
 import inventory : saveInventory;
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable
@@ -188,12 +188,16 @@ void updateWorld(ref App app, float[3] lookat) {
   int[3] pc = app.world.chunkCoord([cast(int)floor(lookat[0] / app.world.tileSize), 0, cast(int)floor(lookat[2] / app.world.tileSize)]);
 
   // Load new chunks within render distance
-  for (int cz = pc.z - effectiveRD ; cz <= pc.z + effectiveRD ; cz++) {
-    for (int cx = pc.x - effectiveRD ; cx <= pc.x + effectiveRD ; cx++) {
+  int[3][] toLoad;
+  for (int cz = pc.z - effectiveRD; cz <= pc.z + effectiveRD; cz++) {
+    for (int cx = pc.x - effectiveRD; cx <= pc.x + effectiveRD; cx++) {
       int[3] coord = [cx, 0, cz];
-      if (coord !in app.world.chunks && coord !in app.world.pendingChunks) app.dispatchWorker(coord);
+      if (coord !in app.world.chunks && coord !in app.world.pendingChunks)
+        toLoad ~= coord;
     }
   }
+  auto sqDist = (int[3] a) => (a[0]-pc[0])^^2 + (a[2]-pc[2])^^2;
+  foreach (coord; toLoad.sort!((a, b) => sqDist(a) < sqDist(b))) app.dispatchWorker(coord);
 
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {

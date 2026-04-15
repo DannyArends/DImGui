@@ -42,11 +42,12 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
       }
     }
   }
-  return [0, 0, 0];
+  return [int.min, 0, 0];
 }
 
-Dwarf spawnDwarf(ref App app, string name) {
+void spawnDwarf(ref App app, string name) {
   auto tile = app.findFreeSurfaceTile();
+  if(tile[0] == int.min) return;
   Dwarf dwarf = new Dwarf();
   dwarf.dwarfName = name;
   dwarf.tilePos = tile;
@@ -54,6 +55,5 @@ Dwarf spawnDwarf(ref App app, string name) {
   dwarf.position([wp[0], wp[1] + app.world.yOffset - 0.5, wp[2]]);
   dwarf.setColor([uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), 1.0f]);
   app.objects ~= dwarf;
-  return dwarf;
 }
 
