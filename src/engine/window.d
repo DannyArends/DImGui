@@ -62,7 +62,7 @@ void createOrResizeWindow(ref App app) {
   app.reflectShaders(app.shadows.shaders);
   app.createResources(app.shadows.shaders, Stage.SHADOWS);
   app.createDescriptors(app.shadows.shaders, Stage.SHADOWS);
-  app.createCommandBuffer(app.shadows.commands, app.commandPool, app.framesInFlight);
+  app.createCommandBuffer(app.shadows.renderPass.commands, app.commandPool, app.framesInFlight);
   app.createShadowMapGraphicsPipeline();
 
   SDL_Log("3: Render shaders reflection");

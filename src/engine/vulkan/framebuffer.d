@@ -87,7 +87,7 @@ void createFramebuffers(ref App app) {
   }
 
   if(app.verbose) SDL_Log("Shadow map framebuffer creation for %d lights", app.lights.length);
-  app.shadows.framebuffers.length = app.lights.length;
+  app.shadows.renderPass.framebuffers.length = app.lights.length;
 
   for(size_t l = 0; l < app.lights.length; l++) {
     VkImageView[] attachments = [ app.shadows.images[l].view ];
@@ -101,15 +101,15 @@ void createFramebuffers(ref App app) {
       height: app.shadows.dimension,
       layers: 1
     };
-    enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, app.allocator, &app.shadows.framebuffers[l]));
-    app.nameVulkanObject(app.shadows.framebuffers[l], toStringz(format("[FRAMEBUFFER] Shadow #%d", l)), VK_OBJECT_TYPE_FRAMEBUFFER);
+    enforceVK(vkCreateFramebuffer(app.device, &framebufferInfo, app.allocator, &app.shadows.renderPass.framebuffers[l]));
+    app.nameVulkanObject(app.shadows.renderPass.framebuffers[l], toStringz(format("[FRAMEBUFFER] Shadow #%d", l)), VK_OBJECT_TYPE_FRAMEBUFFER);
 
     if(app.verbose) SDL_Log("Shadow map framebuffer created.");
   }
 
   if(app.verbose) {
     SDL_Log("%d Scene Framebuffers created", app.scenePass.framebuffers.length);
-    SDL_Log("%d Shadow Framebuffers created", app.shadows.framebuffers.length);
+    SDL_Log("%d Shadow Framebuffers created", app.shadows.renderPass.framebuffers.length);
     SDL_Log("%d Post-Process Framebuffers created", app.postPass.framebuffers.length);
     SDL_Log("%d ImGui Framebuffers created", app.imguiPass.framebuffers.length);
   }
@@ -118,7 +118,7 @@ void createFramebuffers(ref App app) {
     foreach(fb; app.scenePass.framebuffers){ vkDestroyFramebuffer(app.device, fb, app.allocator); }
     foreach(fb; app.postPass.framebuffers){ vkDestroyFramebuffer(app.device, fb, app.allocator); }
     foreach(fb; app.imguiPass.framebuffers){ vkDestroyFramebuffer(app.device, fb, app.allocator); }
-    foreach(fb; app.shadows.framebuffers){ vkDestroyFramebuffer(app.device, fb, app.allocator); }
+    foreach(fb; app.shadows.renderPass.framebuffers){ vkDestroyFramebuffer(app.device, fb, app.allocator); }
   });
 }
 

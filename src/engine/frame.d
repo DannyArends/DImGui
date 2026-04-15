@@ -95,7 +95,7 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers = [];
-  if (shadowsThisFrame){ submitCommandBuffers ~= app.shadows.commands[app.syncIndex]; }
+  if (shadowsThisFrame){ submitCommandBuffers ~= app.shadows.renderPass.commands[app.syncIndex]; }
   submitCommandBuffers ~= [
     app.scenePass.commands[app.syncIndex],
     app.postPass.commands[app.syncIndex],

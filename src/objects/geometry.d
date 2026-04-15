@@ -140,8 +140,7 @@ float scale(T)(T object, uint instance = 0) {
   return(scale(object.instances[instance]));
 }
 
-
-/** Set tid for instance from object.instances to Texture name 
+/** Set different types of textures on an object
  */
 void setTexture(T)(T object, string name, aiTextureType tt) {
   if(object.materials.length == 0) {
@@ -327,7 +326,7 @@ void shadow(ref App app, Geometry object, size_t i) {
   if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null || object.indexBuffer.vb == null) return;
   if(app.trace) SDL_Log("SHADOW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
-  auto cmd = app.shadows.commands[i];
+  auto cmd = app.shadows.renderPass.commands[i];
 
   vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
