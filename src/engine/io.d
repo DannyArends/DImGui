@@ -151,6 +151,8 @@ version(Android) {
 
 }else{ // Version SDL/OS, just use D to get the dir() functionality
 
+  bool exists (const(char)* path) { return(exists(cast(string)fromStringz(path))); }
+
   /** Content of a directory
    */
   string[] dir(const(char)* dirPath, string pattern = "*", bool shallow = true) { 
