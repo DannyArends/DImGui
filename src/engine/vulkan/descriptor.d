@@ -150,8 +150,7 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
   VkDescriptorSetLayout[] layouts;
   VkDescriptorSet[] set;
   layouts.length = set.length = size;
-
-  for(uint i = 0; i < size; i++) { layouts[i] = layout; }
+  layouts[] = layout;
 
   VkDescriptorSetAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -211,45 +210,18 @@ VkWriteDescriptorSet makeWrite(VkDescriptorSet dst, uint binding, VkDescriptorTy
   return set;
 }
 
+void append(T)(ref VkDescriptorImageInfo[] infos, T[] images, VkSampler sampler, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+  foreach(ref img; images){ infos ~= VkDescriptorImageInfo(sampler, img.view, layout); }
+}
+
 /** Populate imageInfos for a given descriptor target
  */
 void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descriptor d) {
   final switch(d.target) {
-    case DescriptorTarget.Textures:
-      foreach(ref img; app.textures.textures) {
-        VkDescriptorImageInfo info = {
-          imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-          imageView: img.view,
-          sampler: app.sampler
-        };
-        imageInfos ~= info;
-      }
-      break;
-    case DescriptorTarget.Shadow:
-      foreach(ref img; app.shadows.images) {
-        VkDescriptorImageInfo info = {
-          imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-          imageView: img.view,
-          sampler: app.sampler
-        };
-        imageInfos ~= info;
-      }
-      break;
-    case DescriptorTarget.HDR:
-      VkDescriptorImageInfo info = {
-        imageLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        imageView: app.resolvedHDR.view,
-        sampler: app.sampler
-      };
-      imageInfos ~= info;
-      break;
-    case DescriptorTarget.Compute:
-      VkDescriptorImageInfo info = {
-        imageLayout: VK_IMAGE_LAYOUT_GENERAL,
-        imageView: app.textures[app.textures.idx(d.name)].view,
-      };
-      imageInfos ~= info;
-      break;
+    case DescriptorTarget.Textures: imageInfos.append(app.textures.textures, app.sampler); break;
+    case DescriptorTarget.Shadow: imageInfos.append(app.shadows.images, app.sampler); break;
+    case DescriptorTarget.HDR: imageInfos.append([app.resolvedHDR], app.sampler); break;
+    case DescriptorTarget.Compute: imageInfos.append([app.textures[app.textures.idx(d.name)]], app.sampler, VK_IMAGE_LAYOUT_GENERAL); break;
     case DescriptorTarget.None: break;
   }
 }
