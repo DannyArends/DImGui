@@ -110,23 +110,19 @@ void transferTextureAsync(ref App app, ref Texture texture) {
   app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }
 
-void mapTextures(ref App app){
-  for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); }
-}
-
-int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
-  if (type in object.materials[materialIndex].textures) {
-    return(idx(app.textures, object.materials[materialIndex].textures[type]));
-  }
+int getTexture(ref App app, Material material, aiTextureType type = aiTextureType_DIFFUSE){
+  if (type in material.textures) { return(idx(app.textures, material.textures[type])); }
   return(-1);
 }
 
-void mapTextures(ref App app, ref Geometry object){
+void mapTextures(ref App app) { for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); } }
+
+void mapTextures(ref App app, ref Geometry object) {
   foreach (ref mesh; object.meshes) {
     if(mesh.mid < 0) continue;
-    auto tid = app.getTexture(object, mesh.mid, aiTextureType_DIFFUSE);
-    auto nid = app.getTexture(object, mesh.mid, aiTextureType_NORMALS);
-    auto oid = app.getTexture(object, mesh.mid, aiTextureType_OPACITY);
+    auto tid = app.getTexture(object.materials[mesh.mid], aiTextureType_DIFFUSE);
+    auto nid = app.getTexture(object.materials[mesh.mid], aiTextureType_NORMALS);
+    auto oid = app.getTexture(object.materials[mesh.mid], aiTextureType_OPACITY);
     if(tid != mesh.tid || nid != mesh.nid || oid != mesh.oid) {
       object.buffers[INSTANCE] = false;
       app.buffers["MeshMatrices"].dirty[] = true;
