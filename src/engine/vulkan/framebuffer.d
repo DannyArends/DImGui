@@ -21,7 +21,7 @@ void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits f
   app.swapDeletionQueue.add((){ app.deAllocate(buffer); });
 }
 
-void createFramebuffers(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, uint width, uint height, string label, ref DeletionQueue queue) {
+void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, uint width, uint height, string label, ref DeletionQueue queue) {
   pass.framebuffers.length = attachmentSets.length;
   foreach(i, views; attachmentSets) {
     VkFramebufferCreateInfo info = {
@@ -48,9 +48,9 @@ void createFramebuffers(ref App app) {
   auto imguiViews  = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
   auto shadowViews = iota(app.lights.length).map!(i => [app.shadows.images[i].view]).array;
 
-  app.createFramebuffers(app.scenePass, sceneViews, app.camera.width, app.camera.height, "Render", app.swapDeletionQueue);
-  app.createFramebuffers(app.postPass, postViews, app.camera.width, app.camera.height, "Post-process", app.swapDeletionQueue);
-  app.createFramebuffers(app.imguiPass, imguiViews, app.camera.width, app.camera.height, "ImGui", app.swapDeletionQueue);
-  app.createFramebuffers(app.shadows.renderPass, shadowViews, app.shadows.dimension, app.shadows.dimension, "Shadow", app.mainDeletionQueue);
+  app.create(app.scenePass, sceneViews, app.camera.width, app.camera.height, "Render", app.swapDeletionQueue);
+  app.create(app.postPass, postViews, app.camera.width, app.camera.height, "Post-process", app.swapDeletionQueue);
+  app.create(app.imguiPass, imguiViews, app.camera.width, app.camera.height, "ImGui", app.swapDeletionQueue);
+  app.create(app.shadows.renderPass, shadowViews, app.shadows.dimension, app.shadows.dimension, "Shadow", app.mainDeletionQueue);
 }
 
