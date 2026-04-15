@@ -199,5 +199,6 @@ void finalizeChunk(ref App app, ChunkData data) {
     app.inventory.pendingGhostUpdate = false;
     app.updateGhostTile();
   }
+  app.camera.isDirty = true;
 }
 
