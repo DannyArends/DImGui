@@ -7,6 +7,7 @@ import engine;
 
 import searchnode : PathNode, isEqual, has;
 import vector : euclidean;
+import dwarf : Dwarf;
 
 enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3, INVALID = 4 };
 
@@ -156,14 +157,24 @@ Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f],
 }
 
 /* Perform a test search and return the result, after which search.stepThroughPath allows to walk the steps */
-void testSearch() {
-  // Perform a pathfinding search
-  Search!(WorldData, PathNode) search = performSearch!(WorldData, PathNode)();
+void testSearch(ref App app) {
+  Dwarf testDwarf = null;
+  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null) { testDwarf = d; break; } }
+  if(testDwarf is null) { SDL_Log("No dwarf found"); return; }
 
-  // If the search was succesful or still searching is ok, we use the 'best path so far approach'
-  if (search.state == SearchState.SUCCEEDED || search.state == SearchState.SEARCHING) {
-    do {
-      search.stepThroughPath();
-    } while( !search.atGoal() ); // We can step untill we are at the end of the path
+  auto wp = app.world.worldPos(testDwarf.tilePos);
+  float[3] start = [wp[0], wp[1] + app.world.yOffset, wp[2]];
+  float[3] goal  = [start[0] + 10.0f, start[1], start[2] + 10.0f];
+
+  SDL_Log("start tile: %s isTile: %d", toStringz(format("%s", app.world.data.getTile(testDwarf.tilePos))), app.world.data.isTile(start));
+
+  auto result = performSearch!(WorldData, PathNode)(start, goal, app.world.data);
+  SDL_Log("Search state: %s, steps: %d", toStringz(format("%s", result.state)), result.steps);
+  if(result.state == SearchState.SUCCEEDED || result.state == SearchState.SEARCHING) {
+    while(!result.atGoal()) {
+      auto p = result.stepThroughPath(false);
+      SDL_Log("  path step: [%.1f, %.1f, %.1f]", p[0], p[1], p[2]);
+    }
   }
 }
+
