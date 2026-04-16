@@ -58,7 +58,7 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
           if(tt != TileType.None) break;
           tile[1]--;
         }
-        if(tile[1] > 0 && !app.isTileOccupied(tile)) return tile;
+        if(tile[1] > 0 && !app.isTileOccupied(tile)) return [tile[0], tile[1]+1, tile[2]];
       }
     }
   }
@@ -104,12 +104,17 @@ if(d.targetTile[0] == int.min && miningQueue.length > 0) {
 
   auto ws = app.world.worldPos(d.tilePos);
   float[3] start = [ws[0], ws[1] + app.world.yOffset, ws[2]];
-  auto wg = app.world.worldPos([standTile[0], standTile[1] + 1, standTile[2]]);
-  float[3] goal = [wg[0], wg[1] + app.world.yOffset, wg[2]];
+  auto wg = app.world.worldPos([standTile[0], standTile[1], standTile[2]]);
+  float[3] goal = [wg[0], wg[1] + app.world.yOffset - 0.5f, wg[2]];
     SDL_Log("Dwarf %s pathfinding from [%.1f,%.1f,%.1f] to [%.1f,%.1f,%.1f]",
       toStringz(d.dwarfName), start[0], start[1], start[2], goal[0], goal[1], goal[2]);
-    auto result = performSearch!(WorldData, PathNode)(start, goal, app.world.data);
+SDL_Log("standTile[%d,%d,%d] isTile:%d", standTile[0], standTile[1], standTile[2], app.world.isTile(goal));
+    auto result = performSearch!(World, PathNode)(start, goal, app.world);
     SDL_Log("Search: %s steps:%d", toStringz(format("%s", result.state)), result.steps);
+    if(result.state == SearchState.FAILED) {
+      d.targetTile = [int.min, 0, 0];
+      return;
+    }
     d.path = [];
     if(result.state == SearchState.SUCCEEDED || result.state == SearchState.SEARCHING)
       while(!result.atGoal()) d.path ~= result.stepThroughPath(false);
@@ -123,11 +128,11 @@ if(d.targetTile[0] == int.min && miningQueue.length > 0) {
     int ny = cast(int)((next[1] - app.world.yOffset) / app.world.tileHeight);
     int nz = cast(int)(next[2] / app.world.tileSize);
     d.tilePos = [nx, ny, nz];
-    auto wp = app.world.worldPos([nx, ny + 1, nz]);
+    auto wp = app.world.worldPos([nx, ny, nz]);
     d.position([wp[0], wp[1] + app.world.yOffset - 0.5f, wp[2]]);
-    auto tileBelow = app.world.getTileAt([d.tilePos[0], d.tilePos[1]-1, d.tilePos[2]]);
-    auto tileAt    = app.world.getTileAt(d.tilePos);
-    auto tileAbove = app.world.getTileAt([d.tilePos[0], d.tilePos[1]+1, d.tilePos[2]]);
+    auto tileBelow = app.getTileAt([d.tilePos[0], d.tilePos[1]-1, d.tilePos[2]]);
+    auto tileAt    = app.getTileAt(d.tilePos);
+    auto tileAbove = app.getTileAt([d.tilePos[0], d.tilePos[1]+1, d.tilePos[2]]);
     SDL_Log("Dwarf %s moved to tile[%d,%d,%d] worldpos[%.1f,%.1f,%.1f] below:%s at:%s above:%s",
       toStringz(d.dwarfName), d.tilePos[0], d.tilePos[1], d.tilePos[2],
       next[0], next[1], next[2],
@@ -137,14 +142,25 @@ if(d.targetTile[0] == int.min && miningQueue.length > 0) {
   }
 
   // Mine target
+  if(d.targetTile[0] != int.min && d.path.length == 0) {
     auto dx = abs(d.tilePos[0] - d.targetTile[0]);
     auto dz = abs(d.tilePos[2] - d.targetTile[2]);
-    if(d.targetTile[0] != int.min && d.path.length == 0 && dx + dz <= 1) {
-    d.miningProgress += 0.25f;
-    SDL_Log("Dwarf %s mining [%d,%d,%d] %.0f%%", toStringz(d.dwarfName),
-      d.targetTile[0], d.targetTile[1], d.targetTile[2], d.miningProgress * 100);
-    if(d.miningProgress >= 1.0f) {
-      app.setTile(d.targetTile);
+    auto dy = abs(d.tilePos[1] - d.targetTile[1]);
+    if(dx + dz == 1 && dy == 0) {
+      d.miningProgress += 0.25f;
+      SDL_Log("Dwarf %s mining [%d,%d,%d] %.0f%%", toStringz(d.dwarfName),
+        d.targetTile[0], d.targetTile[1], d.targetTile[2], d.miningProgress * 100);
+      if(d.miningProgress >= 1.0f) {
+        app.setTile(d.targetTile);
+        d.targetTile = [int.min, 0, 0];
+        d.miningProgress = 0.0f;
+      }
+    } else {
+      SDL_Log("Dwarf %s failed to reach [%d,%d,%d] from [%d,%d,%d], requeueing",
+        toStringz(d.dwarfName),
+        d.targetTile[0], d.targetTile[1], d.targetTile[2],
+        d.tilePos[0], d.tilePos[1], d.tilePos[2]);
+      miningQueue ~= d.targetTile;
       d.targetTile = [int.min, 0, 0];
       d.miningProgress = 0.0f;
     }
@@ -157,8 +173,8 @@ void spawnDwarf(ref App app, string name) {
   Dwarf dwarf = new Dwarf();
   dwarf.dwarfName = name;
   dwarf.tilePos = tile;
-  auto wp = app.world.worldPos([tile[0], tile[1] + 1, tile[2]]);
-  dwarf.position([wp[0], wp[1] + app.world.yOffset - 0.5, wp[2]]);
+  auto wp = app.world.worldPos([tile[0], tile[1], tile[2]]);
+  dwarf.position([wp[0], wp[1] + app.world.yOffset - 0.5f, wp[2]]);
   dwarf.setColor([uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), 1.0f]);
   dwarf.onTick = &dwarfTick;
   app.objects ~= dwarf;
