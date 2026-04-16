@@ -18,7 +18,8 @@ import vulkan : cleanup;
 import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
-
+import search : testSearch;
+import dwarf : miningQueue;
 /** Handle keyboard events
  */
 void handleKeyEvents(ref App app, SDL_Event e) {
@@ -30,6 +31,7 @@ void handleKeyEvents(ref App app, SDL_Event e) {
     if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
     if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
+    if(symbol == SDLK_F11) { app.testSearch(); }
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
   }
 }
@@ -89,8 +91,14 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
  */
 void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-    if (e.button.button == SDL_BUTTON_LEFT) { app.camera.isdrag[0] = true; }
-    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
+    if (e.button.button == SDL_BUTTON_LEFT) { 
+      app.camera.isdrag[0] = true;
+      app.camera.lastMousePos = [e.button.x, e.button.y];
+    }
+    if (e.button.button == SDL_BUTTON_RIGHT) { 
+      app.camera.isdrag[1] = true;
+      app.camera.lastMousePos = [e.button.x, e.button.y];
+    }
   }
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
     app.camera.isdrag[0] = false; 
@@ -111,7 +119,19 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         }
       }
     }
-    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
+    if (e.button.button == SDL_BUTTON_RIGHT) {
+      app.camera.isdrag[1] = false;
+      auto dx = e.button.x - app.camera.lastMousePos[0];
+      auto dy = e.button.y - app.camera.lastMousePos[1];
+      if(dx*dx + dy*dy < 4.0f) {
+        auto ray = app.camera.castRay(e.button.x, e.button.y);
+        int[3] wc;
+        if(app.getBestTile(ray, wc)){ 
+          SDL_Log(toStringz(format("Add %s to miningque of length %s", wc, miningQueue.length)));
+          miningQueue ~= wc;
+        }
+      }
+    }
     app.updateGhostTile();
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 

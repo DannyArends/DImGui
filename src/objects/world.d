@@ -26,13 +26,17 @@ struct WorldData {
 
   /** Map required function */
   bool isTile(float[3] pos) const nothrow {
-    int[3] wc = [cast(int)(pos[0] / tileSize), cast(int)(pos[1] / tileHeight), cast(int)(pos[2] / tileSize)];
+    int[3] wc = [cast(int)(pos[0] / tileSize), 
+                 cast(int)((pos[1] - yOffset) / tileHeight) - 1,  // one below
+                 cast(int)(pos[2] / tileSize)];
     return tileData[getTile(wc)].traversable;
   }
 
   /** Map required function */
   float cost(float[3] pos) const nothrow {
-    int[3] wc = [cast(int)(pos[0] / tileSize), cast(int)(pos[1] / tileHeight), cast(int)(pos[2] / tileSize)];
+    int[3] wc = [cast(int)(pos[0] / tileSize), 
+                 cast(int)((pos[1] - yOffset) / tileHeight) - 1,  // one below
+                 cast(int)(pos[2] / tileSize)];
     return tileData[getTile(wc)].cost;
   }
 
