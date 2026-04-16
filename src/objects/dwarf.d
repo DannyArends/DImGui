@@ -8,6 +8,7 @@ import engine;
 import geometry;
 import search : performSearch, atGoal, stepThroughPath;
 import world : setTile;
+import vector : euclidean;
 import tileatlas : tileData;
 
 int[3][] miningQueue;  // global
@@ -83,32 +84,32 @@ void dwarfTick(ref App app, ref Geometry obj) {
     d.path.length, d.miningProgress);
 
   // Claim a job
-if(d.targetTile[0] == int.min && miningQueue.length > 0) {
-  d.targetTile = miningQueue[0];
-  miningQueue = miningQueue[1..$];
+  if(d.targetTile[0] == int.min && miningQueue.length > 0) {
+    d.targetTile = miningQueue[0];
+    miningQueue = miningQueue[1..$];
 
-  // Find a traversable neighbour to stand on while mining
-  int[3][4] neighbours = [[d.targetTile[0]+1, d.targetTile[1], d.targetTile[2]],
-                          [d.targetTile[0]-1, d.targetTile[1], d.targetTile[2]],
-                          [d.targetTile[0],   d.targetTile[1], d.targetTile[2]+1],
-                          [d.targetTile[0],   d.targetTile[1], d.targetTile[2]-1]];
-  int[3] standTile = [int.min, 0, 0];
-  foreach(n; neighbours) {
-    if(tileData[app.getTileAt(n)].traversable) { standTile = n; break; }
-  }
-  if(standTile[0] == int.min) {
-    miningQueue ~= d.targetTile;  // no access, requeue
-    d.targetTile = [int.min, 0, 0];
-    return;
-  }
+    // Goal is any free XZ neighbour of target
+    int[3][4] neighbours = [[d.targetTile[0]+1, d.targetTile[1], d.targetTile[2]],
+                            [d.targetTile[0]-1, d.targetTile[1], d.targetTile[2]],
+                            [d.targetTile[0],   d.targetTile[1], d.targetTile[2]+1],
+                            [d.targetTile[0],   d.targetTile[1], d.targetTile[2]-1]];
+    int[3] goalTile = [int.min, 0, 0];
+    float bestDist = float.max;
+    foreach(n; neighbours) {
+      if(app.getTileAt(n) == TileType.None && app.getTileAt([n[0], n[1]-1, n[2]]) != TileType.None) {
+        float dist = euclidean([cast(float)n[0], cast(float)n[1], cast(float)n[2]],
+                               [cast(float)d.tilePos[0], cast(float)d.tilePos[1], cast(float)d.tilePos[2]]);
+        if(dist < bestDist) { bestDist = dist; goalTile = n; }
+      }
+    }
+    if(goalTile[0] == int.min) { d.targetTile = [int.min, 0, 0]; return; }
 
-  auto ws = app.world.worldPos(d.tilePos);
-  float[3] start = [ws[0], ws[1] + app.world.yOffset, ws[2]];
-  auto wg = app.world.worldPos([standTile[0], standTile[1], standTile[2]]);
-  float[3] goal = [wg[0], wg[1] + app.world.yOffset - 0.5f, wg[2]];
-    SDL_Log("Dwarf %s pathfinding from [%.1f,%.1f,%.1f] to [%.1f,%.1f,%.1f]",
-      toStringz(d.dwarfName), start[0], start[1], start[2], goal[0], goal[1], goal[2]);
-SDL_Log("standTile[%d,%d,%d] isTile:%d", standTile[0], standTile[1], standTile[2], app.world.isTile(goal));
+    auto ws = app.world.worldPos(d.tilePos);
+    float[3] start = [ws[0], ws[1] + app.world.yOffset, ws[2]];
+    auto wg = app.world.worldPos(goalTile);
+    float[3] goal = [wg[0], wg[1] + app.world.yOffset, wg[2]];
+
+    SDL_Log("Dwarf %s pathfinding from [%.1f,%.1f,%.1f] to [%.1f,%.1f,%.1f]", toStringz(d.dwarfName), start[0], start[1], start[2], goal[0], goal[1], goal[2]);
     auto result = performSearch!(World, PathNode)(start, goal, app.world);
     SDL_Log("Search: %s steps:%d", toStringz(format("%s", result.state)), result.steps);
     if(result.state == SearchState.FAILED) {
@@ -116,8 +117,10 @@ SDL_Log("standTile[%d,%d,%d] isTile:%d", standTile[0], standTile[1], standTile[2
       return;
     }
     d.path = [];
-    if(result.state == SearchState.SUCCEEDED || result.state == SearchState.SEARCHING)
+    if(result.state == SearchState.SUCCEEDED || result.state == SearchState.SEARCHING) {
       while(!result.atGoal()) d.path ~= result.stepThroughPath(false);
+      d.path ~= [result.goal.x, result.goal.y, result.goal.z];
+    }
   }
 
   // Follow path
@@ -145,8 +148,7 @@ SDL_Log("standTile[%d,%d,%d] isTile:%d", standTile[0], standTile[1], standTile[2
   if(d.targetTile[0] != int.min && d.path.length == 0) {
     auto dx = abs(d.tilePos[0] - d.targetTile[0]);
     auto dz = abs(d.tilePos[2] - d.targetTile[2]);
-    auto dy = abs(d.tilePos[1] - d.targetTile[1]);
-    if(dx + dz == 1 && dy == 0) {
+    if(dx + dz == 1 && d.tilePos[1] == d.targetTile[1]) {
       d.miningProgress += 0.25f;
       SDL_Log("Dwarf %s mining [%d,%d,%d] %.0f%%", toStringz(d.dwarfName),
         d.targetTile[0], d.targetTile[1], d.targetTile[2], d.miningProgress * 100);
