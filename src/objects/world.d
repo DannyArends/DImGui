@@ -151,7 +151,7 @@ struct World {
 
   PathNode[] getSuccessors(PathNode* parent) const {
     PathNode[] successors;
-    int py = cast(int)((parent.position[1] - yOffset) / tileHeight);
+    int py = cast(int)((parent.position[1] - yOffset) / tileHeight) - 1;  // solid tile below parent
     foreach(d; [0, 2]) {
       foreach(v; [-tileSize, tileSize]) {
         float[3] to = parent.position;
@@ -179,9 +179,7 @@ bool canMoveTo(ref App app, float[3] pos) {
     if(coord in app.world.chunks) {
       auto idx = app.world.tileIndex(app.world.localCoord(wc));
       if(app.world.chunks[coord].tileTypes[idx] != TileType.None) return false;
-    } else {
-      return false;
-    }
+    } else { return false; }
   }
   return true;
 }
