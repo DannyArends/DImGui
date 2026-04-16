@@ -134,6 +134,11 @@ struct World {
     return 0;
   }
 
+  TileType getTileAt(int[3] tile) const {
+    auto coord = chunkCoord(tile);
+    return (coord in chunks) ? chunks[coord].tileTypes[tileIndex(localCoord(tile))] : getTile(tile);
+  }
+
   /** Map required function */
   TileType tileAt(float[3] pos) const {
     int[3] wc = [cast(int)(pos[0]/tileSize), cast(int)((pos[1]-yOffset)/tileHeight)-1, cast(int)(pos[2]/tileSize)];
@@ -145,18 +150,22 @@ struct World {
 
   PathNode[] getSuccessors(PathNode* parent) const {
     PathNode[] successors;
-    int py = cast(int)((parent.position[1] - yOffset) / tileHeight) - 1;  // solid tile below parent
-    foreach(d; [0, 2]) {
-      foreach(v; [-tileSize, tileSize]) {
-        float[3] to = parent.position;
-        to[d] += v;
-        int nx = cast(int)(to[0] / tileSize);
-        int nz = cast(int)(to[2] / tileSize);
-        int ny = surfaceY(nx, nz);
-        if(abs(ny - py) > 1) continue;  // too steep
-        to[1] = (ny + 1) * tileHeight + yOffset;
-        auto tt = tileAt(to);
-        if(tileData[tt].traversable) successors ~= PathNode(parent, to, tileData[tt].cost);
+    int px = cast(int)(parent.position[0] / tileSize);
+    int py = cast(int)((parent.position[1] - yOffset) / tileHeight) - 1;
+    int pz = cast(int)(parent.position[2] / tileSize);
+
+    foreach(dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
+      int nx = px + dir[0];
+      int nz = pz + dir[1];
+      foreach(dy; [-1, 0, 1]) {
+        int ny = py + dy;
+        TileType solid = getTileAt([nx, ny, nz]);
+        TileType air = getTileAt([nx, ny+1, nz]);
+        if(air == TileType.None && tileData[solid].traversable) {
+          float[3] to = [nx * tileSize, (ny+1) * tileHeight + yOffset, nz * tileSize];
+          successors ~= PathNode(parent, to, tileData[solid].cost);
+          break;
+        }
       }
     }
     return successors;
