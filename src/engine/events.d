@@ -167,7 +167,7 @@ void handleEvents(ref App app) {
     if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
   }
 
-  if(app.time[FRAMESTART] - app.time[LASTTICK] > 2500) {
+  if(app.time[FRAMESTART] - app.time[LASTTICK] > 1000) {
     //GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
