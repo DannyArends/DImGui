@@ -112,8 +112,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     pushConstantRangeCount: 1,
     pPushConstantRanges: &pushConstantRange,
   };
-
-  enforceVK(vkCreatePipelineLayout(app.device, &pipelineLayoutInfo, app.allocator, &app.shadows.pipeline.layout));
+  app.shadows.pipeline.createLayout(app, pipelineLayoutInfo);
   if(app.verbose) SDL_Log(" - shadow map pipeline layout created: %p", app.shadows.pipeline.layout);
 
   auto stages = createStageInfo(app.shadows.shaders);
@@ -186,17 +185,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     renderPass: app.shadows.renderPass,
     subpass: 0
   };
-
-  enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, app.allocator, &app.shadows.pipeline.pipeline));
-  app.nameVulkanObject(app.shadows.pipeline.layout, toStringz("[LAYOUT] Shadows"), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
-  app.nameVulkanObject(app.shadows.pipeline.pipeline, toStringz("[PIPELINE] Shadows"), VK_OBJECT_TYPE_PIPELINE);
-
-  if(app.verbose) SDL_Log("Shadow map graphics pipeline created: %p", app.shadows.pipeline.pipeline);
-
-  app.swapDeletionQueue.add((){
-    vkDestroyPipelineLayout(app.device, app.shadows.pipeline.layout, app.allocator);
-    vkDestroyPipeline(app.device, app.shadows.pipeline.pipeline, app.allocator);
-  });
+  app.shadows.pipeline.create(app, pipelineInfo, "Shadows", app.swapDeletionQueue);
 }
 
 void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
