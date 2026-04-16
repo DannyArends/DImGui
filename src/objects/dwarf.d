@@ -30,13 +30,13 @@ string randomDwarfName() {
   return prefixes[uniform(0, prefixes.length)] ~ suffixes[uniform(0, suffixes.length)];
 }
 
-TileType getTileAt(ref App app, int[3] tile) {
-  auto coord = app.world.chunkCoord(tile);
-  return (coord in app.world.chunks) ? app.world.chunks[coord].tileTypes[app.world.tileIndex(app.world.localCoord(tile))] : app.world.getTile(tile);
+TileType getTileAt(World world, int[3] tile) {
+  auto coord = world.chunkCoord(tile);
+  return (coord in world.chunks) ? world.chunks[coord].tileTypes[world.tileIndex(world.localCoord(tile))] : world.getTile(tile);
 }
 
-bool isStandable(ref App app, int[3] tile) {
-  return app.getTileAt(tile) == TileType.None && app.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
+bool isStandable(World world, int[3] tile) {
+  return world.getTileAt(tile) == TileType.None && world.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
 }
 
 int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
@@ -45,7 +45,7 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
       for(int z = -radius; z <= radius; z++) {
         int[3] tile = [startX + x, app.world.chunkHeight-1, startZ + z];
         while(tile[1] > 0) {
-          TileType tt = app.getTileAt(tile);
+          TileType tt = app.world.getTileAt(tile);
           if(tt != TileType.None) break;
           tile[1]--;
         }
@@ -65,7 +65,7 @@ int[3] findGoalTile(ref App app, Dwarf d) {
   int[3] goalTile = [int.min, 0, 0];
   float bestDist = float.max;
   foreach(n; neighbours) {
-    if(app.isStandable(n)) {
+    if(app.world.isStandable(n)) {
       int dist = abs(n[0]-d.tilePos[0]) + abs(n[2]-d.tilePos[2]);
       if(dist < bestDist) { bestDist = dist; goalTile = n; }
     }
@@ -119,7 +119,7 @@ void followPath(ref App app, Dwarf d) {
   d.tilePos = [nx, ny, nz];
   auto wp = app.tileToWorld(d.tilePos);
   d.position([wp[0], wp[1] - 0.5f, wp[2]]);
-  SDL_Log(toStringz(format("Dwarf %s moved to tile %s below:%s at:%s", d.dwarfName, d.tilePos, app.getTileAt([nx, ny-1, nz]), app.getTileAt(d.tilePos))));
+  SDL_Log(toStringz(format("Dwarf %s moved to tile %s below:%s at:%s", d.dwarfName, d.tilePos, app.world.getTileAt([nx, ny-1, nz]), app.world.getTileAt(d.tilePos))));
 }
 
 /// Mine the target tile if adjacent
