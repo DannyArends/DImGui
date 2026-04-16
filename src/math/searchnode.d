@@ -26,7 +26,7 @@ struct PathNode {
 
 /* isEqual is just based on euclidean proximity, when the euclidean distance < 0.10f then 2 nodes equal */
 bool isEqual(N)(const N x, const N y) {
-  if (euclidean(x.position, y.position) < 0.10f) return true;
+  if (euclidean(x.position, y.position) < 2.1f) return true;  // within one tile
   return false;
 }
 

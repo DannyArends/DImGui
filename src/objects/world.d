@@ -124,6 +124,16 @@ struct World {
     clear();
   }
 
+  int surfaceY(int x, int z) const {
+    for(int y = chunkHeight-1; y > 0; y--) {
+      int[3] wc = [x, y, z];
+      auto coord = chunkCoord(wc);
+      TileType tt = (coord in chunks) ? chunks[coord].tileTypes[tileIndex(localCoord(wc))] : getTile(wc);
+      if(tt != TileType.None) return y;
+    }
+    return 0;
+  }
+
   /** Map required function */
   bool isTile(float[3] pos) const {
     int[3] wc = [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset) / tileHeight) - 1, cast(int)(pos[2] / tileSize)];
@@ -141,10 +151,16 @@ struct World {
 
   PathNode[] getSuccessors(PathNode* parent) const {
     PathNode[] successors;
+    int py = cast(int)((parent.position[1] - yOffset) / tileHeight);
     foreach(d; [0, 2]) {
       foreach(v; [-tileSize, tileSize]) {
         float[3] to = parent.position;
         to[d] += v;
+        int nx = cast(int)(to[0] / tileSize);
+        int nz = cast(int)(to[2] / tileSize);
+        int ny = surfaceY(nx, nz);
+        if(abs(ny - py) > 1) continue;  // too steep
+        to[1] = (ny + 1) * tileHeight + yOffset;
         if(isTile(to)) successors ~= PathNode(parent, to, cost(to));
       }
     }
