@@ -136,8 +136,8 @@ bool atGoal(S)(const S search) {
 
 /* Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
 Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], 
-                                  float[3] goal = [-3.0f, 2.0f, -3.2f], M map = WorldData()) {
-  Search!(WorldData, PathNode) search;
+                                  float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World()) {
+  Search!(World, PathNode) search;
   PathNode s = PathNode(null, start, 0.0f, 0.0f);
   PathNode g = PathNode(null, goal, 0.0f);
   search.setStartAndGoalStates(map, s, g);
@@ -166,9 +166,9 @@ void testSearch(ref App app) {
   float[3] start = [wp[0], wp[1] + app.world.yOffset, wp[2]];
   float[3] goal  = [start[0] + 10.0f, start[1], start[2] + 10.0f];
 
-  SDL_Log("start tile: %s isTile: %d", toStringz(format("%s", app.world.data.getTile(testDwarf.tilePos))), app.world.data.isTile(start));
+  SDL_Log("start tile: %s isTile: %d", toStringz(format("%s", app.world.getTile(testDwarf.tilePos))), app.world.isTile(start));
 
-  auto result = performSearch!(WorldData, PathNode)(start, goal, app.world.data);
+  auto result = performSearch!(World, PathNode)(start, goal, app.world);
   SDL_Log("Search state: %s, steps: %d", toStringz(format("%s", result.state)), result.steps);
   if(result.state == SearchState.SUCCEEDED || result.state == SearchState.SEARCHING) {
     while(!result.atGoal()) {

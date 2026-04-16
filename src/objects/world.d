@@ -24,35 +24,6 @@ struct WorldData {
   int chunkHeight    =  32;       /// Number of tiles (Y) in a chunk
   float yOffset      = -14.0f;    /// Global world Y-offset
 
-  /** Map required function */
-  bool isTile(float[3] pos) const nothrow {
-    int[3] wc = [cast(int)(pos[0] / tileSize), 
-                 cast(int)((pos[1] - yOffset) / tileHeight) - 1,  // one below
-                 cast(int)(pos[2] / tileSize)];
-    return tileData[getTile(wc)].traversable;
-  }
-
-  /** Map required function */
-  float cost(float[3] pos) const nothrow {
-    int[3] wc = [cast(int)(pos[0] / tileSize), 
-                 cast(int)((pos[1] - yOffset) / tileHeight) - 1,  // one below
-                 cast(int)(pos[2] / tileSize)];
-    return tileData[getTile(wc)].cost;
-  }
-
-  /** Map required function */
-  PathNode[] getSuccessors(PathNode* parent) const nothrow {
-    PathNode[] successors;
-    foreach(d; [0, 2]) {
-      foreach(v; [-tileSize, tileSize]) {
-        float[3] to = parent.position;
-        to[d] += v;
-        if(isTile(to)) successors ~= PathNode(parent, to, cost(to));
-      }
-    }
-    return successors;
-  }
-
   /** Returns the filesystem path for a chunk's binary tile data file
    */
   const(char)* chunkPath(int[3] coord) const {
@@ -151,6 +122,33 @@ struct World {
     if(app.verbose) SDL_Log("Deleted world chunks at %s", p);
     app.ensureWorldDir();
     clear();
+  }
+
+  /** Map required function */
+  bool isTile(float[3] pos) const {
+    int[3] wc = [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset) / tileHeight) - 1, cast(int)(pos[2] / tileSize)];
+    auto coord = chunkCoord(wc);
+    TileType tt = (coord in chunks) ? chunks[coord].tileTypes[tileIndex(localCoord(wc))] : getTile(wc);
+    return tileData[tt].traversable;
+  }
+
+  float cost(float[3] pos) const {
+    int[3] wc = [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset) / tileHeight) - 1, cast(int)(pos[2] / tileSize)];
+    auto coord = chunkCoord(wc);
+    TileType tt = (coord in chunks) ? chunks[coord].tileTypes[tileIndex(localCoord(wc))] : getTile(wc);
+    return tileData[tt].cost;
+  }
+
+  PathNode[] getSuccessors(PathNode* parent) const {
+    PathNode[] successors;
+    foreach(d; [0, 2]) {
+      foreach(v; [-tileSize, tileSize]) {
+        float[3] to = parent.position;
+        to[d] += v;
+        if(isTile(to)) successors ~= PathNode(parent, to, cost(to));
+      }
+    }
+    return successors;
   }
 }
 

@@ -65,6 +65,13 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
   return [int.min, 0, 0];
 }
 
+TileType getTileAt(ref App app, int[3] tile) {
+  auto coord = app.world.chunkCoord(tile);
+  return (coord in app.world.chunks) ?
+    app.world.chunks[coord].tileTypes[app.world.tileIndex(app.world.localCoord(tile))] :
+    app.world.getTile(tile);
+}
+
 void dwarfTick(ref App app, ref Geometry obj) {
   auto d = cast(Dwarf)obj;
   if(d is null) return;
@@ -87,7 +94,7 @@ if(d.targetTile[0] == int.min && miningQueue.length > 0) {
                           [d.targetTile[0],   d.targetTile[1], d.targetTile[2]-1]];
   int[3] standTile = [int.min, 0, 0];
   foreach(n; neighbours) {
-    if(tileData[app.world.getTile(n)].traversable) { standTile = n; break; }
+    if(tileData[app.getTileAt(n)].traversable) { standTile = n; break; }
   }
   if(standTile[0] == int.min) {
     miningQueue ~= d.targetTile;  // no access, requeue
@@ -118,9 +125,9 @@ if(d.targetTile[0] == int.min && miningQueue.length > 0) {
     d.tilePos = [nx, ny, nz];
     auto wp = app.world.worldPos([nx, ny + 1, nz]);
     d.position([wp[0], wp[1] + app.world.yOffset - 0.5f, wp[2]]);
-    auto tileBelow = app.world.getTile([d.tilePos[0], d.tilePos[1]-1, d.tilePos[2]]);
-    auto tileAt    = app.world.getTile(d.tilePos);
-    auto tileAbove = app.world.getTile([d.tilePos[0], d.tilePos[1]+1, d.tilePos[2]]);
+    auto tileBelow = app.world.getTileAt([d.tilePos[0], d.tilePos[1]-1, d.tilePos[2]]);
+    auto tileAt    = app.world.getTileAt(d.tilePos);
+    auto tileAbove = app.world.getTileAt([d.tilePos[0], d.tilePos[1]+1, d.tilePos[2]]);
     SDL_Log("Dwarf %s moved to tile[%d,%d,%d] worldpos[%.1f,%.1f,%.1f] below:%s at:%s above:%s",
       toStringz(d.dwarfName), d.tilePos[0], d.tilePos[1], d.tilePos[2],
       next[0], next[1], next[2],
