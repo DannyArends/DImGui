@@ -10,6 +10,8 @@ import noise : noiseHT;
 import tileatlas : heightToTile;
 import vector : vAdd, vMul, x, y, z;
 import inventory : saveInventory;
+import tileatlas : tileData;
+import searchnode : PathNode;
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable
  */
@@ -21,6 +23,31 @@ struct WorldData {
   int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  32;       /// Number of tiles (Y) in a chunk
   float yOffset      = -14.0f;    /// Global world Y-offset
+
+  /** Map required function */
+  bool isTile(float[3] pos) const nothrow {
+    int[3] wc = [cast(int)(pos[0] / tileSize), cast(int)(pos[1] / tileHeight), cast(int)(pos[2] / tileSize)];
+    return tileData[getTile(wc)].traversable;
+  }
+
+  /** Map required function */
+  float cost(float[3] pos) const nothrow {
+    int[3] wc = [cast(int)(pos[0] / tileSize), cast(int)(pos[1] / tileHeight), cast(int)(pos[2] / tileSize)];
+    return tileData[getTile(wc)].cost;
+  }
+
+  /** Map required function */
+  PathNode[] getSuccessors(PathNode* parent) const nothrow {
+    PathNode[] successors;
+    foreach(d; [0, 2]) {
+      foreach(v; [-tileSize, tileSize]) {
+        float[3] to = parent.position;
+        to[d] += v;
+        if(isTile(to)) successors ~= PathNode(parent, to, cost(to));
+      }
+    }
+    return successors;
+  }
 
   /** Returns the filesystem path for a chunk's binary tile data file
    */
