@@ -35,6 +35,10 @@ TileType getTileAt(ref App app, int[3] tile) {
   return (coord in app.world.chunks) ? app.world.chunks[coord].tileTypes[app.world.tileIndex(app.world.localCoord(tile))] : app.world.getTile(tile);
 }
 
+bool isStandable(ref App app, int[3] tile) {
+  return app.getTileAt(tile) == TileType.None && app.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
+}
+
 int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
   foreach(radius; 0..app.world.chunkSize) {
     for(int x = -radius; x <= radius; x++) {
@@ -61,8 +65,8 @@ int[3] findGoalTile(ref App app, Dwarf d) {
   int[3] goalTile = [int.min, 0, 0];
   float bestDist = float.max;
   foreach(n; neighbours) {
-    if(app.getTileAt(n) == TileType.None && app.getTileAt([n[0], n[1]-1, n[2]]) != TileType.None) {
-      float dist = euclidean([cast(float)n[0], cast(float)n[1], cast(float)n[2]], [cast(float)d.tilePos[0], cast(float)d.tilePos[1], cast(float)d.tilePos[2]]);
+    if(app.isStandable(n)) {
+      int dist = abs(n[0]-d.tilePos[0]) + abs(n[2]-d.tilePos[2]);
       if(dist < bestDist) { bestDist = dist; goalTile = n; }
     }
   }
@@ -82,17 +86,15 @@ bool claimJob(ref App app, Dwarf d) {
   miningQueue = miningQueue[1..$];
 
   auto goalTile = app.findGoalTile(d);
-  if(goalTile[0] == int.min) {
-    SDL_Log("Dwarf %s no access to [%d,%d,%d], discarding", toStringz(d.dwarfName),
-      d.targetTile[0], d.targetTile[1], d.targetTile[2]);
+  if (goalTile[0] == int.min) {
+    SDL_Log(toStringz(format("Dwarf %s no access to %s, discarding", d.dwarfName, d.targetTile)));
     d.targetTile = [int.min, 0, 0];
     return false;
   }
 
   float[3] start = app.tileToWorld(d.tilePos);
   float[3] goal  = app.tileToWorld(goalTile);
-  SDL_Log("Dwarf %s pathfinding from [%.1f,%.1f,%.1f] to [%.1f,%.1f,%.1f]",
-    toStringz(d.dwarfName), start[0], start[1], start[2], goal[0], goal[1], goal[2]);
+  SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
 
   auto result = performSearch!(World, PathNode)(start, goal, app.world);
   SDL_Log("Search: %s steps:%d", toStringz(format("%s", result.state)), result.steps);
@@ -115,12 +117,9 @@ void followPath(ref App app, Dwarf d) {
   int ny = cast(int)((next[1] - app.world.yOffset) / app.world.tileHeight);
   int nz = cast(int)(next[2] / app.world.tileSize);
   d.tilePos = [nx, ny, nz];
-  auto wp = app.world.worldPos([nx, ny, nz]);
-  d.position([wp[0], wp[1] + app.world.yOffset - 0.5f, wp[2]]);
-  SDL_Log("Dwarf %s moved to tile[%d,%d,%d] below:%s at:%s",
-    toStringz(d.dwarfName), nx, ny, nz,
-    toStringz(format("%s", app.getTileAt([nx, ny-1, nz]))),
-    toStringz(format("%s", app.getTileAt([nx, ny, nz]))));
+  auto wp = app.tileToWorld(d.tilePos);
+  d.position([wp[0], wp[1] - 0.5f, wp[2]]);
+  SDL_Log(toStringz(format("Dwarf %s moved to tile %s below:%s at:%s", d.dwarfName, d.tilePos, app.getTileAt([nx, ny-1, nz]), app.getTileAt(d.tilePos))));
 }
 
 /// Mine the target tile if adjacent
@@ -129,20 +128,16 @@ void doMining(ref App app, Dwarf d) {
   auto dz = abs(d.tilePos[2] - d.targetTile[2]);
   if(dx + dz == 1 && d.tilePos[1] == d.targetTile[1]) {
     d.miningProgress += 0.25f;
-    SDL_Log("Dwarf %s mining [%d,%d,%d] %.0f%%", toStringz(d.dwarfName),
-      d.targetTile[0], d.targetTile[1], d.targetTile[2], d.miningProgress * 100);
+    SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.dwarfName, d.targetTile, d.miningProgress * 100)));
     if(d.miningProgress >= 1.0f) {
       app.setTile(d.targetTile);
-      d.targetTile    = [int.min, 0, 0];
+      d.targetTile = [int.min, 0, 0];
       d.miningProgress = 0.0f;
     }
   } else {
-    SDL_Log("Dwarf %s failed to reach [%d,%d,%d] from [%d,%d,%d], requeueing",
-      toStringz(d.dwarfName),
-      d.targetTile[0], d.targetTile[1], d.targetTile[2],
-      d.tilePos[0], d.tilePos[1], d.tilePos[2]);
+    SDL_Log(toStringz(format("Dwarf %s failed to reach %s from %s, requeueing", d.dwarfName, d.targetTile, d.tilePos)));
     miningQueue ~= d.targetTile;
-    d.targetTile     = [int.min, 0, 0];
+    d.targetTile = [int.min, 0, 0];
     d.miningProgress = 0.0f;
   }
 }
@@ -150,11 +145,9 @@ void doMining(ref App app, Dwarf d) {
 void dwarfTick(ref App app, ref Geometry obj) {
   auto d = cast(Dwarf)obj;
   if(d is null) return;
-  SDL_Log("Dwarf %s @ tile[%d,%d,%d] target[%d,%d,%d] path:%d mining:%.2f",
-    toStringz(d.dwarfName),
-    d.tilePos[0], d.tilePos[1], d.tilePos[2],
-    d.targetTile[0], d.targetTile[1], d.targetTile[2],
-    d.path.length, d.miningProgress);
+  if(d.targetTile[0] != int.min){
+    SDL_Log(toStringz(format("Dwarf %s @ tile %s target %s path:%d mining:%.0f", d.dwarfName, d.tilePos, d.targetTile, d.path.length, d.miningProgress * 100)));
+  }
 
   if(d.targetTile[0] == int.min) app.claimJob(d);
   else if(d.path.length > 0) app.followPath(d);
