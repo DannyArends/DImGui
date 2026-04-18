@@ -5,11 +5,11 @@
 import engine;
 
 import events : getHits;
-import geometry : texture, deAllocate;
+import geometry : texture, bumpmap, deAllocate;
 import io : exists, readFile, fsize;
 import intersection : intersects;
-import textures : mapTextures;
-import tileatlas : tileData, tileUVTransform;
+import textures : mapTextures, idx;
+import tileatlas : tileData;
 import matrix : translate, scale, multiply;
 import vector : expandBounds;
 import world : setTile;
@@ -33,7 +33,16 @@ struct ChunkData {
 /** Renderable cube geometry for individual blocks within a chunk, not selectable
  */
 class Tiles : Square {
-  this() { super(); isSelectable = false; name = (){ return "Tiles"; }; }
+  this() {
+    super();
+    isSelectable = false;
+    perInstanceMeshDef = true;
+    // Register one mesh entry per TileType, keyed so sort order == enum order
+    foreach (tt; TileType.min .. TileType.max + 1) {
+      meshes[format("tile_%02d", cast(int)tt)] = Mesh([0, 0], -1, -1, -1, -1);
+    }
+    name = (){ return "Tiles"; };
+  }
 }
 
 /** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block
@@ -100,7 +109,7 @@ TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] co
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
  */
-ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
+ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
   TileType[][5] tileCache = wd.loadTileCache(coords, coord);
 
@@ -110,7 +119,6 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == TileType.None) continue;
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
-    auto uvT = ta.tileUVTransform(tileData[data.tileTypes[i]].name);
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
     float[12][6] faces = [
@@ -125,7 +133,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, immutable(TileAtlas) ta, int[3
     foreach (f; 0 .. 6) {
       if (!wd.isFaceExposed(tileCache, coords, wd.tileNeighbours(wc)[f], coord)) continue;
       Instance inst;
-      inst.uvT = uvT;
+      inst.meshdef = [cast(uint)data.tileTypes[i], cast(uint)data.tileTypes[i]]; // relative index
       inst.matrix = Matrix([
         faces[f][0], faces[f][1], faces[f][2], 0,
         faces[f][3], faces[f][4], faces[f][5], 0,
@@ -180,7 +188,13 @@ void finalizeChunk(ref App app, ChunkData data) {
   float cy = sy * 0.5f + app.world.yOffset;
   chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
 
-  chunk.tiles.texture("3DTextures");
+  foreach (tt; TileType.min .. cast(int)TileType.max + 1) {
+    auto key = format("tile_%02d", tt);
+    chunk.tiles.meshes[key].tid = app.textures.idx(tileData[cast(TileType)tt].name);
+    chunk.tiles.meshes[key].nid = app.textures.idx(tileData[cast(TileType)tt].name ~ "_normal");
+  }
+  app.buffers["MeshMatrices"].dirty[] = true;
+
   chunk.tiles.box = new BoundingBox();
   chunk.tiles.box.setDimensions(data.bmin, data.bmax);
   chunk.tiles.box.instances = [Instance()]; // single instance, identity matrix

@@ -47,7 +47,6 @@ struct App {
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
-  TileAtlas tileAtlas;                                                          /// TileAtlas for terrain rendering
   World world;                                                                  /// The game world
   Inventory inventory;                                                          /// Inventory
   ShadowMap shadows;                                                            /// ShadowMap object

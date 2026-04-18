@@ -39,7 +39,7 @@ void main() {
   // Compute lighting and shadows
   vec3 lightColor = baseColor * 0.001;
   if (ubo.lightingMode == 0u) {                        // Global illumination
-    lightColor = baseColor * 0.1;
+    lightColor = baseColor * 0.2;
   } else if (ubo.lightingMode == 1u) {                 // Lights, no shadows
     for(int i = 0; i < ubo.nlights; ++i) {
       lightColor += illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting);

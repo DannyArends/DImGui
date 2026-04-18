@@ -16,7 +16,6 @@ import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
  */
 struct Instance {
   uint[2] meshdef = [0, 0];                     /// Mesh Definition
-  float[4] uvT = [0.0f, 0.0f, 1.0f, 1.0f];      /// UV transform
   Matrix matrix = Matrix.init;                  /// Instance matrix
   alias matrix this;
 }
@@ -76,6 +75,8 @@ class Geometry {
   bool inFrustum = true;                            /// Boolean flag
   bool isSelectable = true;                         /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
+  bool perInstanceMeshDef = false;                  /// When true, meshdef is per-instance relative index
+  uint meshBase = uint.max;                         /// Last known SSBO base offset for this object
   bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow {
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 

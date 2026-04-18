@@ -220,7 +220,7 @@ void dispatchWorker(ref App app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, cast(immutable(TileAtlas))app.tileAtlas, coord);
+      tid.send(cast(immutable(WorldData))app.world.data, coord);
       app.world.pendingChunks[coord] = true;
       if(app.verbose) SDL_Log(toStringz(format("Loading chunk: %s A-sync", coord)));
       break;
