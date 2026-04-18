@@ -36,14 +36,38 @@ void updateMeshInfo(ref App app) {
   app.meshes.length = 0;
   bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
-    uint size = cast(uint)app.objects[o].meshes.array.length;
-    uint[2] expected = [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size];
-    if(app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
-      foreach(ref inst; app.objects[o].instances) inst.meshdef = expected;
-      app.objects[o].buffers[INSTANCE] = false;
-      needsUpdate = true;
+    uint newBase = cast(uint)app.meshes.length;
+    uint size    = cast(uint)app.objects[o].meshes.length;
+    if (app.objects[o].perInstanceMeshDef) {
+      // Append meshes in sorted key order so TileType enum value == relative index
+      auto sortedKeys = app.objects[o].meshes.keys.sort;
+      foreach (k; sortedKeys) app.meshes ~= app.objects[o].meshes[k];
+      if (app.objects[o].meshBase != newBase) {
+        foreach (ref inst; app.objects[o].instances) {
+          if (app.objects[o].meshBase == uint.max) {
+            // First time: instances carry relative indices, make absolute
+            inst.meshdef[0] += newBase;
+            inst.meshdef[1] += newBase;
+          } else {
+            // Base shifted: apply delta
+            int delta = cast(int)newBase - cast(int)app.objects[o].meshBase;
+            inst.meshdef[0] = cast(uint)(cast(int)inst.meshdef[0] + delta);
+            inst.meshdef[1] = cast(uint)(cast(int)inst.meshdef[1] + delta);
+          }
+        }
+        app.objects[o].meshBase = newBase;
+        app.objects[o].buffers[INSTANCE] = false;
+        needsUpdate = true;
+      }
+    } else {
+      uint[2] expected = [newBase, newBase + size];
+      if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
+        foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
+        app.objects[o].buffers[INSTANCE] = false;
+        needsUpdate = true;
+      }
+      app.meshes ~= app.objects[o].meshes.values;
     }
-    app.meshes ~= app.objects[o].meshes.array;
   }
   // Grow SSBO capacity if needed
   if(app.meshes.length > app.meshes.capacity) {

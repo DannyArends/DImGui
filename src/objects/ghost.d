@@ -8,7 +8,8 @@ import engine;
 import chunk : getBestTile;
 import geometry : position;
 import camera : castRay;
-import tileatlas : tileData, tileUVTransform;
+import tileatlas : tileData;
+import textures : idx;
 import intersection : intersects;
 
 int[3] getGhostTile(ref App app, float[3][2] ray) {
@@ -58,9 +59,10 @@ void updateGhostTile(ref App app) {
   if(ghost[0] != int.min) {
     auto wp = app.world.worldPos(ghost);
     app.inventory.ghostCube.position([wp[0], wp[1] + app.world.yOffset, wp[2]]);
-    auto uvT = app.tileAtlas.tileUVTransform(tileData[app.inventory.selectedTile].name);
-    foreach(ref inst; app.inventory.ghostCube.instances) inst.uvT = uvT;
-    app.inventory.ghostCube.buffers[INSTANCE] = false;
+    auto ttype = app.inventory.selectedTile;
+    auto tid = app.textures.idx(tileData[ttype].name);
+    foreach (k, ref m; app.inventory.ghostCube.meshes) { m.tid = tid; }
+    app.buffers["MeshMatrices"].dirty[] = true;
   }
 }
 
