@@ -75,8 +75,8 @@ class Geometry {
   bool inFrustum = true;                            /// Boolean flag
   bool isSelectable = true;                         /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
-  bool perInstanceMeshDef = false;                  /// When true, meshdef is per-instance relative index
-  uint meshBase = uint.max;                         /// Last known SSBO base offset for this object
+  bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
+
   bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow {
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
