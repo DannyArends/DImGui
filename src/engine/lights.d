@@ -31,6 +31,8 @@ struct Light {
 }
 
 enum Lights : Light {
+  Sun  = Light(Matrix.init, [50.0f, 80.0f, 50.0f, 1.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 0.0f]),
+  Fill = Light(Matrix.init, [-30.0f, 40.0f, -30.0f, 0.0f], [0.3f, 0.35f, 0.5f, 1.0f], [1.0f, -1.0f, 1.0f, 0.0f], [0.04f, 0.0f, 90.0f, 0.0f]),
   Red    = Light(Matrix.init, [ 10.0f, 20.0f, 10.0f, 1.0f], [ 400.0f,  20.0f,    0.0f, 1.0f], [ 2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
   Green  = Light(Matrix.init, [ 10.0f, 20.0f,  0.0f, 1.0f], [   0.0f, 400.0f,   20.0f, 1.0f], [-3.0f,  -9.0f,  3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
   Blue   = Light(Matrix.init, [ 0.0f,  10.0f, 10.0f, 1.0f], [  20.0f,   0.0f,  400.0f, 1.0f], [ 0.5f,  -2.0f,  1.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
