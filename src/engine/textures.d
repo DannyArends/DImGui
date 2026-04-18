@@ -139,9 +139,9 @@ void updateTextures(ref App app) {
       needsUpdate = true;
       if(app.trace) { SDL_Log("updateTextures: syncIndex=%d texture.syncIndex=%d pending=%d", app.syncIndex, texture.syncIndex, nPending); }
       if(texture.syncIndex == app.syncIndex) {
+        app.mapTextures();
         texture.dirty = false;
         texture.syncIndex = -1;
-        app.mapTextures();
         needsUpdate = false;
       } else if(texture.syncIndex == -1) { texture.syncIndex = app.syncIndex; }
     }
