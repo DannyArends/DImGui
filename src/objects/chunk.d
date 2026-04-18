@@ -33,11 +33,11 @@ struct ChunkData {
 /** Renderable cube geometry for individual blocks within a chunk, not selectable
  */
 class Tiles : Square {
-  this() {
+  this(ChunkData cd) {
     super();
     isSelectable = false;
-    perInstanceMeshDef = true;
-    meshes.remove("Square");
+    instancedMesh = true;
+    instances = cd.tileInstances;
     name = (){ return "Tiles"; };
   }
 }
@@ -50,13 +50,17 @@ class Chunk : Cube {
   bool dirty = false;
   alias data this;
 
-  this(ChunkData cd) {
+  this(ChunkData cd, WorldData wd) {
     super();
     data = cd;
     indices = [];
-    instances = [Instance()];
-    tiles = new Tiles();
-    tiles.instances = cd.tileInstances;
+    float sx = wd.chunkWorldSize;
+    float sy = wd.chunkHeight * wd.tileHeight;
+    float cx = data.coord[0] * sx + sx * 0.5f;
+    float cz = data.coord[2] * sx + sx * 0.5f;
+    float cy = sy * 0.5f + wd.yOffset;
+    instances = [Instance([0,0], translate([cx, cy, cz]).multiply(scale([sx, sy, sx])))];
+    tiles = new Tiles(cd);
     name = (){ return "Chunk"; };
   }
 }
@@ -177,17 +181,9 @@ void finalizeChunk(ref App app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
   if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
 
-  Chunk chunk = new Chunk(data);
-  float sx = app.world.chunkWorldSize;
-  float sy = app.world.chunkHeight * app.world.tileHeight;
-  float cx = data.coord[0] * sx + sx * 0.5f;
-  float cz = data.coord[2] * sx + sx * 0.5f;
-  float cy = sy * 0.5f + app.world.yOffset;
-  chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
-
+  Chunk chunk = new Chunk(data, app.world);
   chunk.tiles.box = new BoundingBox();
   chunk.tiles.box.setDimensions(data.bmin, data.bmax);
-  chunk.tiles.box.instances = [Instance()];
 
   if (data.coord in app.world.chunks) {
     auto oldTiles = app.world.chunks[data.coord].tiles;

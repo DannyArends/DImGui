@@ -35,13 +35,11 @@ void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; 
 
 void updateMeshInfo(ref App app) {
   app.meshes.length = 0;
-  app.injectTileMeshes();           // always positions 0..18
+  app.injectTileMeshes();
   bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
-    uint newBase = cast(uint)app.meshes.length;
-    uint size    = cast(uint)app.objects[o].meshes.length;
-    if (app.objects[o].perInstanceMeshDef) continue;
-    uint[2] expected = [newBase, newBase + size];
+    if (app.objects[o].instancedMesh) continue;
+    uint[2] expected = [cast(uint)app.meshes.length, cast(uint)(app.meshes.length + app.objects[o].meshes.length)];
     if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
       foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
       app.objects[o].buffers[INSTANCE] = false;
