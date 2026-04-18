@@ -38,9 +38,6 @@ class Tiles : Square {
     isSelectable = false;
     perInstanceMeshDef = true;
     meshes.remove("Square");
-    foreach (tt; TileType.min .. TileType.max + 1) {
-      meshes[format("tile_%02d", cast(int)tt)] = Mesh([0, 0], -1, -1, -1, -1);
-    }
     name = (){ return "Tiles"; };
   }
 }
@@ -133,7 +130,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
     foreach (f; 0 .. 6) {
       if (!wd.isFaceExposed(tileCache, coords, wd.tileNeighbours(wc)[f], coord)) continue;
       Instance inst;
-      inst.meshdef = [cast(uint)data.tileTypes[i], cast(uint)data.tileTypes[i]]; // relative index
+      inst.meshdef = [cast(uint)data.tileTypes[i], cast(uint)data.tileTypes[i]];
       inst.matrix = Matrix([
         faces[f][0], faces[f][1], faces[f][2], 0,
         faces[f][3], faces[f][4], faces[f][5], 0,
@@ -188,34 +185,17 @@ void finalizeChunk(ref App app, ChunkData data) {
   float cy = sy * 0.5f + app.world.yOffset;
   chunk.instances[0].matrix = translate([cx, cy, cz]).multiply(scale([sx, sy, sx]));
 
-  chunk.tiles.materials.length = cast(int)TileType.max + 1;
-  foreach (tt; TileType.min .. cast(int)TileType.max + 1) {
-    auto ttype = cast(TileType)tt;
-    chunk.tiles.meshes[format("tile_%02d", tt)].mid = tt;
-    chunk.tiles.materials[tt] = Material(tileData[ttype].name, [
-      aiTextureType_DIFFUSE: TexureInfo(tileData[ttype].name ~ "_base"),
-      aiTextureType_NORMALS: TexureInfo(tileData[ttype].name ~ "_normal"),
-    ]);
-  }
-
   chunk.tiles.box = new BoundingBox();
   chunk.tiles.box.setDimensions(data.bmin, data.bmax);
-  chunk.tiles.box.instances = [Instance()]; // single instance, identity matrix
+  chunk.tiles.box.instances = [Instance()];
 
   if (data.coord in app.world.chunks) {
     auto oldTiles = app.world.chunks[data.coord].tiles;
-    // Update instances and meshes in-place — keeps same SSBO base, no haywire
     oldTiles.instances = chunk.tiles.instances;
-    oldTiles.materials = chunk.tiles.materials;
-    foreach (k, ref m; chunk.tiles.meshes) oldTiles.meshes[k].mid = m.mid;
-    oldTiles.meshBase = uint.max;          // ADD: force updateMeshInfo to re-convert relative→absolute
     oldTiles.buffers[INSTANCE] = false;
-    app.buffers["MeshMatrices"].dirty[] = true;
     chunk.tiles = oldTiles;
     app.world.chunks[data.coord].deAllocate = true;
-  } else {
-    app.objects ~= chunk.tiles;
-  }
+  } else { app.objects ~= chunk.tiles; }
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;
