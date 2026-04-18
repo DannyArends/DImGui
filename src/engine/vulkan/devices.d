@@ -58,7 +58,7 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     descriptorBindingPartiallyBound : VK_TRUE
   };
 
-  VkPhysicalDeviceFeatures deviceFeatures = { robustBufferAccess: VK_TRUE };
+  VkPhysicalDeviceFeatures deviceFeatures = { robustBufferAccess: VK_TRUE, samplerAnisotropy: VK_TRUE };
 
   VkDeviceCreateInfo createDevice = {
     sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
