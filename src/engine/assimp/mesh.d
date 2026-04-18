@@ -11,6 +11,7 @@ import material : getChannel;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean, cross, dot, x, y, z;
 import vertex : Vertex, INSTANCE;
+import tileatlas : injectTileMeshes;
 
 struct Mesh {
   int[2] vertices;  /// Start .. End positions in Geometry.vertices array
@@ -34,40 +35,19 @@ void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; 
 
 void updateMeshInfo(ref App app) {
   app.meshes.length = 0;
+  app.injectTileMeshes();           // always positions 0..18
   bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     uint newBase = cast(uint)app.meshes.length;
     uint size    = cast(uint)app.objects[o].meshes.length;
-    if (app.objects[o].perInstanceMeshDef) {
-      // Append meshes in sorted key order so TileType enum value == relative index
-      auto sortedKeys = app.objects[o].meshes.keys.sort;
-      foreach (k; sortedKeys) app.meshes ~= app.objects[o].meshes[k];
-      if (app.objects[o].meshBase != newBase) {
-        foreach (ref inst; app.objects[o].instances) {
-          if (app.objects[o].meshBase == uint.max) {
-            // First time: instances carry relative indices, make absolute
-            inst.meshdef[0] += newBase;
-            inst.meshdef[1] += newBase;
-          } else {
-            // Base shifted: apply delta
-            int delta = cast(int)newBase - cast(int)app.objects[o].meshBase;
-            inst.meshdef[0] = cast(uint)(cast(int)inst.meshdef[0] + delta);
-            inst.meshdef[1] = cast(uint)(cast(int)inst.meshdef[1] + delta);
-          }
-        }
-        app.objects[o].meshBase = newBase;
-        app.objects[o].buffers[INSTANCE] = false;
-        needsUpdate = true;
-      }
-    } else {
-      uint[2] expected = [newBase, newBase + size];
-      if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
-        foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
-        app.objects[o].buffers[INSTANCE] = false;
-        needsUpdate = true;
-      }
-      app.meshes ~= app.objects[o].meshes.values;
+    if (app.objects[o].perInstanceMeshDef) continue;
+    uint[2] expected = [newBase, newBase + size];
+    if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
+      foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
+      app.objects[o].buffers[INSTANCE] = false;
+      needsUpdate = true;
     }
+    app.meshes ~= app.objects[o].meshes.values;
   }
   // Grow SSBO capacity if needed
   if(app.meshes.length > app.meshes.capacity) {

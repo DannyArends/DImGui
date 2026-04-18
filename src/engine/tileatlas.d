@@ -6,7 +6,7 @@
 import engine;
 
 import io : dir, fixPath;
-import textures : transferTextureAsync, toRGBA;
+import textures : transferTextureAsync, idx, toRGBA;
 import images : deAllocate;
 
 struct TileT {
@@ -54,4 +54,27 @@ shared static this() {
   if (h < 0.80f) return TileType.Stone;
   if (h < 0.90f) return TileType.Ice01;
   return TileType.Snow;
+}
+
+struct TileAtlas {
+  int[TileType] tid;
+  int[TileType] nid;
+}
+
+void injectTileMeshes(ref App app) {
+  foreach (tt; 0 .. cast(int)TileType.max + 1) {
+    Mesh m;
+    m.tid = app.tileAtlas.tid.get(cast(TileType)tt, -1);
+    m.nid = app.tileAtlas.nid.get(cast(TileType)tt, -1);
+    app.meshes ~= m;
+  }
+}
+
+void updateTileAtlas(ref App app) {
+  foreach (tt; 0 .. cast(int)TileType.max + 1) {
+    auto ttype = cast(TileType)tt;
+    app.tileAtlas.tid[ttype] = app.textures.idx(tileData[ttype].name ~ "_base");
+    app.tileAtlas.nid[ttype] = app.textures.idx(tileData[ttype].name ~ "_normal");
+  }
+  app.buffers["MeshMatrices"].dirty[] = true;
 }
