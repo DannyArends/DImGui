@@ -208,10 +208,11 @@ void finalizeChunk(ref App app, ChunkData data) {
     oldTiles.instances = chunk.tiles.instances;
     oldTiles.materials = chunk.tiles.materials;
     foreach (k, ref m; chunk.tiles.meshes) oldTiles.meshes[k].mid = m.mid;
+    oldTiles.meshBase = uint.max;          // ADD: force updateMeshInfo to re-convert relative→absolute
     oldTiles.buffers[INSTANCE] = false;
     app.buffers["MeshMatrices"].dirty[] = true;
-    chunk.tiles = oldTiles;  // reuse the existing Tiles object
-    app.world.chunks[data.coord].deAllocate = true;  // only dealloc the Chunk, not Tiles
+    chunk.tiles = oldTiles;
+    app.world.chunks[data.coord].deAllocate = true;
   } else {
     app.objects ~= chunk.tiles;
   }
