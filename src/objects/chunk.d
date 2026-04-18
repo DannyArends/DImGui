@@ -37,7 +37,7 @@ class Tiles : Square {
     super();
     isSelectable = false;
     perInstanceMeshDef = true;
-    // Register one mesh entry per TileType, keyed so sort order == enum order
+    meshes.remove("Square");
     foreach (tt; TileType.min .. TileType.max + 1) {
       meshes[format("tile_%02d", cast(int)tt)] = Mesh([0, 0], -1, -1, -1, -1);
     }
