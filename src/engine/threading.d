@@ -123,7 +123,6 @@ void checkAsync(ref App app) {
       vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
       app.textures ~= p.texture;
       app.textures.pending = app.textures.pending.remove(i);
-      app.mapTextures();
     } else { i++; }
   }
 }

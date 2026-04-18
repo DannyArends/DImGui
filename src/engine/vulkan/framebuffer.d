@@ -51,6 +51,6 @@ void createFramebuffers(ref App app) {
   app.create(app.scenePass, sceneViews, app.camera.width, app.camera.height, "Render", app.swapDeletionQueue);
   app.create(app.postPass, postViews, app.camera.width, app.camera.height, "Post-process", app.swapDeletionQueue);
   app.create(app.imguiPass, imguiViews, app.camera.width, app.camera.height, "ImGui", app.swapDeletionQueue);
-  app.create(app.shadows.renderPass, shadowViews, app.shadows.dimension, app.shadows.dimension, "Shadow", app.mainDeletionQueue);
+  app.create(app.shadows.renderPass, shadowViews, app.shadows.dimension, app.shadows.dimension, "Shadow", app.swapDeletionQueue);
 }
 

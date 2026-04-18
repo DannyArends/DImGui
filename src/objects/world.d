@@ -19,10 +19,10 @@ struct WorldData {
   int[2] seed        = [42, 67];  /// [height seed, tile seed]
   int renderDistance =   4;       /// Render distance used to load / evict chunks
   float tileSize     =   2.0f;    /// Size (X & Z) of a tile
-  float tileHeight   =   2.0f;    /// Y-spacing between tiles
+  float tileHeight   =   0.5f;    /// Y-spacing between tiles
   int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
-  int chunkHeight    =  32;       /// Number of tiles (Y) in a chunk
-  float yOffset      = -14.0f;    /// Global world Y-offset
+  int chunkHeight    =  64;       /// Number of tiles (Y) in a chunk
+  float yOffset      =  -8.0f;    /// Global world Y-offset
 
   /** Returns the filesystem path for a chunk's binary tile data file
    */
