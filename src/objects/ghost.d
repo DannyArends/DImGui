@@ -23,19 +23,14 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
   int[6] order = [0,1,2,3,4,5];
   float[6] dots;
   foreach(f; 0..6) dots[f] = dir[0]*normals[f][0] + dir[1]*normals[f][1] + dir[2]*normals[f][2];
-  order[].sort!((a,b) => dots[a] < dots[b]);
-
-  foreach(f; order) {
-    if(dots[order[0]] < 0.0f && dots[f] > 0.0f) break; // skip near-perpendicular faces
+  foreach(f; order[].sort!((a,b) => dots[a] < dots[b])) {
     auto target = neighbours[f];
     if(target[1] < 0 || target[1] >= app.world.chunkHeight) continue;
     auto coord = app.world.chunkCoord(target);
     if(coord in app.world.chunks) {
       auto idx = app.world.tileIndex(app.world.localCoord(target));
       if(app.world.chunks[coord].tileTypes[idx] == TileType.None) return target;
-    } else {
-      if(app.world.getTile(target) == TileType.None) return target;
-    }
+    } else { if(app.world.getTile(target) == TileType.None) return target; }
   }
   return [int.min, 0, 0];
 }
@@ -46,22 +41,15 @@ void updateGhostTile(ref App app) {
     app.inventory.ghostCube.isVisible = false;
     return;
   }
-  auto mx = app.gui.io.MousePos.x;
-  auto my = app.gui.io.MousePos.y;
-  auto dx = mx - app.camera.lastMousePos[0];
-  auto dy = my - app.camera.lastMousePos[1];
-  if (dx*dx + dy*dy < 4.0f) return;  /// ~2px threshold
-  app.camera.lastMousePos = [mx, my];
-  auto ray = app.camera.castRay(mx, my);
+  app.camera.lastMousePos = [app.gui.io.MousePos.x, app.gui.io.MousePos.y];
+  auto ray = app.camera.castRay(app.camera.lastMousePos[0], app.camera.lastMousePos[1]);
   auto ghost = app.getGhostTile(ray);
   app.inventory.ghostTile = ghost;
-  app.inventory.ghostCube.isVisible = ghost[0] != int.min;
-  if(ghost[0] != int.min) {
+  app.inventory.ghostCube.isVisible = (ghost[0] != int.min);
+  if(app.inventory.ghostCube.isVisible) {
     auto wp = app.world.worldPos(ghost);
     app.inventory.ghostCube.position([wp[0], wp[1] + app.world.yOffset, wp[2]]);
-    auto ttype = app.inventory.selectedTile;
-    auto tid = app.textures.idx(tileData[ttype].name);
-    foreach (k, ref m; app.inventory.ghostCube.meshes) { m.tid = tid; }
+    foreach (k, ref m; app.inventory.ghostCube.meshes) { m.tid = app.textures.idx(tileData[app.inventory.selectedTile].name ~ "_base"); }
     app.buffers["MeshMatrices"].dirty[] = true;
   }
 }
