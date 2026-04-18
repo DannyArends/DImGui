@@ -36,7 +36,7 @@ void showInventoryContent(ref App app, uint font = 0) {
   foreach (tileType, count; app.inventory) {
     if (count <= 0) continue;
     auto name = tileData[tileType].name;
-    auto texIdx = idx(app.textures, name);
+    auto texIdx = idx(app.textures, name ~ "_base");
     if (texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
 
