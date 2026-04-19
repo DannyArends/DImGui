@@ -83,6 +83,8 @@ struct WorldData {
     return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
   }
 
+  int tileIdx(int[3] tile) const { return tileIndex(localCoord(tile)); }
+
   /** Convert a world coordinate to a world-space float position
    */
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
@@ -141,7 +143,7 @@ struct World {
 
   TileType getTileAt(int[3] tile) const {
     auto coord = chunkCoord(tile);
-    return (coord in chunks) ? chunks[coord].tileTypes[tileIndex(localCoord(tile))] : getTile(tile);
+    return (coord in chunks) ? chunks[coord].tileTypes[tileIdx(tile)] : getTile(tile);
   }
 
   @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
@@ -204,8 +206,8 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
 
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.chunks) return;
+  int idx = app.world.tileIdx(tile);
 
-  int idx = app.world.tileIndex(app.world.localCoord(tile));
   auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type
   if(newType == TileType.None && mined != TileType.None) {
     app.inventory[mined] = app.inventory.get(mined, 0) + 1;

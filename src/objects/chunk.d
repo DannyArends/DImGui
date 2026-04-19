@@ -118,15 +118,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
     size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
       if (!wd.isFaceExposed(tileCache, coords, wd.tileNeighbours(wc)[f], coord)) continue;
-      Instance inst;
-      inst.meshdef = [cast(uint)data.tileTypes[i], cast(uint)data.tileTypes[i]];
-      inst.matrix = Matrix([
-        faces[f][0], faces[f][1], faces[f][2], 0,
-        faces[f][3], faces[f][4], faces[f][5], 0,
-        faces[f][6], faces[f][7], faces[f][8], 0,
-        faces[f][9], faces[f][10],faces[f][11],1
-      ]);
-      data.tileInstances ~= inst;
+      data.tileInstances ~= Instance(cast(uint)data.tileTypes[i], faces[f]);
       data.tileIndices ~= i;
     }
     // Always expand chunk AABB with full tile extents, regardless of face culling

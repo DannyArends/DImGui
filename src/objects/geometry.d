@@ -18,6 +18,9 @@ struct Instance {
   uint[2] meshdef = [0, 0];                     /// Mesh Definition
   Matrix matrix = Matrix.init;                  /// Instance matrix
   alias matrix this;
+
+  this(uint[2] d, Matrix m) { meshdef = d; matrix = m; }
+  this(uint mdef, float[12] f) { this([mdef, mdef], Matrix([f[0],f[1],f[2], 0, f[3],f[4],f[5], 0, f[6],f[7],f[8],0, f[9],f[10],f[11], 1])); }
 }
 
 shared uint guid = 1;
