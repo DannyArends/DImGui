@@ -71,8 +71,7 @@ void run(string[] args = null) {
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
-  app.ensureWorldDir();                                         /// Ensure the world directory exists
-  app.loadInventory();
+  app.world.loadWorld();                                        /// Load the chunk world
   app.createScene();                                            /// Create our scene with geometries
   app.initializeAsync();                                        /// Start Async loading objects and textures
 
@@ -93,6 +92,7 @@ void run(string[] args = null) {
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
+  app.world.saveWorld(app.verbose > 0);
   app.cleanup();
 }
 

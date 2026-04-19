@@ -13,6 +13,14 @@ import inventory : saveInventory;
 import tileatlas : tileData;
 import searchnode : PathNode;
 
+enum uint WORLD_MAGIC = 0xCA1DE4A;
+
+struct TileDiff {
+  int[3] coord;
+  uint idx;
+  uint type;
+}
+
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable
  */
 struct WorldData {
@@ -23,11 +31,12 @@ struct WorldData {
   int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  64;       /// Number of tiles (Y) in a chunk
   float yOffset      =  -8.0f;    /// Global world Y-offset
+  TileDiff[] diffs;
 
-  /** Returns the filesystem path for a chunk's binary tile data file
+  /** Returns the filesystem path for the world TileDiffs difference
    */
-  const(char)* chunkPath(int[3] coord) const {
-    return(toStringz(fixPath(format("data/world/%d_%d/%d_%d.bin", seed[0], seed[1], coord.x, coord.z))));
+  const(char)* worldPath() const {
+    return toStringz(fixPath(format("data/world/%d_%d.bin", seed[0], seed[1])));
   }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk
@@ -94,33 +103,39 @@ struct World {
 
   /** Save chunk tile data to disk
    */
-  void saveChunk(int[3] coord, bool verbose = false) {
-    if(verbose) SDL_Log(toStringz(format("saveChunk%s: %s tileTypes", coord, chunks[coord].tileTypes.length)));
-    writeFile(chunkPath(coord), cast(char[])chunks[coord].tileTypes);
+  void saveWorld(bool verbose = false) {
+    uint[2] header = [WORLD_MAGIC, cast(uint)this.data.diffs.length];
+    char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])this.data.diffs;
+    writeFile(worldPath(), raw);
+    if(verbose) SDL_Log("saveWorld: %d diffs", this.data.diffs.length);
+  }
+
+  void loadWorld() {
+    auto raw = readFile(worldPath());
+    if(raw.length < 8) return;
+    if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadWorld: invalid magic"); return; }
+    auto diffData = raw[8 .. $];
+    if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
+    data.diffs = cast(TileDiff[])diffData.dup;
+    SDL_Log("loadWorld: %d diffs", data.diffs.length);
   }
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps
    */
+  void deallocateChunk(int[3] coord) {
+    chunks[coord].tiles.deAllocate = true;
+    chunks[coord].deAllocate = true;
+  }
+
   void clear() {
-    foreach (coord; chunks.keys) {
-      if (chunks[coord] !is null) {
-        chunks[coord].tiles.deAllocate = true;
-        chunks[coord].deAllocate = true;
-      }
-    }
+    foreach (coord; chunks.keys) { if (chunks[coord] !is null) { deallocateChunk(coord); } }
     chunks.clear();
     pendingChunks.clear();
   }
 
-  void deleteChunks(ref App app, const(char)* path = "data/world/") {
-    auto p = fixPath(path);
-    foreach(entry; dir(p)) {
-      if(isdir(toStringz(entry))) { deleteChunks(app, toStringz(entry)); }
-      SDL_RemovePath(toStringz(entry));
-    }
-    SDL_RemovePath(p);
-    if(app.verbose) SDL_Log("Deleted world chunks at %s", p);
-    app.ensureWorldDir();
+  void deleteChunks(ref App app) {
+    SDL_RemovePath(worldPath());
+    if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
     clear();
   }
 
@@ -205,6 +220,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   }
 
   app.world.chunks[coord].tileTypes[idx] = newType;
+  app.world.data.diffs ~= TileDiff(coord, idx, newType);
   app.world.chunks[coord].dirty = true;
 
   // Mark neighbouring chunks dirty if tile is on a chunk boundary
@@ -247,20 +263,15 @@ void updateWorld(ref App app, float[3] lookat) {
 
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
-    if (abs(coord[0] - pc[0]) > effectiveRD  || abs(coord[2] - pc[2]) > effectiveRD ) {
-      if (app.world.chunks[coord].dirty) app.world.saveChunk(coord, app.verbose > 0);
-      if (app.world.chunks[coord] !is null) {
-        app.world.chunks[coord].tiles.deAllocate = true;
-        app.world.chunks[coord].deAllocate = true; 
-      }
+    if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
+      if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.remove(coord);
     }
   }
 
-  // Rebuild dirty chunks
+  // Rebuild dirty chunks (remove saveChunk call)
   foreach (coord; app.world.chunks.keys) {
     if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
-      app.world.saveChunk(coord, app.verbose > 0);
       app.dispatchWorker(coord);
       app.world.chunks[coord].dirty = false;
     }

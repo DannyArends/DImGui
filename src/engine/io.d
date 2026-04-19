@@ -40,11 +40,14 @@ const(char)* fixPath(const(char)* path){ return toStringz(fixPath(cast(string)fr
  */
 char[] readFile(const(char)* path, uint verbose = 0) {
   path = fixPath(path);
-  SDL_IOStream* fp = SDL_IOFromFile(path, "rb");
-  if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
+  SDL_IOStream* fp = null;
+  for(int retry = 0; retry < 3 && fp == null; retry++) {
+    fp = SDL_IOFromFile(path, "rb"); if(fp == null) SDL_Delay(1);
+  }
 
   char[] content;
   content.length = cast(size_t)SDL_GetIOSize(fp);
+  if(content.length == 0) { SDL_CloseIO(fp); return []; }   // ADD: guard empty file
 
   size_t readTotal = 0, nRead = 1;
   char* buffer = &content[0];
