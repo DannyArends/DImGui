@@ -77,32 +77,36 @@ float[3] tileToWorld(ref App app, int[3] tile) {
 
 /// Claim a job, find goal tile, compute path
 bool claimJob(ref App app, Dwarf d) {
-  if(miningQueue.length == 0) return false;
-  d.targetTile = miningQueue[0];
-  miningQueue = miningQueue[1..$];
+  try {
+    if(miningQueue.length == 0) return false;
+    d.targetTile = miningQueue[0];
+    miningQueue = miningQueue[1..$];
 
-  auto goalTile = app.findGoalTile(d);
-  if (goalTile[0] == int.min) {
-    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s no access to %s, discarding", d.dwarfName, d.targetTile)));
-    d.targetTile = [int.min, 0, 0];
-    return false;
+    auto goalTile = app.findGoalTile(d);
+    if (goalTile[0] == int.min) {
+      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s no access to %s, discarding", d.dwarfName, d.targetTile)));
+      d.targetTile = [int.min, 0, 0];
+      return false;
+    }
+
+    float[3] start = app.tileToWorld(d.tilePos);
+    float[3] goal  = app.tileToWorld(goalTile);
+    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
+
+    auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
+    if(app.verbose) SDL_Log("Search: %s steps:%d", toStringz(format("%s", result.state)), result.steps);
+
+    if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) {
+      d.targetTile = [int.min, 0, 0];
+      return false;
+    }
+    d.path = [];
+    while(result.pathptr !is null && !result.atGoal()){ d.path ~= result.stepThroughPath(app.trace); }
+    d.path ~= [result.goal.x, result.goal.y, result.goal.z];
+    return true;
+  } catch(Throwable e) {
+    SDL_Log("claimJob CRASH: %s", toStringz(e.toString())); d.targetTile = [int.min, 0, 0]; return false;
   }
-
-  float[3] start = app.tileToWorld(d.tilePos);
-  float[3] goal  = app.tileToWorld(goalTile);
-  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
-
-  auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
-  if(app.verbose) SDL_Log("Search: %s steps:%d", toStringz(format("%s", result.state)), result.steps);
-
-  if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) {
-    d.targetTile = [int.min, 0, 0];
-    return false;
-  }
-  d.path = [];
-  while(result.pathptr !is null && !result.atGoal()){ d.path ~= result.stepThroughPath(app.trace); }
-  d.path ~= [result.goal.x, result.goal.y, result.goal.z];
-  return true;
 }
 
 /// Move dwarf one step along its path
