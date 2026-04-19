@@ -14,7 +14,6 @@ struct Inventory {
   TileType selectedTile = TileType.None;
   int[3] ghostTile = [int.min, 0, 0];
   Geometry ghostCube;
-  bool pendingGhostUpdate = false;
   alias items this;
 }
 
@@ -47,8 +46,6 @@ void placeTile(ref App app, int[3] wc) {
       app.inventory.selectedTile = TileType.None;
     }
     app.saveInventory();
-    app.camera.lastMousePos = [float.min_normal, float.min_normal];
-    app.inventory.pendingGhostUpdate = true;
   }
 }
 

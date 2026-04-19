@@ -11,9 +11,7 @@ import images : transitionImageLayout;
 import io : fixPath;
 
 void saveScreenshot(ref App app) {
-  uint w = app.camera.width;
-  uint h = app.camera.height;
-  VkDeviceSize size = w * h * 4;  // RGBA8
+  VkDeviceSize size = app.camera.width * app.camera.height * 4;  // RGBA8
 
   // Staging buffer to receive pixel data
   VkBuffer stagingBuffer;
@@ -28,7 +26,7 @@ void saveScreenshot(ref App app) {
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
   app.transitionImageLayout(cmd, srcImage, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-  app.copyImageToBuffer(cmd, srcImage, stagingBuffer, w, h);
+  app.copyImageToBuffer(cmd, srcImage, stagingBuffer, app.camera.width, app.camera.height);
   app.transitionImageLayout(cmd, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   app.endSingleTimeCommands(cmd, app.queue);
 
@@ -41,7 +39,7 @@ void saveScreenshot(ref App app) {
   // Save as PNG
   auto ts = SDL_GetTicks();
   string path = fixPath(format("data/screenshots/%d.png", ts));
-  SDL_Surface* surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_RGBA32, data, w * 4);
+  SDL_Surface* surface = SDL_CreateSurfaceFrom(app.camera.width, app.camera.height, SDL_PIXELFORMAT_RGBA32, data, app.camera.width * 4);
   IMG_SavePNG(surface, toStringz(path));
   SDL_DestroySurface(surface);
   SDL_Log("Screenshot saved: %s", toStringz(path));

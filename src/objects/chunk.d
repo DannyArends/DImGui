@@ -196,10 +196,6 @@ void finalizeChunk(ref App app, ChunkData data) {
 
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
-  if (app.inventory.pendingGhostUpdate) {
-    app.inventory.pendingGhostUpdate = false;
-    app.updateGhostTile();
-  }
   app.camera.isDirty = true;
 }
 
