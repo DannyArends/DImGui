@@ -16,9 +16,9 @@ import engine;
 
 /// Smooth noise at float coords (trilinear interpolated)
 @nogc pure float smoothNoise(float x, float y, float z, int seed = 0) nothrow {
-  int ix = cast(int)x; float fx = x - ix;
-  int iy = cast(int)y; float fy = y - iy;
-  int iz = cast(int)z; float fz = z - iz;
+  int ix = cast(int)floor(x); float fx = x - ix;
+  int iy = cast(int)floor(y); float fy = y - iy;
+  int iz = cast(int)floor(z); float fz = z - iz;
   float ux = fx * fx * (3.0f - 2.0f * fx);
   float uy = fy * fy * (3.0f - 2.0f * fy);
   float uz = fz * fz * (3.0f - 2.0f * fz);
