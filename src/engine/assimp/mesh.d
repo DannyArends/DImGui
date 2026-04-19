@@ -11,6 +11,7 @@ import material : getChannel;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean, cross, dot, x, y, z;
 import vertex : Vertex, INSTANCE;
+import tileatlas : injectTileMeshes;
 
 struct Mesh {
   int[2] vertices;  /// Start .. End positions in Geometry.vertices array
@@ -26,7 +27,7 @@ struct MeshList {
   alias meshInfo this;
 }
 
-void logMesh(uint i, ref const Mesh m, const(char)* prefix = "meshInfo") {
+void logMesh(uint i, const Mesh m, const(char)* prefix = "meshInfo") {
   SDL_Log("%s[%d] v=[%d,%d] mid=%d tid=%d nid=%d oid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid, m.tid, m.nid, m.oid);
 }
 
@@ -34,25 +35,31 @@ void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; 
 
 void updateMeshInfo(ref App app) {
   app.meshes.length = 0;
-  bool needsUpdate = true;
+  app.injectTileMeshes();
+  bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
-    uint size = cast(uint)app.objects[o].meshes.array.length;
-    for (size_t i = 0; i < app.objects[o].instances.length; i++) {
-      if(app.objects[o].instances[i].meshdef != [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size]){
-        app.objects[o].instances[i].meshdef = [cast(uint)app.meshes.length, cast(uint)app.meshes.length + size];
-        app.objects[o].buffers[INSTANCE] = false;
-        needsUpdate = true;
-      }
+    if (app.objects[o].instancedMesh) continue;
+    uint[2] expected = [cast(uint)app.meshes.length, cast(uint)(app.meshes.length + app.objects[o].meshes.length)];
+    if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
+      foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
+      app.objects[o].buffers[INSTANCE] = false;
+      needsUpdate = true;
     }
-    app.meshes ~= app.objects[o].meshes.array;
+    app.meshes ~= app.objects[o].meshes.values;
   }
+  // Grow SSBO capacity if needed
   if(app.meshes.length > app.meshes.capacity) {
     while(app.meshes.capacity < app.meshes.length) app.meshes.capacity *= 2;
     app.meshes.length = app.meshes.capacity;
     app.rebuild = true;
   }
+  // Update SSBO
   if(needsUpdate) {
-    app.buffers["MeshMatrices"].dirty[] = true; // Update all syncIndexes
+    foreach(si; 0..app.framesInFlight) {
+      if(si == app.syncIndex) continue;
+      vkWaitForFences(app.device, 1, &app.fences[si].renderInFlight, true, ulong.max);
+    }
+    app.buffers["MeshMatrices"].dirty[] = true;
     app.printMeshInfo();
   }
 }

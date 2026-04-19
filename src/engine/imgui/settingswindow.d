@@ -42,6 +42,10 @@ void showSettingsContent(ref App app, uint font = 0) {
   igSliderScalar("##", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
 
   igTableNextColumn();
+  igText("God Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();
+  igCheckbox("##godMode", &app.camera.godMode);
+
+  igTableNextColumn();
   igText("Show Lights", ImVec2(0.0f, 0.0f)); igTableNextColumn();
   if (igCheckbox("##showLights", &app.showLights)) app.toggleLightGeometries();
 

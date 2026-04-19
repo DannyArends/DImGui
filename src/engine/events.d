@@ -7,7 +7,7 @@ import engine;
 
 import boundingbox : computeBoundingBox;
 import camera : move, drag, zoom, castRay, tryMove, tryDrag, tryZoom;
-import chunk : pickWorld;
+import chunk : getBestTile, setTile;
 import geometry : deAllocate, setColor;
 import imgui : initializeImGui, saveSettings;
 import intersection : intersects;
@@ -16,7 +16,10 @@ import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
 import window: createOrResizeWindow;
-
+import ghost : getGhostTile, updateGhostTile;
+import inventory : placeTile;
+import search : testSearch;
+import dwarf : miningQueue;
 /** Handle keyboard events
  */
 void handleKeyEvents(ref App app, SDL_Event e) {
@@ -28,6 +31,7 @@ void handleKeyEvents(ref App app, SDL_Event e) {
     if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
     if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
+    if(symbol == SDLK_F11) { app.testSearch(); }
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
   }
 }
@@ -86,30 +90,51 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
 /** Handle mouse events
  */
 void handleMouseEvents(ref App app, SDL_Event e) {
+  app.camera.lastMousePos = [app.gui.io.MousePos.x, app.gui.io.MousePos.y];
+  auto ray = app.camera.castRay(app.camera.lastMousePos[0], app.camera.lastMousePos[1]);
+
   if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-    if (e.button.button == SDL_BUTTON_LEFT) {
+    if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
+      app.camera.lastMousePos = [e.button.x, e.button.y];
     }
-    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = true;}
+    if (e.button.button == SDL_BUTTON_RIGHT) { 
+      app.camera.isdrag[1] = true;
+      app.camera.lastMousePos = [e.button.x, e.button.y];
+    }
   }
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+    app.camera.isdrag[0] = false; 
     if (e.button.button == SDL_BUTTON_LEFT) {
-      app.camera.isdrag[0] = false; 
-      auto ray = app.camera.castRay(e.button.x, e.button.y);
-      auto hits = app.getHits(ray, app.showRays);
-      if (hits.length > 0) { app.pickWorld(hits, ray); }
-      foreach (ref hit; hits) {
-        auto obj = app.objects[hit.idx[0]];
-        if (cast(Chunk)obj is null) {
-          obj.box.setColor(Colors.yellowgreen);
-          obj.window = true;
-          break;
+      if(app.inventory.ghostTile[0] != int.min) {
+        app.placeTile(app.inventory.ghostTile);
+      } else {
+        auto hits = app.getHits(ray, app.showRays);
+        if (hits.length > 0) { int[3] wc; if(app.getBestTile(ray, wc)) app.setTile(wc); }
+        foreach (ref hit; hits) {
+          auto obj = app.objects[hit.idx[0]];
+          if (cast(Chunk)obj is null) {
+            obj.box.setColor(Colors.yellowgreen);
+            obj.window = true;
+            break;
+          }
         }
       }
     }
-    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
+    if (e.button.button == SDL_BUTTON_RIGHT) {
+      app.camera.isdrag[1] = false;
+      int[3] wc;
+      if(app.getBestTile(ray, wc)){ 
+        SDL_Log(toStringz(format("Add %s to miningque of length %s", wc, miningQueue.length)));
+        miningQueue ~= wc;
+      }
+    }
+    app.updateGhostTile(ray);
   }
-  if(e.type == SDL_EVENT_MOUSE_MOTION){ if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel); }
+  if(e.type == SDL_EVENT_MOUSE_MOTION){ 
+    if(app.camera.isdrag[1]) { app.tryDrag(e.motion.xrel, e.motion.yrel); }
+    app.updateGhostTile(ray);
+  }
   if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.tryZoom(-e.wheel.y); }
 }
 
@@ -139,7 +164,7 @@ void handleEvents(ref App app) {
     if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
   }
 
-  if(app.time[FRAMESTART] - app.time[LASTTICK] > 2500) {
+  if(app.time[FRAMESTART] - app.time[LASTTICK] > 500) {
     //GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);

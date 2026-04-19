@@ -44,8 +44,8 @@ class TaskThread : Thread {
             main.send(openasset, mytid);
           } else { main.send("Unknown file", mytid); }
         },
-        (immutable(WorldData) wd, immutable(TileAtlas) ta, int[3] coord) {
-          auto data = buildChunkData(wd, ta, coord);
+        (immutable(WorldData) wd, int[3] coord) {
+          auto data = buildChunkData(wd, coord);
           main.send(cast(immutable(ChunkData))data, mytid);
         },
         (bool active) { this.active = active; }  // shutdown signal
@@ -123,7 +123,6 @@ void checkAsync(ref App app) {
       vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
       app.textures ~= p.texture;
       app.textures.pending = app.textures.pending.remove(i);
-      app.mapTextures();
     } else { i++; }
   }
 }

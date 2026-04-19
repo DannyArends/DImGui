@@ -43,11 +43,11 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
 }
 
 // Create an ImageView to a VkImage
-VkImageView createImageView(App app, VkImage image, VkFormat format, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT) {
+VkImageView createImageView(App app, VkImage image, VkFormat format, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, uint levelCount = 1) {
   VkImageSubresourceRange subresourceRange = {
     aspectMask: aspectMask,
     baseMipLevel: 0,
-    levelCount: 1,
+    levelCount: levelCount,
     baseArrayLayer: 0,
     layerCount: 1,
   };

@@ -28,7 +28,7 @@ void main() {
   if(meshSSBO.meshes[fragMesh].tid >= 0){ // Modify by the texture
     vec4 texSample = texture(textureSampler[meshSSBO.meshes[fragMesh].tid], fragTexCoord).rgba;
     if(texSample.a < 0.2f) discard;
-    baseColor = baseColor * pow(texSample, vec4(2.2)).rgb;
+    baseColor = baseColor * texSample.rgb;
   }
 
   vec3 normalForLighting = fragNormal;
@@ -37,21 +37,18 @@ void main() {
   }
 
   // Compute lighting and shadows
- vec3 lightColor = vec3(0.0);
+  vec3 lightColor = baseColor * 0.001;
   if (ubo.lightingMode == 0u) {                        // Global illumination
-    lightColor = baseColor * 0.1;
-  } else if (ubo.lightingMode == 1u) {                 // Lights, no shadows
+    lightColor = baseColor * 0.2;
+  } else if (ubo.lightingMode == 1u) {
+    for(int i = 0; i < ubo.nlights; ++i)
+      lightColor += illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
+  } else {
     for(int i = 0; i < ubo.nlights; ++i) {
-      lightColor += illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting);
-    }
-  } else {                                             // Lights + shadows
-    for(int i = 0; i < ubo.nlights; ++i) {
-      vec3 lightContribution = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting);
+      vec3 lightContribution = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
       float shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld, i);
-      lightColor += (lightContribution * shadowFactor);
+      lightColor += lightContribution * shadowFactor;
     }
   }
-
-  /// ReAdjust output
-  outColor = vec4(pow(lightColor, vec3(1.0/2.2)), 1.0);
+  outColor = vec4(lightColor, 1.0);
 }

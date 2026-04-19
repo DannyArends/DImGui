@@ -16,9 +16,11 @@ import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
  */
 struct Instance {
   uint[2] meshdef = [0, 0];                     /// Mesh Definition
-  float[4] uvT = [0.0f, 0.0f, 1.0f, 1.0f];      /// UV transform
   Matrix matrix = Matrix.init;                  /// Instance matrix
   alias matrix this;
+
+  this(uint[2] d, Matrix m) { meshdef = d; matrix = m; }
+  this(uint mdef, float[12] f) { this([mdef, mdef], Matrix([f[0],f[1],f[2], 0, f[3],f[4],f[5], 0, f[6],f[7],f[8],0, f[9],f[10],f[11], 1])); }
 }
 
 shared uint guid = 1;
@@ -76,6 +78,8 @@ class Geometry {
   bool inFrustum = true;                            /// Boolean flag
   bool isSelectable = true;                         /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
+  bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
+
   bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow {
     return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
@@ -140,37 +144,21 @@ float scale(T)(T object, uint instance = 0) {
   return(scale(object.instances[instance]));
 }
 
-/** Set tid for instance from object.instances to Texture name 
+/** Set different types of textures on an object
  */
-void texture(T)(T object, string name, string mname = "") {
-  if(object.materials.length == 0){
+void setTexture(T)(T object, string name, aiTextureType tt) {
+  if(object.materials.length == 0) {
     object.materials.length = 1;
-    object.materials[0] = Material(name, [aiTextureType_DIFFUSE: TexureInfo(name) ]);
-  }else{
-    object.materials[0].textures[aiTextureType_DIFFUSE] = TexureInfo(name);
+    object.materials[0] = Material(name, [tt: TexureInfo(name)]);
+  } else {
+    object.materials[0].textures[tt] = TexureInfo(name);
   }
-  foreach(ref mesh ; object.meshes) { mesh.mid = 0; }
+  foreach(ref mesh; object.meshes) { mesh.mid = 0; }
 }
 
-void bumpmap(T)(T object, string name, string mname = "") {
-  if(object.materials.length == 0){
-    object.materials.length = 1;
-    object.materials[0] = Material(name, [aiTextureType_NORMALS: TexureInfo(name) ]);
-  }else{
-    object.materials[0].textures[aiTextureType_NORMALS] = TexureInfo(name);
-  }
-  foreach(ref mesh ; object.meshes) { mesh.mid = 0; }
-}
-
-void opacity(T)(T object, string name, string mname = "") {
-  if(object.materials.length == 0){
-    object.materials.length = 1;
-    object.materials[0] = Material(name, [aiTextureType_OPACITY: TexureInfo(name) ]);
-  }else{
-    object.materials[0].textures[aiTextureType_OPACITY] = TexureInfo(name);
-  }
-  foreach(ref mesh ; object.meshes) { mesh.oid = 0; }
-}
+void texture(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_DIFFUSE); }
+void bumpmap(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_NORMALS); }
+void opacity(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_OPACITY); }
 
 /** Euclidean distance between Geometry and Camera */
 @nogc float distance(T)(const T object, const Camera camera) nothrow { 
@@ -342,7 +330,7 @@ void shadow(ref App app, Geometry object, size_t i) {
   if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null || object.indexBuffer.vb == null) return;
   if(app.trace) SDL_Log("SHADOW[%s]: %d instances", toStringz(object.name()), object.instances.length);
   VkDeviceSize[] offsets = [0];
-  auto cmd = app.shadows.commands[i];
+  auto cmd = app.shadows.renderPass.commands[i];
 
   vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);

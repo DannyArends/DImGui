@@ -12,7 +12,6 @@ import devices : createLogicalDevice;
 import events : handleEvents, sdlEventsFilter, removeGeometry;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
-import io: ensureWorldDir;
 import imgui : initializeImGui;
 import instance : createInstance;
 import scene : createScene;
@@ -24,10 +23,10 @@ import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
 import textures : Texture;
-import tileatlas : createTileAtlas;
 import threading : initializeAsync, checkAsync;
 import validation : createDebugCallback;
 import vulkan : cleanup;
+import world : loadWorld;
 import window: createOrResizeWindow, checkForResize;
 
 /* Main entry point to the program */
@@ -67,12 +66,11 @@ void run(string[] args = null) {
   app.createSampler();                                          /// Create a texture sampler
   app.createImGuiDescriptorPool();                              /// ImGui DescriptorPool
   app.createImGuiDescriptorSetLayout();                         /// ImGui DescriptorSet layout
-  app.createTileAtlas();                                        /// before creating TileMap
   app.uploadFont();                                             /// Upload the Font Texture to GPU
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
-  app.ensureWorldDir();                                         /// Ensure the world directory exists
+  app.loadWorld();                                              /// Load the chunk world
   app.createScene();                                            /// Create our scene with geometries
   app.initializeAsync();                                        /// Start Async loading objects and textures
 
@@ -93,6 +91,7 @@ void run(string[] args = null) {
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
+  app.world.saveWorld(app.verbose > 0);
   app.cleanup();
 }
 

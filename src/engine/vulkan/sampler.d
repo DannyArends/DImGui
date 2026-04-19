@@ -24,13 +24,14 @@ void createSampler(ref App app) {
     addressModeU: VK_SAMPLER_ADDRESS_MODE_REPEAT,
     addressModeV: VK_SAMPLER_ADDRESS_MODE_REPEAT,
     addressModeW: VK_SAMPLER_ADDRESS_MODE_REPEAT,
-    anisotropyEnable: ((supportedFeatures.samplerAnisotropy) ? VK_FALSE : VK_TRUE),
+    anisotropyEnable: supportedFeatures.samplerAnisotropy,
     maxAnisotropy: properties.limits.maxSamplerAnisotropy,
     borderColor: VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
     unnormalizedCoordinates: VK_FALSE,
     compareEnable: VK_TRUE,
     compareOp: VK_COMPARE_OP_LESS_OR_EQUAL,
     mipmapMode: VK_SAMPLER_MIPMAP_MODE_LINEAR,
+    maxLod: VK_LOD_CLAMP_NONE
   };
 
   enforceVK(vkCreateSampler(app.device, &samplerInfo, null, &app.sampler));
