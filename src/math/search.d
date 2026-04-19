@@ -13,33 +13,36 @@ enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3
 
 /* Implementation of the search state structure */
 struct Search(M, N) {
-  M map; // map information structure
-  N start; // start node structure
-  N goal; // goal node structure
-  N* pathptr; // pointer to the current node in the path
-  N[] openlist; // Astar open list
-  N[] closedlist; // Astar closed list
-  SearchState state = SearchState.NOT_INITIALISED;
-  size_t steps = 0; // search steps taken
-  size_t path = 0; // step in current path
-  size_t maxsteps = 150; // maximum number of search steps
-  bool cancel = false; // cancels an active search
+  M map;                                                    /// map information structure
+  size_t start = size_t.max;                                /// index into pool: Start Node
+  size_t goal  = size_t.max;                                /// index into pool: Goal node
+  size_t pathptr = size_t.max;                              /// index into pool: pointer to the current node in the path
+  N[] pool;                                                 /// stable node storage
+  size_t[] openlist;                                        /// Astar open list: indices into pool
+  size_t[] closedlist;                                      /// Astar closed list: indices into pool
+  SearchState state = SearchState.NOT_INITIALISED;          /// Astar SearchState
+  size_t steps = 0;                                         /// search steps taken
+  size_t path = 0;                                          /// step in current path
+  size_t maxsteps = 150;                                    /// maximum number of search steps
+  bool cancel = false;                                      /// cancels an active search
 }
 
 /* Set the start and goal node and set the state to searching */
 void setStartAndGoalStates(S, M, N)(ref S search, ref M map, ref N startnode, ref N goalnode) {
   search.map = map;
-  search.start = startnode;
-  search.goal = goalnode;
 
-  search.start.g = 0.0f;
-  search.start.h = euclidean(startnode.position, goalnode.position);
-  search.start.parent = null;
+  startnode.g = 0.0f;
+  startnode.h = euclidean(startnode.position, goalnode.position);
+  startnode.parent = size_t.max;
+
+  search.pool ~= startnode;
+  search.start = search.pool.length - 1;
+  search.pool ~= goalnode;
+  search.goal = search.pool.length - 1;
 
   search.state = SearchState.SEARCHING;
-
   search.openlist ~= search.start;
-  search.pathptr = &search.start;
+  search.pathptr = search.start;
   search.steps = 0;
 
   // If the start and end are the same the search requested is not valid
@@ -47,114 +50,100 @@ void setStartAndGoalStates(S, M, N)(ref S search, ref M map, ref N startnode, re
 }
 
 /* Walk backwards via the parent pointers, setting the child pointers */
-void storeRoute(S, N)(ref S search, N* node){
-  N* nodeChild = node;
-  N* nodeParent = node.parent;
-  while(nodeParent !is null && !nodeChild.isEqual(&search.start)) {
-    nodeParent.child = nodeChild;
+void storeRoute(S)(ref S search, size_t nodeIdx) {
+  size_t nodeChild = nodeIdx;
+  size_t nodeParent = search.pool[nodeChild].parent;
+  while(nodeParent != size_t.max && nodeChild != search.start) {
+    search.pool[nodeParent].child = nodeChild;
     nodeChild = nodeParent;
-    nodeParent = nodeParent.parent;
+    nodeParent = search.pool[nodeChild].parent;
   }
-  search.start = (*nodeChild);
+  search.start = nodeChild;
+  search.pathptr = search.start;
 }
 
 /* Do a step of the A star searching algorithm */
 SearchState step(S, N)(ref S search, N node = PathNode()) {
-  // Break if the user has not initialised the search, and allow step after the search has succeeded or failed
-  if (!((search.state > SearchState.NOT_INITIALISED) && (search.state < SearchState.INVALID))) {
-    SDL_Log("Uninitialized/invalid search detected");
-    return search.state;
-  }
-  if ( (search.state == SearchState.SUCCEEDED) || (search.state == SearchState.FAILED) ) return search.state;
+  if(search.state != SearchState.SEARCHING) return search.state;
+  if(search.openlist.empty() || search.cancel) { search.state = SearchState.FAILED; return search.state; }
 
-  if ( search.openlist.empty() || search.cancel ) {  // Fail searching when there are no nodes left or the user cancels
-    search.state = SearchState.FAILED;
-    return search.state;
-  }
-  //SDL_Log("step: %d, lengths (open/closed): (%d/%d)\n",search.steps, search.openlist.length, search.closedlist.length);
+  size_t nIdx = search.openlist[0];
+  search.steps++;
 
-  N ncopy = search.openlist[0]; N* n = &ncopy; // Get the best / closest node found so far
-  //SDL_Log("closest position so far: [%.1f, %.1f, %.1f]\n", n.x, n.y, n.z);
-  search.steps++; // Take a step, generate successors list 
-  if (n.isEqual(&search.goal)) {
-    //SDL_Log("n Equal to search.goal\n");
+  if(search.pool[nIdx].isEqual(search.pool[search.goal])) {
     search.state = SearchState.SUCCEEDED;
-    search.goal.parent = n.parent;
-    search.storeRoute(&search.goal);
-    //SDL_Log("storeRoute(search.goal) done\n");
+    search.pool[search.goal].parent = search.pool[nIdx].parent;
+    search.storeRoute(search.goal);
     return search.state;
-  } else { // n notEqual to search.goal
-    //SDL_Log("n notEqual to search.goal\n");
-    N[] successors = search.map.getSuccessors(n);
-    if (successors.empty()) {
-      search.state = SearchState.FAILED;
-      return search.state;
-    }
-    foreach (ref N s; successors) {
-      float newG = n.g + s.cost;
-      // Find if a better path (lower g) to the node is on the open or closed list, if so, we can forget this successor
-      size_t i;
-      if((i = search.openlist.has(s)) != size_t.max && search.openlist[i].g <= newG) { continue; }
-      if((i = search.closedlist.has(s)) != size_t.max && search.closedlist[i].g <= newG) { continue; }
-      // No better path to this location was found, so we will just add it for later exploration
-      s.parent = n;
-      s.g = newG;
-      s.h = euclidean(s.position, search.goal.position);
-      // Remove from the closed list (if present) and update / add the node to the openlist
-      if((i = search.closedlist.has(s)) != size_t.max){ search.closedlist = search.closedlist.remove(i); }
-      if((i = search.openlist.has(s)) != size_t.max) {
-        search.openlist[i] = s;
-      }else{ search.openlist ~= s; }
-    }
   }
-  // Remove n from the openlist, and add n to the closed list re-sort by cumulative cost values to target;
-  search.closedlist ~= (*n);
+
+  N[] successors = search.map.getSuccessors(search.pool[nIdx]);
+  if (successors.empty()) { search.state = SearchState.FAILED; return search.state; }
+
+  foreach (ref N s; successors) {
+    float newG = search.pool[nIdx].g + s.cost;
+    size_t i;
+    if ((i = search.openlist.has(search.pool, s)) != size_t.max && search.pool[search.openlist[i]].g <= newG) continue;
+    if ((i = search.closedlist.has(search.pool, s)) != size_t.max && search.pool[search.closedlist[i]].g <= newG) continue;
+    s.parent = nIdx;
+    s.g = newG;
+    s.h = euclidean(s.position, search.pool[search.goal].position);
+    search.pool ~= s;
+    size_t sIdx = search.pool.length - 1;
+    if((i = search.closedlist.has(search.pool, s)) != size_t.max) search.closedlist = search.closedlist.remove(i);
+    if((i = search.openlist.has(search.pool, s)) != size_t.max) {
+      search.pool[search.openlist[i]] = s;
+    }else { search.openlist ~= sIdx; }
+  }
+
+  search.closedlist ~= nIdx;
   search.openlist = search.openlist.remove(0);
 
-  // Sort by index, see: https://forum.dlang.org/post/mailman.560.1633114028.21945.digitalmars-d-learn@puremagic.com
-  auto idx = new size_t[search.openlist.length];
-  search.openlist.makeIndex!("a.f < b.f")(idx);
-  foreach (c, i; idx) { search.openlist[c] = search.openlist[i]; }
+  auto sortIdx = new size_t[search.openlist.length];
+  search.openlist.map!(i => search.pool[i]).array.makeIndex!("a.f < b.f")(sortIdx);
+  foreach (c, i; sortIdx) { search.openlist[c] = search.openlist[i]; }
   return search.state;
 }
 
 /* Take a step through the path computed */
 float[3] stepThroughPath(S)(ref S search, bool verbose = true) {
-  float[3] p = [search.pathptr.x, search.pathptr.y, search.pathptr.z];
-  if(verbose) SDL_Log("path %d : [%.2f, %.2f, %.2f] %f\n", search.path, p[0], p[1], p[2], search.pathptr.h);
-  search.pathptr = search.pathptr.child;
+  if (search.pathptr == size_t.max) return [0.0f, 0.0f, 0.0f];
+  auto n = search.pool[search.pathptr];
+  float[3] p = [n.x, n.y, n.z];
+  if(verbose) SDL_Log("path %d : [%.2f, %.2f, %.2f] %f\n", search.path, p[0], p[1], p[2], n.h);
+  search.pathptr = n.child;
   search.path++;
-  return p;
+  return(p);
 }
 
 /* Test if the current path pointer is at the goal position */
 bool atGoal(S)(const S search) {
-  if (search.pathptr is null) return(true);
-  return(search.pathptr.isEqual(&search.goal));
+  if(search.pathptr == size_t.max) return(true);
+  return(search.pool[search.pathptr].isEqual(search.pool[search.goal]));
 }
 
 /* Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
-Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], 
-                                  float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World(), bool verbose = false) {
+Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f],
+                                  float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World(), bool verbose = true) {
   Search!(World, PathNode) search;
-  PathNode s = PathNode(null, start, 0.0f, 0.0f);
-  PathNode g = PathNode(null, goal, 0.0f);
+  PathNode s = PathNode(size_t.max, size_t.max, start, 0.0f);
+  PathNode g = PathNode(size_t.max, size_t.max, goal, 0.0f);
   search.setStartAndGoalStates(map, s, g);
-  do {
+  do{
     search.state = search.step();
-  } while(search.state == SearchState.SEARCHING && search.steps < search.maxsteps);
+  }while(search.state == SearchState.SEARCHING && search.steps < search.maxsteps);
 
-  // If we're still searching, set the optimal route to be the closest one so far 
-  if (search.state == SearchState.SEARCHING) {
-    if(verbose) {
-      SDL_Log(toStringz(format("performSearch: %s, after: %d / %d, still open: %d","%s", search.state, search.steps, search.maxsteps, search.openlist.length)));
+  if(search.state == SearchState.SEARCHING) {
+    if(verbose){
+      SDL_Log(toStringz(format("performSearch: %s, after: %d / %d, still open: %d", search.state, search.steps, search.maxsteps, search.openlist.length)));
     }
-    if(search.openlist.length > 0){
-      search.goal = search.openlist[0];
-      search.storeRoute(&search.openlist[0]);
+    if(search.openlist.length > 0) {
+      size_t bestIdx = search.openlist[0];
+      search.goal = bestIdx;
+      search.storeRoute(bestIdx);
     }
   }
-  return(search);
+  return search;
 }
 
 /* Perform a test search and return the result, after which search.stepThroughPath allows to walk the steps */
