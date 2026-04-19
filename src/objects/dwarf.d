@@ -94,15 +94,15 @@ bool claimJob(ref App app, Dwarf d) {
     if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
 
     auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
-    if(app.verbose) SDL_Log("Search: %s steps:%d", toStringz(format("%s", result.state)), result.steps);
+    if(app.verbose) SDL_Log(toStringz(format("Search: %s steps: %d", result.state, result.steps)));
 
     if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) {
       d.targetTile = [int.min, 0, 0];
       return false;
     }
     d.path = [];
-    while(result.pathptr !is null && !result.atGoal()){ d.path ~= result.stepThroughPath(app.trace); }
-    d.path ~= [result.goal.x, result.goal.y, result.goal.z];
+    while(result.pathptr != size_t.max && !result.atGoal()) d.path ~= result.stepThroughPath(app.trace);
+    d.path ~= result.pool[result.goal].position;
     return true;
   } catch(Throwable e) {
     SDL_Log("claimJob CRASH: %s", toStringz(e.toString())); d.targetTile = [int.min, 0, 0]; return false;

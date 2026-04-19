@@ -160,7 +160,7 @@ struct World {
   bool isTile(float[3] pos) const { return tileData[tileAt(pos)].traversable; }
   float cost(float[3] pos) const { return tileData[tileAt(pos)].cost; }
 
-  PathNode[] getSuccessors(PathNode* parent) const {
+  PathNode[] getSuccessors(PathNode parent) const {
     PathNode[] successors;
     auto pt = worldToTile(parent.position);
     foreach (dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
@@ -169,7 +169,7 @@ struct World {
         int ny = (pt[1] - 1) + dy;
         auto tt = getTileAt([nx, ny, nz]);
         if (tt != TileType.None && tileData[tt].traversable && isPassable([nx, ny+1, nz])) {
-          successors ~= PathNode(parent, [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], tileData[tt].cost);
+          successors ~= PathNode(size_t.max, size_t.max, [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], tileData[tt].cost);
           break;
         }
       }
