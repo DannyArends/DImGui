@@ -41,7 +41,7 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
   foreach(f; order[].sort!((a,b) => dots[a] < dots[b])) {
     if(neighbours[f][1] < 0 || neighbours[f][1] >= app.world.chunkHeight) continue;
     auto coord = app.world.chunkCoord(neighbours[f]);
-    auto tidx = app.world.tileIndex(app.world.localCoord(neighbours[f]));
+    auto tidx = app.world.tileIdx(neighbours[f]);
     if(app.world.chunks[coord].tileTypes[tidx] == TileType.None) return(neighbours[f]);
   }
   return([int.min, 0, 0]);
