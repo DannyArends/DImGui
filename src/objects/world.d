@@ -66,44 +66,31 @@ struct WorldData {
     return heightToTile(ht[0], ht[1]);
   }
 
-  /** Convert a local chunk index to a 3D local tile coordinate [x, y, z]
-   */
+  /** Convert a local chunk index to a 3D local tile coordinate [x, y, z] */
   @nogc pure int tileIndex(int[3] local) const nothrow { return(local.z * chunkHeight * chunkSize + local.y * chunkSize + local.x); }
-
-  /** Convert a world tile coordinate to its chunk coordinate
-   */
+  /** Convert a world tile coordinate to its chunk coordinate */
   @nogc pure int[3] tileCoord(int i) const nothrow { return [i % chunkSize, (i / chunkSize) % chunkHeight, i / (chunkSize * chunkHeight)];}
-
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
-
-  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate
-   */
+  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
   @nogc pure int[3] chunkCoord(int[3] tile) const nothrow { 
     return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
   }
-
   int tileIdx(int[3] tile) const { return tileIndex(localCoord(tile)); }
-
-  /** Convert a world coordinate to a world-space float position
-   */
+  /** Convert a world coordinate to a world-space float position */
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
-
-  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate
-   */
+  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
   @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
 }
 
-/** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only)
- */
+/** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
 struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks being generated async
   WorldData data;
   alias data this;
 
-  /** Save world diffs to disk
-   */
+  /** Save world diffs to disk */
   void saveWorld(bool verbose = false) {
     uint[2] header = [WORLD_MAGIC, cast(uint)this.data.diffs.length];
     char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])this.data.diffs;
@@ -111,8 +98,7 @@ struct World {
     if(verbose) SDL_Log("saveWorld: %d diffs", this.data.diffs.length);
   }
 
-  /** Mark all chunks for deallocation and clear the chunk and pending maps
-   */
+  /** Mark all chunks for deallocation and clear the chunk and pending maps */
   void deallocateChunk(int[3] coord) {
     chunks[coord].tiles.deAllocate = true;
     chunks[coord].deAllocate = true;
@@ -169,7 +155,7 @@ struct World {
         int ny = (pt[1] - 1) + dy;
         auto tt = getTileAt([nx, ny, nz]);
         if (tt != TileType.None && tileData[tt].traversable && isPassable([nx, ny+1, nz])) {
-          successors ~= PathNode(size_t.max, size_t.max, [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], tileData[tt].cost);
+          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost);
           break;
         }
       }
@@ -198,8 +184,7 @@ bool canMoveTo(ref App app, float[3] pos) {
   return true;
 }
 
-/** Set a tile type in a chunk and mark the chunk dirty for rebuild
- */
+/** Set a tile type in a chunk and mark the chunk dirty for rebuild */
 void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(app.world.getTile(tile) == TileType.Lava) return;  // cannot remove lava
   if(app.verbose) SDL_Log(toStringz(format("setTile: %s", tile)));
@@ -226,8 +211,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   }
 }
 
-/** Dispatch a chunk build job to the next available worker thread
- */
+/** Dispatch a chunk build job to the next available worker thread */
 void dispatchWorker(ref App app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
@@ -240,8 +224,7 @@ void dispatchWorker(ref App app, int[3] coord){
   }
 }
 
-/** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks
- */
+/** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
 void updateWorld(ref App app, float[3] lookat) {
   int effectiveRD = min(app.world.renderDistance, cast(int)(app.camera.nearfar[1] / app.world.chunkWorldSize));
   int[3] pc = app.world.chunkCoord([cast(int)floor(lookat[0] / app.world.tileSize), 0, cast(int)floor(lookat[2] / app.world.tileSize)]);
@@ -272,4 +255,3 @@ void updateWorld(ref App app, float[3] lookat) {
     }
   }
 }
-
