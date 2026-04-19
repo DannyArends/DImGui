@@ -8,10 +8,11 @@ import engine;
 import buffer : createBuffer, copyBufferToImage;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
-import images : nameImageBuffer, imageSize, createImage, deAllocate, transitionImageLayout;
+import images : nameImageBuffer, generateMipmaps, imageSize, createImage, deAllocate, transitionImageLayout;
 import io : dir;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
+import tileatlas : updateTileAtlas;
 
 ImTextureRef ImTextureRefFromID(ulong tex_id) { 
   ImTextureRef tex_ref = { null, cast(ImTextureID)tex_id }; 
@@ -36,6 +37,9 @@ struct Texture {
     this.width = width;
     this.height = height;
     this.surface = surface;
+  }
+  @property uint mipLevels() const {
+    return((path.indexOf("_base") >= 0) ? cast(uint)(floor(log2(max(surface.w, surface.h)))) + 1 : 1);
   }
 }
 
@@ -96,7 +100,11 @@ SDL_Surface* createDummySDLSurface() {
 }
 
 void transferTextureAsync(ref App app, ref Texture texture) {
-  SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(app.transferPool, true);
+  bool needsGraphics = texture.mipLevels > 1;
+  auto pool  = needsGraphics ? app.commandPool : app.transferPool;
+  auto queue = needsGraphics ? app.queue : app.transfer;
+
+  SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(pool, true);
   StageBuffer staging;
   app.toGPU(cmdBuffer, texture, staging);
   vkEndCommandBuffer(cmdBuffer);
@@ -106,28 +114,28 @@ void transferTextureAsync(ref App app, ref Texture texture) {
     pCommandBuffers: &cmdBuffer.commands,
   };
   app.nameVulkanObject(cmdBuffer.fence, toStringz(format("[FENCE] %s", texture.path)), VK_OBJECT_TYPE_FENCE);
-  enforceVK(vkQueueSubmit(app.transfer, 1, &submitInfo, cmdBuffer.fence));
+  enforceVK(vkQueueSubmit(queue, 1, &submitInfo, cmdBuffer.fence));
   app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }
 
-void mapTextures(ref App app){
-  for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); }
-}
-
-int getTexture(T)(ref App app, T object, uint materialIndex, aiTextureType type = aiTextureType_DIFFUSE){
-  if (type in object.materials[materialIndex].textures) {
-    int index = idx(app.textures, object.materials[materialIndex].textures[type]);
-    return(index);
-  }
+int getTexture(ref App app, Material material, aiTextureType type = aiTextureType_DIFFUSE){
+  if (type in material.textures) { return(idx(app.textures, material.textures[type])); }
   return(-1);
 }
 
-void mapTextures(ref App app, ref Geometry object){
+void mapTextures(ref App app) { for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); } }
+
+void mapTextures(ref App app, ref Geometry object) {
   foreach (ref mesh; object.meshes) {
     if(mesh.mid < 0) continue;
-    mesh.tid = app.getTexture(object, mesh.mid, aiTextureType_DIFFUSE);
-    mesh.nid = app.getTexture(object, mesh.mid, aiTextureType_NORMALS);
-    mesh.oid = app.getTexture(object, mesh.mid, aiTextureType_OPACITY);
+    auto tid = app.getTexture(object.materials[mesh.mid], aiTextureType_DIFFUSE);
+    auto nid = app.getTexture(object.materials[mesh.mid], aiTextureType_NORMALS);
+    auto oid = app.getTexture(object.materials[mesh.mid], aiTextureType_OPACITY);
+    if(tid != mesh.tid || nid != mesh.nid || oid != mesh.oid) {
+      object.buffers[INSTANCE] = false;
+      app.buffers["MeshMatrices"].dirty[] = true;
+    }
+    mesh.tid = tid; mesh.nid = nid; mesh.oid = oid;
   }
 }
 
@@ -139,9 +147,10 @@ void updateTextures(ref App app) {
       needsUpdate = true;
       if(app.trace) { SDL_Log("updateTextures: syncIndex=%d texture.syncIndex=%d pending=%d", app.syncIndex, texture.syncIndex, nPending); }
       if(texture.syncIndex == app.syncIndex) {
+        app.updateTileAtlas();
+        app.mapTextures();
         texture.dirty = false;
         texture.syncIndex = -1;
-        app.mapTextures();
         needsUpdate = false;
       } else if(texture.syncIndex == -1) { texture.syncIndex = app.syncIndex; }
     }
@@ -168,13 +177,19 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out Stag
   if(texture.image){ app.mainDeletionQueue.add((){ app.deAllocate(texture); }); }
 
   // Create an image, transition the layout
-  app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory);
-  app.transitionImageLayout(cmdBuffer, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    // Only generate mipmaps for tile textures (_base suffix)
+ app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory,
+                  VK_FORMAT_R8G8B8A8_SRGB, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
+                  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.mipLevels);
+  app.transitionImageLayout(cmdBuffer, texture.image,
+                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                            VK_FORMAT_R8G8B8A8_SRGB, texture.mipLevels);
   app.copyBufferToImage(cmdBuffer, staging.sb, texture.image, texture.surface.w, texture.surface.h);
-  app.transitionImageLayout(cmdBuffer, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  app.generateMipmaps(cmdBuffer, texture.image, texture.surface.w, texture.surface.h, texture.mipLevels);
 
   // Create an imageview and register the texture with ImGui
-  texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+  texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, texture.mipLevels);
   app.nameImageBuffer(texture, texture.path);
   app.registerTexture(texture);
 }

@@ -29,7 +29,6 @@ void reflectShader(ref App app, ref Shader shader) {
   app.enforceSPIRV(spvc_context_parse_spirv(app.context, shader.code, shader.nwords, &ir));
   app.enforceSPIRV(spvc_context_create_compiler(app.context, SPVC_BACKEND_GLSL, ir, SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &compiler));
   app.enforceSPIRV(spvc_compiler_create_shader_resources(compiler, &resources));
-  app.enforceSPIRV(spvc_compiler_create_shader_resources(compiler, &resources));
 
   // Phase 1 Get Entry Points to determine compute groupSizes for x, y, z
   spvc_entry_point* entry_points = null;
@@ -139,27 +138,26 @@ void reflectShaders(ref App app, ref Shader[] shaders) {
 }
 
 void createResources(ref App app, ref Shader[] shaders, string poolID) {
-  if(app.verbose) SDL_Log("Creating Shader Resources: %d shaders from pool %s", app.shaders.length, toStringz(poolID));
   app.createDSPool(poolID, shaders);
-  for(uint s = 0; s < shaders.length; s++) {
-    for(uint d = 0; d < shaders[s].descriptors.length; d++) {
-      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) app.createStorageImage(shaders[s].descriptors[d]);
-      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if(shaders[s].descriptors[d].base == "BoneMatrices") {
-          if(app.boneOffsets.length == 0){ app.boneOffsets.length = 1024; } // Default to room for 1024 bones
-          app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.boneOffsets.length));
-        }else if(shaders[s].descriptors[d].base == "LightMatrices") {
-          app.createSSBO(shaders[s].descriptors[d], cast(uint)app.lights.length);
-        }else if(shaders[s].descriptors[d].base == "MeshMatrices") {
-          app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.meshes.capacity));
-        }else if(app.hasCompute && shaders[s].descriptors[d].base == "lastFrame") {
-          app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
-          app.transferToSSBO(shaders[s].descriptors[d]);
-        }else if(app.hasCompute && shaders[s].descriptors[d].base == "currentFrame") {
-          app.createSSBO(shaders[s].descriptors[d], cast(uint)(app.compute.system.particles.length));
+  foreach(ref shader; shaders) {
+    foreach(ref d; shader.descriptors) {
+      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) { app.createStorageImage(d); }
+      if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) { app.createUBO(d); }
+      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+        if (d.base == "BoneMatrices") { 
+          if(app.boneOffsets.length == 0) app.boneOffsets.length = 1024; 
+          app.createSSBO(d, cast(uint)app.boneOffsets.length); 
+        }else if(d.base == "LightMatrices") {
+          app.createSSBO(d, cast(uint)app.lights.length);
+        }else if(d.base == "MeshMatrices") {
+          app.createSSBO(d, cast(uint)app.meshes.capacity);
+        }else if(app.hasCompute && d.base == "lastFrame") {
+          app.createSSBO(d, cast(uint)app.compute.system.particles.length); 
+          app.transferToSSBO(d); 
+        }else if(app.hasCompute && d.base == "currentFrame") {
+          app.createSSBO(d, cast(uint)app.compute.system.particles.length);
         }
       }
-      if(shaders[s].descriptors[d].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) app.createUBO(shaders[s].descriptors[d]);
     }
   }
 }

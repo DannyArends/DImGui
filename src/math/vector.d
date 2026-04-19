@@ -44,6 +44,11 @@ struct Vector {
   return sqrt( (v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]) + (v1[2] - v2[2]) * (v1[2] - v2[2]) );
 }
 
+/** Euclidean distance between v1 and v2 */
+@nogc pure T sqDist(T)(const T[3] v1, const T[3] v2) nothrow {
+  return (v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]) + (v1[2] - v2[2]) * (v1[2] - v2[2]);
+}
+
 /** Expand a bounding box */
 @nogc pure void expandBounds(ref float[3] bmin, ref float[3] bmax, float[3] p) nothrow {
   if (p[0] < bmin[0]) bmin[0] = p[0];

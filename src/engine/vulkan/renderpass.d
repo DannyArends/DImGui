@@ -9,10 +9,30 @@ import depthbuffer : findDepthFormat;
 import devices : getMSAASamples;
 import validation : nameVulkanObject;
 
+struct RenderPassInfo {
+  VkAttachmentDescription[] attachments;
+  VkSubpassDescription[] subpasses;
+  VkSubpassDependency[] dependencies;
+}
+
 struct RenderPass {
   VkRenderPass pass;
+  alias pass this;
   VkFramebuffer[] framebuffers;
   VkCommandBuffer[] commands;
+
+  void create(ref App app, RenderPassInfo info, string label, ref DeletionQueue queue) {
+    VkRenderPassCreateInfo createInfo = {
+      sType: VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+      attachmentCount: cast(uint)info.attachments.length, pAttachments: info.attachments.ptr,
+      subpassCount: cast(uint)info.subpasses.length,      pSubpasses: info.subpasses.ptr,
+      dependencyCount: cast(uint)info.dependencies.length, pDependencies: info.dependencies.ptr,
+    };
+    enforceVK(vkCreateRenderPass(app.device, &createInfo, app.allocator, &pass));
+    app.nameVulkanObject(pass, toStringz("[RENDERPASS] " ~ label), VK_OBJECT_TYPE_RENDER_PASS);
+    if(app.verbose) SDL_Log(toStringz(label ~ " RenderPass created"));
+    queue.add((){ vkDestroyRenderPass(app.device, pass, app.allocator); });
+  }
 
   void begin(VkCommandBuffer cmd, uint frameIdx, VkExtent2D extent, VkClearValue[] clears) {
     VkRenderPassBeginInfo info = {
@@ -29,198 +49,123 @@ struct RenderPass {
   void end(VkCommandBuffer cmd) { vkCmdEndRenderPass(cmd); }
 }
 
+VkCommandBuffer beginRecording(ref RenderPass pass, ref App app, uint syncIndex, string label) {
+  VkCommandBufferBeginInfo beginInfo = { sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+  enforceVK(vkResetCommandBuffer(pass.commands[syncIndex], 0));
+  enforceVK(vkBeginCommandBuffer(pass.commands[syncIndex], &beginInfo));
+  app.nameVulkanObject(pass.commands[syncIndex], toStringz(format("[COMMANDBUFFER] %s %d", label, syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  return(pass.commands[syncIndex]);
+}
+
+void endRecording(ref RenderPass pass, uint syncIndex) { enforceVK(vkEndCommandBuffer(pass.commands[syncIndex])); }
+
+
 /** Create a Scene RenderPass object
  * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment
  */
 void createSceneRenderPass(ref App app) {
-  if(app.verbose) SDL_Log("Creating RenderPass");
+  VkAttachmentReference colorRef   = { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+  VkAttachmentReference resolveRef = { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+  VkAttachmentReference depthRef   = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
-  VkAttachmentDescription colorAttachment = {
-    format : app.colorFormat,
-    samples : app.getMSAASamples(),
-    loadOp : VK_ATTACHMENT_LOAD_OP_CLEAR,
-    storeOp : VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    initialLayout : VK_IMAGE_LAYOUT_UNDEFINED,
-    finalLayout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+  RenderPassInfo info = {
+    attachments: [
+      { format: app.colorFormat,       samples: app.getMSAASamples(),  loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+        storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+        finalLayout:   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+      { format: app.colorFormat,       samples: VK_SAMPLE_COUNT_1_BIT, loadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        storeOp: VK_ATTACHMENT_STORE_OP_STORE,
+        stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+        finalLayout:   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+      { format: app.findDepthFormat(), samples: app.getMSAASamples(),  loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+        storeOp: VK_ATTACHMENT_STORE_OP_STORE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+        finalLayout:   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
+    ],
+    subpasses: [{
+      pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
+      colorAttachmentCount:    1,
+      pColorAttachments:       &colorRef,
+      pDepthStencilAttachment: &depthRef,
+      pResolveAttachments:     &resolveRef
+    }],
+    dependencies: [{
+      srcSubpass:   VK_SUBPASS_EXTERNAL,
+      srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+      dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+      dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+    }],
   };
-
-  VkAttachmentDescription colorAttachmentResolve = {
-    format : app.colorFormat,
-    samples : VK_SAMPLE_COUNT_1_BIT,
-    loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    storeOp : VK_ATTACHMENT_STORE_OP_STORE,
-    stencilLoadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    stencilStoreOp : VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    initialLayout : VK_IMAGE_LAYOUT_UNDEFINED,
-    finalLayout :VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-  };
-
-  VkAttachmentDescription depthAttachment = {
-    format: app.findDepthFormat(),
-    samples: app.getMSAASamples(),
-    loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
-    storeOp: VK_ATTACHMENT_STORE_OP_STORE,
-    initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-    finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-  };
-
-  VkAttachmentReference colorAttachmentRef = { attachment : 0, layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-  VkAttachmentReference colorAttachmentResolveRef = { attachment : 1, layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-  VkAttachmentReference depthAttachmentRef = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-
-  VkSubpassDescription subpassDescription = {
-    pipelineBindPoint : VK_PIPELINE_BIND_POINT_GRAPHICS,
-    colorAttachmentCount : 1,
-    pColorAttachments : &colorAttachmentRef,
-    pDepthStencilAttachment: &depthAttachmentRef,
-    pResolveAttachments: &colorAttachmentResolveRef
-  };
-
-  VkSubpassDependency subpassDependency = {
-    srcSubpass : VK_SUBPASS_EXTERNAL,
-    dstSubpass : 0,
-    srcStageMask : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-    dstStageMask : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-    srcAccessMask : 0,
-    dstAccessMask : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-  };
-
-  VkAttachmentDescription[] attachments = [colorAttachment, colorAttachmentResolve, depthAttachment];
-
-  VkRenderPassCreateInfo createInfo = {
-    sType : VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-    attachmentCount : cast(uint)(attachments.length),
-    pAttachments : &attachments[0],
-    subpassCount : 1,
-    pSubpasses : &subpassDescription,
-    dependencyCount : 1,
-    pDependencies : &subpassDependency,
-  };
-
-  VkRenderPass renderpass;
-  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &app.scenePass.pass));
-  app.nameVulkanObject(app.scenePass.pass, toStringz("[RENDERPASS] Scene"), VK_OBJECT_TYPE_RENDER_PASS);
-  if(app.verbose) SDL_Log("RenderPass created");
-  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.scenePass.pass, app.allocator); });
+  app.scenePass.create(app, info, "Scene", app.swapDeletionQueue);
 }
 
 /** Create the Post-Processing RenderPass 
  * This VkRenderPass samples the HDR texture, renders and to the SwapChain image
  */
 void createPostProcessRenderPass(ref App app) {
-  if(app.verbose) SDL_Log("Creating Post-Process RenderPass");
+  VkAttachmentReference colorRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
-  // This attachment is the swapchain image itself (LDR)
-  VkAttachmentDescription colorAttachment = {
-    format : app.surfaceformats[app.format].format, // Use swapchain format
-    samples : VK_SAMPLE_COUNT_1_BIT,                // No MSAA for the final output
-    loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,       // We will fully overwrite this
-    storeOp : VK_ATTACHMENT_STORE_OP_STORE,
-    stencilLoadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    stencilStoreOp : VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    initialLayout : VK_IMAGE_LAYOUT_UNDEFINED,      // Will be transitioned by acquireNextImageKHR
-    finalLayout : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR   // Ready for presentation
+  RenderPassInfo info = {
+    attachments: [{
+      format:        app.surfaceformats[app.format].format,
+      samples:       VK_SAMPLE_COUNT_1_BIT,
+      loadOp:        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+      storeOp:       VK_ATTACHMENT_STORE_OP_STORE,
+      stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+      initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+      finalLayout:   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    }],
+    subpasses: [{
+      pipelineBindPoint:    VK_PIPELINE_BIND_POINT_GRAPHICS,
+      colorAttachmentCount: 1,
+      pColorAttachments:    &colorRef,
+    }],
+    dependencies: [
+      { srcSubpass: VK_SUBPASS_EXTERNAL, dstSubpass: 0,
+        srcStageMask: VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        srcAccessMask: VK_ACCESS_NONE, dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT },
+      { srcSubpass: 0, dstSubpass: VK_SUBPASS_EXTERNAL,
+        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dstAccessMask: VK_ACCESS_MEMORY_READ_BIT },
+    ],
   };
-
-  VkAttachmentReference colorAttachmentRef = { attachment : 0, layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-    
-  VkSubpassDescription subpassDescription = {
-    pipelineBindPoint : VK_PIPELINE_BIND_POINT_GRAPHICS,
-    colorAttachmentCount : 1,
-    pColorAttachments : &colorAttachmentRef,
-  };
-
-  // Dependencies for this pass
-  VkSubpassDependency[2] dependencies = [
-    {// Dependency 0: External -> Subpass 0. Ensures swapchain image is ready for write after acquire.
-      srcSubpass : VK_SUBPASS_EXTERNAL,
-      dstSubpass : 0,
-      srcStageMask : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-      dstStageMask : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-      srcAccessMask : VK_ACCESS_NONE,
-      dstAccessMask : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-      dependencyFlags : 0 
-    },
-    {// Dependency 1: Subpass 0 -> External. Ensures rendering is complete before presentation.
-    srcSubpass : 0,
-    dstSubpass : VK_SUBPASS_EXTERNAL,
-    srcStageMask : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // This pass finished writing
-    dstStageMask : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,         // For presentation (or VK_PIPELINE_STAGE_HOST_BIT)
-    srcAccessMask : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-    dstAccessMask : VK_ACCESS_MEMORY_READ_BIT, // Presentation engine will read
-    dependencyFlags : 0
-  }];
-
-  VkAttachmentDescription[] attachments = [colorAttachment];
-
-  VkRenderPassCreateInfo createInfo = {
-    sType : VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-    attachmentCount : cast(uint)(attachments.length),
-    pAttachments : &attachments[0],
-    subpassCount : 1,
-    pSubpasses : &subpassDescription,
-    dependencyCount : cast(uint)(dependencies.length),
-    pDependencies : &dependencies[0],
-  };
-
-  VkRenderPass renderpass;
-  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &app.postPass.pass));
-  app.nameVulkanObject(app.postPass.pass, toStringz("[RENDERPASS] Post-process"), VK_OBJECT_TYPE_RENDER_PASS);
-  if(app.verbose) SDL_Log("Post-Process RenderPass created");
-  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.postPass.pass, app.allocator); });
+  app.postPass.create(app, info, "Post-process", app.swapDeletionQueue);
 }
 
 /** Create the ImGui RenderPass
  * This VkRenderPass loads the contents of the swapchain image and overlays ImGui.
  */
 void createImGuiRenderPass(ref App app) {
-  if(app.verbose) SDL_Log("Creating ImGui RenderPass");
+  VkAttachmentReference colorRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
-  VkAttachmentDescription colorAttachment = {
-    format : app.surfaceformats[app.format].format,     // Swapchain format
-    samples : VK_SAMPLE_COUNT_1_BIT,
-    loadOp : VK_ATTACHMENT_LOAD_OP_LOAD,                // Load existing content (from post-process pass)
-    storeOp : VK_ATTACHMENT_STORE_OP_STORE,
-    stencilLoadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    stencilStoreOp : VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    initialLayout : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-    finalLayout : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR       // Final layout for presentation
+  RenderPassInfo info = {
+    attachments: [{
+      format:        app.surfaceformats[app.format].format,
+      samples:       VK_SAMPLE_COUNT_1_BIT,
+      loadOp:        VK_ATTACHMENT_LOAD_OP_LOAD,
+      storeOp:       VK_ATTACHMENT_STORE_OP_STORE,
+      stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+      initialLayout: VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+      finalLayout:   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    }],
+    subpasses: [{
+      pipelineBindPoint:    VK_PIPELINE_BIND_POINT_GRAPHICS,
+      colorAttachmentCount: 1,
+      pColorAttachments:    &colorRef,
+    }],
+    dependencies: [{
+      srcSubpass:    VK_SUBPASS_EXTERNAL,     dstSubpass:    0,
+      srcStageMask:  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+      dstStageMask:  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+      srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+      dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+    }],
   };
-
-  VkAttachmentReference colorAttachmentRef = { attachment : 0, layout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-    
-  VkSubpassDescription subpassDescription = {
-    pipelineBindPoint : VK_PIPELINE_BIND_POINT_GRAPHICS,
-    colorAttachmentCount : 1,
-    pColorAttachments : &colorAttachmentRef
-  };
-
-  // Dependency from the Post-Process Pass to ImGui Pass
-  VkSubpassDependency dependency = {
-    srcSubpass : VK_SUBPASS_EXTERNAL,
-    dstSubpass : 0,
-    srcStageMask : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-    dstStageMask : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-    srcAccessMask : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // Post-process wrote to it
-    dstAccessMask : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // ImGui will write to it
-    dependencyFlags : 0
-  };
-
-  VkAttachmentDescription[] attachments = [colorAttachment];
-
-  VkRenderPassCreateInfo createInfo = {
-    sType : VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-    attachmentCount : cast(uint)(attachments.length),
-    pAttachments : &attachments[0],
-    subpassCount : 1,
-    pSubpasses : &subpassDescription,
-    dependencyCount : 1,
-    pDependencies : &dependency,
-  };
-
-  VkRenderPass renderpass;
-  enforceVK(vkCreateRenderPass(app.device, &createInfo, null, &app.imguiPass.pass));
-  app.nameVulkanObject(app.imguiPass.pass, toStringz("[RENDERPASS] ImGui"), VK_OBJECT_TYPE_RENDER_PASS);
-  if(app.verbose) SDL_Log("ImGui RenderPass created");
-  app.swapDeletionQueue.add((){ vkDestroyRenderPass(app.device, app.imguiPass.pass, app.allocator); });
+  app.imguiPass.create(app, info, "ImGui", app.swapDeletionQueue);
 }
+

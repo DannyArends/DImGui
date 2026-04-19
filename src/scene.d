@@ -33,6 +33,9 @@ void createScene(ref App app){
     }
   }*/
 
+  app.inventory.ghostCube = new GhostCube([app.world.tileSize,app.world.tileHeight]);
+  app.objects ~= app.inventory.ghostCube;
+
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
   app.objects[($-1)].computeTangents();

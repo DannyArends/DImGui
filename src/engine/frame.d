@@ -51,7 +51,7 @@ void renderFrame(ref App app) {
   app.updateTracks();                     /// Check for sound effects that have finished
   app.updateWorld(app.camera.lookat);     /// Check for updates to the world
   app.updateTextures();                   /// If a texture was loaded, update it
-  app.updateMeshInfo();                   /// Check for Mesh Information change
+  app.updateMeshInfo();      /// Check for Mesh Information change
   app.updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
   app.updateDisco();                      /// Update when disco mode 🕺 🪩 💃
   if(app.hasCompute) app.updateComputeUBO(app.syncIndex);
@@ -95,7 +95,7 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers = [];
-  if (shadowsThisFrame){ submitCommandBuffers ~= app.shadows.commands[app.syncIndex]; }
+  if (shadowsThisFrame){ submitCommandBuffers ~= app.shadows.renderPass.commands[app.syncIndex]; }
   submitCommandBuffers ~= [
     app.scenePass.commands[app.syncIndex],
     app.postPass.commands[app.syncIndex],

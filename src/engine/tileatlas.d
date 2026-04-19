@@ -6,7 +6,7 @@
 import engine;
 
 import io : dir, fixPath;
-import textures : transferTextureAsync, toRGBA;
+import textures : transferTextureAsync, idx, toRGBA;
 import images : deAllocate;
 
 struct TileT {
@@ -57,70 +57,24 @@ shared static this() {
 }
 
 struct TileAtlas {
-  int[2][2][string] uv;
-  uint size;
+  int[TileType] tid;
+  int[TileType] nid;
 }
 
-@nogc pure float[2] tileUV(const TileAtlas ta, string name, bool right, bool bottom) nothrow {
-  if (!(name in ta.uv)) return [right ? 1.0f : 0.0f, bottom ? 1.0f : 0.0f];
-  float u = (right  ? ta.uv[name][0][1] : ta.uv[name][0][0]) / cast(float)(ta.size);
-  float v = (bottom ? ta.uv[name][1][1] : ta.uv[name][1][0]) / cast(float)(ta.size);
-  return [u, v];
-}
-
-@nogc pure float[4] tileUVTransform(const TileAtlas ta, string name) nothrow {
-  float[2] tl = ta.tileUV(name, false, false);
-  float[2] br = ta.tileUV(name, true,  true);
-  return [tl[0], tl[1], br[0] - tl[0], br[1] - tl[1]];
-}
-
-void createTileAtlas(ref App app, string folder = "data/textures/3DTextures.me", int size = 1024, int tileSize = 128) {
-  if (app.verbose) SDL_Log("createTileAtlas: %s", toStringz(folder));
- 
-  TileAtlas ta;
-  ta.size = size;
-
-  string[] files = dir(toStringz(folder), "*_base*");
-  SDL_Surface*[string] surfaces;
- 
-  int tx = 0, ty = 0, rowH = 0, padding = 1;
-  foreach (file; files) {
-    string bname = stripExtension(baseName(file));
-    auto sidx = bname.lastIndexOf("_base");
-    if (sidx < 0) continue;
-    string tname = bname[0 .. sidx];
-
-    SDL_Surface* s = IMG_Load(toStringz(file));
-    if (!s) { SDL_Log("createTileAtlas: failed %s", toStringz(file)); continue; }
-    if (SDL_GetPixelFormatDetails(s.format).bits_per_pixel != 32) s.toRGBA();
-
-    // Scale down to tileSize x tileSize
-    SDL_Surface* scaled = SDL_CreateSurface(tileSize, tileSize, SDL_PIXELFORMAT_RGBA32);
-    SDL_BlitSurfaceScaled(s, null, scaled, null, SDL_SCALEMODE_LINEAR);
-    SDL_DestroySurface(s);
-    s = scaled;
-
-    if (tx + s.w + padding > size) { ty += rowH; rowH = 0; tx = 0; }
-    ta.uv[tname] = [[tx+ padding, tx + s.w- padding], [ty+ padding, ty + s.h- padding]];
-    if (s.h + padding > rowH) rowH = s.h + padding;
-    tx += s.w + padding;
-    surfaces[tname] = s;
+void injectTileMeshes(ref App app) {
+  foreach (tt; 0 .. cast(int)TileType.max + 1) {
+    Mesh m;
+    m.tid = app.tileAtlas.tid.get(cast(TileType)tt, -1);
+    m.nid = app.tileAtlas.nid.get(cast(TileType)tt, -1);
+    app.meshes ~= m;
   }
-
-  auto atlas = SDL_CreateSurface(size, size, SDL_PIXELFORMAT_RGBA32);
-  SDL_FillSurfaceRect(atlas, null, SDL_MapRGBA(SDL_GetPixelFormatDetails(atlas.format), null, 0, 0, 0, 255));
-  SDL_SetSurfaceBlendMode(atlas, SDL_BLENDMODE_NONE);
-  foreach (tname; ta.uv.keys) {
-    SDL_Rect dst = { ta.uv[tname][0][0] - padding, ta.uv[tname][1][0] - padding, 
-                     ta.uv[tname][0][1] - ta.uv[tname][0][0] + padding * 2, ta.uv[tname][1][1] - ta.uv[tname][1][0] + padding * 2 };
-    SDL_BlitSurface(surfaces[tname], null, atlas, &dst);
-    SDL_DestroySurface(surfaces[tname]);
-  }
-
-  auto texture = Texture(folder, size, size, atlas);
-  app.transferTextureAsync(texture);
-  app.mainDeletionQueue.add((){ app.deAllocate(texture); });
-  app.tileAtlas = ta;
-  if (app.verbose) SDL_Log("createTileAtlas: %d tiles [%dx%d]", ta.uv.keys.length, size, size);
 }
 
+void updateTileAtlas(ref App app) {
+  foreach (tt; 0 .. cast(int)TileType.max + 1) {
+    auto ttype = cast(TileType)tt;
+    app.tileAtlas.tid[ttype] = app.textures.idx(tileData[ttype].name ~ "_base");
+    app.tileAtlas.nid[ttype] = app.textures.idx(tileData[ttype].name ~ "_normal");
+  }
+  app.buffers["MeshMatrices"].dirty[] = true;
+}

@@ -5,6 +5,8 @@
 
 import engine;
 
+import std.file : exists, isFile, isDir, dirEntries, SpanMode;
+
 size_t fread(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_ReadIO(fp, buffer, n * size)); }
 size_t fwrite(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_WriteIO(fp, buffer, n * size)); }
 ulong tell(SDL_IOStream* fp){ return(SDL_TellIO(fp)); }
@@ -26,8 +28,8 @@ string fixPath(string path){
   return path;
 }
 
-void ensureWorldDir(ref App app) {
-  string path = fixPath(format("data/world/%d_%d", app.world.seed[0], app.world.seed[1]));
+void ensureWorldDir() {
+  string path = fixPath(format("data/world/"));
   version (Android) { path = format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), path); }
   SDL_CreateDirectory(toStringz(path));
 }
@@ -38,11 +40,14 @@ const(char)* fixPath(const(char)* path){ return toStringz(fixPath(cast(string)fr
  */
 char[] readFile(const(char)* path, uint verbose = 0) {
   path = fixPath(path);
-  SDL_IOStream* fp = SDL_IOFromFile(path, "rb");
-  if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return []; }
+  SDL_IOStream* fp = null;
+  for(int retry = 0; retry < 3 && fp == null; retry++) {
+    fp = SDL_IOFromFile(path, "rb"); if(fp == null) SDL_Delay(1);
+  }
 
   char[] content;
   content.length = cast(size_t)SDL_GetIOSize(fp);
+  if(content.length == 0) { SDL_CloseIO(fp); return []; }   // ADD: guard empty file
 
   size_t readTotal = 0, nRead = 1;
   char* buffer = &content[0];
@@ -148,6 +153,8 @@ version(Android) {
   bool exists (const(char)* path) { return(isfile(path) | dirExists(path)); }
 
 }else{ // Version SDL/OS, just use D to get the dir() functionality
+
+  bool exists (const(char)* path) { return(exists(cast(string)fromStringz(path))); }
 
   /** Content of a directory
    */

@@ -18,7 +18,7 @@ struct Camera {
   alias capabilities this;
 
   float[3]        lookat        = [0.0f, 5.0f, 0.0f];     /// Position in the middle of the screen
-  float[2]        nearfar       = [0.1f, 500.0f];         /// View distances, near [0], far [1]
+  float[2]        nearfar       = [0.1f, 5000.0f];        /// View distances, near [0], far [1]
   float[3]        up            = [0.0f, 1.0f, 0.0f];     /// Defined up vector
   float           fov           = 45.0f;                  /// Field of view
   float           speed         =  0.5f;                  /// Movement speed
@@ -27,8 +27,10 @@ struct Camera {
   bool[2]         isdrag        = [false, false];         /// Mouse dragging
   SDL_FingerID[2] fingerIDs     = [-1, -1];               /// Android FingerIDs
   float[2][2]     fingerPos     = [[0,0],[0,0]];          /// normalized positions of finger 0 and 1
+  float[2]        lastMousePos  = [0, 0];                 /// Last mouse position
   float           lastPinchDist = -1.0f;                  /// -1 = no active pinch
   bool            isDirty       = true;                   /// Camera moved/rotated this frame
+  bool            godMode       = true;                   /// Move through walls
 
   @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -speed]); }
   @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
@@ -50,19 +52,19 @@ struct Camera {
 void tryMove(ref App app, float[3] direction) {
   auto old = app.camera.lookat;
   app.camera.move(direction);
-  if(!app.canMoveTo(app.camera.position)) app.camera.lookat = old;
+  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.lookat = old;
 }
 
 void tryDrag(ref App app, float xrel, float yrel) {
   auto old = app.camera.rotation;
   app.camera.drag(xrel, yrel);
-  if(!app.canMoveTo(app.camera.position)) app.camera.rotation = old;
+  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.rotation = old;
 }
 
 void tryZoom(ref App app, float delta) {
   auto old = app.camera.distance;
   app.camera.zoom(delta);
-  if(!app.canMoveTo(app.camera.position)) app.camera.distance = old;
+  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.distance = old;
 }
 
 /* Create a position/rotation matrix through 3D space starting from xy */

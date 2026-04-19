@@ -187,7 +187,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
         igCombo_FnStrPtr("##oid:all", &selected.oid, &MyComboItemDrawer, cast(void*)&items[0], cast(int)items.length, -1);
       igPopItemWidth();
     igEndTable();
-    if(obj.applySelection(items, obj.meshes[mesh0], selected)) app.mapTextures(obj);
+    if(obj.applySelection(items, obj.meshes[mesh0], selected)) { app.mapTextures(obj); }
 
     auto flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
     bool node_open = igTreeNodeEx_Str("Mesh textures", flags);

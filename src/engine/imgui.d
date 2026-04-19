@@ -15,6 +15,7 @@ import fpswindow : showFPSwindow;
 import objectswindow : showObjectsContent;
 import lightswindow : showLightsContent;
 import mainmenu : showMenu;
+import renderpass : beginRecording, endRecording;
 import sidepanel : showSidepanel;
 import shaderswindow : showShaderContent;
 import texturewindow : showTexturesContent;
@@ -165,15 +166,7 @@ void initializeImGui(ref App app){
 /** Record Vulkan render command buffer by rendering all objects to all render buffers
  */
 void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
-  if(app.trace) SDL_Log("recordImGuiCommandBuffer");
-  auto cmd = app.imguiPass.commands[syncIndex];
-  VkCommandBufferBeginInfo commandBufferInfo = {
-    sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    flags : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-  };
-  enforceVK(vkResetCommandBuffer(cmd, 0)); // Reset for recording
-  enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
-  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] ImGui %d", syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  auto cmd = app.imguiPass.beginRecording(app, syncIndex, "ImGui");
 
   pushLabel(cmd, "ImGui", Colors.lightgray);
 
@@ -187,8 +180,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 
   popLabel(cmd);
 
-  enforceVK(vkEndCommandBuffer(cmd));
-  if(app.trace) SDL_Log("Done recordImGuiCommandBuffer");
+  app.imguiPass.endRecording(syncIndex);
 }
 
 /** Rotate all ImGui vertices to handle Vulkan pre-rotation on Android.
