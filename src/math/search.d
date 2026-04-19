@@ -122,15 +122,16 @@ SearchState step(S, N)(ref S search, N node = PathNode()) {
 
 /* Take a step through the path computed */
 float[3] stepThroughPath(S)(ref S search, bool verbose = true) {
-  float[3] p = [ search.pathptr.x, search.pathptr.y, search.pathptr.z ];
+  float[3] p = [search.pathptr.x, search.pathptr.y, search.pathptr.z];
   if(verbose) SDL_Log("path %d : [%.2f, %.2f, %.2f] %f\n", search.path, p[0], p[1], p[2], search.pathptr.h);
   search.pathptr = search.pathptr.child;
   search.path++;
-  return(p);
+  return p;
 }
 
 /* Test if the current path pointer is at the goal position */
 bool atGoal(S)(const S search) {
+  if (search.pathptr is null) return(true);
   return(search.pathptr.isEqual(&search.goal));
 }
 

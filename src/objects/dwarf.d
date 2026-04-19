@@ -31,6 +31,7 @@ string randomDwarfName() {
 }
 
 bool isStandable(World world, int[3] tile) {
+  if (tile[1] <= 0 || tile[1] >= world.chunkHeight) return false;
   return world.getTileAt(tile) == TileType.None && world.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
 }
 
@@ -95,13 +96,14 @@ bool claimJob(ref App app, Dwarf d) {
     return false;
   }
   d.path = [];
-  while(!result.atGoal()) d.path ~= result.stepThroughPath(false);
+  while(result.pathptr !is null && !result.atGoal()){ d.path ~= result.stepThroughPath(app.trace); }
   d.path ~= [result.goal.x, result.goal.y, result.goal.z];
   return true;
 }
 
 /// Move dwarf one step along its path
 void followPath(ref App app, Dwarf d) {
+  if (d.path.length == 0) return;
   auto next = d.path[0];
   d.path = d.path[1..$];
   d.tilePos = app.world.worldToTile(next);
