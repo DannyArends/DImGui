@@ -78,17 +78,17 @@ bool claimJob(ref App app, Dwarf d) {
 
   auto goalTile = app.findGoalTile(d);
   if (goalTile[0] == int.min) {
-    SDL_Log(toStringz(format("Dwarf %s no access to %s, discarding", d.dwarfName, d.targetTile)));
+    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s no access to %s, discarding", d.dwarfName, d.targetTile)));
     d.targetTile = [int.min, 0, 0];
     return false;
   }
 
   float[3] start = app.tileToWorld(d.tilePos);
   float[3] goal  = app.tileToWorld(goalTile);
-  SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
+  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
 
-  auto result = performSearch!(World, PathNode)(start, goal, app.world);
-  SDL_Log("Search: %s steps:%d", toStringz(format("%s", result.state)), result.steps);
+  auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
+  if(app.verbose) SDL_Log("Search: %s steps:%d", toStringz(format("%s", result.state)), result.steps);
 
   if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) {
     d.targetTile = [int.min, 0, 0];
@@ -107,7 +107,7 @@ void followPath(ref App app, Dwarf d) {
   d.tilePos = app.world.worldToTile(next);
   auto wp = app.tileToWorld(d.tilePos);
   d.position([wp[0], wp[1] - 0.5f, wp[2]]);
-  SDL_Log(toStringz(format("Dwarf %s moved to tile %s", d.dwarfName, d.tilePos)));
+  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s moved to tile %s", d.dwarfName, d.tilePos)));
 }
 
 /// Mine the target tile if adjacent
@@ -116,14 +116,14 @@ void doMining(ref App app, Dwarf d) {
   auto dz = abs(d.tilePos[2] - d.targetTile[2]);
   if(dx + dz == 1 && d.tilePos[1] == d.targetTile[1]) {
     d.miningProgress += 0.25f;
-    SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.dwarfName, d.targetTile, d.miningProgress * 100)));
+    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.dwarfName, d.targetTile, d.miningProgress * 100)));
     if(d.miningProgress >= 1.0f) {
       app.setTile(d.targetTile);
       d.targetTile = [int.min, 0, 0];
       d.miningProgress = 0.0f;
     }
   } else {
-    SDL_Log(toStringz(format("Dwarf %s failed to reach %s from %s, requeueing", d.dwarfName, d.targetTile, d.tilePos)));
+    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s failed to reach %s from %s, requeueing", d.dwarfName, d.targetTile, d.tilePos)));
     miningQueue ~= d.targetTile;
     d.targetTile = [int.min, 0, 0];
     d.miningProgress = 0.0f;
@@ -133,7 +133,7 @@ void doMining(ref App app, Dwarf d) {
 void dwarfTick(ref App app, ref Geometry obj) {
   auto d = cast(Dwarf)obj;
   if(d is null) return;
-  if(d.targetTile[0] != int.min){
+  if(d.targetTile[0] != int.min && app.verbose){
     SDL_Log(toStringz(format("Dwarf %s @ tile %s target %s path:%d mining:%.0f", d.dwarfName, d.tilePos, d.targetTile, d.path.length, d.miningProgress * 100)));
   }
 

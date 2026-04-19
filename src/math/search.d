@@ -136,7 +136,7 @@ bool atGoal(S)(const S search) {
 
 /* Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
 Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], 
-                                  float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World()) {
+                                  float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World(), bool verbose = false) {
   Search!(World, PathNode) search;
   PathNode s = PathNode(null, start, 0.0f, 0.0f);
   PathNode g = PathNode(null, goal, 0.0f);
@@ -147,7 +147,9 @@ Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f],
 
   // If we're still searching, set the optimal route to be the closest one so far 
   if (search.state == SearchState.SEARCHING) {
-    SDL_Log("SEARCHING: %s, after: %d / %d, still open: %d", toStringz(format("%s", search.state)), search.steps, search.maxsteps, search.openlist.length);
+    if(verbose) {
+      SDL_Log(toStringz(format("performSearch: %s, after: %d / %d, still open: %d","%s", search.state, search.steps, search.maxsteps, search.openlist.length)));
+    }
     if(search.openlist.length > 0){
       search.goal = search.openlist[0];
       search.storeRoute(&search.openlist[0]);
@@ -166,14 +168,14 @@ void testSearch(ref App app) {
   float[3] start = [wp[0], wp[1] + app.world.yOffset, wp[2]];
   float[3] goal  = [start[0] + 10.0f, start[1], start[2] + 10.0f];
 
-  SDL_Log("start tile: %s isTile: %d", toStringz(format("%s", app.world.getTile(testDwarf.tilePos))), app.world.isTile(start));
+  if(app.verbose) SDL_Log("start tile: %s isTile: %d", toStringz(format("%s", app.world.getTile(testDwarf.tilePos))), app.world.isTile(start));
 
-  auto result = performSearch!(World, PathNode)(start, goal, app.world);
-  SDL_Log("Search state: %s, steps: %d", toStringz(format("%s", result.state)), result.steps);
+  auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
+  if(app.verbose) SDL_Log("Search state: %s, steps: %d", toStringz(format("%s", result.state)), result.steps);
   if(result.state == SearchState.SUCCEEDED || result.state == SearchState.SEARCHING) {
     while(!result.atGoal()) {
       auto p = result.stepThroughPath(false);
-      SDL_Log("  path step: [%.1f, %.1f, %.1f]", p[0], p[1], p[2]);
+      if(app.verbose) SDL_Log("  path step: [%.1f, %.1f, %.1f]", p[0], p[1], p[2]);
     }
   }
 }
