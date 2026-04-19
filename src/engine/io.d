@@ -28,8 +28,8 @@ string fixPath(string path){
   return path;
 }
 
-void ensureWorldDir(ref App app) {
-  string path = fixPath(format("data/world/%d_%d", app.world.seed[0], app.world.seed[1]));
+void ensureWorldDir() {
+  string path = fixPath(format("data/world/"));
   version (Android) { path = format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), path); }
   SDL_CreateDirectory(toStringz(path));
 }

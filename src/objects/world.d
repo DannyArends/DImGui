@@ -5,11 +5,11 @@
 
 import engine;
 
-import io : isdir, isfile, dir, readFile, writeFile, fixPath, ensureWorldDir;
+import io : ensureWorldDir, readFile, writeFile, fixPath;
 import noise : noiseHT;
 import tileatlas : heightToTile;
 import vector : vAdd, vMul, x, y, z;
-import inventory : saveInventory;
+import inventory : inventoryPath, loadInventory, saveInventory;
 import tileatlas : tileData;
 import searchnode : PathNode;
 
@@ -110,16 +110,6 @@ struct World {
     if(verbose) SDL_Log("saveWorld: %d diffs", this.data.diffs.length);
   }
 
-  void loadWorld() {
-    auto raw = readFile(worldPath());
-    if(raw.length < 8) return;
-    if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadWorld: invalid magic"); return; }
-    auto diffData = raw[8 .. $];
-    if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
-    data.diffs = cast(TileDiff[])diffData.dup;
-    SDL_Log("loadWorld: %d diffs", data.diffs.length);
-  }
-
   /** Mark all chunks for deallocation and clear the chunk and pending maps
    */
   void deallocateChunk(int[3] coord) {
@@ -133,8 +123,10 @@ struct World {
     pendingChunks.clear();
   }
 
-  void deleteChunks(ref App app) {
+  void deleteWorld(ref App app) {
     SDL_RemovePath(worldPath());
+    SDL_RemovePath(inventoryPath());
+    data.diffs = [];
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
     clear();
   }
@@ -185,6 +177,18 @@ struct World {
     }
     return successors;
   }
+}
+
+void loadWorld(ref App app) {
+  ensureWorldDir();
+  auto raw = readFile(app.world.worldPath());
+  if(raw.length < 8) return;
+  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadWorld: invalid magic"); return; }
+  auto diffData = raw[8 .. $];
+  if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
+  app.world.diffs = cast(TileDiff[])diffData.dup;
+  SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
+  app.loadInventory();
 }
 
 bool canMoveTo(ref App app, float[3] pos) {
