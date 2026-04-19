@@ -24,7 +24,7 @@ class GhostCube : Cube {
 
 int[3] getGhostTile(ref App app, float[3][2] ray) {
   int[3] wc;
-  if(!app.getBestTile(ray, wc)) { return [int.min, 0, 0]; }
+  if(!app.getBestTile(ray, wc)) { return([int.min, 0, 0]); }
 
   int[3][6] neighbours = app.world.tileNeighbours(wc);
   float ts = app.world.tileSize, th = app.world.tileHeight;
@@ -44,7 +44,7 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
     auto tidx = app.world.tileIndex(app.world.localCoord(neighbours[f]));
     if(app.world.chunks[coord].tileTypes[tidx] == TileType.None) return(neighbours[f]);
   }
-  return [int.min, 0, 0];
+  return([int.min, 0, 0]);
 }
 
 void updateGhostTile(ref App app, float[3][2] ray) {

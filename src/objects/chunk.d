@@ -6,7 +6,6 @@ import engine;
 
 import events : getHits;
 import geometry : texture, bumpmap, deAllocate;
-import io : exists, readFile, fsize;
 import intersection : intersects;
 import textures : mapTextures, idx;
 import tileatlas : tileData;
@@ -96,14 +95,9 @@ bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const
 TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
   TileType[][5] tileCache;
   foreach (ci; 0 .. 5) {
-    auto path = wd.chunkPath(coords[ci]);
-    if (fsize(path, false) == wd.tileCount * TileType.sizeof) {
-      tileCache[ci] = cast(TileType[])readFile(path);
-    } else {
-      if(path.exists)SDL_RemovePath(path);
-      tileCache[ci].length = wd.tileCount;
-      for (int i = 0; i < wd.tileCount; i++) tileCache[ci][i] = wd.getTile(wd.worldCoord(coords[ci], wd.tileCoord(i)));
-    }
+    tileCache[ci].length = wd.tileCount;
+    for (int i = 0; i < wd.tileCount; i++) { tileCache[ci][i] = wd.getTile(wd.worldCoord(coords[ci], wd.tileCoord(i))); }
+    foreach (d; wd.diffs) { if (d.coord == coords[ci]) tileCache[ci][d.idx] = cast(TileType)d.type; }
   }
   return tileCache;
 }

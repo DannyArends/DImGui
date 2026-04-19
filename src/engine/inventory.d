@@ -17,7 +17,7 @@ struct Inventory {
   alias items this;
 }
 
-const(char)* inventoryPath(int[2] seed) { return(fixPath(toStringz(format("data/world/%d_%d/inventory.bin", seed[0], seed[1])))); }
+const(char)* inventoryPath() { return(fixPath(toStringz(format("data/world/inventory.bin")))); }
 
 void saveInventory(ref App app) {
   int[] data;
@@ -25,11 +25,11 @@ void saveInventory(ref App app) {
     data ~= cast(int)tileType;
     data ~= count;
   }
-  if(data.length > 0) writeFile(inventoryPath(app.world.seed), cast(char[])data, false);
+  if(data.length > 0) writeFile(inventoryPath(), cast(char[])data, false);
 }
 
 void loadInventory(ref App app) {
-  auto path = inventoryPath(app.world.seed);
+  auto path = inventoryPath();
   if(!path.isfile()) return;
   auto raw = cast(int[])readFile(path);
   for(int i = 0; i + 1 < raw.length; i += 2) {
