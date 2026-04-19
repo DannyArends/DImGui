@@ -73,7 +73,7 @@ SearchState step(S, N)(ref S search, N node = PathNode()) {
   }
   //SDL_Log("step: %d, lengths (open/closed): (%d/%d)\n",search.steps, search.openlist.length, search.closedlist.length);
 
-  N* n = &search.openlist[0];  // Get the best / closest node found so far
+  N ncopy = search.openlist[0]; N* n = &ncopy; // Get the best / closest node found so far
   //SDL_Log("closest position so far: [%.1f, %.1f, %.1f]\n", n.x, n.y, n.z);
   search.steps++; // Take a step, generate successors list 
   if (n.isEqual(&search.goal)) {
