@@ -20,8 +20,8 @@ import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
 import search : testSearch;
 import dwarf : miningQueue;
-/** Handle keyboard events
- */
+
+/** Handle keyboard events */
 void handleKeyEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_KEY_DOWN) {
     auto symbol = e.key.key;
@@ -36,8 +36,7 @@ void handleKeyEvents(ref App app, SDL_Event e) {
   }
 }
 
-/** Handle (Android) touch events
- */
+/** Handle (Android) touch events */
 void handleTouchEvents(ref App app, const SDL_Event event) {
   SDL_TouchFingerEvent e = event.tfinger;
   if (event.type == SDL_EVENT_FINGER_DOWN) {
@@ -63,8 +62,7 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
   }
 }
 
-/** Get a list of intersections between the ray and the objects in the scene
- */
+/** Get a list of intersections between the ray and the objects in the scene */
 Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
   Intersection[] hits;
 
@@ -87,8 +85,7 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
   return(hits);
 }
 
-/** Handle mouse events
- */
+/** Handle mouse events */
 void handleMouseEvents(ref App app, SDL_Event e) {
   app.camera.lastMousePos = [app.gui.io.MousePos.x, app.gui.io.MousePos.y];
   auto ray = app.camera.castRay(app.camera.lastMousePos[0], app.camera.lastMousePos[1]);
@@ -138,8 +135,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.tryZoom(-e.wheel.y); }
 }
 
-/** Deallocate and removes stale Geometry from the app.objects array
- */
+/** Deallocate and removes stale Geometry from the app.objects array */
 void removeGeometry(ref App app) {
   size_t[] idx;
   foreach(i, ref object; app.objects) {
@@ -148,8 +144,7 @@ void removeGeometry(ref App app) {
   foreach(i; idx.reverse) { app.objects = app.objects.remove(i); }
 }
 
-/** Handles all ImGui IO and SDL events
- */
+/** Handles all ImGui IO and SDL events */
 void handleEvents(ref App app) {
   if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
@@ -180,10 +175,9 @@ void handleEvents(ref App app) {
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 }
 
-/* sdlEventsFilter returns 1 will have the event go into the SDL_PollEvent queue, 0 if have handled 
-   the event immediately. Android requires us to handle the application events, for now we just 
-   shutdown on enter background, since we should properly ask for permission from the Android OS to 
-   run in the background.
+/** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 
+ Android *requires* us to handle the application events, for now we just pauze on enter background, since we 
+ need to ask for permission from the Android OS to run in the background.
 */
 extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
   if(!event) return(0);
@@ -205,7 +199,12 @@ extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
   return(1);
 }
 
-// Immediate events to handle by the application
+/** Immediate events handled by the application (Android filtered SDL immediate events)
+SDL_EVENT_WILL_ENTER_BACKGROUND
+SDL_EVENT_DID_ENTER_BACKGROUND
+SDL_EVENT_WILL_ENTER_FOREGROUND
+SDL_EVENT_DID_ENTER_FOREGROUND
+*/
 void handleApp(ref App app, const SDL_Event e) {
   if(e.type == SDL_EVENT_WILL_ENTER_BACKGROUND){
     SDL_Log("Suspending, wait on device idle & swapchain deletion queue");
