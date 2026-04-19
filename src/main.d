@@ -12,7 +12,6 @@ import devices : createLogicalDevice;
 import events : handleEvents, sdlEventsFilter, removeGeometry;
 import frame : presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
-import io: ensureWorldDir;
 import imgui : initializeImGui;
 import instance : createInstance;
 import scene : createScene;
@@ -27,7 +26,7 @@ import textures : Texture;
 import threading : initializeAsync, checkAsync;
 import validation : createDebugCallback;
 import vulkan : cleanup;
-import inventory : loadInventory;
+import world : loadWorld;
 import window: createOrResizeWindow, checkForResize;
 
 /* Main entry point to the program */
@@ -71,7 +70,7 @@ void run(string[] args = null) {
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
-  app.world.loadWorld();                                        /// Load the chunk world
+  app.loadWorld();                                              /// Load the chunk world
   app.createScene();                                            /// Create our scene with geometries
   app.initializeAsync();                                        /// Start Async loading objects and textures
 
