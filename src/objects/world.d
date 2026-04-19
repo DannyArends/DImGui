@@ -145,7 +145,7 @@ struct World {
   }
 
   @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
-    return [cast(int)floor(pos[0] / tileSize), cast(int)floor((pos[1] - yOffset) / tileHeight), cast(int)floor(pos[2] / tileSize)];
+    return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset) / tileHeight), cast(int)(pos[2] / tileSize)];
   }
 
   bool isPassable(int[3] wc) const {
