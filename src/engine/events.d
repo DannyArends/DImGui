@@ -124,8 +124,8 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if (e.button.button == SDL_BUTTON_RIGHT) {
       app.camera.isdrag[1] = false;
       int[3] wc;
-      if(app.getBestTile(ray, wc)){ 
-        SDL_Log(toStringz(format("Add %s to miningque of length %s", wc, miningQueue.length)));
+      if(app.getBestTile(ray, wc)) {
+        if(app.verbose) SDL_Log(toStringz(format("Add %s to mining queue of length %s", wc, miningQueue.length)));
         miningQueue ~= wc;
       }
     }
