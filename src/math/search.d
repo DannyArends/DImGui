@@ -50,11 +50,11 @@ void setStartAndGoalStates(S, M, N)(ref S search, ref M map, ref N startnode, re
 void storeRoute(S, N)(ref S search, N* node){
   N* nodeChild = node;
   N* nodeParent = node.parent;
-  do {
+  while(nodeParent !is null && !nodeChild.isEqual(&search.start)) {
     nodeParent.child = nodeChild;
     nodeChild = nodeParent;
     nodeParent = nodeParent.parent;
-  } while( !nodeChild.isEqual(&search.start) ); // Start is always the first node by definition */
+  }
   search.start = (*nodeChild);
 }
 
