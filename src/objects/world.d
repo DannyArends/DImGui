@@ -7,10 +7,9 @@ import engine;
 
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import noise : noiseHT;
-import tileatlas : heightToTile;
+import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : inventoryPath, loadInventory, saveInventory;
-import tileatlas : tileData;
 import searchnode : PathNode;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
@@ -252,7 +251,7 @@ void updateWorld(ref App app, float[3] lookat) {
       if (coord !in app.world.chunks && coord !in app.world.pendingChunks) { toLoad ~= coord; }
     }
   }
-  foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); };
+  foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
 
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
@@ -262,7 +261,7 @@ void updateWorld(ref App app, float[3] lookat) {
     }
   }
 
-  // Rebuild dirty chunks (remove saveChunk call)
+  // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
     if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
       app.dispatchWorker(coord);
