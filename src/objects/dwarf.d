@@ -51,19 +51,15 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
   return [int.min, 0, 0];
 }
 
-/// Find the closest standable neighbour (air tile with solid below) to the dwarf
+/** Find the closest standable neighbour (air tile with solid below) to the dwarf
+ */
 int[3] findGoalTile(ref App app, Dwarf d) {
-  int[3][4] neighbours = [[d.targetTile[0]+1, d.targetTile[1], d.targetTile[2]],
-                          [d.targetTile[0]-1, d.targetTile[1], d.targetTile[2]],
-                          [d.targetTile[0],   d.targetTile[1], d.targetTile[2]+1],
-                          [d.targetTile[0],   d.targetTile[1], d.targetTile[2]-1]];
   int[3] goalTile = [int.min, 0, 0];
   float bestDist = float.max;
-  foreach(n; neighbours) {
-    if(app.world.isStandable(n)) {
-      int dist = abs(n[0]-d.tilePos[0]) + abs(n[2]-d.tilePos[2]);
-      if(dist < bestDist) { bestDist = dist; goalTile = n; }
-    }
+  foreach (n; app.world.tileNeighbours(d.targetTile)[0..2] ~ app.world.tileNeighbours(d.targetTile)[4..6]) {
+    if (!app.world.isStandable(n)) continue;
+    float dist = abs(n[0]-d.tilePos[0]) + abs(n[2]-d.tilePos[2]);
+    if (dist < bestDist) { bestDist = dist; goalTile = n; }
   }
   return goalTile;
 }
@@ -108,13 +104,10 @@ bool claimJob(ref App app, Dwarf d) {
 void followPath(ref App app, Dwarf d) {
   auto next = d.path[0];
   d.path = d.path[1..$];
-  int nx = cast(int)(next[0] / app.world.tileSize);
-  int ny = cast(int)((next[1] - app.world.yOffset) / app.world.tileHeight);
-  int nz = cast(int)(next[2] / app.world.tileSize);
-  d.tilePos = [nx, ny, nz];
+  d.tilePos = app.world.worldToTile(next);
   auto wp = app.tileToWorld(d.tilePos);
   d.position([wp[0], wp[1] - 0.5f, wp[2]]);
-  SDL_Log(toStringz(format("Dwarf %s moved to tile %s below:%s at:%s", d.dwarfName, d.tilePos, app.world.getTileAt([nx, ny-1, nz]), app.world.getTileAt(d.tilePos))));
+  SDL_Log(toStringz(format("Dwarf %s moved to tile %s", d.dwarfName, d.tilePos)));
 }
 
 /// Mine the target tile if adjacent

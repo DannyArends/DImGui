@@ -69,24 +69,15 @@ class Chunk : Cube {
  */
 bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
   int[3] nc = wd.chunkCoord(neighbour);
-  if (nc == coord) { /// Same chunk
-    int[3] ln = wd.localCoord(neighbour);
-    if (ln[1] < 0) return false;
-    if (ln[1] >= wd.chunkHeight) return true;
-    int ni = wd.tileIndex(ln);
-    if (ni < 0 || ni >= cast(int)tileCache[0].length) return true;
-    return tileCache[0][ni] == TileType.None;
-  }
-  foreach (ci; 1 .. 5) { /// Check all neighbouring chunks
-    if (coords[ci] != nc) continue;
-    int[3] ln = wd.localCoord(neighbour);
-    if (ln[1] < 0) return false;
-    if (ln[1] >= wd.chunkHeight) return true;
-    int ni = wd.tileIndex(ln);
-    if (ni < 0 || ni >= cast(int)tileCache[ci].length) return true;
-    return tileCache[ci][ni] == TileType.None;
-  }
-  return true;
+  int ci = (nc == coord) ? 0 : cast(int)coords[1..5].countUntil(nc) + 1;
+  if (ci == 0 && nc != coord) return true;  // not found in any cache
+  if (ci < 0 || ci >= 5) return true;
+  int[3] ln = wd.localCoord(neighbour);
+  if (ln[1] < 0) return false;
+  if (ln[1] >= wd.chunkHeight) return true;
+  int ni = wd.tileIndex(ln);
+  if (ni < 0 || ni >= cast(int)tileCache[ci].length) return true;
+  return tileCache[ci][ni] == TileType.None;
 }
 
 /** Load the TileCache, 
