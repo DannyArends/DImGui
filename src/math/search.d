@@ -120,8 +120,7 @@ bool atGoal(S)(const S search) {
 }
 
 /** Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
-Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f],
-                                  float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World(), bool verbose = true) {
+Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World(), bool verbose = true) {
   Search!(World, PathNode) search;
   PathNode s = PathNode(position: start);
   PathNode g = PathNode(position: goal);
@@ -130,15 +129,10 @@ Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f],
     search.state = search.step();
   }while(search.state == SearchState.SEARCHING && search.steps < search.maxsteps);
 
-  if(search.state == SearchState.SEARCHING) {
-    if(verbose){
-      SDL_Log(toStringz(format("performSearch: %s, after: %d / %d, still open: %d", search.state, search.steps, search.maxsteps, search.openlist.length)));
-    }
-    if(search.openlist.length > 0) {
-      size_t bestIdx = search.openlist[0];
-      search.goal = bestIdx;
-      search.storeRoute(bestIdx);
-    }
+  if (search.state == SearchState.SEARCHING && search.openlist.length > 0) {
+    if(verbose){ SDL_Log(toStringz(format("S: %s, after: %d / %d, still open: %d", search.state, search.steps, search.maxsteps, search.openlist.length))); }
+    search.goal = search.openlist[0];
+    search.storeRoute(search.openlist[0]);
   }
   return search;
 }
