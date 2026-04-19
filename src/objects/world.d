@@ -25,11 +25,11 @@ struct TileDiff {
 struct WorldData {
   int[2] seed        = [42, 67];  /// [height seed, tile seed]
   int renderDistance =   4;       /// Render distance used to load / evict chunks
-  float tileSize     =   2.0f;    /// Size (X & Z) of a tile
-  float tileHeight   =   0.5f;    /// Y-spacing between tiles
+  float tileSize     =   1.0f;    /// Size (X & Z) of a tile
+  float tileHeight   =   1.0f;    /// Y-spacing between tiles
   int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  64;       /// Number of tiles (Y) in a chunk
-  float yOffset      =  -8.0f;    /// Global world Y-offset
+  float yOffset      = -20.0f;    /// Global world Y-offset
   TileDiff[] diffs;
 
   /** Returns the filesystem path for the world TileDiffs difference
@@ -59,7 +59,7 @@ struct WorldData {
    */
   @nogc pure TileType getTile(const int[3] wc) const nothrow {
     auto ht = noiseHT(wc.x, wc.z, seed);
-    int surface = cast(int)(ht[0] * (chunkHeight - 1));
+    int surface = cast(int)(pow(ht[0], 1.5f) * (chunkHeight - 1));
     if (wc.y > surface) return TileType.None;
     if (wc.y == 0) return TileType.Lava;
     if (wc.y < surface) return TileType.Stone;
