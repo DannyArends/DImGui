@@ -15,8 +15,7 @@ import world : setTile;
 import ghost: updateGhostTile;
 import inventory : placeTile;
 
-/** Holds raw tile data and instanced rendering data for a chunk
- */
+/** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
   TileType[] tileTypes;                                     /// Tile type for each tile in the chunk
@@ -29,8 +28,7 @@ struct ChunkData {
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
 
-/** Renderable cube geometry for individual blocks within a chunk, not selectable
- */
+/** Renderable cube geometry for individual blocks within a chunk, not selectable */
 class Tiles : Square {
   this(ChunkData cd) {
     super();
@@ -41,8 +39,7 @@ class Tiles : Square {
   }
 }
 
-/** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block
- */
+/** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block */
 class Chunk : Cube {
   ChunkData data;
   Geometry tiles;
@@ -93,8 +90,7 @@ TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] co
   return tileCache;
 }
 
-/** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
- */
+/** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
   TileType[][5] tileCache = wd.loadTileCache(coords, coord);
@@ -133,8 +129,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   return data;
 }
 
-/** Find the best intersecting tile in the world given a ray, returns world coord or [int.min,0,0] 
- */
+/** Find the best intersecting tile in the world given a ray, returns world coord or [int.min,0,0] */
 bool getBestTile(ref App app, float[3][2] ray, out int[3] wc) {
   Intersection best;
   foreach (ref hit; app.getHits(ray, false)) {
@@ -152,8 +147,7 @@ bool getBestTile(ref App app, float[3][2] ray, out int[3] wc) {
   return true;
 }
 
-/** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene
- */
+/** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene */
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
   if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
@@ -175,4 +169,3 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.world.pendingChunks.remove(data.coord);
   app.camera.isDirty = true;
 }
-

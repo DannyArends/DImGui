@@ -11,7 +11,7 @@ import dwarf : Dwarf;
 
 enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3, INVALID = 4 };
 
-/* Implementation of the search state structure */
+/** Implementation of the search state structure */
 struct Search(M, N) {
   M map;                                                    /// map information structure
   size_t start = size_t.max;                                /// index into pool: Start Node
@@ -23,11 +23,11 @@ struct Search(M, N) {
   SearchState state = SearchState.NOT_INITIALISED;          /// Astar SearchState
   size_t steps = 0;                                         /// search steps taken
   size_t path = 0;                                          /// step in current path
-  size_t maxsteps = 150;                                    /// maximum number of search steps
+  size_t maxsteps = 500;                                    /// maximum number of search steps
   bool cancel = false;                                      /// cancels an active search
 }
 
-/* Set the start and goal node and set the state to searching */
+/** Set the start and goal node and set the state to searching */
 void setStartAndGoalStates(S, M, N)(ref S search, ref M map, ref N startnode, ref N goalnode) {
   search.map = map;
 
@@ -49,7 +49,7 @@ void setStartAndGoalStates(S, M, N)(ref S search, ref M map, ref N startnode, re
   if (startnode.isEqual(goalnode)) search.state = SearchState.INVALID;
 }
 
-/* Walk backwards via the parent pointers, setting the child pointers */
+/** Walk backwards via the parent pointers, setting the child pointers */
 void storeRoute(S)(ref S search, size_t nodeIdx) {
   size_t nodeChild = nodeIdx;
   size_t nodeParent = search.pool[nodeChild].parent;
@@ -62,7 +62,7 @@ void storeRoute(S)(ref S search, size_t nodeIdx) {
   search.pathptr = search.start;
 }
 
-/* Do a step of the A star searching algorithm */
+/** Do a step of the A star searching algorithm */
 SearchState step(S, N)(ref S search, N node = PathNode()) {
   if(search.state != SearchState.SEARCHING) return search.state;
   if(search.openlist.empty() || search.cancel) { search.state = SearchState.FAILED; return search.state; }
@@ -99,35 +99,32 @@ SearchState step(S, N)(ref S search, N node = PathNode()) {
   search.closedlist ~= nIdx;
   search.openlist = search.openlist.remove(0);
 
-  auto sortIdx = new size_t[search.openlist.length];
-  search.openlist.map!(i => search.pool[i]).array.makeIndex!("a.f < b.f")(sortIdx);
-  foreach (c, i; sortIdx) { search.openlist[c] = search.openlist[i]; }
+  search.openlist.sort!((a, b) => search.pool[a].f < search.pool[b].f);
   return search.state;
 }
 
-/* Take a step through the path computed */
+/** Take a step through the path computed */
 float[3] stepThroughPath(S)(ref S search, bool verbose = true) {
-  if (search.pathptr == size_t.max) return [0.0f, 0.0f, 0.0f];
-  auto n = search.pool[search.pathptr];
-  float[3] p = [n.x, n.y, n.z];
-  if(verbose) SDL_Log("path %d : [%.2f, %.2f, %.2f] %f\n", search.path, p[0], p[1], p[2], n.h);
-  search.pathptr = n.child;
+  if (search.pathptr == size_t.max) return cast(float[3])[0.0f, 0.0f, 0.0f];
+  float[3] p = search.pool[search.pathptr].position;
+  if (verbose) SDL_Log("path %d : [%.2f, %.2f, %.2f]\n", search.path, p[0], p[1], p[2]);
+  search.pathptr = search.pool[search.pathptr].child;
   search.path++;
-  return(p);
+  return p;
 }
 
-/* Test if the current path pointer is at the goal position */
+/** Test if the current path pointer is at the goal position */
 bool atGoal(S)(const S search) {
   if(search.pathptr == size_t.max) return(true);
   return(search.pool[search.pathptr].isEqual(search.pool[search.goal]));
 }
 
-/* Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
+/** Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
 Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f],
                                   float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World(), bool verbose = true) {
   Search!(World, PathNode) search;
-  PathNode s = PathNode(size_t.max, size_t.max, start, 0.0f);
-  PathNode g = PathNode(size_t.max, size_t.max, goal, 0.0f);
+  PathNode s = PathNode(position: start);
+  PathNode g = PathNode(position: goal);
   search.setStartAndGoalStates(map, s, g);
   do{
     search.state = search.step();
@@ -146,7 +143,7 @@ Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f],
   return search;
 }
 
-/* Perform a test search and return the result, after which search.stepThroughPath allows to walk the steps */
+/** Perform a test search and return the result, after which search.stepThroughPath allows to walk the steps */
 void testSearch(ref App app) {
   Dwarf testDwarf = null;
   foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null) { testDwarf = d; break; } }
@@ -167,4 +164,3 @@ void testSearch(ref App app) {
     }
   }
 }
-
