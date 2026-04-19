@@ -94,19 +94,17 @@ SearchState step(S, N)(ref S search, N node = PathNode()) {
       float newG = n.g + s.cost;
       // Find if a better path (lower g) to the node is on the open or closed list, if so, we can forget this successor
       size_t i;
-      if ((i = search.openlist.has(s)) > 0 && search.openlist[i].g <= newG) { continue; }
-      if ((i = search.closedlist.has(s)) > 0 && search.closedlist[i].g <= newG) { continue; }
+      if((i = search.openlist.has(s)) != size_t.max && search.openlist[i].g <= newG) { continue; }
+      if((i = search.closedlist.has(s)) != size_t.max && search.closedlist[i].g <= newG) { continue; }
       // No better path to this location was found, so we will just add it for later exploration
       s.parent = n;
       s.g = newG;
       s.h = euclidean(s.position, search.goal.position);
       // Remove from the closed list (if present) and update / add the node to the openlist
-      if ((i = search.closedlist.has(s)) > 0) search.closedlist = search.closedlist.remove(i);
-      if ((i = search.openlist.has(s)) > 0) { 
+      if((i = search.closedlist.has(s)) != size_t.max){ search.closedlist = search.closedlist.remove(i); }
+      if((i = search.openlist.has(s)) != size_t.max) {
         search.openlist[i] = s;
-      } else {
-        search.openlist ~= s;
-      }
+      }else{ search.openlist ~= s; }
     }
   }
   // Remove n from the openlist, and add n to the closed list re-sort by cumulative cost values to target;

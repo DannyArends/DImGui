@@ -36,5 +36,5 @@ size_t has(N)(N[] array, N x) {
   foreach (size_t i, N e; array) {
     if (e.isEqual(x)) return i;
   }
-  return(0);
+  return size_t.max;  // sentinel
 }
