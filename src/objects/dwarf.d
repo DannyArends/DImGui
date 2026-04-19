@@ -30,11 +30,6 @@ string randomDwarfName() {
   return prefixes[uniform(0, prefixes.length)] ~ suffixes[uniform(0, suffixes.length)];
 }
 
-TileType getTileAt(World world, int[3] tile) {
-  auto coord = world.chunkCoord(tile);
-  return (coord in world.chunks) ? world.chunks[coord].tileTypes[world.tileIndex(world.localCoord(tile))] : world.getTile(tile);
-}
-
 bool isStandable(World world, int[3] tile) {
   return world.getTileAt(tile) == TileType.None && world.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
 }

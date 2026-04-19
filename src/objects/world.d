@@ -8,7 +8,7 @@ import engine;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import noise : noiseHT;
 import tileatlas : heightToTile;
-import vector : vAdd, vMul, x, y, z;
+import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : inventoryPath, loadInventory, saveInventory;
 import tileatlas : tileData;
 import searchnode : PathNode;
@@ -101,7 +101,7 @@ struct World {
   WorldData data;
   alias data this;
 
-  /** Save chunk tile data to disk
+  /** Save world diffs to disk
    */
   void saveWorld(bool verbose = false) {
     uint[2] header = [WORLD_MAGIC, cast(uint)this.data.diffs.length];
@@ -127,16 +127,15 @@ struct World {
     SDL_RemovePath(worldPath());
     SDL_RemovePath(inventoryPath());
     data.diffs = [];
+    app.inventory.items.clear();
+    app.inventory.selectedTile = TileType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
     clear();
   }
 
   int surfaceY(int x, int z) const {
     for(int y = chunkHeight-1; y > 0; y--) {
-      int[3] wc = [x, y, z];
-      auto coord = chunkCoord(wc);
-      TileType tt = (coord in chunks) ? chunks[coord].tileTypes[tileIndex(localCoord(wc))] : getTile(wc);
-      if(tt != TileType.None) return y;
+      if(getTileAt([x, y, z]) != TileType.None) return y;
     }
     return 0;
   }
@@ -146,31 +145,30 @@ struct World {
     return (coord in chunks) ? chunks[coord].tileTypes[tileIndex(localCoord(tile))] : getTile(tile);
   }
 
-  /** Map required function */
-  TileType tileAt(float[3] pos) const {
-    int[3] wc = [cast(int)(pos[0]/tileSize), cast(int)((pos[1]-yOffset)/tileHeight)-1, cast(int)(pos[2]/tileSize)];
-    auto coord = chunkCoord(wc);
-    return (coord in chunks) ? chunks[coord].tileTypes[tileIndex(localCoord(wc))] : getTile(wc);
+  @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
+    return [cast(int)floor(pos[0] / tileSize), cast(int)floor((pos[1] - yOffset) / tileHeight), cast(int)floor(pos[2] / tileSize)];
   }
+
+  bool isPassable(int[3] wc) const {
+    if (wc[1] < 0 || wc[1] >= chunkHeight) return false;
+    return getTileAt(wc) == TileType.None;
+  }
+
+  /** Map required function */
+  TileType tileAt(float[3] pos) const { return getTileAt(worldToTile(pos)); }
   bool isTile(float[3] pos) const { return tileData[tileAt(pos)].traversable; }
   float cost(float[3] pos) const { return tileData[tileAt(pos)].cost; }
 
   PathNode[] getSuccessors(PathNode* parent) const {
     PathNode[] successors;
-    int px = cast(int)(parent.position[0] / tileSize);
-    int py = cast(int)((parent.position[1] - yOffset) / tileHeight) - 1;
-    int pz = cast(int)(parent.position[2] / tileSize);
-
-    foreach(dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
-      int nx = px + dir[0];
-      int nz = pz + dir[1];
-      foreach(dy; [-1, 0, 1]) {
-        int ny = py + dy;
-        TileType solid = getTileAt([nx, ny, nz]);
-        TileType air = getTileAt([nx, ny+1, nz]);
-        if(air == TileType.None && tileData[solid].traversable) {
-          float[3] to = [nx * tileSize, (ny+1) * tileHeight + yOffset, nz * tileSize];
-          successors ~= PathNode(parent, to, tileData[solid].cost);
+    auto pt = worldToTile(parent.position);
+    foreach (dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
+      int nx = pt[0] + dir[0], nz = pt[2] + dir[1];
+      foreach (dy; [-1, 0, 1]) {
+        int ny = (pt[1] - 1) + dy;
+        auto tt = getTileAt([nx, ny, nz]);
+        if (tt != TileType.None && tileData[tt].traversable && isPassable([nx, ny+1, nz])) {
+          successors ~= PathNode(parent, [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], tileData[tt].cost);
           break;
         }
       }
@@ -192,17 +190,9 @@ void loadWorld(ref App app) {
 }
 
 bool canMoveTo(ref App app, float[3] pos) {
-  foreach(dx; -1..2) foreach(dy; -1..2) foreach(dz; -1..2) {
-    int tx = cast(int)floor((pos[0] + dx * app.world.tileSize * 0.5f) / app.world.tileSize);
-    int ty = cast(int)floor((pos[1] - app.world.yOffset + dy * app.world.tileHeight * 0.5f) / app.world.tileHeight);
-    int tz = cast(int)floor((pos[2] + dz * app.world.tileSize * 0.5f) / app.world.tileSize);
-    if(ty < 0 || ty >= app.world.chunkHeight) continue;
-    int[3] wc = [tx, ty, tz];
-    auto coord = app.world.chunkCoord(wc);
-    if(coord in app.world.chunks) {
-      auto idx = app.world.tileIndex(app.world.localCoord(wc));
-      if(app.world.chunks[coord].tileTypes[idx] != TileType.None) return false;
-    } else { return false; }
+  foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
+    float[3] p = [pos[0] + dx * app.world.tileSize * 0.5f, pos[1] + dy * app.world.tileHeight * 0.5f, pos[2] + dz * app.world.tileSize * 0.5f];
+    if (!app.world.isPassable(app.world.worldToTile(p))) return false;
   }
   return true;
 }
@@ -262,8 +252,7 @@ void updateWorld(ref App app, float[3] lookat) {
       if (coord !in app.world.chunks && coord !in app.world.pendingChunks) { toLoad ~= coord; }
     }
   }
-  auto sqDist = (int[3] a) => (a[0]-pc[0])^^2 + (a[2]-pc[2])^^2;
-  foreach (coord; toLoad.sort!((a, b) => sqDist(a) < sqDist(b))) app.dispatchWorker(coord);
+  foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); };
 
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
