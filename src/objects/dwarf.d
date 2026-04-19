@@ -13,6 +13,9 @@ int[3][] miningQueue;
 
 /** Dwarven Cylinderz  */
 class Dwarf : Cylinder {
+  this() {
+    name = (){ return(typeof(this).stringof); };
+  }
   string dwarfName;
   int[3] tilePos    = [0, 0, 0];            /// Which tile we're on
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
