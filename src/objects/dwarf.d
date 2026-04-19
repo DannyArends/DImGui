@@ -13,10 +13,14 @@ int[3][] miningQueue;
 
 class Dwarf : Cylinder {
   string dwarfName;
-  int[3] tilePos    = [0, 0, 0];
-  int[3] targetTile = [int.min, 0, 0];
-  float[3][] path;
-  float miningProgress = 0.0f;
+  int[3] tilePos    = [0, 0, 0];            /// Which tile we're on
+  int[3] targetTile = [int.min, 0, 0];      /// Where we are going
+  float[3][] path;                          /// Path we're on
+  float miningProgress = 0.0f;              /// Mining progress
+  float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
+  float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
+  float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
+  float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 }
 
 bool isTileOccupied(ref App app, int[3] tile) {
@@ -106,10 +110,25 @@ void followPath(ref App app, Dwarf d) {
   if (d.path.length == 0) return;
   auto next = d.path[0];
   d.path = d.path[1..$];
-  d.tilePos = app.world.worldToTile(next);
-  auto wp = app.tileToWorld(d.tilePos);
-  d.position([wp[0], wp[1] - 0.5f, wp[2]]);
-  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s moved to tile %s", d.dwarfName, d.tilePos)));
+  d.moveFrom = d.visualPos;
+  d.moveTo   = [next[0], next[1] - 0.5f, next[2]];
+  d.moveT    = 0.0f;
+  d.tilePos  = app.world.worldToTile(next);   // logical position updates immediately
+}
+
+/* dwarfFrame */
+void dwarfFrame(ref App app, ref Geometry obj, float dt) {
+  auto d = cast(Dwarf)obj;
+  if (d is null || d.moveT >= 1.0f) return;
+  d.moveT = min(1.0f, d.moveT + dt * 2.0f);
+  float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
+  d.visualPos = [
+    d.moveFrom[0] + t * (d.moveTo[0] - d.moveFrom[0]),
+    d.moveFrom[1] + t * (d.moveTo[1] - d.moveFrom[1]),
+    d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
+  ];
+  d.position(d.visualPos);
+  if (d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
 }
 
 /// Mine the target tile if adjacent
@@ -140,8 +159,8 @@ void dwarfTick(ref App app, ref Geometry obj) {
   }
 
   if(d.targetTile[0] == int.min) app.claimJob(d);
-  else if(d.path.length > 0) app.followPath(d);
-  else app.doMining(d);
+  else if(d.path.length > 0 && d.moveT >= 1.0f) app.followPath(d);
+  else if(d.path.length == 0 && d.moveT >= 1.0f) app.doMining(d);
 }
 
 void spawnDwarf(ref App app, string name) {
@@ -152,7 +171,12 @@ void spawnDwarf(ref App app, string name) {
   dwarf.tilePos = tile;
   auto wp = app.tileToWorld(tile);
   dwarf.position([wp[0], wp[1] - 0.5f, wp[2]]);
+  dwarf.visualPos = [wp[0], wp[1] - 0.5f, wp[2]];
+  dwarf.moveFrom  = dwarf.visualPos;
+  dwarf.moveTo    = dwarf.visualPos;
+  dwarf.moveT     = 1.0f;
   dwarf.setColor([uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), 1.0f]);
+  dwarf.onFrame = &dwarfFrame;
   dwarf.onTick = &dwarfTick;
   app.objects ~= dwarf;
 }
