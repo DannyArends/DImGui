@@ -206,6 +206,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
 
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.chunks) return;
+  if (coord[1] < 0 || coord[1] >= app.world.chunkHeight) return;
   int idx = app.world.tileIdx(tile);
 
   auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type

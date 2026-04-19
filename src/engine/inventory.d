@@ -38,6 +38,7 @@ void loadInventory(ref App app) {
 }
 
 void placeTile(ref App app, int[3] wc) {
+  if(wc[0] == int.min) return;
   if(app.inventory.selectedTile != TileType.None && app.inventory.get(app.inventory.selectedTile, 0) > 0) {
     app.setTile(wc, app.inventory.selectedTile);
     app.inventory[app.inventory.selectedTile]--;
