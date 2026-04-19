@@ -90,6 +90,9 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
 /** Handle mouse events
  */
 void handleMouseEvents(ref App app, SDL_Event e) {
+  app.camera.lastMousePos = [app.gui.io.MousePos.x, app.gui.io.MousePos.y];
+  auto ray = app.camera.castRay(app.camera.lastMousePos[0], app.camera.lastMousePos[1]);
+
   if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
@@ -106,7 +109,6 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       if(app.inventory.ghostTile[0] != int.min) {
         app.placeTile(app.inventory.ghostTile);
       } else {
-        auto ray = app.camera.castRay(e.button.x, e.button.y);
         auto hits = app.getHits(ray, app.showRays);
         if (hits.length > 0) { int[3] wc; if(app.getBestTile(ray, wc)) app.setTile(wc); }
         foreach (ref hit; hits) {
@@ -121,22 +123,17 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     }
     if (e.button.button == SDL_BUTTON_RIGHT) {
       app.camera.isdrag[1] = false;
-      auto dx = e.button.x - app.camera.lastMousePos[0];
-      auto dy = e.button.y - app.camera.lastMousePos[1];
-      if(dx*dx + dy*dy < 4.0f) {
-        auto ray = app.camera.castRay(e.button.x, e.button.y);
-        int[3] wc;
-        if(app.getBestTile(ray, wc)){ 
-          SDL_Log(toStringz(format("Add %s to miningque of length %s", wc, miningQueue.length)));
-          miningQueue ~= wc;
-        }
+      int[3] wc;
+      if(app.getBestTile(ray, wc)){ 
+        SDL_Log(toStringz(format("Add %s to miningque of length %s", wc, miningQueue.length)));
+        miningQueue ~= wc;
       }
     }
-    app.updateGhostTile();
+    app.updateGhostTile(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 
     if(app.camera.isdrag[1]) { app.tryDrag(e.motion.xrel, e.motion.yrel); }
-    app.updateGhostTile();
+    app.updateGhostTile(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.tryZoom(-e.wheel.y); }
 }

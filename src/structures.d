@@ -22,6 +22,7 @@ public import deletion : CheckedDeletionQueue, DeletionQueue;
 public import frustum : Plane;
 public import glyphatlas : Glyph, GlyphAtlas;
 public import geometry : Geometry, Instance;
+public import ghost : GhostCube;
 public import icosahedron : Icosahedron;
 public import images : ImageBuffer;
 public import imgui : GUI, saveSettings;
