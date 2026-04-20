@@ -91,7 +91,7 @@ bool claimBestJob(ref App app, Dwarf d, out int[3] goalTile) {
     auto goal = app.findGoalTile(d);
     if(goal[0] == int.min) continue;
     float dist = abs(goal[0] - d.tilePos[0]) + abs(goal[2] - d.tilePos[2]);
-    if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
+    if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; goalTile = goal; }
   }
   if(bestIdx == -1) { d.targetTile = [int.min, 0, 0]; return(false); }
   d.targetTile = miningQueue[bestIdx];
