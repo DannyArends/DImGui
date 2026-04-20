@@ -170,7 +170,10 @@ void dwarfTick(ref App app, ref Geometry obj) {
 }
 
 void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
-  if(app.world.droppedBlocks is null) return;
+  if(app.world.droppedBlocks is null){
+    app.world.droppedBlocks = new DroppedBlocks();
+    app.objects ~= app.world.droppedBlocks;
+  }
   float ts = app.world.tileSize * 0.25f;
   float th = app.world.tileHeight * 0.25f;
   auto wp = app.tileToWorld(tile);
