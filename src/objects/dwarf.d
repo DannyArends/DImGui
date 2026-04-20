@@ -130,25 +130,25 @@ bool claimBestJob(ref App app, Dwarf d, out int[3] goalTile) {
   return(true);
 }
 
+/** Pathfind dwarf to goalTile, returns false if unreachable */
+bool pathfindTo(ref App app, Dwarf d, int[3] goalTile) {
+  float[3] start = app.tileToWorld(d.tilePos);
+  float[3] goal  = app.tileToWorld(goalTile);
+  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
+  auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
+  if(app.verbose) SDL_Log(toStringz(format("Search: %s steps: %d", result.state, result.steps)));
+  if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return false;
+  d.path = [];
+  while(result.pathptr != size_t.max && !result.atGoal()) d.path ~= result.stepThroughPath(app.trace);
+  d.path ~= result.pool[result.goal].position;
+  return true;
+}
+
 /** Claim a job, find goal tile, compute path */
 bool claimJob(ref App app, Dwarf d) {
   int[3] goalTile;
   if(!app.claimBestJob(d, goalTile)) return false;
-
-  float[3] start = app.tileToWorld(d.tilePos);
-  float[3] goal  = app.tileToWorld(goalTile);
-  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
-
-  auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
-  if(app.verbose) SDL_Log(toStringz(format("Search: %s steps: %d", result.state, result.steps)));
-
-  if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) {
-    d.targetTile = [int.min, 0, 0];
-    return false;
-  }
-  d.path = [];
-  while(result.pathptr != size_t.max && !result.atGoal()) d.path ~= result.stepThroughPath(app.trace);
-  d.path ~= result.pool[result.goal].position;
+  if(!app.pathfindTo(d, goalTile)) { d.targetTile = [int.min, 0, 0]; return false; }
   return true;
 }
 
@@ -156,13 +156,53 @@ bool claimBuildJob(ref App app, Dwarf d) {
   foreach(i, ref job; buildQueue) {
     int[3] blockTile = app.findDroppedBlock(job.tileType, d.tilePos);
     if(blockTile[0] == int.min) continue;
+    if(!app.pathfindTo(d, blockTile)) continue;
     d.currentBuild = job;
     d.pickupTile = blockTile;
+    d.targetTile = blockTile;
     buildQueue = buildQueue[0..i] ~ buildQueue[i+1..$];
-    // pathfind to blockTile
     return true;
   }
   return false;
+}
+
+void doPickup(ref App app, Dwarf d) {
+  auto db = app.world.droppedBlocks;
+  foreach(i, tile; db.tilePos) {
+    if(tile == d.pickupTile && db.instances[i].meshdef[0] == cast(uint)d.currentBuild.tileType) {
+      db.tilePos = db.tilePos[0..i] ~ db.tilePos[i+1..$];
+      db.instances = db.instances[0..i] ~ db.instances[i+1..$];
+      db.buffers[INSTANCE] = false;
+      break;
+    }
+  }
+  app.deriveInventory();
+  d.pickupTile = [int.min, 0, 0];
+  d.targetTile = d.currentBuild.tile;
+  auto goalTile = app.findGoalTile(d);
+  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
+    SDL_Log(toStringz(format("Dwarf %s can't reach build site %s, requeueing", d.dwarfName, d.currentBuild.tile)));
+    buildQueue ~= d.currentBuild;
+    d.currentBuild = BuildJob.init;
+    d.targetTile = [int.min, 0, 0];
+  }
+}
+
+/** Place the tile at the build site */
+void doBuilding(ref App app, Dwarf d) {
+  auto dx = abs(d.tilePos[0] - d.currentBuild.tile[0]);
+  auto dz = abs(d.tilePos[2] - d.currentBuild.tile[2]);
+  if(dx + dz == 1 && d.tilePos[1] == d.currentBuild.tile[1]) {
+    app.setTile(d.currentBuild.tile, d.currentBuild.tileType);
+    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.dwarfName, d.currentBuild.tileType, d.currentBuild.tile)));
+    d.currentBuild = BuildJob.init;
+    d.targetTile = [int.min, 0, 0];
+  } else {
+    SDL_Log(toStringz(format("Dwarf %s failed to reach build site %s, requeueing", d.dwarfName, d.currentBuild.tile)));
+    buildQueue ~= d.currentBuild;
+    d.currentBuild = BuildJob.init;
+    d.targetTile = [int.min, 0, 0];
+  }
 }
 
 /** Move dwarf one step along its path */
@@ -199,9 +239,15 @@ void dwarfTick(ref App app, ref Geometry obj) {
     SDL_Log(toStringz(format("Dwarf %s @ tile %s target %s path:%d mining:%.0f", d.dwarfName, d.tilePos, d.targetTile, d.path.length, d.miningProgress * 100)));
   }
 
-  if(d.targetTile[0] == int.min){ if(!app.claimJob(d)){ app.claimBuildJob(d); }
-  }else if(d.path.length > 0 && d.moveT >= 1.0f) { app.followPath(d);
-  }else if(d.path.length == 0 && d.moveT >= 1.0f) { app.doMining(d); }
+  if(d.targetTile[0] == int.min) {
+    if(!app.claimJob(d)) app.claimBuildJob(d);
+  } else if(d.path.length > 0 && d.moveT >= 1.0f) {
+    app.followPath(d);
+  } else if(d.path.length == 0 && d.moveT >= 1.0f) {
+    if(d.pickupTile[0] != int.min) app.doPickup(d);
+    else if(d.currentBuild.tile[0] != int.min) app.doBuilding(d);
+    else app.doMining(d);
+  }
 }
 
 Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
