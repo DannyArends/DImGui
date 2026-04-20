@@ -139,18 +139,24 @@ bool claimBuildJob(ref App app, Dwarf d) {
 
 void doPickup(ref App app, Dwarf d) {
   auto db = app.world.droppedBlocks;
-  d.pickupTile = [int.min, 0, 0];
-  d.targetTile = [int.min, 0, 0];
   foreach(i, tile; db.tilePos) {
     if(tile == d.pickupTile) {
+      auto dx = abs(d.tilePos[0] - tile[0]);
+      auto dz = abs(d.tilePos[2] - tile[2]);
+      if(dx + dz > 1) break; 
       db.tilePos = db.tilePos[0..i] ~ db.tilePos[i+1..$];
       db.instances = db.instances[0..i] ~ db.instances[i+1..$];
       db.buffers[INSTANCE] = false;
       app.deriveInventory();
+      d.pickupTile = [int.min, 0, 0];
+      d.targetTile = [int.min, 0, 0];
       return;
     }
   }
+  // block gone
   d.currentBuild = BuildJob.init;
+  d.pickupTile = [int.min, 0, 0];
+  d.targetTile = [int.min, 0, 0];
 }
 
 /** Place the tile at the build site */
@@ -160,13 +166,19 @@ void doBuilding(ref App app, Dwarf d) {
   if(dx + dz == 1 && d.tilePos[1] == d.currentBuild.tile[1]) {
     app.setTile(d.currentBuild.tile, d.currentBuild.tileType);
     if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.dwarfName, d.currentBuild.tileType, d.currentBuild.tile)));
-  } else {
-    SDL_Log(toStringz(format("Dwarf %s failed to reach build site %s, dropping block", d.dwarfName, d.currentBuild.tile)));
-    app.spawnDroppedBlock(d.tilePos, d.currentBuild.tileType);
-    buildQueue ~= d.currentBuild;
+    d.currentBuild = BuildJob.init;
+    d.targetTile = [int.min, 0, 0];
+  } else { // try to re-path
+    d.targetTile = d.currentBuild.tile;
+    auto goalTile = app.findGoalTile(d);
+    if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
+      SDL_Log(toStringz(format("Dwarf %s can't reach build site %s, dropping block", d.dwarfName, d.currentBuild.tile)));
+      app.spawnDroppedBlock(d.tilePos, d.currentBuild.tileType);
+      buildQueue ~= d.currentBuild;
+      d.currentBuild = BuildJob.init;
+      d.targetTile = [int.min, 0, 0];
+    }
   }
-  d.currentBuild = BuildJob.init;
-  d.targetTile = [int.min, 0, 0];
 }
 
 /** Move dwarf one step along its path */
@@ -192,7 +204,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
     d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
   ];
   d.position(d.visualPos);
-  if (d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
+  if (d.moveT >= 1.0f && d.path.length > 0) { app.followPath(d); }
 }
 
 /** dwarfTick */
@@ -201,7 +213,6 @@ void dwarfTick(ref App app, ref Geometry obj) {
   if(d is null) return;
   if(d.targetTile[0] == int.min) {
     if(d.currentBuild.tileType != TileType.None && d.pickupTile[0] == int.min) {
-      // block picked up, now pathfind to build site
       d.targetTile = d.currentBuild.tile;
       auto goalTile = app.findGoalTile(d);
       if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
@@ -210,9 +221,13 @@ void dwarfTick(ref App app, ref Geometry obj) {
         d.currentBuild = BuildJob.init;
         d.targetTile = [int.min, 0, 0];
       }
-    } else if(!app.claimJob(d)) {
-      app.claimBuildJob(d);
-    }
+    } else if(!app.claimJob(d)) { app.claimBuildJob(d); }
+  } else if(d.path.length > 0 && d.moveT >= 1.0f) {
+    app.followPath(d);
+  } else if(d.path.length == 0 && d.moveT >= 1.0f) {
+    if(d.pickupTile[0] != int.min) app.doPickup(d);
+    else if(d.currentBuild.tileType != TileType.None) app.doBuilding(d);
+    else app.doMining(d);
   }
 }
 
@@ -231,10 +246,14 @@ void doMining(ref App app, Dwarf d) {
       d.miningProgress = 0.0f;
     }
   } else {
-    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s failed to reach %s from %s, requeueing", d.dwarfName, d.targetTile, d.tilePos)));
-    miningQueue ~= d.targetTile;
-    d.targetTile = [int.min, 0, 0];
-    d.miningProgress = 0.0f;
+    d.targetTile = d.targetTile; // keep target
+    auto goalTile = app.findGoalTile(d);
+    if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
+      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s can't reach %s, requeueing", d.dwarfName, d.targetTile)));
+      miningQueue ~= d.targetTile;
+      d.targetTile = [int.min, 0, 0];
+      d.miningProgress = 0.0f;
+    }
   }
 }
 
