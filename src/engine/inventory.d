@@ -31,7 +31,8 @@ void deriveInventory(ref App app) {
 void placeTile(ref App app, int[3] wc) {
   if(wc[0] == int.min) return;
   if(app.inventory.selectedTile == TileType.None) return;
-  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) return;
+  int reserved = cast(int)buildQueue.count!(j => j.tileType == app.inventory.selectedTile);
+  if(app.inventory.get(app.inventory.selectedTile, 0) - reserved <= 0) return;
   buildQueue ~= BuildJob(wc, app.inventory.selectedTile);
 }
 
