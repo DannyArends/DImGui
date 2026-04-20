@@ -6,6 +6,7 @@
 public import animation : Animation;
 public import assimp : OpenAsset;
 public import bone : Bone;
+public import blocks : DroppedBlocks;
 public import boundingbox : Bounds, BoundingBox;
 public import buffer : GeometryBuffer, StageBuffer;
 public import camera : Camera;

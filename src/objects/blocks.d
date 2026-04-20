@@ -1,0 +1,77 @@
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
+import engine;
+
+import io : readFile, writeFile;
+import inventory : deriveInventory;
+import world : tileToWorld;
+
+class DroppedBlocks : Cube {
+  int[3][] tilePos;
+
+  this() {
+    super();
+    instancedMesh = true;
+    instances = [];
+    name = (){ return "DroppedBlocks"; };
+  }
+}
+
+struct DroppedBlockData { int[3] tile; uint tileType; }
+
+/** Save blocks dropped */
+void saveDroppedBlocks(ref App app, uint WORLD_MAGIC) {
+  if(app.world.droppedBlocks is null) return;
+  auto blocks = app.world.droppedBlocks;
+  DroppedBlockData[] data;
+  foreach(i, tile; blocks.tilePos) { data ~= DroppedBlockData(tile, blocks.instances[i].meshdef[0]); }
+  uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
+  writeFile(app.world.droppedBlocksPath(), cast(char[])(header ~ cast(uint[2][])data));
+}
+
+/** Load blocks dropped */
+void loadDroppedBlocks(ref App app, uint WORLD_MAGIC) {
+  app.world.droppedBlocks = new DroppedBlocks();
+  app.objects ~= app.world.droppedBlocks;
+  auto raw = readFile(app.world.droppedBlocksPath());
+  if(raw.length < uint[2].sizeof) return;
+  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
+  auto data = cast(DroppedBlockData[])raw[uint[2].sizeof..$].dup;
+  foreach(ref b; data) { app.spawnDroppedBlock(b.tile, cast(TileType)b.tileType); }
+  SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tilePos.length);
+}
+
+/** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
+int[3] findDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
+  if(app.world.droppedBlocks is null) return [int.min, 0, 0];
+  int[3] best = [int.min, 0, 0];
+  float bestDist = float.max;
+  foreach(i, tile; app.world.droppedBlocks.tilePos) {
+    if(app.world.droppedBlocks.instances[i].meshdef[0] != cast(uint)tt) continue;
+    float dist = abs(tile[0] - dwarfTile[0]) + abs(tile[2] - dwarfTile[2]);
+    if(dist < bestDist) { bestDist = dist; best = tile; }
+  }
+  return best;
+}
+
+Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
+  float ts = app.world.tileSize * 0.25f;
+  float th = app.world.tileHeight * 0.25f;
+  auto wp = app.tileToWorld(tile);
+  wp[1] -= (app.world.tileHeight - th) * 0.5f;
+  return Instance(cast(uint)tt, [ts,0,0, 0,th,0, 0,0,ts, wp[0],wp[1],wp[2]]);
+}
+
+void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
+  if(app.world.droppedBlocks is null) {
+    app.world.droppedBlocks = new DroppedBlocks();
+    app.objects ~= app.world.droppedBlocks;
+  }
+  app.world.droppedBlocks.tilePos ~= tile;
+  app.world.droppedBlocks.instances ~= app.toDropInstance(tile, tt);
+  app.world.droppedBlocks.buffers[INSTANCE] = false;
+  app.deriveInventory();
+}
+
