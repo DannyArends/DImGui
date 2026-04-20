@@ -9,7 +9,7 @@ import io : ensureWorldDir, readFile, writeFile, fixPath;
 import noise : noiseHT;
 import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
-import inventory : inventoryPath, loadInventory, saveInventory;
+import inventory : deriveInventory;
 import searchnode : PathNode;
 import dwarf : DroppedBlocks;
 
@@ -105,7 +105,7 @@ struct World {
 
   void deleteWorld(ref App app) {
     SDL_RemovePath(worldPath());
-    SDL_RemovePath(inventoryPath());
+    SDL_RemovePath(droppedBlocksPath());
     data.diffs = [];
     app.inventory.items.clear();
     app.inventory.selectedTile = TileType.None;
@@ -166,8 +166,8 @@ void loadWorld(ref App app) {
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
-  app.loadInventory();
   app.loadDroppedBlocks();
+  app.deriveInventory();
 }
 
 /** Save world diffs to disk */
@@ -176,7 +176,6 @@ void saveWorld(ref App app) {
   char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])app.world.data.diffs;
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
-  app.saveInventory();
   app.saveDroppedBlocks();
 }
 
@@ -234,7 +233,10 @@ void saveDroppedBlocks(ref App app) {
 }
 
 void loadDroppedBlocks(ref App app) {
-  if(app.world.droppedBlocks is null) return;
+  if(app.world.droppedBlocks is null) {
+    app.world.droppedBlocks = new DroppedBlocks();
+    app.objects ~= app.world.droppedBlocks;
+  }
   auto raw = readFile(app.world.droppedBlocksPath());
   if(raw.length < uint[2].sizeof) return;
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }

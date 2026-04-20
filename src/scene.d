@@ -33,9 +33,6 @@ void createScene(ref App app){
     }
   }*/
 
-  app.world.droppedBlocks = new DroppedBlocks();
-  app.objects ~= app.world.droppedBlocks;
-
   app.inventory.ghostCube = new GhostCube([app.world.tileSize,app.world.tileHeight]);
   app.objects ~= app.inventory.ghostCube;
 
