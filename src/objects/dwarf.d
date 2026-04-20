@@ -5,10 +5,15 @@
 import engine;
 import geometry;
 import search : performSearch, atGoal, stepThroughPath;
-import world : setTile;
+import world : setTile,deriveInventory;
 import vector : euclidean;
 import tileatlas : tileData;
 
+struct BuildJob {
+  int[3] tile;
+  TileType tileType;
+}
+BuildJob[] buildQueue;
 int[3][] miningQueue;
 
 /** Dwarven Cylinderz  */
@@ -18,9 +23,11 @@ class Dwarf : Cylinder {
   }
   string dwarfName;
   int[3] tilePos    = [0, 0, 0];            /// Which tile we're on
+  int[3] pickupTile = [int.min, 0, 0];      /// Dropped block to pick up
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
+  BuildJob currentBuild;                    /// Active build job
   float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
@@ -28,6 +35,8 @@ class Dwarf : Cylinder {
 }
 
 class DroppedBlocks : Cube {
+  int[3][] tilePos;
+
   this() {
     super();
     instancedMesh = true;
@@ -85,6 +94,19 @@ int[3] findGoalTile(ref App app, Dwarf d) {
   return goalTile;
 }
 
+/** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
+int[3] findDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
+  if(app.world.droppedBlocks is null) return [int.min, 0, 0];
+  int[3] best = [int.min, 0, 0];
+  float bestDist = float.max;
+  foreach(i, tile; app.world.droppedBlocks.tilePos) {
+    if(app.world.droppedBlocks.instances[i].meshdef[0] != cast(uint)tt) continue;
+    float dist = abs(tile[0] - dwarfTile[0]) + abs(tile[2] - dwarfTile[2]);
+    if(dist < bestDist) { bestDist = dist; best = tile; }
+  }
+  return best;
+}
+
 /** Compute world-space position from tile coords */
 float[3] tileToWorld(ref App app, int[3] tile) {
   auto wp = app.world.worldPos(tile);
@@ -130,6 +152,19 @@ bool claimJob(ref App app, Dwarf d) {
   return true;
 }
 
+bool claimBuildJob(ref App app, Dwarf d) {
+  foreach(i, ref job; buildQueue) {
+    int[3] blockTile = app.findDroppedBlock(job.tileType, d.tilePos);
+    if(blockTile[0] == int.min) continue;
+    d.currentBuild = job;
+    d.pickupTile = blockTile;
+    buildQueue = buildQueue[0..i] ~ buildQueue[i+1..$];
+    // pathfind to blockTile
+    return true;
+  }
+  return false;
+}
+
 /** Move dwarf one step along its path */
 void followPath(ref App app, Dwarf d) {
   if (d.path.length == 0) return;
@@ -164,22 +199,25 @@ void dwarfTick(ref App app, ref Geometry obj) {
     SDL_Log(toStringz(format("Dwarf %s @ tile %s target %s path:%d mining:%.0f", d.dwarfName, d.tilePos, d.targetTile, d.path.length, d.miningProgress * 100)));
   }
 
-  if(d.targetTile[0] == int.min) app.claimJob(d);
-  else if(d.path.length > 0 && d.moveT >= 1.0f) app.followPath(d);
-  else if(d.path.length == 0 && d.moveT >= 1.0f) app.doMining(d);
+  if(d.targetTile[0] == int.min){ if(!app.claimJob(d)){ app.claimBuildJob(d); }
+  }else if(d.path.length > 0 && d.moveT >= 1.0f) { app.followPath(d);
+  }else if(d.path.length == 0 && d.moveT >= 1.0f) { app.doMining(d); }
 }
 
-void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
-  if(app.world.droppedBlocks is null){
-    app.world.droppedBlocks = new DroppedBlocks();
-    app.objects ~= app.world.droppedBlocks;
-  }
+Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
   float ts = app.world.tileSize * 0.25f;
   float th = app.world.tileHeight * 0.25f;
   auto wp = app.tileToWorld(tile);
   wp[1] -= (app.world.tileHeight - th) * 0.5f;
-  app.world.droppedBlocks.instances ~= Instance(cast(uint)tt, [ts, 0, 0, 0, th, 0, 0, 0, ts, wp[0], wp[1], wp[2]]);
+  return Instance(cast(uint)tt, [ts,0,0, 0,th,0, 0,0,ts, wp[0],wp[1],wp[2]]);
+}
+
+void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
+  if(app.world.droppedBlocks is null) return;
+  app.world.droppedBlocks.tilePos ~= tile;
+  app.world.droppedBlocks.instances ~= app.toDropInstance(tile, tt);
   app.world.droppedBlocks.buffers[INSTANCE] = false;
+  app.deriveInventory();
 }
 
 /** Mine the target tile if adjacent */

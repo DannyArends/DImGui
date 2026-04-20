@@ -224,12 +224,15 @@ void dispatchWorker(ref App app, int[3] coord){
   }
 }
 
+struct DroppedBlockData { int[3] tile; uint tileType; }
+
 void saveDroppedBlocks(ref App app) {
   if(app.world.droppedBlocks is null) return;
-  auto instances = app.world.droppedBlocks.instances;
-  uint[2] header = [WORLD_MAGIC, cast(uint)instances.length];
-  char[] raw = (cast(char*)header.ptr)[0..header.sizeof] ~ cast(char[])instances;
-  writeFile(app.world.droppedBlocksPath(), raw);
+  auto blocks = app.world.droppedBlocks;
+  DroppedBlockData[] data;
+  foreach(i, tile; blocks.tilePos) { data ~= DroppedBlockData(tile, blocks.instances[i].meshdef[0]); }
+  uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
+  writeFile(app.world.droppedBlocksPath(), cast(char[])(header ~ cast(uint[2][])data));
 }
 
 void loadDroppedBlocks(ref App app) {
