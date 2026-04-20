@@ -17,23 +17,12 @@ struct Inventory {
   alias items this;
 }
 
-const(char)* inventoryPath() { return(fixPath(toStringz(format("data/world/inventory.bin")))); }
-
-void saveInventory(ref App app) {
-  int[] data;
-  foreach(tileType, count; app.inventory) {
-    data ~= cast(int)tileType;
-    data ~= count;
-  }
-  if(data.length > 0) writeFile(inventoryPath(), cast(char[])data, false);
-}
-
-void loadInventory(ref App app) {
-  auto path = inventoryPath();
-  if(!path.isfile()) return;
-  auto raw = cast(int[])readFile(path);
-  for(int i = 0; i + 1 < raw.length; i += 2) {
-    app.inventory[cast(TileType)raw[i]] = raw[i+1];
+void deriveInventory(ref App app) {
+  app.inventory.items.clear();
+  if(app.world.droppedBlocks is null) return;
+  foreach(ref inst; app.world.droppedBlocks.instances) {
+    auto tt = cast(TileType)inst.meshdef[0];
+    app.inventory[tt] = app.inventory.get(tt, 0) + 1;
   }
 }
 
