@@ -245,7 +245,7 @@ void dwarfTick(ref App app, ref Geometry obj) {
     app.followPath(d);
   } else if(d.path.length == 0 && d.moveT >= 1.0f) {
     if(d.pickupTile[0] != int.min) app.doPickup(d);
-    else if(d.currentBuild.tile[0] != int.min) app.doBuilding(d);
+    else if(d.currentBuild.tileType != TileType.None) app.doBuilding(d);
     else app.doMining(d);
   }
 }
