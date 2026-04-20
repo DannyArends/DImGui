@@ -168,13 +168,22 @@ bool claimBuildJob(ref App app, Dwarf d) {
 
 void doPickup(ref App app, Dwarf d) {
   auto db = app.world.droppedBlocks;
+  bool found = false;
   foreach(i, tile; db.tilePos) {
-    if(tile == d.pickupTile && db.instances[i].meshdef[0] == cast(uint)d.currentBuild.tileType) {
+    if(tile == d.pickupTile) {
       db.tilePos = db.tilePos[0..i] ~ db.tilePos[i+1..$];
       db.instances = db.instances[0..i] ~ db.instances[i+1..$];
       db.buffers[INSTANCE] = false;
+      found = true;
       break;
     }
+  }
+  if(!found) {
+    buildQueue ~= d.currentBuild;
+    d.currentBuild = BuildJob.init;
+    d.pickupTile = [int.min, 0, 0];
+    d.targetTile = [int.min, 0, 0];
+    return;
   }
   app.deriveInventory();
   d.pickupTile = [int.min, 0, 0];
@@ -259,7 +268,10 @@ Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
 }
 
 void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
-  if(app.world.droppedBlocks is null) return;
+  if(app.world.droppedBlocks is null) {
+    app.world.droppedBlocks = new DroppedBlocks();
+    app.objects ~= app.world.droppedBlocks;
+  }
   app.world.droppedBlocks.tilePos ~= tile;
   app.world.droppedBlocks.instances ~= app.toDropInstance(tile, tt);
   app.world.droppedBlocks.buffers[INSTANCE] = false;
@@ -276,7 +288,7 @@ void doMining(ref App app, Dwarf d) {
     if(d.miningProgress >= 1.0f) {
       TileType tt = app.world.getTileAt(d.targetTile);
       app.setTile(d.targetTile);
-      app.spawnDroppedBlock(d.targetTile, tt);
+      if(tt != TileType.None) app.spawnDroppedBlock(d.targetTile, tt);
       d.targetTile = [int.min, 0, 0];
       d.miningProgress = 0.0f;
     }

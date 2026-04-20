@@ -198,7 +198,6 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   int idx = app.world.tileIdx(tile);
 
   auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type
-  if(newType == TileType.None && mined != TileType.None) { app.inventory[mined] = app.inventory.get(mined, 0) + 1; }
 
   app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.data.diffs ~= TileDiff(coord, idx, newType);
