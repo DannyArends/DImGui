@@ -11,6 +11,7 @@ import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : inventoryPath, loadInventory, saveInventory;
 import searchnode : PathNode;
+import dwarf : DroppedBlocks;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -34,9 +35,8 @@ struct WorldData {
 
   /** Returns the filesystem path for the world TileDiffs difference
    */
-  const(char)* worldPath() const {
-    return toStringz(fixPath(format("data/world/%d_%d.bin", seed[0], seed[1])));
-  }
+  const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d.bin", seed[0], seed[1]))); }
+  const(char)* droppedBlocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_drops.bin", seed[0], seed[1]))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk
    */
@@ -88,15 +88,8 @@ struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks being generated async
   WorldData data;
+  DroppedBlocks droppedBlocks;
   alias data this;
-
-  /** Save world diffs to disk */
-  void saveWorld(bool verbose = false) {
-    uint[2] header = [WORLD_MAGIC, cast(uint)this.data.diffs.length];
-    char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])this.data.diffs;
-    writeFile(worldPath(), raw);
-    if(verbose) SDL_Log("saveWorld: %d diffs", this.data.diffs.length);
-  }
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
   void deallocateChunk(int[3] coord) {
@@ -174,6 +167,17 @@ void loadWorld(ref App app) {
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
   app.loadInventory();
+  app.loadDroppedBlocks();
+}
+
+/** Save world diffs to disk */
+void saveWorld(ref App app) {
+  uint[2] header = [WORLD_MAGIC, cast(uint)app.world.data.diffs.length];
+  char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])app.world.data.diffs;
+  writeFile(app.world.worldPath(), raw);
+  if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
+  app.saveInventory();
+  app.saveDroppedBlocks();
 }
 
 bool canMoveTo(ref App app, float[3] pos) {
@@ -195,10 +199,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   int idx = app.world.tileIdx(tile);
 
   auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type
-  if(newType == TileType.None && mined != TileType.None) {
-    app.inventory[mined] = app.inventory.get(mined, 0) + 1;
-    app.saveInventory();
-  }
+  if(newType == TileType.None && mined != TileType.None) { app.inventory[mined] = app.inventory.get(mined, 0) + 1; }
 
   app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.data.diffs ~= TileDiff(coord, idx, newType);
@@ -222,6 +223,26 @@ void dispatchWorker(ref App app, int[3] coord){
       break;
     }
   }
+}
+
+void saveDroppedBlocks(ref App app) {
+  if(app.world.droppedBlocks is null) return;
+  auto instances = app.world.droppedBlocks.instances;
+  uint[2] header = [WORLD_MAGIC, cast(uint)instances.length];
+  char[] raw = (cast(char*)header.ptr)[0..header.sizeof] ~ cast(char[])instances;
+  writeFile(app.world.droppedBlocksPath(), raw);
+}
+
+void loadDroppedBlocks(ref App app) {
+  if(app.world.droppedBlocks is null) return;
+  auto raw = readFile(app.world.droppedBlocksPath());
+  if(raw.length < uint[2].sizeof) return;
+  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
+  auto data = raw[uint[2].sizeof..$];
+  if(data.length % Instance.sizeof != 0) { SDL_Log("loadDroppedBlocks: corrupt data"); return; }
+  app.world.droppedBlocks.instances = cast(Instance[])data.dup;
+  app.world.droppedBlocks.buffers[INSTANCE] = false;
+  SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.instances.length);
 }
 
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */

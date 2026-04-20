@@ -11,10 +11,9 @@ import lsystem : createLSystem;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
-import dwarf : spawnDwarf, randomDwarfName;
+import dwarf : spawnDwarf, DroppedBlocks, randomDwarfName;
 
-/** Create a scene for rendering
- */
+/** Create a scene for rendering */
 void createScene(ref App app){
   SDL_Log("createScene: Add a Square");
   /*
@@ -33,6 +32,9 @@ void createScene(ref App app){
       app.objects[($-1)].instances ~= Instance(matrix: instance);
     }
   }*/
+
+  app.world.droppedBlocks = new DroppedBlocks();
+  app.objects ~= app.world.droppedBlocks;
 
   app.inventory.ghostCube = new GhostCube([app.world.tileSize,app.world.tileHeight]);
   app.objects ~= app.inventory.ghostCube;

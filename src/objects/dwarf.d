@@ -27,6 +27,15 @@ class Dwarf : Cylinder {
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 }
 
+class DroppedBlocks : Cube {
+  this() {
+    super();
+    instancedMesh = true;
+    instances = [];
+    name = (){ return "DroppedBlocks"; };
+  }
+}
+
 /** Is the Tile occupied ?  */
 bool isTileOccupied(ref App app, int[3] tile) {
   foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null && d.tilePos == tile) return true; }
@@ -160,6 +169,16 @@ void dwarfTick(ref App app, ref Geometry obj) {
   else if(d.path.length == 0 && d.moveT >= 1.0f) app.doMining(d);
 }
 
+void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
+  if(app.world.droppedBlocks is null) return;
+  float ts = app.world.tileSize * 0.25f;
+  float th = app.world.tileHeight * 0.25f;
+  auto wp = app.tileToWorld(tile);
+  wp[1] -= (app.world.tileHeight - th) * 0.5f;
+  app.world.droppedBlocks.instances ~= Instance(cast(uint)tt, [ts, 0, 0, 0, th, 0, 0, 0, ts, wp[0], wp[1], wp[2]]);
+  app.world.droppedBlocks.buffers[INSTANCE] = false;
+}
+
 /** Mine the target tile if adjacent */
 void doMining(ref App app, Dwarf d) {
   auto dx = abs(d.tilePos[0] - d.targetTile[0]);
@@ -168,7 +187,9 @@ void doMining(ref App app, Dwarf d) {
     d.miningProgress += 0.25f;
     if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.dwarfName, d.targetTile, d.miningProgress * 100)));
     if(d.miningProgress >= 1.0f) {
+      TileType tt = app.world.getTileAt(d.targetTile);
       app.setTile(d.targetTile);
+      app.spawnDroppedBlock(d.targetTile, tt);
       d.targetTile = [int.min, 0, 0];
       d.miningProgress = 0.0f;
     }
