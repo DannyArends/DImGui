@@ -82,18 +82,27 @@ float[3] tileToWorld(ref App app, int[3] tile) {
   return [wp[0], wp[1] + app.world.yOffset, wp[2]];
 }
 
+/** Scan the queue, claim the closest reachable job and remove it from the queue, returns false if no job could be claimed */
+bool claimBestJob(ref App app, Dwarf d, out int[3] goalTile) {
+  int bestIdx = -1;
+  float bestDist = float.max;
+  foreach(i, job; miningQueue) {
+    d.targetTile = job;
+    auto goal = app.findGoalTile(d);
+    if(goal[0] == int.min) continue;
+    float dist = abs(goal[0] - d.tilePos[0]) + abs(goal[2] - d.tilePos[2]);
+    if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
+  }
+  if(bestIdx == -1) { d.targetTile = [int.min, 0, 0]; return(false); }
+  d.targetTile = miningQueue[bestIdx];
+  miningQueue = miningQueue[0..bestIdx] ~ miningQueue[bestIdx+1..$];
+  return(true);
+}
+
 /** Claim a job, find goal tile, compute path */
 bool claimJob(ref App app, Dwarf d) {
-  if(miningQueue.length == 0) return false;
-  d.targetTile = miningQueue[0];
-  miningQueue = miningQueue[1..$];
-
-  auto goalTile = app.findGoalTile(d);
-  if (goalTile[0] == int.min) {
-    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s no access to %s, discarding", d.dwarfName, d.targetTile)));
-    d.targetTile = [int.min, 0, 0];
-    return false;
-  }
+  int[3] goalTile;
+  if(!app.claimBestJob(d, goalTile)) return false;
 
   float[3] start = app.tileToWorld(d.tilePos);
   float[3] goal  = app.tileToWorld(goalTile);

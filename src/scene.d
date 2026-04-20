@@ -11,6 +11,7 @@ import lsystem : createLSystem;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
+import dwarf : spawnDwarf, randomDwarfName;
 
 /** Create a scene for rendering
  */
@@ -35,6 +36,8 @@ void createScene(ref App app){
 
   app.inventory.ghostCube = new GhostCube([app.world.tileSize,app.world.tileHeight]);
   app.objects ~= app.inventory.ghostCube;
+
+  for(int x = 0; x <= 7; x++) { app.spawnDwarf(randomDwarfName()); }
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
