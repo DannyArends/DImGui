@@ -25,6 +25,7 @@ void deriveInventory(ref App app) {
     auto tt = cast(TileType)inst.meshdef[0];
     app.inventory[tt] = app.inventory.get(tt, 0) + 1;
   }
+  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) { app.inventory.selectedTile = TileType.None; }
 }
 
 void placeTile(ref App app, int[3] wc) {
