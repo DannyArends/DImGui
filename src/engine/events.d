@@ -107,7 +107,12 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         app.placeTile(app.inventory.ghostTile);
       } else {
         auto hits = app.getHits(ray, app.showRays);
-        if (hits.length > 0) { int[3] wc; if(app.getBestTile(ray, wc)) app.setTile(wc); }
+        if (hits.length > 0) { int[3] wc;
+          if(app.getBestTile(ray, wc)) {
+            if(app.verbose) SDL_Log(toStringz(format("Add %s to mining queue of length %s", wc, miningQueue.length)));
+            miningQueue ~= wc;
+          }
+        }
         foreach (ref hit; hits) {
           auto obj = app.objects[hit.idx[0]];
           if (cast(Chunk)obj is null) {
@@ -118,14 +123,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         }
       }
     }
-    if (e.button.button == SDL_BUTTON_RIGHT) {
-      app.camera.isdrag[1] = false;
-      int[3] wc;
-      if(app.getBestTile(ray, wc)) {
-        if(app.verbose) SDL_Log(toStringz(format("Add %s to mining queue of length %s", wc, miningQueue.length)));
-        miningQueue ~= wc;
-      }
-    }
+    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
     app.updateGhostTile(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 
