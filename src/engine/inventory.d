@@ -46,7 +46,6 @@ void placeTile(ref App app, int[3] wc) {
       app.inventory.items.remove(app.inventory.selectedTile);
       app.inventory.selectedTile = TileType.None;
     }
-    app.saveInventory();
   }
 }
 
