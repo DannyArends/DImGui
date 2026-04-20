@@ -11,7 +11,7 @@ import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
-import dwarf : DroppedBlocks;
+import dwarf : DroppedBlocks, spawnDroppedBlock;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -236,18 +236,14 @@ void saveDroppedBlocks(ref App app) {
 }
 
 void loadDroppedBlocks(ref App app) {
-  if(app.world.droppedBlocks is null) {
-    app.world.droppedBlocks = new DroppedBlocks();
-    app.objects ~= app.world.droppedBlocks;
-  }
+  app.world.droppedBlocks = new DroppedBlocks();
+  app.objects ~= app.world.droppedBlocks;
   auto raw = readFile(app.world.droppedBlocksPath());
   if(raw.length < uint[2].sizeof) return;
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
-  auto data = raw[uint[2].sizeof..$];
-  if(data.length % Instance.sizeof != 0) { SDL_Log("loadDroppedBlocks: corrupt data"); return; }
-  app.world.droppedBlocks.instances = cast(Instance[])data.dup;
-  app.world.droppedBlocks.buffers[INSTANCE] = false;
-  SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.instances.length);
+  auto data = cast(DroppedBlockData[])raw[uint[2].sizeof..$].dup;
+  foreach(ref b; data) { app.spawnDroppedBlock(b.tile, cast(TileType)b.tileType); }
+  SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tilePos.length);
 }
 
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
