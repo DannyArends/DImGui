@@ -11,7 +11,7 @@ import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
-import dwarf : DroppedBlocks, spawnDroppedBlock;
+import blocks : spawnDroppedBlock, loadDroppedBlocks, saveDroppedBlocks;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -166,7 +166,7 @@ void loadWorld(ref App app) {
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
-  app.loadDroppedBlocks();
+  app.loadDroppedBlocks(WORLD_MAGIC);
   app.deriveInventory();
 }
 
@@ -176,7 +176,13 @@ void saveWorld(ref App app) {
   char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])app.world.data.diffs;
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
-  app.saveDroppedBlocks();
+  app.saveDroppedBlocks(WORLD_MAGIC);
+}
+
+/** Compute world-space position from tile coords */
+float[3] tileToWorld(ref App app, int[3] tile) {
+  auto wp = app.world.worldPos(tile);
+  return [wp[0], wp[1] + app.world.yOffset, wp[2]];
 }
 
 bool canMoveTo(ref App app, float[3] pos) {
@@ -223,27 +229,6 @@ void dispatchWorker(ref App app, int[3] coord){
   }
 }
 
-struct DroppedBlockData { int[3] tile; uint tileType; }
-
-void saveDroppedBlocks(ref App app) {
-  if(app.world.droppedBlocks is null) return;
-  auto blocks = app.world.droppedBlocks;
-  DroppedBlockData[] data;
-  foreach(i, tile; blocks.tilePos) { data ~= DroppedBlockData(tile, blocks.instances[i].meshdef[0]); }
-  uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
-  writeFile(app.world.droppedBlocksPath(), cast(char[])(header ~ cast(uint[2][])data));
-}
-
-void loadDroppedBlocks(ref App app) {
-  app.world.droppedBlocks = new DroppedBlocks();
-  app.objects ~= app.world.droppedBlocks;
-  auto raw = readFile(app.world.droppedBlocksPath());
-  if(raw.length < uint[2].sizeof) return;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
-  auto data = cast(DroppedBlockData[])raw[uint[2].sizeof..$].dup;
-  foreach(ref b; data) { app.spawnDroppedBlock(b.tile, cast(TileType)b.tileType); }
-  SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tilePos.length);
-}
 
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
 void updateWorld(ref App app, float[3] lookat) {

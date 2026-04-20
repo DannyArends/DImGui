@@ -11,7 +11,7 @@ import lsystem : createLSystem;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
-import dwarf : spawnDwarf, DroppedBlocks, randomDwarfName;
+import dwarf : spawnDwarf, randomDwarfName;
 
 /** Create a scene for rendering */
 void createScene(ref App app){

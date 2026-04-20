@@ -5,9 +5,10 @@
 import engine;
 import geometry;
 import search : performSearch, atGoal, stepThroughPath;
-import world : setTile,deriveInventory;
+import world : setTile, deriveInventory, tileToWorld;
 import vector : euclidean;
 import tileatlas : tileData;
+import blocks : findDroppedBlock, spawnDroppedBlock;
 
 struct BuildJob {
   int[3] tile;
@@ -32,17 +33,6 @@ class Dwarf : Cylinder {
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
-}
-
-class DroppedBlocks : Cube {
-  int[3][] tilePos;
-
-  this() {
-    super();
-    instancedMesh = true;
-    instances = [];
-    name = (){ return "DroppedBlocks"; };
-  }
 }
 
 /** Is the Tile occupied ?  */
@@ -92,25 +82,6 @@ int[3] findGoalTile(ref App app, Dwarf d) {
     if(dist < bestDist) { bestDist = dist; goalTile = n; }
   }
   return goalTile;
-}
-
-/** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
-int[3] findDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
-  if(app.world.droppedBlocks is null) return [int.min, 0, 0];
-  int[3] best = [int.min, 0, 0];
-  float bestDist = float.max;
-  foreach(i, tile; app.world.droppedBlocks.tilePos) {
-    if(app.world.droppedBlocks.instances[i].meshdef[0] != cast(uint)tt) continue;
-    float dist = abs(tile[0] - dwarfTile[0]) + abs(tile[2] - dwarfTile[2]);
-    if(dist < bestDist) { bestDist = dist; best = tile; }
-  }
-  return best;
-}
-
-/** Compute world-space position from tile coords */
-float[3] tileToWorld(ref App app, int[3] tile) {
-  auto wp = app.world.worldPos(tile);
-  return [wp[0], wp[1] + app.world.yOffset, wp[2]];
 }
 
 /** Scan the queue, claim the closest reachable job and remove it from the queue, returns false if no job could be claimed */
@@ -257,25 +228,6 @@ void dwarfTick(ref App app, ref Geometry obj) {
     else if(d.currentBuild.tileType != TileType.None) app.doBuilding(d);
     else app.doMining(d);
   }
-}
-
-Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
-  float ts = app.world.tileSize * 0.25f;
-  float th = app.world.tileHeight * 0.25f;
-  auto wp = app.tileToWorld(tile);
-  wp[1] -= (app.world.tileHeight - th) * 0.5f;
-  return Instance(cast(uint)tt, [ts,0,0, 0,th,0, 0,0,ts, wp[0],wp[1],wp[2]]);
-}
-
-void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
-  if(app.world.droppedBlocks is null) {
-    app.world.droppedBlocks = new DroppedBlocks();
-    app.objects ~= app.world.droppedBlocks;
-  }
-  app.world.droppedBlocks.tilePos ~= tile;
-  app.world.droppedBlocks.instances ~= app.toDropInstance(tile, tt);
-  app.world.droppedBlocks.buffers[INSTANCE] = false;
-  app.deriveInventory();
 }
 
 /** Mine the target tile if adjacent */
