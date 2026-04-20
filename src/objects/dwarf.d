@@ -8,7 +8,7 @@ import search : performSearch, atGoal, stepThroughPath;
 import world : setTile, deriveInventory, tileToWorld;
 import vector : euclidean;
 import tileatlas : tileData;
-import blocks : findDroppedBlock, spawnDroppedBlock;
+import block : findDroppedBlock, spawnDroppedBlock;
 
 struct BuildJob {
   int[3] tile;

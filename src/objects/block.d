@@ -6,9 +6,9 @@ import engine;
 
 import io : readFile, writeFile;
 import inventory : deriveInventory;
-import world : tileToWorld;
+import world : tileToWorld, WORLD_MAGIC;
 
-class DroppedBlocks : Cube {
+class Blocks : Cube {
   int[3][] tilePos;
 
   this() {
@@ -19,26 +19,26 @@ class DroppedBlocks : Cube {
   }
 }
 
-struct DroppedBlockData { int[3] tile; uint tileType; }
+struct BlockData { int[3] tile; uint tileType; }
 
 /** Save blocks dropped */
-void saveDroppedBlocks(ref App app, uint WORLD_MAGIC) {
+void saveDroppedBlocks(ref App app) {
   if(app.world.droppedBlocks is null) return;
   auto blocks = app.world.droppedBlocks;
-  DroppedBlockData[] data;
-  foreach(i, tile; blocks.tilePos) { data ~= DroppedBlockData(tile, blocks.instances[i].meshdef[0]); }
+  BlockData[] data;
+  foreach(i, tile; blocks.tilePos) { data ~= BlockData(tile, blocks.instances[i].meshdef[0]); }
   uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
-  writeFile(app.world.droppedBlocksPath(), cast(char[])(header ~ cast(uint[2][])data));
+  writeFile(app.world.droppedBlocksPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
 }
 
 /** Load blocks dropped */
-void loadDroppedBlocks(ref App app, uint WORLD_MAGIC) {
-  app.world.droppedBlocks = new DroppedBlocks();
+void loadDroppedBlocks(ref App app) {
+  app.world.droppedBlocks = new Blocks();
   app.objects ~= app.world.droppedBlocks;
   auto raw = readFile(app.world.droppedBlocksPath());
   if(raw.length < uint[2].sizeof) return;
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
-  auto data = cast(DroppedBlockData[])raw[uint[2].sizeof..$].dup;
+  auto data = cast(BlockData[])raw[uint[2].sizeof..$].dup;
   foreach(ref b; data) { app.spawnDroppedBlock(b.tile, cast(TileType)b.tileType); }
   SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tilePos.length);
 }
@@ -66,7 +66,7 @@ Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
 
 void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
   if(app.world.droppedBlocks is null) {
-    app.world.droppedBlocks = new DroppedBlocks();
+    app.world.droppedBlocks = new Blocks();
     app.objects ~= app.world.droppedBlocks;
   }
   app.world.droppedBlocks.tilePos ~= tile;

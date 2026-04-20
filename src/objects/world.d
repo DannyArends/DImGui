@@ -11,7 +11,7 @@ import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
-import blocks : spawnDroppedBlock, loadDroppedBlocks, saveDroppedBlocks;
+import block : spawnDroppedBlock, loadDroppedBlocks, saveDroppedBlocks;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -88,7 +88,7 @@ struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks being generated async
   WorldData data;
-  DroppedBlocks droppedBlocks;
+  Blocks droppedBlocks;
   alias data this;
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
@@ -166,7 +166,7 @@ void loadWorld(ref App app) {
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
-  app.loadDroppedBlocks(WORLD_MAGIC);
+  app.loadDroppedBlocks();
   app.deriveInventory();
 }
 
@@ -176,7 +176,7 @@ void saveWorld(ref App app) {
   char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])app.world.data.diffs;
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
-  app.saveDroppedBlocks(WORLD_MAGIC);
+  app.saveDroppedBlocks();
 }
 
 /** Compute world-space position from tile coords */
