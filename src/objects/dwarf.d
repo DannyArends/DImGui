@@ -143,7 +143,7 @@ void doPickup(ref App app, Dwarf d) {
     if(tile == d.pickupTile) {
       auto dx = abs(d.tilePos[0] - tile[0]);
       auto dz = abs(d.tilePos[2] - tile[2]);
-      if(dx + dz > 1) break; 
+      if(dx + dz > 1) return;
       db.tilePos = db.tilePos[0..i] ~ db.tilePos[i+1..$];
       db.instances = db.instances[0..i] ~ db.instances[i+1..$];
       db.buffers[INSTANCE] = false;
