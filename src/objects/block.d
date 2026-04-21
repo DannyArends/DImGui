@@ -51,15 +51,14 @@ bool hasBlocks(ref App app, TileType tt) {
 
 /** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
 int[3] findFreeBlock(ref App app, TileType tt, int[3] dwarfTile) {
-  import jobs : jobQueue;
   if(app.world.droppedBlocks is null) return [int.min, 0, 0];
   int[3] best = [int.min, 0, 0];
   float bestDist = float.max;
   foreach(i, tile; app.world.droppedBlocks.tiles) {
     if(app.world.droppedBlocks.instances[i].meshdef[0] != cast(uint)tt) continue;
+    // only skip blocks already on an active dwarf's jobStack
     bool reserved = false;
-    foreach(j; jobQueue) { if(j.prereqs.length > 0 && j.prereqs[0].targetTile == tile) { reserved = true; break; } }
-    if(!reserved) foreach(o; app.objects) {
+    foreach(o; app.objects) {
       auto d = cast(Dwarf)o;
       if(d is null) continue;
       foreach(j; d.jobStack) { if(j.targetTile == tile) { reserved = true; break; } }
