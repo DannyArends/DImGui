@@ -43,6 +43,12 @@ void loadDroppedBlocks(ref App app) {
   SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tiles.length);
 }
 
+bool hasBlocks(ref App app, TileType tt) {
+  if(app.world.droppedBlocks is null) return false;
+  foreach(i, tile; app.world.droppedBlocks.tiles) { if(app.world.droppedBlocks.instances[i].meshdef[0] == cast(uint)tt) { return(true); } }
+  return false;
+}
+
 /** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
 int[3] findFreeBlock(ref App app, TileType tt, int[3] dwarfTile) {
   import jobs : jobQueue;
