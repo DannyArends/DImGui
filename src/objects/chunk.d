@@ -172,11 +172,12 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.world.pendingChunks.remove(data.coord);
 
   if(app.world.trunk !is null && app.world.canopy !is null) {
-    if(data.coord in app.world.trees) app.removeTreeInstances(data.coord);
-    app.world.trees[data.coord] = app.addTreeInstances(data.trees);
-    app.world.trunk.buffers[INSTANCE] = false;
-    app.world.canopy.buffers[INSTANCE] = false;
+    if(data.coord !in app.world.trees) {
+      app.world.trees[data.coord] = app.addTreeInstances(data.trees);
+      app.world.trunk.buffers[INSTANCE] = false;
+      app.world.canopy.buffers[INSTANCE] = false;
+    }
   }
-
+  SDL_Log(toStringz(format("finalizeChunk: %s trees=%d trunk=%s", data.coord, data.trees.length, app.world.trunk !is null ? "ok" : "null")));
   app.camera.isDirty = true;
 }
