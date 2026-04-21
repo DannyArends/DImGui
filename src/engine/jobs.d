@@ -11,6 +11,7 @@ import inventory : deriveInventory;
 import world : setTile;
 
 struct Job {
+  string name;
   int[3] targetTile;
   TileType tileType;                              // for building/pickup context
   int[3] pickupTile;                             // for build jobs
@@ -21,7 +22,7 @@ struct Job {
 Job[] jobQueue;
 
 Job miningJob(int[3] targetTile) {
-  return Job(targetTile, TileType.None, [int.min, 0, 0],
+  return Job("Mining", targetTile, TileType.None, [int.min, 0, 0],
     (ref App app, Dwarf d) {
       d.miningProgress += 0.25f;
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.name, d.currentJob.targetTile, d.miningProgress * 100)));
@@ -44,7 +45,7 @@ Job miningJob(int[3] targetTile) {
 }
 
 Job pickupJob(int[3] targetTile, TileType tileType, int[3] buildTile) {
-  return Job(targetTile, tileType, buildTile,
+  return Job("Fetching", targetTile, tileType, buildTile,
     (ref App app, Dwarf d) {
       auto db = app.world.droppedBlocks;
       foreach(i, tile; db.tiles) {
@@ -58,13 +59,11 @@ Job pickupJob(int[3] targetTile, TileType tileType, int[3] buildTile) {
           d.targetTile = [int.min, 0, 0];
           return;
         }
-      }
-      // block gone, abandon
+      } // block gone, abandon
       d.currentJob = Job.init;
       d.targetTile = [int.min, 0, 0];
     },
-    (ref App app, Dwarf d) {
-      // can't reach block, requeue build job
+    (ref App app, Dwarf d) { // can't reach block, requeue build job
       jobQueue ~= buildingJob(d.currentJob.pickupTile, d.currentJob.tileType);
       d.currentJob = Job.init;
       d.targetTile = [int.min, 0, 0];
@@ -73,7 +72,7 @@ Job pickupJob(int[3] targetTile, TileType tileType, int[3] buildTile) {
 }
 
 Job buildingJob(int[3] targetTile, TileType tileType) {
-  return Job(targetTile, tileType, [int.min, 0, 0],
+  return Job("Building", targetTile, tileType, [int.min, 0, 0],
     (ref App app, Dwarf d) {
       app.setTile(d.currentJob.targetTile, d.currentJob.tileType);
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.currentJob.tileType, d.currentJob.targetTile)));
@@ -106,8 +105,6 @@ void claimNextJob(ref App app, Dwarf d) {
   jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
   d.targetTile = d.currentJob.targetTile;
   auto goalTile = app.findGoalTile(d);
-  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
-    d.currentJob.onFail(app, d);
-  }
+  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) { d.currentJob.onFail(app, d); }
 }
 

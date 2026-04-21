@@ -6,6 +6,7 @@
 import engine;
 
 import dwarf : spawnDwarf, randomDwarfName;
+import jobs : jobQueue;
 import imgui : faIcon, iconText;
 
 void showDwarfContent(ref App app, uint font = 0) {
@@ -14,14 +15,19 @@ void showDwarfContent(ref App app, uint font = 0) {
   if(igButton(iconText(cast(string)ICON_FA_PLUS, "Spawn"), ImVec2(0,0))) { app.spawnDwarf(randomDwarfName()); }
 
   igSeparator();
+
+  int idle = 0, walking = 0, working = 0;
   foreach(o; app.objects) {
     auto d = cast(Dwarf)o;
     if(d is null) continue;
     string status;
-    if(d.targetTile[0] == int.min) status = "Idle";
-    else if(d.miningProgress > 0.0f) status = format("Mining %.0f", d.miningProgress * 100) ~ "%";
-    else status = format("Walking (%d steps)", d.path.length);
+    if(d.currentJob.onArrive is null) { status = "Idle"; idle++; }
+    else if(d.path.length > 0) { status = format("Walking -> %s", d.currentJob.name); walking++; }
+    else { status = d.currentJob.name; working++; }
     igText(toStringz("%s"), toStringz(format("%s %s @ %s - %s", fromStringz(faIcon(cast(string)ICON_FA_USER)), d.name, d.tile, status)));
   }
+
+  igSeparator();
+  igText(toStringz(format("Queue: %d | Idle: %d | Walking: %d | Working: %d", jobQueue.length, idle, walking, working)));
 }
 
