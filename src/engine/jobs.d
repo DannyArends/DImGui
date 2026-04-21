@@ -6,7 +6,7 @@
 import engine;
 
 import block : spawnDroppedBlock, findDroppedBlock;
-import dwarf : findGoalTile, pathfindTo;
+import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import world : setTile;
 
