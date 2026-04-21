@@ -21,9 +21,9 @@ void showDwarfContent(ref App app, uint font = 0) {
     auto d = cast(Dwarf)o;
     if(d is null) continue;
     string status;
-    if(d.currentJob.onArrive is null) { status = "Idle"; idle++; }
-    else if(d.path.length > 0) { status = format("Walking -> %s", d.currentJob.name); walking++; }
-    else { status = d.currentJob.name; working++; }
+    if(d.jobStack.length == 0) { status = "Idle"; idle++; }
+    else if(d.path.length > 0) { status = format("Walking -> %s", d.jobStack[0].name); walking++; }
+    else { status = d.jobStack[0].name; working++; }
     if(d.carrying.length > 0) status ~= format(" [carrying: %s]", d.carrying);
     igText(toStringz("%s"), toStringz(format("%s %s @ %s - %s", fromStringz(faIcon(cast(string)ICON_FA_USER)), d.name, d.tile, status)));
   }
