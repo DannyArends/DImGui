@@ -37,7 +37,11 @@ bool repathTo(T)(ref App app, T obj, int[3] targetTile) {
   obj.targetTile = targetTile;
   auto goalTile = app.findGoalTile(obj);
   if(goalTile[0] == int.min) return false;
-  return app.pathfindTo(obj, goalTile);
+  if(!app.pathfindTo(obj, goalTile)) return false;
+  obj.moveFrom = obj.visualPos;
+  obj.moveTo = obj.visualPos;
+  obj.moveT = 1.0f;
+  return true;
 }
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
