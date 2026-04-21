@@ -67,5 +67,6 @@ void followPath(T)(ref App app, T obj) {
   obj.moveTo = [next[0], next[1] - 0.5f, next[2]];
   obj.moveT = 0.0f;
   obj.tile = app.world.worldToTile(next);
+  app.camera.isDirty = true;
 }
 

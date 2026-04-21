@@ -154,9 +154,9 @@ void handleEvents(ref App app) {
     //GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    foreach(object; app.objects) {
-      if(app.trace) SDL_Log("object: %s", toStringz(object.geometry()));
-      if(object.onTick) object.onTick(app, object); 
+    foreach(i; iota(app.objects.length).array.randomShuffle()) {
+      if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
+      if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]); 
     }
   }
 
