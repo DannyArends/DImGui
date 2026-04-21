@@ -19,7 +19,9 @@ class Dwarf : Cylinder {
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
-  Job currentJob;
+  Job currentJob;                           /// Current job
+  TileType[] carrying;                      /// Items the dwarf is currently holding
+
   float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
