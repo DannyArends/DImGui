@@ -5,10 +5,11 @@
 import engine;
 import geometry;
 import search : performSearch, atGoal, stepThroughPath;
-import world : setTile, tileToWorld;
+import world : setTile, tileToWorld, isTileOccupied;
 import vector : euclidean;
 import tileatlas : tileData;
 import block : spawnDroppedBlock;
+import pathfinding : followPath, pathfindTo, findGoalTile;
 import jobs : BuildJob, miningQueue, buildQueue, claimJob, claimBuildJob, doPickup, doBuilding, doMining;
 
 /** Dwarven Cylinderz  */
@@ -30,23 +31,11 @@ class Dwarf : Cylinder {
   }
 }
 
-/** Is the Tile occupied ?  */
-bool isTileOccupied(ref App app, int[3] tile) {
-  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null && d.tile == tile) return true; }
-  return false;
-}
-
 /** Random names */
 string randomDwarfName() {
   string[] prefixes = ["Urist", "Iden", "Meng", "Reg", "Doren", "Ast", "Nil", "Erib", "Thob", "Cog"];
   string[] suffixes = ["ral", "dor", "zan", "kel", "tok", "mis", "bur", "ith", "gar", "lon"];
   return prefixes[uniform(0, prefixes.length)] ~ suffixes[uniform(0, suffixes.length)];
-}
-
-/** Can we stand on this Tile ? */
-bool isStandable(World world, int[3] tile) {
-  if (tile[1] <= 0 || tile[1] >= world.chunkHeight) return false;
-  return world.getTileAt(tile) == TileType.None && world.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
 }
 
 /** Find a free surface tile (as in non-occupado) and on top of the world */
@@ -65,43 +54,6 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
     }
   }
   return [int.min, 0, 0];
-}
-
-/** Find the closest standable neighbour (air tile with solid below) to the dwarf */
-int[3] findGoalTile(ref App app, Dwarf d) {
-  int[3] goalTile = [int.min, 0, 0];
-  float bestDist = float.max;
-  foreach(n; app.world.tileNeighbours(d.targetTile)[0..2] ~ app.world.tileNeighbours(d.targetTile)[4..6]) {
-    if(!app.world.isStandable(n)) continue;
-    float dist = abs(n[0]-d.tile[0]) + abs(n[2]-d.tile[2]);
-    if(dist < bestDist) { bestDist = dist; goalTile = n; }
-  }
-  return goalTile;
-}
-
-/** Pathfind dwarf to goalTile, returns false if unreachable */
-bool pathfindTo(ref App app, Dwarf d, int[3] goalTile) {
-  float[3] start = app.tileToWorld(d.tile);
-  float[3] goal  = app.tileToWorld(goalTile);
-  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.name, start, goal)));
-  auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
-  if(app.verbose) SDL_Log(toStringz(format("Search: %s steps: %d", result.state, result.steps)));
-  if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return false;
-  d.path = [];
-  while(result.pathptr != size_t.max && !result.atGoal()) d.path ~= result.stepThroughPath(app.trace);
-  d.path ~= result.pool[result.goal].position;
-  return true;
-}
-
-/** Move dwarf one step along its path */
-void followPath(ref App app, Dwarf d) {
-  if (d.path.length == 0) return;
-  auto next = d.path[0];
-  d.path = d.path[1..$];
-  d.moveFrom = d.visualPos;
-  d.moveTo   = [next[0], next[1] - 0.5f, next[2]];
-  d.moveT    = 0.0f;
-  d.tile  = app.world.worldToTile(next);   /// logical position updates immediately, chains next step
 }
 
 /** dwarfFrame */

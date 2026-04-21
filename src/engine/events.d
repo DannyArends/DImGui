@@ -67,16 +67,14 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isVisible) continue;                       // Invisible objects should not generate hits
     if(!app.objects[x].isSelectable) continue;                    // Non-selectable objects should not generate hits
-    if(cast(Line)(app.objects[x]) is null) continue;                 // Other lines should not generate hits
+    if(cast(Line)(app.objects[x]) !is null) continue;             // Lines should not generate hits
     app.objects[x].computeBoundingBox(app.trace);                 // Make sure we compute the current Bounding Box
     auto intersections = ray.intersects(app.objects[x].box, x);   // Compute the intersection
     app.objects[x].window = false;
     if (intersections.any!(i => i.intersects)) {
       //version(Android) {} else { app.gui.showObjects = true; }
       hits ~= intersections;
-    } else {
-      app.objects[x].box.setColor();
-    }
+    } else { app.objects[x].box.setColor(); }
   }
   if(showRay) app.objects ~= createLine(ray);
   hits.sort!("a.tmin < b.tmin");
@@ -107,7 +105,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         auto hits = app.getHits(ray, app.showRays);
         if (hits.length > 0) { int[3] wc;
           if(app.getBestTile(ray, wc)) {
-            SDL_Log(toStringz(format("Add %s to mining queue of length %s", wc, miningQueue.length)));
+            if(app.verbose) SDL_Log(toStringz(format("Add %s to mining queue of length %s", wc, miningQueue.length)));
             miningQueue ~= wc;
           }
         }

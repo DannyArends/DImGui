@@ -193,6 +193,18 @@ bool canMoveTo(ref App app, float[3] pos) {
   return true;
 }
 
+/** Can we stand on this Tile ? */
+bool isStandable(World world, int[3] tile) {
+  if (tile[1] <= 0 || tile[1] >= world.chunkHeight) return false;
+  return world.getTileAt(tile) == TileType.None && world.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
+}
+
+/** Is the Tile occupied ?  */
+bool isTileOccupied(ref App app, int[3] tile) {
+  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null && d.tile == tile) return true; }
+  return false;
+}
+
 /** Set a tile type in a chunk and mark the chunk dirty for rebuild */
 void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(app.world.getTile(tile) == TileType.Lava) return;  // cannot remove lava
