@@ -15,6 +15,7 @@ struct Job {
   int[3] targetTile;
   TileType tileType;
   Job[] prereqs;
+
   void function(ref App app, Dwarf d) onArrive;
   void function(ref App app, Dwarf d) onFail;
 }
@@ -53,6 +54,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
           db.instances = db.instances[0..i] ~ db.instances[i+1..$];
           db.buffers[INSTANCE] = false;
           app.deriveInventory();
+          d.carrying ~= d.currentJob.tileType;
           d.currentJob = Job.init;
           d.targetTile = [int.min, 0, 0];
           return;
@@ -74,11 +76,13 @@ Job buildingJob(int[3] targetTile, TileType tileType, int[3] blockTile) {
     (ref App app, Dwarf d) {
       app.setTile(d.currentJob.targetTile, d.currentJob.tileType);
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.currentJob.tileType, d.currentJob.targetTile)));
+      d.carrying = d.carrying.remove!(c => c == d.currentJob.tileType);
       d.currentJob = Job.init;
       d.targetTile = [int.min, 0, 0];
     },
     (ref App app, Dwarf d) {
-      app.spawnDroppedBlock(d.tile, d.currentJob.tileType);
+      foreach(tt; d.carrying) app.spawnDroppedBlock(d.tile, tt);
+      d.carrying = [];
       jobQueue ~= buildingJob(d.currentJob.targetTile, d.currentJob.tileType, d.tile);
       d.currentJob = Job.init;
       d.targetTile = [int.min, 0, 0];
