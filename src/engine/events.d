@@ -18,7 +18,6 @@ import vulkan : cleanup;
 import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
-import search : testSearch;
 import jobs : miningQueue;
 
 /** Handle keyboard events */
@@ -31,7 +30,6 @@ void handleKeyEvents(ref App app, SDL_Event e) {
     if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
     if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
-    if(symbol == SDLK_F11) { app.testSearch(); }
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
   }
 }
