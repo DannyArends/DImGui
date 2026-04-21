@@ -114,7 +114,7 @@ void claimNextJob(ref App app, Dwarf d) {
     if(job.failedBy.canFind(d.uid)) continue;
     d.targetTile = job.targetTile;
     auto goal = app.findGoalTile(d);
-    if(goal[0] == int.min) continue;
+    if(goal[0] == int.min) { job.failedBy ~= d.uid; continue; }
     float dist = abs(goal[0] - d.tile[0]) + abs(goal[2] - d.tile[2]);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
