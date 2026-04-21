@@ -8,6 +8,8 @@ import io : readFile, writeFile;
 import inventory : deriveInventory;
 import world : tileToWorld, WORLD_MAGIC;
 
+struct BlockData { int[3] tile; uint tileType; }
+
 class Blocks : Cube {
   int[3][] tilePos;
 
@@ -18,8 +20,6 @@ class Blocks : Cube {
     name = (){ return "DroppedBlocks"; };
   }
 }
-
-struct BlockData { int[3] tile; uint tileType; }
 
 /** Save blocks dropped */
 void saveDroppedBlocks(ref App app) {
@@ -56,6 +56,7 @@ int[3] findDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
   return best;
 }
 
+/** Create a drop instance */
 Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
   float ts = app.world.tileSize * 0.25f;
   float th = app.world.tileHeight * 0.25f;
@@ -64,6 +65,7 @@ Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
   return Instance(cast(uint)tt, [ts,0,0, 0,th,0, 0,0,ts, wp[0],wp[1],wp[2]]);
 }
 
+/** Spawn a dropped block */
 void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
   if(app.world.droppedBlocks is null) {
     app.world.droppedBlocks = new Blocks();

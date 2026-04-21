@@ -123,6 +123,7 @@ bool claimJob(ref App app, Dwarf d) {
   return true;
 }
 
+/** Claim a Build job */
 bool claimBuildJob(ref App app, Dwarf d) {
   foreach(i, ref job; buildQueue) {
     int[3] blockTile = app.findDroppedBlock(job.tileType, d.tilePos);
@@ -137,6 +138,7 @@ bool claimBuildJob(ref App app, Dwarf d) {
   return false;
 }
 
+/** Pickup */
 void doPickup(ref App app, Dwarf d) {
   auto db = app.world.droppedBlocks;
   foreach(i, tile; db.tilePos) {
