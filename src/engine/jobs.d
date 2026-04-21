@@ -91,7 +91,8 @@ void claimNextJob(ref App app, Dwarf d) {
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
-    d.targetTile = job.targetTile;
+    auto scoreTile = job.prereqs.length > 0 ? job.prereqs[0].targetTile : job.targetTile;
+    d.targetTile = scoreTile;
     auto goal = app.findGoalTile(d);
     if(goal[0] == int.min) continue;
     float dist = abs(goal[0] - d.tile[0]) + abs(goal[2] - d.tile[2]);
