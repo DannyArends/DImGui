@@ -10,7 +10,7 @@ import io : writeFile, readFile, fixPath, isfile;
 import tileatlas : TileType;
 import world : setTile;
 import ghost : updateGhostTile;
-import jobs : jobQueue, pickupJob;
+import jobs : jobQueue, buildingJob;
 
 struct Inventory {
   int[TileType] items;
@@ -37,6 +37,6 @@ void placeTile(ref App app, int[3] wc) {
   if(app.inventory.get(app.inventory.selectedTile, 0) - reserved <= 0) return;
   int[3] blockTile = app.findDroppedBlock(app.inventory.selectedTile, [0, 0, 0]);
   if(blockTile[0] == int.min) return;
-  jobQueue ~= pickupJob(blockTile, app.inventory.selectedTile, wc);
+  jobQueue ~= buildingJob(wc, app.inventory.selectedTile, blockTile);
 }
 
