@@ -5,7 +5,6 @@
 
 import engine;
 
-import block : findFreeDroppedBlock;
 import io : writeFile, readFile, fixPath, isfile;
 import tileatlas : TileType;
 import world : setTile;
@@ -34,8 +33,6 @@ void placeTile(ref App app, int[3] wc) {
   if(wc[0] == int.min) return;
   if(app.inventory.selectedTile == TileType.None) return;
   if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) return;
-  int[3] blockTile = app.findFreeDroppedBlock(app.inventory.selectedTile, [0, 0, 0]);
-  if(blockTile[0] == int.min) return;
-  jobQueue ~= buildingJob(wc, app.inventory.selectedTile, blockTile);
+  jobQueue ~= buildingJob(wc, app.inventory.selectedTile);
 }
 

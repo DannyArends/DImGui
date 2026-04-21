@@ -44,7 +44,7 @@ void loadDroppedBlocks(ref App app) {
 }
 
 /** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
-int[3] findFreeDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
+int[3] findFreeBlock(ref App app, TileType tt, int[3] dwarfTile) {
   import jobs : jobQueue;
   if(app.world.droppedBlocks is null) return [int.min, 0, 0];
   int[3] best = [int.min, 0, 0];
