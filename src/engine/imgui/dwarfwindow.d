@@ -30,5 +30,8 @@ void showDwarfContent(ref App app, uint font = 0) {
 
   igSeparator();
   igText(toStringz(format("Queue: %d | Idle: %d | Walking: %d | Working: %d", jobQueue.length, idle, walking, working)));
+
+  igSeparator();
+  foreach(ref j; jobQueue) { igText(toStringz(format("  [%s] -> %s (%s)", j.name, j.targetTile, j.tileType))); }
 }
 

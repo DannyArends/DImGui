@@ -5,7 +5,7 @@
 
 import engine;
 
-import block : spawnDroppedBlock, findFreeBlock;
+import block : spawnDroppedBlock, findFreeBlock, hasBlocks;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import world : setTile;
@@ -15,7 +15,7 @@ struct Job {
   int[3] targetTile;
   TileType tileType;
   Job[] prereqs;
-  uint retries;
+  uint[] failedBy;
 
   void function(ref App app, Dwarf d, ref Job j) onClaim;
   void function(ref App app, Dwarf d) onArrive;
@@ -24,7 +24,7 @@ struct Job {
 Job[] jobQueue;
 
 Job miningJob(int[3] targetTile, uint retries = 3) {
-  return Job("Mining", targetTile, TileType.None, [], 3,
+  return Job("Mining", targetTile, TileType.None, [],
     onArrive: (ref App app, Dwarf d) {
       d.miningProgress += 0.25f;
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.name, d.jobStack[0].targetTile, d.miningProgress * 100)));
@@ -38,11 +38,9 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
       }
     },
     onFail: (ref App app, Dwarf d) {
-      if(d.jobStack[0].retries > 0) {
-        auto j = miningJob(d.jobStack[0].targetTile);
-        j.retries = d.jobStack[0].retries - 1;
-        jobQueue ~= j;
-      } else { SDL_Log(toStringz(format("Dwarf %s giving up on %s", d.name, d.jobStack[0].targetTile))); }
+      auto j = d.jobStack[0];
+      j.failedBy ~= d.uid;
+      jobQueue ~= j;
       d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
       d.miningProgress = 0.0f;
@@ -51,7 +49,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
 }
 
 Job pickupJob(int[3] targetTile, TileType tileType) {
-  return Job("Fetching", targetTile, tileType, [], 2,
+  return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, Dwarf d, ref Job j) {
       j.targetTile = app.findFreeBlock(j.tileType, d.tile);
     },
@@ -75,7 +73,10 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
       d.targetTile = [int.min, 0, 0];
     },
     onFail: (ref App app, Dwarf d) {
-      if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
+      if(d.jobStack.length > 1) {
+        int[3] freeBlock = app.findFreeBlock(d.jobStack[0].tileType, d.tile);
+        if(freeBlock[0] != int.min) jobQueue ~= d.jobStack[1];
+      }
       d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
     }
@@ -83,7 +84,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
 }
 
 Job buildingJob(int[3] targetTile, TileType tileType) {
-  return Job("Building", targetTile, tileType, [pickupJob([int.min, 0, 0], tileType)], 0,
+  return Job("Building", targetTile, tileType, [pickupJob([int.min, 0, 0], tileType)],
     onArrive: (ref App app, Dwarf d) {
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
@@ -103,11 +104,15 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
 
 void claimNextJob(ref App app, Dwarf d) {
   if(jobQueue.length == 0) return;
+  size_t dwarfCount = app.objects.count!(o => cast(Dwarf)o !is null);
+  jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
+  if(jobQueue.length == 0) return;
+
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
-    auto scoreTile = job.prereqs.length > 0 ? job.prereqs[0].targetTile : job.targetTile;
-    d.targetTile = scoreTile;
+    if(job.failedBy.canFind(d.uid)) continue;
+    d.targetTile = job.targetTile;
     auto goal = app.findGoalTile(d);
     if(goal[0] == int.min) continue;
     float dist = abs(goal[0] - d.tile[0]) + abs(goal[2] - d.tile[2]);
@@ -122,18 +127,10 @@ void claimNextJob(ref App app, Dwarf d) {
 
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
 
-  if(d.jobStack[0].targetTile[0] == int.min) {
-    jobQueue ~= job;
-    d.jobStack = [];
-    d.targetTile = [int.min, 0, 0];
-    return;
-  }
-
+  if(d.jobStack[0].targetTile[0] == int.min) { d.jobStack[0].onFail(app, d); return; }
 
   d.targetTile = d.jobStack[0].targetTile;
   auto goalTile = app.findGoalTile(d);
-  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
-    d.jobStack[0].onFail(app, d);
-  }
+  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) { d.jobStack[0].onFail(app, d); }
 }
 
