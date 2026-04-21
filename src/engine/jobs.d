@@ -65,11 +65,13 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
           return;
         }
       }
-      // block gone
+      // block gone — requeue the building job (rest of stack)
+      if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
       d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
     },
     (ref App app, Dwarf d) {
+      if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
       d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
     }
