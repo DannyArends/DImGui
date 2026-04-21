@@ -10,122 +10,104 @@ import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import world : setTile;
 
-struct BuildJob {
-  int[3] tile;
-  TileType tileType;
+struct Job {
+  int[3] targetTile;
+  TileType tileType;                              // for building/pickup context
+  int[3] pickupTile;                             // for build jobs
+  void function(ref App app, Dwarf d) onArrive;
+  void function(ref App app, Dwarf d) onFail;
 }
-BuildJob[] buildQueue;
-int[3][] miningQueue;
 
+Job[] jobQueue;
 
-/** Scan the queue, claim the closest reachable job and remove it from the queue, returns false if no job could be claimed */
-bool claimBestJob(ref App app, Dwarf d, out int[3] goalTile) {
+Job miningJob(int[3] targetTile) {
+  return Job(targetTile, TileType.None, [int.min, 0, 0],
+    (ref App app, Dwarf d) {
+      d.miningProgress += 0.25f;
+      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.name, d.currentJob.targetTile, d.miningProgress * 100)));
+      if(d.miningProgress >= 1.0f) {
+        TileType tt = app.world.getTileAt(d.currentJob.targetTile);
+        app.setTile(d.currentJob.targetTile);
+        if(tt != TileType.None) app.spawnDroppedBlock(d.currentJob.targetTile, tt);
+        d.currentJob = Job.init;
+        d.targetTile = [int.min, 0, 0];
+        d.miningProgress = 0.0f;
+      }
+    },
+    (ref App app, Dwarf d) {
+      jobQueue ~= miningJob(d.currentJob.targetTile);
+      d.currentJob = Job.init;
+      d.targetTile = [int.min, 0, 0];
+      d.miningProgress = 0.0f;
+    }
+  );
+}
+
+Job pickupJob(int[3] targetTile, TileType tileType, int[3] buildTile) {
+  return Job(targetTile, tileType, buildTile,
+    (ref App app, Dwarf d) {
+      auto db = app.world.droppedBlocks;
+      foreach(i, tile; db.tiles) {
+        if(tile == d.currentJob.targetTile) {
+          db.tiles = db.tiles[0..i] ~ db.tiles[i+1..$];
+          db.instances = db.instances[0..i] ~ db.instances[i+1..$];
+          db.buffers[INSTANCE] = false;
+          app.deriveInventory();
+          // chain to build job
+          d.currentJob = buildingJob(d.currentJob.pickupTile, d.currentJob.tileType);
+          d.targetTile = [int.min, 0, 0];
+          return;
+        }
+      }
+      // block gone, abandon
+      d.currentJob = Job.init;
+      d.targetTile = [int.min, 0, 0];
+    },
+    (ref App app, Dwarf d) {
+      // can't reach block, requeue build job
+      jobQueue ~= buildingJob(d.currentJob.pickupTile, d.currentJob.tileType);
+      d.currentJob = Job.init;
+      d.targetTile = [int.min, 0, 0];
+    }
+  );
+}
+
+Job buildingJob(int[3] targetTile, TileType tileType) {
+  return Job(targetTile, tileType, [int.min, 0, 0],
+    (ref App app, Dwarf d) {
+      app.setTile(d.currentJob.targetTile, d.currentJob.tileType);
+      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.currentJob.tileType, d.currentJob.targetTile)));
+      d.currentJob = Job.init;
+      d.targetTile = [int.min, 0, 0];
+    },
+    (ref App app, Dwarf d) {
+      // can't reach build site, drop block and requeue
+      app.spawnDroppedBlock(d.tile, d.currentJob.tileType);
+      jobQueue ~= buildingJob(d.currentJob.targetTile, d.currentJob.tileType);
+      d.currentJob = Job.init;
+      d.targetTile = [int.min, 0, 0];
+    }
+  );
+}
+
+void claimNextJob(ref App app, Dwarf d) {
+  if(jobQueue.length == 0) return;
   int bestIdx = -1;
   float bestDist = float.max;
-  foreach(i, job; miningQueue) {
-    d.targetTile = job;
+  foreach(i, ref job; jobQueue) {
+    d.targetTile = job.targetTile;
     auto goal = app.findGoalTile(d);
     if(goal[0] == int.min) continue;
     float dist = abs(goal[0] - d.tile[0]) + abs(goal[2] - d.tile[2]);
-    if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; goalTile = goal; }
+    if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
-  if(bestIdx == -1) { d.targetTile = [int.min, 0, 0]; return(false); }
-  d.targetTile = miningQueue[bestIdx];
-  miningQueue = miningQueue[0..bestIdx] ~ miningQueue[bestIdx+1..$];
-  return(true);
-}
-
-/** Claim a job, find goal tile, compute path */
-bool claimJob(ref App app, Dwarf d) {
-  int[3] goalTile;
-  if(!app.claimBestJob(d, goalTile)) return false;
-  if(!app.pathfindTo(d, goalTile)) { d.targetTile = [int.min, 0, 0]; return false; }
-  return true;
-}
-
-/** Claim a Build job */
-bool claimBuildJob(ref App app, Dwarf d) {
-  foreach(i, ref job; buildQueue) {
-    int[3] blockTile = app.findDroppedBlock(job.tileType, d.tile);
-    if(blockTile[0] == int.min) continue;
-    if(!app.pathfindTo(d, blockTile)) continue;
-    d.currentBuild = job;
-    d.pickupTile = blockTile;
-    d.targetTile = blockTile;
-    buildQueue = buildQueue[0..i] ~ buildQueue[i+1..$];
-    return true;
-  }
-  return false;
-}
-
-/** Pickup */
-void doPickup(ref App app, Dwarf d) {
-  auto db = app.world.droppedBlocks;
-  foreach(i, tile; db.tiles) {
-    if(tile == d.pickupTile) {
-      auto dx = abs(d.tile[0] - tile[0]);
-      auto dz = abs(d.tile[2] - tile[2]);
-      if(dx + dz > 1) return;
-      db.tiles = db.tiles[0..i] ~ db.tiles[i+1..$];
-      db.instances = db.instances[0..i] ~ db.instances[i+1..$];
-      db.buffers[INSTANCE] = false;
-      app.deriveInventory();
-      d.pickupTile = [int.min, 0, 0];
-      d.targetTile = [int.min, 0, 0];
-      return;
-    }
-  }
-  // block gone
-  d.currentBuild = BuildJob.init;
-  d.pickupTile = [int.min, 0, 0];
-  d.targetTile = [int.min, 0, 0];
-}
-
-/** Mine the target tile if adjacent */
-void doMining(ref App app, Dwarf d) {
-  auto dx = abs(d.tile[0] - d.targetTile[0]);
-  auto dz = abs(d.tile[2] - d.targetTile[2]);
-  if(dx + dz == 1 && d.tile[1] == d.targetTile[1]) {
-    d.miningProgress += 0.25f;
-    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.name, d.targetTile, d.miningProgress * 100)));
-    if(d.miningProgress >= 1.0f) {
-      TileType tt = app.world.getTileAt(d.targetTile);
-      app.setTile(d.targetTile);
-      if(tt != TileType.None) app.spawnDroppedBlock(d.targetTile, tt);
-      d.targetTile = [int.min, 0, 0];
-      d.miningProgress = 0.0f;
-    }
-  } else {
-    d.targetTile = d.targetTile; // keep target
-    auto goalTile = app.findGoalTile(d);
-    if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
-      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s can't reach %s, requeueing", d.name, d.targetTile)));
-      miningQueue ~= d.targetTile;
-      d.targetTile = [int.min, 0, 0];
-      d.miningProgress = 0.0f;
-    }
-  }
-}
-
-/** Place the tile at the build site */
-void doBuilding(ref App app, Dwarf d) {
-  auto dx = abs(d.tile[0] - d.currentBuild.tile[0]);
-  auto dz = abs(d.tile[2] - d.currentBuild.tile[2]);
-  if(dx + dz == 1 && d.tile[1] == d.currentBuild.tile[1]) {
-    app.setTile(d.currentBuild.tile, d.currentBuild.tileType);
-    if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.currentBuild.tileType, d.currentBuild.tile)));
-    d.currentBuild = BuildJob.init;
-    d.targetTile = [int.min, 0, 0];
-  } else { // try to re-path
-    d.targetTile = d.currentBuild.tile;
-    auto goalTile = app.findGoalTile(d);
-    if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
-      SDL_Log(toStringz(format("Dwarf %s can't reach build site %s, dropping block", d.name, d.currentBuild.tile)));
-      app.spawnDroppedBlock(d.tile, d.currentBuild.tileType);
-      buildQueue ~= d.currentBuild;
-      d.currentBuild = BuildJob.init;
-      d.targetTile = [int.min, 0, 0];
-    }
+  if(bestIdx == -1) { d.targetTile = [int.min, 0, 0]; return; }
+  d.currentJob = jobQueue[bestIdx];
+  jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
+  d.targetTile = d.currentJob.targetTile;
+  auto goalTile = app.findGoalTile(d);
+  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
+    d.currentJob.onFail(app, d);
   }
 }
 

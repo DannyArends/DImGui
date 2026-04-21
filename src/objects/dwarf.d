@@ -3,24 +3,23 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 import engine;
+
 import geometry;
-import search : performSearch, atGoal, stepThroughPath;
-import world : setTile, tileToWorld, isTileOccupied;
+import world : tileToWorld, isTileOccupied;
 import vector : euclidean;
 import tileatlas : tileData;
-import block : spawnDroppedBlock;
-import pathfinding : followPath, pathfindTo, findGoalTile;
-import jobs : BuildJob, miningQueue, buildQueue, claimJob, claimBuildJob, doPickup, doBuilding, doMining;
+import block : spawnDroppedBlock, findDroppedBlock;
+import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
+import jobs : Job, jobQueue, miningJob, claimNextJob;
 
 /** Dwarven Cylinderz  */
 class Dwarf : Cylinder {
   string name;                              /// Name
   int[3] tile = [0, 0, 0];                  /// Which tile we're on
-  int[3] pickupTile = [int.min, 0, 0];      /// Dropped block to pick up
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
-  BuildJob currentBuild;                    /// Active build job
+  Job currentJob;
   float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
@@ -76,22 +75,14 @@ void dwarfTick(ref App app, ref Geometry obj) {
   auto d = cast(Dwarf)obj;
   if(d is null) return;
   if(d.targetTile[0] == int.min) {
-    if(d.currentBuild.tileType != TileType.None && d.pickupTile[0] == int.min) {
-      d.targetTile = d.currentBuild.tile;
-      auto goalTile = app.findGoalTile(d);
-      if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
-        app.spawnDroppedBlock(d.tile, d.currentBuild.tileType);
-        buildQueue ~= d.currentBuild;
-        d.currentBuild = BuildJob.init;
-        d.targetTile = [int.min, 0, 0];
-      }
-    } else if(!app.claimJob(d)) { app.claimBuildJob(d); }
+    if(d.currentJob.onArrive !is null) {
+      if(!app.repathTo(d, d.currentJob.targetTile)) d.currentJob.onFail(app, d);
+    } else { app.claimNextJob(d); }
   } else if(d.path.length > 0 && d.moveT >= 1.0f) {
     app.followPath(d);
   } else if(d.path.length == 0 && d.moveT >= 1.0f) {
-    if(d.pickupTile[0] != int.min) app.doPickup(d);
-    else if(d.currentBuild.tileType != TileType.None) app.doBuilding(d);
-    else app.doMining(d);
+    if(app.atDestination(d, d.currentJob.targetTile)) d.currentJob.onArrive(app, d);
+    else if(!app.repathTo(d, d.currentJob.targetTile)) d.currentJob.onFail(app, d);
   }
 }
 
