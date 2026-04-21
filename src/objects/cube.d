@@ -55,6 +55,6 @@ class Cube : Geometry {
               20,21,22,  22,23,20];     // backside
     instances = [Instance()];
     meshes["Cube"] = Mesh([0, cast(uint)vertices.length]);
-    name = (){ return(typeof(this).stringof); };
+    geometry = (){ return(typeof(this).stringof); };
   }
 }

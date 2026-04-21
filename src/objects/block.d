@@ -11,13 +11,13 @@ import world : tileToWorld, WORLD_MAGIC;
 struct BlockData { int[3] tile; uint tileType; }
 
 class Blocks : Cube {
-  int[3][] tilePos;
+  int[3][] tiles;
 
   this() {
     super();
     instancedMesh = true;
     instances = [];
-    name = (){ return "DroppedBlocks"; };
+    geometry = (){ return "DroppedBlocks"; };
   }
 }
 
@@ -26,7 +26,7 @@ void saveDroppedBlocks(ref App app) {
   if(app.world.droppedBlocks is null) return;
   auto blocks = app.world.droppedBlocks;
   BlockData[] data;
-  foreach(i, tile; blocks.tilePos) { data ~= BlockData(tile, blocks.instances[i].meshdef[0]); }
+  foreach(i, tile; blocks.tiles) { data ~= BlockData(tile, blocks.instances[i].meshdef[0]); }
   uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
   writeFile(app.world.droppedBlocksPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
 }
@@ -40,7 +40,7 @@ void loadDroppedBlocks(ref App app) {
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
   auto data = cast(BlockData[])raw[uint[2].sizeof..$].dup;
   foreach(ref b; data) { app.spawnDroppedBlock(b.tile, cast(TileType)b.tileType); }
-  SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tilePos.length);
+  SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tiles.length);
 }
 
 /** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
@@ -48,7 +48,7 @@ int[3] findDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
   if(app.world.droppedBlocks is null) return [int.min, 0, 0];
   int[3] best = [int.min, 0, 0];
   float bestDist = float.max;
-  foreach(i, tile; app.world.droppedBlocks.tilePos) {
+  foreach(i, tile; app.world.droppedBlocks.tiles) {
     if(app.world.droppedBlocks.instances[i].meshdef[0] != cast(uint)tt) continue;
     float dist = abs(tile[0] - dwarfTile[0]) + abs(tile[2] - dwarfTile[2]);
     if(dist < bestDist) { bestDist = dist; best = tile; }
@@ -71,7 +71,7 @@ void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
     app.world.droppedBlocks = new Blocks();
     app.objects ~= app.world.droppedBlocks;
   }
-  app.world.droppedBlocks.tilePos ~= tile;
+  app.world.droppedBlocks.tiles ~= tile;
   app.world.droppedBlocks.instances ~= app.toDropInstance(tile, tt);
   app.world.droppedBlocks.buffers[INSTANCE] = false;
   app.deriveInventory();

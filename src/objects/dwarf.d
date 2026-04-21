@@ -13,11 +13,8 @@ import jobs : BuildJob, miningQueue, buildQueue, claimJob, claimBuildJob, doPick
 
 /** Dwarven Cylinderz  */
 class Dwarf : Cylinder {
-  this() {
-    name = (){ return(typeof(this).stringof); };
-  }
-  string dwarfName;
-  int[3] tilePos    = [0, 0, 0];            /// Which tile we're on
+  string name;                              /// Name
+  int[3] tile = [0, 0, 0];                  /// Which tile we're on
   int[3] pickupTile = [int.min, 0, 0];      /// Dropped block to pick up
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
@@ -27,11 +24,15 @@ class Dwarf : Cylinder {
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
+
+  this() {
+    geometry = (){ return(typeof(this).stringof); };
+  }
 }
 
 /** Is the Tile occupied ?  */
 bool isTileOccupied(ref App app, int[3] tile) {
-  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null && d.tilePos == tile) return true; }
+  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null && d.tile == tile) return true; }
   return false;
 }
 
@@ -72,7 +73,7 @@ int[3] findGoalTile(ref App app, Dwarf d) {
   float bestDist = float.max;
   foreach(n; app.world.tileNeighbours(d.targetTile)[0..2] ~ app.world.tileNeighbours(d.targetTile)[4..6]) {
     if(!app.world.isStandable(n)) continue;
-    float dist = abs(n[0]-d.tilePos[0]) + abs(n[2]-d.tilePos[2]);
+    float dist = abs(n[0]-d.tile[0]) + abs(n[2]-d.tile[2]);
     if(dist < bestDist) { bestDist = dist; goalTile = n; }
   }
   return goalTile;
@@ -80,9 +81,9 @@ int[3] findGoalTile(ref App app, Dwarf d) {
 
 /** Pathfind dwarf to goalTile, returns false if unreachable */
 bool pathfindTo(ref App app, Dwarf d, int[3] goalTile) {
-  float[3] start = app.tileToWorld(d.tilePos);
+  float[3] start = app.tileToWorld(d.tile);
   float[3] goal  = app.tileToWorld(goalTile);
-  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.dwarfName, start, goal)));
+  if(app.verbose) SDL_Log(toStringz(format("Dwarf %s pathfinding from %s to %s", d.name, start, goal)));
   auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
   if(app.verbose) SDL_Log(toStringz(format("Search: %s steps: %d", result.state, result.steps)));
   if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return false;
@@ -100,7 +101,7 @@ void followPath(ref App app, Dwarf d) {
   d.moveFrom = d.visualPos;
   d.moveTo   = [next[0], next[1] - 0.5f, next[2]];
   d.moveT    = 0.0f;
-  d.tilePos  = app.world.worldToTile(next);   /// logical position updates immediately, chains next step
+  d.tile  = app.world.worldToTile(next);   /// logical position updates immediately, chains next step
 }
 
 /** dwarfFrame */
@@ -127,7 +128,7 @@ void dwarfTick(ref App app, ref Geometry obj) {
       d.targetTile = d.currentBuild.tile;
       auto goalTile = app.findGoalTile(d);
       if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
-        app.spawnDroppedBlock(d.tilePos, d.currentBuild.tileType);
+        app.spawnDroppedBlock(d.tile, d.currentBuild.tileType);
         buildQueue ~= d.currentBuild;
         d.currentBuild = BuildJob.init;
         d.targetTile = [int.min, 0, 0];
@@ -147,8 +148,8 @@ void spawnDwarf(ref App app, string name) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   Dwarf dwarf = new Dwarf();
-  dwarf.dwarfName = name;
-  dwarf.tilePos = tile;
+  dwarf.name = name;
+  dwarf.tile = tile;
   auto wp = app.tileToWorld(tile);
   dwarf.position([wp[0], wp[1] - 0.5f, wp[2]]);
   dwarf.visualPos = [wp[0], wp[1] - 0.5f, wp[2]];

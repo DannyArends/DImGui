@@ -64,13 +64,13 @@ void computeLightSpace(const App app, ref Light light, float nearPlane = 0.1f, f
  */
 void toggleLightGeometries(ref App app) {
   foreach (o; app.objects) {
-    if (cast(Cone)o !is null && o.name() == "LightCone") o.deAllocate = true;
+    if (cast(Cone)o !is null && o.geometry() == "LightCone") o.deAllocate = true;
   }
   if (!app.showLights) return;
   foreach (ref light; app.lights) {
     app.objects ~= new Cone();
     SDL_Log("direction: %f %f %f", light.direction[0], light.direction[1], light.direction[2]);
-    app.objects[$-1].name = (){ return "LightCone"; };
+    app.objects[$-1].geometry = (){ return "LightCone"; };
     app.objects[$-1].rotate([light.yaw(), 1.0f, light.pitch()]);
     app.objects[$-1].position(light.position[0..3]);
     app.objects[$-1].setColor(light.intensity);

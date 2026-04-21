@@ -67,7 +67,7 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isVisible) continue;                       // Invisible objects should not generate hits
     if(!app.objects[x].isSelectable) continue;                    // Non-selectable objects should not generate hits
-    if(app.objects[x].name() == "Line") continue;                 // Other lines should not generate hits
+    if(cast(Line)(app.objects[x]) is null) continue;                 // Other lines should not generate hits
     app.objects[x].computeBoundingBox(app.trace);                 // Make sure we compute the current Bounding Box
     auto intersections = ray.intersects(app.objects[x].box, x);   // Compute the intersection
     app.objects[x].window = false;
@@ -107,7 +107,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         auto hits = app.getHits(ray, app.showRays);
         if (hits.length > 0) { int[3] wc;
           if(app.getBestTile(ray, wc)) {
-            if(app.verbose) SDL_Log(toStringz(format("Add %s to mining queue of length %s", wc, miningQueue.length)));
+            SDL_Log(toStringz(format("Add %s to mining queue of length %s", wc, miningQueue.length)));
             miningQueue ~= wc;
           }
         }
@@ -160,7 +160,7 @@ void handleEvents(ref App app) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     foreach(object; app.objects) {
-      if(app.trace) SDL_Log("object: %s", toStringz(object.name()));
+      if(app.trace) SDL_Log("object: %s", toStringz(object.geometry()));
       if(object.onTick) object.onTick(app, object); 
     }
   }

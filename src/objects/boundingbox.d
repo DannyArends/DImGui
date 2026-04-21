@@ -89,14 +89,14 @@ class BoundingBox : Geometry {
 void computeBoundingBox(T)(ref T object, bool verbose = false) {
   bool initial = false;
   if(object.box is null) {
-    if(verbose) SDL_Log("Computing new Bounding Box for %s", toStringz(object.name()));
+    if(verbose) SDL_Log("Computing new Bounding Box for %s", toStringz(object.geometry()));
     object.box = new BoundingBox();
     initial = true;
   }
-  object.box.name = (){ return("BoundingBox"); };
+  object.box.geometry = (){ return("BoundingBox"); };
 
   if(initial || !object.buffers[VERTEX]) { // The object vertex buffer is out of date, update the BoundingBox vertices
-    if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.name()), toStringz(object.name()));
+    if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.geometry()), toStringz(object.geometry()));
     Bounds bounds;
     for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
     object.box.setDimensions(bounds.min, bounds.max);
