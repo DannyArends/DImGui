@@ -30,7 +30,7 @@ void showObjectsContent(ref App app, uint font = 0) {
       auto p = app.objects[i].position;
       igTableNextRow(0, 5.0f);
       string text = to!string(i);
-      if(object.name) text = object.name() ~ " " ~ text;
+      if(object.geometry()) text = object.geometry() ~ " " ~ text;
       igTableNextColumn();
         igText(toStringz(format("%s: %s (%d)", text, object.mName, object.uid)), ImVec2(0.0f, 0.0f));
       igTableNextColumn();
@@ -100,7 +100,7 @@ bool applySelection(ref Geometry obj, DropdownItem[] items, Mesh mesh, Selection
 /** Individual Object
  */
 void showObjectwindow(ref App app, ref Geometry obj) {
-  igText(toStringz(format("Name: %s %s", obj.name(), obj.mName)), ImVec2(0.0f, 0.0f));
+  igText(toStringz(format("Name: %s %s", obj.geometry(), obj.mName)), ImVec2(0.0f, 0.0f));
   igText(toStringz(format("Vertices: %s", obj.vertices.length)), ImVec2(0.0f, 0.0f));
   igText(toStringz(format("Indices: %s", obj.indices.length)), ImVec2(0.0f, 0.0f));
   igText(toStringz(format("Instances: %s", obj.instances.length)), ImVec2(0.0f, 0.0f));
@@ -117,7 +117,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
       int[2] limits = [0, cast(uint)(obj.animations.length-1)];
       igSliderScalar("##a", ImGuiDataType_U32,  &obj.animation, &limits[0], &limits[1], "%d", 0);
   }
-  igBeginTable(toStringz(obj.name() ~ "_Tbl"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+  igBeginTable(toStringz(obj.geometry() ~ "_Tbl"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     auto p = obj.position;
     igTableNextColumn();
       igText(faIcon(cast(string)ICON_FA_ARROWS), ImVec2(0.0f, 0.0f)); 
@@ -167,7 +167,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
     DropdownItem[] items = app.texturesToDropdown();
     auto selected = items.getKeys(obj.meshes[mesh0]);
 
-    igBeginTable(toStringz(obj.name() ~ "_TexTbl"), 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+    igBeginTable(toStringz(obj.geometry() ~ "_TexTbl"), 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       igTableNextColumn();
       igText("Diffuse:", ImVec2(0.0f, 0.0f));
       igTableNextColumn();
@@ -192,7 +192,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
     auto flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
     bool node_open = igTreeNodeEx_Str("Mesh textures", flags);
     if (node_open) {
-      igBeginTable(toStringz(obj.name() ~ "_Textures"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+      igBeginTable(toStringz(obj.geometry() ~ "_Textures"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       foreach(name; obj.meshes.byKey()){
         igTableNextColumn();
           igText(toStringz(format("%s", name)), ImVec2(0.0f, 0.0f)); igSameLine(0,5);

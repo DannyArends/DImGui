@@ -33,7 +33,7 @@ void showDwarfContent(ref App app, uint font = 0) {
     if(d.targetTile[0] == int.min) status = "Idle";
     else if(d.miningProgress > 0.0f) status = format("Mining %.0f", d.miningProgress * 100) ~ "%";
     else status = format("Walking (%d steps)", d.path.length);
-    igText(toStringz("%s"), toStringz(format("%s %s @ %s - %s", fromStringz(faIcon(cast(string)ICON_FA_USER)), d.dwarfName, d.tilePos, status)));
+    igText(toStringz("%s"), toStringz(format("%s %s @ %s - %s", fromStringz(faIcon(cast(string)ICON_FA_USER)), d.name, d.tile, status)));
   }
 }
 

@@ -36,6 +36,6 @@ class Torus : Geometry {
 
     instances = [Instance()];
     meshes["Torus"] = Mesh([0, cast(uint)vertices.length]);
-    name = (){ return(typeof(this).stringof); };
+    geometry = (){ return(typeof(this).stringof); };
   }
 }

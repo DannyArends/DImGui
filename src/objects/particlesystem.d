@@ -43,7 +43,7 @@ class ParticleSystem : Geometry {
     meshes["ParticleSystem"] = Mesh([0, cast(uint)vertices.length]);
     /** onFrame handler aging the particles every frame */
     onFrame = (ref App app, ref Geometry obj, float dt){ (cast(ParticleSystem)obj).age(); };
-    name = (){ return(typeof(this).stringof); };
+    geometry = (){ return(typeof(this).stringof); };
   }
 
   /** (Re)Spawn a particle at i */

@@ -35,7 +35,7 @@ class Tiles : Square {
     isSelectable = false;
     instancedMesh = true;
     instances = cd.tileInstances;
-    name = (){ return "Tiles"; };
+    geometry = (){ return "Tiles"; };
   }
 }
 
@@ -57,7 +57,7 @@ class Chunk : Cube {
     float cy = sy * 0.5f + wd.yOffset;
     instances = [Instance([0,0], translate([cx, cy, cz]).multiply(scale([sx, sy, sx])))];
     tiles = new Tiles(cd);
-    name = (){ return "Chunk"; };
+    geometry = (){ return "Chunk"; };
   }
 }
 
