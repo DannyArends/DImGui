@@ -165,6 +165,13 @@ struct World {
 
 void loadWorld(ref App app) {
   ensureWorldDir();
+
+  app.world.trunk = new TrunkMesh();
+  app.world.canopy = new CanopyMesh();
+  app.objects ~= app.world.trunk;
+  app.objects ~= app.world.canopy;
+  app.objects[($-1)].computeTangents();
+
   auto raw = readFile(app.world.worldPath());
   if(raw.length < 8) return;
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadWorld: invalid magic"); return; }
@@ -173,13 +180,8 @@ void loadWorld(ref App app) {
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
   app.loadDroppedBlocks();
-  app.loadTrees();
   app.deriveInventory();
-  app.world.trunk = new TrunkMesh();
-  app.world.canopy = new CanopyMesh();
-  app.objects ~= app.world.trunk;
-  app.objects ~= app.world.canopy;
-  app.objects[($-1)].computeTangents();
+  app.loadTrees();
 }
 
 /** Save world diffs to disk */
