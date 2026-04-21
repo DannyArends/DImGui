@@ -8,7 +8,7 @@ import io : writeFile, readFile, fixPath, isfile;
 import tileatlas : TileType;
 import world : setTile;
 import ghost : updateGhostTile;
-import dwarf : BuildJob, buildQueue;
+import jobs : BuildJob, buildQueue;
 
 struct Inventory {
   int[TileType] items;
