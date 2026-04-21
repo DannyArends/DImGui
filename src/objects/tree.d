@@ -5,6 +5,7 @@
  
 import engine;
 
+import block : spawnDroppedBlock;
 import io : readFile, writeFile;
 import tileatlas : TileType;
 import world : tileToWorld, WORLD_MAGIC;
@@ -96,6 +97,37 @@ void removeTreeInstances(ref App app, int[3] coord) {
   // remove canopy instances
   app.world.canopy.instances = app.world.canopy.instances[0..trees[0].canopyIdx] ~ app.world.canopy.instances[trees[$-1].canopyIdx+1..$];
   app.world.trees.remove(coord);
+}
+
+/** Find and fell the tree rooted at or directly above the given tile */
+void fellTree(ref App app, int[3] tile) {
+  int[3] coord = app.world.chunkCoord(tile);
+  if(coord !in app.world.trees) return;
+  foreach(i, ref t; app.world.trees[coord]) {
+    if(t.rootTile != [tile[0], tile[1]+1, tile[2]]) continue;
+
+    // remove trunk instances
+    size_t trunkEnd = t.trunkStart + t.height;
+    app.world.trunk.instances = app.world.trunk.instances[0..t.trunkStart] ~ app.world.trunk.instances[trunkEnd..$];
+    // remove canopy instance
+    app.world.canopy.instances = app.world.canopy.instances[0..t.canopyIdx] ~ app.world.canopy.instances[t.canopyIdx+1..$];
+
+    // update indices of ALL other trees
+    foreach(ref other; app.world.trees) {
+      foreach(ref ot; other) {
+        if(ot.trunkStart > t.trunkStart) ot.trunkStart -= t.height;
+        if(ot.canopyIdx  > t.canopyIdx)  ot.canopyIdx  -= 1;
+      }
+    }
+
+    app.world.trunk.buffers[INSTANCE] = false;
+    app.world.canopy.buffers[INSTANCE] = false;
+
+    // spawn wood blocks
+    for(uint h = 0; h < t.height; h++) { app.spawnDroppedBlock([t.rootTile[0], tile[1], t.rootTile[2]], TileType.Wood); }
+    app.world.trees[coord] = app.world.trees[coord][0..i] ~ app.world.trees[coord][i+1..$];
+    return;
+  }
 }
 
 void saveTrees(ref App app) {

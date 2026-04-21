@@ -8,6 +8,7 @@ import engine;
 import block : spawnDroppedBlock, findFreeBlock, hasBlocks;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
+import tree : fellTree;
 import world : setTile;
 
 struct Job {
@@ -31,6 +32,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
       if(d.miningProgress >= 1.0f) {
         TileType tt = app.world.getTileAt(d.jobStack[0].targetTile);
         app.setTile(d.jobStack[0].targetTile);
+        app.fellTree(d.jobStack[0].targetTile);
         if(tt != TileType.None) app.spawnDroppedBlock(d.jobStack[0].targetTile, tt);
         d.jobStack = d.jobStack[1..$];
         d.targetTile = [int.min, 0, 0];
@@ -73,10 +75,6 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
       d.targetTile = [int.min, 0, 0];
     },
     onFail: (ref App app, Dwarf d) {
-      if(d.jobStack.length > 1) {
-        int[3] freeBlock = app.findFreeBlock(d.jobStack[0].tileType, d.tile);
-        if(freeBlock[0] != int.min) jobQueue ~= d.jobStack[1];
-      }
       d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
     }
@@ -95,7 +93,9 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
     onFail: (ref App app, Dwarf d) {
       foreach(tt; d.carrying) app.spawnDroppedBlock(d.tile, tt);
       d.carrying = [];
-      jobQueue ~= buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
+      auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
+      newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
+      jobQueue ~= newJob;
       d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
     }
