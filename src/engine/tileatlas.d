@@ -16,7 +16,8 @@ struct TileT {
 }
 
 enum TileType : ubyte {
-  None, Lava, Water, Path08, Dirt01, Sand01, Sand02, Sand03, Sand05, Gravel, Moss01, Ground08, Grass01, Grass02, Grass03, Grass04, Forest01, Forest02, Stone, Ice01, Snow
+  None, Lava, Water, Path08, Dirt01, Sand01, Sand02, Sand03, Sand05, Gravel, Moss01, Ground08, 
+  Grass01, Grass02, Grass03, Grass04, Forest01, Forest02, Stone, Ice01, Snow, Wood, Leaves
 }
 
 immutable TileT[TileType] tileData;
@@ -43,6 +44,8 @@ shared static this() {
     TileType.Stone: TileT("Stone_01", true,  1.8f),
     TileType.Ice01: TileT("Ice_01", true,  1.0f),
     TileType.Snow: TileT("Ice_03", true,  1.6f),
+    TileType.Wood: TileT("Wood_03", false, 0.0f),
+    TileType.Leaves: TileT("Hedge_01", false, 0.0f),
   ];
 }
 

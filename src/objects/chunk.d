@@ -14,6 +14,7 @@ import vector : expandBounds;
 import world : setTile;
 import ghost: updateGhostTile;
 import inventory : placeTile;
+import tree : addTreeInstances, buildTreeData, removeTreeInstances;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
@@ -24,6 +25,7 @@ struct ChunkData {
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   Instance[] tileInstances;                                 /// GPU instances for all visible tile faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
+  Tree[] trees;                                             /// Trees generated for this chunk
   float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
@@ -126,6 +128,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       data.pickIndices ~= i;
     }
   }
+  data.trees = buildTreeData(wd, coord, data.tileTypes);
   return data;
 }
 
@@ -167,5 +170,13 @@ void finalizeChunk(ref App app, ChunkData data) {
 
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
+
+  if(app.world.trunk !is null && app.world.canopy !is null) {
+    if(data.coord in app.world.trees) app.removeTreeInstances(data.coord);
+    app.world.trees[data.coord] = app.addTreeInstances(data.trees);
+    app.world.trunk.buffers[INSTANCE] = false;
+    app.world.canopy.buffers[INSTANCE] = false;
+  }
+
   app.camera.isDirty = true;
 }

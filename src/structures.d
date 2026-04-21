@@ -56,6 +56,7 @@ public import text : Text;
 public import tileatlas : TileAtlas, TileT, TileType;
 public import textures : Texture, Textures;
 public import torus : Torus;
+public import tree : TrunkMesh, CanopyMesh, Tree;
 public import turtle : Turtle;
 public import threading : Threading;
 public import uniforms : ParticleUniformBuffer, UBO;
