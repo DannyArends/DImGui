@@ -4,11 +4,13 @@
  */
 
 import engine;
+
+import block : findDroppedBlock;
 import io : writeFile, readFile, fixPath, isfile;
 import tileatlas : TileType;
 import world : setTile;
 import ghost : updateGhostTile;
-import jobs : BuildJob, buildQueue;
+import jobs : jobQueue, pickupJob;
 
 struct Inventory {
   int[TileType] items;
@@ -31,8 +33,10 @@ void deriveInventory(ref App app) {
 void placeTile(ref App app, int[3] wc) {
   if(wc[0] == int.min) return;
   if(app.inventory.selectedTile == TileType.None) return;
-  int reserved = cast(int)buildQueue.count!(j => j.tileType == app.inventory.selectedTile);
+  int reserved = cast(int)jobQueue.count!(j => j.tileType == app.inventory.selectedTile);
   if(app.inventory.get(app.inventory.selectedTile, 0) - reserved <= 0) return;
-  buildQueue ~= BuildJob(wc, app.inventory.selectedTile);
+  int[3] blockTile = app.findDroppedBlock(app.inventory.selectedTile, [0, 0, 0]);
+  if(blockTile[0] == int.min) return;
+  jobQueue ~= pickupJob(blockTile, app.inventory.selectedTile, wc);
 }
 

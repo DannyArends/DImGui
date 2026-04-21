@@ -6,24 +6,12 @@
 import engine;
 
 import dwarf : spawnDwarf, randomDwarfName;
-import jobs : miningQueue;
 import imgui : faIcon, iconText;
 
 void showDwarfContent(ref App app, uint font = 0) {
   igText("Spawn Dwarf:");
   igSameLine(0, 5);
   if(igButton(iconText(cast(string)ICON_FA_PLUS, "Spawn"), ImVec2(0,0))) { app.spawnDwarf(randomDwarfName()); }
-
-  igSeparator();
-  int walking = 0;
-  int mining  = 0;
-  foreach(o; app.objects) {
-    auto d = cast(Dwarf)o;
-    if(d is null || d.targetTile[0] == int.min) continue;
-    if(d.miningProgress > 0.0f) mining++;
-    else walking++;
-  }
-  igText(toStringz(format("Queue: %d | Walking: %d | Mining: %d", miningQueue.length, walking, mining)));
 
   igSeparator();
   foreach(o; app.objects) {
