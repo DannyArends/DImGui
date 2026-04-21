@@ -5,13 +5,15 @@
 
 import engine;
 
+import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
-import noise : noiseHT;
+import noise : noiseHTT;
 import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : spawnDroppedBlock, loadDroppedBlocks, saveDroppedBlocks;
+import tree : loadTrees, saveTrees;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -24,19 +26,20 @@ struct TileDiff {
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable
  */
 struct WorldData {
-  int[2] seed        = [42, 67];  /// [height seed, tile seed]
-  int renderDistance =   4;       /// Render distance used to load / evict chunks
-  float tileSize     =   1.0f;    /// Size (X & Z) of a tile
-  float tileHeight   =   1.0f;    /// Y-spacing between tiles
-  int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
-  int chunkHeight    =  64;       /// Number of tiles (Y) in a chunk
-  float yOffset      = -20.0f;    /// Global world Y-offset
+  int[3] seed        = [42, 67, 69];  /// [height seed, tile seed]
+  int renderDistance =   4;           /// Render distance used to load / evict chunks
+  float tileSize     =   1.0f;        /// Size (X & Z) of a tile
+  float tileHeight   =   1.0f;        /// Y-spacing between tiles
+  int chunkSize      =  32;           /// Number of tiles (X & Z) in a chunk
+  int chunkHeight    =  64;           /// Number of tiles (Y) in a chunk
+  float yOffset      = -20.0f;        /// Global world Y-offset
   TileDiff[] diffs;
 
   /** Returns the filesystem path for the world TileDiffs difference
    */
-  const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d.bin", seed[0], seed[1]))); }
-  const(char)* droppedBlocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_drops.bin", seed[0], seed[1]))); }
+  const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* droppedBlocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* treePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_trees.bin", seed[0], seed[1], seed[2]))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk
    */
@@ -58,7 +61,7 @@ struct WorldData {
   /** Determine the tile type at a world coordinate from noise, no chunk data required
    */
   @nogc pure TileType getTile(const int[3] wc) const nothrow {
-    auto ht = noiseHT(wc.x, wc.z, seed);
+    auto ht = noiseHTT(wc.x, wc.z, seed);
     int surface = cast(int)(pow(ht[0], 1.5f) * (chunkHeight - 1));
     if (wc.y > surface) return TileType.None;
     if (wc.y == 0) return TileType.Lava;
@@ -87,6 +90,9 @@ struct WorldData {
 struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks being generated async
+  TrunkMesh trunk;                                          /// Single Trunk
+  CanopyMesh canopy;                                        /// Trees per chunk coord
+  Tree[][int[3]] trees;                                     /// Trees per chunk coord
   WorldData data;
   Blocks droppedBlocks;
   alias data this;
@@ -167,7 +173,13 @@ void loadWorld(ref App app) {
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
   app.loadDroppedBlocks();
+  app.loadTrees();
   app.deriveInventory();
+  app.world.trunk = new TrunkMesh();
+  app.world.canopy = new CanopyMesh();
+  app.objects ~= app.world.trunk;
+  app.objects ~= app.world.canopy;
+  app.objects[($-1)].computeTangents();
 }
 
 /** Save world diffs to disk */
@@ -177,6 +189,7 @@ void saveWorld(ref App app) {
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
   app.saveDroppedBlocks();
+  app.saveTrees();
 }
 
 /** Compute world-space position from tile coords */

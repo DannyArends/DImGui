@@ -27,10 +27,11 @@ class Cylinder : Geometry {
       float[3] sideFaceNormal = [cos(avgTheta), 0.0f, sin(avgTheta)];
 
       uint vIdx = cast(uint)vertices.length;
-      vertices ~= Vertex([bottomPositions[0].x, bottomPositions[0].y - halfHeight, bottomPositions[0].z], [0.0f, 0.0f], color, sideFaceNormal);
-      vertices ~= Vertex([bottomPositions[1].x, bottomPositions[1].y - halfHeight, bottomPositions[1].z], [1.0f, 0.0f], color, sideFaceNormal);
-      vertices ~= Vertex([bottomPositions[1].x, height - halfHeight, bottomPositions[1].z], [1.0f, 1.0f], color, sideFaceNormal);
-      vertices ~= Vertex([bottomPositions[0].x, height - halfHeight, bottomPositions[0].z], [0.0f, 1.0f], color, sideFaceNormal);
+      float[4] tangent = [-sin(avgTheta), 0.0f, cos(avgTheta), 1.0f];
+      vertices ~= Vertex([bottomPositions[0].x, bottomPositions[0].y - halfHeight, bottomPositions[0].z], [0.0f, 0.0f], color, sideFaceNormal, tangent);
+      vertices ~= Vertex([bottomPositions[1].x, bottomPositions[1].y - halfHeight, bottomPositions[1].z], [1.0f, 0.0f], color, sideFaceNormal, tangent);
+      vertices ~= Vertex([bottomPositions[1].x, height - halfHeight, bottomPositions[1].z], [1.0f, 1.0f], color, sideFaceNormal, tangent);
+      vertices ~= Vertex([bottomPositions[0].x, height - halfHeight, bottomPositions[0].z], [0.0f, 1.0f], color, sideFaceNormal, tangent);
 
       indices ~= [vIdx+2, vIdx + 1, vIdx, vIdx, vIdx + 3, vIdx + 2];
     }
