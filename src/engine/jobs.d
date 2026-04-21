@@ -25,19 +25,19 @@ Job miningJob(int[3] targetTile) {
   return Job("Mining", targetTile, TileType.None, [],
     (ref App app, Dwarf d) {
       d.miningProgress += 0.25f;
-      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.name, d.currentJob.targetTile, d.miningProgress * 100)));
+      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.name, d.jobStack[0].targetTile, d.miningProgress * 100)));
       if(d.miningProgress >= 1.0f) {
-        TileType tt = app.world.getTileAt(d.currentJob.targetTile);
-        app.setTile(d.currentJob.targetTile);
-        if(tt != TileType.None) app.spawnDroppedBlock(d.currentJob.targetTile, tt);
-        d.currentJob = Job.init;
+        TileType tt = app.world.getTileAt(d.jobStack[0].targetTile);
+        app.setTile(d.jobStack[0].targetTile);
+        if(tt != TileType.None) app.spawnDroppedBlock(d.jobStack[0].targetTile, tt);
+        d.jobStack = d.jobStack[1..$];
         d.targetTile = [int.min, 0, 0];
         d.miningProgress = 0.0f;
       }
     },
     (ref App app, Dwarf d) {
-      jobQueue ~= miningJob(d.currentJob.targetTile);
-      d.currentJob = Job.init;
+      jobQueue ~= miningJob(d.jobStack[0].targetTile);
+      d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
       d.miningProgress = 0.0f;
     }
@@ -49,23 +49,23 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
     (ref App app, Dwarf d) {
       auto db = app.world.droppedBlocks;
       foreach(i, tile; db.tiles) {
-        if(tile == d.currentJob.targetTile) {
+        if(tile == d.jobStack[0].targetTile) {
           db.tiles = db.tiles[0..i] ~ db.tiles[i+1..$];
           db.instances = db.instances[0..i] ~ db.instances[i+1..$];
           db.buffers[INSTANCE] = false;
           app.deriveInventory();
-          d.carrying ~= d.currentJob.tileType;
-          d.currentJob = Job.init;
+          d.carrying ~= d.jobStack[0].tileType;
+          d.jobStack = d.jobStack[1..$];
           d.targetTile = [int.min, 0, 0];
           return;
         }
       }
       // block gone
-      d.currentJob = Job.init;
+      d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
     },
     (ref App app, Dwarf d) {
-      d.currentJob = Job.init;
+      d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
     }
   );
@@ -74,17 +74,17 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
 Job buildingJob(int[3] targetTile, TileType tileType, int[3] blockTile) {
   return Job("Building", targetTile, tileType, [pickupJob(blockTile, tileType)],
     (ref App app, Dwarf d) {
-      app.setTile(d.currentJob.targetTile, d.currentJob.tileType);
-      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.currentJob.tileType, d.currentJob.targetTile)));
-      d.carrying = d.carrying.remove!(c => c == d.currentJob.tileType);
-      d.currentJob = Job.init;
+      app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
+      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
+      d.carrying = d.carrying.remove!(c => c == d.jobStack[0].tileType);
+      d.jobStack = d.jobStack[1..$];
       d.targetTile = [int.min, 0, 0];
     },
     (ref App app, Dwarf d) {
       foreach(tt; d.carrying) app.spawnDroppedBlock(d.tile, tt);
       d.carrying = [];
-      jobQueue ~= buildingJob(d.currentJob.targetTile, d.currentJob.tileType, d.tile);
-      d.currentJob = Job.init;
+      jobQueue ~= buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType, d.tile);
+      d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
     }
   );
@@ -107,15 +107,12 @@ void claimNextJob(ref App app, Dwarf d) {
   auto job = jobQueue[bestIdx];
   jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
 
-  if(job.prereqs.length > 0) {
-    auto prereq = job.prereqs[0];
-    job.prereqs = job.prereqs[1..$];
-    jobQueue ~= job;       // push back with one less prereq
-    d.currentJob = prereq; // do prereq first
-  } else { d.currentJob = job; }
+  d.jobStack = job.prereqs ~ [job];
 
-  d.targetTile = d.currentJob.targetTile;
+  d.targetTile = d.jobStack[0].targetTile;
   auto goalTile = app.findGoalTile(d);
-  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) { d.currentJob.onFail(app, d); }
+  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) {
+    d.jobStack[0].onFail(app, d);
+  }
 }
 

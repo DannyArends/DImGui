@@ -19,7 +19,7 @@ class Dwarf : Cylinder {
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
-  Job currentJob;                           /// Current job
+  Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
   TileType[] carrying;                      /// Items the dwarf is currently holding
 
   float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
@@ -77,14 +77,16 @@ void dwarfTick(ref App app, ref Geometry obj) {
   auto d = cast(Dwarf)obj;
   if(d is null) return;
   if(d.targetTile[0] == int.min) {
-    if(d.currentJob.onArrive !is null) {
-      if(!app.repathTo(d, d.currentJob.targetTile)) d.currentJob.onFail(app, d);
-    } else { app.claimNextJob(d); }
+    if(d.jobStack.length > 0) {
+      if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
+    } else {
+      app.claimNextJob(d);
+    }
   } else if(d.path.length > 0 && d.moveT >= 1.0f) {
     app.followPath(d);
   } else if(d.path.length == 0 && d.moveT >= 1.0f) {
-    if(app.atDestination(d, d.currentJob.targetTile)) d.currentJob.onArrive(app, d);
-    else if(!app.repathTo(d, d.currentJob.targetTile)) d.currentJob.onFail(app, d);
+    if(app.atDestination(d, d.jobStack[0].targetTile)) d.jobStack[0].onArrive(app, d);
+    else if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
   }
 }
 
