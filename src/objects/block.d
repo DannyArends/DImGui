@@ -51,9 +51,14 @@ int[3] findFreeDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
   float bestDist = float.max;
   foreach(i, tile; app.world.droppedBlocks.tiles) {
     if(app.world.droppedBlocks.instances[i].meshdef[0] != cast(uint)tt) continue;
-    // skip if already reserved in queue
     bool reserved = false;
     foreach(j; jobQueue) { if(j.prereqs.length > 0 && j.prereqs[0].targetTile == tile) { reserved = true; break; } }
+    if(!reserved) foreach(o; app.objects) {
+      auto d = cast(Dwarf)o;
+      if(d is null) continue;
+      foreach(j; d.jobStack) { if(j.targetTile == tile) { reserved = true; break; } }
+      if(reserved) break;
+    }
     if(reserved) continue;
     float dist = abs(tile[0] - dwarfTile[0]) + abs(tile[2] - dwarfTile[2]);
     if(dist < bestDist) { bestDist = dist; best = tile; }
