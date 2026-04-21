@@ -44,12 +44,17 @@ void loadDroppedBlocks(ref App app) {
 }
 
 /** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
-int[3] findDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
+int[3] findFreeDroppedBlock(ref App app, TileType tt, int[3] dwarfTile) {
+  import jobs : jobQueue;
   if(app.world.droppedBlocks is null) return [int.min, 0, 0];
   int[3] best = [int.min, 0, 0];
   float bestDist = float.max;
   foreach(i, tile; app.world.droppedBlocks.tiles) {
     if(app.world.droppedBlocks.instances[i].meshdef[0] != cast(uint)tt) continue;
+    // skip if already reserved in queue
+    bool reserved = false;
+    foreach(j; jobQueue) { if(j.prereqs.length > 0 && j.prereqs[0].targetTile == tile) { reserved = true; break; } }
+    if(reserved) continue;
     float dist = abs(tile[0] - dwarfTile[0]) + abs(tile[2] - dwarfTile[2]);
     if(dist < bestDist) { bestDist = dist; best = tile; }
   }

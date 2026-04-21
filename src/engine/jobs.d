@@ -5,7 +5,7 @@
 
 import engine;
 
-import block : spawnDroppedBlock, findDroppedBlock;
+import block : spawnDroppedBlock;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import world : setTile;
@@ -15,14 +15,15 @@ struct Job {
   int[3] targetTile;
   TileType tileType;
   Job[] prereqs;
+  uint retries;
 
   void function(ref App app, Dwarf d) onArrive;
   void function(ref App app, Dwarf d) onFail;
 }
 Job[] jobQueue;
 
-Job miningJob(int[3] targetTile) {
-  return Job("Mining", targetTile, TileType.None, [],
+Job miningJob(int[3] targetTile, uint retries = 3) {
+  return Job("Mining", targetTile, TileType.None, [], 3,
     (ref App app, Dwarf d) {
       d.miningProgress += 0.25f;
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.name, d.jobStack[0].targetTile, d.miningProgress * 100)));
@@ -36,16 +37,20 @@ Job miningJob(int[3] targetTile) {
       }
     },
     (ref App app, Dwarf d) {
-      jobQueue ~= miningJob(d.jobStack[0].targetTile);
+      if(d.jobStack[0].retries > 0) {
+        auto j = miningJob(d.jobStack[0].targetTile);
+        j.retries = d.jobStack[0].retries - 1;
+        jobQueue ~= j;
+      } else { SDL_Log(toStringz(format("Dwarf %s giving up on %s", d.name, d.jobStack[0].targetTile))); }
       d.jobStack = [];
       d.targetTile = [int.min, 0, 0];
       d.miningProgress = 0.0f;
-    }
+    },
   );
 }
 
 Job pickupJob(int[3] targetTile, TileType tileType) {
-  return Job("Fetching", targetTile, tileType, [],
+  return Job("Fetching", targetTile, tileType, [], 2,
     (ref App app, Dwarf d) {
       auto db = app.world.droppedBlocks;
       foreach(i, tile; db.tiles) {
@@ -72,7 +77,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
 }
 
 Job buildingJob(int[3] targetTile, TileType tileType, int[3] blockTile) {
-  return Job("Building", targetTile, tileType, [pickupJob(blockTile, tileType)],
+  return Job("Building", targetTile, tileType, [pickupJob(blockTile, tileType)], 0,
     (ref App app, Dwarf d) {
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
