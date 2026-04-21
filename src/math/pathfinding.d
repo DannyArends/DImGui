@@ -9,8 +9,7 @@ import search : performSearch, atGoal, stepThroughPath;
 import world : tileToWorld, isStandable, isTileOccupied;
 
 /** Pathfind object T to goalTile, returns false if unreachable.
- * Requires T to have: tile, path
- */
+ * Requires T to have: tile, path */
 bool pathfindTo(T)(ref App app, T obj, int[3] goalTile) {
   float[3] start = app.tileToWorld(obj.tile);
   float[3] goal  = app.tileToWorld(goalTile);
@@ -24,7 +23,25 @@ bool pathfindTo(T)(ref App app, T obj, int[3] goalTile) {
   return true;
 }
 
-/** Find the closest standable neighbour (air tile with solid below) to the dwarf */
+/** Check if object T is adjacent to targetTile.
+ * Requires T to have: tile */
+bool atDestination(T)(ref App app, T obj, int[3] targetTile) {
+  auto dx = abs(obj.tile[0] - targetTile[0]);
+  auto dz = abs(obj.tile[2] - targetTile[2]);
+  return dx + dz == 1 && obj.tile[1] == targetTile[1];
+}
+
+/** Attempt to re-path object T to goalTile, returns false if unreachable.
+ * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
+bool repathTo(T)(ref App app, T obj, int[3] targetTile) {
+  obj.targetTile = targetTile;
+  auto goalTile = app.findGoalTile(obj);
+  if(goalTile[0] == int.min) return false;
+  return app.pathfindTo(obj, goalTile);
+}
+
+/** Find the closest standable neighbour (air tile with solid below) to the object.
+ * Requires T to have: tile, targetTile */
 int[3] findGoalTile(T)(ref App app, T obj) {
   int[3] goalTile = [int.min, 0, 0];
   float bestDist = float.max;
@@ -37,8 +54,7 @@ int[3] findGoalTile(T)(ref App app, T obj) {
 }
 
 /** Follow the next step in object T's path.
- * Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT
- */
+ * Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT */
 void followPath(T)(ref App app, T obj) {
   if(obj.path.length == 0) return;
   auto next = obj.path[0];
