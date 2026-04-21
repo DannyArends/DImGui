@@ -4,7 +4,9 @@
  */
 
 import engine;
-import dwarf : Dwarf, miningQueue, spawnDwarf, randomDwarfName;
+
+import dwarf : spawnDwarf, randomDwarfName;
+import jobs : miningQueue;
 import imgui : faIcon, iconText;
 
 void showDwarfContent(ref App app, uint font = 0) {

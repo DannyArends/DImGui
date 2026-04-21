@@ -19,7 +19,7 @@ import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
 import search : testSearch;
-import dwarf : miningQueue;
+import jobs : miningQueue;
 
 /** Handle keyboard events */
 void handleKeyEvents(ref App app, SDL_Event e) {

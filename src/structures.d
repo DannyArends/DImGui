@@ -20,6 +20,7 @@ public import cylinder : Cylinder;
 public import descriptor : Descriptor, DescriptorLayoutBuilder;
 public import depthbuffer : DepthBuffer;
 public import deletion : CheckedDeletionQueue, DeletionQueue;
+public import dwarf : Dwarf;
 public import frustum : Plane;
 public import glyphatlas : Glyph, GlyphAtlas;
 public import geometry : Geometry, Instance;
