@@ -277,11 +277,8 @@ void updateWorld(ref App app, float[3] lookat) {
   foreach(coord; app.world.pendingTrees.keys.dup) {
     if(coord !in app.world.chunks) continue;
     if(!app.world.chunks[coord].tiles.isBuffered) continue;
-    if(coord !in app.world.trees) {
-      app.world.trees[coord] = app.addTreeInstances(app.world.pendingTrees[coord]);
-      app.world.trunk.buffers[INSTANCE] = false;
-      app.world.canopy.buffers[INSTANCE] = false;
-    }
+    if(!app.world.chunks[coord].tiles.inFrustum) continue;
+    if(coord !in app.world.trees) { app.world.trees[coord] = app.addTreeInstances(app.world.pendingTrees[coord]); }
     app.world.pendingTrees.remove(coord);
   }
 
