@@ -13,7 +13,7 @@ import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : spawnDroppedBlock, loadDroppedBlocks, saveDroppedBlocks;
-import tree : loadTrees, saveTrees, removeTreeInstances;
+import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -93,6 +93,7 @@ struct World {
   TrunkMesh trunk;                                          /// Single Trunk
   CanopyMesh canopy;                                        /// Trees per chunk coord
   Tree[][int[3]] trees;                                     /// Trees per chunk coord
+  Tree[][int[3]] pendingTrees;
   WorldData data;
   Blocks droppedBlocks;
   alias data this;
@@ -271,6 +272,18 @@ void updateWorld(ref App app, float[3] lookat) {
     }
   }
   foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
+
+  // Load pending trees onto chunks that have been loaded
+  foreach(coord; app.world.pendingTrees.keys.dup) {
+    if(coord !in app.world.chunks) continue;
+    if(!app.world.chunks[coord].tiles.isBuffered) continue;
+    if(coord !in app.world.trees) {
+      app.world.trees[coord] = app.addTreeInstances(app.world.pendingTrees[coord]);
+      app.world.trunk.buffers[INSTANCE] = false;
+      app.world.canopy.buffers[INSTANCE] = false;
+    }
+    app.world.pendingTrees.remove(coord);
+  }
 
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
