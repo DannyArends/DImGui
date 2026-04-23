@@ -83,6 +83,8 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
     t.canopyIdx = app.world.canopy.instances.length;
     app.world.canopy.instances ~= Instance(cast(uint)TileType.Leaves, [cSize, 0, 0,  0, cSize * cSquish, 0,  0, 0, cSize, px, py + t.height * th, pz]);
   }
+  app.world.trunk.buffers[INSTANCE] = false;
+  app.world.canopy.buffers[INSTANCE] = false;
   return trees;
 }
 
@@ -144,14 +146,9 @@ void loadTrees(ref App app) {
   if(raw.length < uint[2].sizeof) return;
   if((cast(uint[])raw)[0] != WORLD_MAGIC) return;
   auto trees = cast(Tree[])raw[uint[2].sizeof..$].dup;
-  // group by chunk
   foreach(ref t; trees) {
     int[3] coord = app.world.chunkCoord(t.rootTile);
-    app.world.trees[coord] ~= t;
+    app.world.pendingTrees[coord] ~= t;  // use pendingTrees instead
   }
-  // add instances
-  foreach(coord, ref chunkTrees; app.world.trees) { chunkTrees = app.addTreeInstances(chunkTrees); }
-  app.world.trunk.buffers[INSTANCE] = false;
-  app.world.canopy.buffers[INSTANCE] = false;
 }
 

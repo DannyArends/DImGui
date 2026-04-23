@@ -171,8 +171,5 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
 
-  // trees added separately in updateWorld once chunk is buffered
-  app.world.pendingTrees[data.coord] = data.trees;
-
   app.camera.isDirty = true;
 }
