@@ -65,7 +65,7 @@ struct WorldData {
     int surface = cast(int)(pow(ht[0], 1.5f) * (chunkHeight - 1));
     if (wc.y > surface) return TileType.None;
     if (wc.y == 0) return TileType.Lava;
-    if (wc.y < surface) return TileType.Stone;
+    if (wc.y < surface) return TileType.Stone01;
     return heightToTile(ht[0], ht[1]);
   }
 
