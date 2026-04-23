@@ -13,7 +13,7 @@ import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : spawnDroppedBlock, loadDroppedBlocks, saveDroppedBlocks;
-import tree : loadTrees, saveTrees;
+import tree : loadTrees, saveTrees, removeTreeInstances;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -277,6 +277,7 @@ void updateWorld(ref App app, float[3] lookat) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.remove(coord);
+      app.removeTreeInstances(coord);
     }
   }
 
