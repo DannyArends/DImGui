@@ -8,7 +8,6 @@ import geometry;
 import world : tileToWorld, isTileOccupied;
 import vector : euclidean;
 import tileatlas : tileData;
-import block : spawnDroppedBlock;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
 import jobs : Job, jobQueue, miningJob, claimNextJob;
 

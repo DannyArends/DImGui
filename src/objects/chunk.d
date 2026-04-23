@@ -14,7 +14,7 @@ import vector : expandBounds;
 import world : setTile;
 import ghost: updateGhostTile;
 import inventory : placeTile;
-import tree : addTreeInstances, buildTreeData, removeTreeInstances;
+import tree : buildTreeData;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
