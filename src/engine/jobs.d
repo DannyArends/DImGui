@@ -5,7 +5,7 @@
 
 import engine;
 
-import block : spawnDroppedBlock, findFreeBlock, hasBlocks;
+import block : spawnBlock, findFreeBlock, hasBlocks;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
@@ -33,7 +33,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
         TileType tt = app.world.getTileAt(d.jobStack[0].targetTile);
         app.setTile(d.jobStack[0].targetTile);
         app.fellTree(d.jobStack[0].targetTile);
-        if(tt != TileType.None) app.spawnDroppedBlock(d.jobStack[0].targetTile, tt);
+        if(tt != TileType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         d.jobStack = d.jobStack[1..$];
         d.targetTile = [int.min, 0, 0];
         d.miningProgress = 0.0f;
@@ -91,7 +91,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       d.targetTile = [int.min, 0, 0];
     },
     onFail: (ref App app, Dwarf d) {
-      foreach(tt; d.carrying) app.spawnDroppedBlock(d.tile, tt);
+      foreach(tt; d.carrying) app.spawnBlock(d.tile, tt);
       d.carrying = [];
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];

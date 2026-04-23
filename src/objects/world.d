@@ -12,7 +12,7 @@ import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
-import block : spawnDroppedBlock, loadDroppedBlocks, saveDroppedBlocks;
+import block : loadBlocks, saveBlocks;
 import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
@@ -89,11 +89,11 @@ struct WorldData {
 /** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
 struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
-  bool[int[3]] pendingChunks;                               /// Chunks being generated async
-  TrunkMesh trunk;                                          /// Single Trunk
-  CanopyMesh canopy;                                        /// Trees per chunk coord
+  bool[int[3]] pendingChunks;                               /// Chunks generated async
+  TrunkMesh trunk;                                          /// Shared TrunkMesh
+  CanopyMesh canopy;                                        /// Shared CanopyMesh
   Tree[][int[3]] trees;                                     /// Trees per chunk coord
-  Tree[][int[3]] pendingTrees;
+  Tree[][int[3]] pendingTrees;                              /// Trees generated async
   WorldData data;
   Blocks droppedBlocks;
   alias data this;
@@ -180,7 +180,7 @@ void loadWorld(ref App app) {
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
-  app.loadDroppedBlocks();
+  app.loadBlocks();
   app.deriveInventory();
   app.loadTrees();
 }
@@ -191,7 +191,7 @@ void saveWorld(ref App app) {
   char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])app.world.data.diffs;
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
-  app.saveDroppedBlocks();
+  app.saveBlocks();
   app.saveTrees();
 }
 

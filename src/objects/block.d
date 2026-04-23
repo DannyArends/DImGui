@@ -22,7 +22,7 @@ class Blocks : Cube {
 }
 
 /** Save blocks dropped */
-void saveDroppedBlocks(ref App app) {
+void saveBlocks(ref App app) {
   if(app.world.droppedBlocks is null) return;
   auto blocks = app.world.droppedBlocks;
   BlockData[] data;
@@ -32,14 +32,14 @@ void saveDroppedBlocks(ref App app) {
 }
 
 /** Load blocks dropped */
-void loadDroppedBlocks(ref App app) {
+void loadBlocks(ref App app) {
   app.world.droppedBlocks = new Blocks();
   app.objects ~= app.world.droppedBlocks;
   auto raw = readFile(app.world.droppedBlocksPath());
   if(raw.length < uint[2].sizeof) return;
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
   auto data = cast(BlockData[])raw[uint[2].sizeof..$].dup;
-  foreach(ref b; data) { app.spawnDroppedBlock(b.tile, cast(TileType)b.tileType); }
+  foreach(ref b; data) { app.spawnBlock(b.tile, cast(TileType)b.tileType); }
   SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tiles.length);
 }
 
@@ -81,7 +81,7 @@ Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
 }
 
 /** Spawn a dropped block */
-void spawnDroppedBlock(ref App app, int[3] tile, TileType tt) {
+void spawnBlock(ref App app, int[3] tile, TileType tt) {
   if(app.world.droppedBlocks is null) {
     app.world.droppedBlocks = new Blocks();
     app.objects ~= app.world.droppedBlocks;
