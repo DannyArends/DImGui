@@ -88,16 +88,17 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
   return trees;
 }
 
+void rebuildTreeInstances(ref App app) {
+  app.world.trunk.instances = [];
+  app.world.canopy.instances = [];
+  foreach(chunkCoord, ref chunkTrees; app.world.trees){ chunkTrees = app.addTreeInstances(chunkTrees); }
+}
+
 /** Remove tree instances for a chunk from shared meshes */
 void removeTreeInstances(ref App app, int[3] coord) {
   if(coord !in app.world.trees) return;
   app.world.trees.remove(coord);
-  // rebuild all instances from remaining trees
-  app.world.trunk.instances = [];
-  app.world.canopy.instances = [];
-  foreach(chunkCoord, ref chunkTrees; app.world.trees) {
-    chunkTrees = app.addTreeInstances(chunkTrees);
-  }
+  app.rebuildTreeInstances();
   app.world.trunk.buffers[INSTANCE] = false;
   app.world.canopy.buffers[INSTANCE] = false;
 }
@@ -112,11 +113,7 @@ void fellTree(ref App app, int[3] tile) {
     for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], tile[1], t.rootTile[2]], TileType.Wood); }
     // remove from trees array
     app.world.trees[coord] = app.world.trees[coord][0..i] ~ app.world.trees[coord][i+1..$];
-    // rebuild all instances from scratch
-    app.world.trunk.instances = [];
-    app.world.canopy.instances = [];
-    foreach(chunkCoord, ref chunkTrees; app.world.trees)
-      chunkTrees = app.addTreeInstances(chunkTrees);
+    app.rebuildTreeInstances();
     return;
   }
 }
