@@ -178,6 +178,5 @@ void finalizeChunk(ref App app, ChunkData data) {
       app.world.canopy.buffers[INSTANCE] = false;
     }
   }
-  SDL_Log(toStringz(format("finalizeChunk: %s trees=%d trunk=%s", data.coord, data.trees.length, app.world.trunk !is null ? "ok" : "null")));
   app.camera.isDirty = true;
 }

@@ -89,14 +89,15 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
 /** Remove tree instances for a chunk from shared meshes */
 void removeTreeInstances(ref App app, int[3] coord) {
   if(coord !in app.world.trees) return;
-  auto trees = app.world.trees[coord];
-  if(trees.length == 0) return;
-  // remove trunk instances
-  size_t trunkEnd = trees[$-1].trunkStart + trees[$-1].height;
-  app.world.trunk.instances = app.world.trunk.instances[0..trees[0].trunkStart] ~ app.world.trunk.instances[trunkEnd..$];
-  // remove canopy instances
-  app.world.canopy.instances = app.world.canopy.instances[0..trees[0].canopyIdx] ~ app.world.canopy.instances[trees[$-1].canopyIdx+1..$];
   app.world.trees.remove(coord);
+  // rebuild all instances from remaining trees
+  app.world.trunk.instances = [];
+  app.world.canopy.instances = [];
+  foreach(chunkCoord, ref chunkTrees; app.world.trees) {
+    chunkTrees = app.addTreeInstances(chunkTrees);
+  }
+  app.world.trunk.buffers[INSTANCE] = false;
+  app.world.canopy.buffers[INSTANCE] = false;
 }
 
 /** Find and fell the tree rooted at or directly above the given tile */
