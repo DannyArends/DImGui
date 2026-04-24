@@ -171,5 +171,9 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
 
+  // Add trees to the chunk
+  if(app.world.trunk !is null && app.world.canopy !is null) {
+    if(data.coord !in app.world.trees && data.coord !in app.world.pendingTrees) { app.world.pendingTrees[data.coord] = data.trees; }
+  }
   app.camera.isDirty = true;
 }

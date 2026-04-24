@@ -119,9 +119,10 @@ void fellTree(ref App app, int[3] tile) {
 }
 
 void saveTrees(ref App app) {
-  if(app.world.trees.length == 0) return;
   Tree[] allTrees;
   foreach(trees; app.world.trees.values) allTrees ~= trees;
+  foreach(trees; app.world.pendingTrees.values) allTrees ~= trees;
+  if(allTrees.length == 0) return;
   uint[2] header = [WORLD_MAGIC, cast(uint)allTrees.length];
   writeFile(app.world.treePath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])allTrees));
 }
