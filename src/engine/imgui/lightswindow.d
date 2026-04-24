@@ -6,15 +6,14 @@
 import engine;
 
 import imgui : iconText;
-import lights : Light, updateSun;
+import lights : Light, updateSunFromTime, sunElevation, sunAzimuth;
 
 /** Show the GUI window which allows us to manipulate lighting
  */
 void showLightsContent(ref App app, uint font = 0) {
   auto lightsBefore = app.lights.lights.dup;
 
-  // Sun controls
-  static float elevation = 45.0f;
+  igCheckbox(iconText(cast(string)ICON_FA_MUSIC, "Disco"), &app.disco);
 
   if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_SUN_O, "Sun"), 0)) {
     igBeginTable("Sun_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
@@ -24,36 +23,22 @@ void showLightsContent(ref App app, uint font = 0) {
       igPushItemWidth(200 * app.gui.uiscale);
       igSliderFloat("##tod", &app.lights.sunTime, 0.0f, 24.0f, "%.1f h", 0);
 
+    app.updateSunFromTime();
 
     igTableNextColumn(); igText("Elevation");
     igTableNextColumn();
-      igPushItemWidth(200 * app.gui.uiscale);
-      igSliderFloat("##el", &elevation, -10.0f, 90.0f, "%.1f deg", 0);
-
-    // sunrise=8, sunset=20, azimuth follows time
-    float sunriseH = 8.0f, sunsetH = 20.0f;
-    float azimuth = (app.lights.sunTime / 24.0f) * 360.0f;
-    // elevation follows a sine curve between sunrise and sunset
-    float dayFrac = (app.lights.sunTime - sunriseH) / (sunsetH - sunriseH);
-    elevation = (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
-
-    app.updateSun(azimuth, elevation);
-
-    igTableNextColumn(); igText("Elevation");
-    igTableNextColumn();
-      igText(toStringz(format("%.1f deg", elevation)));
+      igText(toStringz(format("%.1f deg", sunElevation(app.lights.sunTime))));
 
     igTableNextColumn(); igText("Azimuth");
     igTableNextColumn();
-      igText(toStringz(format("%.1f deg", azimuth)));
+      igText(toStringz(format("%.1f deg", sunAzimuth(app.lights.sunTime))));
 
     igEndTable();
     igTreePop();
   }
 
-  igCheckbox(iconText(cast(string)ICON_FA_MUSIC, "Disco"), &app.disco);
-
   foreach(i, ref Light light; app.lights) {
+    if(i == 0 || i == 1) continue;
     igPushID_Int(to!int(i));
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB_O, format("Light %d", i)), 0)) {
       igBeginTable(toStringz(format("Light_Tbl_%d", i)), 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);

@@ -43,7 +43,7 @@ struct App {
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[string] buffers;                                                         /// SSBO buffers
   UBO[string] ubos;                                                             /// UBO buffers
-  Lighting lights = {[Lights.Sun, Lights.Fill, Lights.Red, Lights.Green, Lights.Blue]};   /// Scene lighting
+  Lighting lights = {[Lights.Sun, Lights.Fill]}; //, Lights.Red, Lights.Green, Lights.Blue]};   /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
