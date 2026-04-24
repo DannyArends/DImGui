@@ -33,7 +33,7 @@ struct Light {
 }
 
 enum Lights : Light {
-  Sun  = Light(Matrix.init, [50.0f, 80.0f, 50.0f, 1.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 0.0f]),
+  Sun  = Light(Matrix.init, [50.0f, 80.0f, 50.0f, 0.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 0.0f]),
   Fill = Light(Matrix.init, [-30.0f, 40.0f, -30.0f, 0.0f], [0.1f, 0.15f, 0.3f, 1.0f], [1.0f, -1.0f, 1.0f, 0.0f], [0.04f, 0.0f, 90.0f, 0.0f]),
   Red    = Light(Matrix.init, [ 10.0f, 20.0f, 10.0f, 1.0f], [ 400.0f,  20.0f,    0.0f, 1.0f], [ 2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
   Green  = Light(Matrix.init, [ 10.0f, 20.0f,  0.0f, 1.0f], [   0.0f, 400.0f,   20.0f, 1.0f], [-3.0f,  -9.0f,  3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
@@ -47,18 +47,22 @@ struct Lighting {
   alias lights this;
 }
 
-/** Compute lightspace for the provided light
- */
-void computeLightSpace(const App app, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f) {
-  float[3] lightPos = light.position[0 .. 3];
-  float[3] lightDir = light.direction[0 .. 3].normalize();
+/** Compute lightspace for the provided light */
+void computeLightSpace(const App app, ref Light light, bool directional = false, float nearPlane = 0.1f, float farPlane = 500.0f) {
+  float[3] lightPos = light.position[0..3];
+  float[3] lightDir = light.direction[0..3].normalize();
   float[3] lightTarget = lightPos.vAdd(lightDir);
   float[3] upVector = [0.0f, 1.0f, 0.0f];
 
   Matrix lightView = lookAt(lightPos, lightTarget, upVector);
 
-  float fovY = (2 * light.properties[2]);
-  Matrix lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
+  Matrix lightProjection;
+  if(directional) {
+    lightProjection = orthogonal(-60.0f, 60.0f, -60.0f, 60.0f, nearPlane, farPlane);
+  } else {
+    float fovY = (2 * light.properties[2]);
+    lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
+  }
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
 }
 
@@ -82,6 +86,14 @@ void updateLightGeometries(ref App app) {
   }
 }
 
+float sunAzimuth(float sunTime) { return (sunTime / 24.0f) * 360.0f;}
+
+float sunElevation(float sunTime, float sunriseH = 8.0f, float sunsetH = 20.0f) {
+  float dayFrac = (sunTime - sunriseH) / (sunsetH - sunriseH);
+  return (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
+}
+
+void updateSunFromTime(ref App app) { app.updateSun(sunAzimuth(app.lights.sunTime), sunElevation(app.lights.sunTime)); }
 
 /** Show Lights as cones */
 void toggleLightGeometries(ref App app) {
@@ -114,8 +126,10 @@ void updateSun(ref App app, float azimuth, float elevation) {
   float azRad = radian(azimuth);
   float elRad = radian(elevation);
   float[3] dir = [ -cos(elRad) * sin(azRad), -sin(elRad), -cos(elRad) * cos(azRad) ];
+  SDL_Log("sun dir: %f %f %f elevation: %f", dir[0], dir[1], dir[2], elevation);
+
   app.lights[0].direction[0..3] = dir;
-  app.lights[0].position[0..3]  = [-dir[0]*100.0f, -dir[1]*100.0f, -dir[2]*100.0f];
+  app.lights[0].position = [-dir[0]*100.0f, -dir[1]*100.0f, -dir[2]*100.0f, 0.0f];  // w=0 = directional
 
   // t: 0=night, 1=full day
   float t     = clamp(sin(elRad), 0.0f, 1.0f);          // 0=night, 1=full day
@@ -163,7 +177,7 @@ void updateSun(ref App app, float azimuth, float elevation) {
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
-  foreach(ref light; app.lights) { app.computeLightSpace(light); }
+  foreach(i, ref light; app.lights) { app.computeLightSpace(light, i == 0); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 

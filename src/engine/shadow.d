@@ -239,13 +239,13 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdPushConstants(cmd, app.shadows.pipeline.layout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(!app.objects[x].isVisible || !app.objects[x].inFrustum) continue;
+      if(!app.objects[x].isVisible) continue;
       if(cast(Tiles)app.objects[x] !is null) continue;  // skip tiles, handled via chunk
       auto chunk = cast(Chunk)app.objects[x];
       uint inst = cast(uint)(chunk !is null ? chunk.tiles.instances.length : app.objects[x].instances.length);
       app.shadows.totalShadowInstances += inst;
       if(app.objects[x].topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-      if(app.objects[x].box !is null && !aabbInFrustum(lightFrustum, app.objects[x].box.bmin(0), app.objects[x].box.bmax(0))) continue;
+      //if(app.objects[x].box !is null && !aabbInFrustum(lightFrustum, app.objects[x].box.bmin(0), app.objects[x].box.bmax(0))) continue;
       app.shadows.lastShadowInstances += inst;
       if(chunk !is null) {
         app.shadow(chunk.tiles, syncIndex);
