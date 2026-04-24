@@ -8,6 +8,7 @@ import engine;
 import geometry : computeNormals, computeTangents, position, rotate, scale, texture, bumpmap, opacity;
 import icosahedron : refineIcosahedron;
 import lsystem : createLSystem;
+import lights : updateSun;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
@@ -15,6 +16,9 @@ import dwarf : spawnDwarf, randomDwarfName;
 
 /** Create a scene for rendering */
 void createScene(ref App app){
+  SDL_Log("createScene: set time to Noon");
+  app.updateSun((app.lights.sunTime / 24.0f) * 360.0f, 45.0f);
+
   SDL_Log("createScene: Add a Square");
   /*
   app.objects ~= new Square();
