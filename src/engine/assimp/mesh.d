@@ -14,16 +14,16 @@ import vertex : Vertex, INSTANCE;
 import tileatlas : injectTileMeshes;
 
 struct Mesh {
-  int[2] vertices;  /// Start .. End positions in Geometry.vertices array
-  int mid = -1;               /// Mesh Material ID
-  int tid = -1;               /// Mesh DIFFUSE ID
-  int nid = -1;               /// Mesh NORMALS ID
-  int oid = -1;               /// Mesh OPACITY ID
+  int[2] vertices;        /// Start .. End positions in Geometry.vertices array
+  int mid = -1;           /// Mesh Material ID
+  int tid = -1;           /// Mesh DIFFUSE ID
+  int nid = -1;           /// Mesh NORMALS ID
+  int oid = -1;           /// Mesh OPACITY ID
 }
 
 struct MeshList {
-  Mesh[] meshInfo;            /// Meshes for GPU SSBO
-  ulong capacity = 256;       /// GPU SSBO capacity
+  Mesh[] meshInfo;        /// Meshes for GPU SSBO
+  ulong capacity = 256;   /// GPU SSBO capacity
   alias meshInfo this;
 }
 
