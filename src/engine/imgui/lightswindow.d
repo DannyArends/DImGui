@@ -22,7 +22,10 @@ void showLightsContent(ref App app, uint font = 0) {
     igTableNextColumn();
       igPushItemWidth(200 * app.gui.uiscale);
       igSliderFloat("##tod", &app.lights.sunTime, 0.0f, 24.0f, "%.1f h", 0);
-
+    igTableNextColumn(); igText("Bearing");
+    igTableNextColumn();
+      igPushItemWidth(200 * app.gui.uiscale);
+      igSliderFloat("##bear", &app.lights.sunBearing, 0.0f, 365.0f, "%.0f", 0);
     app.updateSunFromTime();
 
     igTableNextColumn(); igText("Elevation");
