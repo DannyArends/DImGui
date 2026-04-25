@@ -165,8 +165,6 @@ void updateSun(ref App app, float azimuth, float elevation) {
   sunColor[3] = 1.0f;
   app.lights[0].intensity = sunColor;
   app.lights[0].properties[0] = t * 0.1f;
-  app.lights[1].intensity[0..3] = [t * 0.15f, t * 0.2f, t * 0.25f];  // blue fill, fades at night
-  app.lights[1].properties[0] = t * 0.05f;  // ambient also fades
 
   app.buffers["LightMatrices"].dirty[] = true;
   app.shadows.dirty = true;
