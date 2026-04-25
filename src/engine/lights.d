@@ -44,24 +44,26 @@ enum Lights : Light {
 struct Lighting {
   Light[] lights;
   float sunTime = 12.0f;
+  float sunBearing = 90.0f;
   alias lights this;
 }
 
 /** Compute lightspace for the provided light */
 void computeLightSpace(const App app, ref Light light, bool directional = false, float nearPlane = 0.1f, float farPlane = 500.0f) {
-  float[3] lightPos = light.position[0..3];
   float[3] lightDir = light.direction[0..3].normalize();
-  float[3] lightTarget = lightPos.vAdd(lightDir);
   float[3] upVector = [0.0f, 1.0f, 0.0f];
 
-  Matrix lightView = lookAt(lightPos, lightTarget, upVector);
+  float worldRadius = app.world.renderDistance * app.world.chunkSize * app.world.tileSize;
+  float worldHeight = app.world.chunkHeight * app.world.tileHeight;
 
-  Matrix lightProjection;
-  if(directional) {
-    lightProjection = orthogonal(-60.0f, 60.0f, -60.0f, 60.0f, nearPlane, farPlane);
-  } else {
-    lightProjection = perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
-  }
+  float[3] worldCenter = [0.0f, worldHeight * 0.5f, 0.0f];
+  float[3] lightEye    = worldCenter.vSub(lightDir.vMul(farPlane * 0.5f));
+
+  Matrix lightView       = lookAt(lightEye, worldCenter, upVector);
+  Matrix lightProjection = directional
+    ? orthogonal(-worldRadius, worldRadius, -worldRadius, worldRadius, -worldHeight, farPlane)
+    : perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
+
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
 }
 
@@ -85,14 +87,16 @@ void updateLightGeometries(ref App app) {
   }
 }
 
-float sunAzimuth(float sunTime) { return (sunTime / 24.0f) * 360.0f;}
+float sunAzimuth(float sunTime, float bearing = 0.0f) { return (sunTime / 24.0f) * 360.0f + bearing;}
 
 float sunElevation(float sunTime, float sunriseH = 6.0f, float sunsetH = 22.0f) {
   float dayFrac = (sunTime - sunriseH) / (sunsetH - sunriseH);
   return (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
 }
 
-void updateSunFromTime(ref App app) { app.updateSun(sunAzimuth(app.lights.sunTime), sunElevation(app.lights.sunTime)); }
+void updateSunFromTime(ref App app) { 
+  app.updateSun(sunAzimuth(app.lights.sunTime, app.lights.sunBearing), sunElevation(app.lights.sunTime));
+}
 
 /** Show Lights as cones */
 void toggleLightGeometries(ref App app) {
@@ -105,7 +109,7 @@ void toggleLightGeometries(ref App app) {
       app.objects ~= new Icosahedron();
       app.objects[$-1].refineIcosahedron(3);
       app.objects[$-1].geometry = (){ return "SunGeometry"; };
-      app.objects[$-1].scale([5.0f, 5.0f, 5.0f]);
+      app.objects[$-1].scale([1.0f, 1.0f, 1.0f]);
       app.objects[$-1].position(light.position[0..3]);
       app.objects[$-1].setColor([1.0f, 0.95f, 0.6f, 1.0f]);
       app.objects[$-1].texture("2k_sun");
@@ -120,51 +124,41 @@ void toggleLightGeometries(ref App app) {
   }
 }
 
+
+float[4] lerpColor(float[4] a, float[4] b, float t) {
+  float[4] result;
+  foreach(i; 0..3) result[i] = a[i] + t * (b[i] - a[i]);
+  result[3] = 1.0f;
+  return result;
+}
+
+float[4] dawnDayBlend(float[4] night, float[4] dawn, float[4] day, float t, float dawnThreshold = 0.55f) {
+  if(t < dawnThreshold) return lerpColor(night, dawn, t / dawnThreshold);
+  return lerpColor(dawn, day, (t - dawnThreshold) / (1.0f - dawnThreshold));
+}
 /** Update time of day / sun */
-void updateSun(ref App app, float azimuth, float elevation) {
+void updateSun(ref App app, float azimuth, float elevation,
+               float[4] skyNight   = [0.02f, 0.02f, 0.08f, 1.0f],
+               float[4] skyDawn    = [0.7f,  0.35f, 0.15f, 1.0f],
+               float[4] skyDay     = [0.4f,  0.65f, 0.9f,  1.0f],
+               float[4] sunNight   = [0.0f,  0.0f,  0.0f,  1.0f],
+               float[4] sunDawn    = [0.8f,  0.5f,  0.1f,  1.0f],
+               float[4] sunNoon    = [1.0f,  0.9f,  0.4f,  1.0f],
+               float dawnThreshold = 0.55f,
+               float ambientScale  = 0.1f,
+               float sunDistance   = 100.0f) {
   float azRad = radian(azimuth);
   float elRad = radian(elevation);
-  float[3] dir = [ -cos(elRad) * sin(azRad), -sin(elRad), -cos(elRad) * cos(azRad) ];
+  float[3] dir = [-cos(elRad) * sin(azRad), -sin(elRad), -cos(elRad) * cos(azRad)];
 
   app.lights[0].direction[0..3] = dir;
-  app.lights[0].position = [-dir[0]*100.0f, -dir[1]*100.0f, -dir[2]*100.0f, 0.0f];  // w=0 = directional
+  app.lights[0].position = [-dir[0]*sunDistance, -dir[1]*sunDistance, -dir[2]*sunDistance, 0.0f];
 
-  // t: 0=night, 1=full day
-  float t = clamp(sin(elRad), 0.0f, 1.0f);          // 0=night, 1=full day
-  float dawn  = clamp(1.0f - abs(elevation - 8.0f) / 15.0f, 0.0f, 1.0f);  // peak at 8deg
+  float t = clamp(sin(elRad), 0.0f, 1.0f);
 
-  float[4] night = [0.02f, 0.02f, 0.08f, 1.0f];
-  float[4] dawn_c = [0.7f,  0.35f, 0.15f, 1.0f];
-  float[4] day = [0.4f,  0.65f, 0.9f,  1.0f];
-
-  // blend: night->dawn->day as three-way lerp, not additive
-  float[4] sky;
-  if(t < 0.3f) {
-    float f = t / 0.3f;
-    foreach(i; 0..3) sky[i] = night[i] + f * (dawn_c[i] - night[i]);
-  } else {
-    float f = (t - 0.3f) / 0.7f;
-    foreach(i; 0..3) sky[i] = dawn_c[i] + f * (day[i] - dawn_c[i]);
-  }
-  sky[3] = 1.0f;
-  app.clearValue[0].color.float32 = sky;
-
-  // sun intensity: off at night, warm at dawn/dusk, white at noon
-  float[4] sunNight = [0.0f, 0.0f,  0.0f, 1.0f];
-  float[4] sunDawn  = [0.8f, 0.5f,  0.1f, 1.0f];
-  float[4] sunNoon  = [1.0f, 0.9f,  0.4f, 1.0f];
-
-  float[4] sunColor;
-  if(t < 0.3f) {
-    float f = t / 0.3f;
-    foreach(i; 0..3) sunColor[i] = sunNight[i] + f * (sunDawn[i] - sunNight[i]);
-  } else {
-    float f = (t - 0.3f) / 0.7f;
-    foreach(i; 0..3) sunColor[i] = sunDawn[i] + f * (sunNoon[i] - sunDawn[i]);
-  }
-  sunColor[3] = 1.0f;
-  app.lights[0].intensity = sunColor;
-  app.lights[0].properties[0] = t * 0.1f;
+  app.clearValue[0].color.float32 = dawnDayBlend(skyNight, skyDawn, skyDay, t, dawnThreshold);
+  app.lights[0].intensity         = dawnDayBlend(sunNight, sunDawn, sunNoon, t, dawnThreshold);
+  app.lights[0].properties[0]     = t * ambientScale;
 
   app.buffers["LightMatrices"].dirty[] = true;
   app.shadows.dirty = true;
