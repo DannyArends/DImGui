@@ -11,7 +11,7 @@ import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : updateSSBO;
 import textures : mapTextures;
 import vector : normalize, vAdd, vSub, negate, vMul, xyz;
-import quaternion : xyzw;
+import quaternion : xyzw, w;
 import matrix : degree, translate;
 
 enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
@@ -21,14 +21,16 @@ struct Light {
   float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light Position
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
-  float[4] properties = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light properties [ambient, attenuation, angle, unused]
-  
-  float pitch() { return degree(asin(-direction.xyz.normalize()[1])); }
-  float yaw()   { return degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2])); }
+  float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, angle, enabled]
+
+  void set(bool v) { properties[3] = v?1.0f:0.0f; }
+  bool enabled() { return(properties.w == 1.0f); }
+  float pitch() { return(degree(asin(-direction.xyz.normalize()[1]))); }
+  float yaw()   { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
 }
 
 enum Lights : Light {
-  Sun  = Light(Matrix.init, [50.0f, 80.0f, 50.0f, 0.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 0.0f]),
+  Sun  = Light(Matrix.init, [50.0f, 80.0f, 50.0f, 0.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 1.0f]),
   Fill = Light(Matrix.init, [-30.0f, 40.0f, -30.0f, 0.0f], [0.1f, 0.15f, 0.3f, 1.0f], [1.0f, -1.0f, 1.0f, 0.0f], [0.04f, 0.0f, 90.0f, 0.0f]),
   Red = Light(Matrix.init, [10.0f, 20.0f, 10.0f, 1.0f], [400.0f, 20.0f, 0.0f, 1.0f], [2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
   Green  = Light(Matrix.init, [10.0f, 20.0f, 0.0f, 1.0f], [0.0f, 400.0f, 20.0f, 1.0f], [-3.0f, -9.0f, 3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
@@ -155,6 +157,7 @@ void updateDisco(ref App app) {
   if (!app.disco || app.lights.length < 3) return;
   float t = (SDL_GetTicks() - app.time[STARTUP]) / 1000.0f;
   foreach (i; 1 .. app.lights.length) {
+    if(!app.lights[i].enabled) continue;
     float fi = cast(float)i;
     float speed  = 0.5f + fmod(fi * 0.61803f, 1.0f) * 1.8f;
     float radius = 12.0f + fmod(fi * 0.31415f, 1.0f) * 22.0f;

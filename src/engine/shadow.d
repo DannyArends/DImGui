@@ -221,6 +221,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   app.shadows.lastShadowInstances = 0;
   app.shadows.totalShadowInstances = 0;
   for(size_t l = 0; l < app.lights.length; l++) {
+    if(!app.lights[l].enabled) continue;
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
 
     auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
