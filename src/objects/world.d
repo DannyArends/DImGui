@@ -79,6 +79,8 @@ struct WorldData {
   @nogc pure int[3] chunkCoord(int[3] tile) const nothrow { 
     return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
   }
+  @property @nogc pure float radius() const nothrow { return renderDistance * chunkWorldSize * 1.41422f; }
+  @property @nogc pure float height() const nothrow { return chunkHeight * tileHeight; }
   int tileIdx(int[3] tile) const { return tileIndex(localCoord(tile)); }
   /** Convert a world coordinate to a world-space float position */
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
