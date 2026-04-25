@@ -60,8 +60,7 @@ void computeLightSpace(const App app, ref Light light, bool directional = false,
   if(directional) {
     lightProjection = orthogonal(-60.0f, 60.0f, -60.0f, 60.0f, nearPlane, farPlane);
   } else {
-    float fovY = (2 * light.properties[2]);
-    lightProjection = perspective(fovY, 1.0f, nearPlane, farPlane);
+    lightProjection = perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
   }
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
 }
@@ -88,7 +87,7 @@ void updateLightGeometries(ref App app) {
 
 float sunAzimuth(float sunTime) { return (sunTime / 24.0f) * 360.0f;}
 
-float sunElevation(float sunTime, float sunriseH = 8.0f, float sunsetH = 20.0f) {
+float sunElevation(float sunTime, float sunriseH = 6.0f, float sunsetH = 22.0f) {
   float dayFrac = (sunTime - sunriseH) / (sunsetH - sunriseH);
   return (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
 }
@@ -134,9 +133,9 @@ void updateSun(ref App app, float azimuth, float elevation) {
   float t = clamp(sin(elRad), 0.0f, 1.0f);          // 0=night, 1=full day
   float dawn  = clamp(1.0f - abs(elevation - 8.0f) / 15.0f, 0.0f, 1.0f);  // peak at 8deg
 
-  float[4] night  = [0.02f, 0.02f, 0.08f, 1.0f];
+  float[4] night = [0.02f, 0.02f, 0.08f, 1.0f];
   float[4] dawn_c = [0.7f,  0.35f, 0.15f, 1.0f];
-  float[4] day    = [0.4f,  0.65f, 0.9f,  1.0f];
+  float[4] day = [0.4f,  0.65f, 0.9f,  1.0f];
 
   // blend: night->dawn->day as three-way lerp, not additive
   float[4] sky;
