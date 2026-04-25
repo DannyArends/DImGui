@@ -30,9 +30,7 @@ vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
 float calculateShadow(vec4 position, uint i) {
   vec3 projCoords = ((position.xyz / position.w) * 0.5) + 0.5;
 
-  if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
-      projCoords.y < 0.0 || projCoords.y > 1.0 ||
-      projCoords.z < 0.0 || projCoords.z > 1.0){
+  if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z < 0.0 || projCoords.z > 1.0){
     return 1.0; // Not in shadow
   }
 
