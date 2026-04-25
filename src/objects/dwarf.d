@@ -26,7 +26,8 @@ class Dwarf : Cylinder {
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 
-  this() {
+  this(float radius = 0.5f, float height = 1.0f, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
+    super(radius, height, 6, color);
     geometry = (){ return(typeof(this).stringof); };
   }
 }
@@ -64,7 +65,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
   float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
   d.visualPos = [
     d.moveFrom[0] + t * (d.moveTo[0] - d.moveFrom[0]),
-    d.moveFrom[1] + t * (d.moveTo[1] - d.moveFrom[1]),
+    d.moveFrom[1] + t * (d.moveTo[1] - d.moveFrom[1]) + 0.5f,
     d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
   ];
   d.position(d.visualPos);
@@ -97,8 +98,8 @@ void spawnDwarf(ref App app, string name) {
   dwarf.name = name;
   dwarf.tile = tile;
   auto wp = app.tileToWorld(tile);
-  dwarf.position([wp[0], wp[1] - 0.5f, wp[2]]);
-  dwarf.visualPos = [wp[0], wp[1] - 0.5f, wp[2]];
+  dwarf.position([wp[0], wp[1], wp[2]]);
+  dwarf.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   dwarf.moveFrom  = dwarf.visualPos;
   dwarf.moveTo = dwarf.visualPos;
   dwarf.moveT = 1.0f;
