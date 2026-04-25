@@ -126,13 +126,12 @@ void updateSun(ref App app, float azimuth, float elevation) {
   float azRad = radian(azimuth);
   float elRad = radian(elevation);
   float[3] dir = [ -cos(elRad) * sin(azRad), -sin(elRad), -cos(elRad) * cos(azRad) ];
-  SDL_Log("sun dir: %f %f %f elevation: %f", dir[0], dir[1], dir[2], elevation);
 
   app.lights[0].direction[0..3] = dir;
   app.lights[0].position = [-dir[0]*100.0f, -dir[1]*100.0f, -dir[2]*100.0f, 0.0f];  // w=0 = directional
 
   // t: 0=night, 1=full day
-  float t     = clamp(sin(elRad), 0.0f, 1.0f);          // 0=night, 1=full day
+  float t = clamp(sin(elRad), 0.0f, 1.0f);          // 0=night, 1=full day
   float dawn  = clamp(1.0f - abs(elevation - 8.0f) / 15.0f, 0.0f, 1.0f);  // peak at 8deg
 
   float[4] night  = [0.02f, 0.02f, 0.08f, 1.0f];
@@ -152,9 +151,9 @@ void updateSun(ref App app, float azimuth, float elevation) {
   app.clearValue[0].color.float32 = sky;
 
   // sun intensity: off at night, warm at dawn/dusk, white at noon
-  float[4] sunNight = [0.0f,  0.0f,  0.0f,  1.0f];
-  float[4] sunDawn  = [0.9f,  0.5f,  0.1f,  1.0f];
-  float[4] sunNoon  = [5.0f,  3.8f,  3.4f, 1.0f];
+  float[4] sunNight = [0.0f, 0.0f,  0.0f, 1.0f];
+  float[4] sunDawn  = [0.8f, 0.5f,  0.1f, 1.0f];
+  float[4] sunNoon  = [1.0f, 0.9f,  0.4f, 1.0f];
 
   float[4] sunColor;
   if(t < 0.3f) {
