@@ -23,8 +23,8 @@ struct Light {
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
   float[4] properties = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light properties [ambient, attenuation, angle, unused]
   
-  float pitch() { auto d = direction[0..3].normalize(); return degree(asin(-d[1])); }
-  float yaw() { auto d = direction[0..3].normalize(); return degree(atan2(d[0], d[2])); }
+  float pitch() { return degree(asin(-direction.xyz.normalize()[1])); }
+  float yaw()   { return degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2])); }
 }
 
 enum Lights : Light {
@@ -45,7 +45,7 @@ struct Lighting {
 
 /** Compute lightspace for the provided light */
 void computeLightSpace(const World world, ref Light light, bool directional = false, float nearPlane = 0.1f, float farPlane = 500.0f) {
-  float[3] lightDir = light.direction[0..3].normalize();
+  float[3] lightDir = light.direction.xyz.normalize();
   float[3] upVector = [0.0f, 1.0f, 0.0f];
   float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
   float[3] lightEye = worldCenter.vSub(lightDir.vMul(farPlane * 0.5f));
@@ -61,20 +61,17 @@ void computeLightSpace(const World world, ref Light light, bool directional = fa
 /** Update light geometries for rendering */
 void updateLightGeometries(ref App app) {
   if(!app.showLights) return;
-  int sunIdx = 0;
+  int l = 1;
   foreach(o; app.objects) {
     if(o.geometry() == "SunGeometry") {
-      o.position(app.lights[0].position[0..3]);
+      o.position(app.lights[0].position.xyz);
       o.setColor([1.0f, 0.95f, 0.6f, 1.0f]);
-    } else if(o.geometry() == "LightCone") {
-      if(sunIdx + 1 < app.lights.length) {
-        auto light = app.lights[sunIdx + 1];
-        o.instances[0].matrix = Matrix.init;
-        o.position(light.position[0..3]);
-        o.rotate([light.yaw(), 1.0f, light.pitch()]);
-        o.setColor(light.intensity);
-      }
-      sunIdx++;
+    } else if(o.geometry() == "LightCone" && l < app.lights.length) {
+      auto light = app.lights[l++];
+      o.instances[0].matrix = Matrix.init;
+      o.position(light.position.xyz);
+      o.rotate([light.yaw(), 1.0f, light.pitch()]);
+      o.setColor(light.intensity);
     }
   }
 }
