@@ -24,7 +24,7 @@ struct ShadowMap {
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  uint dimension = isAndroid ? 512 : 1024;  /// Allow shadows to be disabled
+  uint dimension = isAndroid ? 512 : 2048;  /// Allow shadows to be disabled
 
   bool dirty = true;
 
@@ -152,7 +152,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     depthClampEnable: VK_FALSE,
     polygonMode: VK_POLYGON_MODE_FILL,
     lineWidth: 1.0f,
-    cullMode: VK_CULL_MODE_BACK_BIT,
+    cullMode: VK_CULL_MODE_NONE,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
     depthBiasConstantFactor: 1.25f,
@@ -245,7 +245,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       uint inst = cast(uint)(chunk !is null ? chunk.tiles.instances.length : app.objects[x].instances.length);
       app.shadows.totalShadowInstances += inst;
       if(app.objects[x].topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-      //if(app.objects[x].box !is null && !aabbInFrustum(lightFrustum, app.objects[x].box.bmin(0), app.objects[x].box.bmax(0))) continue;
+      if(app.objects[x].box !is null && !aabbInFrustum(lightFrustum, app.objects[x].box.bmin(0), app.objects[x].box.bmax(0))) continue;
       app.shadows.lastShadowInstances += inst;
       if(chunk !is null) {
         app.shadow(chunk.tiles, syncIndex);

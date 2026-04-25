@@ -6,7 +6,7 @@
 import engine;
 
 import imgui : iconText;
-import lights : Light, updateSunFromTime, sunElevation, sunAzimuth;
+import lights : Light, updateSun, sunElevation, sunAzimuth;
 
 /** Show the GUI window which allows us to manipulate lighting
  */
@@ -26,7 +26,7 @@ void showLightsContent(ref App app, uint font = 0) {
     igTableNextColumn();
       igPushItemWidth(200 * app.gui.uiscale);
       igSliderFloat("##bear", &app.lights.sunBearing, 0.0f, 365.0f, "%.0f", 0);
-    app.updateSunFromTime();
+    app.updateSun();
 
     igTableNextColumn(); igText("Elevation");
     igTableNextColumn();
@@ -41,7 +41,7 @@ void showLightsContent(ref App app, uint font = 0) {
   }
 
   foreach(i, ref Light light; app.lights) {
-    if(i == 0 || i == 1) continue;
+    if(i == 0) continue;
     igPushID_Int(to!int(i));
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB_O, format("Light %d", i)), 0)) {
       igBeginTable(toStringz(format("Light_Tbl_%d", i)), 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
