@@ -223,7 +223,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   for(size_t l = 0; l < app.lights.length; l++) {
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
 
-    auto lightFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
+    auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
 
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -236,20 +236,20 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
     uint currentLightIndex = cast(uint)l;
-    vkCmdPushConstants(cmd, app.shadows.pipeline.layout,
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
+    vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(!app.objects[x].isVisible) continue;
-      if(cast(Tiles)app.objects[x] !is null) continue;  // skip tiles, handled via chunk
-      auto chunk = cast(Chunk)app.objects[x];
-      uint inst = cast(uint)(chunk !is null ? chunk.tiles.instances.length : app.objects[x].instances.length);
-      app.shadows.totalShadowInstances += inst;
-      if(app.objects[x].topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-      if(app.objects[x].box !is null && !aabbInFrustum(lightFrustum, app.objects[x].box.bmin(0), app.objects[x].box.bmax(0))) continue;
-      app.shadows.lastShadowInstances += inst;
-      if(chunk !is null) {
-        app.shadow(chunk.tiles, syncIndex);
-      } else { app.shadow(app.objects[x], syncIndex); }
+      auto isChunk = (cast(Chunk)app.objects[x] !is null);
+      auto obj = (isChunk? (cast(Chunk)app.objects[x]).tiles : app.objects[x]);
+
+      if(!obj.isVisible) continue;                                         /// Skip invisible objects
+      if(cast(Tiles)obj !is null) continue;                                /// Skip tiles
+      if(obj.geometry() == "SunGeometry") continue;                        /// Skip the sun
+      if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;    /// Skip non triangle objects
+      app.shadows.totalShadowInstances += obj.instances.length;            /// Could be rendered
+
+      if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box.bmin(0), obj.box.bmax(0))) continue;
+      app.shadows.lastShadowInstances += obj.instances.length;             /// Inside the light Frustum
+      app.shadow(obj, syncIndex);
     }
     vkCmdEndRenderPass(cmd);
     popLabel(cmd);
