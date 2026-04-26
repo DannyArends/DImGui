@@ -13,6 +13,7 @@ import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : loadBlocks, saveBlocks;
+import dwarf : saveDwarfs;
 import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
@@ -209,8 +210,8 @@ void loadWorld(ref App app) {
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
   app.loadBlocks();
-  app.deriveInventory();
   app.loadTrees();
+  app.deriveInventory();
 }
 
 /** Save world diffs to disk */
@@ -221,6 +222,7 @@ void saveWorld(ref App app) {
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
   app.saveBlocks();
   app.saveTrees();
+  app.saveDwarfs();
 }
 
 /** Is the Tile occupied ?  */

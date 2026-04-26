@@ -9,7 +9,7 @@ import block : spawnBlock;
 import io : readFile, writeFile;
 import tileatlas : TileType;
 import matrix : translate, multiply, scale;
-import world : WORLD_MAGIC;
+import world : noTile, WORLD_MAGIC;
 
 /** Shared instanced cylinder mesh for all tree trunks */
 class TrunkMesh : Cylinder {
