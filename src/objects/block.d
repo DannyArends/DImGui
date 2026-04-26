@@ -10,9 +10,19 @@ import matrix : translate, multiply, scale;
 import world : tileToWorld, WORLD_MAGIC;
 
 struct BlockData { int[3] tile; uint tileType; }
+struct BlockFallData {
+  size_t idx;
+  float[2] state;  /// [y, v]
+
+  @property @nogc float y() nothrow { return state[0]; }
+  @property @nogc float v() nothrow { return state[1]; }
+  @property @nogc void y(float y) nothrow { state[0] = y; }
+  @property @nogc void v(float v) nothrow { state[1] = v; }
+}
 
 class Blocks : Cube {
-  int[3][] tiles;
+  int[3][] tiles;           /// Tile of instances
+  BlockFallData[] falling;  /// All state related to falling blocks
 
   this() {
     super();
@@ -92,3 +102,35 @@ void spawnBlock(ref App app, int[3] tile, TileType tt) {
   app.deriveInventory();
 }
 
+@nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
+
+/** Check blocks above a mined tile to see if they go falling */
+void unsettleBlocksAbove(ref App app, int[3] minedTile) {
+  auto db = app.world.droppedBlocks;
+  if(db is null) return;
+  foreach(i, tile; db.tiles) {
+    if(tile.isAbove(minedTile) && !db.falling.any!(f => f.idx == i)) { db.falling ~= BlockFallData(i, [app.tileToWorld(tile)[1], 0.0f]); }
+  }
+}
+
+/** Update falling blocks */
+void settleBlocks(ref App app, float dt) {
+  auto db = app.world.droppedBlocks;
+  if(db is null || db.falling.length == 0) return;
+  bool changed = false;
+  db.falling = db.falling.filter!((ref f) {
+    f.v = f.v + 9.8f * dt;
+    f.y = f.y - f.v * dt;
+    int[3] below = [db.tiles[f.idx][0], db.tiles[f.idx][1] - 1, db.tiles[f.idx][2]];
+    float landY = app.tileToWorld(db.tiles[f.idx])[1] - (app.world.tileHeight - app.world.tileHeight * 0.25f) * 0.5f;
+    if(below[1] < 0 || app.world.getTileAt(below) != TileType.None || f.y <= landY) {
+      db.instances[f.idx] = app.toDropInstance(db.tiles[f.idx], cast(TileType)db.instances[f.idx].meshdef[0]);
+      changed = true;
+      return false;
+    }
+    db.instances[f.idx].matrix[13] = f.y;
+    changed = true;
+    return true;
+  }).array;
+  if(changed) db.buffers[INSTANCE] = false;
+}
