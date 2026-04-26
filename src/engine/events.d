@@ -164,9 +164,8 @@ void handleEvents(ref App app) {
     if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
   }
 
-  float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
-  if(app.time[FRAMESTART] - app.time[LASTTICK] > 500) {
-    app.updateLightGeometries(dt * 10);
+  if(app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
+    app.updateLightGeometries();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     foreach(i; iota(app.objects.length).array.randomShuffle()) {
@@ -176,6 +175,7 @@ void handleEvents(ref App app) {
   }
 
   // Call all onFrame() handlers
+  float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   app.world.settleBlocks(app.world.blocks, dt);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }

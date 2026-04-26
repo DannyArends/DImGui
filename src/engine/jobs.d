@@ -52,6 +52,12 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
   );
 }
 
+Job stuffJob() { 
+  auto j = pickupJob(noTile, TileType.None);
+  j.name = "Stuff";
+  return(j);
+}
+
 /** woodcutting Job */
 Job woodcuttingJob(int[3] targetTile) {
   return Job("Woodcutting", targetTile, TileType.None, [],
@@ -79,7 +85,7 @@ Job woodcuttingJob(int[3] targetTile) {
 Job pickupJob(int[3] targetTile, TileType tileType) {
   return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, Dwarf d, ref Job j) {
-      j.targetTile = app.findFreeBlock(j.tileType, d.tile);
+      j.targetTile = app.findFreeBlock(d.tile, j.tileType);
     },
     onArrive: (ref App app, Dwarf d) {
       auto db = app.world.blocks;

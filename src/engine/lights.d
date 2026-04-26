@@ -64,9 +64,9 @@ struct Lighting {
 }
 
 /** Update light geometries for rendering */
-void updateLightGeometries(ref App app, float dt) {
-  //app.lights.sunTime = fmod(app.lights.sunTime + dt * 0.001f, 24.0f);
-  //app.updateSun();
+void updateLightGeometries(ref App app, float minsPerTick = 2.0f) {
+  app.lights.sunTime = fmod(app.lights.sunTime + (minsPerTick / 60.0f), 24.0f);
+  app.updateSun();
   if(!app.showLights) return;
   int l = 1;
   foreach(o; app.objects) {
@@ -87,7 +87,7 @@ void updateLightGeometries(ref App app, float dt) {
 @nogc pure float sunAzimuth(float sunTime, float bearing = 0.0f) nothrow { return (sunTime / 24.0f) * 360.0f + bearing;}
 
 /** Compute Elevation of the sun */
-@nogc pure float sunElevation(float sunTime, float sunriseH = 6.0f, float sunsetH = 20.0f) nothrow {
+@nogc pure float sunElevation(float sunTime, float sunriseH = 4.0f, float sunsetH = 22.0f) nothrow {
   float dayFrac = (sunTime - sunriseH) / (sunsetH - sunriseH);
   return (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
 }

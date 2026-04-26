@@ -7,7 +7,7 @@ import engine;
 import io : readFile, writeFile;
 import inventory : deriveInventory;
 import matrix : translate, multiply, scale;
-import world : WORLD_MAGIC;
+import world : noTile, WORLD_MAGIC;
 
 struct BlockData { int[3] tile; uint tileType; }
 struct BlockFallData {
@@ -60,13 +60,12 @@ void loadBlocks(ref App app) {
 }
 
 /** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
-int[3] findFreeBlock(ref App app, TileType tt, int[3] dwarfTile) {
-  if(app.world.blocks is null) return [int.min, 0, 0];
-  int[3] best = [int.min, 0, 0];
+int[3] findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
+  if(app.world.blocks is null) return noTile;
+  int[3] best = noTile;
   float bestDist = float.max;
   foreach(i, tile; app.world.blocks.tiles) {
-    if(app.world.blocks.instances[i].meshdef[0] != cast(uint)tt) continue;
-    // only skip blocks already on an active dwarf's jobStack
+    if(tt != TileType.None && app.world.blocks.instances[i].meshdef[0] != cast(uint)tt) continue;
     bool reserved = false;
     foreach(o; app.objects) {
       auto d = cast(Dwarf)o;

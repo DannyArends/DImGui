@@ -11,7 +11,7 @@ import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
 import vector : euclidean;
 import tileatlas : tileData;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
-import jobs : Job, jobQueue, miningJob, claimNextJob;
+import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob;
 
 struct DwarfData {
   int[3] tile = [0, 0, 0];
@@ -114,9 +114,13 @@ void dwarfTick(ref App app, ref Geometry obj) {
     } else {
       app.claimNextJob(d);
       if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
-        d.idleTicks[0] = 0;
-        int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
-        if(app.pathfindTo(d, wander)) d.targetTile = wander;
+        if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 && d.carrying.length < d.inventory.length / 2 && uniform(0, 10) == 0) {
+          auto job = stuffJob();
+          app.dispatchJob(d, job);
+        } else {
+          int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
+          if(app.pathfindTo(d, wander)) d.targetTile = wander;
+        }
       }
     }
   } else if(d.path.length > 0 && d.moveT >= 1.0f) {
