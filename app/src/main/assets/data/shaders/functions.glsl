@@ -51,6 +51,7 @@ float calculateShadow(vec4 position, uint i) {
 
 // Our illumination function
 vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 cameraPos) {
+  if (light.properties.w == 0.0) return vec3(0.0);
   float attenuation = 1.0;
   vec3 s;
   if (light.position.w == 0.0) {

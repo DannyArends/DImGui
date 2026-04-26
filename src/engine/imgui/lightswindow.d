@@ -44,14 +44,14 @@ void showLightsContent(ref App app, uint font = 0) {
   foreach(i, ref Light light; app.lights) {
     if(i == 0) continue;
     igPushID_Int(to!int(i));
+    bool enabled = app.lights[i].enabled();
+    if(igCheckbox("##enabled", &enabled)) {
+      app.lights[i].enabled(enabled);
+      app.buffers["LightMatrices"].dirty[] = true;
+      app.shadows.dirty = true;
+    }
+    igSameLine(0, 5);
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB_O, format("Light %d", i)), 0)) {
-      bool enabled = (app.lights[i].properties.w == 1.0f);
-      if(igCheckbox("##enabled", &enabled)) {
-        app.lights[i].set(enabled ? 1 : 0);
-        app.buffers["LightMatrices"].dirty[] = true;
-        app.shadows.dirty = true;
-      }
-      igSameLine(0, 5);
       igBeginTable(toStringz(format("Light_Tbl_%d", i)), 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
       igTableNextColumn(); igText(iconText("Position", cast(string)ICON_FA_ARROWS));
