@@ -121,17 +121,12 @@ void settleBlocks(ref App app, float dt) {
   if(db is null || db.falling.length == 0) return;
   bool changed = false;
   db.falling = db.falling.filter!((ref f) {
-    f.v = f.v + 0.005f * (dt/ 100.0f);
-    f.y = f.y - f.v * (dt/ 100.0f);
-    SDL_Log("dt=%f v=%f y=%f", dt, f.v, f.y);
-    float ts = app.world.tileSize * 0.25f;
-    float th = app.world.tileHeight * 0.25f;
-    int[3] curTile = app.world.worldToTile([db.tiles[f.idx][0] * app.world.tileSize, f.y, db.tiles[f.idx][2] * app.world.tileSize]);
-    int[3] below = [curTile[0], curTile[1] - 1, curTile[2]];
-    float landY = app.tileToWorld(curTile)[1] - (app.world.tileHeight - th) * 0.5f;
-    if(below[1] < 0 || app.world.getTileAt(below) != TileType.None) {
-      db.tiles[f.idx] = curTile;
-      db.instances[f.idx] = app.toDropInstance(curTile, cast(TileType)db.instances[f.idx].meshdef[0]);
+    f.v = f.v + 0.005f * (dt / 100.0f);
+    f.y = f.y - f.v * (dt / 100.0f);
+    float landY = app.toDropInstance(db.tiles[f.idx], TileType.None).matrix[13] - app.world.tileHeight;
+    if(f.y <= landY) {
+      db.tiles[f.idx][1] -= 1;
+      db.instances[f.idx] = app.toDropInstance(db.tiles[f.idx], cast(TileType)db.instances[f.idx].meshdef[0]);
       changed = true;
       return false;
     }
