@@ -168,7 +168,7 @@ void handleEvents(ref App app) {
   // Call all onFrame() handlers
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
-  app.settleBlocks(dt);
+  app.world.settleBlocks(app.world.blocks, dt);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 }
 

@@ -5,7 +5,7 @@
 
 import engine;
 
-import block : spawnBlock, findFreeBlock, hasBlocks;
+import block : spawnBlock, findFreeBlock;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
@@ -59,7 +59,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
       j.targetTile = app.findFreeBlock(j.tileType, d.tile);
     },
     onArrive: (ref App app, Dwarf d) {
-      auto db = app.world.droppedBlocks;
+      auto db = app.world.blocks;
       foreach(i, tile; db.tiles) {
         if(tile == d.jobStack[0].targetTile) {
           db.tiles = db.tiles[0..i] ~ db.tiles[i+1..$];

@@ -22,8 +22,8 @@ struct Inventory {
 
 void deriveInventory(ref App app) {
   app.inventory.items.clear();
-  if(app.world.droppedBlocks is null) return;
-  foreach(ref inst; app.world.droppedBlocks.instances) {
+  if(app.world.blocks is null) return;
+  foreach(ref inst; app.world.blocks.instances) {
     auto tt = cast(TileType)inst.meshdef[0];
     app.inventory[tt] = app.inventory.get(tt, 0) + 1;
   }

@@ -5,7 +5,7 @@
 import engine;
 
 import geometry;
-import world : noTile, tileToWorld, isTileOccupied;
+import world : noTile, surfaceAt, isTileOccupied;
 import vector : euclidean;
 import tileatlas : tileData;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
@@ -51,13 +51,8 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
   foreach(radius; 0..app.world.chunkSize) {
     for(int x = -radius; x <= radius; x++) {
       for(int z = -radius; z <= radius; z++) {
-        int[3] tile = [startX + x, app.world.chunkHeight-1, startZ + z];
-        while(tile[1] > 0) {
-          TileType tt = app.world.getTileAt(tile);
-          if(tt != TileType.None) break;
-          tile[1]--;
-        }
-        if(tile[1] > 0 && !app.isTileOccupied([tile[0], tile[1]+1, tile[2]])) { return [tile[0], tile[1]+1, tile[2]]; }
+        int y = app.world.surfaceAt(startX + x, app.world.chunkHeight - 1, startZ + z);
+        if(y > 0 && !app.isTileOccupied([startX + x, y + 1, startZ + z])) return [startX + x, y + 1, startZ + z];
       }
     }
   }
@@ -110,7 +105,7 @@ void spawnDwarf(ref App app, string name) {
   Dwarf dwarf = new Dwarf();
   dwarf.name = name;
   dwarf.tile = tile;
-  auto wp = app.tileToWorld(tile);
+  auto wp = app.world.tileToWorld(tile);
   dwarf.position([wp[0], wp[1], wp[2]]);
   dwarf.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   dwarf.moveFrom  = dwarf.visualPos;

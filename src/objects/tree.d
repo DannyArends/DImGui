@@ -9,7 +9,7 @@ import block : spawnBlock;
 import io : readFile, writeFile;
 import tileatlas : TileType;
 import matrix : translate, multiply, scale;
-import world : tileToWorld, WORLD_MAGIC;
+import world : WORLD_MAGIC;
 
 /** Shared instanced cylinder mesh for all tree trunks */
 class TrunkMesh : Cylinder {
@@ -66,7 +66,7 @@ Tree[] buildTreeData(immutable(WorldData) wd, int[3] coord, const TileType[] til
 /** Add tree instances to shared trunk/canopy meshes, returns trees with updated indices */
 Tree[] addTreeInstances(ref App app, Tree[] trees) {
   foreach(ref t; trees) {
-    auto wp = app.tileToWorld(t.rootTile);
+    auto wp = app.world.tileToWorld(t.rootTile);
     float px = wp[0], py = wp[1], pz = wp[2];
     float th = app.world.tileHeight;
 
