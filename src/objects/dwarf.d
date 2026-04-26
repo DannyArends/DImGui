@@ -18,6 +18,7 @@ class Dwarf : Cylinder {
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
+  uint idleTicks = 0;
   Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
   TileType[] carrying;                      /// Items the dwarf is currently holding
 
@@ -30,6 +31,11 @@ class Dwarf : Cylinder {
     super(radius, height, 6, color);
     geometry = (){ return(typeof(this).stringof); };
   }
+
+  @property @nogc bool hasGoal() nothrow { return targetTile[0] != int.min; }
+  @property @nogc bool isIdle() nothrow { return !hasGoal && jobStack.length == 0; }
+  @property @nogc bool isWandering() nothrow { return hasGoal && jobStack.length == 0; }
+  @nogc void clearGoal() nothrow { targetTile = [int.min, 0, 0]; }
 }
 
 /** Random names */
@@ -76,16 +82,22 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
 void dwarfTick(ref App app, ref Geometry obj) {
   auto d = cast(Dwarf)obj;
   if(d is null) return;
-  if(d.targetTile[0] == int.min) {
+  if(!d.hasGoal) {
     if(d.jobStack.length > 0) {
       if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
     } else {
       app.claimNextJob(d);
+      if(d.isIdle && ++d.idleTicks > 200) {
+        d.idleTicks = 0;
+        int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
+        if(app.pathfindTo(d, wander)) d.targetTile = wander;
+      }
     }
   } else if(d.path.length > 0 && d.moveT >= 1.0f) {
     app.followPath(d);
   } else if(d.path.length == 0 && d.moveT >= 1.0f) {
-    if(app.atDestination(d, d.jobStack[0].targetTile)) d.jobStack[0].onArrive(app, d);
+    if(d.isWandering) { d.clearGoal(); }
+    else if(app.atDestination(d, d.jobStack[0].targetTile)) d.jobStack[0].onArrive(app, d);
     else if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
   }
 }

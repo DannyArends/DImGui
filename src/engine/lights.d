@@ -27,6 +27,7 @@ struct Light {
   @property @nogc pure float angle() nothrow { return properties[2]; }
   @property @nogc pure void enabled(bool v) nothrow { properties[3] = v?1.0f:0.0f; }
   @property @nogc pure bool enabled() nothrow { return(properties.w == 1.0f); }
+  @property @nogc pure bool directional() nothrow { return(position.w == 0.0f); }
   @property @nogc pure float pitch() nothrow { return(degree(asin(-direction.xyz.normalize()[1]))); }
   @property @nogc pure float yaw() nothrow { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
 }
@@ -48,14 +49,14 @@ struct Lighting {
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(const World world, ref Light light, bool directional = false, float nearPlane = 0.1f, float farPlane = 500.0f) nothrow {
+@nogc void computeLightSpace(const World world, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   float[3] upVector = [0.0f, 1.0f, 0.0f];
   float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
   float[3] lightEye = worldCenter.vSub(lightDir.vMul(farPlane * 0.5f));
 
   Matrix lightView = lookAt(lightEye, worldCenter, upVector);
-  Matrix lightProjection = directional
+  Matrix lightProjection = light.directional
     ? orthogonal(-world.radius, world.radius, -world.radius, world.radius, -world.height, farPlane)
     : perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
 
@@ -145,7 +146,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
-  foreach(i, ref light; app.lights) { app.world.computeLightSpace(light, i == 0); }
+  foreach(i, ref light; app.lights) { app.world.computeLightSpace(light); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 
