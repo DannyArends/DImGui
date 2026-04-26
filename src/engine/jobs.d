@@ -9,7 +9,7 @@ import block : spawnBlock, findFreeBlock;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
-import world : noTile, setTile;
+import world : noTile, setTile, tileAbove;
 
 struct Job {
   string name;
@@ -33,7 +33,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
       if(d.miningProgress >= 1.0f) {
         TileType tt = app.world.getTileAt(d.jobStack[0].targetTile);
         app.setTile(d.jobStack[0].targetTile);
-        app.fellTree(d.jobStack[0].targetTile);
+        app.fellTree(d.jobStack[0].targetTile.tileAbove);
         if(tt != TileType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
         d.jobStack = d.jobStack[1..$];

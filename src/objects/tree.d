@@ -5,8 +5,9 @@
  
 import engine;
 
-import block : spawnBlock;
+import block : spawnBlock, unsettleBlocks;
 import io : readFile, writeFile;
+import intersection : intersects;
 import tileatlas : TileType;
 import matrix : translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
@@ -38,6 +39,24 @@ struct Tree {
   size_t trunkStart;        /// First instance index in TrunkMesh
   size_t canopyIdx;         /// Instance index in CanopyMesh
   uint hash;
+}
+
+bool getBestTree(ref App app, float[3][2] ray, Intersection[] hits, out int[3] rootTile) {
+  Intersection best;
+  foreach(ref hit; hits) {
+    auto obj = app.objects[hit.idx[0]];
+    if(obj.geometry() != "TrunkMesh" && obj.geometry() != "CanopyMesh") continue;
+    foreach(ref trees; app.world.trees.values) foreach(ref t; trees) {
+      bool match = (hit.idx[1] >= t.trunkStart && hit.idx[1] < t.trunkStart + t.height) || hit.idx[1] == t.canopyIdx;
+      if(!match) continue;
+      auto wp = app.world.tileToWorld(t.rootTile);
+      float[3] bmin = [wp[0] - 1.0f, wp[1], wp[2] - 1.0f];
+      float[3] bmax = [wp[0] + 1.0f, wp[1] + t.height + 1.5f, wp[2] + 1.0f];
+      auto i = ray.intersects(bmin, bmax, hit.idx[0], hit.idx[1]);
+      if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = t.rootTile; }
+    }
+  }
+  return best.intersects;
 }
 
 /** Generate trees for a chunk based on tile types and noise */
@@ -110,9 +129,11 @@ void fellTree(ref App app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.trees) return;
   foreach(i, ref t; app.world.trees[coord]) {
-    if(t.rootTile != [tile[0], tile[1]+1, tile[2]]) continue;
+    //if(t.rootTile != [tile[0], tile[1]+1, tile[2]]) continue;
+    if(t.rootTile != tile) continue;
     // spawn wood blocks
     for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]], TileType.Wood); }
+    app.world.unsettleBlocks(app.world.blocks, t.rootTile);
     // remove from trees array
     app.world.trees[coord] = app.world.trees[coord][0..i] ~ app.world.trees[coord][i+1..$];
     app.rebuildTreeInstances();
