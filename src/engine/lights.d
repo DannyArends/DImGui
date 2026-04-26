@@ -23,10 +23,12 @@ struct Light {
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
   float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, angle, enabled]
 
-  void enabled(bool v) { properties[3] = v?1.0f:0.0f; }
-  bool enabled() { return(properties.w == 1.0f); }
-  float pitch() { return(degree(asin(-direction.xyz.normalize()[1]))); }
-  float yaw() { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
+  @property @nogc pure void angle(float v) nothrow { properties[2] = v; }
+  @property @nogc pure float angle() nothrow { return properties[2]; }
+  @property @nogc pure void enabled(bool v) nothrow { properties[3] = v?1.0f:0.0f; }
+  @property @nogc pure bool enabled() nothrow { return(properties.w == 1.0f); }
+  @property @nogc pure float pitch() nothrow { return(degree(asin(-direction.xyz.normalize()[1]))); }
+  @property @nogc pure float yaw() nothrow { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
 }
 
 enum Lights : Light {
@@ -46,7 +48,7 @@ struct Lighting {
 }
 
 /** Compute lightspace for the provided light */
-void computeLightSpace(const World world, ref Light light, bool directional = false, float nearPlane = 0.1f, float farPlane = 500.0f) {
+@nogc void computeLightSpace(const World world, ref Light light, bool directional = false, float nearPlane = 0.1f, float farPlane = 500.0f) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   float[3] upVector = [0.0f, 1.0f, 0.0f];
   float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
@@ -79,10 +81,10 @@ void updateLightGeometries(ref App app) {
 }
 
 /** Compute Azimuth of the sun */
-float sunAzimuth(float sunTime, float bearing = 0.0f) { return (sunTime / 24.0f) * 360.0f + bearing;}
+@nogc pure float sunAzimuth(float sunTime, float bearing = 0.0f) nothrow { return (sunTime / 24.0f) * 360.0f + bearing;}
 
 /** Compute Elevation of the sun */
-float sunElevation(float sunTime, float sunriseH = 6.0f, float sunsetH = 20.0f) {
+@nogc pure float sunElevation(float sunTime, float sunriseH = 6.0f, float sunsetH = 20.0f) nothrow {
   float dayFrac = (sunTime - sunriseH) / (sunsetH - sunriseH);
   return (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
 }
@@ -101,23 +103,21 @@ void toggleLightGeometries(ref App app) {
       app.objects ~= new Icosahedron();
       app.objects[$-1].refineIcosahedron(3);
       app.objects[$-1].geometry = (){ return "SunGeometry"; };
-      app.objects[$-1].position(light.position.xyz);
-      app.objects[$-1].setColor(light.intensity);
     } else {
       app.objects ~= new Cone();
       app.objects[$-1].geometry = (){ return "LightCone"; };
       app.objects[$-1].rotate([light.yaw(), 1.0f, light.pitch()]);
-      app.objects[$-1].position(light.position.xyz);
-      app.objects[$-1].setColor(light.intensity);
     }
+    app.objects[$-1].position(light.position.xyz);
+    app.objects[$-1].setColor(light.intensity);
   }
 }
 
 /** Color lerp */
-float[4] lerpColor(float[4] a, float[4] b, float t) { return vAdd(a.xyz, vMul(vSub(b.xyz, a.xyz), t)).xyzw; }
+@nogc pure float[4] lerpColor(float[4] a, float[4] b, float t) nothrow { return vAdd(a.xyz, vMul(vSub(b.xyz, a.xyz), t)).xyzw; }
 
 /** Blending dawn & day */
-float[4] dawnDayBlend(float[4] night, float[4] dawn, float[4] day, float t, float dawnThreshold = 0.55f) {
+@nogc pure float[4] dawnDayBlend(float[4] night, float[4] dawn, float[4] day, float t, float dawnThreshold = 0.55f) nothrow {
   if(t < dawnThreshold) { return lerpColor(night, dawn, t / dawnThreshold); }
   return lerpColor(dawn, day, (t - dawnThreshold) / (1.0f - dawnThreshold));
 }
@@ -150,7 +150,7 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
 }
 
 /** Disco beam */
-float beam(float t, float speed, float freq, float phase) { return abs(sin(t * speed * freq + phase)) * 500.0f; }
+@nogc pure float beam(float t, float speed, float freq, float phase) nothrow { return abs(sin(t * speed * freq + phase)) * 500.0f; }
 
 /** Disco mode 🕺 🪩 💃 */
 void updateDisco(ref App app) {
