@@ -5,7 +5,7 @@
 
 import engine;
 
-import block : spawnBlock, findFreeBlock, hasBlocks, unsettleBlocksAbove;
+import block : spawnBlock, findFreeBlock, hasBlocks;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
@@ -34,8 +34,8 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
         TileType tt = app.world.getTileAt(d.jobStack[0].targetTile);
         app.setTile(d.jobStack[0].targetTile);
         app.fellTree(d.jobStack[0].targetTile);
-        app.unsettleBlocksAbove(d.jobStack[0].targetTile);
         if(tt != TileType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
+        app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
         d.jobStack = d.jobStack[1..$];
         d.clearGoal();
         d.miningProgress = 0.0f;

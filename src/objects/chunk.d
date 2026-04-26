@@ -4,6 +4,7 @@
  */
 import engine;
 
+import block : unsettleBlocksAbove;
 import events : getHits;
 import geometry : texture, bumpmap, deAllocate;
 import intersection : intersects;
@@ -175,5 +176,8 @@ void finalizeChunk(ref App app, ChunkData data) {
   if(app.world.trunk !is null && app.world.canopy !is null) {
     if(data.coord !in app.world.trees && data.coord !in app.world.pendingTrees) { app.world.pendingTrees[data.coord] = data.trees; }
   }
+
+  foreach(tile; app.world.pendingUnsettle) app.unsettleBlocksAbove(tile);
+  app.world.pendingUnsettle = [];
   app.camera.isDirty = true;
 }
