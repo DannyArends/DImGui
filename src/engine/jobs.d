@@ -122,7 +122,7 @@ bool tryAssign(ref App app, ref Job job) {
   float bestDist = float.max;
   foreach(o; app.objects) {
     auto d = cast(Dwarf)o;
-    if(d is null || d.jobStack.length > 0 || job.failedBy.canFind(d.uid)) continue;
+    if(d is null || (!d.isIdle && !d.isWandering) || job.failedBy.canFind(d.uid)) continue;
     float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
     if(dist < bestDist) { bestDist = dist; best = d; }
   }
