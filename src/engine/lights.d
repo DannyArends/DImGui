@@ -23,10 +23,10 @@ struct Light {
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
   float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, angle, enabled]
 
-  void set(bool v) { properties[3] = v?1.0f:0.0f; }
+  void enabled(bool v) { properties[3] = v?1.0f:0.0f; }
   bool enabled() { return(properties.w == 1.0f); }
   float pitch() { return(degree(asin(-direction.xyz.normalize()[1]))); }
-  float yaw()   { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
+  float yaw() { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
 }
 
 enum Lights : Light {
@@ -82,7 +82,7 @@ void updateLightGeometries(ref App app) {
 float sunAzimuth(float sunTime, float bearing = 0.0f) { return (sunTime / 24.0f) * 360.0f + bearing;}
 
 /** Compute Elevation of the sun */
-float sunElevation(float sunTime, float sunriseH = 6.0f, float sunsetH = 22.0f) {
+float sunElevation(float sunTime, float sunriseH = 6.0f, float sunsetH = 20.0f) {
   float dayFrac = (sunTime - sunriseH) / (sunsetH - sunriseH);
   return (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
 }
