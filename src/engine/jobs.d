@@ -52,10 +52,34 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
   );
 }
 
-Job stuffJob() { 
-  auto j = pickupJob(noTile, TileType.None);
-  j.name = "Stuff";
-  return(j);
+Job stuffJob() {
+  return Job("Stuffing", noTile, TileType.None, [],
+    onClaim: (ref App app, Dwarf d, ref Job j) {
+      j.targetTile = app.findFreeBlock(d.tile);
+    },
+    onArrive: (ref App app, Dwarf d) {
+      auto db = app.world.blocks;
+      foreach(i, tile; db.tiles) {
+        if(tile != d.jobStack[0].targetTile) continue;
+        auto tt = cast(TileType)db.instances[i].meshdef[0];
+        if(d.pickup(tt)) {
+          db.tiles = db.tiles[0..i] ~ db.tiles[i+1..$];
+          db.instances = db.instances[0..i] ~ db.instances[i+1..$];
+          db.buffers[INSTANCE] = false;
+          app.deriveInventory();
+        }
+        d.jobStack = d.jobStack[1..$];
+        d.clearGoal();
+        return;
+      }
+      d.jobStack = d.jobStack[1..$];
+      d.clearGoal();
+    },
+    onFail: (ref App app, Dwarf d) {
+      d.jobStack = [];
+      d.clearGoal();
+    }
+  );
 }
 
 /** woodcutting Job */
@@ -95,7 +119,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
           db.instances = db.instances[0..i] ~ db.instances[i+1..$];
           db.buffers[INSTANCE] = false;
           app.deriveInventory();
-          if(d.pickup(cast(TileType)db.instances[i].meshdef[0])) {
+          if(d.pickup(d.jobStack[0].tileType)) {
             d.jobStack = d.jobStack[1..$];
             d.clearGoal();
           } // Failed to pickup (inventory full)

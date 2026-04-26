@@ -119,6 +119,7 @@ void settleBlocks(const World world, ref Blocks blocks, float dt) {
   blocks.falling = blocks.falling.filter!((ref f) {
     f.v = f.v + 0.125f * dt;
     f.y = f.y - f.v * dt;
+    if(f.idx >= blocks.tiles.length) return(false); // Done with falling
     int[3] tile = blocks.tiles[f.idx];
     int landTileY = world.surfaceAt(tile[0], tile[1] - 1, tile[2]);
     float landY = world.tileToWorld([tile[0], landTileY + 1, tile[2]])[1] - world.blockOffset;
