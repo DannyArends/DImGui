@@ -96,7 +96,7 @@ struct World {
   CanopyMesh canopy;                                        /// Shared CanopyMesh
   Tree[][int[3]] trees;                                     /// Trees per chunk coord
   Tree[][int[3]] pendingTrees;                              /// Trees generated async
-  Blocks blocks;                                             /// Blocks
+  Blocks blocks;                                            /// Blocks
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   alias data this;
 

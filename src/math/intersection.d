@@ -8,15 +8,14 @@ import engine;
 import matrix : multiply;
 import vector : x,y,z, vAdd, vMul;
 
-/** Intersection structure
- */
+/** Intersection structure */
 struct Intersection{
   bool intersects = false;    /// Does it intersect
   float[3] intersection;      /// Point of intersection in
   float[3] intersectionOut;   /// Point of intersection out
   float tmin;                 /// Min Distance of intersection
   float tmax;                 /// Max Distance of intersection
-  size_t[2] idx;                /// Index & Instance of intersected object
+  size_t[2] idx;              /// Index & Instance of intersected object
   alias intersects this;
 }
 
@@ -26,8 +25,7 @@ float[3] rayAtY(float[3][2] ray, float y) {
   return [ray[0].x + ray[1].x * t, y, ray[0].z + ray[1].z * t];
 }
 
-/** Compute the intersection between a ray and bmin and bmin
- */
+/** Compute the intersection between a ray and bmin and bmin */
 @nogc pure Intersection intersects(const float[3][2] ray, const float[3] bmin, const float[3] bmax, size_t index, size_t instance) {
   Intersection i;
 
@@ -65,8 +63,7 @@ float[3] rayAtY(float[3][2] ray, float y) {
   return(i);
 }
 
-/** Compute the intersection between a ray and a bounding box
- */
+/** Compute the intersection between a ray and a bounding box */
 pure Intersection[] intersects(const float[3][2] ray, const BoundingBox box, size_t index) {
   Intersection[] intersections;
   for(size_t instance = 0; instance < box.instances.length; instance++) {

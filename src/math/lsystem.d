@@ -33,8 +33,7 @@ enum Symbols : Symbol {
   Down = Symbol('Z')
 }
 
-/** Production Rule
- */
+/** Production Rule */
 struct Rule {
   Symbol[] production;
   size_t probability;
@@ -47,13 +46,13 @@ struct Rule {
   }
 }
 
-/** A list of production rules
- */
+/** A list of production rules */
 struct Rules {
   Rule[] rules;
   alias rules this;
 }
 
+/** Lsystem */
 struct LSystem {
   Symbol[] state;
   Rules[Symbol] rules;
