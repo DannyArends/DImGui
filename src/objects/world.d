@@ -192,6 +192,7 @@ struct World {
 }
 
 @nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
+@nogc pure int[3] tileAbove(int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
 
 void loadWorld(ref App app) {
   ensureWorldDir();
