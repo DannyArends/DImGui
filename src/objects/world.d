@@ -95,6 +95,7 @@ struct World {
   Tree[][int[3]] pendingTrees;                              /// Trees generated async
   WorldData data;
   Blocks droppedBlocks;
+  int[3][] pendingUnsettle;
   alias data this;
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */

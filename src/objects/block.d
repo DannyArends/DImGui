@@ -109,7 +109,9 @@ void unsettleBlocksAbove(ref App app, int[3] minedTile) {
   auto db = app.world.droppedBlocks;
   if(db is null) return;
   foreach(i, tile; db.tiles) {
-    if(tile.isAbove(minedTile) && !db.falling.any!(f => f.idx == i)) { db.falling ~= BlockFallData(i, [app.tileToWorld(tile)[1], 0.0f]); }
+    int[3] below = [tile[0], tile[1] - 1, tile[2]];
+    if(below == minedTile && !db.falling.any!(f => f.idx == i))
+      db.falling ~= BlockFallData(i, [app.toDropInstance(tile, TileType.None).matrix[13], 0.0f]);
   }
 }
 
@@ -119,12 +121,17 @@ void settleBlocks(ref App app, float dt) {
   if(db is null || db.falling.length == 0) return;
   bool changed = false;
   db.falling = db.falling.filter!((ref f) {
-    f.v = f.v + 9.8f * dt;
-    f.y = f.y - f.v * dt;
-    int[3] below = [db.tiles[f.idx][0], db.tiles[f.idx][1] - 1, db.tiles[f.idx][2]];
-    float landY = app.tileToWorld(db.tiles[f.idx])[1] - (app.world.tileHeight - app.world.tileHeight * 0.25f) * 0.5f;
-    if(below[1] < 0 || app.world.getTileAt(below) != TileType.None || f.y <= landY) {
-      db.instances[f.idx] = app.toDropInstance(db.tiles[f.idx], cast(TileType)db.instances[f.idx].meshdef[0]);
+    f.v = f.v + 0.005f * (dt/ 100.0f);
+    f.y = f.y - f.v * (dt/ 100.0f);
+    SDL_Log("dt=%f v=%f y=%f", dt, f.v, f.y);
+    float ts = app.world.tileSize * 0.25f;
+    float th = app.world.tileHeight * 0.25f;
+    int[3] curTile = app.world.worldToTile([db.tiles[f.idx][0] * app.world.tileSize, f.y, db.tiles[f.idx][2] * app.world.tileSize]);
+    int[3] below = [curTile[0], curTile[1] - 1, curTile[2]];
+    float landY = app.tileToWorld(curTile)[1] - (app.world.tileHeight - th) * 0.5f;
+    if(below[1] < 0 || app.world.getTileAt(below) != TileType.None) {
+      db.tiles[f.idx] = curTile;
+      db.instances[f.idx] = app.toDropInstance(curTile, cast(TileType)db.instances[f.idx].meshdef[0]);
       changed = true;
       return false;
     }
