@@ -51,7 +51,8 @@ void loadBlocks(ref App app) {
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
   auto data = cast(BlockData[])raw[uint[2].sizeof..$].dup;
   foreach(ref b; data) { app.spawnBlock(b.tile, cast(TileType)b.tileType); }
-  SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tiles.length);
+  foreach(tile; app.world.droppedBlocks.tiles) app.world.pendingUnsettle ~= tile;
+  SDL_Log("loadBlocks: %d blocks (%d pending unsettle)", app.world.droppedBlocks.tiles.length, app.world.pendingUnsettle.length);
 }
 
 @nogc pure bool hasBlocks(ref App app, TileType tt) nothrow {
@@ -105,14 +106,13 @@ void spawnBlock(ref App app, int[3] tile, TileType tt) {
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
 
 /** Check blocks above a mined tile to see if they go falling */
-void unsettleBlocksAbove(ref App app, int[3] minedTile) {
+void unsettleBlocks(ref App app, int[3] minedTile) {
   auto db = app.world.droppedBlocks;
   if(db is null) return;
   foreach(i, tile; db.tiles) {
-    if(tile[0] != minedTile[0] || tile[2] != minedTile[2] || tile[1] != minedTile[1] + 1) continue;
+    if(tile[0] != minedTile[0] || tile[2] != minedTile[2] || tile[1] < minedTile[1]) continue;
     if(!db.falling.any!(f => f.idx == i)) {
       float startY = app.tileToWorld(tile)[1] - (app.world.tileHeight - app.world.tileHeight * 0.25f) * 0.5f;
-      SDL_Log("unsettleBlocksAbove: idx=%d tile=[%d,%d,%d] startY=%f", cast(int)i, tile[0], tile[1], tile[2], startY);
       db.falling ~= BlockFallData(i, [startY, 0.0f]);
     }
   }
