@@ -5,7 +5,7 @@
 import engine;
 
 import geometry;
-import world : tileToWorld, isTileOccupied;
+import world : noTile, tileToWorld, isTileOccupied;
 import vector : euclidean;
 import tileatlas : tileData;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
@@ -18,7 +18,7 @@ class Dwarf : Cylinder {
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
-  uint idleTicks = 0;
+  uint[2] idleTicks = [0, 18];              /// Idle ticks and Patience / Wanderlust
   Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
   TileType[] carrying;                      /// Items the dwarf is currently holding
 
@@ -29,13 +29,14 @@ class Dwarf : Cylinder {
 
   this(float radius = 0.5f, float height = 1.0f, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
     super(radius, height, 6, color);
+    idleTicks[1] = uniform(3, 18);
     geometry = (){ return(typeof(this).stringof); };
   }
 
-  @property @nogc bool hasGoal() nothrow { return targetTile[0] != int.min; }
+  @property @nogc bool hasGoal() nothrow { return targetTile != noTile; }
   @property @nogc bool isIdle() nothrow { return !hasGoal && jobStack.length == 0; }
   @property @nogc bool isWandering() nothrow { return hasGoal && jobStack.length == 0; }
-  @nogc void clearGoal() nothrow { targetTile = [int.min, 0, 0]; }
+  @nogc void clearGoal() nothrow { targetTile = noTile; }
 }
 
 /** Random names */
@@ -87,8 +88,8 @@ void dwarfTick(ref App app, ref Geometry obj) {
       if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
     } else {
       app.claimNextJob(d);
-      if(d.isIdle && ++d.idleTicks > 200) {
-        d.idleTicks = 0;
+      if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
+        d.idleTicks[0] = 0;
         int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
         if(app.pathfindTo(d, wander)) d.targetTile = wander;
       }

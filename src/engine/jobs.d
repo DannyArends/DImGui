@@ -9,7 +9,7 @@ import block : spawnBlock, findFreeBlock, hasBlocks;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
-import world : setTile;
+import world : noTile, setTile;
 
 struct Job {
   string name;
@@ -36,7 +36,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
         app.fellTree(d.jobStack[0].targetTile);
         if(tt != TileType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         d.jobStack = d.jobStack[1..$];
-        d.targetTile = [int.min, 0, 0];
+        d.clearGoal();
         d.miningProgress = 0.0f;
       }
     },
@@ -45,7 +45,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
       j.failedBy ~= d.uid;
       jobQueue ~= j;
       d.jobStack = [];
-      d.targetTile = [int.min, 0, 0];
+      d.clearGoal();
       d.miningProgress = 0.0f;
     },
   );
@@ -67,18 +67,18 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
           app.deriveInventory();
           d.carrying ~= d.jobStack[0].tileType;
           d.jobStack = d.jobStack[1..$];
-          d.targetTile = [int.min, 0, 0];
+          d.clearGoal();
           return;
         }
       }
       // block gone — requeue the building job (rest of stack)
       if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
       d.jobStack = [];
-      d.targetTile = [int.min, 0, 0];
+      d.clearGoal();
     },
     onFail: (ref App app, Dwarf d) {
       d.jobStack = [];
-      d.targetTile = [int.min, 0, 0];
+      d.clearGoal();
     }
   );
 }
@@ -91,7 +91,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       d.carrying = d.carrying.remove!(c => c == d.jobStack[0].tileType);
       d.jobStack = d.jobStack[1..$];
-      d.targetTile = [int.min, 0, 0];
+      d.clearGoal();
     },
     onFail: (ref App app, Dwarf d) {
       foreach(tt; d.carrying) app.spawnBlock(d.tile, tt);
@@ -100,7 +100,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
       jobQueue ~= newJob;
       d.jobStack = [];
-      d.targetTile = [int.min, 0, 0];
+      d.clearGoal();
     }
   );
 }
@@ -109,10 +109,10 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
 bool dispatchJob(ref App app, Dwarf d, ref Job job) {
   d.jobStack = job.prereqs ~ [job];
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
-  if(d.jobStack[0].targetTile[0] == int.min) { d.jobStack[0].onFail(app, d); return false; }
+  if(d.jobStack[0].targetTile == noTile) { d.jobStack[0].onFail(app, d); return false; }
   d.targetTile = d.jobStack[0].targetTile;
   auto goal = app.findGoalTile(d);
-  if(goal[0] == int.min || !app.pathfindTo(d, goal)) { d.jobStack[0].onFail(app, d); return false; }
+  if(goal == noTile || !app.pathfindTo(d, goal)) { d.jobStack[0].onFail(app, d); return false; }
   return true;
 }
 

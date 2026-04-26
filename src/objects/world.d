@@ -23,8 +23,9 @@ struct TileDiff {
   uint type;
 }
 
-/** World configuration and coordinate system settings, safe to send to worker threads as immutable
- */
+enum int[3] noTile = [int.min, 0, 0];
+
+/** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
   int[3] seed        = [42, 67, 69];  /// [height seed, tile seed]
   int renderDistance =   4;           /// Render distance used to load / evict chunks
@@ -35,21 +36,18 @@ struct WorldData {
   float yOffset      = -20.0f;        /// Global world Y-offset
   TileDiff[] diffs;
 
-  /** Returns the filesystem path for the world TileDiffs difference
-   */
+  /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
   const(char)* droppedBlocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
   const(char)* treePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_trees.bin", seed[0], seed[1], seed[2]))); }
 
-  /** Convert a world tile coordinate to its local coordinate within its chunk
-   */
+  /** Convert a world tile coordinate to its local coordinate within its chunk */
   int[3] localCoord(int[3] tile) const {
     auto coord = chunkCoord(tile);
     return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
   }
 
-  /** Get tile neighbours
-   */
+  /** Get tile neighbours */
   @nogc pure int[3][6] tileNeighbours(const int[3] wc) const nothrow {
     return [
       [wc[0]+1, wc[1], wc[2]], [wc[0]-1, wc[1], wc[2]],
@@ -58,8 +56,7 @@ struct WorldData {
     ];
   }
 
-  /** Determine the tile type at a world coordinate from noise, no chunk data required
-   */
+  /** Determine the tile type at a world coordinate from noise, no chunk data required */
   @nogc pure TileType getTile(const int[3] wc) const nothrow {
     auto ht = noiseHTT(wc.x, wc.z, seed);
     int surface = cast(int)(pow(ht[0], 1.5f) * (chunkHeight - 1));
