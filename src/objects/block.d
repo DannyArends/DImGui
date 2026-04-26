@@ -124,7 +124,7 @@ void settleBlocks(const World world, ref Blocks blocks, float dt) {
     int landTileY = world.surfaceAt(tile[0], tile[1] - 1, tile[2]);
     float landY = world.tileToWorld([tile[0], landTileY + 1, tile[2]])[1] - world.blockOffset;
     if(f.y <= landY) {
-      blocks.tiles[f.idx] = [tile[0], landTileY + 1, tile[2]];
+      blocks.tiles[f.idx] = [tile[0], landTileY+1, tile[2]];
       blocks.instances[f.idx].matrix[13] = world.tileToWorld(blocks.tiles[f.idx])[1] - world.blockOffset;
       changed = true;
       return(false); // Done with falling
