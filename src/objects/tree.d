@@ -76,7 +76,7 @@ Tree[] buildTreeData(immutable(WorldData) wd, int[3] coord, const TileType[] til
     if (n[2] < 0.65f) continue;  // sparse placement — only high noise values get trees
     uint hash = (wc[0] * 2654435761u) ^ (wc[2] * 2246822519u);
     if (hash % 6 != 0) continue;  // ~1 in 8 eligible tiles gets a tree
-    uint height = 1 + cast(uint)((n[0] + n[1]) * 4.0f);  // height 2-8, mix of both noises
+    uint height = 1 + cast(uint)((n[0] + n[1]) * 6.0f);  // height 2-8, mix of both noises
     trees ~= Tree([wc[0], wc[1]+1, wc[2]], height, 0, 0, hash);
   }
   return trees;
