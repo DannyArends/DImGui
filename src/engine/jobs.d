@@ -117,12 +117,11 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
 Job buildingJob(int[3] targetTile, TileType tileType) {
   return Job("Building", targetTile, tileType, [pickupJob([int.min, 0, 0], tileType)],
     onArrive: (ref App app, Dwarf d) {
+      if(!d.use(d.jobStack[0].tileType)) { d.jobStack[0].onFail(app, d); return; }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
-      if(d.use(d.jobStack[0].tileType)) {
-        d.jobStack = d.jobStack[1..$];
-        d.clearGoal();
-      }
+      d.jobStack = d.jobStack[1..$];
+      d.clearGoal();
     },
     onFail: (ref App app, Dwarf d) {
       foreach(i, tt; d.carrying) d.drop(app, i);
