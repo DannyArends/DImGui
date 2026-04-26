@@ -26,7 +26,7 @@ import textures : Texture;
 import threading : initializeAsync, checkAsync;
 import validation : createDebugCallback;
 import vulkan : cleanup;
-import world : loadWorld;
+import world : loadWorld, saveWorld;
 import window: createOrResizeWindow, checkForResize;
 
 /* Main entry point to the program */
@@ -91,7 +91,7 @@ void run(string[] args = null) {
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
-  app.world.saveWorld(app.verbose > 0);
+  app.saveWorld();
   app.cleanup();
 }
 

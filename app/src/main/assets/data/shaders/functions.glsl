@@ -30,9 +30,7 @@ vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
 float calculateShadow(vec4 position, uint i) {
   vec3 projCoords = ((position.xyz / position.w) * 0.5) + 0.5;
 
-  if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
-      projCoords.y < 0.0 || projCoords.y > 1.0 ||
-      projCoords.z < 0.0 || projCoords.z > 1.0){
+  if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z < 0.0 || projCoords.z > 1.0){
     return 1.0; // Not in shadow
   }
 
@@ -53,6 +51,7 @@ float calculateShadow(vec4 position, uint i) {
 
 // Our illumination function
 vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 cameraPos) {
+  if (light.properties.w == 0.0) return vec3(0.0);
   float attenuation = 1.0;
   vec3 s;
   if (light.position.w == 0.0) {

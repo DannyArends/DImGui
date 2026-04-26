@@ -56,6 +56,7 @@ class BoundingBox : Geometry {
    * Uses OBB projection: transforms center, then sums absolute column extents.
    */
   @nogc pure private float[3][2] boundsWorld(size_t instance = 0) nothrow const {
+    if(instances.length == 0 || instance >= instances.length) return [[0,0,0],[0,0,0]];
     auto m = instances[instance].matrix;
     float[3] lo = vertices[0].position;
     float[3] hi = vertices[6].position;
@@ -64,8 +65,7 @@ class BoundingBox : Geometry {
     float[3] e = [abs(m[0])*h[0] + abs(m[4])*h[1] + abs(m[8])*h[2],
                   abs(m[1])*h[0] + abs(m[5])*h[1] + abs(m[9])*h[2],
                   abs(m[2])*h[0] + abs(m[6])*h[1] + abs(m[10])*h[2]];
-    return [[c[0]-e[0], c[1]-e[1], c[2]-e[2]],
-            [c[0]+e[0], c[1]+e[1], c[2]+e[2]]];
+    return [[c[0]-e[0], c[1]-e[1], c[2]-e[2]], [c[0]+e[0], c[1]+e[1], c[2]+e[2]]];
   }
 
   @nogc pure float[3] bmin(size_t instance = 0) nothrow const { return boundsWorld(instance)[0]; }
@@ -89,14 +89,14 @@ class BoundingBox : Geometry {
 void computeBoundingBox(T)(ref T object, bool verbose = false) {
   bool initial = false;
   if(object.box is null) {
-    if(verbose) SDL_Log("Computing new Bounding Box for %s", toStringz(object.name()));
+    if(verbose) SDL_Log("Computing new Bounding Box for %s", toStringz(object.geometry()));
     object.box = new BoundingBox();
     initial = true;
   }
-  object.box.name = (){ return("BoundingBox"); };
+  object.box.geometry = (){ return("BoundingBox"); };
 
   if(initial || !object.buffers[VERTEX]) { // The object vertex buffer is out of date, update the BoundingBox vertices
-    if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.name()), toStringz(object.name()));
+    if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.geometry()), toStringz(object.geometry()));
     Bounds bounds;
     for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
     object.box.setDimensions(bounds.min, bounds.max);

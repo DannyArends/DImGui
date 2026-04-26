@@ -14,9 +14,9 @@ import vector : expandBounds;
 import world : setTile;
 import ghost: updateGhostTile;
 import inventory : placeTile;
+import tree : buildTreeData;
 
-/** Holds raw tile data and instanced rendering data for a chunk
- */
+/** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
   TileType[] tileTypes;                                     /// Tile type for each tile in the chunk
@@ -25,24 +25,23 @@ struct ChunkData {
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   Instance[] tileInstances;                                 /// GPU instances for all visible tile faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
+  Tree[] trees;                                             /// Trees generated for this chunk
   float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
 
-/** Renderable cube geometry for individual blocks within a chunk, not selectable
- */
+/** Renderable cube geometry for individual blocks within a chunk, not selectable */
 class Tiles : Square {
   this(ChunkData cd) {
     super();
     isSelectable = false;
     instancedMesh = true;
     instances = cd.tileInstances;
-    name = (){ return "Tiles"; };
+    geometry = (){ return "Tiles"; };
   }
 }
 
-/** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block
- */
+/** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block */
 class Chunk : Cube {
   ChunkData data;
   Geometry tiles;
@@ -60,7 +59,7 @@ class Chunk : Cube {
     float cy = sy * 0.5f + wd.yOffset;
     instances = [Instance([0,0], translate([cx, cy, cz]).multiply(scale([sx, sy, sx])))];
     tiles = new Tiles(cd);
-    name = (){ return "Chunk"; };
+    geometry = (){ return "Chunk"; };
   }
 }
 
@@ -93,8 +92,7 @@ TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] co
   return tileCache;
 }
 
-/** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling
- */
+/** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
   TileType[][5] tileCache = wd.loadTileCache(coords, coord);
@@ -130,11 +128,11 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       data.pickIndices ~= i;
     }
   }
+  data.trees = buildTreeData(wd, coord, data.tileTypes);
   return data;
 }
 
-/** Find the best intersecting tile in the world given a ray, returns world coord or [int.min,0,0] 
- */
+/** Find the best intersecting tile in the world given a ray, returns world coord or [int.min,0,0] */
 bool getBestTile(ref App app, float[3][2] ray, out int[3] wc) {
   Intersection best;
   foreach (ref hit; app.getHits(ray, false)) {
@@ -152,8 +150,7 @@ bool getBestTile(ref App app, float[3][2] ray, out int[3] wc) {
   return true;
 }
 
-/** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene
- */
+/** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene */
 void finalizeChunk(ref App app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
   if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
@@ -173,6 +170,10 @@ void finalizeChunk(ref App app, ChunkData data) {
 
   app.world.chunks[data.coord] = chunk;
   app.world.pendingChunks.remove(data.coord);
+
+  // Add trees to the chunk
+  if(app.world.trunk !is null && app.world.canopy !is null) {
+    if(data.coord !in app.world.trees && data.coord !in app.world.pendingTrees) { app.world.pendingTrees[data.coord] = data.trees; }
+  }
   app.camera.isDirty = true;
 }
-

@@ -10,7 +10,7 @@ import descriptor : updateDescriptorSet, createDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 import imgui : recordImGuiCommandBuffer;
-import lights : updateDisco, LMode;
+import lights : updateDisco, updateLightGeometries, LMode;
 import mesh : updateMeshInfo;
 import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
 import sfx : updateTracks;
@@ -48,6 +48,7 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
+  app.updateLightGeometries();
   app.updateTracks();                     /// Check for sound effects that have finished
   app.updateWorld(app.camera.lookat);     /// Check for updates to the world
   app.updateTextures();                   /// If a texture was loaded, update it

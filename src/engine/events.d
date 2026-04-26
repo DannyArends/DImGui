@@ -18,10 +18,9 @@ import vulkan : cleanup;
 import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
-import search : testSearch;
-import dwarf : miningQueue;
-/** Handle keyboard events
- */
+import jobs : tryAssign, jobQueue, miningJob;
+
+/** Handle keyboard events */
 void handleKeyEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_KEY_DOWN) {
     auto symbol = e.key.key;
@@ -31,13 +30,11 @@ void handleKeyEvents(ref App app, SDL_Event e) {
     if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
     if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
-    if(symbol == SDLK_F11) { app.testSearch(); }
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
   }
 }
 
-/** Handle (Android) touch events
- */
+/** Handle (Android) touch events */
 void handleTouchEvents(ref App app, const SDL_Event event) {
   SDL_TouchFingerEvent e = event.tfinger;
   if (event.type == SDL_EVENT_FINGER_DOWN) {
@@ -63,32 +60,28 @@ void handleTouchEvents(ref App app, const SDL_Event event) {
   }
 }
 
-/** Get a list of intersections between the ray and the objects in the scene
- */
+/** Get a list of intersections between the ray and the objects in the scene */
 Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true){
   Intersection[] hits;
 
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isVisible) continue;                       // Invisible objects should not generate hits
     if(!app.objects[x].isSelectable) continue;                    // Non-selectable objects should not generate hits
-    if(app.objects[x].name() == "Line") continue;                 // Other lines should not generate hits
+    if(cast(Line)(app.objects[x]) !is null) continue;             // Lines should not generate hits
     app.objects[x].computeBoundingBox(app.trace);                 // Make sure we compute the current Bounding Box
     auto intersections = ray.intersects(app.objects[x].box, x);   // Compute the intersection
     app.objects[x].window = false;
     if (intersections.any!(i => i.intersects)) {
       //version(Android) {} else { app.gui.showObjects = true; }
       hits ~= intersections;
-    } else {
-      app.objects[x].box.setColor();
-    }
+    } else { app.objects[x].box.setColor(); }
   }
   if(showRay) app.objects ~= createLine(ray);
   hits.sort!("a.tmin < b.tmin");
   return(hits);
 }
 
-/** Handle mouse events
- */
+/** Handle mouse events */
 void handleMouseEvents(ref App app, SDL_Event e) {
   app.camera.lastMousePos = [app.gui.io.MousePos.x, app.gui.io.MousePos.y];
   auto ray = app.camera.castRay(app.camera.lastMousePos[0], app.camera.lastMousePos[1]);
@@ -110,7 +103,13 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         app.placeTile(app.inventory.ghostTile);
       } else {
         auto hits = app.getHits(ray, app.showRays);
-        if (hits.length > 0) { int[3] wc; if(app.getBestTile(ray, wc)) app.setTile(wc); }
+        if (hits.length > 0) {
+          int[3] wc;
+          if(app.getBestTile(ray, wc)) {
+            auto job = miningJob(wc);
+            if(!app.tryAssign(job)) jobQueue ~= job; 
+          }
+        }
         foreach (ref hit; hits) {
           auto obj = app.objects[hit.idx[0]];
           if (cast(Chunk)obj is null) {
@@ -121,14 +120,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         }
       }
     }
-    if (e.button.button == SDL_BUTTON_RIGHT) {
-      app.camera.isdrag[1] = false;
-      int[3] wc;
-      if(app.getBestTile(ray, wc)){ 
-        SDL_Log(toStringz(format("Add %s to miningque of length %s", wc, miningQueue.length)));
-        miningQueue ~= wc;
-      }
-    }
+    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
     app.updateGhostTile(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 
@@ -138,8 +130,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.tryZoom(-e.wheel.y); }
 }
 
-/** Deallocate and removes stale Geometry from the app.objects array
- */
+/** Deallocate and removes stale Geometry from the app.objects array */
 void removeGeometry(ref App app) {
   size_t[] idx;
   foreach(i, ref object; app.objects) {
@@ -148,8 +139,7 @@ void removeGeometry(ref App app) {
   foreach(i; idx.reverse) { app.objects = app.objects.remove(i); }
 }
 
-/** Handles all ImGui IO and SDL events
- */
+/** Handles all ImGui IO and SDL events */
 void handleEvents(ref App app) {
   if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
@@ -168,9 +158,9 @@ void handleEvents(ref App app) {
     //GC.collect();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    foreach(object; app.objects) {
-      if(app.trace) SDL_Log("object: %s", toStringz(object.name()));
-      if(object.onTick) object.onTick(app, object); 
+    foreach(i; iota(app.objects.length).array.randomShuffle()) {
+      if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
+      if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]); 
     }
   }
 
@@ -180,10 +170,9 @@ void handleEvents(ref App app) {
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 }
 
-/* sdlEventsFilter returns 1 will have the event go into the SDL_PollEvent queue, 0 if have handled 
-   the event immediately. Android requires us to handle the application events, for now we just 
-   shutdown on enter background, since we should properly ask for permission from the Android OS to 
-   run in the background.
+/** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 
+ Android *requires* us to handle the application events, for now we just pauze on enter background, since we 
+ need to ask for permission from the Android OS to run in the background.
 */
 extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
   if(!event) return(0);
@@ -205,7 +194,12 @@ extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
   return(1);
 }
 
-// Immediate events to handle by the application
+/** Immediate events handled by the application (Android filtered SDL immediate events)
+SDL_EVENT_WILL_ENTER_BACKGROUND
+SDL_EVENT_DID_ENTER_BACKGROUND
+SDL_EVENT_WILL_ENTER_FOREGROUND
+SDL_EVENT_DID_ENTER_FOREGROUND
+*/
 void handleApp(ref App app, const SDL_Event e) {
   if(e.type == SDL_EVENT_WILL_ENTER_BACKGROUND){
     SDL_Log("Suspending, wait on device idle & swapchain deletion queue");

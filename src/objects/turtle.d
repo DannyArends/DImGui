@@ -34,7 +34,7 @@ class Turtle : Geometry {
       t.frame++;
     };
     meshes["Turtle"] = Mesh([0, cast(uint)vertices.length]);
-    name = (){ return(typeof(this).stringof); };
+    geometry = (){ return(typeof(this).stringof); };
   }
 
   void age(ref App app, ref Geometry obj, float dt) {

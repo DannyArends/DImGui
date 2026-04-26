@@ -59,18 +59,18 @@ class Geometry {
 
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
-    if(app.trace) SDL_Log("Buffering: %s", toStringz(name()));
+    if(app.trace) SDL_Log("Buffering: %s", toStringz(geometry()));
     if(!buffers[VERTEX] && vertices.length > 0) {
       buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-      app.nameGeometryBuffer(vertexBuffer, "VERTEX", name());
+      app.nameGeometryBuffer(vertexBuffer, "VERTEX", geometry());
     }
     if(!buffers[INDEX] && indices.length > 0){
       buffers[INDEX] = app.toGPU(indices, indexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-      app.nameGeometryBuffer(indexBuffer, "INDEX", name());
+      app.nameGeometryBuffer(indexBuffer, "INDEX", geometry());
     }
     if(!buffers[INSTANCE] && instances.length > 0){
       buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-      app.nameGeometryBuffer(instanceBuffer, "INSTANCE", name());
+      app.nameGeometryBuffer(instanceBuffer, "INSTANCE", geometry());
     }
   }
 
@@ -95,18 +95,19 @@ class Geometry {
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseMove;
   void function(ref App app, ref Geometry obj, float dt) onFrame;
   void function(ref App app, ref Geometry obj) onTick;
-  string function() name;
+  string function() geometry;
 }
 
 void logDraw(T)(ref App app, ref T object) {
   if(!app.trace) return;
   foreach(ref inst; object.instances) {
-    for(uint m = inst.meshdef[0]; m < inst.meshdef[1]; m++) { if(m < app.meshes.length){ logMesh(m, app.meshes[m], toStringz(object.name())); } }
+    for(uint m = inst.meshdef[0]; m < inst.meshdef[1]; m++) { if(m < app.meshes.length){ logMesh(m, app.meshes[m], toStringz(object.geometry())); } }
   }
 }
 
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
   for(size_t x = 0; x < app.objects.length; x++) {
+    if(app.objects[x].instances.length == 0) continue;
     if(app.objects[x].box is null || !app.objects[x].isBuffered) app.objects[x].computeBoundingBox(app.trace);
     if(app.showBounds && !app.objects[x].box.isBuffered) app.objects[x].box.buffer(app, cmd);
     if(!app.objects[x].isBuffered){ app.objects[x].buffer(app, cmd); app.shadows.dirty = true; }
@@ -322,13 +323,13 @@ void draw(T)(ref App app, ref T object, size_t i) {
   vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, cast(uint)object.indexBuffer.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
-  if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.name()));
+  if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.geometry()));
 }
 
 /** Render a Geometry to app.shadows.commands[i] */
 void shadow(ref App app, Geometry object, size_t i) {
   if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null || object.indexBuffer.vb == null) return;
-  if(app.trace) SDL_Log("SHADOW[%s]: %d instances", toStringz(object.name()), object.instances.length);
+  if(app.trace) SDL_Log("SHADOW[%s]: %d instances", toStringz(object.geometry()), object.instances.length);
   VkDeviceSize[] offsets = [0];
   auto cmd = app.shadows.renderPass.commands[i];
 
@@ -337,5 +338,5 @@ void shadow(ref App app, Geometry object, size_t i) {
   vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, cast(uint)object.indexBuffer.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
-  if(app.trace) SDL_Log("SHADOW[%s]: DONE", toStringz(object.name()));
+  if(app.trace) SDL_Log("SHADOW[%s]: DONE", toStringz(object.geometry()));
 }
