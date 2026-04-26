@@ -133,9 +133,28 @@ struct World {
   }
 
   /** Compute world-space position from tile coords */
-  float[3] tileToWorld(int[3] tile) const {
+  @nogc pure float[3] tileToWorld(int[3] tile) const nothrow {
     auto wp = worldPos(tile);
     return [wp[0], wp[1] + yOffset, wp[2]];
+  }
+  
+  @nogc pure int surfaceAt(int x, int y, int z) const nothrow {
+    while(y > 0 && getTileAt([x, y, z]) == TileType.None) y--;
+    return y;
+  }
+
+  bool canMoveTo(float[3] pos) {
+    foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
+      float[3] p = [pos[0] + dx * tileSize * 0.5f, pos[1] + dy * tileHeight * 0.5f, pos[2] + dz * tileSize * 0.5f];
+      if (!isPassable(worldToTile(p))) return(false);
+    }
+    return(true);
+  }
+
+  /** Can we stand on this Tile ? */
+  bool isStandable(int[3] tile) {
+    if (tile[1] <= 0 || tile[1] >= chunkHeight) return false;
+    return getTileAt(tile) == TileType.None && getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
   }
 
   @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
@@ -199,25 +218,6 @@ void saveWorld(ref App app) {
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
   app.saveBlocks();
   app.saveTrees();
-}
-
-@nogc pure int surfaceAt(const World world, int x, int y, int z) nothrow {
-  while(y > 0 && world.getTileAt([x, y, z]) == TileType.None) y--;
-  return y;
-}
-
-bool canMoveTo(ref App app, float[3] pos) {
-  foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
-    float[3] p = [pos[0] + dx * app.world.tileSize * 0.5f, pos[1] + dy * app.world.tileHeight * 0.5f, pos[2] + dz * app.world.tileSize * 0.5f];
-    if (!app.world.isPassable(app.world.worldToTile(p))) return false;
-  }
-  return true;
-}
-
-/** Can we stand on this Tile ? */
-bool isStandable(World world, int[3] tile) {
-  if (tile[1] <= 0 || tile[1] >= world.chunkHeight) return false;
-  return world.getTileAt(tile) == TileType.None && world.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
 }
 
 /** Is the Tile occupied ?  */

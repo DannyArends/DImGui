@@ -9,7 +9,6 @@ import vector : normalize, vMul,vSub, vAdd, negate, xyz;
 import matrix : multiply, inverse, rotate, radian, perspective, transpose, lookAt;
 import quaternion : xyzw, normalize, rotate, qMul, angleAxis;
 import frustum : extractFrustum, aabbInFrustum;
-import world : canMoveTo;
 
 /** Camera */
 struct Camera {
@@ -52,21 +51,21 @@ struct Camera {
 void tryMove(ref App app, float[3] direction) {
   auto old = app.camera.lookat;
   app.camera.move(direction);
-  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.lookat = old;
+  if(!app.camera.godMode && !app.world.canMoveTo(app.camera.position)) app.camera.lookat = old;
 }
 
 /** tryDrag (checks God-mode) */
 void tryDrag(ref App app, float xrel, float yrel) {
   auto old = app.camera.rotation;
   app.camera.drag(xrel, yrel);
-  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.rotation = old;
+  if(!app.camera.godMode && !app.world.canMoveTo(app.camera.position)) app.camera.rotation = old;
 }
 
 /** tryZoom (checks God-mode) */
 void tryZoom(ref App app, float delta) {
   auto old = app.camera.distance;
   app.camera.zoom(delta);
-  if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.distance = old;
+  if(!app.camera.godMode && !app.world.canMoveTo(app.camera.position)) app.camera.distance = old;
 }
 
 /** Create a position/rotation matrix through 3D space starting from xy */

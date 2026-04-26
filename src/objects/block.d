@@ -7,7 +7,7 @@ import engine;
 import io : readFile, writeFile;
 import inventory : deriveInventory;
 import matrix : translate, multiply, scale;
-import world : surfaceAt, WORLD_MAGIC;
+import world : WORLD_MAGIC;
 
 struct BlockData { int[3] tile; uint tileType; }
 struct BlockFallData {

@@ -5,7 +5,7 @@
 import engine;
 
 import geometry;
-import world : noTile, surfaceAt, isTileOccupied;
+import world : noTile, isTileOccupied;
 import vector : euclidean;
 import tileatlas : tileData;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
