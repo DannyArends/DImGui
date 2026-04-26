@@ -5,27 +5,54 @@
 import engine;
 
 import geometry;
-import world : noTile, isTileOccupied;
+import block : spawnBlock;
+import world : noTile, tileBelow, isTileOccupied;
 import vector : euclidean;
 import tileatlas : tileData;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
 import jobs : Job, jobQueue, miningJob, claimNextJob;
 
+struct DwarfData {
+  int[3] tile = [0, 0, 0];
+  char[64] first;
+  char[64] last;
+  TileType[32] inventory;
+
+  @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
+  @property void name(string s) {
+    auto parts = s.split(" ");
+    first[] = '\0'; first[0..min(parts[0].length, first.length)] = parts[0][0..min(parts[0].length, first.length)];
+    last[]  = '\0'; if(parts.length > 1) last[0..min(parts[1].length, last.length)] = parts[1][0..min(parts[1].length, last.length)];
+  }
+  @property TileType[] carrying() { 
+    return inventory[].countUntil(TileType.None) >= 0 ? inventory[0..inventory[].countUntil(TileType.None)].dup : inventory[].dup;
+  }
+  @property bool pickup(TileType c) { foreach(ref slot; inventory) { if(slot == TileType.None) { slot = c; return(true); } } return(false); }
+  @property bool use(TileType c) { foreach(ref slot; inventory) { if(slot == c) { slot = TileType.None; return true; } } return false; }
+  @property bool drop(ref App app, size_t slot) {
+    if(slot >= inventory.length || inventory[slot] == TileType.None) return false;
+    app.spawnBlock(tile, inventory[slot]);
+    inventory[slot] = TileType.None;
+    return true;
+  }
+}
+
 /** Dwarven Cylinderz  */
 class Dwarf : Cylinder {
-  string name;                              /// Name
-  int[3] tile = [0, 0, 0];                  /// Which tile we're on
+  DwarfData data;                           /// Data saved between sessions
+  alias data this;
+
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
   uint[2] idleTicks = [0, 18];              /// Idle ticks and Patience / Wanderlust
   Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
-  TileType[] carrying;                      /// Items the dwarf is currently holding
 
   float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
+
 
   this(float radius = 0.5f, float height = 1.0f, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
     super(radius, height, 6, color);
@@ -58,8 +85,6 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
   }
   return [int.min, 0, 0];
 }
-
-@nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
 
 /** dwarfFrame */
 void dwarfFrame(ref App app, ref Geometry obj, float dt) {
