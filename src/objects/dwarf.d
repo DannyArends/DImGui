@@ -26,10 +26,10 @@ struct DwarfData {
     first[] = '\0'; first[0..min(parts[0].length, first.length)] = parts[0][0..min(parts[0].length, first.length)];
     last[]  = '\0'; if(parts.length > 1) last[0..min(parts[1].length, last.length)] = parts[1][0..min(parts[1].length, last.length)];
   }
-  @property TileType[] carrying() { 
-    return inventory[].countUntil(TileType.None) >= 0 ? inventory[0..inventory[].countUntil(TileType.None)].dup : inventory[].dup;
-  }
-  @property bool pickup(TileType c) { foreach(ref slot; inventory) { if(slot == TileType.None) { slot = c; return(true); } } return(false); }
+  @property TileType[] carrying() { return inventory[].filter!(t => t != TileType.None).array; }
+  @property bool pickup(TileType c) { foreach(i, ref slot; inventory) { if(slot == TileType.None) { 
+    SDL_Log(toStringz(format("%s, stores in %d - %s", name, i, c)));
+  slot = c; return(true); } } return(false); }
   @property bool use(TileType c) { foreach(ref slot; inventory) { if(slot == c) { slot = TileType.None; return true; } } return false; }
   @property bool drop(ref App app, size_t slot) {
     if(slot >= inventory.length || inventory[slot] == TileType.None) return false;
@@ -114,7 +114,7 @@ void dwarfTick(ref App app, ref Geometry obj) {
     } else {
       app.claimNextJob(d);
       if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
-        if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 && d.carrying.length < d.inventory.length / 2 && uniform(0, 10) == 0) {
+        if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
           auto job = stuffJob();
           app.dispatchJob(d, job);
         } else {

@@ -95,7 +95,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
           db.instances = db.instances[0..i] ~ db.instances[i+1..$];
           db.buffers[INSTANCE] = false;
           app.deriveInventory();
-          if(d.pickup(d.jobStack[0].tileType)) {
+          if(d.pickup(cast(TileType)db.instances[i].meshdef[0])) {
             d.jobStack = d.jobStack[1..$];
             d.clearGoal();
           } // Failed to pickup (inventory full)
