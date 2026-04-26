@@ -154,7 +154,7 @@ struct World {
   /** Can we stand on this Tile ? */
   bool isStandable(int[3] tile) {
     if (tile[1] <= 0 || tile[1] >= chunkHeight) return false;
-    return getTileAt(tile) == TileType.None && getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
+    return getTileAt(tile) == TileType.None && getTileAt(tile.tileBelow) != TileType.None;
   }
 
   @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
