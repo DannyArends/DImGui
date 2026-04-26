@@ -5,7 +5,9 @@
 
 import engine;
 
-/// Deterministic hash of 3D integer coords -> float [0..1]
+enum float NOISE_SCALE = 0.02f;
+
+/** Deterministic hash of 3D integer coords -> float [0..1] */
 @nogc pure float valueNoise(int x, int y, int z, int seed = 0) nothrow {
   int n = x + y * 57 + z * 131 + seed * 1013;
   n = (n << 13) ^ n;
@@ -14,7 +16,7 @@ import engine;
 
 @nogc pure float lerp(float a, float b, float t) nothrow { return a + t * (b - a); }
 
-/// Smooth noise at float coords (trilinear interpolated)
+/** Smooth noise at float coords (trilinear interpolated) */
 @nogc pure float smoothNoise(float x, float y, float z, int seed = 0) nothrow {
   int ix = cast(int)floor(x); float fx = x - ix;
   int iy = cast(int)floor(y); float fy = y - iy;
@@ -30,7 +32,7 @@ import engine;
     uz);
 }
 
-/// Multi-octave fractal noise
+/** Multi-octave fractal noise */
 @nogc pure float fbm(float x, float y, float z, int octaves = 6, float lacunarity = 2.0f, float gain = 0.5f, int seed = 0) nothrow {
   float value = 0.0f, amplitude = 0.5f, frequency = 1.0f;
   for (int i = 0; i < octaves; i++) {
@@ -40,8 +42,6 @@ import engine;
   }
   return(clamp(value, 0.0f, 1.0f));
 }
-
-enum float NOISE_SCALE = 0.02f;
 
 @nogc pure float[3] noiseHTT(int x, int z, const int[3] seed) nothrow {
   return [fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[0]), 
