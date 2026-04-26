@@ -18,7 +18,7 @@ import vulkan : cleanup;
 import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
-import jobs : jobQueue, miningJob;
+import jobs : tryAssign, jobQueue, miningJob;
 
 /** Handle keyboard events */
 void handleKeyEvents(ref App app, SDL_Event e) {
@@ -103,8 +103,12 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         app.placeTile(app.inventory.ghostTile);
       } else {
         auto hits = app.getHits(ray, app.showRays);
-        if (hits.length > 0) { int[3] wc;
-          if(app.getBestTile(ray, wc)) { jobQueue ~= miningJob(wc); }
+        if (hits.length > 0) {
+          int[3] wc;
+          if(app.getBestTile(ray, wc)) {
+            auto job = miningJob(wc);
+            if(!app.tryAssign(job)) jobQueue ~= job; 
+          }
         }
         foreach (ref hit; hits) {
           auto obj = app.objects[hit.idx[0]];

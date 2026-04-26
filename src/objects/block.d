@@ -6,6 +6,7 @@ import engine;
 
 import io : readFile, writeFile;
 import inventory : deriveInventory;
+import matrix : translate, multiply, scale;
 import world : tileToWorld, WORLD_MAGIC;
 
 struct BlockData { int[3] tile; uint tileType; }
@@ -43,10 +44,9 @@ void loadBlocks(ref App app) {
   SDL_Log("loadDroppedBlocks: %d blocks", app.world.droppedBlocks.tiles.length);
 }
 
-bool hasBlocks(ref App app, TileType tt) {
+@nogc pure bool hasBlocks(ref App app, TileType tt) nothrow {
   if(app.world.droppedBlocks is null) return false;
-  foreach(i, tile; app.world.droppedBlocks.tiles) { if(app.world.droppedBlocks.instances[i].meshdef[0] == cast(uint)tt) { return(true); } }
-  return false;
+  return app.world.droppedBlocks.instances.any!(i => i.meshdef[0] == cast(uint)tt);
 }
 
 /** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
@@ -77,7 +77,7 @@ Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
   float th = app.world.tileHeight * 0.25f;
   auto wp = app.tileToWorld(tile);
   wp[1] -= (app.world.tileHeight - th) * 0.5f;
-  return Instance(cast(uint)tt, [ts,0,0, 0,th,0, 0,0,ts, wp[0],wp[1],wp[2]]);
+  return Instance([cast(uint)tt, cast(uint)tt], translate(wp).multiply(scale([ts, th, ts])));
 }
 
 /** Spawn a dropped block */

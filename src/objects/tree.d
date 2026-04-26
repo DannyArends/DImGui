@@ -8,6 +8,7 @@ import engine;
 import block : spawnBlock;
 import io : readFile, writeFile;
 import tileatlas : TileType;
+import matrix : translate, multiply, scale;
 import world : tileToWorld, WORLD_MAGIC;
 
 /** Shared instanced cylinder mesh for all tree trunks */
@@ -77,11 +78,12 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
     for(uint h = 0; h < t.height; h++) {
       float s = baseRadius - h * 0.015f;
       if(s < 0.05f) s = 0.05f;
-      app.world.trunk.instances ~= Instance(cast(uint)TileType.Wood, [s, 0, 0,  0, th, 0,  0, 0, s,  px, py + h * th, pz]);
-    }
+      app.world.trunk.instances ~= Instance([cast(uint)TileType.Wood, cast(uint)TileType.Wood], 
+                                             translate([px, py + h * th, pz]).multiply(scale([s, th, s])));
 
-    t.canopyIdx = app.world.canopy.instances.length;
-    app.world.canopy.instances ~= Instance(cast(uint)TileType.Leaves, [cSize, 0, 0,  0, cSize * cSquish, 0,  0, 0, cSize, px, py + t.height * th, pz]);
+    }
+    app.world.canopy.instances ~= Instance([cast(uint)TileType.Leaves, cast(uint)TileType.Leaves], 
+                                            translate([px, py + t.height * th, pz]).multiply(scale([cSize, cSize * cSquish, cSize])));
   }
   app.world.trunk.buffers[INSTANCE] = false;
   app.world.canopy.buffers[INSTANCE] = false;
