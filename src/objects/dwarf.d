@@ -59,11 +59,14 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
   return [int.min, 0, 0];
 }
 
+@nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
+
 /** dwarfFrame */
 void dwarfFrame(ref App app, ref Geometry obj, float dt) {
   auto d = cast(Dwarf)obj;
   if (d is null || d.moveT >= 1.0f) return;
-  d.moveT = min(1.0f, d.moveT + dt * 2.0f);
+  float cost = max(1.0f, tileData[app.world.getTileAt(d.tile.tileBelow)].cost);
+  d.moveT = min(1.0f, d.moveT + dt * 2.0f / cost);
   float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
   d.visualPos = [
     d.moveFrom[0] + t * (d.moveTo[0] - d.moveFrom[0]),

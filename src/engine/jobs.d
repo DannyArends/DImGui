@@ -78,6 +78,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
       d.clearGoal();
     },
     onFail: (ref App app, Dwarf d) {
+      if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
       d.jobStack = [];
       d.clearGoal();
     }
