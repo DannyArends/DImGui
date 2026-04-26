@@ -24,7 +24,7 @@ class OpenAsset : Geometry {
   Bone[string] bones;   /// Local bone map, merged into app.bones on main thread
   this() {
     instances = [Instance()];
-    name = (){ return(this.stringof); };
+    geometry = (){ return(this.stringof); };
   }
 }
 

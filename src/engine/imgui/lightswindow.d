@@ -6,7 +6,8 @@
 import engine;
 
 import imgui : iconText;
-import lights : Light;
+import lights : Light, updateSun, sunElevation, sunAzimuth;
+import quaternion : w;
 
 /** Show the GUI window which allows us to manipulate lighting
  */
@@ -15,8 +16,41 @@ void showLightsContent(ref App app, uint font = 0) {
 
   igCheckbox(iconText(cast(string)ICON_FA_MUSIC, "Disco"), &app.disco);
 
+  if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_SUN_O, "Sun"), 0)) {
+    igBeginTable("Sun_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+
+    igTableNextColumn(); igText("Time of Day");
+    igTableNextColumn();
+      igPushItemWidth(200 * app.gui.uiscale);
+      igSliderFloat("##tod", &app.lights.sunTime, 0.0f, 24.0f, "%.1f h", 0);
+    igTableNextColumn(); igText("Bearing");
+    igTableNextColumn();
+      igPushItemWidth(200 * app.gui.uiscale);
+      igSliderFloat("##bear", &app.lights.sunBearing, 0.0f, 365.0f, "%.0f", 0);
+    app.updateSun();
+
+    igTableNextColumn(); igText("Elevation");
+    igTableNextColumn();
+      igText(toStringz(format("%.1f deg", sunElevation(app.lights.sunTime))));
+
+    igTableNextColumn(); igText("Azimuth");
+    igTableNextColumn();
+      igText(toStringz(format("%.1f deg", sunAzimuth(app.lights.sunTime))));
+
+    igEndTable();
+    igTreePop();
+  }
+
   foreach(i, ref Light light; app.lights) {
+    if(i == 0) continue;
     igPushID_Int(to!int(i));
+    bool enabled = app.lights[i].enabled();
+    if(igCheckbox("##enabled", &enabled)) {
+      app.lights[i].enabled(enabled);
+      app.buffers["LightMatrices"].dirty[] = true;
+      app.shadows.dirty = true;
+    }
+    igSameLine(0, 5);
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB_O, format("Light %d", i)), 0)) {
       igBeginTable(toStringz(format("Light_Tbl_%d", i)), 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 

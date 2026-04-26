@@ -5,12 +5,15 @@
 
 import engine;
 
+import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
-import noise : noiseHT;
+import noise : noiseHTT;
 import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
-import inventory : inventoryPath, loadInventory, saveInventory;
+import inventory : deriveInventory;
 import searchnode : PathNode;
+import block : loadBlocks, saveBlocks;
+import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -23,20 +26,20 @@ struct TileDiff {
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable
  */
 struct WorldData {
-  int[2] seed        = [42, 67];  /// [height seed, tile seed]
-  int renderDistance =   4;       /// Render distance used to load / evict chunks
-  float tileSize     =   2.0f;    /// Size (X & Z) of a tile
-  float tileHeight   =   0.5f;    /// Y-spacing between tiles
-  int chunkSize      =  32;       /// Number of tiles (X & Z) in a chunk
-  int chunkHeight    =  64;       /// Number of tiles (Y) in a chunk
-  float yOffset      =  -8.0f;    /// Global world Y-offset
+  int[3] seed        = [42, 67, 69];  /// [height seed, tile seed]
+  int renderDistance =   4;           /// Render distance used to load / evict chunks
+  float tileSize     =   1.0f;        /// Size (X & Z) of a tile
+  float tileHeight   =   1.0f;        /// Y-spacing between tiles
+  int chunkSize      =  32;           /// Number of tiles (X & Z) in a chunk
+  int chunkHeight    =  64;           /// Number of tiles (Y) in a chunk
+  float yOffset      = -20.0f;        /// Global world Y-offset
   TileDiff[] diffs;
 
   /** Returns the filesystem path for the world TileDiffs difference
    */
-  const(char)* worldPath() const {
-    return toStringz(fixPath(format("data/world/%d_%d.bin", seed[0], seed[1])));
-  }
+  const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* droppedBlocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* treePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_trees.bin", seed[0], seed[1], seed[2]))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk
    */
@@ -58,61 +61,46 @@ struct WorldData {
   /** Determine the tile type at a world coordinate from noise, no chunk data required
    */
   @nogc pure TileType getTile(const int[3] wc) const nothrow {
-    auto ht = noiseHT(wc.x, wc.z, seed);
-    int surface = cast(int)(ht[0] * (chunkHeight - 1));
+    auto ht = noiseHTT(wc.x, wc.z, seed);
+    int surface = cast(int)(pow(ht[0], 1.5f) * (chunkHeight - 1));
     if (wc.y > surface) return TileType.None;
     if (wc.y == 0) return TileType.Lava;
-    if (wc.y < surface) return TileType.Stone;
+    if (wc.y < surface) return TileType.Stone01;
     return heightToTile(ht[0], ht[1]);
   }
 
-  /** Convert a local chunk index to a 3D local tile coordinate [x, y, z]
-   */
+  /** Convert a local chunk index to a 3D local tile coordinate [x, y, z] */
   @nogc pure int tileIndex(int[3] local) const nothrow { return(local.z * chunkHeight * chunkSize + local.y * chunkSize + local.x); }
-
-  /** Convert a world tile coordinate to its chunk coordinate
-   */
+  /** Convert a world tile coordinate to its chunk coordinate */
   @nogc pure int[3] tileCoord(int i) const nothrow { return [i % chunkSize, (i / chunkSize) % chunkHeight, i / (chunkSize * chunkHeight)];}
-
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
-
-  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate
-   */
+  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
   @nogc pure int[3] chunkCoord(int[3] tile) const nothrow { 
     return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
   }
-
+  @property @nogc pure float radius() const nothrow { return renderDistance * chunkWorldSize * 1.41422f; }
+  @property @nogc pure float height() const nothrow { return chunkHeight * tileHeight; }
   int tileIdx(int[3] tile) const { return tileIndex(localCoord(tile)); }
-
-  /** Convert a world coordinate to a world-space float position
-   */
+  /** Convert a world coordinate to a world-space float position */
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
-
-  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate
-   */
+  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
   @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
 }
 
-/** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only)
- */
+/** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
 struct World {
   Chunk[int[3]] chunks;                                     /// Current chunks
-  bool[int[3]] pendingChunks;                               /// Chunks being generated async
+  bool[int[3]] pendingChunks;                               /// Chunks generated async
+  TrunkMesh trunk;                                          /// Shared TrunkMesh
+  CanopyMesh canopy;                                        /// Shared CanopyMesh
+  Tree[][int[3]] trees;                                     /// Trees per chunk coord
+  Tree[][int[3]] pendingTrees;                              /// Trees generated async
   WorldData data;
+  Blocks droppedBlocks;
   alias data this;
 
-  /** Save world diffs to disk
-   */
-  void saveWorld(bool verbose = false) {
-    uint[2] header = [WORLD_MAGIC, cast(uint)this.data.diffs.length];
-    char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])this.data.diffs;
-    writeFile(worldPath(), raw);
-    if(verbose) SDL_Log("saveWorld: %d diffs", this.data.diffs.length);
-  }
-
-  /** Mark all chunks for deallocation and clear the chunk and pending maps
-   */
+  /** Mark all chunks for deallocation and clear the chunk and pending maps */
   void deallocateChunk(int[3] coord) {
     chunks[coord].tiles.deAllocate = true;
     chunks[coord].deAllocate = true;
@@ -126,7 +114,7 @@ struct World {
 
   void deleteWorld(ref App app) {
     SDL_RemovePath(worldPath());
-    SDL_RemovePath(inventoryPath());
+    SDL_RemovePath(droppedBlocksPath());
     data.diffs = [];
     app.inventory.items.clear();
     app.inventory.selectedTile = TileType.None;
@@ -160,7 +148,7 @@ struct World {
   bool isTile(float[3] pos) const { return tileData[tileAt(pos)].traversable; }
   float cost(float[3] pos) const { return tileData[tileAt(pos)].cost; }
 
-  PathNode[] getSuccessors(PathNode* parent) const {
+  PathNode[] getSuccessors(PathNode parent) const {
     PathNode[] successors;
     auto pt = worldToTile(parent.position);
     foreach (dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
@@ -169,7 +157,7 @@ struct World {
         int ny = (pt[1] - 1) + dy;
         auto tt = getTileAt([nx, ny, nz]);
         if (tt != TileType.None && tileData[tt].traversable && isPassable([nx, ny+1, nz])) {
-          successors ~= PathNode(parent, [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], tileData[tt].cost);
+          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost);
           break;
         }
       }
@@ -180,6 +168,13 @@ struct World {
 
 void loadWorld(ref App app) {
   ensureWorldDir();
+
+  app.world.trunk = new TrunkMesh();
+  app.world.canopy = new CanopyMesh();
+  app.objects ~= app.world.trunk;
+  app.objects ~= app.world.canopy;
+  app.objects[($-1)].computeTangents();
+
   auto raw = readFile(app.world.worldPath());
   if(raw.length < 8) return;
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadWorld: invalid magic"); return; }
@@ -187,7 +182,25 @@ void loadWorld(ref App app) {
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
-  app.loadInventory();
+  app.loadBlocks();
+  app.deriveInventory();
+  app.loadTrees();
+}
+
+/** Save world diffs to disk */
+void saveWorld(ref App app) {
+  uint[2] header = [WORLD_MAGIC, cast(uint)app.world.data.diffs.length];
+  char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])app.world.data.diffs;
+  writeFile(app.world.worldPath(), raw);
+  if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
+  app.saveBlocks();
+  app.saveTrees();
+}
+
+/** Compute world-space position from tile coords */
+float[3] tileToWorld(ref App app, int[3] tile) {
+  auto wp = app.world.worldPos(tile);
+  return [wp[0], wp[1] + app.world.yOffset, wp[2]];
 }
 
 bool canMoveTo(ref App app, float[3] pos) {
@@ -198,21 +211,29 @@ bool canMoveTo(ref App app, float[3] pos) {
   return true;
 }
 
-/** Set a tile type in a chunk and mark the chunk dirty for rebuild
- */
+/** Can we stand on this Tile ? */
+bool isStandable(World world, int[3] tile) {
+  if (tile[1] <= 0 || tile[1] >= world.chunkHeight) return false;
+  return world.getTileAt(tile) == TileType.None && world.getTileAt([tile[0], tile[1]-1, tile[2]]) != TileType.None;
+}
+
+/** Is the Tile occupied ?  */
+bool isTileOccupied(ref App app, int[3] tile) {
+  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null && d.tile == tile) return true; }
+  return false;
+}
+
+/** Set a tile type in a chunk and mark the chunk dirty for rebuild */
 void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(app.world.getTile(tile) == TileType.Lava) return;  // cannot remove lava
   if(app.verbose) SDL_Log(toStringz(format("setTile: %s", tile)));
 
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.chunks) return;
+  if (coord[1] < 0 || coord[1] >= app.world.chunkHeight) return;
   int idx = app.world.tileIdx(tile);
 
   auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type
-  if(newType == TileType.None && mined != TileType.None) {
-    app.inventory[mined] = app.inventory.get(mined, 0) + 1;
-    app.saveInventory();
-  }
 
   app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.data.diffs ~= TileDiff(coord, idx, newType);
@@ -225,8 +246,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   }
 }
 
-/** Dispatch a chunk build job to the next available worker thread
- */
+/** Dispatch a chunk build job to the next available worker thread */
 void dispatchWorker(ref App app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
@@ -239,8 +259,8 @@ void dispatchWorker(ref App app, int[3] coord){
   }
 }
 
-/** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks
- */
+
+/** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
 void updateWorld(ref App app, float[3] lookat) {
   int effectiveRD = min(app.world.renderDistance, cast(int)(app.camera.nearfar[1] / app.world.chunkWorldSize));
   int[3] pc = app.world.chunkCoord([cast(int)floor(lookat[0] / app.world.tileSize), 0, cast(int)floor(lookat[2] / app.world.tileSize)]);
@@ -255,11 +275,21 @@ void updateWorld(ref App app, float[3] lookat) {
   }
   foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
 
+  // Load pending trees onto chunks that have been loaded
+  foreach(coord; app.world.pendingTrees.keys.dup) {
+    if(coord !in app.world.chunks) continue;
+    if(!app.world.chunks[coord].tiles.isBuffered) continue;
+    if(!app.world.chunks[coord].tiles.inFrustum) continue;
+    if(coord !in app.world.trees) { app.world.trees[coord] = app.addTreeInstances(app.world.pendingTrees[coord]); }
+    app.world.pendingTrees.remove(coord);
+  }
+
   // Evict chunks outside render distance
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.remove(coord);
+      app.removeTreeInstances(coord);
     }
   }
 
@@ -271,4 +301,3 @@ void updateWorld(ref App app, float[3] lookat) {
     }
   }
 }
-

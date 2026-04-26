@@ -24,7 +24,7 @@ struct ShadowMap {
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  uint dimension = isAndroid ? 512 : 1024;  /// Allow shadows to be disabled
+  uint dimension = isAndroid ? 512 : 2048;  /// Allow shadows to be disabled
 
   bool dirty = true;
 
@@ -152,7 +152,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     depthClampEnable: VK_FALSE,
     polygonMode: VK_POLYGON_MODE_FILL,
     lineWidth: 1.0f,
-    cullMode: VK_CULL_MODE_BACK_BIT,
+    cullMode: VK_CULL_MODE_NONE,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
     depthBiasConstantFactor: 1.25f,
@@ -221,9 +221,10 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   app.shadows.lastShadowInstances = 0;
   app.shadows.totalShadowInstances = 0;
   for(size_t l = 0; l < app.lights.length; l++) {
+    if(!app.lights[l].enabled) continue;
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
 
-    auto lightFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
+    auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
 
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -236,20 +237,20 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
     uint currentLightIndex = cast(uint)l;
-    vkCmdPushConstants(cmd, app.shadows.pipeline.layout,
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
+    vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(!app.objects[x].isVisible || !app.objects[x].inFrustum) continue;
-      if(cast(Tiles)app.objects[x] !is null) continue;  // skip tiles, handled via chunk
-      auto chunk = cast(Chunk)app.objects[x];
-      uint inst = cast(uint)(chunk !is null ? chunk.tiles.instances.length : app.objects[x].instances.length);
-      app.shadows.totalShadowInstances += inst;
-      if(app.objects[x].topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-      if(app.objects[x].box !is null && !aabbInFrustum(lightFrustum, app.objects[x].box.bmin(0), app.objects[x].box.bmax(0))) continue;
-      app.shadows.lastShadowInstances += inst;
-      if(chunk !is null) {
-        app.shadow(chunk.tiles, syncIndex);
-      } else { app.shadow(app.objects[x], syncIndex); }
+      auto isChunk = (cast(Chunk)app.objects[x] !is null);
+      auto obj = (isChunk? (cast(Chunk)app.objects[x]).tiles : app.objects[x]);
+
+      if(!obj.isVisible) continue;                                         /// Skip invisible objects
+      if(cast(Tiles)obj !is null) continue;                                /// Skip tiles
+      if(obj.geometry() == "SunGeometry") continue;                        /// Skip the sun
+      if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;    /// Skip non triangle objects
+      app.shadows.totalShadowInstances += obj.instances.length;            /// Could be rendered
+
+      if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box.bmin(0), obj.box.bmax(0))) continue;
+      app.shadows.lastShadowInstances += obj.instances.length;             /// Inside the light Frustum
+      app.shadow(obj, syncIndex);
     }
     vkCmdEndRenderPass(cmd);
     popLabel(cmd);

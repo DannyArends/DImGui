@@ -149,6 +149,13 @@ enum Colors : float[4] {
     green = [0.0f, 1.0f, 0.0f, 1.0f],
     blue = [0.0f, 0.0f, 1.0f, 1.0f],
 
+    skyNight = [0.02f, 0.02f,  0.08f, 1.0f],
+    skyDawn = [0.7f, 0.35f,  0.15f, 1.0f],
+    skyDay = [0.4f, 0.65f,  0.9f, 1.0f],
+    sunNight = [0.0f, 0.0f, 0.0f, 1.0f],
+    sunDawn = [0.4f, 0.25f, 0.05f, 1.0f],
+    sunNoon = [0.7f, 0.65f, 0.3f, 1.0f],
+
     aliceblue = [0.941f, 0.973f, 1.000f, 1.0f],
     antiquewhite = [0.980f, 0.922f, 0.843f, 1.0f],
     aqua = [0.000f, 1.000f, 1.000f, 1.0f],

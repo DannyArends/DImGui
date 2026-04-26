@@ -147,7 +147,7 @@ float[3] scale(const Matrix m) {
 
   projection[0]  =  2.0f / (right - left);
   projection[5]  = -2.0f / (top - bottom);
-  projection[10] =  1.0f / (far - near);
+  projection[10] = -1.0f / (far - near);
 
   projection[12] = -(right + left) / (right - left);
   projection[13] = -(top + bottom) / (top - bottom);

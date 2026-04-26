@@ -16,9 +16,9 @@ import engine;
 
 /// Smooth noise at float coords (trilinear interpolated)
 @nogc pure float smoothNoise(float x, float y, float z, int seed = 0) nothrow {
-  int ix = cast(int)x; float fx = x - ix;
-  int iy = cast(int)y; float fy = y - iy;
-  int iz = cast(int)z; float fz = z - iz;
+  int ix = cast(int)floor(x); float fx = x - ix;
+  int iy = cast(int)floor(y); float fy = y - iy;
+  int iz = cast(int)floor(z); float fz = z - iz;
   float ux = fx * fx * (3.0f - 2.0f * fx);
   float uy = fy * fy * (3.0f - 2.0f * fy);
   float uz = fz * fz * (3.0f - 2.0f * fz);
@@ -43,7 +43,9 @@ import engine;
 
 enum float NOISE_SCALE = 0.02f;
 
-@nogc pure float[2] noiseHT(int x, int z, const int[2] seed) nothrow {
-  return [fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[0]), fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[1])];
+@nogc pure float[3] noiseHTT(int x, int z, const int[3] seed) nothrow {
+  return [fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[0]), 
+          fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[1]),
+          fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[2])];
 }
 

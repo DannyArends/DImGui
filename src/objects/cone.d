@@ -40,7 +40,7 @@ class Cone : Geometry {
 
     instances = [Instance()];
     meshes["Cone"] = Mesh([0, cast(uint)vertices.length]);
-    name = (){ return(typeof(this).stringof); };
+    geometry = (){ return(typeof(this).stringof); };
   }
 }
 

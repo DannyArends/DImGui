@@ -8,15 +8,26 @@ import engine;
 import geometry : computeNormals, computeTangents, position, rotate, scale, texture, bumpmap, opacity;
 import icosahedron : refineIcosahedron;
 import lsystem : createLSystem;
+import lights : updateSun;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
+import dwarf : spawnDwarf, randomDwarfName;
 
-/** Create a scene for rendering
- */
+/** Create a scene for rendering */
 void createScene(ref App app){
-  SDL_Log("createScene: Add a Square");
+  SDL_Log("createScene: set time to Noon");
+  app.updateSun();
+
+  SDL_Log("createScene: Ghost Cube");
+  app.inventory.ghostCube = new GhostCube([app.world.tileSize,app.world.tileHeight]);
+  app.objects ~= app.inventory.ghostCube;
+
+  SDL_Log("createScene: The 8 Dwarves of 7");
+  for(int x = 0; x <= 7; x++) { app.spawnDwarf(randomDwarfName()); }
+
   /*
+  SDL_Log("createScene: Add a Square");
   app.objects ~= new Square();
   app.objects[($-1)].computeTangents();
   app.objects[($-1)].texture("Bump_03_base");
@@ -31,10 +42,11 @@ void createScene(ref App app){
       instance = instance.translate([cast(float) x, 0.0f, cast(float)z]);
       app.objects[($-1)].instances ~= Instance(matrix: instance);
     }
-  }*/
+  }
 
-  app.inventory.ghostCube = new GhostCube([app.world.tileSize,app.world.tileHeight]);
-  app.objects ~= app.inventory.ghostCube;
+
+
+
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
@@ -119,5 +131,7 @@ void createScene(ref App app){
     SDL_Log("createScene: Add ParticleSystem");
     app.objects ~= app.compute.system;
   }
+  
+  */
   SDL_Log("createScene: Finished");
 }

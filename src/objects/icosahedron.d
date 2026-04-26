@@ -36,13 +36,14 @@ class Icosahedron : Geometry {
                3,  9, 4, 3,  4,  2,  3,  2,  6,  3, 6,  8, 3,  8,  9,
                4,  9, 5, 2,  4, 11,  6,  2, 10,  8, 6,  7, 9,  8,  1];
     instances = [Instance()];
+
     meshes["Icosahedron"] = Mesh([0, cast(uint)vertices.length]);
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    name = (){ return(typeof(this).stringof); };
+    geometry = (){ return(typeof(this).stringof); };
   }
 }
 
-@nogc  pure float[2] toTC(float[3] p) nothrow {
+@nogc pure float[2] toTC(float[3] p) nothrow {
     float normalisedX =  0.0f;
     float normalisedZ = -1.0f;
     float xSq = p[0] * p[0];

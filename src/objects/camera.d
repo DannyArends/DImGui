@@ -77,7 +77,9 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 }
 
 /* Move the position the camera looks at */
-@nogc void move(ref Camera camera, float[3] movement) nothrow { camera.lookat = vAdd(camera.lookat, movement); camera.isDirty = true; }
+@nogc void move(ref Camera camera, float[3] movement) nothrow { 
+  camera.lookat = vAdd(camera.lookat, movement); camera.isDirty = true; 
+}
 
 /* Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {

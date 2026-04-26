@@ -7,7 +7,7 @@ import engine;
 import geometry : setColor;
 
 class Square : Geometry {
-   this() {
+  this() {
     vertices = [
       Vertex([-0.5f, 0.0f, -0.5f], [1.0f, 1.0f], [1.0f, 1.0f, 1.0f, 1.0f], [0.0f, 1.0f, 0.0f], [1.0f, 0.0f, 0.0f, 1.0f]),
       Vertex([ 0.5f, 0.0f, -0.5f], [0.0f, 1.0f], [1.0f, 1.0f, 1.0f, 1.0f], [0.0f, 1.0f, 0.0f], [1.0f, 0.0f, 0.0f, 1.0f]),
@@ -17,7 +17,7 @@ class Square : Geometry {
     indices = [0, 2, 1, 0, 3, 2];
     instances = [Instance()];
     meshes["Square"] = Mesh([0, cast(uint)vertices.length]);
-    name = (){ return(typeof(this).stringof); };
+    geometry = (){ return(typeof(this).stringof); };
   };
 }
 

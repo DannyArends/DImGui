@@ -4,10 +4,13 @@
  */
 
 import engine;
+
+import block : findFreeBlock;
 import io : writeFile, readFile, fixPath, isfile;
 import tileatlas : TileType;
 import world : setTile;
 import ghost : updateGhostTile;
+import jobs : jobQueue, buildingJob;
 
 struct Inventory {
   int[TileType] items;
@@ -17,35 +20,21 @@ struct Inventory {
   alias items this;
 }
 
-const(char)* inventoryPath() { return(fixPath(toStringz(format("data/world/inventory.bin")))); }
-
-void saveInventory(ref App app) {
-  int[] data;
-  foreach(tileType, count; app.inventory) {
-    data ~= cast(int)tileType;
-    data ~= count;
+void deriveInventory(ref App app) {
+  app.inventory.items.clear();
+  if(app.world.droppedBlocks is null) return;
+  foreach(ref inst; app.world.droppedBlocks.instances) {
+    auto tt = cast(TileType)inst.meshdef[0];
+    app.inventory[tt] = app.inventory.get(tt, 0) + 1;
   }
-  if(data.length > 0) writeFile(inventoryPath(), cast(char[])data, false);
-}
-
-void loadInventory(ref App app) {
-  auto path = inventoryPath();
-  if(!path.isfile()) return;
-  auto raw = cast(int[])readFile(path);
-  for(int i = 0; i + 1 < raw.length; i += 2) {
-    app.inventory[cast(TileType)raw[i]] = raw[i+1];
-  }
+  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) { app.inventory.selectedTile = TileType.None; }
 }
 
 void placeTile(ref App app, int[3] wc) {
-  if(app.inventory.selectedTile != TileType.None && app.inventory.get(app.inventory.selectedTile, 0) > 0) {
-    app.setTile(wc, app.inventory.selectedTile);
-    app.inventory[app.inventory.selectedTile]--;
-    if(app.inventory[app.inventory.selectedTile] <= 0) {
-      app.inventory.items.remove(app.inventory.selectedTile);
-      app.inventory.selectedTile = TileType.None;
-    }
-    app.saveInventory();
-  }
+  if(wc[0] == int.min) return;
+  if(app.inventory.selectedTile == TileType.None) return;
+  int[3] freeBlock = app.findFreeBlock(app.inventory.selectedTile, [0, 0, 0]);
+  if(freeBlock[0] == int.min) return;
+  jobQueue ~= buildingJob(wc, app.inventory.selectedTile);
 }
 
