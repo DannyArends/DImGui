@@ -6,7 +6,6 @@
 import engine;
 
 import search : performSearch, atGoal, stepThroughPath;
-import world :  isStandable, isTileOccupied;
 
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
