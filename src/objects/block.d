@@ -12,14 +12,12 @@ import world : tileToWorld, WORLD_MAGIC;
 struct BlockData { int[3] tile; uint tileType; }
 struct BlockFallData {
   size_t idx;
-  float[3] state;  /// [y, v, landY]
+  float[2] state;  /// [y, v]
 
   @property @nogc float y()     nothrow { return state[0]; }
   @property @nogc float v()     nothrow { return state[1]; }
-  @property @nogc float landY() nothrow { return state[2]; }
   @property @nogc void y(float val)     nothrow { state[0] = val; }
   @property @nogc void v(float val)     nothrow { state[1] = val; }
-  @property @nogc void landY(float val) nothrow { state[2] = val; }
 }
 
 class Blocks : Cube {
@@ -114,8 +112,8 @@ void unsettleBlocksAbove(ref App app, int[3] minedTile) {
     if(tile[0] != minedTile[0] || tile[2] != minedTile[2] || tile[1] != minedTile[1] + 1) continue;
     if(!db.falling.any!(f => f.idx == i)) {
       float startY = app.tileToWorld(tile)[1] - (app.world.tileHeight - app.world.tileHeight * 0.25f) * 0.5f;
-      SDL_Log("unsettleBlocksAbove: idx=%d tile=[%d,%d,%d] startY=%f landY=%f", cast(int)i, tile[0], tile[1], tile[2], startY, startY - 1.0f);
-      db.falling ~= BlockFallData(i, [startY, 0.0f, startY - 1.0f]);
+      SDL_Log("unsettleBlocksAbove: idx=%d tile=[%d,%d,%d] startY=%f", cast(int)i, tile[0], tile[1], tile[2], startY);
+      db.falling ~= BlockFallData(i, [startY, 0.0f]);
     }
   }
 }
@@ -126,11 +124,14 @@ void settleBlocks(ref App app, float dt) {
   if(db is null || db.falling.length == 0) return;
   bool changed = false;
   db.falling = db.falling.filter!((ref f) {
-    SDL_Log("settleBlocks: idx=%d y=%f landY=%f v=%f", cast(int)f.idx, f.y, f.landY, f.v);
-f.v = f.v + 0.125f * dt;
-f.y = f.y - f.v * dt;
-    if(f.y <= f.landY) {
-      db.tiles[f.idx][1] -= 1;
+    f.v = f.v + 0.125f * dt;
+    f.y = f.y - f.v * dt;
+    int[3] tile = db.tiles[f.idx];
+    int landTileY = tile[1] - 1;
+    while(landTileY > 0 && app.world.getTileAt([tile[0], landTileY, tile[2]]) == TileType.None) landTileY--;
+    float landY = app.tileToWorld([tile[0], landTileY + 1, tile[2]])[1] - (app.world.tileHeight - app.world.tileHeight * 0.25f) * 0.5f;
+    if(f.y <= landY) {
+      db.tiles[f.idx] = [tile[0], landTileY + 1, tile[2]];
       db.instances[f.idx] = app.toDropInstance(db.tiles[f.idx], cast(TileType)db.instances[f.idx].meshdef[0]);
       changed = true;
       return false;
