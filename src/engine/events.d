@@ -5,6 +5,7 @@
 
 import engine;
 
+import block : settleBlocks;
 import boundingbox : computeBoundingBox;
 import camera : move, drag, zoom, castRay, tryMove, tryDrag, tryZoom;
 import chunk : getBestTile, setTile;
@@ -167,6 +168,7 @@ void handleEvents(ref App app) {
   // Call all onFrame() handlers
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
+  app.settleBlocks(dt);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 }
 

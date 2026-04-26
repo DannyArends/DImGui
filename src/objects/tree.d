@@ -112,7 +112,7 @@ void fellTree(ref App app, int[3] tile) {
   foreach(i, ref t; app.world.trees[coord]) {
     if(t.rootTile != [tile[0], tile[1]+1, tile[2]]) continue;
     // spawn wood blocks
-    for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], tile[1], t.rootTile[2]], TileType.Wood); }
+    for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]], TileType.Wood); }
     // remove from trees array
     app.world.trees[coord] = app.world.trees[coord][0..i] ~ app.world.trees[coord][i+1..$];
     app.rebuildTreeInstances();
