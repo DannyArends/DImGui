@@ -12,7 +12,7 @@ import lights : updateSun;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
-import dwarf : spawnDwarf, randomDwarfName;
+import dwarf : spawnDwarf, loadDwarfs, randomDwarfName;
 
 /** Create a scene for rendering */
 void createScene(ref App app){
@@ -24,7 +24,7 @@ void createScene(ref App app){
   app.objects ~= app.inventory.ghostCube;
 
   SDL_Log("createScene: The 8 Dwarves of 7");
-  for(int x = 0; x <= 7; x++) { app.spawnDwarf(randomDwarfName()); }
+  if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(randomDwarfName()); }
 
   /*
   SDL_Log("createScene: Add a Square");

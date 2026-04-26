@@ -5,8 +5,9 @@
 import engine;
 
 import geometry;
+import io : readFile, writeFile;
 import block : spawnBlock;
-import world : noTile, tileBelow, isTileOccupied;
+import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
 import vector : euclidean;
 import tileatlas : tileData;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
@@ -14,6 +15,7 @@ import jobs : Job, jobQueue, miningJob, claimNextJob;
 
 struct DwarfData {
   int[3] tile = [0, 0, 0];
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
   char[64] first;
   char[64] last;
   TileType[32] inventory;
@@ -139,9 +141,36 @@ void spawnDwarf(ref App app, string name) {
   dwarf.moveFrom  = dwarf.visualPos;
   dwarf.moveTo = dwarf.visualPos;
   dwarf.moveT = 1.0f;
-  dwarf.setColor([uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), 1.0f]);
+  dwarf.data.color = [uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), 1.0f];
+  dwarf.setColor(dwarf.data.color);
   dwarf.onFrame = &dwarfFrame;
   dwarf.onTick = &dwarfTick;
   app.objects ~= dwarf;
 }
 
+void saveDwarfs(ref App app) {
+  DwarfData[] data;
+  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null) data ~= d.data; }
+  uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
+  writeFile(app.world.dwarfsPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
+}
+
+bool loadDwarfs(ref App app) {
+  auto raw = readFile(app.world.dwarfsPath());
+  if(raw.length < uint[2].sizeof) return(false);
+  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDwarfs: invalid magic"); return(false); }
+  auto data = cast(DwarfData[])raw[uint[2].sizeof..$].dup;
+  foreach(ref dd; data) {
+    Dwarf dwarf = new Dwarf();
+    dwarf.data = dd;
+    dwarf.setColor(dd.color);
+    auto wp = app.world.tileToWorld(dd.tile);
+    dwarf.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
+    dwarf.position(dwarf.visualPos);
+    dwarf.onTick  = &dwarfTick;
+    dwarf.onFrame = &dwarfFrame;
+    app.objects ~= dwarf;
+  }
+  SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
+  return(true);
+}

@@ -30,6 +30,7 @@ public import images : ImageBuffer;
 public import imgui : GUI, saveSettings;
 public import inventory : Inventory;
 public import intersection : Intersection;
+public import jobs : Job;
 public import line : Line;
 public import lights : Lighting, Lights;
 public import lsystem : LSystem, Symbols;

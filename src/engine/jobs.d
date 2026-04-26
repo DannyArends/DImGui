@@ -52,6 +52,29 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
   );
 }
 
+/** woodcutting Job */
+Job woodcuttingJob(int[3] targetTile) {
+  return Job("Woodcutting", targetTile, TileType.None, [],
+    onArrive: (ref App app, Dwarf d) {
+      d.miningProgress += 0.25f;
+      if(d.miningProgress >= 1.0f) {
+        app.fellTree(d.jobStack[0].targetTile);
+        d.jobStack = d.jobStack[1..$];
+        d.clearGoal();
+        d.miningProgress = 0.0f;
+      }
+    },
+    onFail: (ref App app, Dwarf d) {
+      auto j = d.jobStack[0];
+      j.failedBy ~= d.uid;
+      jobQueue ~= j;
+      d.jobStack = [];
+      d.clearGoal();
+      d.miningProgress = 0.0f;
+    }
+  );
+}
+
 /** Pickup Job */
 Job pickupJob(int[3] targetTile, TileType tileType) {
   return Job("Fetching", targetTile, tileType, [],
