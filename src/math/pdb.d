@@ -63,8 +63,7 @@ struct Protein {
   }
 }
 
-/** Pointcloud of all Atoms
- */
+/** Pointcloud of all Atoms */
 class AtomCloud : Geometry {
   this(Atom[] atoms) {
     foreach(i, Atom atom; atoms) {
@@ -78,8 +77,7 @@ class AtomCloud : Geometry {
   }
 }
 
-/** AminoAcids rendering
- */
+/** AminoAcids rendering */
 class AminoAcidCloud : Geometry {
   this(AminoAcid[int] peptides) nothrow {
     uint vs, vi, vp = 0;
@@ -103,7 +101,7 @@ class AminoAcidCloud : Geometry {
   }
 }
 
-// Protein backbone
+/** Protein backbone Geometry */
 class Backbone : Geometry {
   this(AminoAcid[int] peptides) nothrow {
     uint vi, vp = 0;
@@ -125,8 +123,7 @@ class Backbone : Geometry {
 }
 
 /** loadProtein
- * See: PDB format description version 3.3, ftp://ftp.wwpdb.org/pub/pdb/doc/format_descriptions/Format_v33_A4.pdf
- */
+ * See: PDB format description version 3.3, ftp://ftp.wwpdb.org/pub/pdb/doc/format_descriptions/Format_v33_A4.pdf */
 Protein loadProtein(const(char)* path, bool verbose = false) {
   Protein protein;
   if (!isfile(path)) {
@@ -167,8 +164,7 @@ Protein loadProtein(const(char)* path, bool verbose = false) {
 }
 
 /** loadProteinCif
- * See: PDB mmCIF File Format, http://mmcif.wwpdb.org/pdbx-mmcif-home-page.html
- */
+ * See: PDB mmCIF File Format, http://mmcif.wwpdb.org/pdbx-mmcif-home-page.html */
 Protein loadProteinCif(const(char)* path, string chain = "", bool verbose = true) {
   Protein protein;
   if (!isfile(path)) {

@@ -11,8 +11,7 @@ import quaternion : xyzw, normalize, rotate, qMul, angleAxis;
 import frustum : extractFrustum, aabbInFrustum;
 import world : canMoveTo;
 
-/** Camera
- */
+/** Camera */
 struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
@@ -49,25 +48,28 @@ struct Camera {
   @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
 }
 
+/** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
   auto old = app.camera.lookat;
   app.camera.move(direction);
   if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.lookat = old;
 }
 
+/** tryDrag (checks God-mode) */
 void tryDrag(ref App app, float xrel, float yrel) {
   auto old = app.camera.rotation;
   app.camera.drag(xrel, yrel);
   if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.rotation = old;
 }
 
+/** tryZoom (checks God-mode) */
 void tryZoom(ref App app, float delta) {
   auto old = app.camera.distance;
   app.camera.zoom(delta);
   if(!app.camera.godMode && !app.canMoveTo(app.camera.position)) app.camera.distance = old;
 }
 
-/* Create a position/rotation matrix through 3D space starting from xy */
+/** Create a position/rotation matrix through 3D space starting from xy */
 float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
   float[2] ndc = [(2.0f * x) / cast(float)camera.width  - 1.0f, (2.0f * y) / cast(float)camera.height - 1.0f];
   float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];
@@ -76,19 +78,19 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
   return [camera.position.vAdd(dir), dir.normalize()];
 }
 
-/* Move the position the camera looks at */
+/** Move the position the camera looks at */
 @nogc void move(ref Camera camera, float[3] movement) nothrow { 
   camera.lookat = vAdd(camera.lookat, movement); camera.isDirty = true; 
 }
 
-/* Drag the camera in the x/y directions, causes camera rotation */
+/** Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
   camera.rotation[0] = fmod(camera.rotation[0] - xrel + 360.0f, 360.0f);
   camera.rotation[1] = clamp(camera.rotation[1] -= yrel, -65.0f, 65.0f);
   camera.isDirty = true;
 }
 
-/* Zoom the distance of the camera to the position the camera looks at */
+/** Zoom the distance of the camera to the position the camera looks at */
 @nogc void zoom(ref Camera camera, float delta) nothrow {
   camera.distance = clamp(camera.distance + delta, 2.0f, 60.0f);
   camera.isDirty = true;
