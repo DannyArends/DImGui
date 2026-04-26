@@ -87,12 +87,6 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
       auto db = app.world.blocks;
       foreach(i, tile; db.tiles) {
         if(tile != d.jobStack[0].targetTile) continue;
-        if(db.falling.any!(f => f.idx == i)) {
-          if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
-          d.jobStack = [];
-          d.clearGoal();
-          return;
-        }
         auto tt = cast(TileType)db.instances[i].meshdef[0];
         if(d.pickup(tt)) {
           db.tiles     = db.tiles[0..i] ~ db.tiles[i+1..$];
