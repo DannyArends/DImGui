@@ -13,6 +13,7 @@ import geometry : deAllocate, setColor;
 import imgui : initializeImGui, saveSettings;
 import intersection : intersects;
 import line : createLine;
+import lights : updateLightGeometries;
 import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
@@ -20,6 +21,7 @@ import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
 import tree : getBestTree;
+import world : noTile;
 import jobs : tryAssign, jobQueue, miningJob, woodcuttingJob;
 
 /** Handle keyboard events */
@@ -125,7 +127,10 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         }
       }
     }
-    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
+    if (e.button.button == SDL_BUTTON_RIGHT) {
+      app.inventory.selectedTile = TileType.None;
+      app.camera.isdrag[1] = false;
+    }
     app.updateGhostTile(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 
@@ -159,8 +164,9 @@ void handleEvents(ref App app) {
     if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
   }
 
+  float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 500) {
-    //GC.collect();
+    app.updateLightGeometries(dt * 10);
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     foreach(i; iota(app.objects.length).array.randomShuffle()) {
@@ -171,7 +177,6 @@ void handleEvents(ref App app) {
 
   // Call all onFrame() handlers
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
-  float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
   app.world.settleBlocks(app.world.blocks, dt);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 }
