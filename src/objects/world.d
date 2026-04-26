@@ -40,6 +40,7 @@ struct WorldData {
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
   const(char)* blocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
   const(char)* treePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_trees.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* dwarfsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_dwarfs.bin", seed[0], seed[1], seed[2]))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
   @nogc pure int [3] localCoord(int[3] tile) const nothrow {
@@ -154,7 +155,7 @@ struct World {
   /** Can we stand on this Tile ? */
   bool isStandable(int[3] tile) {
     if (tile[1] <= 0 || tile[1] >= chunkHeight) return false;
-    return getTileAt(tile) == TileType.None && getTileAt(tile.tileBelow) != TileType.None;
+    return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None;
   }
 
   @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
@@ -188,6 +189,8 @@ struct World {
     return successors;
   }
 }
+
+@nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
 
 void loadWorld(ref App app) {
   ensureWorldDir();

@@ -66,9 +66,10 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
           db.instances = db.instances[0..i] ~ db.instances[i+1..$];
           db.buffers[INSTANCE] = false;
           app.deriveInventory();
-          d.carrying ~= d.jobStack[0].tileType;
-          d.jobStack = d.jobStack[1..$];
-          d.clearGoal();
+          if(d.pickup(d.jobStack[0].tileType)) {
+            d.jobStack = d.jobStack[1..$];
+            d.clearGoal();
+          } // Failed to pickup (inventory full)
           return;
         }
       }
@@ -91,13 +92,13 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
     onArrive: (ref App app, Dwarf d) {
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
-      d.carrying = d.carrying.remove!(c => c == d.jobStack[0].tileType);
-      d.jobStack = d.jobStack[1..$];
-      d.clearGoal();
+      if(d.use(d.jobStack[0].tileType)) {
+        d.jobStack = d.jobStack[1..$];
+        d.clearGoal();
+      }
     },
     onFail: (ref App app, Dwarf d) {
-      foreach(tt; d.carrying) app.spawnBlock(d.tile, tt);
-      d.carrying = [];
+      foreach(i, tt; d.carrying) d.drop(app, i);
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
       jobQueue ~= newJob;
