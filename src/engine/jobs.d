@@ -24,6 +24,7 @@ struct Job {
 }
 Job[] jobQueue;
 
+/** Mining Job */
 Job miningJob(int[3] targetTile, uint retries = 3) {
   return Job("Mining", targetTile, TileType.None, [],
     onArrive: (ref App app, Dwarf d) {
@@ -50,6 +51,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
   );
 }
 
+/** Pickup Job */
 Job pickupJob(int[3] targetTile, TileType tileType) {
   return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, Dwarf d, ref Job j) {
@@ -81,6 +83,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
   );
 }
 
+/** Building Job (generates a pickup job prereq) */
 Job buildingJob(int[3] targetTile, TileType tileType) {
   return Job("Building", targetTile, tileType, [pickupJob([int.min, 0, 0], tileType)],
     onArrive: (ref App app, Dwarf d) {
@@ -102,35 +105,44 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
   );
 }
 
+/** Dispatch a job to a dwarf */
+bool dispatchJob(ref App app, Dwarf d, ref Job job) {
+  d.jobStack = job.prereqs ~ [job];
+  foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
+  if(d.jobStack[0].targetTile[0] == int.min) { d.jobStack[0].onFail(app, d); return false; }
+  d.targetTile = d.jobStack[0].targetTile;
+  auto goal = app.findGoalTile(d);
+  if(goal[0] == int.min || !app.pathfindTo(d, goal)) { d.jobStack[0].onFail(app, d); return false; }
+  return true;
+}
+
+/** Try assigning a job to the closest idle dwarf */
+bool tryAssign(ref App app, ref Job job) {
+  Dwarf best = null;
+  float bestDist = float.max;
+  foreach(o; app.objects) {
+    auto d = cast(Dwarf)o;
+    if(d is null || d.jobStack.length > 0 || job.failedBy.canFind(d.uid)) continue;
+    float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
+    if(dist < bestDist) { bestDist = dist; best = d; }
+  }
+  return best !is null && app.dispatchJob(best, job);
+}
+
+/** Allow a dwarf to select their next job */
 void claimNextJob(ref App app, Dwarf d) {
   if(jobQueue.length == 0) return;
   size_t dwarfCount = app.objects.count!(o => cast(Dwarf)o !is null);
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  if(jobQueue.length == 0) return;
-
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
     if(job.failedBy.canFind(d.uid)) continue;
-    d.targetTile = job.targetTile;
-    auto goal = app.findGoalTile(d);
-    if(goal[0] == int.min) { job.failedBy ~= d.uid; continue; }
-    float dist = abs(goal[0] - d.tile[0]) + abs(goal[2] - d.tile[2]);
+    float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
-  if(bestIdx == -1) { d.targetTile = [int.min, 0, 0]; return; }
-
+  if(bestIdx == -1) return;
   auto job = jobQueue[bestIdx];
   jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
-
-  d.jobStack = job.prereqs ~ [job];
-
-  foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
-
-  if(d.jobStack[0].targetTile[0] == int.min) { d.jobStack[0].onFail(app, d); return; }
-
-  d.targetTile = d.jobStack[0].targetTile;
-  auto goalTile = app.findGoalTile(d);
-  if(goalTile[0] == int.min || !app.pathfindTo(d, goalTile)) { d.jobStack[0].onFail(app, d); }
+  app.dispatchJob(d, job);
 }
-
