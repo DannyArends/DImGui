@@ -21,7 +21,8 @@ void showDwarfContent(ref App app, uint font = 0) {
     auto d = cast(Dwarf)o;
     if(d is null) continue;
     string status;
-    if(d.jobStack.length == 0) { status = "Idle"; idle++; }
+    if(d.isIdle) { status = "Idle"; idle++; }
+    else if(d.isWandering) { status = "Wandering"; }
     else if(d.path.length > 0) { status = format("Walking -> %s", d.jobStack[0].name); walking++; }
     else { status = d.jobStack[0].name; working++; }
     if(d.carrying.length > 0) status ~= format(" [carrying: %s]", d.carrying);
