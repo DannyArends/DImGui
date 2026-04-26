@@ -6,13 +6,13 @@
 import engine;
 
 import search : performSearch, atGoal, stepThroughPath;
-import world : tileToWorld, isStandable, isTileOccupied;
+import world :  isStandable, isTileOccupied;
 
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
 bool pathfindTo(T)(ref App app, T obj, int[3] goalTile) {
-  float[3] start = app.tileToWorld(obj.tile);
-  float[3] goal  = app.tileToWorld(goalTile);
+  float[3] start = app.world.tileToWorld(obj.tile);
+  float[3] goal  = app.world.tileToWorld(goalTile);
   if(app.verbose) SDL_Log(toStringz(format("pathfindTo: %s -> %s", start, goal)));
   auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
   if(app.verbose) SDL_Log(toStringz(format("Search: %s steps: %d", result.state, result.steps)));

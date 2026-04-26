@@ -38,11 +38,11 @@ struct WorldData {
 
   /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* droppedBlocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* blocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
   const(char)* treePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_trees.bin", seed[0], seed[1], seed[2]))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
-  int[3] localCoord(int[3] tile) const {
+  @nogc pure int [3] localCoord(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
   }
@@ -76,9 +76,11 @@ struct WorldData {
   @nogc pure int[3] chunkCoord(int[3] tile) const nothrow { 
     return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
   }
+  @property @nogc pure float blockSize() const nothrow { return(tileSize * 0.25f); }
+  @property @nogc pure float blockOffset() const nothrow { return(tileHeight - blockSize) * 0.5f; }
   @property @nogc pure float radius() const nothrow { return renderDistance * chunkWorldSize * 1.41422f; }
   @property @nogc pure float height() const nothrow { return chunkHeight * tileHeight; }
-  int tileIdx(int[3] tile) const { return tileIndex(localCoord(tile)); }
+  @nogc pure int tileIdx(int[3] tile) const nothrow { return tileIndex(localCoord(tile)); }
   /** Convert a world coordinate to a world-space float position */
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
@@ -87,15 +89,15 @@ struct WorldData {
 
 /** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
 struct World {
+  WorldData data;                                           /// Immutable world Data
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks generated async
   TrunkMesh trunk;                                          /// Shared TrunkMesh
   CanopyMesh canopy;                                        /// Shared CanopyMesh
   Tree[][int[3]] trees;                                     /// Trees per chunk coord
   Tree[][int[3]] pendingTrees;                              /// Trees generated async
-  WorldData data;
-  Blocks droppedBlocks;
-  int[3][] pendingUnsettle;
+  Blocks blocks;                                             /// Blocks
+  int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   alias data this;
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
@@ -112,7 +114,7 @@ struct World {
 
   void deleteWorld(ref App app) {
     SDL_RemovePath(worldPath());
-    SDL_RemovePath(droppedBlocksPath());
+    SDL_RemovePath(blocksPath());
     data.diffs = [];
     app.inventory.items.clear();
     app.inventory.selectedTile = TileType.None;
@@ -121,15 +123,19 @@ struct World {
   }
 
   int surfaceY(int x, int z) const {
-    for(int y = chunkHeight-1; y > 0; y--) {
-      if(getTileAt([x, y, z]) != TileType.None) return y;
-    }
+    for(int y = chunkHeight-1; y > 0; y--) { if(getTileAt([x, y, z]) != TileType.None) return y; }
     return 0;
   }
 
-  TileType getTileAt(int[3] tile) const {
+  @nogc pure TileType getTileAt(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     return (coord in chunks) ? chunks[coord].tileTypes[tileIdx(tile)] : getTile(tile);
+  }
+
+  /** Compute world-space position from tile coords */
+  float[3] tileToWorld(int[3] tile) const {
+    auto wp = worldPos(tile);
+    return [wp[0], wp[1] + yOffset, wp[2]];
   }
 
   @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
@@ -195,10 +201,9 @@ void saveWorld(ref App app) {
   app.saveTrees();
 }
 
-/** Compute world-space position from tile coords */
-float[3] tileToWorld(ref App app, int[3] tile) {
-  auto wp = app.world.worldPos(tile);
-  return [wp[0], wp[1] + app.world.yOffset, wp[2]];
+@nogc pure int surfaceAt(const World world, int x, int y, int z) nothrow {
+  while(y > 0 && world.getTileAt([x, y, z]) == TileType.None) y--;
+  return y;
 }
 
 bool canMoveTo(ref App app, float[3] pos) {
