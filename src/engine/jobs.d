@@ -52,35 +52,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
   );
 }
 
-Job stuffJob() {
-  return Job("Stuffing", noTile, TileType.None, [],
-    onClaim: (ref App app, Dwarf d, ref Job j) {
-      j.targetTile = app.findFreeBlock(d.tile);
-    },
-    onArrive: (ref App app, Dwarf d) {
-      auto db = app.world.blocks;
-      foreach(i, tile; db.tiles) {
-        if(tile != d.jobStack[0].targetTile) continue;
-        auto tt = cast(TileType)db.instances[i].meshdef[0];
-        if(d.pickup(tt)) {
-          db.tiles = db.tiles[0..i] ~ db.tiles[i+1..$];
-          db.instances = db.instances[0..i] ~ db.instances[i+1..$];
-          db.buffers[INSTANCE] = false;
-          app.deriveInventory();
-        }
-        d.jobStack = d.jobStack[1..$];
-        d.clearGoal();
-        return;
-      }
-      d.jobStack = d.jobStack[1..$];
-      d.clearGoal();
-    },
-    onFail: (ref App app, Dwarf d) {
-      d.jobStack = [];
-      d.clearGoal();
-    }
-  );
-}
+Job stuffJob() { return pickupJob(noTile, TileType.None); }
 
 /** woodcutting Job */
 Job woodcuttingJob(int[3] targetTile) {
@@ -114,19 +86,27 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
     onArrive: (ref App app, Dwarf d) {
       auto db = app.world.blocks;
       foreach(i, tile; db.tiles) {
-        if(tile == d.jobStack[0].targetTile) {
-          db.tiles = db.tiles[0..i] ~ db.tiles[i+1..$];
-          db.instances = db.instances[0..i] ~ db.instances[i+1..$];
-          db.buffers[INSTANCE] = false;
-          app.deriveInventory();
-          if(d.pickup(d.jobStack[0].tileType)) {
-            d.jobStack = d.jobStack[1..$];
-            d.clearGoal();
-          } // Failed to pickup (inventory full)
+        if(tile != d.jobStack[0].targetTile) continue;
+        if(db.falling.any!(f => f.idx == i)) {
+          if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
+          d.jobStack = [];
+          d.clearGoal();
           return;
         }
+        auto tt = cast(TileType)db.instances[i].meshdef[0];
+        if(d.pickup(tt)) {
+          db.tiles     = db.tiles[0..i] ~ db.tiles[i+1..$];
+          db.instances = db.instances[0..i] ~ db.instances[i+1..$];
+          db.falling   = db.falling.filter!(f => f.idx != i).array;
+          foreach(ref f; db.falling) if(f.idx > i) f.idx--;
+          db.buffers[INSTANCE] = false;
+          app.deriveInventory();
+        }
+        d.jobStack = d.jobStack[1..$];
+        d.clearGoal();
+        return;
       }
-      // block gone — requeue the building job (rest of stack)
+      // block gone — requeue building job
       if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
       d.jobStack = [];
       d.clearGoal();
