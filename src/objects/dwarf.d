@@ -151,6 +151,19 @@ void dwarfTick(ref App app, ref Geometry obj) {
   }
 }
 
+void addDwarf(ref App app, ref Dwarf d) {
+  d.idleTicks[1] = uniform(3, 18);
+  auto wp = app.world.tileToWorld(d.tile);
+  d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
+  d.moveFrom = d.moveFrom = d.moveTo = d.visualPos;
+  d.moveT = 1.0f;
+  Instance inst;
+  inst.meshdef[2] = d.colorID;
+  inst = position(inst, d.visualPos);
+  app.world.dwarves.instances ~= inst;
+  app.world.dwarves ~= d;
+}
+
 /** Spawn a Dwarf */
 void spawnDwarf(ref App app, string name) {
   auto tile = app.findFreeSurfaceTile();
@@ -161,23 +174,9 @@ void spawnDwarf(ref App app, string name) {
     app.world.dwarves.onTick  = &dwarfTick;
     app.objects ~= app.world.dwarves;
   }
-  Dwarf d;
-  d.uid = nextDwarfUID++;
+  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, uniform(0, cast(uint)app.colors.length), tile));
   d.name = name;
-  d.tile = tile;
-  d.colorID = uniform(0, cast(uint)app.colors.length);
-  d.idleTicks[1] = uniform(3, 18);
-  auto wp = app.world.tileToWorld(tile);
-  d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
-  d.moveFrom = d.visualPos;
-  d.moveTo   = d.visualPos;
-  d.moveT    = 1.0f;
-  Instance inst;
-  inst.meshdef[2] = d.colorID;
-  inst = position(inst, d.visualPos);
-  d.instanceIdx = app.world.dwarves.instances.length;
-  app.world.dwarves.instances ~= inst;
-  app.world.dwarves ~= d;
+  app.addDwarf(d);
   app.world.dwarves.buffers[INSTANCE] = false;
 }
 
@@ -200,22 +199,7 @@ bool loadDwarfs(ref App app) {
     app.world.dwarves.onTick  = &dwarfTick;
     app.objects ~= app.world.dwarves;
   }
-  foreach(ref dd; data) {
-    Dwarf d;
-    d.data = dd;
-    d.idleTicks[1] = uniform(3, 18);
-    auto wp = app.world.tileToWorld(dd.tile);
-    d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
-    d.moveFrom = d.visualPos;
-    d.moveTo   = d.visualPos;
-    d.moveT    = 1.0f;
-    Instance inst;
-    inst.meshdef[2] = dd.colorID;
-    inst = position(inst, d.visualPos);
-    d.instanceIdx = app.world.dwarves.instances.length;
-    app.world.dwarves.instances ~= inst;
-    app.world.dwarves ~= d;
-  }
+  foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
   app.world.dwarves.buffers[INSTANCE] = false;
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
