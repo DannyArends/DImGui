@@ -168,23 +168,22 @@ void handleEvents(ref App app) {
     app.updateLightGeometries();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    foreach(i; iota(app.objects.length).array.randomShuffle()) {
+    foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]); 
     }
   }
 
   // Call all onFrame() handlers
-  float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
+  float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   app.world.settleBlocks(app.world.blocks, dt);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
 }
 
 /** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 
- Android *requires* us to handle the application events, for now we just pauze on enter background, since we 
- need to ask for permission from the Android OS to run in the background.
-*/
+ * Android *requires* us to handle the application events, for now we just pauze on enter background, since we 
+ * need to ask for permission from the Android OS to run in the background. */
 extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
   if(!event) return(0);
   try {
@@ -206,11 +205,7 @@ extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
 }
 
 /** Immediate events handled by the application (Android filtered SDL immediate events)
-SDL_EVENT_WILL_ENTER_BACKGROUND
-SDL_EVENT_DID_ENTER_BACKGROUND
-SDL_EVENT_WILL_ENTER_FOREGROUND
-SDL_EVENT_DID_ENTER_FOREGROUND
-*/
+ * SDL_EVENT_WILL_ENTER_BACKGROUND, SDL_EVENT_DID_ENTER_BACKGROUND, SDL_EVENT_WILL_ENTER_FOREGROUND, SDL_EVENT_DID_ENTER_FOREGROUND */
 void handleApp(ref App app, const SDL_Event e) {
   if(e.type == SDL_EVENT_WILL_ENTER_BACKGROUND){
     SDL_Log("Suspending, wait on device idle & swapchain deletion queue");

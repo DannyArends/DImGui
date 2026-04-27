@@ -10,7 +10,7 @@ import compute : initializeCompute;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : handleEvents, sdlEventsFilter, removeGeometry;
-import frame : presentFrame, renderFrame;
+import frame : waitForFrame, presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
 import imgui : initializeImGui;
 import instance : createInstance;
@@ -81,6 +81,7 @@ void run(string[] args = null) {
     app.checkAsync();
     app.handleEvents();
 
+    app.waitForFrame();       // wait outside timing
     app.time[FRAMESTART] = SDL_GetTicks();
     if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
 
@@ -88,6 +89,7 @@ void run(string[] args = null) {
     app.renderFrame();        // Reder frame
     app.presentFrame();       // Show frame
     app.totalFramesRendered++;
+    app.time[LASTFRAME] = app.time[FRAMESTOP];
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
