@@ -148,11 +148,19 @@ void dwarfTick(ref App app, ref Geometry obj) {
   }
 }
 
+void ensureDwarves(ref App app) {
+  if(app.world.dwarves !is null) return;
+  app.world.dwarves = new Dwarves();
+  app.world.dwarves.onFrame = &dwarfFrame;
+  app.world.dwarves.onTick  = &dwarfTick;
+  app.objects ~= app.world.dwarves;
+}
+
 void addDwarf(ref App app, ref Dwarf d) {
   d.idleTicks[1] = uniform(3, 18);
   auto wp = app.world.tileToWorld(d.tile);
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
-  d.moveFrom = d.moveFrom = d.moveTo = d.visualPos;
+  d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
   Instance inst;
   inst.meshdef[2] = d.colorID;
@@ -165,12 +173,7 @@ void addDwarf(ref App app, ref Dwarf d) {
 void spawnDwarf(ref App app, string name) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
-  if(app.world.dwarves is null) {
-    app.world.dwarves = new Dwarves();
-    app.world.dwarves.onFrame = &dwarfFrame;
-    app.world.dwarves.onTick  = &dwarfTick;
-    app.objects ~= app.world.dwarves;
-  }
+  app.ensureDwarves();
   Dwarf d = Dwarf(DwarfData(nextDwarfUID++, uniform(0, cast(uint)app.colors.length), tile));
   d.name = name;
   app.addDwarf(d);
@@ -184,18 +187,12 @@ void saveDwarfs(ref App app) {
   writeFile(app.world.dwarfsPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
 }
 
-
 bool loadDwarfs(ref App app) {
   auto raw = readFile(app.world.dwarfsPath());
   if(raw.length < uint[2].sizeof) return false;
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDwarfs: invalid magic"); return false; }
   auto data = cast(DwarfData[])raw[uint[2].sizeof..$].dup;
-  if(app.world.dwarves is null) {
-    app.world.dwarves = new Dwarves();
-    app.world.dwarves.onFrame = &dwarfFrame;
-    app.world.dwarves.onTick  = &dwarfTick;
-    app.objects ~= app.world.dwarves;
-  }
+  app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
   app.world.dwarves.buffers[INSTANCE] = false;
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
