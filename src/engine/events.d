@@ -168,14 +168,14 @@ void handleEvents(ref App app) {
     app.updateLightGeometries();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    foreach(i; iota(app.objects.length).array.randomShuffle()) {
+    foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]); 
     }
   }
 
   // Call all onFrame() handlers
-  float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
+  float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   app.world.settleBlocks(app.world.blocks, dt);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }

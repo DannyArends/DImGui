@@ -89,6 +89,7 @@ void run(string[] args = null) {
     app.renderFrame();        // Reder frame
     app.presentFrame();       // Show frame
     app.totalFramesRendered++;
+    app.time[LASTFRAME] = app.time[FRAMESTOP];
     app.time[FRAMESTOP] = SDL_GetTicks();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);

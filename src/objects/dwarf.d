@@ -31,9 +31,7 @@ struct DwarfData {
     last[]  = '\0'; if(parts.length > 1) last[0..min(parts[1].length, last.length)] = parts[1][0..min(parts[1].length, last.length)];
   }
   @property TileType[] carrying() { return inventory[].filter!(t => t != TileType.None).array; }
-  @property bool pickup(TileType c) { foreach(i, ref slot; inventory) { if(slot == TileType.None) { 
-    SDL_Log(toStringz(format("%s, stores in %d - %s", name, i, c)));
-  slot = c; return(true); } } return(false); }
+  @property bool pickup(TileType c) { foreach(i, ref slot; inventory) { if(slot == TileType.None) { slot = c; return(true); } } return(false); }
   @property bool use(TileType c) { foreach(ref slot; inventory) { if(slot == c) { slot = TileType.None; return true; } } return false; }
   @property bool drop(ref App app, size_t slot) {
     if(slot >= inventory.length || inventory[slot] == TileType.None) return false;
@@ -118,34 +116,37 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
   }
 }
 
-/** dwarfTick */
+/** A single dwarf being ticked */
+void tickDwarf(ref App app, ref Dwarf d) {
+  if(!d.hasGoal) {
+    if(d.jobStack.length > 0) {
+      if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
+    } else {
+      app.claimNextJob(d);
+      if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
+        if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
+          auto job = stuffJob();
+          if(!app.dispatchJob(d, job)) d.idleTicks[0] = 0;
+        } else {
+          int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
+          if(app.pathfindTo(d, wander)) d.targetTile = wander;
+        }
+      }
+    }
+  } else if(d.path.length > 0 && d.moveT >= 1.0f) {
+    app.followPath(d);
+  } else if(d.path.length == 0 && d.moveT >= 1.0f) {
+    if(d.isWandering) { d.clearGoal(); }
+    else if(app.atDestination(d, d.jobStack[0].targetTile)) d.jobStack[0].onArrive(app, d);
+    else if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
+  }
+}
+
+/** dwarfTick, ticks all dwarves in random order */
 void dwarfTick(ref App app, ref Geometry obj) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
-  foreach(i, ref d; ds.dwarves) {
-    if(!d.hasGoal) {
-      if(d.jobStack.length > 0) {
-        if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
-      } else {
-        app.claimNextJob(d);
-        if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
-          if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
-            auto job = stuffJob();
-            if(!app.dispatchJob(d, job)) d.idleTicks[0] = 0;
-          } else {
-            int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
-            if(app.pathfindTo(d, wander)) d.targetTile = wander;
-          }
-        }
-      }
-    } else if(d.path.length > 0 && d.moveT >= 1.0f) {
-      app.followPath(d);
-    } else if(d.path.length == 0 && d.moveT >= 1.0f) {
-      if(d.isWandering) { d.clearGoal(); }
-      else if(app.atDestination(d, d.jobStack[0].targetTile)) d.jobStack[0].onArrive(app, d);
-      else if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
-    }
-  }
+  foreach(i; iota(ds.dwarves.length).array.randomShuffle()) { app.tickDwarf(ds.dwarves[i]); }
 }
 
 void ensureDwarves(ref App app) {
