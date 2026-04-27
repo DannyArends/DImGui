@@ -28,12 +28,8 @@ void deriveInventory(ref App app) {
       app.inventory[tt] = app.inventory.get(tt, 0) + 1;
     }
   }
-  foreach(o; app.objects) {
-    auto d = cast(Dwarf)o;
-    if(d is null) continue;
-    foreach(tt; d.carrying) {
-      app.inventory[tt] = app.inventory.get(tt, 0) + 1;
-    }
+  if(app.world.dwarves !is null) {
+    foreach(ref d; app.world.dwarves) { foreach(tt; d.carrying) { app.inventory[tt] = app.inventory.get(tt, 0) + 1; } }
   }
   if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) app.inventory.selectedTile = TileType.None;
   jobQueue = jobQueue.filter!(j => j.name != "Building" || app.inventory.get(j.tileType, 0) > 0).array;  // add this

@@ -67,9 +67,7 @@ int[3] findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None)
   foreach(i, tile; app.world.blocks.tiles) {
     if(tt != TileType.None && app.world.blocks.instances[i].meshdef[0] != cast(uint)tt) continue;
     bool reserved = false;
-    foreach(o; app.objects) {
-      auto d = cast(Dwarf)o;
-      if(d is null) continue;
+    if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
       foreach(j; d.jobStack) { if(j.targetTile == tile) { reserved = true; break; } }
       if(reserved) break;
     }

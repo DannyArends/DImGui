@@ -43,6 +43,7 @@ struct App {
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[string] buffers;                                                         /// SSBO buffers
   UBO[string] ubos;                                                             /// UBO buffers
+  float[4][] colors = [EnumMembers!Colors];                                     /// All known colors
   Lighting lights = {[Lights.Sun, Lights.Red, Lights.Green, Lights.Blue]};      /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class

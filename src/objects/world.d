@@ -99,6 +99,7 @@ struct World {
   Tree[][int[3]] trees;                                     /// Trees per chunk coord
   Tree[][int[3]] pendingTrees;                              /// Trees generated async
   Blocks blocks;                                            /// Blocks
+  Dwarves dwarves;                                          /// Dwarves
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   alias data this;
 
@@ -228,7 +229,7 @@ void saveWorld(ref App app) {
 
 /** Is the Tile occupied ?  */
 bool isTileOccupied(ref App app, int[3] tile) {
-  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null && d.tile == tile) return true; }
+  if(app.world.dwarves !is null) { foreach(ref d; app.world.dwarves) { if(d.tile == tile) return true; } }
   return false;
 }
 

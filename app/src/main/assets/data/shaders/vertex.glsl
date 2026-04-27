@@ -10,25 +10,25 @@
 #include "functions.glsl"
 
 // Per Vertex attributes
-layout(location = 0) in vec3 inPosition;          /// Vertex position
-layout(location = 1) in vec4 inColor;             /// TODO: get from materialSSB0.materials[] with meshSSBO.meshes[i].material
-layout(location = 2) in vec3 inNormal;            /// Normal
-layout(location = 3) in vec2 inTexCoord;          /// Texture coordinate
-layout(location = 4) in vec4 inTangent;           /// Tangent vector
-layout(location = 5) in uvec4 inBones;            /// assimp: BoneIDs
-layout(location = 6) in vec4 inWeights;           /// assimp: BoneWeights
+layout(location = 0) in vec3 inPosition;            /// Vertex position
+layout(location = 1) in vec4 inColor;               /// TODO: get from materialSSB0.materials[] with meshSSBO.meshes[i].material
+layout(location = 2) in vec3 inNormal;              /// Normal
+layout(location = 3) in vec2 inTexCoord;            /// Texture coordinate
+layout(location = 4) in vec4 inTangent;             /// Tangent vector
+layout(location = 5) in uvec4 inBones;              /// assimp: BoneIDs
+layout(location = 6) in vec4 inWeights;             /// assimp: BoneWeights
 
 // Per Instance attributes
-layout(location = 7) in uvec3 meshdef;            /// Mesh start + stop
-layout(location = 8) in mat4 instance;            /// Instance matrix
+layout(location = 7) in uvec4 meshdef;              /// Mesh [start, stop, material, unused]
+layout(location = 8) in mat4 instance;              /// Instance matrix
 
 // Output to Fragment shader
-layout(location = 0) out vec4 fragPosWorld;       /// Fragment world position
-layout(location = 1) out vec4 fragColor;          /// Fragment color
-layout(location = 2) out vec3 fragNormal;         /// Fragment normal
-layout(location = 3) out vec2 fragTexCoord;       /// Texture coordinate
-layout(location = 4) flat out uint fragMesh;      /// MeshID
-layout(location = 5) out mat3 fragTBN;            /// Tangent, Bitangent, Normal matrix
+layout(location = 0) out vec4 fragPosWorld;         /// Fragment world position
+layout(location = 1) out vec4 fragColor;            /// Fragment color
+layout(location = 2) out vec3 fragNormal;           /// Fragment normal
+layout(location = 3) out vec2 fragTexCoord;         /// Texture coordinate
+layout(location = 4) flat out uvec2 fragInstance;   /// [Mesh, Material]
+layout(location = 5) out mat3 fragTBN;              /// Tangent, Bitangent, Normal matrix
 
 void main() {
   /// Compute bone effects on vertex
@@ -52,13 +52,13 @@ void main() {
   fragColor = inColor;
   fragNormal = normalize(normalMatrix * inNormal);
   fragTexCoord = inTexCoord;
-  fragMesh = meshdef[0];
+  uint meshID = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
-    for (; fragMesh < meshdef[1]; fragMesh++) {
-      if (meshSSBO.meshes[fragMesh].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[fragMesh].vertices[1]) {
-        break;
-      }
+    for (; meshID < meshdef[1]; meshID++) {
+      if (meshSSBO.meshes[meshID].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[meshID].vertices[1]) break;
     }
   }
+  fragInstance = uvec2(meshID, meshdef[2]);
   fragTBN = mat3(T, B, N); 
 }
+
