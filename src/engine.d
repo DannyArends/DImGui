@@ -43,6 +43,7 @@ struct App {
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[string] buffers;                                                         /// SSBO buffers
   UBO[string] ubos;                                                             /// UBO buffers
+  float[4][] colors = [EnumMembers!Colors];                                     /// All known colors
   Lighting lights = {[Lights.Sun, Lights.Red, Lights.Green, Lights.Blue]};      /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
@@ -116,7 +117,7 @@ struct App {
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
   float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
-  ulong[5] time = [0, 0, 0, 0, 0];                                              /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK)
+  ulong[6] time = [0, 0, 0, 0, 0, 0];                                           /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK, LASTFRAME)
   uint totalFramesRendered = 0;                                                 /// Total frames rendered so far
 
   const(char)*[] instanceExtensions;                                            /// Enabled instance extensions
