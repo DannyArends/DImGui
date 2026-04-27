@@ -14,9 +14,12 @@ import inventory : deriveInventory;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
 import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob;
 
+uint nextDwarfUID = 1;
+
 struct DwarfData {
+  uint uid = 0;               /// unique dwarf ID
+  uint colorID = 0; 
   int[3] tile = [0, 0, 0];
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
   char[64] first;
   char[64] last;
   TileType[32] inventory;
@@ -41,9 +44,24 @@ struct DwarfData {
 }
 
 /** Dwarven Cylinderz  */
-class Dwarf : Cylinder {
+class Dwarves : Cylinder {
+  Dwarf[] dwarves;
+  alias dwarves this;
+
+  this() { 
+    super(0.5f, 1.0f, 6);
+    instancedMesh = true;
+    instances = [];
+    geometry = (){ return "Dwarves"; };
+  }
+}
+
+
+struct Dwarf {
   DwarfData data;                           /// Data saved between sessions
   alias data this;
+
+  size_t instanceIdx;                       /// Instance ?
 
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
@@ -55,13 +73,6 @@ class Dwarf : Cylinder {
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
-
-
-  this(float radius = 0.5f, float height = 1.0f, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
-    super(radius, height, 6, color);
-    idleTicks[1] = uniform(3, 18);
-    geometry = (){ return(typeof(this).stringof); };
-  }
 
   @property @nogc bool hasGoal() nothrow { return targetTile != noTile; }
   @property @nogc bool isIdle() nothrow { return !hasGoal && jobStack.length == 0; }
@@ -91,45 +102,52 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
 
 /** dwarfFrame */
 void dwarfFrame(ref App app, ref Geometry obj, float dt) {
-  auto d = cast(Dwarf)obj;
-  if (d is null || d.moveT >= 1.0f) return;
-  float cost = max(1.0f, tileData[app.world.getTileAt(d.tile.tileBelow)].cost);
-  d.moveT = min(1.0f, d.moveT + dt * 2.0f / cost);
-  float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
-  d.visualPos = [
-    d.moveFrom[0] + t * (d.moveTo[0] - d.moveFrom[0]),
-    d.moveFrom[1] + t * (d.moveTo[1] - d.moveFrom[1]) + 0.5f,
-    d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
-  ];
-  d.position(d.visualPos);
-  if (d.moveT >= 1.0f && d.path.length > 0) { app.followPath(d); }
+  auto ds = cast(Dwarves)obj;
+  if(ds is null) return;
+  foreach(i, ref d; ds.dwarves) {
+    if(d.moveT >= 1.0f) continue;
+    float cost = max(1.0f, tileData[app.world.getTileAt(d.tile.tileBelow)].cost);
+    d.moveT = min(1.0f, d.moveT + dt * 2.0f / cost);
+    float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
+    d.visualPos = [
+      d.moveFrom[0] + t * (d.moveTo[0] - d.moveFrom[0]),
+      d.moveFrom[1] + t * (d.moveTo[1] - d.moveFrom[1]) + 0.5f,
+      d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
+    ];
+    ds.instances[i] = position(ds.instances[i], d.visualPos);
+    ds.buffers[INSTANCE] = false;
+    if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
+  }
 }
 
 /** dwarfTick */
 void dwarfTick(ref App app, ref Geometry obj) {
-  auto d = cast(Dwarf)obj;
-  if(d is null) return;
-  if(!d.hasGoal) {
-    if(d.jobStack.length > 0) {
-      if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
-    } else {
-      app.claimNextJob(d);
-      if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
-        if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
-          auto job = stuffJob();
-          app.dispatchJob(d, job);
-        } else {
-          int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
-          if(app.pathfindTo(d, wander)) d.targetTile = wander;
+  auto ds = cast(Dwarves)obj;
+  if(ds is null) return;
+  foreach(i, ref d; ds.dwarves) {
+    if(!d.hasGoal) {
+      if(d.jobStack.length > 0) {
+        if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
+      } else {
+        app.claimNextJob(d);
+        if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
+          if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 &&
+             d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
+            auto job = stuffJob();
+            app.dispatchJob(d, job);
+          } else {
+            int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
+            if(app.pathfindTo(d, wander)) d.targetTile = wander;
+          }
         }
       }
+    } else if(d.path.length > 0 && d.moveT >= 1.0f) {
+      app.followPath(d);
+    } else if(d.path.length == 0 && d.moveT >= 1.0f) {
+      if(d.isWandering) { d.clearGoal(); }
+      else if(app.atDestination(d, d.jobStack[0].targetTile)) d.jobStack[0].onArrive(app, d);
+      else if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
     }
-  } else if(d.path.length > 0 && d.moveT >= 1.0f) {
-    app.followPath(d);
-  } else if(d.path.length == 0 && d.moveT >= 1.0f) {
-    if(d.isWandering) { d.clearGoal(); }
-    else if(app.atDestination(d, d.jobStack[0].targetTile)) d.jobStack[0].onArrive(app, d);
-    else if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
   }
 }
 
@@ -137,46 +155,71 @@ void dwarfTick(ref App app, ref Geometry obj) {
 void spawnDwarf(ref App app, string name) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
-  Dwarf dwarf = new Dwarf();
-  dwarf.name = name;
-  dwarf.tile = tile;
+  if(app.world.dwarves is null) {
+    app.world.dwarves = new Dwarves();
+    app.world.dwarves.onFrame = &dwarfFrame;
+    app.world.dwarves.onTick  = &dwarfTick;
+    app.objects ~= app.world.dwarves;
+  }
+  Dwarf d;
+  d.uid = nextDwarfUID++;
+  d.name = name;
+  d.tile = tile;
+  d.colorID = uniform(0, cast(uint)app.colors.length);
+  d.idleTicks[1] = uniform(3, 18);
   auto wp = app.world.tileToWorld(tile);
-  dwarf.position([wp[0], wp[1], wp[2]]);
-  dwarf.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
-  dwarf.moveFrom  = dwarf.visualPos;
-  dwarf.moveTo = dwarf.visualPos;
-  dwarf.moveT = 1.0f;
-  dwarf.data.color = [uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), uniform(0.3f, 1.0f), 1.0f];
-  dwarf.setColor(dwarf.data.color);
-  dwarf.onFrame = &dwarfFrame;
-  dwarf.onTick = &dwarfTick;
-  app.objects ~= dwarf;
+  d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
+  d.moveFrom = d.visualPos;
+  d.moveTo   = d.visualPos;
+  d.moveT    = 1.0f;
+  Instance inst;
+  inst.meshdef[2] = d.colorID;
+  inst = position(inst, d.visualPos);
+  d.instanceIdx = app.world.dwarves.instances.length;
+  app.world.dwarves.instances ~= inst;
+  app.world.dwarves ~= d;
+  app.world.dwarves.buffers[INSTANCE] = false;
 }
 
 void saveDwarfs(ref App app) {
-  DwarfData[] data;
-  foreach(o; app.objects) { auto d = cast(Dwarf)o; if(d !is null) data ~= d.data; }
+  if(app.world.dwarves is null) return;
+  DwarfData[] data = app.world.dwarves[].map!(d => d.data).array;
   uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
   writeFile(app.world.dwarfsPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
 }
 
+
 bool loadDwarfs(ref App app) {
   auto raw = readFile(app.world.dwarfsPath());
-  if(raw.length < uint[2].sizeof) return(false);
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDwarfs: invalid magic"); return(false); }
+  if(raw.length < uint[2].sizeof) return false;
+  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDwarfs: invalid magic"); return false; }
   auto data = cast(DwarfData[])raw[uint[2].sizeof..$].dup;
-  foreach(ref dd; data) {
-    Dwarf dwarf = new Dwarf();
-    dwarf.data = dd;
-    dwarf.setColor(dd.color);
-    auto wp = app.world.tileToWorld(dd.tile);
-    dwarf.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
-    dwarf.position(dwarf.visualPos);
-    dwarf.onTick  = &dwarfTick;
-    dwarf.onFrame = &dwarfFrame;
-    app.objects ~= dwarf;
+  if(app.world.dwarves is null) {
+    app.world.dwarves = new Dwarves();
+    app.world.dwarves.onFrame = &dwarfFrame;
+    app.world.dwarves.onTick  = &dwarfTick;
+    app.objects ~= app.world.dwarves;
   }
+  foreach(ref dd; data) {
+    Dwarf d;
+    d.data = dd;
+    d.idleTicks[1] = uniform(3, 18);
+    auto wp = app.world.tileToWorld(dd.tile);
+    d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
+    d.moveFrom = d.visualPos;
+    d.moveTo   = d.visualPos;
+    d.moveT    = 1.0f;
+    Instance inst;
+    inst.meshdef[2] = dd.colorID;
+    inst = position(inst, d.visualPos);
+    d.instanceIdx = app.world.dwarves.instances.length;
+    app.world.dwarves.instances ~= inst;
+    app.world.dwarves ~= d;
+  }
+  app.world.dwarves.buffers[INSTANCE] = false;
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
-  return(true);
+  foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;
+  return true;
 }
+

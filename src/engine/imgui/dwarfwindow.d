@@ -31,9 +31,7 @@ void showDwarfContent(ref App app, uint font = 0) {
   igSeparator();
 
   int idle = 0, walking = 0, working = 0;
-  foreach(o; app.objects) {
-    auto d = cast(Dwarf)o;
-    if(d is null) continue;
+  if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
     string status;
     if(d.isIdle) { status = "Idle"; idle++; }
     else if(d.isWandering) { status = "Wandering"; }
