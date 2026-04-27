@@ -19,24 +19,25 @@ import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
 import world : updateWorld;
 
+/** waitForFrame */
+void waitForFrame(ref App app) {
+  if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
+  if(app.hasCompute) {
+    enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, ulong.max));
+    enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
+  }
+  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
+  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
+  app.bufferDeletionQueue.flush();
+}
+
 /** Main Frame rendering loop a 3D Frame:
- * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui
- */
+ * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui */
 void renderFrame(ref App app) {
   bool shadowsThisFrame = app.lMode == LMode.LightsAndShadows;
   if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired = app.sync[app.syncIndex].imageAcquired;
-
-  if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
-  if (app.hasCompute) {
-    enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, ulong.max));
-    enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
-  }
-
-  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
-  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
-  app.bufferDeletionQueue.flush(); // Flush the Queue
 
   if(app.trace) SDL_Log("Phase 1: Aquire the image");
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
