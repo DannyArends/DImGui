@@ -129,10 +129,9 @@ void dwarfTick(ref App app, ref Geometry obj) {
       } else {
         app.claimNextJob(d);
         if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
-          if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 &&
-             d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
+          if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
             auto job = stuffJob();
-            app.dispatchJob(d, job);
+            if(!app.dispatchJob(d, job)) d.idleTicks[0] = 0;
           } else {
             int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
             if(app.pathfindTo(d, wander)) d.targetTile = wander;
