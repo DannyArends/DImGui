@@ -48,7 +48,7 @@ public import shaders : Shader, ShaderDef, IncluderContext;
 public import square : Square;
 public import searchnode : PathNode;
 public import search : SearchState;
-public import sdl : STARTUP, FRAMESTART, FRAMESTOP, LASTTICK;
+public import sdl : STARTUP, FRAMESTART, FRAMESTOP, LASTTICK, LASTFRAME;
 public import sync : Sync, Fence;
 public import ssbo : SSBO;
 public import shadow : ShadowMap;
