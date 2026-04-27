@@ -10,6 +10,7 @@ import block : spawnBlock;
 import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
 import vector : euclidean;
 import tileatlas : tileData;
+import inventory : deriveInventory;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
 import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob;
 
@@ -176,5 +177,6 @@ bool loadDwarfs(ref App app) {
     app.objects ~= dwarf;
   }
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
+  app.deriveInventory();
   return(true);
 }

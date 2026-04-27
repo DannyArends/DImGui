@@ -22,12 +22,20 @@ struct Inventory {
 
 void deriveInventory(ref App app) {
   app.inventory.items.clear();
-  if(app.world.blocks is null) return;
-  foreach(ref inst; app.world.blocks.instances) {
-    auto tt = cast(TileType)inst.meshdef[0];
-    app.inventory[tt] = app.inventory.get(tt, 0) + 1;
+  if(app.world.blocks !is null) {
+    foreach(ref inst; app.world.blocks.instances) {
+      auto tt = cast(TileType)inst.meshdef[0];
+      app.inventory[tt] = app.inventory.get(tt, 0) + 1;
+    }
   }
-  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) { app.inventory.selectedTile = TileType.None; }
+  foreach(o; app.objects) {
+    auto d = cast(Dwarf)o;
+    if(d is null) continue;
+    foreach(tt; d.carrying) {
+      app.inventory[tt] = app.inventory.get(tt, 0) + 1;
+    }
+  }
+  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) app.inventory.selectedTile = TileType.None;
 }
 
 void placeTile(ref App app, int[3] wc) {
