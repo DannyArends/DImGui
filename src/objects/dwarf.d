@@ -61,8 +61,6 @@ struct Dwarf {
   DwarfData data;                           /// Data saved between sessions
   alias data this;
 
-  size_t instanceIdx;                       /// Instance ?
-
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
