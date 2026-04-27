@@ -19,7 +19,7 @@ layout(location = 5) in mat3 fragTBN;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-  vec3 baseColor = fragColor.rgb * colorSSBO.colors[fragInstance[1]].color.rgb;
+  vec3 baseColor = fragInstance[1] > 0u ? fragColor.rgb * colorSSBO.colors[fragInstance[1]].color.rgb : fragColor.rgb;
   if(meshSSBO.meshes[fragInstance[0]].oid >= 0) { // We have an opacity texture
     float alpha = texture(textureSampler[meshSSBO.meshes[fragInstance[0]].oid], fragTexCoord).a;
     if(alpha < 0.2f) discard;
