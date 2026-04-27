@@ -128,6 +128,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
     onArrive: (ref App app, Dwarf d) {
       if(!d.use(d.jobStack[0].tileType)) { d.jobStack[0].onFail(app, d); return; }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
+      app.deriveInventory();
       /*if(app.verbose)*/SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       d.jobStack = d.jobStack[1..$];
       d.clearGoal();

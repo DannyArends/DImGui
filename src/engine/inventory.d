@@ -36,13 +36,13 @@ void deriveInventory(ref App app) {
     }
   }
   if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) app.inventory.selectedTile = TileType.None;
+  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.inventory.get(j.tileType, 0) > 0).array;  // add this
 }
 
 void placeTile(ref App app, int[3] wc) {
   if(wc[0] == int.min) return;
   if(app.inventory.selectedTile == TileType.None) return;
-  int[3] freeBlock = app.findFreeBlock([0, 0, 0], app.inventory.selectedTile);
-  if(freeBlock[0] == int.min) return;
+  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) return;
   jobQueue ~= buildingJob(wc, app.inventory.selectedTile);
 }
 
