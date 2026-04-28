@@ -30,6 +30,7 @@ void handleKeyEvents(ref App app, SDL_Event e) {
     auto symbol = e.key.key;
     if(symbol == SDLK_PAGEUP) app.tryMove([ 0.0f,  1.0f, 0.0f]);
     if(symbol == SDLK_PAGEDOWN) app.tryMove([ 0.0f, -1.0f, 0.0f]);
+    if(symbol == SDLK_P) app.paused = !app.paused;
     if(symbol == SDLK_W || symbol == SDLK_UP) app.tryMove(app.camera.forward());
     if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
@@ -164,6 +165,7 @@ void handleEvents(ref App app) {
     if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
   }
 
+  if(app.paused) return;
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.updateLightGeometries();
     app.time[LASTTICK] = app.time[FRAMESTART];
