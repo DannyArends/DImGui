@@ -133,6 +133,7 @@ struct App {
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint verbose = 0;                                                             /// Be very verbose
   bool disco = false;                                                           /// Disco mode
+  bool paused = false;                                                          /// paused ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isMinimized = false;                                                     /// isMinimized?
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
