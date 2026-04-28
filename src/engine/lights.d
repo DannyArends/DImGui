@@ -48,8 +48,21 @@ struct Lighting {
   alias lights this;
 }
 
+@nogc pure float texelRound(float v) nothrow { return cast(float)cast(int)(v + (v >= 0 ? 0.5f : -0.5f)); }
+
+@nogc void snapToTexelGrid(ref Light light, float shadowMapSize) nothrow {
+  float[4] origin = [0.0f, 0.0f, 0.0f, 1.0f];
+  float[4] shadowOrigin = light.lightSpaceMatrix.multiply(origin);
+  shadowOrigin[0] = shadowOrigin[0] * shadowMapSize / 2.0f;
+  shadowOrigin[1] = shadowOrigin[1] * shadowMapSize / 2.0f;
+  float[4] rounded = [texelRound(shadowOrigin[0]), texelRound(shadowOrigin[1]), 0.0f, 0.0f];
+  float[2] rounding = [(rounded[0] - shadowOrigin[0]) / (shadowMapSize / 2.0f), (rounded[1] - shadowOrigin[1]) / (shadowMapSize / 2.0f)];
+  light.lightSpaceMatrix[12] += rounding[0];
+  light.lightSpaceMatrix[13] += rounding[1];
+}
+
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(const World world, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f) nothrow {
+@nogc void computeLightSpace(const World world, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f, uint shadowDimension = 2048) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   float[3] upVector = [0.0f, 1.0f, 0.0f];
   float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
@@ -61,6 +74,7 @@ struct Lighting {
     : perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
 
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
+  if(light.directional) light.snapToTexelGrid(cast(float)shadowDimension);
 }
 
 /** Update light geometries for rendering */
@@ -148,7 +162,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
-  foreach(i, ref light; app.lights) { app.world.computeLightSpace(light); }
+  foreach(i, ref light; app.lights) { app.world.computeLightSpace(light, app.camera.nearfar[0], app.camera.nearfar[1], app.shadows.dimension); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 

@@ -31,5 +31,5 @@ void main() {
   mat4 model = lightUbo.scene * instance;
   vec4 worldPos = model * position;
   gl_Position = lightSSBO.lights[pc.clight].lightProjView * worldPos;
-  gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5; // Strange, depth values seem to be from -1.0f to 1.0f
+//  gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5; // Strange, depth values seem to be from -1.0f to 1.0f
 }

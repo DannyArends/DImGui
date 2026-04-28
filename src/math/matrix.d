@@ -159,8 +159,8 @@ float[3] scale(const Matrix m) {
   float tanHalfFovy = tan(radian(fovy) / 2.0f);
   float x  =  1.0f / (aspectRatio * tanHalfFovy);
   float y  = -1.0f / tanHalfFovy;
-  float A  = -(far + near) / (far - near);
-  float B  = -2.0f * far * near / (far - near);
+  float A  = -far / (far - near); 
+  float B  = -far * near / (far - near);
   return(Matrix([
         x,    0.0f,  0.0f,  0.0f,
         0.0f,    y,  0.0f,  0.0f,
