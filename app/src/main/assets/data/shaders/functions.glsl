@@ -36,7 +36,7 @@ float calculateShadow(vec4 position, uint i) {
   }
 
   float shadowFactor = 0.0;
-  vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[i], 0));
+  vec2 texelSize = vec2(ubo.shadowTexelSize);
   int sampleCount = 2;
   float range = 1.0;
 

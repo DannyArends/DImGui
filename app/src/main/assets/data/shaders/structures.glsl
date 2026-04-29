@@ -68,6 +68,7 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   mat4 view;                  /// View matrix
   mat4 proj;                  /// Projection matrix
   mat4 ori;                   /// Screen orientation
+  float shadowTexelSize;      /// Shadow texel size
   uint nlights;               /// Number of actual lights
   uint lightingMode;          /// Show shadows ?
 } ubo;
