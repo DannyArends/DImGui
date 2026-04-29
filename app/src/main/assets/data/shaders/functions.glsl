@@ -60,14 +60,14 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
   } else {                                                // Point lighting
     s = normalize( light.position.xyz - position );
     float l = length( light.position.xyz - position );
-    attenuation = 1.0 / (light.properties[1] + pow(l, 2.0));
+    attenuation = 1.0 / (light.properties[1] + l * l);
 
     // Cone lighting
-    float lAngle = degrees(acos(dot(-s, normalize(light.direction.xyz))));
-    float outerConeAngle = light.properties[2];
-    float innerConeAngle =outerConeAngle / 2.0f;
+    float cosOuter = cos(radians(light.properties[2]));
+    float cosInner = cos(radians(light.properties[2] / 2.0f));
+    float cosAngle = dot(-s, normalize(light.direction.xyz));
+    float coneFactor = smoothstep(cosOuter, cosInner, cosAngle);
 
-    float coneFactor = 1.0 - smoothstep(innerConeAngle, outerConeAngle, lAngle);
     attenuation *= coneFactor;
   }
   float sDotN = max( dot( s, normal ), 0.0 );
