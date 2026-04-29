@@ -84,6 +84,7 @@ void renderFrame(ref App app) {
   // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
   if(shadowsThisFrame) {
+    app.updateLightGeometries();
     app.recordShadowCommandBuffer(app.syncIndex);
   }else{ shadowsThisFrame = false; }
 

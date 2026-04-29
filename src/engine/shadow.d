@@ -24,7 +24,7 @@ struct ShadowMap {
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  uint dimension = isAndroid ? 512 : 2048;  /// Allow shadows to be disabled
+  uint dimension = isAndroid ? 512 : 4096;  /// Allow shadows to be disabled
 
   bool dirty = true;
 

@@ -79,7 +79,7 @@ struct Lighting {
 }
 
 /** Update light geometries for rendering */
-void updateLightGeometries(ref App app, float minsPerTick = 2.0f) {
+void updateLightGeometries(ref App app, float minsPerTick = 0.005f) {
   app.lights.sunTime = fmod(app.lights.sunTime + (minsPerTick / 60.0f), 24.0f);
   app.updateSun();
   if(!app.showLights) return;
