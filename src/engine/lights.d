@@ -48,22 +48,11 @@ struct Lighting {
   alias lights this;
 }
 
-@nogc pure float texelRound(float v) nothrow { return cast(float)cast(int)(v + (v >= 0 ? 0.5f : -0.5f)); }
-
-@nogc void snapToTexelGrid(ref Light light, const World world, float shadowMapSize) nothrow {
-  float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
-  float texelSize = (2.0f * world.radius) / shadowMapSize;
-  float[4] centerLS = light.lightSpaceMatrix.multiply([worldCenter[0], worldCenter[1], worldCenter[2], 1.0f]);
-  float dx = (texelRound(centerLS[0] / texelSize) * texelSize - centerLS[0]);
-  float dy = (texelRound(centerLS[1] / texelSize) * texelSize - centerLS[1]);
-  light.lightSpaceMatrix[12] += dx * (1.0f / world.radius);
-  light.lightSpaceMatrix[13] += dy * (1.0f / world.radius);
-}
-
 /** Compute lightspace for the provided light */
 @nogc void computeLightSpace(const World world, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f, uint shadowDimension = 2048) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
-  float[3] upVector = [0.0f, 1.0f, 0.0f];
+  float[3] upVector = abs(lightDir[1]) < 0.99f ? [0.0f, 1.0f, 0.0f] : [0.0f, 0.0f, 1.0f];
+
   float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
   float[3] lightEye = light.directional ? worldCenter.vSub(lightDir.vMul(farPlane * 0.5f)) : light.position.xyz;
   float[3] lookTarget = light.directional ? worldCenter : light.position.xyz.vAdd(lightDir);
@@ -75,7 +64,6 @@ struct Lighting {
     : perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
 
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
-  if(light.directional) light.snapToTexelGrid(world, cast(float)shadowDimension);
 }
 
 /** Update light geometries for rendering */
