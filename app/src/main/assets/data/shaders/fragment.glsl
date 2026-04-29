@@ -38,19 +38,16 @@ void main() {
     normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mesh.nid, fragTexCoord, fragTBN);
   }
 
-  // Compute lighting and shadows
   vec3 lightColor = baseColor * 0.001;
-  if (ubo.lightingMode == 0u) {                        // Global illumination
-    lightColor = baseColor * 0.2;
-  } else if (ubo.lightingMode == 1u) {
-    for(int i = 0; i < ubo.nlights; ++i)
-      lightColor += illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
-  } else {
-    for(int i = 0; i < ubo.nlights; ++i) {
-      vec3 lightContribution = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
-      float shadowFactor = calculateShadow(lightSSBO.lights[i].lightProjView * fragPosWorld, i);
-      lightColor += lightContribution * shadowFactor;
+  if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
+  bool useShadows = ubo.lightingMode == 2u;
+  for(int i = 0; i < ubo.nlights; ++i) {
+    Light light = lightSSBO.lights[i];
+    vec3 lightContribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
+    if(useShadows && any(greaterThan(lightContribution, vec3(0.01)))) {
+      lightContribution *= calculateShadow(light.lightProjView * fragPosWorld, i);
     }
+    lightColor += lightContribution;
   }
   outColor = vec4(lightColor, 1.0);
 }
