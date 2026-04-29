@@ -48,6 +48,7 @@ void createSyncObjects(ref App app) {
     app.nameVulkanObject(app.fences[i].computeInFlight, toStringz(format("[FENCE] computeInFlight #%d",i)), VK_OBJECT_TYPE_FENCE);
   }
   if(app.verbose) SDL_Log("Done vkCreateFence");
+
   app.swapDeletionQueue.add((){
     app.bufferDeletionQueue.flush(true); // Make sure we flush the buffers using the old fences
     for (uint i = 0; i < app.framesInFlight; i++) {

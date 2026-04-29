@@ -15,7 +15,7 @@ import glyphatlas : loadGlyphAtlas, uploadFont;
 import imgui : initializeImGui;
 import instance : createInstance;
 import scene : createScene;
-import sdl : initializeSDL, SDL_WINDOW_MINIMIZED;
+import sdl : initializeSDL;
 import shadow : createShadowMap;
 import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
 import reflection : createReflectionContext;
@@ -76,21 +76,18 @@ void run(string[] args = null) {
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;
-  while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
-    app.removeGeometry();     // Remove stale geometry
-    app.checkAsync();
-    app.handleEvents();
-
-    app.waitForFrame();       // wait outside timing
-    app.time[FRAMESTART] = SDL_GetTicks();
-    if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
-
-    app.checkForResize();     // Check for resize
-    app.renderFrame();        // Reder frame
-    app.presentFrame();       // Show frame
-    app.totalFramesRendered++;
-    app.time[LASTFRAME] = app.time[FRAMESTOP];
-    app.time[FRAMESTOP] = SDL_GetTicks();
+  while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & render loop
+    app.checkForResize();                                         /// Check for resize
+    if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue
+    app.removeGeometry();                                         /// Remove stale geometry
+    app.checkAsync();                                             /// Check ASync handlers
+    app.handleEvents();                                           /// Handle SDL / user events
+    app.waitForFrame();                                           /// Wait for a new frame (outside timing)
+    app.time[FRAMESTART] = SDL_GetTicks();                        /// Start the clock
+    app.renderFrame();                                            /// Render frame
+    app.presentFrame();                                           /// Show frame
+    app.time[LASTFRAME] = app.time[FRAMESTOP];                    /// Remember last time we stopped ?
+    app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
   app.saveWorld();

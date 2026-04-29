@@ -158,8 +158,8 @@ void handleEvents(ref App app) {
     if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
     if(e.type == SDL_EVENT_QUIT) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
-    if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.isMinimized = false; }
-    if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.isMinimized = true; }
+    if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.minimized = false; }
+    if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.minimized = true; }
     if(!app.gui.io.WantCaptureKeyboard) app.handleKeyEvents(e);
     if(!app.gui.io.WantCaptureMouse) app.handleMouseEvents(e);
     if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
@@ -229,7 +229,7 @@ void handleApp(ref App app, const SDL_Event e) {
     vkDestroySurfaceKHR(app.instance, app.surface, app.allocator); // Before destroying the Surface
     app.surface = null;
 
-    app.isMinimized = true;
+    app.minimized = true;
   }
   if(e.type == SDL_EVENT_WILL_ENTER_FOREGROUND){ SDL_Log("Resuming."); }
   if(e.type == SDL_EVENT_DID_ENTER_FOREGROUND){
@@ -238,6 +238,6 @@ void handleApp(ref App app, const SDL_Event e) {
     app.createSurface();                                          /// Create Vulkan rendering surface
     app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
     app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
-    app.isMinimized = false;
+    app.minimized = false;
   }
 }
