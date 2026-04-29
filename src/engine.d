@@ -8,6 +8,8 @@ public import structures;
 public import world : World;
 public import lights : LMode;
 
+import sdl : SDL_WINDOW_MINIMIZED;
+
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
@@ -134,11 +136,12 @@ struct App {
   uint verbose = 0;                                                             /// Be very verbose
   bool disco = false;                                                           /// Disco mode
   bool paused = false;                                                          /// paused ?
+  bool minimized = false;                                                       /// minimized ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?
-  bool isMinimized = false;                                                     /// isMinimized?
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
 
   // Properties based on the SwapChain
+  @property bool isMinimized() { return minimized || (SDL_GetWindowFlags(this.window) & SDL_WINDOW_MINIMIZED) != 0; }
   @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }
   @property pure @nogc bool trace() nothrow const { return(verbose > 1); }
   @property pure @nogc uint framesInFlight() nothrow const { return(cast(uint)swapChainImages.length + 1); }
