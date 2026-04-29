@@ -7,8 +7,7 @@ import engine;
 
 import io : fixPath, isfile;
 
-/** Set an icon for the SDL window
- */
+/** Set an icon for the SDL window */
 void setIcon(SDL_Window *window, const(char)* path = "data/icons/icon.png") {
   version(Android){ }else{
     if (path.isfile()) {

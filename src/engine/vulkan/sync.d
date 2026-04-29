@@ -7,8 +7,7 @@ import engine;
 
 import validation : nameVulkanObject;
 
-/** Sync
- */
+/** Sync */
 struct Sync {
   VkSemaphore computeComplete;
   VkSemaphore imageAcquired;
@@ -19,8 +18,7 @@ struct Fence {
   VkFence computeInFlight;
 }
 
-/** Create Vulkan synchronization objects
- */
+/** Create Vulkan synchronization objects */
 void createSyncObjects(ref App app) {
   app.sync.length = app.framesInFlight;
   app.fences.length = app.framesInFlight;
@@ -66,11 +64,11 @@ void createSyncObjects(ref App app) {
 
 void insertWriteBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
   VkBufferMemoryBarrier writeBarrier = {
-      sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-      srcAccessMask : VK_ACCESS_SHADER_WRITE_BIT, // Previous stage (e.g., compute shader writing to pOut)
-      dstAccessMask : VK_ACCESS_SHADER_READ_BIT,  // Access for the copy operation
-      buffer : buffer,
-      size : size                    // Size of the affected region
+    sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+    srcAccessMask : VK_ACCESS_SHADER_WRITE_BIT, // Previous stage (e.g., compute shader writing to pOut)
+    dstAccessMask : VK_ACCESS_SHADER_READ_BIT, // Access for the copy operation
+    buffer : buffer,
+    size : size // Size of the affected region
   };
 
   vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, null, 1, &writeBarrier, 0, null);
@@ -78,11 +76,11 @@ void insertWriteBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDevice
 
 void insertReadBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
   VkBufferMemoryBarrier readBarrier = {
-      sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-      srcAccessMask : VK_ACCESS_TRANSFER_READ_BIT, // Previous stage (e.g., compute shader writing to pOut)
-      dstAccessMask : VK_ACCESS_SHADER_WRITE_BIT,  // Access for the copy operation
-      buffer : buffer,
-      size : size                    // Size of the affected region
+    sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+    srcAccessMask : VK_ACCESS_TRANSFER_READ_BIT, // Previous stage (e.g., compute shader writing to pOut)
+    dstAccessMask : VK_ACCESS_SHADER_WRITE_BIT, // Access for the copy operation
+    buffer : buffer,
+    size : size // Size of the affected region
   };
 
   vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, null, 1, &readBarrier, 0, null);

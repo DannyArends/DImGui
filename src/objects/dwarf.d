@@ -41,12 +41,12 @@ struct DwarfData {
   }
 }
 
-/** Dwarven Cylinderz  */
+/** Dwarven Cylinderz */
 class Dwarves : Cylinder {
   Dwarf[] dwarves;
   alias dwarves this;
 
-  this() { 
+  this() {
     super(0.5f, 1.0f, 6);
     instancedMesh = true;
     instances = [];
