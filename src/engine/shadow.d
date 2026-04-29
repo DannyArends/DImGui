@@ -88,12 +88,19 @@ void createShadowMapRenderPass(ref App app) {
       colorAttachmentCount:    0,
       pDepthStencilAttachment: &depthRef
     }],
-    dependencies: [{
+    dependencies: [{ //  Write-after-Read
       srcSubpass:    VK_SUBPASS_EXTERNAL,
       srcStageMask:  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
       dstStageMask:  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
       srcAccessMask: VK_ACCESS_SHADER_READ_BIT,
       dstAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+    },{ // Read-after-Write
+      dstSubpass: VK_SUBPASS_EXTERNAL,
+      srcStageMask:  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+      dstStageMask:  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+      srcAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+      dstAccessMask: VK_ACCESS_SHADER_READ_BIT,
+      dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
     }],
   };
   app.shadows.renderPass.create(app, info, "Shadows", app.mainDeletionQueue);
