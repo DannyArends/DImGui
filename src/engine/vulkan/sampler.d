@@ -61,5 +61,6 @@ void createShadowSampler(ref App app) {
 
   app.mainDeletionQueue.add((){ vkDestroySampler(app.device, app.shadows.sampler, null); });
 
-  if(app.verbose) SDL_Log("Created TextureSampler: %p", app.sampler);
+  if(app.verbose) SDL_Log("Created ShadowSampler: %p", app.shadows.sampler);
 }
+
