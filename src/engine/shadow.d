@@ -10,6 +10,7 @@ import images : createImage, deAllocate, transitionImageLayout, nameImageBuffer;
 import geometry : shadow, bufferGeometries;
 import reflection : reflectShaders, createResources;
 import renderpass : beginRecording, endRecording;
+import sampler : createShadowSampler;
 import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
 import uniforms : forEachUBO;
@@ -19,6 +20,7 @@ import frustum : aabbInFrustum, extractFrustum;
 struct ShadowMap {
   ImageBuffer[] images;
 
+  VkSampler sampler;
   Shader[] shaders;
   RenderPass renderPass;
   GraphicsPipeline pipeline;
@@ -40,6 +42,7 @@ struct LightUbo {
 void createShadowMap(ref App app) {
   app.createShadowMapResources();
   app.createShadowMapRenderPass();
+  app.createShadowSampler();
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
