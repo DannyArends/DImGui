@@ -69,7 +69,7 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
     float outerConeAngle = light.properties[2];
     float innerConeAngle =outerConeAngle / 2.0f;
 
-    float coneFactor = smoothstep(outerConeAngle, innerConeAngle, lAngle);
+    float coneFactor = 1.0 - smoothstep(innerConeAngle, outerConeAngle, lAngle);
     attenuation *= coneFactor;
   }
   float sDotN = max( dot( s, normal ), 0.0 );

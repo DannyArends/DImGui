@@ -167,7 +167,6 @@ void handleEvents(ref App app) {
 
   if(app.paused) return;
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
-    app.updateLightGeometries();
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     foreach(i; iota(app.objects.length)) {
