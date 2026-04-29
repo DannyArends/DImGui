@@ -19,21 +19,23 @@ layout(location = 5) in mat3 fragTBN;
 layout(location = 0) out vec4 outColor;
 
 void main() {
+  Mesh mesh = meshSSBO.meshes[fragInstance[0]];
+
   vec3 baseColor = fragInstance[1] > 0u ? fragColor.rgb * colorSSBO.colors[fragInstance[1]].color.rgb : fragColor.rgb;
-  if(meshSSBO.meshes[fragInstance[0]].oid >= 0) { // We have an opacity texture
-    float alpha = texture(textureSampler[meshSSBO.meshes[fragInstance[0]].oid], fragTexCoord).a;
+  if(mesh.oid >= 0) { // We have an opacity texture
+    float alpha = texture(textureSampler[mesh.oid], fragTexCoord).a;
     if(alpha < 0.2f) discard;
   }
 
-  if(meshSSBO.meshes[fragInstance[0]].tid >= 0){ // Modify by the texture
-    vec4 texSample = texture(textureSampler[meshSSBO.meshes[fragInstance[0]].tid], fragTexCoord).rgba;
+  if(mesh.tid >= 0){ // Modify by the texture
+    vec4 texSample = texture(textureSampler[mesh.tid], fragTexCoord).rgba;
     if(texSample.a < 0.2f) discard;
     baseColor = baseColor * texSample.rgb;
   }
 
   vec3 normalForLighting = fragNormal;
-  if(meshSSBO.meshes[fragInstance[0]].nid >= 0) { // Bump if a normal map is active for this fragment
-    normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, meshSSBO.meshes[fragInstance[0]].nid, fragTexCoord, fragTBN);
+  if(mesh.nid >= 0) { // Bump if a normal map is active for this fragment
+    normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mesh.nid, fragTexCoord, fragTBN);
   }
 
   // Compute lighting and shadows
