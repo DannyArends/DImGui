@@ -222,7 +222,7 @@ void append(T)(ref VkDescriptorImageInfo[] infos, T[] images, VkSampler sampler,
 void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descriptor d) {
   final switch(d.target) {
     case DescriptorTarget.Textures: imageInfos.append(app.textures.textures, app.sampler); break;
-    case DescriptorTarget.Shadow: imageInfos.append(app.shadows.images, app.sampler); break;
+    case DescriptorTarget.Shadow: imageInfos.append(app.shadows.images, app.shadows.sampler); break;
     case DescriptorTarget.HDR: imageInfos.append([app.resolvedHDR], app.sampler); break;
     case DescriptorTarget.Compute: imageInfos.append([app.textures[app.textures.idx(d.name)]], app.sampler, VK_IMAGE_LAYOUT_GENERAL); break;
     case DescriptorTarget.None: break;
