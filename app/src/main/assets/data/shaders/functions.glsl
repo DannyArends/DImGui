@@ -55,11 +55,9 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
   if (light.properties.w == 0.0) return vec3(0.0);
   float attenuation = 1.0;
   vec3 s;
-  if (light.position.w == 0.0) {
-    // Directional lighting
+  if (light.position.w == 0.0) {                          // Directional lighting
     s = normalize( light.position.xyz );
-  } else {
-    // Point lighting
+  } else {                                                // Point lighting
     s = normalize( light.position.xyz - position );
     float l = length( light.position.xyz - position );
     attenuation = 1.0 / (light.properties[1] + pow(l, 2.0));
@@ -82,7 +80,6 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
 vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
   vec3 normalFromMap = texture(textureSampler[fragNid], fragTexCoord).rgb;
   normalFromMap = normalize(normalFromMap * 2.0 - 1.0);
-  normalFromMap = vec3(normalFromMap.xy * 2.0f, normalFromMap.z);
 
   vec3 finalNormal = normalize(fragTBN * normalFromMap);
   return(finalNormal);
