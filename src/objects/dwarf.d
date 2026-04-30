@@ -69,6 +69,7 @@ struct Dwarf {
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
+  bool waitingForPath = false;
 
   @property @nogc bool hasGoal() nothrow { return targetTile != noTile; }
   @property @nogc bool isIdle() nothrow { return !hasGoal && jobStack.length == 0; }
@@ -101,9 +102,10 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
   foreach(i, ref d; ds.dwarves) {
+    if(d.waitingForPath) continue;
     if(d.moveT >= 1.0f) continue;
     float cost = max(1.0f, tileData[app.world.getTileAt(d.tile.tileBelow)].cost);
-    d.moveT = min(1.0f, d.moveT + dt * 2.0f / cost);
+    d.moveT = min(1.0f, d.moveT + dt * 1.0f / cost);
     float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
     d.visualPos = [
       d.moveFrom[0] + t * (d.moveTo[0] - d.moveFrom[0]),

@@ -10,7 +10,8 @@ import bone : mergeBones;
 import buffer : destroyStagingBuffer;
 import chunk : buildChunkData, finalizeChunk;
 import io : dir, fixPath;
-import pathfinding : pathfindWorker, applyPathResult;
+import jobs : applyPathResult;
+import pathfinding : pathfindWorker;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
 
@@ -65,7 +66,7 @@ struct Threading {
   bool[Tid] workers;
 }
 
-void initializeAsync(ref App app, bool preLoadASimp = false, uint numWorkers = 16){
+void initializeAsync(ref App app, bool preLoadASimp = false, uint numWorkers = 32){
   if(preLoadASimp) app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
@@ -81,15 +82,14 @@ void stopWorkers(ref App app) { foreach(tid; app.concurrency.workers.keys) { tid
 
 void checkAsync(ref App app) {
   if(app.trace) SDL_Log("Checking Async, jobs: %d", app.concurrency.paths.length);
-  if(app.concurrency.paths.length > 0){
-    foreach(tid; app.concurrency.workers.keys) {
-      if(app.trace) SDL_Log("Checking Worker %p (status: %d)", tid, app.concurrency.workers[tid]);
-      if(app.concurrency.paths.length > 0 && !app.concurrency.workers[tid]){
-        auto idx = uniform(0, app.concurrency.paths.length);
-        tid.send(app.concurrency.paths[idx]);
-        app.concurrency.workers[tid] = true;
-        app.concurrency.paths = app.concurrency.paths.remove(idx);
-      }
+  // Submit pending textures / objects to available workers
+  foreach(tid; app.concurrency.workers.keys) {
+    if(app.concurrency.paths.length == 0) break;
+    if(!app.concurrency.workers[tid]) {
+      auto idx = uniform(0, app.concurrency.paths.length);
+      tid.send(app.concurrency.paths[idx]);
+      app.concurrency.workers[tid] = true;
+      app.concurrency.paths = app.concurrency.paths.remove(idx);
     }
   }
   receiveTimeout(dur!"msecs"(-1), (string message, Tid tid) {
@@ -136,12 +136,14 @@ void checkAsync(ref App app) {
     } else { i++; }
   }
   // Check all open pathfinding requests
-  foreach(tid; app.concurrency.workers.keys) {
-    if(app.world.pendingPaths.length == 0) break;
-    if(!app.concurrency.workers[tid]) {
-      app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, app.world.pendingPaths[0]);
-      app.world.pendingPaths = app.world.pendingPaths[1..$];
+  if(app.concurrency.paths.length == 0) { // Make sure no objects or textures need to be loaded
+    foreach(tid; app.concurrency.workers.keys) {
+      if(app.world.pendingPaths.length == 0) break;
+      if(!app.concurrency.workers[tid]) {
+        app.concurrency.workers[tid] = true;
+        tid.send(cast(immutable(WorldData))app.world.data, app.world.pendingPaths[0]);
+        app.world.pendingPaths = app.world.pendingPaths[1..$];
+      }
     }
   }
 }

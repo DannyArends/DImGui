@@ -10,7 +10,7 @@ auto timed(alias fn, Args...)(ref App app, Args args) {
     ulong t0 = SDL_GetTicks();
     scope(exit) {
       ulong dt = SDL_GetTicks() - t0;
-      if(dt > 2) SDL_Log("SLOW %s=%dms", __traits(identifier, fn).ptr, dt);
+      if(dt > 5) SDL_Log("SLOW %s=%dms", __traits(identifier, fn).ptr, dt);
     }
   }
   return fn(app, args);
