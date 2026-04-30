@@ -7,6 +7,29 @@ import engine;
 
 import search : performSearch, atGoal, stepThroughPath;
 
+struct PathRequest {
+  uint dwarfUID;
+  int[3] fromTile;
+  int[3] goalTile;
+}
+
+struct PathResult {
+  uint dwarfUID;
+  float[3][] path;
+  bool success;
+}
+
+PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
+  float[3] start = wd.tileToWorld(req.fromTile);
+  float[3] goal  = wd.tileToWorld(req.goalTile);
+  auto result = performSearch!(WorldData, PathNode)(start, goal, cast(WorldData)wd);
+  if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return PathResult(req.dwarfUID, [], false);
+  float[3][] path;
+  while(result.pathptr != size_t.max && !result.atGoal()) path ~= result.stepThroughPath(false);
+  path ~= result.pool[result.goal].position;
+  return PathResult(req.dwarfUID, path, true);
+}
+
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
 bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {

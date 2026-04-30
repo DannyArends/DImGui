@@ -102,6 +102,12 @@ struct WorldData {
 
   @nogc pure int surfaceAt(int x, int y, int z) const nothrow { while(y > 0 && getTileAt([x, y, z]) == TileType.None){ y--; } return y; }
 
+  /** Compute world-space position from tile coords */
+  @nogc pure float[3] tileToWorld(int[3] tile) const nothrow {
+    auto wp = worldPos(tile);
+    return [wp[0], wp[1] + yOffset, wp[2]];
+  }
+
   pure bool isPassable(int[3] wc) const nothrow {
     if(wc[1] < 0 || wc[1] >= chunkHeight) return false;
     return getTileAt(wc) == TileType.None;
@@ -169,12 +175,6 @@ struct World {
   int surfaceY(int x, int z) const {
     for(int y = chunkHeight-1; y > 0; y--) { if(getTileAt([x, y, z]) != TileType.None) return y; }
     return 0;
-  }
-
-  /** Compute world-space position from tile coords */
-  @nogc pure float[3] tileToWorld(int[3] tile) const nothrow {
-    auto wp = worldPos(tile);
-    return [wp[0], wp[1] + yOffset, wp[2]];
   }
 
   bool canMoveTo(float[3] pos) {
