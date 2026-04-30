@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, copyBufferToImage;
+import buffer : createBuffer, copyBufferToImage, destroyStagingBuffer;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import images : nameImageBuffer, generateMipmaps, imageSize, createImage, deAllocate, transitionImageLayout;
@@ -88,8 +88,23 @@ SDL_Surface* createDummySDLSurface() {
   return surface;
 }
 
-/** Texture index
- */
+/** Check pending textures */
+void checkPendingTextures(ref App app) {
+  size_t i = 0;
+  while(i < app.textures.pending.length) {
+    auto p = app.textures.pending[i];
+    if(vkGetFenceStatus(app.device, p.cmdBuffer.fence) == VK_SUCCESS) {
+      app.destroyStagingBuffer(p.staging);
+      SDL_DestroySurface(p.texture.surface);
+      vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
+      vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
+      app.textures ~= p.texture;
+      app.textures.pending = app.textures.pending.remove(i);
+    } else { i++; }
+  }
+}
+
+/** Texture index */
 @nogc pure int idx(const Texture[] textures, string name) nothrow {
   int besthit = -1;
   for(uint i = 0; i < textures.length; i++) {
