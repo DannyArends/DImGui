@@ -119,8 +119,8 @@ bool atGoal(S)(const S search) {
 }
 
 /** Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
-Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World(), bool verbose = true) {
-  Search!(World, PathNode) search;
+Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], float[3] goal = [-3.0f, 2.0f, -3.2f], M map, bool verbose = true) {
+  Search!(M, PathNode) search;
   PathNode s = PathNode(position: start);
   PathNode g = PathNode(position: goal);
   search.setStartAndGoalStates(map, s, g);

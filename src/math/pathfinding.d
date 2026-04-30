@@ -13,7 +13,7 @@ bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
   float[3] start = app.world.tileToWorld(obj.tile);
   float[3] goal  = app.world.tileToWorld(goalTile);
   if(app.verbose) SDL_Log(toStringz(format("pathfindTo: %s -> %s", start, goal)));
-  auto result = performSearch!(World, PathNode)(start, goal, app.world, app.verbose > 0);
+  auto result = performSearch!(WorldData, PathNode)(start, goal, app.world, app.verbose > 0);
   if(app.verbose) SDL_Log(toStringz(format("Search: %s steps: %d", result.state, result.steps)));
   if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return false;
   obj.path = [];
