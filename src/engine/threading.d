@@ -10,6 +10,7 @@ import bone : mergeBones;
 import buffer : destroyStagingBuffer;
 import chunk : buildChunkData, finalizeChunk;
 import io : dir, fixPath;
+import pathfinding : pathfindWorker, applyPathResult;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
 
@@ -47,6 +48,10 @@ class TaskThread : Thread {
         (immutable(WorldData) wd, int[3] coord) {
           auto data = buildChunkData(wd, coord);
           main.send(cast(immutable(ChunkData))data, mytid);
+        },
+        (immutable(WorldData) wd, PathRequest req) {
+          auto result = pathfindWorker(wd, req);
+          main.send(cast(immutable(PathResult))result, mytid);
         },
         (bool active) { this.active = active; }  // shutdown signal
       );
@@ -112,6 +117,11 @@ void checkAsync(ref App app) {
     app.concurrency.workers[tid] = false;
     app.finalizeChunk(cast(ChunkData)data);
   });
+  // Accept any incoming pathfinding results
+  receiveTimeout(dur!"msecs"(-1), (immutable(PathResult) result, Tid tid) {
+    app.concurrency.workers[tid] = false;
+    app.applyPathResult(cast(PathResult)result);
+  });
   // Check all pending texture transfers; promote to app.textures once GPU is done
   size_t i = 0;
   while(i < app.textures.pending.length) {
@@ -124,6 +134,15 @@ void checkAsync(ref App app) {
       app.textures ~= p.texture;
       app.textures.pending = app.textures.pending.remove(i);
     } else { i++; }
+  }
+  // Check all open pathfinding requests
+  foreach(tid; app.concurrency.workers.keys) {
+    if(app.world.pendingPaths.length == 0) break;
+    if(!app.concurrency.workers[tid]) {
+      app.concurrency.workers[tid] = true;
+      tid.send(cast(immutable(WorldData))app.world.data, app.world.pendingPaths[0]);
+      app.world.pendingPaths = app.world.pendingPaths[1..$];
+    }
   }
 }
 

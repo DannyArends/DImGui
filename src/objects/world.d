@@ -148,6 +148,7 @@ struct World {
   Blocks blocks;                                            /// Blocks
   Dwarves dwarves;                                          /// Dwarves
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
+  PathRequest[] pendingPaths;                               /// Pending pathfinding requests
   alias data this;
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
