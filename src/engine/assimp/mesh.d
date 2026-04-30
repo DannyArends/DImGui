@@ -55,10 +55,6 @@ void updateMeshInfo(ref App app) {
   }
   // Update SSBO
   if(needsUpdate) {
-    foreach(si; 0..app.framesInFlight) {
-      if(si == app.syncIndex) continue;
-      vkWaitForFences(app.device, 1, &app.fences[si].renderInFlight, true, ulong.max);
-    }
     app.buffers["MeshMatrices"].dirty[] = true;
     app.printMeshInfo();
   }
