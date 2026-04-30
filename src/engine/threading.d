@@ -7,13 +7,12 @@ import engine;
 
 import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
 import bone : mergeBones;
-import buffer : destroyStagingBuffer;
 import chunk : buildChunkData, finalizeChunk;
 import io : dir, fixPath;
 import jobs : applyPathResult;
-import pathfinding : pathfindWorker;
+import pathfinding : pathfindWorker, dispatchPendingPaths;
 import images : deAllocate;
-import textures: isTexture, mapTextures, transferTextureAsync, toRGBA;
+import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures;
 
 class TaskThread : Thread {
   private Tid main;
@@ -78,11 +77,7 @@ void initializeAsync(ref App app, bool preLoadASimp = false, uint numWorkers = 3
   if(app.verbose) SDL_Log(toStringz(format("Workers %s", app.concurrency.workers)));
 }
 
-void stopWorkers(ref App app) { foreach(tid; app.concurrency.workers.keys) { tid.send(false); } }
-
-void checkAsync(ref App app) {
-  if(app.trace) SDL_Log("Checking Async, jobs: %d", app.concurrency.paths.length);
-  // Submit pending textures / objects to available workers
+void dispatchPendingAssets(ref App app) {
   foreach(tid; app.concurrency.workers.keys) {
     if(app.concurrency.paths.length == 0) break;
     if(!app.concurrency.workers[tid]) {
@@ -92,6 +87,16 @@ void checkAsync(ref App app) {
       app.concurrency.paths = app.concurrency.paths.remove(idx);
     }
   }
+}
+
+void stopWorkers(ref App app) { foreach(tid; app.concurrency.workers.keys) { tid.send(false); } }
+
+void checkAsync(ref App app) {
+  if(app.trace) SDL_Log("Checking Async, jobs: %d", app.concurrency.paths.length);
+  app.dispatchPendingAssets();    // Submit pending textures / objects to available workers
+  app.checkPendingTextures();     // Check all pending texture transfers; promote to app.textures once GPU is done
+  app.dispatchPendingPaths();     // Check all open pathfinding requests
+
   receiveTimeout(dur!"msecs"(-1), (string message, Tid tid) {
     app.concurrency.workers[tid] = false;
     SDL_Log("Received back: %s", toStringz(message));
@@ -122,29 +127,5 @@ void checkAsync(ref App app) {
     app.concurrency.workers[tid] = false;
     app.applyPathResult(cast(PathResult)result);
   });
-  // Check all pending texture transfers; promote to app.textures once GPU is done
-  size_t i = 0;
-  while(i < app.textures.pending.length) {
-    auto p = app.textures.pending[i];
-    if(vkGetFenceStatus(app.device, app.textures.pending[i].cmdBuffer.fence) == VK_SUCCESS) {
-      app.destroyStagingBuffer(p.staging);
-      SDL_DestroySurface(p.texture.surface);
-      vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
-      vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
-      app.textures ~= p.texture;
-      app.textures.pending = app.textures.pending.remove(i);
-    } else { i++; }
-  }
-  // Check all open pathfinding requests
-  if(app.concurrency.paths.length == 0) { // Make sure no objects or textures need to be loaded
-    foreach(tid; app.concurrency.workers.keys) {
-      if(app.world.pendingPaths.length == 0) break;
-      if(!app.concurrency.workers[tid]) {
-        app.concurrency.workers[tid] = true;
-        tid.send(cast(immutable(WorldData))app.world.data, app.world.pendingPaths[0]);
-        app.world.pendingPaths = app.world.pendingPaths[1..$];
-      }
-    }
-  }
 }
 

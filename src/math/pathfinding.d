@@ -61,10 +61,20 @@ bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
   auto goalTile = app.findGoalTile(obj);
   if(goalTile[0] == int.min) return false;
   if(!app.pathfindTo(obj, goalTile)) return false;
-  obj.moveFrom = obj.visualPos;
-  obj.moveTo = obj.visualPos;
-  obj.moveT = 1.0f;
   return true;
+}
+
+/** Dispatch pending path finding jobs */
+void dispatchPendingPaths(ref App app) {
+  if(app.concurrency.paths.length > 0) return;
+  foreach(tid; app.concurrency.workers.keys) {
+    if(app.world.pendingPaths.length == 0) break;
+    if(!app.concurrency.workers[tid]) {
+      app.concurrency.workers[tid] = true;
+      tid.send(cast(immutable(WorldData))app.world.data, app.world.pendingPaths[0]);
+      app.world.pendingPaths = app.world.pendingPaths[1..$];
+    }
+  }
 }
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
