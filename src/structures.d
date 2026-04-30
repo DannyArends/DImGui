@@ -40,6 +40,7 @@ public import mesh : Mesh, MeshList;
 public import meta : MetaData;
 public import node : Node;
 public import particlesystem : ParticleSystem;
+public import pathfinding : PathRequest, PathResult;
 public import pdb : AtomCloud, Backbone, AminoAcidCloud;
 public import pipeline : GraphicsPipeline;
 public import quaternion : Quaternion;
