@@ -21,6 +21,7 @@ import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
 import tree : getBestTree;
+import timing : timed;
 import world : noTile;
 import jobs : tryAssign, jobQueue, miningJob, woodcuttingJob;
 
@@ -154,32 +155,47 @@ void removeGeometry(ref App app) {
 void handleEvents(ref App app) {
   if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
+  ulong t0 = SDL_GetTicks();
   while (SDL_PollEvent(&e)) {
+    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW SDL_PollEvent=%dms", SDL_GetTicks()-t0);
+
+    t0 = SDL_GetTicks();
     if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
+    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW ImGui_ImplSDL3_ProcessEvent=%dms", SDL_GetTicks()-t0);
     if(e.type == SDL_EVENT_QUIT) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
     if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.minimized = false; }
     if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.minimized = true; }
-    if(!app.gui.io.WantCaptureKeyboard) app.handleKeyEvents(e);
-    if(!app.gui.io.WantCaptureMouse) app.handleMouseEvents(e);
-    if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
+    if(!app.gui.io.WantCaptureKeyboard) app.timed!handleKeyEvents(e);
+    if(!app.gui.io.WantCaptureMouse) app.timed!handleMouseEvents(e);
+    if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e);
   }
 
   if(app.paused) return;
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
+    t0 = SDL_GetTicks();
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
-      if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]); 
+      ulong t1 = SDL_GetTicks();
+      if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]);
+      if(SDL_GetTicks()-t1 > 2) SDL_Log("SLOW onTick %s=%dms", toStringz(app.objects[i].geometry()), SDL_GetTicks()-t0);
     }
+    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW app.objects.onTick=%dms", SDL_GetTicks()-t0);
   }
 
   // Call all onFrame() handlers
   float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
+
+  t0 = SDL_GetTicks();
   app.world.settleBlocks(app.world.blocks, dt);
+  
+
+  t0 = SDL_GetTicks();
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
+  if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW onFrame=%dms", SDL_GetTicks()-t0);
 }
 
 /** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 

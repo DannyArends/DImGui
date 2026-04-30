@@ -36,6 +36,7 @@ struct WorldData {
   int chunkHeight    =  64;           /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;        /// Global world Y-offset
   TileDiff[] diffs;
+  
 
   /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
@@ -87,6 +88,51 @@ struct WorldData {
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
   @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
+
+  @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
+    return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset) / tileHeight), cast(int)(pos[2] / tileSize)];
+  }
+
+  @nogc pure TileType getTileAt(int[3] tile) const nothrow {
+    auto coord = chunkCoord(tile);
+    auto idx = tileIdx(tile);
+    foreach(d; diffs) {
+      if(d.coord == coord && d.idx == idx) return cast(TileType)d.type;
+    }
+    return getTile(tile);
+  }
+
+  @nogc pure int surfaceAt(int x, int y, int z) const nothrow {
+    while(y > 0 && getTileAt([x, y, z]) == TileType.None) y--;
+    return y;
+  }
+
+  pure bool isPassable(int[3] wc) const nothrow {
+    if(wc[1] < 0 || wc[1] >= chunkHeight) return false;
+    return getTileAt(wc) == TileType.None;
+  }
+
+  pure bool isStandable(int[3] tile) const nothrow {
+    if(tile[1] <= 0 || tile[1] >= chunkHeight) return false;
+    return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None;
+  }
+
+  pure PathNode[] getSuccessors(PathNode parent) const {
+    PathNode[] successors;
+    auto pt = worldToTile(parent.position);
+    foreach(dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
+      int nx = pt[0] + dir[0], nz = pt[2] + dir[1];
+      foreach(dy; [-1, 0, 1]) {
+        int ny = (pt[1] - 1) + dy;
+        auto tt = getTileAt([nx, ny, nz]);
+        if(tt != TileType.None && tileData[tt].traversable && isPassable([nx, ny+1, nz])) {
+          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost);
+          break;
+        }
+      }
+    }
+    return successors;
+  }
 }
 
 /** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
@@ -130,21 +176,13 @@ struct World {
     return 0;
   }
 
-  @nogc pure TileType getTileAt(int[3] tile) const nothrow {
-    auto coord = chunkCoord(tile);
-    return (coord in chunks) ? chunks[coord].tileTypes[tileIdx(tile)] : getTile(tile);
-  }
-
   /** Compute world-space position from tile coords */
   @nogc pure float[3] tileToWorld(int[3] tile) const nothrow {
     auto wp = worldPos(tile);
     return [wp[0], wp[1] + yOffset, wp[2]];
   }
   
-  @nogc pure int surfaceAt(int x, int y, int z) const nothrow {
-    while(y > 0 && getTileAt([x, y, z]) == TileType.None) y--;
-    return y;
-  }
+
 
   bool canMoveTo(float[3] pos) {
     foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
@@ -158,10 +196,6 @@ struct World {
   bool isStandable(int[3] tile) {
     if (tile[1] <= 0 || tile[1] >= chunkHeight) return false;
     return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None;
-  }
-
-  @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
-    return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset) / tileHeight), cast(int)(pos[2] / tileSize)];
   }
 
   bool isPassable(int[3] wc) const {
