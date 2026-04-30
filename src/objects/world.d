@@ -181,8 +181,6 @@ struct World {
     auto wp = worldPos(tile);
     return [wp[0], wp[1] + yOffset, wp[2]];
   }
-  
-
 
   bool canMoveTo(float[3] pos) {
     foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
@@ -190,39 +188,6 @@ struct World {
       if (!isPassable(worldToTile(p))) return(false);
     }
     return(true);
-  }
-
-  /** Can we stand on this Tile ? */
-  bool isStandable(int[3] tile) {
-    if (tile[1] <= 0 || tile[1] >= chunkHeight) return false;
-    return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None;
-  }
-
-  bool isPassable(int[3] wc) const {
-    if (wc[1] < 0 || wc[1] >= chunkHeight) return false;
-    return getTileAt(wc) == TileType.None;
-  }
-
-  /** Map required function */
-  TileType tileAt(float[3] pos) const { return getTileAt(worldToTile(pos)); }
-  bool isTile(float[3] pos) const { return tileData[tileAt(pos)].traversable; }
-  float cost(float[3] pos) const { return tileData[tileAt(pos)].cost; }
-
-  PathNode[] getSuccessors(PathNode parent) const {
-    PathNode[] successors;
-    auto pt = worldToTile(parent.position);
-    foreach (dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
-      int nx = pt[0] + dir[0], nz = pt[2] + dir[1];
-      foreach (dy; [-1, 0, 1]) {
-        int ny = (pt[1] - 1) + dy;
-        auto tt = getTileAt([nx, ny, nz]);
-        if (tt != TileType.None && tileData[tt].traversable && isPassable([nx, ny+1, nz])) {
-          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost);
-          break;
-        }
-      }
-    }
-    return successors;
   }
 }
 
