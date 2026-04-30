@@ -62,7 +62,7 @@ bool isTexture(string path){
   return(false);
 }
 
-// Convert an SDL-Surface to RGBA32 format
+/** Convert an SDL-Surface to RGBA32 format */
 void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
   SDL_Surface* adapted = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
   if (adapted) {
@@ -72,8 +72,7 @@ void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
   }
 }
 
-/** Create a 1x1 white SDL_Surface
- */
+/** Create a 1x1 white SDL_Surface */
 SDL_Surface* createDummySDLSurface() {
   SDL_Surface* surface = SDL_CreateSurface(1, 1, SDL_PIXELFORMAT_RGBA32);
   if(!surface){
@@ -191,9 +190,8 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out Stag
   // If we already had an image, view and memory, make sure to deAllocate it on shutdown
   if(texture.image){ app.mainDeletionQueue.add((){ app.deAllocate(texture); }); }
 
-  // Create an image, transition the layout
-    // Only generate mipmaps for tile textures (_base suffix)
- app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory,
+  // Create an image, transition the layout, only generate mipmaps for tile textures (_base suffix)
+  app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory,
                   VK_FORMAT_R8G8B8A8_SRGB, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
                   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.mipLevels);
@@ -209,8 +207,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out Stag
   app.registerTexture(texture);
 }
 
-/** 'Register' a texture in the ImGui DescriptorSet
- */
+/** 'Register' a texture in the ImGui DescriptorSet */
 void registerTexture(ref App app, ref Texture texture) {
   if(app.trace) SDL_Log("Registering Texture %p with ImGui", texture.view);
   texture.imID = createDescriptorSet(app.device, app.pools[Stage.IMGUI], app.layouts[Stage.IMGUI], 1)[0];

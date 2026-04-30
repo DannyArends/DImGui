@@ -97,7 +97,7 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
   return [int.min, 0, 0];
 }
 
-/** dwarfFrame */
+/** All dwarves being framed */
 void dwarfFrame(ref App app, ref Geometry obj, float dt) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
