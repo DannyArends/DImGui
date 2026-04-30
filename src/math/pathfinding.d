@@ -30,22 +30,10 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   return PathResult(req.dwarfUID, path, true);
 }
 
-void applyPathResult(ref App app, PathResult result) {
-  if(app.world.dwarves is null) return;
-  foreach(ref d; app.world.dwarves) {
-    if(d.uid != result.dwarfUID) continue;
-    if(!result.success) { if(d.jobStack.length > 0) d.jobStack[0].onFail(app, d); return; }
-    d.path = result.path;
-    d.moveFrom = d.visualPos;
-    d.moveTo = d.visualPos;
-    d.moveT = 1.0f;
-    return;
-  }
-}
-
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
 bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
+  app.world.pendingPaths = app.world.pendingPaths.filter!(r => r.dwarfUID != obj.uid).array;  // Remove any existing pending request for this dwarf
   auto req = PathRequest(obj.uid, obj.tile, goalTile);
   foreach(tid; app.concurrency.workers.keys) {
     if(!app.concurrency.workers[tid]) {

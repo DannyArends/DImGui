@@ -24,6 +24,20 @@ struct Job {
 }
 Job[] jobQueue;
 
+void applyPathResult(ref App app, PathResult result) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves) {
+    if(d.uid != result.dwarfUID) continue;
+    if(!result.success) { if(d.jobStack.length > 0) d.jobStack[0].onFail(app, d); return; }
+    d.waitingForPath = false;
+    d.path = result.path;
+    d.moveFrom = d.visualPos;
+    d.moveTo = d.visualPos;
+    d.moveT = 1.0f;
+    return;
+  }
+}
+
 /** Mining Job */
 Job miningJob(int[3] targetTile, uint retries = 3) {
   return Job("Mining", targetTile, TileType.None, [],
