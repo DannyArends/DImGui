@@ -22,7 +22,7 @@ struct PathResult {
 PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3] start = wd.tileToWorld(req.fromTile);
   float[3] goal  = wd.tileToWorld(req.goalTile);
-  auto result = performSearch!(WorldData, PathNode)(start, goal, cast(WorldData)wd);
+  auto result = performSearch!(WorldData, PathNode)(start, goal, cast(WorldData)wd, false);
   if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return PathResult(req.dwarfUID, [], false);
   float[3][] path;
   while(result.pathptr != size_t.max && !result.atGoal()) path ~= result.stepThroughPath(false);
@@ -34,7 +34,7 @@ void applyPathResult(ref App app, PathResult result) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves) {
     if(d.uid != result.dwarfUID) continue;
-    if(!result.success) { d.jobStack[0].onFail(app, d); return; }
+    if(!result.success) { if(d.jobStack.length > 0) d.jobStack[0].onFail(app, d); return; }
     d.path = result.path;
     d.moveFrom = d.visualPos;
     d.moveTo = d.visualPos;
