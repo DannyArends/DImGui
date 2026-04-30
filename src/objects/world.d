@@ -96,16 +96,11 @@ struct WorldData {
   @nogc pure TileType getTileAt(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     auto idx = tileIdx(tile);
-    foreach(d; diffs) {
-      if(d.coord == coord && d.idx == idx) return cast(TileType)d.type;
-    }
+    foreach(d; diffs) { if(d.coord == coord && d.idx == idx) return cast(TileType)d.type; }
     return getTile(tile);
   }
 
-  @nogc pure int surfaceAt(int x, int y, int z) const nothrow {
-    while(y > 0 && getTileAt([x, y, z]) == TileType.None) y--;
-    return y;
-  }
+  @nogc pure int surfaceAt(int x, int y, int z) const nothrow { while(y > 0 && getTileAt([x, y, z]) == TileType.None){ y--; } return y; }
 
   pure bool isPassable(int[3] wc) const nothrow {
     if(wc[1] < 0 || wc[1] >= chunkHeight) return false;
