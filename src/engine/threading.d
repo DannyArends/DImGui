@@ -5,7 +5,7 @@
 
 import engine;
 
-import assimp : loadOpenAsset, isOpenAsset, OpenAsset;
+import assimp : loadOpenAsset, isOpenAsset;
 import bone : mergeBones;
 import chunk : buildChunkData, finalizeChunk;
 import io : dir, fixPath;
