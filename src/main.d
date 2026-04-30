@@ -24,6 +24,7 @@ import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
 import textures : Texture;
 import threading : initializeAsync, checkAsync;
+import timing : timed;
 import validation : createDebugCallback;
 import vulkan : cleanup;
 import world : loadWorld, saveWorld;
@@ -77,15 +78,15 @@ void run(string[] args = null) {
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & render loop
-    app.checkForResize();                                         /// Check for resize
+    app.timed!checkForResize();                                         /// Check for resize
     if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue
-    app.removeGeometry();                                         /// Remove stale geometry
-    app.checkAsync();                                             /// Check ASync handlers
-    app.handleEvents();                                           /// Handle SDL / user events
+    app.timed!removeGeometry();                                         /// Remove stale geometry
+    app.timed!checkAsync();                                             /// Check ASync handlers
+    app.timed!handleEvents();                                           /// Handle SDL / user events
     app.waitForFrame();                                           /// Wait for a new frame (outside timing)
     app.time[FRAMESTART] = SDL_GetTicks();                        /// Start the clock
-    app.renderFrame();                                            /// Render frame
-    app.presentFrame();                                           /// Show frame
+    app.timed!renderFrame();                                            /// Render frame
+    app.timed!presentFrame();                                           /// Show frame
     app.time[LASTFRAME] = app.time[FRAMESTOP];                    /// Remember last time we stopped ?
     app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
   }
