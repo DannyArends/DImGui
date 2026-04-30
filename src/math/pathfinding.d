@@ -30,18 +30,31 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   return PathResult(req.dwarfUID, path, true);
 }
 
+void applyPathResult(ref App app, PathResult result) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves) {
+    if(d.uid != result.dwarfUID) continue;
+    if(!result.success) { d.jobStack[0].onFail(app, d); return; }
+    d.path = result.path;
+    d.moveFrom = d.visualPos;
+    d.moveTo = d.visualPos;
+    d.moveT = 1.0f;
+    return;
+  }
+}
+
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
 bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
-  float[3] start = app.world.tileToWorld(obj.tile);
-  float[3] goal  = app.world.tileToWorld(goalTile);
-  if(app.verbose) SDL_Log(toStringz(format("pathfindTo: %s -> %s", start, goal)));
-  auto result = performSearch!(WorldData, PathNode)(start, goal, app.world, app.verbose > 0);
-  if(app.verbose) SDL_Log(toStringz(format("Search: %s steps: %d", result.state, result.steps)));
-  if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return false;
-  obj.path = [];
-  while(result.pathptr != size_t.max && !result.atGoal()) obj.path ~= result.stepThroughPath(app.trace);
-  obj.path ~= result.pool[result.goal].position;
+  auto req = PathRequest(obj.uid, obj.tile, goalTile);
+  foreach(tid; app.concurrency.workers.keys) {
+    if(!app.concurrency.workers[tid]) {
+      app.concurrency.workers[tid] = true;
+      tid.send(cast(immutable(WorldData))app.world.data, req);
+      return true;
+    }
+  }
+  app.world.pendingPaths ~= req;
   return true;
 }
 
