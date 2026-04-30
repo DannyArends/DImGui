@@ -24,6 +24,7 @@ struct Job {
 }
 Job[] jobQueue;
 
+/** Apply pathfinding results */
 void applyPathResult(ref App app, PathResult result) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves) {
