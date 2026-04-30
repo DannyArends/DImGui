@@ -35,8 +35,7 @@ class TaskThread : Thread {
         (string path) {
           if (verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
           if (path.isTexture()) {
-            auto fp = fixPath(toStringz(path));
-            auto surface = IMG_Load(fp);
+            auto surface = IMG_Load(fixPath(toStringz(path)));
             if (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel < 4) { surface.toRGBA(verbose); }
             auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);
             main.send(texture, mytid);
