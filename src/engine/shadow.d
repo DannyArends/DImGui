@@ -10,6 +10,7 @@ import images : createImage, deAllocate, transitionImageLayout, nameImageBuffer;
 import geometry : shadow, bufferGeometries;
 import reflection : reflectShaders, createResources;
 import renderpass : beginRecording, endRecording;
+import sampler : createShadowSampler;
 import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
 import swapchain : createImageView;
 import uniforms : forEachUBO;
@@ -19,12 +20,13 @@ import frustum : aabbInFrustum, extractFrustum;
 struct ShadowMap {
   ImageBuffer[] images;
 
+  VkSampler sampler;
   Shader[] shaders;
   RenderPass renderPass;
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  uint dimension = isAndroid ? 512 : 2048;  /// Allow shadows to be disabled
+  uint dimension = isAndroid ? 512 : 4096;  /// Allow shadows to be disabled
 
   bool dirty = true;
 
@@ -40,6 +42,7 @@ struct LightUbo {
 void createShadowMap(ref App app) {
   app.createShadowMapResources();
   app.createShadowMapRenderPass();
+  app.createShadowSampler();
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
@@ -88,12 +91,19 @@ void createShadowMapRenderPass(ref App app) {
       colorAttachmentCount:    0,
       pDepthStencilAttachment: &depthRef
     }],
-    dependencies: [{
+    dependencies: [{ //  Write-after-Read
       srcSubpass:    VK_SUBPASS_EXTERNAL,
       srcStageMask:  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
       dstStageMask:  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
       srcAccessMask: VK_ACCESS_SHADER_READ_BIT,
       dstAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+    },{ // Read-after-Write
+      dstSubpass: VK_SUBPASS_EXTERNAL,
+      srcStageMask:  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+      dstStageMask:  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+      srcAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+      dstAccessMask: VK_ACCESS_SHADER_READ_BIT,
+      dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
     }],
   };
   app.shadows.renderPass.create(app, info, "Shadows", app.mainDeletionQueue);
@@ -155,8 +165,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
     cullMode: VK_CULL_MODE_NONE,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
-    depthBiasConstantFactor: 1.25f,
-    depthBiasSlopeFactor: 1.75f
+    depthBiasConstantFactor: 4.0f,
+    depthBiasSlopeFactor: 3.5f,
   };
 
   VkPipelineMultisampleStateCreateInfo multisampling = {
@@ -243,7 +253,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       auto obj = (isChunk? (cast(Chunk)app.objects[x]).tiles : app.objects[x]);
 
       if(!obj.isVisible) continue;                                         /// Skip invisible objects
-      if(cast(Tiles)obj !is null) continue;                                /// Skip tiles
+      //if(cast(Tiles)obj !is null) continue;                                /// Skip tiles
       if(obj.geometry() == "SunGeometry") continue;                        /// Skip the sun
       if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;    /// Skip non triangle objects
       app.shadows.totalShadowInstances += obj.instances.length;            /// Could be rendered

@@ -17,6 +17,7 @@ struct UniformBufferObject {
   Matrix view;
   Matrix proj;
   Matrix orientation;
+  float shadowTexelSize;
   uint nlights = 0;
   LMode lMode = LMode.LightsAndShadows;
 }
@@ -72,6 +73,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     view: app.camera.view,
     proj: app.camera.proj,
     orientation: Matrix.init,
+    shadowTexelSize: 1.0f / cast(float)app.shadows.dimension,
     nlights: cast(uint)app.lights.length,
     lMode: cast(LMode)app.lMode,
   };

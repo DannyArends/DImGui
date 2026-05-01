@@ -5,6 +5,7 @@
 
 import engine;
 
+import block : settleBlocks;
 import boundingbox : computeBoundingBox;
 import camera : move, drag, zoom, castRay, tryMove, tryDrag, tryZoom;
 import chunk : getBestTile, setTile;
@@ -12,13 +13,17 @@ import geometry : deAllocate, setColor;
 import imgui : initializeImGui, saveSettings;
 import intersection : intersects;
 import line : createLine;
+import lights : updateLightGeometries;
 import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
 import window: createOrResizeWindow;
 import ghost : getGhostTile, updateGhostTile;
 import inventory : placeTile;
-import jobs : tryAssign, jobQueue, miningJob;
+import tree : getBestTree;
+import timing : timed;
+import world : noTile;
+import jobs : tryAssign, jobQueue, miningJob, woodcuttingJob;
 
 /** Handle keyboard events */
 void handleKeyEvents(ref App app, SDL_Event e) {
@@ -26,6 +31,7 @@ void handleKeyEvents(ref App app, SDL_Event e) {
     auto symbol = e.key.key;
     if(symbol == SDLK_PAGEUP) app.tryMove([ 0.0f,  1.0f, 0.0f]);
     if(symbol == SDLK_PAGEDOWN) app.tryMove([ 0.0f, -1.0f, 0.0f]);
+    if(symbol == SDLK_P) app.paused = !app.paused;
     if(symbol == SDLK_W || symbol == SDLK_UP) app.tryMove(app.camera.forward());
     if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
@@ -103,12 +109,15 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         app.placeTile(app.inventory.ghostTile);
       } else {
         auto hits = app.getHits(ray, app.showRays);
-        if (hits.length > 0) {
+        if(hits.length > 0) {
           int[3] wc;
-          if(app.getBestTile(ray, wc)) {
-            auto job = miningJob(wc);
-            if(!app.tryAssign(job)) jobQueue ~= job; 
+          Job job;
+          if(app.getBestTree(ray, hits, wc)) {
+            job = woodcuttingJob(wc);
+          }else if(app.getBestTile(ray, wc)) {
+            job = miningJob(wc);
           }
+          if(job.name !is null && !app.tryAssign(job)) jobQueue ~= job;
         }
         foreach (ref hit; hits) {
           auto obj = app.objects[hit.idx[0]];
@@ -120,7 +129,10 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         }
       }
     }
-    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
+    if (e.button.button == SDL_BUTTON_RIGHT) {
+      app.inventory.selectedTile = TileType.None;
+      app.camera.isdrag[1] = false;
+    }
     app.updateGhostTile(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 
@@ -143,37 +155,52 @@ void removeGeometry(ref App app) {
 void handleEvents(ref App app) {
   if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
+  ulong t0 = SDL_GetTicks();
   while (SDL_PollEvent(&e)) {
+    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW SDL_PollEvent=%dms", SDL_GetTicks()-t0);
+
+    t0 = SDL_GetTicks();
     if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
+    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW ImGui_ImplSDL3_ProcessEvent=%dms", SDL_GetTicks()-t0);
     if(e.type == SDL_EVENT_QUIT) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
-    if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.isMinimized = false; }
-    if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.isMinimized = true; }
-    if(!app.gui.io.WantCaptureKeyboard) app.handleKeyEvents(e);
-    if(!app.gui.io.WantCaptureMouse) app.handleMouseEvents(e);
-    if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e);
+    if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.minimized = false; }
+    if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.minimized = true; }
+    if(!app.gui.io.WantCaptureKeyboard) app.timed!handleKeyEvents(e);
+    if(!app.gui.io.WantCaptureMouse) app.timed!handleMouseEvents(e);
+    if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e);
   }
 
-  if(app.time[FRAMESTART] - app.time[LASTTICK] > 500) {
-    //GC.collect();
+  if(app.paused) return;
+  if(app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    foreach(i; iota(app.objects.length).array.randomShuffle()) {
+    t0 = SDL_GetTicks();
+    foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
-      if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]); 
+      ulong t1 = SDL_GetTicks();
+      if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]);
+      if(SDL_GetTicks()-t1 > 2) SDL_Log("SLOW onTick %s=%dms", toStringz(app.objects[i].geometry()), SDL_GetTicks()-t0);
     }
+    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW app.objects.onTick=%dms", SDL_GetTicks()-t0);
   }
 
   // Call all onFrame() handlers
+  float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
-  float dt = (app.time[FRAMESTOP] - app.time[FRAMESTART]) / 100.0f;
+
+  t0 = SDL_GetTicks();
+  app.world.settleBlocks(app.world.blocks, dt);
+  
+
+  t0 = SDL_GetTicks();
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
+  if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW onFrame=%dms", SDL_GetTicks()-t0);
 }
 
 /** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 
- Android *requires* us to handle the application events, for now we just pauze on enter background, since we 
- need to ask for permission from the Android OS to run in the background.
-*/
+ * Android *requires* us to handle the application events, for now we just pauze on enter background, since we 
+ * need to ask for permission from the Android OS to run in the background. */
 extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
   if(!event) return(0);
   try {
@@ -195,11 +222,7 @@ extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
 }
 
 /** Immediate events handled by the application (Android filtered SDL immediate events)
-SDL_EVENT_WILL_ENTER_BACKGROUND
-SDL_EVENT_DID_ENTER_BACKGROUND
-SDL_EVENT_WILL_ENTER_FOREGROUND
-SDL_EVENT_DID_ENTER_FOREGROUND
-*/
+ * SDL_EVENT_WILL_ENTER_BACKGROUND, SDL_EVENT_DID_ENTER_BACKGROUND, SDL_EVENT_WILL_ENTER_FOREGROUND, SDL_EVENT_DID_ENTER_FOREGROUND */
 void handleApp(ref App app, const SDL_Event e) {
   if(e.type == SDL_EVENT_WILL_ENTER_BACKGROUND){
     SDL_Log("Suspending, wait on device idle & swapchain deletion queue");
@@ -222,7 +245,7 @@ void handleApp(ref App app, const SDL_Event e) {
     vkDestroySurfaceKHR(app.instance, app.surface, app.allocator); // Before destroying the Surface
     app.surface = null;
 
-    app.isMinimized = true;
+    app.minimized = true;
   }
   if(e.type == SDL_EVENT_WILL_ENTER_FOREGROUND){ SDL_Log("Resuming."); }
   if(e.type == SDL_EVENT_DID_ENTER_FOREGROUND){
@@ -231,6 +254,6 @@ void handleApp(ref App app, const SDL_Event e) {
     app.createSurface();                                          /// Create Vulkan rendering surface
     app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
     app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
-    app.isMinimized = false;
+    app.minimized = false;
   }
 }

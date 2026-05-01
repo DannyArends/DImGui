@@ -10,12 +10,12 @@ import compute : initializeCompute;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : handleEvents, sdlEventsFilter, removeGeometry;
-import frame : presentFrame, renderFrame;
+import frame : waitForFrame, presentFrame, renderFrame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
 import imgui : initializeImGui;
 import instance : createInstance;
 import scene : createScene;
-import sdl : initializeSDL, SDL_WINDOW_MINIMIZED;
+import sdl : initializeSDL;
 import shadow : createShadowMap;
 import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
 import reflection : createReflectionContext;
@@ -24,6 +24,7 @@ import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
 import textures : Texture;
 import threading : initializeAsync, checkAsync;
+import timing : timed;
 import validation : createDebugCallback;
 import vulkan : cleanup;
 import world : loadWorld, saveWorld;
@@ -76,19 +77,18 @@ void run(string[] args = null) {
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;
-  while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & rendering Loop
-    app.removeGeometry();     // Remove stale geometry
-    app.checkAsync();
-    app.handleEvents();
-
-    app.time[FRAMESTART] = SDL_GetTicks();
-    if((SDL_GetWindowFlags(app) & SDL_WINDOW_MINIMIZED) || app.isMinimized) { SDL_Delay(10); continue; }
-
-    app.checkForResize();     // Check for resize
-    app.renderFrame();        // Reder frame
-    app.presentFrame();       // Show frame
-    app.totalFramesRendered++;
-    app.time[FRAMESTOP] = SDL_GetTicks();
+  while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & render loop
+    app.timed!checkForResize();                                   /// Check for resize
+    if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue
+    app.timed!removeGeometry();                                   /// Remove stale geometry
+    app.timed!checkAsync();                                       /// Check ASync handlers
+    app.timed!handleEvents();                                     /// Handle SDL / user events
+    app.waitForFrame();                                           /// Wait for a new frame (outside timing)
+    app.time[FRAMESTART] = SDL_GetTicks();                        /// Start the clock
+    app.timed!renderFrame();                                      /// Render frame
+    app.timed!presentFrame();                                     /// Show frame
+    app.time[LASTFRAME] = app.time[FRAMESTOP];                    /// Remember last time we stopped ?
+    app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
   app.saveWorld();

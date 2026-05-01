@@ -36,8 +36,7 @@ void ensureWorldDir() {
 
 const(char)* fixPath(const(char)* path){ return toStringz(fixPath(cast(string)fromStringz(path))); }
 
-/** Read content of a file as a char[]
- */
+/** Read content of a file as a char[] */
 char[] readFile(const(char)* path, uint verbose = 0) {
   path = fixPath(path);
   SDL_IOStream* fp = null;
@@ -63,8 +62,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
   return content;
 }
 
-/** Write content of a char[] to a file
- */
+/** Write content of a char[] to a file */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   path = fixPath(path);
   version (Android) { path = toStringz(format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path))); }
@@ -156,8 +154,7 @@ version(Android) {
 
   bool exists (const(char)* path) { return(exists(cast(string)fromStringz(path))); }
 
-  /** Content of a directory
-   */
+  /** Content of a directory */
   string[] dir(const(char)* dirPath, string pattern = "*", bool shallow = true) { 
     string path = cast(string)fromStringz(fixPath(dirPath));
     auto mode = SpanMode.shallow;
@@ -166,8 +163,7 @@ version(Android) {
     return(entries);
   }
 
-  /** Helper function to determine if a path is a file
-   */
+  /** Helper function to determine if a path is a file */
   bool isfile(const(char)* filePath) {
     string path = cast(string)fromStringz(fixPath(filePath));
     try {
@@ -176,8 +172,7 @@ version(Android) {
     return(false);
   }
 
-  /** Helper function to determine if a path is a file
-   */
+  /** Helper function to determine if a path is a file */
   bool isdir(const(char)* dirPath) {
     string path = cast(string)fromStringz(fixPath(dirPath));
     try {

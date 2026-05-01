@@ -28,14 +28,15 @@ vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
 
 // Function to calculate the shadow factor
 float calculateShadow(vec4 position, uint i) {
-  vec3 projCoords = ((position.xyz / position.w) * 0.5) + 0.5;
+  vec3 projCoords = position.xyz / position.w;
+  projCoords.xy = projCoords.xy * 0.5 + 0.5;
 
   if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z < 0.0 || projCoords.z > 1.0){
     return 1.0; // Not in shadow
   }
 
   float shadowFactor = 0.0;
-  vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[i], 0));
+  vec2 texelSize = vec2(ubo.shadowTexelSize);
   int sampleCount = 2;
   float range = 1.0;
 
@@ -54,21 +55,19 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
   if (light.properties.w == 0.0) return vec3(0.0);
   float attenuation = 1.0;
   vec3 s;
-  if (light.position.w == 0.0) {
-    // Directional lighting
+  if (light.position.w == 0.0) {                          // Directional lighting
     s = normalize( light.position.xyz );
-  } else {
-    // Point lighting
+  } else {                                                // Point lighting
     s = normalize( light.position.xyz - position );
     float l = length( light.position.xyz - position );
-    attenuation = 1.0 / (light.properties[1] + pow(l, 2.0));
+    attenuation = 1.0 / (light.properties[1] + l * l);
 
     // Cone lighting
-    float lAngle = degrees(acos(dot(-s, normalize(light.direction.xyz))));
-    float outerConeAngle = light.properties[2];
-    float innerConeAngle =outerConeAngle / 2.0f;
+    float cosOuter = cos(radians(light.properties[2]));
+    float cosInner = cos(radians(light.properties[2] / 2.0f));
+    float cosAngle = dot(-s, normalize(light.direction.xyz));
+    float coneFactor = smoothstep(cosOuter, cosInner, cosAngle);
 
-    float coneFactor = smoothstep(outerConeAngle, innerConeAngle, lAngle);
     attenuation *= coneFactor;
   }
   float sDotN = max( dot( s, normal ), 0.0 );
@@ -81,7 +80,6 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
 vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
   vec3 normalFromMap = texture(textureSampler[fragNid], fragTexCoord).rgb;
   normalFromMap = normalize(normalFromMap * 2.0 - 1.0);
-  normalFromMap = vec3(normalFromMap.xy * 2.0f, normalFromMap.z);
 
   vec3 finalNormal = normalize(fragTBN * normalFromMap);
   return(finalNormal);

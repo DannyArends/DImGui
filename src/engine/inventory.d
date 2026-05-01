@@ -22,19 +22,23 @@ struct Inventory {
 
 void deriveInventory(ref App app) {
   app.inventory.items.clear();
-  if(app.world.droppedBlocks is null) return;
-  foreach(ref inst; app.world.droppedBlocks.instances) {
-    auto tt = cast(TileType)inst.meshdef[0];
-    app.inventory[tt] = app.inventory.get(tt, 0) + 1;
+  if(app.world.blocks !is null) {
+    foreach(ref inst; app.world.blocks.instances) {
+      auto tt = cast(TileType)inst.meshdef[0];
+      app.inventory[tt] = app.inventory.get(tt, 0) + 1;
+    }
   }
-  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) { app.inventory.selectedTile = TileType.None; }
+  if(app.world.dwarves !is null) {
+    foreach(ref d; app.world.dwarves) { foreach(tt; d.carrying) { app.inventory[tt] = app.inventory.get(tt, 0) + 1; } }
+  }
+  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) app.inventory.selectedTile = TileType.None;
+  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.inventory.get(j.tileType, 0) > 0).array;  // add this
 }
 
 void placeTile(ref App app, int[3] wc) {
   if(wc[0] == int.min) return;
   if(app.inventory.selectedTile == TileType.None) return;
-  int[3] freeBlock = app.findFreeBlock(app.inventory.selectedTile, [0, 0, 0]);
-  if(freeBlock[0] == int.min) return;
+  if(app.inventory.get(app.inventory.selectedTile, 0) <= 0) return;
   jobQueue ~= buildingJob(wc, app.inventory.selectedTile);
 }
 

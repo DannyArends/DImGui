@@ -8,6 +8,8 @@ public import structures;
 public import world : World;
 public import lights : LMode;
 
+import sdl : SDL_WINDOW_MINIMIZED;
+
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
@@ -43,6 +45,7 @@ struct App {
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[string] buffers;                                                         /// SSBO buffers
   UBO[string] ubos;                                                             /// UBO buffers
+  float[4][] colors = [EnumMembers!Colors];                                     /// All known colors
   Lighting lights = {[Lights.Sun, Lights.Red, Lights.Green, Lights.Blue]};      /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
@@ -116,7 +119,7 @@ struct App {
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
   float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
-  ulong[5] time = [0, 0, 0, 0, 0];                                              /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK)
+  ulong[6] time = [0, 0, 0, 0, 0, 0];                                           /// Time monitoring (START, STARTUP, FRAMESTART, FRAMESTOP, LASTTICK, LASTFRAME)
   uint totalFramesRendered = 0;                                                 /// Total frames rendered so far
 
   const(char)*[] instanceExtensions;                                            /// Enabled instance extensions
@@ -132,11 +135,13 @@ struct App {
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint verbose = 0;                                                             /// Be very verbose
   bool disco = false;                                                           /// Disco mode
+  bool paused = false;                                                          /// paused ?
+  bool minimized = false;                                                       /// minimized ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?
-  bool isMinimized = false;                                                     /// isMinimized?
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
 
   // Properties based on the SwapChain
+  @property bool isMinimized() { return minimized || (SDL_GetWindowFlags(this.window) & SDL_WINDOW_MINIMIZED) != 0; }
   @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }
   @property pure @nogc bool trace() nothrow const { return(verbose > 1); }
   @property pure @nogc uint framesInFlight() nothrow const { return(cast(uint)swapChainImages.length + 1); }
