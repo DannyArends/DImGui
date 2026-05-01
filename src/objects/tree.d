@@ -5,16 +5,17 @@
  
 import engine;
 
-import block : spawnBlock;
+import block : spawnBlock, unsettleBlocks;
 import io : readFile, writeFile;
+import intersection : intersects;
 import tileatlas : TileType;
 import matrix : translate, multiply, scale;
-import world : tileToWorld, WORLD_MAGIC;
+import world : noTile, WORLD_MAGIC;
 
 /** Shared instanced cylinder mesh for all tree trunks */
 class TrunkMesh : Cylinder {
   this() {
-    super(0.2f, 1.0f, 12);  // thin cylinder, 12 segments for perf
+    super(0.4f, 1.0f, 12);  // thin cylinder, 12 segments for perf
     instancedMesh = true;
     instances = [];
     geometry = (){ return "TrunkMesh"; };
@@ -40,6 +41,24 @@ struct Tree {
   uint hash;
 }
 
+bool getBestTree(ref App app, float[3][2] ray, Intersection[] hits, out int[3] rootTile) {
+  Intersection best;
+  foreach(ref hit; hits) {
+    auto obj = app.objects[hit.idx[0]];
+    if(obj.geometry() != "TrunkMesh" && obj.geometry() != "CanopyMesh") continue;
+    foreach(ref trees; app.world.trees.values) foreach(ref t; trees) {
+      bool match = (hit.idx[1] >= t.trunkStart && hit.idx[1] < t.trunkStart + t.height) || hit.idx[1] == t.canopyIdx;
+      if(!match) continue;
+      auto wp = app.world.tileToWorld(t.rootTile);
+      float[3] bmin = [wp[0] - 1.0f, wp[1], wp[2] - 1.0f];
+      float[3] bmax = [wp[0] + 1.0f, wp[1] + t.height + 1.5f, wp[2] + 1.0f];
+      auto i = ray.intersects(bmin, bmax, hit.idx[0], hit.idx[1]);
+      if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = t.rootTile; }
+    }
+  }
+  return best.intersects;
+}
+
 /** Generate trees for a chunk based on tile types and noise */
 Tree[] buildTreeData(immutable(WorldData) wd, int[3] coord, const TileType[] tileTypes) {
   import noise : noiseHTT;
@@ -57,7 +76,7 @@ Tree[] buildTreeData(immutable(WorldData) wd, int[3] coord, const TileType[] til
     if (n[2] < 0.65f) continue;  // sparse placement — only high noise values get trees
     uint hash = (wc[0] * 2654435761u) ^ (wc[2] * 2246822519u);
     if (hash % 6 != 0) continue;  // ~1 in 8 eligible tiles gets a tree
-    uint height = 1 + cast(uint)((n[0] + n[1]) * 2.0f);  // height 2-8, mix of both noises
+    uint height = 1 + cast(uint)((n[0] + n[1]) * 6.0f);  // height 2-8, mix of both noises
     trees ~= Tree([wc[0], wc[1]+1, wc[2]], height, 0, 0, hash);
   }
   return trees;
@@ -66,7 +85,7 @@ Tree[] buildTreeData(immutable(WorldData) wd, int[3] coord, const TileType[] til
 /** Add tree instances to shared trunk/canopy meshes, returns trees with updated indices */
 Tree[] addTreeInstances(ref App app, Tree[] trees) {
   foreach(ref t; trees) {
-    auto wp = app.tileToWorld(t.rootTile);
+    auto wp = app.world.tileToWorld(t.rootTile);
     float px = wp[0], py = wp[1], pz = wp[2];
     float th = app.world.tileHeight;
 
@@ -110,9 +129,11 @@ void fellTree(ref App app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.trees) return;
   foreach(i, ref t; app.world.trees[coord]) {
-    if(t.rootTile != [tile[0], tile[1]+1, tile[2]]) continue;
+    //if(t.rootTile != [tile[0], tile[1]+1, tile[2]]) continue;
+    if(t.rootTile != tile) continue;
     // spawn wood blocks
-    for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], tile[1], t.rootTile[2]], TileType.Wood); }
+    for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]], TileType.Wood); }
+    app.world.unsettleBlocks(app.world.blocks, t.rootTile);
     // remove from trees array
     app.world.trees[coord] = app.world.trees[coord][0..i] ~ app.world.trees[coord][i+1..$];
     app.rebuildTreeInstances();

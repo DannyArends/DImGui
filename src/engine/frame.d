@@ -15,28 +15,30 @@ import mesh : updateMeshInfo;
 import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
 import sfx : updateTracks;
 import textures : updateTextures;
+import timing : timed;
 import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
 import world : updateWorld;
 
+/** waitForFrame */
+void waitForFrame(ref App app) {
+  if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
+  if(app.hasCompute) {
+    enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, ulong.max));
+    enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
+  }
+  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
+  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
+  app.bufferDeletionQueue.flush();
+}
+
 /** Main Frame rendering loop a 3D Frame:
- * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui
- */
+ * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui */
 void renderFrame(ref App app) {
   bool shadowsThisFrame = app.lMode == LMode.LightsAndShadows;
   if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
   VkSemaphore imageAcquired = app.sync[app.syncIndex].imageAcquired;
-
-  if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
-  if (app.hasCompute) {
-    enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, ulong.max));
-    enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
-  }
-
-  enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
-  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
-  app.bufferDeletionQueue.flush(); // Flush the Queue
 
   if(app.trace) SDL_Log("Phase 1: Aquire the image");
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
@@ -48,16 +50,15 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
-  app.updateLightGeometries();
-  app.updateTracks();                     /// Check for sound effects that have finished
-  app.updateWorld(app.camera.lookat);     /// Check for updates to the world
-  app.updateTextures();                   /// If a texture was loaded, update it
-  app.updateMeshInfo();      /// Check for Mesh Information change
-  app.updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
-  app.updateDisco();                      /// Update when disco mode 🕺 🪩 💃
-  if(app.hasCompute) app.updateComputeUBO(app.syncIndex);
-  app.updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
-  app.updateRenderUBO(app.shaders, app.syncIndex);
+  app.timed!updateTracks();                     /// Check for sound effects that have finished
+  app.timed!updateWorld(app.camera.lookat);     /// Check for updates to the world
+  app.timed!updateTextures();                   /// If a texture was loaded, update it
+  app.timed!updateMeshInfo();                   /// Check for Mesh Information change
+  app.timed!updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
+  app.timed!updateDisco();                      /// Update when disco mode 🕺 🪩 💃
+  if(app.hasCompute) app.timed!updateComputeUBO(app.syncIndex);
+  app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
+  app.timed!updateRenderUBO(app.shaders, app.syncIndex);
 
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
@@ -66,7 +67,7 @@ void renderFrame(ref App app) {
     if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
     VkCommandBuffer[] computeCommandBuffers = [];
     foreach(ref shader; app.compute.shaders){
-      app.recordComputeCommandBuffer(shader, app.syncIndex);
+      app.timed!recordComputeCommandBuffer(shader, app.syncIndex);
       computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
     }
 
@@ -83,16 +84,16 @@ void renderFrame(ref App app) {
 
   // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
-  if(shadowsThisFrame && app.shadows.dirty) {
-    app.recordShadowCommandBuffer(app.syncIndex);
-    app.shadows.dirty = false;
+  if(shadowsThisFrame) {
+    app.timed!updateLightGeometries();
+    app.timed!recordShadowCommandBuffer(app.syncIndex);
   }else{ shadowsThisFrame = false; }
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
-  app.recordSceneCommandBuffer(app.shaders, app.syncIndex);
-  app.recordPostCommandBuffer(app.syncIndex);
-  app.recordImGuiCommandBuffer(app.syncIndex);
+  app.timed!recordSceneCommandBuffer(app.shaders, app.syncIndex);
+  app.timed!recordPostCommandBuffer(app.syncIndex);
+  app.timed!recordImGuiCommandBuffer(app.syncIndex);
 
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers = [];
@@ -126,6 +127,7 @@ void renderFrame(ref App app) {
   //SDL_Log("vkQueueSubmit: frame=%d sync=%d frameIndex=%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
   enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
   if(app.trace) SDL_Log("Done renderFrame: %d", app.syncIndex);
+  app.totalFramesRendered++;
 }
 
 void presentFrame(ref App app) {

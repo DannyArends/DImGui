@@ -27,6 +27,7 @@ struct Light {
   @property @nogc pure float angle() nothrow { return properties[2]; }
   @property @nogc pure void enabled(bool v) nothrow { properties[3] = v?1.0f:0.0f; }
   @property @nogc pure bool enabled() nothrow { return(properties.w == 1.0f); }
+  @property @nogc pure bool directional() nothrow { return(position.w == 0.0f); }
   @property @nogc pure float pitch() nothrow { return(degree(asin(-direction.xyz.normalize()[1]))); }
   @property @nogc pure float yaw() nothrow { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
 }
@@ -48,14 +49,17 @@ struct Lighting {
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(const World world, ref Light light, bool directional = false, float nearPlane = 0.1f, float farPlane = 500.0f) nothrow {
+@nogc void computeLightSpace(const World world, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f, uint shadowDimension = 2048) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
-  float[3] upVector = [0.0f, 1.0f, 0.0f];
-  float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
-  float[3] lightEye = worldCenter.vSub(lightDir.vMul(farPlane * 0.5f));
+  float[3] upVector = abs(lightDir[1]) < 0.99f ? [0.0f, 1.0f, 0.0f] : [0.0f, 0.0f, 1.0f];
 
-  Matrix lightView = lookAt(lightEye, worldCenter, upVector);
-  Matrix lightProjection = directional
+  float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
+  float[3] lightEye = light.directional ? worldCenter.vSub(lightDir.vMul(farPlane * 0.5f)) : light.position.xyz;
+  float[3] lookTarget = light.directional ? worldCenter : light.position.xyz.vAdd(lightDir);
+
+  Matrix lightView = lookAt(lightEye, lookTarget, upVector);
+
+  Matrix lightProjection = light.directional
     ? orthogonal(-world.radius, world.radius, -world.radius, world.radius, -world.height, farPlane)
     : perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
 
@@ -63,7 +67,9 @@ struct Lighting {
 }
 
 /** Update light geometries for rendering */
-void updateLightGeometries(ref App app) {
+void updateLightGeometries(ref App app, float minsPerTick = 0.005f) {
+  app.lights.sunTime = fmod(app.lights.sunTime + (minsPerTick / 60.0f), 24.0f);
+  app.updateSun();
   if(!app.showLights) return;
   int l = 1;
   foreach(o; app.objects) {
@@ -84,7 +90,7 @@ void updateLightGeometries(ref App app) {
 @nogc pure float sunAzimuth(float sunTime, float bearing = 0.0f) nothrow { return (sunTime / 24.0f) * 360.0f + bearing;}
 
 /** Compute Elevation of the sun */
-@nogc pure float sunElevation(float sunTime, float sunriseH = 6.0f, float sunsetH = 20.0f) nothrow {
+@nogc pure float sunElevation(float sunTime, float sunriseH = 4.0f, float sunsetH = 22.0f) nothrow {
   float dayFrac = (sunTime - sunriseH) / (sunsetH - sunriseH);
   return (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
 }
@@ -145,7 +151,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
-  foreach(i, ref light; app.lights) { app.world.computeLightSpace(light, i == 0); }
+  foreach(i, ref light; app.lights) { app.world.computeLightSpace(light, app.camera.nearfar[0], app.camera.nearfar[1], app.shadows.dimension); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 

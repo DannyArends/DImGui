@@ -12,8 +12,7 @@ import images : createImage, deAllocate, imageSize;
 import io : fixPath;
 import swapchain : createImageView;
 
-/** Glyph stores SDL2_TTF glyph data
- */
+/** Glyph stores SDL2_TTF glyph data */
 struct Glyph {
   int minx;
   int maxx;
@@ -27,8 +26,7 @@ struct Glyph {
   @property @nogc int gY() nothrow { return(maxy - miny); }
 }
 
-/** The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas
- */
+/** The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas */
 struct GlyphAtlas {
   string path;          /// Path of TTF file
   TTF_Font* ttf;        /// Pointer to the loaded TTF_Font

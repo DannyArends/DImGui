@@ -107,27 +107,11 @@ T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
 /** T[4] math pass through vectorized functions for +,-,*,^
  * vAdd: a + v(1) | v(1) + v(2)
  * vMul, vDiv, vPow: b * v(1), b / v(1), v(1) * v(1) */
-@nogc pure T[4] vAdd(T)(const T[4] v1, const T[4] v2) nothrow {
-  T[4] vAdd = v1[] + v2[]; return(vAdd);
-}
-@nogc pure T[4] vAdd(T)(const T[4] v1, const T a) nothrow {
-  T[4] vAdd = v1[] + a; return(vAdd);
-}
-@nogc pure T[4] vSub(T)(const T[4] v1, const T[4] v2) nothrow {
-  T[4] vSub = v1[] - v2[]; return(vSub);
-}
-@nogc pure T[4] negate(T)(ref T[4] v) nothrow {
-  v[] = -v[]; return(v);
-}
-@nogc pure T[4] vMul(T)(const T[4] v1, const T[4] v2) nothrow {
-  T[4] vMul = v1[] * v2[]; return(vMul);
-}
-@nogc pure T[4] vMul(T)(const T[4] v1, const T b) nothrow {
-  T[4] vMul = v1[] * b; return(vMul);
-}
-@nogc pure T[4] vDiv(T)(const T[4] v1, const T b) nothrow {
-  T[4] vDiv = v1[] / b; return(vDiv);
-}
-@nogc pure T[4] vPow(T)(const T[4] v1) nothrow {
-  T[4] vPow = v1[] * v1[]; return(vPow);
-}
+@nogc pure T[4] vAdd(T)(const T[4] v1, const T[4] v2) nothrow { T[4] vAdd = v1[] + v2[]; return(vAdd); }
+@nogc pure T[4] vAdd(T)(const T[4] v1, const T a) nothrow { T[4] vAdd = v1[] + a; return(vAdd); }
+@nogc pure T[4] vSub(T)(const T[4] v1, const T[4] v2) nothrow { T[4] vSub = v1[] - v2[]; return(vSub); }
+@nogc pure T[4] negate(T)(ref T[4] v) nothrow { v[] = -v[]; return(v); }
+@nogc pure T[4] vMul(T)(const T[4] v1, const T[4] v2) nothrow { T[4] vMul = v1[] * v2[]; return(vMul); }
+@nogc pure T[4] vMul(T)(const T[4] v1, const T b) nothrow { T[4] vMul = v1[] * b; return(vMul); }
+@nogc pure T[4] vDiv(T)(const T[4] v1, const T b) nothrow { T[4] vDiv = v1[] / b; return(vDiv); }
+@nogc pure T[4] vPow(T)(const T[4] v1) nothrow { T[4] vPow = v1[] * v1[]; return(vPow); }

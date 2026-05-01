@@ -22,7 +22,7 @@ struct Search(M, N) {
   SearchState state = SearchState.NOT_INITIALISED;          /// Astar SearchState
   size_t steps = 0;                                         /// search steps taken
   size_t path = 0;                                          /// step in current path
-  size_t maxsteps = 500;                                    /// maximum number of search steps
+  size_t maxsteps = 1500;                                   /// maximum number of search steps
   bool cancel = false;                                      /// cancels an active search
 }
 
@@ -119,8 +119,8 @@ bool atGoal(S)(const S search) {
 }
 
 /** Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
-Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], float[3] goal = [-3.0f, 2.0f, -3.2f], M map = World(), bool verbose = true) {
-  Search!(World, PathNode) search;
+Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], float[3] goal = [-3.0f, 2.0f, -3.2f], M map, bool verbose = true) {
+  Search!(M, PathNode) search;
   PathNode s = PathNode(position: start);
   PathNode g = PathNode(position: goal);
   search.setStartAndGoalStates(map, s, g);

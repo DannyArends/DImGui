@@ -19,7 +19,7 @@ Plane[6] extractFrustum(const Matrix vp) @nogc pure nothrow {
     p[1][i] = vp[i*4 + 3] - vp[i*4 + 0];  // right:  row3 - row0
     p[2][i] = vp[i*4 + 3] + vp[i*4 + 1];  // bottom: row3 + row1
     p[3][i] = vp[i*4 + 3] - vp[i*4 + 1];  // top:    row3 - row1
-    p[4][i] = vp[i*4 + 3] + vp[i*4 + 2];  // near:   row3 + row2
+    p[4][i] = vp[i*4 + 2];                // near:   row2
     p[5][i] = vp[i*4 + 3] - vp[i*4 + 2];  // far:    row3 - row2
   }
   return p;

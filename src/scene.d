@@ -12,7 +12,33 @@ import lights : updateSun;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
-import dwarf : spawnDwarf, randomDwarfName;
+import dwarf : spawnDwarf, loadDwarfs, randomDwarfName;
+
+/*
+void createScene(ref App app){
+  app.updateSun();
+
+  app.inventory.ghostCube = new GhostCube([app.world.tileSize, app.world.tileHeight]);
+  app.objects ~= app.inventory.ghostCube;
+
+  // Ground plane
+  app.objects ~= new Square();
+  app.objects[$-1].computeTangents();
+  app.objects[$-1].position([0.0f, 0.0f, 0.0f]);
+  app.objects[$-1].scale([20.0f, 20.0f, 20.0f]);
+
+  // Cube to cast/receive shadows
+  app.objects ~= new Cube(color: [1.0f, 1.0f, 0.0f, 1.0f]);
+  app.objects[$-1].computeTangents();
+  app.objects[$-1].position([0.0f, 1.0f, 0.0f]);
+
+  // Enable red point light
+  app.lights[2].enabled = true;
+  app.lights[2].position  = [0.0f, 10.0f, 0.0f, 1.0f];
+  app.lights[2].direction = [-0.1f, -1.0f, 0.1f, 0.0f];
+
+  app.lMode = LMode.LightsAndShadows;
+} */
 
 /** Create a scene for rendering */
 void createScene(ref App app){
@@ -24,7 +50,7 @@ void createScene(ref App app){
   app.objects ~= app.inventory.ghostCube;
 
   SDL_Log("createScene: The 8 Dwarves of 7");
-  for(int x = 0; x <= 7; x++) { app.spawnDwarf(randomDwarfName()); }
+  if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(randomDwarfName()); }
 
   /*
   SDL_Log("createScene: Add a Square");
@@ -43,10 +69,6 @@ void createScene(ref App app){
       app.objects[($-1)].instances ~= Instance(matrix: instance);
     }
   }
-
-
-
-
 
   SDL_Log("createScene: Add a Cube");
   app.objects ~= new Cube(color : [1.0f, 1.0f, 0.0f, 1.0f]);
@@ -131,7 +153,6 @@ void createScene(ref App app){
     SDL_Log("createScene: Add ParticleSystem");
     app.objects ~= app.compute.system;
   }
-  
   */
   SDL_Log("createScene: Finished");
-}
+} 

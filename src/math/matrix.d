@@ -7,8 +7,7 @@ import engine;
 import vector : dot, sum, x, y, z, magnitude, xyz, vMul, vSub, cross, normalize;
 import quaternion : xyzw, vMul;
 
-/** Matrix is a [4x4] 'structure' stored as float[16] (defaults to identity matrix).
- */
+/** Matrix is a [4x4] 'structure' stored as float[16] (defaults to identity matrix). */
 struct Matrix {
     float[16] data = [
       1.0f, 0.0f, 0.0f, 0.0f,
@@ -18,8 +17,7 @@ struct Matrix {
   alias data this;
 }
 
-/** Convert from row-major aiMatrix to our column-major Matrix type
- */
+/** Convert from row-major aiMatrix to our column-major Matrix type */
 Matrix toMatrix(aiMatrix4x4 m){
   float[16] myMatrixArray = [
     m.a1, m.b1, m.c1, m.d1,
@@ -161,8 +159,8 @@ float[3] scale(const Matrix m) {
   float tanHalfFovy = tan(radian(fovy) / 2.0f);
   float x  =  1.0f / (aspectRatio * tanHalfFovy);
   float y  = -1.0f / tanHalfFovy;
-  float A  = -(far + near) / (far - near);
-  float B  = -2.0f * far * near / (far - near);
+  float A  = -far / (far - near); 
+  float B  = -far * near / (far - near);
   return(Matrix([
         x,    0.0f,  0.0f,  0.0f,
         0.0f,    y,  0.0f,  0.0f,
