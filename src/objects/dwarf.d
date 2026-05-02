@@ -124,7 +124,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
 void tickDwarf(ref App app, ref Dwarf d) {
   if(!d.hasGoal) {
     if(d.jobStack.length > 0) {
-      if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
+      if(d.jobStack[0].targetTile == noTile || !app.repathTo(d, d.jobStack[0].targetTile)) { d.jobStack[0].onFail(app, d); }
     } else {
       app.claimNextJob(d);
       if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
