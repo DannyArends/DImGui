@@ -7,6 +7,7 @@ import engine;
 
 import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
+import jobs : jobQueue;
 import noise : noiseHTT;
 import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
@@ -36,7 +37,7 @@ struct WorldData {
   int chunkHeight    =  64;           /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;        /// Global world Y-offset
   TileDiff[] diffs;
-  
+  float[int[3]] tileCostModifiers;
 
   /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
@@ -126,8 +127,10 @@ struct WorldData {
       foreach(dy; [-1, 0, 1]) {
         int ny = (pt[1] - 1) + dy;
         auto tt = getTileAt([nx, ny, nz]);
-        if(tt != TileType.None && tileData[tt].traversable && isPassable([nx, ny+1, nz])) {
-          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost);
+        int[3] standTile = [nx, ny+1, nz];
+        if(tt != TileType.None && tileData[tt].traversable && isPassable(standTile)) {
+          float modifier = standTile in tileCostModifiers ? tileCostModifiers[standTile] : 0.0f;
+          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost + modifier);
           break;
         }
       }
@@ -258,6 +261,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
   }
   app.world.pendingPaths = [];
+  foreach(ref j; jobQueue) j.failedBy = [];
 }
 
 /** Dispatch a chunk build job to the next available worker thread */

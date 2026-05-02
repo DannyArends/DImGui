@@ -146,7 +146,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 
     if(app.camera.isdrag[1]) { app.tryDrag(e.motion.xrel, e.motion.yrel); }
     app.updateGhostTile(ray);
-    if(app.world.inventory.isDragging && app.world.inventory.ghost.tile != noTile) {
+    if(app.world.inventory.isDragging && app.world.inventory.ghost.tile != noTile && app.world.inventory.dragPreview.length > 0) {
       app.computeDragPreview(app.world.inventory.dragPreview[0], app.world.inventory.ghost.tile);
       app.syncBuildGhosts();
     }

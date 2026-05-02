@@ -84,6 +84,8 @@ void syncBuildGhosts(ref App app) {
     app.world.buildingGhosts.instances ~= inst;
   }
 
+  app.world.data.tileCostModifiers.clear();
+  foreach(ref j; jobQueue) { if(j.name == "Building") app.world.data.tileCostModifiers[j.targetTile] = 10.0f; }
   foreach(ref j; jobQueue) { if(j.name == "Building") addInstance(j.targetTile, committed); }
   if(app.world.dwarves !is null) {
     foreach(ref d; app.world.dwarves) {

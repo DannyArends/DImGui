@@ -138,12 +138,64 @@ Job holdItemJob(TileType tileType) {
     }
   );
 }
+/** Move to a free neighbouring tile and drops a carried block */
+Job dropBlockJob(int[3] fromTile, TileType tt) {
+  return Job("DropBlock", fromTile, tt, [],
+    onClaim: (ref App app, ref Dwarf d, ref Job j) {
+      foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
+        if(app.world.isStandable(n)) { j.targetTile = n; return; }
+      }
+      d.jobStack = d.jobStack[1..$];  // no free neighbour, skip
+    },
+    onArrive: (ref App app, ref Dwarf d) {
+      foreach(i, tt; d.carrying) {
+        if(tt == d.jobStack[0].tileType) { d.drop(app, i); break; }
+      }
+      d.jobStack = d.jobStack[1..$];
+      d.clearGoal();
+    },
+    onFail: (ref App app, ref Dwarf d) {
+      d.jobStack = d.jobStack[1..$];
+      d.clearGoal();
+    }
+  );
+}
+
+/** Clean the worksite (generates a pickup job prereq) */
+Job cleanWorksiteJob(int[3] targetTile) {
+  return Job("CleanWorksite", targetTile, TileType.None, [],
+    onClaim: (ref App app, ref Dwarf d, ref Job j) {
+      foreach(i, tile; app.world.blocks.tiles) {
+        if(tile == j.targetTile) { j.tileType = cast(TileType)app.world.blocks.instances[i].meshdef[0]; return; }
+      }
+      j.targetTile = noTile;
+    },
+    onArrive: (ref App app, ref Dwarf d) {
+      if(!d.pickup(d.jobStack[0].tileType)) {
+        d.jobStack = [dropBlockJob(d.tile, d.carrying[0])] ~ d.jobStack;
+      } else {
+        app.doPickup(d);
+        d.jobStack = d.jobStack[1..$];
+        d.clearGoal();
+      }
+    },
+    onFail: (ref App app, ref Dwarf d) {
+      d.jobStack = d.jobStack[1..$];  // skip, can't clean
+      d.clearGoal();
+    }
+  );
+}
 
 /** Building Job (generates a pickup job prereq) */
 Job buildingJob(int[3] targetTile, TileType tileType) {
-  return Job("Building", targetTile, tileType, [holdItemJob(tileType)],
+  return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), holdItemJob(tileType)],
     onArrive: (ref App app, ref Dwarf d) {
       if(!d.use(d.jobStack[0].tileType)) { d.jobStack[0].onFail(app, d); return; }
+      if(app.world.dwarves !is null) { // Evict any dwarf standing on the target tile
+        foreach(ref other; app.world.dwarves.dwarves) {
+          if(other.tile == d.jobStack[0].targetTile) { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
+        }
+      }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       app.deriveInventory();
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
