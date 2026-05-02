@@ -37,7 +37,7 @@ struct WorldData {
   int chunkHeight    =  64;           /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;        /// Global world Y-offset
   TileDiff[] diffs;
-  float[int[3]] tileCostModifiers;
+  int[3][] ghostTiles;
 
   /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
@@ -116,7 +116,8 @@ struct WorldData {
 
   pure bool isStandable(int[3] tile) const nothrow {
     if(tile[1] <= 0 || tile[1] >= chunkHeight) return false;
-    return(getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable);
+    if(ghostTiles.canFind(tile)) return false;
+    return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable;
   }
 
   pure PathNode[] getSuccessors(PathNode parent) const {
@@ -129,7 +130,7 @@ struct WorldData {
         auto tt = getTileAt([nx, ny, nz]);
         int[3] standTile = [nx, ny+1, nz];
         if(tt != TileType.None && tileData[tt].traversable && isPassable(standTile)) {
-          float modifier = standTile in tileCostModifiers ? tileCostModifiers[standTile] : 0.0f;
+          float modifier = ghostTiles.canFind(standTile) ? 1000.0f : 0.0f;
           successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost + modifier);
           break;
         }
