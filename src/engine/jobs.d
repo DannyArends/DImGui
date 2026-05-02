@@ -57,6 +57,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
         app.setTile(d.jobStack[0].targetTile);
         app.fellTree(d.jobStack[0].targetTile.tileAbove);
         if(tt != TileType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
+        app.deriveInventory();
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
         d.jobStack = d.jobStack[1..$];
         d.clearGoal();
@@ -100,8 +101,13 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
 }
 
 Job moveAwayJob(int[3] from) {
-  int[3] target = [from[0] + uniform(-3, 3), from[1], from[2] + uniform(-3, 3)];
-  return Job("MoveAway", target, TileType.None, [],
+  return Job("MoveAway", from, TileType.None, [],
+    onClaim: (ref App app, ref Dwarf d, ref Job j) {
+      foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
+        if(app.world.isStandable(n)) { j.targetTile = n; return; }
+      }
+      j.targetTile = noTile;  // nowhere to go, skip
+    },
     onArrive: (ref App app, ref Dwarf d) {
       d.jobStack = d.jobStack[1..$];
       d.clearGoal();
@@ -196,11 +202,11 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
         }
       }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
-      app.deriveInventory();
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       d.jobStack = d.jobStack[1..$];
       d.clearGoal();
       app.syncBuildGhosts();
+      app.deriveInventory();
     },
     onFail: (ref App app, ref Dwarf d) {
       if(app.verbose) SDL_Log(toStringz(format("[Job] %s FAILED Building %s at %s, requeueing", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
@@ -238,21 +244,16 @@ void doPickup(ref App app, ref Dwarf d) {
   auto db = app.world.blocks;
   foreach(i, tile; db.tiles) {
     if(tile != d.jobStack[0].targetTile) continue;
-    auto tt = cast(TileType)db.instances[i].meshdef[0];
-    if(app.verbose) SDL_Log(toStringz(format("[Job] %s picking up %s at %s", d.name, tt, tile)));
-    if(d.pickup(tt)) {
-      db.tiles     = db.tiles[0..i] ~ db.tiles[i+1..$];
-      db.instances = db.instances[0..i] ~ db.instances[i+1..$];
-      db.falling   = db.falling.filter!(f => f.idx != i).array;
-      foreach(ref f; db.falling) if(f.idx > i) f.idx--;
-      db.buffers[INSTANCE] = false;
-      app.deriveInventory();
-    }
+    if(!d.pickup(cast(TileType)db.instances[i].meshdef[0])) { d.jobStack[0].onFail(app, d); return; }
+    db.tiles     = db.tiles[0..i] ~ db.tiles[i+1..$];
+    db.instances = db.instances[0..i] ~ db.instances[i+1..$];
+    db.falling   = db.falling.filter!(f => f.idx != i).array;
+    foreach(ref f; db.falling) if(f.idx > i) f.idx--;
+    db.buffers[INSTANCE] = false;
     d.jobStack = d.jobStack[1..$];
     d.clearGoal();
     return;
   }
-  if(app.verbose) SDL_Log(toStringz(format("[Job] %s block gone at %s, requeueing parent", d.name, d.jobStack[0].targetTile)));
   if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
   d.jobStack = [];
   d.clearGoal();
@@ -299,12 +300,13 @@ void claimNextJob(ref App app, ref Dwarf d) {
   foreach(i, ref job; jobQueue) {
     if(job.failedBy.canFind(d.uid)) continue;
     if(job.targetTile == noTile) continue;
+    if(job.name == "Building" && app.world.inventory.onFloor.get(job.tileType, 0) <= 0 && !d.carrying.canFind(job.tileType)) continue;
     float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
   if(bestIdx == -1) return;
   auto job = jobQueue[bestIdx];
   jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
-  app.dispatchJob(d, job);
+  if(app.dispatchJob(d, job)) app.deriveInventory();
 }
 
