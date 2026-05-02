@@ -15,55 +15,50 @@ import jobs : jobQueue, buildingJob;
 struct Inventory {
   GhostCube ghost;
   alias ghost this;
-  int[TileType] onFloor;
-  int[TileType] carried;
   int[TileType] queued;
   bool isDragging = false;
   int[3][] dragPreview;
 
-  int get(TileType tt, int def = 0) { return max(0, onFloor.get(tt, def) + carried.get(tt, def) - queued.get(tt, def)); }
-  int total(TileType tt) const { return onFloor.get(tt, 0) + carried.get(tt, 0); }
-  void clear() { onFloor.clear(); carried.clear(); queued.clear(); }
-  void update(Blocks blocks, Dwarves dwarves, Job[] jobs) {
-    clear();
-    if(blocks !is null) {
-      foreach(ref b; blocks.blocks) {
-        if(b.tile == noTile || b.tile == builtTile) continue;
-        onFloor[b.type] = onFloor.get(b.type, 0) + 1;
-      }
-    }
-    if(dwarves !is null) {
-      foreach(ref d; dwarves) { foreach(id; d.carrying) { bool found = false;
-        foreach(ref b; blocks.blocks) { if(b.id == id) { carried[b.type] = carried.get(b.type, 0) + 1; found = true; break; } }
-        if(!found) SDL_Log("WARNING: block id=%d not found in registry!", id);
-      } }
-    }
-    foreach(ref j; jobs) { if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1; }
+  int onFloor(TileType tt, Blocks blocks) const {
+    if(blocks is null) return 0;
+    return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
   }
-  string toString(TileType tt) const {
-    return format("%s | Floor:%d Carried:%d Queued:%d", tileData[tt].name, onFloor.get(tt, 0), carried.get(tt, 0), queued.get(tt, 0));
+  int carried(TileType tt, Blocks blocks) const {
+    if(blocks is null) return 0;
+    return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile == noTile);
+  }
+  int built(TileType tt, Blocks blocks) const {
+    if(blocks is null) return 0;
+    return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile == builtTile);
+  }
+  int get(TileType tt, Blocks blocks) const { return max(0, onFloor(tt, blocks) + carried(tt, blocks) - queued.get(tt, 0)); }
+  int total(TileType tt, Blocks blocks) const { return onFloor(tt, blocks) + carried(tt, blocks); }
+  string toString(TileType tt, Blocks blocks) const {
+    return format("%s | Available:%d (Floor:%d Carried:%d Queued:%d Built:%d)",
+      tileData[tt].name, get(tt, blocks), onFloor(tt, blocks), carried(tt, blocks), queued.get(tt, 0), built(tt, blocks));
   }
 }
 
 void deriveInventory(ref App app) {
-  app.world.inventory.update(app.world.blocks, app.world.dwarves, jobQueue);
+  app.world.inventory.queued.clear();
+  foreach(ref j; jobQueue) { if(j.name == "Building") app.world.inventory.queued[j.tileType] = app.world.inventory.queued.get(j.tileType, 0) + 1; }
   auto prevLen = jobQueue.length;
-  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileType) > 0).array;
-  if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) app.world.inventory.ghost.type = TileType.None;
+  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileType, app.world.blocks) > 0).array;
+  if(app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks) <= 0) app.world.inventory.ghost.type = TileType.None;
   if(jobQueue.length != prevLen) app.syncBuildGhosts();
 }
 
 void placeTile(ref App app, int[3] wc) {
   if(wc == noTile) return;
   if(app.world.inventory.ghost.type == TileType.None) return;
-  if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) return;
+  if(app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks) <= 0) return;
   jobQueue ~= buildingJob(wc, app.world.inventory.ghost.type);
   app.syncBuildGhosts();
   app.deriveInventory();
 }
 
 void computeDragPreview(ref App app, int[3] from, int[3] to) {
-  int available = app.world.inventory.get(app.world.inventory.ghost.type, 0);
+  int available = app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks);
   int dx = abs(to[0] - from[0]);
   int dz = abs(to[2] - from[2]);
   app.world.inventory.dragPreview = [];
