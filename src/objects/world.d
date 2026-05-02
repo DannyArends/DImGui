@@ -200,9 +200,13 @@ void loadWorld(ref App app) {
 
   app.world.trunk = new TrunkMesh();
   app.world.canopy = new CanopyMesh();
+  app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight]);
+  app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
   app.objects ~= app.world.trunk;
   app.objects ~= app.world.canopy;
   app.objects[($-1)].computeTangents();
+  app.objects ~= app.world.buildingGhosts;
+  app.objects ~= app.world.inventory.ghost;
 
   auto raw = readFile(app.world.worldPath());
   if(raw.length < 8) return;
@@ -215,10 +219,6 @@ void loadWorld(ref App app) {
   SDL_Log("loadWorld: Trees");
   app.loadTrees();
   SDL_Log("loadWorld: Ghost Cube");
-  app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
-  app.objects ~= app.world.inventory.ghost;
-  app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight]);
-  app.objects ~= app.world.buildingGhosts;
   app.deriveInventory();
 }
 
