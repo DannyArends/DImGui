@@ -146,6 +146,7 @@ struct World {
   Tree[][int[3]] trees;                                     /// Trees per chunk coord
   Tree[][int[3]] pendingTrees;                              /// Trees generated async
   Blocks blocks;                                            /// Blocks
+  Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
@@ -167,8 +168,8 @@ struct World {
     SDL_RemovePath(worldPath());
     SDL_RemovePath(blocksPath());
     data.diffs = [];
-    app.inventory.items.clear();
-    app.inventory.selectedTile = TileType.None;
+    app.world.inventory.items.clear();
+    app.world.inventory.ghost.type = TileType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
     clear();
   }
@@ -207,7 +208,11 @@ void loadWorld(ref App app) {
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
   app.loadBlocks();
+  SDL_Log("loadWorld: Trees");
   app.loadTrees();
+  SDL_Log("loadWorld: Ghost Cube");
+  app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
+  app.objects ~= app.world.inventory.ghost;
   app.deriveInventory();
 }
 
@@ -263,7 +268,6 @@ void dispatchWorker(ref App app, int[3] coord){
     }
   }
 }
-
 
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
 void updateWorld(ref App app, float[3] lookat) {
