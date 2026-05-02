@@ -162,6 +162,7 @@ void handleBlocking(ref App app, ref Dwarf d) {
     return;
   }
   d.waitingSince = 0;  // no longer blocked
+  if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
 }
 
 /** dwarfTick, ticks all dwarves in random order */
