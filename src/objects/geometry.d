@@ -80,6 +80,7 @@ class Geometry {
   bool isSelectable = true;                         /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
+  bool castShadow = true;                           /// Boolean flag
 
   bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow {

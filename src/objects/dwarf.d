@@ -12,7 +12,7 @@ import vector : euclidean;
 import tileatlas : tileData;
 import inventory : deriveInventory;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
-import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob;
+import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob, moveAwayJob;
 
 uint nextDwarfUID = 1;
 
@@ -55,7 +55,6 @@ class Dwarves : Cylinder {
   }
 }
 
-
 struct Dwarf {
   DwarfData data;                           /// Data saved between sessions
   alias data this;
@@ -63,14 +62,16 @@ struct Dwarf {
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
   float miningProgress = 0.0f;              /// Mining progress
-  uint[2] idleTicks = [0, 18];              /// Idle ticks and Patience / Wanderlust
+  uint[2] idleTicks = [0, 180];             /// Idle ticks and Patience / Wanderlust
   Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
 
   float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
-  bool waitingForPath = false;
+  bool waitingForPath = false;              /// Waiting for ASync path ?
+
+  uint waitingSince = 0;                    /// Timestamp when waiting for another dwarf to move
 
   @property @nogc bool hasGoal() nothrow { return targetTile != noTile; }
   @property @nogc bool isIdle() nothrow { return !hasGoal && jobStack.length == 0; }
@@ -140,9 +141,27 @@ void tickDwarf(ref App app, ref Dwarf d) {
     app.followPath(d);
   } else if(d.path.length == 0 && d.moveT >= 1.0f) {
     if(d.isWandering) { d.clearGoal(); }
-    else if(app.atDestination(d, d.jobStack[0].targetTile)) d.jobStack[0].onArrive(app, d);
+    else if(app.atDestination(d, d.jobStack[0].targetTile)) { d.waitingSince = 0; d.jobStack[0].onArrive(app, d); }
+    else if(d.jobStack[0].name == "Building") { app.handleBlocking(d); }
     else if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
   }
+}
+
+void handleBlocking(ref App app, ref Dwarf d) {
+  foreach(ref other; app.world.dwarves.dwarves) {
+    if(other.uid == d.uid) continue;
+    if(!app.atDestination(other, d.jobStack[0].targetTile)) continue;
+    if(d.waitingSince == 0) {
+      d.waitingSince = cast(uint)SDL_GetTicks();
+      if(other.jobStack.length == 0 || other.jobStack[0].name != "MoveAway"){ other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
+    }
+    if(SDL_GetTicks() - d.waitingSince > 4000) {
+      d.waitingSince = 0;
+      d.jobStack[0].onFail(app, d);
+    }
+    return;
+  }
+  d.waitingSince = 0;  // no longer blocked
 }
 
 /** dwarfTick, ticks all dwarves in random order */
@@ -161,7 +180,7 @@ void ensureDwarves(ref App app) {
 }
 
 void addDwarf(ref App app, ref Dwarf d) {
-  d.idleTicks[1] = uniform(3, 18);
+  d.idleTicks[1] = uniform(30, 180);
   auto wp = app.world.tileToWorld(d.tile);
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;

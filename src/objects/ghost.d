@@ -25,6 +25,7 @@ class GhostCube : Cube {
     super(color: [1.0f, 1.0f, 1.0f, 1.0f]);
     isSelectable = false;
     isVisible = false;
+    castShadow = false;
     scale(this, [dim[0], dim[1], dim[0]]);
   }
 }
@@ -73,7 +74,8 @@ void updateGhostTile(ref App app, float[3][2] ray) {
 void syncBuildGhosts(ref App app) {
   if(app.world.buildingGhosts is null) return;
   app.world.buildingGhosts.instances = [];
-  uint color = colorIndex(Colors.dodgerblue);
+  uint committed = colorIndex(Colors.dodgerblue);
+  uint preview = colorIndex(Colors.darkslateblue);
 
   void addInstance(int[3] tile, uint color) {
     Instance inst = Instance([0, 0, color, 0]);
@@ -82,12 +84,13 @@ void syncBuildGhosts(ref App app) {
     app.world.buildingGhosts.instances ~= inst;
   }
 
-  foreach(ref j; jobQueue) { if(j.name == "Building") addInstance(j.targetTile, color); }
+  foreach(ref j; jobQueue) { if(j.name == "Building") addInstance(j.targetTile, committed); }
   if(app.world.dwarves !is null) {
     foreach(ref d; app.world.dwarves) {
-      foreach(ref j; d.jobStack) { if(j.name == "Building") addInstance(j.targetTile, color); }
+      foreach(ref j; d.jobStack) { if(j.name == "Building") addInstance(j.targetTile, committed); }
     }
   }
+  foreach(tile; app.world.inventory.dragPreview) addInstance(tile, preview);
   app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
   app.world.buildingGhosts.buffers[INSTANCE] = false;
 }

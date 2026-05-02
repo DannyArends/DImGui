@@ -257,6 +257,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
     int[3] nc = app.world.chunkCoord(n);
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
   }
+  app.world.pendingPaths = [];
 }
 
 /** Dispatch a chunk build job to the next available worker thread */
