@@ -126,7 +126,7 @@ void unsettleBlocks(const World world, ref Blocks blocks, int[3] minedTile) {
   if(blocks is null) return;
   foreach(ref b; blocks.blocks) {
     if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
-    if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile)[1] - world.blockOffset, 0.0f];
+    if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile)[1] - world.blockOffset, 0.001f];
   }
 }
 

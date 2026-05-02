@@ -5,7 +5,7 @@
 
 import engine;
 
-import block : spawnBlock, findFreeBlock;
+import block : spawnBlock, findFreeBlock, syncBlockInstances, noBlock;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
@@ -16,8 +16,8 @@ struct Job {
   string name;
   int[3] targetTile;
   TileType tileType;
-  uint[] blockIDs;         /// block IDs reserved/carried for this job
   Job[] prereqs;
+  uint[] blockIDs;
   uint[] failedBy;
 
   void function(ref App app, ref Dwarf d, ref Job j) onClaim;
