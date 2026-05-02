@@ -166,13 +166,9 @@ Job cleanWorksiteJob(int[3] targetTile) {
       j.targetTile = noTile;
     },
     onArrive: (ref App app, ref Dwarf d) {
-      if(!d.pickup(d.jobStack[0].tileType)) {
+      if(d.carrying.length >= d.inventory.length) {
         d.jobStack = [dropBlockJob(d.tile, d.carrying[0])] ~ d.jobStack;
-      } else {
-        app.doPickup(d);
-        d.jobStack = d.jobStack[1..$];
-        d.clearGoal();
-      }
+      } else { app.doPickup(d); }
     },
     onFail: (ref App app, ref Dwarf d) {
       d.jobStack = d.jobStack[1..$];  // skip, can't clean
@@ -216,7 +212,7 @@ bool dispatchJob(ref App app, ref Dwarf d, ref Job job) {
   if(app.verbose) SDL_Log(toStringz(format("[Job] %s claimed '%s' targeting %s", d.name, job.name, job.targetTile)));
   d.jobStack = job.prereqs ~ [job];
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
-  d.jobStack = d.jobStack.filter!(j => j.name == job.name || j.targetTile != noTile).array;
+  d.jobStack = d.jobStack.filter!(j => j.targetTile != noTile).array;
   if(app.verbose) SDL_Log(toStringz(format("[Job] %s stack: %s", d.name, d.jobStack.map!(j => j.name).array)));
   if(d.jobStack.length == 0 || d.jobStack[0].targetTile == noTile) { d.jobStack = []; return false; }
   d.targetTile = d.jobStack[0].targetTile;
@@ -294,6 +290,7 @@ void claimNextJob(ref App app, ref Dwarf d) {
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
     if(job.failedBy.canFind(d.uid)) continue;
+    if(job.targetTile == noTile) continue;
     float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
