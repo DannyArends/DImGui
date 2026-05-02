@@ -96,6 +96,18 @@ void spawnBlock(ref App app, int[3] tile, TileType tt) {
   app.world.blocks.buffers[INSTANCE] = false;
 }
 
+/** Remove all blocks on tile */
+void removeBlockAt(ref App app, int[3] tile) {
+  if(app.world.blocks is null) return;
+  size_t[] toRemove;
+  foreach(i, t; app.world.blocks.tiles) { if(t == tile) toRemove ~= i; }
+  foreach_reverse(i; toRemove) {
+    app.world.blocks.tiles     = app.world.blocks.tiles[0..i] ~ app.world.blocks.tiles[i+1..$];
+    app.world.blocks.instances = app.world.blocks.instances[0..i] ~ app.world.blocks.instances[i+1..$];
+  }
+  if(toRemove.length > 0) app.world.blocks.buffers[INSTANCE] = false;
+}
+
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
 
 /** Check blocks above a mined tile to see if they go falling */

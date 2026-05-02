@@ -30,7 +30,13 @@ void applyPathResult(ref App app, PathResult result) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves) {
     if(d.uid != result.dwarfUID) continue;
-    if(!result.success) { if(d.jobStack.length > 0) d.jobStack[0].onFail(app, d); return; }
+    if(!result.success) {
+      if(d.jobStack.length > 0) {
+        d.jobStack[$-1].failedBy ~= d.uid;
+        d.jobStack[0].onFail(app, d);
+      }
+      return;
+    }
     d.waitingForPath = false;
     d.path = result.path;
     d.moveFrom = d.visualPos;
@@ -160,8 +166,10 @@ Job dropBlockJob(int[3] fromTile, TileType tt) {
 Job cleanWorksiteJob(int[3] targetTile) {
   return Job("CleanWorksite", targetTile, TileType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
-      foreach(i, tile; app.world.blocks.tiles) {
-        if(tile == j.targetTile) { j.tileType = cast(TileType)app.world.blocks.instances[i].meshdef[0]; return; }
+      if(app.world.blocks !is null) {
+        foreach(i, tile; app.world.blocks.tiles) {
+          if(tile == j.targetTile) { j.tileType = cast(TileType)app.world.blocks.instances[i].meshdef[0]; return; }
+        }
       }
       j.targetTile = noTile;
     },

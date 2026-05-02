@@ -139,7 +139,7 @@ void tickDwarf(ref App app, ref Dwarf d) {
     }
   } else if(d.path.length > 0 && d.moveT >= 1.0f) {
     app.followPath(d);
-  } else if(d.path.length == 0 && d.moveT >= 1.0f) {
+  } else if(d.path.length == 0 && d.moveT >= 1.0f && !d.waitingForPath) {
     if(d.isWandering) { d.clearGoal(); }
     else if(app.atDestination(d, d.jobStack[0].targetTile)) { d.waitingSince = 0; d.jobStack[0].onArrive(app, d); }
     else if(d.jobStack[0].name == "Building") { app.handleBlocking(d); }
