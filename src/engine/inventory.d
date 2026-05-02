@@ -22,6 +22,7 @@ struct Inventory {
   int[3][] dragPreview;
 
   int get(TileType tt, int def = 0) { return max(0, onFloor.get(tt, def) + carried.get(tt, def) - queued.get(tt, def)); }
+  int total(TileType tt) const { return onFloor.get(tt, 0) + carried.get(tt, 0); }
   void clear() { onFloor.clear(); carried.clear(); queued.clear(); }
   void update(Blocks blocks, Dwarves dwarves, Job[] jobs) {
     clear();
@@ -32,11 +33,9 @@ struct Inventory {
       }
     }
     if(dwarves !is null) {
-      foreach(ref d; dwarves) { foreach(id; d.carrying) { foreach(ref b; blocks.blocks) {
-        if(b.id == id) { carried[b.type] = carried.get(b.type, 0) + 1; break; }
-      } } }
-      foreach(ref d; dwarves) { foreach(ref j; d.jobStack) {
-        if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1;
+      foreach(ref d; dwarves) { foreach(id; d.carrying) { bool found = false;
+        foreach(ref b; blocks.blocks) { if(b.id == id) { carried[b.type] = carried.get(b.type, 0) + 1; found = true; break; } }
+        if(!found) SDL_Log("WARNING: block id=%d not found in registry!", id);
       } }
     }
     foreach(ref j; jobs) { if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1; }
@@ -49,7 +48,7 @@ struct Inventory {
 void deriveInventory(ref App app) {
   app.world.inventory.update(app.world.blocks, app.world.dwarves, jobQueue);
   auto prevLen = jobQueue.length;
-  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.get(j.tileType, 0) > 0).array;
+  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileType) > 0).array;
   if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) app.world.inventory.ghost.type = TileType.None;
   if(jobQueue.length != prevLen) app.syncBuildGhosts();
 }

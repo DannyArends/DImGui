@@ -110,13 +110,16 @@ uint spawnBlock(ref App app, int[3] tile, TileType tt) {
 void syncBlockInstances(ref App app) {
   if(app.world.blocks is null) return;
   app.world.blocks.instances = [];
+  int visible = 0, hidden = 0;
   foreach(ref b; app.world.blocks.blocks) {
     if(b.tile == noTile || b.tile == builtTile) {
       Instance inst;
       inst.matrix = inst.matrix.scale([0.0f, 0.0f, 0.0f]);
       app.world.blocks.instances ~= inst;
     } else { app.world.blocks.instances ~= app.toDropInstance(b.tile, b.type); }
+    if(b.tile == noTile || b.tile == builtTile) { hidden++; } else { visible++; }
   }
+  //SDL_Log("syncBlockInstances: %d visible, %d hidden (total=%d)", visible, hidden, cast(int)app.world.blocks.blocks.length);
   app.world.blocks.buffers[INSTANCE] = false;
 }
 
