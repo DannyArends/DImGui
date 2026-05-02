@@ -61,6 +61,13 @@ void claimBlock(ref App app, ref Dwarf d, ref Job j) {
   j.targetTile = noTile;
 }
 
+void claimNeighbour(ref App app, ref Job j) {
+  foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
+    if(app.world.isStandable(n)) { j.targetTile = n; return; }
+  }
+  j.targetTile = noTile;
+}
+
 /** Mining Job */
 Job miningJob(int[3] targetTile, uint retries = 3) {
   return Job("Mining", targetTile, TileType.None, [],
@@ -113,12 +120,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
 
 Job moveAwayJob(int[3] from) {
   return Job("MoveAway", from, TileType.None, [],
-    onClaim: (ref App app, ref Dwarf d, ref Job j) {
-      foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
-        if(app.world.isStandable(n)) { j.targetTile = n; return; }
-      }
-      j.targetTile = noTile;  // nowhere to go, skip
-    },
+    onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) { d.completeSubJob(); },
     onFail: (ref App app, ref Dwarf d) { d.completeSubJob(); }
   );
@@ -128,11 +130,7 @@ Job holdItemJob(TileType tileType) {
   return Job("HoldItem", [int.min, 0, 0], tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref App app, ref Dwarf d) {
-      foreach(id; d.carrying) {
-        foreach(ref b; app.world.blocks.blocks) {
-          if(b.id == id && b.type == d.jobStack[0].tileType) { d.completeSubJob(); return; }
-        }
-      }
+      if(d.carrying.any!(id => app.blockType(id) == d.jobStack[0].tileType)) { d.completeSubJob(); return; }
       app.doPickup(d);
     },
     onFail: (ref App app, ref Dwarf d) {
@@ -144,12 +142,7 @@ Job holdItemJob(TileType tileType) {
 /** Move to a free neighbouring tile and drops a carried block */
 Job dropBlockJob(int[3] fromTile, uint blockID) {
   return Job("DropBlock", fromTile, TileType.None, [],
-    onClaim: (ref App app, ref Dwarf d, ref Job j) {
-      foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
-        if(app.world.isStandable(n)) { j.targetTile = n; return; }
-      }
-      j.targetTile = noTile;
-    },
+    onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) {
       foreach(i, id; d.carrying) {
         if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, i); break; }
@@ -185,13 +178,8 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
   return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), holdItemJob(tileType)],
     onArrive: (ref App app, ref Dwarf d) {
       // find carried block of correct type
-      uint blockID = noBlock;
-      foreach(id; d.carrying) {
-        foreach(ref b; app.world.blocks.blocks) {
-          if(b.id == id && b.type == d.jobStack[0].tileType) { blockID = id; break; }
-        }
-        if(blockID != noBlock) break;
-      }
+      auto found = d.carrying.filter!(id => app.blockType(id) == d.jobStack[0].tileType);
+      uint blockID = found.empty ? noBlock : found.front;
       if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
       if(!d.use(blockID)) { d.jobStack[0].onFail(app, d); return; }
       // mark block as InChunk — update its tile to build site
