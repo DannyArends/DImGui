@@ -98,8 +98,9 @@ uint spawnBlock(ref App app, int[3] tile, TileType tt) {
     app.world.blocks = new Blocks();
     app.objects ~= app.world.blocks;
   }
-  auto b = Block(app.world.blocks.nextID++, tt, tile);
+  auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
   app.world.blocks.blocks ~= b;
+  //SDL_Log("spawnBlock: id=%d type=%d tile=[%d,%d,%d] total=%d", b.id, cast(int)tt, tile[0], tile[1], tile[2], cast(int)app.world.blocks.blocks.length);
   app.world.blocks.instances ~= app.toDropInstance(tile, tt);
   app.world.blocks.buffers[INSTANCE] = false;
   return b.id;
@@ -136,6 +137,7 @@ void settleBlocks(const World world, ref Blocks blocks, float dt) {
   bool changed = false;
   foreach(i, ref b; blocks.blocks) {
     if(!b.isFalling) continue;
+    //SDL_Log("settleBlocks: block %d falling y=%.2f", b.id, b.y);
     b.v = b.v + 0.125f * dt;
     b.y = b.y - b.v * dt;
     int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
