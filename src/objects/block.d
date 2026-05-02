@@ -94,7 +94,6 @@ void spawnBlock(ref App app, int[3] tile, TileType tt) {
   app.world.blocks.tiles ~= tile;
   app.world.blocks.instances ~= app.toDropInstance(tile, tt);
   app.world.blocks.buffers[INSTANCE] = false;
-  app.deriveInventory();
 }
 
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }

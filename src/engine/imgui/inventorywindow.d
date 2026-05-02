@@ -31,8 +31,7 @@ void showInventoryContent(ref App app, uint font = 0) {
 
   foreach(tileType; EnumMembers!TileType) {
     //if(!tileData[tileType].traversable) continue;  // skip non-collectable tiles
-    auto name = tileData[tileType].name;
-    auto texIdx = idx(app.textures, name ~ "_base");
+    auto texIdx = idx(app.textures, tileData[tileType].name ~ "_base");
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
     int count = app.world.inventory.get(tileType, 0);
@@ -50,7 +49,7 @@ void showInventoryContent(ref App app, uint font = 0) {
     igGetItemRectMin(&pos);
     igGetItemRectMax(&posMax);
     if(count > 0) drawCenteredText(igGetWindowDrawList(), pos, posMax, toStringz(format("%d", count)));
-    if(igIsItemHovered(0)) igSetTooltip(toStringz(format("%s x%d", name, count)));
+    if(igIsItemHovered(0)) igSetTooltip(toStringz(format("%s x%d", tileData[tileType].name, count)));
 
     if(++col < cols) igSameLine(0, 4);
     else { col = 0; }
