@@ -112,14 +112,9 @@ Job holdItemJob(TileType tileType) {
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
       if(d.carrying.canFind(j.tileType)) {
         if(app.verbose) SDL_Log(toStringz(format("[Job] %s already holds %s, skipping HoldItem", d.name, j.tileType)));
-        d.jobStack = d.jobStack[1..$];  // already satisfied, remove self
+        j.targetTile = noTile;  // signal to skip
       } else {
         j.targetTile = app.findFreeBlock(d.tile, j.tileType);
-        if(j.targetTile == noTile) {
-          d.jobStack = [];
-          d.clearGoal();
-          return;
-        }
         if(app.verbose) SDL_Log(toStringz(format("[Job] %s fetching %s from %s", d.name, j.tileType, j.targetTile)));
       }
     },
@@ -145,7 +140,7 @@ Job dropBlockJob(int[3] fromTile, TileType tt) {
       foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
         if(app.world.isStandable(n)) { j.targetTile = n; return; }
       }
-      d.jobStack = d.jobStack[1..$];  // no free neighbour, skip
+      j.targetTile = noTile;  // no free neighbour
     },
     onArrive: (ref App app, ref Dwarf d) {
       foreach(i, tt; d.carrying) {
@@ -221,11 +216,17 @@ bool dispatchJob(ref App app, ref Dwarf d, ref Job job) {
   if(app.verbose) SDL_Log(toStringz(format("[Job] %s claimed '%s' targeting %s", d.name, job.name, job.targetTile)));
   d.jobStack = job.prereqs ~ [job];
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
+  d.jobStack = d.jobStack.filter!(j => j.name == job.name || j.targetTile != noTile).array;
   if(app.verbose) SDL_Log(toStringz(format("[Job] %s stack: %s", d.name, d.jobStack.map!(j => j.name).array)));
-  if(d.jobStack[0].targetTile == noTile) { d.jobStack[0].onFail(app, d); return false; }
+  if(d.jobStack.length == 0 || d.jobStack[0].targetTile == noTile) { d.jobStack = []; return false; }
   d.targetTile = d.jobStack[0].targetTile;
   auto goal = app.findGoalTile(d);
-  if(goal == noTile || !app.pathfindTo(d, goal)) { d.jobStack[0].onFail(app, d); return false; }
+  if(goal == noTile || !app.pathfindTo(d, goal)) {
+    job.failedBy ~= d.uid;
+    jobQueue ~= job;
+    d.jobStack = [];
+    return false;
+  }
   return true;
 }
 
