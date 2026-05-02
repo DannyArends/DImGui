@@ -34,6 +34,9 @@ struct Inventory {
     foreach(ref j; jobs) {
       if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1;
     }
+    if(dwarves !is null) {
+      foreach(ref d; dwarves) { foreach(ref j; d.jobStack) { if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1; } }
+    }
   }
   string toString(TileType tt) const {
     return format("%s | Floor:%d Carried:%d Queued:%d", tileData[tt].name, onFloor.get(tt, 0), carried.get(tt, 0), queued.get(tt, 0));
@@ -54,6 +57,7 @@ void placeTile(ref App app, int[3] wc) {
   if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) return;
   jobQueue ~= buildingJob(wc, app.world.inventory.ghost.type);
   app.syncBuildGhosts();
+  app.deriveInventory();
 }
 
 void computeDragPreview(ref App app, int[3] from, int[3] to) {

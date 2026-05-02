@@ -9,20 +9,24 @@ import inventory : deriveInventory;
 import matrix : translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
 
-struct BlockData { int[3] tile; uint tileType; }
-struct BlockFallData {
-  size_t idx;
-  float[2] state;  /// [y, v]
+enum uint noBlock = uint.max;
 
-  @property @nogc float y()     nothrow { return state[0]; }
-  @property @nogc float v()     nothrow { return state[1]; }
-  @property @nogc void y(float val)     nothrow { state[0] = val; }
-  @property @nogc void v(float val)     nothrow { state[1] = val; }
+struct Block {
+  uint id;              /// Unique block ID, forever
+  TileType type;        /// Block type
+  int[3] tile;          /// Current tile position
+  float[2] fallState;   /// [y, v] fall physics, [0,0] if not falling
+
+  @property @nogc bool isFalling() nothrow { return fallState[1] != 0.0f; }
+  @property @nogc float y()  nothrow { return fallState[0]; }
+  @property @nogc float v()  nothrow { return fallState[1]; }
+  @property @nogc void y(float val) nothrow { fallState[0] = val; }
+  @property @nogc void v(float val) nothrow { fallState[1] = val; }
 }
 
 class Blocks : Cube {
-  int[3][] tiles;           /// Tile of instances
-  BlockFallData[] falling;  /// All state related to falling blocks
+  Block[] blocks;           /// All blocks, forever
+  uint nextID = 1;          /// Next block ID
 
   this() {
     super();
@@ -32,50 +36,53 @@ class Blocks : Cube {
   }
 }
 
-/** Save blocks dropped */
+/** Save blocks */
 void saveBlocks(ref App app) {
   if(app.world.blocks is null) return;
-  BlockData[] data;
-  foreach(i, tile; app.world.blocks.tiles) { data ~= BlockData(tile, app.world.blocks.instances[i].meshdef[0]); }
-  uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
-  writeFile(app.world.blocksPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
+  uint[2] header = [WORLD_MAGIC, app.world.blocks.nextID];
+  writeFile(app.world.blocksPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])app.world.blocks.blocks));
 }
 
-/** Load blocks dropped */
+/** Load blocks */
 void loadBlocks(ref App app) {
   app.world.blocks = new Blocks();
   app.objects ~= app.world.blocks;
   auto raw = readFile(app.world.blocksPath());
   if(raw.length < uint[2].sizeof) return;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
-  auto data = cast(BlockData[])raw[uint[2].sizeof..$].dup;
-  foreach(ref b; data) { app.spawnBlock(b.tile, cast(TileType)b.tileType); }
-  foreach(tile; app.world.blocks.tiles) app.world.pendingUnsettle ~= tile;
-  SDL_Log("loadBlocks: %d blocks (%d pending unsettle)", app.world.blocks.tiles.length, app.world.pendingUnsettle.length);
+  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadBlocks: invalid magic"); return; }
+  app.world.blocks.nextID = (cast(uint[])raw)[1];
+  app.world.blocks.blocks = cast(Block[])raw[uint[2].sizeof..$].dup;
+  foreach(ref b; app.world.blocks.blocks) {
+    app.world.blocks.instances ~= app.toDropInstance(b.tile, b.type);
+    if(b.isFalling) app.world.pendingUnsettle ~= b.tile;
+  }
+  app.world.blocks.buffers[INSTANCE] = false;
+  SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.blocks.length);
 }
 
 @nogc pure bool hasBlocks(ref App app, TileType tt) nothrow {
   if(app.world.blocks is null) return false;
-  return app.world.blocks.instances.any!(i => i.meshdef[0] == cast(uint)tt);
+  return app.world.blocks.blocks.any!(b => b.type == tt);
 }
 
-/** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
-int[3] findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
-  if(app.world.blocks is null) return noTile;
-  int[3] best = noTile;
+/** Find the closest free block of given type, returns block ID or noBlock if none found */
+uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
+  if(app.world.blocks is null) return noBlock;
+  uint bestID = noBlock;
   float bestDist = float.max;
-  foreach(i, tile; app.world.blocks.tiles) {
-    if(tt != TileType.None && app.world.blocks.instances[i].meshdef[0] != cast(uint)tt) continue;
+  foreach(ref b; app.world.blocks.blocks) {
+    if(tt != TileType.None && b.type != tt) continue;
+    if(b.tile == noTile) continue;  // carried
     bool reserved = false;
     if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
-      foreach(j; d.jobStack) { if(j.targetTile == tile) { reserved = true; break; } }
+      foreach(j; d.jobStack) { if(j.blockID == b.id) { reserved = true; break; } }
       if(reserved) break;
     }
     if(reserved) continue;
-    float dist = abs(tile[0] - dwarfTile[0]) + abs(tile[2] - dwarfTile[2]);
-    if(dist < bestDist) { bestDist = dist; best = tile; }
+    float dist = abs(b.tile[0] - dwarfTile[0]) + abs(b.tile[2] - dwarfTile[2]);
+    if(dist < bestDist) { bestDist = dist; bestID = b.id; }
   }
-  return best;
+  return bestID;
 }
 
 /** Create a drop instance */
@@ -85,27 +92,31 @@ Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
   return Instance([cast(uint)tt, cast(uint)tt], translate(wp).multiply(scale([app.world.blockSize, app.world.blockSize, app.world.blockSize])));
 }
 
-/** Spawn a dropped block */
-void spawnBlock(ref App app, int[3] tile, TileType tt) {
+/** Spawn a new block into the registry */
+uint spawnBlock(ref App app, int[3] tile, TileType tt) {
   if(app.world.blocks is null) {
     app.world.blocks = new Blocks();
     app.objects ~= app.world.blocks;
   }
-  app.world.blocks.tiles ~= tile;
+  auto b = Block(app.world.blocks.nextID++, tt, tile);
+  app.world.blocks.blocks ~= b;
   app.world.blocks.instances ~= app.toDropInstance(tile, tt);
   app.world.blocks.buffers[INSTANCE] = false;
+  return b.id;
 }
 
-/** Remove all blocks on tile */
-void removeBlockAt(ref App app, int[3] tile) {
+/** Sync instances from blocks registry */
+void syncBlockInstances(ref App app) {
   if(app.world.blocks is null) return;
-  size_t[] toRemove;
-  foreach(i, t; app.world.blocks.tiles) { if(t == tile) toRemove ~= i; }
-  foreach_reverse(i; toRemove) {
-    app.world.blocks.tiles     = app.world.blocks.tiles[0..i] ~ app.world.blocks.tiles[i+1..$];
-    app.world.blocks.instances = app.world.blocks.instances[0..i] ~ app.world.blocks.instances[i+1..$];
+  app.world.blocks.instances = [];
+  foreach(ref b; app.world.blocks.blocks) {
+    if(b.tile == noTile) {
+      Instance inst;
+      inst.matrix = inst.matrix.scale([0.0f, 0.0f, 0.0f]);
+      app.world.blocks.instances ~= inst;
+    } else { app.world.blocks.instances ~= app.toDropInstance(b.tile, b.type); }
   }
-  if(toRemove.length > 0) app.world.blocks.buffers[INSTANCE] = false;
+  app.world.blocks.buffers[INSTANCE] = false;
 }
 
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
