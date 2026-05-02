@@ -93,6 +93,20 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
   );
 }
 
+Job moveAwayJob(int[3] from) {
+  int[3] target = [from[0] + uniform(-3, 3), from[1], from[2] + uniform(-3, 3)];
+  return Job("MoveAway", target, TileType.None, [],
+    onArrive: (ref App app, ref Dwarf d) {
+      d.jobStack = d.jobStack[1..$];
+      d.clearGoal();
+    },
+    onFail: (ref App app, ref Dwarf d) {
+      d.jobStack = d.jobStack[1..$];
+      d.clearGoal();
+    }
+  );
+}
+
 Job holdItemJob(TileType tileType) {
   return Job("HoldItem", [int.min, 0, 0], tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
@@ -101,6 +115,11 @@ Job holdItemJob(TileType tileType) {
         d.jobStack = d.jobStack[1..$];  // already satisfied, remove self
       } else {
         j.targetTile = app.findFreeBlock(d.tile, j.tileType);
+        if(j.targetTile == noTile) {
+          d.jobStack = [];
+          d.clearGoal();
+          return;
+        }
         if(app.verbose) SDL_Log(toStringz(format("[Job] %s fetching %s from %s", d.name, j.tileType, j.targetTile)));
       }
     },

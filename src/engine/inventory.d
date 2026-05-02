@@ -16,6 +16,8 @@ struct Inventory {
   GhostCube ghost;
   int[TileType] items;
   alias items this;
+  bool isDragging = false;
+  int[3][] dragPreview;
 }
 
 void deriveInventory(ref App app) {
@@ -39,4 +41,26 @@ void placeTile(ref App app, int[3] wc) {
   if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) return;
   jobQueue ~= buildingJob(wc, app.world.inventory.ghost.type);
   app.syncBuildGhosts();
+}
+
+void computeDragPreview(ref App app, int[3] from, int[3] to) {
+  int available = app.world.inventory.get(app.world.inventory.ghost.type, 0);
+  int dx = abs(to[0] - from[0]);
+  int dz = abs(to[2] - from[2]);
+  app.world.inventory.dragPreview = [];
+  if(dx >= dz) {  // snap to X axis
+    int step = to[0] > from[0] ? 1 : -1;
+    for(int x = from[0]; x != to[0] + step; x += step){
+      if(app.world.getTile([x, from[1], from[2]]) != TileType.None) continue;
+      app.world.inventory.dragPreview ~= [x, from[1], from[2]];
+      if(app.world.inventory.dragPreview.length >= available) break;
+    }
+  } else {  // snap to Z axis
+    int step = to[2] > from[2] ? 1 : -1;
+    for(int z = from[2]; z != to[2] + step; z += step){
+      if(app.world.getTile([from[0], from[1], z]) != TileType.None) continue;
+      app.world.inventory.dragPreview ~= [from[0], from[1], z];
+      if(app.world.inventory.dragPreview.length >= available) break;
+    }
+  }
 }

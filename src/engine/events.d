@@ -18,8 +18,8 @@ import screenshot : saveScreenshot;
 import surface : createSurface;
 import vulkan : cleanup;
 import window: createOrResizeWindow;
-import ghost : getGhostTile, updateGhostTile;
-import inventory : placeTile;
+import ghost : getGhostTile, updateGhostTile, syncBuildGhosts;
+import inventory : placeTile, computeDragPreview;
 import tree : getBestTree;
 import timing : timed;
 import world : noTile;
@@ -96,6 +96,11 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
       app.camera.lastMousePos = [e.button.x, e.button.y];
+      if(app.world.inventory.ghost.tile != noTile && app.world.inventory.ghost.type != TileType.None) {
+        app.world.inventory.isDragging = true;
+        app.world.inventory.dragPreview = [app.world.inventory.ghost.tile];
+        app.syncBuildGhosts();
+      }
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { 
       app.camera.isdrag[1] = true;
@@ -106,7 +111,12 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
     app.camera.isdrag[0] = false; 
     if (e.button.button == SDL_BUTTON_LEFT) {
-      if(app.world.inventory.ghost.tile != noTile) {
+      if(app.world.inventory.isDragging) {
+        foreach(tile; app.world.inventory.dragPreview) app.placeTile(tile);
+        app.world.inventory.isDragging = false;
+        app.world.inventory.dragPreview = [];
+        app.syncBuildGhosts();
+      } else if(app.world.inventory.ghost.tile != noTile) {
         app.placeTile(app.world.inventory.ghost.tile);
       } else {
         auto hits = app.getHits(ray, app.showRays);
@@ -136,6 +146,10 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 
     if(app.camera.isdrag[1]) { app.tryDrag(e.motion.xrel, e.motion.yrel); }
     app.updateGhostTile(ray);
+    if(app.world.inventory.isDragging && app.world.inventory.ghost.tile != noTile) {
+      app.computeDragPreview(app.world.inventory.dragPreview[0], app.world.inventory.ghost.tile);
+      app.syncBuildGhosts();
+    }
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL){ app.tryZoom(-e.wheel.y); }
 }
