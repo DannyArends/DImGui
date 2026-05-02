@@ -13,7 +13,7 @@ import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
-import block : loadBlocks, saveBlocks;
+import block : loadBlocks, saveBlocks, removeBlockAt;
 import dwarf : saveDwarfs;
 import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
 
@@ -254,6 +254,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.data.diffs ~= TileDiff(coord, idx, newType);
   app.world.chunks[coord].dirty = true;
+  app.removeBlockAt(tile);
 
   // Mark neighbouring chunks dirty if tile is on a chunk boundary
   foreach (n; app.world.tileNeighbours(tile)) {
