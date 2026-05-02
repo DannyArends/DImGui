@@ -250,14 +250,14 @@ void doPickup(ref App app, ref Dwarf d) {
 /** Try assigning a job to the closest idle dwarf */
 bool tryAssign(ref App app, ref Job job) {
   if(app.world.dwarves is null) return false;
-  Dwarf* best = null;
+  int bestIdx = -1;
   float bestDist = float.max;
-  foreach(ref d; app.world.dwarves) {
+  foreach(i, ref d; app.world.dwarves.dwarves) {
     if((!d.isIdle && !d.isWandering) || job.failedBy.canFind(d.uid)) continue;
     float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
-    if(dist < bestDist) { bestDist = dist; best = &d; }
+    if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
-  return best !is null && app.dispatchJob(*best, job);
+  return bestIdx >= 0 && app.dispatchJob(app.world.dwarves.dwarves[bestIdx], job);
 }
 
 /** Fail the current job and requeue */
