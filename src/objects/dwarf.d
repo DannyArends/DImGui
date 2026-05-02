@@ -17,12 +17,12 @@ import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob, mov
 uint nextDwarfUID = 1;
 
 struct DwarfData {
-  uint uid = 0;               /// unique dwarf ID
-  uint colorID = 0; 
+  uint uid = 0;
+  uint colorID = 0;
   int[3] tile = [0, 0, 0];
   char[64] first;
   char[64] last;
-  TileType[32] inventory;
+  uint[32] inventory;  /// block IDs, noBlock = empty slot
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
   @property void name(string s) {
@@ -30,14 +30,15 @@ struct DwarfData {
     first[] = '\0'; first[0..min(parts[0].length, first.length)] = parts[0][0..min(parts[0].length, first.length)];
     last[]  = '\0'; if(parts.length > 1) last[0..min(parts[1].length, last.length)] = parts[1][0..min(parts[1].length, last.length)];
   }
-  @property TileType[] carrying() { return inventory[].filter!(t => t != TileType.None).array; }
-  @property bool pickup(TileType c) { foreach(i, ref slot; inventory) { if(slot == TileType.None) { slot = c; return(true); } } return(false); }
-  @property bool use(TileType c) { foreach(ref slot; inventory) { if(slot == c) { slot = TileType.None; return true; } } return false; }
+  @property uint[] carrying() { return inventory[].filter!(id => id != noBlock).array; }
+  @property bool pickup(uint blockID) { foreach(ref slot; inventory) { if(slot == noBlock) { slot = blockID; return true; } } return false; }
+  @property bool use(uint blockID) { foreach(ref slot; inventory) { if(slot == blockID) { slot = noBlock; return true; } } return false; }
   @property bool drop(ref App app, size_t slot) {
-    if(slot >= inventory.length || inventory[slot] == TileType.None) return false;
-    app.spawnBlock(tile, inventory[slot]);
-    app.deriveInventory();
-    inventory[slot] = TileType.None;
+    if(slot >= inventory.length || inventory[slot] == noBlock) return false;
+    auto b = app.world.blocks.blocks.find!(b => b.id == inventory[slot]);
+    if(!b.empty) b.front.tile = tile;  // put back on floor at dwarf tile
+    app.syncBlockInstances();
+    inventory[slot] = noBlock;
     return true;
   }
 }

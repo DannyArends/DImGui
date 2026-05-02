@@ -16,6 +16,7 @@ struct Job {
   string name;
   int[3] targetTile;
   TileType tileType;
+  uint[] blockIDs;         /// block IDs reserved/carried for this job
   Job[] prereqs;
   uint[] failedBy;
 
@@ -23,6 +24,7 @@ struct Job {
   void function(ref App app, ref Dwarf d) onArrive;
   void function(ref App app, ref Dwarf d) onFail;
 }
+
 Job[] jobQueue;
 
 /** Apply pathfinding results */

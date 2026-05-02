@@ -75,7 +75,7 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
     if(b.tile == noTile) continue;  // carried
     bool reserved = false;
     if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
-      foreach(j; d.jobStack) { if(j.blockID == b.id) { reserved = true; break; } }
+      foreach(j; d.jobStack) { if(j.blockIDs.canFind(b.id)) { reserved = true; break; } }
       if(reserved) break;
     }
     if(reserved) continue;
@@ -121,37 +121,33 @@ void syncBlockInstances(ref App app) {
 
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
 
-/** Check blocks above a mined tile to see if they go falling */
+/** Mark blocks above a mined tile as falling */
 void unsettleBlocks(const World world, ref Blocks blocks, int[3] minedTile) {
   if(blocks is null) return;
-  foreach(i, tile; blocks.tiles) {
-    if(tile[0] != minedTile[0] || tile[2] != minedTile[2] || tile[1] < minedTile[1]) continue;
-    if(!blocks.falling.any!(f => f.idx == i)) {
-      blocks.falling ~= BlockFallData(i, [world.tileToWorld(tile)[1] - world.blockOffset(), 0.0f]);
-    }
+  foreach(ref b; blocks.blocks) {
+    if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
+    if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile)[1] - world.blockOffset, 0.0f];
   }
 }
 
 /** Update falling blocks */
 void settleBlocks(const World world, ref Blocks blocks, float dt) {
-  if(blocks is null || blocks.falling.length == 0) return;
+  if(blocks is null) return;
   bool changed = false;
-  blocks.falling = blocks.falling.filter!((ref f) {
-    f.v = f.v + 0.125f * dt;
-    f.y = f.y - f.v * dt;
-    if(f.idx >= blocks.tiles.length) return(false); // Done with falling
-    int[3] tile = blocks.tiles[f.idx];
-    int landTileY = world.surfaceAt(tile[0], tile[1] - 1, tile[2]);
-    float landY = world.tileToWorld([tile[0], landTileY + 1, tile[2]])[1] - world.blockOffset;
-    if(f.y <= landY) {
-      blocks.tiles[f.idx] = [tile[0], landTileY+1, tile[2]];
-      blocks.instances[f.idx].matrix[13] = world.tileToWorld(blocks.tiles[f.idx])[1] - world.blockOffset;
-      changed = true;
-      return(false); // Done with falling
+  foreach(i, ref b; blocks.blocks) {
+    if(!b.isFalling) continue;
+    b.v = b.v + 0.125f * dt;
+    b.y = b.y - b.v * dt;
+    int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
+    float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]])[1] - world.blockOffset;
+    if(b.y <= landY) {
+      b.tile = [b.tile[0], landTileY + 1, b.tile[2]];
+      b.fallState = [0.0f, 0.0f];  // settled
+      blocks.instances[i].matrix[13] = world.tileToWorld(b.tile)[1] - world.blockOffset;
+    } else {
+      blocks.instances[i].matrix[13] = b.y;
     }
-    blocks.instances[f.idx].matrix[13] = f.y;
     changed = true;
-    return(true); // Still falling
-  }).array;
+  }
   if(changed) blocks.buffers[INSTANCE] = false;
 }
