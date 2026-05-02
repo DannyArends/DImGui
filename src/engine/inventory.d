@@ -5,7 +5,7 @@
 
 import engine;
 
-import block : findFreeBlock;
+import block : findFreeBlock, builtTile;
 import io : writeFile, readFile, fixPath, isfile;
 import tileatlas : TileType, tileData;
 import world : noTile, setTile;
@@ -27,7 +27,7 @@ struct Inventory {
     clear();
     if(blocks !is null) {
       foreach(ref b; blocks.blocks) {
-        if(b.tile == noTile) continue;  // carried, not on floor
+        if(b.tile == noTile || b.tile == builtTile) continue;
         onFloor[b.type] = onFloor.get(b.type, 0) + 1;
       }
     }
