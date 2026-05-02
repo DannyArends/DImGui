@@ -85,11 +85,10 @@ void syncBuildGhosts(ref App app) {
   }
 
   app.world.data.ghostTiles = [];
-  foreach(ref j; jobQueue) { if(j.name == "Building") app.world.data.ghostTiles ~= j.targetTile; }
-  foreach(ref j; jobQueue) { if(j.name == "Building") addInstance(j.targetTile, committed); }
+  foreach(ref j; jobQueue) { if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.ghostTiles ~= j.targetTile; } }
   if(app.world.dwarves !is null) {
     foreach(ref d; app.world.dwarves) {
-      foreach(ref j; d.jobStack) { if(j.name == "Building") addInstance(j.targetTile, committed); }
+      foreach(ref j; d.jobStack) { if(j.name == "Building") {addInstance(j.targetTile, committed); app.world.data.ghostTiles ~= j.targetTile; }}
     }
   }
   foreach(tile; app.world.inventory.dragPreview) addInstance(tile, preview);

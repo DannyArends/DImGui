@@ -116,7 +116,6 @@ struct WorldData {
 
   pure bool isStandable(int[3] tile) const nothrow {
     if(tile[1] <= 0 || tile[1] >= chunkHeight) return false;
-    if(ghostTiles.canFind(tile)) return false;
     return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable;
   }
 
