@@ -5,12 +5,15 @@
 
 import engine;
 
-/** Generate a random color
- */
+uint colorIndex(Colors c) {
+  foreach(i, m; [EnumMembers!Colors]) { if(m == c) return(cast(uint)i); }
+  return(0u);
+}
+
+/** Generate a random color */
 float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), alpha]); }
 
-/** Amino Acid Residue to 'official' colors
- */
+/** Amino Acid Residue to 'official' colors */
 @nogc float[4] residueToColor(string residue) nothrow {
   switch (residue) {
     case "ALA": return Colors.aliceblue;

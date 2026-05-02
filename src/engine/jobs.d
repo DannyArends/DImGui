@@ -9,6 +9,7 @@ import block : spawnBlock, findFreeBlock;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
+import ghost : syncBuildGhosts;
 import world : noTile, setTile, tileAbove;
 
 struct Job {
@@ -129,6 +130,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       d.jobStack = d.jobStack[1..$];
       d.clearGoal();
+      app.syncBuildGhosts();
     },
     onFail: (ref App app, ref Dwarf d) {
       if(app.verbose) SDL_Log(toStringz(format("[Job] %s FAILED Building %s at %s, requeueing", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
@@ -138,6 +140,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       jobQueue ~= newJob;
       d.jobStack = [];
       d.clearGoal();
+      app.syncBuildGhosts();
     }
   );
 }
@@ -214,6 +217,7 @@ void claimNextJob(ref App app, ref Dwarf d) {
   if(jobQueue.length == 0) return;
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
+  app.syncBuildGhosts();
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {

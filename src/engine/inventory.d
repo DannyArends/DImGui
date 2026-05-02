@@ -9,7 +9,7 @@ import block : findFreeBlock;
 import io : writeFile, readFile, fixPath, isfile;
 import tileatlas : TileType;
 import world : noTile, setTile;
-import ghost : updateGhostTile;
+import ghost : updateGhostTile, syncBuildGhosts;
 import jobs : jobQueue, buildingJob;
 
 struct Inventory {
@@ -38,4 +38,5 @@ void placeTile(ref App app, int[3] wc) {
   if(app.world.inventory.ghost.type == TileType.None) return;
   if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) return;
   jobQueue ~= buildingJob(wc, app.world.inventory.ghost.type);
+  app.syncBuildGhosts();
 }
