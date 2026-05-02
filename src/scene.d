@@ -45,10 +45,6 @@ void createScene(ref App app){
   SDL_Log("createScene: set time to Noon");
   app.updateSun();
 
-  SDL_Log("createScene: Ghost Cube");
-  app.inventory.ghostCube = new GhostCube([app.world.tileSize,app.world.tileHeight]);
-  app.objects ~= app.inventory.ghostCube;
-
   SDL_Log("createScene: The 8 Dwarves of 7");
   if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(randomDwarfName()); }
 

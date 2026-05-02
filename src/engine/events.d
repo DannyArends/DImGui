@@ -105,8 +105,8 @@ void handleMouseEvents(ref App app, SDL_Event e) {
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
     app.camera.isdrag[0] = false; 
     if (e.button.button == SDL_BUTTON_LEFT) {
-      if(app.inventory.ghostTile[0] != int.min) {
-        app.placeTile(app.inventory.ghostTile);
+      if(app.world.inventory.ghost.tile != noTile) {
+        app.placeTile(app.world.inventory.ghost.tile);
       } else {
         auto hits = app.getHits(ray, app.showRays);
         if(hits.length > 0) {
@@ -130,7 +130,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
       }
     }
     if (e.button.button == SDL_BUTTON_RIGHT) {
-      app.inventory.selectedTile = TileType.None;
+      app.world.inventory.ghost.type = TileType.None;
       app.camera.isdrag[1] = false;
     }
     app.updateGhostTile(ray);
