@@ -5,7 +5,7 @@
 
 import engine;
 
-import block : spawnBlock, findFreeBlock, syncBlockInstances, noBlock;
+import block : spawnBlock, findFreeBlock, syncBlockInstances, noBlock, builtTile;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
@@ -218,9 +218,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
       if(!d.use(blockID)) { d.jobStack[0].onFail(app, d); return; }
       // mark block as InChunk — update its tile to build site
-      foreach(ref b; app.world.blocks.blocks) {
-        if(b.id == blockID) { b.tile = d.jobStack[0].targetTile; break; }
-      }
+      foreach(ref b; app.world.blocks.blocks) { if(b.id == blockID) { b.tile = builtTile; break; } }
       if(app.world.dwarves !is null) {
         foreach(ref other; app.world.dwarves.dwarves) {
           if(other.tile == d.jobStack[0].targetTile) { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
