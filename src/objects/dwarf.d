@@ -6,7 +6,7 @@ import engine;
 
 import geometry;
 import io : readFile, writeFile;
-import block : spawnBlock;
+import block : spawnBlock, noBlock;
 import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
 import vector : euclidean;
 import tileatlas : tileData;
@@ -22,7 +22,7 @@ struct DwarfData {
   int[3] tile = [0, 0, 0];
   char[64] first;
   char[64] last;
-  uint[32] inventory;  /// block IDs, noBlock = empty slot
+  uint[32] inventory = noBlock;  /// block IDs, noBlock = empty slot
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
   @property void name(string s) {
@@ -130,7 +130,7 @@ void tickDwarf(ref App app, ref Dwarf d) {
     } else {
       app.claimNextJob(d);
       if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
-        if(app.world.blocks !is null && app.world.blocks.tiles.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
+        if(app.world.blocks !is null && app.world.blocks.blocks.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
           auto job = stuffJob();
           if(!app.dispatchJob(d, job)) d.idleTicks[0] = 0;
         } else {

@@ -26,17 +26,20 @@ struct Inventory {
   void update(Blocks blocks, Dwarves dwarves, Job[] jobs) {
     clear();
     if(blocks !is null) {
-      foreach(ref inst; blocks.instances) { auto tt = cast(TileType)inst.meshdef[0]; onFloor[tt] = onFloor.get(tt, 0) + 1; }
+      foreach(ref b; blocks.blocks) {
+        if(b.tile == noTile) continue;  // carried, not on floor
+        onFloor[b.type] = onFloor.get(b.type, 0) + 1;
+      }
     }
     if(dwarves !is null) {
-      foreach(ref d; dwarves) { foreach(tt; d.carrying) { carried[tt] = carried.get(tt, 0) + 1; } }
+      foreach(ref d; dwarves) { foreach(id; d.carrying) { foreach(ref b; blocks.blocks) {
+        if(b.id == id) { carried[b.type] = carried.get(b.type, 0) + 1; break; }
+      } } }
+      foreach(ref d; dwarves) { foreach(ref j; d.jobStack) {
+        if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1;
+      } }
     }
-    foreach(ref j; jobs) {
-      if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1;
-    }
-    if(dwarves !is null) {
-      foreach(ref d; dwarves) { foreach(ref j; d.jobStack) { if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1; } }
-    }
+    foreach(ref j; jobs) { if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1; }
   }
   string toString(TileType tt) const {
     return format("%s | Floor:%d Carried:%d Queued:%d", tileData[tt].name, onFloor.get(tt, 0), carried.get(tt, 0), queued.get(tt, 0));

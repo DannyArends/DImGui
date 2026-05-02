@@ -40,7 +40,9 @@ void showDwarfContent(ref App app, uint font = 0) {
     igText(toStringz("%s"), toStringz(format("%s %s", fromStringz(faIcon(cast(string)ICON_FA_USER)), d.name)));
     if(d.carrying.length > 0) {
       igSameLine(0, 5);
-      app.showTileIcons(d.carrying);
+      TileType[] types;
+      foreach(id; d.carrying) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) { types ~= b.type; break; } } }
+      app.showTileIcons(types);
     }
     igText(toStringz("%s"), toStringz(format("%s - %s\n", d.tile, status)));
   }
