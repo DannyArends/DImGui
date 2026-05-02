@@ -6,7 +6,7 @@ import engine;
 
 import geometry;
 import io : readFile, writeFile;
-import block : spawnBlock, noBlock;
+import block : spawnBlock, syncBlockInstances, noBlock;
 import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
 import vector : euclidean;
 import tileatlas : tileData;
@@ -35,8 +35,7 @@ struct DwarfData {
   @property bool use(uint blockID) { foreach(ref slot; inventory) { if(slot == blockID) { slot = noBlock; return true; } } return false; }
   @property bool drop(ref App app, size_t slot) {
     if(slot >= inventory.length || inventory[slot] == noBlock) return false;
-    auto b = app.world.blocks.blocks.find!(b => b.id == inventory[slot]);
-    if(!b.empty) b.front.tile = tile;  // put back on floor at dwarf tile
+    foreach(ref b; app.world.blocks.blocks) { if(b.id == inventory[slot]) { b.tile = tile; break; } }
     app.syncBlockInstances();
     inventory[slot] = noBlock;
     return true;
