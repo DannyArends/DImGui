@@ -10,6 +10,7 @@ import matrix : translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
 
 enum uint noBlock = uint.max;
+enum int[3] builtTile = [noBlock, 0, 0];
 
 struct Block {
   uint id;              /// Unique block ID, forever
@@ -72,7 +73,7 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
   float bestDist = float.max;
   foreach(ref b; app.world.blocks.blocks) {
     if(tt != TileType.None && b.type != tt) continue;
-    if(b.tile == noTile) continue;  // carried
+    if(b.tile == noTile || b.tile == builtTile) continue;
     bool reserved = false;
     if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
       foreach(j; d.jobStack) { if(j.blockIDs.canFind(b.id)) { reserved = true; break; } }
@@ -100,7 +101,6 @@ uint spawnBlock(ref App app, int[3] tile, TileType tt) {
   }
   auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
   app.world.blocks.blocks ~= b;
-  //SDL_Log("spawnBlock: id=%d type=%d tile=[%d,%d,%d] total=%d", b.id, cast(int)tt, tile[0], tile[1], tile[2], cast(int)app.world.blocks.blocks.length);
   app.world.blocks.instances ~= app.toDropInstance(tile, tt);
   app.world.blocks.buffers[INSTANCE] = false;
   return b.id;
@@ -111,7 +111,7 @@ void syncBlockInstances(ref App app) {
   if(app.world.blocks is null) return;
   app.world.blocks.instances = [];
   foreach(ref b; app.world.blocks.blocks) {
-    if(b.tile == noTile) {
+    if(b.tile == noTile || b.tile == builtTile) {
       Instance inst;
       inst.matrix = inst.matrix.scale([0.0f, 0.0f, 0.0f]);
       app.world.blocks.instances ~= inst;
