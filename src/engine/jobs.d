@@ -92,7 +92,11 @@ Job woodcuttingJob(int[3] targetTile) {
 Job pickupJob(int[3] targetTile, TileType tileType) {
   return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
-      j.targetTile = app.findFreeBlock(d.tile, j.tileType);
+      auto id = app.findFreeBlock(d.tile, j.tileType);
+      if(id == noBlock) { j.targetTile = noTile; return; }
+      j.blockIDs = [id];
+      foreach(ref b; app.world.blocks.blocks) { if(b.id == id) { j.targetTile = b.tile; return; } }
+      j.targetTile = noTile;
     },
     onArrive: (ref App app, ref Dwarf d) { app.doPickup(d); },
     onFail: (ref App app, ref Dwarf d) {
@@ -124,20 +128,26 @@ Job moveAwayJob(int[3] from) {
 Job holdItemJob(TileType tileType) {
   return Job("HoldItem", [int.min, 0, 0], tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
-      if(d.carrying.canFind(j.tileType)) {
-        if(app.verbose) SDL_Log(toStringz(format("[Job] %s already holds %s, skipping HoldItem", d.name, j.tileType)));
-        j.targetTile = noTile;  // signal to skip
-      } else {
-        j.targetTile = app.findFreeBlock(d.tile, j.tileType);
-        if(app.verbose) SDL_Log(toStringz(format("[Job] %s fetching %s from %s", d.name, j.tileType, j.targetTile)));
+      foreach(id; d.carrying) {
+        foreach(ref b; app.world.blocks.blocks) {
+          if(b.id == id && b.type == j.tileType) { j.targetTile = noTile; return; }  // already carrying
+        }
       }
+      auto id = app.findFreeBlock(d.tile, j.tileType);
+      if(id == noBlock) { j.targetTile = noTile; return; }
+      j.blockIDs = [id];
+      foreach(ref b; app.world.blocks.blocks) { if(b.id == id) { j.targetTile = b.tile; return; } }
+      j.targetTile = noTile;
     },
     onArrive: (ref App app, ref Dwarf d) {
-      if(d.carrying.canFind(d.jobStack[0].tileType)) {
-        if(app.verbose) SDL_Log(toStringz(format("[Job] %s HoldItem satisfied for %s", d.name, d.jobStack[0].tileType)));
-        d.jobStack = d.jobStack[1..$];
-        d.clearGoal();
-        return;
+      foreach(id; d.carrying) {
+        foreach(ref b; app.world.blocks.blocks) {
+          if(b.id == id && b.type == d.jobStack[0].tileType) {
+            d.jobStack = d.jobStack[1..$];
+            d.clearGoal();
+            return;
+          }
+        }
       }
       app.doPickup(d);
     },
@@ -148,17 +158,17 @@ Job holdItemJob(TileType tileType) {
   );
 }
 /** Move to a free neighbouring tile and drops a carried block */
-Job dropBlockJob(int[3] fromTile, TileType tt) {
-  return Job("DropBlock", fromTile, tt, [],
+Job dropBlockJob(int[3] fromTile, uint blockID) {
+  return Job("DropBlock", fromTile, TileType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
       foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
         if(app.world.isStandable(n)) { j.targetTile = n; return; }
       }
-      j.targetTile = noTile;  // no free neighbour
+      j.targetTile = noTile;
     },
     onArrive: (ref App app, ref Dwarf d) {
-      foreach(i, tt; d.carrying) {
-        if(tt == d.jobStack[0].tileType) { d.drop(app, i); break; }
+      foreach(i, id; d.carrying) {
+        if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, i); break; }
       }
       d.jobStack = d.jobStack[1..$];
       d.clearGoal();
@@ -175,8 +185,8 @@ Job cleanWorksiteJob(int[3] targetTile) {
   return Job("CleanWorksite", targetTile, TileType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
       if(app.world.blocks !is null) {
-        foreach(i, tile; app.world.blocks.tiles) {
-          if(tile == j.targetTile) { j.tileType = cast(TileType)app.world.blocks.instances[i].meshdef[0]; return; }
+        foreach(ref b; app.world.blocks.blocks) {
+          if(b.tile == j.targetTile) { j.blockIDs = [b.id]; j.tileType = b.type; return; }
         }
       }
       j.targetTile = noTile;
@@ -187,7 +197,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
       } else { app.doPickup(d); }
     },
     onFail: (ref App app, ref Dwarf d) {
-      d.jobStack = d.jobStack[1..$];  // skip, can't clean
+      d.jobStack = d.jobStack[1..$];
       d.clearGoal();
     }
   );
@@ -197,13 +207,27 @@ Job cleanWorksiteJob(int[3] targetTile) {
 Job buildingJob(int[3] targetTile, TileType tileType) {
   return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), holdItemJob(tileType)],
     onArrive: (ref App app, ref Dwarf d) {
-      if(!d.use(d.jobStack[0].tileType)) { d.jobStack[0].onFail(app, d); return; }
-      if(app.world.dwarves !is null) { // Evict any dwarf standing on the target tile
+      // find carried block of correct type
+      uint blockID = noBlock;
+      foreach(id; d.carrying) {
+        foreach(ref b; app.world.blocks.blocks) {
+          if(b.id == id && b.type == d.jobStack[0].tileType) { blockID = id; break; }
+        }
+        if(blockID != noBlock) break;
+      }
+      if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
+      if(!d.use(blockID)) { d.jobStack[0].onFail(app, d); return; }
+      // mark block as InChunk — update its tile to build site
+      foreach(ref b; app.world.blocks.blocks) {
+        if(b.id == blockID) { b.tile = d.jobStack[0].targetTile; break; }
+      }
+      if(app.world.dwarves !is null) {
         foreach(ref other; app.world.dwarves.dwarves) {
           if(other.tile == d.jobStack[0].targetTile) { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
         }
       }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
+      app.syncBlockInstances();
       if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       d.jobStack = d.jobStack[1..$];
       d.clearGoal();
@@ -211,8 +235,10 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       app.deriveInventory();
     },
     onFail: (ref App app, ref Dwarf d) {
-      if(app.verbose) SDL_Log(toStringz(format("[Job] %s FAILED Building %s at %s, requeueing", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
-      foreach(i, tt; d.carrying) d.drop(app, i);
+      if(app.verbose){
+        SDL_Log(toStringz(format("[Job] %s FAILED Building %s at %s, requeueing", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
+      }
+      foreach(i, id; d.carrying) d.drop(app, i);
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
       jobQueue ~= newJob;
@@ -243,20 +269,19 @@ bool dispatchJob(ref App app, ref Dwarf d, ref Job job) {
 }
 
 void doPickup(ref App app, ref Dwarf d) {
-  auto db = app.world.blocks;
-  foreach(i, tile; db.tiles) {
-    if(tile != d.jobStack[0].targetTile) continue;
-    if(!d.pickup(cast(TileType)db.instances[i].meshdef[0])) { d.jobStack[0].onFail(app, d); return; }
-    db.tiles     = db.tiles[0..i] ~ db.tiles[i+1..$];
-    db.instances = db.instances[0..i] ~ db.instances[i+1..$];
-    db.falling   = db.falling.filter!(f => f.idx != i).array;
-    foreach(ref f; db.falling) if(f.idx > i) f.idx--;
-    db.buffers[INSTANCE] = false;
+  auto blockID = d.jobStack[0].blockIDs.length > 0 ? d.jobStack[0].blockIDs[0] : noBlock;
+  if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
+  foreach(ref b; app.world.blocks.blocks) {
+    if(b.id != blockID) continue;
+    if(!d.pickup(blockID)) { d.jobStack[0].onFail(app, d); return; }
+    b.tile = noTile;  // mark as carried
+    app.syncBlockInstances();
     d.jobStack = d.jobStack[1..$];
     d.clearGoal();
     return;
   }
-  if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
+  // block not found
+  if(d.jobStack.length > 1) jobQueue ~= d.jobStack[$-1];
   d.jobStack = [];
   d.clearGoal();
 }
