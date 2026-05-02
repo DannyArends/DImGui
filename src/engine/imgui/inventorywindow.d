@@ -49,8 +49,7 @@ void showInventoryContent(ref App app, uint font = 0) {
     igGetItemRectMin(&pos);
     igGetItemRectMax(&posMax);
     if(count > 0) drawCenteredText(igGetWindowDrawList(), pos, posMax, toStringz(format("%d", count)));
-    if(igIsItemHovered(0)) igSetTooltip(toStringz(format("%s x%d", tileData[tileType].name, count)));
-
+    if(igIsItemHovered(0)) igSetTooltip(toStringz(app.world.inventory.toString(tileType)));
     if(++col < cols) igSameLine(0, 4);
     else { col = 0; }
   }

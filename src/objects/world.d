@@ -172,7 +172,6 @@ struct World {
     SDL_RemovePath(worldPath());
     SDL_RemovePath(blocksPath());
     data.diffs = [];
-    app.world.inventory.items.clear();
     app.world.inventory.ghost.type = TileType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
     clear();
