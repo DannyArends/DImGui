@@ -36,6 +36,7 @@ struct DwarfData {
   @property bool drop(ref App app, size_t slot) {
     if(slot >= inventory.length || inventory[slot] == TileType.None) return false;
     app.spawnBlock(tile, inventory[slot]);
+    app.deriveInventory();
     inventory[slot] = TileType.None;
     return true;
   }

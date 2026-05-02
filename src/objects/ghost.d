@@ -53,7 +53,7 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
 
 void updateGhostTile(ref App app, float[3][2] ray) {
   if(app.world.inventory.ghost.type == TileType.None) {
-    app.world.inventory.ghost.tile = noTile; 
+    app.world.inventory.ghost.tile = noTile;
     app.world.inventory.ghost.isVisible = false;
     return;
   }else{ app.world.inventory.ghost.isVisible = true; }

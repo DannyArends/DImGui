@@ -9,6 +9,7 @@ import block : spawnBlock, unsettleBlocks;
 import io : readFile, writeFile;
 import intersection : intersects;
 import tileatlas : TileType;
+import inventory : deriveInventory;
 import matrix : translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
 
@@ -133,6 +134,7 @@ void fellTree(ref App app, int[3] tile) {
     if(t.rootTile != tile) continue;
     // spawn wood blocks
     for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]], TileType.Wood); }
+    app.deriveInventory();
     app.world.unsettleBlocks(app.world.blocks, t.rootTile);
     // remove from trees array
     app.world.trees[coord] = app.world.trees[coord][0..i] ~ app.world.trees[coord][i+1..$];

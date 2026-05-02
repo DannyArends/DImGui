@@ -13,8 +13,8 @@ import ghost : updateGhostTile;
 import jobs : jobQueue, buildingJob;
 
 struct Inventory {
-  int[TileType] items;
   GhostCube ghost;
+  int[TileType] items;
   alias items this;
 }
 
@@ -30,7 +30,7 @@ void deriveInventory(ref App app) {
     foreach(ref d; app.world.dwarves) { foreach(tt; d.carrying) { app.world.inventory[tt] = app.world.inventory.get(tt, 0) + 1; } }
   }
   if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) app.world.inventory.ghost.type = TileType.None;
-  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.get(j.tileType, 0) > 0).array;  // add this
+  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.get(j.tileType, 0) > 0).array;
 }
 
 void placeTile(ref App app, int[3] wc) {
@@ -39,4 +39,3 @@ void placeTile(ref App app, int[3] wc) {
   if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) return;
   jobQueue ~= buildingJob(wc, app.world.inventory.ghost.type);
 }
-
