@@ -10,7 +10,7 @@ import matrix : translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
 
 enum uint noBlock = uint.max;
-enum int[3] builtTile = [noBlock, 0, 0];
+enum int[3] builtTile = [int.max, 0, 0];
 
 struct Block {
   uint id;              /// Unique block ID, forever
