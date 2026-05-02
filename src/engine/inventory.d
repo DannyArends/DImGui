@@ -7,38 +7,43 @@ import engine;
 
 import block : findFreeBlock;
 import io : writeFile, readFile, fixPath, isfile;
-import tileatlas : TileType;
+import tileatlas : TileType, tileData;
 import world : noTile, setTile;
 import ghost : updateGhostTile, syncBuildGhosts;
 import jobs : jobQueue, buildingJob;
 
 struct Inventory {
   GhostCube ghost;
-  int[TileType] items;
-  alias items this;
+  alias ghost this;
+  int[TileType] onFloor;
+  int[TileType] carried;
+  int[TileType] queued;
   bool isDragging = false;
   int[3][] dragPreview;
+
+  int get(TileType tt, int def = 0) { return max(0, onFloor.get(tt, def) + carried.get(tt, def) - queued.get(tt, def)); }
+  void clear() { onFloor.clear(); carried.clear(); queued.clear(); }
+  void update(Blocks blocks, Dwarves dwarves, Job[] jobs) {
+    clear();
+    if(blocks !is null) {
+      foreach(ref inst; blocks.instances) { auto tt = cast(TileType)inst.meshdef[0]; onFloor[tt] = onFloor.get(tt, 0) + 1; }
+    }
+    if(dwarves !is null) {
+      foreach(ref d; dwarves) { foreach(tt; d.carrying) { carried[tt] = carried.get(tt, 0) + 1; } }
+    }
+    foreach(ref j; jobs) {
+      if(j.name == "Building") queued[j.tileType] = queued.get(j.tileType, 0) + 1;
+    }
+  }
+  string toString(TileType tt) const {
+    return format("%s | Floor:%d Carried:%d Queued:%d", tileData[tt].name, onFloor.get(tt, 0), carried.get(tt, 0), queued.get(tt, 0));
+  }
 }
 
 void deriveInventory(ref App app) {
-  app.world.inventory.items.clear();
-  if(app.world.blocks !is null) {
-    foreach(ref inst; app.world.blocks.instances) {
-      auto tt = cast(TileType)inst.meshdef[0];
-      app.world.inventory[tt] = app.world.inventory.get(tt, 0) + 1;
-    }
-  }
-  if(app.world.dwarves !is null) {
-    foreach(ref d; app.world.dwarves) { foreach(tt; d.carrying) { app.world.inventory[tt] = app.world.inventory.get(tt, 0) + 1; } }
-  }
+  app.world.inventory.update(app.world.blocks, app.world.dwarves, jobQueue);
   auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.get(j.tileType, 0) > 0).array;
-  foreach(ref j; jobQueue) {
-    if(j.name == "Building") {
-      auto cur = app.world.inventory.get(j.tileType, 0);
-      if(cur > 0) app.world.inventory[j.tileType] = cur - 1;
-    }
-  }
   if(app.world.inventory.get(app.world.inventory.ghost.type, 0) <= 0) app.world.inventory.ghost.type = TileType.None;
   if(jobQueue.length != prevLen) app.syncBuildGhosts();
 }
