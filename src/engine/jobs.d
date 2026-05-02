@@ -327,8 +327,8 @@ void claimNextJob(ref App app, ref Dwarf d) {
   foreach(i, ref job; jobQueue) {
     if(job.failedBy.canFind(d.uid)) continue;
     if(job.targetTile == noTile) continue;
-    if(job.name == "Building" && app.world.inventory.onFloor.get(job.tileType, 0) <= 0 && !d.carrying.canFind(job.tileType)) continue;
-    float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
+    if(job.name == "Building" && app.world.inventory.onFloor.get(job.tileType, 0) <= 0 && !d.carrying.any!(id => app.world.blocks.blocks.any!(b => b.id == id && b.type == job.tileType))) continue;
+  float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
   if(bestIdx == -1) return;
