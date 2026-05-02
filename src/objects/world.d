@@ -115,7 +115,7 @@ struct WorldData {
 
   pure bool isStandable(int[3] tile) const nothrow {
     if(tile[1] <= 0 || tile[1] >= chunkHeight) return false;
-    return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None;
+    return(getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable);
   }
 
   pure PathNode[] getSuccessors(PathNode parent) const {
@@ -147,6 +147,7 @@ struct World {
   Tree[][int[3]] pendingTrees;                              /// Trees generated async
   Blocks blocks;                                            /// Blocks
   Inventory inventory;                                      /// Inventory
+  GhostCube buildingGhosts;                                 /// Building Ghosts
   Dwarves dwarves;                                          /// Dwarves
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
@@ -213,6 +214,8 @@ void loadWorld(ref App app) {
   SDL_Log("loadWorld: Ghost Cube");
   app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
   app.objects ~= app.world.inventory.ghost;
+  app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight]);
+  app.objects ~= app.world.buildingGhosts;
   app.deriveInventory();
 }
 

@@ -99,6 +99,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { 
       app.camera.isdrag[1] = true;
+      app.world.inventory.ghost.type = TileType.None;
       app.camera.lastMousePos = [e.button.x, e.button.y];
     }
   }
@@ -129,10 +130,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         }
       }
     }
-    if (e.button.button == SDL_BUTTON_RIGHT) {
-      app.world.inventory.ghost.type = TileType.None;
-      app.camera.isdrag[1] = false;
-    }
+    if (e.button.button == SDL_BUTTON_RIGHT) { app.camera.isdrag[1] = false; }
     app.updateGhostTile(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION){ 

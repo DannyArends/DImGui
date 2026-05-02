@@ -5,6 +5,7 @@
 
 import engine;
 
+import color : colorIndex;
 import chunk : getBestTile;
 import geometry;
 import camera : castRay;
@@ -12,14 +13,16 @@ import tileatlas : tileData;
 import textures : idx;
 import intersection : intersects;
 import vector : dot;
+import matrix : translate;
 import world : noTile;
+import jobs : jobQueue;
 
 class GhostCube : Cube {
   TileType type = TileType.None;
   int[3] tile = noTile;
 
   this(float[2] dim) {
-    super(color: [1.0f, 1.0f, 1.0f, 0.3f]);
+    super(color: [1.0f, 1.0f, 1.0f, 1.0f]);
     isSelectable = false;
     isVisible = false;
     scale(this, [dim[0], dim[1], dim[0]]);
@@ -65,4 +68,26 @@ void updateGhostTile(ref App app, float[3][2] ray) {
     }
     app.buffers["MeshMatrices"].dirty[] = true;
   }
+}
+
+void syncBuildGhosts(ref App app) {
+  if(app.world.buildingGhosts is null) return;
+  app.world.buildingGhosts.instances = [];
+  uint color = colorIndex(Colors.dodgerblue);
+
+  void addInstance(int[3] tile, uint color) {
+    Instance inst = Instance([0, 0, color, 0]);
+    inst.matrix = inst.matrix.scale([app.world.tileSize, app.world.tileHeight, app.world.tileSize]);
+    inst.matrix = inst.matrix.translate(app.world.tileToWorld(tile));
+    app.world.buildingGhosts.instances ~= inst;
+  }
+
+  foreach(ref j; jobQueue) { if(j.name == "Building") addInstance(j.targetTile, color); }
+  if(app.world.dwarves !is null) {
+    foreach(ref d; app.world.dwarves) {
+      foreach(ref j; d.jobStack) { if(j.name == "Building") addInstance(j.targetTile, color); }
+    }
+  }
+  app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
+  app.world.buildingGhosts.buffers[INSTANCE] = false;
 }

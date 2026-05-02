@@ -45,7 +45,7 @@ shared static this() {
     TileType.Stone05: TileT("Stone_05", true,  2.0f),
     TileType.Ice01: TileT("Ice_01", true,  4.0f),
     TileType.Snow: TileT("Ice_03", true,  4.5f),
-    TileType.Wood: TileT("Wood_03", false, 0.0f),
+    TileType.Wood: TileT("Wood_03", true, 1.0f),
     TileType.Leaves: TileT("Hedge_01", false, 0.0f),
   ];
 }
