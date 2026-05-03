@@ -22,7 +22,7 @@ struct Search(M, N) {
   SearchState state = SearchState.NOT_INITIALISED;          /// Astar SearchState
   size_t steps = 0;                                         /// search steps taken
   size_t path = 0;                                          /// step in current path
-  size_t maxsteps = 1500;                                   /// maximum number of search steps
+  size_t maxsteps = 10000;                                  /// maximum number of search steps
   bool cancel = false;                                      /// cancels an active search
 }
 
@@ -129,11 +129,6 @@ Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], float[3]
     search.state = search.step();
   }while(search.state == SearchState.SEARCHING && search.steps < search.maxsteps);
 
-  if (search.state == SearchState.SEARCHING && search.openlist.length > 0) {
-    auto best = search.openlist.minElement!(i => search.pool[i].h);
-    search.goal = best;
-    search.storeRoute(best);
-  }
   return search;
 }
 
