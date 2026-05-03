@@ -10,7 +10,7 @@ import geometry : texture, bumpmap, deAllocate;
 import intersection : intersects;
 import textures : mapTextures, idx;
 import tileatlas : tileData;
-import matrix : translate, scale, multiply;
+import matrix : translateScale, translate, scale, multiply;
 import vector : expandBounds;
 import world : setTile;
 import ghost: updateGhostTile;
@@ -56,7 +56,7 @@ class Chunk : Cube {
     float cx = data.coord[0] * sx + sx * 0.5f;
     float cz = data.coord[2] * sx + sx * 0.5f;
     float cy = sy * 0.5f + wd.yOffset;
-    instances = [Instance([0,0], translate([cx, cy, cz]).multiply(scale([sx, sy, sx])))];
+    instances = [Instance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
     tiles = new Tiles(cd);
     geometry = (){ return "Chunk"; };
   }

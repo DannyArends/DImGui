@@ -90,10 +90,6 @@ struct WorldData {
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
   @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
 
-  @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
-    return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset) / tileHeight), cast(int)(pos[2] / tileSize)];
-  }
-
   @nogc pure TileType getTileAt(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     auto idx = tileIdx(tile);
@@ -104,19 +100,20 @@ struct WorldData {
   @nogc pure int surfaceAt(int x, int y, int z) const nothrow { while(y > 0 && getTileAt([x, y, z]) == TileType.None){ y--; } return y; }
 
   /** Compute world-space position from tile coords */
-  @nogc pure float[3] tileToWorld(int[3] tile) const nothrow {
-    auto wp = worldPos(tile);
-    return [wp[0], wp[1] + yOffset, wp[2]];
+  @nogc pure float[3] tileToWorld(int[3] tile, float yOff = 0.0f) const nothrow {
+    return [tile.x * tileSize, tile.y * tileHeight + yOffset + yOff, tile.z * tileSize];
+  }
+  @nogc pure int[3] worldToTile(float[3] pos, float yOff = 0.0f) const nothrow {
+    return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset - yOff) / tileHeight), cast(int)(pos[2] / tileSize)];
   }
 
   pure bool isPassable(int[3] wc) const nothrow {
-    if(wc[1] < 0 || wc[1] >= chunkHeight) return false;
+    if(wc[1] <= 0 || wc[1] >= chunkHeight){ return(false); }
     return getTileAt(wc) == TileType.None;
   }
 
   pure bool isStandable(int[3] tile) const nothrow {
-    if(tile[1] <= 0 || tile[1] >= chunkHeight) return false;
-    return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable;
+    return isPassable(tile) && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable;
   }
 
   pure PathNode[] getSuccessors(PathNode parent) const {
