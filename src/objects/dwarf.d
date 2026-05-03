@@ -148,8 +148,10 @@ void tickDwarf(ref App app, ref Dwarf d) {
       }
       break;
     case DwarfState.WaitingForPath: break;
-    case DwarfState.Moving: break;
-    case DwarfState.Wandering: break;
+    case DwarfState.Moving:
+    case DwarfState.Wandering:
+      if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
+      break;
     case DwarfState.Working:
       if(d.jobStack.length == 0) { d.state = DwarfState.Idle; break; }
       if(app.atDestination(d, d.jobStack[0].targetTile)) {
