@@ -5,7 +5,6 @@
 
 import engine;
 
-import dwarf : DwarfState;
 import search : performSearch, atGoal, stepThroughPath;
 
 struct PathRequest {

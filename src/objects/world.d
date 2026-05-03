@@ -94,8 +94,9 @@ struct WorldData {
   @nogc pure TileType getTileAt(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     auto idx = tileIdx(tile);
-    foreach(d; diffs) { if(d.coord == coord && d.idx == idx) return cast(TileType)d.type; }
-    return getTile(tile);
+    TileType result = getTile(tile);
+    foreach(d; diffs) { if(d.coord == coord && d.idx == idx) result = cast(TileType)d.type; }
+    return result;
   }
 
   @nogc pure int surfaceAt(int x, int y, int z) const nothrow { while(y > 0 && getTileAt([x, y, z]) == TileType.None){ y--; } return y; }
