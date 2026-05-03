@@ -34,8 +34,8 @@ void applyPathResult(ref App app, PathResult result) {
     if(d.uid != result.dwarfUID) continue;
     if(!result.success) {
       if(d.jobStack.length > 0) {
-        d.jobStack[0].failedBy ~= d.uid;
-        if(d.jobStack.length > 1) d.jobStack[$-1].failedBy ~= d.uid;
+        if(!d.jobStack[0].failedBy.canFind(d.uid)) d.jobStack[0].failedBy ~= d.uid;
+        if(d.jobStack.length > 1 && !d.jobStack[$-1].failedBy.canFind(d.uid)) { d.jobStack[$-1].failedBy ~= d.uid; }
         d.jobStack[0].onFail(app, d);
       }
       return;
@@ -264,7 +264,7 @@ bool tryAssign(ref App app, ref Job job) {
 /** Fail the current job and requeue */
 void failAndRequeue(ref Dwarf d) {
   auto j = d.jobStack[0];
-  j.failedBy ~= d.uid;
+  if(!j.failedBy.canFind(d.uid)) j.failedBy ~= d.uid;
   jobQueue ~= j;
   d.jobStack = [];
   d.clearGoal();
