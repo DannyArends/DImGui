@@ -243,7 +243,7 @@ void doPickup(ref App app, ref Dwarf d) {
     return;
   }
   // block not found
-  if(d.jobStack.length > 1) jobQueue ~= d.jobStack[$-1];
+  if(d.jobStack.length > 1 && d.jobStack[$-1].targetTile != noTile) jobQueue ~= d.jobStack[$-1];
   d.jobStack = [];
   d.clearGoal();
 }
@@ -283,7 +283,7 @@ void claimNextJob(ref App app, ref Dwarf d) {
   if(jobQueue.length == 0) return;
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
   auto prevLen = jobQueue.length;
-  jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
+  jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount && j.targetTile != noTile).array;
   app.syncBuildGhosts();
 
   int bestIdx = -1;
