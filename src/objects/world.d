@@ -8,6 +8,7 @@ import engine;
 import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
+import pathfinding :invalidatePaths;
 import noise : noiseHTT;
 import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
@@ -259,6 +260,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   }
   app.world.pendingPaths = [];
   foreach(ref j; jobQueue) j.failedBy = [];
+  app.invalidatePaths(tile);
 }
 
 /** Dispatch a chunk build job to the next available worker thread */

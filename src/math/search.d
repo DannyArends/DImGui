@@ -87,12 +87,13 @@ SearchState step(S, N)(ref S search, N node = PathNode()) {
     s.parent = nIdx;
     s.g = newG;
     s.h = euclidean(s.position, search.pool[search.goal].position);
-    search.pool ~= s;
-    size_t sIdx = search.pool.length - 1;
     if((i = search.closedlist.has(search.pool, s)) != size_t.max) search.closedlist = search.closedlist.remove(i);
     if((i = search.openlist.has(search.pool, s)) != size_t.max) {
       search.pool[search.openlist[i]] = s;
-    }else { search.openlist ~= sIdx; }
+    } else {
+      search.pool ~= s;
+      search.openlist ~= search.pool.length - 1;
+    }
   }
 
   search.closedlist ~= nIdx;
@@ -129,9 +130,9 @@ Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], float[3]
   }while(search.state == SearchState.SEARCHING && search.steps < search.maxsteps);
 
   if (search.state == SearchState.SEARCHING && search.openlist.length > 0) {
-    if(verbose){ SDL_Log(toStringz(format("S: %s, after: %d / %d, still open: %d", search.state, search.steps, search.maxsteps, search.openlist.length))); }
-    search.goal = search.openlist[0];
-    search.storeRoute(search.openlist[0]);
+    auto best = search.openlist.minElement!(i => search.pool[i].h);
+    search.goal = best;
+    search.storeRoute(best);
   }
   return search;
 }

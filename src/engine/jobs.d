@@ -284,7 +284,8 @@ void claimNextJob(ref App app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
   auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  if(jobQueue.length != prevLen) app.syncBuildGhosts();
+  app.syncBuildGhosts();
+
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
@@ -297,6 +298,6 @@ void claimNextJob(ref App app, ref Dwarf d) {
   if(bestIdx == -1) return;
   auto job = jobQueue[bestIdx];
   jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
-  if(app.dispatchJob(d, job)) { app.syncBuildGhosts(); app.deriveInventory(); }
+  if(app.dispatchJob(d, job)) { app.deriveInventory(); }
 }
 
