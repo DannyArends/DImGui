@@ -120,7 +120,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
   igBeginTable(toStringz(obj.geometry() ~ "_Tbl"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     auto p = obj.position;
     igTableNextColumn();
-      igText(faIcon(cast(string)ICON_FA_ARROWS), ImVec2(0.0f, 0.0f)); 
+      igText(faIcon(cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT), ImVec2(0.0f, 0.0f)); 
     igTableNextColumn();
       igPushItemWidth(100 * app.gui.uiscale);
         igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
@@ -145,7 +145,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
     igTableNextColumn();
 
     igTableNextColumn();
-      if(igButton(faIcon(cast(string)ICON_FA_REFRESH), ImVec2(0.0f, 0.0f))){ obj.rotate(app.gui.rotF); app.gui.rotF = [0.0f,0.0f,0.0f]; }
+      if(igButton(faIcon(cast(string)ICON_FA_ARROWS_ROTATE), ImVec2(0.0f, 0.0f))){ obj.rotate(app.gui.rotF); app.gui.rotF = [0.0f,0.0f,0.0f]; }
     igTableNextColumn();
       igPushItemWidth(100 * app.gui.uiscale);
         igSliderScalar("##xR", ImGuiDataType_Float,  &app.gui.rotF[0], &app.gui.rot[0], &app.gui.rot[1], "%.0f", 0);
