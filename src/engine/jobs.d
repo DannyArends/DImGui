@@ -209,7 +209,6 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
       jobQueue ~= newJob;
-      d.jobStack = [];
       d.clearGoal();
       app.syncBuildGhosts();
     }
@@ -251,7 +250,6 @@ void doPickup(ref App app, ref Dwarf d) {
   }
   // block not found
   if(d.jobStack.length > 1 && d.jobStack[$-1].targetTile != noTile) jobQueue ~= d.jobStack[$-1];
-  d.jobStack = [];
   d.clearGoal();
 }
 

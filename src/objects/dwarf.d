@@ -82,7 +82,7 @@ struct Dwarf {
   uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
 
   @property bool waitingForPath(){ return(state == DwarfState.WaitingForPath); }
-  @nogc void clearGoal() nothrow { targetTile = noTile; }
+  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
 }
 
 /** Random names */
