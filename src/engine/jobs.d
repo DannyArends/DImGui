@@ -215,7 +215,6 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   auto goal = app.findGoalTile(d);
   if(goal == noTile || !app.pathfindTo(d, goal)) {
     job.failedBy ~= d.uid;
-    job.onFail(app, d);
     jobQueue ~= job;
     d.jobStack = [];
     return false;
