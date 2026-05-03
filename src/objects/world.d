@@ -264,16 +264,17 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
 }
 
 /** Dispatch a chunk build job to the next available worker thread */
-void dispatchWorker(ref App app, int[3] coord){
+bool dispatchWorker(ref App app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, coord);
       app.world.pendingChunks[coord] = true;
       if(app.verbose) SDL_Log(toStringz(format("Loading chunk: %s A-sync", coord)));
-      break;
+      return(true);
     }
   }
+  return(false);
 }
 
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
@@ -311,9 +312,6 @@ void updateWorld(ref App app, float[3] lookat) {
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
-    if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
-      app.dispatchWorker(coord);
-      app.world.chunks[coord].dirty = false;
-    }
+    if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) { app.dispatchWorker(coord); }
   }
 }
