@@ -137,19 +137,36 @@ void fellTree(ref App app, int[3] tile) {
 }
 
 void saveTrees(ref App app) {
+  // Flush pending trees into trees map
+  foreach(coord, trees; app.world.pendingTrees) {
+    if(coord !in app.world.trees) app.world.trees[coord] = trees;
+    else if(app.world.trees[coord].length == 0) app.world.trees[coord] = trees;
+  }
+  app.world.pendingTrees.clear();
+
   Tree[] allTrees;
-  foreach(trees; app.world.trees.values) allTrees ~= trees;
-  foreach(trees; app.world.pendingTrees.values) allTrees ~= trees;
+  foreach(coord, trees; app.world.trees) {
+    if(trees.length == 0) { // tombstone — marks this chunk as fully cleared, prevents regeneration on reload
+      allTrees ~= Tree([int.min, coord[0], coord[2]], 0, 0, 0, 0);
+    } else { allTrees ~= trees; }
+  }
   if(allTrees.length == 0) return;
   writeWorldData(app.world.treePath(), allTrees, cast(uint)allTrees.length);
 }
+
 
 void loadTrees(ref App app) {
   Tree[] trees;  uint i;
   if(!readWorldData(app.world.treePath(), trees, i)) return;
   foreach(ref t; trees) {
+    if(t.rootTile[0] == int.min) { // tombstone — restore empty entry to prevent regeneration
+      int[3] coord = [t.rootTile[1], 0, t.rootTile[2]];
+      app.world.pendingTrees[coord] = [];
+      continue;
+    }
     int[3] coord = app.world.chunkCoord(t.rootTile);
-    app.world.pendingTrees[coord] ~= t;  // use pendingTrees instead
+    app.world.pendingTrees[coord] ~= t;
   }
+  //SDL_Log("loadTrees: %d trees loaded into %d chunks", cast(int)trees.length, cast(int)app.world.pendingTrees.length);
 }
 
