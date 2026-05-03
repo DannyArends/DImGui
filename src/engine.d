@@ -14,8 +14,7 @@ enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", PO
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 
-/** Main application structure
- */
+/** Main application structure */
 struct App {
   SDL_Window* window;
   alias window this;
@@ -150,16 +149,14 @@ struct App {
   }
 }
 
-/** Check result of Vulkan call and print if an error occured
- */
+/** Check result of Vulkan call and print if an error occured */
 extern(C) void enforceVK(VkResult err) {
   if (err == VK_SUCCESS) return;
   SDL_Log("[enforceVK] Error: VkResult = %d", err);
   if (err < 0) abort();
 }
 
-/** Check result of SpirV-Compiler call and print if an error occured
- */
+/** Check result of SpirV-Compiler call and print if an error occured */
 void enforceSPIRV(App app, spvc_result err) {
   if(err == SPVC_SUCCESS) return;
   SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));

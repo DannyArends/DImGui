@@ -4,7 +4,7 @@
  */
 import engine;
 
-import io : readFile, writeFile;
+import serialization : readWorldData, writeWorldData;
 import inventory : deriveInventory;
 import matrix : translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
@@ -31,33 +31,28 @@ class Blocks : Cube {
 
   this() {
     super();
-    instancedMesh = true;
-    instances = [];
-    geometry = (){ return "Blocks"; };
+    initInstanced(() => "Blocks");
   }
 }
 
 /** Save blocks */
 void saveBlocks(ref App app) {
   if(app.world.blocks is null) return;
-  uint[2] header = [WORLD_MAGIC, app.world.blocks.nextID];
-  writeFile(app.world.blocksPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])app.world.blocks.blocks));
+  writeWorldData(app.world.blocksPath(), app.world.blocks.blocks, app.world.blocks.nextID);
 }
 
 /** Load blocks */
 void loadBlocks(ref App app) {
   app.world.blocks = new Blocks();
   app.objects ~= app.world.blocks;
-  auto raw = readFile(app.world.blocksPath());
-  if(raw.length < uint[2].sizeof) return;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadBlocks: invalid magic"); return; }
-  app.world.blocks.nextID = (cast(uint[])raw)[1];
-  app.world.blocks.blocks = cast(Block[])raw[uint[2].sizeof..$].dup;
+  Block[] blocks;
+  if(!readWorldData(app.world.blocksPath(), blocks, app.world.blocks.nextID)) return;
+  app.world.blocks.blocks = blocks;
   foreach(ref b; app.world.blocks.blocks) {
     app.world.blocks.instances ~= app.toDropInstance(b.tile, b.type);
     if(b.isFalling) app.world.pendingUnsettle ~= b.tile;
   }
-  app.world.blocks.buffers[INSTANCE] = false;
+  app.world.blocks.markDirty();
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.blocks.length);
 }
 
@@ -102,7 +97,7 @@ uint spawnBlock(ref App app, int[3] tile, TileType tt) {
   auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
   app.world.blocks.blocks ~= b;
   app.world.blocks.instances ~= app.toDropInstance(tile, tt);
-  app.world.blocks.buffers[INSTANCE] = false;
+  app.world.blocks.markDirty();
   return b.id;
 }
 
@@ -120,7 +115,7 @@ void syncBlockInstances(ref App app) {
     if(b.tile == noTile || b.tile == builtTile) { hidden++; } else { visible++; }
   }
   //SDL_Log("syncBlockInstances: %d visible, %d hidden (total=%d)", visible, hidden, cast(int)app.world.blocks.blocks.length);
-  app.world.blocks.buffers[INSTANCE] = false;
+  app.world.blocks.markDirty();
 }
 
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }

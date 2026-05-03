@@ -35,10 +35,8 @@ struct ChunkData {
 class Tiles : Square {
   this(ChunkData cd) {
     super();
+    initInstanced(() => "Tiles", cd.tileInstances);
     isSelectable = false;
-    instancedMesh = true;
-    instances = cd.tileInstances;
-    geometry = (){ return "Tiles"; };
   }
 }
 
