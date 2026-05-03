@@ -5,7 +5,7 @@
 
 import engine;
 
-import matrix : translateScale;
+import matrix : position;
 
 class PathMarkers : Cylinder {
   this() {
@@ -21,7 +21,9 @@ void syncPathMarkers(ref App app) {
   if(app.showPaths) {
     foreach(ref d; app.world.dwarves) {
       foreach(ref wp; d.path) {
-        app.world.pathMarkers.instances ~= DrawInstance([0, 0, d.colorID, 0], translateScale(wp, [0.2f, 0.2f, 0.2f]));
+        DrawInstance inst = DrawInstance([0, 0, d.colorID, 0]);
+        inst = position(inst, [wp[0], wp[1] - 0.4f, wp[2]]);
+        app.world.pathMarkers.instances ~= inst;
       }
     }
   }
