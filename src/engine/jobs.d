@@ -212,7 +212,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
 }
 
 /** Dispatch a job to a dwarf */
-bool dispatchJob(ref App app, ref Dwarf d, ref Job job) {
+bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   if(app.verbose) SDL_Log(toStringz(format("[Job] %s claimed '%s' targeting %s", d.name, job.name, job.targetTile)));
   d.jobStack = job.prereqs ~ [job];
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
