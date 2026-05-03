@@ -312,6 +312,8 @@ void updateWorld(ref App app, float[3] lookat) {
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
-    if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) { app.dispatchWorker(coord); }
+    if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
+      if(app.dispatchWorker(coord)) app.world.chunks[coord].dirty = false;
+    }
   }
 }
