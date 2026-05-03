@@ -136,16 +136,6 @@ void tickDwarf(ref App app, ref Dwarf d) {
   final switch(d.state) {
     case DwarfState.Idle:
       app.claimNextJob(d);
-      if(d.state != DwarfState.Idle) break;
-      if(++d.idleTicks[0] > d.idleTicks[1]) {
-        d.idleTicks[0] = 0;
-        if(app.world.blocks !is null && app.world.blocks.blocks.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
-          app.dispatchJob(d, stuffJob());
-        } else {
-          int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
-          if(app.pathfindTo(d, wander)) d.targetTile = wander;
-        }
-      }
       break;
     case DwarfState.WaitingForPath: break;
     case DwarfState.Moving:
@@ -157,15 +147,10 @@ void tickDwarf(ref App app, ref Dwarf d) {
       if(app.atDestination(d, d.jobStack[0].targetTile)) {
         d.blockedSince = 0;
         d.jobStack[0].onArrive(app, d);
-      } else if(d.jobStack[0].name == "Building") {
-        d.state = DwarfState.Blocked;
-        app.handleBlocking(d);
       } else {
         if(app.repathTo(d, d.jobStack[0].targetTile)) {
           d.state = DwarfState.WaitingForPath;
-        } else {
-          d.jobStack[0].onFail(app, d);
-        }
+        } else { d.jobStack[0].onFail(app, d); }
       }
       break;
     case DwarfState.Blocked: app.handleBlocking(d); break;
