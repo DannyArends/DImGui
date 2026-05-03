@@ -199,7 +199,7 @@ void loadWorld(ref App app) {
 
   app.world.trunk = new TrunkMesh();
   app.world.canopy = new CanopyMesh();
-  app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight]);
+  app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight], true);
   app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
   app.objects ~= app.world.trunk;
   app.objects ~= app.world.canopy;

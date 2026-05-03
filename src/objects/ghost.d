@@ -21,12 +21,14 @@ class GhostCube : Cube {
   TileType type = TileType.None;
   int[3] tile = noTile;
 
-  this(float[2] dim) {
+  this(float[2] dim, bool instanced = false) {
     super(color: [1.0f, 1.0f, 1.0f, 1.0f]);
     isSelectable = false;
     isVisible = false;
     castShadow = false;
     scale(this, [dim[0], dim[1], dim[0]]);
+    geometry = (){ return(typeof(this).stringof); };
+    if(instanced) initInstanced(() => "BuildingGhosts");
   }
 }
 

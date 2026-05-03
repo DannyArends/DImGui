@@ -6,7 +6,7 @@
 import engine;
 
 import block : spawnBlock, unsettleBlocks;
-import io : readFile, writeFile;
+import serialization : readWorldData, writeWorldData;
 import intersection : intersects;
 import tileatlas : TileType;
 import inventory : deriveInventory;
@@ -17,9 +17,7 @@ import world : noTile, WORLD_MAGIC;
 class TrunkMesh : Cylinder {
   this() {
     super(0.4f, 1.0f, 12);  // thin cylinder, 12 segments for perf
-    instancedMesh = true;
-    instances = [];
-    geometry = (){ return "TrunkMesh"; };
+    initInstanced(() => "TrunkMesh");
   }
 }
  
@@ -27,9 +25,7 @@ class TrunkMesh : Cylinder {
 class CanopyMesh : Icosahedron {
   this() {
     super();
-    instancedMesh = true;
-    instances = [];
-    geometry = (){ return "CanopyMesh"; };
+    initInstanced(() => "CanopyMesh");
   }
 }
  
@@ -105,8 +101,8 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
     app.world.canopy.instances ~= Instance([cast(uint)TileType.Leaves, cast(uint)TileType.Leaves], 
                                             translate([px, py + t.height * th, pz]).multiply(scale([cSize, cSize * cSquish, cSize])));
   }
-  app.world.trunk.buffers[INSTANCE] = false;
-  app.world.canopy.buffers[INSTANCE] = false;
+  app.world.trunk.markDirty();
+  app.world.canopy.markDirty();
   return trees;
 }
 
@@ -121,8 +117,8 @@ void removeTreeInstances(ref App app, int[3] coord) {
   if(coord !in app.world.trees) return;
   app.world.trees.remove(coord);
   app.rebuildTreeInstances();
-  app.world.trunk.buffers[INSTANCE] = false;
-  app.world.canopy.buffers[INSTANCE] = false;
+  app.world.trunk.markDirty();
+  app.world.canopy.markDirty();
 }
 
 /** Find and fell the tree rooted at or directly above the given tile */
@@ -148,15 +144,12 @@ void saveTrees(ref App app) {
   foreach(trees; app.world.trees.values) allTrees ~= trees;
   foreach(trees; app.world.pendingTrees.values) allTrees ~= trees;
   if(allTrees.length == 0) return;
-  uint[2] header = [WORLD_MAGIC, cast(uint)allTrees.length];
-  writeFile(app.world.treePath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])allTrees));
+  writeWorldData(app.world.treePath(), allTrees, cast(uint)allTrees.length);
 }
 
 void loadTrees(ref App app) {
-  auto raw = readFile(app.world.treePath());
-  if(raw.length < uint[2].sizeof) return;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) return;
-  auto trees = cast(Tree[])raw[uint[2].sizeof..$].dup;
+  Tree[] trees;  uint i;
+  if(!readWorldData(app.world.treePath(), trees, i)) return;
   foreach(ref t; trees) {
     int[3] coord = app.world.chunkCoord(t.rootTile);
     app.world.pendingTrees[coord] ~= t;  // use pendingTrees instead

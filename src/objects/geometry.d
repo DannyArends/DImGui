@@ -83,8 +83,12 @@ class Geometry {
   bool castShadow = true;                           /// Boolean flag
 
   bool[3] buffers = [false, false, false];          /// Boolean flag
-  @property @nogc bool isBuffered() nothrow {
-    return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); 
+  @property @nogc bool isBuffered() nothrow { return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); }
+  @nogc void markDirty() nothrow { buffers[INSTANCE] = false; }
+  @nogc void initInstanced(string delegate() name, Instance[] initial = []) nothrow {
+    instancedMesh = true;
+    instances = initial;
+    geometry = name;
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
@@ -97,7 +101,7 @@ class Geometry {
   void function(ref App app, ref Geometry obj, SDL_Event e) onMouseMove;
   void function(ref App app, ref Geometry obj, float dt) onFrame;
   void function(ref App app, ref Geometry obj) onTick;
-  string function() geometry;
+  string delegate() geometry;
 }
 
 void logDraw(T)(ref App app, ref T object) {
@@ -120,7 +124,7 @@ void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
 @nogc void position(T)(T object, float[3] p, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = position(object.instances[instance], p);
-  object.buffers[INSTANCE] = false;
+  object.markDirty();
 }
 
 @nogc float[3] position(T)(T object, uint instance = 0) nothrow {
@@ -132,14 +136,14 @@ void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
 @nogc void rotate(T)(T object, float[3] r, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = rotate(object.instances[instance], r);
-  object.buffers[INSTANCE] = false;
+  object.markDirty();
 }
 
 /** Scale instance from object.instances by s */
 @nogc void scale(T)(T object, float[3] s, uint instance = 0) nothrow {
   assert(instance <  object.instances.length, "No such instance");
   object.instances[instance] = scale(object.instances[instance], s);
-  object.buffers[INSTANCE] = false;
+  object.markDirty();
 }
 
 float scale(T)(T object, uint instance = 0) {

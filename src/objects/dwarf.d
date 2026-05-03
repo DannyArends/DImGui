@@ -5,7 +5,7 @@
 import engine;
 
 import geometry;
-import io : readFile, writeFile;
+import serialization : readWorldData, writeWorldData;
 import block : spawnBlock, syncBlockInstances, noBlock;
 import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
 import vector : euclidean;
@@ -49,9 +49,7 @@ class Dwarves : Cylinder {
 
   this() {
     super(0.5f, 1.0f, 6);
-    instancedMesh = true;
-    instances = [];
-    geometry = (){ return "Dwarves"; };
+    initInstanced(() => "Dwarves");
   }
 }
 
@@ -115,7 +113,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
       d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
     ];
     ds.instances[i] = position(ds.instances[i], d.visualPos);
-    ds.buffers[INSTANCE] = false;
+    ds.markDirty();
     if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
   }
 }
@@ -202,24 +200,21 @@ void spawnDwarf(ref App app, string name) {
   Dwarf d = Dwarf(DwarfData(nextDwarfUID++, uniform(0, cast(uint)app.colors.length), tile));
   d.name = name;
   app.addDwarf(d);
-  app.world.dwarves.buffers[INSTANCE] = false;
+  app.world.dwarves.markDirty();
 }
 
 void saveDwarfs(ref App app) {
   if(app.world.dwarves is null) return;
   DwarfData[] data = app.world.dwarves[].map!(d => d.data).array;
-  uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
-  writeFile(app.world.dwarfsPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
+  writeWorldData(app.world.dwarfsPath(), data, cast(uint)data.length);
 }
 
 bool loadDwarfs(ref App app) {
-  auto raw = readFile(app.world.dwarfsPath());
-  if(raw.length < uint[2].sizeof) return false;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDwarfs: invalid magic"); return false; }
-  auto data = cast(DwarfData[])raw[uint[2].sizeof..$].dup;
+  DwarfData[] data;  uint i;
+  if(!readWorldData(app.world.dwarfsPath(), data, i)) return false;
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
-  app.world.dwarves.buffers[INSTANCE] = false;
+  app.world.dwarves.markDirty();
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
   foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;
