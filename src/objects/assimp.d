@@ -13,9 +13,9 @@ import node : loadNode;
 import meta : loadMetaData;
 import io : readFile;
 import material : loadMaterials;
-import geometry : scale, rotate, computeNormals, computeTangents;
 import textures : idx;
 import matrix : translate;
+import normals : computeNormals, computeTangents;
 import vector : x, y, z, euclidean;
 
 /** OpenAsset using assimp

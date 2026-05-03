@@ -4,10 +4,10 @@
  */
 import engine;
 
-import geometry;
 import serialization : readWorldData, writeWorldData;
 import block : spawnBlock, syncBlockInstances, noBlock;
 import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
+import matrix : position, scale, rotate;
 import vector : euclidean;
 import tileatlas : tileData;
 import inventory : deriveInventory;

@@ -5,13 +5,14 @@
 
 import engine;
 
-import geometry : computeNormals, computeTangents, position, rotate, scale, texture, bumpmap, opacity;
+import geometry : texture, bumpmap, opacity;
 import icosahedron : refineIcosahedron;
 import lsystem : createLSystem;
 import lights : updateSun;
 import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
+import normals : computeNormals, computeTangents;
 import dwarf : spawnDwarf, loadDwarfs, randomDwarfName;
 
 /*
