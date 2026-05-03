@@ -35,12 +35,13 @@ void applyPathResult(ref App app, PathResult result) {
     if(!result.success) {
       if(d.jobStack.length > 0) {
         if(!d.jobStack[0].failedBy.canFind(d.uid)) d.jobStack[0].failedBy ~= d.uid;
-        if(d.jobStack.length > 1 && !d.jobStack[$-1].failedBy.canFind(d.uid)) { d.jobStack[$-1].failedBy ~= d.uid; }
+        if(d.jobStack.length > 1 && !d.jobStack[$-1].failedBy.canFind(d.uid)) d.jobStack[$-1].failedBy ~= d.uid;
         d.jobStack[0].onFail(app, d);
       }
+      d.state = DwarfState.Idle;
       return;
     }
-    d.waitingForPath = false;
+    d.state = (d.jobStack.length > 0) ? DwarfState.Moving : DwarfState.Wandering;
     d.path = result.path;
     d.moveFrom = d.visualPos;
     d.moveTo = d.visualPos;
@@ -50,7 +51,11 @@ void applyPathResult(ref App app, PathResult result) {
 }
 
 /** Advance the job stack — removes the active sub-job and clears the dwarf's current goal */
-void completeSubJob(ref Dwarf d) { d.jobStack = d.jobStack[1..$]; d.clearGoal(); }
+void completeSubJob(ref Dwarf d) {
+  d.jobStack = d.jobStack[1..$];
+  d.targetTile = noTile;
+  d.state = (d.jobStack.length > 0) ? DwarfState.Working : DwarfState.Idle;
+}
 
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
 void progressJob(ref App app, ref Dwarf d, float amount, void delegate() onComplete) {
@@ -222,11 +227,13 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   d.targetTile = d.jobStack[0].targetTile;
   auto goal = app.findGoalTile(d);
   if(goal == noTile || !app.pathfindTo(d, goal)) {
-    job.failedBy ~= d.uid;
+    if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
     jobQueue ~= job;
     d.jobStack = [];
+    d.state = DwarfState.Idle;
     return false;
   }
+  d.state = DwarfState.WaitingForPath;
   return true;
 }
 
@@ -254,7 +261,7 @@ bool tryAssign(ref App app, ref Job job) {
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref d; app.world.dwarves.dwarves) {
-    if((!d.isIdle && !d.isWandering) || job.failedBy.canFind(d.uid)) continue;
+    if((d.state != DwarfState.Idle && d.state != DwarfState.Wandering) || job.failedBy.canFind(d.uid)) continue;
     float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
@@ -267,15 +274,17 @@ void failAndRequeue(ref Dwarf d) {
   if(!j.failedBy.canFind(d.uid)) j.failedBy ~= d.uid;
   jobQueue ~= j;
   d.jobStack = [];
-  d.clearGoal();
+  d.targetTile = noTile;
+  d.state = DwarfState.Idle;
   d.progress = 0.0f;
 }
 
 /** Fail the current job and requeue parent */
 void failAndRequeueParent(ref Dwarf d) {
-  if(d.jobStack.length > 1) jobQueue ~= d.jobStack[1];
+  if(d.jobStack.length > 1 && d.jobStack[$-1].targetTile != noTile) jobQueue ~= d.jobStack[$-1];
   d.jobStack = [];
-  d.clearGoal();
+  d.targetTile = noTile;
+  d.state = DwarfState.Idle;
 }
 
 /** Allow a dwarf to select their next job */
