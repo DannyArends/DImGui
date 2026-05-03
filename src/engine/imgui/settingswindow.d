@@ -7,64 +7,35 @@ import engine;
 
 import imgui : clearSettings;
 import lights : toggleLightGeometries;
+import widgets : labelCol;
 
-/** Show the GUI window with global settings
- */
+/** Show the GUI window with global settings */
 void showSettingsContent(ref App app, uint font = 0) {
-  igBeginTable("Settings_Tbl", 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-  igTableNextColumn();
-  igText("Total Frames", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igText(toStringz(format("%s", app.totalFramesRendered)), ImVec2(0.0f, 0.0f));
+  igBeginTable("Settings_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
-  igTableNextColumn();
-  igText("Deletion Queues", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igText(toStringz(format("%d / %d / %d", app.bufferDeletionQueue.length, app.swapDeletionQueue.length, app.mainDeletionQueue.length)), ImVec2(0.0f, 0.0f));
+  labelCol("Total Frames"); igText(toStringz(format("%s", app.totalFramesRendered)));
+  labelCol("Deletion Queues"); igText(toStringz(format("%d / %d / %d", app.bufferDeletionQueue.length, app.swapDeletionQueue.length, app.mainDeletionQueue.length)));
 
-  igTableNextColumn();
-  igText("Verbose", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igPushItemWidth(100 * app.gui.uiscale);
-  int[2] limits = [0, 2];
-  igSliderScalar("##a", ImGuiDataType_U32,  &app.verbose, &limits[0], &limits[1], "%d", 0);
+  labelCol("Verbose");
+    int[2] limits = [0, 2];
+    igPushItemWidth(100 * app.gui.uiscale);
+    igSliderScalar("##a", ImGuiDataType_U32, &app.verbose, &limits[0], &limits[1], "%d", 0);
 
-  igTableNextColumn(); igText("Lighting Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igPushItemWidth(200 * app.gui.uiscale);
-  const(char)*[3] modes = ["Global Illumination", "Lights", "Lights + Shadows"];
-  int lm = cast(int)app.lMode;
-  if(igCombo_Str_arr("##lm", &lm, &modes[0], 3, -1)) app.lMode = cast(LMode)lm;
-  igPopItemWidth();
+  labelCol("Lighting Mode");
+    const(char)*[3] modes = ["Global Illumination", "Lights", "Lights + Shadows"];
+    int lm = cast(int)app.lMode;
+    igPushItemWidth(200 * app.gui.uiscale);
+    if(igCombo_Str_arr("##lm", &lm, &modes[0], 3, -1)) app.lMode = cast(LMode)lm;
+    igPopItemWidth();
 
-  igTableNextColumn();
-  igText("Clear Settings", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  if(igButton("RESET GUI", ImVec2(0.0f, 0.0f))){ clearSettings(); }
-
-  igTableNextColumn();
-  igText("Volume", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igSliderScalar("##", ImGuiDataType_Float,  &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0); 
-
-  igTableNextColumn();
-  igText("God Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igCheckbox("##godMode", &app.camera.godMode);
-
-  igTableNextColumn();
-  igText("Show Lights", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  if (igCheckbox("##showLights", &app.showLights)) app.toggleLightGeometries();
-
-  igTableNextColumn();
-  igText("Disco Mode", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igCheckbox("##disco", &app.disco);
-
-  igTableNextColumn();
-  igText("Show Bounds", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igCheckbox("##showBounds", &app.showBounds);
-
-  igTableNextColumn();
-  igText("Show Rays", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igCheckbox("##showRays", &app.showRays);
-
-  igTableNextColumn();
-  igText("Clear color", ImVec2(0.0f, 0.0f)); igTableNextColumn();
-  igColorEdit3("##clearcolor", app.clearValue[0].color.float32.ptr, 0);
-
+  labelCol("Clear Settings"); if(igButton("RESET GUI", ImVec2(0.0f, 0.0f))) clearSettings();
+  labelCol("Volume"); igSliderScalar("##", ImGuiDataType_Float, &app.soundEffectGain, &app.gui.sound[0], &app.gui.sound[1], "%.2f", 0);
+  labelCol("God Mode"); igCheckbox("##godMode", &app.camera.godMode);
+  labelCol("Show Lights"); if(igCheckbox("##showLights", &app.showLights)) app.toggleLightGeometries();
+  labelCol("Disco Mode"); igCheckbox("##disco", &app.disco);
+  labelCol("Show Bounds"); igCheckbox("##showBounds", &app.showBounds);
+  labelCol("Show Rays"); igCheckbox("##showRays", &app.showRays);
+  labelCol("Clear color"); igColorEdit3("##clearcolor", app.clearValue[0].color.float32.ptr, 0);
   igEndTable();
 }
 

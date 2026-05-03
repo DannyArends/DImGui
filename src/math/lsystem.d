@@ -5,8 +5,7 @@
 
 import engine;
 
-/** Symbol
- */
+/** Symbol */
 struct Symbol {
   char symbol;
   bool constant = true;
@@ -75,9 +74,7 @@ struct LSystem {
     Symbol[] newstate;
     newstate.reserve(state.length);
     if(state.length > max_length) return(false);
-    for (size_t i = 0; i < state.length; i++) {
-      newstate ~= replace(state[i]);
-    }
+    for (size_t i = 0; i < state.length; i++) { newstate ~= replace(state[i]); }
     if(newstate.length == 0) newstate ~= Symbols.Origin;
     state = newstate;
     return(true);
@@ -85,7 +82,7 @@ struct LSystem {
 
 }
 
-LSystem createLSystem() {
+LSystem createLSystem(size_t nIter = 5) {
   auto test = LSystem([Symbols.Origin]);
   test.rules[Symbols.Origin] = Rules([Rule("W.O", 5)]);
   test.rules[Symbols.Origin] ~= Rule("S.O", 5);
@@ -98,17 +95,11 @@ LSystem createLSystem() {
   test.rules[Symbols.Origin] ~= Rule("<O", 15);
   test.rules[Symbols.Origin] ~= Rule(">O", 15);
 
-  foreach (s; [Symbols.Forward, Symbols.Backward, 
-               Symbols.Left, Symbols.Right, 
-               Symbols.Up, Symbols.Down] ) {
-	test.rules[s] = Rules([]);
+  foreach (s; [Symbols.Forward, Symbols.Backward, Symbols.Left, Symbols.Right, Symbols.Up, Symbols.Down] ) {
+    test.rules[s] = Rules([]);
     test.rules[s] ~= Rule("O", 1);  // Super Speed, Ball Like
     test.rules[s] ~= Rule("RM", 3);
   }
-
-  for(size_t i = 0; i < 5; i++){
-    //SDL_Log("state: %s", to!string(test.state).toStringz);
-    test.iterate();
-  }
+  for(size_t i = 0; i < nIter; i++){ test.iterate(); }
   return(test);
 }

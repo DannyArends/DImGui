@@ -13,9 +13,9 @@ import node : loadNode;
 import meta : loadMetaData;
 import io : readFile;
 import material : loadMaterials;
-import geometry : scale, rotate, computeNormals, computeTangents;
 import textures : idx;
 import matrix : translate;
+import normals : computeNormals, computeTangents;
 import vector : x, y, z, euclidean;
 
 /** OpenAsset using assimp
@@ -23,7 +23,7 @@ import vector : x, y, z, euclidean;
 class OpenAsset : Geometry {
   Bone[string] bones;   /// Local bone map, merged into app.bones on main thread
   this() {
-    instances = [Instance()];
+    instances = [DrawInstance()];
     geometry = (){ return(this.stringof); };
   }
 }

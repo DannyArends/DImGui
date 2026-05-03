@@ -68,9 +68,8 @@ Matrix toMatrix(aiMatrix4x4 m){
 }
 
 /** Matrix x Yaw, Pitch, Roll vector in degrees V(yaw, pitch, roll) - Applies rotations in local object space (Yaw -> Pitch -> Roll) */
-@nogc pure Matrix rotate(const Matrix m, const float[3] v) nothrow {
-  return m.multiply(rotate(v));
-}
+@nogc pure Matrix rotate(const Matrix m, const float[3] v) nothrow { return m.multiply(rotate(v)); }
+@nogc pure Matrix translateScale(float[3] p, float[3] s) nothrow { return translate(p).multiply(scale(s)); }
 
 @nogc pure Matrix rotate(const float[3] v) nothrow {
   float yaw   = radian(v[0]); float pitch = radian(v[1]); float roll  = radian(v[2]);

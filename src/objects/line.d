@@ -17,7 +17,7 @@ class Line : Geometry {
       Vertex([ 0.0f, 1.0f, 0.0f ], [  0.0f, 0.0f ], [ 0.0f, 1.0f, 0.0f, 1.0f ])
     ];
     indices = [0, 1];
-    instances = [Instance()];
+    instances = [DrawInstance()];
 
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     onTick = (ref App app, ref Geometry obj) { obj.deAllocate = true; }; // Set the deAllocate flag onTick

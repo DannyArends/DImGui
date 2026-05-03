@@ -7,6 +7,7 @@ import engine;
 
 import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
+import jobs : jobQueue;
 import noise : noiseHTT;
 import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
@@ -36,7 +37,7 @@ struct WorldData {
   int chunkHeight    =  64;           /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;        /// Global world Y-offset
   TileDiff[] diffs;
-  
+  int[3][] ghostTiles;
 
   /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
@@ -89,10 +90,6 @@ struct WorldData {
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
   @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
 
-  @nogc pure int[3] worldToTile(float[3] pos) const nothrow {
-    return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset) / tileHeight), cast(int)(pos[2] / tileSize)];
-  }
-
   @nogc pure TileType getTileAt(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     auto idx = tileIdx(tile);
@@ -103,19 +100,20 @@ struct WorldData {
   @nogc pure int surfaceAt(int x, int y, int z) const nothrow { while(y > 0 && getTileAt([x, y, z]) == TileType.None){ y--; } return y; }
 
   /** Compute world-space position from tile coords */
-  @nogc pure float[3] tileToWorld(int[3] tile) const nothrow {
-    auto wp = worldPos(tile);
-    return [wp[0], wp[1] + yOffset, wp[2]];
+  @nogc pure float[3] tileToWorld(int[3] tile, float yOff = 0.0f) const nothrow {
+    return [tile.x * tileSize, tile.y * tileHeight + yOffset + yOff, tile.z * tileSize];
+  }
+  @nogc pure int[3] worldToTile(float[3] pos, float yOff = 0.0f) const nothrow {
+    return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset - yOff) / tileHeight), cast(int)(pos[2] / tileSize)];
   }
 
   pure bool isPassable(int[3] wc) const nothrow {
-    if(wc[1] < 0 || wc[1] >= chunkHeight) return false;
+    if(wc[1] <= 0 || wc[1] >= chunkHeight){ return(false); }
     return getTileAt(wc) == TileType.None;
   }
 
   pure bool isStandable(int[3] tile) const nothrow {
-    if(tile[1] <= 0 || tile[1] >= chunkHeight) return false;
-    return getTileAt(tile) == TileType.None && getTileAt(tileBelow(tile)) != TileType.None;
+    return isPassable(tile) && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable;
   }
 
   pure PathNode[] getSuccessors(PathNode parent) const {
@@ -126,8 +124,10 @@ struct WorldData {
       foreach(dy; [-1, 0, 1]) {
         int ny = (pt[1] - 1) + dy;
         auto tt = getTileAt([nx, ny, nz]);
-        if(tt != TileType.None && tileData[tt].traversable && isPassable([nx, ny+1, nz])) {
-          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost);
+        int[3] standTile = [nx, ny+1, nz];
+        if(tt != TileType.None && tileData[tt].traversable && isPassable(standTile)) {
+          float modifier = ghostTiles.canFind(standTile) ? 1000.0f : 0.0f;
+          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost + modifier);
           break;
         }
       }
@@ -146,6 +146,8 @@ struct World {
   Tree[][int[3]] trees;                                     /// Trees per chunk coord
   Tree[][int[3]] pendingTrees;                              /// Trees generated async
   Blocks blocks;                                            /// Blocks
+  Inventory inventory;                                      /// Inventory
+  GhostCube buildingGhosts;                                 /// Building Ghosts
   Dwarves dwarves;                                          /// Dwarves
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
@@ -167,8 +169,7 @@ struct World {
     SDL_RemovePath(worldPath());
     SDL_RemovePath(blocksPath());
     data.diffs = [];
-    app.inventory.items.clear();
-    app.inventory.selectedTile = TileType.None;
+    app.world.inventory.ghost.type = TileType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
     clear();
   }
@@ -195,9 +196,13 @@ void loadWorld(ref App app) {
 
   app.world.trunk = new TrunkMesh();
   app.world.canopy = new CanopyMesh();
+  app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight], true);
+  app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
   app.objects ~= app.world.trunk;
   app.objects ~= app.world.canopy;
   app.objects[($-1)].computeTangents();
+  app.objects ~= app.world.buildingGhosts;
+  app.objects ~= app.world.inventory.ghost;
 
   auto raw = readFile(app.world.worldPath());
   if(raw.length < 8) return;
@@ -207,7 +212,9 @@ void loadWorld(ref App app) {
   app.world.diffs = cast(TileDiff[])diffData.dup;
   SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
   app.loadBlocks();
+  SDL_Log("loadWorld: Trees");
   app.loadTrees();
+  SDL_Log("loadWorld: Ghost Cube");
   app.deriveInventory();
 }
 
@@ -249,6 +256,8 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
     int[3] nc = app.world.chunkCoord(n);
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
   }
+  app.world.pendingPaths = [];
+  foreach(ref j; jobQueue) j.failedBy = [];
 }
 
 /** Dispatch a chunk build job to the next available worker thread */
@@ -263,7 +272,6 @@ void dispatchWorker(ref App app, int[3] coord){
     }
   }
 }
-
 
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
 void updateWorld(ref App app, float[3] lookat) {
