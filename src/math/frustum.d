@@ -11,7 +11,7 @@ import matrix : multiply;
 
 alias Quaternion Plane;
 
-// Extract from column-major VP matrix
+/** Extract from column-major VP matrix */
 Plane[6] extractFrustum(const Matrix vp) @nogc pure nothrow {
   Plane[6] p;
   foreach (i; 0..4) {  // i = column index
