@@ -38,7 +38,7 @@ class Cylinder : Geometry {
     this.computeCap([0.0f, halfHeight, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, color); // Top cap
     this.computeCap([0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color); // Bottom cap
 
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["Cylinder"] = Mesh([0, cast(uint)vertices.length]);
     geometry = (){ return(typeof(this).stringof); };
   }

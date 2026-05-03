@@ -185,8 +185,7 @@ void addDwarf(ref App app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  Instance inst;
-  inst.meshdef[2] = d.colorID;
+  DrawInstance inst = DrawInstance([0, 0, d.colorID, 0]);
   inst = position(inst, d.visualPos);
   app.world.dwarves.instances ~= inst;
   app.world.dwarves ~= d;

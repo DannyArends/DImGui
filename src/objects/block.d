@@ -19,8 +19,8 @@ struct Block {
   float[2] fallState;   /// [y, v] fall physics, [0,0] if not falling
 
   @property @nogc bool isFalling() nothrow { return fallState[1] != 0.0f; }
-  @property @nogc float y()  nothrow { return fallState[0]; }
-  @property @nogc float v()  nothrow { return fallState[1]; }
+  @property @nogc float y() nothrow { return fallState[0]; }
+  @property @nogc float v() nothrow { return fallState[1]; }
   @property @nogc void y(float val) nothrow { fallState[0] = val; }
   @property @nogc void v(float val) nothrow { fallState[1] = val; }
 }
@@ -87,8 +87,8 @@ void ensureBlocks(ref App app) {
 }
 
 /** Create a drop instance */
-Instance toDropInstance(World world, int[3] tile, TileType tt) {
-  return Instance(tt, translateScale(world.tileToWorld(tile, -world.blockOffset), [world.blockSize, world.blockSize, world.blockSize]));
+DrawInstance toDropInstance(World world, int[3] tile, TileType tt) {
+  return DrawInstance(tt, translateScale(world.tileToWorld(tile, -world.blockOffset), [world.blockSize, world.blockSize, world.blockSize]));
 }
 
 /** Spawn a new block into the registry */
@@ -108,9 +108,7 @@ void syncBlockInstances(ref App app) {
   int visible = 0, hidden = 0;
   foreach(ref b; app.world.blocks.blocks) {
     if(b.tile == noTile || b.tile == builtTile) {
-      Instance inst;
-      inst.matrix = inst.matrix.scale([0.0f, 0.0f, 0.0f]);
-      app.world.blocks.instances ~= inst;
+      app.world.blocks.instances ~= DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]));
     } else { app.world.blocks.instances ~= app.world.toDropInstance(b.tile, b.type); }
     if(b.tile == noTile || b.tile == builtTile) { hidden++; } else { visible++; }
   }

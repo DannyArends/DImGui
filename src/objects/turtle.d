@@ -23,7 +23,7 @@ class Turtle : Geometry {
 
     vertices = [Vertex(origin, [0.0f, 0.0f], colors[0]), Vertex([0.0f, 0.0f, 0.0f], [0.0f, 0.0f], colors[1])];
     indices = [0, 1];
-    instances = [Instance()];
+    instances = [DrawInstance()];
 
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 

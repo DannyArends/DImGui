@@ -94,9 +94,9 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
     for(uint h = 0; h < t.height; h++) {
       float s = baseRadius - h * 0.015f;
       if(s < 0.05f) s = 0.05f;
-      app.world.trunk.instances ~= Instance(TileType.Wood, translateScale([px, py + h * th, pz], [s, th, s]));
+      app.world.trunk.instances ~= DrawInstance(TileType.Wood, translateScale([px, py + h * th, pz], [s, th, s]));
     }
-    app.world.canopy.instances ~= Instance(TileType.Leaves, translateScale([px, py + t.height * th, pz], [cSize, cSize*cSquish, cSize]));
+    app.world.canopy.instances ~= DrawInstance(TileType.Leaves, translateScale([px, py + t.height * th, pz], [cSize, cSize*cSquish, cSize]));
   }
   app.world.trunk.markDirty();
   app.world.canopy.markDirty();

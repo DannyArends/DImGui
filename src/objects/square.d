@@ -15,7 +15,7 @@ class Square : Geometry {
       Vertex([-0.5f, 0.0f,  0.5f], [1.0f, 0.0f], [1.0f, 1.0f, 1.0f, 1.0f], [0.0f, 1.0f, 0.0f], [1.0f, 0.0f, 0.0f, 1.0f])];
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     indices = [0, 2, 1, 0, 3, 2];
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["Square"] = Mesh([0, cast(uint)vertices.length]);
     geometry = (){ return(typeof(this).stringof); };
   };

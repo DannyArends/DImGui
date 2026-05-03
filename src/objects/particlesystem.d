@@ -34,7 +34,7 @@ class ParticleSystem : Geometry {
     particles.length = nParticles;
     vertices.length = nParticles;
     indices.length = nParticles;
-    instances = [Instance()];
+    instances = [DrawInstance()];
     for(uint i = 0; i < nParticles; i++) { spawn(i); }
 
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;

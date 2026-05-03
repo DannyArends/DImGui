@@ -24,7 +24,7 @@ struct ChunkData {
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
-  Instance[] tileInstances;                                 /// GPU instances for all visible tile faces
+  DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
   Tree[] trees;                                             /// Trees generated for this chunk
   float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
@@ -56,7 +56,7 @@ class Chunk : Cube {
     float cx = data.coord[0] * sx + sx * 0.5f;
     float cz = data.coord[2] * sx + sx * 0.5f;
     float cy = sy * 0.5f + wd.yOffset;
-    instances = [Instance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
+    instances = [DrawInstance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
     tiles = new Tiles(cd);
     geometry = (){ return "Chunk"; };
   }
@@ -115,7 +115,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
     size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
       if (!wd.isFaceExposed(tileCache, coords, wd.tileNeighbours(wc)[f], coord)) continue;
-      data.tileInstances ~= Instance(cast(uint)data.tileTypes[i], faces[f]);
+      data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faces[f]);
       data.tileIndices ~= i;
     }
     // Always expand chunk AABB with full tile extents, regardless of face culling

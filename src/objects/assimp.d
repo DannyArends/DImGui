@@ -23,7 +23,7 @@ import vector : x, y, z, euclidean;
 class OpenAsset : Geometry {
   Bone[string] bones;   /// Local bone map, merged into app.bones on main thread
   this() {
-    instances = [Instance()];
+    instances = [DrawInstance()];
     geometry = (){ return(this.stringof); };
   }
 }
