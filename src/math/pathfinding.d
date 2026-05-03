@@ -30,6 +30,14 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   return PathResult(req.dwarfUID, path, true);
 }
 
+/** Invalidate any dwarf paths that pass through the given tile */
+void invalidatePaths(ref App app, int[3] tile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(d.path.any!(p => app.world.worldToTile(p) == tile)) d.path = [];
+  }
+}
+
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
 bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
