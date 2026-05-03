@@ -5,17 +5,13 @@
 import engine;
 
 import block : unsettleBlocks;
-import mouse : getHits;
-import geometry : texture, bumpmap, deAllocate;
+import geometry : deAllocate;
 import intersection : intersects;
-import textures : mapTextures, idx;
-import tileatlas : tileData;
-import matrix : translateScale, translate, scale, multiply;
-import vector : expandBounds;
-import world : setTile;
-import ghost: updateGhostTile;
-import inventory : placeTile;
+import matrix : translateScale;
+import mouse : getHits;
+import textures : idx;
 import tree : buildTreeData;
+import vector : expandBounds;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {

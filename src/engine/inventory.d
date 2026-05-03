@@ -5,12 +5,11 @@
 
 import engine;
 
-import block : findFreeBlock, builtTile;
-import io : writeFile, readFile, fixPath, isfile;
-import tileatlas : TileType, tileData;
-import world : noTile, setTile;
-import ghost : updateGhostTile, syncBuildGhosts;
-import jobs : jobQueue, buildingJob;
+import block : builtTile;
+import ghost : syncBuildGhosts;
+import jobs : buildingJob, jobQueue;
+import tileatlas : tileData, TileType;
+import world : noTile;
 
 struct Inventory {
   GhostCube ghost;

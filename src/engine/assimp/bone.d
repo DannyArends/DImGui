@@ -5,12 +5,10 @@
 
 import engine;
 
-import animation : Node, calculateGlobalTransform, calculateCurrentTick;
-import assimp : OpenAsset, name, nodeName;
-import boundingbox : Bounds;
-import matrix : Matrix, toMatrix, multiply, inverse, rotate, scale, position, transpose, translate;
+import animation : calculateCurrentTick, calculateGlobalTransform;
+import assimp : name, nodeName, OpenAsset;
+import matrix : inverse, Matrix, multiply, position, toMatrix;
 import sdl : STARTUP;
-import vector : negate, x,y,z;
 
 /** Our Bone structure matching the GPU
  */

@@ -5,17 +5,16 @@
 
 import engine;
 
-import descriptor : updateDescriptorData, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
-import images : createImage, deAllocate, transitionImageLayout, nameImageBuffer;
-import geometry : shadow, bufferGeometries;
-import reflection : reflectShaders, createResources;
+import descriptor : updateDescriptorData;
+import frustum : aabbInFrustum, extractFrustum;
+import geometry : bufferGeometries, shadow;
+import images : createImage, deAllocate, nameImageBuffer;
 import renderpass : beginRecording, endRecording;
 import sampler : createShadowSampler;
-import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
+import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
 import swapchain : createImageView;
 import uniforms : forEachUBO;
-import validation : pushLabel, popLabel, nameVulkanObject;
-import frustum : aabbInFrustum, extractFrustum;
+import validation : popLabel, pushLabel;
 
 struct ShadowMap {
   ImageBuffer[] images;
