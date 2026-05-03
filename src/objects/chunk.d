@@ -5,7 +5,7 @@
 import engine;
 
 import block : unsettleBlocks;
-import events : getHits;
+import mouse : getHits;
 import geometry : texture, bumpmap, deAllocate;
 import intersection : intersects;
 import textures : mapTextures, idx;
