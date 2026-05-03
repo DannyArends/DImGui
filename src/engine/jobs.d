@@ -6,6 +6,7 @@
 import engine;
 
 import block : spawnBlock, findFreeBlock, syncBlockInstances, noBlock, builtTile;
+import dwarf : DwarfState;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;

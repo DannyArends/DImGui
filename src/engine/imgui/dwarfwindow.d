@@ -5,7 +5,7 @@
 
 import engine;
 
-import dwarf : spawnDwarf, randomDwarfName;
+import dwarf : spawnDwarf, DwarfState, randomDwarfName;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
@@ -33,10 +33,12 @@ void showDwarfContent(ref App app, uint font = 0) {
   int idle = 0, walking = 0, working = 0;
   if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
     string status;
-    if(d.isIdle) { status = "Idle"; idle++; }
-    else if(d.isWandering) { status = "Wandering"; }
-    else if(d.path.length > 0) { status = format("Walking -> %s", d.jobStack[0].name); walking++; }
-    else { status = d.jobStack[0].name; working++; }
+    if(d.state == DwarfState.Idle) { status = "Idle"; idle++; }
+    else if(d.state == DwarfState.Wandering) { status = "Wandering"; }
+    else if(d.state == DwarfState.WaitingForPath) { status = d.jobStack.length > 0 ? format("Pathing -> %s", d.jobStack[0].name) : "Pathing"; }
+    else if(d.state == DwarfState.Moving) { status = d.jobStack.length > 0 ? format("Walking -> %s", d.jobStack[0].name) : "Walking"; walking++; }
+    else if(d.state == DwarfState.Working) { status = d.jobStack.length > 0 ? d.jobStack[0].name : "Working"; working++; }
+    else if(d.state == DwarfState.Blocked) { status = "Blocked"; }
     igText(toStringz("%s"), toStringz(format("%s %s", fromStringz(faIcon(cast(string)ICON_FA_USER)), d.name)));
     if(d.carrying.length > 0) {
       igSameLine(0, 5);

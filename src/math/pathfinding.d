@@ -5,6 +5,7 @@
 
 import engine;
 
+import dwarf : DwarfState;
 import search : performSearch, atGoal, stepThroughPath;
 
 struct PathRequest {
@@ -47,11 +48,13 @@ bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
     if(!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, req);
-      return((obj.waitingForPath = true));
+      obj.state = DwarfState.WaitingForPath;
+      return true;
     }
   }
   app.world.pendingPaths ~= req;
-  return((obj.waitingForPath = true));
+  obj.state = DwarfState.WaitingForPath;
+  return(false);
 }
 
 /** Check if object T is adjacent to targetTile.
