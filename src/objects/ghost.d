@@ -95,6 +95,6 @@ void syncBuildGhosts(ref App app) {
   }
   foreach(tile; app.world.inventory.dragPreview) addInstance(tile, preview);
   app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
-  app.world.buildingGhosts.buffers[INSTANCE] = false;
+  app.world.buildingGhosts.markDirty();
   //SDL_Log("syncBuildGhosts: jobQueue=%d", cast(int)jobQueue.length);
 }

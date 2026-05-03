@@ -10,7 +10,7 @@ import serialization : readWorldData, writeWorldData;
 import intersection : intersects;
 import tileatlas : TileType;
 import inventory : deriveInventory;
-import matrix : translate, multiply, scale;
+import matrix : translateScale, translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
 
 /** Shared instanced cylinder mesh for all tree trunks */
@@ -94,12 +94,9 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
     for(uint h = 0; h < t.height; h++) {
       float s = baseRadius - h * 0.015f;
       if(s < 0.05f) s = 0.05f;
-      app.world.trunk.instances ~= Instance([cast(uint)TileType.Wood, cast(uint)TileType.Wood], 
-                                             translate([px, py + h * th, pz]).multiply(scale([s, th, s])));
-
+      app.world.trunk.instances ~= Instance(TileType.Wood, translateScale([px, py + h * th, pz], [s, th, s]));
     }
-    app.world.canopy.instances ~= Instance([cast(uint)TileType.Leaves, cast(uint)TileType.Leaves], 
-                                            translate([px, py + t.height * th, pz]).multiply(scale([cSize, cSize * cSquish, cSize])));
+    app.world.canopy.instances ~= Instance(TileType.Leaves, translateScale([px, py + t.height * th, pz], [cSize, cSize*cSquish, cSize]));
   }
   app.world.trunk.markDirty();
   app.world.canopy.markDirty();
@@ -110,6 +107,8 @@ void rebuildTreeInstances(ref App app) {
   app.world.trunk.instances = [];
   app.world.canopy.instances = [];
   foreach(chunkCoord, ref chunkTrees; app.world.trees){ chunkTrees = app.addTreeInstances(chunkTrees); }
+  app.world.trunk.markDirty();
+  app.world.canopy.markDirty();
 }
 
 /** Remove tree instances for a chunk from shared meshes */
@@ -117,8 +116,6 @@ void removeTreeInstances(ref App app, int[3] coord) {
   if(coord !in app.world.trees) return;
   app.world.trees.remove(coord);
   app.rebuildTreeInstances();
-  app.world.trunk.markDirty();
-  app.world.canopy.markDirty();
 }
 
 /** Find and fell the tree rooted at or directly above the given tile */

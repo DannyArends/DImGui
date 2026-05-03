@@ -6,7 +6,7 @@ import engine;
 
 import serialization : readWorldData, writeWorldData;
 import inventory : deriveInventory;
-import matrix : translate, multiply, scale;
+import matrix : translateScale, translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
 
 enum uint noBlock = uint.max;
@@ -43,13 +43,12 @@ void saveBlocks(ref App app) {
 
 /** Load blocks */
 void loadBlocks(ref App app) {
-  app.world.blocks = new Blocks();
-  app.objects ~= app.world.blocks;
+  app.ensureBlocks();
   Block[] blocks;
   if(!readWorldData(app.world.blocksPath(), blocks, app.world.blocks.nextID)) return;
   app.world.blocks.blocks = blocks;
   foreach(ref b; app.world.blocks.blocks) {
-    app.world.blocks.instances ~= app.toDropInstance(b.tile, b.type);
+    app.world.blocks.instances ~= app.world.toDropInstance(b.tile, b.type);
     if(b.isFalling) app.world.pendingUnsettle ~= b.tile;
   }
   app.world.blocks.markDirty();
@@ -81,22 +80,23 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
   return bestID;
 }
 
+void ensureBlocks(ref App app) {
+  if(app.world.blocks !is null) return;
+  app.world.blocks = new Blocks();
+  app.objects ~= app.world.blocks;
+}
+
 /** Create a drop instance */
-Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
-  auto wp = app.world.tileToWorld(tile);
-  wp[1] -= app.world.blockOffset;
-  return Instance([cast(uint)tt, cast(uint)tt], translate(wp).multiply(scale([app.world.blockSize, app.world.blockSize, app.world.blockSize])));
+Instance toDropInstance(World world, int[3] tile, TileType tt) {
+  return Instance(tt, translateScale(world.tileToWorld(tile, -world.blockOffset), [world.blockSize, world.blockSize, world.blockSize]));
 }
 
 /** Spawn a new block into the registry */
 uint spawnBlock(ref App app, int[3] tile, TileType tt) {
-  if(app.world.blocks is null) {
-    app.world.blocks = new Blocks();
-    app.objects ~= app.world.blocks;
-  }
+  app.ensureBlocks();
   auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
   app.world.blocks.blocks ~= b;
-  app.world.blocks.instances ~= app.toDropInstance(tile, tt);
+  app.world.blocks.instances ~= app.world.toDropInstance(tile, tt);
   app.world.blocks.markDirty();
   return b.id;
 }
@@ -111,7 +111,7 @@ void syncBlockInstances(ref App app) {
       Instance inst;
       inst.matrix = inst.matrix.scale([0.0f, 0.0f, 0.0f]);
       app.world.blocks.instances ~= inst;
-    } else { app.world.blocks.instances ~= app.toDropInstance(b.tile, b.type); }
+    } else { app.world.blocks.instances ~= app.world.toDropInstance(b.tile, b.type); }
     if(b.tile == noTile || b.tile == builtTile) { hidden++; } else { visible++; }
   }
   //SDL_Log("syncBlockInstances: %d visible, %d hidden (total=%d)", visible, hidden, cast(int)app.world.blocks.blocks.length);
@@ -125,7 +125,7 @@ void unsettleBlocks(const World world, ref Blocks blocks, int[3] minedTile) {
   if(blocks is null) return;
   foreach(ref b; blocks.blocks) {
     if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
-    if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile)[1] - world.blockOffset, 0.001f];
+    if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile, -world.blockOffset)[1], 0.001f];
   }
 }
 
@@ -139,15 +139,13 @@ void settleBlocks(const World world, ref Blocks blocks, float dt) {
     b.v = b.v + 0.125f * dt;
     b.y = b.y - b.v * dt;
     int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
-    float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]])[1] - world.blockOffset;
+    float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
     if(b.y <= landY) {
       b.tile = [b.tile[0], landTileY + 1, b.tile[2]];
       b.fallState = [0.0f, 0.0f];  // settled
-      blocks.instances[i].matrix[13] = world.tileToWorld(b.tile)[1] - world.blockOffset;
-    } else {
-      blocks.instances[i].matrix[13] = b.y;
-    }
+      blocks.instances[i].matrix[13] = world.tileToWorld(b.tile, -world.blockOffset)[1];
+    } else { blocks.instances[i].matrix[13] = b.y; }
     changed = true;
   }
-  if(changed) blocks.buffers[INSTANCE] = false;
+  if(changed) blocks.markDirty();
 }
