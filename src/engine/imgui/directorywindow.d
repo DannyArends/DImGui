@@ -28,7 +28,7 @@ void listDirContent(ref App app, const(char)* path) {
       }
     } else if(ptr.isfile) {
       ImVec2 size;
-      if(igSelectable_Bool(iconText(cast(string)ICON_FA_FILE_O, baseName(to!string(elem))), false, 0, size)) { 
+      if(igSelectable_Bool(iconText(cast(string)ICON_FA_FILE, baseName(to!string(elem))), false, 0, size)) { 
         SDL_Log("Clicked: %s", ptr);
         app.concurrency.paths ~= file;
       }

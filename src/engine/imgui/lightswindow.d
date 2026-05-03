@@ -16,7 +16,7 @@ void showLightsContent(ref App app, uint font = 0) {
 
   igCheckbox(iconText(cast(string)ICON_FA_MUSIC, "Disco"), &app.disco);
 
-  if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_SUN_O, "Sun"), 0)) {
+  if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_SUN, "Sun"), 0)) {
     igBeginTable("Sun_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
     igTableNextColumn(); igText("Time of Day");
@@ -51,10 +51,10 @@ void showLightsContent(ref App app, uint font = 0) {
       app.shadows.dirty = true;
     }
     igSameLine(0, 5);
-    if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB_O, format("Light %d", i)), 0)) {
+    if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB, format("Light %d", i)), 0)) {
       igBeginTable(toStringz(format("Light_Tbl_%d", i)), 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
-      igTableNextColumn(); igText(iconText("Position", cast(string)ICON_FA_ARROWS));
+      igTableNextColumn(); igText(iconText("Position", cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT));
       igTableNextColumn();
         igPushItemWidth(75 * app.gui.uiscale); 
         igSliderScalar("##pX", ImGuiDataType_Float, &light.position[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
