@@ -49,15 +49,19 @@ void applyPathResult(ref App app, PathResult result) {
   }
 }
 
+/** Advance the job stack — removes the active sub-job and clears the dwarf's current goal */
 void completeSubJob(ref Dwarf d) { d.jobStack = d.jobStack[1..$]; d.clearGoal(); }
 
+/** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
 void progressJob(ref App app, ref Dwarf d, float amount, void delegate() onComplete) {
   d.progress += amount;
   if(d.progress >= 1.0f) { onComplete(); d.completeSubJob(); d.progress = 0.0f; }
 }
 
+/** Returns the TileType of a block by ID, or TileType.None if not found */
 TileType blockType(ref App app, uint id) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) return b.type; } return TileType.None; }
 
+/** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref App app, ref Dwarf d, ref Job j) {
   if(d.carrying.any!(id => app.blockType(id) == j.tileType)) { j.targetTile = noTile; return; }
   auto id = app.findFreeBlock(d.tile, j.tileType);
@@ -67,6 +71,7 @@ void claimBlock(ref App app, ref Dwarf d, ref Job j) {
   j.targetTile = noTile;
 }
 
+/** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
 void claimNeighbour(ref App app, ref Job j) {
   foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
     if(app.world.isStandable(n)) { j.targetTile = n; return; }
@@ -91,6 +96,7 @@ Job miningJob(int[3] targetTile, uint retries = 3) {
   );
 }
 
+/** Convenience job: sends the dwarf to pick up any available block */
 Job stuffJob() { return pickupJob(noTile, TileType.None); }
 
 /** woodcutting Job */
@@ -115,6 +121,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
   );
 }
 
+/** Job: move the dwarf to a free neighbouring tile away from their current position */
 Job moveAwayJob(int[3] from) {
   return Job("MoveAway", from, TileType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
@@ -123,6 +130,7 @@ Job moveAwayJob(int[3] from) {
   );
 }
 
+/** Job: ensure the dwarf is carrying a block of the required type, fetching one if not */
 Job holdItemJob(TileType tileType) {
   return Job("HoldItem", [int.min, 0, 0], tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
@@ -222,6 +230,7 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   return true;
 }
 
+/** Execute a block pickup for the active job; marks the block as carried and completes the sub-job */
 void doPickup(ref App app, ref Dwarf d) {
   auto blockID = d.jobStack[0].blockIDs.length > 0 ? d.jobStack[0].blockIDs[0] : noBlock;
   if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
