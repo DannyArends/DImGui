@@ -6,7 +6,6 @@
 import engine;
 
 import imgui : faIcon;
-import geometry;
 import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys;
 import textures : mapTextures, ImTextureRefFromID;
 

@@ -7,13 +7,12 @@ import engine;
 
 import color : colorIndex;
 import chunk : getBestTile;
-import geometry;
 import camera : castRay;
 import tileatlas : tileData;
 import textures : idx;
 import intersection : intersects;
 import vector : dot;
-import matrix : translate;
+import matrix : position, scale, rotate, translate;
 import world : noTile;
 import jobs : jobQueue;
 
@@ -26,7 +25,7 @@ class GhostCube : Cube {
     isSelectable = false;
     isVisible = false;
     castShadow = false;
-    scale(this, [dim[0], dim[1], dim[0]]);
+    scale([dim[0], dim[1], dim[0]]);
     geometry = (){ return(typeof(this).stringof); };
     if(instanced) initInstanced(() => "BuildingGhosts");
   }

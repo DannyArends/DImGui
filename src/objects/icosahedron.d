@@ -5,7 +5,8 @@
 
 import engine;
 
-import geometry : faces, addVertex;
+import normals : faces;
+import geometry : addVertex;
 import vector : midpoint, cross, vSub, normalize;
 
 const float x = 0.426943;
