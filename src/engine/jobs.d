@@ -43,8 +43,7 @@ void applyPathResult(ref App app, PathResult result) {
     }
     d.state = (d.jobStack.length > 0) ? DwarfState.Moving : DwarfState.Wandering;
     d.path = result.path;
-    d.moveFrom = d.visualPos;
-    d.moveTo = d.visualPos;
+    d.moveTo = d.moveFrom = d.visualPos;
     d.moveT = 1.0f;
     return;
   }
@@ -55,6 +54,11 @@ void completeSubJob(ref Dwarf d) {
   d.jobStack = d.jobStack[1..$];
   d.targetTile = noTile;
   d.state = (d.jobStack.length > 0) ? DwarfState.Working : DwarfState.Idle;
+}
+
+void failSubJob(ref App app, ref Dwarf d) {
+  if(app.verbose) SDL_Log(toStringz(format("[Job] %s FAILED %s (tileType=%s)", d.name, d.jobStack[0].name, d.jobStack[0].tileType)));
+  d.failAndRequeueParent();
 }
 
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
@@ -119,10 +123,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
   return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref App app, ref Dwarf d) { app.doPickup(d); },
-    onFail: (ref App app, ref Dwarf d) {
-      if(app.verbose) SDL_Log(toStringz(format("[Job] %s FAILED %s (tileType=%s)", d.name, d.jobStack[0].name, d.jobStack[0].tileType)));
-      d.failAndRequeueParent();
-    }
+    onFail: (ref App app, ref Dwarf d) { app.failSubJob(d); }
   );
 }
 
@@ -143,10 +144,7 @@ Job holdItemJob(TileType tileType) {
       if(d.carrying.any!(id => app.blockType(id) == d.jobStack[0].tileType)) { d.completeSubJob(); return; }
       app.doPickup(d);
     },
-    onFail: (ref App app, ref Dwarf d) {
-      if(app.verbose) SDL_Log(toStringz(format("[Job] %s FAILED %s (tileType=%s)", d.name, d.jobStack[0].name, d.jobStack[0].tileType)));
-      d.failAndRequeueParent();
-    }
+    onFail: (ref App app, ref Dwarf d) { app.failSubJob(d); }
   );
 }
 /** Move to a free neighbouring tile and drops a carried block */
@@ -222,14 +220,13 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
   d.jobStack = d.jobStack.filter!(j => j.targetTile != noTile).array;
   if(app.verbose) SDL_Log(toStringz(format("[Job] %s stack: %s", d.name, d.jobStack.map!(j => j.name).array)));
-  if(d.jobStack.length == 0 || d.jobStack[0].targetTile == noTile) { d.jobStack = []; return false; }
+  if(d.jobStack.length == 0 || d.jobStack[0].targetTile == noTile) { d.clearGoal(); return false; }
   d.targetTile = d.jobStack[0].targetTile;
   auto goal = app.findGoalTile(d);
   if(goal == noTile || !app.pathfindTo(d, goal)) {
     if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
     jobQueue ~= job;
-    d.jobStack = [];
-    d.state = DwarfState.Idle;
+    d.clearGoal();
     return false;
   }
   d.state = DwarfState.WaitingForPath;
@@ -271,18 +268,14 @@ void failAndRequeue(ref Dwarf d) {
   auto j = d.jobStack[0];
   if(!j.failedBy.canFind(d.uid)) j.failedBy ~= d.uid;
   jobQueue ~= j;
-  d.jobStack = [];
-  d.targetTile = noTile;
-  d.state = DwarfState.Idle;
+  d.clearGoal();
   d.progress = 0.0f;
 }
 
 /** Fail the current job and requeue parent */
 void failAndRequeueParent(ref Dwarf d) {
   if(d.jobStack.length > 1 && d.jobStack[$-1].targetTile != noTile) jobQueue ~= d.jobStack[$-1];
-  d.jobStack = [];
-  d.targetTile = noTile;
-  d.state = DwarfState.Idle;
+  d.clearGoal();
 }
 
 /** Allow a dwarf to select their next job */
@@ -291,22 +284,19 @@ void claimNextJob(ref App app, ref Dwarf d) {
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount && j.targetTile != noTile).array;
   app.syncBuildGhosts();
 
-  if(jobQueue.length > 0) {
-    int bestIdx = -1;
-    float bestDist = float.max;
-    foreach(i, ref job; jobQueue) {
-      if(job.failedBy.canFind(d.uid)) continue;
-      if(job.targetTile == noTile) continue;
-      if(job.name == "Building" && app.world.inventory.total(job.tileType, app.world.blocks) <= 0) continue;
-      float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
-      if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
-    }
-    if(bestIdx != -1) {
-      auto job = jobQueue[bestIdx];
-      jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
-      if(app.dispatchJob(d, job)) { app.deriveInventory(); }
-      return;
-    }
+  int bestIdx = -1;
+  float bestDist = float.max;
+  foreach(i, ref job; jobQueue) {
+    if(job.failedBy.canFind(d.uid)) continue;
+    if(job.name == "Building" && app.world.inventory.total(job.tileType, app.world.blocks) <= 0) continue;
+    float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
+    if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
+  }
+  if(bestIdx != -1) {
+    auto job = jobQueue[bestIdx];
+    jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
+    if(app.dispatchJob(d, job)) { app.deriveInventory(); }
+    return;
   }
 
   // No job found — wander or pick up stuff

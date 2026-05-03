@@ -13,7 +13,7 @@ import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
 import normals : computeNormals, computeTangents;
-import dwarf : spawnDwarf, loadDwarfs, randomDwarfName;
+import dwarf : spawnDwarf, loadDwarfs;
 
 /*
 void createScene(ref App app){
@@ -47,7 +47,7 @@ void createScene(ref App app){
   app.updateSun();
 
   SDL_Log("createScene: The 8 Dwarves of 7");
-  if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(randomDwarfName()); }
+  if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
 
   /*
   SDL_Log("createScene: Add a Square");
