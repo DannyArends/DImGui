@@ -5,7 +5,7 @@
 
 import engine;
 
-import dwarf : spawnDwarf, DwarfState, randomDwarfName;
+import dwarf : spawnDwarf, DwarfState;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
@@ -26,7 +26,7 @@ void showTileIcons(ref App app, TileType[] tiles, float cellSize = 16.0f) {
 void showDwarfContent(ref App app, uint font = 0) {
   igText("Spawn Dwarf:");
   igSameLine(0, 5);
-  if(igButton(iconText(cast(string)ICON_FA_PLUS, "Spawn"), ImVec2(0,0))) { app.spawnDwarf(randomDwarfName()); }
+  if(igButton(iconText(cast(string)ICON_FA_PLUS, "Spawn"), ImVec2(0,0))) { app.spawnDwarf(); }
 
   igSeparator();
 
@@ -39,7 +39,12 @@ void showDwarfContent(ref App app, uint font = 0) {
     else if(d.state == DwarfState.Moving) { status = d.jobStack.length > 0 ? format("Walking -> %s", d.jobStack[0].name) : "Walking"; walking++; }
     else if(d.state == DwarfState.Working) { status = d.jobStack.length > 0 ? d.jobStack[0].name : "Working"; working++; }
     else if(d.state == DwarfState.Blocked) { status = "Blocked"; }
-    igText(toStringz("%s"), toStringz(format("%s %s", fromStringz(faIcon(cast(string)ICON_FA_USER)), d.name)));
+    float[4] col = app.colors[d.colorID];
+    igPushStyleColor_Vec4(ImGuiCol_Text, ImVec4(col[0], col[1], col[2], col[3]));
+    igText(toStringz(format("%s", fromStringz(faIcon(cast(string)ICON_FA_USER))))); igSameLine(0,5);
+    igPopStyleColor(1);
+    igText(toStringz(format("%s", d.name)));
+
     if(d.carrying.length > 0) {
       igSameLine(0, 5);
       TileType[] types;

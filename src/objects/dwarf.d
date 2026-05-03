@@ -6,14 +6,14 @@ import engine;
 
 import serialization : readWorldData, writeWorldData;
 import block : spawnBlock, syncBlockInstances, noBlock;
-import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
+import world : noTile, tileBelow, isTileOccupied;
 import matrix : position, scale, rotate;
-import vector : euclidean;
 import tileatlas : tileData;
 import inventory : deriveInventory;
 import pathmarker : syncPathMarkers;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
 import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob, moveAwayJob;
+import rnjesus : randomizeName;
 
 uint nextDwarfUID = 1;
 
@@ -26,11 +26,6 @@ struct DwarfData {
   uint[32] inventory = noBlock;  /// block IDs, noBlock = empty slot
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
-  @property void name(string s) {
-    auto parts = s.split(" ");
-    first[] = '\0'; first[0..min(parts[0].length, first.length)] = parts[0][0..min(parts[0].length, first.length)];
-    last[]  = '\0'; if(parts.length > 1) last[0..min(parts[1].length, last.length)] = parts[1][0..min(parts[1].length, last.length)];
-  }
   @property uint[] carrying() { return inventory[].filter!(id => id != noBlock).array; }
   @property bool pickup(uint blockID) { foreach(ref slot; inventory) { if(slot == noBlock) { slot = blockID; return true; } } return false; }
   @property bool use(uint blockID) { foreach(ref slot; inventory) { if(slot == blockID) { slot = noBlock; return true; } } return false; }
@@ -83,13 +78,6 @@ struct Dwarf {
 
   @property bool waitingForPath(){ return(state == DwarfState.WaitingForPath); }
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
-}
-
-/** Random names */
-string randomDwarfName() {
-  string[] prefixes = ["Urist", "Iden", "Meng", "Reg", "Doren", "Ast", "Nil", "Erib", "Thob", "Cog"];
-  string[] suffixes = ["ral", "dor", "zan", "kel", "tok", "mis", "bur", "ith", "gar", "lon"];
-  return prefixes[uniform(0, prefixes.length)] ~ suffixes[uniform(0, suffixes.length)];
 }
 
 /** Find a free surface tile (as in non-occupado) and on top of the world */
@@ -209,13 +197,20 @@ void addDwarf(ref App app, ref Dwarf d) {
   app.world.dwarves ~= d;
 }
 
+uint pickUniqueColor(ref App app) {
+  uint[] used = app.world.dwarves !is null ? app.world.dwarves.dwarves.map!(d => d.colorID).array : [];
+  uint colorID;
+  do { colorID = uniform(0, cast(uint)app.colors.length); } while(used.canFind(colorID) && used.length < app.colors.length);
+  return colorID;
+}
+
 /** Spawn a Dwarf */
-void spawnDwarf(ref App app, string name) {
+void spawnDwarf(ref App app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
-  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, uniform(0, cast(uint)app.colors.length), tile));
-  d.name = name;
+  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, app.pickUniqueColor(), tile));
+  randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.markDirty();
 }
