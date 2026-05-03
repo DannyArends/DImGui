@@ -153,7 +153,7 @@ void tickDwarf(ref App app, ref Dwarf d) {
     case DwarfState.Working:
       if(d.jobStack.length == 0) { d.state = DwarfState.Idle; break; }
       if(app.atDestination(d, d.jobStack[0].targetTile)) {
-        d.waitingSince = 0;
+        d.blockedSince = 0;
         d.jobStack[0].onArrive(app, d);
       } else if(d.jobStack[0].name == "Building") {
         d.state = DwarfState.Blocked;
@@ -174,18 +174,18 @@ void handleBlocking(ref App app, ref Dwarf d) {
   foreach(ref other; app.world.dwarves.dwarves) {
     if(other.uid == d.uid) continue;
     if(!app.atDestination(other, d.jobStack[0].targetTile)) continue;
-    if(d.waitingSince == 0) {
-      d.waitingSince = cast(uint)SDL_GetTicks();
+    if(d.blockedSince == 0) {
+      d.blockedSince = cast(uint)SDL_GetTicks();
       if(other.jobStack.length == 0 || other.jobStack[0].name != "MoveAway") { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
     }
-    if(SDL_GetTicks() - d.waitingSince > 4000) {
-      d.waitingSince = 0;
+    if(SDL_GetTicks() - d.blockedSince > 4000) {
+      d.blockedSince = 0;
       d.state = DwarfState.Idle;
       d.jobStack[0].onFail(app, d);
     }
     return;
   }
-  d.waitingSince = 0;
+  d.blockedSince = 0;
   if(!app.repathTo(d, d.jobStack[0].targetTile)) {
     d.state = DwarfState.Idle;
     d.jobStack[0].onFail(app, d);
