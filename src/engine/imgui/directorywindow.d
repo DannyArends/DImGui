@@ -6,13 +6,8 @@
 import engine;
 
 import imgui : iconText;
+import widgets : textSize;
 import io : dir, isdir, isfile, fsize;
-
-ImVec2 textSize(const(char)* txt) {
-  ImVec2 textSize; 
-  igCalcTextSize(&textSize, txt, null, false, -1.0f);
-  return(textSize);
-}
 
 void listDirContent(ref App app, const(char)* path) {
   auto content = dir(path);
@@ -40,4 +35,3 @@ void listDirContent(ref App app, const(char)* path) {
 }
 
 void showDirectoryContent(ref App app, uint font = 0) { app.listDirContent("data"); }
-
