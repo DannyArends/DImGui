@@ -149,6 +149,7 @@ struct World {
   Inventory inventory;                                      /// Inventory
   GhostCube buildingGhosts;                                 /// Building Ghosts
   Dwarves dwarves;                                          /// Dwarves
+  PathMarkers pathMarkers;                                  /// Path markers
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
   alias data this;

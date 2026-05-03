@@ -11,6 +11,7 @@ import matrix : position, scale, rotate;
 import vector : euclidean;
 import tileatlas : tileData;
 import inventory : deriveInventory;
+import pathmarker : syncPathMarkers;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
 import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob, moveAwayJob;
 
@@ -116,6 +117,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
     ds.markDirty();
     if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
   }
+  app.syncPathMarkers();
 }
 
 /** A single dwarf being ticked */
@@ -177,6 +179,8 @@ void ensureDwarves(ref App app) {
   app.world.dwarves.onFrame = &dwarfFrame;
   app.world.dwarves.onTick  = &dwarfTick;
   app.objects ~= app.world.dwarves;
+  app.world.pathMarkers = new PathMarkers();
+  app.objects ~= app.world.pathMarkers;
 }
 
 void addDwarf(ref App app, ref Dwarf d) {
