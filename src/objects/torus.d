@@ -34,7 +34,7 @@ class Torus : Geometry {
       }
     }
 
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["Torus"] = Mesh([0, cast(uint)vertices.length]);
     geometry = (){ return(typeof(this).stringof); };
   }

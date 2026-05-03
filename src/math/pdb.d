@@ -70,7 +70,7 @@ class AtomCloud : Geometry {
       vertices ~= Vertex(atom.location, [1.0f, 1.0f], atomToColor(atom.element));
       indices ~= cast(uint)i;
     }
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["AtomCloud"] = Mesh([0, cast(uint)vertices.length]);
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     geometry = (){ return(typeof(this).stringof); };
@@ -94,7 +94,7 @@ class AminoAcidCloud : Geometry {
         }
       }
     }
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["AminoAcidCloud"] = Mesh([0, cast(uint)vertices.length]);
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     geometry = (){ return(typeof(this).stringof); };
@@ -115,7 +115,7 @@ class Backbone : Geometry {
         }
       }
     }
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["Backbone"] = Mesh([0, cast(uint)vertices.length]);
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     geometry = (){ return(typeof(this).stringof); };

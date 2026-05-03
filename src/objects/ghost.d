@@ -80,7 +80,7 @@ void syncBuildGhosts(ref App app) {
   uint preview = colorIndex(Colors.darkslateblue);
 
   void addInstance(int[3] tile, uint color) {
-    Instance inst = Instance([0, 0, color, 0]);
+    auto inst = DrawInstance([0, 0, color, 0]);
     inst.matrix = inst.matrix.scale([app.world.tileSize, app.world.tileHeight, app.world.tileSize]);
     inst.matrix = inst.matrix.translate(app.world.tileToWorld(tile));
     app.world.buildingGhosts.instances ~= inst;

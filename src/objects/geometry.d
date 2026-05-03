@@ -12,18 +12,6 @@ import textures : idx;
 import mesh : logMesh;
 import vector : vSub, vAdd, dot, vMul, cross, normalize, euclidean;
 
-/** An instance of a Geometry */
-struct Instance {
-  uint[4] meshdef = [0, 0, 0, 0];               /// Mesh Definition [start, end, mID, pad]
-  Matrix matrix = Matrix.init;                  /// Instance matrix
-  alias matrix this;
-
-  this(uint[4] d) { meshdef = d; }
-  this(TileType tt, Matrix m) { this([cast(uint)tt, cast(uint)tt], m); }
-  this(uint[2] d, Matrix m) { meshdef[0..2] = d; matrix = m; }
-  this(uint mdef, float[12] f) { this([mdef, mdef], Matrix([f[0],f[1],f[2], 0, f[3],f[4],f[5], 0, f[6],f[7],f[8],0, f[9],f[10],f[11], 1])); }
-}
-
 shared uint guid = 1;
 
 /** A Geometry that can be rendered */
@@ -35,7 +23,7 @@ class Geometry {
 
   Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
   uint[] indices;                               /// Indices of type uint stored on the CPU
-  Instance[] instances;                         /// Instance array
+  DrawInstance[] instances;                     /// Instance array
   alias instances this;
 
   uint uid;
@@ -84,7 +72,7 @@ class Geometry {
   bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow { return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); }
   @nogc void markDirty() nothrow { buffers[INSTANCE] = false; }
-  @nogc void initInstanced(string delegate() name, Instance[] initial = []) nothrow {
+  @nogc void initInstanced(string delegate() name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
     instances = initial;
     geometry = name;
