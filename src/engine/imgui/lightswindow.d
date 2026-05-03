@@ -8,6 +8,7 @@ import engine;
 import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
 import quaternion : w;
+import widgets : sliderFloat3;
 
 /** Show the GUI window which allows us to manipulate lighting
  */
@@ -56,30 +57,19 @@ void showLightsContent(ref App app, uint font = 0) {
 
       igTableNextColumn(); igText(iconText("Position", cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT));
       igTableNextColumn();
-        igPushItemWidth(75 * app.gui.uiscale); 
-        igSliderScalar("##pX", ImGuiDataType_Float, &light.position[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-        igPushItemWidth(75 * app.gui.uiscale);
-        igSliderScalar("##pY", ImGuiDataType_Float, &light.position[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-        igPushItemWidth(75 * app.gui.uiscale);
-        igSliderScalar("##pZ", ImGuiDataType_Float, &light.position[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+        sliderFloat3(["##pX","##pY","##pZ"], &light.position[0], &light.position[1], &light.position[2], 
+                     &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
 
       igTableNextColumn(); igText(iconText("Intensity", cast(string)ICON_FA_BOLT));
       igTableNextColumn();
-        igPushItemWidth(75 * app.gui.uiscale);
-        igSliderScalar("##I0", ImGuiDataType_Float, &light.intensity[0], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
-        igPushItemWidth(75 * app.gui.uiscale);
-        igSliderScalar("##I1", ImGuiDataType_Float, &light.intensity[1], &app.gui.col[0], &app.gui.col[1], "%.2f", 0); igSameLine(0,5);
-        igPushItemWidth(75 * app.gui.uiscale);
-        igSliderScalar("##I2", ImGuiDataType_Float, &light.intensity[2], &app.gui.col[0], &app.gui.col[1], "%.2f", 0);
+        sliderFloat3(["##I0","##I1","##I2"], &light.intensity[0], &light.intensity[1], &light.intensity[2], 
+                     &app.gui.col[0], &app.gui.col[1], 75, app.gui.uiscale);
+
 
       igTableNextColumn(); igText(iconText("Direction", cast(string)ICON_FA_LOCATION_ARROW));
       igTableNextColumn();
-        igPushItemWidth(75 * app.gui.uiscale);
-        igSliderScalar("##D0", ImGuiDataType_Float, &light.direction[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-        igPushItemWidth(75 * app.gui.uiscale);
-        igSliderScalar("##D1", ImGuiDataType_Float, &light.direction[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0); igSameLine(0,5);
-        igPushItemWidth(75 * app.gui.uiscale);
-        igSliderScalar("##D2", ImGuiDataType_Float, &light.direction[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
+        sliderFloat3(["##D0","##D1","##D2"], &light.direction[0], &light.direction[1], &light.direction[2], 
+                     &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
 
       igTableNextColumn(); igText(iconText("Cone", cast(string)ICON_FA_EXPAND));
       igTableNextColumn();
