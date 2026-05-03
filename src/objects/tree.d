@@ -6,19 +6,18 @@
 import engine;
 
 import block : spawnBlock, unsettleBlocks;
-import io : readFile, writeFile;
+import serialization : readWorldData, writeWorldData;
 import intersection : intersects;
 import tileatlas : TileType;
-import matrix : translate, multiply, scale;
+import inventory : deriveInventory;
+import matrix : translateScale, translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
 
 /** Shared instanced cylinder mesh for all tree trunks */
 class TrunkMesh : Cylinder {
   this() {
     super(0.4f, 1.0f, 12);  // thin cylinder, 12 segments for perf
-    instancedMesh = true;
-    instances = [];
-    geometry = (){ return "TrunkMesh"; };
+    initInstanced(() => "TrunkMesh");
   }
 }
  
@@ -26,9 +25,7 @@ class TrunkMesh : Cylinder {
 class CanopyMesh : Icosahedron {
   this() {
     super();
-    instancedMesh = true;
-    instances = [];
-    geometry = (){ return "CanopyMesh"; };
+    initInstanced(() => "CanopyMesh");
   }
 }
  
@@ -97,15 +94,12 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
     for(uint h = 0; h < t.height; h++) {
       float s = baseRadius - h * 0.015f;
       if(s < 0.05f) s = 0.05f;
-      app.world.trunk.instances ~= Instance([cast(uint)TileType.Wood, cast(uint)TileType.Wood], 
-                                             translate([px, py + h * th, pz]).multiply(scale([s, th, s])));
-
+      app.world.trunk.instances ~= DrawInstance(TileType.Wood, translateScale([px, py + h * th, pz], [s, th, s]));
     }
-    app.world.canopy.instances ~= Instance([cast(uint)TileType.Leaves, cast(uint)TileType.Leaves], 
-                                            translate([px, py + t.height * th, pz]).multiply(scale([cSize, cSize * cSquish, cSize])));
+    app.world.canopy.instances ~= DrawInstance(TileType.Leaves, translateScale([px, py + t.height * th, pz], [cSize, cSize*cSquish, cSize]));
   }
-  app.world.trunk.buffers[INSTANCE] = false;
-  app.world.canopy.buffers[INSTANCE] = false;
+  app.world.trunk.markDirty();
+  app.world.canopy.markDirty();
   return trees;
 }
 
@@ -113,6 +107,8 @@ void rebuildTreeInstances(ref App app) {
   app.world.trunk.instances = [];
   app.world.canopy.instances = [];
   foreach(chunkCoord, ref chunkTrees; app.world.trees){ chunkTrees = app.addTreeInstances(chunkTrees); }
+  app.world.trunk.markDirty();
+  app.world.canopy.markDirty();
 }
 
 /** Remove tree instances for a chunk from shared meshes */
@@ -120,8 +116,6 @@ void removeTreeInstances(ref App app, int[3] coord) {
   if(coord !in app.world.trees) return;
   app.world.trees.remove(coord);
   app.rebuildTreeInstances();
-  app.world.trunk.buffers[INSTANCE] = false;
-  app.world.canopy.buffers[INSTANCE] = false;
 }
 
 /** Find and fell the tree rooted at or directly above the given tile */
@@ -133,6 +127,7 @@ void fellTree(ref App app, int[3] tile) {
     if(t.rootTile != tile) continue;
     // spawn wood blocks
     for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]], TileType.Wood); }
+    app.deriveInventory();
     app.world.unsettleBlocks(app.world.blocks, t.rootTile);
     // remove from trees array
     app.world.trees[coord] = app.world.trees[coord][0..i] ~ app.world.trees[coord][i+1..$];
@@ -146,15 +141,12 @@ void saveTrees(ref App app) {
   foreach(trees; app.world.trees.values) allTrees ~= trees;
   foreach(trees; app.world.pendingTrees.values) allTrees ~= trees;
   if(allTrees.length == 0) return;
-  uint[2] header = [WORLD_MAGIC, cast(uint)allTrees.length];
-  writeFile(app.world.treePath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])allTrees));
+  writeWorldData(app.world.treePath(), allTrees, cast(uint)allTrees.length);
 }
 
 void loadTrees(ref App app) {
-  auto raw = readFile(app.world.treePath());
-  if(raw.length < uint[2].sizeof) return;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) return;
-  auto trees = cast(Tree[])raw[uint[2].sizeof..$].dup;
+  Tree[] trees;  uint i;
+  if(!readWorldData(app.world.treePath(), trees, i)) return;
   foreach(ref t; trees) {
     int[3] coord = app.world.chunkCoord(t.rootTile);
     app.world.pendingTrees[coord] ~= t;  // use pendingTrees instead

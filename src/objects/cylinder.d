@@ -10,8 +10,7 @@ import cone : computeThetas, computeBasePositions, computeCap;
 
 /** Cylinder
  * Defines a cylinder geometry with a specified radius, height, and number of segments.
- * The bottom base is centered at (0,0,0) and the top base is centered at (0, height, 0).
- */
+ * The bottom base is centered at (0,0,0) and the top base is centered at (0, height, 0). */
 class Cylinder : Geometry {
   this(float radius = 0.5f, float height = 1.0f, uint numSegments = 128, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     if (numSegments < 3) { numSegments = 3; }
@@ -39,7 +38,7 @@ class Cylinder : Geometry {
     this.computeCap([0.0f, halfHeight, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, color); // Top cap
     this.computeCap([0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color); // Bottom cap
 
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["Cylinder"] = Mesh([0, cast(uint)vertices.length]);
     geometry = (){ return(typeof(this).stringof); };
   }

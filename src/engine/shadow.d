@@ -5,17 +5,16 @@
 
 import engine;
 
-import descriptor : updateDescriptorData, createDescriptorSetLayout, createDescriptorSet, updateDescriptorSet;
-import images : createImage, deAllocate, transitionImageLayout, nameImageBuffer;
-import geometry : shadow, bufferGeometries;
-import reflection : reflectShaders, createResources;
+import descriptor : updateDescriptorData;
+import frustum : aabbInFrustum, extractFrustum;
+import geometry : bufferGeometries, shadow;
+import images : createImage, deAllocate, nameImageBuffer;
 import renderpass : beginRecording, endRecording;
 import sampler : createShadowSampler;
-import shaders : Shader, ShaderDef, loadShaders, createStageInfo;
+import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
 import swapchain : createImageView;
 import uniforms : forEachUBO;
-import validation : pushLabel, popLabel, nameVulkanObject;
-import frustum : aabbInFrustum, extractFrustum;
+import validation : popLabel, pushLabel;
 
 struct ShadowMap {
   ImageBuffer[] images;
@@ -253,7 +252,8 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       auto obj = (isChunk? (cast(Chunk)app.objects[x]).tiles : app.objects[x]);
 
       if(!obj.isVisible) continue;                                         /// Skip invisible objects
-      //if(cast(Tiles)obj !is null) continue;                                /// Skip tiles
+      if(!obj.castShadow) continue;                                        /// Skip non shadow casters
+      //if(cast(Tiles)obj !is null) continue;                              /// Skip tiles
       if(obj.geometry() == "SunGeometry") continue;                        /// Skip the sun
       if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;    /// Skip non triangle objects
       app.shadows.totalShadowInstances += obj.instances.length;            /// Could be rendered

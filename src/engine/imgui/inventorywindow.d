@@ -31,27 +31,25 @@ void showInventoryContent(ref App app, uint font = 0) {
 
   foreach(tileType; EnumMembers!TileType) {
     //if(!tileData[tileType].traversable) continue;  // skip non-collectable tiles
-    auto name = tileData[tileType].name;
-    auto texIdx = idx(app.textures, name ~ "_base");
+    auto texIdx = idx(app.textures, tileData[tileType].name ~ "_base");
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
-    int count = app.inventory.get(tileType, 0);
+    int count = app.world.inventory.get(tileType, app.world.blocks);
 
-    bool selected = app.inventory.selectedTile == tileType;
+    bool selected = app.world.inventory.ghost.type == tileType;
     if(selected) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.4f, 0.6f, 0.4f, 1.0f));
     auto tint = count > 0 ? ImVec4(1,1,1,1) : ImVec4(0.3f,0.3f,0.3f,0.5f);
     igImageButton(toStringz(format("##inv_%d", tileType)), texID,
                   ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1),
                   ImVec4(0,0,0,0), tint);
-    if(count > 0 && igIsItemClicked(0)) app.inventory.selectedTile = selected ? TileType.None : tileType;
+    if(count > 0 && igIsItemClicked(0)) app.world.inventory.ghost.type = selected ? TileType.None : tileType;
     if(selected) igPopStyleColor(1);
 
     ImVec2 pos, posMax;
     igGetItemRectMin(&pos);
     igGetItemRectMax(&posMax);
     if(count > 0) drawCenteredText(igGetWindowDrawList(), pos, posMax, toStringz(format("%d", count)));
-    if(igIsItemHovered(0)) igSetTooltip(toStringz(format("%s x%d", name, count)));
-
+    if(igIsItemHovered(0)) igSetTooltip(toStringz(app.world.inventory.toString(tileType, app.world.blocks)));
     if(++col < cols) igSameLine(0, 4);
     else { col = 0; }
   }

@@ -5,7 +5,7 @@
 
 import engine;
 
-import geometry;
+import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : updateSSBO;

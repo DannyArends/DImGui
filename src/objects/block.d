@@ -4,132 +4,146 @@
  */
 import engine;
 
-import io : readFile, writeFile;
+import serialization : readWorldData, writeWorldData;
 import inventory : deriveInventory;
-import matrix : translate, multiply, scale;
+import matrix : translateScale, translate, multiply, scale;
 import world : noTile, WORLD_MAGIC;
 
-struct BlockData { int[3] tile; uint tileType; }
-struct BlockFallData {
-  size_t idx;
-  float[2] state;  /// [y, v]
+enum uint noBlock = uint.max;
+enum int[3] builtTile = [int.max, 0, 0];
 
-  @property @nogc float y()     nothrow { return state[0]; }
-  @property @nogc float v()     nothrow { return state[1]; }
-  @property @nogc void y(float val)     nothrow { state[0] = val; }
-  @property @nogc void v(float val)     nothrow { state[1] = val; }
+struct Block {
+  uint id;              /// Unique block ID, forever
+  TileType type;        /// Block type
+  int[3] tile;          /// Current tile position
+  float[2] fallState;   /// [y, v] fall physics, [0,0] if not falling
+
+  @property @nogc bool isFalling() nothrow { return fallState[1] != 0.0f; }
+  @property @nogc float y() nothrow { return fallState[0]; }
+  @property @nogc float v() nothrow { return fallState[1]; }
+  @property @nogc void y(float val) nothrow { fallState[0] = val; }
+  @property @nogc void v(float val) nothrow { fallState[1] = val; }
 }
 
 class Blocks : Cube {
-  int[3][] tiles;           /// Tile of instances
-  BlockFallData[] falling;  /// All state related to falling blocks
+  Block[] blocks;           /// All blocks, forever
+  uint nextID = 1;          /// Next block ID
 
   this() {
     super();
-    instancedMesh = true;
-    instances = [];
-    geometry = (){ return "Blocks"; };
+    initInstanced(() => "Blocks");
   }
 }
 
-/** Save blocks dropped */
+/** Save blocks */
 void saveBlocks(ref App app) {
   if(app.world.blocks is null) return;
-  BlockData[] data;
-  foreach(i, tile; app.world.blocks.tiles) { data ~= BlockData(tile, app.world.blocks.instances[i].meshdef[0]); }
-  uint[2] header = [WORLD_MAGIC, cast(uint)data.length];
-  writeFile(app.world.blocksPath(), cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
+  writeWorldData(app.world.blocksPath(), app.world.blocks.blocks, app.world.blocks.nextID);
 }
 
-/** Load blocks dropped */
+/** Load blocks */
 void loadBlocks(ref App app) {
-  app.world.blocks = new Blocks();
-  app.objects ~= app.world.blocks;
-  auto raw = readFile(app.world.blocksPath());
-  if(raw.length < uint[2].sizeof) return;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadDroppedBlocks: invalid magic"); return; }
-  auto data = cast(BlockData[])raw[uint[2].sizeof..$].dup;
-  foreach(ref b; data) { app.spawnBlock(b.tile, cast(TileType)b.tileType); }
-  foreach(tile; app.world.blocks.tiles) app.world.pendingUnsettle ~= tile;
-  SDL_Log("loadBlocks: %d blocks (%d pending unsettle)", app.world.blocks.tiles.length, app.world.pendingUnsettle.length);
+  app.ensureBlocks();
+  Block[] blocks;
+  if(!readWorldData(app.world.blocksPath(), blocks, app.world.blocks.nextID)) return;
+  app.world.blocks.blocks = blocks;
+  foreach(ref b; app.world.blocks.blocks) {
+    app.world.blocks.instances ~= app.world.toDropInstance(b.tile, b.type);
+    if(b.isFalling) app.world.pendingUnsettle ~= b.tile;
+  }
+  app.world.blocks.markDirty();
+  SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.blocks.length);
 }
 
 @nogc pure bool hasBlocks(ref App app, TileType tt) nothrow {
   if(app.world.blocks is null) return false;
-  return app.world.blocks.instances.any!(i => i.meshdef[0] == cast(uint)tt);
+  return app.world.blocks.blocks.any!(b => b.type == tt);
 }
 
-/** Find the closest dropped block of the given TileType to the dwarf, returns tile or [int.min,0,0] */
-int[3] findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
-  if(app.world.blocks is null) return noTile;
-  int[3] best = noTile;
+/** Find the closest free block of given type, returns block ID or noBlock if none found */
+uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
+  if(app.world.blocks is null) return noBlock;
+  uint bestID = noBlock;
   float bestDist = float.max;
-  foreach(i, tile; app.world.blocks.tiles) {
-    if(tt != TileType.None && app.world.blocks.instances[i].meshdef[0] != cast(uint)tt) continue;
+  foreach(ref b; app.world.blocks.blocks) {
+    if(tt != TileType.None && b.type != tt) continue;
+    if(b.tile == noTile || b.tile == builtTile) continue;
     bool reserved = false;
     if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
-      foreach(j; d.jobStack) { if(j.targetTile == tile) { reserved = true; break; } }
+      foreach(j; d.jobStack) { if(j.blockIDs.canFind(b.id)) { reserved = true; break; } }
       if(reserved) break;
     }
     if(reserved) continue;
-    float dist = abs(tile[0] - dwarfTile[0]) + abs(tile[2] - dwarfTile[2]);
-    if(dist < bestDist) { bestDist = dist; best = tile; }
+    float dist = abs(b.tile[0] - dwarfTile[0]) + abs(b.tile[2] - dwarfTile[2]);
+    if(dist < bestDist) { bestDist = dist; bestID = b.id; }
   }
-  return best;
+  return bestID;
+}
+
+void ensureBlocks(ref App app) {
+  if(app.world.blocks !is null) return;
+  app.world.blocks = new Blocks();
+  app.objects ~= app.world.blocks;
 }
 
 /** Create a drop instance */
-Instance toDropInstance(ref App app, int[3] tile, TileType tt) {
-  auto wp = app.world.tileToWorld(tile);
-  wp[1] -= app.world.blockOffset;
-  return Instance([cast(uint)tt, cast(uint)tt], translate(wp).multiply(scale([app.world.blockSize, app.world.blockSize, app.world.blockSize])));
+DrawInstance toDropInstance(World world, int[3] tile, TileType tt) {
+  return DrawInstance(tt, translateScale(world.tileToWorld(tile, -world.blockOffset), [world.blockSize, world.blockSize, world.blockSize]));
 }
 
-/** Spawn a dropped block */
-void spawnBlock(ref App app, int[3] tile, TileType tt) {
-  if(app.world.blocks is null) {
-    app.world.blocks = new Blocks();
-    app.objects ~= app.world.blocks;
+/** Spawn a new block into the registry */
+uint spawnBlock(ref App app, int[3] tile, TileType tt) {
+  app.ensureBlocks();
+  auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
+  app.world.blocks.blocks ~= b;
+  app.world.blocks.instances ~= app.world.toDropInstance(tile, tt);
+  app.world.blocks.markDirty();
+  return b.id;
+}
+
+/** Sync instances from blocks registry */
+void syncBlockInstances(ref App app) {
+  if(app.world.blocks is null) return;
+  app.world.blocks.instances = [];
+  int visible = 0, hidden = 0;
+  foreach(ref b; app.world.blocks.blocks) {
+    if(b.tile == noTile || b.tile == builtTile) {
+      app.world.blocks.instances ~= DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]));
+    } else { app.world.blocks.instances ~= app.world.toDropInstance(b.tile, b.type); }
+    if(b.tile == noTile || b.tile == builtTile) { hidden++; } else { visible++; }
   }
-  app.world.blocks.tiles ~= tile;
-  app.world.blocks.instances ~= app.toDropInstance(tile, tt);
-  app.world.blocks.buffers[INSTANCE] = false;
-  app.deriveInventory();
+  //SDL_Log("syncBlockInstances: %d visible, %d hidden (total=%d)", visible, hidden, cast(int)app.world.blocks.blocks.length);
+  app.world.blocks.markDirty();
 }
 
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
 
-/** Check blocks above a mined tile to see if they go falling */
+/** Mark blocks above a mined tile as falling */
 void unsettleBlocks(const World world, ref Blocks blocks, int[3] minedTile) {
   if(blocks is null) return;
-  foreach(i, tile; blocks.tiles) {
-    if(tile[0] != minedTile[0] || tile[2] != minedTile[2] || tile[1] < minedTile[1]) continue;
-    if(!blocks.falling.any!(f => f.idx == i)) {
-      blocks.falling ~= BlockFallData(i, [world.tileToWorld(tile)[1] - world.blockOffset(), 0.0f]);
-    }
+  foreach(ref b; blocks.blocks) {
+    if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
+    if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile, -world.blockOffset)[1], 0.001f];
   }
 }
 
 /** Update falling blocks */
 void settleBlocks(const World world, ref Blocks blocks, float dt) {
-  if(blocks is null || blocks.falling.length == 0) return;
+  if(blocks is null) return;
   bool changed = false;
-  blocks.falling = blocks.falling.filter!((ref f) {
-    f.v = f.v + 0.125f * dt;
-    f.y = f.y - f.v * dt;
-    if(f.idx >= blocks.tiles.length) return(false); // Done with falling
-    int[3] tile = blocks.tiles[f.idx];
-    int landTileY = world.surfaceAt(tile[0], tile[1] - 1, tile[2]);
-    float landY = world.tileToWorld([tile[0], landTileY + 1, tile[2]])[1] - world.blockOffset;
-    if(f.y <= landY) {
-      blocks.tiles[f.idx] = [tile[0], landTileY+1, tile[2]];
-      blocks.instances[f.idx].matrix[13] = world.tileToWorld(blocks.tiles[f.idx])[1] - world.blockOffset;
-      changed = true;
-      return(false); // Done with falling
-    }
-    blocks.instances[f.idx].matrix[13] = f.y;
+  foreach(i, ref b; blocks.blocks) {
+    if(!b.isFalling) continue;
+    //SDL_Log("settleBlocks: block %d falling y=%.2f", b.id, b.y);
+    b.v = b.v + 0.125f * dt;
+    b.y = b.y - b.v * dt;
+    int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
+    float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
+    if(b.y <= landY) {
+      b.tile = [b.tile[0], landTileY + 1, b.tile[2]];
+      b.fallState = [0.0f, 0.0f];  // settled
+      blocks.instances[i].matrix[13] = world.tileToWorld(b.tile, -world.blockOffset)[1];
+    } else { blocks.instances[i].matrix[13] = b.y; }
     changed = true;
-    return(true); // Still falling
-  }).array;
-  if(changed) blocks.buffers[INSTANCE] = false;
+  }
+  if(changed) blocks.markDirty();
 }

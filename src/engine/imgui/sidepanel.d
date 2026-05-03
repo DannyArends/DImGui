@@ -31,12 +31,12 @@ void showSidepanel(ref App app, uint font = 0) {
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_INBOX, "Inventory"), 0)) app.showInventoryContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_FOLDER, "Load"), 0)) app.showDirectoryContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_CUBES, "Objects"), 0)) app.showObjectsContent(font);
-  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_LIGHTBULB_O, "Lights"), 0)) app.showLightsContent(font);
-  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_COG, "Settings"), 0)) app.showSettingsContent(font);
+  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_LIGHTBULB, "Lights"), 0)) app.showLightsContent(font);
+  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_GEAR, "Settings"), 0)) app.showSettingsContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_GLOBE, "World"), 0)) app.showWorldContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_USER, "Dwarfs"), 0)) app.showDwarfContent(font);
-  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_VOLUME_UP, "Sounds"), 0)) app.showSFXContent(font);
-  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_PICTURE_O, "Textures"), 0)) app.showTexturesContent(font);
+  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_VOLUME_HIGH, "Sounds"), 0)) app.showSFXContent(font);
+  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_IMAGE, "Textures"), 0)) app.showTexturesContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_CODE, "Shaders"), 0)) app.showShaderContent(font);
   igEnd();
   igPopFont();

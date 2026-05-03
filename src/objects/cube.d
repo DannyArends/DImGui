@@ -6,8 +6,7 @@
 import engine;
 
 /** Cube
- * Defines a cube geometry with its base at (0,0,0) and extending upwards to a height of 1.0.
- */
+ * Defines a cube geometry with its base at (0,0,0) and extending upwards to a height of 1.0. */
 class Cube : Geometry {
   this(float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
   vertices = [
@@ -53,7 +52,7 @@ class Cube : Geometry {
               12,13,14,  14,15,12,      // left
               16,17,18,  18,19,16,      // bottom
               20,21,22,  22,23,20];     // backside
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["Cube"] = Mesh([0, cast(uint)vertices.length]);
     geometry = (){ return(typeof(this).stringof); };
   }

@@ -8,8 +8,7 @@ import engine;
 import vector : vMul, vAdd, magnitude, normalize;
 import quaternion : xyzw;
 
-/** A single particle
- */
+/** A single particle */
 struct Particle {
   float[4] position;    /// Position
   float[4] velocity;    /// Velocity
@@ -19,8 +18,7 @@ struct Particle {
   float random2;        /// Random number
 }
 
-/** ParticleSystem
- */
+/** ParticleSystem */
 class ParticleSystem : Geometry {
   float[3] position = [15.0f, 8.0f, -8.0f];
   float[3][2] impulse = [[-2.0f, -1.0f, -1.0f],
@@ -36,7 +34,7 @@ class ParticleSystem : Geometry {
     particles.length = nParticles;
     vertices.length = nParticles;
     indices.length = nParticles;
-    instances = [Instance()];
+    instances = [DrawInstance()];
     for(uint i = 0; i < nParticles; i++) { spawn(i); }
 
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;

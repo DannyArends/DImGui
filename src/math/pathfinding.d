@@ -39,11 +39,11 @@ bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
     if(!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, req);
-      return true;
+      return((obj.waitingForPath = true));
     }
   }
   app.world.pendingPaths ~= req;
-  return true;
+  return((obj.waitingForPath = true));
 }
 
 /** Check if object T is adjacent to targetTile.

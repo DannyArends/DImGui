@@ -5,12 +5,13 @@
 
 import engine;
 
-/** Generate a random color
- */
+/** Color index */
+uint colorIndex(Colors c) { foreach(i, m; [EnumMembers!Colors]) { if(m == c) return(cast(uint)i); } return(0u); }
+
+/** Generate a random color */
 float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), alpha]); }
 
-/** Amino Acid Residue to 'official' colors
- */
+/** Amino Acid Residue to 'official' colors */
 @nogc float[4] residueToColor(string residue) nothrow {
   switch (residue) {
     case "ALA": return Colors.aliceblue;
@@ -39,108 +40,106 @@ float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(
   }
 }
 
-/** Atom to Jmol color scheme
- */
+/** Atom to Jmol color scheme */
 @nogc float[4] atomToColor(string atom) nothrow {
   switch (atom) {
-    case "H" :  return [0.933, 0.933, 0.933, 1.0];
-    case "He":  return [0.851, 1.000, 1.000, 1.0];
-    case "Li":  return [0.800, 0.502, 1.000, 1.0];
-    case "Be":  return [0.761, 1.000, 0.000, 1.0];
-    case "B" :  return [1.000, 0.710, 0.710, 1.0];
-    case "C" :  return [0.000, 0.000, 0.000, 1.0];
-    case "N" :  return [0.188, 0.314, 0.973, 1.0];
-    case "O" :  return [1.000, 0.051, 0.051, 1.0];
-    case "F" :  return [0.565, 0.878, 0.314, 1.0];
-    case "Ne":  return [0.702, 0.890, 0.961, 1.0];
-    case "Na":  return [0.671, 0.361, 0.949, 1.0];
-    case "Mg":  return [0.541, 1.000, 0.000, 1.0];
-    case "Al":  return [0.749, 0.651, 0.651, 1.0];
-    case "Si":  return [0.941, 0.784, 0.627, 1.0];
-    case "P" :  return [1.000, 0.502, 0.000, 1.0];
-    case "S" :  return [1.000, 1.000, 0.188, 1.0];
-    case "Cl":  return [0.122, 0.941, 0.122, 1.0];
-    case "Ar":  return [0.502, 0.820, 0.890, 1.0];
-    case "K" :  return [0.561, 0.251, 0.831, 1.0];
-    case "Ca":  return [0.239, 1.000, 0.000, 1.0];
-    case "Sc":  return [0.902, 0.902, 0.902, 1.0];
-    case "Ti":  return [0.749, 0.761, 0.780, 1.0];
-    case "V" :  return [0.651, 0.651, 0.671, 1.0];
-    case "Cr":  return [0.541, 0.600, 0.780, 1.0];
-    case "Mn":  return [0.612, 0.478, 0.780, 1.0];
-    case "Fe":  return [0.878, 0.400, 0.200, 1.0];
-    case "Co":  return [0.941, 0.565, 0.627, 1.0];
-    case "Ni":  return [0.314, 0.820, 0.314, 1.0];
-    case "Cu":  return [0.784, 0.502, 0.200, 1.0];
-    case "Zn":  return [0.490, 0.502, 0.690, 1.0];
-    case "Ga":  return [0.761, 0.561, 0.561, 1.0];
-    case "Ge":  return [0.400, 0.561, 0.561, 1.0];
-    case "As":  return [0.741, 0.502, 0.890, 1.0];
-    case "Se":  return [1.000, 0.631, 0.000, 1.0];
-    case "Br":  return [0.651, 0.161, 0.161, 1.0];
-    case "Kr":  return [0.361, 0.722, 0.820, 1.0];
-    case "Rb":  return [0.439, 0.180, 0.690, 1.0];
-    case "Sr":  return [0.000, 1.000, 0.000, 1.0];
-    case "Y" :  return [0.580, 1.000, 1.000, 1.0];
-    case "Zr":  return [0.580, 0.878, 0.878, 1.0];
-    case "Nb":  return [0.451, 0.761, 0.788, 1.0];
-    case "Mo":  return [0.329, 0.710, 0.710, 1.0];
-    case "Tc":  return [0.231, 0.620, 0.620, 1.0];
-    case "Ru":  return [0.141, 0.561, 0.561, 1.0];
-    case "Rh":  return [0.039, 0.490, 0.549, 1.0];
-    case "Pd":  return [0.000, 0.412, 0.522, 1.0];
-    case "Ag":  return [0.753, 0.753, 0.753, 1.0];
-    case "Cd":  return [1.000, 0.851, 0.561, 1.0];
-    case "In":  return [0.651, 0.459, 0.451, 1.0];
-    case "Sn":  return [0.400, 0.502, 0.502, 1.0];
-    case "Sb":  return [0.620, 0.388, 0.710, 1.0];
-    case "Te":  return [0.831, 0.478, 0.000, 1.0];
-    case "I" :  return [0.580, 0.000, 0.580, 1.0];
-    case "Xe":  return [0.259, 0.620, 0.690, 1.0];
-    case "Cs":  return [0.341, 0.090, 0.561, 1.0];
-    case "Ba":  return [0.000, 0.788, 0.000, 1.0];
-    case "La":  return [0.439, 0.831, 1.000, 1.0];
-    case "Ce":  return [1.000, 1.000, 0.780, 1.0];
-    case "Pr":  return [0.851, 1.000, 0.780, 1.0];
-    case "Nd":  return [0.780, 1.000, 0.780, 1.0];
-    case "Pm":  return [0.639, 1.000, 0.780, 1.0];
-    case "Sm":  return [0.561, 1.000, 0.780, 1.0];
-    case "Eu":  return [0.380, 1.000, 0.780, 1.0];
-    case "Gd":  return [0.271, 1.000, 0.780, 1.0];
-    case "Tb":  return [0.188, 1.000, 0.780, 1.0];
-    case "Dy":  return [0.122, 1.000, 0.780, 1.0];
-    case "Ho":  return [0.000, 1.000, 0.612, 1.0];
-    case "Er":  return [0.000, 0.902, 0.459, 1.0];
-    case "Tm":  return [0.000, 0.831, 0.322, 1.0];
-    case "Yb":  return [0.000, 0.749, 0.219, 1.0];
-    case "Lu":  return [0.000, 0.671, 0.141, 1.0];
-    case "Hf":  return [0.302, 0.761, 1.000, 1.0];
-    case "Ta":  return [0.302, 0.651, 1.000, 1.0];
-    case "W" :  return [0.129, 0.580, 0.839, 1.0];
-    case "Re":  return [0.149, 0.490, 0.671, 1.0];
-    case "Os":  return [0.149, 0.400, 0.588, 1.0];
-    case "Ir":  return [0.090, 0.329, 0.529, 1.0];
-    case "Pt":  return [0.816, 0.816, 0.878, 1.0];
-    case "Au":  return [1.000, 0.820, 0.137, 1.0];
-    case "Hg":  return [0.722, 0.722, 0.816, 1.0];
-    case "Tl":  return [0.651, 0.329, 0.302, 1.0];
-    case "Pb":  return [0.341, 0.349, 0.380, 1.0];
-    case "Bi":  return [0.620, 0.310, 0.710, 1.0];
-    case "Po":  return [0.671, 0.361, 0.000, 1.0];
-    case "At":  return [0.459, 0.310, 0.271, 1.0];
-    case "Rn":  return [0.259, 0.510, 0.588, 1.0];
-    case "Fr":  return [0.259, 0.000, 0.400, 1.0];
-    case "Ra":  return [0.000, 0.490, 0.000, 1.0];
-    case "Ac":  return [0.439, 0.671, 0.980, 1.0];
-    case "Th":  return [0.000, 0.729, 1.000, 1.0];
-    case "Pa":  return [0.000, 0.631, 1.000, 1.0];
-    case "U" :  return [0.000, 0.561, 1.000, 1.0];
+    case "H" :  return Colors.jmolWhitesmoke;
+    case "He":  return Colors.jmolLightcyan;
+    case "Li":  return Colors.jmolViolet;
+    case "Be":  return Colors.jmolGreenyellow;
+    case "B" :  return Colors.jmolLightpink;
+    case "C" :  return Colors.black;
+    case "N" :  return Colors.jmolRoyalblue;
+    case "O" :  return Colors.jmolRed;
+    case "F" :  return Colors.jmolYellowgreen;
+    case "Ne":  return Colors.jmolPaleturquoise;
+    case "Na":  return Colors.jmolMediumorchid;
+    case "Mg":  return Colors.jmolChartreuse;
+    case "Al":  return Colors.jmolDarkgray;
+    case "Si":  return Colors.jmolWheat;
+    case "P" :  return Colors.jmolDarkorange;
+    case "S" :  return Colors.jmolYellow;
+    case "Cl":  return Colors.jmolLimegreen;
+    case "Ar":  return Colors.jmolSkyblue;
+    case "K" :  return Colors.jmolDarkorchid;
+    case "Ca":  return Colors.jmolLime;
+    case "Sc":  return Colors.jmolGainsboro;
+    case "Ti":  return Colors.jmolSilver;
+    case "V" :  return Colors.jmolDarkgray2;
+    case "Cr":  return Colors.jmolDarkgray3;
+    case "Mn":  return Colors.jmolMediumpurple;
+    case "Fe":  return Colors.jmolChocolate;
+    case "Co":  return Colors.jmolLightcoral;
+    case "Ni":  return Colors.jmolLimegreen2;
+    case "Cu":  return Colors.jmolPeru;
+    case "Zn":  return Colors.jmolLightslategray;
+    case "Ga":  return Colors.jmolRosybrown;
+    case "Ge":  return Colors.jmolSlategray;
+    case "As":  return Colors.jmolOrchid;
+    case "Se":  return Colors.jmolOrange;
+    case "Br":  return Colors.jmolBrown;
+    case "Kr":  return Colors.jmolMediumturquoise;
+    case "Rb":  return Colors.jmolDarkorchid2;
+    case "Sr":  return Colors.lime;
+    case "Y" :  return Colors.jmolPaleturquoise2;
+    case "Zr":  return Colors.jmolSkyblue2;
+    case "Nb":  return Colors.jmolMediumaquamarine;
+    case "Mo":  return Colors.jmolMediumaquamarine2;
+    case "Tc":  return Colors.jmolLightseagreen;
+    case "Ru":  return Colors.jmolDarkcyan;
+    case "Rh":  return Colors.jmolTeal;
+    case "Pd":  return Colors.jmolTeal2;
+    case "Ag":  return Colors.silver;
+    case "Cd":  return Colors.jmolKhaki;
+    case "In":  return Colors.jmolGray;
+    case "Sn":  return Colors.jmolSlategray2;
+    case "Sb":  return Colors.jmolMediumpurple2;
+    case "Te":  return Colors.jmolDarkgoldenrod;
+    case "I" :  return Colors.jmolDarkmagenta;
+    case "Xe":  return Colors.jmolSteelblue;
+    case "Cs":  return Colors.jmolIndigo;
+    case "Ba":  return Colors.jmolLime2;
+    case "La":  return Colors.jmolLightskyblue;
+    case "Ce":  return Colors.jmolLemonchiffon;
+    case "Pr":  return Colors.jmolLightgoldenrodyellow;
+    case "Nd":  return Colors.jmolGainsboro2;
+    case "Pm":  return Colors.jmolAquamarine;
+    case "Sm":  return Colors.jmolAquamarine2;
+    case "Eu":  return Colors.jmolAquamarine3;
+    case "Gd":  return Colors.jmolTurquoise;
+    case "Tb":  return Colors.jmolTurquoise2;
+    case "Dy":  return Colors.jmolTurquoise3;
+    case "Ho":  return Colors.jmolMediumspringgreen;
+    case "Er":  return Colors.jmolSpringgreen;
+    case "Tm":  return Colors.jmolLimegreen3;
+    case "Yb":  return Colors.jmolLimegreen4;
+    case "Lu":  return Colors.jmolForestgreen;
+    case "Hf":  return Colors.jmolMediumturquoise2;
+    case "Ta":  return Colors.jmolCornflowerblue;
+    case "W" :  return Colors.jmolDodgerblue;
+    case "Re":  return Colors.jmolSteelblue2;
+    case "Os":  return Colors.jmolTeal3;
+    case "Ir":  return Colors.jmolTeal4;
+    case "Pt":  return Colors.jmolLightgray;
+    case "Au":  return Colors.jmolGold;
+    case "Hg":  return Colors.jmolSilver2;
+    case "Tl":  return Colors.jmolSienna;
+    case "Pb":  return Colors.jmolDimgray;
+    case "Bi":  return Colors.jmolDarkorchid3;
+    case "Po":  return Colors.jmolSaddlebrown;
+    case "At":  return Colors.jmolDimgray2;
+    case "Rn":  return Colors.jmolSteelblue3;
+    case "Fr":  return Colors.jmolIndigo2;
+    case "Ra":  return Colors.jmolGreen;
+    case "Ac":  return Colors.jmolCornflowerblue2;
+    case "Th":  return Colors.jmolDeepskyblue;
+    case "Pa":  return Colors.jmolDeepskyblue2;
+    case "U" :  return Colors.jmolDodgerblue2;
     default: return Colors.white;
   }
 }
 
-/* Named colors
- */
+/* Named colors */
 enum Colors : float[4] {
     white = [1.0f, 1.0f, 1.0f, 1.0f],
     black = [0.0f, 0.0f, 0.0f, 1.0f],
@@ -296,6 +295,96 @@ enum Colors : float[4] {
     wheat = [0.961f, 0.871f, 0.702f, 1.0f],
     whitesmoke = [0.961f, 0.961f, 0.961f, 1.0f],
     yellow = [1.000f, 1.000f, 0.000f, 1.0f],
-    yellowgreen = [0.604f, 0.804f, 0.196f, 1.0f]
+    yellowgreen = [0.604f, 0.804f, 0.196f, 1.0f],
+    // Jmol element colors
+    jmolWhitesmoke = [0.933f, 0.933f, 0.933f, 1.0f],  // H
+    jmolLightcyan = [0.851f, 1.000f, 1.000f, 1.0f],  // He
+    jmolViolet = [0.800f, 0.502f, 1.000f, 1.0f],  // Li
+    jmolGreenyellow = [0.761f, 1.000f, 0.000f, 1.0f],  // Be
+    jmolLightpink = [1.000f, 0.710f, 0.710f, 1.0f],  // B
+    jmolRoyalblue = [0.188f, 0.314f, 0.973f, 1.0f],  // N
+    jmolRed = [1.000f, 0.051f, 0.051f, 1.0f],  // O
+    jmolYellowgreen = [0.565f, 0.878f, 0.314f, 1.0f],  // F
+    jmolPaleturquoise = [0.702f, 0.890f, 0.961f, 1.0f],  // Ne
+    jmolMediumorchid = [0.671f, 0.361f, 0.949f, 1.0f],  // Na
+    jmolChartreuse = [0.541f, 1.000f, 0.000f, 1.0f],  // Mg
+    jmolDarkgray = [0.749f, 0.651f, 0.651f, 1.0f],  // Al
+    jmolWheat = [0.941f, 0.784f, 0.627f, 1.0f],  // Si
+    jmolDarkorange = [1.000f, 0.502f, 0.000f, 1.0f],  // P
+    jmolYellow = [1.000f, 1.000f, 0.188f, 1.0f],  // S
+    jmolLimegreen = [0.122f, 0.941f, 0.122f, 1.0f],  // Cl
+    jmolSkyblue = [0.502f, 0.820f, 0.890f, 1.0f],  // Ar
+    jmolDarkorchid = [0.561f, 0.251f, 0.831f, 1.0f],  // K
+    jmolLime = [0.239f, 1.000f, 0.000f, 1.0f],  // Ca
+    jmolGainsboro = [0.902f, 0.902f, 0.902f, 1.0f],  // Sc
+    jmolSilver = [0.749f, 0.761f, 0.780f, 1.0f],  // Ti
+    jmolDarkgray2 = [0.651f, 0.651f, 0.671f, 1.0f],  // V
+    jmolDarkgray3 = [0.541f, 0.600f, 0.780f, 1.0f],  // Cr
+    jmolMediumpurple = [0.612f, 0.478f, 0.780f, 1.0f],  // Mn
+    jmolChocolate = [0.878f, 0.400f, 0.200f, 1.0f],  // Fe
+    jmolLightcoral = [0.941f, 0.565f, 0.627f, 1.0f],  // Co
+    jmolLimegreen2 = [0.314f, 0.820f, 0.314f, 1.0f],  // Ni
+    jmolPeru = [0.784f, 0.502f, 0.200f, 1.0f],  // Cu
+    jmolLightslategray = [0.490f, 0.502f, 0.690f, 1.0f],  // Zn
+    jmolRosybrown = [0.761f, 0.561f, 0.561f, 1.0f],  // Ga
+    jmolSlategray = [0.400f, 0.561f, 0.561f, 1.0f],  // Ge
+    jmolOrchid = [0.741f, 0.502f, 0.890f, 1.0f],  // As
+    jmolOrange = [1.000f, 0.631f, 0.000f, 1.0f],  // Se
+    jmolBrown = [0.651f, 0.161f, 0.161f, 1.0f],  // Br
+    jmolMediumturquoise = [0.361f, 0.722f, 0.820f, 1.0f],  // Kr
+    jmolDarkorchid2 = [0.439f, 0.180f, 0.690f, 1.0f],  // Rb
+    jmolPaleturquoise2 = [0.580f, 1.000f, 1.000f, 1.0f],  // Y
+    jmolSkyblue2 = [0.580f, 0.878f, 0.878f, 1.0f],  // Zr
+    jmolMediumaquamarine = [0.451f, 0.761f, 0.788f, 1.0f],  // Nb
+    jmolMediumaquamarine2 = [0.329f, 0.710f, 0.710f, 1.0f],  // Mo
+    jmolLightseagreen = [0.231f, 0.620f, 0.620f, 1.0f],  // Tc
+    jmolDarkcyan = [0.141f, 0.561f, 0.561f, 1.0f],  // Ru
+    jmolTeal = [0.039f, 0.490f, 0.549f, 1.0f],  // Rh
+    jmolTeal2 = [0.000f, 0.412f, 0.522f, 1.0f],  // Pd
+    jmolKhaki = [1.000f, 0.851f, 0.561f, 1.0f],  // Cd
+    jmolGray = [0.651f, 0.459f, 0.451f, 1.0f],  // In
+    jmolSlategray2 = [0.400f, 0.502f, 0.502f, 1.0f],  // Sn
+    jmolMediumpurple2 = [0.620f, 0.388f, 0.710f, 1.0f],  // Sb
+    jmolDarkgoldenrod = [0.831f, 0.478f, 0.000f, 1.0f],  // Te
+    jmolDarkmagenta = [0.580f, 0.000f, 0.580f, 1.0f],  // I
+    jmolSteelblue = [0.259f, 0.620f, 0.690f, 1.0f],  // Xe
+    jmolIndigo = [0.341f, 0.090f, 0.561f, 1.0f],  // Cs
+    jmolLime2 = [0.000f, 0.788f, 0.000f, 1.0f],  // Ba
+    jmolLightskyblue = [0.439f, 0.831f, 1.000f, 1.0f],  // La
+    jmolLemonchiffon = [1.000f, 1.000f, 0.780f, 1.0f],  // Ce
+    jmolLightgoldenrodyellow = [0.851f, 1.000f, 0.780f, 1.0f],  // Pr
+    jmolGainsboro2 = [0.780f, 1.000f, 0.780f, 1.0f],  // Nd
+    jmolAquamarine = [0.639f, 1.000f, 0.780f, 1.0f],  // Pm
+    jmolAquamarine2 = [0.561f, 1.000f, 0.780f, 1.0f],  // Sm
+    jmolAquamarine3 = [0.380f, 1.000f, 0.780f, 1.0f],  // Eu
+    jmolTurquoise  = [0.271f, 1.000f, 0.780f, 1.0f],  // Gd
+    jmolTurquoise2 = [0.188f, 1.000f, 0.780f, 1.0f],  // Tb
+    jmolTurquoise3 = [0.122f, 1.000f, 0.780f, 1.0f],  // Dy
+    jmolMediumspringgreen = [0.000f, 1.000f, 0.612f, 1.0f],  // Ho
+    jmolSpringgreen = [0.000f, 0.902f, 0.459f, 1.0f],  // Er
+    jmolLimegreen3 = [0.000f, 0.831f, 0.322f, 1.0f],  // Tm
+    jmolLimegreen4 = [0.000f, 0.749f, 0.219f, 1.0f],  // Yb
+    jmolForestgreen = [0.000f, 0.671f, 0.141f, 1.0f],  // Lu
+    jmolMediumturquoise2 = [0.302f, 0.761f, 1.000f, 1.0f],  // Hf
+    jmolCornflowerblue = [0.302f, 0.651f, 1.000f, 1.0f],  // Ta
+    jmolDodgerblue = [0.129f, 0.580f, 0.839f, 1.0f],  // W
+    jmolSteelblue2 = [0.149f, 0.490f, 0.671f, 1.0f],  // Re
+    jmolTeal3 = [0.149f, 0.400f, 0.588f, 1.0f],  // Os
+    jmolTeal4 = [0.090f, 0.329f, 0.529f, 1.0f],  // Ir
+    jmolLightgray = [0.816f, 0.816f, 0.878f, 1.0f],  // Pt
+    jmolGold = [1.000f, 0.820f, 0.137f, 1.0f],  // Au
+    jmolSilver2 = [0.722f, 0.722f, 0.816f, 1.0f],  // Hg
+    jmolSienna = [0.651f, 0.329f, 0.302f, 1.0f],  // Tl
+    jmolDimgray = [0.341f, 0.349f, 0.380f, 1.0f],  // Pb
+    jmolDarkorchid3 = [0.620f, 0.310f, 0.710f, 1.0f],  // Bi
+    jmolSaddlebrown = [0.671f, 0.361f, 0.000f, 1.0f],  // Po
+    jmolDimgray2 = [0.459f, 0.310f, 0.271f, 1.0f],  // At
+    jmolSteelblue3 = [0.259f, 0.510f, 0.588f, 1.0f],  // Rn
+    jmolIndigo2 = [0.259f, 0.000f, 0.400f, 1.0f],  // Fr
+    jmolGreen = [0.000f, 0.490f, 0.000f, 1.0f],  // Ra
+    jmolCornflowerblue2 = [0.439f, 0.671f, 0.980f, 1.0f],  // Ac
+    jmolDeepskyblue = [0.000f, 0.729f, 1.000f, 1.0f],  // Th
+    jmolDeepskyblue2 = [0.000f, 0.631f, 1.000f, 1.0f],  // Pa
+    jmolDodgerblue2 = [0.000f, 0.561f, 1.000f, 1.0f],  // U
 }
 

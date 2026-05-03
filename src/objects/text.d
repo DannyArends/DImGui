@@ -36,7 +36,7 @@ class Text : Geometry {
       col++;
       nGlyhs++;
     }
-    instances = [Instance()];
+    instances = [DrawInstance()];
     meshes["Text"] = Mesh([0, cast(uint)this.vertices.length]);
     this.opacity(app.glyphAtlas.path);
     geometry = (){ return(typeof(this).stringof); };
