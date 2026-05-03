@@ -6,8 +6,7 @@
 import engine;
 
 /** Cube
- * Defines a cube geometry with its base at (0,0,0) and extending upwards to a height of 1.0.
- */
+ * Defines a cube geometry with its base at (0,0,0) and extending upwards to a height of 1.0. */
 class Cube : Geometry {
   this(float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
   vertices = [
