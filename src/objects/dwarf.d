@@ -59,7 +59,7 @@ struct Dwarf {
 
   int[3] targetTile = [int.min, 0, 0];      /// Where we are going
   float[3][] path;                          /// Path we're on
-  float miningProgress = 0.0f;              /// Mining progress
+  float progress = 0.0f;                    /// Job progress
   uint[2] idleTicks = [0, 180];             /// Idle ticks and Patience / Wanderlust
   Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
 

@@ -34,7 +34,8 @@ void applyPathResult(ref App app, PathResult result) {
     if(d.uid != result.dwarfUID) continue;
     if(!result.success) {
       if(d.jobStack.length > 0) {
-        d.jobStack[$-1].failedBy ~= d.uid;
+        d.jobStack[0].failedBy ~= d.uid;
+        if(d.jobStack.length > 1) d.jobStack[$-1].failedBy ~= d.uid;
         d.jobStack[0].onFail(app, d);
       }
       return;
@@ -49,6 +50,11 @@ void applyPathResult(ref App app, PathResult result) {
 }
 
 void completeSubJob(ref Dwarf d) { d.jobStack = d.jobStack[1..$]; d.clearGoal(); }
+
+void progressJob(ref App app, ref Dwarf d, float amount, void delegate() onComplete) {
+  d.progress += amount;
+  if(d.progress >= 1.0f) { onComplete(); d.completeSubJob(); d.progress = 0.0f; }
+}
 
 TileType blockType(ref App app, uint id) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) return b.type; } return TileType.None; }
 
@@ -72,18 +78,14 @@ void claimNeighbour(ref App app, ref Job j) {
 Job miningJob(int[3] targetTile, uint retries = 3) {
   return Job("Mining", targetTile, TileType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
-      d.miningProgress += 0.25f;
-      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s mining %s %.0f%%", d.name, d.jobStack[0].targetTile, d.miningProgress * 100)));
-      if(d.miningProgress >= 1.0f) {
+      app.progressJob(d, 0.25f, () {
         TileType tt = app.world.getTileAt(d.jobStack[0].targetTile);
         app.setTile(d.jobStack[0].targetTile);
         app.fellTree(d.jobStack[0].targetTile.tileAbove);
         if(tt != TileType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         app.deriveInventory();
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
-        d.completeSubJob();
-        d.miningProgress = 0.0f;
-      }
+      });
     },
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
   );
@@ -95,12 +97,7 @@ Job stuffJob() { return pickupJob(noTile, TileType.None); }
 Job woodcuttingJob(int[3] targetTile) {
   return Job("Woodcutting", targetTile, TileType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
-      d.miningProgress += 0.25f;
-      if(d.miningProgress >= 1.0f) {
-        app.fellTree(d.jobStack[0].targetTile);
-        d.completeSubJob();
-        d.miningProgress = 0.0f;
-      }
+      app.progressJob(d, 0.25f, () { app.fellTree(d.jobStack[0].targetTile); });
     },
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
   );
@@ -144,9 +141,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
   return Job("DropBlock", fromTile, TileType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) {
-      foreach(i, id; d.carrying) {
-        if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, i); break; }
-      }
+      foreach(slot, id; d.inventory) { if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, slot); break; } }
       d.completeSubJob();
     },
     onFail: (ref App app, ref Dwarf d) { d.completeSubJob(); }
@@ -158,9 +153,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
   return Job("CleanWorksite", targetTile, TileType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
       if(app.world.blocks !is null) {
-        foreach(ref b; app.world.blocks.blocks) {
-          if(b.tile == j.targetTile) { j.blockIDs = [b.id]; j.tileType = b.type; return; }
-        }
+        foreach(ref b; app.world.blocks.blocks) { if(b.tile == j.targetTile) { j.blockIDs = [b.id]; j.tileType = b.type; return; } }
       }
       j.targetTile = noTile;
     },
@@ -179,11 +172,10 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
     onArrive: (ref App app, ref Dwarf d) {
       // find carried block of correct type
       auto found = d.carrying.filter!(id => app.blockType(id) == d.jobStack[0].tileType);
-      uint blockID = found.empty ? noBlock : found.front;
-      if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
-      if(!d.use(blockID)) { d.jobStack[0].onFail(app, d); return; }
+      if(found.empty) { d.jobStack[0].onFail(app, d); return; }
+      if(!d.use(found.front)) { d.jobStack[0].onFail(app, d); return; }
       // mark block as InChunk — update its tile to build site
-      foreach(ref b; app.world.blocks.blocks) { if(b.id == blockID) { b.tile = builtTile; break; } }
+      foreach(ref b; app.world.blocks.blocks) { if(b.id == found.front) { b.tile = builtTile; break; } }
       if(app.world.dwarves !is null) {
         foreach(ref other; app.world.dwarves.dwarves) {
           if(other.tile == d.jobStack[0].targetTile) { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
@@ -200,7 +192,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       if(app.verbose){
         SDL_Log(toStringz(format("[Job] %s FAILED Building %s at %s, requeueing", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       }
-      foreach(i, id; d.carrying) d.drop(app, i);
+      foreach(slot, id; d.inventory) { if(id != noBlock) d.drop(app, slot); }
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
       jobQueue ~= newJob;
@@ -223,6 +215,7 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   auto goal = app.findGoalTile(d);
   if(goal == noTile || !app.pathfindTo(d, goal)) {
     job.failedBy ~= d.uid;
+    job.onFail(app, d);
     jobQueue ~= job;
     d.jobStack = [];
     return false;
@@ -267,7 +260,7 @@ void failAndRequeue(ref Dwarf d) {
   jobQueue ~= j;
   d.jobStack = [];
   d.clearGoal();
-  d.miningProgress = 0.0f;
+  d.progress = 0.0f;
 }
 
 /** Fail the current job and requeue parent */
@@ -281,8 +274,9 @@ void failAndRequeueParent(ref Dwarf d) {
 void claimNextJob(ref App app, ref Dwarf d) {
   if(jobQueue.length == 0) return;
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
+  auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  app.syncBuildGhosts();
+  if(jobQueue.length != prevLen) app.syncBuildGhosts();
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
@@ -295,6 +289,6 @@ void claimNextJob(ref App app, ref Dwarf d) {
   if(bestIdx == -1) return;
   auto job = jobQueue[bestIdx];
   jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
-  if(app.dispatchJob(d, job)) app.deriveInventory();
+  if(app.dispatchJob(d, job)) { app.syncBuildGhosts(); app.deriveInventory(); }
 }
 
