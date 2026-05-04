@@ -5,7 +5,7 @@
 
 import engine;
 
-import dwarf : spawnDwarf, DwarfState;
+import dwarf : spawnDwarf;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
