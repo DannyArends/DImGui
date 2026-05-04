@@ -9,7 +9,6 @@ import block : spawnBlock;
 import intersection : intersects;
 import matrix : translateScale;
 import noise : noiseHTT;
-import serialization : readWorldData, writeWorldData;
 import vegetation : saveVegetation, loadVegetation, removeVegetation;
 import world : noTile;
 
@@ -24,6 +23,10 @@ struct Bush {
   int[3] rootTile;
   size_t bushIdx;
   uint hash;
+
+  static bool matchGeometry(string g) { return g == "BushMesh"; }
+  bool matchIndex(size_t idx) const { return idx == bushIdx; }
+  @property float bboxHeight() const { return 0.0f; }
 }
 
 Bush[] buildBushData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes) {
@@ -76,20 +79,7 @@ void gatherBush(ref App app, int[3] tile) {
 }
 
 bool getBestBush(ref App app, float[3][2] ray, Intersection[] hits, out int[3] rootTile) {
-  Intersection best;
-  foreach(ref hit; hits) {
-    auto obj = app.objects[hit.idx[0]];
-    if(obj.geometry() != "BushMesh") continue;
-    foreach(ref bushes; app.world.bushes.values) foreach(ref b; bushes) {
-      if(hit.idx[1] != b.bushIdx) continue;
-      auto wp = app.world.tileToWorld(b.rootTile);
-      float[3] bmin = [wp[0] - 1.0f, wp[1], wp[2] - 1.0f];
-      float[3] bmax = [wp[0] + 1.0f, wp[1] + 1.5f, wp[2] + 1.0f];
-      auto i = ray.intersects(bmin, bmax, hit.idx[0], hit.idx[1]);
-      if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = b.rootTile; }
-    }
-  }
-  return best.intersects;
+  return app.getBestVegetation!Bush(ray, hits, app.world.bushes, rootTile);
 }
 
 void saveBushes(ref App app) { app.saveVegetation!Bush(app.world.bushes, app.world.pendingBushes, app.world.bushPath()); }

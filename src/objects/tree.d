@@ -6,7 +6,6 @@
 import engine;
 
 import block : spawnBlock, unsettleBlocks;
-import serialization : readWorldData, writeWorldData;
 import intersection : intersects;
 import inventory : deriveInventory;
 import matrix : translateScale, scale;
@@ -35,24 +34,14 @@ struct Tree {
   size_t trunkStart;        /// First instance index in TrunkMesh
   size_t canopyIdx;         /// Instance index in CanopyMesh
   uint hash;
+
+  static bool matchGeometry(string g) { return g == "TrunkMesh" || g == "CanopyMesh"; }
+  bool matchIndex(size_t idx) const { return (idx >= trunkStart && idx < trunkStart + height) || idx == canopyIdx; }
+  @property float bboxHeight() const { return cast(float)height; }
 }
 
 bool getBestTree(ref App app, float[3][2] ray, Intersection[] hits, out int[3] rootTile) {
-  Intersection best;
-  foreach(ref hit; hits) {
-    auto obj = app.objects[hit.idx[0]];
-    if(obj.geometry() != "TrunkMesh" && obj.geometry() != "CanopyMesh") continue;
-    foreach(ref trees; app.world.trees.values) foreach(ref t; trees) {
-      bool match = (hit.idx[1] >= t.trunkStart && hit.idx[1] < t.trunkStart + t.height) || hit.idx[1] == t.canopyIdx;
-      if(!match) continue;
-      auto wp = app.world.tileToWorld(t.rootTile);
-      float[3] bmin = [wp[0] - 1.0f, wp[1], wp[2] - 1.0f];
-      float[3] bmax = [wp[0] + 1.0f, wp[1] + t.height + 1.5f, wp[2] + 1.0f];
-      auto i = ray.intersects(bmin, bmax, hit.idx[0], hit.idx[1]);
-      if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = t.rootTile; }
-    }
-  }
-  return best.intersects;
+  return app.getBestVegetation!Tree(ray, hits, app.world.trees, rootTile);
 }
 
 /** Generate trees for a chunk based on tile types and noise */
