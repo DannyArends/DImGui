@@ -105,7 +105,15 @@ uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
   app.world.blocks.blocks ~= b;
-  app.world.blocks.instances ~= app.world.toDropInstance(tile, tt);
+  if(tt == ResourceType.Berry) {
+    float sz = 0.15f;
+    app.world.berries.instances ~= DrawInstance(ResourceType.Berry,
+      translateScale(app.world.tileToWorld(tile, -app.world.blockOffset), [sz, sz, sz]));
+    app.world.berries.markDirty();
+  } else {
+    app.world.blocks.instances ~= app.world.toDropInstance(tile, tt);
+    app.world.blocks.markDirty();
+  }
   app.world.blocks.markDirty();
   return b.id;
 }
