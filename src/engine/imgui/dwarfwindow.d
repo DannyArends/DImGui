@@ -49,10 +49,13 @@ void showDwarfContent(ref App app, uint font = 0) {
     igPopStyleColor(1);
     igText(toStringz(format("%s", d.name)));
 
-    if(d.carrying.length > 0) {
+    if(!d.inventory[].all!(s => s.empty)) {
       igSameLine(0, 5);
       ResourceType[] types;
-      foreach(id; d.carrying) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) { types ~= b.type; break; } } }
+      foreach(ref s; d.inventory) {
+        if(s.isBlock) foreach(ubyte i; 0..s.count) types ~= s.type;
+        else if(s.isStack) foreach(ubyte i; 0..s.count) types ~= s.type;
+      }
       app.showTileIcons(types);
     }
     igText(toStringz("%s"), toStringz(format("%s - %s\n", d.tile, status)));
