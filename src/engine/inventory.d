@@ -8,33 +8,33 @@ import engine;
 import block : builtTile;
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
-import tileatlas : tileData, TileType;
+import resources : resourceData, ResourceType;
 import world : noTile;
 
 struct Inventory {
   GhostCube ghost;
   alias ghost this;
-  int[TileType] queued;
+  int[ResourceType] queued;
   bool isDragging = false;
   int[3][] dragPreview;
 
-  int onFloor(TileType tt, Blocks blocks) const {
+  int onFloor(ResourceType tt, Blocks blocks) const {
     if(blocks is null) return 0;
     return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
   }
-  int carried(TileType tt, Blocks blocks) const {
+  int carried(ResourceType tt, Blocks blocks) const {
     if(blocks is null) return 0;
     return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile == noTile);
   }
-  int built(TileType tt, Blocks blocks) const {
+  int built(ResourceType tt, Blocks blocks) const {
     if(blocks is null) return 0;
     return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile == builtTile);
   }
-  int get(TileType tt, Blocks blocks) const { return max(0, onFloor(tt, blocks) + carried(tt, blocks) - queued.get(tt, 0)); }
-  int total(TileType tt, Blocks blocks) const { return onFloor(tt, blocks) + carried(tt, blocks); }
-  string toString(TileType tt, Blocks blocks) const {
+  int get(ResourceType tt, Blocks blocks) const { return max(0, onFloor(tt, blocks) + carried(tt, blocks) - queued.get(tt, 0)); }
+  int total(ResourceType tt, Blocks blocks) const { return onFloor(tt, blocks) + carried(tt, blocks); }
+  string toString(ResourceType tt, Blocks blocks) const {
     return format("%s | Available:%d (Floor:%d Carried:%d Queued:%d Built:%d)",
-      tileData[tt].name, get(tt, blocks), onFloor(tt, blocks), carried(tt, blocks), queued.get(tt, 0), built(tt, blocks));
+      resourceData(tt).name, get(tt, blocks), onFloor(tt, blocks), carried(tt, blocks), queued.get(tt, 0), built(tt, blocks));
   }
 }
 
@@ -46,13 +46,13 @@ void deriveInventory(ref App app) {
   if(jobQueue.length != prevLen) {
     SDL_Log(toStringz(format("[Inventory] %d building jobs removed (inventory check)", cast(int)(prevLen - jobQueue.length))));
   }
-  if(app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks) <= 0) app.world.inventory.ghost.type = TileType.None;
+  if(app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks) <= 0) app.world.inventory.ghost.type = ResourceType.None;
   if(jobQueue.length != prevLen) app.syncBuildGhosts();
 }
 
 void placeTile(ref App app, int[3] wc) {
   if(wc == noTile) return;
-  if(app.world.inventory.ghost.type == TileType.None) return;
+  if(app.world.inventory.ghost.type == ResourceType.None) return;
   if(app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks) <= 0) return;
   jobQueue ~= buildingJob(wc, app.world.inventory.ghost.type);
   app.syncBuildGhosts();
@@ -67,14 +67,14 @@ void computeDragPreview(ref App app, int[3] from, int[3] to) {
   if(dx >= dz) {  // snap to X axis
     int step = to[0] > from[0] ? 1 : -1;
     for(int x = from[0]; x != to[0] + step; x += step){
-      if(app.world.getTile([x, from[1], from[2]]) != TileType.None) continue;
+      if(app.world.getTile([x, from[1], from[2]]) != ResourceType.None) continue;
       app.world.inventory.dragPreview ~= [x, from[1], from[2]];
       if(app.world.inventory.dragPreview.length >= available) break;
     }
   } else {  // snap to Z axis
     int step = to[2] > from[2] ? 1 : -1;
     for(int z = from[2]; z != to[2] + step; z += step){
-      if(app.world.getTile([from[0], from[1], z]) != TileType.None) continue;
+      if(app.world.getTile([from[0], from[1], z]) != ResourceType.None) continue;
       app.world.inventory.dragPreview ~= [from[0], from[1], z];
       if(app.world.inventory.dragPreview.length >= available) break;
     }

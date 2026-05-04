@@ -18,7 +18,7 @@ enum JobState { Pending, Satisfied, Unavailable }
 struct Job {
   string name;
   int[3] targetTile = noTile;
-  TileType tileType;
+  ResourceType tileType;
   Job[] prereqs;
   uint[] blockIDs;
   uint[] failedBy;
@@ -84,8 +84,8 @@ void progressJob(ref App app, ref Dwarf d, float amount, void delegate() onCompl
   if(d.progress >= 1.0f) { onComplete(); d.completeSubJob(); d.progress = 0.0f; }
 }
 
-/** Returns the TileType of a block by ID, or TileType.None if not found */
-TileType blockType(ref App app, uint id) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) return b.type; } return TileType.None; }
+/** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
+ResourceType blockType(ref App app, uint id) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) return b.type; } return ResourceType.None; }
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref App app, ref Dwarf d, ref Job j) {
@@ -107,13 +107,13 @@ void claimNeighbour(ref App app, ref Job j) {
 
 /** Mining Job */
 Job miningJob(int[3] targetTile) {
-  return Job("Mining", targetTile, TileType.None, [],
+  return Job("Mining", targetTile, ResourceType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () {
-        TileType tt = app.world.getTileAt(d.jobStack[0].targetTile);
+        ResourceType tt = app.world.getTileAt(d.jobStack[0].targetTile);
         app.setTile(d.jobStack[0].targetTile);
         app.fellTree(d.jobStack[0].targetTile.tileAbove);
-        if(tt != TileType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
+        if(tt != ResourceType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         app.deriveInventory();
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
       });
@@ -124,7 +124,7 @@ Job miningJob(int[3] targetTile) {
 
 /** woodcutting Job */
 Job woodcuttingJob(int[3] targetTile) {
-  return Job("Woodcutting", targetTile, TileType.None, [],
+  return Job("Woodcutting", targetTile, ResourceType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () { app.fellTree(d.jobStack[0].targetTile); });
     },
@@ -133,7 +133,7 @@ Job woodcuttingJob(int[3] targetTile) {
 }
 
 /** Pickup Job */
-Job pickupJob(int[3] targetTile, TileType tileType) {
+Job pickupJob(int[3] targetTile, ResourceType tileType) {
   return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref App app, ref Dwarf d) { app.doPickup(d); },
@@ -143,7 +143,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
 
 /** Job: move the dwarf to a free neighbouring tile away from their current position */
 Job moveAwayJob(int[3] from) {
-  return Job("MoveAway", from, TileType.None, [],
+  return Job("MoveAway", from, ResourceType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) { d.completeSubJob(); },
     onFail: (ref App app, ref Dwarf d) { d.completeSubJob(); }
@@ -152,7 +152,7 @@ Job moveAwayJob(int[3] from) {
 
 /** Move to a free neighbouring tile and drops a carried block */
 Job dropBlockJob(int[3] fromTile, uint blockID) {
-  return Job("DropBlock", fromTile, TileType.None, [], [blockID],
+  return Job("DropBlock", fromTile, ResourceType.None, [], [blockID],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) {
       foreach(slot, id; d.inventory) { if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, slot); break; } }
@@ -164,7 +164,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
 
 /** Clean the worksite (generates a pickup job prereq) */
 Job cleanWorksiteJob(int[3] targetTile) {
-  return Job("CleanWorksite", targetTile, TileType.None, [],
+  return Job("CleanWorksite", targetTile, ResourceType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
       if(app.world.blocks !is null) {
         foreach(ref b; app.world.blocks.blocks) { if(b.tile == j.targetTile) { j.blockIDs = [b.id]; j.tileType = b.type; return; } }
@@ -181,7 +181,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
 }
 
 /** Building Job (generates a pickup job prereq) */
-Job buildingJob(int[3] targetTile, TileType tileType) {
+Job buildingJob(int[3] targetTile, ResourceType tileType) {
   return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), pickupJob(noTile, tileType)],
     onArrive: (ref App app, ref Dwarf d) {
       // find carried block of correct type
@@ -309,7 +309,7 @@ void claimNextJob(ref App app, ref Dwarf d) {
   if(++d.idleTicks[0] > d.idleTicks[1]) {
     d.idleTicks[0] = 0;
     if(app.hasBlocks() && d.hasInventorySpace() && uniform(0, 10) == 0) {
-      app.dispatchJob(d, pickupJob(noTile, TileType.None));
+      app.dispatchJob(d, pickupJob(noTile, ResourceType.None));
     } else {
       int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
       if(app.pathfindTo(d, wander)) d.targetTile = wander;

@@ -46,7 +46,7 @@ enum ResourceType : ubyte {
 }
 
 /// Retrieve the ResourceT metadata for a given ResourceType
-ResourceT resourceData(ResourceType rt) {
+@nogc pure ResourceT resourceData(ResourceType rt) nothrow {
   switch(rt) {
     static foreach(member; __traits(allMembers, ResourceType)) {
       case __traits(getMember, ResourceType, member):
@@ -77,8 +77,8 @@ struct ResourceAtlas {
 void injectResourceMeshes(ref App app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
     Mesh m;
-    m.tid = app.tileAtlas.tid.get(cast(ResourceType)tt, -1);
-    m.nid = app.tileAtlas.nid.get(cast(ResourceType)tt, -1);
+    m.tid = app.resourceAtlas.tid.get(cast(ResourceType)tt, -1);
+    m.nid = app.resourceAtlas.nid.get(cast(ResourceType)tt, -1);
     app.meshes ~= m;
   }
 }
@@ -86,8 +86,8 @@ void injectResourceMeshes(ref App app) {
 void updateResourceAtlas(ref App app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
     auto ttype = cast(ResourceType)tt;
-    app.tileAtlas.tid[ttype] = app.textures.idx(resourceData(ttype).name ~ "_base");
-    app.tileAtlas.nid[ttype] = app.textures.idx(resourceData(ttype).name ~ "_normal");
+    app.resourceAtlas.tid[ttype] = app.textures.idx(resourceData(ttype).name ~ "_base");
+    app.resourceAtlas.nid[ttype] = app.textures.idx(resourceData(ttype).name ~ "_normal");
   }
   app.buffers["MeshMatrices"].dirty[] = true;
 }

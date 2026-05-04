@@ -7,7 +7,7 @@ import engine;
 
 import color : colorIndex;
 import chunk : getBestTile;
-import tileatlas : tileData;
+import resources : resourceData;
 import textures : idx;
 import vector : dot;
 import matrix : position, scale, translate;
@@ -15,7 +15,7 @@ import world : noTile;
 import jobs : jobQueue;
 
 class GhostCube : Cube {
-  TileType type = TileType.None;
+  ResourceType type = ResourceType.None;
   int[3] tile = noTile;
 
   this(float[2] dim, bool instanced = false) {
@@ -49,13 +49,13 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
     if(neighbours[f][1] < 0 || neighbours[f][1] >= app.world.chunkHeight) continue;
     auto coord = app.world.chunkCoord(neighbours[f]);
     auto tidx = app.world.tileIdx(neighbours[f]);
-    if(app.world.chunks[coord].tileTypes[tidx] == TileType.None) return(neighbours[f]);
+    if(app.world.chunks[coord].tileTypes[tidx] == ResourceType.None) return(neighbours[f]);
   }
   return(noTile);
 }
 
 void updateGhostTile(ref App app, float[3][2] ray) {
-  if(app.world.inventory.ghost.type == TileType.None) {
+  if(app.world.inventory.ghost.type == ResourceType.None) {
     app.world.inventory.ghost.tile = noTile;
     app.world.inventory.ghost.isVisible = false;
     return;
@@ -64,7 +64,7 @@ void updateGhostTile(ref App app, float[3][2] ray) {
   if(app.world.inventory.ghost.isVisible) {
     app.world.inventory.ghost.position(app.world.tileToWorld(app.world.inventory.ghost.tile));
     foreach (k, ref m; app.world.inventory.ghost.meshes) {
-      m.tid = app.textures.idx(tileData[app.world.inventory.ghost.type].name ~ "_base");
+      m.tid = app.textures.idx(resourceData(app.world.inventory.ghost.type).name ~ "_base");
     }
     app.buffers["MeshMatrices"].dirty[] = true;
   }

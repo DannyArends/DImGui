@@ -16,7 +16,7 @@ import vector : expandBounds;
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
-  TileType[] tileTypes;                                     /// Tile type for each tile in the chunk
+  ResourceType[] tileTypes;                                     /// Tile type for each tile in the chunk
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
@@ -59,9 +59,9 @@ class Chunk : Cube {
 }
 
 /** Check if a face is exposed / uncovered
- * TODO: should use TileType[][int[3]] (coordinate as index) but that doesn't work on Android
+ * TODO: should use ResourceType[][int[3]] (coordinate as index) but that doesn't work on Android
  */
-bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
+bool isFaceExposed(immutable(WorldData) wd, const ResourceType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
   int[3] nc = wd.chunkCoord(neighbour);
   int ci = (nc == coord) ? 0 : cast(int)coords[1..5].countUntil(nc) + 1;
   if (ci == 0 && nc != coord) return true;  // not found in any cache
@@ -71,18 +71,18 @@ bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const
   if (ln[1] >= wd.chunkHeight) return true;
   int ni = wd.tileIndex(ln);
   if (ni < 0 || ni >= cast(int)tileCache[ci].length) return true;
-  return tileCache[ci][ni] == TileType.None;
+  return tileCache[ci][ni] == ResourceType.None;
 }
 
 /** Load the TileCache, 
- * TODO: should use TileType[][int[3]] (coordinate as index) but that doesn't work on Android
+ * TODO: should use ResourceType[][int[3]] (coordinate as index) but that doesn't work on Android
  */
-TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
-  TileType[][5] tileCache;
+ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
+  ResourceType[][5] tileCache;
   foreach (ci; 0 .. 5) {
     tileCache[ci].length = wd.tileCount;
     for (int i = 0; i < wd.tileCount; i++) { tileCache[ci][i] = wd.getTile(wd.worldCoord(coords[ci], wd.tileCoord(i))); }
-    foreach (d; wd.diffs) { if (d.coord == coords[ci]) tileCache[ci][d.idx] = cast(TileType)d.type; }
+    foreach (d; wd.diffs) { if (d.coord == coords[ci]) tileCache[ci][d.idx] = cast(ResourceType)d.type; }
   }
   return tileCache;
 }
@@ -90,13 +90,13 @@ TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] co
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
-  TileType[][5] tileCache = wd.loadTileCache(coords, coord);
+  ResourceType[][5] tileCache = wd.loadTileCache(coords, coord);
 
   ChunkData data = ChunkData(coord, tileCache[0]);
 
   float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
-    if (data.tileTypes[i] == TileType.None) continue;
+    if (data.tileTypes[i] == ResourceType.None) continue;
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];

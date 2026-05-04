@@ -26,7 +26,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
       app.camera.lastMousePos = [e.button.x, e.button.y];
-      if(app.world.inventory.ghost.tile != noTile && app.world.inventory.ghost.type != TileType.None) {
+      if(app.world.inventory.ghost.tile != noTile && app.world.inventory.ghost.type != ResourceType.None) {
         app.world.inventory.isDragging = true;
         app.world.inventory.dragPreview = [app.world.inventory.ghost.tile];
         app.syncBuildGhosts();
@@ -34,7 +34,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { 
       app.camera.isdrag[1] = true;
-      app.world.inventory.ghost.type = TileType.None;
+      app.world.inventory.ghost.type = ResourceType.None;
       app.camera.lastMousePos = [e.button.x, e.button.y];
     }
   }

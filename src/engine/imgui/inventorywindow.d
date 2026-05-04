@@ -4,7 +4,7 @@
  */
 
 import engine;
-import tileatlas : tileData;
+import resources : resourceData;
 import textures : ImTextureRefFromID, idx;
 import imgui : faIcon;
 
@@ -29,9 +29,8 @@ void showInventoryContent(ref App app, uint font = 0) {
   int cols = cast(int)floor((app.gui.panelW - cellSize) / cast(float)(cellSize + 4)) - 1;
   int col = 0;
 
-  foreach(tileType; EnumMembers!TileType) {
-    //if(!tileData[tileType].traversable) continue;  // skip non-collectable tiles
-    auto texIdx = idx(app.textures, tileData[tileType].name ~ "_base");
+  foreach(tileType; EnumMembers!ResourceType) {
+    auto texIdx = idx(app.textures, resourceData(tileType).name ~ "_base");
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
     int count = app.world.inventory.get(tileType, app.world.blocks);
@@ -42,7 +41,7 @@ void showInventoryContent(ref App app, uint font = 0) {
     igImageButton(toStringz(format("##inv_%d", tileType)), texID,
                   ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1),
                   ImVec4(0,0,0,0), tint);
-    if(count > 0 && igIsItemClicked(0)) app.world.inventory.ghost.type = selected ? TileType.None : tileType;
+    if(count > 0 && igIsItemClicked(0)) app.world.inventory.ghost.type = selected ? ResourceType.None : tileType;
     if(selected) igPopStyleColor(1);
 
     ImVec2 pos, posMax;

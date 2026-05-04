@@ -57,7 +57,7 @@ public import ssbo : SSBO;
 public import shadow : ShadowMap;
 public import sfx : Audio, WavFMT;
 public import text : Text;
-public import tileatlas : TileAtlas, TileT, TileType;
+public import resources  : ResourceAtlas, ResourceType, ResourceT;
 public import textures : Texture, Textures;
 public import torus : Torus;
 public import tree : TrunkMesh, CanopyMesh, Tree;

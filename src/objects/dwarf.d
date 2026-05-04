@@ -8,7 +8,7 @@ import serialization : readWorldData, writeWorldData;
 import block : syncBlockInstances, noBlock;
 import world : noTile, tileBelow, isTileOccupied;
 import matrix : position, scale;
-import tileatlas : tileData;
+import resources : resourceData;
 import inventory : deriveInventory;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo;
@@ -123,7 +123,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
   foreach(i, ref d; ds.dwarves) {
     if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
     if(d.moveT >= 1.0f) continue;
-    float cost = max(1.0f, tileData[app.world.getTileAt(d.tile.tileBelow)].cost);
+    float cost = max(1.0f, resourceData(app.world.getTileAt(d.tile.tileBelow)).cost);
     d.moveT = min(1.0f, d.moveT + dt * 1.0f / cost);
     float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
     d.visualPos = [
