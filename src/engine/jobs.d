@@ -5,6 +5,7 @@
 
 import engine;
 
+import bush : gatherBush;
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
 import pathfinding : pathfindTo;
 import inventory : deriveInventory;
@@ -127,6 +128,16 @@ Job woodcuttingJob(int[3] targetTile) {
   return Job("Woodcutting", targetTile, ResourceType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () { app.fellTree(d.jobStack[0].targetTile); });
+    },
+    onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
+  );
+}
+
+/** Gathering Berries Job */
+Job gatherBerriesJob(int[3] targetTile) {
+  return Job("GatherBerries", targetTile, ResourceType.None, [],
+    onArrive: (ref App app, ref Dwarf d) {
+      app.progressJob(d, 0.5f, () { app.gatherBush(d.jobStack[0].targetTile); });
     },
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
   );
