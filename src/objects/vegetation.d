@@ -4,6 +4,8 @@
  */
 
 import engine;
+
+import intersection : intersects;
 import serialization : readWorldData, writeWorldData;
 
 /** Create a tombstone entry for a cleared chunk */

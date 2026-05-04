@@ -6,10 +6,9 @@
 import engine;
 
 import block : spawnBlock, unsettleBlocks;
-import intersection : intersects;
 import inventory : deriveInventory;
 import matrix : translateScale, scale;
-import vegetation : saveVegetation, loadVegetation, removeVegetation;
+import vegetation : saveVegetation, getBestVegetation, loadVegetation, removeVegetation;
 
 /** Shared instanced cylinder mesh for all tree trunks */
 class TrunkMesh : Cylinder {
