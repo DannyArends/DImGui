@@ -88,7 +88,7 @@ void claimNeighbour(ref App app, ref Job j) {
 }
 
 /** Mining Job */
-Job miningJob(int[3] targetTile, uint retries = 3) {
+Job miningJob(int[3] targetTile) {
   return Job("Mining", targetTile, TileType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () {
@@ -148,7 +148,7 @@ Job holdItemJob(TileType tileType) {
 }
 /** Move to a free neighbouring tile and drops a carried block */
 Job dropBlockJob(int[3] fromTile, uint blockID) {
-  return Job("DropBlock", fromTile, TileType.None, [],
+  return Job("DropBlock", fromTile, TileType.None, [], [blockID],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) {
       foreach(slot, id; d.inventory) { if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, slot); break; } }
