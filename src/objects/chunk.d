@@ -4,6 +4,7 @@
  */
 import engine;
 
+import bush : buildBushData;
 import block : unsettleBlocks;
 import geometry : deAllocate;
 import intersection : intersects;
@@ -23,6 +24,7 @@ struct ChunkData {
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
   Tree[] trees;                                             /// Trees generated for this chunk
+  Bush[] bushes;                                            /// Bushes generated for this chunk
   float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
@@ -124,6 +126,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
     }
   }
   data.trees = buildTreeData(wd, coord, data.tileTypes);
+  data.bushes = buildBushData(wd, coord, data.tileTypes);
   return data;
 }
 
@@ -171,6 +174,10 @@ void finalizeChunk(ref App app, ChunkData data) {
   if(app.world.trunk !is null && app.world.canopy !is null) {
     if(data.coord !in app.world.trees && data.coord !in app.world.pendingTrees) { app.world.pendingTrees[data.coord] = data.trees; }
   }
+  if(app.world.bush !is null){
+    if(data.coord !in app.world.bushes && data.coord !in app.world.pendingBushes) { app.world.pendingBushes[data.coord] = data.bushes; }
+  }
+
   if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.pendingUnsettle.length);
   foreach(tile; app.world.pendingUnsettle) app.world.unsettleBlocks(app.world.blocks, tile);
   app.world.pendingUnsettle = [];
