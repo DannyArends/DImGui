@@ -120,9 +120,9 @@ struct Dwarf {
 bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
   obj.targetTile = targetTile;
   auto goalTile = app.findGoalTile(obj);
-  if(goalTile[0] == int.min) return false;
-  if(!app.pathfindTo(obj, goalTile)) return false;
-  return true;
+  if(goalTile == noTile) return(false);
+  app.pathfindTo(obj, goalTile);
+  return(true);
 }
 
 /** Follow the next step in object T's path.

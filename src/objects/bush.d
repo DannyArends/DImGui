@@ -59,6 +59,9 @@ Bush[] addBushInstances(ref App app, Bush[] bushes) {
 }
 
 void rebuildBushInstances(ref App app) {
+  foreach(key; app.world.data.tilePenalties.keys) {
+    if(app.world.data.tilePenalties[key] < 10.0f) app.world.data.tilePenalties.remove(key);
+  }
   app.world.bush.instances = [];
   foreach(chunkCoord, ref chunkBushes; app.world.bushes) { chunkBushes = app.addBushInstances(chunkBushes); }
   app.world.bush.markDirty();
