@@ -19,16 +19,13 @@ struct Inventory {
   int[3][] dragPreview;
 
   int onFloor(ResourceType tt, ref App app) const {
-    if(app.world.blocks is null) return 0;
-    return cast(int)app.world.blocks.blocks.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
+    return cast(int)app.world.blocks.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
   }
   int carried(ResourceType tt, ref App app) const {
-    if(app.world.blocks is null) return 0;
-    return cast(int)app.world.blocks.blocks.count!(b => b.type == tt && b.tile == noTile);
+    return cast(int)app.world.blocks.count!(b => b.type == tt && b.tile == noTile);
   }
   int built(ResourceType tt, ref App app) const {
-    if(app.world.blocks is null) return 0;
-    return cast(int)app.world.blocks.blocks.count!(b => b.type == tt && b.tile == builtTile);
+    return cast(int)app.world.blocks.count!(b => b.type == tt && b.tile == builtTile);
   }
   int get(ResourceType tt, ref App app) const { return max(0, onFloor(tt, app) + carried(tt, app) - queued.get(tt, 0)); }
   int total(ResourceType tt, ref App app) const { return onFloor(tt, app) + carried(tt, app); }
@@ -42,25 +39,25 @@ void deriveInventory(ref App app) {
   app.world.inventory.queued.clear();
   foreach(ref j; jobQueue) { if(j.name == "Building") app.world.inventory.queued[j.tileType] = app.world.inventory.queued.get(j.tileType, 0) + 1; }
   auto prevLen = jobQueue.length;
-  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileType, app.world.blocks) > 0).array;
+  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileType, app) > 0).array;
   if(jobQueue.length != prevLen) {
     SDL_Log(toStringz(format("[Inventory] %d building jobs removed (inventory check)", cast(int)(prevLen - jobQueue.length))));
   }
-  if(app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks) <= 0) app.world.inventory.ghost.type = ResourceType.None;
+  if(app.world.inventory.get(app.world.inventory.ghost.type, app) <= 0) app.world.inventory.ghost.type = ResourceType.None;
   if(jobQueue.length != prevLen) app.syncBuildGhosts();
 }
 
 void placeTile(ref App app, int[3] wc) {
   if(wc == noTile) return;
   if(app.world.inventory.ghost.type == ResourceType.None) return;
-  if(app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks) <= 0) return;
+  if(app.world.inventory.get(app.world.inventory.ghost.type, app) <= 0) return;
   jobQueue ~= buildingJob(wc, app.world.inventory.ghost.type);
   app.syncBuildGhosts();
   app.deriveInventory();
 }
 
 void computeDragPreview(ref App app, int[3] from, int[3] to) {
-  int available = app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks);
+  int available = app.world.inventory.get(app.world.inventory.ghost.type, app);
   int dx = abs(to[0] - from[0]);
   int dz = abs(to[2] - from[2]);
   app.world.inventory.dragPreview = [];

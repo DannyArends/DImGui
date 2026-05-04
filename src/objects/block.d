@@ -7,6 +7,7 @@ import engine;
 import color : Colors, colorIndex;
 import inventory : deriveInventory;
 import matrix : translateScale, scale;
+import resources : resourceData;
 import serialization : readWorldData, writeWorldData;
 import vector : manhattan;
 import world : noTile;
@@ -30,32 +31,30 @@ struct Block {
 
 /** Save blocks */
 void saveBlocks(ref App app) {
-  if(app.world.blocks is null) return;
-  writeWorldData(app.world.blocksPath(), app.world.blocks.blocks, app.world.blocks.nextID);
+  if(app.world.blocks.length == 0) return;
+  writeWorldData(app.world.blocksPath(), app.world.blocks, app.world.blockNextID);
 }
 
 /** Load blocks */
 void loadBlocks(ref App app) {
   app.ensureBlocks();
   Block[] blocks;
-  if(!readWorldData(app.world.blocksPath(), blocks, app.world.blocks.nextID)) return;
-  app.world.blocks.blocks = blocks;
+  if(!readWorldData(app.world.blocksPath(), blocks, app.world.blockNextID)) return;
+  app.world.blocks = blocks;
   app.syncBlockInstances();
-  foreach(ref b; app.world.blocks.blocks) {
-    if(b.isFalling) app.world.pendingUnsettle ~= b.tile;
-  }
-  SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.blocks.length);
+  foreach(ref b; app.world.blocks) { if(b.isFalling) app.world.pendingUnsettle ~= b.tile; }
+  SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
 }
 
-@nogc pure bool hasBlocks(ref App app) nothrow { return(app.world.blocks !is null && app.world.blocks.blocks.length > 0); }
-@nogc pure bool hasBlocks(ref App app, ResourceType tt) nothrow { return(app.hasBlocks() && app.world.blocks.blocks.any!(b => b.type == tt)); }
+@nogc pure bool hasBlocks(ref App app) nothrow { return app.world.blocks.length > 0; }
+@nogc pure bool hasBlocks(ref App app, ResourceType tt) nothrow { return app.world.blocks.any!(b => b.type == tt); }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 uint findFreeBlock(ref App app, int[3] dwarfTile, ResourceType tt = ResourceType.None) {
-  if(app.world.blocks is null) return noBlock;
+  if(app.world.blocks.length == 0) return noBlock;
   uint bestID = noBlock;
   float bestDist = float.max;
-  foreach(ref b; app.world.blocks.blocks) {
+  foreach(ref b; app.world.blocks) {
     if(tt != ResourceType.None && b.type != tt) continue;
     if(b.tile == noTile || b.tile == builtTile) continue;
     bool reserved = false;
@@ -72,23 +71,19 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, ResourceType tt = ResourceType
 }
 
 void ensureBlocks(ref App app) {
-  if(app.world.blocks !is null) return;
-  app.world.blocks = new Blocks();
-  app.objects ~= app.world.blocks;
   foreach(rt; EnumMembers!ResourceType) {
     auto meshName = resourceData(rt).meshName;
     if(meshName in app.world.dropMeshes) continue;
-    if(meshName == "Blocks")  { app.world.dropMeshes[meshName] = new Cube(); }
-    if(meshName == "Berries") { app.world.dropMeshes[meshName] = new Icosahedron(); }
-    app.objects ~= app.world.dropMeshes[meshName];
+    if(meshName == "Blocks") { app.world.dropMeshes[meshName] = new Cube(); app.objects ~= app.world.dropMeshes[meshName]; }
+    if(meshName == "Berries") { app.world.dropMeshes[meshName] = new Icosahedron(); app.objects ~= app.world.dropMeshes[meshName]; }
   }
 }
 
 /** Spawn a new block into the registry */
 uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
-  auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
-  app.world.blocks.blocks ~= b;
+  auto b = Block(app.world.blockNextID++, tt, tile, [0.0f, 0.0f]);
+  app.world.blocks ~= b;
   app.syncBlockInstances();
   return b.id;
 }
@@ -107,7 +102,7 @@ DrawInstance toDropInstance(World world, ref Block b) {
 void syncBlockInstances(ref App app) {
   if(app.world.blocks is null) return;
   foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
-  foreach(ref b; app.world.blocks.blocks) {
+  foreach(ref b; app.world.blocks) {
     auto meshName = resourceData(b.type).meshName;
     bool hidden = b.tile == noTile || b.tile == builtTile;
     b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
@@ -130,9 +125,9 @@ void unsettleBlocks(const World world, ref Block[] blocks, int[3] minedTile) {
 
 /** Update falling blocks */
 void settleBlocks(ref World world, float dt) {
-  if(world.blocks is null) return;
+  if(world.blocks.length == 0) return;
   bool changed = false;
-  foreach(ref b; world.blocks.blocks) {
+  foreach(ref b; world.blocks) {
     if(!b.isFalling) continue;
     b.v = b.v + 0.125f * dt;
     b.y = b.y - b.v * dt;

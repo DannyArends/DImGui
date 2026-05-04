@@ -64,7 +64,7 @@ struct DwarfData {
   bool drop(ref App app, size_t slot) {
     if(slot >= inventory.length || inventory[slot].empty) return false;
     if(inventory[slot].isBlock) {
-      foreach(ref b; app.world.blocks.blocks) { if(b.id == inventory[slot].blockID) { b.tile = tile; break; } }
+      foreach(ref b; app.world.blocks) { if(b.id == inventory[slot].blockID) { b.tile = tile; break; } }
       app.syncBlockInstances();
     }
     inventory[slot] = InventorySlot.init;
