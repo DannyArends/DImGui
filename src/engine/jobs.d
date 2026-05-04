@@ -135,17 +135,6 @@ Job moveAwayJob(int[3] from) {
   );
 }
 
-/** Job: ensure the dwarf is carrying a block of the required type, fetching one if not */
-Job holdItemJob(TileType tileType) {
-  return Job("HoldItem", noTile, tileType, [],
-    onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
-    onArrive: (ref App app, ref Dwarf d) {
-      if(d.carrying.any!(id => app.blockType(id) == d.jobStack[0].tileType)) { d.completeSubJob(); return; }
-      app.doPickup(d);
-    },
-    onFail: (ref App app, ref Dwarf d) { d.failAndRequeueParent(); }
-  );
-}
 /** Move to a free neighbouring tile and drops a carried block */
 Job dropBlockJob(int[3] fromTile, uint blockID) {
   return Job("DropBlock", fromTile, TileType.None, [], [blockID],
@@ -178,7 +167,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
 
 /** Building Job (generates a pickup job prereq) */
 Job buildingJob(int[3] targetTile, TileType tileType) {
-  return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), holdItemJob(tileType)],
+  return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), pickupJob(noTile, tileType)],
     onArrive: (ref App app, ref Dwarf d) {
       // find carried block of correct type
       auto found = d.carrying.filter!(id => app.blockType(id) == d.jobStack[0].tileType);
