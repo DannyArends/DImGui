@@ -74,8 +74,18 @@ void ensureBlocks(ref App app) {
   foreach(rt; EnumMembers!ResourceType) {
     auto meshName = resourceData(rt).meshName;
     if(meshName in app.world.dropMeshes) continue;
-    if(meshName == "Blocks") { app.world.dropMeshes[meshName] = new Cube(); app.objects ~= app.world.dropMeshes[meshName]; }
-    if(meshName == "Berries") { app.world.dropMeshes[meshName] = new Icosahedron(); app.objects ~= app.world.dropMeshes[meshName]; }
+    if(meshName == "Blocks") {
+      auto m = new Cube();
+      m.initInstanced(() => meshName);
+      app.world.dropMeshes[meshName] = m;
+      app.objects ~= m;
+    }
+    if(meshName == "Berries") {
+      auto m = new Icosahedron();
+      m.initInstanced(() => meshName);
+      app.world.dropMeshes[meshName] = m;
+      app.objects ~= m;
+    }
   }
 }
 
