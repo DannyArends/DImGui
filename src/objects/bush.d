@@ -6,10 +6,9 @@
 import engine;
 
 import block : spawnBlock;
-import intersection : intersects;
 import matrix : translateScale;
 import noise : noiseHTT;
-import vegetation : saveVegetation, loadVegetation, removeVegetation;
+import vegetation : getBestVegetation, saveVegetation, loadVegetation, removeVegetation;
 import world : noTile;
 
 class BushMesh : Icosahedron {
