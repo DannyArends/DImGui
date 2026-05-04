@@ -103,7 +103,7 @@ void claimNeighbour(ref App app, ref Job j) {
   foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
     if(app.world.isStandable(n)) { j.targetTile = n; return; }
   }
-  j.state = JobState.Satisfied;
+  j.state = JobState.Unavailable;
 }
 
 /** Mining Job */
@@ -213,7 +213,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
     onFail: (ref App app, ref Dwarf d) {
       foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app, slot); }
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
-      newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
+      newJob.failedBy = d.jobStack[$-1].failedBy ~ [d.uid];
       jobQueue ~= newJob;
       d.clearGoal();
       app.syncBuildGhosts();

@@ -209,6 +209,8 @@ void invalidatePaths(ref App app, int[3] tile) {
   foreach(ref d; app.world.dwarves.dwarves) {
     if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
     d.path = [];
+    d.moveTo = d.moveFrom = d.visualPos;
+    d.moveT = 1.0f;
     if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile);
   }
 }
