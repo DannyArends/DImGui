@@ -5,10 +5,11 @@
 
 import engine;
 
-import world : noTile;
+import block : spawnBlock;
+import intersection : intersects;
 import matrix : translateScale;
 import noise : noiseHTT;
-import intersection : intersects;
+import world : noTile;
 
 class BushMesh : Icosahedron {
   this() {
@@ -65,16 +66,17 @@ void removeBushInstances(ref App app, int[3] coord) {
   app.rebuildBushInstances();
 }
 
-uint gatherBush(ref App app, int[3] tile) {
+void gatherBush(ref App app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
-  if(coord !in app.world.bushes) return 0;
+  if(coord !in app.world.bushes) return;
   foreach(i, ref b; app.world.bushes[coord]) {
     if(b.rootTile != tile) continue;
+    uint count = 3 + (b.hash % 3);
+    foreach(n; 0..count) app.spawnBlock(tile, ResourceType.Berry);
     app.world.bushes[coord] = app.world.bushes[coord][0..i] ~ app.world.bushes[coord][i+1..$];
     app.rebuildBushInstances();
-    return 2 + (b.hash % 3);   // 2-4 berries per bush
+    return;
   }
-  return 0;
 }
 
 bool getBestBush(ref App app, float[3][2] ray, Intersection[] hits, out int[3] rootTile) {
