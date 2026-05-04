@@ -117,6 +117,12 @@ struct WorldData {
   pure bool isStandable(int[3] tile) const nothrow {
     return isPassable(tile) && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable;
   }
+  
+  pure bool hasStandableNeighbour(int[3] tile) nothrow {
+    auto n = tileNeighbours(tile);
+    foreach(i; [0,1,4,5]) { if(isStandable(n[i])) return true; }
+    return false;
+  }
 
   pure PathNode[] getSuccessors(PathNode parent) const {
     PathNode[] successors;

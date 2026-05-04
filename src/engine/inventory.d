@@ -43,6 +43,9 @@ void deriveInventory(ref App app) {
   foreach(ref j; jobQueue) { if(j.name == "Building") app.world.inventory.queued[j.tileType] = app.world.inventory.queued.get(j.tileType, 0) + 1; }
   auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileType, app.world.blocks) > 0).array;
+  if(jobQueue.length != prevLen) {
+    SDL_Log(toStringz(format("[Inventory] %d building jobs removed (inventory check)", cast(int)(prevLen - jobQueue.length))));
+  }
   if(app.world.inventory.get(app.world.inventory.ghost.type, app.world.blocks) <= 0) app.world.inventory.ghost.type = TileType.None;
   if(jobQueue.length != prevLen) app.syncBuildGhosts();
 }
