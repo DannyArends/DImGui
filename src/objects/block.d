@@ -6,8 +6,9 @@ import engine;
 
 import serialization : readWorldData, writeWorldData;
 import inventory : deriveInventory;
-import matrix : translateScale, translate, multiply, scale;
-import world : noTile, WORLD_MAGIC;
+import matrix : translateScale, scale;
+import vector : manhattan;
+import world : noTile;
 
 enum uint noBlock = uint.max;
 enum int[3] builtTile = [int.max, 0, 0];
@@ -55,10 +56,8 @@ void loadBlocks(ref App app) {
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.blocks.length);
 }
 
-@nogc pure bool hasBlocks(ref App app, TileType tt) nothrow {
-  if(app.world.blocks is null) return false;
-  return app.world.blocks.blocks.any!(b => b.type == tt);
-}
+@nogc pure bool hasBlocks(ref App app) nothrow { return(app.world.blocks !is null && app.world.blocks.blocks.length > 0); }
+@nogc pure bool hasBlocks(ref App app, TileType tt) nothrow { return(app.hasBlocks() && app.world.blocks.blocks.any!(b => b.type == tt)); }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
@@ -74,7 +73,8 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
       if(reserved) break;
     }
     if(reserved) continue;
-    float dist = abs(b.tile[0] - dwarfTile[0]) + abs(b.tile[2] - dwarfTile[2]);
+    if(!app.world.data.hasStandableNeighbour(b.tile)) continue;
+    float dist = manhattan(b.tile, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = b.id; }
   }
   return bestID;
@@ -107,10 +107,9 @@ void syncBlockInstances(ref App app) {
   app.world.blocks.instances = [];
   int visible = 0, hidden = 0;
   foreach(ref b; app.world.blocks.blocks) {
-    if(b.tile == noTile || b.tile == builtTile) {
-      app.world.blocks.instances ~= DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]));
-    } else { app.world.blocks.instances ~= app.world.toDropInstance(b.tile, b.type); }
-    if(b.tile == noTile || b.tile == builtTile) { hidden++; } else { visible++; }
+    bool inactive = b.tile == noTile || b.tile == builtTile;
+    app.world.blocks.instances ~= inactive ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f])) : app.world.toDropInstance(b.tile, b.type);
+    if(inactive){ hidden++; }else{ visible++; }
   }
   //SDL_Log("syncBlockInstances: %d visible, %d hidden (total=%d)", visible, hidden, cast(int)app.world.blocks.blocks.length);
   app.world.blocks.markDirty();

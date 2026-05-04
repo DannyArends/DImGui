@@ -4,7 +4,7 @@
  */
 
 import engine;
-import tileatlas : tileData, TileType;
+import tileatlas : tileData;
 import textures : ImTextureRefFromID, idx;
 import imgui : faIcon;
 

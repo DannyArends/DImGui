@@ -5,14 +5,15 @@
 import engine;
 
 import serialization : readWorldData, writeWorldData;
-import block : spawnBlock, syncBlockInstances, noBlock;
-import world : noTile, tileBelow, isTileOccupied, WORLD_MAGIC;
-import matrix : position, scale, rotate;
-import vector : euclidean;
+import block : syncBlockInstances, noBlock;
+import world : noTile, tileBelow, isTileOccupied;
+import matrix : position, scale;
 import tileatlas : tileData;
 import inventory : deriveInventory;
-import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
-import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob, moveAwayJob;
+import pathmarker : syncPathMarkers;
+import pathfinding : pathfindTo;
+import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination, findGoalTile;
+import rnjesus : randomizeName;
 
 uint nextDwarfUID = 1;
 
@@ -25,11 +26,6 @@ struct DwarfData {
   uint[32] inventory = noBlock;  /// block IDs, noBlock = empty slot
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
-  @property void name(string s) {
-    auto parts = s.split(" ");
-    first[] = '\0'; first[0..min(parts[0].length, first.length)] = parts[0][0..min(parts[0].length, first.length)];
-    last[]  = '\0'; if(parts.length > 1) last[0..min(parts[1].length, last.length)] = parts[1][0..min(parts[1].length, last.length)];
-  }
   @property uint[] carrying() { return inventory[].filter!(id => id != noBlock).array; }
   @property bool pickup(uint blockID) { foreach(ref slot; inventory) { if(slot == noBlock) { slot = blockID; return true; } } return false; }
   @property bool use(uint blockID) { foreach(ref slot; inventory) { if(slot == blockID) { slot = noBlock; return true; } } return false; }
@@ -40,6 +36,7 @@ struct DwarfData {
     inventory[slot] = noBlock;
     return true;
   }
+  @property bool hasInventorySpace() { return carrying.length < (inventory.length / 2); }
 }
 
 /** Dwarven Cylinderz */
@@ -53,11 +50,20 @@ class Dwarves : Cylinder {
   }
 }
 
+enum DwarfState {
+  Idle,           /// no job, no goal, standing still
+  Wandering,      /// no job, has targetTile, following path
+  WaitingForPath, /// has job, sent path request, waiting for async result
+  Moving,         /// has job, following path (moveT < 1.0f)
+  Working,        /// arrived at destination, executing job action
+  Blocked,        /// at destination but another dwarf is in the way
+}
+
 struct Dwarf {
   DwarfData data;                           /// Data saved between sessions
   alias data this;
 
-  int[3] targetTile = [int.min, 0, 0];      /// Where we are going
+  int[3] targetTile = noTile;               /// Where we are going
   float[3][] path;                          /// Path we're on
   float progress = 0.0f;                    /// Job progress
   uint[2] idleTicks = [0, 180];             /// Idle ticks and Patience / Wanderlust
@@ -67,21 +73,34 @@ struct Dwarf {
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
-  bool waitingForPath = false;              /// Waiting for ASync path ?
 
-  uint waitingSince = 0;                    /// Timestamp when waiting for another dwarf to move
+  DwarfState state = DwarfState.Idle;
+  uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
 
-  @property @nogc bool hasGoal() nothrow { return targetTile != noTile; }
-  @property @nogc bool isIdle() nothrow { return !hasGoal && jobStack.length == 0; }
-  @property @nogc bool isWandering() nothrow { return hasGoal && jobStack.length == 0; }
-  @nogc void clearGoal() nothrow { targetTile = noTile; }
+  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
 }
 
-/** Random names */
-string randomDwarfName() {
-  string[] prefixes = ["Urist", "Iden", "Meng", "Reg", "Doren", "Ast", "Nil", "Erib", "Thob", "Cog"];
-  string[] suffixes = ["ral", "dor", "zan", "kel", "tok", "mis", "bur", "ith", "gar", "lon"];
-  return prefixes[uniform(0, prefixes.length)] ~ suffixes[uniform(0, suffixes.length)];
+/** Attempt to re-path object T to goalTile, returns false if unreachable.
+ * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
+bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
+  obj.targetTile = targetTile;
+  auto goalTile = app.findGoalTile(obj);
+  if(goalTile[0] == int.min) return false;
+  if(!app.pathfindTo(obj, goalTile)) return false;
+  return true;
+}
+
+/** Follow the next step in object T's path.
+ * Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT */
+void followPath(T)(ref App app, ref T obj) {
+  if(obj.path.length == 0) return;
+  auto next = obj.path[0];
+  obj.path = obj.path[1..$];
+  obj.moveFrom = obj.visualPos;
+  obj.moveTo = [next[0], next[1] - 0.5f, next[2]];
+  obj.moveT = 0.0f;
+  obj.tile = app.world.worldToTile(next);
+  app.camera.isDirty = true;
 }
 
 /** Find a free surface tile (as in non-occupado) and on top of the world */
@@ -94,7 +113,7 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
       }
     }
   }
-  return [int.min, 0, 0];
+  return(noTile);
 }
 
 /** All dwarves being framed */
@@ -102,7 +121,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
   foreach(i, ref d; ds.dwarves) {
-    if(d.waitingForPath) continue;
+    if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
     if(d.moveT >= 1.0f) continue;
     float cost = max(1.0f, tileData[app.world.getTileAt(d.tile.tileBelow)].cost);
     d.moveT = min(1.0f, d.moveT + dt * 1.0f / cost);
@@ -114,35 +133,38 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
     ];
     ds.instances[i] = position(ds.instances[i], d.visualPos);
     ds.markDirty();
-    if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
+    if(d.moveT >= 1.0f) {
+      if(d.path.length > 0) {
+        app.followPath(d);
+      } else { d.state = (d.jobStack.length > 0) ? DwarfState.Working : DwarfState.Idle; }
+    }
   }
+  app.syncPathMarkers();
 }
 
 /** A single dwarf being ticked */
 void tickDwarf(ref App app, ref Dwarf d) {
-  if(d.jobStack.length == 0) app.claimNextJob(d);
-  if(!d.hasGoal) {
-    if(d.jobStack.length > 0) {
-      if(d.jobStack[0].targetTile == noTile || !app.repathTo(d, d.jobStack[0].targetTile)) { d.jobStack[0].onFail(app, d); }
-    } else {
+  final switch(d.state) {
+    case DwarfState.Idle:
       app.claimNextJob(d);
-      if(d.isIdle && ++d.idleTicks[0] > d.idleTicks[1]) {
-        if(app.world.blocks !is null && app.world.blocks.blocks.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
-          app.dispatchJob(d, stuffJob());
-        } else {
-          int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
-          if(app.pathfindTo(d, wander)) d.targetTile = wander;
-        }
-        d.idleTicks[0] = 0;
+      break;
+    case DwarfState.WaitingForPath: break;
+    case DwarfState.Moving:
+    case DwarfState.Wandering:
+      if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
+      break;
+    case DwarfState.Working:
+      if(d.jobStack.length == 0) { d.state = DwarfState.Idle; break; }
+      if(app.atDestination(d, d.jobStack[0].targetTile)) {
+        d.blockedSince = 0;
+        d.jobStack[0].onArrive(app, d);
+      } else {
+        if(app.repathTo(d, d.jobStack[0].targetTile)) {
+          d.state = DwarfState.WaitingForPath;
+        } else { d.jobStack[0].onFail(app, d); }
       }
-    }
-  } else if(d.path.length > 0 && d.moveT >= 1.0f) {
-    app.followPath(d);
-  } else if(d.path.length == 0 && d.moveT >= 1.0f && !d.waitingForPath) {
-    if(d.isWandering) { d.clearGoal(); }
-    else if(app.atDestination(d, d.jobStack[0].targetTile)) { d.waitingSince = 0; d.jobStack[0].onArrive(app, d); }
-    else if(d.jobStack[0].name == "Building") { app.handleBlocking(d); }
-    else if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
+      break;
+    case DwarfState.Blocked: app.handleBlocking(d); break;
   }
 }
 
@@ -150,18 +172,22 @@ void handleBlocking(ref App app, ref Dwarf d) {
   foreach(ref other; app.world.dwarves.dwarves) {
     if(other.uid == d.uid) continue;
     if(!app.atDestination(other, d.jobStack[0].targetTile)) continue;
-    if(d.waitingSince == 0) {
-      d.waitingSince = cast(uint)SDL_GetTicks();
-      if(other.jobStack.length == 0 || other.jobStack[0].name != "MoveAway"){ other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
+    if(d.blockedSince == 0) {
+      d.blockedSince = cast(uint)SDL_GetTicks();
+      if(other.jobStack.length == 0 || other.jobStack[0].name != "MoveAway") { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
     }
-    if(SDL_GetTicks() - d.waitingSince > 4000) {
-      d.waitingSince = 0;
+    if(SDL_GetTicks() - d.blockedSince > 4000) {
+      d.blockedSince = 0;
+      d.state = DwarfState.Idle;
       d.jobStack[0].onFail(app, d);
     }
     return;
   }
-  d.waitingSince = 0;  // no longer blocked
-  if(!app.repathTo(d, d.jobStack[0].targetTile)) d.jobStack[0].onFail(app, d);
+  d.blockedSince = 0;
+  if(!app.repathTo(d, d.jobStack[0].targetTile)) {
+    d.state = DwarfState.Idle;
+    d.jobStack[0].onFail(app, d);
+  } else { d.state = DwarfState.WaitingForPath; } // No longer blocked — repath
 }
 
 /** dwarfTick, ticks all dwarves in random order */
@@ -177,10 +203,13 @@ void ensureDwarves(ref App app) {
   app.world.dwarves.onFrame = &dwarfFrame;
   app.world.dwarves.onTick  = &dwarfTick;
   app.objects ~= app.world.dwarves;
+  app.world.pathMarkers = new PathMarkers();
+  app.objects ~= app.world.pathMarkers;
 }
 
 void addDwarf(ref App app, ref Dwarf d) {
   d.idleTicks[1] = uniform(30, 180);
+  d.state = DwarfState.Idle;
   auto wp = app.world.tileToWorld(d.tile);
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
@@ -191,13 +220,20 @@ void addDwarf(ref App app, ref Dwarf d) {
   app.world.dwarves ~= d;
 }
 
+uint pickUniqueColor(ref App app) {
+  uint[] used = app.world.dwarves !is null ? app.world.dwarves.dwarves.map!(d => d.colorID).array : [];
+  uint colorID;
+  do { colorID = uniform(0, cast(uint)app.colors.length); } while(used.canFind(colorID) && used.length < app.colors.length);
+  return colorID;
+}
+
 /** Spawn a Dwarf */
-void spawnDwarf(ref App app, string name) {
+void spawnDwarf(ref App app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
-  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, uniform(0, cast(uint)app.colors.length), tile));
-  d.name = name;
+  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, app.pickUniqueColor(), tile));
+  randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.markDirty();
 }

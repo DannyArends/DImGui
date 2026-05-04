@@ -93,8 +93,9 @@ struct WorldData {
   @nogc pure TileType getTileAt(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     auto idx = tileIdx(tile);
-    foreach(d; diffs) { if(d.coord == coord && d.idx == idx) return cast(TileType)d.type; }
-    return getTile(tile);
+    TileType result = getTile(tile);
+    foreach(d; diffs) { if(d.coord == coord && d.idx == idx) result = cast(TileType)d.type; }
+    return result;
   }
 
   @nogc pure int surfaceAt(int x, int y, int z) const nothrow { while(y > 0 && getTileAt([x, y, z]) == TileType.None){ y--; } return y; }
@@ -107,13 +108,19 @@ struct WorldData {
     return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset - yOff) / tileHeight), cast(int)(pos[2] / tileSize)];
   }
 
-  pure bool isPassable(int[3] wc) const nothrow {
+  @nogc pure bool isPassable(int[3] wc) const nothrow {
     if(wc[1] <= 0 || wc[1] >= chunkHeight){ return(false); }
     return getTileAt(wc) == TileType.None;
   }
 
-  pure bool isStandable(int[3] tile) const nothrow {
+  @nogc pure bool isStandable(int[3] tile) const nothrow {
     return isPassable(tile) && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable;
+  }
+
+  @nogc pure bool hasStandableNeighbour(int[3] tile) const nothrow {
+    auto n = tileNeighbours(tile);
+    foreach(i; [0,1,4,5]) { if(isStandable(n[i])) return true; }
+    return false;
   }
 
   pure PathNode[] getSuccessors(PathNode parent) const {
@@ -126,7 +133,7 @@ struct WorldData {
         auto tt = getTileAt([nx, ny, nz]);
         int[3] standTile = [nx, ny+1, nz];
         if(tt != TileType.None && tileData[tt].traversable && isPassable(standTile)) {
-          float modifier = ghostTiles.canFind(standTile) ? 1000.0f : 0.0f;
+          float modifier = ghostTiles.canFind(standTile) ? 20.0f : 0.0f;
           successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost + modifier);
           break;
         }
@@ -149,6 +156,7 @@ struct World {
   Inventory inventory;                                      /// Inventory
   GhostCube buildingGhosts;                                 /// Building Ghosts
   Dwarves dwarves;                                          /// Dwarves
+  PathMarkers pathMarkers;                                  /// Path markers
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
   alias data this;
@@ -174,11 +182,6 @@ struct World {
     clear();
   }
 
-  int surfaceY(int x, int z) const {
-    for(int y = chunkHeight-1; y > 0; y--) { if(getTileAt([x, y, z]) != TileType.None) return y; }
-    return 0;
-  }
-
   bool canMoveTo(float[3] pos) {
     foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
       float[3] p = [pos[0] + dx * tileSize * 0.5f, pos[1] + dy * tileHeight * 0.5f, pos[2] + dz * tileSize * 0.5f];
@@ -190,6 +193,14 @@ struct World {
 
 @nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
 @nogc pure int[3] tileAbove(int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
+
+/** Invalidate any dwarf paths that pass through the given tile */
+void invalidatePaths(ref World world, int[3] tile) {
+  if(world.dwarves is null) return;
+  foreach(ref d; world.dwarves.dwarves) {
+    if(d.path.any!(p => world.worldToTile(p) == tile)) d.path = [];
+  }
+}
 
 void loadWorld(ref App app) {
   ensureWorldDir();
@@ -210,11 +221,8 @@ void loadWorld(ref App app) {
   auto diffData = raw[8 .. $];
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
-  SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
   app.loadBlocks();
-  SDL_Log("loadWorld: Trees");
   app.loadTrees();
-  SDL_Log("loadWorld: Ghost Cube");
   app.deriveInventory();
 }
 
@@ -245,8 +253,6 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if (coord[1] < 0 || coord[1] >= app.world.chunkHeight) return;
   int idx = app.world.tileIdx(tile);
 
-  auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type
-
   app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.data.diffs ~= TileDiff(coord, idx, newType);
   app.world.chunks[coord].dirty = true;
@@ -257,20 +263,21 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
   }
   app.world.pendingPaths = [];
-  foreach(ref j; jobQueue) j.failedBy = [];
+  app.world.invalidatePaths(tile);
 }
 
 /** Dispatch a chunk build job to the next available worker thread */
-void dispatchWorker(ref App app, int[3] coord){
+bool dispatchWorker(ref App app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, coord);
       app.world.pendingChunks[coord] = true;
       if(app.verbose) SDL_Log(toStringz(format("Loading chunk: %s A-sync", coord)));
-      break;
+      return(true);
     }
   }
+  return(false);
 }
 
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
@@ -309,8 +316,7 @@ void updateWorld(ref App app, float[3] lookat) {
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
     if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) {
-      app.dispatchWorker(coord);
-      app.world.chunks[coord].dirty = false;
+      if(app.dispatchWorker(coord)) app.world.chunks[coord].dirty = false;
     }
   }
 }
