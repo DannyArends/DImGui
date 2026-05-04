@@ -31,14 +31,6 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   return PathResult(req.dwarfUID, path, true);
 }
 
-/** Invalidate any dwarf paths that pass through the given tile */
-void invalidatePaths(ref App app, int[3] tile) {
-  if(app.world.dwarves is null) return;
-  foreach(ref d; app.world.dwarves.dwarves) {
-    if(d.path.any!(p => app.world.worldToTile(p) == tile)) d.path = [];
-  }
-}
-
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
 bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
@@ -57,24 +49,6 @@ bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
   return(false);
 }
 
-/** Check if object T is adjacent to targetTile.
- * Requires T to have: tile */
-bool atDestination(T)(ref App app, ref T obj, int[3] targetTile) {
-  auto dx = abs(obj.tile[0] - targetTile[0]);
-  auto dz = abs(obj.tile[2] - targetTile[2]);
-  return dx + dz == 1 && obj.tile[1] == targetTile[1];
-}
-
-/** Attempt to re-path object T to goalTile, returns false if unreachable.
- * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
-bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
-  obj.targetTile = targetTile;
-  auto goalTile = app.findGoalTile(obj);
-  if(goalTile[0] == int.min) return false;
-  if(!app.pathfindTo(obj, goalTile)) return false;
-  return true;
-}
-
 /** Dispatch pending path finding jobs */
 void dispatchPendingPaths(ref App app) {
   if(app.concurrency.paths.length > 0) return;
@@ -87,30 +61,3 @@ void dispatchPendingPaths(ref App app) {
     }
   }
 }
-
-/** Find the closest standable neighbour (air tile with solid below) to the object.
- * Requires T to have: tile, targetTile */
-int[3] findGoalTile(T)(ref App app, ref T obj) {
-  int[3] goalTile = noTile;
-  float bestDist = float.max;
-  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
-    if(!app.world.isStandable(n)) continue;
-    float dist = abs(n[0]-obj.tile[0]) + abs(n[2]-obj.tile[2]);
-    if(dist < bestDist) { bestDist = dist; goalTile = n; }
-  }
-  return goalTile;
-}
-
-/** Follow the next step in object T's path.
- * Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT */
-void followPath(T)(ref App app, ref T obj) {
-  if(obj.path.length == 0) return;
-  auto next = obj.path[0];
-  obj.path = obj.path[1..$];
-  obj.moveFrom = obj.visualPos;
-  obj.moveTo = [next[0], next[1] - 0.5f, next[2]];
-  obj.moveT = 0.0f;
-  obj.tile = app.world.worldToTile(next);
-  app.camera.isDirty = true;
-}
-

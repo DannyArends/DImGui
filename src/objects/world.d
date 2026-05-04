@@ -8,14 +8,13 @@ import engine;
 import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
-import pathfinding :invalidatePaths;
 import noise : noiseHTT;
 import tileatlas : heightToTile, tileData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : loadBlocks, saveBlocks;
-import dwarf : saveDwarfs;
+import dwarf : saveDwarfs, invalidatePaths;
 import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
@@ -109,16 +108,16 @@ struct WorldData {
     return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset - yOff) / tileHeight), cast(int)(pos[2] / tileSize)];
   }
 
-  pure bool isPassable(int[3] wc) const nothrow {
+  @nogc pure bool isPassable(int[3] wc) const nothrow {
     if(wc[1] <= 0 || wc[1] >= chunkHeight){ return(false); }
     return getTileAt(wc) == TileType.None;
   }
 
-  pure bool isStandable(int[3] tile) const nothrow {
+  @nogc pure bool isStandable(int[3] tile) const nothrow {
     return isPassable(tile) && getTileAt(tileBelow(tile)) != TileType.None && tileData[getTileAt(tileBelow(tile))].traversable;
   }
-  
-  pure bool hasStandableNeighbour(int[3] tile) nothrow {
+
+  @nogc pure bool hasStandableNeighbour(int[3] tile) const nothrow {
     auto n = tileNeighbours(tile);
     foreach(i; [0,1,4,5]) { if(isStandable(n[i])) return true; }
     return false;
@@ -183,11 +182,6 @@ struct World {
     clear();
   }
 
-  int surfaceY(int x, int z) const {
-    for(int y = chunkHeight-1; y > 0; y--) { if(getTileAt([x, y, z]) != TileType.None) return y; }
-    return 0;
-  }
-
   bool canMoveTo(float[3] pos) {
     foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
       float[3] p = [pos[0] + dx * tileSize * 0.5f, pos[1] + dy * tileHeight * 0.5f, pos[2] + dz * tileSize * 0.5f];
@@ -219,11 +213,8 @@ void loadWorld(ref App app) {
   auto diffData = raw[8 .. $];
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
-  SDL_Log("loadWorld: %d diffs", app.world.diffs.length);
   app.loadBlocks();
-  SDL_Log("loadWorld: Trees");
   app.loadTrees();
-  SDL_Log("loadWorld: Ghost Cube");
   app.deriveInventory();
 }
 
@@ -253,8 +244,6 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   if(coord !in app.world.chunks) return;
   if (coord[1] < 0 || coord[1] >= app.world.chunkHeight) return;
   int idx = app.world.tileIdx(tile);
-
-  auto mined = app.world.chunks[coord].tileTypes[idx];  // get old type
 
   app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.data.diffs ~= TileDiff(coord, idx, newType);
