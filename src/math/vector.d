@@ -44,6 +44,9 @@ struct Vector {
   return sqrt( (v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]) + (v1[2] - v2[2]) * (v1[2] - v2[2]) );
 }
 
+@nogc pure T manhattan2D(T)(const T[3] a, const T[3] b) nothrow { return abs(a[0]-b[0]) + abs(a[2]-b[2]); }
+@nogc pure T manhattan(T)(const T[3] a, const T[3] b) nothrow { return abs(a[0]-b[0]) + abs(a[1]-b[1]) + abs(a[2]-b[2]); }
+
 /** Euclidean distance between v1 and v2 */
 @nogc pure T sqDist(T)(const T[3] v1, const T[3] v2) nothrow {
   return (v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]) + (v1[2] - v2[2]) * (v1[2] - v2[2]);

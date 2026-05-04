@@ -164,6 +164,7 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;
+  app.world.chunks[data.coord].dirty = false;
   app.world.pendingChunks.remove(data.coord);
 
   // Add trees to the chunk

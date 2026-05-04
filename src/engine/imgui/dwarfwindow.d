@@ -5,7 +5,7 @@
 
 import engine;
 
-import dwarf : spawnDwarf, randomDwarfName;
+import dwarf : spawnDwarf;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
@@ -24,20 +24,31 @@ void showTileIcons(ref App app, TileType[] tiles, float cellSize = 16.0f) {
 }
 
 void showDwarfContent(ref App app, uint font = 0) {
-  igText("Spawn Dwarf:");
-  igSameLine(0, 5);
-  if(igButton(iconText(cast(string)ICON_FA_PLUS, "Spawn"), ImVec2(0,0))) { app.spawnDwarf(randomDwarfName()); }
+  igText("Spawn Dwarf:"); igSameLine(0, 5);
+  if(igButton(iconText(cast(string)ICON_FA_PLUS, "Spawn"), ImVec2(0,0))) { app.spawnDwarf(); }
 
   igSeparator();
 
   int idle = 0, walking = 0, working = 0;
   if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
     string status;
-    if(d.isIdle) { status = "Idle"; idle++; }
-    else if(d.isWandering) { status = "Wandering"; }
-    else if(d.path.length > 0) { status = format("Walking -> %s", d.jobStack[0].name); walking++; }
-    else { status = d.jobStack[0].name; working++; }
-    igText(toStringz("%s"), toStringz(format("%s %s", fromStringz(faIcon(cast(string)ICON_FA_USER)), d.name)));
+    if(d.state == DwarfState.Idle) { status = "Idle"; idle++; }
+    else if(d.state == DwarfState.Wandering) { status = "Wandering"; }
+    else if(d.state == DwarfState.WaitingForPath) { status = d.jobStack.length > 0 ? format("Pathing -> %s", d.jobStack[0].name) : "Pathing"; }
+    else if(d.state == DwarfState.Moving) { status = d.jobStack.length > 0 ? format("Walking -> %s", d.jobStack[0].name) : "Walking"; walking++; }
+    else if(d.state == DwarfState.Working) {
+      if(d.jobStack.length > 0) {
+        status = format("%s%s", d.jobStack[0].name, d.jobStack[0].state);
+      } else { status = "Working"; }
+      working++;
+    }
+    else if(d.state == DwarfState.Blocked) { status = "Blocked"; }
+    float[4] col = app.colors[d.colorID];
+    igPushStyleColor_Vec4(ImGuiCol_Text, ImVec4(col[0], col[1], col[2], col[3]));
+    igText(toStringz(format("%s", fromStringz(faIcon(cast(string)ICON_FA_USER))))); igSameLine(0,5);
+    igPopStyleColor(1);
+    igText(toStringz(format("%s", d.name)));
+
     if(d.carrying.length > 0) {
       igSameLine(0, 5);
       TileType[] types;

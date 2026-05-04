@@ -7,7 +7,6 @@ import engine;
 
 import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
-import quaternion : w;
 import widgets : sliderFloat3;
 
 /** Show the GUI window which allows us to manipulate lighting
