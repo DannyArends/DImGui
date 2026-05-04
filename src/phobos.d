@@ -26,5 +26,7 @@ public import std.random : Random, uniform, randomShuffle, dice;
 public import std.range : iota, chain;
 public import std.regex : regex, matchAll;
 public import std.string : toStringz, fromStringz, capitalize, lastIndexOf, toLower, toUpper, indexOf, startsWith, strip, chomp, splitLines;
+public import std.sumtype : SumType, match;
 public import std.traits : EnumMembers;
+public import std.typecons : Tuple, tuple;
 public import std.utf : isValidDchar;
