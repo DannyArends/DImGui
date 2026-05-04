@@ -115,6 +115,22 @@ float[3] berryOffset(ref Block b, float[3] base) {
   return [base[0] + bx, base[1], base[2] + bz];
 }
 
+DrawInstance toDropInstance(World world, ref Block b) {
+  auto base = world.tileToWorld(b.tile, -world.blockOffset);
+  if(b.type == ResourceType.Berry) {
+    float sz = 0.15f;
+    float bx = ((b.id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
+    float bz = ((b.id * 22695477u + 1u)          % 100u) / 100.0f - 0.5f;
+    return DrawInstance([0u, 0u, colorIndex(Colors.crimson), 0u], translateScale([base[0]+bx, base[1], base[2]+bz], [sz, sz, sz]));
+  }
+  if(b.type == ResourceType.Wood) {
+    float bx = ((b.id * 1234567u + 891011u) % 100u) / 100.0f - 0.5f;
+    float bz = ((b.id * 9876543u + 210987u) % 100u) / 100.0f - 0.5f;
+    return DrawInstance(b.type, translateScale([base[0]+bx, base[1], base[2]+bz], [world.blockSize, world.blockSize, world.blockSize]));
+  }
+  return DrawInstance(b.type, translateScale(base, [world.blockSize, world.blockSize, world.blockSize]));
+}
+
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref App app) {
   if(app.world.blocks is null) return;
@@ -122,17 +138,10 @@ void syncBlockInstances(ref App app) {
   app.world.berries.instances = [];
   foreach(ref b; app.world.blocks.blocks) {
     bool hidden = b.tile == noTile || b.tile == builtTile;
-    if(b.type == ResourceType.Berry) {
-      float sz = 0.15f;
-      uint[4] d = [0,0, colorIndex(Colors.crimson),0];
-      app.world.berries.instances ~= hidden
-        ? DrawInstance(d, Matrix().scale([0.0f, 0.0f, 0.0f]))
-        : DrawInstance(d, translateScale(berryOffset(b, app.world.tileToWorld(b.tile, -app.world.blockOffset)), [sz, sz, sz]));
-    } else {
-      app.world.blocks.instances ~= hidden
-        ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]))
-        : app.world.toDropInstance(b.tile, b.type);
-    }
+    auto inst = hidden ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f])) : app.world.toDropInstance(b);
+    if(b.type == ResourceType.Berry){
+      app.world.berries.instances ~= inst;
+    }else{ app.world.blocks.instances ~= inst; }
   }
   app.world.blocks.markDirty();
   app.world.berries.markDirty();
