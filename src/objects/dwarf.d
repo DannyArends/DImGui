@@ -11,8 +11,8 @@ import matrix : position, scale, rotate;
 import tileatlas : tileData;
 import inventory : deriveInventory;
 import pathmarker : syncPathMarkers;
-import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
-import jobs : Job, dispatchJob, jobQueue, miningJob, claimNextJob, moveAwayJob;
+import pathfinding : pathfindTo;
+import jobs : Job, dispatchJob, jobQueue, miningJob, claimNextJob, moveAwayJob, atDestination, findGoalTile;
 import rnjesus : randomizeName;
 
 uint nextDwarfUID = 1;
@@ -77,10 +77,39 @@ struct Dwarf {
   DwarfState state = DwarfState.Idle;
   uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
 
-  @property bool waitingForPath(){ return(state == DwarfState.WaitingForPath); }
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
 }
 
+/** Invalidate any dwarf paths that pass through the given tile */
+void invalidatePaths(ref App app, int[3] tile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(d.path.any!(p => app.world.worldToTile(p) == tile)) d.path = [];
+  }
+}
+
+/** Attempt to re-path object T to goalTile, returns false if unreachable.
+ * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
+bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
+  obj.targetTile = targetTile;
+  auto goalTile = app.findGoalTile(obj);
+  if(goalTile[0] == int.min) return false;
+  if(!app.pathfindTo(obj, goalTile)) return false;
+  return true;
+}
+
+/** Follow the next step in object T's path.
+ * Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT */
+void followPath(T)(ref App app, ref T obj) {
+  if(obj.path.length == 0) return;
+  auto next = obj.path[0];
+  obj.path = obj.path[1..$];
+  obj.moveFrom = obj.visualPos;
+  obj.moveTo = [next[0], next[1] - 0.5f, next[2]];
+  obj.moveT = 0.0f;
+  obj.tile = app.world.worldToTile(next);
+  app.camera.isDirty = true;
+}
 
 /** Find a free surface tile (as in non-occupado) and on top of the world */
 int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
@@ -123,7 +152,6 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
 
 /** A single dwarf being ticked */
 void tickDwarf(ref App app, ref Dwarf d) {
-  //SDL_Log(toStringz(format("[tickDwarf] %s claimed '%s'", d.name, d.state)));
   final switch(d.state) {
     case DwarfState.Idle:
       app.claimNextJob(d);

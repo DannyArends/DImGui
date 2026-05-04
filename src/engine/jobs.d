@@ -6,7 +6,7 @@
 import engine;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
-import pathfinding : findGoalTile, pathfindTo;
+import pathfinding : pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
 import ghost : syncBuildGhosts;
@@ -59,6 +59,27 @@ void completeSubJob(ref Dwarf d) {
   d.jobStack = d.jobStack[1..$];
   d.targetTile = noTile;
   d.state = (d.jobStack.length > 0) ? DwarfState.Working : DwarfState.Idle;
+}
+
+/** Check if object T is adjacent to targetTile.
+ * Requires T to have: tile */
+bool atDestination(T)(ref App app, ref T obj, int[3] targetTile) {
+  auto dx = abs(obj.tile[0] - targetTile[0]);
+  auto dz = abs(obj.tile[2] - targetTile[2]);
+  return dx + dz == 1 && obj.tile[1] == targetTile[1];
+}
+
+/** Find the closest standable neighbour (air tile with solid below) to the object.
+ * Requires T to have: tile, targetTile */
+int[3] findGoalTile(T)(ref App app, ref T obj) {
+  int[3] goalTile = noTile;
+  float bestDist = float.max;
+  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
+    if(!app.world.isStandable(n)) continue;
+    float dist = abs(n[0]-obj.tile[0]) + abs(n[2]-obj.tile[2]);
+    if(dist < bestDist) { bestDist = dist; goalTile = n; }
+  }
+  return goalTile;
 }
 
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
