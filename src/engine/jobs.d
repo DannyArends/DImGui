@@ -70,11 +70,11 @@ bool atDestination(T)(ref App app, ref T obj, int[3] targetTile) { return manhat
  * Requires T to have: tile, targetTile */
 int[3] findGoalTile(T)(ref App app, ref T obj) {
   int[3] goalTile = noTile;
-  float bestDist = float.max;
+  float bestScore = float.max;
   foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
     if(!app.world.isStandable(n)) continue;
-    float dist = manhattan2D(n, obj.tile);
-    if(dist < bestDist) { bestDist = dist; goalTile = n; }
+    float score = manhattan2D(n, obj.tile) + app.world.data.tilePenalties.get(n, 0.0f);
+    if(score < bestScore) { bestScore = score; goalTile = n; }
   }
   return goalTile;
 }
@@ -238,13 +238,13 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   d.targetTile = d.jobStack[0].targetTile;
   auto goal = app.findGoalTile(d);
 
-  if(goal == noTile || !app.pathfindTo(d, goal)) {
+  if(goal == noTile) {
     if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
     jobQueue ~= job;
     d.clearGoal();
     return false;
   }
-  d.state = DwarfState.WaitingForPath;
+  app.pathfindTo(d, goal);
   return true;
 }
 
@@ -321,7 +321,8 @@ void claimNextJob(ref App app, ref Dwarf d) {
       app.dispatchJob(d, pickupJob(noTile, ResourceType.None));
     } else {
       int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
-      if(app.pathfindTo(d, wander)) d.targetTile = wander;
+      app.pathfindTo(d, wander);
+      d.targetTile = wander;
     }
   }
 }

@@ -15,8 +15,9 @@ import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : loadBlocks, saveBlocks;
-import dwarf : saveDwarfs;
+import dwarf : saveDwarfs, repathTo;
 import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
+
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -203,10 +204,12 @@ struct World {
 @nogc pure int[3] tileAbove(int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
 
 /** Invalidate any dwarf paths that pass through the given tile */
-void invalidatePaths(ref World world, int[3] tile) {
-  if(world.dwarves is null) return;
-  foreach(ref d; world.dwarves.dwarves) {
-    if(d.path.any!(p => world.worldToTile(p) == tile)) d.path = [];
+void invalidatePaths(ref App app, int[3] tile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
+    d.path = [];
+    if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile);
   }
 }
 
@@ -276,7 +279,7 @@ void setTile(ref App app, int[3] tile, ResourceType newType = ResourceType.None)
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
   }
   app.world.pendingPaths = [];
-  app.world.invalidatePaths(tile);
+  app.invalidatePaths(tile);
 }
 
 /** Dispatch a chunk build job to the next available worker thread */

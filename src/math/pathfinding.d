@@ -32,7 +32,7 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
 
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
-bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
+void pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
   app.world.pendingPaths = app.world.pendingPaths.filter!(r => r.dwarfUID != obj.uid).array;  // Remove any existing pending request for this dwarf
   auto req = PathRequest(obj.uid, obj.tile, goalTile);
   foreach(tid; app.concurrency.workers.keys) {
@@ -40,12 +40,11 @@ bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, req);
       obj.state = DwarfState.WaitingForPath;
-      return true;
+      return;
     }
   }
   app.world.pendingPaths ~= req;
   obj.state = DwarfState.WaitingForPath;
-  return(false);
 }
 
 /** Dispatch pending path finding jobs */

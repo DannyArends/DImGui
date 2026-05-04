@@ -78,7 +78,7 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
 
     t.trunkStart = app.world.trunk.instances.length;
     for(uint h = 0; h < t.height; h++) {
-      app.world.data.tilePenalties[[t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]]] = 20.0f;
+      app.world.data.tilePenalties[[t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]]] = 15.0f;
       float s = baseRadius - h * 0.015f;
       if(s < 0.05f) s = 0.05f;
       app.world.trunk.instances ~= DrawInstance(ResourceType.Wood, translateScale([px, py + h * th, pz], [s, th, s]));
@@ -91,6 +91,9 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
 }
 
 void rebuildTreeInstances(ref App app) {
+  foreach(key; app.world.data.tilePenalties.keys) {
+    if(app.world.data.tilePenalties[key] < 20.0f) app.world.data.tilePenalties.remove(key);
+  }
   app.world.trunk.instances = [];
   app.world.canopy.instances = [];
   foreach(chunkCoord, ref chunkTrees; app.world.trees){ chunkTrees = app.addTreeInstances(chunkTrees); }
