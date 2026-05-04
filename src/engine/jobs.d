@@ -86,7 +86,7 @@ void progressJob(ref App app, ref Dwarf d, float amount, void delegate() onCompl
 }
 
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
-ResourceType blockType(ref App app, uint id) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) return b.type; } return ResourceType.None; }
+ResourceType blockType(ref App app, uint id) { foreach(ref b; app.world.blocks) { if(b.id == id) return b.type; } return ResourceType.None; }
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref App app, ref Dwarf d, ref Job j) {
@@ -94,7 +94,7 @@ void claimBlock(ref App app, ref Dwarf d, ref Job j) {
   auto id = app.findFreeBlock(d.tile, j.tileType);
   if(id == noBlock) { j.state = JobState.Unavailable; return; }
   j.blockIDs = [id];
-  foreach(ref b; app.world.blocks.blocks) { if(b.id == id) { j.targetTile = b.tile; return; } }
+  foreach(ref b; app.world.blocks) { if(b.id == id) { j.targetTile = b.tile; return; } }
   j.state = JobState.Unavailable;
 }
 
@@ -177,9 +177,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
 Job cleanWorksiteJob(int[3] targetTile) {
   return Job("CleanWorksite", targetTile, ResourceType.None, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) {
-      if(app.world.blocks !is null) {
-        foreach(ref b; app.world.blocks.blocks) { if(b.tile == j.targetTile) { j.blockIDs = [b.id]; j.tileType = b.type; return; } }
-      }
+      foreach(ref b; app.world.blocks) { if(b.tile == j.targetTile) { j.blockIDs = [b.id]; j.tileType = b.type; return; } }
       j.state = JobState.Satisfied;
     },
     onArrive: (ref App app, ref Dwarf d) {
@@ -200,7 +198,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       if(found.empty) { d.jobStack[0].onFail(app, d); return; }
       if(!d.use(found.front)) { d.jobStack[0].onFail(app, d); return; }
       // mark block as InChunk — update its tile to build site
-      foreach(ref b; app.world.blocks.blocks) { if(b.id == found.front) { b.tile = builtTile; break; } }
+      foreach(ref b; app.world.blocks) { if(b.id == found.front) { b.tile = builtTile; break; } }
       if(app.world.dwarves !is null) {
         foreach(ref other; app.world.dwarves.dwarves) {
           if(other.tile == d.jobStack[0].targetTile) { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
@@ -254,7 +252,7 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
 void doPickup(ref App app, ref Dwarf d) {
   auto blockID = d.jobStack[0].blockIDs.length > 0 ? d.jobStack[0].blockIDs[0] : noBlock;
   if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
-  foreach(ref b; app.world.blocks.blocks) {
+  foreach(ref b; app.world.blocks) {
     if(b.id != blockID) continue;
     if(!d.pickup(blockID, app.blockType(blockID))) { d.jobStack[0].onFail(app, d); return; }
     b.tile = noTile;  // mark as carried
