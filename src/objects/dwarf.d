@@ -12,7 +12,7 @@ import tileatlas : tileData;
 import inventory : deriveInventory;
 import pathmarker : syncPathMarkers;
 import pathfinding : followPath, pathfindTo, findGoalTile, atDestination, repathTo;
-import jobs : Job, dispatchJob, jobQueue, miningJob, stuffJob, claimNextJob, moveAwayJob;
+import jobs : Job, dispatchJob, jobQueue, miningJob, claimNextJob, moveAwayJob;
 import rnjesus : randomizeName;
 
 uint nextDwarfUID = 1;
@@ -36,6 +36,7 @@ struct DwarfData {
     inventory[slot] = noBlock;
     return true;
   }
+  @property bool hasInventorySpace() { return carrying.length < (inventory.length / 2); }
 }
 
 /** Dwarven Cylinderz */
@@ -79,6 +80,7 @@ struct Dwarf {
   @property bool waitingForPath(){ return(state == DwarfState.WaitingForPath); }
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
 }
+
 
 /** Find a free surface tile (as in non-occupado) and on top of the world */
 int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
