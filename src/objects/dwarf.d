@@ -243,7 +243,7 @@ void ensureDwarves(ref App app) {
 }
 
 void addDwarf(ref App app, ref Dwarf d) {
-  d.idleTicks[1] = uniform(30, 180);
+  d.idleTicks[1] = uniform(3, 18);
   d.state = DwarfState.Idle;
   auto wp = app.world.tileToWorld(d.tile);
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
