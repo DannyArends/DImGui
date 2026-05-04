@@ -18,23 +18,23 @@ struct Inventory {
   bool isDragging = false;
   int[3][] dragPreview;
 
-  int onFloor(ResourceType tt, Blocks blocks) const {
-    if(blocks is null) return 0;
-    return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
+  int onFloor(ResourceType tt, ref App app) const {
+    if(app.world.blocks is null) return 0;
+    return cast(int)app.world.blocks.blocks.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
   }
-  int carried(ResourceType tt, Blocks blocks) const {
-    if(blocks is null) return 0;
-    return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile == noTile);
+  int carried(ResourceType tt, ref App app) const {
+    if(app.world.blocks is null) return 0;
+    return cast(int)app.world.blocks.blocks.count!(b => b.type == tt && b.tile == noTile);
   }
-  int built(ResourceType tt, Blocks blocks) const {
-    if(blocks is null) return 0;
-    return cast(int)blocks.blocks.count!(b => b.type == tt && b.tile == builtTile);
+  int built(ResourceType tt, ref App app) const {
+    if(app.world.blocks is null) return 0;
+    return cast(int)app.world.blocks.blocks.count!(b => b.type == tt && b.tile == builtTile);
   }
-  int get(ResourceType tt, Blocks blocks) const { return max(0, onFloor(tt, blocks) + carried(tt, blocks) - queued.get(tt, 0)); }
-  int total(ResourceType tt, Blocks blocks) const { return onFloor(tt, blocks) + carried(tt, blocks); }
-  string toString(ResourceType tt, Blocks blocks) const {
+  int get(ResourceType tt, ref App app) const { return max(0, onFloor(tt, app) + carried(tt, app) - queued.get(tt, 0)); }
+  int total(ResourceType tt, ref App app) const { return onFloor(tt, app) + carried(tt, app); }
+  string toString(ResourceType tt, ref App app) const {
     return format("%s | Available:%d (Floor:%d Carried:%d Queued:%d Built:%d)",
-      resourceData(tt).name, get(tt, blocks), onFloor(tt, blocks), carried(tt, blocks), queued.get(tt, 0), built(tt, blocks));
+      resourceData(tt).name, get(tt, app), onFloor(tt, app), carried(tt, app), queued.get(tt, 0), built(tt, app));
   }
 }
 

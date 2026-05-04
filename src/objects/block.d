@@ -28,16 +28,6 @@ struct Block {
   @property @nogc void v(float val) nothrow { fallState[1] = val; }
 }
 
-class Blocks : Cube {
-  Block[] blocks;             /// All blocks, forever
-  uint nextID = 1;            /// Next block ID
-
-  this() {
-    super();
-    initInstanced(() => "Blocks");
-  }
-}
-
 /** Save blocks */
 void saveBlocks(ref App app) {
   if(app.world.blocks is null) return;
@@ -131,9 +121,8 @@ void syncBlockInstances(ref App app) {
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
 
 /** Mark blocks above a mined tile as falling */
-void unsettleBlocks(const World world, ref Blocks blocks, int[3] minedTile) {
-  if(blocks is null) return;
-  foreach(ref b; blocks.blocks) {
+void unsettleBlocks(const World world, ref Block[] blocks, int[3] minedTile) {
+  foreach(ref b; blocks) {
     if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
     if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile, -world.blockOffset)[1], 0.001f];
   }

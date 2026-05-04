@@ -34,7 +34,7 @@ void showInventoryContent(ref App app, uint font = 0) {
     auto texIdx = idx(app.textures, resourceData(tileType).name ~ "_base");
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
-    int count = app.world.inventory.get(tileType, app.world.blocks);
+    int count = app.world.inventory.get(tileType, app);
 
     bool selected = app.world.inventory.ghost.type == tileType;
     if(selected) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.4f, 0.6f, 0.4f, 1.0f));
@@ -49,7 +49,7 @@ void showInventoryContent(ref App app, uint font = 0) {
     igGetItemRectMin(&pos);
     igGetItemRectMax(&posMax);
     if(count > 0) drawCenteredText(igGetWindowDrawList(), pos, posMax, toStringz(format("%d", count)));
-    if(igIsItemHovered(0)) igSetTooltip(toStringz(app.world.inventory.toString(tileType, app.world.blocks)));
+    if(igIsItemHovered(0)) igSetTooltip(toStringz(app.world.inventory.toString(tileType, app)));
     if(++col < cols) igSameLine(0, 4);
     else { col = 0; }
   }
