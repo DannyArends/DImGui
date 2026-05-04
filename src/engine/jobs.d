@@ -16,7 +16,7 @@ enum JobState { Pending, Satisfied, Unavailable }
 
 struct Job {
   string name;
-  int[3] targetTile;
+  int[3] targetTile = noTile;
   TileType tileType;
   Job[] prereqs;
   uint[] blockIDs;
@@ -242,8 +242,11 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
 
   if(d.jobStack.length == 0) { d.clearGoal(); return false; }
   d.targetTile = d.jobStack[0].targetTile;
+  SDL_Log(toStringz(format("[Dispatch] %s first job='%s' targetTile=%s", d.name, d.jobStack[0].name, d.targetTile)));
+  
   auto goal = app.findGoalTile(d);
   if(goal == noTile || !app.pathfindTo(d, goal)) {
+    SDL_Log(toStringz(format("[Dispatch] %s PATH FAILED goal=%s for '%s' target=%s", d.name, goal, job.name, job.targetTile)));
     if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
     jobQueue ~= job;
     d.clearGoal();
@@ -301,7 +304,9 @@ void failAndRequeueParent(ref Dwarf d) {
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref App app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
+  auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
+  if(jobQueue.length != prevLen) SDL_Log(toStringz(format("[Queue] %d jobs removed (failedBy filter), dwarfCount=%d", cast(int)(prevLen - jobQueue.length), cast(int)dwarfCount)));
   app.syncBuildGhosts();
 
   int bestIdx = -1;
@@ -314,6 +319,7 @@ void claimNextJob(ref App app, ref Dwarf d) {
   }
   if(bestIdx != -1) {
     auto job = jobQueue[bestIdx];
+    SDL_Log(toStringz(format("[Claim] %s taking '%s' tileType=%s failedBy=%d", d.name, job.name, job.tileType, cast(int)job.failedBy.length)));
     jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
     if(app.dispatchJob(d, job)) { app.deriveInventory(); }
     return;

@@ -62,7 +62,7 @@ struct Dwarf {
   DwarfData data;                           /// Data saved between sessions
   alias data this;
 
-  int[3] targetTile = [int.min, 0, 0];      /// Where we are going
+  int[3] targetTile = noTile;               /// Where we are going
   float[3][] path;                          /// Path we're on
   float progress = 0.0f;                    /// Job progress
   uint[2] idleTicks = [0, 180];             /// Idle ticks and Patience / Wanderlust
@@ -90,7 +90,7 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
       }
     }
   }
-  return [int.min, 0, 0];
+  return(noTile);
 }
 
 /** All dwarves being framed */

@@ -74,6 +74,7 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
       if(reserved) break;
     }
     if(reserved) continue;
+    if(!app.world.data.hasStandableNeighbour(b.tile)) continue;
     float dist = abs(b.tile[0] - dwarfTile[0]) + abs(b.tile[2] - dwarfTile[2]);
     if(dist < bestDist) { bestDist = dist; bestID = b.id; }
   }

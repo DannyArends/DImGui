@@ -6,6 +6,7 @@
 import engine;
 
 import search : performSearch, atGoal, stepThroughPath;
+import world : noTile;
 
 struct PathRequest {
   uint dwarfUID;
@@ -90,7 +91,7 @@ void dispatchPendingPaths(ref App app) {
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
 int[3] findGoalTile(T)(ref App app, ref T obj) {
-  int[3] goalTile = [int.min, 0, 0];
+  int[3] goalTile = noTile;
   float bestDist = float.max;
   foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
     if(!app.world.isStandable(n)) continue;
