@@ -109,6 +109,12 @@ uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
   return b.id;
 }
 
+float[3] berryOffset(ref Block b, float[3] base) {
+  float bx = ((b.id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
+  float bz = ((b.id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
+  return [base[0] + bx, base[1], base[2] + bz];
+}
+
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref App app) {
   if(app.world.blocks is null) return;
@@ -118,9 +124,10 @@ void syncBlockInstances(ref App app) {
     bool hidden = b.tile == noTile || b.tile == builtTile;
     if(b.type == ResourceType.Berry) {
       float sz = 0.15f;
+      uint[4] d = [0,0, colorIndex(Colors.crimson),0];
       app.world.berries.instances ~= hidden
-        ? DrawInstance([0,0, colorIndex(Colors.crimson),0], Matrix().scale([0.0f, 0.0f, 0.0f]))
-        : DrawInstance([0,0, colorIndex(Colors.crimson),0], translateScale(app.world.tileToWorld(b.tile, -app.world.blockOffset), [sz, sz, sz]));
+        ? DrawInstance(d, Matrix().scale([0.0f, 0.0f, 0.0f]))
+        : DrawInstance(d, translateScale(berryOffset(b, app.world.tileToWorld(b.tile, -app.world.blockOffset)), [sz, sz, sz]));
     } else {
       app.world.blocks.instances ~= hidden
         ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]))
