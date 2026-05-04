@@ -7,7 +7,8 @@ import engine;
 import serialization : readWorldData, writeWorldData;
 import inventory : deriveInventory;
 import matrix : translateScale, translate, multiply, scale;
-import world : noTile, WORLD_MAGIC;
+import vector : manhattan;
+import world : noTile;
 
 enum uint noBlock = uint.max;
 enum int[3] builtTile = [int.max, 0, 0];
@@ -56,9 +57,11 @@ void loadBlocks(ref App app) {
 }
 
 @nogc pure bool hasBlocks(ref App app, TileType tt) nothrow {
-  if(app.world.blocks is null) return false;
-  return app.world.blocks.blocks.any!(b => b.type == tt);
+  if(!app.hasBlocks()) return(false);
+  return(app.world.blocks.blocks.any!(b => b.type == tt));
 }
+
+@nogc pure bool hasBlocks(ref App app) nothrow { return(app.world.blocks !is null && app.world.blocks.blocks.length > 0); }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
@@ -75,7 +78,7 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
     }
     if(reserved) continue;
     if(!app.world.data.hasStandableNeighbour(b.tile)) continue;
-    float dist = abs(b.tile[0] - dwarfTile[0]) + abs(b.tile[2] - dwarfTile[2]);
+    float dist = manhattan(b.tile, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = b.id; }
   }
   return bestID;

@@ -5,11 +5,12 @@
 
 import engine;
 
-import block : spawnBlock, findFreeBlock, syncBlockInstances, noBlock, builtTile;
+import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
 import pathfinding : findGoalTile, pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
 import ghost : syncBuildGhosts;
+import vector : manhattan;
 import world : noTile, setTile, tileAbove;
 
 enum JobState { Pending, Satisfied, Unavailable }
@@ -103,9 +104,6 @@ Job miningJob(int[3] targetTile) {
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
   );
 }
-
-/** Convenience job: sends the dwarf to pick up any available block */
-Job stuffJob() { return pickupJob(noTile, TileType.None); }
 
 /** woodcutting Job */
 Job woodcuttingJob(int[3] targetTile) {
@@ -248,7 +246,7 @@ bool tryAssign(ref App app, ref Job job) {
   float bestDist = float.max;
   foreach(i, ref d; app.world.dwarves.dwarves) {
     if((d.state != DwarfState.Idle && d.state != DwarfState.Wandering) || job.failedBy.canFind(d.uid)) continue;
-    float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
+    float dist = manhattan(job.targetTile, d.tile);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
   return bestIdx >= 0 && app.dispatchJob(app.world.dwarves.dwarves[bestIdx], job);
@@ -279,8 +277,8 @@ void claimNextJob(ref App app, ref Dwarf d) {
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
     if(job.failedBy.canFind(d.uid)) continue;
-    if(job.name == "Building" && app.world.inventory.total(job.tileType, app.world.blocks) <= 0) continue;
-    float dist = abs(job.targetTile[0] - d.tile[0]) + abs(job.targetTile[2] - d.tile[2]);
+    if(job.name == "Building" && !app.hasBlocks(job.tileType)) continue;
+    float dist = manhattan(job.targetTile, d.tile);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
   if(bestIdx != -1) {
@@ -293,8 +291,8 @@ void claimNextJob(ref App app, ref Dwarf d) {
   // No job found — wander or pick up stuff
   if(++d.idleTicks[0] > d.idleTicks[1]) {
     d.idleTicks[0] = 0;
-    if(app.world.blocks !is null && app.world.blocks.blocks.length > 0 && d.carrying.length < (d.inventory.length / 2) && uniform(0, 10) == 0) {
-      app.dispatchJob(d, stuffJob());
+    if(app.hasBlocks() && d.hasInventorySpace() && uniform(0, 10) == 0) {
+      app.dispatchJob(d, pickupJob(noTile, TileType.None));
     } else {
       int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
       if(app.pathfindTo(d, wander)) d.targetTile = wander;
