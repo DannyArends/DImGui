@@ -172,7 +172,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
       j.state = JobState.Satisfied;
     },
     onArrive: (ref App app, ref Dwarf d) {
-      if(d.carrying.length >= d.inventory.length) {
+      if(!d.hasInventorySpace) {
         d.jobStack = [dropBlockJob(d.tile, d.carrying[0])] ~ d.jobStack;
       } else { app.doPickup(d); }
     },
