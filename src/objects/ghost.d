@@ -7,12 +7,10 @@ import engine;
 
 import color : colorIndex;
 import chunk : getBestTile;
-import camera : castRay;
 import tileatlas : tileData;
 import textures : idx;
-import intersection : intersects;
 import vector : dot;
-import matrix : position, scale, rotate, translate;
+import matrix : position, scale, translate;
 import world : noTile;
 import jobs : jobQueue;
 
@@ -95,5 +93,4 @@ void syncBuildGhosts(ref App app) {
   foreach(tile; app.world.inventory.dragPreview) addInstance(tile, preview);
   app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
   app.world.buildingGhosts.markDirty();
-  //SDL_Log("syncBuildGhosts: jobQueue=%d", cast(int)jobQueue.length);
 }
