@@ -109,25 +109,20 @@ uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
   return b.id;
 }
 
-float[3] berryOffset(ref Block b, float[3] base) {
-  float bx = ((b.id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
-  float bz = ((b.id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
-  return [base[0] + bx, base[1], base[2] + bz];
+@nogc pure float[3] wiggle(const Block b, float[3] base, uint s1, uint s2, uint s3, uint s4) nothrow {
+  float bx = ((b.id * s1 + s2) % 100u) / 100.0f - 0.5f;
+  float bz = ((b.id * s3 + s4) % 100u) / 100.0f - 0.5f;
+  return [base[0]+bx, base[1], base[2]+bz];
 }
 
 DrawInstance toDropInstance(World world, ref Block b) {
   auto base = world.tileToWorld(b.tile, -world.blockOffset);
-  if(b.type == ResourceType.Berry) {
-    float sz = 0.15f;
-    float bx = ((b.id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
-    float bz = ((b.id * 22695477u + 1u)          % 100u) / 100.0f - 0.5f;
-    return DrawInstance([0u, 0u, colorIndex(Colors.crimson), 0u], translateScale([base[0]+bx, base[1], base[2]+bz], [sz, sz, sz]));
-  }
-  if(b.type == ResourceType.Wood) {
-    float bx = ((b.id * 1234567u + 891011u) % 100u) / 100.0f - 0.5f;
-    float bz = ((b.id * 9876543u + 210987u) % 100u) / 100.0f - 0.5f;
-    return DrawInstance(b.type, translateScale([base[0]+bx, base[1], base[2]+bz], [world.blockSize, world.blockSize, world.blockSize]));
-  }
+  if(b.type == ResourceType.Berry)
+    return DrawInstance([0u, 0u, colorIndex(Colors.crimson), 0u],
+      translateScale(b.wiggle(base, 1664525u, 1013904223u, 22695477u, 1u), [0.15f, 0.15f, 0.15f]));
+  if(b.type == ResourceType.Wood)
+    return DrawInstance(b.type,
+      translateScale(b.wiggle(base, 1234567u, 891011u, 9876543u, 210987u), [world.blockSize, world.blockSize, world.blockSize]));
   return DrawInstance(b.type, translateScale(base, [world.blockSize, world.blockSize, world.blockSize]));
 }
 
