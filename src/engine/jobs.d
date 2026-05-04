@@ -60,11 +60,6 @@ void completeSubJob(ref Dwarf d) {
   d.state = (d.jobStack.length > 0) ? DwarfState.Working : DwarfState.Idle;
 }
 
-void failSubJob(ref App app, ref Dwarf d) {
-  SDL_Log(toStringz(format("[Job] %s FAILED %s (tileType=%s)", d.name, d.jobStack[0].name, d.jobStack[0].tileType)));
-  d.failAndRequeueParent();
-}
-
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
 void progressJob(ref App app, ref Dwarf d, float amount, void delegate() onComplete) {
   d.progress += amount;
@@ -127,10 +122,7 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
   return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref App app, ref Dwarf d) { app.doPickup(d); },
-    onFail: (ref App app, ref Dwarf d) { 
-      SDL_Log(toStringz(format("[pickupJob] %s FAILED %s", d.name, d.jobStack[0])));
-      app.failSubJob(d);
-    }
+    onFail: (ref App app, ref Dwarf d) { d.failAndRequeueParent(); }
   );
 }
 
@@ -145,15 +137,13 @@ Job moveAwayJob(int[3] from) {
 
 /** Job: ensure the dwarf is carrying a block of the required type, fetching one if not */
 Job holdItemJob(TileType tileType) {
-  return Job("HoldItem", [int.min, 0, 0], tileType, [],
+  return Job("HoldItem", noTile, tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref App app, ref Dwarf d) {
       if(d.carrying.any!(id => app.blockType(id) == d.jobStack[0].tileType)) { d.completeSubJob(); return; }
       app.doPickup(d);
     },
-    onFail: (ref App app, ref Dwarf d) { 
-      SDL_Log(toStringz(format("[holdItemJob] %s FAILED %s", d.name, d.jobStack[0])));
-      app.failSubJob(d); }
+    onFail: (ref App app, ref Dwarf d) { d.failAndRequeueParent(); }
   );
 }
 /** Move to a free neighbouring tile and drops a carried block */
@@ -164,10 +154,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
       foreach(slot, id; d.inventory) { if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, slot); break; } }
       d.completeSubJob();
     },
-    onFail: (ref App app, ref Dwarf d) {
-      SDL_Log(toStringz(format("[dropBlockJob] %s FAILED %s", d.name, d.jobStack[0])));
-      d.completeSubJob();
-    }
+    onFail: (ref App app, ref Dwarf d) { d.completeSubJob(); }
   );
 }
 
@@ -206,13 +193,11 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       app.syncBlockInstances();
-      if(app.verbose) SDL_Log(toStringz(format("Dwarf %s built %s at %s", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       d.completeSubJob();
       app.syncBuildGhosts();
       app.deriveInventory();
     },
     onFail: (ref App app, ref Dwarf d) {
-      SDL_Log(toStringz(format("[Job] %s FAILED Building %s at %s, requeueing", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       foreach(slot, id; d.inventory) { if(id != noBlock) d.drop(app, slot); }
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
@@ -225,12 +210,10 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
 
 /** Dispatch a job to a dwarf */
 bool dispatchJob(ref App app, ref Dwarf d, Job job) {
-  if(app.verbose) SDL_Log(toStringz(format("[Job] %s claimed '%s' targeting %s", d.name, job.name, job.targetTile)));
   d.jobStack = job.prereqs ~ [job];
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
 
   if(d.jobStack.any!(j => j.state == JobState.Unavailable)) {
-    SDL_Log(toStringz(format("[Job] %s dispatch UNAVAILABLE for '%s'", d.name, job.name)));
     if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
     jobQueue ~= job;
     d.clearGoal();
@@ -238,15 +221,11 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   }
 
   d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
-  if(app.verbose) SDL_Log(toStringz(format("[Job] %s stack: %s", d.name, d.jobStack.map!(j => j.name).array)));
-
   if(d.jobStack.length == 0) { d.clearGoal(); return false; }
   d.targetTile = d.jobStack[0].targetTile;
-  SDL_Log(toStringz(format("[Dispatch] %s first job='%s' targetTile=%s", d.name, d.jobStack[0].name, d.targetTile)));
-  
   auto goal = app.findGoalTile(d);
+
   if(goal == noTile || !app.pathfindTo(d, goal)) {
-    SDL_Log(toStringz(format("[Dispatch] %s PATH FAILED goal=%s for '%s' target=%s", d.name, goal, job.name, job.targetTile)));
     if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
     jobQueue ~= job;
     d.clearGoal();
@@ -304,9 +283,7 @@ void failAndRequeueParent(ref Dwarf d) {
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref App app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
-  auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  if(jobQueue.length != prevLen) SDL_Log(toStringz(format("[Queue] %d jobs removed (failedBy filter), dwarfCount=%d", cast(int)(prevLen - jobQueue.length), cast(int)dwarfCount)));
   app.syncBuildGhosts();
 
   int bestIdx = -1;
@@ -319,7 +296,6 @@ void claimNextJob(ref App app, ref Dwarf d) {
   }
   if(bestIdx != -1) {
     auto job = jobQueue[bestIdx];
-    SDL_Log(toStringz(format("[Claim] %s taking '%s' tileType=%s failedBy=%d", d.name, job.name, job.tileType, cast(int)job.failedBy.length)));
     jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
     if(app.dispatchJob(d, job)) { app.deriveInventory(); }
     return;
