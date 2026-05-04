@@ -44,7 +44,7 @@ enum ResourceType : ubyte {
   @ResourceT("Ice_03",           true,  true,  1,  4.5f, "Blocks",  1.0f)  Snow,
   @ResourceT("Wood_03",          true,  true,  1,  1.0f, "Blocks",  1.0f)  Wood,
   @ResourceT("Hedge_01",         false, false, 0,  0.0f, "Blocks",  1.0f)  Leaves,
-  @ResourceT("Berry",            false, false, 16, 0.0f, "Berries", 0.15f) Berry
+  @ResourceT("Berry",            false, false, 16, 0.0f, "Berries", 0.5f) Berry
 }
 
 /// Retrieve the ResourceT metadata for a given ResourceType
