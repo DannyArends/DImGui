@@ -17,26 +17,61 @@ import rnjesus : randomizeName;
 
 uint nextDwarfUID = 1;
 
+struct InventorySlot {
+  enum Kind : ubyte { Empty, Block, Stack }
+  Kind kind     = Kind.Empty;
+  uint blockID  = noBlock;
+  ResourceType type  = ResourceType.None;
+  ubyte count   = 0;
+
+  @property bool empty()   const { return kind == Kind.Empty; }
+  @property bool isBlock() const { return kind == Kind.Block; }
+  @property bool isStack() const { return kind == Kind.Stack; }
+  bool accepts(ResourceType type) {
+    if(empty) return true;
+    return isStack && this.type == type && count < resourceData(type).maxStack;
+  }
+}
+
 struct DwarfData {
   uint uid = 0;
   uint colorID = 0;
   int[3] tile = [0, 0, 0];
   char[64] first;
   char[64] last;
-  uint[32] inventory = noBlock;  /// block IDs, noBlock = empty slot
+  InventorySlot[32] inventory;  /// block IDs, noBlock = empty slot
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
-  @property uint[] carrying() { return inventory[].filter!(id => id != noBlock).array; }
-  @property bool pickup(uint blockID) { foreach(ref slot; inventory) { if(slot == noBlock) { slot = blockID; return true; } } return false; }
-  @property bool use(uint blockID) { foreach(ref slot; inventory) { if(slot == blockID) { slot = noBlock; return true; } } return false; }
-  @property bool drop(ref App app, size_t slot) {
-    if(slot >= inventory.length || inventory[slot] == noBlock) return false;
-    foreach(ref b; app.world.blocks.blocks) { if(b.id == inventory[slot]) { b.tile = tile; break; } }
-    app.syncBlockInstances();
-    inventory[slot] = noBlock;
+  @property uint[] carrying() { return inventory[].filter!(s => s.isBlock).map!(s => s.blockID).array; }
+
+  bool pickup(uint blockID, ResourceType type) {
+    foreach(ref s; inventory) {
+      if(!s.accepts(type)) continue;
+      s.kind = resourceData(type).maxStack > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block;
+      s.blockID = blockID;
+      s.type = type;
+      s.count++;
+      return true;
+    }
+    return false;
+  }
+
+  bool use(uint blockID) {
+    foreach(ref s; inventory) { if(s.isBlock && s.blockID == blockID) { s = InventorySlot.init; return true; } }
+    return false;
+  }
+
+  bool drop(ref App app, size_t slot) {
+    if(slot >= inventory.length || inventory[slot].empty) return false;
+    if(inventory[slot].isBlock) {
+      foreach(ref b; app.world.blocks.blocks) { if(b.id == inventory[slot].blockID) { b.tile = tile; break; } }
+      app.syncBlockInstances();
+    }
+    inventory[slot] = InventorySlot.init;
     return true;
   }
-  @property bool hasInventorySpace() { return carrying.length < (inventory.length / 2); }
+
+  @property bool hasInventorySpace() { return inventory[].any!(s => s.empty); }
 }
 
 /** Dwarven Cylinderz */

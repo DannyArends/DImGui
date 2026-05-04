@@ -155,7 +155,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
   return Job("DropBlock", fromTile, ResourceType.None, [], [blockID],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) {
-      foreach(slot, id; d.inventory) { if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, slot); break; } }
+      foreach(slot, ref s; d.inventory) { if(s.isBlock && s.blockID == d.jobStack[0].blockIDs[0]) { d.drop(app, slot); break; } }
       d.completeSubJob();
     },
     onFail: (ref App app, ref Dwarf d) { d.completeSubJob(); }
@@ -202,7 +202,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       app.deriveInventory();
     },
     onFail: (ref App app, ref Dwarf d) {
-      foreach(slot, id; d.inventory) { if(id != noBlock) d.drop(app, slot); }
+      foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app, slot); }
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
       jobQueue ~= newJob;
@@ -245,7 +245,7 @@ void doPickup(ref App app, ref Dwarf d) {
   if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
   foreach(ref b; app.world.blocks.blocks) {
     if(b.id != blockID) continue;
-    if(!d.pickup(blockID)) { d.jobStack[0].onFail(app, d); return; }
+    if(!d.pickup(blockID, app.blockType(blockID))) { d.jobStack[0].onFail(app, d); return; }
     b.tile = noTile;  // mark as carried
     app.syncBlockInstances();
     d.completeSubJob();
