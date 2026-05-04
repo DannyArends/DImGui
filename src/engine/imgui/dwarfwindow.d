@@ -9,12 +9,12 @@ import dwarf : spawnDwarf;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
-import tileatlas : tileData;
+import resources : resourceData;
 
-void showTileIcons(ref App app, TileType[] tiles, float cellSize = 16.0f) {
+void showTileIcons(ref App app, ResourceType[] tiles, float cellSize = 16.0f) {
   foreach(tt; tiles.sort.uniq) {
     igSameLine(0, 2);
-    auto name = tileData[tt].name;
+    auto name = resourceData(tt).name;
     auto texIdx = idx(app.textures, name ~ "_base");
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
@@ -51,7 +51,7 @@ void showDwarfContent(ref App app, uint font = 0) {
 
     if(d.carrying.length > 0) {
       igSameLine(0, 5);
-      TileType[] types;
+      ResourceType[] types;
       foreach(id; d.carrying) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) { types ~= b.type; break; } } }
       app.showTileIcons(types);
     }

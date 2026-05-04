@@ -55,18 +55,17 @@ bool getBestTree(ref App app, float[3][2] ray, Intersection[] hits, out int[3] r
 }
 
 /** Generate trees for a chunk based on tile types and noise */
-Tree[] buildTreeData(immutable(WorldData) wd, int[3] coord, const TileType[] tileTypes) {
+Tree[] buildTreeData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes) {
   import noise : noiseHTT;
   import tree : Tree;
   Tree[] trees;
   for (int i = 0; i < wd.tileCount; i++) {
-    if (tileTypes[i] == TileType.None) continue;
+    if (tileTypes[i] == ResourceType.None) continue;
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     int[3] above = [wc[0], wc[1]+1, wc[2]];
-    if (wd.getTile(above) != TileType.None) continue;
+    if (wd.getTile(above) != ResourceType.None) continue;
     auto tt = tileTypes[i];
-    if (tt != TileType.Grass01 && tt != TileType.Grass02 &&
-        tt != TileType.Forest01 && tt != TileType.Forest02) continue;
+    if (tt != ResourceType.Grass01 && tt != ResourceType.Grass02 && tt != ResourceType.Forest01 && tt != ResourceType.Forest02) continue;
     auto n = noiseHTT(wc[0], wc[2], wd.seed);
     if (n[2] < 0.65f) continue;  // sparse placement — only high noise values get trees
     uint hash = (wc[0] * 2654435761u) ^ (wc[2] * 2246822519u);
@@ -92,9 +91,9 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
     for(uint h = 0; h < t.height; h++) {
       float s = baseRadius - h * 0.015f;
       if(s < 0.05f) s = 0.05f;
-      app.world.trunk.instances ~= DrawInstance(TileType.Wood, translateScale([px, py + h * th, pz], [s, th, s]));
+      app.world.trunk.instances ~= DrawInstance(ResourceType.Wood, translateScale([px, py + h * th, pz], [s, th, s]));
     }
-    app.world.canopy.instances ~= DrawInstance(TileType.Leaves, translateScale([px, py + t.height * th, pz], [cSize, cSize*cSquish, cSize]));
+    app.world.canopy.instances ~= DrawInstance(ResourceType.Leaves, translateScale([px, py + t.height * th, pz], [cSize, cSize*cSquish, cSize]));
   }
   app.world.trunk.markDirty();
   app.world.canopy.markDirty();
@@ -124,7 +123,7 @@ void fellTree(ref App app, int[3] tile) {
     //if(t.rootTile != [tile[0], tile[1]+1, tile[2]]) continue;
     if(t.rootTile != tile) continue;
     // spawn wood blocks
-    for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]], TileType.Wood); }
+    for(uint h = 0; h < t.height; h++) { app.spawnBlock([t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]], ResourceType.Wood); }
     app.deriveInventory();
     app.world.unsettleBlocks(app.world.blocks, t.rootTile);
     // remove from trees array

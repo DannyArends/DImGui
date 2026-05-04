@@ -15,7 +15,7 @@ enum int[3] builtTile = [int.max, 0, 0];
 
 struct Block {
   uint id;              /// Unique block ID, forever
-  TileType type;        /// Block type
+  ResourceType type;    /// Block type
   int[3] tile;          /// Current tile position
   float[2] fallState;   /// [y, v] fall physics, [0,0] if not falling
 
@@ -57,15 +57,15 @@ void loadBlocks(ref App app) {
 }
 
 @nogc pure bool hasBlocks(ref App app) nothrow { return(app.world.blocks !is null && app.world.blocks.blocks.length > 0); }
-@nogc pure bool hasBlocks(ref App app, TileType tt) nothrow { return(app.hasBlocks() && app.world.blocks.blocks.any!(b => b.type == tt)); }
+@nogc pure bool hasBlocks(ref App app, ResourceType tt) nothrow { return(app.hasBlocks() && app.world.blocks.blocks.any!(b => b.type == tt)); }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
-uint findFreeBlock(ref App app, int[3] dwarfTile, TileType tt = TileType.None) {
+uint findFreeBlock(ref App app, int[3] dwarfTile, ResourceType tt = ResourceType.None) {
   if(app.world.blocks is null) return noBlock;
   uint bestID = noBlock;
   float bestDist = float.max;
   foreach(ref b; app.world.blocks.blocks) {
-    if(tt != TileType.None && b.type != tt) continue;
+    if(tt != ResourceType.None && b.type != tt) continue;
     if(b.tile == noTile || b.tile == builtTile) continue;
     bool reserved = false;
     if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves) {
@@ -87,12 +87,12 @@ void ensureBlocks(ref App app) {
 }
 
 /** Create a drop instance */
-DrawInstance toDropInstance(World world, int[3] tile, TileType tt) {
+DrawInstance toDropInstance(World world, int[3] tile, ResourceType tt) {
   return DrawInstance(tt, translateScale(world.tileToWorld(tile, -world.blockOffset), [world.blockSize, world.blockSize, world.blockSize]));
 }
 
 /** Spawn a new block into the registry */
-uint spawnBlock(ref App app, int[3] tile, TileType tt) {
+uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
   app.world.blocks.blocks ~= b;
