@@ -78,8 +78,7 @@ void handleEvents(ref App app) {
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
 
   t0 = SDL_GetTicks();
-  app.world.settleBlocks(app.world.blocks, dt);
-  
+  app.world.settleBlocks(app.world.blocks, app.world.berries, dt);
 
   t0 = SDL_GetTicks();
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
