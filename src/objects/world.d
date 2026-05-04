@@ -133,7 +133,7 @@ struct WorldData {
         auto tt = getTileAt([nx, ny, nz]);
         int[3] standTile = [nx, ny+1, nz];
         if(tt != TileType.None && tileData[tt].traversable && isPassable(standTile)) {
-          float modifier = ghostTiles.canFind(standTile) ? 1000.0f : 0.0f;
+          float modifier = ghostTiles.canFind(standTile) ? 20.0f : 0.0f;
           successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: tileData[tt].cost + modifier);
           break;
         }
@@ -263,7 +263,6 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
   }
   app.world.pendingPaths = [];
-  foreach(ref j; jobQueue) j.failedBy = [];
   app.world.invalidatePaths(tile);
 }
 
