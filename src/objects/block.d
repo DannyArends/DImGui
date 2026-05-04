@@ -15,10 +15,11 @@ enum uint noBlock = uint.max;
 enum int[3] builtTile = [int.max, 0, 0];
 
 struct Block {
-  uint id;              /// Unique block ID, forever
-  ResourceType type;    /// Block type
-  int[3] tile;          /// Current tile position
-  float[2] fallState;   /// [y, v] fall physics, [0,0] if not falling
+  uint id;                          /// Unique block ID, forever
+  ResourceType type;                /// Block type
+  int[3] tile;                      /// Current tile position
+  float[2] fallState;               /// [y, v] fall physics, [0,0] if not falling
+  size_t instanceIdx = size_t.max;
 
   @property @nogc bool isFalling() nothrow { return fallState[1] != 0.0f; }
   @property @nogc float y() nothrow { return fallState[0]; }
@@ -34,13 +35,6 @@ class Blocks : Cube {
   this() {
     super();
     initInstanced(() => "Blocks");
-  }
-}
-
-class Berries : Icosahedron {
-  this() {
-    super();
-    initInstanced(() => "Berries");
   }
 }
 
@@ -91,13 +85,13 @@ void ensureBlocks(ref App app) {
   if(app.world.blocks !is null) return;
   app.world.blocks = new Blocks();
   app.objects ~= app.world.blocks;
-  app.world.berries = new Berries();
-  app.objects ~= app.world.berries;
-}
-
-/** Create a drop instance */
-DrawInstance toDropInstance(World world, int[3] tile, ResourceType tt) {
-  return DrawInstance(tt, translateScale(world.tileToWorld(tile, -world.blockOffset), [world.blockSize, world.blockSize, world.blockSize]));
+  foreach(rt; EnumMembers!ResourceType) {
+    auto meshName = resourceData(rt).meshName;
+    if(meshName in app.world.dropMeshes) continue;
+    if(meshName == "Blocks")  { app.world.dropMeshes[meshName] = new Cube(); }
+    if(meshName == "Berries") { app.world.dropMeshes[meshName] = new Icosahedron(); }
+    app.objects ~= app.world.dropMeshes[meshName];
+  }
 }
 
 /** Spawn a new block into the registry */
@@ -109,37 +103,29 @@ uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
   return b.id;
 }
 
-@nogc pure float[3] wiggle(const Block b, float[3] base, uint s1, uint s2, uint s3, uint s4) nothrow {
-  float bx = ((b.id * s1 + s2) % 100u) / 100.0f - 0.5f;
-  float bz = ((b.id * s3 + s4) % 100u) / 100.0f - 0.5f;
-  return [base[0]+bx, base[1], base[2]+bz];
-}
-
 DrawInstance toDropInstance(World world, ref Block b) {
+  auto rd = resourceData(b.type);
   auto base = world.tileToWorld(b.tile, -world.blockOffset);
-  if(b.type == ResourceType.Berry)
-    return DrawInstance([0u, 0u, colorIndex(Colors.crimson), 0u],
-      translateScale(b.wiggle(base, 1664525u, 1013904223u, 22695477u, 1u), [0.15f, 0.15f, 0.15f]));
-  if(b.type == ResourceType.Wood)
-    return DrawInstance(b.type,
-      translateScale(b.wiggle(base, 1234567u, 891011u, 9876543u, 210987u), [world.blockSize, world.blockSize, world.blockSize]));
-  return DrawInstance(b.type, translateScale(base, [world.blockSize, world.blockSize, world.blockSize]));
+  float sz = rd.dropScale * world.blockSize;
+  float bx = ((b.id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
+  float bz = ((b.id * 22695477u + 1u)          % 100u) / 100.0f - 0.5f;
+  float[3] pos = [base[0] + bx, base[1], base[2] + bz];
+  return DrawInstance(b.type, translateScale(pos, [sz, sz, sz]));
 }
 
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref App app) {
   if(app.world.blocks is null) return;
-  app.world.blocks.instances = [];
-  app.world.berries.instances = [];
+  foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
   foreach(ref b; app.world.blocks.blocks) {
+    auto meshName = resourceData(b.type).meshName;
     bool hidden = b.tile == noTile || b.tile == builtTile;
-    auto inst = hidden ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f])) : app.world.toDropInstance(b);
-    if(b.type == ResourceType.Berry){
-      app.world.berries.instances ~= inst;
-    }else{ app.world.blocks.instances ~= inst; }
+    b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
+    app.world.dropMeshes[meshName].instances ~= hidden
+      ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]))
+      : app.world.toDropInstance(b);
   }
-  app.world.blocks.markDirty();
-  app.world.berries.markDirty();
+  foreach(ref mesh; app.world.dropMeshes.values) mesh.markDirty();
 }
 
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
@@ -157,23 +143,16 @@ void unsettleBlocks(const World world, ref Blocks blocks, int[3] minedTile) {
 void settleBlocks(ref World world, float dt) {
   if(world.blocks is null) return;
   bool changed = false;
-  size_t bi = 0, ri = 0;
   foreach(ref b; world.blocks.blocks) {
-    if(b.isFalling) {
-      b.v = b.v + 0.125f * dt;
-      b.y = b.y - b.v * dt;
-      int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
-      float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
-      if(b.y <= landY) {
-        b.tile = [b.tile[0], landTileY + 1, b.tile[2]];
-        b.fallState = [0.0f, 0.0f];
-      }
-      float posY = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1];
-      if(b.type == ResourceType.Berry) world.berries.instances[ri].matrix[13] = posY;
-      else world.blocks.instances[bi].matrix[13] = posY;
-      changed = true;
-    }
-    if(b.type == ResourceType.Berry) ri++; else bi++;
+    if(!b.isFalling) continue;
+    b.v = b.v + 0.125f * dt;
+    b.y = b.y - b.v * dt;
+    int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
+    float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
+    if(b.y <= landY) { b.tile = [b.tile[0], landTileY + 1, b.tile[2]]; b.fallState = [0.0f, 0.0f]; }
+    float posY = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1];
+    world.dropMeshes[resourceData(b.type).meshName].instances[b.instanceIdx].matrix[13] = posY;
+    changed = true;
   }
-  if(changed) { world.blocks.markDirty(); world.berries.markDirty(); }
+  if(changed) foreach(ref mesh; world.dropMeshes.values) mesh.markDirty();
 }

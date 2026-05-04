@@ -59,8 +59,7 @@ Bush[] addBushInstances(ref App app, Bush[] bushes) {
 
 void rebuildBushInstances(ref App app) {
   app.world.bush.instances = [];
-  foreach(chunkCoord, ref chunkBushes; app.world.bushes)
-    chunkBushes = app.addBushInstances(chunkBushes);
+  foreach(chunkCoord, ref chunkBushes; app.world.bushes) { chunkBushes = app.addBushInstances(chunkBushes); }
   app.world.bush.markDirty();
 }
 
@@ -70,7 +69,7 @@ void gatherBush(ref App app, int[3] tile) {
   foreach(i, ref b; app.world.bushes[coord]) {
     if(b.rootTile != tile) continue;
     uint count = 3 + (b.hash % 3);
-    foreach(n; 0..count) app.spawnBlock(tile, ResourceType.Berry);
+    foreach(n; 0..count) { app.spawnBlock(tile, ResourceType.Berry); }
     app.world.bushes[coord] = app.world.bushes[coord][0..i] ~ app.world.bushes[coord][i+1..$];
     app.rebuildBushInstances();
     return;
