@@ -14,7 +14,7 @@ import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : loadBlocks, saveBlocks;
-import dwarf : saveDwarfs, invalidatePaths;
+import dwarf : saveDwarfs;
 import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
@@ -194,6 +194,14 @@ struct World {
 @nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
 @nogc pure int[3] tileAbove(int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
 
+/** Invalidate any dwarf paths that pass through the given tile */
+void invalidatePaths(ref World world, int[3] tile) {
+  if(world.dwarves is null) return;
+  foreach(ref d; world.dwarves.dwarves) {
+    if(d.path.any!(p => world.worldToTile(p) == tile)) d.path = [];
+  }
+}
+
 void loadWorld(ref App app) {
   ensureWorldDir();
 
@@ -256,7 +264,7 @@ void setTile(ref App app, int[3] tile, TileType newType = TileType.None) {
   }
   app.world.pendingPaths = [];
   foreach(ref j; jobQueue) j.failedBy = [];
-  app.invalidatePaths(tile);
+  app.world.invalidatePaths(tile);
 }
 
 /** Dispatch a chunk build job to the next available worker thread */
