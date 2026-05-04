@@ -6,7 +6,7 @@ import engine;
 
 import serialization : readWorldData, writeWorldData;
 import inventory : deriveInventory;
-import matrix : translateScale, translate, multiply, scale;
+import matrix : translateScale, scale;
 import vector : manhattan;
 import world : noTile;
 

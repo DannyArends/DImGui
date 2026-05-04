@@ -5,14 +5,14 @@
 import engine;
 
 import serialization : readWorldData, writeWorldData;
-import block : spawnBlock, syncBlockInstances, noBlock;
+import block : syncBlockInstances, noBlock;
 import world : noTile, tileBelow, isTileOccupied;
-import matrix : position, scale, rotate;
+import matrix : position, scale;
 import tileatlas : tileData;
 import inventory : deriveInventory;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo;
-import jobs : Job, dispatchJob, jobQueue, miningJob, claimNextJob, moveAwayJob, atDestination, findGoalTile;
+import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination, findGoalTile;
 import rnjesus : randomizeName;
 
 uint nextDwarfUID = 1;
@@ -78,14 +78,6 @@ struct Dwarf {
   uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
 
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
-}
-
-/** Invalidate any dwarf paths that pass through the given tile */
-void invalidatePaths(ref App app, int[3] tile) {
-  if(app.world.dwarves is null) return;
-  foreach(ref d; app.world.dwarves.dwarves) {
-    if(d.path.any!(p => app.world.worldToTile(p) == tile)) d.path = [];
-  }
 }
 
 /** Attempt to re-path object T to goalTile, returns false if unreachable.

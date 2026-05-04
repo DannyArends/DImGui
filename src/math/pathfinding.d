@@ -6,7 +6,6 @@
 import engine;
 
 import search : performSearch, atGoal, stepThroughPath;
-import world : noTile;
 
 struct PathRequest {
   uint dwarfUID;
