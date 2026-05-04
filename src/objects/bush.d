@@ -9,6 +9,7 @@ import block : spawnBlock;
 import intersection : intersects;
 import matrix : translateScale;
 import noise : noiseHTT;
+import serialization : readWorldData, writeWorldData;
 import world : noTile;
 
 class BushMesh : Icosahedron {
@@ -94,4 +95,33 @@ bool getBestBush(ref App app, float[3][2] ray, Intersection[] hits, out int[3] r
     }
   }
   return best.intersects;
+}
+
+void saveBushes(ref App app) {
+  foreach(coord, bushes; app.world.pendingBushes) {
+    if(coord !in app.world.bushes) app.world.bushes[coord] = bushes;
+    else if(app.world.bushes[coord].length == 0) app.world.bushes[coord] = bushes;
+  }
+  app.world.pendingBushes.clear();
+  Bush[] allBushes;
+  foreach(coord, bushes; app.world.bushes) {
+    if(bushes.length == 0) { allBushes ~= Bush([int.min, coord[0], coord[2]], 0, 0); }
+    else { allBushes ~= bushes; }
+  }
+  if(allBushes.length == 0) return;
+  writeWorldData(app.world.bushPath(), allBushes, cast(uint)allBushes.length);
+}
+
+void loadBushes(ref App app) {
+  Bush[] bushes; uint i;
+  if(!readWorldData(app.world.bushPath(), bushes, i)) return;
+  foreach(ref b; bushes) {
+    if(b.rootTile[0] == int.min) {
+      int[3] coord = [b.rootTile[1], 0, b.rootTile[2]];
+      app.world.pendingBushes[coord] = [];
+      continue;
+    }
+    int[3] coord = app.world.chunkCoord(b.rootTile);
+    app.world.pendingBushes[coord] ~= b;
+  }
 }

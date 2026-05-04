@@ -5,7 +5,7 @@
 
 import engine;
 
-import bush : addBushInstances;
+import bush : loadBushes, saveBushes, addBushInstances, rebuildBushInstances;
 import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
@@ -44,6 +44,7 @@ struct WorldData {
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
   const(char)* blocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
   const(char)* treePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_trees.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* bushPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_bushes.bin", seed[0], seed[1], seed[2]))); }
   const(char)* dwarfsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_dwarfs.bin", seed[0], seed[1], seed[2]))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
@@ -231,6 +232,7 @@ void loadWorld(ref App app) {
   app.world.diffs = cast(TileDiff[])diffData.dup;
   app.loadBlocks();
   app.loadTrees();
+  app.loadBushes();
   app.deriveInventory();
 }
 
@@ -242,6 +244,7 @@ void saveWorld(ref App app) {
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
   app.saveBlocks();
   app.saveTrees();
+  app.saveBushes();
   app.saveDwarfs();
 }
 

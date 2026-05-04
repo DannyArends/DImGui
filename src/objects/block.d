@@ -4,9 +4,10 @@
  */
 import engine;
 
-import serialization : readWorldData, writeWorldData;
+import color : Colors, colorIndex;
 import inventory : deriveInventory;
 import matrix : translateScale, scale;
+import serialization : readWorldData, writeWorldData;
 import vector : manhattan;
 import world : noTile;
 
@@ -55,11 +56,10 @@ void loadBlocks(ref App app) {
   Block[] blocks;
   if(!readWorldData(app.world.blocksPath(), blocks, app.world.blocks.nextID)) return;
   app.world.blocks.blocks = blocks;
+  app.syncBlockInstances();
   foreach(ref b; app.world.blocks.blocks) {
-    app.world.blocks.instances ~= app.world.toDropInstance(b.tile, b.type);
     if(b.isFalling) app.world.pendingUnsettle ~= b.tile;
   }
-  app.world.blocks.markDirty();
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.blocks.length);
 }
 
@@ -105,16 +105,7 @@ uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   auto b = Block(app.world.blocks.nextID++, tt, tile, [0.0f, 0.0f]);
   app.world.blocks.blocks ~= b;
-  if(tt == ResourceType.Berry) {
-    float sz = 0.15f;
-    app.world.berries.instances ~= DrawInstance(ResourceType.Berry,
-      translateScale(app.world.tileToWorld(tile, -app.world.blockOffset), [sz, sz, sz]));
-    app.world.berries.markDirty();
-  } else {
-    app.world.blocks.instances ~= app.world.toDropInstance(tile, tt);
-    app.world.blocks.markDirty();
-  }
-  app.world.blocks.markDirty();
+  app.syncBlockInstances();
   return b.id;
 }
 
@@ -128,8 +119,8 @@ void syncBlockInstances(ref App app) {
     if(b.type == ResourceType.Berry) {
       float sz = 0.15f;
       app.world.berries.instances ~= hidden
-        ? DrawInstance(ResourceType.Berry, Matrix().scale([0.0f, 0.0f, 0.0f]))
-        : DrawInstance(ResourceType.Berry, translateScale(app.world.tileToWorld(b.tile, -app.world.blockOffset), [sz, sz, sz]));
+        ? DrawInstance([0,0, colorIndex(Colors.crimson),0], Matrix().scale([0.0f, 0.0f, 0.0f]))
+        : DrawInstance([0,0, colorIndex(Colors.crimson),0], translateScale(app.world.tileToWorld(b.tile, -app.world.blockOffset), [sz, sz, sz]));
     } else {
       app.world.blocks.instances ~= hidden
         ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]))
@@ -152,22 +143,25 @@ void unsettleBlocks(const World world, ref Blocks blocks, int[3] minedTile) {
 }
 
 /** Update falling blocks */
-void settleBlocks(const World world, ref Blocks blocks, float dt) {
+void settleBlocks(const World world, ref Blocks blocks, ref Berries berries, float dt) {
   if(blocks is null) return;
   bool changed = false;
-  foreach(i, ref b; blocks.blocks) {
-    if(!b.isFalling) continue;
-    //SDL_Log("settleBlocks: block %d falling y=%.2f", b.id, b.y);
-    b.v = b.v + 0.125f * dt;
-    b.y = b.y - b.v * dt;
-    int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
-    float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
-    if(b.y <= landY) {
-      b.tile = [b.tile[0], landTileY + 1, b.tile[2]];
-      b.fallState = [0.0f, 0.0f];  // settled
-      blocks.instances[i].matrix[13] = world.tileToWorld(b.tile, -world.blockOffset)[1];
-    } else { blocks.instances[i].matrix[13] = b.y; }
-    changed = true;
+  size_t bi = 0, ri = 0;
+  foreach(ref b; blocks.blocks) {
+    if(b.isFalling) {
+      b.v = b.v + 0.125f * dt;
+      b.y = b.y - b.v * dt;
+      int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
+      float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
+      if(b.y <= landY) {
+        b.tile = [b.tile[0], landTileY + 1, b.tile[2]];
+        b.fallState = [0.0f, 0.0f];
+      }
+      if(b.type == ResourceType.Berry) { berries.instances[ri].matrix[13] = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1]; }
+      else { blocks.instances[bi].matrix[13]  = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1]; }
+      changed = true;
+    }
+    if(b.type == ResourceType.Berry) ri++; else bi++;
   }
-  if(changed) blocks.markDirty();
+  if(changed) { blocks.markDirty(); berries.markDirty(); }
 }
