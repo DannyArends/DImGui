@@ -17,34 +17,35 @@ struct ResourceT {
   float cost       = 0.0f;
   string meshName  = "Blocks";
   float dropScale  = 1.0f;
+  Colors color     = Colors.white;
 }
 
 enum ResourceType : ubyte {
-  @ResourceT("None",             false, false, 0,  0.0f, "Blocks",  1.0f)  None,
-  @ResourceT("Lava_01",          false, false, 0,  0.0f, "Blocks",  1.0f)  Lava,
-  @ResourceT("Water_01",         false, false, 0,  0.0f, "Blocks",  1.0f)  Water,
-  @ResourceT("Sand_01",          true,  true,  1,  2.0f, "Blocks",  1.0f)  Sand01,
-  @ResourceT("Sand_02",          true,  true,  1,  2.0f, "Blocks",  1.0f)  Sand02,
-  @ResourceT("Sand_03",          true,  true,  1,  2.5f, "Blocks",  1.0f)  Sand03,
-  @ResourceT("Sand_05",          true,  true,  1,  3.5f, "Blocks",  1.0f)  Sand05,
-  @ResourceT("Gravel_01",        true,  true,  1,  1.5f, "Blocks",  1.0f)  Gravel,
-  @ResourceT("Moss_01",          true,  true,  1,  1.0f, "Blocks",  1.0f)  Moss01,
-  @ResourceT("Ground_08",        true,  true,  1,  1.0f, "Blocks",  1.0f)  Ground08,
-  @ResourceT("Grass_01",         true,  true,  1,  1.0f, "Blocks",  1.0f)  Grass01,
-  @ResourceT("Grass_02",         true,  true,  1,  1.0f, "Blocks",  1.0f)  Grass02,
-  @ResourceT("Grass_03",         true,  true,  1,  1.0f, "Blocks",  1.0f)  Grass03,
-  @ResourceT("Grass_04",         true,  true,  1,  1.0f, "Blocks",  1.0f)  Grass04,
-  @ResourceT("Forest_Ground_01", true,  true,  1,  2.0f, "Blocks",  1.0f)  Forest01,
-  @ResourceT("Jungle_01",        true,  true,  1,  2.9f, "Blocks",  1.0f)  Forest02,
-  @ResourceT("Stone_01",         true,  true,  1,  3.0f, "Blocks",  1.0f)  Stone01,
-  @ResourceT("Stone_02",         true,  true,  1,  2.0f, "Blocks",  1.0f)  Stone02,
-  @ResourceT("Stone_03",         true,  true,  1,  2.0f, "Blocks",  1.0f)  Stone03,
-  @ResourceT("Stone_05",         true,  true,  1,  2.0f, "Blocks",  1.0f)  Stone05,
-  @ResourceT("Ice_01",           true,  true,  1,  4.0f, "Blocks",  1.0f)  Ice01,
-  @ResourceT("Ice_03",           true,  true,  1,  4.5f, "Blocks",  1.0f)  Snow,
-  @ResourceT("Wood_03",          true,  true,  1,  1.0f, "Blocks",  1.0f)  Wood,
-  @ResourceT("Hedge_01",         false, false, 0,  0.0f, "Blocks",  1.0f)  Leaves,
-  @ResourceT("Berry",            false, false, 16, 0.0f, "Berries", 0.5f) Berry
+  @ResourceT("None",             false, false, 0,  0.0f, "Blocks",  1.0f, Colors.white)  None,
+  @ResourceT("Lava_01",          false, false, 0,  0.0f, "Blocks",  1.0f, Colors.white)  Lava,
+  @ResourceT("Water_01",         false, false, 0,  0.0f, "Blocks",  1.0f, Colors.white)  Water,
+  @ResourceT("Sand_01",          true,  true,  1,  2.0f, "Blocks",  1.0f, Colors.white)  Sand01,
+  @ResourceT("Sand_02",          true,  true,  1,  2.0f, "Blocks",  1.0f, Colors.white)  Sand02,
+  @ResourceT("Sand_03",          true,  true,  1,  2.5f, "Blocks",  1.0f, Colors.white)  Sand03,
+  @ResourceT("Sand_05",          true,  true,  1,  3.5f, "Blocks",  1.0f, Colors.white)  Sand05,
+  @ResourceT("Gravel_01",        true,  true,  1,  1.5f, "Blocks",  1.0f, Colors.white)  Gravel,
+  @ResourceT("Moss_01",          true,  true,  1,  1.0f, "Blocks",  1.0f, Colors.white)  Moss01,
+  @ResourceT("Ground_08",        true,  true,  1,  1.0f, "Blocks",  1.0f, Colors.white)  Ground08,
+  @ResourceT("Grass_01",         true,  true,  1,  1.0f, "Blocks",  1.0f, Colors.white)  Grass01,
+  @ResourceT("Grass_02",         true,  true,  1,  1.0f, "Blocks",  1.0f, Colors.white)  Grass02,
+  @ResourceT("Grass_03",         true,  true,  1,  1.0f, "Blocks",  1.0f, Colors.white)  Grass03,
+  @ResourceT("Grass_04",         true,  true,  1,  1.0f, "Blocks",  1.0f, Colors.white)  Grass04,
+  @ResourceT("Forest_Ground_01", true,  true,  1,  2.0f, "Blocks",  1.0f, Colors.white)  Forest01,
+  @ResourceT("Jungle_01",        true,  true,  1,  2.9f, "Blocks",  1.0f, Colors.white)  Forest02,
+  @ResourceT("Stone_01",         true,  true,  1,  3.0f, "Blocks",  1.0f, Colors.white)  Stone01,
+  @ResourceT("Stone_02",         true,  true,  1,  2.0f, "Blocks",  1.0f, Colors.white)  Stone02,
+  @ResourceT("Stone_03",         true,  true,  1,  2.0f, "Blocks",  1.0f, Colors.white)  Stone03,
+  @ResourceT("Stone_05",         true,  true,  1,  2.0f, "Blocks",  1.0f, Colors.white)  Stone05,
+  @ResourceT("Ice_01",           true,  true,  1,  4.0f, "Blocks",  1.0f, Colors.white)  Ice01,
+  @ResourceT("Ice_03",           true,  true,  1,  4.5f, "Blocks",  1.0f, Colors.white)  Snow,
+  @ResourceT("Wood_03",          true,  true,  1,  1.0f, "Blocks",  1.0f, Colors.white)  Wood,
+  @ResourceT("Hedge_01",         false, false, 0,  0.0f, "Blocks",  1.0f, Colors.white)  Leaves,
+  @ResourceT("Berry",            false, false, 16, 0.0f, "Berries", 0.5f, Colors.crimson) Berry
 }
 
 /// Retrieve the ResourceT metadata for a given ResourceType

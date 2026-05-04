@@ -6,9 +6,11 @@ import engine;
 
 import color : Colors, colorIndex;
 import inventory : deriveInventory;
+import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
 import resources : resourceData;
 import serialization : readWorldData, writeWorldData;
+import normals : computeTangents;
 import vector : manhattan;
 import world : noTile;
 
@@ -75,13 +77,15 @@ void ensureBlocks(ref App app) {
     auto meshName = resourceData(rt).meshName;
     if(meshName in app.world.dropMeshes) continue;
     if(meshName == "Blocks") {
-      auto m = new Cube();
+      Geometry m = new Cube();
       m.initInstanced(() => meshName);
       app.world.dropMeshes[meshName] = m;
       app.objects ~= m;
     }
     if(meshName == "Berries") {
-      auto m = new Icosahedron();
+      Geometry m = new Icosahedron();
+      m.computeTangents();
+      m.refineIcosahedron(3);
       m.initInstanced(() => meshName);
       app.world.dropMeshes[meshName] = m;
       app.objects ~= m;
@@ -105,7 +109,7 @@ DrawInstance toDropInstance(World world, ref Block b) {
   float bx = ((b.id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
   float bz = ((b.id * 22695477u + 1u)          % 100u) / 100.0f - 0.5f;
   float[3] pos = [base[0] + bx, base[1], base[2] + bz];
-  return DrawInstance(b.type, translateScale(pos, [sz, sz, sz]));
+  return DrawInstance([cast(uint)b.type, cast(uint)b.type, colorIndex(resourceData(b.type).color), 0u], translateScale(pos, [sz, sz, sz]));
 }
 
 /** Sync instances from blocks registry */
