@@ -36,6 +36,13 @@ class Blocks : Cube {
   }
 }
 
+class Berries : Icosahedron {
+  this() {
+    super();
+    initInstanced(() => "Berries");
+  }
+}
+
 /** Save blocks */
 void saveBlocks(ref App app) {
   if(app.world.blocks is null) return;
@@ -84,6 +91,8 @@ void ensureBlocks(ref App app) {
   if(app.world.blocks !is null) return;
   app.world.blocks = new Blocks();
   app.objects ~= app.world.blocks;
+  app.world.berries = new Berries();
+  app.objects ~= app.world.berries;
 }
 
 /** Create a drop instance */
@@ -105,14 +114,22 @@ uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
 void syncBlockInstances(ref App app) {
   if(app.world.blocks is null) return;
   app.world.blocks.instances = [];
-  int visible = 0, hidden = 0;
+  app.world.berries.instances = [];
   foreach(ref b; app.world.blocks.blocks) {
-    bool inactive = b.tile == noTile || b.tile == builtTile;
-    app.world.blocks.instances ~= inactive ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f])) : app.world.toDropInstance(b.tile, b.type);
-    if(inactive){ hidden++; }else{ visible++; }
+    bool hidden = b.tile == noTile || b.tile == builtTile;
+    if(b.type == ResourceType.Berry) {
+      float sz = 0.15f;
+      app.world.berries.instances ~= hidden
+        ? DrawInstance(ResourceType.Berry, Matrix().scale([0.0f, 0.0f, 0.0f]))
+        : DrawInstance(ResourceType.Berry, translateScale(app.world.tileToWorld(b.tile, -app.world.blockOffset), [sz, sz, sz]));
+    } else {
+      app.world.blocks.instances ~= hidden
+        ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]))
+        : app.world.toDropInstance(b.tile, b.type);
+    }
   }
-  //SDL_Log("syncBlockInstances: %d visible, %d hidden (total=%d)", visible, hidden, cast(int)app.world.blocks.blocks.length);
   app.world.blocks.markDirty();
+  app.world.berries.markDirty();
 }
 
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }

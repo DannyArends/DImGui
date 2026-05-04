@@ -157,6 +157,7 @@ struct World {
   Bush[][int[3]] bushes;                                    /// Bushes per chunk coord
   Bush[][int[3]] pendingBushes;                             /// Bushes generated async
   Blocks blocks;                                            /// Blocks
+  Berries berries;
   Inventory inventory;                                      /// Inventory
   GhostCube buildingGhosts;                                 /// Building Ghosts
   Dwarves dwarves;                                          /// Dwarves
