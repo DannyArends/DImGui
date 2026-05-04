@@ -83,11 +83,11 @@ void syncBuildGhosts(ref App app) {
     app.world.buildingGhosts.instances ~= inst;
   }
 
-  app.world.data.ghostTiles = [];
-  foreach(ref j; jobQueue) { if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.ghostTiles ~= j.targetTile; } }
+  foreach(key; app.world.data.tilePenalties.keys) { if(app.world.data.tilePenalties[key] >= 20.0f) app.world.data.tilePenalties.remove(key); }
+  foreach(ref j; jobQueue) { if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.tilePenalties[j.targetTile] = 40.0f; } }
   if(app.world.dwarves !is null) {
     foreach(ref d; app.world.dwarves) { foreach(ref j; d.jobStack) { 
-      if(j.name == "Building") {addInstance(j.targetTile, committed); app.world.data.ghostTiles ~= j.targetTile; }
+      if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.tilePenalties[j.targetTile] = 40.0f; }
     } }
   }
   foreach(tile; app.world.inventory.dragPreview) addInstance(tile, preview);

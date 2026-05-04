@@ -51,6 +51,7 @@ Bush[] addBushInstances(ref App app, Bush[] bushes) {
     auto wp = app.world.tileToWorld(b.rootTile);
     float sz = 0.6f + (b.hash % 6) * 0.05f;   // 0.6 - 0.85, smaller than canopy
     b.bushIdx = app.world.bush.instances.length;
+    app.world.data.tilePenalties[b.rootTile] = 10.0f;
     app.world.bush.instances ~= DrawInstance(ResourceType.Leaves, translateScale([wp[0], wp[1], wp[2]], [sz, sz * 0.5f, sz]));
   }
   app.world.bush.markDirty();
