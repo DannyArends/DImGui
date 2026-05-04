@@ -10,6 +10,7 @@ import intersection : intersects;
 import matrix : translateScale;
 import noise : noiseHTT;
 import serialization : readWorldData, writeWorldData;
+import vegetation : saveVegetation, loadVegetation, removeVegetation;
 import world : noTile;
 
 class BushMesh : Icosahedron {
@@ -61,12 +62,6 @@ void rebuildBushInstances(ref App app) {
   app.world.bush.markDirty();
 }
 
-void removeBushInstances(ref App app, int[3] coord) {
-  if(coord !in app.world.bushes) return;
-  app.world.bushes.remove(coord);
-  app.rebuildBushInstances();
-}
-
 void gatherBush(ref App app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.bushes) return;
@@ -97,31 +92,6 @@ bool getBestBush(ref App app, float[3][2] ray, Intersection[] hits, out int[3] r
   return best.intersects;
 }
 
-void saveBushes(ref App app) {
-  foreach(coord, bushes; app.world.pendingBushes) {
-    if(coord !in app.world.bushes) app.world.bushes[coord] = bushes;
-    else if(app.world.bushes[coord].length == 0) app.world.bushes[coord] = bushes;
-  }
-  app.world.pendingBushes.clear();
-  Bush[] allBushes;
-  foreach(coord, bushes; app.world.bushes) {
-    if(bushes.length == 0) { allBushes ~= Bush([int.min, coord[0], coord[2]], 0, 0); }
-    else { allBushes ~= bushes; }
-  }
-  if(allBushes.length == 0) return;
-  writeWorldData(app.world.bushPath(), allBushes, cast(uint)allBushes.length);
-}
-
-void loadBushes(ref App app) {
-  Bush[] bushes; uint i;
-  if(!readWorldData(app.world.bushPath(), bushes, i)) return;
-  foreach(ref b; bushes) {
-    if(b.rootTile[0] == int.min) {
-      int[3] coord = [b.rootTile[1], 0, b.rootTile[2]];
-      app.world.pendingBushes[coord] = [];
-      continue;
-    }
-    int[3] coord = app.world.chunkCoord(b.rootTile);
-    app.world.pendingBushes[coord] ~= b;
-  }
-}
+void saveBushes(ref App app) { app.saveVegetation!Bush(app.world.bushes, app.world.pendingBushes, app.world.bushPath()); }
+void loadBushes(ref App app) { app.loadVegetation!Bush(app.world.pendingBushes, app.world.bushPath()); }
+void removeBushInstances(ref App app, int[3] coord) { app.removeVegetation!(Bush, rebuildBushInstances)(app.world.bushes, coord); }

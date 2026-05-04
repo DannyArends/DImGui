@@ -10,6 +10,7 @@ import serialization : readWorldData, writeWorldData;
 import intersection : intersects;
 import inventory : deriveInventory;
 import matrix : translateScale, scale;
+import vegetation : saveVegetation, loadVegetation, removeVegetation;
 
 /** Shared instanced cylinder mesh for all tree trunks */
 class TrunkMesh : Cylinder {
@@ -108,13 +109,6 @@ void rebuildTreeInstances(ref App app) {
   app.world.canopy.markDirty();
 }
 
-/** Remove tree instances for a chunk from shared meshes */
-void removeTreeInstances(ref App app, int[3] coord) {
-  if(coord !in app.world.trees) return;
-  app.world.trees.remove(coord);
-  app.rebuildTreeInstances();
-}
-
 /** Find and fell the tree rooted at or directly above the given tile */
 void fellTree(ref App app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
@@ -133,37 +127,6 @@ void fellTree(ref App app, int[3] tile) {
   }
 }
 
-void saveTrees(ref App app) {
-  // Flush pending trees into trees map
-  foreach(coord, trees; app.world.pendingTrees) {
-    if(coord !in app.world.trees) app.world.trees[coord] = trees;
-    else if(app.world.trees[coord].length == 0) app.world.trees[coord] = trees;
-  }
-  app.world.pendingTrees.clear();
-
-  Tree[] allTrees;
-  foreach(coord, trees; app.world.trees) {
-    if(trees.length == 0) { // tombstone — marks this chunk as fully cleared, prevents regeneration on reload
-      allTrees ~= Tree([int.min, coord[0], coord[2]], 0, 0, 0, 0);
-    } else { allTrees ~= trees; }
-  }
-  if(allTrees.length == 0) return;
-  writeWorldData(app.world.treePath(), allTrees, cast(uint)allTrees.length);
-}
-
-
-void loadTrees(ref App app) {
-  Tree[] trees;  uint i;
-  if(!readWorldData(app.world.treePath(), trees, i)) return;
-  foreach(ref t; trees) {
-    if(t.rootTile[0] == int.min) { // tombstone — restore empty entry to prevent regeneration
-      int[3] coord = [t.rootTile[1], 0, t.rootTile[2]];
-      app.world.pendingTrees[coord] = [];
-      continue;
-    }
-    int[3] coord = app.world.chunkCoord(t.rootTile);
-    app.world.pendingTrees[coord] ~= t;
-  }
-  //SDL_Log("loadTrees: %d trees loaded into %d chunks", cast(int)trees.length, cast(int)app.world.pendingTrees.length);
-}
-
+void saveTrees(ref App app) { app.saveVegetation!Tree(app.world.trees, app.world.pendingTrees, app.world.treePath()); }
+void loadTrees(ref App app) { app.loadVegetation!Tree(app.world.pendingTrees, app.world.treePath()); }
+void removeTreeInstances(ref App app, int[3] coord) { app.removeVegetation!(Tree, rebuildTreeInstances)(app.world.trees, coord); }
