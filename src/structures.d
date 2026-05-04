@@ -9,6 +9,7 @@ public import bone : Bone;
 public import block : Blocks;
 public import boundingbox : Bounds, BoundingBox;
 public import buffer : GeometryBuffer, StageBuffer;
+public import bush : BushMesh, Bush;
 public import camera : Camera;
 public import chunk : Tiles, Chunk, ChunkData;
 public import compute : Compute;

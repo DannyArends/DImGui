@@ -2,12 +2,19 @@
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
-/*
+
 import engine;
 
 import world : noTile;
 import matrix : translateScale;
 import noise : noiseHTT;
+
+class BushMesh : Icosahedron {
+  this() {
+    super();
+    initInstanced(() => "BushMesh");
+  }
+}
 
 struct Bush {
   int[3] rootTile;
@@ -68,4 +75,3 @@ uint gatherBush(ref App app, int[3] tile) {
   }
   return 0;
 }
-*/

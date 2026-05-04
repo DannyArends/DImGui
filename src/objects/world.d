@@ -5,6 +5,7 @@
 
 import engine;
 
+import bush : addBushInstances;
 import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
@@ -152,6 +153,9 @@ struct World {
   CanopyMesh canopy;                                        /// Shared CanopyMesh
   Tree[][int[3]] trees;                                     /// Trees per chunk coord
   Tree[][int[3]] pendingTrees;                              /// Trees generated async
+  BushMesh bush;                                            /// Shared BushMesh
+  Bush[][int[3]] bushes;                                    /// Bushes per chunk coord
+  Bush[][int[3]] pendingBushes;                             /// Bushes generated async
   Blocks blocks;                                            /// Blocks
   Inventory inventory;                                      /// Inventory
   GhostCube buildingGhosts;                                 /// Building Ghosts
@@ -207,10 +211,13 @@ void loadWorld(ref App app) {
 
   app.world.trunk = new TrunkMesh();
   app.world.canopy = new CanopyMesh();
+  app.world.bush = new BushMesh();
   app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight], true);
   app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
   app.objects ~= app.world.trunk;
   app.objects ~= app.world.canopy;
+  app.objects[($-1)].computeTangents();
+  app.objects ~= app.world.bush;
   app.objects[($-1)].computeTangents();
   app.objects ~= app.world.buildingGhosts;
   app.objects ~= app.world.inventory.ghost;
@@ -302,6 +309,14 @@ void updateWorld(ref App app, float[3] lookat) {
     if(!app.world.chunks[coord].tiles.inFrustum) continue;
     if(coord !in app.world.trees) { app.world.trees[coord] = app.addTreeInstances(app.world.pendingTrees[coord]); }
     app.world.pendingTrees.remove(coord);
+  }
+
+  foreach(coord; app.world.pendingBushes.keys.dup) {
+    if(coord !in app.world.chunks) continue;
+    if(!app.world.chunks[coord].tiles.isBuffered) continue;
+    if(!app.world.chunks[coord].tiles.inFrustum) continue;
+    if(coord !in app.world.bushes) { app.world.bushes[coord] = app.addBushInstances(app.world.pendingBushes[coord]); }
+    app.world.pendingBushes.remove(coord);
   }
 
   // Evict chunks outside render distance
