@@ -8,6 +8,7 @@ import engine;
 import world : noTile;
 import matrix : translateScale;
 import noise : noiseHTT;
+import intersection : intersects;
 
 class BushMesh : Icosahedron {
   this() {
@@ -74,4 +75,21 @@ uint gatherBush(ref App app, int[3] tile) {
     return 2 + (b.hash % 3);   // 2-4 berries per bush
   }
   return 0;
+}
+
+bool getBestBush(ref App app, float[3][2] ray, Intersection[] hits, out int[3] rootTile) {
+  Intersection best;
+  foreach(ref hit; hits) {
+    auto obj = app.objects[hit.idx[0]];
+    if(obj.geometry() != "BushMesh") continue;
+    foreach(ref bushes; app.world.bushes.values) foreach(ref b; bushes) {
+      if(hit.idx[1] != b.bushIdx) continue;
+      auto wp = app.world.tileToWorld(b.rootTile);
+      float[3] bmin = [wp[0] - 1.0f, wp[1], wp[2] - 1.0f];
+      float[3] bmax = [wp[0] + 1.0f, wp[1] + 1.5f, wp[2] + 1.0f];
+      auto i = ray.intersects(bmin, bmax, hit.idx[0], hit.idx[1]);
+      if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = b.rootTile; }
+    }
+  }
+  return best.intersects;
 }
