@@ -24,9 +24,7 @@ void saveVegetation(T)(ref App app, ref T[][int[3]] objects, ref T[][int[3]] pen
   }
   pending.clear();
   T[] all;
-  foreach(coord, items; objects) {
-    all ~= items.length == 0 ? [makeTombstone!T(coord)] : items;
-  }
+  foreach(coord, items; objects) { all ~= items.length == 0 ? [makeTombstone!T(coord)] : items; }
   if(all.length == 0) return;
   writeWorldData(path, all, cast(uint)all.length);
 }
@@ -58,7 +56,7 @@ bool getBestVegetation(T)(ref App app, float[3][2] ray, Intersection[] hits, T[]
     foreach(ref chunk; objects.values) foreach(ref t; chunk) {
       if(!t.matchIndex(hit.idx[1])) continue;
       auto wp = app.world.tileToWorld(t.rootTile);
-      float[3] bmin = [wp[0] - 1.0f, wp[1],              wp[2] - 1.0f];
+      float[3] bmin = [wp[0] - 1.0f, wp[1], wp[2] - 1.0f];
       float[3] bmax = [wp[0] + 1.0f, wp[1] + t.bboxHeight + 1.5f, wp[2] + 1.0f];
       auto i = ray.intersects(bmin, bmax, hit.idx[0], hit.idx[1]);
       if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = t.rootTile; }
