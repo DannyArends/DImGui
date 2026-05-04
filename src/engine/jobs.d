@@ -63,11 +63,7 @@ void completeSubJob(ref Dwarf d) {
 
 /** Check if object T is adjacent to targetTile.
  * Requires T to have: tile */
-bool atDestination(T)(ref App app, ref T obj, int[3] targetTile) {
-  auto dx = abs(obj.tile[0] - targetTile[0]);
-  auto dz = abs(obj.tile[2] - targetTile[2]);
-  return dx + dz == 1 && obj.tile[1] == targetTile[1];
-}
+bool atDestination(T)(ref App app, ref T obj, int[3] targetTile) { return manhattan(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]; }
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
