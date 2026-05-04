@@ -78,6 +78,7 @@ Tree[] addTreeInstances(ref App app, Tree[] trees) {
 
     t.trunkStart = app.world.trunk.instances.length;
     for(uint h = 0; h < t.height; h++) {
+      app.world.data.tilePenalties[[t.rootTile[0], t.rootTile[1] + cast(int)h, t.rootTile[2]]] = 20.0f;
       float s = baseRadius - h * 0.015f;
       if(s < 0.05f) s = 0.05f;
       app.world.trunk.instances ~= DrawInstance(ResourceType.Wood, translateScale([px, py + h * th, pz], [s, th, s]));
