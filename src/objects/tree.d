@@ -8,10 +8,8 @@ import engine;
 import block : spawnBlock, unsettleBlocks;
 import serialization : readWorldData, writeWorldData;
 import intersection : intersects;
-import tileatlas : TileType;
 import inventory : deriveInventory;
-import matrix : translateScale, translate, multiply, scale;
-import world : noTile, WORLD_MAGIC;
+import matrix : translateScale, scale;
 
 /** Shared instanced cylinder mesh for all tree trunks */
 class TrunkMesh : Cylinder {
