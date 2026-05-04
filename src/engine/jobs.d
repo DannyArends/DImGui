@@ -10,7 +10,7 @@ import pathfinding : pathfindTo;
 import inventory : deriveInventory;
 import tree : fellTree;
 import ghost : syncBuildGhosts;
-import vector : manhattan;
+import vector : manhattan, manhattan2D;
 import world : noTile, setTile, tileAbove;
 
 enum JobState { Pending, Satisfied, Unavailable }
@@ -63,7 +63,7 @@ void completeSubJob(ref Dwarf d) {
 
 /** Check if object T is adjacent to targetTile.
  * Requires T to have: tile */
-bool atDestination(T)(ref App app, ref T obj, int[3] targetTile) { return manhattan(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]; }
+bool atDestination(T)(ref App app, ref T obj, int[3] targetTile) { return manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]; }
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
@@ -72,7 +72,7 @@ int[3] findGoalTile(T)(ref App app, ref T obj) {
   float bestDist = float.max;
   foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
     if(!app.world.isStandable(n)) continue;
-    float dist = abs(n[0]-obj.tile[0]) + abs(n[2]-obj.tile[2]);
+    float dist = manhattan2D(n, obj.tile);
     if(dist < bestDist) { bestDist = dist; goalTile = n; }
   }
   return goalTile;
