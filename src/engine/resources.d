@@ -15,34 +15,36 @@ struct ResourceT {
   bool buildable   = false;
   ubyte maxStack   = 1;
   float cost       = 0.0f;
+  string meshName  = "Blocks";
+  float dropScale  = 1.0f;
 }
 
 enum ResourceType : ubyte {
-  @ResourceT("None",             false, false, 0, 0.0f) None,
-  @ResourceT("Lava_01",          false, false, 0, 0.0f) Lava,
-  @ResourceT("Water_01",         false, false, 0, 0.0f) Water,
-  @ResourceT("Sand_01",          true,  true,  1, 2.0f) Sand01,
-  @ResourceT("Sand_02",          true,  true,  1, 2.0f) Sand02,
-  @ResourceT("Sand_03",          true,  true,  1, 2.5f) Sand03,
-  @ResourceT("Sand_05",          true,  true,  1, 3.5f) Sand05,
-  @ResourceT("Gravel_01",        true,  true,  1, 1.5f) Gravel,
-  @ResourceT("Moss_01",          true,  true,  1, 1.0f) Moss01,
-  @ResourceT("Ground_08",        true,  true,  1, 1.0f) Ground08,
-  @ResourceT("Grass_01",         true,  true,  1, 1.0f) Grass01,
-  @ResourceT("Grass_02",         true,  true,  1, 1.0f) Grass02,
-  @ResourceT("Grass_03",         true,  true,  1, 1.0f) Grass03,
-  @ResourceT("Grass_04",         true,  true,  1, 1.0f) Grass04,
-  @ResourceT("Forest_Ground_01", true,  true,  1, 2.0f) Forest01,
-  @ResourceT("Jungle_01",        true,  true,  1, 2.9f) Forest02,
-  @ResourceT("Stone_01",         true,  true,  1, 3.0f) Stone01,
-  @ResourceT("Stone_02",         true,  true,  1, 2.0f) Stone02,
-  @ResourceT("Stone_03",         true,  true,  1, 2.0f) Stone03,
-  @ResourceT("Stone_05",         true,  true,  1, 2.0f) Stone05,
-  @ResourceT("Ice_01",           true,  false, 1, 4.0f) Ice01,
-  @ResourceT("Ice_03",           true,  false, 1, 4.5f) Snow,
-  @ResourceT("Wood_03",          true,  true,  1, 1.0f) Wood,
-  @ResourceT("Hedge_01",         false, false, 0, 0.0f) Leaves,
-  @ResourceT("Berry",            false, false, 16, 0.0f) Berry,
+  @ResourceT("None",             false, false, 0,  0.0f, "Blocks",  1.0f)  None,
+  @ResourceT("Lava_01",          false, false, 0,  0.0f, "Blocks",  1.0f)  Lava,
+  @ResourceT("Water_01",         false, false, 0,  0.0f, "Blocks",  1.0f)  Water,
+  @ResourceT("Sand_01",          true,  true,  1,  2.0f, "Blocks",  1.0f)  Sand01,
+  @ResourceT("Sand_02",          true,  true,  1,  2.0f, "Blocks",  1.0f)  Sand02,
+  @ResourceT("Sand_03",          true,  true,  1,  2.5f, "Blocks",  1.0f)  Sand03,
+  @ResourceT("Sand_05",          true,  true,  1,  3.5f, "Blocks",  1.0f)  Sand05,
+  @ResourceT("Gravel_01",        true,  true,  1,  1.5f, "Blocks",  1.0f)  Gravel,
+  @ResourceT("Moss_01",          true,  true,  1,  1.0f, "Blocks",  1.0f)  Moss01,
+  @ResourceT("Ground_08",        true,  true,  1,  1.0f, "Blocks",  1.0f)  Ground08,
+  @ResourceT("Grass_01",         true,  true,  1,  1.0f, "Blocks",  1.0f)  Grass01,
+  @ResourceT("Grass_02",         true,  true,  1,  1.0f, "Blocks",  1.0f)  Grass02,
+  @ResourceT("Grass_03",         true,  true,  1,  1.0f, "Blocks",  1.0f)  Grass03,
+  @ResourceT("Grass_04",         true,  true,  1,  1.0f, "Blocks",  1.0f)  Grass04,
+  @ResourceT("Forest_Ground_01", true,  true,  1,  2.0f, "Blocks",  1.0f)  Forest01,
+  @ResourceT("Jungle_01",        true,  true,  1,  2.9f, "Blocks",  1.0f)  Forest02,
+  @ResourceT("Stone_01",         true,  true,  1,  3.0f, "Blocks",  1.0f)  Stone01,
+  @ResourceT("Stone_02",         true,  true,  1,  2.0f, "Blocks",  1.0f)  Stone02,
+  @ResourceT("Stone_03",         true,  true,  1,  2.0f, "Blocks",  1.0f)  Stone03,
+  @ResourceT("Stone_05",         true,  true,  1,  2.0f, "Blocks",  1.0f)  Stone05,
+  @ResourceT("Ice_01",           true,  true,  1,  4.0f, "Blocks",  1.0f)  Ice01,
+  @ResourceT("Ice_03",           true,  true,  1,  4.5f, "Blocks",  1.0f)  Snow,
+  @ResourceT("Wood_03",          true,  true,  1,  1.0f, "Blocks",  1.0f)  Wood,
+  @ResourceT("Hedge_01",         false, false, 0,  0.0f, "Blocks",  1.0f)  Leaves,
+  @ResourceT("Berry",            false, false, 16, 0.0f, "Berries", 0.15f) Berry
 }
 
 /// Retrieve the ResourceT metadata for a given ResourceType

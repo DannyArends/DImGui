@@ -157,8 +157,7 @@ struct World {
   BushMesh bush;                                            /// Shared BushMesh
   Bush[][int[3]] bushes;                                    /// Bushes per chunk coord
   Bush[][int[3]] pendingBushes;                             /// Bushes generated async
-  Blocks blocks;                                            /// Blocks
-  Berries berries;
+  Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
   GhostCube buildingGhosts;                                 /// Building Ghosts
   Dwarves dwarves;                                          /// Dwarves
