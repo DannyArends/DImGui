@@ -36,7 +36,12 @@ void showDwarfContent(ref App app, uint font = 0) {
     else if(d.state == DwarfState.Wandering) { status = "Wandering"; }
     else if(d.state == DwarfState.WaitingForPath) { status = d.jobStack.length > 0 ? format("Pathing -> %s", d.jobStack[0].name) : "Pathing"; }
     else if(d.state == DwarfState.Moving) { status = d.jobStack.length > 0 ? format("Walking -> %s", d.jobStack[0].name) : "Walking"; walking++; }
-    else if(d.state == DwarfState.Working) { status = d.jobStack.length > 0 ? d.jobStack[0].name : "Working"; working++; }
+    else if(d.state == DwarfState.Working) {
+      if(d.jobStack.length > 0) {
+        status = format("%s%s", d.jobStack[0].name, d.jobStack[0].state);
+      } else { status = "Working"; }
+      working++;
+    }
     else if(d.state == DwarfState.Blocked) { status = "Blocked"; }
     float[4] col = app.colors[d.colorID];
     igPushStyleColor_Vec4(ImGuiCol_Text, ImVec4(col[0], col[1], col[2], col[3]));

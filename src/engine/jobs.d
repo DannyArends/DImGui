@@ -12,6 +12,8 @@ import tree : fellTree;
 import ghost : syncBuildGhosts;
 import world : noTile, setTile, tileAbove;
 
+enum JobState { Pending, Satisfied, Unavailable }
+
 struct Job {
   string name;
   int[3] targetTile;
@@ -19,6 +21,8 @@ struct Job {
   Job[] prereqs;
   uint[] blockIDs;
   uint[] failedBy;
+
+  JobState state = JobState.Pending;
 
   void function(ref App app, ref Dwarf d, ref Job j) onClaim;
   void function(ref App app, ref Dwarf d) onArrive;
@@ -57,7 +61,7 @@ void completeSubJob(ref Dwarf d) {
 }
 
 void failSubJob(ref App app, ref Dwarf d) {
-  if(app.verbose) SDL_Log(toStringz(format("[Job] %s FAILED %s (tileType=%s)", d.name, d.jobStack[0].name, d.jobStack[0].tileType)));
+  SDL_Log(toStringz(format("[Job] %s FAILED %s (tileType=%s)", d.name, d.jobStack[0].name, d.jobStack[0].tileType)));
   d.failAndRequeueParent();
 }
 
@@ -72,12 +76,12 @@ TileType blockType(ref App app, uint id) { foreach(ref b; app.world.blocks.block
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref App app, ref Dwarf d, ref Job j) {
-  if(d.carrying.any!(id => app.blockType(id) == j.tileType)) { j.targetTile = noTile; return; }
+  if(d.carrying.any!(id => app.blockType(id) == j.tileType)) { j.state = JobState.Satisfied; return; }
   auto id = app.findFreeBlock(d.tile, j.tileType);
-  if(id == noBlock) { j.targetTile = noTile; return; }
+  if(id == noBlock) { j.state = JobState.Unavailable; return; }
   j.blockIDs = [id];
   foreach(ref b; app.world.blocks.blocks) { if(b.id == id) { j.targetTile = b.tile; return; } }
-  j.targetTile = noTile;
+  j.state = JobState.Unavailable;
 }
 
 /** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
@@ -85,7 +89,7 @@ void claimNeighbour(ref App app, ref Job j) {
   foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
     if(app.world.isStandable(n)) { j.targetTile = n; return; }
   }
-  j.targetTile = noTile;
+  j.state = JobState.Satisfied;
 }
 
 /** Mining Job */
@@ -123,7 +127,10 @@ Job pickupJob(int[3] targetTile, TileType tileType) {
   return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref App app, ref Dwarf d) { app.doPickup(d); },
-    onFail: (ref App app, ref Dwarf d) { app.failSubJob(d); }
+    onFail: (ref App app, ref Dwarf d) { 
+      SDL_Log(toStringz(format("[pickupJob] %s FAILED %s", d.name, d.jobStack[0])));
+      app.failSubJob(d);
+    }
   );
 }
 
@@ -144,7 +151,9 @@ Job holdItemJob(TileType tileType) {
       if(d.carrying.any!(id => app.blockType(id) == d.jobStack[0].tileType)) { d.completeSubJob(); return; }
       app.doPickup(d);
     },
-    onFail: (ref App app, ref Dwarf d) { app.failSubJob(d); }
+    onFail: (ref App app, ref Dwarf d) { 
+      SDL_Log(toStringz(format("[holdItemJob] %s FAILED %s", d.name, d.jobStack[0])));
+      app.failSubJob(d); }
   );
 }
 /** Move to a free neighbouring tile and drops a carried block */
@@ -155,7 +164,10 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
       foreach(slot, id; d.inventory) { if(id == d.jobStack[0].blockIDs[0]) { d.drop(app, slot); break; } }
       d.completeSubJob();
     },
-    onFail: (ref App app, ref Dwarf d) { d.completeSubJob(); }
+    onFail: (ref App app, ref Dwarf d) {
+      SDL_Log(toStringz(format("[dropBlockJob] %s FAILED %s", d.name, d.jobStack[0])));
+      d.completeSubJob();
+    }
   );
 }
 
@@ -166,7 +178,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
       if(app.world.blocks !is null) {
         foreach(ref b; app.world.blocks.blocks) { if(b.tile == j.targetTile) { j.blockIDs = [b.id]; j.tileType = b.type; return; } }
       }
-      j.targetTile = noTile;
+      j.state = JobState.Satisfied;
     },
     onArrive: (ref App app, ref Dwarf d) {
       if(d.carrying.length >= d.inventory.length) {
@@ -200,9 +212,7 @@ Job buildingJob(int[3] targetTile, TileType tileType) {
       app.deriveInventory();
     },
     onFail: (ref App app, ref Dwarf d) {
-      if(app.verbose){
-        SDL_Log(toStringz(format("[Job] %s FAILED Building %s at %s, requeueing", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
-      }
+      SDL_Log(toStringz(format("[Job] %s FAILED Building %s at %s, requeueing", d.name, d.jobStack[0].tileType, d.jobStack[0].targetTile)));
       foreach(slot, id; d.inventory) { if(id != noBlock) d.drop(app, slot); }
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       newJob.failedBy = d.jobStack[0].failedBy ~ [d.uid];
@@ -218,9 +228,19 @@ bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   if(app.verbose) SDL_Log(toStringz(format("[Job] %s claimed '%s' targeting %s", d.name, job.name, job.targetTile)));
   d.jobStack = job.prereqs ~ [job];
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
-  d.jobStack = d.jobStack.filter!(j => j.targetTile != noTile).array;
+
+  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) {
+    SDL_Log(toStringz(format("[Job] %s dispatch UNAVAILABLE for '%s'", d.name, job.name)));
+    if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
+    jobQueue ~= job;
+    d.clearGoal();
+    return false;
+  }
+
+  d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
   if(app.verbose) SDL_Log(toStringz(format("[Job] %s stack: %s", d.name, d.jobStack.map!(j => j.name).array)));
-  if(d.jobStack.length == 0 || d.jobStack[0].targetTile == noTile) { d.clearGoal(); return false; }
+
+  if(d.jobStack.length == 0) { d.clearGoal(); return false; }
   d.targetTile = d.jobStack[0].targetTile;
   auto goal = app.findGoalTile(d);
   if(goal == noTile || !app.pathfindTo(d, goal)) {
@@ -246,7 +266,7 @@ void doPickup(ref App app, ref Dwarf d) {
     return;
   }
   // block not found
-  if(d.jobStack.length > 1 && d.jobStack[$-1].targetTile != noTile) jobQueue ~= d.jobStack[$-1];
+  if(d.jobStack.length > 1) jobQueue ~= d.jobStack[$-1];
   d.clearGoal();
 }
 
@@ -274,14 +294,14 @@ void failAndRequeue(ref Dwarf d) {
 
 /** Fail the current job and requeue parent */
 void failAndRequeueParent(ref Dwarf d) {
-  if(d.jobStack.length > 1 && d.jobStack[$-1].targetTile != noTile) jobQueue ~= d.jobStack[$-1];
+  if(d.jobStack.length > 1) jobQueue ~= d.jobStack[$-1];
   d.clearGoal();
 }
 
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref App app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
-  jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount && j.targetTile != noTile).array;
+  jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
   app.syncBuildGhosts();
 
   int bestIdx = -1;

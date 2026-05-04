@@ -121,6 +121,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
 
 /** A single dwarf being ticked */
 void tickDwarf(ref App app, ref Dwarf d) {
+  //SDL_Log(toStringz(format("[tickDwarf] %s claimed '%s'", d.name, d.state)));
   final switch(d.state) {
     case DwarfState.Idle:
       app.claimNextJob(d);
