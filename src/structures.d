@@ -6,7 +6,7 @@
 public import animation : Animation;
 public import assimp : OpenAsset;
 public import bone : Bone;
-public import block : Blocks;
+public import block : Berries, Blocks;
 public import boundingbox : Bounds, BoundingBox;
 public import buffer : GeometryBuffer, StageBuffer;
 public import bush : BushMesh, Bush;
