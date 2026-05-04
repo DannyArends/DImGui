@@ -100,7 +100,7 @@ DrawInstance toDropInstance(World world, ref Block b) {
 
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref App app) {
-  if(app.world.blocks is null) return;
+  if(app.world.dropMeshes.length == 0) return;
   foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
   foreach(ref b; app.world.blocks) {
     auto meshName = resourceData(b.type).meshName;
