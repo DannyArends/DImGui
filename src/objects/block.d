@@ -28,8 +28,8 @@ struct Block {
 }
 
 class Blocks : Cube {
-  Block[] blocks;           /// All blocks, forever
-  uint nextID = 1;          /// Next block ID
+  Block[] blocks;             /// All blocks, forever
+  uint nextID = 1;            /// Next block ID
 
   this() {
     super();
@@ -154,11 +154,11 @@ void unsettleBlocks(const World world, ref Blocks blocks, int[3] minedTile) {
 }
 
 /** Update falling blocks */
-void settleBlocks(const World world, ref Blocks blocks, ref Berries berries, float dt) {
-  if(blocks is null) return;
+void settleBlocks(ref World world, float dt) {
+  if(world.blocks is null) return;
   bool changed = false;
   size_t bi = 0, ri = 0;
-  foreach(ref b; blocks.blocks) {
+  foreach(ref b; world.blocks.blocks) {
     if(b.isFalling) {
       b.v = b.v + 0.125f * dt;
       b.y = b.y - b.v * dt;
@@ -168,11 +168,12 @@ void settleBlocks(const World world, ref Blocks blocks, ref Berries berries, flo
         b.tile = [b.tile[0], landTileY + 1, b.tile[2]];
         b.fallState = [0.0f, 0.0f];
       }
-      if(b.type == ResourceType.Berry) { berries.instances[ri].matrix[13] = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1]; }
-      else { blocks.instances[bi].matrix[13]  = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1]; }
+      float posY = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1];
+      if(b.type == ResourceType.Berry) world.berries.instances[ri].matrix[13] = posY;
+      else world.blocks.instances[bi].matrix[13] = posY;
       changed = true;
     }
     if(b.type == ResourceType.Berry) ri++; else bi++;
   }
-  if(changed) { blocks.markDirty(); berries.markDirty(); }
+  if(changed) { world.blocks.markDirty(); world.berries.markDirty(); }
 }
