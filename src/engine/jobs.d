@@ -8,9 +8,7 @@ import engine;
 import bush : gatherBush;
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
 import pathfinding : pathfindTo;
-import inventory : deriveInventory;
 import tree : fellTree;
-import ghost : syncBuildGhosts;
 import vector : manhattan, manhattan2D;
 import world : noTile, setTile, tileAbove;
 
@@ -115,7 +113,7 @@ Job miningJob(int[3] targetTile) {
         app.setTile(d.jobStack[0].targetTile);
         app.fellTree(d.jobStack[0].targetTile.tileAbove);
         if(tt != ResourceType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
-        app.deriveInventory();
+        app.world.inventoryDirty = true;
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
       });
     },
@@ -207,8 +205,8 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       app.world.blocksDirty = true;
       d.completeSubJob();
-      app.syncBuildGhosts();
-      app.deriveInventory();
+      app.world.ghostsDirty = true;
+      app.world.inventoryDirty = true;
     },
     onFail: (ref App app, ref Dwarf d) {
       foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app, slot); }
@@ -216,7 +214,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       newJob.failedBy = d.jobStack[$-1].failedBy ~ [d.uid];
       jobQueue ~= newJob;
       d.clearGoal();
-      app.syncBuildGhosts();
+      app.world.ghostsDirty = true;
     }
   );
 }
@@ -297,7 +295,7 @@ void failAndRequeueParent(ref Dwarf d) {
 void claimNextJob(ref App app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  app.syncBuildGhosts();
+  app.world.ghostsDirty = true;
 
   int bestIdx = -1;
   float bestDist = float.max;
@@ -310,7 +308,7 @@ void claimNextJob(ref App app, ref Dwarf d) {
   if(bestIdx != -1) {
     auto job = jobQueue[bestIdx];
     jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
-    if(app.dispatchJob(d, job)) { app.deriveInventory(); }
+    if(app.dispatchJob(d, job)) { app.world.inventoryDirty = true; }
     return;
   }
 

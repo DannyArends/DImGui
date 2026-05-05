@@ -164,7 +164,9 @@ struct World {
   bool blocksDirty = false;
   Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
+  bool inventoryDirty = false;
   GhostCube buildingGhosts;                                 /// Building Ghosts
+  bool ghostsDirty = false;
   Dwarves dwarves;                                          /// Dwarves
   PathMarkers pathMarkers;                                  /// Path markers
   bool pathsDirty = false;
