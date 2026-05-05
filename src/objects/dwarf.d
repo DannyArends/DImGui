@@ -57,7 +57,8 @@ struct DwarfData {
     return false;
   }
 
-  bool use(uint blockID) {
+  bool use(ref App app, uint blockID) {
+    foreach(ref b; app.world.blocks) { if(b.id == blockID) { b.reserved = false; break; } }
     foreach(ref s; inventory) { if(s.isBlock && s.blockID == blockID) { s = InventorySlot.init; return true; } }
     return false;
   }
@@ -65,7 +66,7 @@ struct DwarfData {
   bool drop(ref App app, size_t slot) {
     if(slot >= inventory.length || inventory[slot].empty) return false;
     if(inventory[slot].isBlock) {
-      foreach(ref b; app.world.blocks) { if(b.id == inventory[slot].blockID) { b.tile = tile; break; } }
+      foreach(ref b; app.world.blocks) { if(b.id == inventory[slot].blockID) { b.tile = tile; b.reserved = false; break; } }
       app.world.blocksDirty = true;
     }
     inventory[slot] = InventorySlot.init;
@@ -230,11 +231,24 @@ void handleBlocking(ref App app, ref Dwarf d) {
 void dwarfTick(ref App app, ref Geometry obj) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
-  foreach(i; iota(ds.dwarves.length).array.randomShuffle()) { app.tickDwarf(ds.dwarves[i]); }
-  if(app.world.blocksDirty) { app.syncBlockInstances(); app.world.blocksDirty = false; }
-  if(app.world.pathsDirty) { app.syncPathMarkers(); app.world.pathsDirty = false; }
-  if(app.world.ghostsDirty) { app.syncBuildGhosts(); app.world.ghostsDirty = false; }
-  if(app.world.inventoryDirty) { app.deriveInventory(); app.world.inventoryDirty = false; }
+  auto t0 = SDL_GetTicks();
+  foreach(i; iota(ds.dwarves.length).array.randomShuffle()) {
+    auto td0 = SDL_GetTicks();
+    app.tickDwarf(ds.dwarves[i]);
+    auto td1 = SDL_GetTicks();
+    if(td1 - td0 > 2) SDL_Log("slow dwarf %d state=%d job=%s ms=%d",
+      ds.dwarves[i].uid,
+      cast(int)ds.dwarves[i].state,
+      ds.dwarves[i].jobStack.length > 0 ? toStringz(ds.dwarves[i].jobStack[0].name) : "none".ptr,
+      td1 - td0);
+  }
+  auto t1 = SDL_GetTicks();
+  if(app.world.blocksDirty)   { app.syncBlockInstances(); app.world.blocksDirty = false; }
+  if(app.world.pathsDirty)    { app.syncPathMarkers();    app.world.pathsDirty = false; }
+  if(app.world.ghostsDirty)   { app.syncBuildGhosts();   app.world.ghostsDirty = false; }
+  if(app.world.inventoryDirty){ app.deriveInventory();   app.world.inventoryDirty = false; }
+  auto t2 = SDL_GetTicks();
+  if(t2 - t0 > 2) SDL_Log("dwarfTick breakdown: tickDwarves=%dms syncs=%dms", t1-t0, t2-t1);
 }
 
 void ensureDwarves(ref App app) {

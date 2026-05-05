@@ -92,7 +92,7 @@ void claimBlock(ref App app, ref Dwarf d, ref Job j) {
   auto id = app.findFreeBlock(d.tile, j.tileType);
   if(id == noBlock) { j.state = JobState.Unavailable; return; }
   j.blockIDs = [id];
-  foreach(ref b; app.world.blocks) { if(b.id == id) { j.targetTile = b.tile; return; } }
+  foreach(ref b; app.world.blocks) { if(b.id == id) { b.reserved = true; j.targetTile = b.tile; return; } }
   j.state = JobState.Unavailable;
 }
 
@@ -146,7 +146,10 @@ Job pickupJob(int[3] targetTile, ResourceType tileType) {
   return Job("Fetching", targetTile, tileType, [],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref App app, ref Dwarf d) { app.doPickup(d); },
-    onFail: (ref App app, ref Dwarf d) { d.failAndRequeueParent(); }
+    onFail: (ref App app, ref Dwarf d) {
+      foreach(id; d.jobStack[0].blockIDs){ foreach(ref b; app.world.blocks) { if(b.id == id) { b.reserved = false; break; } } }
+      d.failAndRequeue();
+    }
   );
 }
 
@@ -194,7 +197,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       // find carried block of correct type
       auto found = d.carrying.filter!(id => app.blockType(id) == d.jobStack[0].tileType);
       if(found.empty) { d.jobStack[0].onFail(app, d); return; }
-      if(!d.use(found.front)) { d.jobStack[0].onFail(app, d); return; }
+      if(!d.use(app, found.front)) { d.jobStack[0].onFail(app, d); return; }
       // mark block as InChunk — update its tile to build site
       foreach(ref b; app.world.blocks) { if(b.id == found.front) { b.tile = builtTile; break; } }
       if(app.world.dwarves !is null) {
