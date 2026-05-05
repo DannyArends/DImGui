@@ -22,8 +22,9 @@ struct Block {
   ResourceType type;                /// Block type
   int[3] tile;                      /// Current tile position
   float[2] fallState;               /// [y, v] fall physics, [0,0] if not falling
-  size_t instanceIdx = size_t.max;
-  bool reserved = false;
+  size_t instanceIdx = size_t.max;  /// Instance IDX
+  bool reserved = false;            /// Reserved for a job ?
+  bool reachable = false;           /// Has a standable neighbour ?
 
   @property @nogc bool isFalling() nothrow { return fallState[1] != 0.0f; }
   @property @nogc float y() nothrow { return fallState[0]; }
@@ -58,9 +59,9 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, ResourceType tt = ResourceType
   uint bestID = noBlock;
   float bestDist = float.max;
   foreach(ref b; app.world.blocks) {
-    if(b.reserved || b.tile == noTile || b.tile == builtTile) continue;
+    if(!b.reachable || b.reserved || b.tile == noTile || b.tile == builtTile) continue;
     if(tt != ResourceType.None && b.type != tt) continue;
-    if(!app.world.data.hasStandableNeighbour(b.tile)) continue;
+
     float dist = manhattan(b.tile, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = b.id; }
   }
@@ -112,6 +113,7 @@ void syncBlockInstances(ref App app) {
   if(app.world.dropMeshes.length == 0) return;
   foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
   foreach(ref b; app.world.blocks) {
+    if(b.tile != noTile && b.tile != builtTile){ b.reachable = app.world.data.hasStandableNeighbour(b.tile); }
     auto meshName = resourceData(b.type).meshName;
     bool hidden = b.tile == noTile || b.tile == builtTile;
     b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
