@@ -10,6 +10,7 @@ import world : noTile, tileBelow, isTileOccupied;
 import matrix : position, scale;
 import resources : resourceData;
 import inventory : deriveInventory;
+import ghost : syncBuildGhosts;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo;
 import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination, findGoalTile;
@@ -231,7 +232,9 @@ void dwarfTick(ref App app, ref Geometry obj) {
   if(ds is null) return;
   foreach(i; iota(ds.dwarves.length).array.randomShuffle()) { app.tickDwarf(ds.dwarves[i]); }
   if(app.world.blocksDirty) { app.syncBlockInstances(); app.world.blocksDirty = false; }
-  if(app.world.pathsDirty)  { app.syncPathMarkers();    app.world.pathsDirty = false; }
+  if(app.world.pathsDirty) { app.syncPathMarkers(); app.world.pathsDirty = false; }
+  if(app.world.ghostsDirty) { app.syncBuildGhosts(); app.world.ghostsDirty = false; }
+  if(app.world.inventoryDirty) { app.deriveInventory(); app.world.inventoryDirty = false; }
 }
 
 void ensureDwarves(ref App app) {
