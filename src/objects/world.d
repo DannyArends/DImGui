@@ -161,14 +161,17 @@ struct World {
   Bush[][int[3]] pendingBushes;                             /// Bushes generated async
   Block[] blocks;                                           /// Block registry
   uint blockNextID = 1;                                     /// next block ID
+  bool blocksDirty = false;
   Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
   GhostCube buildingGhosts;                                 /// Building Ghosts
   Dwarves dwarves;                                          /// Dwarves
   PathMarkers pathMarkers;                                  /// Path markers
+  bool pathsDirty = false;
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
   alias data this;
+
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
   void deallocateChunk(int[3] coord) {

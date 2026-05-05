@@ -205,7 +205,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
         }
       }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
-      app.syncBlockInstances();
+      app.world.blocksDirty = true;
       d.completeSubJob();
       app.syncBuildGhosts();
       app.deriveInventory();
@@ -256,7 +256,7 @@ void doPickup(ref App app, ref Dwarf d) {
     if(b.id != blockID) continue;
     if(!d.pickup(blockID, app.blockType(blockID))) { d.jobStack[0].onFail(app, d); return; }
     b.tile = noTile;  // mark as carried
-    app.syncBlockInstances();
+    app.world.blocksDirty = true;
     d.completeSubJob();
     return;
   }
