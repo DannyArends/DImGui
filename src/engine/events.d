@@ -63,26 +63,20 @@ void handleEvents(ref App app) {
   if(app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    t0 = SDL_GetTicks();
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
-      ulong t1 = SDL_GetTicks();
       if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]);
-      if(SDL_GetTicks()-t1 > 2) SDL_Log("SLOW onTick %s=%dms", toStringz(app.objects[i].geometry()), SDL_GetTicks()-t0);
     }
-    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW app.objects.onTick=%dms", SDL_GetTicks()-t0);
   }
 
   // Call all onFrame() handlers
   float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
 
-  t0 = SDL_GetTicks();
   app.world.settleBlocks(dt);
 
-  t0 = SDL_GetTicks();
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
-  if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW onFrame=%dms", SDL_GetTicks()-t0);
+
 }
 
 /** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 
