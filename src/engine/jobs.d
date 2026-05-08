@@ -9,6 +9,7 @@ import bush : gatherBush;
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
 import pathfinding : pathfindTo;
 import tree : fellTree;
+import timing : timed;
 import vector : manhattan, manhattan2D;
 import world : noTile, setTile, tileAbove;
 
@@ -318,7 +319,7 @@ void claimNextJob(ref App app, ref Dwarf d) {
   // No job found — wander or pick up stuff
   if(++d.idleTicks[0] > d.idleTicks[1]) {
     d.idleTicks[0] = 0;
-    if(app.hasBlocks() && d.hasInventorySpace() && uniform(0, 10) == 0) {
+    if(app.timed!hasBlocks() && d.hasInventorySpace() && uniform(0, 2) == 0) {
       app.dispatchJob(d, pickupJob(noTile, ResourceType.None));
     } else {
       int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];

@@ -15,6 +15,7 @@ import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo;
 import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination, findGoalTile;
 import rnjesus : randomizeName;
+import timing : timed;
 
 uint nextDwarfUID = 1;
 
@@ -182,9 +183,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
 /** A single dwarf being ticked */
 void tickDwarf(ref App app, ref Dwarf d) {
   final switch(d.state) {
-    case DwarfState.Idle:
-      app.claimNextJob(d);
-      break;
+    case DwarfState.Idle: app.claimNextJob(d); break;
     case DwarfState.WaitingForPath: break;
     case DwarfState.Moving:
     case DwarfState.Wandering:
@@ -231,24 +230,11 @@ void handleBlocking(ref App app, ref Dwarf d) {
 void dwarfTick(ref App app, ref Geometry obj) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
-  auto t0 = SDL_GetTicks();
-  foreach(i; iota(ds.dwarves.length).array.randomShuffle()) {
-    auto td0 = SDL_GetTicks();
-    app.tickDwarf(ds.dwarves[i]);
-    auto td1 = SDL_GetTicks();
-    if(td1 - td0 > 2) SDL_Log("slow dwarf %d state=%d job=%s ms=%d",
-      ds.dwarves[i].uid,
-      cast(int)ds.dwarves[i].state,
-      ds.dwarves[i].jobStack.length > 0 ? toStringz(ds.dwarves[i].jobStack[0].name) : "none".ptr,
-      td1 - td0);
-  }
-  auto t1 = SDL_GetTicks();
-  if(app.world.blocksDirty)   { app.syncBlockInstances(); app.world.blocksDirty = false; }
-  if(app.world.pathsDirty)    { app.syncPathMarkers();    app.world.pathsDirty = false; }
-  if(app.world.ghostsDirty)   { app.syncBuildGhosts();   app.world.ghostsDirty = false; }
-  if(app.world.inventoryDirty){ app.deriveInventory();   app.world.inventoryDirty = false; }
-  auto t2 = SDL_GetTicks();
-  if(t2 - t0 > 2) SDL_Log("dwarfTick breakdown: tickDwarves=%dms syncs=%dms", t1-t0, t2-t1);
+  foreach(i; iota(ds.dwarves.length).array.randomShuffle()) { app.tickDwarf(ds.dwarves[i]); }
+  if(app.world.blocksDirty) { app.timed!syncBlockInstances(); app.world.blocksDirty = false; }
+  if(app.world.pathsDirty) { app.timed!syncPathMarkers(); app.world.pathsDirty = false; }
+  if(app.world.ghostsDirty) { app.timed!syncBuildGhosts(); app.world.ghostsDirty = false; }
+  if(app.world.inventoryDirty) { app.timed!deriveInventory(); app.world.inventoryDirty = false; }
 }
 
 void ensureDwarves(ref App app) {
