@@ -6,7 +6,7 @@
 import engine;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
-import feature : interactFeature, interactFeaturesAt;
+import feature : findFeatureAt, interactFeature, interactFeaturesAt;
 import pathfinding : pathfindTo;
 import timing : timed;
 import vector : manhattan, manhattan2D;
@@ -124,14 +124,17 @@ Job miningJob(int[3] targetTile) {
 /** Interact with features Job (gathering / woodcutting) */
 Job interactFeatureJob(int[3] targetTile) {
   return Job("InteractFeature", targetTile, ResourceType.None, [],
-    onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
-    onArrive: (ref App app, ref Dwarf d) {
-      foreach(ref ft; features) {
-        app.progressJob(d, ft.interaction == "Fell" ? 0.25f : 0.5f, () {
-          app.interactFeature(d.jobStack[0].targetTile, ft, app.world.features[ft.name]);
-        });
-      }
-    },
+onArrive: (ref App app, ref Dwarf d) {
+  auto ftName = app.findFeatureAt(d.jobStack[0].targetTile);
+  if(ftName == "") { d.jobStack[0].onFail(app, d); return; }
+  foreach(ref ft; features) {
+    if(ft.name != ftName) continue;
+    app.progressJob(d, ft.interaction == "Fell" ? 0.25f : 0.5f, () {
+      app.interactFeature(d.jobStack[0].targetTile, ft, app.world.features[ft.name]);
+    });
+    return;
+  }
+},
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
   );
 }
