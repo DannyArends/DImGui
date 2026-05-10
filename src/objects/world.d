@@ -7,24 +7,16 @@ import engine;
 
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
-import noise : noiseHTT;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import pathfinding : invalidatePaths, repathTo;
 import block : loadBlocks, saveBlocks;
+import tile : tileBelow, getTile, isStandable, isPassable;
 import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
 import vegetation : saveVegetation, loadVegetation;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
-
-struct TileDiff {
-  int[3] coord;
-  uint idx;
-  uint type;
-}
-
-enum int[3] noTile = [int.min, 0, 0];
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
@@ -37,7 +29,6 @@ struct WorldData {
   float yOffset      = -20.0f;        /// Global world Y-offset
   TileDiff[] diffs;
   float[int[3]] tilePenalties;
-  //int[3][] ghostTiles;
 
   /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
@@ -60,20 +51,7 @@ struct WorldData {
     ];
   }
 
-  /** Determine the tile type at a world coordinate from noise, no chunk data required */
-  @nogc pure ResourceType getTile(const int[3] wc) const nothrow {
-    auto ht = noiseHTT(wc.x, wc.z, seed);
-    int surface = cast(int)(pow(ht[0], 1.5f) * (chunkHeight - 1));
-    if (wc.y > surface) return ResourceType.None;
-    if (wc.y == 0) return ResourceType.Lava;
-    if (wc.y < surface) return ResourceType.Stone01;
-    return heightToResource(ht[0], ht[1]);
-  }
-
-  /** Convert a local chunk index to a 3D local tile coordinate [x, y, z] */
-  @nogc pure int tileIndex(int[3] local) const nothrow { return(local.z * chunkHeight * chunkSize + local.y * chunkSize + local.x); }
   /** Convert a world tile coordinate to its chunk coordinate */
-  @nogc pure int[3] tileCoord(int i) const nothrow { return [i % chunkSize, (i / chunkSize) % chunkHeight, i / (chunkSize * chunkHeight)];}
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
@@ -84,63 +62,10 @@ struct WorldData {
   @property @nogc pure float blockOffset() const nothrow { return(tileHeight - blockSize) * 0.5f; }
   @property @nogc pure float radius() const nothrow { return renderDistance * chunkWorldSize * 1.41422f; }
   @property @nogc pure float height() const nothrow { return chunkHeight * tileHeight; }
-  @nogc pure int tileIdx(int[3] tile) const nothrow { return tileIndex(localCoord(tile)); }
   /** Convert a world coordinate to a world-space float position */
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
   @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
-
-  @nogc pure ResourceType getTileAt(int[3] tile) const nothrow {
-    auto coord = chunkCoord(tile);
-    auto idx = tileIdx(tile);
-    ResourceType result = getTile(tile);
-    foreach(d; diffs) { if(d.coord == coord && d.idx == idx) result = cast(ResourceType)d.type; }
-    return result;
-  }
-
-  @nogc pure int surfaceAt(int x, int y, int z) const nothrow { while(y > 0 && getTileAt([x, y, z]) == ResourceType.None){ y--; } return y; }
-
-  /** Compute world-space position from tile coords */
-  @nogc pure float[3] tileToWorld(int[3] tile, float yOff = 0.0f) const nothrow {
-    return [tile.x * tileSize, tile.y * tileHeight + yOffset + yOff, tile.z * tileSize];
-  }
-  @nogc pure int[3] worldToTile(float[3] pos, float yOff = 0.0f) const nothrow {
-    return [cast(int)(pos[0] / tileSize), cast(int)((pos[1] - yOffset - yOff) / tileHeight), cast(int)(pos[2] / tileSize)];
-  }
-
-  @nogc pure bool isPassable(int[3] wc) const nothrow {
-    if(wc[1] <= 0 || wc[1] >= chunkHeight){ return(false); }
-    return getTileAt(wc) == ResourceType.None;
-  }
-
-  @nogc pure bool isStandable(int[3] tile) const nothrow {
-    return isPassable(tile) && getTileAt(tileBelow(tile)) != ResourceType.None && resourceData(getTileAt(tileBelow(tile))).traversable;
-  }
-
-  @nogc pure bool hasStandableNeighbour(int[3] tile) const nothrow {
-    auto n = tileNeighbours(tile);
-    foreach(i; [0,1,4,5]) { if(isStandable(n[i])) return true; }
-    return false;
-  }
-
-  pure PathNode[] getSuccessors(PathNode parent) const {
-    PathNode[] successors;
-    auto pt = worldToTile(parent.position);
-    foreach(dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
-      int nx = pt[0] + dir[0], nz = pt[2] + dir[1];
-      foreach(dy; [-1, 0, 1]) {
-        int ny = (pt[1] - 1) + dy;
-        auto tt = getTileAt([nx, ny, nz]);
-        int[3] standTile = [nx, ny+1, nz];
-        if(tt != ResourceType.None && resourceData(tt).traversable && isPassable(standTile)) {
-          float modifier = tilePenalties.get(standTile, 0.0f);
-          successors ~= PathNode(position: [nx*tileSize, (ny+1)*tileHeight+yOffset, nz*tileSize], cost: resourceData(tt).cost + modifier);
-          break;
-        }
-      }
-    }
-    return successors;
-  }
 }
 
 /** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
@@ -187,18 +112,7 @@ struct World {
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
     clear();
   }
-
-  bool canMoveTo(float[3] pos) {
-    foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
-      float[3] p = [pos[0] + dx * tileSize * 0.5f, pos[1] + dy * tileHeight * 0.5f, pos[2] + dz * tileSize * 0.5f];
-      if (!isPassable(worldToTile(p))) return(false);
-    }
-    return(true);
-  }
 }
-
-@nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
-@nogc pure int[3] tileAbove(int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
 
 void loadWorld(ref App app) {
   ensureWorldDir();
@@ -235,35 +149,6 @@ void saveWorld(ref App app) {
     app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
   }
   app.saveDwarfs();
-}
-
-/** Is the Tile occupied ?  */
-bool isTileOccupied(ref App app, int[3] tile) {
-  if(app.world.dwarves !is null) { foreach(ref d; app.world.dwarves) { if(d.tile == tile) return true; } }
-  return false;
-}
-
-/** Set a tile type in a chunk and mark the chunk dirty for rebuild */
-void setTile(ref App app, int[3] tile, ResourceType newType = ResourceType.None) {
-  if(app.world.getTile(tile) == ResourceType.Lava) return;  // cannot remove lava
-  if(app.verbose) SDL_Log(toStringz(format("setTile: %s", tile)));
-
-  int[3] coord = app.world.chunkCoord(tile);
-  if(coord !in app.world.chunks) return;
-  if (coord[1] < 0 || coord[1] >= app.world.chunkHeight) return;
-  int idx = app.world.tileIdx(tile);
-
-  app.world.chunks[coord].tileTypes[idx] = newType;
-  app.world.data.diffs ~= TileDiff(coord, idx, newType);
-  app.world.chunks[coord].dirty = true;
-
-  // Mark neighbouring chunks dirty if tile is on a chunk boundary
-  foreach (n; app.world.tileNeighbours(tile)) {
-    int[3] nc = app.world.chunkCoord(n);
-    if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
-  }
-  app.world.pendingPaths = [];
-  app.invalidatePaths(tile);
 }
 
 /** Dispatch a chunk build job to the next available worker thread */

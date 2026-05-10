@@ -7,6 +7,7 @@ import engine;
 
 import vector : manhattan2D;
 import search : performSearch, atGoal, stepThroughPath;
+import tile : isStandable, isPassable, tileToWorld, worldToTile;
 
 struct PathRequest {
   uint dwarfUID;
@@ -94,4 +95,12 @@ int[3] findGoalTile(T)(ref App app, ref T obj) {
     if(score < bestScore) { bestScore = score; goalTile = n; }
   }
   return goalTile;
+}
+
+bool canMoveTo(T)(T wd, float[3] pos) {
+  foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
+    float[3] p = [pos[0] + dx * wd.tileSize * 0.5f, pos[1] + dy * wd.tileHeight * 0.5f, pos[2] + dz * wd.tileSize * 0.5f];
+    if (!wd.isPassable(wd.worldToTile(p))) return(false);
+  }
+  return(true);
 }
