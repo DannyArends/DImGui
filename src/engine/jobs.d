@@ -6,7 +6,7 @@
 import engine;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
-import feature : interactFeature, interactFeaturesAt;
+import feature : interactFeaturesAt;
 import pathfinding : pathfindTo;
 import timing : timed;
 import vector : manhattan, manhattan2D;
