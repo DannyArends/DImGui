@@ -11,6 +11,7 @@ import matrix : translateScale;
 import mouse : getHits;
 import textures : idx;
 import vector : expandBounds;
+import feature : Feature;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {

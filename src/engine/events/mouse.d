@@ -12,8 +12,9 @@ import geometry : setColor;
 import ghost : updateGhostTile, syncBuildGhosts;
 import intersection : intersects;
 import inventory : placeTile, computeDragPreview;
-import jobs : tryAssign, jobQueue, miningJob;
+import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import line : createLine;
+import vegetation : getBestVegetation;
 import world : noTile;
 
 /** Handle mouse events */

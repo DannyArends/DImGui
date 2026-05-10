@@ -13,7 +13,7 @@ import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : loadBlocks, saveBlocks;
 import dwarf : saveDwarfs, repathTo;
-import raws : features;
+import feature : Feature;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
