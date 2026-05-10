@@ -11,7 +11,7 @@ import geometry : setColor;
 import ghost : updateGhostTile;
 import intersection : intersects;
 import line : createLine;
-import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress;
+import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, updateHoverHighlight;
 
 /** Handle mouse events */
 void handleMouseEvents(ref App app, SDL_Event e) {
@@ -40,6 +40,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel);
     app.updateGhostTile(ray);
     if(app.camera.isdrag[0]) app.handlePrimaryDrag(e.motion.x, e.motion.y);
+    else app.updateHoverHighlight(e.motion.x, e.motion.y);
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y);
 }

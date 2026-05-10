@@ -9,9 +9,8 @@ import color : colorIndex;
 import chunk : getBestTile;
 import textures : idx;
 import vector : dot;
-import matrix : position, scale, translate;
+import matrix : translateScale;
 import jobs : jobQueue;
-import tool : syncPaintGhosts;
 import tile : tileIdx, tileToWorld;
 
 int[3] getGhostTile(ref App app, float[3][2] ray) {
@@ -55,28 +54,59 @@ void updateGhostTile(ref App app, float[3][2] ray) {
   }
 }
 
+Matrix mineHighlight(float[3] wp, float ts, float th) {
+  return translateScale([wp[0], wp[1], wp[2]], [ts * 1.05f, th * 1.05f, ts * 1.05f]);
+}
+
+Matrix buildHighlight(float[3] wp, float ts, float th) {
+  return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]);
+}
+
+Matrix stockpileHighlight(float[3] wp, float ts, float th) {
+  return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts * 1.05f, th * 0.1f, ts * 1.05f]);
+}
+
 void syncBuildGhosts(ref App app) {
   if(app.world.buildingGhosts is null) return;
-  if(app.world.activeTool != ToolMode.Build) { app.syncPaintGhosts(); return; }
   app.world.buildingGhosts.instances = [];
-  uint committed = colorIndex(Colors.dodgerblue);
-  uint preview = colorIndex(Colors.darkslateblue);
 
   void addInstance(int[3] tile, uint color) {
+    auto wp = app.world.tileToWorld(tile);
+    float ts = app.world.tileSize, th = app.world.tileHeight;
     auto inst = DrawInstance([0, 0, color, 0]);
-    inst.matrix = inst.matrix.scale([app.world.tileSize, app.world.tileHeight, app.world.tileSize]);
-    inst.matrix = inst.matrix.translate(app.world.tileToWorld(tile));
+    final switch(app.world.activeTool) {
+      case ToolMode.Mine:      inst.matrix = mineHighlight(wp, ts, th); break;
+      case ToolMode.Stockpile: inst.matrix = stockpileHighlight(wp, ts, th); break;
+      case ToolMode.Build:     inst.matrix = buildHighlight(wp, ts, th); break;
+      case ToolMode.Select:    inst.matrix = mineHighlight(wp, ts, th); break;
+    }
     app.world.buildingGhosts.instances ~= inst;
   }
 
+  // Committed build jobs
   foreach(key; app.world.data.tilePenalties.keys) { if(app.world.data.tilePenalties[key] >= 20.0f) app.world.data.tilePenalties.remove(key); }
-  foreach(ref j; jobQueue) { if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.tilePenalties[j.targetTile] = 40.0f; } }
+  foreach(ref j; jobQueue) { 
+    if(j.name == "Building") { addInstance(j.targetTile, colorIndex(Colors.dodgerblue)); app.world.data.tilePenalties[j.targetTile] = 40.0f; } 
+  }
   if(app.world.dwarves !is null) {
-    foreach(ref d; app.world.dwarves) { foreach(ref j; d.jobStack) { 
-      if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.tilePenalties[j.targetTile] = 40.0f; }
+    foreach(ref d; app.world.dwarves) { foreach(ref j; d.jobStack) {
+      if(j.name == "Building") { addInstance(j.targetTile, colorIndex(Colors.dodgerblue)); app.world.data.tilePenalties[j.targetTile] = 40.0f; }
     } }
   }
-  foreach(tile; app.world.inventory.dragPreview) addInstance(tile, preview);
+
+  // Build drag preview
+  foreach(tile; app.world.inventory.dragPreview) addInstance(tile, colorIndex(Colors.darkslateblue));
+
+  // Paint preview (Mine / Stockpile)
+  uint paintColor;
+  final switch(app.world.activeTool) {
+    case ToolMode.Select: paintColor = colorIndex(Colors.white); break;
+    case ToolMode.Mine: paintColor = colorIndex(Colors.orangered); break;
+    case ToolMode.Build: paintColor = colorIndex(Colors.dodgerblue); break;
+    case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold); break;
+  }
+  foreach(tile; app.world.paint.preview) addInstance(tile, paintColor);
+
   app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
   app.world.buildingGhosts.markDirty();
 }
