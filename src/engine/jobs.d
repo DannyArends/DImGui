@@ -216,25 +216,14 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
 bool dispatchJob(ref App app, ref Dwarf d, Job job) {
   d.jobStack = job.prereqs ~ [job];
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
-
-  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) {
-    if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
-    jobQueue ~= job;
-    d.clearGoal();
-    return false;
-  }
+  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) { app.rejectJob(d, job); return false; }
 
   d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
   if(d.jobStack.length == 0) { d.clearGoal(); return false; }
   d.targetTile = d.jobStack[0].targetTile;
   auto goal = app.findGoalTile(d);
 
-  if(goal == noTile) {
-    if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
-    jobQueue ~= job;
-    d.clearGoal();
-    return false;
-  }
+  if(goal == noTile) { app.rejectJob(d, job); return false; }
   app.pathfindTo(d, goal);
   return true;
 }
@@ -269,20 +258,24 @@ bool tryAssign(ref App app, ref Job job) {
   return bestIdx >= 0 && app.dispatchJob(app.world.dwarves.dwarves[bestIdx], job);
 }
 
+/** Reject the job and requeue */
+bool rejectJob(ref App app, ref Dwarf d, ref Job job) {
+  if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
+  jobQueue ~= job;
+  d.clearGoal();
+  return false;
+}
+
 /** Fail the current job and requeue */
 void failAndRequeue(ref Dwarf d) {
-  auto j = d.jobStack[0];
-  if(!j.failedBy.canFind(d.uid)) j.failedBy ~= d.uid;
-  jobQueue ~= j;
+  if(!d.jobStack[0].failedBy.canFind(d.uid)) d.jobStack[0].failedBy ~= d.uid;
+  jobQueue ~= d.jobStack[0];
   d.clearGoal();
   d.progress = 0.0f;
 }
 
 /** Fail the current job and requeue parent */
-void failAndRequeueParent(ref Dwarf d) {
-  if(d.jobStack.length > 1) jobQueue ~= d.jobStack[$-1];
-  d.clearGoal();
-}
+void failAndRequeueParent(ref Dwarf d) { if(d.jobStack.length > 1) jobQueue ~= d.jobStack[$-1]; d.clearGoal(); }
 
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref App app, ref Dwarf d) {
