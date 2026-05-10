@@ -46,3 +46,26 @@ string generateColorsEnum(string raw) pure {
   result ~= "}\n";
   return result;
 }
+
+/** CTFE: generates heightToResource function */
+string generateHeightToResource(string raw) pure {
+  auto tokens = parseTokens(raw);
+  string result = "@nogc pure ResourceType heightToResource(float h, float t) nothrow {\n";
+  string lo = "", hi = "";
+  string[] results;
+  foreach(token; tokens) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    if(p[0] == "HEIGHT_RULE" && p.length == 3) {
+      if(lo != "" && results.length > 0) {
+        result ~= "  if(h < " ~ hi ~ "f) { ResourceType[" ~ to!string(results.length) ~ "] v = [";
+        foreach(i, r; results) { result ~= "ResourceType." ~ r ~ (i+1 < results.length ? ", " : ""); }
+        result ~= "]; return v[cast(uint)(t * " ~ to!string(results.length) ~ ") % " ~ to!string(results.length) ~ "]; }\n";
+      }
+      lo = p[1]; hi = p[2]; results = [];
+    } else if(p[0] == "RESULT" && p.length == 2) { results ~= p[1]; }
+  }
+  if(results.length > 0) { result ~= "  return ResourceType." ~ results[0] ~ ";\n"; } // emit last rule
+  result ~= "}\n";
+  return result;
+}

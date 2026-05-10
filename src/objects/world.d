@@ -10,14 +10,16 @@ import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
 import noise : noiseHTT;
-import resources : resourceData, heightToResource;
+import resources : resourceData;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : loadBlocks, saveBlocks;
 import dwarf : saveDwarfs, repathTo;
 import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
+import ctfeparse : generateHeightToResource;
 
+mixin(generateHeightToResource(import("data/raws/terrain.txt")));
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
