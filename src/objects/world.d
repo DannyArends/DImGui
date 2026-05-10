@@ -322,8 +322,7 @@ void updateWorld(ref App app, float[3] lookat) {
     foreach(coord; app.world.pendingFeatures[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;
       if(coord !in app.world.features[ft.name]) {
-        app.world.features[ft.name][coord] = app.world.pendingFeatures[ft.name][coord];
-        app.rebuildFeatureInstances(app.world.features[ft.name], ft, app.world.featureMeshes);
+        app.world.features[ft.name][coord] = app.addFeatureInstances(app.world.pendingFeatures[ft.name][coord], ft, app.world.featureMeshes);
       }
       app.world.pendingFeatures[ft.name].remove(coord);
     }
