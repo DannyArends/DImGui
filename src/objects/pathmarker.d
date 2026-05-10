@@ -15,17 +15,17 @@ class PathMarkers : Cylinder {
 }
 
 /** Rebuild path marker instances from all dwarf paths */
-void syncPathMarkers(ref App app) {
-  if(app.world.pathMarkers is null || app.world.dwarves is null) return;
-  app.world.pathMarkers.instances = [];
-  if(app.showPaths) {
-    foreach(ref d; app.world.dwarves) {
-      foreach(ref wp; d.path) {
+void syncPathMarkers(ref World world, bool showPaths = false) {
+  if(world.pathMarkers is null || world.dwarves is null) return;
+  world.pathMarkers.instances = [];
+  if(showPaths) {
+    foreach(ref d; world.dwarves) {
+      foreach(l; d.path) {
         DrawInstance inst = DrawInstance([0, 0, d.colorID, 0]);
-        inst = position(inst, [wp[0], wp[1] - 0.4f, wp[2]]);
-        app.world.pathMarkers.instances ~= inst;
+        inst = position(inst, [l[0], l[1] - 0.4f, l[2]]);
+        world.pathMarkers.instances ~= inst;
       }
     }
   }
-  app.world.pathMarkers.markDirty();
+  world.pathMarkers.markDirty();
 }
