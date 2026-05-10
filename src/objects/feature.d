@@ -109,16 +109,12 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
   return features;
 }
 
-void rebuildFeatureInstances(ref App app, Feature[][int[3]] features, ref immutable FeatureT ft, Geometry[string] meshes) {
-  foreach(ref part; ft.parts) {
-    if(part.mesh !in meshes) continue;
-    meshes[part.mesh].instances = [];
-  }
+void rebuildFeatureInstances(ref App app, Feature[][int[3]] featureMap, ref immutable FeatureT ft, Geometry[string] meshes) {
   foreach(key; app.world.data.tilePenalties.keys) {
     if(app.world.data.tilePenalties[key] == ft.tilePenalty)
       app.world.data.tilePenalties.remove(key);
   }
-  foreach(coord, ref chunkFeatures; features) { chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, meshes); }
+  foreach(coord, ref chunkFeatures; featureMap) { chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, meshes); }
   foreach(ref part; ft.parts) {
     if(part.mesh !in meshes) continue;
     meshes[part.mesh].markDirty();
@@ -126,7 +122,13 @@ void rebuildFeatureInstances(ref App app, Feature[][int[3]] features, ref immuta
 }
 
 void rebuildAllFeatures(ref App app) {
-  foreach(ref ft; features){ app.rebuildFeatureInstances(app.world.features[ft.name], ft, app.world.featureMeshes); }
+  foreach(ref mesh; app.world.featureMeshes.values) mesh.instances = [];
+  foreach(ref ft; features) {
+    foreach(coord, ref chunkFeatures; app.world.features[ft.name]){
+      chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.featureMeshes);
+    }
+  }
+  foreach(ref mesh; app.world.featureMeshes.values) mesh.markDirty();
 }
 
 void interactFeature(ref App app, int[3] tile, ref immutable FeatureT ft, Feature[][int[3]] featureMap) {
