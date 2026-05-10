@@ -124,6 +124,7 @@ Job miningJob(int[3] targetTile) {
 /** Interact with features Job (gathering / woodcutting) */
 Job interactFeatureJob(int[3] targetTile) {
   return Job("InteractFeature", targetTile, ResourceType.None, [],
+    onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) {
       foreach(ref ft; features) {
         app.progressJob(d, ft.interaction == "Fell" ? 0.25f : 0.5f, () {

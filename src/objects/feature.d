@@ -44,7 +44,9 @@ struct Feature {
   size_t[] instanceIdxs;  // per part — for repeated parts, trunkStart only
   uint hash;
 
-  bool matchIndex(size_t idx) const { return instanceIdxs.canFind(idx); }
+  bool matchIndex(size_t idx) const {
+    return instanceIdxs.canFind(idx) || (instanceIdxs.length > 0 && idx >= instanceIdxs[0] && idx < instanceIdxs[0] + height);
+  }
   @property float bboxHeight() const { return cast(float)height; }
 }
 
