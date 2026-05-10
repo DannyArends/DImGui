@@ -7,13 +7,6 @@ import engine;
 
 import matrix : position;
 
-class PathMarkers : Cylinder {
-  this() {
-    super(0.1f, 0.2f, 6);
-    initInstanced(() => "PathMarkers");
-  }
-}
-
 /** Rebuild path marker instances from all dwarf paths */
 void syncPathMarkers(ref World world, bool showPaths = false) {
   if(world.pathMarkers is null || world.dwarves is null) return;
