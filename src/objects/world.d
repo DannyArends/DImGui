@@ -238,7 +238,11 @@ void loadWorld(ref App app) {
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
   app.loadBlocks();
-  foreach(ref ft; features) { app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name)); }
+  foreach(ref ft; features) {
+    if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
+    if(ft.name !in app.world.features) app.world.features[ft.name] = null;
+    app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
+  }
   app.deriveInventory();
 }
 
