@@ -12,10 +12,9 @@ import geometry : setColor;
 import ghost : updateGhostTile, syncBuildGhosts;
 import intersection : intersects;
 import inventory : placeTile, computeDragPreview;
-import jobs : tryAssign, jobQueue, miningJob, woodcuttingJob;
+import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import line : createLine;
-import tree : getBestTree;
-import world : noTile;
+import vegetation : getBestVegetation;
 
 /** Handle mouse events */
 void handleMouseEvents(ref App app, SDL_Event e) {
@@ -26,7 +25,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if (e.button.button == SDL_BUTTON_LEFT) { 
       app.camera.isdrag[0] = true;
       app.camera.lastMousePos = [e.button.x, e.button.y];
-      if(app.world.inventory.ghost.tile != noTile && app.world.inventory.ghost.type != TileType.None) {
+      if(app.world.inventory.ghost.tile != noTile && app.world.inventory.ghost.type != ResourceType.None) {
         app.world.inventory.isDragging = true;
         app.world.inventory.dragPreview = [app.world.inventory.ghost.tile];
         app.syncBuildGhosts();
@@ -34,7 +33,7 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     }
     if (e.button.button == SDL_BUTTON_RIGHT) { 
       app.camera.isdrag[1] = true;
-      app.world.inventory.ghost.type = TileType.None;
+      app.world.inventory.ghost.type = ResourceType.None;
       app.camera.lastMousePos = [e.button.x, e.button.y];
     }
   }
@@ -53,10 +52,13 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         if(hits.length > 0) {
           int[3] wc;
           Job job;
-          if(app.getBestTree(ray, hits, wc)) {
-            job = woodcuttingJob(wc);
-          }else if(app.getBestTile(ray, wc)) {
-            job = miningJob(wc);
+          if(app.getBestTile(ray, wc)) { job = miningJob(wc); }
+          foreach(ref ft; features) {
+            bool matchFeature(string g) { return ft.parts.any!(p => p.mesh == g); }
+            if(app.getBestVegetation!(Feature, matchFeature)(ray, hits, app.world.features.get(ft.name, null), wc)) {
+              job = interactFeatureJob(wc);
+              break;
+            }
           }
           if(job.name !is null && !app.tryAssign(job)) jobQueue ~= job;
         }

@@ -4,7 +4,7 @@
  */
 
 import engine;
-import tileatlas : tileData;
+
 import textures : ImTextureRefFromID, idx;
 import imgui : faIcon;
 
@@ -29,12 +29,12 @@ void showInventoryContent(ref App app, uint font = 0) {
   int cols = cast(int)floor((app.gui.panelW - cellSize) / cast(float)(cellSize + 4)) - 1;
   int col = 0;
 
-  foreach(tileType; EnumMembers!TileType) {
-    //if(!tileData[tileType].traversable) continue;  // skip non-collectable tiles
-    auto texIdx = idx(app.textures, tileData[tileType].name ~ "_base");
+  foreach(tileType; EnumMembers!ResourceType) {
+    if(!resourceData(tileType).buildable) continue;
+    auto texIdx = idx(app.textures, resourceData(tileType).name ~ "_base");
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
-    int count = app.world.inventory.get(tileType, app.world.blocks);
+    int count = app.world.inventory.get(tileType, app);
 
     bool selected = app.world.inventory.ghost.type == tileType;
     if(selected) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.4f, 0.6f, 0.4f, 1.0f));
@@ -42,17 +42,28 @@ void showInventoryContent(ref App app, uint font = 0) {
     igImageButton(toStringz(format("##inv_%d", tileType)), texID,
                   ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1),
                   ImVec4(0,0,0,0), tint);
-    if(count > 0 && igIsItemClicked(0)) app.world.inventory.ghost.type = selected ? TileType.None : tileType;
+    if(count > 0 && igIsItemClicked(0)) app.world.inventory.ghost.type = selected ? ResourceType.None : tileType;
     if(selected) igPopStyleColor(1);
 
     ImVec2 pos, posMax;
     igGetItemRectMin(&pos);
     igGetItemRectMax(&posMax);
     if(count > 0) drawCenteredText(igGetWindowDrawList(), pos, posMax, toStringz(format("%d", count)));
-    if(igIsItemHovered(0)) igSetTooltip(toStringz(app.world.inventory.toString(tileType, app.world.blocks)));
+    if(igIsItemHovered(0)) igSetTooltip(toStringz(app.world.inventory.toString(tileType, app)));
     if(++col < cols) igSameLine(0, 4);
     else { col = 0; }
   }
-  igNewLine();
+  igSeparator();
+  igText("Items:");
+  foreach(tileType; EnumMembers!ResourceType) {
+    if(resourceData(tileType).maxStack <= 1) continue;
+    uint total = 0;
+    if(app.world.dwarves !is null)
+      foreach(ref d; app.world.dwarves)
+        foreach(ref s; d.inventory)
+          if(s.isStack && s.type == tileType) total += s.count;
+    if(total == 0) continue;
+    igText(toStringz(format("%s: %d", resourceData(tileType).name, total)));
+  }
 }
 
