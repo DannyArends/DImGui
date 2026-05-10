@@ -102,7 +102,7 @@ float getFeatureProgressRate(ref App app, int[3] tile) {
   return 0.25f;
 }
 
-Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable FeatureT ft, Geometry[string] meshes) {
+Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
     auto wp = app.world.tileToWorld(f.rootTile);
     float th = app.world.tileHeight;

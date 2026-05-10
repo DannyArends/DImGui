@@ -11,6 +11,7 @@ import textures : idx;
 import vector : dot;
 import matrix : position, scale, translate;
 import jobs : jobQueue;
+import tool : syncPaintGhosts;
 import tile : tileIdx, tileToWorld;
 
 int[3] getGhostTile(ref App app, float[3][2] ray) {
@@ -56,6 +57,7 @@ void updateGhostTile(ref App app, float[3][2] ray) {
 
 void syncBuildGhosts(ref App app) {
   if(app.world.buildingGhosts is null) return;
+  if(app.world.activeTool != ToolMode.Build) { app.syncPaintGhosts(); return; }
   app.world.buildingGhosts.instances = [];
   uint committed = colorIndex(Colors.dodgerblue);
   uint preview = colorIndex(Colors.darkslateblue);
