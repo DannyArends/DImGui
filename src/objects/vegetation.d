@@ -48,11 +48,11 @@ void removeVegetation(T, alias rebuildFn)(ref App app, ref T[][int[3]] objects, 
   rebuildFn(app);
 }
 
-bool getBestVegetation(T)(ref App app, float[3][2] ray, Intersection[] hits, T[][int[3]] objects, out int[3] rootTile)
+bool getBestVegetation(T, alias matchGeometry)(ref App app, float[3][2] ray, Intersection[] hits, T[][int[3]] objects, out int[3] rootTile)
   if(is(typeof(T.init.rootTile) == int[3])) {
   Intersection best;
   foreach(ref hit; hits) {
-    if(!T.matchGeometry(app.objects[hit.idx[0]].geometry())) continue;
+    if(!matchGeometry(app.objects[hit.idx[0]].geometry())) continue;
     foreach(ref chunk; objects.values) foreach(ref t; chunk) {
       if(!t.matchIndex(hit.idx[1])) continue;
       auto wp = app.world.tileToWorld(t.rootTile);

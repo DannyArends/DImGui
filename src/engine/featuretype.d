@@ -38,11 +38,6 @@ struct Feature {
   size_t[] instanceIdxs;  // per part — for repeated parts, trunkStart only
   uint hash;
 
-  static bool matchGeometry(string g) {
-    import raws : features;
-    foreach(ref ft; features) foreach(ref p; ft.parts) if(p.mesh == g) return true;
-    return false;
-  }
   bool matchIndex(size_t idx) const { return instanceIdxs.canFind(idx); }
   @property float bboxHeight() const { return cast(float)height; }
 }
