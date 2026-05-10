@@ -69,3 +69,51 @@ string generateHeightToResource(string raw) pure {
   result ~= "}\n";
   return result;
 }
+
+string generateResourceEnum(string raw) pure {
+  auto tokens = parseTokens(raw);
+  string enumResult  = "enum ResourceType : ubyte {\n";
+  string switchResult = "@nogc pure ResourceT resourceData(ResourceType rt) nothrow {\n  final switch(rt) {\n";
+  string current = "";
+  string texture = "None", mesh = "Blocks", color = "Colors.white";
+  bool traversable = false, buildable = false;
+  ubyte maxStack = 1;
+  float cost = 0.0f, scale = 1.0f;
+
+  void emitCurrent() {
+    if(current == "") return;
+    enumResult  ~= "  " ~ current ~ ",\n";
+    switchResult ~= "    case ResourceType." ~ current ~ ": " ~
+      "return ResourceT(\"" ~ texture ~ "\", " ~
+      (traversable ? "true" : "false") ~ ", " ~
+      (buildable   ? "true" : "false") ~ ", " ~
+      to!string(cast(int)maxStack) ~ ", " ~
+      to!string(cost) ~ "f, \"" ~ mesh ~ "\", " ~
+      to!string(scale) ~ "f, " ~ color ~ ");\n";
+  }
+
+  foreach(token; tokens) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    switch(p[0]) {
+      case "MATERIAL":
+        emitCurrent();
+        current = p[1]; texture = p[1]; mesh = "Blocks"; color = "Colors.white";
+        traversable = false; buildable = false; maxStack = 1; cost = 0.0f; scale = 1.0f;
+        break;
+      case "TEXTURE": texture = p[1]; break;
+      case "TRAVERSABLE": traversable = true; break;
+      case "BUILDABLE": buildable = true; break;
+      case "MESH": mesh = p[1]; break;
+      case "SCALE": scale = to!float(p[1]); break;
+      case "COST": cost = to!float(p[1]); break;
+      case "MAX_STACK": maxStack = cast(ubyte)to!int(p[1]); break;
+      case "COLOR": color = "Colors." ~ p[1]; break;
+      default: break;
+    }
+  }
+  emitCurrent();
+  enumResult  ~= "}\n";
+  switchResult ~= "  }\n}\n";
+  return enumResult ~ switchResult;
+}

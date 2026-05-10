@@ -5,10 +5,6 @@
 
 import engine;
 
-import ctfeparse : generateColorsEnum;
-
-mixin(generateColorsEnum(import("data/raws/colors.txt")));
-
 /** Color index */
 uint colorIndex(Colors c) { foreach(i, m; [EnumMembers!Colors]) { if(m == c) return(cast(uint)i); } return(0u); }
 

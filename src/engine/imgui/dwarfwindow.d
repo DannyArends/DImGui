@@ -9,7 +9,6 @@ import dwarf : spawnDwarf;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
-import resources : resourceData;
 
 void showTileIcons(ref App app, ResourceType[] tiles, float cellSize = 16.0f) {
   foreach(tt; tiles.sort.uniq) {

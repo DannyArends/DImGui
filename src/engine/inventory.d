@@ -8,7 +8,6 @@ import engine;
 import block : builtTile;
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
-import resources : resourceData, ResourceType;
 import world : noTile;
 
 struct Inventory {

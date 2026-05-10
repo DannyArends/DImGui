@@ -7,7 +7,6 @@ import engine;
 
 import color : colorIndex;
 import chunk : getBestTile;
-import resources : resourceData;
 import textures : idx;
 import vector : dot;
 import matrix : position, scale, translate;
