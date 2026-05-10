@@ -320,6 +320,7 @@ void updateWorld(ref App app, float[3] lookat) {
 
   // Load pending trees onto chunks that have been loaded
   foreach(ref ft; features) {
+    if(ft.name !in app.world.pendingFeatures) continue;
     foreach(coord; app.world.pendingFeatures[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;
       if(coord !in app.world.features[ft.name]) {

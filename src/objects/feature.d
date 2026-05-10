@@ -86,6 +86,7 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
     foreach(ref part; ft.parts) {
       if(part.mesh !in meshes) continue;
       auto mesh = meshes[part.mesh];
+      if(mesh is null) continue;
       f.instanceIdxs ~= mesh.instances.length;
       float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
       float sy = part.scaleY < 0 ? th : part.scaleY + (f.hash % 5) * part.scaleYVariance;
@@ -124,10 +125,14 @@ void rebuildFeatureInstances(ref App app, Feature[][int[3]] features, ref immuta
   }
 }
 
-void interactFeature(ref App app, int[3] tile, ref immutable FeatureT ft, Feature[][int[3]] features) {
+void rebuildAllFeatures(ref App app) {
+  foreach(ref ft; features){ app.rebuildFeatureInstances(app.world.features[ft.name], ft, app.world.featureMeshes); }
+}
+
+void interactFeature(ref App app, int[3] tile, ref immutable FeatureT ft, Feature[][int[3]] featureMap) {
   int[3] coord = app.world.chunkCoord(tile);
-  if(coord !in features) return;
-  foreach(i, ref f; features[coord]) {
+  if(coord !in featureMap) return;
+  foreach(i, ref f; featureMap[coord]) {
     if(f.rootTile != tile) continue;
     foreach(ref drop; ft.drops) {
       auto rt = drop.material.to!ResourceType;
@@ -139,23 +144,22 @@ void interactFeature(ref App app, int[3] tile, ref immutable FeatureT ft, Featur
         foreach(n; 0..count) app.spawnBlock(tile, rt);
       }
     }
-    features[coord] = features[coord][0..i] ~ features[coord][i+1..$];
+    featureMap[coord] = featureMap[coord][0..i] ~ featureMap[coord][i+1..$];
     app.world.unsettleBlocks(app.world.blocks, tile);
     app.world.inventoryDirty = true;
-    app.rebuildFeatureInstances(app.world.features[ft.name], ft, app.world.featureMeshes);
+    app.rebuildAllFeatures();
     return;
   }
 }
 
 void removeAllFeatures(ref App app, int[3] coord) {
-  import raws : features;
   bool changed = false;
   foreach(ref ft; features) {
     if(coord !in app.world.features[ft.name]) continue;
     app.world.features[ft.name].remove(coord);
     changed = true;
   }
-  if(changed) foreach(ref ft; features){ app.rebuildFeatureInstances(app.world.features[ft.name], ft, app.world.featureMeshes); }
+  if(changed) app.rebuildAllFeatures();
 }
 
 void interactFeaturesAt(ref App app, int[3] tile) {
