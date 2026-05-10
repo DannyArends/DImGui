@@ -45,7 +45,16 @@ struct Feature {
   uint hash;
 
   bool matchIndex(size_t idx) const {
-    return instanceIdxs.canFind(idx) || (instanceIdxs.length > 0 && idx >= instanceIdxs[0] && idx < instanceIdxs[0] + height);
+    import raws : features;
+    foreach(ref ft; features) {
+      foreach(pi, ref part; ft.parts) {
+        if(pi >= instanceIdxs.length) continue;
+        if(part.repeat) {
+          if(idx >= instanceIdxs[pi] && idx < instanceIdxs[pi] + height) return true;
+        } else { if(idx == instanceIdxs[pi]) return true; }
+      }
+    }
+    return false;
   }
   @property float bboxHeight() const { return cast(float)height; }
 }
@@ -75,22 +84,22 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
     float th = app.world.tileHeight;
     f.instanceIdxs = [];
     foreach(ref part; ft.parts) {
+      if(part.mesh !in meshes) continue;
+      auto mesh = meshes[part.mesh];
+      f.instanceIdxs ~= mesh.instances.length;
       float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
       float sy = part.scaleY < 0 ? th : part.scaleY + (f.hash % 5) * part.scaleYVariance;
       float oy = part.offsetY < 0 ? f.height * th : part.offsetY;
-      auto mesh = meshes[part.mesh];
-      f.instanceIdxs ~= mesh.instances.length;
+      auto rt = part.resourceType == "None" ? ResourceType.None : part.resourceType.to!ResourceType;
       if(part.repeat) {
         for(uint h = 0; h < f.height; h++) {
           app.world.data.tilePenalties[[f.rootTile[0], f.rootTile[1]+cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
           float s = sx - h * part.taper;
           if(s < 0.05f) s = 0.05f;
-          auto rt = part.resourceType == "None" ? ResourceType.None : part.resourceType.to!ResourceType;
           mesh.instances ~= DrawInstance(rt, translateScale([wp[0], wp[1] + h * th, wp[2]], [s, sy, s]));
         }
       } else {
-        app.world.data.tilePenalties[f.rootTile] = ft.tilePenalty;
-        auto rt = part.resourceType == "None" ? ResourceType.None : part.resourceType.to!ResourceType;
+        if(ft.tilePenalty > 0.0f) app.world.data.tilePenalties[f.rootTile] = ft.tilePenalty;
         mesh.instances ~= DrawInstance(rt, translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]));
       }
       mesh.markDirty();
@@ -100,12 +109,21 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
 }
 
 void rebuildFeatureInstances(ref App app, Feature[][int[3]] features, ref immutable FeatureT ft, Geometry[string] meshes) {
-  foreach(ref mesh; meshes.values) mesh.instances = [];
+  // Only clear meshes used by THIS feature type
+  foreach(ref part; ft.parts) {
+    if(part.mesh !in meshes) continue;
+    meshes[part.mesh].instances = [];
+  }
+  // Clear tile penalties for this feature
   foreach(key; app.world.data.tilePenalties.keys) {
-    if(app.world.data.tilePenalties[key] == ft.tilePenalty){ app.world.data.tilePenalties.remove(key); }
+    if(app.world.data.tilePenalties[key] == ft.tilePenalty)
+      app.world.data.tilePenalties.remove(key);
   }
   foreach(coord, ref chunkFeatures; features) { chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, meshes); }
-  foreach(ref mesh; meshes.values) { mesh.markDirty(); }
+  foreach(ref part; ft.parts) {
+    if(part.mesh !in meshes) continue;
+    meshes[part.mesh].markDirty();
+  }
 }
 
 void interactFeature(ref App app, int[3] tile, ref immutable FeatureT ft, Feature[][int[3]] features) {
