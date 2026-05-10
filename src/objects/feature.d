@@ -137,11 +137,22 @@ void removeAllFeatures(ref App app, int[3] coord) {
 }
 
 void interactFeaturesAt(ref App app, int[3] tile) {
-  import raws : features;
   foreach(ref ft; features) {
     if(ft.name !in app.world.features) continue;
     foreach(ref chunk; app.world.features[ft.name].values)
       foreach(ref f; chunk)
         if(f.rootTile == tile) { app.interactFeature(tile, ft, app.world.features[ft.name]); return; }
   }
+}
+
+string findFeatureAt(ref App app, int[3] tile) {
+  foreach(ref ft; features) {
+    if(ft.name !in app.world.features) continue;
+    foreach(ref chunk; app.world.features[ft.name].values){
+      foreach(ref f; chunk){
+        if(f.rootTile == tile){ return ft.name; }
+      }
+    }
+  }
+  return "";
 }
