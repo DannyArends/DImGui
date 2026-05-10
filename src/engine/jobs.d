@@ -6,7 +6,7 @@
 import engine;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
-import feature : findFeatureAt, interactFeature, interactFeaturesAt;
+import feature : interactFeature, interactFeaturesAt;
 import pathfinding : pathfindTo;
 import timing : timed;
 import vector : manhattan, manhattan2D;
@@ -79,7 +79,6 @@ int[3] findGoalTile(T)(ref App app, ref T obj) {
 
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
 void progressJob(ref App app, ref Dwarf d, float amount, void delegate() onComplete) {
-  if(d.jobStack.length > 0 && d.jobStack[0].name == "InteractFeature") SDL_Log("progressJob: progress=%.2f", d.progress + amount);
   d.progress += amount;
   if(d.progress >= 1.0f) { onComplete(); d.completeSubJob(); d.progress = 0.0f; }
 }
@@ -126,18 +125,15 @@ Job miningJob(int[3] targetTile) {
 Job interactFeatureJob(int[3] targetTile) {
   return Job("InteractFeature", targetTile, ResourceType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
-      auto ftName = app.findFeatureAt(d.jobStack[0].targetTile);
-      if(ftName == "") { d.jobStack[0].onFail(app, d); return; }
       foreach(ref ft; features) {
-        if(ft.name != ftName) continue;
-        app.progressJob(d, ft.interaction == "Fell" ? 0.25f : 0.5f, () {
-          foreach(ref ft2; features) {
-            if(ft2.name != ftName) continue;
-            app.interactFeature(d.jobStack[0].targetTile, ft2, app.world.features[ft2.name]);
+        if(ft.name !in app.world.features) continue;
+        foreach(ref chunk; app.world.features[ft.name].values){
+          foreach(ref f; chunk) {
+            if(f.rootTile != d.jobStack[0].targetTile) continue;
+            app.progressJob(d, ft.interaction == "Fell" ? 0.25f : 0.5f, () { app.interactFeaturesAt(d.jobStack[0].targetTile); });
             return;
           }
-        });
-        return;
+        }
       }
     },
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
