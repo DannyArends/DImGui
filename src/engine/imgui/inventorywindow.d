@@ -8,6 +8,20 @@ import engine;
 import textures : ImTextureRefFromID, idx;
 import imgui : faIcon;
 
+/** Show tool mode switcher */
+void showToolSwitcher(ref App app) {
+  immutable string[4] labels = [ " Select ", " Mine ", " Build ", " Stockpile " ];
+  immutable ToolMode[4] modes = [ ToolMode.Select, ToolMode.Mine, ToolMode.Build, ToolMode.Stockpile ];
+  foreach(i, mode; modes) {
+    bool active = app.world.activeTool == mode;
+    if(active) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 0.3f, 1.0f));
+    if(igButton(toStringz(labels[i]), ImVec2(0, 0))) app.world.activeTool = mode;
+    if(active) igPopStyleColor(1);
+    if(i < modes.length - 1) igSameLine(0, 4);
+  }
+  igSeparator();
+}
+
 void drawCenteredText(ImDrawList* drawList, ImVec2 min, ImVec2 max, const(char)* text) {
   auto font = igGetFont();
   float fontSize = igGetFontSize();
@@ -25,6 +39,8 @@ void drawCenteredText(ImDrawList* drawList, ImVec2 min, ImVec2 max, const(char)*
 
 /** Show inventory */
 void showInventoryContent(ref App app, uint font = 0) {
+  app.showToolSwitcher();
+
   float cellSize = 32.0f;
   int cols = cast(int)floor((app.gui.panelW - cellSize) / cast(float)(cellSize + 4)) - 1;
   int col = 0;

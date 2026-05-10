@@ -56,6 +56,7 @@ public import ssbo : SSBO;
 public import shadow : ShadowMap;
 public import sfx : Audio, WavFMT;
 public import text : Text;
+public import tool : ToolMode, PaintState;
 public import tile : builtTile, noTile, TileDiff;
 public import raws : Colors, ResourceType, resourceData, heightToResource, features;
 public import resources : ResourceT, ResourceAtlas;
