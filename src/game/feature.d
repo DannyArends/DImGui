@@ -57,14 +57,17 @@ struct Feature {
   @property float bboxHeight() const { return cast(float)height; }
 }
 
+string delegate() captureKey(string k) { return () => k; }
+
 void initFeatureMeshes(ref App app) {
   foreach(ref ft; features) {
     foreach(ref part; ft.parts) {
-      if(part.mesh in app.world.featureMeshes) continue;
+      string meshKey = ft.name ~ ":" ~ part.mesh;
+      if(meshKey in app.world.featureMeshes) continue;
       Geometry mesh;
-      if(part.mesh == "Cylinder") { mesh = new Cylinder(0.4f, 1.0f, 12); mesh.initInstanced(() => "Cylinder"); }
-      if(part.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); mesh.initInstanced(() => "Icosahedron"); }
-      app.world.featureMeshes[part.mesh] = mesh;
+      if(part.mesh == "Cylinder") { mesh = new Cylinder(0.4f, 1.0f, 12); mesh.initInstanced(captureKey(meshKey)); }
+      if(part.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); mesh.initInstanced(captureKey(meshKey)); }
+      app.world.featureMeshes[meshKey] = mesh;
       app.objects ~= mesh;
     }
   }
@@ -105,8 +108,9 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
     float th = app.world.tileHeight;
     f.instanceIdxs = [];
     foreach(ref part; ft.parts) {
-      if(part.mesh !in meshes) continue;
-      auto mesh = meshes[part.mesh];
+      string meshKey = ft.name ~ ":" ~ part.mesh;
+      if(meshKey !in meshes) continue;
+      auto mesh = meshes[meshKey];
       if(mesh is null) continue;
       f.instanceIdxs ~= mesh.instances.length;
       float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
