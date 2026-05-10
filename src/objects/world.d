@@ -223,7 +223,8 @@ void loadWorld(ref App app) {
       Geometry mesh;
       if(part.mesh == "Cylinder") mesh = new Cylinder(0.4f, 1.0f, 12);
       if(part.mesh == "Icosahedron"){ mesh = new Icosahedron(); mesh.computeTangents(); }
-      mesh.initInstanced(() => key);
+      auto capturedKey = key;
+      mesh.initInstanced(() => capturedKey);
       app.world.featureMeshes[key] = mesh;
       app.objects ~= mesh;
     }
