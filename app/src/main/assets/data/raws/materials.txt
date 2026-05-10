@@ -127,13 +127,28 @@
   [ITEM][BUILDABLE][MAX_STACK:1]
   [MESH:Blocks][SCALE:1.0]
 
-[MATERIAL:Wood]
+[MATERIAL:OakWood]
+  [TEXTURE:Wood_02]
+  [ITEM][BUILDABLE][MAX_STACK:1]
+  [MESH:Blocks][SCALE:1.0]
+ 
+[MATERIAL:OliveWood]
   [TEXTURE:Wood_03]
   [ITEM][BUILDABLE][MAX_STACK:1]
   [MESH:Blocks][SCALE:1.0]
 
 [MATERIAL:Leaves]
+  [TEXTURE:Foliage_01]
+  [ITEM][MAX_STACK:1]
+  [MESH:Blocks][SCALE:1.0]
+
+[MATERIAL:OakLeaves]
   [TEXTURE:Hedge_01]
+  [ITEM][MAX_STACK:1]
+  [MESH:Blocks][SCALE:1.0]
+
+[MATERIAL:OliveLeaves]
+  [TEXTURE:Foliage_01]
   [ITEM][MAX_STACK:1]
   [MESH:Blocks][SCALE:1.0]
 
