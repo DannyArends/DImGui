@@ -33,6 +33,7 @@ struct FeatureT {
   uint hashMod, hashRem;
   uint heightMin = 1, heightMax = 1;
   float tilePenalty = 0.0f;
+  float progressRate = 0.25f;
   string interaction;
   FeaturePartT[] parts;
   FeatureDropT[] drops;
@@ -71,6 +72,16 @@ Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const Resource
     result ~= Feature([wc[0], wc[1]+1, wc[2]], height, [], hash);
   }
   return result;
+}
+
+float getFeatureProgressRate(ref App app, int[3] tile) {
+  foreach(ref ft; features) {
+    if(ft.name !in app.world.features) continue;
+    int[3] coord = app.world.chunkCoord(tile);
+    if(coord !in app.world.features[ft.name]) continue;
+    foreach(ref f; app.world.features[ft.name][coord]){ if(f.rootTile == tile) return ft.progressRate; }
+  }
+  return 0.25f;
 }
 
 Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable FeatureT ft, Geometry[string] meshes) {

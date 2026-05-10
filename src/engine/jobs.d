@@ -6,7 +6,7 @@
 import engine;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
-import feature : interactFeaturesAt;
+import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo;
 import timing : timed;
 import vector : manhattan, manhattan2D;
@@ -125,16 +125,7 @@ Job miningJob(int[3] targetTile) {
 Job interactFeatureJob(int[3] targetTile) {
   return Job("InteractFeature", targetTile, ResourceType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
-      foreach(ref ft; features) {
-        if(ft.name !in app.world.features) continue;
-        foreach(ref chunk; app.world.features[ft.name].values){
-          foreach(ref f; chunk) {
-            if(f.rootTile != d.jobStack[0].targetTile) continue;
-            app.progressJob(d, ft.interaction == "Fell" ? 0.25f : 0.5f, () { app.interactFeaturesAt(d.jobStack[0].targetTile); });
-            return;
-          }
-        }
-      }
+      app.progressJob(d, app.getFeatureProgressRate(d.jobStack[0].targetTile), () { app.interactFeaturesAt(d.jobStack[0].targetTile); });
     },
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
   );
