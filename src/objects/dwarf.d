@@ -221,7 +221,7 @@ void dwarfTick(ref App app, ref Geometry obj) {
   if(ds is null) return;
   foreach(i; iota(ds.dwarves.length).array.randomShuffle()) { app.tickDwarf(ds.dwarves[i]); }
   if(app.world.blocksDirty) { app.timed!syncBlockInstances(); app.world.blocksDirty = false; }
-  if(app.world.pathsDirty) { app.timed!syncPathMarkers(); app.world.pathsDirty = false; }
+  if(app.world.pathsDirty) { app.world.syncPathMarkers(app.showPaths); app.world.pathsDirty = false; }
   if(app.world.ghostsDirty) { app.timed!syncBuildGhosts(); app.world.ghostsDirty = false; }
   if(app.world.inventoryDirty) { app.timed!deriveInventory(); app.world.inventoryDirty = false; }
 }
