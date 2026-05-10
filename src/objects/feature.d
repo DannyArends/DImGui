@@ -110,22 +110,18 @@ void rebuildFeatureInstances(ref App app, Feature[][int[3]] features, ref immuta
 
 void interactFeature(ref App app, int[3] tile, ref immutable FeatureT ft, Feature[][int[3]] features) {
   int[3] coord = app.world.chunkCoord(tile);
-SDL_Log("interactFeature: tile=%d,%d,%d coord=%d,%d,%d inMap=%d features.length=%d", 
-  tile[0], tile[1], tile[2], coord[0], coord[1], coord[2],
-  (coord in features) !is null ? 1 : 0,
-  cast(int)features.length);
   if(coord !in features) return;
-  SDL_Log("interactFeature: searching %d features in chunk", cast(int)features[coord].length);
   foreach(i, ref f; features[coord]) {
-   SDL_Log("interactFeature: f.rootTile=%d,%d,%d tile=%d,%d,%d match=%d",
-    f.rootTile[0], f.rootTile[1], f.rootTile[2],
-    tile[0], tile[1], tile[2],
-    cast(int)(f.rootTile == tile));
     if(f.rootTile != tile) continue;
     foreach(ref drop; ft.drops) {
       auto rt = drop.material.to!ResourceType;
-      uint count = drop.perHeight ? f.height : drop.countMin + (f.hash % max(1, drop.countMax - drop.countMin + 1));
-      foreach(n; 0..count){ app.spawnBlock(tile, rt); }
+      if(drop.perHeight) {
+        for(uint h = 0; h < f.height; h++)
+          app.spawnBlock([tile[0], tile[1] + cast(int)h, tile[2]], rt);
+      } else {
+        uint count = drop.countMin + (f.hash % max(1, drop.countMax - drop.countMin + 1));
+        foreach(n; 0..count) app.spawnBlock(tile, rt);
+      }
     }
     features[coord] = features[coord][0..i] ~ features[coord][i+1..$];
     app.world.unsettleBlocks(app.world.blocks, tile);
