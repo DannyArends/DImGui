@@ -7,8 +7,7 @@ import engine;
 
 enum { VERTEX = 0, INSTANCE = 1, INDEX = 2 }
 
-/** Vertex Structure
- */
+/** Vertex Structure */
 struct Vertex {
   float[3] position = [0.0f, 0.0f, 0.0f];           /// Vertex position
   float[2] texCoord = [0.0f, 1.0f];                 /// Vertex texture coordinates
