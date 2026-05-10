@@ -7,61 +7,30 @@ import engine;
 import block : unsettleBlocks;
 import geometry : deAllocate;
 import intersection : intersects;
-import matrix : translateScale;
+import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile;
 import mouse : getHits;
 import textures : idx;
-import tree : buildTreeData;
 import vector : expandBounds;
+import feature : buildFeatureData;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
-  TileType[] tileTypes;                                     /// Tile type for each tile in the chunk
+  ResourceType[] tileTypes;                                 /// Tile type for each tile in the chunk
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
-  Tree[] trees;                                             /// Trees generated for this chunk
+  Feature[][string] featureData;                            /// Chunk Features
   float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
 
-/** Renderable cube geometry for individual blocks within a chunk, not selectable */
-class Tiles : Square {
-  this(ChunkData cd) {
-    super();
-    initInstanced(() => "Tiles", cd.tileInstances);
-    isSelectable = false;
-  }
-}
-
-/** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block */
-class Chunk : Cube {
-  ChunkData data;
-  Geometry tiles;
-  bool dirty = false;
-  alias data this;
-
-  this(ChunkData cd, WorldData wd) {
-    super();
-    data = cd;
-    indices = [];
-    float sx = wd.chunkWorldSize;
-    float sy = wd.chunkHeight * wd.tileHeight;
-    float cx = data.coord[0] * sx + sx * 0.5f;
-    float cz = data.coord[2] * sx + sx * 0.5f;
-    float cy = sy * 0.5f + wd.yOffset;
-    instances = [DrawInstance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
-    tiles = new Tiles(cd);
-    geometry = (){ return "Chunk"; };
-  }
-}
-
 /** Check if a face is exposed / uncovered
- * TODO: should use TileType[][int[3]] (coordinate as index) but that doesn't work on Android
+ * TODO: should use ResourceType[][int[3]] (coordinate as index) but that doesn't work on Android
  */
-bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
+bool isFaceExposed(immutable(WorldData) wd, const ResourceType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
   int[3] nc = wd.chunkCoord(neighbour);
   int ci = (nc == coord) ? 0 : cast(int)coords[1..5].countUntil(nc) + 1;
   if (ci == 0 && nc != coord) return true;  // not found in any cache
@@ -71,18 +40,18 @@ bool isFaceExposed(immutable(WorldData) wd, const TileType[][5] tileCache, const
   if (ln[1] >= wd.chunkHeight) return true;
   int ni = wd.tileIndex(ln);
   if (ni < 0 || ni >= cast(int)tileCache[ci].length) return true;
-  return tileCache[ci][ni] == TileType.None;
+  return tileCache[ci][ni] == ResourceType.None;
 }
 
 /** Load the TileCache, 
- * TODO: should use TileType[][int[3]] (coordinate as index) but that doesn't work on Android
+ * TODO: should use ResourceType[][int[3]] (coordinate as index) but that doesn't work on Android
  */
-TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
-  TileType[][5] tileCache;
+ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
+  ResourceType[][5] tileCache;
   foreach (ci; 0 .. 5) {
     tileCache[ci].length = wd.tileCount;
     for (int i = 0; i < wd.tileCount; i++) { tileCache[ci][i] = wd.getTile(wd.worldCoord(coords[ci], wd.tileCoord(i))); }
-    foreach (d; wd.diffs) { if (d.coord == coords[ci]) tileCache[ci][d.idx] = cast(TileType)d.type; }
+    foreach (d; wd.diffs) { if (d.coord == coords[ci]) tileCache[ci][d.idx] = cast(ResourceType)d.type; }
   }
   return tileCache;
 }
@@ -90,13 +59,13 @@ TileType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] co
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
-  TileType[][5] tileCache = wd.loadTileCache(coords, coord);
+  ResourceType[][5] tileCache = wd.loadTileCache(coords, coord);
 
   ChunkData data = ChunkData(coord, tileCache[0]);
 
   float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
-    if (data.tileTypes[i] == TileType.None) continue;
+    if (data.tileTypes[i] == ResourceType.None) continue;
     auto wc = wd.worldCoord(coord, wd.tileCoord(i));
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
@@ -123,7 +92,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       data.pickIndices ~= i;
     }
   }
-  data.trees = buildTreeData(wd, coord, data.tileTypes);
+  foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
 }
 
@@ -168,9 +137,14 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.world.pendingChunks.remove(data.coord);
 
   // Add trees to the chunk
-  if(app.world.trunk !is null && app.world.canopy !is null) {
-    if(data.coord !in app.world.trees && data.coord !in app.world.pendingTrees) { app.world.pendingTrees[data.coord] = data.trees; }
+  foreach(ref ft; features) {
+    if(ft.name !in app.world.features) app.world.features[ft.name] = null;
+    if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
+    if(data.coord !in app.world.features[ft.name] && data.coord !in app.world.pendingFeatures[ft.name]){
+      app.world.pendingFeatures[ft.name][data.coord] = data.featureData[ft.name];
+    }
   }
+
   if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.pendingUnsettle.length);
   foreach(tile; app.world.pendingUnsettle) app.world.unsettleBlocks(app.world.blocks, tile);
   app.world.pendingUnsettle = [];

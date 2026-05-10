@@ -7,6 +7,7 @@ import engine;
 
 import frustum : aabbInFrustum, extractFrustum;
 import matrix : inverse, lookAt, multiply, perspective, rotate, transpose;
+import pathfinding : canMoveTo;
 import quaternion : angleAxis, normalize, qMul, rotate;
 import vector : normalize, vAdd, xyz;
 

@@ -11,7 +11,7 @@ import material : getChannel;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean, cross, dot, x, y, z;
 import vertex : Vertex, INSTANCE;
-import tileatlas : injectTileMeshes;
+import resources : injectResourceMeshes;
 
 struct Mesh {
   int[2] vertices;        /// Start .. End positions in Geometry.vertices array
@@ -35,7 +35,7 @@ void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; 
 
 void updateMeshInfo(ref App app) {
   app.meshes.length = 0;
-  app.injectTileMeshes();
+  app.injectResourceMeshes();
   bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     if (app.objects[o].instancedMesh) continue;

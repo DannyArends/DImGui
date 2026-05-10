@@ -5,7 +5,9 @@
 
 import engine;
 
+import vector : manhattan2D;
 import search : performSearch, atGoal, stepThroughPath;
+import tile : isStandable, isPassable, tileToWorld, worldToTile;
 
 struct PathRequest {
   uint dwarfUID;
@@ -32,7 +34,7 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
 
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
-bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
+void pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
   app.world.pendingPaths = app.world.pendingPaths.filter!(r => r.dwarfUID != obj.uid).array;  // Remove any existing pending request for this dwarf
   auto req = PathRequest(obj.uid, obj.tile, goalTile);
   foreach(tid; app.concurrency.workers.keys) {
@@ -40,12 +42,11 @@ bool pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, req);
       obj.state = DwarfState.WaitingForPath;
-      return true;
+      return;
     }
   }
   app.world.pendingPaths ~= req;
   obj.state = DwarfState.WaitingForPath;
-  return(false);
 }
 
 /** Dispatch pending path finding jobs */
@@ -59,4 +60,47 @@ void dispatchPendingPaths(ref App app) {
       app.world.pendingPaths = app.world.pendingPaths[1..$];
     }
   }
+}
+
+/** Invalidate any dwarf paths that pass through the given tile */
+void invalidatePaths(ref App app, int[3] tile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
+    d.path = [];
+    d.moveTo = d.moveFrom = d.visualPos;
+    d.moveT = 1.0f;
+    if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile);
+  }
+}
+
+/** Attempt to re-path object T to goalTile, returns false if unreachable.
+ * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
+bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
+  obj.targetTile = targetTile;
+  auto goalTile = app.findGoalTile(obj);
+  if(goalTile == noTile) return(false);
+  app.pathfindTo(obj, goalTile);
+  return(true);
+}
+
+/** Find the closest standable neighbour (air tile with solid below) to the object.
+ * Requires T to have: tile, targetTile */
+int[3] findGoalTile(T)(ref App app, ref T obj) {
+  int[3] goalTile = noTile;
+  float bestScore = float.max;
+  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
+    if(!app.world.isStandable(n)) continue;
+    float score = manhattan2D(n, obj.tile) + app.world.data.tilePenalties.get(n, 0.0f);
+    if(score < bestScore) { bestScore = score; goalTile = n; }
+  }
+  return goalTile;
+}
+
+bool canMoveTo(T)(T wd, float[3] pos) {
+  foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
+    float[3] p = [pos[0] + dx * wd.tileSize * 0.5f, pos[1] + dy * wd.tileHeight * 0.5f, pos[2] + dz * wd.tileSize * 0.5f];
+    if (!wd.isPassable(wd.worldToTile(p))) return(false);
+  }
+  return(true);
 }
