@@ -45,14 +45,9 @@ struct Feature {
   uint hash;
 
   bool matchIndex(size_t idx) const {
-    import raws : features;
-    foreach(ref ft; features) {
-      foreach(pi, ref part; ft.parts) {
-        if(pi >= instanceIdxs.length) continue;
-        if(part.repeat) {
-          if(idx >= instanceIdxs[pi] && idx < instanceIdxs[pi] + height) return true;
-        } else { if(idx == instanceIdxs[pi]) return true; }
-      }
+    foreach(pi, startIdx; instanceIdxs) {
+      if(idx == startIdx) return true;
+      if(idx > startIdx && idx < startIdx + height) return true;
     }
     return false;
   }
@@ -109,18 +104,6 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
   return features;
 }
 
-void rebuildFeatureInstances(ref App app, Feature[][int[3]] featureMap, ref immutable FeatureT ft, Geometry[string] meshes) {
-  foreach(key; app.world.data.tilePenalties.keys) {
-    if(app.world.data.tilePenalties[key] == ft.tilePenalty)
-      app.world.data.tilePenalties.remove(key);
-  }
-  foreach(coord, ref chunkFeatures; featureMap) { chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, meshes); }
-  foreach(ref part; ft.parts) {
-    if(part.mesh !in meshes) continue;
-    meshes[part.mesh].markDirty();
-  }
-}
-
 void rebuildAllFeatures(ref App app) {
   foreach(ref mesh; app.world.featureMeshes.values) mesh.instances = [];
   foreach(ref ft; features) {
@@ -167,20 +150,8 @@ void removeAllFeatures(ref App app, int[3] coord) {
 void interactFeaturesAt(ref App app, int[3] tile) {
   foreach(ref ft; features) {
     if(ft.name !in app.world.features) continue;
-    foreach(ref chunk; app.world.features[ft.name].values)
-      foreach(ref f; chunk)
-        if(f.rootTile == tile) { app.interactFeature(tile, ft, app.world.features[ft.name]); return; }
-  }
-}
-
-string findFeatureAt(ref App app, int[3] tile) {
-  foreach(ref ft; features) {
-    if(ft.name !in app.world.features) continue;
-    foreach(ref chunk; app.world.features[ft.name].values){
-      foreach(ref f; chunk){
-        if(f.rootTile == tile){ return ft.name; }
-      }
+    foreach(ref chunk; app.world.features[ft.name].values) {
+      foreach(ref f; chunk) { if(f.rootTile == tile) { app.interactFeature(tile, ft, app.world.features[ft.name]); return; } }
     }
   }
-  return "";
 }
