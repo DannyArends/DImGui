@@ -5,10 +5,9 @@
 
 import engine;
 
-import bush : gatherBush;
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
 import pathfinding : pathfindTo;
-import tree : fellTree;
+import raws : features;
 import timing : timed;
 import vector : manhattan, manhattan2D;
 import world : noTile, setTile, tileAbove;
@@ -122,21 +121,17 @@ Job miningJob(int[3] targetTile) {
   );
 }
 
-/** woodcutting Job */
-Job woodcuttingJob(int[3] targetTile) {
-  return Job("Woodcutting", targetTile, ResourceType.None, [],
+/** Interact with features Job (gathering / woodcutting) */
+Job interactFeatureJob(int[3] targetTile) {
+  return Job("InteractFeature", targetTile, ResourceType.None, [],
     onArrive: (ref App app, ref Dwarf d) {
-      app.progressJob(d, 0.25f, () { app.fellTree(d.jobStack[0].targetTile); });
-    },
-    onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
-  );
-}
-
-/** Gathering Berries Job */
-Job gatherBerriesJob(int[3] targetTile) {
-  return Job("GatherBerries", targetTile, ResourceType.None, [],
-    onArrive: (ref App app, ref Dwarf d) {
-      app.progressJob(d, 0.5f, () { app.gatherBush(d.jobStack[0].targetTile); });
+      foreach(ref ft; features) {
+        if(ft.name != d.jobStack[0].featureName) continue;
+        app.progressJob(d, ft.interaction == "Fell" ? 0.25f : 0.5f, () {
+          app.interactFeature(d.jobStack[0].targetTile, ft, app.world.features[ft.name]);
+        });
+        return;
+      }
     },
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
   );

@@ -5,7 +5,6 @@
 
 import engine;
 
-import bush : getBestBush;
 import boundingbox : computeBoundingBox;
 import camera : castRay, tryDrag, tryZoom;
 import chunk : getBestTile;
@@ -13,9 +12,8 @@ import geometry : setColor;
 import ghost : updateGhostTile, syncBuildGhosts;
 import intersection : intersects;
 import inventory : placeTile, computeDragPreview;
-import jobs : tryAssign, jobQueue, miningJob, woodcuttingJob, gatherBerriesJob;
+import jobs : tryAssign, jobQueue, miningJob;
 import line : createLine;
-import tree : getBestTree;
 import world : noTile;
 
 /** Handle mouse events */
@@ -54,12 +52,12 @@ void handleMouseEvents(ref App app, SDL_Event e) {
         if(hits.length > 0) {
           int[3] wc;
           Job job;
-          if(app.getBestTree(ray, hits, wc)) {
-            job = woodcuttingJob(wc);
-          }else if(app.getBestBush(ray, hits, wc)) {
-            job = gatherBerriesJob(wc);
-          }else if(app.getBestTile(ray, wc)) {
-            job = miningJob(wc);
+          if(app.getBestTile(ray, wc)) { job = miningJob(wc); }
+          foreach(ref ft; features) {
+            if(app.getBestVegetation!Feature(ray, hits, app.world.features[ft.name], wc)) {
+              job = interactFeatureJob(wc);
+              break;
+            }
           }
           if(job.name !is null && !app.tryAssign(job)) jobQueue ~= job;
         }
