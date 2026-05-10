@@ -5,10 +5,9 @@
 
 import engine;
 
-import block : builtTile;
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
-import world : noTile;
+import tile : getTile;
 
 struct Inventory {
   GhostCube ghost;

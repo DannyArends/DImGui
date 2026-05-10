@@ -8,6 +8,7 @@ import engine;
 import block : spawnBlock, unsettleBlocks;
 import matrix : translateScale;
 import normals : computeTangents;
+import tile : getTile, tileCoord, tileToWorld;
 import vegetation : saveVegetation, loadVegetation;
 
 struct FeaturePartT {

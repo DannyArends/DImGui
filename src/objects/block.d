@@ -8,13 +8,12 @@ import color : colorIndex;
 import inventory : deriveInventory;
 import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
-import serialization : readWorldData, writeWorldData;
 import normals : computeTangents;
+import serialization : readWorldData, writeWorldData;
+import tile : surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile;
 import vector : manhattan;
-import world : noTile;
 
 enum uint noBlock = uint.max;
-enum int[3] builtTile = [int.max, 0, 0];
 
 struct Block {
   uint id;                          /// Unique block ID, forever

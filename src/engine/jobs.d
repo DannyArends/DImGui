@@ -5,12 +5,13 @@
 
 import engine;
 
-import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
+import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
+import tile : setTile, tileAbove, getTileAt, isStandable;
 import timing : timed;
 import vector : manhattan, manhattan2D;
-import world : setTile, tileAbove;
+
 
 enum JobState { Pending, Satisfied, Unavailable }
 

@@ -6,7 +6,6 @@ import engine;
 
 import serialization : readWorldData, writeWorldData;
 import block : syncBlockInstances, noBlock;
-import world : noTile, tileBelow, isTileOccupied;
 import matrix : position, scale;
 import inventory : deriveInventory;
 import ghost : syncBuildGhosts;
@@ -14,6 +13,7 @@ import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo;
 import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination;
 import rnjesus : randomizeName;
+import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
 import timing : timed;
 
 uint nextDwarfUID = 1;

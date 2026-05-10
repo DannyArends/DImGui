@@ -7,6 +7,7 @@ import engine;
 
 import intersection : intersects;
 import serialization : readWorldData, writeWorldData;
+import tile : tileToWorld;
 
 /** Create a tombstone entry for a cleared chunk */
 T makeTombstone(T)(int[3] coord) if(is(typeof(T.init.rootTile) == int[3])) {

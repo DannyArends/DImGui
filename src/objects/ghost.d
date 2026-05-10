@@ -11,6 +11,7 @@ import textures : idx;
 import vector : dot;
 import matrix : position, scale, translate;
 import jobs : jobQueue;
+import tile : tileIdx, tileToWorld;
 
 class GhostCube : Cube {
   ResourceType type = ResourceType.None;
