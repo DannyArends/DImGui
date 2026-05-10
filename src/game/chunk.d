@@ -7,7 +7,6 @@ import engine;
 import block : unsettleBlocks;
 import geometry : deAllocate;
 import intersection : intersects;
-import matrix : translateScale;
 import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile;
 import mouse : getHits;
 import textures : idx;
@@ -26,37 +25,6 @@ struct ChunkData {
   Feature[][string] featureData;                            /// Chunk Features
   float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
-}
-
-/** Renderable cube geometry for individual blocks within a chunk, not selectable */
-class Tiles : Square {
-  this(ChunkData cd) {
-    super();
-    initInstanced(() => "Tiles", cd.tileInstances);
-    isSelectable = false;
-  }
-}
-
-/** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block */
-class Chunk : Cube {
-  ChunkData data;
-  Geometry tiles;
-  bool dirty = false;
-  alias data this;
-
-  this(ChunkData cd, WorldData wd) {
-    super();
-    data = cd;
-    indices = [];
-    float sx = wd.chunkWorldSize;
-    float sy = wd.chunkHeight * wd.tileHeight;
-    float cx = data.coord[0] * sx + sx * 0.5f;
-    float cz = data.coord[2] * sx + sx * 0.5f;
-    float cy = sy * 0.5f + wd.yOffset;
-    instances = [DrawInstance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
-    tiles = new Tiles(cd);
-    geometry = (){ return "Chunk"; };
-  }
 }
 
 /** Check if a face is exposed / uncovered

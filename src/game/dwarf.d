@@ -76,17 +76,6 @@ struct DwarfData {
   @property bool hasInventorySpace() { return inventory[].any!(s => s.empty); }
 }
 
-/** Dwarven Cylinderz */
-class Dwarves : Cylinder {
-  Dwarf[] dwarves;
-  alias dwarves this;
-
-  this() {
-    super(0.5f, 1.0f, 6);
-    initInstanced(() => "Dwarves");
-  }
-}
-
 enum DwarfState {
   Idle,           /// no job, no goal, standing still
   Wandering,      /// no job, has targetTile, following path

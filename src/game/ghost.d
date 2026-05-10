@@ -13,21 +13,6 @@ import matrix : position, scale, translate;
 import jobs : jobQueue;
 import tile : tileIdx, tileToWorld;
 
-class GhostCube : Cube {
-  ResourceType type = ResourceType.None;
-  int[3] tile = noTile;
-
-  this(float[2] dim, bool instanced = false) {
-    super(color: [1.0f, 1.0f, 1.0f, 1.0f]);
-    isSelectable = false;
-    isVisible = false;
-    castShadow = false;
-    scale([dim[0], dim[1], dim[0]]);
-    geometry = (){ return(typeof(this).stringof); };
-    if(instanced) initInstanced(() => "BuildingGhosts");
-  }
-}
-
 int[3] getGhostTile(ref App app, float[3][2] ray) {
   int[3] wc;
   if(!app.getBestTile(ray, wc)) { return(noTile); }
