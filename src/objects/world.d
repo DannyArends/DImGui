@@ -13,7 +13,7 @@ import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : loadBlocks, saveBlocks;
 import dwarf : saveDwarfs, repathTo;
-import feature : Feature;
+import feature : Feature, removeAllFeatures;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -328,7 +328,7 @@ void updateWorld(ref App app, float[3] lookat) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.remove(coord);
-      foreach(ref ft; features) { app.removeVegetation!(Feature, rebuildFeatureInstances)(app.world.features[ft.name], coord); }
+      app.removeAllFeatures(coord);
     }
   }
 

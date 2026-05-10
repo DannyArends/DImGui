@@ -118,3 +118,14 @@ void interactFeature(ref App app, int[3] tile, ref immutable FeatureT ft, Featur
     return;
   }
 }
+
+void removeAllFeatures(ref App app, int[3] coord) {
+  import raws : features;
+  bool changed = false;
+  foreach(ref ft; features) {
+    if(coord !in app.world.features[ft.name]) continue;
+    app.world.features[ft.name].remove(coord);
+    changed = true;
+  }
+  if(changed) foreach(ref ft; features){ app.rebuildFeatureInstances(app.world.features[ft.name], ft, app.world.featureMeshes); }
+}
