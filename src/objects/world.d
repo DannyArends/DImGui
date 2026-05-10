@@ -237,8 +237,7 @@ void loadWorld(ref App app) {
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
   app.world.diffs = cast(TileDiff[])diffData.dup;
   app.loadBlocks();
-  app.loadTrees();
-  app.loadBushes();
+  foreach(ref ft; features) { app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name)); }
   app.deriveInventory();
 }
 
@@ -249,8 +248,9 @@ void saveWorld(ref App app) {
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
   app.saveBlocks();
-  app.saveTrees();
-  app.saveBushes();
+  foreach(ref ft; features) {
+    app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
+  }
   app.saveDwarfs();
 }
 
@@ -328,7 +328,7 @@ void updateWorld(ref App app, float[3] lookat) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.remove(coord);
-      app.removeTreeInstances(coord);
+      foreach(ref ft; features) { app.removeVegetation!(Feature, rebuildFeatureInstances)(app.world.features[ft.name], coord); }
     }
   }
 
