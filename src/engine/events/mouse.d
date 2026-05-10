@@ -55,7 +55,10 @@ void handleMouseEvents(ref App app, SDL_Event e) {
           Job job;
           if(app.getBestTile(ray, wc)) { job = miningJob(wc); }
           foreach(ref ft; features) {
-            bool matchFeature(string g) { return ft.parts.any!(p => p.mesh == g); }
+            bool matchFeature(string g) {
+              foreach(pi, ref p; ft.parts) { if(g == ft.name ~ "_" ~ to!string(pi)) return true; }
+              return false;
+            }
             if(app.getBestVegetation!(Feature, matchFeature)(ray, hits, app.world.features.get(ft.name, null), wc)) {
               job = interactFeatureJob(wc);
               break;

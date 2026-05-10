@@ -8,6 +8,7 @@ import engine;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
 import noise : noiseHTT;
+import normals : computeTangents;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
 import searchnode : PathNode;
@@ -216,13 +217,14 @@ void loadWorld(ref App app) {
   ensureWorldDir();
 
   foreach(ref ft; features) {
-    foreach(ref part; ft.parts) {
-      if(part.mesh in app.world.featureMeshes) continue;
+    foreach(pi, ref part; ft.parts) {
+      auto key = ft.name ~ "_" ~ to!string(pi);
+      if(key in app.world.featureMeshes) continue;
       Geometry mesh;
-      if(part.mesh == "Cylinder")     mesh = new Cylinder(0.4f, 1.0f, 12);
-      if(part.mesh == "Icosahedron")  mesh = new Icosahedron();
-      mesh.initInstanced(() => part.mesh);
-      app.world.featureMeshes[part.mesh] = mesh;
+      if(part.mesh == "Cylinder") mesh = new Cylinder(0.4f, 1.0f, 12);
+      if(part.mesh == "Icosahedron"){ mesh = new Icosahedron(); mesh.computeTangents(); }
+      mesh.initInstanced(() => key);
+      app.world.featureMeshes[key] = mesh;
       app.objects ~= mesh;
     }
   }
