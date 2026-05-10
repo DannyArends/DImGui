@@ -319,15 +319,11 @@ void updateWorld(ref App app, float[3] lookat) {
   }
   foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
 
-  // Load pending features onto chunks that have been loaded
+  // Load pending trees onto chunks that have been loaded
   foreach(ref ft; features) {
-    if(ft.name !in app.world.pendingFeatures) continue;
     foreach(coord; app.world.pendingFeatures[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;
       if(coord !in app.world.features[ft.name]) {
-        SDL_Log("addFeatureInstances: ft=%s coord=%d,%d,%d pending=%d",
-          toStringz(ft.name), coord[0], coord[1], coord[2],
-          cast(int)app.world.pendingFeatures[ft.name][coord].length);
         app.world.features[ft.name][coord] = app.addFeatureInstances(app.world.pendingFeatures[ft.name][coord], ft, app.world.featureMeshes);
       }
       app.world.pendingFeatures[ft.name].remove(coord);
