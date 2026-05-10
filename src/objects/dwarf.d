@@ -8,7 +8,6 @@ import serialization : readWorldData, writeWorldData;
 import block : syncBlockInstances, noBlock;
 import world : noTile, tileBelow, isTileOccupied;
 import matrix : position, scale;
-import resources : resourceData;
 import inventory : deriveInventory;
 import ghost : syncBuildGhosts;
 import pathmarker : syncPathMarkers;

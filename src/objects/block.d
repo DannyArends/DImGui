@@ -4,11 +4,10 @@
  */
 import engine;
 
-import color : Colors, colorIndex;
+import color : colorIndex;
 import inventory : deriveInventory;
 import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
-import resources : resourceData;
 import serialization : readWorldData, writeWorldData;
 import normals : computeTangents;
 import vector : manhattan;
