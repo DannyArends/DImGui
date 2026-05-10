@@ -5,6 +5,10 @@
 
 import engine;
 
+import matrix : translateScale;
+import block : spawnBlock, unsettleBlocks;
+import vegetation : saveVegetation, loadVegetation;
+
 struct FeaturePartT {
   string mesh;
   float scaleX = 1.0f, scaleXVariance = 0.0f;
@@ -128,4 +132,14 @@ void removeAllFeatures(ref App app, int[3] coord) {
     changed = true;
   }
   if(changed) foreach(ref ft; features){ app.rebuildFeatureInstances(app.world.features[ft.name], ft, app.world.featureMeshes); }
+}
+
+void interactFeaturesAt(ref App app, int[3] tile) {
+  import raws : features;
+  foreach(ref ft; features) {
+    if(ft.name !in app.world.features) continue;
+    foreach(ref chunk; app.world.features[ft.name].values)
+      foreach(ref f; chunk)
+        if(f.rootTile == tile) { app.interactFeature(tile, ft, app.world.features[ft.name]); return; }
+  }
 }
