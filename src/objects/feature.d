@@ -67,7 +67,7 @@ Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const Resource
     if(n[2] < ft.noiseThreshold) continue;
     uint hash = (wc[0] * ft.hashSeed1) ^ (wc[2] * ft.hashSeed2);
     if(hash % ft.hashMod != ft.hashRem) continue;
-    uint height = ft.heightMin == ft.heightMax ? ft.heightMin : ft.heightMin + cast(uint)((n[0] + n[1]) * (ft.heightMax - ft.heightMin) * 0.5f);
+    uint height = ft.heightMin + (ft.heightMin == ft.heightMax ? 0 : cast(uint)((n[0]+n[1]) * (ft.heightMax-ft.heightMin) * 0.5f));
     result ~= Feature([wc[0], wc[1]+1, wc[2]], height, [], hash);
   }
   return result;
@@ -114,44 +114,32 @@ void rebuildAllFeatures(ref App app) {
   foreach(ref mesh; app.world.featureMeshes.values) mesh.markDirty();
 }
 
-void interactFeature(ref App app, int[3] tile, ref immutable FeatureT ft, Feature[][int[3]] featureMap) {
-  int[3] coord = app.world.chunkCoord(tile);
-  if(coord !in featureMap) return;
-  foreach(i, ref f; featureMap[coord]) {
-    if(f.rootTile != tile) continue;
-    foreach(ref drop; ft.drops) {
-      auto rt = drop.material.to!ResourceType;
-      if(drop.perHeight) {
-        for(uint h = 0; h < f.height; h++)
-          app.spawnBlock([tile[0], tile[1] + cast(int)h, tile[2]], rt);
-      } else {
-        uint count = drop.countMin + (f.hash % max(1, drop.countMax - drop.countMin + 1));
-        foreach(n; 0..count) app.spawnBlock(tile, rt);
-      }
-    }
-    featureMap[coord] = featureMap[coord][0..i] ~ featureMap[coord][i+1..$];
-    app.world.unsettleBlocks(app.world.blocks, tile);
-    app.world.inventoryDirty = true;
-    app.rebuildAllFeatures();
-    return;
-  }
-}
-
 void removeAllFeatures(ref App app, int[3] coord) {
-  bool changed = false;
-  foreach(ref ft; features) {
-    if(coord !in app.world.features[ft.name]) continue;
-    app.world.features[ft.name].remove(coord);
-    changed = true;
-  }
-  if(changed) app.rebuildAllFeatures();
+  foreach(ref ft; features) app.world.features[ft.name].remove(coord);
+  app.rebuildAllFeatures();
 }
 
 void interactFeaturesAt(ref App app, int[3] tile) {
   foreach(ref ft; features) {
     if(ft.name !in app.world.features) continue;
-    foreach(ref chunk; app.world.features[ft.name].values) {
-      foreach(ref f; chunk) { if(f.rootTile == tile) { app.interactFeature(tile, ft, app.world.features[ft.name]); return; } }
+    int[3] coord = app.world.chunkCoord(tile);
+    if(coord !in app.world.features[ft.name]) continue;
+    foreach(i, ref f; app.world.features[ft.name][coord]) {
+      if(f.rootTile != tile) continue;
+      foreach(ref drop; ft.drops) {
+        auto rt = drop.material.to!ResourceType;
+        if(drop.perHeight) {
+          for(uint h = 0; h < f.height; h++) app.spawnBlock([tile[0], tile[1]+cast(int)h, tile[2]], rt);
+        } else {
+          uint count = drop.countMin + (f.hash % max(1, drop.countMax - drop.countMin + 1));
+          foreach(n; 0..count) app.spawnBlock(tile, rt);
+        }
+      }
+      app.world.features[ft.name][coord] = app.world.features[ft.name][coord][0..i] ~ app.world.features[ft.name][coord][i+1..$];
+      app.world.unsettleBlocks(app.world.blocks, tile);
+      app.world.inventoryDirty = true;
+      app.rebuildAllFeatures();
+      return;
     }
   }
 }
