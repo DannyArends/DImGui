@@ -5,8 +5,9 @@
 
 import engine;
 
-import matrix : translateScale;
 import block : spawnBlock, unsettleBlocks;
+import matrix : translateScale;
+import normals : computeTangents;
 import vegetation : saveVegetation, loadVegetation;
 
 struct FeaturePartT {
@@ -53,6 +54,19 @@ struct Feature {
     return false;
   }
   @property float bboxHeight() const { return cast(float)height; }
+}
+
+void initFeatureMeshes(ref App app) {
+  foreach(ref ft; features) {
+    foreach(ref part; ft.parts) {
+      if(part.mesh in app.world.featureMeshes) continue;
+      Geometry mesh;
+      if(part.mesh == "Cylinder") { mesh = new Cylinder(0.4f, 1.0f, 12); mesh.initInstanced(() => "Cylinder"); }
+      if(part.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); mesh.initInstanced(() => "Icosahedron"); }
+      app.world.featureMeshes[part.mesh] = mesh;
+      app.objects ~= mesh;
+    }
+  }
 }
 
 Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, ref immutable FeatureT ft) {

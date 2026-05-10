@@ -15,7 +15,6 @@ import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import line : createLine;
 import vegetation : getBestVegetation;
-import world : noTile;
 
 /** Handle mouse events */
 void handleMouseEvents(ref App app, SDL_Event e) {

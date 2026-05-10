@@ -7,10 +7,10 @@ import engine;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
 import feature : interactFeaturesAt, getFeatureProgressRate;
-import pathfinding : pathfindTo;
+import pathfinding : pathfindTo, findGoalTile;
 import timing : timed;
 import vector : manhattan, manhattan2D;
-import world : noTile, setTile, tileAbove;
+import world : setTile, tileAbove;
 
 enum JobState { Pending, Satisfied, Unavailable }
 
@@ -63,19 +63,6 @@ void completeSubJob(ref Dwarf d) {
 /** Check if object T is adjacent to targetTile.
  * Requires T to have: tile */
 bool atDestination(T)(ref App app, ref T obj, int[3] targetTile) { return manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]; }
-
-/** Find the closest standable neighbour (air tile with solid below) to the object.
- * Requires T to have: tile, targetTile */
-int[3] findGoalTile(T)(ref App app, ref T obj) {
-  int[3] goalTile = noTile;
-  float bestScore = float.max;
-  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
-    if(!app.world.isStandable(n)) continue;
-    float score = manhattan2D(n, obj.tile) + app.world.data.tilePenalties.get(n, 0.0f);
-    if(score < bestScore) { bestScore = score; goalTile = n; }
-  }
-  return goalTile;
-}
 
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
 void progressJob(ref App app, ref Dwarf d, float amount, void delegate() onComplete) {

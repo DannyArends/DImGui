@@ -8,13 +8,12 @@ import engine;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
 import noise : noiseHTT;
-import normals : computeTangents;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import inventory : deriveInventory;
-import searchnode : PathNode;
+import pathfinding : invalidatePaths, repathTo;
 import block : loadBlocks, saveBlocks;
-import dwarf : saveDwarfs, repathTo;
-import feature : Feature, removeAllFeatures, addFeatureInstances;
+import dwarf : saveDwarfs;
+import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
 import vegetation : saveVegetation, loadVegetation;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
@@ -201,32 +200,10 @@ struct World {
 @nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
 @nogc pure int[3] tileAbove(int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
 
-/** Invalidate any dwarf paths that pass through the given tile */
-void invalidatePaths(ref App app, int[3] tile) {
-  if(app.world.dwarves is null) return;
-  foreach(ref d; app.world.dwarves.dwarves) {
-    if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
-    d.path = [];
-    d.moveTo = d.moveFrom = d.visualPos;
-    d.moveT = 1.0f;
-    if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile);
-  }
-}
-
 void loadWorld(ref App app) {
   ensureWorldDir();
+  app.initFeatureMeshes();
 
-  foreach(ref ft; features) {
-    foreach(ref part; ft.parts) {
-      if(part.mesh in app.world.featureMeshes) continue;
-      Geometry mesh;
-      if(part.mesh == "Cylinder")    mesh = new Cylinder(0.4f, 1.0f, 12);
-      if(part.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); }
-      mesh.initInstanced(() => part.mesh);
-      app.world.featureMeshes[part.mesh] = mesh;
-      app.objects ~= mesh;
-    }
-  }
   app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight], true);
   app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
   app.objects ~= app.world.buildingGhosts;
