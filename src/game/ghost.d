@@ -7,27 +7,11 @@ import engine;
 
 import color : colorIndex;
 import chunk : getBestTile;
-import tileatlas : tileData;
 import textures : idx;
 import vector : dot;
 import matrix : position, scale, translate;
-import world : noTile;
 import jobs : jobQueue;
-
-class GhostCube : Cube {
-  TileType type = TileType.None;
-  int[3] tile = noTile;
-
-  this(float[2] dim, bool instanced = false) {
-    super(color: [1.0f, 1.0f, 1.0f, 1.0f]);
-    isSelectable = false;
-    isVisible = false;
-    castShadow = false;
-    scale([dim[0], dim[1], dim[0]]);
-    geometry = (){ return(typeof(this).stringof); };
-    if(instanced) initInstanced(() => "BuildingGhosts");
-  }
-}
+import tile : tileIdx, tileToWorld;
 
 int[3] getGhostTile(ref App app, float[3][2] ray) {
   int[3] wc;
@@ -49,13 +33,13 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
     if(neighbours[f][1] < 0 || neighbours[f][1] >= app.world.chunkHeight) continue;
     auto coord = app.world.chunkCoord(neighbours[f]);
     auto tidx = app.world.tileIdx(neighbours[f]);
-    if(app.world.chunks[coord].tileTypes[tidx] == TileType.None) return(neighbours[f]);
+    if(app.world.chunks[coord].tileTypes[tidx] == ResourceType.None) return(neighbours[f]);
   }
   return(noTile);
 }
 
 void updateGhostTile(ref App app, float[3][2] ray) {
-  if(app.world.inventory.ghost.type == TileType.None) {
+  if(app.world.inventory.ghost.type == ResourceType.None) {
     app.world.inventory.ghost.tile = noTile;
     app.world.inventory.ghost.isVisible = false;
     return;
@@ -64,7 +48,7 @@ void updateGhostTile(ref App app, float[3][2] ray) {
   if(app.world.inventory.ghost.isVisible) {
     app.world.inventory.ghost.position(app.world.tileToWorld(app.world.inventory.ghost.tile));
     foreach (k, ref m; app.world.inventory.ghost.meshes) {
-      m.tid = app.textures.idx(tileData[app.world.inventory.ghost.type].name ~ "_base");
+      m.tid = app.textures.idx(resourceData(app.world.inventory.ghost.type).name ~ "_base");
     }
     app.buffers["MeshMatrices"].dirty[] = true;
   }
@@ -83,11 +67,11 @@ void syncBuildGhosts(ref App app) {
     app.world.buildingGhosts.instances ~= inst;
   }
 
-  app.world.data.ghostTiles = [];
-  foreach(ref j; jobQueue) { if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.ghostTiles ~= j.targetTile; } }
+  foreach(key; app.world.data.tilePenalties.keys) { if(app.world.data.tilePenalties[key] >= 20.0f) app.world.data.tilePenalties.remove(key); }
+  foreach(ref j; jobQueue) { if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.tilePenalties[j.targetTile] = 40.0f; } }
   if(app.world.dwarves !is null) {
     foreach(ref d; app.world.dwarves) { foreach(ref j; d.jobStack) { 
-      if(j.name == "Building") {addInstance(j.targetTile, committed); app.world.data.ghostTiles ~= j.targetTile; }
+      if(j.name == "Building") { addInstance(j.targetTile, committed); app.world.data.tilePenalties[j.targetTile] = 40.0f; }
     } }
   }
   foreach(tile; app.world.inventory.dragPreview) addInstance(tile, preview);
