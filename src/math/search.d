@@ -7,6 +7,7 @@ import engine;
 
 import searchnode : PathNode, isEqual, has;
 import vector : euclidean;
+import tile : getSuccessors;
 
 enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3, INVALID = 4 };
 

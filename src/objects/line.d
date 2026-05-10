@@ -8,8 +8,7 @@ import engine;
 import matrix : multiply;
 import vector : vAdd, vSub, vMul, x, y, z;
 
-/** Line
- */
+/** Line */
 class Line : Geometry {
   this(){
     vertices = [
@@ -25,16 +24,13 @@ class Line : Geometry {
   }
 }
 
-/** Ray
- */
+/** Ray */
 alias float[3][2] Ray;
 
-/** Create a Line from a Ray
- */
+/** Create a Line from a Ray */
 Line createLine(Ray ray, float length = 50){
   Line line = new Line();
   line.vertices[0].position = ray[0];
   line.vertices[1].position = ray[0].vAdd(ray[1].vMul(length));
   return(line);
 }
-

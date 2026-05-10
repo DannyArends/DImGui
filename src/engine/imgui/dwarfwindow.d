@@ -9,12 +9,11 @@ import dwarf : spawnDwarf;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
-import tileatlas : tileData;
 
-void showTileIcons(ref App app, TileType[] tiles, float cellSize = 16.0f) {
+void showTileIcons(ref App app, ResourceType[] tiles, float cellSize = 16.0f) {
   foreach(tt; tiles.sort.uniq) {
     igSameLine(0, 2);
-    auto name = tileData[tt].name;
+    auto name = resourceData(tt).name;
     auto texIdx = idx(app.textures, name ~ "_base");
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
@@ -49,10 +48,13 @@ void showDwarfContent(ref App app, uint font = 0) {
     igPopStyleColor(1);
     igText(toStringz(format("%s", d.name)));
 
-    if(d.carrying.length > 0) {
+    if(!d.inventory[].all!(s => s.empty)) {
       igSameLine(0, 5);
-      TileType[] types;
-      foreach(id; d.carrying) { foreach(ref b; app.world.blocks.blocks) { if(b.id == id) { types ~= b.type; break; } } }
+      ResourceType[] types;
+      foreach(ref s; d.inventory) {
+        if(s.isBlock) foreach(ubyte i; 0..s.count) types ~= s.type;
+        else if(s.isStack) foreach(ubyte i; 0..s.count) types ~= s.type;
+      }
       app.showTileIcons(types);
     }
     igText(toStringz("%s"), toStringz(format("%s - %s\n", d.tile, status)));

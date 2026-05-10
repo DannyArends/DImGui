@@ -12,7 +12,7 @@ import images : nameImageBuffer, generateMipmaps, imageSize, createImage, deAllo
 import io : dir;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
-import tileatlas : updateTileAtlas;
+import resources : updateResourceAtlas;
 
 ImTextureRef ImTextureRefFromID(ulong tex_id) { 
   ImTextureRef tex_ref = { null, cast(ImTextureID)tex_id }; 
@@ -161,7 +161,7 @@ void updateTextures(ref App app) {
       needsUpdate = true;
       if(app.trace) { SDL_Log("updateTextures: syncIndex=%d texture.syncIndex=%d pending=%d", app.syncIndex, texture.syncIndex, nPending); }
       if(texture.syncIndex == app.syncIndex) {
-        app.updateTileAtlas();
+        app.updateResourceAtlas();
         app.mapTextures();
         texture.dirty = false;
         texture.syncIndex = -1;
