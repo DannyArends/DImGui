@@ -59,19 +59,6 @@ enum ResourceType : ubyte {
   }
 }
 
-@nogc pure ResourceType heightToResource(float h, float t) nothrow {
-  if (h < 0.05f) return ResourceType.Lava;
-  if (h < 0.15f){ ResourceType[3] variants = [ResourceType.Stone01, ResourceType.Gravel, ResourceType.Moss01]; return variants[cast(uint)(t * 3) % 3]; }
-  if (h < 0.25f){ ResourceType[4] variants = [ResourceType.Sand01, ResourceType.Sand02, ResourceType.Sand03, ResourceType.Sand05]; return variants[cast(uint)(t * 4) % 4]; }
-  if (h < 0.35f){ ResourceType[4] variants = [ResourceType.Forest02, ResourceType.Sand02, ResourceType.Forest01, ResourceType.Grass02]; return variants[cast(uint)(t * 4) % 4]; }
-  if (h < 0.50f){ ResourceType[4] variants = [ResourceType.Grass01, ResourceType.Grass02, ResourceType.Grass01, ResourceType.Grass04]; return variants[cast(uint)(t * 4) % 4]; }
-  if (h < 0.70f){ ResourceType[4] variants = [ResourceType.Grass04, ResourceType.Grass01, ResourceType.Stone02, ResourceType.Forest02]; return variants[cast(uint)(t * 4) % 4]; }
-  if (h < 0.80f){ ResourceType[3] variants = [ResourceType.Stone01, ResourceType.Stone05, ResourceType.Forest01]; return variants[cast(uint)(t * 3) % 3]; }
-  if (h < 0.85f) return ResourceType.Stone01;
-  if (h < 0.90f) return ResourceType.Ice01;
-  return ResourceType.Snow;
-}
-
 struct ResourceAtlas {
   int[ResourceType] tid;
   int[ResourceType] nid;
