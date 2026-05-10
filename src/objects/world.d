@@ -5,8 +5,6 @@
 
 import engine;
 
-import bush : loadBushes, saveBushes, addBushInstances, rebuildBushInstances;
-import geometry : computeTangents;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
 import noise : noiseHTT;
@@ -15,7 +13,7 @@ import inventory : deriveInventory;
 import searchnode : PathNode;
 import block : loadBlocks, saveBlocks;
 import dwarf : saveDwarfs, repathTo;
-import tree : loadTrees, saveTrees, addTreeInstances, removeTreeInstances;
+import raws : features;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
@@ -43,9 +41,8 @@ struct WorldData {
   /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
   const(char)* blocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* treePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_trees.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* bushPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_bushes.bin", seed[0], seed[1], seed[2]))); }
   const(char)* dwarfsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_dwarfs.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* featurePath(string name) const { return toStringz(fixPath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], name))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
   @nogc pure int [3] localCoord(int[3] tile) const nothrow {
@@ -150,13 +147,9 @@ struct World {
   WorldData data;                                           /// Immutable world Data
   Chunk[int[3]] chunks;                                     /// Current chunks
   bool[int[3]] pendingChunks;                               /// Chunks generated async
-  TrunkMesh trunk;                                          /// Shared TrunkMesh
-  CanopyMesh canopy;                                        /// Shared CanopyMesh
-  Tree[][int[3]] trees;                                     /// Trees per chunk coord
-  Tree[][int[3]] pendingTrees;                              /// Trees generated async
-  BushMesh bush;                                            /// Shared BushMesh
-  Bush[][int[3]] bushes;                                    /// Bushes per chunk coord
-  Bush[][int[3]] pendingBushes;                             /// Bushes generated async
+  Geometry[string] featureMeshes;                           /// meshes keyed by mesh name
+  Feature[][int[3]][string] features;                       /// features[featureName][chunkCoord]
+  Feature[][int[3]][string] pendingFeatures;                /// pending features
   Block[] blocks;                                           /// Block registry
   uint blockNextID = 1;                                     /// next block ID
   bool blocksDirty = false;
@@ -221,16 +214,19 @@ void invalidatePaths(ref App app, int[3] tile) {
 void loadWorld(ref App app) {
   ensureWorldDir();
 
-  app.world.trunk = new TrunkMesh();
-  app.world.canopy = new CanopyMesh();
-  app.world.bush = new BushMesh();
+  foreach(ref ft; features) {
+    foreach(ref part; ft.parts) {
+      if(part.mesh in app.world.featureMeshes) continue;
+      Geometry mesh;
+      if(part.mesh == "Cylinder")     mesh = new Cylinder(0.4f, 1.0f, 12);
+      if(part.mesh == "Icosahedron")  mesh = new Icosahedron();
+      mesh.initInstanced(() => part.mesh);
+      app.world.featureMeshes[part.mesh] = mesh;
+      app.objects ~= mesh;
+    }
+  }
   app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight], true);
   app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
-  app.objects ~= app.world.trunk;
-  app.objects ~= app.world.canopy;
-  app.objects[($-1)].computeTangents();
-  app.objects ~= app.world.bush;
-  app.objects[($-1)].computeTangents();
   app.objects ~= app.world.buildingGhosts;
   app.objects ~= app.world.inventory.ghost;
 
@@ -317,20 +313,14 @@ void updateWorld(ref App app, float[3] lookat) {
   foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
 
   // Load pending trees onto chunks that have been loaded
-  foreach(coord; app.world.pendingTrees.keys.dup) {
-    if(coord !in app.world.chunks) continue;
-    if(!app.world.chunks[coord].tiles.isBuffered) continue;
-    if(!app.world.chunks[coord].tiles.inFrustum) continue;
-    if(coord !in app.world.trees) { app.world.trees[coord] = app.addTreeInstances(app.world.pendingTrees[coord]); }
-    app.world.pendingTrees.remove(coord);
-  }
-
-  foreach(coord; app.world.pendingBushes.keys.dup) {
-    if(coord !in app.world.chunks) continue;
-    if(!app.world.chunks[coord].tiles.isBuffered) continue;
-    if(!app.world.chunks[coord].tiles.inFrustum) continue;
-    if(coord !in app.world.bushes) { app.world.bushes[coord] = app.addBushInstances(app.world.pendingBushes[coord]); }
-    app.world.pendingBushes.remove(coord);
+  foreach(ref ft; features) {
+    foreach(coord; app.world.pendingFeatures[ft.name].keys.dup) {
+      if(coord !in app.world.chunks) continue;
+      if(coord !in app.world.features[ft.name]) {
+        app.world.features[ft.name][coord] = app.addFeatureInstances(app.world.pendingFeatures[ft.name][coord], ft, app.world.featureMeshes);
+      }
+      app.world.pendingFeatures[ft.name].remove(coord);
+    }
   }
 
   // Evict chunks outside render distance

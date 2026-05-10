@@ -4,27 +4,24 @@
  */
 import engine;
 
-import bush : buildBushData;
 import block : unsettleBlocks;
 import geometry : deAllocate;
 import intersection : intersects;
 import matrix : translateScale;
 import mouse : getHits;
 import textures : idx;
-import tree : buildTreeData;
 import vector : expandBounds;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
-  ResourceType[] tileTypes;                                     /// Tile type for each tile in the chunk
+  ResourceType[] tileTypes;                                 /// Tile type for each tile in the chunk
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
-  Tree[] trees;                                             /// Trees generated for this chunk
-  Bush[] bushes;                                            /// Bushes generated for this chunk
+  Feature[][string] featureData;                            /// Chunk Features
   float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
@@ -125,8 +122,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       data.pickIndices ~= i;
     }
   }
-  data.trees = buildTreeData(wd, coord, data.tileTypes);
-  data.bushes = buildBushData(wd, coord, data.tileTypes);
+  foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
 }
 
@@ -171,11 +167,12 @@ void finalizeChunk(ref App app, ChunkData data) {
   app.world.pendingChunks.remove(data.coord);
 
   // Add trees to the chunk
-  if(app.world.trunk !is null && app.world.canopy !is null) {
-    if(data.coord !in app.world.trees && data.coord !in app.world.pendingTrees) { app.world.pendingTrees[data.coord] = data.trees; }
-  }
-  if(app.world.bush !is null){
-    if(data.coord !in app.world.bushes && data.coord !in app.world.pendingBushes) { app.world.pendingBushes[data.coord] = data.bushes; }
+  foreach(ref ft; features) {
+    if(ft.name !in app.world.features) app.world.features[ft.name] = null;
+    if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
+    if(data.coord !in app.world.features[ft.name] && data.coord !in app.world.pendingFeatures[ft.name]){
+      app.world.pendingFeatures[ft.name][data.coord] = data.featureData[ft.name];
+    }
   }
 
   if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.pendingUnsettle.length);
