@@ -22,7 +22,7 @@ public import deletion : CheckedDeletionQueue, DeletionQueue;
 public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, FeatureDropT, Feature;
 public import frustum : Plane;
-public import game : Chunk, Dwarves, GhostCube, PathMarkers, Tiles;
+public import gameobjects : Chunk, Dwarves, GhostCube, PathMarkers, Tiles;
 public import glyphatlas : Glyph, GlyphAtlas;
 public import geometry : Geometry;
 public import icosahedron : Icosahedron;
