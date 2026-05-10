@@ -5,6 +5,7 @@
 
 import engine;
 
+import vector : manhattan2D;
 import search : performSearch, atGoal, stepThroughPath;
 
 struct PathRequest {
@@ -58,4 +59,39 @@ void dispatchPendingPaths(ref App app) {
       app.world.pendingPaths = app.world.pendingPaths[1..$];
     }
   }
+}
+
+/** Invalidate any dwarf paths that pass through the given tile */
+void invalidatePaths(ref App app, int[3] tile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
+    d.path = [];
+    d.moveTo = d.moveFrom = d.visualPos;
+    d.moveT = 1.0f;
+    if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile);
+  }
+}
+
+/** Attempt to re-path object T to goalTile, returns false if unreachable.
+ * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
+bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
+  obj.targetTile = targetTile;
+  auto goalTile = app.findGoalTile(obj);
+  if(goalTile == noTile) return(false);
+  app.pathfindTo(obj, goalTile);
+  return(true);
+}
+
+/** Find the closest standable neighbour (air tile with solid below) to the object.
+ * Requires T to have: tile, targetTile */
+int[3] findGoalTile(T)(ref App app, ref T obj) {
+  int[3] goalTile = noTile;
+  float bestScore = float.max;
+  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
+    if(!app.world.isStandable(n)) continue;
+    float score = manhattan2D(n, obj.tile) + app.world.data.tilePenalties.get(n, 0.0f);
+    if(score < bestScore) { bestScore = score; goalTile = n; }
+  }
+  return goalTile;
 }

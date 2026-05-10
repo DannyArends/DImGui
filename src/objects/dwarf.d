@@ -11,8 +11,8 @@ import matrix : position, scale;
 import inventory : deriveInventory;
 import ghost : syncBuildGhosts;
 import pathmarker : syncPathMarkers;
-import pathfinding : pathfindTo;
-import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination, findGoalTile;
+import pathfinding : pathfindTo, repathTo;
+import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination;
 import rnjesus : randomizeName;
 import timing : timed;
 
@@ -115,16 +115,6 @@ struct Dwarf {
   uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
 
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
-}
-
-/** Attempt to re-path object T to goalTile, returns false if unreachable.
- * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
-bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
-  obj.targetTile = targetTile;
-  auto goalTile = app.findGoalTile(obj);
-  if(goalTile == noTile) return(false);
-  app.pathfindTo(obj, goalTile);
-  return(true);
 }
 
 /** Follow the next step in object T's path.
