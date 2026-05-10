@@ -62,7 +62,7 @@ void handlePrimaryPress(ref App app, float sx, float sy) {
       app.world.paint.active  = true;
       app.world.paint.start   = wc;
       app.world.paint.preview = [wc];
-      app.syncPaintGhosts();
+      app.syncBuildGhosts();
       break;
   }
 }
@@ -126,9 +126,18 @@ void handleSecondaryPress(ref App app, float sx, float sy) {
     case ToolMode.Mine:
     case ToolMode.Stockpile:
       app.world.paint = PaintState.init;
-      app.syncPaintGhosts();
+      app.syncBuildGhosts();
       break;
   }
+}
+
+void updateHoverHighlight(ref App app, float sx, float sy) {
+  if(app.world.activeTool != ToolMode.Mine && app.world.activeTool != ToolMode.Stockpile) return;
+  auto ray = app.camera.castRay(sx, sy);
+  int[3] wc;
+  if(!app.getBestTile(ray, wc)) { app.world.paint.preview = []; app.syncBuildGhosts(); return; }
+  app.world.paint.preview = [wc];
+  app.syncBuildGhosts();
 }
 
 /** Update rectangular paint preview from anchor to current tile */
@@ -141,7 +150,7 @@ void updatePaintPreview(ref App app, int[3] current) {
   for(int x = x0; x <= x1; x++)
     for(int z = z0; z <= z1; z++)
       app.world.paint.preview ~= [x, from[1], z];
-  app.syncPaintGhosts();
+  app.syncBuildGhosts();
 }
 
 /** Commit the current paint preview */
@@ -160,27 +169,5 @@ void commitPaint(ref App app) {
       break; // TODO: designate stockpile zone
   }
   app.world.paint = PaintState.init;
-  app.syncPaintGhosts();
-}
-
-/** Sync the ghost overlay for the current paint preview */
-void syncPaintGhosts(ref App app) {
-  if(app.world.buildingGhosts is null) return;
-  if(app.world.activeTool == ToolMode.Build) { app.syncBuildGhosts(); return; }
-  app.world.buildingGhosts.instances = [];
-  uint color;
-  final switch(app.world.activeTool) {
-    case ToolMode.Select: color = colorIndex(Colors.white); break;
-    case ToolMode.Mine: color = colorIndex(Colors.orangered); break;
-    case ToolMode.Build: color = colorIndex(Colors.dodgerblue); break;
-    case ToolMode.Stockpile: color = colorIndex(Colors.gold); break;
-  }
-  foreach(tile; app.world.paint.preview) {
-    auto inst = DrawInstance([0, 0, color, 0]);
-    inst.matrix = inst.matrix.scale([app.world.tileSize, app.world.tileHeight, app.world.tileSize]);
-    inst.matrix = inst.matrix.translate(app.world.tileToWorld(tile));
-    app.world.buildingGhosts.instances ~= inst;
-  }
-  app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
-  app.world.buildingGhosts.markDirty();
+  app.syncBuildGhosts();
 }
