@@ -3,9 +3,9 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
+import engine;
+
 import ctfeparse : generateColorsEnum, generateResourceEnum, generateHeightToResource, generateFeatureData;
-import featuretype : FeatureT, FeaturePartT, FeatureDropT;
-import resources : ResourceT;
 
 mixin(generateColorsEnum(import("data/raws/colors.txt")));
 mixin(generateResourceEnum(import("data/raws/materials.txt")));

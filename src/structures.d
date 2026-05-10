@@ -20,7 +20,7 @@ public import descriptor : Descriptor, DescriptorLayoutBuilder;
 public import depthbuffer : DepthBuffer;
 public import deletion : CheckedDeletionQueue, DeletionQueue;
 public import dwarf : Dwarves, Dwarf, DwarfData, DwarfState;
-public import featuretype : FeatureT, FeaturePartT, FeatureDropT, Feature;
+public import feature : FeatureT, FeaturePartT, FeatureDropT, Feature;
 public import frustum : Plane;
 public import glyphatlas : Glyph, GlyphAtlas;
 public import geometry : Geometry;

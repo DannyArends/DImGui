@@ -7,7 +7,6 @@ import engine;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, builtTile;
 import pathfinding : pathfindTo;
-import raws : features;
 import timing : timed;
 import vector : manhattan, manhattan2D;
 import world : noTile, setTile, tileAbove;
