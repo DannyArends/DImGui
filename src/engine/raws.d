@@ -4,7 +4,7 @@
  */
 
 import ctfeparse : generateColorsEnum, generateResourceEnum, generateHeightToResource, generateFeatureData;
-import feature : FeatureT, FeaturePartT, FeatureDropT;
+import featuretype : FeatureT, FeaturePartT, FeatureDropT;
 import resources : ResourceT;
 
 mixin(generateColorsEnum(import("data/raws/colors.txt")));
