@@ -217,15 +217,13 @@ void loadWorld(ref App app) {
   ensureWorldDir();
 
   foreach(ref ft; features) {
-    foreach(pi, ref part; ft.parts) {
-      auto key = ft.name ~ "_" ~ to!string(pi);
-      if(key in app.world.featureMeshes) continue;
+    foreach(ref part; ft.parts) {
+      if(part.mesh in app.world.featureMeshes) continue;
       Geometry mesh;
-      if(part.mesh == "Cylinder") mesh = new Cylinder(0.4f, 1.0f, 12);
-      if(part.mesh == "Icosahedron"){ mesh = new Icosahedron(); mesh.computeTangents(); }
-      auto capturedKey = key;
-      mesh.initInstanced(() => capturedKey);
-      app.world.featureMeshes[key] = mesh;
+      if(part.mesh == "Cylinder")    mesh = new Cylinder(0.4f, 1.0f, 12);
+      if(part.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); }
+      mesh.initInstanced(() => part.mesh);
+      app.world.featureMeshes[part.mesh] = mesh;
       app.objects ~= mesh;
     }
   }

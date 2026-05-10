@@ -83,10 +83,9 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
     auto wp = app.world.tileToWorld(f.rootTile);
     float th = app.world.tileHeight;
     f.instanceIdxs = [];
-    foreach(pi, ref part; ft.parts) {
-      auto key = ft.name ~ "_" ~ to!string(pi);
-      if(key !in meshes) continue;
-      auto mesh = meshes[key];
+    foreach(ref part; ft.parts) {
+      if(part.mesh !in meshes) continue;
+      auto mesh = meshes[part.mesh];
       f.instanceIdxs ~= mesh.instances.length;
       float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
       float sy = part.scaleY < 0 ? th : part.scaleY + (f.hash % 5) * part.scaleYVariance;
@@ -110,22 +109,18 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
 }
 
 void rebuildFeatureInstances(ref App app, Feature[][int[3]] features, ref immutable FeatureT ft, Geometry[string] meshes) {
-  // Only clear meshes used by THIS feature type
-  foreach(pi, ref part; ft.parts) {
-    auto key = ft.name ~ "_" ~ to!string(pi);
-    if(key !in meshes) continue;
-    meshes[key].instances = [];
+  foreach(ref part; ft.parts) {
+    if(part.mesh !in meshes) continue;
+    meshes[part.mesh].instances = [];
   }
-  // Clear tile penalties for this feature
   foreach(key; app.world.data.tilePenalties.keys) {
     if(app.world.data.tilePenalties[key] == ft.tilePenalty)
       app.world.data.tilePenalties.remove(key);
   }
   foreach(coord, ref chunkFeatures; features) { chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, meshes); }
-  foreach(pi, ref part; ft.parts) {
-    auto key = ft.name ~ "_" ~ to!string(pi);
-    if(key !in meshes) continue;
-    meshes[key].markDirty();
+  foreach(ref part; ft.parts) {
+    if(part.mesh !in meshes) continue;
+    meshes[part.mesh].markDirty();
   }
 }
 
