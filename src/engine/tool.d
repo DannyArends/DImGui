@@ -14,14 +14,14 @@ import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import matrix : scale, translate;
 import mouse : getHits;
 import geometry : setColor;
-import tile : tileToWorld;
+import tile : tileToWorld, getTileAt;
 import vegetation : getBestVegetation;
 
 enum ToolMode : ubyte { Select, Mine, Build, Stockpile }
 
 struct PaintState {
-  bool     active  = false;
-  int[3]   start   = [int.min, 0, int.min];
+  bool     active = false;
+  int[3]   start = [int.min, 0, int.min];
   int[3][] preview;
 }
 
@@ -161,6 +161,7 @@ void commitPaint(ref App app) {
     case ToolMode.Build:  break;
     case ToolMode.Mine:
       foreach(tile; app.world.paint.preview) {
+        if(app.world.getTileAt(tile) == ResourceType.None) continue;
         auto job = miningJob(tile);
         if(!app.tryAssign(job)) jobQueue ~= job;
       }
