@@ -39,7 +39,7 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
 
 void updateGhostTile(ref App app, float[3][2] ray) {
   if(app.world.inventory.activeTool != ToolMode.Build) return;
-  app.world.inventory.ghost.tile = app.world.inventory.ghost.type == ResourceType.None ? noTile : app.getGhostTile(ray);
+  app.world.inventory.tile = app.world.inventory.type == ResourceType.None ? noTile : app.getGhostTile(ray);
   app.syncBuildGhosts();
 }
 
@@ -65,7 +65,7 @@ ubyte highlightStyle(ToolMode mode) {
 }
 
 void syncBuildGhosts(ref App app) {
-  if(app.world.inventory.ghost is null) return;
+  if(app.world.inventory is null) return;
   app.world.inventory.instances = [];
 
   void addInstance(int[3] tile, uint color, ubyte style) {
@@ -86,13 +86,13 @@ void syncBuildGhosts(ref App app) {
 
   // Paint preview
   uint paintColor;
-  final switch(app.world.inventory.ghost.activeTool) {
+  final switch(app.world.inventory.activeTool) {
     case ToolMode.Select: paintColor = colorIndex(Colors.white); break;
     case ToolMode.Mine: paintColor = colorIndex(Colors.orangered); break;
     case ToolMode.Build: paintColor = colorIndex(Colors.dodgerblue); break;
     case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold); break;
   }
-  foreach(tile; app.world.inventory.ghost.paint.preview) addInstance(tile, paintColor, highlightStyle(app.world.inventory.ghost.activeTool));
+  foreach(tile; app.world.inventory.paint.preview) addInstance(tile, paintColor, highlightStyle(app.world.inventory.activeTool));
 
   if(app.world.inventory.activeTool == ToolMode.Build && app.world.inventory.tile != noTile && app.world.inventory.type != ResourceType.None) {
     auto wp = app.world.tileToWorld(app.world.inventory.tile);

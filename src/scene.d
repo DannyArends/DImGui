@@ -19,9 +19,6 @@ import dwarf : spawnDwarf, loadDwarfs;
 void createScene(ref App app){
   app.updateSun();
 
-  app.inventory.ghostCube = new GhostCube([app.world.tileSize, app.world.tileHeight]);
-  app.objects ~= app.inventory.ghostCube;
-
   // Ground plane
   app.objects ~= new Square();
   app.objects[$-1].computeTangents();
