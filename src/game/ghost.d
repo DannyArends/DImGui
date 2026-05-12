@@ -71,7 +71,7 @@ void syncBuildGhosts(ref App app) {
   void addInstance(int[3] tile, uint color, ubyte style) {
     auto wp = app.world.tileToWorld(tile);
     float ts = app.world.tileSize, th = app.world.tileHeight;
-    auto inst = DrawInstance([0, 0, color, 0]);
+    auto inst = DrawInstance([0, 0, color, -1]);
     final switch(style) {
       case 0: inst.matrix = buildHighlight(wp, ts, th); break;
       case 1: inst.matrix = mineHighlight(wp, ts, th); break;
@@ -93,6 +93,15 @@ void syncBuildGhosts(ref App app) {
     case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold); break;
   }
   foreach(tile; app.world.inventory.ghost.paint.preview) addInstance(tile, paintColor, highlightStyle(app.world.inventory.ghost.activeTool));
+
+  if(app.world.inventory.activeTool == ToolMode.Build && app.world.inventory.tile != noTile && app.world.inventory.type != ResourceType.None) {
+    auto wp = app.world.tileToWorld(app.world.inventory.tile);
+    float ts = app.world.tileSize, th = app.world.tileHeight;
+    int texIdx = app.textures.idx(resourceData(app.world.inventory.type).name ~ "_base");
+    auto inst = DrawInstance([0, 0, 0, texIdx]);
+    inst.matrix = buildHighlight(wp, ts, th);
+    app.world.inventory.instances ~= inst;
+  }
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
   app.world.inventory.markDirty();
