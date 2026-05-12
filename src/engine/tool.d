@@ -100,11 +100,15 @@ void handlePrimaryRelease(ref App app, float sx, float sy) {
       break;
     case ToolMode.Build:
       if(app.world.inventory.isDragging) {
-        foreach(tile; app.world.inventory.dragPreview) app.placeTile(tile);
+        foreach(tile; app.world.inventory.dragPreview) {
+          app.world.buildingGhosts.buildDesignations ~= tile;
+          app.placeTile(tile);
+        }
         app.world.inventory.isDragging = false;
         app.world.inventory.dragPreview = [];
         app.syncBuildGhosts();
       } else if(app.world.inventory.ghost.tile != noTile) {
+        app.world.buildingGhosts.buildDesignations ~= app.world.inventory.ghost.tile;
         app.placeTile(app.world.inventory.ghost.tile);
       }
       break;
@@ -158,10 +162,16 @@ void commitPaint(ref App app) {
   if(app.world.paint.preview.length == 0) return;
   final switch(app.world.activeTool) {
     case ToolMode.Select: break;
-    case ToolMode.Build:  break;
+    case ToolMode.Build:
+      foreach(tile; app.world.paint.preview) {
+        app.world.buildingGhosts.buildDesignations ~= tile;
+        app.placeTile(tile);
+      }
+      break;
     case ToolMode.Mine:
       foreach(tile; app.world.paint.preview) {
         if(app.world.getTileAt(tile) == ResourceType.None) continue;
+        app.world.buildingGhosts.mineDesignations ~= tile;
         auto job = miningJob(tile);
         if(!app.tryAssign(job)) jobQueue ~= job;
       }

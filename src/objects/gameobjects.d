@@ -51,6 +51,8 @@ class Chunk : Cube {
 class GhostCube : Cube {
   ResourceType type = ResourceType.None;
   int[3] tile = noTile;
+  int[3][] mineDesignations;
+  int[3][] buildDesignations;
 
   this(float[2] dim, bool instanced = false) {
     super(color: [1.0f, 1.0f, 1.0f, 1.0f]);
