@@ -50,6 +50,8 @@ class Chunk : Cube {
 
 class GhostCube : Cube {
   ResourceType type = ResourceType.None;
+  ToolMode activeTool = ToolMode.Select;
+  PaintState paint;
   int[3] tile = noTile;
   int[3][] mineDesignations;
   int[3][] buildDesignations;

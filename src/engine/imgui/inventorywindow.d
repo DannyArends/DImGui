@@ -28,10 +28,10 @@ void showToolSwitcher(ref App app) {
   immutable string[3] labels = [ " Select ", " Mine ", " Stockpile " ];
   immutable ToolMode[3] modes = [ ToolMode.Select, ToolMode.Mine, ToolMode.Stockpile ];
   foreach(i, mode; modes) {
-    bool active = app.world.activeTool == mode;
+    bool active = app.world.inventory.ghost.activeTool == mode;
     if(active) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 0.3f, 1.0f));
     if(igButton(toStringz(labels[i]), ImVec2(0, 0))) {
-      app.world.activeTool = mode;
+      app.world.inventory.ghost.activeTool = mode;
       app.world.inventory.ghost.type = ResourceType.None;
     }
     if(active) igPopStyleColor(1);
@@ -62,7 +62,7 @@ void showInventoryContent(ref App app, uint font = 0) {
                   ImVec4(0,0,0,0), tint);
     if(count > 0 && igIsItemClicked(0)) {
       app.world.inventory.ghost.type = selected ? ResourceType.None : tileType;
-      app.world.activeTool = selected ? ToolMode.Select : ToolMode.Build;
+      app.world.inventory.ghost.activeTool = selected ? ToolMode.Select : ToolMode.Build;
     }
     if(selected) igPopStyleColor(1);
 

@@ -11,7 +11,6 @@ import color : colorIndex;
 import ghost : syncBuildGhosts;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
-import matrix : scale, translate;
 import mouse : getHits;
 import geometry : setColor;
 import tile : tileToWorld, getTileAt;
@@ -20,8 +19,8 @@ import vegetation : getBestVegetation;
 enum ToolMode : ubyte { Select, Mine, Build, Stockpile }
 
 struct PaintState {
-  bool     active = false;
-  int[3]   start = [int.min, 0, int.min];
+  bool active = false;
+  int[3] start = [int.min, 0, int.min];
   int[3][] preview;
 }
 
@@ -30,7 +29,7 @@ void handlePrimaryPress(ref App app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
 
-  final switch(app.world.activeTool) {
+  final switch(app.world.inventory.ghost.activeTool) {
     case ToolMode.Select:
       auto hits = app.getHits(ray, app.showRays);
       if(hits.length > 0) {
@@ -51,17 +50,18 @@ void handlePrimaryPress(ref App app, float sx, float sy) {
       break;
     case ToolMode.Build:
       if(app.world.inventory.ghost.tile != noTile && app.world.inventory.ghost.type != ResourceType.None) {
-        app.world.inventory.isDragging = true;
-        app.world.inventory.dragPreview = [app.world.inventory.ghost.tile];
+        app.world.inventory.ghost.paint.active = true;
+        app.world.inventory.ghost.paint.start = app.world.inventory.ghost.tile;
+        app.world.inventory.ghost.paint.preview = [app.world.inventory.ghost.tile];
         app.syncBuildGhosts();
       }
       break;
     case ToolMode.Mine:
     case ToolMode.Stockpile:
       if(!app.getBestTile(ray, wc)) break;
-      app.world.paint.active  = true;
-      app.world.paint.start   = wc;
-      app.world.paint.preview = [wc];
+      app.world.inventory.ghost.paint.active  = true;
+      app.world.inventory.ghost.paint.start = wc;
+      app.world.inventory.ghost.paint.preview = [wc];
       app.syncBuildGhosts();
       break;
   }
@@ -72,19 +72,18 @@ void handlePrimaryDrag(ref App app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
 
-  final switch(app.world.activeTool) {
+  final switch(app.world.inventory.ghost.activeTool) {
     case ToolMode.Select:
       break;
     case ToolMode.Build:
-      if(app.world.inventory.isDragging && app.world.inventory.ghost.tile != noTile &&
-         app.world.inventory.dragPreview.length > 0) {
-        app.computeDragPreview(app.world.inventory.dragPreview[0], app.world.inventory.ghost.tile);
-        app.syncBuildGhosts();
-      }
+      if(!app.world.inventory.ghost.paint.active) break;
+      if(app.world.inventory.ghost.tile == noTile) break;
+      app.computeDragPreview(app.world.inventory.ghost.paint.start, app.world.inventory.ghost.tile);
+      app.syncBuildGhosts();
       break;
     case ToolMode.Mine:
     case ToolMode.Stockpile:
-      if(!app.world.paint.active) break;
+      if(!app.world.inventory.ghost.paint.active) break;
       if(!app.getBestTile(ray, wc)) break;
       app.updatePaintPreview(wc);
       break;
@@ -93,19 +92,16 @@ void handlePrimaryDrag(ref App app, float sx, float sy) {
 
 /** Primary release: left up / finger up */
 void handlePrimaryRelease(ref App app, float sx, float sy) {
-  auto ray = app.camera.castRay(sx, sy);
-
-  final switch(app.world.activeTool) {
+  final switch(app.world.inventory.ghost.activeTool) {
     case ToolMode.Select:
       break;
     case ToolMode.Build:
-      if(app.world.inventory.isDragging) {
-        foreach(tile; app.world.inventory.dragPreview) {
+      if(app.world.inventory.ghost.paint.active) {
+        foreach(tile; app.world.inventory.ghost.paint.preview) {
           app.world.buildingGhosts.buildDesignations ~= tile;
           app.placeTile(tile);
         }
-        app.world.inventory.isDragging = false;
-        app.world.inventory.dragPreview = [];
+        app.world.inventory.ghost.paint = PaintState.init;
         app.syncBuildGhosts();
       } else if(app.world.inventory.ghost.tile != noTile) {
         app.world.buildingGhosts.buildDesignations ~= app.world.inventory.ghost.tile;
@@ -114,14 +110,14 @@ void handlePrimaryRelease(ref App app, float sx, float sy) {
       break;
     case ToolMode.Mine:
     case ToolMode.Stockpile:
-      if(app.world.paint.active) app.commitPaint();
+      if(app.world.inventory.ghost.paint.active) app.commitPaint();
       break;
   }
 }
 
 /** Secondary press: right click */
 void handleSecondaryPress(ref App app, float sx, float sy) {
-  final switch(app.world.activeTool) {
+  final switch(app.world.inventory.ghost.activeTool) {
     case ToolMode.Select:
       break;
     case ToolMode.Build:
@@ -129,47 +125,47 @@ void handleSecondaryPress(ref App app, float sx, float sy) {
       break;
     case ToolMode.Mine:
     case ToolMode.Stockpile:
-      app.world.paint = PaintState.init;
+      app.world.inventory.ghost.paint = PaintState.init;
       app.syncBuildGhosts();
       break;
   }
 }
 
 void updateHoverHighlight(ref App app, float sx, float sy) {
-  if(app.world.activeTool != ToolMode.Mine && app.world.activeTool != ToolMode.Stockpile) return;
+  if(app.world.inventory.ghost.activeTool != ToolMode.Mine && app.world.inventory.ghost.activeTool != ToolMode.Stockpile) return;
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
-  if(!app.getBestTile(ray, wc)) { app.world.paint.preview = []; app.syncBuildGhosts(); return; }
-  app.world.paint.preview = [wc];
+  if(!app.getBestTile(ray, wc)) { app.world.inventory.ghost.paint.preview = []; app.syncBuildGhosts(); return; }
+  app.world.inventory.ghost.paint.preview = [wc];
   app.syncBuildGhosts();
 }
 
 /** Update rectangular paint preview from anchor to current tile */
 void updatePaintPreview(ref App app, int[3] current) {
-  if(app.world.paint.start[0] == int.min) return;
-  auto from = app.world.paint.start;
-  app.world.paint.preview = [];
+  if(app.world.inventory.ghost.paint.start == noTile) return;
+  auto from = app.world.inventory.ghost.paint.start;
+  app.world.inventory.ghost.paint.preview = [];
   int x0 = min(from[0], current[0]), x1 = max(from[0], current[0]);
   int z0 = min(from[2], current[2]), z1 = max(from[2], current[2]);
-  for(int x = x0; x <= x1; x++)
-    for(int z = z0; z <= z1; z++)
-      app.world.paint.preview ~= [x, from[1], z];
+  for(int x = x0; x <= x1; x++) { for(int z = z0; z <= z1; z++) {
+    app.world.inventory.ghost.paint.preview ~= [x, from[1], z];
+  } }
   app.syncBuildGhosts();
 }
 
 /** Commit the current paint preview */
 void commitPaint(ref App app) {
-  if(app.world.paint.preview.length == 0) return;
-  final switch(app.world.activeTool) {
+  if(app.world.inventory.ghost.paint.preview.length == 0) return;
+  final switch(app.world.inventory.ghost.activeTool) {
     case ToolMode.Select: break;
     case ToolMode.Build:
-      foreach(tile; app.world.paint.preview) {
+      foreach(tile; app.world.inventory.ghost.paint.preview) {
         app.world.buildingGhosts.buildDesignations ~= tile;
         app.placeTile(tile);
       }
       break;
     case ToolMode.Mine:
-      foreach(tile; app.world.paint.preview) {
+      foreach(tile; app.world.inventory.ghost.paint.preview) {
         if(app.world.getTileAt(tile) == ResourceType.None) continue;
         app.world.buildingGhosts.mineDesignations ~= tile;
         auto job = miningJob(tile);
@@ -179,6 +175,6 @@ void commitPaint(ref App app) {
     case ToolMode.Stockpile:
       break; // TODO: designate stockpile zone
   }
-  app.world.paint = PaintState.init;
+  app.world.inventory.ghost.paint = PaintState.init;
   app.syncBuildGhosts();
 }
