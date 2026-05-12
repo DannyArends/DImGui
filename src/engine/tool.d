@@ -98,13 +98,13 @@ void handlePrimaryRelease(ref App app, float sx, float sy) {
     case ToolMode.Build:
       if(app.world.inventory.ghost.paint.active) {
         foreach(tile; app.world.inventory.ghost.paint.preview) {
-          app.world.buildingGhosts.buildDesignations ~= tile;
+          app.world.inventory.buildDesignations ~= tile;
           app.placeTile(tile);
         }
         app.world.inventory.ghost.paint = PaintState.init;
         app.syncBuildGhosts();
       } else if(app.world.inventory.ghost.tile != noTile) {
-        app.world.buildingGhosts.buildDesignations ~= app.world.inventory.ghost.tile;
+        app.world.inventory.buildDesignations ~= app.world.inventory.ghost.tile;
         app.placeTile(app.world.inventory.ghost.tile);
       }
       break;
@@ -160,14 +160,14 @@ void commitPaint(ref App app) {
     case ToolMode.Select: break;
     case ToolMode.Build:
       foreach(tile; app.world.inventory.ghost.paint.preview) {
-        app.world.buildingGhosts.buildDesignations ~= tile;
+        app.world.inventory.buildDesignations ~= tile;
         app.placeTile(tile);
       }
       break;
     case ToolMode.Mine:
       foreach(tile; app.world.inventory.ghost.paint.preview) {
         if(app.world.getTileAt(tile) == ResourceType.None) continue;
-        app.world.buildingGhosts.mineDesignations ~= tile;
+        app.world.inventory.mineDesignations ~= tile;
         auto job = miningJob(tile);
         if(!app.tryAssign(job)) jobQueue ~= job;
       }
@@ -175,6 +175,6 @@ void commitPaint(ref App app) {
     case ToolMode.Stockpile:
       break; // TODO: designate stockpile zone
   }
-  app.world.inventory.ghost.paint = PaintState.init;
+  app.world.inventory.paint = PaintState.init;
   app.syncBuildGhosts();
 }
