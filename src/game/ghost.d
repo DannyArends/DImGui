@@ -70,45 +70,33 @@ void syncBuildGhosts(ref App app) {
   if(app.world.buildingGhosts is null) return;
   app.world.buildingGhosts.instances = [];
 
-  void addInstance(int[3] tile, uint color) {
+  void addInstance(int[3] tile, uint color, bool envelop) {
     auto wp = app.world.tileToWorld(tile);
     float ts = app.world.tileSize, th = app.world.tileHeight;
     auto inst = DrawInstance([0, 0, color, 0]);
-    final switch(app.world.activeTool) {
-      case ToolMode.Mine:      inst.matrix = mineHighlight(wp, ts, th); break;
-      case ToolMode.Stockpile: inst.matrix = stockpileHighlight(wp, ts, th); break;
-      case ToolMode.Build:     inst.matrix = buildHighlight(wp, ts, th); break;
-      case ToolMode.Select:    inst.matrix = mineHighlight(wp, ts, th); break;
-    }
+    inst.matrix = envelop ? mineHighlight(wp, ts, th) : stockpileHighlight(wp, ts, th);
     app.world.buildingGhosts.instances ~= inst;
   }
 
-  // Committed build jobs
-  foreach(key; app.world.data.tilePenalties.keys) { if(app.world.data.tilePenalties[key] >= 20.0f) app.world.data.tilePenalties.remove(key); }
-  foreach(ref j; jobQueue) { 
-    if(j.name == "Building") { addInstance(j.targetTile, colorIndex(Colors.dodgerblue)); app.world.data.tilePenalties[j.targetTile] = 40.0f; }
-    if(j.name == "Mining") { addInstance(j.targetTile, colorIndex(Colors.orangered)); }
-  }
-  if(app.world.dwarves !is null) {
-    foreach(ref d; app.world.dwarves) { foreach(ref j; d.jobStack) {
-      if(j.name == "Building") { addInstance(j.targetTile, colorIndex(Colors.dodgerblue)); app.world.data.tilePenalties[j.targetTile] = 40.0f; }
-      if(j.name == "Mining") { addInstance(j.targetTile, colorIndex(Colors.orangered)); }
-    } }
-  }
+  // Committed designations from world lists (not scanned from jobs)
+  foreach(tile; app.world.buildingGhosts.buildDesignations) addInstance(tile, colorIndex(Colors.dodgerblue), false);
+  foreach(tile; app.world.buildingGhosts.mineDesignations)  addInstance(tile, colorIndex(Colors.orangered),  true);
 
   // Build drag preview
-  foreach(tile; app.world.inventory.dragPreview) addInstance(tile, colorIndex(Colors.darkslateblue));
+  foreach(tile; app.world.inventory.dragPreview) addInstance(tile, colorIndex(Colors.darkslateblue), true);
 
-  // Paint preview (Mine / Stockpile)
+  // Paint preview
+  bool envelop = app.world.activeTool == ToolMode.Mine;
   uint paintColor;
   final switch(app.world.activeTool) {
-    case ToolMode.Select: paintColor = colorIndex(Colors.white); break;
-    case ToolMode.Mine: paintColor = colorIndex(Colors.orangered); break;
-    case ToolMode.Build: paintColor = colorIndex(Colors.dodgerblue); break;
-    case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold); break;
+    case ToolMode.Select:    paintColor = colorIndex(Colors.white);      break;
+    case ToolMode.Mine:      paintColor = colorIndex(Colors.orangered);  break;
+    case ToolMode.Build:     paintColor = colorIndex(Colors.dodgerblue); break;
+    case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold);       break;
   }
-  foreach(tile; app.world.paint.preview) addInstance(tile, paintColor);
+  foreach(tile; app.world.paint.preview) addInstance(tile, paintColor, envelop);
 
   app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
   app.world.buildingGhosts.markDirty();
 }
+

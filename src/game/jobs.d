@@ -103,6 +103,8 @@ Job miningJob(int[3] targetTile) {
         if(tt != ResourceType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         app.world.inventoryDirty = true;
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
+        app.world.buildingGhosts.mineDesignations = app.world.buildingGhosts.mineDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
+        app.world.ghostsDirty = true;
       });
     },
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
@@ -185,6 +187,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       app.world.blocksDirty = true;
+      app.world.buildingGhosts.buildDesignations = app.world.buildingGhosts.buildDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
       d.completeSubJob();
       app.world.ghostsDirty = true;
       app.world.inventoryDirty = true;
