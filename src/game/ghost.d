@@ -66,35 +66,43 @@ Matrix stockpileHighlight(float[3] wp, float ts, float th) {
   return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts * 1.05f, th * 0.1f, ts * 1.05f]);
 }
 
+ubyte highlightStyle(ToolMode mode) {
+  final switch(mode) {
+    case ToolMode.Select: return 0;
+    case ToolMode.Build: return 0;
+    case ToolMode.Mine: return 1;
+    case ToolMode.Stockpile: return 2;
+  }
+}
+
 void syncBuildGhosts(ref App app) {
   if(app.world.buildingGhosts is null) return;
   app.world.buildingGhosts.instances = [];
 
-  void addInstance(int[3] tile, uint color, bool envelop) {
+  void addInstance(int[3] tile, uint color, ubyte style) {
     auto wp = app.world.tileToWorld(tile);
     float ts = app.world.tileSize, th = app.world.tileHeight;
     auto inst = DrawInstance([0, 0, color, 0]);
-    inst.matrix = envelop ? mineHighlight(wp, ts, th) : stockpileHighlight(wp, ts, th);
+    if(style == 0) inst.matrix = buildHighlight(wp, ts, th);
+    if(style == 1) inst.matrix = mineHighlight(wp, ts, th);
+    if(style == 2) inst.matrix = stockpileHighlight(wp, ts, th);
     app.world.buildingGhosts.instances ~= inst;
   }
 
   // Committed designations from world lists (not scanned from jobs)
-  foreach(tile; app.world.buildingGhosts.buildDesignations) addInstance(tile, colorIndex(Colors.dodgerblue), false);
-  foreach(tile; app.world.buildingGhosts.mineDesignations)  addInstance(tile, colorIndex(Colors.orangered),  true);
-
-  // Build drag preview
-  foreach(tile; app.world.inventory.dragPreview) addInstance(tile, colorIndex(Colors.darkslateblue), true);
+  foreach(tile; app.world.buildingGhosts.buildDesignations) addInstance(tile, colorIndex(Colors.dodgerblue), 0);
+  foreach(tile; app.world.buildingGhosts.mineDesignations) addInstance(tile, colorIndex(Colors.orangered),  1);
+  foreach(tile; app.world.inventory.dragPreview) addInstance(tile, colorIndex(Colors.darkslateblue), 0);
 
   // Paint preview
-  bool envelop = app.world.activeTool == ToolMode.Mine;
   uint paintColor;
   final switch(app.world.activeTool) {
-    case ToolMode.Select:    paintColor = colorIndex(Colors.white);      break;
-    case ToolMode.Mine:      paintColor = colorIndex(Colors.orangered);  break;
-    case ToolMode.Build:     paintColor = colorIndex(Colors.dodgerblue); break;
-    case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold);       break;
+    case ToolMode.Select: paintColor = colorIndex(Colors.white); break;
+    case ToolMode.Mine: paintColor = colorIndex(Colors.orangered); break;
+    case ToolMode.Build: paintColor = colorIndex(Colors.dodgerblue); break;
+    case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold); break;
   }
-  foreach(tile; app.world.paint.preview) addInstance(tile, paintColor, envelop);
+  foreach(tile; app.world.paint.preview) addInstance(tile, paintColor, highlightStyle(app.world.activeTool));
 
   app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
   app.world.buildingGhosts.markDirty();
