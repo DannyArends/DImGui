@@ -82,8 +82,6 @@ struct World {
   Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
   bool inventoryDirty = false;
-  GhostCube buildingGhosts;                                 /// Building Ghosts
-  bool ghostsDirty = false;
   Dwarves dwarves;                                          /// Dwarves
   PathMarkers pathMarkers;                                  /// Path markers
   bool pathsDirty = false;
@@ -118,9 +116,7 @@ void loadWorld(ref App app) {
   ensureWorldDir();
   app.initFeatureMeshes();
 
-  app.world.buildingGhosts = new GhostCube([app.world.tileSize, app.world.tileHeight], true);
   app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
-  app.objects ~= app.world.buildingGhosts;
   app.objects ~= app.world.inventory.ghost;
 
   auto raw = readFile(app.world.worldPath());

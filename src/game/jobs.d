@@ -103,8 +103,8 @@ Job miningJob(int[3] targetTile) {
         if(tt != ResourceType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         app.world.inventoryDirty = true;
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
-        app.world.buildingGhosts.mineDesignations = app.world.buildingGhosts.mineDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
-        app.world.ghostsDirty = true;
+        app.world.inventory.mineDesignations = app.world.inventory.mineDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
+        app.world.inventory.ghostsDirty = true;
       });
     },
     onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
@@ -187,9 +187,9 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       app.world.blocksDirty = true;
-      app.world.buildingGhosts.buildDesignations = app.world.buildingGhosts.buildDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
+      app.world.inventory.buildDesignations = app.world.inventory.buildDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
       d.completeSubJob();
-      app.world.ghostsDirty = true;
+      app.world.inventory.ghostsDirty = true;
       app.world.inventoryDirty = true;
     },
     onFail: (ref App app, ref Dwarf d) {
@@ -198,7 +198,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       newJob.failedBy = d.jobStack[$-1].failedBy ~ [d.uid];
       jobQueue ~= newJob;
       d.clearGoal();
-      app.world.ghostsDirty = true;
+      app.world.inventory.ghostsDirty = true;
     }
   );
 }
@@ -272,7 +272,7 @@ void failAndRequeueParent(ref Dwarf d) { if(d.jobStack.length > 1) jobQueue ~= d
 void claimNextJob(ref App app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  app.world.ghostsDirty = true;
+  app.world.inventory.ghostsDirty = true;
 
   int bestIdx = -1;
   float bestDist = float.max;

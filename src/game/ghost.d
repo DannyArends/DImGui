@@ -38,19 +38,9 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
 }
 
 void updateGhostTile(ref App app, float[3][2] ray) {
-  if(app.world.inventory.ghost.type == ResourceType.None) {
-    app.world.inventory.ghost.tile = noTile;
-    app.world.inventory.ghost.isVisible = false;
-    return;
-  }else{ app.world.inventory.ghost.isVisible = true; }
-  app.world.inventory.ghost.tile = app.getGhostTile(ray);
-  if(app.world.inventory.ghost.isVisible) {
-    app.world.inventory.ghost.position(app.world.tileToWorld(app.world.inventory.ghost.tile));
-    foreach (k, ref m; app.world.inventory.ghost.meshes) {
-      m.tid = app.textures.idx(resourceData(app.world.inventory.ghost.type).name ~ "_base");
-    }
-    app.buffers["MeshMatrices"].dirty[] = true;
-  }
+  if(app.world.inventory.activeTool != ToolMode.Build) return;
+  app.world.inventory.ghost.tile = app.world.inventory.ghost.type == ResourceType.None ? noTile : app.getGhostTile(ray);
+  app.syncBuildGhosts();
 }
 
 Matrix mineHighlight(float[3] wp, float ts, float th) {
@@ -75,8 +65,8 @@ ubyte highlightStyle(ToolMode mode) {
 }
 
 void syncBuildGhosts(ref App app) {
-  if(app.world.buildingGhosts is null) return;
-  app.world.buildingGhosts.instances = [];
+  if(app.world.inventory.ghost is null) return;
+  app.world.inventory.instances = [];
 
   void addInstance(int[3] tile, uint color, ubyte style) {
     auto wp = app.world.tileToWorld(tile);
@@ -87,12 +77,12 @@ void syncBuildGhosts(ref App app) {
       case 1: inst.matrix = mineHighlight(wp, ts, th); break;
       case 2: inst.matrix = stockpileHighlight(wp, ts, th); break;
     }
-    app.world.buildingGhosts.instances ~= inst;
+    app.world.inventory.instances ~= inst;
   }
 
   // Committed designations from world lists (not scanned from jobs)
-  foreach(tile; app.world.buildingGhosts.buildDesignations) addInstance(tile, colorIndex(Colors.dodgerblue), 0);
-  foreach(tile; app.world.buildingGhosts.mineDesignations) addInstance(tile, colorIndex(Colors.orangered),  1);
+  foreach(tile; app.world.inventory.buildDesignations) addInstance(tile, colorIndex(Colors.dodgerblue), 0);
+  foreach(tile; app.world.inventory.mineDesignations) addInstance(tile, colorIndex(Colors.orangered),  1);
 
   // Paint preview
   uint paintColor;
@@ -104,7 +94,7 @@ void syncBuildGhosts(ref App app) {
   }
   foreach(tile; app.world.inventory.ghost.paint.preview) addInstance(tile, paintColor, highlightStyle(app.world.inventory.ghost.activeTool));
 
-  app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
-  app.world.buildingGhosts.markDirty();
+  app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
+  app.world.inventory.markDirty();
 }
 
