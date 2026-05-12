@@ -5,7 +5,7 @@
 
 import engine;
 
-import ghost : syncBuildGhosts, syncDesignations;
+import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
 import tile : getTile;
 
@@ -40,7 +40,7 @@ void deriveInventory(ref App app) {
     SDL_Log(toStringz(format("[Inventory] %d building jobs removed (inventory check)", cast(int)(prevLen - jobQueue.length))));
   }
   if(app.world.inventory.get(app.world.inventory.type, app) <= 0) app.world.inventory.type = ResourceType.None;
-  if(jobQueue.length != prevLen) app.syncDesignations();
+  if(jobQueue.length != prevLen) app.syncBuildGhosts();
 }
 
 void placeTile(ref App app, int[3] wc) {
