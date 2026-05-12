@@ -8,7 +8,7 @@ import engine;
 import camera : castRay;
 import chunk : getBestTile;
 import color : colorIndex;
-import ghost : syncPaintPreview, syncDesignations;
+import ghost : syncBuildGhosts;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import mouse : getHits;
@@ -53,7 +53,7 @@ void handlePrimaryPress(ref App app, float sx, float sy) {
         app.world.inventory.paint.active = true;
         app.world.inventory.paint.start = app.world.inventory.tile;
         app.world.inventory.paint.preview = [app.world.inventory.tile];
-        app.syncPaintPreview();
+        app.syncBuildGhosts();
       }
       break;
     case ToolMode.Mine:
@@ -62,7 +62,7 @@ void handlePrimaryPress(ref App app, float sx, float sy) {
       app.world.inventory.paint.active  = true;
       app.world.inventory.paint.start = wc;
       app.world.inventory.paint.preview = [wc];
-      app.syncPaintPreview();
+      app.syncBuildGhosts();
       break;
   }
 }
@@ -79,7 +79,7 @@ void handlePrimaryDrag(ref App app, float sx, float sy) {
       if(!app.world.inventory.paint.active) break;
       if(app.world.inventory.tile == noTile) break;
       app.computeDragPreview(app.world.inventory.paint.start, app.world.inventory.tile);
-      app.syncPaintPreview();
+      app.syncBuildGhosts();
       break;
     case ToolMode.Mine:
     case ToolMode.Stockpile:
@@ -102,7 +102,7 @@ void handlePrimaryRelease(ref App app, float sx, float sy) {
           app.placeTile(tile);
         }
         app.world.inventory.paint = PaintState.init;
-        app.syncDesignations();
+        app.syncBuildGhosts();
       } else if(app.world.inventory.tile != noTile) {
         app.world.inventory.buildDesignations ~= app.world.inventory.tile;
         app.placeTile(app.world.inventory.tile);
@@ -126,7 +126,7 @@ void handleSecondaryPress(ref App app, float sx, float sy) {
     case ToolMode.Mine:
     case ToolMode.Stockpile:
       app.world.inventory.paint = PaintState.init;
-      app.syncDesignations();
+      app.syncBuildGhosts();
       break;
   }
 }
@@ -135,9 +135,9 @@ void updateHoverHighlight(ref App app, float sx, float sy) {
   if(app.world.inventory.activeTool != ToolMode.Mine && app.world.inventory.activeTool != ToolMode.Stockpile) return;
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
-  if(!app.getBestTile(ray, wc)) { app.world.inventory.paint.preview = []; app.syncPaintPreview(); return; }
+  if(!app.getBestTile(ray, wc)) { app.world.inventory.paint.preview = []; app.syncBuildGhosts(); return; }
   app.world.inventory.paint.preview = [wc];
-  app.syncPaintPreview();
+  app.syncBuildGhosts();
 }
 
 /** Update rectangular paint preview from anchor to current tile */
@@ -150,7 +150,7 @@ void updatePaintPreview(ref App app, int[3] current) {
   for(int x = x0; x <= x1; x++) { for(int z = z0; z <= z1; z++) {
     app.world.inventory.paint.preview ~= [x, from[1], z];
   } }
-  app.syncDesignations();
+  app.syncBuildGhosts();
 }
 
 /** Commit the current paint preview */
@@ -176,5 +176,5 @@ void commitPaint(ref App app) {
       break; // TODO: designate stockpile zone
   }
   app.world.inventory.paint = PaintState.init;
-  app.syncDesignations();
+  app.syncBuildGhosts();
 }
