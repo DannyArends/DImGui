@@ -64,45 +64,59 @@ ubyte highlightStyle(ToolMode mode) {
   }
 }
 
+void addInstance(ref App app, int[3] tile, uint color, ubyte style) {
+  auto wp = app.world.tileToWorld(tile);
+  float ts = app.world.tileSize, th = app.world.tileHeight;
+  auto inst = DrawInstance([0, 0, color, -1]);
+  final switch(style) {
+    case 0: inst.matrix = buildHighlight(wp, ts, th); break;
+    case 1: inst.matrix = mineHighlight(wp, ts, th); break;
+    case 2: inst.matrix = stockpileHighlight(wp, ts, th); break;
+  }
+  app.world.inventory.instances ~= inst;
+}
+
+/** Committed designations + tile penalties */
+void syncDesignations(ref App app) {
+  foreach(tile; app.world.inventory.buildDesignations) {
+    app.addInstance(tile, colorIndex(Colors.dodgerblue), 0);
+    app.world.data.tilePenalties[tile] = 40.0f;
+  }
+  foreach(tile; app.world.inventory.mineDesignations){ app.addInstance(tile, colorIndex(Colors.orangered), 1); }
+}
+
+/** Paint preview (drag highlight) */
+void syncPaintPreview(ref App app) {
+  uint paintColor;
+  final switch(app.world.inventory.activeTool) {
+    case ToolMode.Select:    paintColor = colorIndex(Colors.white);      break;
+    case ToolMode.Mine:      paintColor = colorIndex(Colors.orangered);  break;
+    case ToolMode.Build:     paintColor = colorIndex(Colors.dodgerblue); break;
+    case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold);       break;
+  }
+  foreach(tile; app.world.inventory.paint.preview) { app.addInstance(tile, paintColor, highlightStyle(app.world.inventory.activeTool)); }
+}
+
+/** Cursor ghost (single tile with texture) */
+void syncCursorGhost(ref App app) {
+  if(app.world.inventory.activeTool != ToolMode.Build) return;
+  if(app.world.inventory.tile == noTile) return;
+  if(app.world.inventory.type == ResourceType.None) return;
+  auto wp = app.world.tileToWorld(app.world.inventory.tile);
+  float ts = app.world.tileSize, th = app.world.tileHeight;
+  int texIdx = app.textures.idx(resourceData(app.world.inventory.type).name ~ "_base");
+  auto inst = DrawInstance([0, 0, 0, texIdx]);
+  inst.matrix = buildHighlight(wp, ts, th);
+  app.world.inventory.instances ~= inst;
+}
+
+/** Update Orchestrator */
 void syncBuildGhosts(ref App app) {
   if(app.world.inventory is null) return;
   app.world.inventory.instances = [];
-
-  void addInstance(int[3] tile, uint color, ubyte style) {
-    auto wp = app.world.tileToWorld(tile);
-    float ts = app.world.tileSize, th = app.world.tileHeight;
-    auto inst = DrawInstance([0, 0, color, -1]);
-    final switch(style) {
-      case 0: inst.matrix = buildHighlight(wp, ts, th); break;
-      case 1: inst.matrix = mineHighlight(wp, ts, th); break;
-      case 2: inst.matrix = stockpileHighlight(wp, ts, th); break;
-    }
-    app.world.inventory.instances ~= inst;
-  }
-
-  // Committed designations from world lists (not scanned from jobs)
-  foreach(tile; app.world.inventory.buildDesignations) addInstance(tile, colorIndex(Colors.dodgerblue), 0);
-  foreach(tile; app.world.inventory.mineDesignations) addInstance(tile, colorIndex(Colors.orangered),  1);
-
-  // Paint preview
-  uint paintColor;
-  final switch(app.world.inventory.activeTool) {
-    case ToolMode.Select: paintColor = colorIndex(Colors.white); break;
-    case ToolMode.Mine: paintColor = colorIndex(Colors.orangered); break;
-    case ToolMode.Build: paintColor = colorIndex(Colors.dodgerblue); break;
-    case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold); break;
-  }
-  foreach(tile; app.world.inventory.paint.preview) addInstance(tile, paintColor, highlightStyle(app.world.inventory.activeTool));
-
-  if(app.world.inventory.activeTool == ToolMode.Build && app.world.inventory.tile != noTile && app.world.inventory.type != ResourceType.None) {
-    auto wp = app.world.tileToWorld(app.world.inventory.tile);
-    float ts = app.world.tileSize, th = app.world.tileHeight;
-    int texIdx = app.textures.idx(resourceData(app.world.inventory.type).name ~ "_base");
-    auto inst = DrawInstance([0, 0, 0, texIdx]);
-    inst.matrix = buildHighlight(wp, ts, th);
-    app.world.inventory.instances ~= inst;
-  }
-
+  app.syncDesignations();
+  app.syncPaintPreview();
+  app.syncCursorGhost();
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
   app.world.inventory.markDirty();
 }
