@@ -20,9 +20,9 @@ struct Job {
   int[3] targetTile = noTile;
   ResourceType tileType;
   Job[] prereqs;
+  bool personal = false;
   uint[] blockIDs;
   uint[] failedBy;
-
   JobState state = JobState.Pending;
 
   void function(ref App app, ref Dwarf d, ref Job j) onClaim;
@@ -123,7 +123,7 @@ Job interactFeatureJob(int[3] targetTile) {
 
 /** Pickup Job */
 Job pickupJob(int[3] targetTile, ResourceType tileType) {
-  return Job("Fetching", targetTile, tileType, [],
+  return Job("Fetching", targetTile, tileType, [], true,
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref App app, ref Dwarf d) { app.doPickup(d); },
     onFail: (ref App app, ref Dwarf d) {
@@ -144,7 +144,7 @@ Job moveAwayJob(int[3] from) {
 
 /** Move to a free neighbouring tile and drops a carried block */
 Job dropBlockJob(int[3] fromTile, uint blockID) {
-  return Job("DropBlock", fromTile, ResourceType.None, [], [blockID],
+  return Job("DropBlock", fromTile, ResourceType.None, [], true, [blockID],
     onClaim: (ref App app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref App app, ref Dwarf d) {
       foreach(slot, ref s; d.inventory) { if(s.isBlock && s.blockID == d.jobStack[0].blockIDs[0]) { d.drop(app, slot); break; } }
@@ -252,7 +252,7 @@ bool tryAssign(ref App app, ref Job job) {
 /** Reject the job and requeue */
 bool rejectJob(ref App app, ref Dwarf d, ref Job job) {
   if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
-  jobQueue ~= job;
+  if(!job.personal) jobQueue ~= job;
   d.clearGoal();
   return false;
 }
@@ -260,7 +260,7 @@ bool rejectJob(ref App app, ref Dwarf d, ref Job job) {
 /** Fail the current job and requeue */
 void failAndRequeue(ref Dwarf d) {
   if(!d.jobStack[0].failedBy.canFind(d.uid)) d.jobStack[0].failedBy ~= d.uid;
-  jobQueue ~= d.jobStack[0];
+  if(!d.jobStack[0].personal) jobQueue ~= d.jobStack[0];
   d.clearGoal();
   d.progress = 0.0f;
 }
