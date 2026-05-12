@@ -28,11 +28,11 @@ void showToolSwitcher(ref App app) {
   immutable string[3] labels = [ " Select ", " Mine ", " Stockpile " ];
   immutable ToolMode[3] modes = [ ToolMode.Select, ToolMode.Mine, ToolMode.Stockpile ];
   foreach(i, mode; modes) {
-    bool active = app.world.inventory.ghost.activeTool == mode;
+    bool active = app.world.inventory.activeTool == mode;
     if(active) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 0.3f, 1.0f));
     if(igButton(toStringz(labels[i]), ImVec2(0, 0))) {
-      app.world.inventory.ghost.activeTool = mode;
-      app.world.inventory.ghost.type = ResourceType.None;
+      app.world.inventory.activeTool = mode;
+      app.world.inventory.type = ResourceType.None;
     }
     if(active) igPopStyleColor(1);
     if(i < modes.length - 1) igSameLine(0, 4);
@@ -54,15 +54,15 @@ void showInventoryContent(ref App app, uint font = 0) {
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
     int count = app.world.inventory.get(tileType, app);
 
-    bool selected = app.world.inventory.ghost.type == tileType;
+    bool selected = app.world.inventory.type == tileType;
     if(selected) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.4f, 0.6f, 0.4f, 1.0f));
     auto tint = count > 0 ? ImVec4(1,1,1,1) : ImVec4(0.3f,0.3f,0.3f,0.5f);
     igImageButton(toStringz(format("##inv_%d", tileType)), texID,
                   ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1),
                   ImVec4(0,0,0,0), tint);
     if(count > 0 && igIsItemClicked(0)) {
-      app.world.inventory.ghost.type = selected ? ResourceType.None : tileType;
-      app.world.inventory.ghost.activeTool = selected ? ToolMode.Select : ToolMode.Build;
+      app.world.inventory.type = selected ? ResourceType.None : tileType;
+      app.world.inventory.activeTool = selected ? ToolMode.Select : ToolMode.Build;
     }
     if(selected) igPopStyleColor(1);
 
@@ -80,10 +80,11 @@ void showInventoryContent(ref App app, uint font = 0) {
     if(resourceData(tileType).maxStack <= 1) continue;
     uint total = 0;
     if(app.world.dwarves !is null)
-      foreach(ref d; app.world.dwarves)
-        foreach(ref s; d.inventory)
-          if(s.isStack && s.type == tileType) total += s.count;
+      foreach(ref d; app.world.dwarves){ foreach(ref s; d.inventory){
+        if(s.isStack && s.type == tileType) total += s.count;
+      } }
     if(total == 0) continue;
     igText(toStringz(format("%s: %d", resourceData(tileType).name, total)));
   }
 }
+
