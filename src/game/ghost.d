@@ -10,7 +10,6 @@ import chunk : getBestTile;
 import textures : idx;
 import vector : dot;
 import matrix : translateScale;
-import jobs : jobQueue;
 import tile : tileIdx, tileToWorld;
 
 int[3] getGhostTile(ref App app, float[3][2] ray) {
@@ -83,26 +82,27 @@ void syncBuildGhosts(ref App app) {
     auto wp = app.world.tileToWorld(tile);
     float ts = app.world.tileSize, th = app.world.tileHeight;
     auto inst = DrawInstance([0, 0, color, 0]);
-    if(style == 0) inst.matrix = buildHighlight(wp, ts, th);
-    if(style == 1) inst.matrix = mineHighlight(wp, ts, th);
-    if(style == 2) inst.matrix = stockpileHighlight(wp, ts, th);
+    final switch(style) {
+      case 0: inst.matrix = buildHighlight(wp, ts, th); break;
+      case 1: inst.matrix = mineHighlight(wp, ts, th); break;
+      case 2: inst.matrix = stockpileHighlight(wp, ts, th); break;
+    }
     app.world.buildingGhosts.instances ~= inst;
   }
 
   // Committed designations from world lists (not scanned from jobs)
   foreach(tile; app.world.buildingGhosts.buildDesignations) addInstance(tile, colorIndex(Colors.dodgerblue), 0);
   foreach(tile; app.world.buildingGhosts.mineDesignations) addInstance(tile, colorIndex(Colors.orangered),  1);
-  foreach(tile; app.world.inventory.dragPreview) addInstance(tile, colorIndex(Colors.darkslateblue), 0);
 
   // Paint preview
   uint paintColor;
-  final switch(app.world.activeTool) {
+  final switch(app.world.inventory.ghost.activeTool) {
     case ToolMode.Select: paintColor = colorIndex(Colors.white); break;
     case ToolMode.Mine: paintColor = colorIndex(Colors.orangered); break;
     case ToolMode.Build: paintColor = colorIndex(Colors.dodgerblue); break;
     case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold); break;
   }
-  foreach(tile; app.world.paint.preview) addInstance(tile, paintColor, highlightStyle(app.world.activeTool));
+  foreach(tile; app.world.inventory.ghost.paint.preview) addInstance(tile, paintColor, highlightStyle(app.world.inventory.ghost.activeTool));
 
   app.world.buildingGhosts.isVisible = (app.world.buildingGhosts.instances.length > 0);
   app.world.buildingGhosts.markDirty();

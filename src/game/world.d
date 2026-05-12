@@ -84,8 +84,6 @@ struct World {
   bool inventoryDirty = false;
   GhostCube buildingGhosts;                                 /// Building Ghosts
   bool ghostsDirty = false;
-  ToolMode activeTool = ToolMode.Select;
-  PaintState paint;
   Dwarves dwarves;                                          /// Dwarves
   PathMarkers pathMarkers;                                  /// Path markers
   bool pathsDirty = false;

@@ -13,8 +13,6 @@ struct Inventory {
   GhostCube ghost;
   alias ghost this;
   int[ResourceType] queued;
-  bool isDragging = false;
-  int[3][] dragPreview;
 
   int onFloor(ResourceType tt, ref App app) const {
     return cast(int)app.world.blocks.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
@@ -58,20 +56,21 @@ void computeDragPreview(ref App app, int[3] from, int[3] to) {
   int available = app.world.inventory.get(app.world.inventory.ghost.type, app);
   int dx = abs(to[0] - from[0]);
   int dz = abs(to[2] - from[2]);
-  app.world.inventory.dragPreview = [];
-  if(dx >= dz) {  // snap to X axis
+  app.world.inventory.ghost.paint.preview = [];
+  if(dx >= dz) {
     int step = to[0] > from[0] ? 1 : -1;
-    for(int x = from[0]; x != to[0] + step; x += step){
+    for(int x = from[0]; x != to[0] + step; x += step) {
       if(app.world.getTile([x, from[1], from[2]]) != ResourceType.None) continue;
-      app.world.inventory.dragPreview ~= [x, from[1], from[2]];
-      if(app.world.inventory.dragPreview.length >= available) break;
+      app.world.inventory.ghost.paint.preview ~= [x, from[1], from[2]];
+      if(app.world.inventory.ghost.paint.preview.length >= available) break;
     }
-  } else {  // snap to Z axis
+  } else {
     int step = to[2] > from[2] ? 1 : -1;
-    for(int z = from[2]; z != to[2] + step; z += step){
+    for(int z = from[2]; z != to[2] + step; z += step) {
       if(app.world.getTile([from[0], from[1], z]) != ResourceType.None) continue;
-      app.world.inventory.dragPreview ~= [from[0], from[1], z];
-      if(app.world.inventory.dragPreview.length >= available) break;
+      app.world.inventory.ghost.paint.preview ~= [from[0], from[1], z];
+      if(app.world.inventory.ghost.paint.preview.length >= available) break;
     }
   }
 }
+
