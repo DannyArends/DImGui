@@ -56,6 +56,7 @@ class GhostCube : Cube {
   int[3][] mineDesignations;
   int[3][] buildDesignations;
   bool ghostsDirty = false;
+  int cachedTexIdx = -1;
 
   this(float[2] dim) {
     super(color: [1.0f, 1.0f, 1.0f, 1.0f]);

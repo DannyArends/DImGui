@@ -187,7 +187,6 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       app.world.blocksDirty = true;
-      app.world.inventory.buildDesignations = app.world.inventory.buildDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
       d.completeSubJob();
       app.world.inventory.ghostsDirty = true;
       app.world.inventoryDirty = true;

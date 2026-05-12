@@ -104,8 +104,7 @@ void syncCursorGhost(ref App app) {
   if(app.world.inventory.type == ResourceType.None) return;
   auto wp = app.world.tileToWorld(app.world.inventory.tile);
   float ts = app.world.tileSize, th = app.world.tileHeight;
-  int texIdx = app.textures.idx(resourceData(app.world.inventory.type).name ~ "_base");
-  auto inst = DrawInstance([0, 0, 0, texIdx]);
+  auto inst = DrawInstance([0, 0, 0, app.world.inventory.cachedTexIdx]);
   inst.matrix = buildHighlight(wp, ts, th);
   app.world.inventory.instances ~= inst;
 }
