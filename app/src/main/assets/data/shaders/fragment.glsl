@@ -13,24 +13,25 @@ layout(location = 0) in vec4 fragPosWorld;
 layout(location = 1) in vec4 fragColor;
 layout(location = 2) in vec3 fragNormal;
 layout(location = 3) in vec2 fragTexCoord;
-layout(location = 4) flat in uvec2 fragInstance;  /// [Mesh, Material]
+layout(location = 4) flat in ivec3 fragInstance;  /// [Mesh, Material, Texture override]
 layout(location = 5) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
 void main() {
-  Mesh mesh = meshSSBO.meshes[fragInstance[0]];
+  Mesh mesh = meshSSBO.meshes[uint(fragInstance[0])];
 
-  vec3 baseColor = fragInstance[1] > 0u ? fragColor.rgb * colorSSBO.colors[fragInstance[1]].color.rgb : fragColor.rgb;
+  vec3 baseColor = fragInstance[1] > 0u ? fragColor.rgb * colorSSBO.colors[uint(fragInstance[1])].color.rgb : fragColor.rgb;
   if(mesh.oid >= 0) { // We have an opacity texture
     float alpha = texture(textureSampler[mesh.oid], fragTexCoord).a;
     if(alpha < 0.2f) discard;
   }
 
-  if(mesh.tid >= 0){ // Modify by the texture
+  int tid = fragInstance[2] >= 0 ? fragInstance[2] : mesh.tid;
+  if(tid >= 0){ // Modify by the texture
     vec4 texSample = texture(textureSampler[mesh.tid], fragTexCoord).rgba;
     if(texSample.a < 0.2f) discard;
-    baseColor = baseColor * texSample.rgb;
+    baseColor = fragInstance[2] >= 0 ? texSample.rgb : baseColor * texSample.rgb;
   }
 
   vec3 normalForLighting = fragNormal;
