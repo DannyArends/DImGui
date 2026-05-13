@@ -11,10 +11,15 @@ import validation : nameVulkanObject;
 // Create a swapchain for IMGui
 void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-  version (Android) {
+  version(Android) {
     auto x = app.isSupported(VK_FORMAT_R5G6B5_UNORM_PACK16);
     if(x >= 0){ app.format = cast(uint)x; SDL_Log("Using format: %d", app.format); }
     compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+  } else {
+    foreach(fmt; [VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM]) {
+      auto x = app.isSupported(fmt);
+      if(x >= 0){ app.format = cast(uint)x; SDL_Log("Using swapchain format: %d", app.format); break; }
+    }
   }
 
   VkSwapchainCreateInfoKHR swapchainCreateInfo = { // SwapChain CreateInfo

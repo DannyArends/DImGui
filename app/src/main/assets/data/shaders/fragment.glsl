@@ -29,7 +29,7 @@ void main() {
 
   int tid = fragInstance[2] >= 0 ? fragInstance[2] : mesh.tid;
   if(tid >= 0){ // Modify by the texture
-    vec4 texSample = texture(textureSampler[mesh.tid], fragTexCoord).rgba;
+    vec4 texSample = texture(textureSampler[tid], fragTexCoord).rgba;
     if(texSample.a < 0.2f) discard;
     baseColor = fragInstance[2] >= 0 ? texSample.rgb : baseColor * texSample.rgb;
   }

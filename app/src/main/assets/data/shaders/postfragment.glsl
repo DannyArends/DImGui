@@ -15,7 +15,7 @@ vec3 tonemapACES(vec3 x) {
 }
 
 void main() {
-    vec3 hdrColor = texture(hdrSampler, fragTexCoord).rgb;
-    vec3 tonemappedColor = tonemapACES(hdrColor);
-    outColor = vec4(pow(tonemappedColor, vec3(1.0 / 2.2)), 1.0);
+  vec3 hdrColor = texture(hdrSampler, fragTexCoord).rgb;
+  vec3 tonemappedColor = tonemapACES(hdrColor);
+  outColor = vec4(pow(tonemappedColor, vec3(1.0 / 2.2)), 1.0);
 }
