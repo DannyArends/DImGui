@@ -43,13 +43,8 @@ void removeGeometry(ref App app) {
 void handleEvents(ref App app) {
   if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
-  ulong t0 = SDL_GetTicks();
   while (SDL_PollEvent(&e)) {
-    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW SDL_PollEvent=%dms", SDL_GetTicks()-t0);
-
-    t0 = SDL_GetTicks();
     if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
-    if(SDL_GetTicks()-t0 > 2) SDL_Log("SLOW ImGui_ImplSDL3_ProcessEvent=%dms", SDL_GetTicks()-t0);
     if(e.type == SDL_EVENT_QUIT) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
     if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.minimized = false; }
