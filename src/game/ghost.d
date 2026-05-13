@@ -12,9 +12,9 @@ import vector : dot;
 import matrix : translateScale;
 import tile : tileIdx, tileToWorld;
 
-int[3] getGhostTile(ref App app, float[3][2] ray) {
+int[3] getGhostTile(ref App app, float[3][2] ray, Intersection[] hits) {
   int[3] wc;
-  if(!app.getBestTile(ray, wc)) { return(noTile); }
+  if(!app.getBestTile(ray, hits, wc)) { return(noTile); }
 
   int[3][6] neighbours = app.world.tileNeighbours(wc);
   float ts = app.world.tileSize, th = app.world.tileHeight;
@@ -37,9 +37,11 @@ int[3] getGhostTile(ref App app, float[3][2] ray) {
   return(noTile);
 }
 
-void updateGhostTile(ref App app, float[3][2] ray) {
+void updateGhostTile(ref App app, float[3][2] ray, Intersection[] hits) {
   if(app.world.inventory.activeTool != ToolMode.Build) return;
-  app.world.inventory.tile = app.world.inventory.type == ResourceType.None ? noTile : app.getGhostTile(ray);
+  int[3] newTile = app.world.inventory.type == ResourceType.None ? noTile : app.getGhostTile(ray, hits);
+  if(newTile == app.world.inventory.tile) return;
+  app.world.inventory.tile = newTile;
   app.syncBuildGhosts();
 }
 

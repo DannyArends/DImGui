@@ -34,13 +34,14 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     app.camera.isdrag[0] = false;
     if(e.button.button == SDL_BUTTON_LEFT) app.handlePrimaryRelease(e.button.x, e.button.y);
     if(e.button.button == SDL_BUTTON_RIGHT) app.camera.isdrag[1] = false;
-    app.updateGhostTile(ray);
+    auto hits = app.getHits(ray, false);
+    app.updateGhostTile(ray, hits);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION) {
     if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel);
-    app.updateGhostTile(ray);
+    auto hits = app.getHits(ray, false);
+    app.updateGhostTile(ray, hits);
     if(app.camera.isdrag[0]) app.handlePrimaryDrag(e.motion.x, e.motion.y);
-    else app.updateHoverHighlight(e.motion.x, e.motion.y);
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y);
 }
@@ -52,7 +53,7 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true) {
     if(!app.objects[x].isVisible) continue;
     if(!app.objects[x].isSelectable) continue;
     if(cast(Line)(app.objects[x]) !is null) continue;
-    app.objects[x].computeBoundingBox(app.trace);
+    if(app.objects[x].box is null || cast(Chunk)app.objects[x] is null) app.objects[x].computeBoundingBox(app.trace);
     auto intersections = ray.intersects(app.objects[x].box, x);
     app.objects[x].window = false;
     if(intersections.any!(i => i.intersects)) hits ~= intersections;
