@@ -36,7 +36,7 @@ void showSettingsContent(ref App app, uint font = 0) {
   labelCol("Show Bounds"); igCheckbox("##showBounds", &app.showBounds);
   labelCol("Show Paths");  igCheckbox("##showPaths", &app.showPaths);
   labelCol("Show Rays"); igCheckbox("##showRays", &app.showRays);
-  labelCol("Clear color"); igColorEdit3("##clearcolor", app.clearValue[0].color.float32.ptr, 0);
+  labelCol("Clear color"); igColorEdit3("##clearcolor", app.clearValue[0].color.float32.ptr, ImGuiColorEditFlags_Float);
   igEndTable();
 }
 

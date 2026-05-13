@@ -41,7 +41,7 @@ void createColorResources(ref App app) {
 /** Create & bind an Image on GPU backed with memory
  */
 void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceMemory* imageMemory, 
-                 VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
+                 VkFormat format = VK_FORMAT_R8G8B8A8_UNORM,
                  VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
                  VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
                  VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
@@ -134,7 +134,7 @@ void generateMipmaps(ref App app, VkCommandBuffer cmd, VkImage image, int width,
 void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage image,
                            VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                            VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           VkFormat format = VK_FORMAT_R8G8B8A8_SRGB, uint levelCount = 1) {
+                           VkFormat format = VK_FORMAT_R8G8B8A8_UNORM, uint levelCount = 1) {
   VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
   if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
     aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
