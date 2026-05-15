@@ -16,7 +16,7 @@ struct TexureInfo {
   alias path this;
 }
 
-struct Material {
+struct AMat {
   string path;
   TexureInfo[aiTextureType] textures;
   float[4][aiColorType] colors;
@@ -45,11 +45,11 @@ int getChannel(T)(T object, uint materialIndex, aiTextureType type = aiTextureTy
   return(0);
 }
 
-Material[] loadMaterials(aiScene* scene, const(char)* path){
-  Material[] materials;
+AMat[] loadMaterials(aiScene* scene, const(char)* path){
+  AMat[] materials;
   for(uint i = 0; i < scene.mNumMaterials; i++) {
     aiMaterial* material = scene.mMaterials[i];
-    Material mat =  { path : to!string(fromStringz(path)) };
+    AMat mat = { path : to!string(fromStringz(path)) };
     foreach(type; EnumMembers!aiTextureType) {
       auto info = material.getTextureInfo(type);
       if(info.path != ""){ mat.textures[type] = info; }
