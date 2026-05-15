@@ -7,7 +7,7 @@ import engine;
 
 import assimp : OpenAsset, name;
 import bone : Bone, BoneWeights, loadBoneWeights;
-import material : getChannel;
+import amat : getChannel;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean, cross, dot, x, y, z;
 import vertex : Vertex, INSTANCE;

@@ -132,7 +132,7 @@ void transferTextureAsync(ref App app, ref Texture texture) {
   app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }
 
-int getTexture(ref App app, Material material, aiTextureType type = aiTextureType_DIFFUSE){
+int getTexture(ref App app, AMat material, aiTextureType type = aiTextureType_DIFFUSE){
   if (type in material.textures) { return(idx(app.textures, material.textures[type])); }
   return(-1);
 }

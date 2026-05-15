@@ -35,7 +35,7 @@ public import jobs : Job;
 public import line : Line;
 public import lights : Lighting, Lights;
 public import lsystem : LSystem, Symbols;
-public import material : Material, TexureInfo;
+public import amat : AMat, TexureInfo;
 public import matrix : Matrix;
 public import mesh : Mesh, MeshList;
 public import meta : MetaData;

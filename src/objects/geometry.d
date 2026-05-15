@@ -34,7 +34,7 @@ class Geometry {
   Animation[] animations;                       /// Animations
   uint animation = 0;                           /// Current Animation
   Mesh[string] meshes;                          /// Meshes
-  Material[] materials;                         /// Materials
+  AMat[] materials;                             /// Materials
 
   BoundingBox box = null;                       /// Bounding Box
   bool window = false;                          /// ImGui window displayed?
@@ -140,7 +140,7 @@ void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
 void setTexture(T)(T object, string name, aiTextureType tt) {
   if(object.materials.length == 0) {
     object.materials.length = 1;
-    object.materials[0] = Material(name, [tt: TexureInfo(name)]);
+    object.materials[0] = AMat(name, [tt: TexureInfo(name)]);
   } else { object.materials[0].textures[tt] = TexureInfo(name); }
   foreach(ref mesh; object.meshes) { mesh.mid = 0; }
 }

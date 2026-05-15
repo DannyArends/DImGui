@@ -12,7 +12,7 @@ import matrix : toMatrix, multiply, inverse, transpose, rotate;
 import node : loadNode;
 import meta : loadMetaData;
 import io : readFile;
-import material : loadMaterials;
+import amat : loadMaterials;
 import textures : idx;
 import matrix : translate;
 import normals : computeNormals, computeTangents;
