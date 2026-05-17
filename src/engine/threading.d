@@ -10,6 +10,7 @@ import bone : mergeBones;
 import chunk : buildChunkData, finalizeChunk;
 import io : dir, fixPath;
 import jobs : applyPathResult;
+import material : registerAMaterials;
 import pathfinding : pathfindWorker, dispatchPendingPaths;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures;
@@ -64,7 +65,7 @@ struct Threading {
   bool[Tid] workers;
 }
 
-void initializeAsync(ref App app, bool preLoadASimp = false, uint numWorkers = 32){
+void initializeAsync(ref App app, bool preLoadASimp = true, uint numWorkers = 32){
   if(preLoadASimp) app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
@@ -106,6 +107,7 @@ void checkAsync(ref App app) {
     auto obj = cast(OpenAsset)message;
     app.mergeBones(obj);
     app.objects ~= obj;
+    app.registerAMaterials(app.objects[($-1)]);
     app.mapTextures(app.objects[($-1)]);
   });
   // Accept any incoming texture transfers

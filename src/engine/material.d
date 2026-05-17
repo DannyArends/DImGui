@@ -5,6 +5,8 @@
 
 import engine;
 
+import textures : idx;
+
 shared uint muid = 0;
 
 struct Material {
@@ -27,8 +29,11 @@ struct MaterialList {
   alias materials this;
 }
 
-int getOrCreateMaterial(ref App app, int tid, int nid, int oid) {
-  Material m = Material(tid, nid, oid);
-  app.materials ~= m;
-  return m.mid;
+void registerAMaterials(ref App app, ref Geometry object) {
+  foreach(ref mesh; object.meshes) {
+    if(mesh.mid < 0 || mesh.mid >= object.materials.length) continue;
+    mesh.mat = mesh.mid;  // save local index before remap
+    app.materials ~= Material(-1, -1, -1);
+    mesh.mid = app.materials[$-1].mid;
+  }
 }

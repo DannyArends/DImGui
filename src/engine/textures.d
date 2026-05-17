@@ -141,11 +141,10 @@ void mapTextures(ref App app) { for(uint i = 0; i < app.objects.length; i++) { a
 
 void mapTextures(ref App app, ref Geometry object) {
   foreach (ref mesh; object.meshes) {
-    if(mesh.mid < 0) continue;
-    auto tid = app.getTexture(object.materials[mesh.mid], aiTextureType_DIFFUSE);
-    auto nid = app.getTexture(object.materials[mesh.mid], aiTextureType_NORMALS);
-    auto oid = app.getTexture(object.materials[mesh.mid], aiTextureType_OPACITY);
-    if(mesh.mid >= app.materials.length) app.materials.length = mesh.mid + 1;
+    if(mesh.mid < 0 || mesh.mat < 0) continue;
+    auto tid = app.getTexture(object.materials[mesh.mat], aiTextureType_DIFFUSE);
+    auto nid = app.getTexture(object.materials[mesh.mat], aiTextureType_NORMALS);
+    auto oid = app.getTexture(object.materials[mesh.mat], aiTextureType_OPACITY);
     auto ref mat = app.materials[mesh.mid];
     if(mat.tid != tid || mat.nid != nid || mat.oid != oid) {
       mat.tid = tid; mat.nid = nid; mat.oid = oid;
