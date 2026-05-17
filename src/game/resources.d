@@ -42,7 +42,6 @@ void updateResourceAtlas(ref App app) {
     app.meshes[tt].nid = app.resourceAtlas.nid[ttype];
     app.materials[app.meshes[tt].mid].tid = app.resourceAtlas.tid[ttype];
     app.materials[app.meshes[tt].mid].nid = app.resourceAtlas.nid[ttype];
-    SDL_Log("material[%d] tid=%d nid=%d", app.meshes[tt].mid, app.resourceAtlas.tid[ttype], app.resourceAtlas.nid[ttype]);
   }
   app.buffers["MeshMatrices"].dirty[] = true;
   app.buffers["MaterialBuffer"].dirty[] = true;
