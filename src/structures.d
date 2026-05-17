@@ -60,7 +60,7 @@ public import text : Text;
 public import tool : ToolMode, PaintState;
 public import tile : builtTile, noTile, TileDiff;
 public import raws : Colors, ResourceType, resourceData, heightToResource, features;
-public import resources : ResourceT, ResourceAtlas;
+public import resources : ResourceT;
 public import textures : Texture, Textures;
 public import torus : Torus;
 public import turtle : Turtle;

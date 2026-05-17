@@ -15,9 +15,6 @@ import vertex : Vertex, INSTANCE;
 struct Mesh {
   int[2] vertices;        /// Start .. End positions in Geometry.vertices array
   int mid = -1;           /// Mesh Material ID
-  int tid = -1;           /// Mesh DIFFUSE ID
-  int nid = -1;           /// Mesh NORMALS ID
-  int oid = -1;           /// Mesh OPACITY ID
 }
 
 struct MeshList {
@@ -27,7 +24,7 @@ struct MeshList {
 }
 
 void logMesh(uint i, const Mesh m, const(char)* prefix = "meshInfo") {
-  SDL_Log("%s[%d] v=[%d,%d] mid=%d tid=%d nid=%d oid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid, m.tid, m.nid, m.oid);
+  SDL_Log("%s[%d] v=[%d,%d] mid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid);
 }
 
 void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; app.meshes) logMesh(cast(uint)i, m); }

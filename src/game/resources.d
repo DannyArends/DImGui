@@ -20,28 +20,19 @@ struct ResourceT {
   Colors color     = Colors.white;
 }
 
-struct ResourceAtlas {
-  int[ResourceType] tid;
-  int[ResourceType] nid;
-}
-
 void injectResourceMeshes(ref App app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
     auto ttype = cast(ResourceType)tt;
     app.materials ~= Material(app.resourceAtlas.tid.get(ttype, -1), app.resourceAtlas.nid.get(ttype, -1), -1);
-    app.meshes ~= Mesh([0, 0], app.materials[$-1].mid, app.materials[$-1].tid, app.materials[$-1].nid, -1);
+    app.meshes ~= Mesh([0, 0], app.materials[$-1].mid);
   }
 }
 
 void updateResourceAtlas(ref App app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
     auto ttype = cast(ResourceType)tt;
-    app.resourceAtlas.tid[ttype] = app.textures.idx(resourceData(ttype).name ~ "_base");
-    app.resourceAtlas.nid[ttype] = app.textures.idx(resourceData(ttype).name ~ "_normal");
-    app.meshes[tt].tid = app.resourceAtlas.tid[ttype];
-    app.meshes[tt].nid = app.resourceAtlas.nid[ttype];
-    app.materials[app.meshes[tt].mid].tid = app.resourceAtlas.tid[ttype];
-    app.materials[app.meshes[tt].mid].nid = app.resourceAtlas.nid[ttype];
+    app.materials[app.meshes[tt].mid].tid = app.textures.idx(resourceData(ttype).name ~ "_base");
+    app.materials[app.meshes[tt].mid].nid = app.textures.idx(resourceData(ttype).name ~ "_normal");
   }
   app.buffers["MeshMatrices"].dirty[] = true;
   app.buffers["MaterialBuffer"].dirty[] = true;
