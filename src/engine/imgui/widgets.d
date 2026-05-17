@@ -56,20 +56,22 @@ DropDownItem[] texturesToDropdown(ref App app){
   return(items);
 }
 
-SelectionKey getKeys(DropDownItem[] items, Mesh mesh){
+SelectionKey getKeys(DropDownItem[] items, ref App app, Mesh mesh) {
   SelectionKey key;
-  foreach(i, item; items){
-    if(mesh.tid == item.i) key.tid = cast(int)i;
-    if(mesh.nid == item.i) key.nid = cast(int)i;
-    if(mesh.oid == item.i) key.oid = cast(int)i;
+  auto ref mat = app.materials[mesh.mid];
+  foreach(i, item; items) {
+    if(mat.tid == item.i) key.tid = cast(int)i;
+    if(mat.nid == item.i) key.nid = cast(int)i;
+    if(mat.oid == item.i) key.oid = cast(int)i;
   }
   return(key);
 }
 
-bool applySelection(ref Geometry obj, DropDownItem[] items, Mesh mesh, SelectionKey key){
+bool applySelection(ref App app, ref Geometry obj, DropDownItem[] items, Mesh mesh, SelectionKey key) {
   bool needUpdate = false;
-  if(items[key.tid].i != mesh.tid){ obj.texture(items[(key.tid)].name); needUpdate = true; }
-  if(items[key.nid].i != mesh.nid){ obj.bumpmap(items[(key.nid)].name); needUpdate = true; }
-  if(items[key.oid].i != mesh.oid){ obj.opacity(items[(key.oid)].name); needUpdate = true; }
+  auto ref mat = app.materials[mesh.mid];
+  if(items[key.tid].i != mat.tid){ obj.texture(items[(key.tid)].name); needUpdate = true; }
+  if(items[key.nid].i != mat.nid){ obj.bumpmap(items[(key.nid)].name); needUpdate = true; }
+  if(items[key.oid].i != mat.oid){ obj.opacity(items[(key.oid)].name); needUpdate = true; }
   return(needUpdate);
 }
