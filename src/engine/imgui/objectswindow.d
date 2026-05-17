@@ -112,7 +112,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
     int[2] limits = [-1, cast(int)(app.textures.length-1)];
     auto mesh0 = obj.meshes.keys[0];
     DropDownItem[] items = app.texturesToDropdown();
-    auto selected = items.getKeys(app, obj.meshes[mesh0]);
+    auto selected = app.getKeys(items, obj.meshes[mesh0]);
 
     igBeginTable(toStringz(obj.geometry() ~ "_TexTbl"), 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       igTableNextColumn();
@@ -145,8 +145,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
           igText(toStringz(format("%s", name)), ImVec2(0.0f, 0.0f)); igSameLine(0,5);
         igTableNextColumn();
           igPushItemWidth(100 * app.gui.uiscale);
-igSliderScalar(toStringz(format("##tid:%s", name)), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].tid, &limits[0], &limits[1], "%d", 0);
-          igPopItemWidth();
+igSliderScalar(toStringz(format("##tid:%s", name)), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].tid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
         igTableNextColumn();
           igPushItemWidth(100 * app.gui.uiscale);
 igSliderScalar(toStringz(format("##nid:%s", name)), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].nid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();

@@ -15,6 +15,7 @@ import vertex : Vertex, INSTANCE;
 struct Mesh {
   int[2] vertices;        /// Start .. End positions in Geometry.vertices array
   int mid = -1;           /// Mesh Material ID
+  int pad = 0;            /// Padding
 }
 
 struct MeshList {
