@@ -20,23 +20,24 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
   Mesh mesh = meshSSBO.meshes[uint(fragInstance[0])];
+  Material mat = materialSSBO.materials[uint(mesh.mid)];
 
   vec3 baseColor = fragInstance[1] > 0u ? fragColor.rgb * colorSSBO.colors[uint(fragInstance[1])].color.rgb : fragColor.rgb;
-  if(mesh.oid >= 0) { // We have an opacity texture
-    float alpha = texture(textureSampler[mesh.oid], fragTexCoord).a;
+  if(mat.oid >= 0) {
+    float alpha = texture(textureSampler[mat.oid], fragTexCoord).a;
     if(alpha < 0.2f) discard;
   }
 
-  int tid = fragInstance[2] >= 0 ? fragInstance[2] : mesh.tid;
-  if(tid >= 0){ // Modify by the texture
+  int tid = fragInstance[2] >= 0 ? fragInstance[2] : mat.tid;
+  if(tid >= 0){
     vec4 texSample = texture(textureSampler[tid], fragTexCoord).rgba;
     if(texSample.a < 0.2f) discard;
     baseColor = fragInstance[2] >= 0 ? texSample.rgb : baseColor * texSample.rgb;
   }
 
   vec3 normalForLighting = fragNormal;
-  if(mesh.nid >= 0) { // Bump if a normal map is active for this fragment
-    normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mesh.nid, fragTexCoord, fragTBN);
+  if(mat.nid >= 0) {
+    normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
   }
 
   vec3 lightColor = baseColor * 0.001;
