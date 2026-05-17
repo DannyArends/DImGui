@@ -5,11 +5,20 @@
 
 import engine;
 
+shared uint muid = 0;
+
 struct Material {
+  uint mid;
   int tid = -1;
   int nid = -1;
   int oid = -1;
-  int pad = -1;
+
+  this(int tid, int nid, int oid) {
+    this.mid = atomicOp!"+="(muid, 1) - 1;
+    this.tid = tid;
+    this.nid = nid;
+    this.oid = oid;
+  }
 }
 
 struct MaterialList {
