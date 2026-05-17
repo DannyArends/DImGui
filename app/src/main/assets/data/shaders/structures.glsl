@@ -40,6 +40,7 @@ struct Color {
 struct Mesh {
   uvec2 vertices;     /// Start & End vertex
   int mid;            /// Material ID
+  int pad;
 };
 
 struct Material {

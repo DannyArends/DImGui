@@ -56,7 +56,7 @@ DropDownItem[] texturesToDropdown(ref App app){
   return(items);
 }
 
-SelectionKey getKeys(DropDownItem[] items, ref App app, Mesh mesh) {
+SelectionKey getKeys(ref App app, DropDownItem[] items, Mesh mesh) {
   SelectionKey key;
   auto ref mat = app.materials[mesh.mid];
   foreach(i, item; items) {
