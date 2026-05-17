@@ -34,6 +34,5 @@ void updateResourceAtlas(ref App app) {
     app.materials[app.meshes[tt].mid].tid = app.textures.idx(resourceData(ttype).name ~ "_base");
     app.materials[app.meshes[tt].mid].nid = app.textures.idx(resourceData(ttype).name ~ "_normal");
   }
-  app.buffers["MeshMatrices"].dirty[] = true;
   app.buffers["MaterialBuffer"].dirty[] = true;
 }
