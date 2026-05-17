@@ -27,11 +27,9 @@ struct ResourceAtlas {
 
 void injectResourceMeshes(ref App app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
-    Mesh m;
-    m.mid = tt;  // <-- add this
-    m.tid = app.resourceAtlas.tid.get(cast(ResourceType)tt, -1);
-    m.nid = app.resourceAtlas.nid.get(cast(ResourceType)tt, -1);
-    app.meshes ~= m;
+    auto ttype = cast(ResourceType)tt;
+    app.materials ~= Material(app.resourceAtlas.tid.get(ttype, -1), app.resourceAtlas.nid.get(ttype, -1), -1);
+    app.meshes ~= Mesh([0, 0], app.materials[$-1].mid, app.materials[$-1].tid, app.materials[$-1].nid, -1);
   }
 }
 
@@ -40,12 +38,11 @@ void updateResourceAtlas(ref App app) {
     auto ttype = cast(ResourceType)tt;
     app.resourceAtlas.tid[ttype] = app.textures.idx(resourceData(ttype).name ~ "_base");
     app.resourceAtlas.nid[ttype] = app.textures.idx(resourceData(ttype).name ~ "_normal");
-    if (tt >= app.materials.length) app.materials.length = tt + 1;
-    app.materials[tt].tid = app.resourceAtlas.tid[ttype];
-    app.materials[tt].nid = app.resourceAtlas.nid[ttype];
-    SDL_Log("material[%d] tid=%d nid=%d (mesh.tid=%d mesh.nid=%d)",
-            tt, app.materials[tt].tid, app.materials[tt].nid,
-            app.resourceAtlas.tid[ttype], app.resourceAtlas.nid[ttype]);
+    app.meshes[tt].tid = app.resourceAtlas.tid[ttype];
+    app.meshes[tt].nid = app.resourceAtlas.nid[ttype];
+    app.materials[app.meshes[tt].mid].tid = app.resourceAtlas.tid[ttype];
+    app.materials[app.meshes[tt].mid].nid = app.resourceAtlas.nid[ttype];
+    SDL_Log("material[%d] tid=%d nid=%d", app.meshes[tt].mid, app.resourceAtlas.tid[ttype], app.resourceAtlas.nid[ttype]);
   }
   app.buffers["MeshMatrices"].dirty[] = true;
   app.buffers["MaterialBuffer"].dirty[] = true;

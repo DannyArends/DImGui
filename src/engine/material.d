@@ -26,3 +26,9 @@ struct MaterialList {
   ulong capacity = 256;
   alias materials this;
 }
+
+int getOrCreateMaterial(ref App app, int tid, int nid, int oid) {
+  Material m = Material(tid, nid, oid);
+  app.materials ~= m;
+  return m.mid;
+}
