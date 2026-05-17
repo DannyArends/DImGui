@@ -3,6 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
+public import amat : AMat, TexureInfo;
 public import animation : Animation;
 public import assimp : OpenAsset;
 public import bone : Bone;
@@ -35,7 +36,7 @@ public import jobs : Job;
 public import line : Line;
 public import lights : Lighting, Lights;
 public import lsystem : LSystem, Symbols;
-public import amat : AMat, TexureInfo;
+public import material : Material, MaterialList;
 public import matrix : Matrix;
 public import mesh : Mesh, MeshList;
 public import meta : MetaData;

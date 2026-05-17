@@ -178,6 +178,9 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
   if("ColorBuffer" in elements) {
     app.updateSSBO!(float[4])(cmdBuffer[syncIndex], app.colors, elements["ColorBuffer"], syncIndex);
   }
+  if("MaterialBuffer" in elements) {
+    app.updateSSBO!Material(cmdBuffer[syncIndex], app.materials, elements["MaterialBuffer"], syncIndex);
+  }
   if("LightMatrices" in elements) {
     app.updateLighting(cmdBuffer[syncIndex], elements["LightMatrices"]);
   }

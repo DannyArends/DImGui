@@ -19,6 +19,7 @@
 #define BINDING_TEXTURES          5
 #define BINDING_SHADOWMAP         6
 #define BINDING_COLOR_SSBO        7
+#define BINDING_MATERIAL_SSBO     8
 
 struct Light {
   mat4 lightProjView; /// Combined light's projection * light's view matrix
@@ -44,6 +45,13 @@ struct Mesh {
   int oid;            /// OPACITY ID
 };
 
+struct Material {
+  int tid;   /// Diffuse texture ID
+  int nid;   /// Normal map ID
+  int oid;   /// Opacity texture ID
+  int pad;   /// Padding
+};
+
 /// Shader Storage Buffer Objects
 layout (std430, set = 0, binding = BINDING_BONES_SSBO) readonly buffer BoneMatrices {
     Bone transforms[];
@@ -60,6 +68,10 @@ layout (std430, set = 0, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatr
 layout (std430, set = 0, binding = BINDING_COLOR_SSBO) readonly buffer ColorBuffer {
     Color colors[];
 } colorSSBO;      // 7
+
+layout (std430, set = 0, binding = BINDING_MATERIAL_SSBO) readonly buffer MaterialBuffer {
+    Material materials[];
+} materialSSBO;   // 8
 
 /// UBO
 layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {

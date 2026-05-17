@@ -153,6 +153,8 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
           app.createSSBO(d, cast(uint)app.meshes.capacity);
         } else if(d.base == "ColorBuffer") {
           app.createSSBO(d, cast(uint)app.colors.length);
+        } else if(d.base == "MaterialBuffer") {
+          app.createSSBO(d, cast(uint)app.materials.capacity);
         }else if(app.hasCompute && d.base == "lastFrame") {
           app.createSSBO(d, cast(uint)app.compute.system.particles.length); 
           app.transferToSSBO(d); 
