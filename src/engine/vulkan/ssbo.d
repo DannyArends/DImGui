@@ -17,8 +17,10 @@ struct SSBO {
 
 struct SSBOList(T) {
   T[] items;
-  ulong capacity = 256;
   alias items this;
+
+  @property ulong capacity() { return items.capacity; }
+  @property void capacity(size_t n) { items.reserve(n); }
 }
 
 void nameSSBO(ref App app, SSBO ssbo, string name){
@@ -28,9 +30,10 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
   }
 }
 
-void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
-  if(app.verbose) SDL_Log("createSSBO at %s, size = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, nObjects);
-  descriptor.nObjects = nObjects;
+void createSSBO(T)(ref App app, ref Descriptor descriptor, ref SSBOList!T container, ulong defaultCapacity = 256) {
+  if(container.capacity == 0) container.reserve(defaultCapacity);
+  if(app.verbose) SDL_Log("createSSBO at %s, size = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, container.capacity);
+  descriptor.nObjects = cast(uint)container.capacity;
   if(descriptor.base in app.buffers) return;
   app.buffers[descriptor.base] = SSBO();
   app.buffers[descriptor.base].data.length = app.framesInFlight;
@@ -43,7 +46,7 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     enforceVK(vkMapMemory(app.device, app.buffers[descriptor.base].memory[i], 0, descriptor.size, 0, &app.buffers[descriptor.base].data[i]));
-    if(app.trace) SDL_Log("createSSBO: %s, nObjects=%d, size=%d", toStringz(descriptor.base), nObjects, descriptor.size);
+    if(app.trace) SDL_Log("createSSBO: %s, size=%d", toStringz(descriptor.base), descriptor.size);
     app.buffers[descriptor.base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[descriptor.base], descriptor.base);
@@ -58,7 +61,7 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T contai
   uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;
   if(size > descriptor.size) {
-    while(container.capacity * T.sizeof < size) container.capacity *= 2;
+    while(container.capacity * T.sizeof < size){ container.reserve(container.capacity * 2); }
     app.rebuild = true;
     return;
   }
