@@ -28,11 +28,12 @@ void main() {
     if(alpha < 0.2f) discard;
   }
 
-  int tid = fragInstance[2] >= 0 ? fragInstance[2] : mat.tid;
+  bool useTexOverride = fragInstance[2] >= 0;
+  int tid = useTexOverride ? fragInstance[2] : mat.tid;
   if(tid >= 0){
     vec4 texSample = texture(textureSampler[tid], fragTexCoord).rgba;
     if(texSample.a < 0.2f) discard;
-    baseColor = fragInstance[2] >= 0 ? texSample.rgb : baseColor * texSample.rgb;
+    baseColor = useTexOverride ? texSample.rgb : baseColor * texSample.rgb;
   }
 
   vec3 normalForLighting = fragNormal;
