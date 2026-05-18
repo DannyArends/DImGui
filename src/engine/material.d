@@ -23,12 +23,6 @@ struct Material {
   }
 }
 
-struct MaterialList {
-  Material[] materials;
-  ulong capacity = 256;
-  alias materials this;
-}
-
 void registerAMaterials(ref App app, ref Geometry object) {
   foreach(ref mesh; object.meshes) {
     if(mesh.mid < 0 || mesh.mid >= object.materials.length) continue;
@@ -37,3 +31,4 @@ void registerAMaterials(ref App app, ref Geometry object) {
     mesh.mid = app.materials[$-1].mid;
   }
 }
+

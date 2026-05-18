@@ -18,12 +18,6 @@ struct Mesh {
   int mat = -1;           /// assimp-local material index
 }
 
-struct MeshList {
-  Mesh[] meshInfo;        /// Meshes for GPU SSBO
-  ulong capacity = 256;   /// GPU SSBO capacity
-  alias meshInfo this;
-}
-
 void logMesh(uint i, const Mesh m, const(char)* prefix = "meshInfo") {
   SDL_Log("%s[%d] v=[%d,%d] mid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid);
 }
@@ -43,17 +37,7 @@ void updateMeshInfo(ref App app) {
     }
     app.meshes ~= app.objects[o].meshes.values;
   }
-  // Grow SSBO capacity if needed
-  if(app.meshes.length > app.meshes.capacity) {
-    while(app.meshes.capacity < app.meshes.length) app.meshes.capacity *= 2;
-    app.meshes.length = app.meshes.capacity;
-    app.rebuild = true;
-  }
-  // Update SSBO
-  if(needsUpdate) {
-    app.buffers["MeshMatrices"].dirty[] = true;
-    app.printMeshInfo();
-  }
+  if(needsUpdate) { app.buffers["MeshMatrices"].dirty[] = true; } // Update SSBO
 }
 
 string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool verbose = false) {

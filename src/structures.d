@@ -38,7 +38,7 @@ public import lights : Light, Lighting, Lights;
 public import lsystem : LSystem, Symbols;
 public import material : Material;
 public import matrix : Matrix;
-public import mesh : Mesh, MeshList;
+public import mesh : Mesh;
 public import meta : MetaData;
 public import node : Node;
 public import particlesystem : ParticleSystem;
