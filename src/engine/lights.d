@@ -42,7 +42,7 @@ enum Lights : Light {
 };
 
 struct Lighting {
-  Light[] lights;
+  SSBOList!Light lights;
   float sunTime = 8.0f;
   float sunBearing = 135.0f;
   alias lights this;
