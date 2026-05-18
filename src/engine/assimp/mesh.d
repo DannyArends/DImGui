@@ -52,8 +52,6 @@ string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool
   auto weights = asset.loadBoneWeights(mesh, asset.bones, gTransform);
   auto normMatrix = gTransform.inverse().transpose();
 
-  // TODO first create a Material definition for the object => add to app.materials
-  // Then use OUR internal material index (app.materials)
   Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(vOff) + mesh.mNumVertices],  mesh.mMaterialIndex);
 
   for (size_t vIdx = 0; vIdx < mesh.mNumVertices; vIdx++) {  // Load vertex information

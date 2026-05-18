@@ -19,6 +19,17 @@ enum spvc_resource_type[const(char)*] types = [
   "Stage Output" : SPVC_RESOURCE_TYPE_STAGE_OUTPUT
 ];
 
+/** Reflected stage input/output attribute */
+struct StageInput {
+  const(char)* name;
+  size_t location;
+
+  spvc_basetype basetype;
+  uint rows;
+  uint columns;
+}
+
+/** Reflect a single shader to extract descriptors */
 void reflectShader(ref App app, ref Shader shader) {
   if(app.trace) SDL_Log("Reflect: %s", toStringz(shader.path));
   shader.descriptors = [];
@@ -59,15 +70,7 @@ void reflectShader(ref App app, ref Shader shader) {
   }
 }
 
-struct StageInput {
-  const(char)* name;
-  size_t location;
-
-  spvc_basetype basetype;
-  uint rows;
-  uint columns;
-}
-
+/**  Reflect a stage input/output attribute */
 StageInput reflectStage(ref App app, spvc_compiler compiler, const(char)* type, spvc_reflected_resource* list, size_t i) {
   const(char)* name = spvc_compiler_get_name(compiler, list[i].id);
   size_t location = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationLocation);
@@ -81,6 +84,7 @@ StageInput reflectStage(ref App app, spvc_compiler compiler, const(char)* type, 
   return(s);
 }
 
+/** Reflect a single descriptor (UBO, SSBO, sampler) */
 Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* type, spvc_reflected_resource* list, size_t i) {
     Descriptor descr = Descriptor(convert(types[type]));
     spvc_type_id type_id = list[i].type_id;
@@ -133,10 +137,12 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     return(descr);
 }
 
+/** Reflect all shaders in array */
 void reflectShaders(ref App app, ref Shader[] shaders) {
   for(uint i = 0; i < shaders.length; i++) { app.reflectShader(shaders[i]); }
 }
 
+/** Create GPU resources (SSBOs, UBOs, images) from reflected descriptors */
 void createResources(ref App app, ref Shader[] shaders, string poolID) {
   app.createDSPool(poolID, shaders);
   foreach(ref shader; shaders) {
@@ -165,6 +171,7 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
   }
 }
 
+/** Convert shaderc shader kind to Vulkan stage flag */
 VkShaderStageFlagBits convert(shaderc_shader_kind kind) {
   switch (kind) {
     case shaderc_vertex_shader: return VK_SHADER_STAGE_VERTEX_BIT; break;
@@ -175,6 +182,7 @@ VkShaderStageFlagBits convert(shaderc_shader_kind kind) {
   }
 }
 
+/** Convert SPIRV-Cross resource type to Vulkan descriptor type */
 VkDescriptorType convert(spvc_resource_type type) {
   switch (type) {
     case SPVC_RESOURCE_TYPE_UNIFORM_BUFFER: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; break;
@@ -185,8 +193,10 @@ VkDescriptorType convert(spvc_resource_type type) {
   }
 }
 
+/** Return input string or "(none)" if empty */
 const(char)* check(string inp) { return(toStringz((inp == "")? "(none)" : inp)); }
 
+/** Create SPIRV-Cross reflection context */
 void createReflectionContext(ref App app) {
   spvc_result result = spvc_context_create(&app.context);
   if(result != SPVC_SUCCESS) {
@@ -196,7 +206,7 @@ void createReflectionContext(ref App app) {
   app.mainDeletionQueue.add((){ spvc_context_destroy(app.context); });
 }
 
-// Helper to convert spvc_basetype to a string (or a custom enum)
+/** Convert SPIRV-Cross basetype to string */
 const(char)* convert(spvc_basetype basetype) {
   switch (basetype) {
     case SPVC_BASETYPE_UNKNOWN: return "unknown";

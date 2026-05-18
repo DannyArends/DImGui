@@ -10,8 +10,7 @@ import assimp : name, nodeName, OpenAsset;
 import matrix : inverse, Matrix, multiply, position, toMatrix;
 import sdl : STARTUP;
 
-/** Our Bone structure matching the GPU
- */
+/** Our Bone structure matching the GPU */
 struct Bone {
   Matrix offset;          /// Inverse bind pose matrix
   uint index;             /// Bone index
@@ -23,8 +22,7 @@ struct Bone {
 
 alias float[uint][string] BoneWeights;
 
-/** loadBoneWeights - writes to asset-local bones, merged into app.bones on main thread
- */
+/** loadBoneWeights - writes to asset-local bones, merged into app.bones on main thread */
 BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones, Matrix pTransform) {
   BoneWeights weights;
   for (uint b = 0; b < mesh.mNumBones; b++) {
@@ -46,8 +44,7 @@ BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] glob
 }
 
 /** updateBoneOffsets
- * compute the new bone offsets for the current frame
- */
+ * compute the new bone offsets for the current frame */
 void updateBoneOffsets(App app, uint syncIndex) {
   ulong t = SDL_GetTicks() - app.time[STARTUP];
   bool hasAnimation = false;

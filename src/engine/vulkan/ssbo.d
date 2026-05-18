@@ -8,6 +8,7 @@ import engine;
 import buffer : createBuffer, deAllocate;
 import validation : nameVulkanObject;
 
+/** GPU SSBO buffers, memory, data and dirty flags */
 struct SSBO {
   VkBuffer[] buffers;
   VkDeviceMemory[] memory;
@@ -15,12 +16,14 @@ struct SSBO {
   bool[] dirty;
 }
 
+/** CPU+GPU SSBO container with capacity tracking */
 struct SSBOList(T) {
   T[] items;
   ulong capacity = 256;
   alias items this;
 }
 
+/** Name SSBO buffers and memory for debugging */
 void nameSSBO(ref App app, SSBO ssbo, string name){
   for(uint i = 0; i < ssbo.buffers.length; i++) {
     app.nameVulkanObject(ssbo.buffers[i], toStringz(format("[SSBO-BUF] %s #%d", name, i)), VK_OBJECT_TYPE_BUFFER);
@@ -28,6 +31,7 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
   }
 }
 
+/** Create GPU SSBO buffer for nObjects */
 void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
   if(app.verbose) SDL_Log("createSSBO at %s, size = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, nObjects);
   descriptor.nObjects = nObjects;
@@ -54,11 +58,13 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
   });
 }
 
+/** Create GPU SSBO from container */
 void createSSBO(T)(ref App app, ref Descriptor descriptor, ref SSBOList!T container) {
   if(container.length > container.capacity) container.capacity = container.length;
   app.createSSBO(descriptor, cast(uint)container.capacity);
 }
 
+/** Upload container data to GPU, grow and rebuild if overflow */
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;
