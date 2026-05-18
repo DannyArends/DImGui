@@ -22,7 +22,7 @@ void main() {
   Mesh mesh = meshSSBO.meshes[uint(fragInstance[0])];
   Material mat = materialSSBO.materials[uint(mesh.mid)];
 
-  vec3 baseColor = fragInstance[1] > 0u ? fragColor.rgb * colorSSBO.colors[uint(fragInstance[1])].color.rgb : fragColor.rgb;
+  vec3 baseColor = fragInstance[1] >= 0u ? fragColor.rgb * colorSSBO.colors[uint(fragInstance[1])].color.rgb : fragColor.rgb;
   if(mat.oid >= 0) {
     float alpha = texture(textureSampler[mat.oid], fragTexCoord).a;
     if(alpha < 0.2f) discard;
