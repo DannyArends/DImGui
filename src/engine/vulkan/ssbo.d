@@ -54,6 +54,11 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
   });
 }
 
+void createSSBO(T)(ref App app, ref Descriptor descriptor, ref SSBOList!T container) {
+  if(container.length > container.capacity) container.capacity = container.length;
+  app.createSSBO(descriptor, cast(uint)container.capacity);
+}
+
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;

@@ -145,21 +145,20 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
       if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) { app.createUBO(d); }
       if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         if (d.base == "BoneMatrices") { 
-          if(app.boneOffsets.length == 0) app.boneOffsets.length = 1024; 
-          app.createSSBO(d, cast(uint)app.boneOffsets.length); 
+          app.createSSBO(d, app.boneOffsets);
         }else if(d.base == "LightMatrices") {
-          app.createSSBO(d, cast(uint)app.lights.length);
+          app.createSSBO(d, app.lights);
         }else if(d.base == "MeshMatrices") {
-          app.createSSBO(d, cast(uint)app.meshes.capacity);
+          app.createSSBO(d, app.meshes);
         } else if(d.base == "ColorBuffer") {
-          app.createSSBO(d, cast(uint)app.colors.length);
+          app.createSSBO(d, app.colors);
         } else if(d.base == "MaterialBuffer") {
-          app.createSSBO(d, cast(uint)app.materials.capacity);
+          app.createSSBO(d, app.materials);
         }else if(app.hasCompute && d.base == "lastFrame") {
-          app.createSSBO(d, cast(uint)app.compute.system.particles.length); 
+          app.createSSBO(d, app.compute.system.particles);
           app.transferToSSBO(d); 
         }else if(app.hasCompute && d.base == "currentFrame") {
-          app.createSSBO(d, cast(uint)app.compute.system.particles.length);
+          app.createSSBO(d, app.compute.system.particles);
         }
       }
     }
