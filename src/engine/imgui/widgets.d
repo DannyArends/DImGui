@@ -58,7 +58,7 @@ DropDownItem[] texturesToDropdown(ref App app){
 
 SelectionKey getKeys(ref App app, DropDownItem[] items, Mesh mesh) {
   SelectionKey key;
-  auto ref mat = app.materials[mesh.mid];
+  auto mat = app.materials[mesh.mid];
   foreach(i, item; items) {
     if(mat.tid == item.i) key.tid = cast(int)i;
     if(mat.nid == item.i) key.nid = cast(int)i;
@@ -69,7 +69,7 @@ SelectionKey getKeys(ref App app, DropDownItem[] items, Mesh mesh) {
 
 bool applySelection(ref App app, ref Geometry obj, DropDownItem[] items, Mesh mesh, SelectionKey key) {
   bool needUpdate = false;
-  auto ref mat = app.materials[mesh.mid];
+  auto mat = app.materials[mesh.mid];
   if(items[key.tid].i != mat.tid){ obj.texture(items[(key.tid)].name); needUpdate = true; }
   if(items[key.nid].i != mat.nid){ obj.bumpmap(items[(key.nid)].name); needUpdate = true; }
   if(items[key.oid].i != mat.oid){ obj.opacity(items[(key.oid)].name); needUpdate = true; }
