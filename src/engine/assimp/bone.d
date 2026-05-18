@@ -76,8 +76,9 @@ void mergeBones(ref App app, ref OpenAsset obj) {
   }
   // Grow boneOffsets and trigger SSBO rebuild if needed
   if(app.bones.length > app.boneOffsets.length) {
-    while(app.boneOffsets.length < app.bones.length){ app.boneOffsets.length *= 2; }
-    app.rebuild = true; // triggers createOrResizeWindow -> recreates SSBO at new size
+    if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
+    while(app.boneOffsets.length < app.bones.length) app.boneOffsets.length *= 2;
+    app.rebuild = true;
   }
 }
 
