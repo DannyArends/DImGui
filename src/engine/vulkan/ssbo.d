@@ -15,6 +15,12 @@ struct SSBO {
   bool[] dirty;
 }
 
+struct SSBOList(T) {
+  T[] items;
+  ulong capacity = 256;
+  alias items this;
+}
+
 void nameSSBO(ref App app, SSBO ssbo, string name){
   for(uint i = 0; i < ssbo.buffers.length; i++) {
     app.nameVulkanObject(ssbo.buffers[i], toStringz(format("[SSBO-BUF] %s #%d", name, i)), VK_OBJECT_TYPE_BUFFER);
@@ -48,16 +54,17 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
   });
 }
 
-void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, T[] objects, Descriptor descriptor, uint syncIndex) {
-  uint size = cast(uint)(T.sizeof * objects.length);
+void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint syncIndex) {
+  uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;
   if(size > descriptor.size) {
-    if(app.trace) SDL_Log("updateSSBO: overflow! %s needs %d bytes, buffer has %d", toStringz(descriptor.base), size, descriptor.size);
-    return; // or reallocate
+    while(container.capacity * T.sizeof < size) container.capacity *= 2;
+    app.rebuild = true;
+    return;
   }
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
-  if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)objects.length);
-  memcpy(app.buffers[descriptor.base].data[syncIndex], &objects[0], size);
+  if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)container.length);
+  memcpy(app.buffers[descriptor.base].data[syncIndex], &container[0], size);
   app.buffers[descriptor.base].dirty[syncIndex] = false;
 }
 

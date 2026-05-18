@@ -37,16 +37,16 @@ struct App {
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
-  Matrix[] boneOffsets;                                                         /// Animated BoneOffsets for GPU SSBO
-  MeshList meshes;                                                              /// Meshes for GPU SSBO
+  SSBOList!Matrix boneOffsets;                                                  /// Animated BoneOffsets for GPU SSBO
+  SSBOList!Mesh meshes;                                                         /// Meshes for GPU SSBO
   Textures textures;                                                            /// Textures
-  MaterialList materials;                                                       /// GPU materials
+  SSBOList!Material materials;                                                  /// GPU materials
   Audio audio;
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[string] buffers;                                                         /// SSBO buffers
   UBO[string] ubos;                                                             /// UBO buffers
-  float[4][] colors = [EnumMembers!Colors];                                     /// All known colors
-  Lighting lights = {[Lights.Sun, Lights.Red, Lights.Green, Lights.Blue]};      /// Scene lighting
+  SSBOList!(float[4]) colors = { items: cast(float[4][])[EnumMembers!Colors] }; /// All known colors
+  Lighting lights = {lights : {items: cast(Light[])[Lights.Sun, Lights.Red, Lights.Green, Lights.Blue]}};  /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering

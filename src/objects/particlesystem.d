@@ -28,7 +28,7 @@ class ParticleSystem : Geometry {
                        [0.1f, 1.0f, 1.0f, 1.0f]];
   float floor = -1.0f;
   float rate = 0.000001f;
-  Particle[] particles;
+  SSBOList!Particle particles;
 
   this(uint nParticles = 1000, bool verbose = false) {
     particles.length = nParticles;
