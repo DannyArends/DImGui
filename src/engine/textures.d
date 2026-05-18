@@ -145,9 +145,8 @@ void mapTextures(ref App app, ref Geometry object) {
     auto tid = app.getTexture(object.materials[mesh.mat], aiTextureType_DIFFUSE);
     auto nid = app.getTexture(object.materials[mesh.mat], aiTextureType_NORMALS);
     auto oid = app.getTexture(object.materials[mesh.mat], aiTextureType_OPACITY);
-    auto ref mat = app.materials[mesh.mid];
-    if(mat.tid != tid || mat.nid != nid || mat.oid != oid) {
-      mat.tid = tid; mat.nid = nid; mat.oid = oid;
+    if(app.materials[mesh.mid].tid != tid || app.materials[mesh.mid].nid != nid || app.materials[mesh.mid].oid != oid) {
+      app.materials[mesh.mid].tid = tid; app.materials[mesh.mid].nid = nid; app.materials[mesh.mid].oid = oid;
       app.buffers["MaterialBuffer"].dirty[] = true;
     }
   }
