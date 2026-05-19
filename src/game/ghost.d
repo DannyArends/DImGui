@@ -6,7 +6,6 @@
 import engine;
 
 import chunk : getBestTile;
-import textures : idx;
 import vector : dot;
 import matrix : translateScale;
 import tile : tileIdx, tileToWorld;

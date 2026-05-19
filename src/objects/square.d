@@ -4,7 +4,6 @@
  */
 
 import engine;
-import geometry : setColor;
 
 class Square : Geometry {
   this() {
