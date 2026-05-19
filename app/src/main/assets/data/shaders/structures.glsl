@@ -18,8 +18,7 @@
 /// Samplers/Images
 #define BINDING_TEXTURES          5
 #define BINDING_SHADOWMAP         6
-#define BINDING_COLOR_SSBO        7
-#define BINDING_MATERIAL_SSBO     8
+#define BINDING_MATERIAL_SSBO     7
 
 struct Light {
   mat4 lightProjView; /// Combined light's projection * light's view matrix
@@ -31,10 +30,6 @@ struct Light {
 
 struct Bone {
   mat4 offset;        /// Bone offset
-};
-
-struct Color {
-  vec4 color;         /// Color
 };
 
 struct Mesh {
@@ -63,13 +58,9 @@ layout (std430, set = 0, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatr
     Light lights[];
 } lightSSBO;      // 4
 
-layout (std430, set = 0, binding = BINDING_COLOR_SSBO) readonly buffer ColorBuffer {
-    Color colors[];
-} colorSSBO;      // 7
-
 layout (std430, set = 0, binding = BINDING_MATERIAL_SSBO) readonly buffer MaterialBuffer {
     Material materials[];
-} materialSSBO;   // 8
+} materialSSBO;   // 7
 
 /// UBO
 layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {

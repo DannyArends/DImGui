@@ -7,12 +7,14 @@ import engine;
 
 /** An instance of a Geometry */
 struct DrawInstance {
-  int[4] meshdef = [0, 0, 0, -1];               /// Mesh Definition [start, end, mID, pad]
+  int[4] meshdef = [0, 0, 0, -1];               /// Mesh Definition [start, end, pad, texOverride]
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// Per-instance color
   Matrix matrix = Matrix.init;                  /// Instance matrix
   alias matrix this;
 
   this(int[4] d, Matrix m = Matrix.init) { meshdef = d; matrix = m; }
   this(ResourceType tt, Matrix m) { this([cast(int)tt, cast(int)tt], m); }
   this(int[2] d, Matrix m) { meshdef[0..2] = d; matrix = m; }
+  this(int[2] d, float[4] c, Matrix m) { meshdef[0..2] = d; color = c; matrix = m; }
   this(int mdef, float[12] f) { this([mdef, mdef], Matrix([f[0],f[1],f[2], 0, f[3],f[4],f[5], 0, f[6],f[7],f[8],0, f[9],f[10],f[11], 1])); }
 }

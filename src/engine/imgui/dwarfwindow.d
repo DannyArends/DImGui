@@ -42,8 +42,7 @@ void showDwarfContent(ref App app, uint font = 0) {
       working++;
     }
     else if(d.state == DwarfState.Blocked) { status = "Blocked"; }
-    float[4] col = app.colors[d.colorID];
-    igPushStyleColor_Vec4(ImGuiCol_Text, ImVec4(col[0], col[1], col[2], col[3]));
+    igPushStyleColor_Vec4(ImGuiCol_Text, ImVec4(d.color[0], d.color[1], d.color[2], d.color[3]));
     igText(toStringz(format("%s", fromStringz(faIcon(cast(string)ICON_FA_USER))))); igSameLine(0,5);
     igPopStyleColor(1);
     igText(toStringz(format("%s", d.name)));

@@ -20,14 +20,15 @@ layout(location = 6) in vec4 inWeights;             /// assimp: BoneWeights
 
 // Per Instance attributes
 layout(location = 7) in ivec4 meshdef;              /// Mesh [start, stop, material, texure override]
-layout(location = 8) in mat4 instance;              /// Instance matrix
+layout(location = 8) in vec4 instanceColor;         /// Instance color
+layout(location = 9) in mat4 instance;              /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;         /// Fragment world position
 layout(location = 1) out vec4 fragColor;            /// Fragment color
 layout(location = 2) out vec3 fragNormal;           /// Fragment normal
 layout(location = 3) out vec2 fragTexCoord;         /// Texture coordinate
-layout(location = 4) flat out ivec3 fragInstance;   /// [Mesh, Material, Texure override]
+layout(location = 4) flat out ivec2 fragInstance;   /// [Mesh, Texure override]
 layout(location = 5) out mat3 fragTBN;              /// Tangent, Bitangent, Normal matrix
 
 void main() {
@@ -49,7 +50,7 @@ void main() {
 
   /// Transfer data to fragment shader
   fragPosWorld = (model * position);
-  fragColor = inColor;
+  fragColor = instanceColor * inColor;
   fragNormal = normalize(normalMatrix * inNormal);
   fragTexCoord = inTexCoord;
   uint meshID = uint(meshdef[0]);
@@ -58,7 +59,7 @@ void main() {
       if (meshSSBO.meshes[meshID].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[meshID].vertices[1]) break;
     }
   }
-  fragInstance = ivec3(meshID, meshdef[2], meshdef[3]);
+  fragInstance = ivec2(meshID, meshdef[3]);
   fragTBN = mat3(T, B, N); 
 }
 
