@@ -21,6 +21,7 @@ layout(location = 0) out vec4 outColor;
 void main() {
   Mesh mesh = meshSSBO.meshes[uint(fragInstance[0])];
   Material mat = materialSSBO.materials[uint(mesh.mid)];
+  if(fragInstance[1] >= 0) mat = materialSSBO.materials[uint(fragInstance[1])];
 
   vec3 baseColor = fragColor.rgb;
   if(mat.oid >= 0) {
@@ -28,12 +29,10 @@ void main() {
     if(alpha < 0.2f) discard;
   }
 
-  bool useTexOverride = fragInstance[1] >= 0;
-  int tid = useTexOverride ? fragInstance[1] : mat.tid;
-  if(tid >= 0){
-    vec4 texSample = texture(textureSampler[tid], fragTexCoord).rgba;
+  if(mat.tid >= 0) {
+    vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
     if(texSample.a < 0.2f) discard;
-    baseColor = useTexOverride ? texSample.rgb : baseColor * texSample.rgb;
+    baseColor *= texSample.rgb;
   }
 
   vec3 normalForLighting = fragNormal;
