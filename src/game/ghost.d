@@ -5,7 +5,6 @@
 
 import engine;
 
-import color : colorIndex;
 import chunk : getBestTile;
 import textures : idx;
 import vector : dot;
@@ -66,10 +65,10 @@ ubyte highlightStyle(ToolMode mode) {
   }
 }
 
-void addInstance(ref App app, int[3] tile, uint color, ubyte style) {
+void addInstance(ref App app, int[3] tile, float[4] color, ubyte style) {
   auto wp = app.world.tileToWorld(tile);
   float ts = app.world.tileSize, th = app.world.tileHeight;
-  auto inst = DrawInstance([0, 0, color, -1]);
+  auto inst = DrawInstance([0, 0], color, Matrix.init);
   final switch(style) {
     case 0: inst.matrix = buildHighlight(wp, ts, th); break;
     case 1: inst.matrix = mineHighlight(wp, ts, th); break;
@@ -81,20 +80,20 @@ void addInstance(ref App app, int[3] tile, uint color, ubyte style) {
 /** Committed designations + tile penalties */
 void syncDesignations(ref App app) {
   foreach(tile; app.world.inventory.buildDesignations) {
-    app.addInstance(tile, colorIndex(Colors.dodgerblue), 0);
+    app.addInstance(tile, Colors.dodgerblue, 0);
     app.world.data.tilePenalties[tile] = 40.0f;
   }
-  foreach(tile; app.world.inventory.mineDesignations){ app.addInstance(tile, colorIndex(Colors.orangered), 1); }
+  foreach(tile; app.world.inventory.mineDesignations){ app.addInstance(tile, Colors.orangered, 1); }
 }
 
 /** Paint preview (drag highlight) */
 void syncPaintPreview(ref App app) {
-  uint paintColor;
+  float[4] paintColor;
   final switch(app.world.inventory.activeTool) {
-    case ToolMode.Select:    paintColor = colorIndex(Colors.white);      break;
-    case ToolMode.Mine:      paintColor = colorIndex(Colors.orangered);  break;
-    case ToolMode.Build:     paintColor = colorIndex(Colors.dodgerblue); break;
-    case ToolMode.Stockpile: paintColor = colorIndex(Colors.gold);       break;
+    case ToolMode.Select:    paintColor = Colors.white;      break;
+    case ToolMode.Mine:      paintColor = Colors.orangered;  break;
+    case ToolMode.Build:     paintColor = Colors.dodgerblue; break;
+    case ToolMode.Stockpile: paintColor = Colors.gold;       break;
   }
   foreach(tile; app.world.inventory.paint.preview) { app.addInstance(tile, paintColor, highlightStyle(app.world.inventory.activeTool)); }
 }
