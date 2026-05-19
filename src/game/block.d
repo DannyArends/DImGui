@@ -103,7 +103,7 @@ DrawInstance toDropInstance(World world, ref Block b) {
   float bx = ((b.id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
   float bz = ((b.id * 22695477u + 1u)          % 100u) / 100.0f - 0.5f;
   float[3] pos = [base[0] + bx, base[1], base[2] + bz];
-  return DrawInstance([cast(uint)b.type, cast(uint)b.type, colorIndex(resourceData(b.type).color), 0u], translateScale(pos, [sz, sz, sz]));
+  return DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, [sz, sz, sz]));
 }
 
 /** Sync instances from blocks registry */

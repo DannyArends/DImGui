@@ -6,6 +6,7 @@ import engine;
 
 import serialization : readWorldData, writeWorldData;
 import block : syncBlockInstances, noBlock;
+import color : randomColor;
 import matrix : position, scale;
 import inventory : deriveInventory;
 import ghost : syncBuildGhosts;
@@ -36,7 +37,7 @@ struct InventorySlot {
 
 struct DwarfData {
   uint uid = 0;
-  uint colorID = 0;
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
   int[3] tile = [0, 0, 0];
   char[64] first;
   char[64] last;
@@ -232,17 +233,10 @@ void addDwarf(ref App app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  DrawInstance inst = DrawInstance([0, 0, d.colorID, -1]);
+  DrawInstance inst = DrawInstance([0, 0], d.color, Matrix.init);
   inst = position(inst, d.visualPos);
   app.world.dwarves.instances ~= inst;
   app.world.dwarves ~= d;
-}
-
-uint pickUniqueColor(ref App app) {
-  uint[] used = app.world.dwarves !is null ? app.world.dwarves.dwarves.map!(d => d.colorID).array : [];
-  uint colorID;
-  do { colorID = uniform(0, cast(uint)app.colors.length); } while(used.canFind(colorID) && used.length < app.colors.length);
-  return colorID;
 }
 
 /** Spawn a Dwarf */
@@ -250,7 +244,7 @@ void spawnDwarf(ref App app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
-  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, app.pickUniqueColor(), tile));
+  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, randomColor(), tile));
   randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.markDirty();
