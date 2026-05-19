@@ -22,8 +22,7 @@ struct ResourceT {
 
 void injectResourceMeshes(ref App app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
-    auto ttype = cast(ResourceType)tt;
-    app.materials ~= Material(-1, -1, -1);
+    app.materials ~= Material(cast(uint)app.materials.length, -1, -1, -1);
     app.meshes ~= Mesh([0, 0], app.materials[$-1].mid);
   }
 }
