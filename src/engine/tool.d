@@ -7,7 +7,6 @@ import engine;
 
 import camera : castRay;
 import chunk : getBestTile;
-import color : colorIndex;
 import ghost : syncBuildGhosts;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;

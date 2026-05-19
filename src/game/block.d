@@ -4,7 +4,6 @@
  */
 import engine;
 
-import color : colorIndex;
 import inventory : deriveInventory;
 import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
