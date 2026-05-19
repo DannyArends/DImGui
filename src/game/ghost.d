@@ -78,6 +78,15 @@ void addTiles(ref App app, int[3][] tiles, ToolMode mode) {
   }
 }
 
+/** Cursor ghost (single tile with texture) */
+void syncCursorGhost(ref App app) {
+  if(app.world.inventory.activeTool != ToolMode.Build) return;
+  if(app.world.inventory.tile == noTile) return;
+  if(app.world.inventory.type == ResourceType.None) return;
+  auto wp = app.world.tileToWorld(app.world.inventory.tile);
+  app.world.inventory.instances ~= DrawInstance(app.world.inventory.cachedMatIdx, buildHighlight(wp, app.world.tileSize, app.world.tileHeight));
+}
+
 /** Update Orchestrator */
 void syncBuildGhosts(ref App app) {
   if(app.world.inventory is null) return;
@@ -91,17 +100,5 @@ void syncBuildGhosts(ref App app) {
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
   app.world.inventory.markDirty();
-}
-
-/** Cursor ghost (single tile with texture) */
-void syncCursorGhost(ref App app) {
-  if(app.world.inventory.activeTool != ToolMode.Build) return;
-  if(app.world.inventory.tile == noTile) return;
-  if(app.world.inventory.type == ResourceType.None) return;
-  auto wp = app.world.tileToWorld(app.world.inventory.tile);
-  float ts = app.world.tileSize, th = app.world.tileHeight;
-  auto inst = DrawInstance([0, 0, 0, app.world.inventory.cachedTexIdx]);
-  inst.matrix = buildHighlight(wp, ts, th);
-  app.world.inventory.instances ~= inst;
 }
 
