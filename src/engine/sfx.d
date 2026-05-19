@@ -7,8 +7,7 @@ import engine;
 
 import io : dir;
 
-/** WAV format for sound effects
- */
+/** WAV format for sound effects */
 struct WavFMT {
   string path;
   MIX_Audio* chunk;
@@ -18,8 +17,7 @@ struct WavFMT {
   bool looping = false;
 }
 
-/** Audio information structure
- */
+/** Audio information structure */
 struct Audio {
   const(char)*[] chunk;
   const(char)*[] music;
@@ -34,6 +32,7 @@ struct Audio {
   @property int sampleSize(){ return((bits / 8) + audioChannels); }
 }
 
+/** List all available audio devices */
 string[] listAudioDevices() {
   int nDevices;
   SDL_AudioDeviceID* deviceIDs = SDL_GetAudioPlaybackDevices(&nDevices);
@@ -50,8 +49,7 @@ string[] listAudioDevices() {
   return(devices);
 }
 
-/** Initialize audio and open an audio channel
- */
+/** Initialize audio and open an audio channel */
 void openAudio(ref App app, int rate = 44100, int size = 1024, bool verbose = false) {
   Audio sfx;
   auto devices = listAudioDevices();
@@ -77,8 +75,7 @@ void openAudio(ref App app, int rate = 44100, int size = 1024, bool verbose = fa
   }
 }
 
-/** Load a WAV formatted file
- */
+/** Load a WAV formatted file */
 WavFMT loadWav(MIX_Mixer* mixer, string path, float pitch = 1.0, float gain = 0.5, bool looping = false) {
   WavFMT sfx = { path: path,
                  chunk: MIX_LoadAudio(mixer, toStringz(path), true),
@@ -92,8 +89,7 @@ WavFMT loadWav(MIX_Mixer* mixer, string path, float pitch = 1.0, float gain = 0.
   return(sfx);
 }
 
-/** Load all CasualGameSounds WAV sound effects
- */
+/** Load all CasualGameSounds WAV sound effects */
 void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSounds", float pitch = 1.0, float gain = 0.5, bool looping = false, bool play = false) {
   auto files = dir(path, "*.wav");
   foreach(file; files) {
@@ -102,8 +98,7 @@ void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSou
   SDL_Log("Loaded %d sounds effects from: %s", app.soundfx.length, path);
 }
 
-/** Play a sound effect
- */
+/** Play a sound effect */
 int play(ref App app, WavFMT sfx) {
   if(!sfx.loaded) return(-1);
   MIX_Track* track = MIX_CreateTrack(app.audio.mixer);
@@ -115,8 +110,7 @@ int play(ref App app, WavFMT sfx) {
   return(0);
 }
 
-/** Check sound effects for completion
- */
+/** Check sound effects for completion */
 void updateTracks(ref App app) {
   size_t[] done;
   foreach(i, track; app.audio.activeTracks) {
