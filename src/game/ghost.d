@@ -55,47 +55,42 @@ Matrix buildHighlight(float[3] wp, float ts, float th) {
 Matrix stockpileHighlight(float[3] wp, float ts, float th) {
   return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts * 1.05f, th * 0.1f, ts * 1.05f]);
 }
-
-ubyte highlightStyle(ToolMode mode) {
-  final switch(mode) {
-    case ToolMode.Select: return 0;
-    case ToolMode.Build: return 0;
-    case ToolMode.Mine: return 1;
-    case ToolMode.Stockpile: return 2;
-  }
+/** Per-tool highlight: color and matrix builder */
+struct ToolHighlight {
+  float[4]  color;
+  Matrix function(float[3], float, float) matrix;
 }
 
-void addInstance(ref App app, int[3] tile, float[4] color, ubyte style) {
-  auto wp = app.world.tileToWorld(tile);
+immutable ToolHighlight[ToolMode.max + 1] toolHighlight = [
+  ToolMode.Select: { Colors.white, &buildHighlight },
+  ToolMode.Mine: { Colors.orangered, &mineHighlight },
+  ToolMode.Build: { Colors.dodgerblue, &buildHighlight },
+  ToolMode.Stockpile: { Colors.gold, &stockpileHighlight },
+];
+
+void addTiles(ref App app, int[3][] tiles, ToolMode mode) {
+  auto h = toolHighlight[mode];
   float ts = app.world.tileSize, th = app.world.tileHeight;
-  auto inst = DrawInstance([0, 0], color, Matrix.init);
-  final switch(style) {
-    case 0: inst.matrix = buildHighlight(wp, ts, th); break;
-    case 1: inst.matrix = mineHighlight(wp, ts, th); break;
-    case 2: inst.matrix = stockpileHighlight(wp, ts, th); break;
+  foreach(tile; tiles) {
+    auto inst = DrawInstance([0, 0], h.color, Matrix.init);
+    inst.matrix = h.matrix(app.world.tileToWorld(tile), ts, th);
+    app.world.inventory.instances ~= inst;
   }
-  app.world.inventory.instances ~= inst;
 }
 
-/** Committed designations + tile penalties */
-void syncDesignations(ref App app) {
-  foreach(tile; app.world.inventory.buildDesignations) {
-    app.addInstance(tile, Colors.dodgerblue, 0);
-    app.world.data.tilePenalties[tile] = 40.0f;
-  }
-  foreach(tile; app.world.inventory.mineDesignations){ app.addInstance(tile, Colors.orangered, 1); }
-}
+/** Update Orchestrator */
+void syncBuildGhosts(ref App app) {
+  if(app.world.inventory is null) return;
+  app.world.inventory.instances = [];
 
-/** Paint preview (drag highlight) */
-void syncPaintPreview(ref App app) {
-  float[4] paintColor;
-  final switch(app.world.inventory.activeTool) {
-    case ToolMode.Select:    paintColor = Colors.white;      break;
-    case ToolMode.Mine:      paintColor = Colors.orangered;  break;
-    case ToolMode.Build:     paintColor = Colors.dodgerblue; break;
-    case ToolMode.Stockpile: paintColor = Colors.gold;       break;
-  }
-  foreach(tile; app.world.inventory.paint.preview) { app.addInstance(tile, paintColor, highlightStyle(app.world.inventory.activeTool)); }
+  app.addTiles(app.world.inventory.buildDesignations, ToolMode.Build);
+  foreach(tile; app.world.inventory.buildDesignations) app.world.data.tilePenalties[tile] = 40.0f;
+  app.addTiles(app.world.inventory.mineDesignations, ToolMode.Mine);
+  app.addTiles(app.world.inventory.paint.preview, app.world.inventory.activeTool);
+  app.syncCursorGhost();
+
+  app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
+  app.world.inventory.markDirty();
 }
 
 /** Cursor ghost (single tile with texture) */
@@ -108,16 +103,5 @@ void syncCursorGhost(ref App app) {
   auto inst = DrawInstance([0, 0, 0, app.world.inventory.cachedTexIdx]);
   inst.matrix = buildHighlight(wp, ts, th);
   app.world.inventory.instances ~= inst;
-}
-
-/** Update Orchestrator */
-void syncBuildGhosts(ref App app) {
-  if(app.world.inventory is null) return;
-  app.world.inventory.instances = [];
-  app.syncDesignations();
-  app.syncPaintPreview();
-  app.syncCursorGhost();
-  app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
-  app.world.inventory.markDirty();
 }
 
