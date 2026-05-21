@@ -43,7 +43,7 @@ void handlePrimaryPress(ref App app, float sx, float sy) {
         if(job.name !is null && !app.tryAssign(job)) jobQueue ~= job;
         foreach(ref hit; hits) {
           auto obj = app.objects[hit.idx[0]];
-          if(cast(Chunk)obj is null) { obj.setColor(Colors.yellowgreen); obj.window = true; break; }
+          if(cast(Chunk)obj is null) { obj.window = true; break; }
         }
       }
       break;
