@@ -35,12 +35,12 @@ void main() {
     baseColor *= texSample.rgb;
   }
 
-  vec3 normalForLighting = fragNormal;
+  vec3 normalForLighting = normalize(fragNormal);
   if(mat.nid >= 0) {
     normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
   }
 
-  vec3 lightColor = baseColor * 0.001;
+  vec3 lightColor = baseColor * 0.08;
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
   bool useShadows = ubo.lightingMode == 2u;
   for(int i = 0; i < ubo.nlights; ++i) {
