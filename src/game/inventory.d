@@ -7,7 +7,7 @@ import engine;
 
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
-import tile : getTile;
+import tile : getTileAt;
 
 struct Inventory {
   GhostCube ghost;
@@ -60,14 +60,14 @@ void computeDragPreview(ref App app, int[3] from, int[3] to) {
   if(dx >= dz) {
     int step = to[0] > from[0] ? 1 : -1;
     for(int x = from[0]; x != to[0] + step; x += step) {
-      if(app.world.getTile([x, from[1], from[2]]) != ResourceType.None) continue;
+      if(app.world.getTileAt([x, from[1], from[2]]) != ResourceType.None) continue;
       app.world.inventory.paint.preview ~= [x, from[1], from[2]];
       if(app.world.inventory.paint.preview.length >= available) break;
     }
   } else {
     int step = to[2] > from[2] ? 1 : -1;
     for(int z = from[2]; z != to[2] + step; z += step) {
-      if(app.world.getTile([from[0], from[1], z]) != ResourceType.None) continue;
+      if(app.world.getTileAt([from[0], from[1], z]) != ResourceType.None) continue;
       app.world.inventory.paint.preview ~= [from[0], from[1], z];
       if(app.world.inventory.paint.preview.length >= available) break;
     }
