@@ -39,10 +39,10 @@ struct Mesh {
 };
 
 struct Material {
-  uint mid;  /// Material ID
   int tid;   /// Diffuse texture ID
   int nid;   /// Normal map ID
   int oid;   /// Opacity texture ID
+  int pad;
 };
 
 /// Shader Storage Buffer Objects
