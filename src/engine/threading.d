@@ -7,11 +7,8 @@ import engine;
 
 import assimp : loadOpenAsset, isOpenAsset;
 import bone : mergeBones;
-import chunk : buildChunkData, finalizeChunk;
 import io : dir, fixPath;
-import jobs : applyPathResult;
 import material : registerAMaterials;
-import pathfinding : pathfindWorker, dispatchPendingPaths;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures;
 
@@ -95,7 +92,6 @@ void checkAsync(ref App app) {
   if(app.trace) SDL_Log("Checking Async, jobs: %d", app.concurrency.paths.length);
   app.dispatchPendingAssets();    // Submit pending textures / objects to available workers
   app.checkPendingTextures();     // Check all pending texture transfers; promote to app.textures once GPU is done
-  app.dispatchPendingPaths();     // Check all open pathfinding requests
 
   receiveTimeout(dur!"msecs"(-1), (string message, Tid tid) {
     app.concurrency.workers[tid] = false;
@@ -116,17 +112,6 @@ void checkAsync(ref App app) {
     Texture texture = cast(Texture)message;
     app.transferTextureAsync(texture);
     app.mainDeletionQueue.add((){ app.deAllocate(texture); });
-  });
-  // Accept any incoming chunks, and submit for finalization on GPU
-  receiveTimeout(dur!"msecs"(-1), (immutable(ChunkData) data, Tid tid) {
-    //SDL_Log("Received chunk [%d, %d] tiles=%d", data.coord[0], data.coord[2], data.tileInstances.length);
-    app.concurrency.workers[tid] = false;
-    app.finalizeChunk(cast(ChunkData)data);
-  });
-  // Accept any incoming pathfinding results
-  receiveTimeout(dur!"msecs"(-1), (immutable(PathResult) result, Tid tid) {
-    app.concurrency.workers[tid] = false;
-    app.applyPathResult(cast(PathResult)result);
   });
 }
 

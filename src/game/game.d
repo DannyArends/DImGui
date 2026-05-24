@@ -6,10 +6,12 @@
 import engine;
 
 import block : settleBlocks;
+import chunk : finalizeChunk;
 import dwarfwindow : showDwarfContent;
 import imgui : iconText;
 import inventorywindow : showInventoryContent;
-import pathfinding : canMoveTo;
+import jobs : applyPathResult;
+import pathfinding : canMoveTo, dispatchPendingPaths;
 import resources : injectResourceMeshes;
 import world : World, loadWorld, saveWorld;
 import worldwindow : showWorldContent;
@@ -40,6 +42,18 @@ void initGame(ref GameApp app) {
     app.world.settleBlocks(dt);
     app.updateWorld(app.camera.lookat);
   };
+}
+
+void checkGameAsync(ref GameApp app) {
+  app.dispatchPendingPaths();
+  receiveTimeout(dur!"msecs"(-1), (immutable(ChunkData) data, Tid tid) {
+    app.concurrency.workers[tid] = false;
+    app.finalizeChunk(cast(ChunkData)data);
+  });
+  receiveTimeout(dur!"msecs"(-1), (immutable(PathResult) result, Tid tid) {
+    app.concurrency.workers[tid] = false;
+    app.applyPathResult(cast(PathResult)result);
+  });
 }
 
 void cleanupGame(ref GameApp app) { app.saveWorld(); }
