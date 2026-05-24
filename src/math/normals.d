@@ -3,13 +3,13 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import phobos;
 
 import vector : vSub, vAdd, vMul, cross, normalize, dot;
 import vertex : VERTEX;
 
 /** Get all the triangle faces of a geometry */
-pure uint[3][] faces(const Geometry geometry) nothrow {
+pure uint[3][] faces(T)(const T geometry) nothrow {
   uint[3][] fList;
   if(geometry.indices.length <= 2) return(fList); // Objects (e.g. lines) can have less elements than a triangle 
   fList.length = (geometry.indices.length - 2);

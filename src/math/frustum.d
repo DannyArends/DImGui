@@ -3,11 +3,11 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import phobos;
 
 import vector : x, y, z;
-import quaternion : w;
-import matrix : multiply;
+import quaternion : Quaternion, w;
+import matrix : Matrix, multiply;
 
 alias Quaternion Plane;
 
@@ -33,18 +33,17 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
   return true;
 }
 
-@nogc void cullFrustum(ref App app, const Plane[6] frustum) nothrow {
-  for (size_t x = 0; x < app.objects.length; x++) {
-    if(app.objects[x].box is null) continue;
-    if(app.objects[x].skipFrustum) continue;
-    app.objects[x].inFrustum = false;
-    for (size_t i = 0; i < app.objects[x].box.instances.length; i++) {
-      if (aabbInFrustum(frustum, app.objects[x].box.bmin(i), app.objects[x].box.bmax(i))) {
-        app.objects[x].inFrustum = true;
+@nogc void cullFrustum(T)(ref T[] objects, const Plane[6] frustum) nothrow {
+  for (size_t x = 0; x < objects.length; x++) {
+    if(objects[x].box is null) continue;
+    if(objects[x].skipFrustum) continue;
+    objects[x].inFrustum = false;
+    for (size_t i = 0; i < objects[x].box.instances.length; i++) {
+      if (aabbInFrustum(frustum, objects[x].box.bmin(i), objects[x].box.bmax(i))) {
+        objects[x].inFrustum = true;
         break;
       }
     }
-    // If this is a Chunk, propagate to its tiles
-    if(app.objects[x].onFrustumUpdate) app.objects[x].onFrustumUpdate(app.objects[x].inFrustum);
+    if(objects[x].onFrustumUpdate) objects[x].onFrustumUpdate(objects[x].inFrustum);
   }
 }
