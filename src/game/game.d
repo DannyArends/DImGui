@@ -23,10 +23,7 @@ struct GameApp {
   World world;
 
   bool showPaths = false;
-  bool showBounds = false;
   bool showRays = false;
-  bool showLights = false;
-  bool disco = false;
   bool paused = false;
 }
 

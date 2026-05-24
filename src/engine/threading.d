@@ -26,6 +26,9 @@ class TaskThread : Thread {
   }
 
   void run() { if(verbose) SDL_Log("Worker spawned: %p", thisTid);
+    import chunk : buildChunkData;
+    import pathfinding : pathfindWorker;
+
     mytid = thisTid();
     main.send(mytid);
     while (active) {
