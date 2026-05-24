@@ -10,7 +10,7 @@ import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
 
-void showTileIcons(ref App app, ResourceType[] tiles, float cellSize = 16.0f) {
+void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f) {
   foreach(tt; tiles.sort.uniq) {
     igSameLine(0, 2);
     auto name = resourceData(tt).name;

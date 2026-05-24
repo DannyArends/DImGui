@@ -20,7 +20,7 @@ struct ResourceT {
   Colors color     = Colors.white;
 }
 
-void injectResourceMeshes(ref App app) {
+void injectResourceMeshes(ref GameApp app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
     app.meshes ~= Mesh([0, 0], cast(int)(app.materials.length));
     app.materials ~= Material();

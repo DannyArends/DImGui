@@ -107,7 +107,7 @@ Job miningJob(int[3] targetTile) {
         app.world.inventory.ghostsDirty = true;
       });
     },
-    onFail: (ref App app, ref Dwarf d) { d.failAndRequeue(); }
+    onFail: (ref GameApp app, ref Dwarf d) { d.failAndRequeue(); }
   );
 }
 
