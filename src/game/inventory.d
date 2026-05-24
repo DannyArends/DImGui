@@ -31,7 +31,7 @@ struct Inventory {
   }
 }
 
-void deriveInventory(ref App app) {
+void deriveInventory(ref GameApp app) {
   app.world.inventory.queued.clear();
   foreach(ref j; jobQueue) { if(j.name == "Building") app.world.inventory.queued[j.tileType] = app.world.inventory.queued.get(j.tileType, 0) + 1; }
   auto prevLen = jobQueue.length;
@@ -43,7 +43,7 @@ void deriveInventory(ref App app) {
   if(jobQueue.length != prevLen) app.world.inventory.ghostsDirty = true;
 }
 
-void placeTile(ref App app, int[3] wc) {
+void placeTile(ref GameApp app, int[3] wc) {
   if(wc == noTile) return;
   if(app.world.inventory.type == ResourceType.None) return;
   if(app.world.inventory.get(app.world.inventory.type, app) <= 0) return;
@@ -52,7 +52,7 @@ void placeTile(ref App app, int[3] wc) {
   app.deriveInventory();
 }
 
-void computeDragPreview(ref App app, int[3] from, int[3] to) {
+void computeDragPreview(ref GameApp app, int[3] from, int[3] to) {
   int available = app.world.inventory.get(app.world.inventory.type, app);
   int dx = abs(to[0] - from[0]);
   int dz = abs(to[2] - from[2]);
