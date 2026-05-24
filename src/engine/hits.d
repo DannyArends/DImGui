@@ -19,6 +19,7 @@ Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true) {
     if(!app.objects[x].isSelectable) continue;
     if(cast(Line)(app.objects[x]) !is null) continue;
     if(!app.objects[x].skipBoundingBox && app.objects[x].box is null) app.objects[x].computeBoundingBox(app.trace);
+    if(app.objects[x].box is null) continue;
     auto intersections = ray.intersects(app.objects[x].box, x);
     app.objects[x].window = false;
     if(intersections.any!(i => i.intersects)) hits ~= intersections;

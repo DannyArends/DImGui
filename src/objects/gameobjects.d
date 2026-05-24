@@ -37,6 +37,7 @@ class Chunk : Cube {
     super();
     data = cd;
     skipBoundingBox = true;
+    castShadow = false;
     indices = [];
     float sx = wd.chunkWorldSize;
     float sy = wd.chunkHeight * wd.tileHeight;

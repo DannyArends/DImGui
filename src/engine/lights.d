@@ -114,6 +114,7 @@ void toggleLightGeometries(ref App app) {
       app.objects[$-1].geometry = (){ return "LightCone"; };
       app.objects[$-1].rotate([light.yaw(), 1.0f, light.pitch()]);
     }
+    app.objects[$-1].castShadow = false;
     app.objects[$-1].position(light.position.xyz);
     app.objects[$-1].setColor(light.intensity);
   }
