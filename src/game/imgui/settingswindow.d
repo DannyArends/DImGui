@@ -10,7 +10,7 @@ import lights : toggleLightGeometries;
 import widgets : labelCol;
 
 /** Show the GUI window with global settings */
-void showSettingsContent(ref App app, uint font = 0) {
+void showSettingsContent(ref GameApp app, uint font = 0) {
   igBeginTable("Settings_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
   labelCol("Total Frames"); igText(toStringz(format("%s", app.totalFramesRendered)));

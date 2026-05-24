@@ -11,7 +11,7 @@ import widgets : sliderFloat3;
 
 /** Show the GUI window which allows us to manipulate lighting
  */
-void showLightsContent(ref App app, uint font = 0) {
+void showLightsContent(ref GameApp app, uint font = 0) {
   auto lightsBefore = app.lights.lights.dup;
 
   igCheckbox(iconText(cast(string)ICON_FA_MUSIC, "Disco"), &app.disco);
