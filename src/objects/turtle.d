@@ -28,16 +28,15 @@ class Turtle : Geometry {
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
     /** onFrame handler aging the particles every frame */
-    onFrame = (ref App app, ref Geometry obj, float dt){ 
-      auto t =  (cast(Turtle)obj);
-      if(fmod(t.frame, 10) == 0) t.age(app, obj, dt);
-      t.frame++;
+    onFrame = (float dt){ 
+      if(fmod(this.frame, 10) == 0) this.age(dt);
+      this.frame++;
     };
     meshes["Turtle"] = Mesh([0, cast(uint)vertices.length]);
     geometry = (){ return(typeof(this).stringof); };
   }
 
-  void age(ref App app, ref Geometry obj, float dt) {
+  void age(float dt) {
     if(!lsystem.iterate()){ return; }
     auto rnd = Random(this.seed);
     //SDL_Log("state: %s", to!string(lsystem.state).toStringz);

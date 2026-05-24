@@ -219,8 +219,8 @@ void dwarfTick(ref App app, ref Geometry obj) {
 void ensureDwarves(ref App app) {
   if(app.world.dwarves !is null) return;
   app.world.dwarves = new Dwarves();
-  app.world.dwarves.onFrame = &dwarfFrame;
-  app.world.dwarves.onTick  = &dwarfTick;
+  app.world.dwarves.onFrame = (float dt){ dwarfFrame(app, app.world.dwarves, dt); };
+  app.world.dwarves.onTick  = (){ dwarfTick(app, app.world.dwarves); };
   app.objects ~= app.world.dwarves;
   app.world.pathMarkers = new PathMarkers();
   app.objects ~= app.world.pathMarkers;

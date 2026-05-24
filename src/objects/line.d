@@ -19,7 +19,7 @@ class Line : Geometry {
     instances = [DrawInstance()];
 
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-    onTick = (ref App app, ref Geometry obj) { obj.deAllocate = true; }; // Set the deAllocate flag onTick
+    onTick = (){ this.deAllocate = true; };
     geometry = (){ return(typeof(this).stringof); };
   }
 }
