@@ -69,6 +69,6 @@ public import threading : Threading;
 public import uniforms : ParticleUniformBuffer, UBO;
 public import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 public import vulkan : SupportedFeatures;
-public import widgets : DropDownItem, SelectionKey;
+public import widgets : DropDownItem, SelectionKey, GameWindow;
 public import world : World, WorldData;
 

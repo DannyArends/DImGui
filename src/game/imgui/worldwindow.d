@@ -7,7 +7,7 @@ import engine;
 
 /** Show the GUI window for the World
  */
-void showWorldContent(ref App app, uint font = 0) {
+void showWorldContent(ref GameApp app, uint font = 0) {
   igBeginTable("World_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
   int[2] seedLimits = [0, 1000];

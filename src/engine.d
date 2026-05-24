@@ -40,7 +40,8 @@ struct App {
   SSBOList!Mesh meshes;                                                         /// Meshes for GPU SSBO
   Textures textures;                                                            /// Textures
   SSBOList!Material materials;                                                  /// GPU materials
-  Audio audio;
+  Audio audio;                                                                  /// Sounds
+  GameWindow[] gameWindows;                                                     /// Game windows
   WavFMT[] soundfx;                                                             /// Sound effects
   SSBO[string] buffers;                                                         /// SSBO buffers
   UBO[string] ubos;                                                             /// UBO buffers

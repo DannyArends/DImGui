@@ -6,8 +6,12 @@
 import engine;
 
 import block : settleBlocks;
+import dwarfwindow : showDwarfContent;
+import imgui : iconText;
+import inventorywindow : showInventoryContent;
 import resources : injectResourceMeshes;
 import world : World, loadWorld, saveWorld;
+import worldwindow : showWorldContent;
 
 struct GameApp {
   App app;
@@ -26,6 +30,9 @@ struct GameApp {
 void initGame(ref GameApp app) {
   app.loadWorld();
   app.injectResourceMeshes();
+  app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
+  app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
+  app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
 
   app.onFrame = (float dt) {
     app.world.settleBlocks(dt);
