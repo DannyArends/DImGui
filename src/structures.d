@@ -28,7 +28,7 @@ public import imgui : GUI, saveSettings;
 public import instancing : DrawInstance;
 public import intersection : Intersection;
 public import line : Line;
-public import lights : Light, Lighting, Lights;
+public import lights : LMode, Light, Lighting, Lights;
 public import lsystem : LSystem, Symbols;
 public import material : Material;
 public import matrix : Matrix;
