@@ -6,7 +6,7 @@
 import engine;
 
 import intersection : intersects;
-import serialization : readWorldData, writeWorldData;
+import serialization : readData, writeData;
 import tile : tileToWorld;
 
 /** Create a tombstone entry for a cleared chunk */
@@ -27,14 +27,14 @@ void saveVegetation(T)(ref GameApp app, ref T[][int[3]] objects, ref T[][int[3]]
   T[] all;
   foreach(coord, items; objects) { all ~= items.length == 0 ? [makeTombstone!T(coord)] : items; }
   if(all.length == 0) return;
-  writeWorldData(path, all, cast(uint)all.length);
+  writeData(path, all, cast(uint)all.length);
 }
 
 /** Load vegetation objects from disk into pending map */
 void loadVegetation(T)(ref GameApp app, ref T[][int[3]] pending, const(char)* path)
   if(is(typeof(T.init.rootTile) == int[3])) {
   T[] items; uint i;
-  if(!readWorldData(path, items, i)) return;
+  if(!readData(path, items, i)) return;
   foreach(ref item; items) {
     if(item.rootTile[0] == int.min) { pending[[item.rootTile[1], 0, item.rootTile[2]]] = []; continue; }
     pending[app.world.chunkCoord(item.rootTile)] ~= item;

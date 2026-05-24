@@ -24,14 +24,12 @@ void registerAMaterials(ref App app, ref Geometry object) {
 }
 
 void ensureMaterial(ref App app, ref Geometry object) {
-  bool changed = false;
   foreach(ref mesh; object.meshes) {
     if(mesh.mid >= 0) continue;
     mesh.mid = cast(int)(app.materials.length);
     app.materials ~= Material();
-    changed = true;
+    app.buffers["MaterialBuffer"].dirty[] = true;
   }
-  if(changed){ app.buffers["MaterialBuffer"].dirty[] = true; }
 }
 
 void updateMaterials(ref App app) {
