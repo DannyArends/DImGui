@@ -68,9 +68,9 @@ void saveSettings() {
   }
 }
 
-void makeWindow(ref App app, const(char)* title, bool* show, uint font, void function(ref App, uint) content) {
+void makeWindow(ref App app, const(char)* title, bool* show, uint font, void delegate(uint) content) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
-  if(igBegin(title, show, 0)) { content(app, font); igEnd(); } else { igEnd(); }
+  if(igBegin(title, show, 0)) { content(font); igEnd(); } else { igEnd(); }
   igPopFont();
 }
 
@@ -228,12 +228,11 @@ ImDrawData* renderGUI(ref App app){
   app.showMenu(font);
   version(Android){ }else{ app.showSidepanel(font); }
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
-  if(app.gui.showFPS) app.showFPSwindow(font);
-  if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, &showObjectsContent);
-  if(app.gui.showShaders) app.makeWindow("Shader", &app.gui.showShaders, font, &showShaderContent);
-  if(app.gui.showSFX) app.makeWindow("SFX", &app.gui.showSFX, font, &showSFXContent);
-  if(app.gui.showSettings) app.makeWindow("Settings", &app.gui.showSettings, font, &showSettingsContent);
-  if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, &showTexturesContent);
+  if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, (uint f){ app.showObjectsContent(f); });
+  if(app.gui.showShaders) app.makeWindow("Shader", &app.gui.showShaders, font, (uint f){ app.showShaderContent(f); });
+  if(app.gui.showSFX) app.makeWindow("SFX", &app.gui.showSFX, font, (uint f){ app.showSFXContent(f); });
+  if(app.gui.showSettings) app.makeWindow("Settings", &app.gui.showSettings, font, (uint f){ app.showSettingsContent(f); });
+  if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, (uint f){ app.showTexturesContent(f); });
   foreach(ref window; app.gameWindows) {
     if(window.visible){ app.makeWindow(toStringz(window.label), &window.visible, font, window.show); }
   }

@@ -37,6 +37,9 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
   app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
+  app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_GAUGE, "FPS"), (uint font){ app.showFPSContent(font); });
+  app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
+  app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
 
   app.onFrame = (float dt) {
     app.world.settleBlocks(dt);

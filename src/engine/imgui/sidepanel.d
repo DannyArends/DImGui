@@ -7,10 +7,8 @@ import engine;
 
 import imgui : iconText;
 import directorywindow : showDirectoryContent;
-import settingswindow : showSettingsContent;
 import sfxwindow : showSFXContent;
 import objectswindow : showObjectsContent;
-import lightswindow : showLightsContent;
 import shaderswindow : showShaderContent;
 import texturewindow : showTexturesContent;
 
@@ -27,8 +25,6 @@ void showSidepanel(ref App app, uint font = 0) {
 
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_FOLDER, "Load"), 0)) app.showDirectoryContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_CUBES, "Objects"), 0)) app.showObjectsContent(font);
-  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_LIGHTBULB, "Lights"), 0)) app.showLightsContent(font);
-  if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_GEAR, "Settings"), 0)) app.showSettingsContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_VOLUME_HIGH, "Sounds"), 0)) app.showSFXContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_IMAGE, "Textures"), 0)) app.showTexturesContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_CODE, "Shaders"), 0)) app.showShaderContent(font);
