@@ -34,7 +34,7 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
 
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
-void pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
+void pathfindTo(T)(ref GameApp app, ref T obj, int[3] goalTile) {
   app.world.pendingPaths = app.world.pendingPaths.filter!(r => r.dwarfUID != obj.uid).array;  // Remove any existing pending request for this dwarf
   auto req = PathRequest(obj.uid, obj.tile, goalTile);
   foreach(tid; app.concurrency.workers.keys) {
@@ -50,7 +50,7 @@ void pathfindTo(T)(ref App app, ref T obj, int[3] goalTile) {
 }
 
 /** Dispatch pending path finding jobs */
-void dispatchPendingPaths(ref App app) {
+void dispatchPendingPaths(ref GameApp app) {
   if(app.concurrency.paths.length > 0) return;
   foreach(tid; app.concurrency.workers.keys) {
     if(app.world.pendingPaths.length == 0) break;
@@ -63,7 +63,7 @@ void dispatchPendingPaths(ref App app) {
 }
 
 /** Invalidate any dwarf paths that pass through the given tile */
-void invalidatePaths(ref App app, int[3] tile) {
+void invalidatePaths(ref GameApp app, int[3] tile) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves.dwarves) {
     if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
@@ -76,7 +76,7 @@ void invalidatePaths(ref App app, int[3] tile) {
 
 /** Attempt to re-path object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
-bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
+bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile) {
   obj.targetTile = targetTile;
   auto goalTile = app.findGoalTile(obj);
   if(goalTile == noTile) return(false);
@@ -86,7 +86,7 @@ bool repathTo(T)(ref App app, ref T obj, int[3] targetTile) {
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
-int[3] findGoalTile(T)(ref App app, ref T obj) {
+int[3] findGoalTile(T)(ref GameApp app, ref T obj) {
   int[3] goalTile = noTile;
   float bestScore = float.max;
   foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {

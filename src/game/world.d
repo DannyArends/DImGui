@@ -101,7 +101,7 @@ struct World {
     pendingChunks.clear();
   }
 
-  void deleteWorld(ref App app) {
+  void deleteWorld(ref GameApp app) {
     SDL_RemovePath(worldPath());
     SDL_RemovePath(blocksPath());
     data.diffs = [];
@@ -111,7 +111,7 @@ struct World {
   }
 }
 
-void loadWorld(ref App app) {
+void loadWorld(ref GameApp app) {
   ensureWorldDir();
   app.initFeatureMeshes();
 
@@ -134,7 +134,7 @@ void loadWorld(ref App app) {
 }
 
 /** Save world diffs to disk */
-void saveWorld(ref App app) {
+void saveWorld(ref GameApp app) {
   uint[2] header = [WORLD_MAGIC, cast(uint)app.world.data.diffs.length];
   char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])app.world.data.diffs;
   writeFile(app.world.worldPath(), raw);
@@ -147,7 +147,7 @@ void saveWorld(ref App app) {
 }
 
 /** Dispatch a chunk build job to the next available worker thread */
-bool dispatchWorker(ref App app, int[3] coord){
+bool dispatchWorker(ref GameApp app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
@@ -161,7 +161,7 @@ bool dispatchWorker(ref App app, int[3] coord){
 }
 
 /** Load chunks within render distance, evict chunks outside it, rebuild dirty chunks */
-void updateWorld(ref App app, float[3] lookat) {
+void updateWorld(ref GameApp app, float[3] lookat) {
   int effectiveRD = min(app.world.renderDistance, cast(int)(app.camera.nearfar[1] / app.world.chunkWorldSize));
   int[3] pc = app.world.chunkCoord([cast(int)floor(lookat[0] / app.world.tileSize), 0, cast(int)floor(lookat[2] / app.world.tileSize)]);
 

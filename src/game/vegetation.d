@@ -17,7 +17,7 @@ T makeTombstone(T)(int[3] coord) if(is(typeof(T.init.rootTile) == int[3])) {
 }
 
 /** Save vegetation objects to disk */
-void saveVegetation(T)(ref App app, ref T[][int[3]] objects, ref T[][int[3]] pending, const(char)* path)
+void saveVegetation(T)(ref GameApp app, ref T[][int[3]] objects, ref T[][int[3]] pending, const(char)* path)
   if(is(typeof(T.init.rootTile) == int[3])) {
   foreach(coord, items; pending) {
     if(coord !in objects) objects[coord] = items;
@@ -31,7 +31,7 @@ void saveVegetation(T)(ref App app, ref T[][int[3]] objects, ref T[][int[3]] pen
 }
 
 /** Load vegetation objects from disk into pending map */
-void loadVegetation(T)(ref App app, ref T[][int[3]] pending, const(char)* path)
+void loadVegetation(T)(ref GameApp app, ref T[][int[3]] pending, const(char)* path)
   if(is(typeof(T.init.rootTile) == int[3])) {
   T[] items; uint i;
   if(!readWorldData(path, items, i)) return;
@@ -42,14 +42,14 @@ void loadVegetation(T)(ref App app, ref T[][int[3]] pending, const(char)* path)
 }
 
 /** Remove vegetation for a chunk and rebuild instances */
-void removeVegetation(T, alias rebuildFn)(ref App app, ref T[][int[3]] objects, int[3] coord)
+void removeVegetation(T, alias rebuildFn)(ref GameApp app, ref T[][int[3]] objects, int[3] coord)
   if(is(typeof(T.init.rootTile) == int[3])) {
   if(coord !in objects) return;
   objects.remove(coord);
   rebuildFn(app);
 }
 
-bool getBestVegetation(T, alias matchGeometry)(ref App app, float[3][2] ray, Intersection[] hits, T[][int[3]] objects, out int[3] rootTile)
+bool getBestVegetation(T, alias matchGeometry)(ref GameApp app, float[3][2] ray, Intersection[] hits, T[][int[3]] objects, out int[3] rootTile)
   if(is(typeof(T.init.rootTile) == int[3])) {
   Intersection best;
   foreach(ref hit; hits) {
