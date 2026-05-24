@@ -5,8 +5,9 @@
 
 import engine;
 
-import world : WORLD_MAGIC;
 import io : readFile, writeFile;
+
+enum uint WORLD_MAGIC = 0xCA1DE4A;
 
 bool readWorldData(T)(const(char)* path, out T[] data, out uint h) {
   auto raw = readFile(path);
