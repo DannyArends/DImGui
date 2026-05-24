@@ -23,6 +23,15 @@ void registerAMaterials(ref App app, ref Geometry object) {
   }
 }
 
+void ensureMaterial(ref App app, ref Geometry object) {
+  foreach(ref mesh; object.meshes) {
+    if(mesh.mid >= 0) continue;
+    mesh.mid = cast(int)(app.materials.length);
+    app.materials ~= Material();
+  }
+  app.buffers["MaterialBuffer"].dirty[] = true;
+}
+
 void updateMaterials(ref App app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
     auto ttype = cast(ResourceType)tt;
