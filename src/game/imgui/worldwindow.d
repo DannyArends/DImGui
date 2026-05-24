@@ -5,6 +5,8 @@
 
 import engine;
 
+import game : GameApp;
+
 /** Show the GUI window for the World
  */
 void showWorldContent(ref GameApp app, uint font = 0) {

@@ -5,6 +5,8 @@
 import engine;
 
 import block : unsettleBlocks;
+import game : GameApp;
+import gameobjects : Chunk;
 import geometry : deAllocate;
 import intersection : intersects;
 import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile;

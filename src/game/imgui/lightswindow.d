@@ -5,6 +5,7 @@
 
 import engine;
 
+import game : GameApp;
 import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
 import widgets : sliderFloat3;

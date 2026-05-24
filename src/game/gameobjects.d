@@ -23,6 +23,8 @@ class Tiles : Square {
     super();
     initInstanced(() => "Tiles", cd.tileInstances);
     isSelectable = false;
+    skipFrustum = true;
+    hideInObjectsWindow = true;
   }
 }
 
@@ -38,6 +40,7 @@ class Chunk : Cube {
     data = cd;
     skipBoundingBox = true;
     castShadow = false;
+    hideInObjectsWindow = true;
     indices = [];
     float sx = wd.chunkWorldSize;
     float sy = wd.chunkHeight * wd.tileHeight;

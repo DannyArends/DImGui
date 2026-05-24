@@ -7,6 +7,8 @@ import engine;
 import block : syncBlockInstances, noBlock;
 import color : randomColor;
 import inventory : deriveInventory;
+import game : GameApp;
+import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
 import matrix : position, scale;
 import pathmarker : syncPathMarkers;

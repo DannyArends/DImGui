@@ -5,6 +5,7 @@
 
 import engine;
 
+import game : GameApp;
 import io : dir, fixPath;
 import textures : transferTextureAsync, idx, toRGBA;
 import images : deAllocate;

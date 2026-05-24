@@ -7,6 +7,8 @@ import engine;
 
 import camera : castRay;
 import chunk : getBestTile;
+import game : GameApp;
+import gameobjects : Chunk;
 import ghost : syncBuildGhosts;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;

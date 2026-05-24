@@ -64,6 +64,8 @@ class Geometry {
 
   bool isVisible = true;                            /// Boolean flag
   bool inFrustum = true;                            /// Boolean flag
+  bool skipFrustum = false;                         /// Boolean flag
+  bool hideInObjectsWindow = false;                 /// Boolean flag
   bool isSelectable = true;                         /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index

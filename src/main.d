@@ -11,7 +11,7 @@ import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
-import game : cleanupGame, checkGameAsync, initGame, updateGame;
+import game : cleanupGame, checkGameAsync, GameApp, initGame, updateGame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
 import imgui : initializeImGui;
 import input : handleEvents;
