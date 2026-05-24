@@ -5,8 +5,9 @@
 
 import engine;
 
-import textures : ImTextureRefFromID, idx;
+import game : GameApp;
 import imgui : faIcon;
+import textures : ImTextureRefFromID, idx;
 
 void drawCenteredText(ImDrawList* drawList, ImVec2 min, ImVec2 max, const(char)* text) {
   auto font = igGetFont();

@@ -5,6 +5,7 @@
 
 import engine;
 
+import game : GameApp;
 import imgui : faIcon;
 
 size_t vertexCount(Geometry o, bool showBounds) {

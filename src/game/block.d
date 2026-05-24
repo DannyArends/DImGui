@@ -4,6 +4,7 @@
  */
 import engine;
 
+import game : GameApp;
 import inventory : deriveInventory;
 import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;

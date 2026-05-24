@@ -6,6 +6,7 @@
 import engine;
 
 import block : spawnBlock, unsettleBlocks;
+import game : GameApp;
 import matrix : translateScale;
 import normals : computeTangents;
 import tile : getTile, tileCoord, tileToWorld;

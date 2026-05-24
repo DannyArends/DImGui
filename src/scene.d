@@ -15,7 +15,7 @@ import assimp : loadOpenAsset;
 import normals : computeNormals, computeTangents;
 
 /** Create a scene for rendering */
-void createScene(ref GameApp app){
+void createScene(ref App app){
   SDL_Log("createScene: set time to Noon");
   app.updateSun();
   SDL_Log("createScene: Finished");

@@ -5,6 +5,7 @@
 
 import engine;
 
+import game : GameApp;
 import vector : manhattan2D;
 import search : performSearch, atGoal, stepThroughPath;
 import tile : getSuccessors, isStandable, isPassable, tileToWorld, worldToTile;

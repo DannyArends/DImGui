@@ -5,6 +5,8 @@
 
 import engine;
 
+import game : GameApp;
+import gameobjects : GhostCube;
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
 import tile : getTileAt;

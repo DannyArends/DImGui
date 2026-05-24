@@ -6,6 +6,7 @@
 import engine;
 
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
+import game : GameApp;
 import ghost : updateGhostTile;
 import hits : getHits;
 import screenshot : saveScreenshot;

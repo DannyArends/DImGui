@@ -6,6 +6,7 @@
 import engine;
 
 import dwarf : spawnDwarf;
+import game : GameApp;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;

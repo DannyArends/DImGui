@@ -5,6 +5,7 @@
 
 import engine;
 
+import game : GameApp;
 import intersection : intersects;
 import serialization : readData, writeData;
 import tile : tileToWorld;

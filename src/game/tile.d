@@ -5,6 +5,7 @@
 
 import engine;
 
+import game : GameApp;
 import noise : noiseHTT;
 import pathfinding : invalidatePaths;
 import vector : x,y,z;

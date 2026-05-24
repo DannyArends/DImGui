@@ -6,6 +6,7 @@
 import engine;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock;
+import game : GameApp;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import tile : setTile, tileAbove, getTileAt, isStandable;

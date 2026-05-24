@@ -8,6 +8,8 @@ import engine;
 import block : loadBlocks, saveBlocks;
 import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
+import game : GameApp;
+import gameobjects : Chunk, Dwarves, PathMarkers, GhostCube;
 import inventory : deriveInventory;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;

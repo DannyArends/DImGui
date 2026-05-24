@@ -5,6 +5,7 @@
 
 import engine;
 
+import game : GameApp;
 import imgui : clearSettings;
 import lights : toggleLightGeometries;
 import widgets : labelCol;
