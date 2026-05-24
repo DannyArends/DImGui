@@ -37,6 +37,7 @@ class Geometry {
   AMat[] materials;                             /// Materials
 
   BoundingBox box = null;                       /// Bounding Box
+  bool skipBoundingBox = false;                 /// Do we compute boundingboxes ?
   bool window = false;                          /// ImGui window displayed?
 
   @nogc this() nothrow {
