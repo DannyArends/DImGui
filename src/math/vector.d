@@ -5,8 +5,7 @@
 
 import engine;
 
-/** Vector, stored as float[3]
- */
+/** Vector, stored as float[3] */
 struct Vector { 
   float[3] data = [ 0.0f, 0.0f, 0.0f ];
   alias data this;

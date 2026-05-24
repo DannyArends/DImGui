@@ -8,7 +8,7 @@ import block : unsettleBlocks;
 import geometry : deAllocate;
 import intersection : intersects;
 import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile;
-import mouse : getHits;
+import hits : getHits;
 import textures : idx;
 import vector : expandBounds;
 import feature : buildFeatureData;
