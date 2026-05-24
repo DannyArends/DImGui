@@ -97,9 +97,9 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
 }
 
 /** Find the best intersecting tile in the world given a ray, returns world coord or [int.min,0,0] */
-bool getBestTile(ref App app, float[3][2] ray, out int[3] wc) { return(app.getBestTile(ray, app.getHits(ray, false), wc)); }
+bool getBestTile(ref GameApp app, float[3][2] ray, out int[3] wc) { return(app.getBestTile(ray, app.getHits(ray, false), wc)); }
 
-bool getBestTile(ref App app, float[3][2] ray, Intersection[] hits, out int[3] wc) {
+bool getBestTile(ref GameApp app, float[3][2] ray, Intersection[] hits, out int[3] wc) {
   Intersection best;
   foreach(ref hit; hits) {
     auto chunk = cast(Chunk)app.objects[hit.idx[0]];
@@ -117,7 +117,7 @@ bool getBestTile(ref App app, float[3][2] ray, Intersection[] hits, out int[3] w
 }
 
 /** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene */
-void finalizeChunk(ref App app, ChunkData data) {
+void finalizeChunk(ref GameApp app, ChunkData data) {
   if (data.coord !in app.world.pendingChunks) return;
   if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
 

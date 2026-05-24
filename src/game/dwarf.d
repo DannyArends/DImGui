@@ -58,13 +58,13 @@ struct DwarfData {
     return false;
   }
 
-  bool use(ref App app, uint blockID) {
+  bool use(ref GameApp app, uint blockID) {
     foreach(ref b; app.world.blocks) { if(b.id == blockID) { b.reserved = false; break; } }
     foreach(ref s; inventory) { if(s.isBlock && s.blockID == blockID) { s = InventorySlot.init; return true; } }
     return false;
   }
 
-  bool drop(ref App app, size_t slot) {
+  bool drop(ref GameApp app, size_t slot) {
     if(slot >= inventory.length || inventory[slot].empty) return false;
     if(inventory[slot].isBlock) {
       foreach(ref b; app.world.blocks) { if(b.id == inventory[slot].blockID) { b.tile = tile; b.reserved = false; break; } }
@@ -109,7 +109,7 @@ struct Dwarf {
 
 /** Follow the next step in object T's path.
  * Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT */
-void followPath(T)(ref App app, ref T obj) {
+void followPath(T)(ref GameApp app, ref T obj) {
   if(obj.path.length == 0) return;
   auto next = obj.path[0];
   obj.path = obj.path[1..$];
@@ -121,7 +121,7 @@ void followPath(T)(ref App app, ref T obj) {
 }
 
 /** Find a free surface tile (as in non-occupado) and on top of the world */
-int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
+int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
   foreach(radius; 0..app.world.chunkSize) {
     for(int x = -radius; x <= radius; x++) {
       for(int z = -radius; z <= radius; z++) {
@@ -134,7 +134,7 @@ int[3] findFreeSurfaceTile(ref App app, int startX = 0, int startZ = 0) {
 }
 
 /** All dwarves being framed */
-void dwarfFrame(ref App app, ref Geometry obj, float dt) {
+void dwarfFrame(ref GameApp app, ref Geometry obj, float dt) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
   foreach(i, ref d; ds.dwarves) {
@@ -160,7 +160,7 @@ void dwarfFrame(ref App app, ref Geometry obj, float dt) {
 }
 
 /** A single dwarf being ticked */
-void tickDwarf(ref App app, ref Dwarf d) {
+void tickDwarf(ref GameApp app, ref Dwarf d) {
   final switch(d.state) {
     case DwarfState.Idle: app.claimNextJob(d); break;
     case DwarfState.WaitingForPath: break;
@@ -183,7 +183,7 @@ void tickDwarf(ref App app, ref Dwarf d) {
   }
 }
 
-void handleBlocking(ref App app, ref Dwarf d) {
+void handleBlocking(ref GameApp app, ref Dwarf d) {
   foreach(ref other; app.world.dwarves.dwarves) {
     if(other.uid == d.uid) continue;
     if(!app.atDestination(other, d.jobStack[0].targetTile)) continue;
@@ -206,7 +206,7 @@ void handleBlocking(ref App app, ref Dwarf d) {
 }
 
 /** dwarfTick, ticks all dwarves in random order */
-void dwarfTick(ref App app, ref Geometry obj) {
+void dwarfTick(ref GameApp app, ref Geometry obj) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
   foreach(i; iota(ds.dwarves.length).array.randomShuffle()) { app.tickDwarf(ds.dwarves[i]); }
@@ -216,7 +216,7 @@ void dwarfTick(ref App app, ref Geometry obj) {
   if(app.world.inventoryDirty) { app.timed!deriveInventory(); app.world.inventoryDirty = false; }
 }
 
-void ensureDwarves(ref App app) {
+void ensureDwarves(ref GameApp app) {
   if(app.world.dwarves !is null) return;
   app.world.dwarves = new Dwarves();
   app.world.dwarves.onFrame = (float dt){ dwarfFrame(app, app.world.dwarves, dt); };
@@ -226,7 +226,7 @@ void ensureDwarves(ref App app) {
   app.objects ~= app.world.pathMarkers;
 }
 
-void addDwarf(ref App app, ref Dwarf d) {
+void addDwarf(ref GameApp app, ref Dwarf d) {
   d.idleTicks[1] = uniform(3, 18);
   d.state = DwarfState.Idle;
   auto wp = app.world.tileToWorld(d.tile);
@@ -240,7 +240,7 @@ void addDwarf(ref App app, ref Dwarf d) {
 }
 
 /** Spawn a Dwarf */
-void spawnDwarf(ref App app) {
+void spawnDwarf(ref GameApp app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
@@ -250,13 +250,13 @@ void spawnDwarf(ref App app) {
   app.world.dwarves.markDirty();
 }
 
-void saveDwarfs(ref App app) {
+void saveDwarfs(ref GameApp app) {
   if(app.world.dwarves is null) return;
   DwarfData[] data = app.world.dwarves[].map!(d => d.data).array;
   writeWorldData(app.world.dwarfsPath(), data, cast(uint)data.length);
 }
 
-bool loadDwarfs(ref App app) {
+bool loadDwarfs(ref GameApp app) {
   DwarfData[] data;  uint i;
   if(!readWorldData(app.world.dwarfsPath(), data, i)) return false;
   app.ensureDwarves();
