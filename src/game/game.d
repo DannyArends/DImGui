@@ -5,6 +5,7 @@
 
 import engine;
 
+import block : settleBlocks;
 import resources : injectResourceMeshes;
 import world : World, loadWorld, saveWorld;
 
