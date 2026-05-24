@@ -46,6 +46,7 @@ class Chunk : Cube {
     float cy = sy * 0.5f + wd.yOffset;
     instances = [DrawInstance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
     tiles = new Tiles(cd);
+    onFrustumUpdate = (bool v){ tiles.inFrustum = v; };
     geometry = (){ return "Chunk"; };
   }
 }

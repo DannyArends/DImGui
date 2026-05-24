@@ -118,6 +118,7 @@ class Geometry {
   void delegate(SDL_Event e) onMouseMove;
   void delegate(float dt) onFrame;
   void delegate() onTick;
+  @nogc void delegate(bool) nothrow onFrustumUpdate;
   string delegate() geometry;
 }
 
