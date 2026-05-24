@@ -24,7 +24,7 @@ struct PaintState {
 }
 
 /** Primary press: left click / single tap */
-void handlePrimaryPress(ref App app, float sx, float sy) {
+void handlePrimaryPress(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
 
@@ -67,7 +67,7 @@ void handlePrimaryPress(ref App app, float sx, float sy) {
 }
 
 /** Primary drag: left hold + move / single finger move */
-void handlePrimaryDrag(ref App app, float sx, float sy) {
+void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
 
@@ -90,7 +90,7 @@ void handlePrimaryDrag(ref App app, float sx, float sy) {
 }
 
 /** Primary release: left up / finger up */
-void handlePrimaryRelease(ref App app, float sx, float sy) {
+void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
   final switch(app.world.inventory.activeTool) {
     case ToolMode.Select:
       break;
@@ -115,7 +115,7 @@ void handlePrimaryRelease(ref App app, float sx, float sy) {
 }
 
 /** Secondary press: right click */
-void handleSecondaryPress(ref App app, float sx, float sy) {
+void handleSecondaryPress(ref GameApp app, float sx, float sy) {
   final switch(app.world.inventory.activeTool) {
     case ToolMode.Select:
       break;
@@ -130,7 +130,7 @@ void handleSecondaryPress(ref App app, float sx, float sy) {
   }
 }
 
-void updateHoverHighlight(ref App app, float sx, float sy) {
+void updateHoverHighlight(ref GameApp app, float sx, float sy) {
   if(app.world.inventory.activeTool != ToolMode.Mine && app.world.inventory.activeTool != ToolMode.Stockpile) return;
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
@@ -140,7 +140,7 @@ void updateHoverHighlight(ref App app, float sx, float sy) {
 }
 
 /** Update rectangular paint preview from anchor to current tile */
-void updatePaintPreview(ref App app, int[3] current) {
+void updatePaintPreview(ref GameApp app, int[3] current) {
   if(app.world.inventory.paint.start == noTile) return;
   auto from = app.world.inventory.paint.start;
   app.world.inventory.paint.preview = [];
@@ -153,7 +153,7 @@ void updatePaintPreview(ref App app, int[3] current) {
 }
 
 /** Commit the current paint preview */
-void commitPaint(ref App app) {
+void commitPaint(ref GameApp app) {
   if(app.world.inventory.paint.preview.length == 0) return;
   final switch(app.world.inventory.activeTool) {
     case ToolMode.Select: break;
