@@ -41,7 +41,7 @@ void showToolSwitcher(ref App app) {
 }
 
 /** Show inventory */
-void showInventoryContent(ref App app, uint font = 0) {
+void showInventoryContent(ref GameApp app, uint font = 0) {
   app.showToolSwitcher();
   float cellSize = 32.0f;
   int cols = cast(int)floor((app.gui.panelW - cellSize) / cast(float)(cellSize + 4)) - 1;

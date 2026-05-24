@@ -21,6 +21,11 @@ struct SelectionKey {
   int oid;
 }
 
+struct GameWindow {
+  string label;
+  void delegate(uint font) show;
+}
+
 ImVec2 textSize(const(char)* txt) { ImVec2 textSize; igCalcTextSize(&textSize, txt, null, false, -1.0f); return(textSize); }
 
 /** Render three inline scaled float sliders for a vec3 */

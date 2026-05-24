@@ -22,7 +22,7 @@ void showTileIcons(ref App app, ResourceType[] tiles, float cellSize = 16.0f) {
   }
 }
 
-void showDwarfContent(ref App app, uint font = 0) {
+void showDwarfContent(ref GameApp app, uint font = 0) {
   igText("Spawn Dwarf:"); igSameLine(0, 5);
   if(igButton(iconText(cast(string)ICON_FA_PLUS, "Spawn"), ImVec2(0,0))) { app.spawnDwarf(); }
 
