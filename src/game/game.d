@@ -24,7 +24,7 @@ import worldwindow : showWorldContent;
 class GameTaskThread : TaskThread {
   this(Tid id, bool verbose = false) { super(id, verbose); }
 
-  override void handleMessages() {
+  override void handleGameObjects() {
     receiveTimeout(dur!"msecs"(-1),
       (immutable(WorldData) wd, int[3] coord) {
         auto data = buildChunkData(wd, coord);
@@ -49,7 +49,7 @@ struct GameApp {
 }
 
 void initGame(ref GameApp app) {
-  app.concurrency.threadFactory = (Tid tid, bool verbose) => new GameTaskThread(tid, verbose);
+  app.concurrency.factory = (Tid tid, bool verbose) => new GameTaskThread(tid, verbose);
   app.loadWorld();
   app.injectResourceMeshes();
   app.camera.canMoveTo = (float[3] pos){ return app.world.canMoveTo(pos); };

@@ -28,9 +28,6 @@ class TaskThread : Thread {
   void handleGameObjects() { }
 
   void run() { if(verbose) SDL_Log("Worker spawned: %p", thisTid);
-    import chunk : buildChunkData;
-    import pathfinding : pathfindWorker;
-
     mytid = thisTid();
     main.send(mytid);
     while (active) {
@@ -47,14 +44,6 @@ class TaskThread : Thread {
             main.send(openasset, mytid);
           } else { main.send("Unknown file", mytid); }
         },
-        /*(immutable(WorldData) wd, int[3] coord) {
-          auto data = buildChunkData(wd, coord);
-          main.send(cast(immutable(ChunkData))data, mytid);
-        },
-        (immutable(WorldData) wd, PathRequest req) {
-          auto result = pathfindWorker(wd, req);
-          main.send(cast(immutable(PathResult))result, mytid);
-        }, */
         (bool active) { this.active = active; }  // shutdown signal
       );
       handleGameObjects();
@@ -121,4 +110,3 @@ void checkAsync(ref App app) {
     app.mainDeletionQueue.add((){ app.deAllocate(texture); });
   });
 }
-
