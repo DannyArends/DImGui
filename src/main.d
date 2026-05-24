@@ -50,7 +50,7 @@ version (Android) {
  * Main entry point for Windows and Linux
  */
 void run(string[] args = null) {
-  App app = initializeSDL();                                    /// Initialize SDL library and create a window
+  GameApp app = initializeSDL();                                    /// Initialize SDL library and create a window
 
   app.createCompiler();                                         /// Create the SPIR-V compiler
   app.createReflectionContext();                                /// Create a SPIR-V reflection context

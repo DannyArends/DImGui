@@ -39,7 +39,7 @@ void createScene(ref App app){
 } */
 
 /** Create a scene for rendering */
-void createScene(ref App app){
+void createScene(ref GameApp app){
   SDL_Log("createScene: set time to Noon");
   app.updateSun();
 
