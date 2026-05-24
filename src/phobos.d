@@ -16,7 +16,7 @@ public import core.stdc.stdlib : abort, exit, malloc, free;
 public import core.stdc.stdio : printf;
 
 public import std.algorithm;
-public import std.array : array, split, replace, empty;
+public import std.array : array, split, replace, empty, join;
 public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, receiveOnly, receiveTimeout;
 public import std.conv : to;
 public import std.format : format;

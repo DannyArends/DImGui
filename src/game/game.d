@@ -3,7 +3,22 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+public import engine;
+
+public import block : Block;
+public import chunk : ChunkData;
+public import dwarf : Dwarf, DwarfData, DwarfState;
+public import feature : FeatureT, FeaturePartT, FeatureDropT, Feature;
+public import inventory : Inventory;
+public import jobs : Job;
+public import gameobjects : Chunk, Dwarves, PathMarkers, GhostCube;
+public import pathfinding : PathRequest, PathResult;
+public import searchnode : PathNode;
+public import tool : ToolMode, PaintState;
+public import tile : builtTile, noTile, TileDiff;
+public import raws : ResourceType, resourceData, heightToResource, features;
+public import resources : ResourceT;
+public import world : World, WorldData;
 
 import block : settleBlocks;
 import chunk : buildChunkData, finalizeChunk;
@@ -15,7 +30,7 @@ import inventorywindow : showInventoryContent;
 import jobs : applyPathResult;
 import lightswindow : showLightsContent;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
-import resources : injectResourceMeshes;
+import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
 import threading : TaskThread;
 import world : loadWorld, saveWorld, updateWorld;
@@ -49,6 +64,7 @@ struct GameApp {
 }
 
 void initGame(ref GameApp app) {
+  app.numResourceTypes = cast(uint)ResourceType.max + 1;
   app.concurrency.factory = (Tid tid, bool verbose) => new GameTaskThread(tid, verbose);
   app.loadWorld();
   app.injectResourceMeshes();
@@ -67,6 +83,7 @@ void updateGame(ref GameApp app) {
   float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   app.world.settleBlocks(dt);
   app.updateWorld(app.camera.lookat);
+  app.updateMaterials();
   app.shadows.bounds = [app.world.height, app.world.radius];
 }
 

@@ -3,12 +3,9 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import game;
 
-import game : GameApp;
-
-/** Show the GUI window for the World
- */
+/** Show the GUI window for the World */
 void showWorldContent(ref GameApp app, uint font = 0) {
   igBeginTable("World_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 

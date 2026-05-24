@@ -3,10 +3,9 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import game;
 
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock;
-import game : GameApp;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import tile : setTile, tileAbove, getTileAt, isStandable;

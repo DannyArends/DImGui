@@ -26,7 +26,7 @@ void logMesh(uint i, const Mesh m, const(char)* prefix = "meshInfo") {
 void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; app.meshes) logMesh(cast(uint)i, m); }
 
 void updateMeshInfo(ref App app) {
-  app.meshes.length = cast(int)ResourceType.max + 1;
+  app.meshes.length = app.numResourceTypes;
   bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     if (app.objects[o].instancedMesh) continue;
