@@ -5,7 +5,7 @@
 
 import engine;
 
-auto timed(alias fn, Args...)(ref App app, Args args) {
+auto timed(alias fn, T, Args...)(ref T app, Args args) {
   debug { if(app.trace) {
     ulong t0 = SDL_GetTicks();
     scope(exit) {

@@ -236,8 +236,8 @@ ImDrawData* renderGUI(ref App app){
   foreach(ref window; app.gameWindows) {
     if(window.visible){ app.makeWindow(toStringz(window.label), &window.visible, font, window.show); }
   }
-  if(app.gui.showLights) app.makeWindow("Lighting", &app.gui.showLights, font, &showLightsContent);
-  if(app.gui.showDirectory) app.makeWindow("Directory", &app.gui.showDirectory, font, &showDirectoryContent);
+  if(app.gui.showLights) app.makeWindow("Lighting", &app.gui.showLights, font, (uint f){ app.showLightsContent(f); });
+  if(app.gui.showDirectory) app.makeWindow("Directory", &app.gui.showDirectory, font, (uint f){ app.showDirectoryContent(f); });
 
   igRender();
   auto drawData = igGetDrawData();
