@@ -61,7 +61,7 @@ void handleKeyEvents(ref GameApp app, SDL_Event e) {
 }
 
 /** Handle (Android) touch events */
-void handleTouchEvents(ref App app, const SDL_Event event) {
+void handleTouchEvents(ref GameApp app, const SDL_Event event) {
   SDL_TouchFingerEvent e = event.tfinger;
   if (event.type == SDL_EVENT_FINGER_DOWN) {
     if(app.camera.fingerIDs[0] == -1) { app.camera.fingerIDs[0] = e.fingerID; app.camera.fingerPos[0] = [e.x, e.y]; }
