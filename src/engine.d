@@ -5,7 +5,6 @@
 
 public import phobos;
 public import structures;
-public import lights : LMode;
 
 import sdl : SDL_WINDOW_MINIMIZED;
 
