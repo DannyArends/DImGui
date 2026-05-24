@@ -5,16 +5,12 @@
 
 import engine;
 
-import boundingbox : computeBoundingBox;
 import camera : castRay, tryDrag, tryZoom;
-import geometry : setColor;
 import ghost : updateGhostTile;
-import intersection : intersects;
-import line : createLine;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, updateHoverHighlight;
 
 /** Handle mouse events */
-void handleMouseEvents(ref App app, SDL_Event e) {
+void handleMouseEvents(ref GameApp app, SDL_Event e) {
   app.camera.lastMousePos = [app.gui.io.MousePos.x, app.gui.io.MousePos.y];
   auto ray = app.camera.castRay(app.camera.lastMousePos[0], app.camera.lastMousePos[1]);
 
@@ -44,22 +40,4 @@ void handleMouseEvents(ref App app, SDL_Event e) {
     if(app.camera.isdrag[0]) app.handlePrimaryDrag(e.motion.x, e.motion.y);
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y);
-}
-
-/** Get a list of intersections between the ray and the objects in the scene */
-Intersection[] getHits(ref App app, float[3][2] ray, bool showRay = true) {
-  Intersection[] hits;
-  for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isVisible) continue;
-    if(!app.objects[x].isSelectable) continue;
-    if(cast(Line)(app.objects[x]) !is null) continue;
-    if(app.objects[x].box is null || cast(Chunk)app.objects[x] is null) app.objects[x].computeBoundingBox(app.trace);
-    auto intersections = ray.intersects(app.objects[x].box, x);
-    app.objects[x].window = false;
-    if(intersections.any!(i => i.intersects)) hits ~= intersections;
-    else app.objects[x].box.setColor();
-  }
-  if(showRay) app.objects ~= createLine(ray);
-  hits.sort!("a.tmin < b.tmin");
-  return hits;
 }

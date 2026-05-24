@@ -10,7 +10,7 @@ import chunk : getBestTile;
 import ghost : syncBuildGhosts;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
-import mouse : getHits;
+import hits : getHits;
 import geometry : setColor;
 import tile : tileToWorld, getTileAt;
 import vegetation : getBestVegetation;
