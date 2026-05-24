@@ -31,13 +31,13 @@ struct Block {
 }
 
 /** Save blocks */
-void saveBlocks(ref App app) {
+void saveBlocks(ref GameApp app) {
   if(app.world.blocks.length == 0) return;
   writeWorldData(app.world.blocksPath(), app.world.blocks, app.world.blockNextID);
 }
 
 /** Load blocks */
-void loadBlocks(ref App app) {
+void loadBlocks(ref GameApp app) {
   app.ensureBlocks();
   Block[] blocks;
   if(!readWorldData(app.world.blocksPath(), blocks, app.world.blockNextID)) return;
@@ -47,11 +47,11 @@ void loadBlocks(ref App app) {
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
 }
 
-@nogc pure bool hasBlocks(ref App app) nothrow { return app.world.blocks.length > 0; }
-@nogc pure bool hasBlocks(ref App app, ResourceType tt) nothrow { return app.world.blocks.any!(b => b.type == tt); }
+@nogc pure bool hasBlocks(ref GameApp app) nothrow { return app.world.blocks.length > 0; }
+@nogc pure bool hasBlocks(ref GameApp app, ResourceType tt) nothrow { return app.world.blocks.any!(b => b.type == tt); }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
-uint findFreeBlock(ref App app, int[3] dwarfTile, ResourceType tt = ResourceType.None) {
+uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = ResourceType.None) {
   if(app.world.blocks.length == 0) return noBlock;
   uint bestID = noBlock;
   float bestDist = float.max;
@@ -65,7 +65,7 @@ uint findFreeBlock(ref App app, int[3] dwarfTile, ResourceType tt = ResourceType
   return bestID;
 }
 
-void ensureBlocks(ref App app) {
+void ensureBlocks(ref GameApp app) {
   foreach(rt; EnumMembers!ResourceType) {
     auto meshName = resourceData(rt).meshName;
     if(meshName in app.world.dropMeshes) continue;
@@ -87,7 +87,7 @@ void ensureBlocks(ref App app) {
 }
 
 /** Spawn a new block into the registry */
-uint spawnBlock(ref App app, int[3] tile, ResourceType tt) {
+uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   auto b = Block(app.world.blockNextID++, tt, tile, [0.0f, 0.0f]);
   app.world.blocks ~= b;
@@ -106,7 +106,7 @@ DrawInstance toDropInstance(World world, ref Block b) {
 }
 
 /** Sync instances from blocks registry */
-void syncBlockInstances(ref App app) {
+void syncBlockInstances(ref GameApp app) {
   if(app.world.dropMeshes.length == 0) return;
   foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
   foreach(ref b; app.world.blocks) {
