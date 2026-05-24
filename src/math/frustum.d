@@ -45,7 +45,6 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
       }
     }
     // If this is a Chunk, propagate to its tiles
-    auto chunk = cast(Chunk)app.objects[x];
-    if (chunk !is null) chunk.tiles.inFrustum = app.objects[x].inFrustum;
+    if(app.objects[x].onFrustumUpdate) app.objects[x].onFrustumUpdate(app.objects[x].inFrustum);
   }
 }
