@@ -7,6 +7,7 @@ import engine;
 
 import block : settleBlocks;
 import chunk : finalizeChunk;
+import dwarf : spawnDwarf, loadDwarfs;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
 import imgui : iconTextStr;
@@ -40,6 +41,8 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GAUGE, "FPS"), (uint font){ app.showFPSContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
+  if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
+  SDL_Log("createScene: The 8 Dwarves of 7");
 }
 
 void updateGame(ref GameApp app) {

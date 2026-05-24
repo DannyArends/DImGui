@@ -7,7 +7,6 @@ import engine;
 
 import searchnode : PathNode, isEqual, has;
 import vector : euclidean;
-import tile : getSuccessors;
 
 enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3, INVALID = 4 };
 
@@ -63,7 +62,7 @@ void storeRoute(S)(ref S search, size_t nodeIdx) {
 }
 
 /** Do a step of the A star searching algorithm */
-SearchState step(S, N)(ref S search, N node = PathNode()) {
+SearchState step(alias getSuccessors, S)(ref S search) {
   if(search.state != SearchState.SEARCHING) return search.state;
   if(search.openlist.empty() || search.cancel) { search.state = SearchState.FAILED; return search.state; }
 
@@ -77,10 +76,10 @@ SearchState step(S, N)(ref S search, N node = PathNode()) {
     return search.state;
   }
 
-  N[] successors = search.map.getSuccessors(search.pool[nIdx]);
+  auto successors = getSuccessors(search.map, search.pool[nIdx]);
   if (successors.empty()) { search.state = SearchState.FAILED; return search.state; }
 
-  foreach (ref N s; successors) {
+  foreach (ref s; successors) {
     float newG = search.pool[nIdx].g + s.cost;
     size_t i;
     if ((i = search.openlist.has(search.pool, s)) != size_t.max && search.pool[search.openlist[i]].g <= newG) continue;
@@ -121,13 +120,13 @@ bool atGoal(S)(const S search) {
 }
 
 /** Perform a search and return the result, after which the search.stepThroughPath allows to walk it */
-Search!(M, N) performSearch(M, N)(float[3] start = [0.0f, -4.0f, 0.0f], float[3] goal = [-3.0f, 2.0f, -3.2f], M map, bool verbose = true) {
+Search!(M, N) performSearch(M, N, alias getSuccessors)(float[3] start = [0.0f, -4.0f, 0.0f], float[3] goal = [-3.0f, 2.0f, -3.2f], M map, bool verbose = true) {
   Search!(M, PathNode) search;
   PathNode s = PathNode(position: start);
   PathNode g = PathNode(position: goal);
   search.setStartAndGoalStates(map, s, g);
   do{
-    search.state = search.step();
+    search.state = step!getSuccessors(search);
   }while(search.state == SearchState.SEARCHING && search.steps < search.maxsteps);
 
   if (search.state == SearchState.SEARCHING && search.openlist.length > 0) {
