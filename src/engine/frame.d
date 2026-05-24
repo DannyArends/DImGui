@@ -18,7 +18,6 @@ import textures : updateTextures;
 import timing : timed;
 import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
-import world : updateWorld;
 
 /** waitForFrame */
 void waitForFrame(ref App app) {
@@ -51,7 +50,6 @@ void renderFrame(ref App app) {
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
   app.timed!updateTracks();                     /// Check for sound effects that have finished
-  app.timed!updateWorld(app.camera.lookat);     /// Check for updates to the world
   app.timed!updateTextures();                   /// If a texture was loaded, update it
   app.timed!updateMeshInfo();                   /// Check for Mesh Information change
   app.timed!updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes

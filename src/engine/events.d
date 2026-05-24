@@ -60,7 +60,7 @@ void handleEvents(ref App app) {
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
-      if(app.objects[i].onTick) app.objects[i].onTick(app, app.objects[i]);
+      if(app.objects[i].onTick) app.objects[i].onTick();
     }
   }
 
@@ -69,9 +69,7 @@ void handleEvents(ref App app) {
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
 
   app.world.settleBlocks(dt);
-
-  foreach(object; app.objects) { if(object.onFrame) object.onFrame(app, object, dt); }
-
+  foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }
 }
 
 /** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 
