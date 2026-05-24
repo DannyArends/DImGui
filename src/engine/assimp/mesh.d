@@ -8,6 +8,7 @@ import engine;
 import assimp : OpenAsset, name;
 import bone : Bone, BoneWeights, loadBoneWeights;
 import amat : getChannel;
+import material : ensureMaterial;
 import matrix : Matrix, multiply, inverse, transpose;
 import vector : euclidean, cross, dot, x, y, z;
 import vertex : Vertex, INSTANCE;
@@ -29,6 +30,7 @@ void updateMeshInfo(ref App app) {
   bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     if (app.objects[o].instancedMesh) continue;
+    app.ensureMaterial(app.objects[o]);
     uint[2] expected = [cast(uint)app.meshes.length, cast(uint)(app.meshes.length + app.objects[o].meshes.length)];
     if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
       foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
@@ -37,7 +39,7 @@ void updateMeshInfo(ref App app) {
     }
     app.meshes ~= app.objects[o].meshes.values;
   }
-  if(needsUpdate) { app.buffers["MeshMatrices"].dirty[] = true; } // Update SSBO
+  if(needsUpdate) { app.buffers["MeshMatrices"].dirty[] = true; }
 }
 
 string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool verbose = false) {

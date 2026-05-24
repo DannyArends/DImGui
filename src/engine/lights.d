@@ -151,6 +151,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
+  if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
   foreach(i, ref light; app.lights) { computeLightSpace(app.shadows.bounds, light, app.camera.nearfar[0], app.camera.nearfar[1], app.shadows.dimension); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
