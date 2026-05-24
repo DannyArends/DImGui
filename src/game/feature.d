@@ -59,7 +59,7 @@ struct Feature {
 
 string delegate() captureKey(string k) { return () => k; }
 
-void initFeatureMeshes(ref App app) {
+void initFeatureMeshes(ref GameApp app) {
   foreach(ref ft; features) {
     foreach(ref part; ft.parts) {
       string meshKey = ft.name ~ ":" ~ part.mesh;
@@ -92,7 +92,7 @@ Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const Resource
   return result;
 }
 
-float getFeatureProgressRate(ref App app, int[3] tile) {
+float getFeatureProgressRate(ref GameApp app, int[3] tile) {
   foreach(ref ft; features) {
     if(ft.name !in app.world.features) continue;
     int[3] coord = app.world.chunkCoord(tile);
@@ -102,7 +102,7 @@ float getFeatureProgressRate(ref App app, int[3] tile) {
   return 0.25f;
 }
 
-Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
+Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
     auto wp = app.world.tileToWorld(f.rootTile);
     float th = app.world.tileHeight;
@@ -134,7 +134,7 @@ Feature[] addFeatureInstances(ref App app, Feature[] features, ref immutable Fea
   return features;
 }
 
-void rebuildAllFeatures(ref App app) {
+void rebuildAllFeatures(ref GameApp app) {
   foreach(ref mesh; app.world.featureMeshes.values) mesh.instances = [];
   foreach(ref ft; features) {
     foreach(coord, ref chunkFeatures; app.world.features[ft.name]){
@@ -144,12 +144,12 @@ void rebuildAllFeatures(ref App app) {
   foreach(ref mesh; app.world.featureMeshes.values) mesh.markDirty();
 }
 
-void removeAllFeatures(ref App app, int[3] coord) {
+void removeAllFeatures(ref GameApp app, int[3] coord) {
   foreach(ref ft; features) app.world.features[ft.name].remove(coord);
   app.rebuildAllFeatures();
 }
 
-void interactFeaturesAt(ref App app, int[3] tile) {
+void interactFeaturesAt(ref GameApp app, int[3] tile) {
   foreach(ref ft; features) {
     if(ft.name !in app.world.features) continue;
     int[3] coord = app.world.chunkCoord(tile);
