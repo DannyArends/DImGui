@@ -249,13 +249,9 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     uint currentLightIndex = cast(uint)l;
     vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
     for(size_t x = 0; x < app.objects.length; x++) {
-      auto isChunk = (cast(Chunk)app.objects[x] !is null);
-      auto obj = (isChunk? (cast(Chunk)app.objects[x]).tiles : app.objects[x]);
-
+      auto obj = app.objects[x];
       if(!obj.isVisible) continue;                                         /// Skip invisible objects
       if(!obj.castShadow) continue;                                        /// Skip non shadow casters
-      //if(cast(Tiles)obj !is null) continue;                              /// Skip tiles
-      if(obj.geometry() == "SunGeometry") continue;                        /// Skip the sun
       if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;    /// Skip non triangle objects
       app.shadows.totalShadowInstances += obj.instances.length;            /// Could be rendered
 
