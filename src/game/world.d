@@ -5,18 +5,17 @@
 
 import engine;
 
-import io : ensureWorldDir, readFile, writeFile, fixPath;
-import jobs : jobQueue;
-import vector : sqDist, vAdd, vMul, x, y, z;
-import inventory : deriveInventory;
-import pathfinding : invalidatePaths, repathTo;
 import block : loadBlocks, saveBlocks;
-import tile : tileBelow, getTile, isStandable, isPassable;
 import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
+import inventory : deriveInventory;
+import io : ensureWorldDir, readFile, writeFile, fixPath;
+import jobs : jobQueue;
+import pathfinding : invalidatePaths, repathTo;
+import serialization : WORLD_MAGIC;
+import tile : tileBelow, getTile, isStandable, isPassable;
+import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : saveVegetation, loadVegetation;
-
-enum uint WORLD_MAGIC = 0xCA1DE4A;
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
