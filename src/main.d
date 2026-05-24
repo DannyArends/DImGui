@@ -11,6 +11,7 @@ import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : handleEvents, sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
+import game : initGame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
 import imgui : initializeImGui;
 import instance : createInstance;
@@ -28,7 +29,6 @@ import threading : initializeAsync, checkAsync;
 import timing : timed;
 import validation : createDebugCallback;
 import vulkan : cleanup;
-import world : loadWorld, saveWorld;
 import window: createOrResizeWindow, checkForResize;
 
 /* Main entry point to the program */
@@ -72,7 +72,7 @@ void run(string[] args = null) {
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
-  app.loadWorld();                                              /// Load the chunk world
+  app.initGame();                                               /// Load the chunk world
   app.injectResourceMeshes();
   app.createScene();                                            /// Create our scene with geometries
   app.initializeAsync();                                        /// Start Async loading objects and textures
@@ -93,7 +93,7 @@ void run(string[] args = null) {
     app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
-  app.saveWorld();
+  app.cleanupGame();
   app.cleanup();
 }
 

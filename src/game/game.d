@@ -5,15 +5,13 @@
 
 import engine;
 
-import world : World;
-import resources : ResourceAtlas;
+import world : World, loadWorld, saveWorld;
 
 struct GameApp {
   App app;
   alias app this;  // GameApp usable everywhere App is expected
 
   World world;
-  ResourceAtlas resourceAtlas;
   bool showPaths = false;
   bool showBounds = false;
   bool showRays = false;
@@ -21,3 +19,15 @@ struct GameApp {
   bool disco = false;
   bool paused = false;
 }
+
+void initGame(ref GameApp app) {
+  app.loadWorld();
+  app.injectResources();
+
+  app.onFrame = (float dt) {
+    app.world.settleBlocks(dt);
+    app.updateWorld(app.camera.lookat);
+  };
+}
+
+void cleanupGame(ref GameApp app) { app.saveWorld(); }

@@ -5,7 +5,6 @@
 
 import engine;
 
-import block : settleBlocks;
 import camera : tryMove;
 import geometry : deAllocate;
 import imgui : initializeImGui, saveSettings;
@@ -68,7 +67,6 @@ void handleEvents(ref App app) {
   float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
 
-  app.world.settleBlocks(dt);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }
 }
 
