@@ -28,6 +28,7 @@ import fpswindow : showFPSContent;
 import imgui : iconTextStr;
 import inventorywindow : showInventoryContent;
 import jobs : applyPathResult;
+import lights : updateSun;
 import lightswindow : showLightsContent;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
@@ -67,6 +68,7 @@ void initGame(ref GameApp app) {
   app.concurrency.factory = (Tid tid, bool verbose) => new GameTaskThread(tid, verbose);
   app.camera.canMoveTo = (float[3] pos){ return app.world.canMoveTo(pos); };
   app.loadWorld();
+  app.updateSun();
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
