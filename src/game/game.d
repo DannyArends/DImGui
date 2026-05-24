@@ -9,6 +9,7 @@ import block : settleBlocks;
 import dwarfwindow : showDwarfContent;
 import imgui : iconText;
 import inventorywindow : showInventoryContent;
+import pathfinding : canMoveTo;
 import resources : injectResourceMeshes;
 import world : World, loadWorld, saveWorld;
 import worldwindow : showWorldContent;
@@ -30,6 +31,7 @@ struct GameApp {
 void initGame(ref GameApp app) {
   app.loadWorld();
   app.injectResourceMeshes();
+  app.camera.canMoveTo = (float[3] pos){ return app.world.canMoveTo(pos); };
   app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
   app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconText(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });

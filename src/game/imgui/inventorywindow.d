@@ -24,7 +24,7 @@ void drawCenteredText(ImDrawList* drawList, ImVec2 min, ImVec2 max, const(char)*
 }
 
 /** Show tool mode switcher */
-void showToolSwitcher(ref App app) {
+void showToolSwitcher(ref GameApp app) {
   immutable string[3] labels = [ " Select ", " Mine ", " Stockpile " ];
   immutable ToolMode[3] modes = [ ToolMode.Select, ToolMode.Mine, ToolMode.Stockpile ];
   foreach(i, mode; modes) {

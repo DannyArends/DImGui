@@ -7,7 +7,6 @@ import engine;
 
 import frustum : aabbInFrustum, extractFrustum;
 import matrix : inverse, lookAt, multiply, perspective, rotate, transpose;
-import pathfinding : canMoveTo;
 import quaternion : angleAxis, normalize, qMul, rotate;
 import vector : normalize, vAdd, xyz;
 
@@ -46,27 +45,28 @@ struct Camera {
   @property @nogc Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
   @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
   @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
+  bool delegate(float[3] pos) canMoveTo;
 }
 
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
   auto old = app.camera.lookat;
   app.camera.move(direction);
-  if(!app.camera.godMode && !app.world.canMoveTo(app.camera.position)) app.camera.lookat = old;
+  if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.lookat = old;
 }
 
 /** tryDrag (checks God-mode) */
 void tryDrag(ref App app, float xrel, float yrel) {
   auto old = app.camera.rotation;
   app.camera.drag(xrel, yrel);
-  if(!app.camera.godMode && !app.world.canMoveTo(app.camera.position)) app.camera.rotation = old;
+  if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.rotation = old;
 }
 
 /** tryZoom (checks God-mode) */
 void tryZoom(ref App app, float delta) {
   auto old = app.camera.distance;
   app.camera.zoom(delta);
-  if(!app.camera.godMode && !app.world.canMoveTo(app.camera.position)) app.camera.distance = old;
+  if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.distance = old;
 }
 
 /** Create a position/rotation matrix through 3D space starting from xy */
