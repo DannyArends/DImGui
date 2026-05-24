@@ -64,11 +64,9 @@ struct GameApp {
 }
 
 void initGame(ref GameApp app) {
-  app.numResourceTypes = cast(uint)ResourceType.max + 1;
   app.concurrency.factory = (Tid tid, bool verbose) => new GameTaskThread(tid, verbose);
-  app.loadWorld();
-  app.injectResourceMeshes();
   app.camera.canMoveTo = (float[3] pos){ return app.world.canMoveTo(pos); };
+  app.loadWorld();
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
@@ -81,9 +79,10 @@ void initGame(ref GameApp app) {
 
 void updateGame(ref GameApp app) {
   float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
+  app.injectResourceMeshes();
+  app.updateMaterials();
   app.world.settleBlocks(dt);
   app.updateWorld(app.camera.lookat);
-  app.updateMaterials();
   app.shadows.bounds = [app.world.height, app.world.radius];
 }
 

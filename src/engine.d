@@ -111,7 +111,6 @@ struct App {
 
   // Sync and Frame Tracking
   uint selectedDevice = 0;                                                      /// Device selected for rendering
-  uint numResourceTypes = 0;                                                    /// Number of resources defined by the game
   uint queueFamily = uint.max;                                                  /// Current GFX queueFamily used
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)

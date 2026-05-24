@@ -21,16 +21,20 @@ struct ResourceT {
 }
 
 void injectResourceMeshes(ref GameApp app) {
+  app.meshes.length = 0;
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
-    app.meshes ~= Mesh([0, 0], cast(int)(app.materials.length));
-    app.materials ~= Material();
+    auto ttype = cast(ResourceType)tt;
+    app.world.resources[ttype] = cast(uint)app.meshes.length;
+    if(app.materials.length <= tt) app.materials ~= Material();  // only add material once
+    app.meshes ~= Mesh([0, 0], cast(int)tt);  // reuse existing material slot
   }
 }
 
 void updateMaterials(ref GameApp app) {
-  foreach (tt; 0 .. app.numResourceTypes) {
+  foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
     auto ttype = cast(ResourceType)tt;
-    app.materials[app.meshes[tt].mid].tid = app.textures.idx(resourceData(ttype).name ~ "_base");
-    app.materials[app.meshes[tt].mid].nid = app.textures.idx(resourceData(ttype).name ~ "_normal");
+    uint idx =  app.world.resources[ttype];
+    app.materials[app.meshes[idx].mid].tid = app.textures.idx(resourceData(ttype).name ~ "_base");
+    app.materials[app.meshes[idx].mid].nid = app.textures.idx(resourceData(ttype).name ~ "_normal");
   }
 }
