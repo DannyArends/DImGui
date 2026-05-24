@@ -16,7 +16,6 @@ import glyphatlas : loadGlyphAtlas, uploadFont;
 import imgui : initializeImGui;
 import input : handleEvents;
 import instance : createInstance;
-import scene : createScene;
 import sdl : initializeSDL;
 import shadow : createShadowMap;
 import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
@@ -73,7 +72,6 @@ void run(string[] args = null) {
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
   app.initGame();                                               /// Load the chunk world
-  app.createScene();                                            /// Create our scene with geometries
   app.initializeAsync();                                        /// Start Async loading objects and textures
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
