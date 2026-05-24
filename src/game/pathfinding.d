@@ -7,7 +7,7 @@ import engine;
 
 import vector : manhattan2D;
 import search : performSearch, atGoal, stepThroughPath;
-import tile : isStandable, isPassable, tileToWorld, worldToTile;
+import tile : getSuccessors, isStandable, isPassable, tileToWorld, worldToTile;
 
 struct PathRequest {
   uint dwarfUID;
@@ -24,7 +24,7 @@ struct PathResult {
 PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3] start = wd.tileToWorld(req.fromTile);
   float[3] goal  = wd.tileToWorld(req.goalTile);
-  auto result = performSearch!(WorldData, PathNode)(start, goal, cast(WorldData)wd, false);
+  auto result = performSearch!(WorldData, PathNode, getSuccessors)(start, goal, cast(WorldData)wd, false);
   if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return PathResult(req.dwarfUID, [], false);
   float[3][] path;
   while(result.pathptr != size_t.max && !result.atGoal()) path ~= result.stepThroughPath(false);

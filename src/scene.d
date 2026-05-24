@@ -13,15 +13,11 @@ import matrix : scale, translate, rotate;
 import pdb : loadProteinCif;
 import assimp : loadOpenAsset;
 import normals : computeNormals, computeTangents;
-import dwarf : spawnDwarf, loadDwarfs;
 
 /** Create a scene for rendering */
 void createScene(ref GameApp app){
   SDL_Log("createScene: set time to Noon");
   app.updateSun();
-
-  SDL_Log("createScene: The 8 Dwarves of 7");
-  if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
   SDL_Log("createScene: Finished");
 }
 
