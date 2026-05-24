@@ -3,9 +3,8 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import game;
 
-import game : GameApp;
 import imgui : faIcon;
 
 size_t vertexCount(Geometry o, bool showBounds) {
@@ -22,8 +21,7 @@ string humanCount(size_t n) {
   return format("%d", n);
 }
 
-/** Show the GUI window with FPS statistics
- */
+/** Show the GUI window with FPS statistics */
 void showFPSContent(ref GameApp app, uint font = 0) {
   version(Android){
     igPushFont(app.gui.fonts[font], app.gui.fontsize(.8f));

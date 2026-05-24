@@ -3,15 +3,13 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import game;
 
-import game : GameApp;
 import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
 import widgets : sliderFloat3;
 
-/** Show the GUI window which allows us to manipulate lighting
- */
+/** Show the GUI window which allows us to manipulate lighting */
 void showLightsContent(ref GameApp app, uint font = 0) {
   auto lightsBefore = app.lights.lights.dup;
 

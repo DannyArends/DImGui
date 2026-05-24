@@ -20,6 +20,5 @@ struct DrawInstance {
   this(int mat, Matrix m) { material = mat; matrix = m; }
   this(uint[2] d, Matrix m = Matrix.init) { meshdef = d; matrix = m; }
   this(uint[2] d, float[4] c, Matrix m = Matrix.init) { meshdef = d; color = c; matrix = m; }
-  this(ResourceType tt, Matrix m) { this([cast(uint)tt, cast(uint)tt], m); }
   this(int mdef, float[12] f) { this([cast(uint)mdef, cast(uint)mdef], Matrix([f[0],f[1],f[2],0, f[3],f[4],f[5],0, f[6],f[7],f[8],0, f[9],f[10],f[11],1])); }
 }

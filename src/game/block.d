@@ -2,9 +2,9 @@
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
-import engine;
 
-import game : GameApp;
+import game;
+
 import inventory : deriveInventory;
 import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
@@ -116,7 +116,7 @@ void syncBlockInstances(ref GameApp app) {
     bool hidden = b.tile == noTile || b.tile == builtTile;
     b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
     app.world.dropMeshes[meshName].instances ~= hidden
-      ? DrawInstance(b.type, Matrix().scale([0.0f, 0.0f, 0.0f]))
+      ? DrawInstance([cast(uint)b.type, cast(uint)b.type], Matrix().scale([0.0f, 0.0f, 0.0f]))
       : app.world.toDropInstance(b);
   }
   foreach(ref mesh; app.world.dropMeshes.values) mesh.markDirty();

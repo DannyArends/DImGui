@@ -5,6 +5,24 @@
 
 import engine;
 
+import ctfe : parseTokens, splitColon;
+
+/** CTFE: generate Colors enum from raws text */
+string generateColorsEnum(string raw) pure {
+  auto tokens = parseTokens(raw);
+  string result = "enum Colors : float[4] {\n";
+  string current = "";
+  foreach(token; tokens) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    if(p[0] == "COLOR" && p.length == 2) { current = p[1]; }
+    else if(p[0] == "RGB" && p.length == 4 && current != ""){ result ~= format("  %s = [%sf, %sf, %sf, 1.0f],\n", current, p[1], p[2], p[3]); }
+  }
+  return result ~ "}\n";
+}
+
+mixin(generateColorsEnum(import("data/raws/colors.txt")));
+
 /** Generate a random color */
 float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), alpha]); }
 

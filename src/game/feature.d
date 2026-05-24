@@ -3,7 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
@@ -123,11 +123,11 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
           app.world.data.tilePenalties[[f.rootTile[0], f.rootTile[1]+cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
           float s = sx - h * part.taper;
           if(s < 0.05f) s = 0.05f;
-          mesh.instances ~= DrawInstance(rt, translateScale([wp[0], wp[1] + h * th, wp[2]], [s, sy, s]));
+          mesh.instances ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + h * th, wp[2]], [s, sy, s]));
         }
       } else {
         if(ft.tilePenalty > 0.0f) app.world.data.tilePenalties[f.rootTile] = ft.tilePenalty;
-        mesh.instances ~= DrawInstance(rt, translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]));
+        mesh.instances ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]));
       }
       mesh.markDirty();
     }

@@ -3,13 +3,11 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import game;
 
 import block : loadBlocks, saveBlocks;
 import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
-import game : GameApp;
-import gameobjects : Chunk, Dwarves, PathMarkers, GhostCube;
 import inventory : deriveInventory;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;

@@ -3,12 +3,10 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import game;
 
 import camera : castRay;
 import chunk : getBestTile;
-import game : GameApp;
-import gameobjects : Chunk;
 import ghost : syncBuildGhosts;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
