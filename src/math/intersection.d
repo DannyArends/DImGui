@@ -3,7 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import phobos;
 
 import matrix : multiply;
 import vector : x,y,z, vAdd, vMul;
@@ -64,7 +64,7 @@ float[3] rayAtY(float[3][2] ray, float y) {
 }
 
 /** Compute the intersection between a ray and a bounding box */
-pure Intersection[] intersects(const float[3][2] ray, const BoundingBox box, size_t index) {
+pure Intersection[] intersects(T)(const float[3][2] ray, const T box, size_t index) {
   Intersection[] intersections;
   for(size_t instance = 0; instance < box.instances.length; instance++) {
     auto intersection = ray.intersects(box.bmin(instance), box.bmax(instance), index, instance);

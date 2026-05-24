@@ -33,7 +33,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   pushLabel(cmd, "Rendering", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Scene renderpass");
 
-  if(app.camera.isDirty) { app.cullFrustum(extractFrustum(app.camera.proj.multiply(app.camera.view))); app.camera.isDirty = false; }
+  if(app.camera.isDirty) { app.objects.cullFrustum(extractFrustum(app.camera.proj.multiply(app.camera.view))); app.camera.isDirty = false; }
 
   app.scenePass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);

@@ -2,7 +2,9 @@
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
-import engine;
+
+import phobos;
+
 enum NameStyle { Dwarf, Elf, Human, Orc }
 
 string pick(immutable string[] arr) { return arr[uniform(0, $)]; }

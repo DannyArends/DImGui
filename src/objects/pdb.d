@@ -6,6 +6,7 @@
  * PDB format description version 3.3, ftp://ftp.wwpdb.org/pub/pdb/doc/format_descriptions/Format_v33_A4.pdf
  * PDB mmCIF File Format, http://mmcif.wwpdb.org/pdbx-mmcif-home-page.html
  */
+
 import engine;
 
 import color : atomToColor, residueToColor;
