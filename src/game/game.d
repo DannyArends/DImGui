@@ -10,6 +10,8 @@ import chunk : finalizeChunk;
 import dwarfwindow : showDwarfContent;
 import imgui : iconText;
 import inventorywindow : showInventoryContent;
+import lightswindow : showLightsContent;
+import settingswindow : showSettingsContent;
 import jobs : applyPathResult;
 import pathfinding : canMoveTo, dispatchPendingPaths;
 import resources : injectResourceMeshes;

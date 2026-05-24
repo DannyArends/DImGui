@@ -7,13 +7,11 @@ import engine;
 
 import devices : getMSAASamples;
 import io : fixPath, isfile, readFile, writeFile;
-import settingswindow : showSettingsContent;
 import sfxwindow : showSFXContent;
 import directorywindow : showDirectoryContent;
 import joystickwindow : showJoystickwindow;
 import fpswindow : showFPSwindow;
 import objectswindow : showObjectsContent;
-import lightswindow : showLightsContent;
 import mainmenu : showMenu;
 import renderpass : beginRecording, endRecording;
 import sidepanel : showSidepanel;
@@ -231,12 +229,10 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, (uint f){ app.showObjectsContent(f); });
   if(app.gui.showShaders) app.makeWindow("Shader", &app.gui.showShaders, font, (uint f){ app.showShaderContent(f); });
   if(app.gui.showSFX) app.makeWindow("SFX", &app.gui.showSFX, font, (uint f){ app.showSFXContent(f); });
-  if(app.gui.showSettings) app.makeWindow("Settings", &app.gui.showSettings, font, (uint f){ app.showSettingsContent(f); });
   if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, (uint f){ app.showTexturesContent(f); });
   foreach(ref window; app.gameWindows) {
     if(window.visible){ app.makeWindow(toStringz(window.label), &window.visible, font, window.show); }
   }
-  if(app.gui.showLights) app.makeWindow("Lighting", &app.gui.showLights, font, (uint f){ app.showLightsContent(f); });
   if(app.gui.showDirectory) app.makeWindow("Directory", &app.gui.showDirectory, font, (uint f){ app.showDirectoryContent(f); });
 
   igRender();
