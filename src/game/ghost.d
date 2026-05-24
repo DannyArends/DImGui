@@ -10,7 +10,7 @@ import vector : dot;
 import matrix : translateScale;
 import tile : tileIdx, tileToWorld;
 
-int[3] getGhostTile(ref App app, float[3][2] ray, Intersection[] hits) {
+int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   int[3] wc;
   if(!app.getBestTile(ray, hits, wc)) { return(noTile); }
 
@@ -35,7 +35,7 @@ int[3] getGhostTile(ref App app, float[3][2] ray, Intersection[] hits) {
   return(noTile);
 }
 
-void updateGhostTile(ref App app, float[3][2] ray, Intersection[] hits) {
+void updateGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   if(app.world.inventory.activeTool != ToolMode.Build) return;
   int[3] newTile = app.world.inventory.type == ResourceType.None ? noTile : app.getGhostTile(ray, hits);
   if(newTile == app.world.inventory.tile) return;
@@ -67,7 +67,7 @@ immutable ToolHighlight[ToolMode.max + 1] toolHighlight = [
   ToolMode.Stockpile: { Colors.gold, &stockpileHighlight },
 ];
 
-void addTiles(ref App app, int[3][] tiles, ToolMode mode) {
+void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
   auto h = toolHighlight[mode];
   float ts = app.world.tileSize, th = app.world.tileHeight;
   foreach(tile; tiles) {
@@ -78,7 +78,7 @@ void addTiles(ref App app, int[3][] tiles, ToolMode mode) {
 }
 
 /** Cursor ghost (single tile with texture) */
-void syncCursorGhost(ref App app) {
+void syncCursorGhost(ref GameApp app) {
   if(app.world.inventory.activeTool != ToolMode.Build) return;
   if(app.world.inventory.tile == noTile) return;
   if(app.world.inventory.type == ResourceType.None) return;
@@ -87,7 +87,7 @@ void syncCursorGhost(ref App app) {
 }
 
 /** Update Orchestrator */
-void syncBuildGhosts(ref App app) {
+void syncBuildGhosts(ref GameApp app) {
   if(app.world.inventory is null) return;
   app.world.inventory.instances = [];
 
