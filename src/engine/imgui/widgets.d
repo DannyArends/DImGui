@@ -24,6 +24,7 @@ struct SelectionKey {
 struct GameWindow {
   string label;
   void delegate(uint font) show;
+  bool visible = false;
 }
 
 ImVec2 textSize(const(char)* txt) { ImVec2 textSize; igCalcTextSize(&textSize, txt, null, false, -1.0f); return(textSize); }
