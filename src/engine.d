@@ -5,7 +5,6 @@
 
 public import phobos;
 public import structures;
-public import world : World;
 public import lights : LMode;
 
 import sdl : SDL_WINDOW_MINIMIZED;
@@ -49,7 +48,6 @@ struct App {
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
-  World world;                                                                  /// The game world
   ShadowMap shadows;                                                            /// ShadowMap object
 
   VkSampler sampler;
@@ -125,15 +123,9 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool showBounds = false;                                                      /// Show bounding boxes
   LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
-  bool showRays = false;                                                        /// Show rays
-  bool showLights = false;                                                      /// Show lights
-  bool showPaths = false;                                                       /// Show dwarf paths
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint verbose = 0;                                                             /// Be very verbose
-  bool disco = false;                                                           /// Disco mode
-  bool paused = false;                                                          /// paused ?
   bool minimized = false;                                                       /// minimized ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
