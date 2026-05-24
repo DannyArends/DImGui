@@ -26,12 +26,3 @@ void injectResourceMeshes(ref App app) {
     app.materials ~= Material();
   }
 }
-
-void updateResourceAtlas(ref App app) {
-  foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
-    auto ttype = cast(ResourceType)tt;
-    app.materials[app.meshes[tt].mid].tid = app.textures.idx(resourceData(ttype).name ~ "_base");
-    app.materials[app.meshes[tt].mid].nid = app.textures.idx(resourceData(ttype).name ~ "_normal");
-  }
-  app.buffers["MaterialBuffer"].dirty[] = true;
-}
