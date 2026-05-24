@@ -8,66 +8,17 @@ import engine;
 import camera : tryMove;
 import geometry : deAllocate;
 import imgui : initializeImGui, saveSettings;
-import mouse : handleMouseEvents;
 import screenshot : saveScreenshot;
 import surface : createSurface;
 import timing : timed;
-import touch : handleTouchEvents;
 import vulkan : cleanup;
 import window : createOrResizeWindow;
-
-/** Handle keyboard events */
-void handleKeyEvents(ref App app, SDL_Event e) {
-  if(e.type == SDL_EVENT_KEY_DOWN) {
-    auto symbol = e.key.key;
-    if(symbol == SDLK_PAGEUP) app.tryMove([ 0.0f,  1.0f, 0.0f]);
-    if(symbol == SDLK_PAGEDOWN) app.tryMove([ 0.0f, -1.0f, 0.0f]);
-    if(symbol == SDLK_P) app.paused = !app.paused;
-    if(symbol == SDLK_W || symbol == SDLK_UP) app.tryMove(app.camera.forward());
-    if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
-    if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
-    if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
-    if(symbol == SDLK_F12) { app.saveScreenshot(); }
-  }
-}
 
 /** Deallocate and removes stale Geometry from the app.objects array */
 void removeGeometry(ref App app) {
   size_t[] idx;
   foreach(i, ref object; app.objects) { if(object.deAllocate) { app.deAllocate(object); idx ~= i; } }
   foreach(i; idx.reverse) { app.objects = app.objects.remove(i); }
-}
-
-/** Handles all ImGui IO and SDL events */
-void handleEvents(ref App app) {
-  if(app.trace) SDL_Log("handleEvents");
-  SDL_Event e;
-  while (SDL_PollEvent(&e)) {
-    if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
-    if(e.type == SDL_EVENT_QUIT) app.finished = true;
-    if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
-    if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.minimized = false; }
-    if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.minimized = true; }
-    if(!app.gui.io.WantCaptureKeyboard) app.timed!handleKeyEvents(e);
-    if(!app.gui.io.WantCaptureMouse) app.timed!handleMouseEvents(e);
-    if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e);
-  }
-
-  if(app.paused) return;
-  if(app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
-    app.time[LASTTICK] = app.time[FRAMESTART];
-    if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    foreach(i; iota(app.objects.length)) {
-      if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
-      if(app.objects[i].onTick) app.objects[i].onTick();
-    }
-  }
-
-  // Call all onFrame() handlers
-  float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
-  if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
-
-  foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }
 }
 
 /** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 
