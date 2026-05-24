@@ -4,16 +4,16 @@
  */
 import engine;
 
-import serialization : readWorldData, writeWorldData;
 import block : syncBlockInstances, noBlock;
 import color : randomColor;
-import matrix : position, scale;
 import inventory : deriveInventory;
 import ghost : syncBuildGhosts;
+import matrix : position, scale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo;
 import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination;
 import rnjesus : randomizeName;
+import serialization : readData, writeData;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
 import timing : timed;
 
@@ -251,12 +251,12 @@ void spawnDwarf(ref GameApp app) {
 void saveDwarfs(ref GameApp app) {
   if(app.world.dwarves is null) return;
   DwarfData[] data = app.world.dwarves[].map!(d => d.data).array;
-  writeWorldData(app.world.dwarfsPath(), data, cast(uint)data.length);
+  writeData(app.world.dwarfsPath(), data, cast(uint)data.length);
 }
 
 bool loadDwarfs(ref GameApp app) {
   DwarfData[] data;  uint i;
-  if(!readWorldData(app.world.dwarfsPath(), data, i)) return false;
+  if(!readData(app.world.dwarfsPath(), data, i)) return false;
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
   app.world.dwarves.markDirty();

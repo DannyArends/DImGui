@@ -8,7 +8,7 @@ import inventory : deriveInventory;
 import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
 import normals : computeTangents;
-import serialization : readWorldData, writeWorldData;
+import serialization : readData, writeData;
 import tile : surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile;
 import vector : manhattan;
 
@@ -33,14 +33,14 @@ struct Block {
 /** Save blocks */
 void saveBlocks(ref GameApp app) {
   if(app.world.blocks.length == 0) return;
-  writeWorldData(app.world.blocksPath(), app.world.blocks, app.world.blockNextID);
+  writeData(app.world.blocksPath(), app.world.blocks, app.world.blockNextID);
 }
 
 /** Load blocks */
 void loadBlocks(ref GameApp app) {
   app.ensureBlocks();
   Block[] blocks;
-  if(!readWorldData(app.world.blocksPath(), blocks, app.world.blockNextID)) return;
+  if(!readData(app.world.blocksPath(), blocks, app.world.blockNextID)) return;
   app.world.blocks = blocks;
   app.syncBlockInstances();
   foreach(ref b; app.world.blocks) { if(b.isFalling) app.world.pendingUnsettle ~= b.tile; }
