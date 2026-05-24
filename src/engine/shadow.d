@@ -26,6 +26,7 @@ struct ShadowMap {
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
   uint dimension = isAndroid ? 512 : 4096;  /// Allow shadows to be disabled
+  float[2] bounds = [0.0f, 0.0f];  /// [height, radius] for shadow projection
 
   bool dirty = true;
 

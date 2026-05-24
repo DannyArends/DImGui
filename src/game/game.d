@@ -5,6 +5,7 @@
 
 import engine;
 
+import block : settleBlocks;
 import chunk : finalizeChunk;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
@@ -15,7 +16,7 @@ import settingswindow : showSettingsContent;
 import jobs : applyPathResult;
 import pathfinding : canMoveTo, dispatchPendingPaths;
 import resources : injectResourceMeshes;
-import world : loadWorld, saveWorld;
+import world : loadWorld, saveWorld, updateWorld;
 import worldwindow : showWorldContent;
 
 struct GameApp {
@@ -39,6 +40,13 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GAUGE, "FPS"), (uint font){ app.showFPSContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
+}
+
+void updateGame(ref GameApp app) {
+  float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
+  app.world.settleBlocks(dt);
+  app.updateWorld(app.camera.lookat);
+  app.shadows.bounds = [app.world.height, app.world.radius];
 }
 
 void checkGameAsync(ref GameApp app) {

@@ -11,7 +11,7 @@ import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
-import game : cleanupGame, checkGameAsync, initGame;
+import game : cleanupGame, checkGameAsync, initGame, updateGame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
 import imgui : initializeImGui;
 import input : handleEvents;
@@ -50,7 +50,7 @@ version (Android) {
  * Main entry point for Windows and Linux
  */
 void run(string[] args = null) {
-  GameApp app = initializeSDL();                                    /// Initialize SDL library and create a window
+  GameApp app = GameApp(initializeSDL());                       /// Initialize SDL library and create a window
 
   app.createCompiler();                                         /// Create the SPIR-V compiler
   app.createReflectionContext();                                /// Create a SPIR-V reflection context
@@ -85,6 +85,7 @@ void run(string[] args = null) {
     app.timed!checkAsync();                                       /// Check ASync handlers
     app.timed!checkGameAsync();                                   /// Game specific ASync handlers
     app.timed!handleEvents();                                     /// Handle SDL / user events
+    app.timed!updateGame();                                       /// Handle Game Updates
     app.waitForFrame();                                           /// Wait for a new frame (outside timing)
     app.time[FRAMESTART] = SDL_GetTicks();                        /// Start the clock
     app.timed!renderFrame();                                      /// Render frame

@@ -135,9 +135,8 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
 
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
-  auto ds = cast(Dwarves)obj;
-  if(ds is null) return;
-  foreach(i, ref d; ds.dwarves) {
+  if(app.world.dwarves is null) return;
+  foreach(i, ref d; app.world.dwarves) {
     if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
     if(d.moveT >= 1.0f) continue;
     float cost = max(1.0f, resourceData(app.world.getTileAt(d.tile.tileBelow)).cost);
@@ -148,8 +147,8 @@ void dwarfFrame(ref GameApp app, float dt) {
       d.moveFrom[1] + t * (d.moveTo[1] - d.moveFrom[1]) + 0.5f,
       d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
     ];
-    ds.instances[i] = position(ds.instances[i], d.visualPos);
-    ds.markDirty();
+    app.world.dwarves.instances[i] = position(app.world.dwarves.instances[i], d.visualPos);
+    app.world.dwarves.markDirty();
     if(d.moveT >= 1.0f) {
       if(d.path.length > 0) {
         app.followPath(d);
@@ -207,9 +206,8 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 
 /** dwarfTick, ticks all dwarves in random order */
 void dwarfTick(ref GameApp app) {
-  auto ds = cast(Dwarves)obj;
-  if(ds is null) return;
-  foreach(i; iota(ds.dwarves.length).array.randomShuffle()) { app.tickDwarf(ds.dwarves[i]); }
+  if(app.world.dwarves is null) return;
+  foreach(i; iota(app.world.dwarves.length).array.randomShuffle()) { app.tickDwarf(app.world.dwarves[i]); }
   if(app.world.blocksDirty) { app.timed!syncBlockInstances(); app.world.blocksDirty = false; }
   if(app.world.pathsDirty) { app.world.syncPathMarkers(app.showPaths); app.world.pathsDirty = false; }
   if(app.world.inventory.ghostsDirty) { app.timed!syncBuildGhosts(); app.world.inventory.ghostsDirty = false; }

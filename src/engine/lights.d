@@ -49,18 +49,18 @@ struct Lighting {
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(const World world, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f, uint shadowDimension = 2048) nothrow {
+@nogc void computeLightSpace(float[2] size, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f, uint shadowDimension = 2048) nothrow {  
   float[3] lightDir = light.direction.xyz.normalize();
   float[3] upVector = abs(lightDir[1]) < 0.99f ? [0.0f, 1.0f, 0.0f] : [0.0f, 0.0f, 1.0f];
 
-  float[3] worldCenter = [0.0f, world.height * 0.5f, 0.0f];
+  float[3] worldCenter = [0.0f, size[0] * 0.5f, 0.0f];
   float[3] lightEye = light.directional ? worldCenter.vSub(lightDir.vMul(farPlane * 0.5f)) : light.position.xyz;
   float[3] lookTarget = light.directional ? worldCenter : light.position.xyz.vAdd(lightDir);
 
   Matrix lightView = lookAt(lightEye, lookTarget, upVector);
 
   Matrix lightProjection = light.directional
-    ? orthogonal(-world.radius, world.radius, -world.radius, world.radius, -world.height, farPlane)
+    ? orthogonal(-size[1], size[1], -size[1], size[1], -size[0], farPlane)
     : perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
 
   light.lightSpaceMatrix = lightProjection.multiply(lightView);
@@ -150,7 +150,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
-  foreach(i, ref light; app.lights) { app.world.computeLightSpace(light, app.camera.nearfar[0], app.camera.nearfar[1], app.shadows.dimension); }
+  foreach(i, ref light; app.lights) { computeLightSpace(app.shadows.bounds, light, app.camera.nearfar[0], app.camera.nearfar[1], app.shadows.dimension); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 
