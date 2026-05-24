@@ -11,7 +11,7 @@ import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import devices : createLogicalDevice;
 import events : handleEvents, sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
-import game : initGame;
+import game : cleanupGame, checkGameAsync, initGame;
 import glyphatlas : loadGlyphAtlas, uploadFont;
 import imgui : initializeImGui;
 import instance : createInstance;
@@ -82,6 +82,7 @@ void run(string[] args = null) {
     if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue
     app.timed!removeGeometry();                                   /// Remove stale geometry
     app.timed!checkAsync();                                       /// Check ASync handlers
+    app.timed!checkGameAsync();                                   /// Game specific ASync handlers
     app.timed!handleEvents();                                     /// Handle SDL / user events
     app.waitForFrame();                                           /// Wait for a new frame (outside timing)
     app.time[FRAMESTART] = SDL_GetTicks();                        /// Start the clock
