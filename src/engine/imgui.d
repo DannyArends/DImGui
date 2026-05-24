@@ -20,10 +20,8 @@ import sidepanel : showSidepanel;
 import shaderswindow : showShaderContent;
 import texturewindow : showTexturesContent;
 import validation : nameVulkanObject, pushLabel, popLabel;
-import worldwindow: showWorldContent;
 
-/** Main GUI structure
- */
+/** Main GUI structure */
 struct GUI {
   ImGuiIO* io;
   ImFont*[] fonts;
@@ -38,7 +36,6 @@ struct GUI {
   bool showObjects = false;
   bool showLights = false;
   bool showSettings = false;
-  bool showWorldSettings = false;
   bool showSFX = false;
   bool showShaders = false;
   bool showTexture = false;
@@ -237,7 +234,9 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showSFX) app.makeWindow("SFX", &app.gui.showSFX, font, &showSFXContent);
   if(app.gui.showSettings) app.makeWindow("Settings", &app.gui.showSettings, font, &showSettingsContent);
   if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, &showTexturesContent);
-  if(app.gui.showWorldSettings) app.makeWindow("World", &app.gui.showWorldSettings, font, &showWorldContent);
+  foreach(ref window; app.gameWindows) {
+    if(window.visible){ app.makeWindow(toStringz(window.label), &window.visible, font, window.show); }
+  }
   if(app.gui.showLights) app.makeWindow("Lighting", &app.gui.showLights, font, &showLightsContent);
   if(app.gui.showDirectory) app.makeWindow("Directory", &app.gui.showDirectory, font, &showDirectoryContent);
 
