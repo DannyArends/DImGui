@@ -10,7 +10,6 @@ import io : fixPath, isfile, readFile, writeFile;
 import sfxwindow : showSFXContent;
 import directorywindow : showDirectoryContent;
 import joystickwindow : showJoystickwindow;
-import fpswindow : showFPSwindow;
 import objectswindow : showObjectsContent;
 import mainmenu : showMenu;
 import renderpass : beginRecording, endRecording;
@@ -54,8 +53,7 @@ struct GUI {
   float[2] sound = [0.0, 1.0f];
 }
 
-/** Save ImGui settings to disk (or Android internal storage)
- */
+/** Save ImGui settings to disk (or Android internal storage) */
 void saveSettings() {
   size_t ini_data_size = 0;
   const(char)* ini_data = igSaveIniSettingsToMemory(&ini_data_size);
@@ -72,8 +70,7 @@ void makeWindow(ref App app, const(char)* title, bool* show, uint font, void del
   igPopFont();
 }
 
-/** Clear ImGui settings on disk (or Android internal storage)
- */
+/** Clear ImGui settings on disk (or Android internal storage) */
 void clearSettings() {
   auto g = *igGetCurrentContext();
   for (int i = 0; i < g.Windows.Size; i++) {
@@ -82,8 +79,7 @@ void clearSettings() {
   }
 }
 
-/** Load ImGui settings from disk (or Android internal storage)
- */
+/** Load ImGui settings from disk (or Android internal storage) */
 void loadSettings(const(char)* path = "imgui.ini") {
   path = fixPath(path);
   if(path.isfile()) {
@@ -94,13 +90,12 @@ void loadSettings(const(char)* path = "imgui.ini") {
   }
 }
 
-/** FontAwesome icon as const(char)*
- */
+/** FontAwesome icon as const(char)* */
 const(char)* faIcon(string s = cast(string)ICON_FA_MAGNIFYING_GLASS) { return(toStringz(format("%s", s))); }
 const(char)* iconText(string icon, string text) { return(toStringz(format("%s %s", fromStringz(faIcon(icon)), text))); }
+string iconTextStr(string icon, string text) { return format("%s %s", fromStringz(faIcon(icon)), text); }
 
-/** Code to initialize the ImGui backend
- */
+/** Code to initialize the ImGui backend */
 void initializeImGui(ref App app){
   igCreateContext(null);
   app.gui.io = igGetIO_Nil();
@@ -158,8 +153,7 @@ void initializeImGui(ref App app){
   if(app.verbose) SDL_Log("ImGui initialized, MSAA: %d", app.getMSAASamples());
 }
 
-/** Record Vulkan render command buffer by rendering all objects to all render buffers
- */
+/** Record Vulkan render command buffer by rendering all objects to all render buffers */
 void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
   auto cmd = app.imguiPass.beginRecording(app, syncIndex, "ImGui");
 
@@ -179,8 +173,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 }
 
 /** Rotate all ImGui vertices to handle Vulkan pre-rotation on Android.
- *  ImGui lays out in DisplaySize space. We remap into extentW x extentH framebuffer.
- */
+ *  ImGui lays out in DisplaySize space. We remap into extentW x extentH framebuffer. */
 version(Android) {
   ImVec2 remapPoint(float x, float y, float dW, float dH, float W, float H, VkSurfaceTransformFlagBitsKHR t) {
     if (t & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR)  return ImVec2((1.0f - y/dH)*W, (x/dW)*H);
@@ -212,8 +205,7 @@ version(Android) {
   }
 }
 
-/** Render the GUI and return the ImDrawData*
- */
+/** Render the GUI and return the ImDrawData* */
 ImDrawData* renderGUI(ref App app){
   // Start ImGui frame
   ImGui_ImplVulkan_NewFrame();
@@ -240,4 +232,3 @@ ImDrawData* renderGUI(ref App app){
   version(Android) { rotateImGui(drawData, app.camera.currentTransform, app.camera.currentExtent.width, app.camera.currentExtent.height); }
   return(drawData);
 }
-

@@ -134,7 +134,7 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
 }
 
 /** All dwarves being framed */
-void dwarfFrame(ref GameApp app, ref Geometry obj, float dt) {
+void dwarfFrame(ref GameApp app, float dt) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
   foreach(i, ref d; ds.dwarves) {
@@ -206,7 +206,7 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 }
 
 /** dwarfTick, ticks all dwarves in random order */
-void dwarfTick(ref GameApp app, ref Geometry obj) {
+void dwarfTick(ref GameApp app) {
   auto ds = cast(Dwarves)obj;
   if(ds is null) return;
   foreach(i; iota(ds.dwarves.length).array.randomShuffle()) { app.tickDwarf(ds.dwarves[i]); }
@@ -219,8 +219,8 @@ void dwarfTick(ref GameApp app, ref Geometry obj) {
 void ensureDwarves(ref GameApp app) {
   if(app.world.dwarves !is null) return;
   app.world.dwarves = new Dwarves();
-  app.world.dwarves.onFrame = (float dt){ dwarfFrame(app, app.world.dwarves, dt); };
-  app.world.dwarves.onTick  = (){ dwarfTick(app, app.world.dwarves); };
+  app.world.dwarves.onFrame = (float dt){ dwarfFrame(app, dt); };
+  app.world.dwarves.onTick  = (){ dwarfTick(app); };
   app.objects ~= app.world.dwarves;
   app.world.pathMarkers = new PathMarkers();
   app.objects ~= app.world.pathMarkers;

@@ -5,9 +5,11 @@
 
 import engine;
 
+import block : settleBlocks;
 import camera : castRay, tryDrag, tryZoom;
 import ghost : updateGhostTile;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, updateHoverHighlight;
+import world : updateWorld;
 
 /** Handle mouse events */
 void handleMouseEvents(ref GameApp app, SDL_Event e) {
@@ -113,4 +115,6 @@ void handleEvents(ref GameApp app) {
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
 
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }
+  app.world.settleBlocks(dt);
+  app.updateWorld(app.camera.lookat);
 }

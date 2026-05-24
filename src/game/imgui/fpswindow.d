@@ -23,7 +23,7 @@ string humanCount(size_t n) {
 
 /** Show the GUI window with FPS statistics
  */
-void showFPSwindow(ref GameApp app, uint font = 1) {
+void showFPSContent(ref GameApp app, uint font = 0) {
   version(Android){
     igPushFont(app.gui.fonts[font], app.gui.fontsize(.8f));
   }else{
