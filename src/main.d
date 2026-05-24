@@ -20,7 +20,6 @@ import sdl : initializeSDL;
 import shadow : createShadowMap;
 import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
 import reflection : createReflectionContext;
-import resources : injectResourceMeshes;
 import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
@@ -73,7 +72,6 @@ void run(string[] args = null) {
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
   app.initGame();                                               /// Load the chunk world
-  app.injectResourceMeshes();
   app.createScene();                                            /// Create our scene with geometries
   app.initializeAsync();                                        /// Start Async loading objects and textures
 

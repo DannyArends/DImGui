@@ -5,6 +5,7 @@
 
 import engine;
 
+import resources : injectResourceMeshes;
 import world : World, loadWorld, saveWorld;
 
 struct GameApp {
@@ -12,6 +13,7 @@ struct GameApp {
   alias app this;  // GameApp usable everywhere App is expected
 
   World world;
+
   bool showPaths = false;
   bool showBounds = false;
   bool showRays = false;
@@ -22,7 +24,7 @@ struct GameApp {
 
 void initGame(ref GameApp app) {
   app.loadWorld();
-  app.injectResources();
+  app.injectResourceMeshes();
 
   app.onFrame = (float dt) {
     app.world.settleBlocks(dt);
