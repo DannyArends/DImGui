@@ -13,8 +13,8 @@ import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures;
 
 class TaskThread : Thread {
-  private Tid main;
-  private Tid mytid;
+  protected Tid main;
+  protected Tid mytid;
   private bool verbose = false;
   private bool active = true;
 
@@ -24,6 +24,8 @@ class TaskThread : Thread {
     this.isDaemon(true);
     super(&run, 8 * 1024 * 1024);  // 8MB stack
   }
+
+  void handleGameObjects() { }
 
   void run() { if(verbose) SDL_Log("Worker spawned: %p", thisTid);
     import chunk : buildChunkData;
@@ -45,16 +47,17 @@ class TaskThread : Thread {
             main.send(openasset, mytid);
           } else { main.send("Unknown file", mytid); }
         },
-        (immutable(WorldData) wd, int[3] coord) {
+        /*(immutable(WorldData) wd, int[3] coord) {
           auto data = buildChunkData(wd, coord);
           main.send(cast(immutable(ChunkData))data, mytid);
         },
         (immutable(WorldData) wd, PathRequest req) {
           auto result = pathfindWorker(wd, req);
           main.send(cast(immutable(PathResult))result, mytid);
-        },
+        }, */
         (bool active) { this.active = active; }  // shutdown signal
       );
+      handleGameObjects();
       SDL_Delay(10);
     }
   }
@@ -63,13 +66,14 @@ class TaskThread : Thread {
 struct Threading {
   string[] paths;
   bool[Tid] workers;
+  TaskThread function(Tid, bool) factory;
 }
 
 void initializeAsync(ref App app, bool preLoadASimp = true, uint numWorkers = 32){
   if(preLoadASimp) app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
-    auto worker = new TaskThread(thisTid, app.verbose > 0);
+    auto worker = app.concurrency.factory ? app.concurrency.factory(thisTid, app.verbose > 0) : new TaskThread(thisTid, app.verbose > 0);
     worker.start();
     auto id = receiveOnly!Tid();
     app.concurrency.workers[id] = false;

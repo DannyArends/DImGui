@@ -6,32 +6,50 @@
 import engine;
 
 import block : settleBlocks;
-import chunk : finalizeChunk;
+import chunk : buildChunkData, finalizeChunk;
 import dwarf : spawnDwarf, loadDwarfs;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
 import imgui : iconTextStr;
 import inventorywindow : showInventoryContent;
-import lightswindow : showLightsContent;
-import settingswindow : showSettingsContent;
 import jobs : applyPathResult;
-import pathfinding : canMoveTo, dispatchPendingPaths;
+import lightswindow : showLightsContent;
+import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes;
+import settingswindow : showSettingsContent;
+import threading : TaskThread;
 import world : loadWorld, saveWorld, updateWorld;
 import worldwindow : showWorldContent;
 
+class GameTaskThread : TaskThread {
+  this(Tid id, bool verbose = false) { super(id, verbose); }
+
+  override void handleMessages() {
+    receiveTimeout(dur!"msecs"(-1),
+      (immutable(WorldData) wd, int[3] coord) {
+        auto data = buildChunkData(wd, coord);
+        main.send(cast(immutable(ChunkData))data, mytid);
+      },
+      (immutable(WorldData) wd, PathRequest req) {
+        auto result = pathfindWorker(wd, req);
+        main.send(cast(immutable(PathResult))result, mytid);
+      }
+    );
+  }
+}
+
 struct GameApp {
   App app;
-  alias app this;  // GameApp usable everywhere App is expected
+  alias app this;
 
   World world;
-
   bool showPaths = false;
   bool showRays = false;
   bool paused = false;
 }
 
 void initGame(ref GameApp app) {
+  app.concurrency.threadFactory = (Tid tid, bool verbose) => new GameTaskThread(tid, verbose);
   app.loadWorld();
   app.injectResourceMeshes();
   app.camera.canMoveTo = (float[3] pos){ return app.world.canMoveTo(pos); };
