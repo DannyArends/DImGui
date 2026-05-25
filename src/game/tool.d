@@ -23,6 +23,14 @@ struct PaintState {
   int[3][] preview;
 }
 
+void selectObject(ref GameApp app, Intersection[] hits) {
+  foreach(ref o; app.objects) o.window = false;
+  foreach(ref hit; hits) {
+    auto obj = app.objects[hit.idx[0]];
+    if(cast(Chunk)obj is null) { obj.window = true; break; }
+  }
+}
+
 /** Primary press: left click / single tap */
 void handlePrimaryPress(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
@@ -41,10 +49,7 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
           }
         }
         if(job.name !is null && !app.tryAssign(job)) jobQueue ~= job;
-        foreach(ref hit; hits) {
-          auto obj = app.objects[hit.idx[0]];
-          if(cast(Chunk)obj is null) { obj.window = true; break; }
-        }
+        app.selectObject(hits);
       }
       break;
     case ToolMode.Build:
