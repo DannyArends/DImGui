@@ -58,8 +58,8 @@ struct Threading {
   TaskThread function(Tid, bool) factory;
 }
 
-void initializeAsync(ref App app, bool preLoadASimp = true, uint numWorkers = 32){
-  if(preLoadASimp) app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
+void initializeAsync(ref App app, bool preLoadAssimp = true, uint numWorkers = 32){
+  if(preLoadAssimp) app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
     auto worker = app.concurrency.factory ? app.concurrency.factory(thisTid, app.verbose > 0) : new TaskThread(thisTid, app.verbose > 0);
