@@ -43,6 +43,13 @@ void cleanup(T)(ref App app, ref GeometryBuffer!T buffer) {
   buffer = GeometryBuffer!T();
 }
 
+void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
+  app.cleanup(object.vertices);
+  app.cleanup(object.indices);
+  app.cleanup(object.instances);
+  if(object.box) app.cleanup(object.box);
+}
+
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memoryProperties;
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
@@ -107,7 +114,7 @@ void copyImageToBuffer(ref App app, VkCommandBuffer commandBuffer, VkImage image
   vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
 }
 
-/** Defer cleanup of a GeometryBuffer until its fence signals or force is true
+/** Defer cleanup of a GeometryBuffer / Geometry until its fence signals or force is true
  *  Note: buffer should be passed by value, so the closure captures a copy of the handles */
 void deAllocate(T)(ref App app, T object) {
   auto fence = app.fences[app.syncIndex].renderInFlight;
