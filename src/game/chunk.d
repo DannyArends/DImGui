@@ -131,7 +131,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   if (data.coord in app.world.chunks) {
     auto oldTiles = app.world.chunks[data.coord].tiles;
     oldTiles.instances = chunk.tiles.instances;
-    oldTiles.buffers[INSTANCE] = false;
+    oldTiles.instances.buffered = false;
     chunk.tiles = oldTiles;
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; }

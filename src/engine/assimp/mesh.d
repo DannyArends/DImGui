@@ -33,7 +33,7 @@ void updateMeshInfo(ref App app) {
     uint[2] expected = [cast(uint)app.meshes.length, cast(uint)(app.meshes.length + app.objects[o].meshes.length)];
     if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
       foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
-      app.objects[o].buffers[INSTANCE] = false;
+      app.objects[o].instances.buffered = false;
       needsUpdate = true;
     }
     app.meshes ~= app.objects[o].meshes.values;

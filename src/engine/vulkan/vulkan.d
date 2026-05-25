@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : destroyGeometryBuffers;
+import buffer : cleanupBuffer;
 import imgui : saveSettings;
 import geometry : cleanup;
 import threading : stopWorkers;
@@ -16,8 +16,7 @@ struct SupportedFeatures {
  VkPhysicalDevice16BitStorageFeatures vk16;
 }
 
-/** query Supported Vulkan Features & enforce minimal feature set required
- */
+/** query Supported Vulkan Features & enforce minimal feature set required */
 void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
   app.supported.vk12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
   app.supported.vk16.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
@@ -39,16 +38,16 @@ void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
   if(!app.supported.vk12.descriptorBindingPartiallyBound) assert(0, "Vulkan 1.2 feature not supported: descriptorBindingPartiallyBound");
 }
 
-/** Shutdown ImGui and deAllocate all vulkan related objects in existance
- */
+/** Shutdown ImGui and deAllocate all vulkan related objects in existance */
 void cleanup(App app) {
   SDL_Log("Wait on device idle & swapchain deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
-  app.swapDeletionQueue.flush();  // Delete SwapChain associated resources
+  app.bufferDeletionQueue.flush(true);  /// Delete bufferDeletionQueue associated resources
+  app.swapDeletionQueue.flush();        /// Delete SwapChain associated resources
 
   // Free any staging buffers still pending (GPU is idle, all fences signaled)
   foreach(ref p; app.textures.pending) {
-    app.destroyGeometryBuffers(p.staging);
+    app.cleanupBuffer(p.staging);
     SDL_DestroySurface(p.texture.surface);
     vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
     vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);

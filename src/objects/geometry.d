@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : destroyGeometryBuffers, nameGeometryBuffer, toGPU;
+import buffer : cleanupBuffer, nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
 import textures : idx;
 import mesh : logMesh;
@@ -15,15 +15,11 @@ shared uint guid = 1;
 
 /** A Geometry that can be rendered */
 class Geometry {
-  GeometryBuffer vertexBuffer;
-  GeometryBuffer indexBuffer;
-  GeometryBuffer instanceBuffer;
-  VkFence fence;                                /// Fence to complete before destoying the object
+  GeometryBuffer!Vertex vertices;               /// Vertices of type Vertex stored on the CPU
+  GeometryBuffer!uint indices;                  /// Indices of type uint stored on the CPU
+  GeometryBuffer!DrawInstance instances;        /// Instance array
 
-  Vertex[] vertices;                            /// Vertices of type Vertex stored on the CPU
-  uint[] indices;                               /// Indices of type uint stored on the CPU
-  DrawInstance[] instances;                     /// Instance array
-  alias instances this;
+  VkFence fence;                                /// Fence to complete before destoying the object
 
   uint uid;
   Node rootnode;                                /// OpenAsset Root
@@ -48,17 +44,17 @@ class Geometry {
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(geometry()));
-    if(!buffers[VERTEX] && vertices.length > 0) {
-      buffers[VERTEX] = app.toGPU(vertices, vertexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-      app.nameGeometryBuffer(vertexBuffer, "VERTEX", geometry());
+    if(!vertices.buffered && vertices.length > 0) {
+      vertices.buffered = app.toGPU(vertices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+      app.nameGeometryBuffer(vertices, "VERTEX", geometry());
     }
-    if(!buffers[INDEX] && indices.length > 0){
-      buffers[INDEX] = app.toGPU(indices, indexBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-      app.nameGeometryBuffer(indexBuffer, "INDEX", geometry());
+    if(!indices.buffered && indices.length > 0){
+      indices.buffered = app.toGPU(indices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+      app.nameGeometryBuffer(indices, "INDEX", geometry());
     }
-    if(!buffers[INSTANCE] && instances.length > 0){
-      buffers[INSTANCE] = app.toGPU(instances, instanceBuffer, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-      app.nameGeometryBuffer(instanceBuffer, "INSTANCE", geometry());
+    if(!instances.buffered && instances.length > 0){
+      instances.buffered = app.toGPU(instances, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+      app.nameGeometryBuffer(instances, "INSTANCE", geometry());
     }
   }
 
@@ -71,9 +67,9 @@ class Geometry {
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
 
-  bool[3] buffers = [false, false, false];          /// Boolean flag
-  @property @nogc bool isBuffered() nothrow { return(buffers[VERTEX] && buffers[INDEX] && buffers[INSTANCE]); }
-  @nogc void markDirty() nothrow { buffers[INSTANCE] = false; }
+  //bool[3] buffers = [false, false, false];          /// Boolean flag
+  @property @nogc bool isBuffered() nothrow { return(vertices.buffered && indices.buffered && instances.buffered); }
+
   @nogc void initInstanced(string delegate() name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
     instances = initial;
@@ -85,7 +81,7 @@ class Geometry {
     import matrix : position;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = position(instances[instance], p);
-    markDirty();
+    instances.buffered = false;
   }
 
   @nogc float[3] position(uint instance = 0) nothrow {
@@ -99,7 +95,7 @@ class Geometry {
     import matrix : rotate;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = rotate(instances[instance], r);
-    markDirty();
+    instances.buffered = false;
   }
 
   /** Scale instance from object.instances by s */
@@ -107,7 +103,7 @@ class Geometry {
     import matrix : scale;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = scale(instances[instance], s);
-    markDirty();
+    instances.buffered = false;
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
@@ -152,10 +148,10 @@ void opacity(T)(T object, string name, string mname = "") { object.setTexture(na
 }
 
 /** Cleanup all GPU buffers, now */
-void cleanup(ref App app, Geometry object) {
-  app.destroyGeometryBuffers(object.vertexBuffer);
-  app.destroyGeometryBuffers(object.indexBuffer);
-  app.destroyGeometryBuffers(object.instanceBuffer);
+void cleanup(T)(ref App app, ref T object) {
+  app.cleanupBuffer(object.vertices);
+  app.cleanupBuffer(object.indices);
+  app.cleanupBuffer(object.instances);
   if(object.box){ app.cleanup(object.box); }
 }
 
@@ -171,13 +167,13 @@ void deAllocate(ref App app, Geometry object) {
 /** Add a vertex to a geometry of the object */
 uint addVertex(ref Geometry geometry, const Vertex v) nothrow {
   geometry.vertices ~= v;
-  geometry.buffers[VERTEX] = false;
+  geometry.vertices.buffered = false;
   return(cast(uint)(geometry.vertices.length-1));
 }
 
 void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
   for (uint x = 0; x < geometry.vertices.length; x++) { geometry.vertices[x].color = color; }
-  geometry.buffers[VERTEX] = false;
+  geometry.vertices.buffered = false;
 }
 
 /** Render a Geometry to app.scenePass.commands[i] */
@@ -187,11 +183,11 @@ void draw(T)(ref App app, ref T object, size_t i) {
   VkDeviceSize[] offsets = [0];
   auto cmd = app.scenePass.commands[i];
 
-  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
-  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
-  vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertices.vb, &offsets[0]);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instances.vb, &offsets[0]);
+  vkCmdBindIndexBuffer(cmd, object.indices.vb, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(cmd, cast(uint)object.indexBuffer.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, cast(uint)object.indices.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.geometry()));
 }
 
@@ -202,10 +198,10 @@ void shadow(ref App app, Geometry object, size_t i) {
   VkDeviceSize[] offsets = [0];
   auto cmd = app.shadows.renderPass.commands[i];
 
-  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertexBuffer.vb, &offsets[0]);
-  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instanceBuffer.vb, &offsets[0]);
-  vkCmdBindIndexBuffer(cmd, object.indexBuffer.vb, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertices.vb, &offsets[0]);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instances.vb, &offsets[0]);
+  vkCmdBindIndexBuffer(cmd, object.indices.vb, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(cmd, cast(uint)object.indexBuffer.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, cast(uint)object.indices.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("SHADOW[%s]: DONE", toStringz(object.geometry()));
 }

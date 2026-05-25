@@ -43,7 +43,7 @@ void computeNormals(T)(ref T geometry, bool invert = false, bool verbose = false
     geometry.vertices[i].normal.normalize();
     if(invert) geometry.vertices[i].normal[] = -geometry.vertices[i].normal[];
   }
-  geometry.buffers[VERTEX] = false;
+  geometry.vertices.buffered = false;
   if(verbose) SDL_Log("computeNormals %d vertex normals computed\n", geometry.vertices.length);
 }
 
@@ -118,6 +118,6 @@ void computeTangents(T)(ref T geometry, bool verbose = false) {
     geometry.vertices[i].tangent = [finalTangent[0], finalTangent[1], finalTangent[2], handedness];
   }
 
-  geometry.buffers[VERTEX] = false; // Mark vertex buffer as dirty, needs re-upload
+  geometry.vertices.buffered = false; // Mark vertex buffer as dirty, needs re-upload
   if(verbose) SDL_Log("computeTangents %d vertex tangents computed", geometry.vertices.length);
 }

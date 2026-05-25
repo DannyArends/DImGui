@@ -99,6 +99,6 @@ void syncBuildGhosts(ref GameApp app) {
   app.syncCursorGhost();
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
-  app.world.inventory.markDirty();
+  app.world.inventory.instances.buffered = false;
 }
 

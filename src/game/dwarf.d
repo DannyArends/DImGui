@@ -151,7 +151,7 @@ void dwarfFrame(ref GameApp app, float dt) {
       d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
     ];
     app.world.dwarves.instances[i] = position(app.world.dwarves.instances[i], d.visualPos);
-    app.world.dwarves.markDirty();
+    app.world.dwarves.instances.buffered = false;
     if(d.moveT >= 1.0f) {
       if(d.path.length > 0) {
         app.followPath(d);
@@ -248,7 +248,7 @@ void spawnDwarf(ref GameApp app) {
   Dwarf d = Dwarf(DwarfData(nextDwarfUID++, randomColor(), tile));
   randomizeName(d);
   app.addDwarf(d);
-  app.world.dwarves.markDirty();
+  app.world.dwarves.instances.buffered = false;
 }
 
 void saveDwarfs(ref GameApp app) {
@@ -262,7 +262,7 @@ bool loadDwarfs(ref GameApp app) {
   if(!readData(app.world.dwarfsPath(), data, i)) return false;
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
-  app.world.dwarves.markDirty();
+  app.world.dwarves.instances.buffered = false;
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
   foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;
