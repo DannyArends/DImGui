@@ -9,13 +9,12 @@ import images : createImage, nameImageBuffer, deAllocate, ImageBuffer;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
 
-/** Function to create an HDR color image and its view (MSAA if enabled)
- */
+/** Function to create an HDR color image and its view (MSAA if enabled) */
 void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits flag, VkMemoryPropertyFlags properties) {
   if(app.verbose) SDL_Log("Creating Offscreen HDR Image");
 
-  app.createImage(app.camera.width, app.camera.height, &buffer.image, &buffer.memory, app.offscreenFormat, flag, VK_IMAGE_TILING_OPTIMAL, properties);
-  buffer.view = app.createImageView(buffer.image, app.offscreenFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+  app.createImage(app.camera.width, app.camera.height, &buffer.image, &buffer.memory, app.offscreen.format, flag, VK_IMAGE_TILING_OPTIMAL, properties);
+  buffer.view = app.createImageView(buffer.image, app.offscreen.format, VK_IMAGE_ASPECT_COLOR_BIT);
   app.nameImageBuffer(buffer, "Offscreen HDR Image");
 
   app.swapDeletionQueue.add((){ app.deAllocate(buffer); });
@@ -25,13 +24,11 @@ void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, ui
   pass.framebuffers.length = attachmentSets.length;
   foreach(i, views; attachmentSets) {
     VkFramebufferCreateInfo info = {
-      sType:           VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-      renderPass:      pass,
+      sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+      renderPass: pass,
       attachmentCount: cast(uint)views.length,
-      pAttachments:    views.ptr,
-      width:           width,
-      height:          height,
-      layers:          1
+      pAttachments: views.ptr,
+      width: width, height: height, layers: 1
     };
     enforceVK(vkCreateFramebuffer(app.device, &info, app.allocator, &pass.framebuffers[i]));
     app.nameVulkanObject(pass.framebuffers[i], toStringz(format("[FRAMEBUFFER] %s #%d", label, i)), VK_OBJECT_TYPE_FRAMEBUFFER);
@@ -40,8 +37,7 @@ void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, ui
 }
 
 /** Create framebuffers for Rendering, Post-processing, and ImGui, for each SwapChain ImageView 
- * with appropriate Color and Depth attachements
- */
+ * with appropriate Color and Depth attachements */
 void createFramebuffers(ref App app) {
   auto sceneViews  = iota(app.imageCount).map!(i => [app.offscreenHDR.view, app.resolvedHDR.view, app.depthBuffer.view]).array;
   auto postViews   = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;

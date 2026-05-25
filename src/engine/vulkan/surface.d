@@ -31,7 +31,7 @@ int isSupported(ref App app, VkFormat requested){
   return(s);
 }
 
-void querySurfaceFormats(ref App app) {
+void queryPresentFormats(ref App app) {
   uint formatCount;
   enforceVK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(app.physicalDevice, app.surface, &app.camera.capabilities));  // Capabilities
   app.camera.isDirty = true;
@@ -42,15 +42,13 @@ void querySurfaceFormats(ref App app) {
   app.surfaceformats.length = formatCount;
   enforceVK(vkGetPhysicalDeviceSurfaceFormatsKHR(app.physicalDevice, app.surface, &formatCount, &app.surfaceformats[0]));
 
-  if(app.verbose){
+  if (app.verbose) {
     SDL_Log("[SurfaceCapabilities] formatCount: %d", formatCount);
-    foreach(fmt; app.surfaceformats){
-      fmt.printSurfaceFormat();
-    }
+    foreach(fmt; app.surfaceformats){ fmt.printSurfaceFormat(); }
   }
 }
 
-bool queryDeviceFormats(ref App app, VkFormat requested = VK_FORMAT_R16G16B16A16_SFLOAT) {
+bool supportsColorFormat(ref App app, VkFormat requested = VK_FORMAT_R16G16B16A16_SFLOAT) {
   VkFormatProperties formatProperties;
   vkGetPhysicalDeviceFormatProperties(app.physicalDevice, requested, &formatProperties);
   if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
@@ -60,12 +58,14 @@ bool queryDeviceFormats(ref App app, VkFormat requested = VK_FORMAT_R16G16B16A16
   return(false);
 }
 
-VkFormat getBestColorFormat(ref App app){
+VkSurfaceFormatKHR getBestColorFormat(ref App app){
   auto ordering = [VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R8G8B8A8_SRGB, VK_FORMAT_R8G8B8A8_UNORM];
   version(Android){
     ordering = [VK_FORMAT_R5G6B5_UNORM_PACK16, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT];
   }
-  foreach(format; ordering){ if(app.queryDeviceFormats(format)){ return(app.offscreenFormat = format); } }
+  foreach(format; ordering){ if(app.supportsColorFormat(format)){
+    return(app.offscreen = VkSurfaceFormatKHR(format, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR));
+  } }
   assert(0, "No suitable format found");
 }
 

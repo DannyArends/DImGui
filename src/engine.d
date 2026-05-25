@@ -86,9 +86,9 @@ struct App {
 
   // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;                                                  /// Vulkan Surface
-  VkSurfaceFormatKHR[] surfaceformats = null;                                   /// Available Surface formats
-  VkFormat offscreenFormat;                                                     /// Format used for MSAA / offscreen rendering
-  uint format = 0;                                                              /// selected format
+  VkSurfaceFormatKHR[] surfaceformats = null;                                   /// All available Surface formats
+  VkSurfaceFormatKHR offscreen;                                                 /// Format used for MSAA / offscreen rendering
+  VkSurfaceFormatKHR present;                                                   /// Swapchain format
   VkSwapchainKHR swapChain = null;                                              /// Our SwapChain
   VkCommandPool commandPool = null;                                             /// Our Rendering Command Pool
   VkCommandPool transferPool = null;                                            /// Our Texture Transfer Pool
@@ -106,7 +106,7 @@ struct App {
   VkAllocationCallbacks* allocator = null;
   VkDebugReportCallbackEXT debugCallback = null;
 
-  Threading concurrency;
+  Threading concurrency;                                                        /// Threads & ASync loading
 
   // Sync and Frame Tracking
   uint selectedDevice = 0;                                                      /// Device selected for rendering

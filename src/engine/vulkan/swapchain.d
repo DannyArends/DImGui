@@ -8,17 +8,17 @@ import engine;
 import surface : isSupported;
 import validation : nameVulkanObject;
 
-// Create a swapchain for IMGui
+/** Create a swapchain for IMGui */
 void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   version(Android) {
     auto x = app.isSupported(VK_FORMAT_R5G6B5_UNORM_PACK16);
-    if(x >= 0){ app.format = cast(uint)x; SDL_Log("Using format: %d", app.format); }
+    if(x >= 0){ app.present = app.surfaceformats[x]; SDL_Log(toStringz(format("Using format: %s", app.present))); }
     compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
   } else {
     foreach(fmt; [VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM]) {
       auto x = app.isSupported(fmt);
-      if(x >= 0){ app.format = cast(uint)x; SDL_Log("Using swapchain format: %d", app.format); break; }
+      if(x >= 0){ app.present = app.surfaceformats[x]; SDL_Log(toStringz(format("Using format: %s", app.present))); break; }
     }
   }
 
@@ -26,8 +26,8 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
     sType: VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
     surface: app.surface,
     minImageCount: app.camera.minImageCount,
-    imageFormat: app.surfaceformats[app.format].format,
-    imageColorSpace: app.surfaceformats[app.format].colorSpace,
+    imageFormat: app.present.format,
+    imageColorSpace: app.present.colorSpace,
     imageExtent: app.camera.currentExtent,
     imageArrayLayers: 1,
     imageUsage: VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -47,7 +47,7 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   if(oldChain) { vkDestroySwapchainKHR(app.device, oldChain, app.allocator); }
 }
 
-// Create an ImageView to a VkImage
+/** Create an ImageView to a VkImage */
 VkImageView createImageView(App app, VkImage image, VkFormat format, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, uint levelCount = 1) {
   VkImageSubresourceRange subresourceRange = {
     aspectMask: aspectMask,
@@ -70,7 +70,7 @@ VkImageView createImageView(App app, VkImage image, VkFormat format, VkImageAspe
   return imageView;
 }
 
-// Aquire swapchain images
+/** Aquire swapchain images */
 void aquireSwapChainImages(ref App app) {
   uint imageCount;
   vkGetSwapchainImagesKHR(app.device, app.swapChain, &imageCount, null);
@@ -92,7 +92,7 @@ void aquireSwapChainImages(ref App app) {
   // Allocate space for an imageview per image & create the imageviews
   app.swapChainImageViews.length = app.imageCount;
   for (uint i = 0; i < app.imageCount; i++) {
-    app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.surfaceformats[app.format].format);
+    app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.present.format);
   }
   if(app.verbose) SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
   app.nameSwapChain();
