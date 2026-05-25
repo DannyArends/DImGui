@@ -21,18 +21,15 @@ void saveScreenshot(ref App app) {
   void* data;
   enforceVK(vkMapMemory(app.device, stagingMemory, 0, size, 0, &data));
 
-  VkImage srcImage = app.swapChainImages[app.frameIndex];
-  VkFormat srcFormat = app.surfaceformats[app.format].format;
-
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
-  app.transitionImageLayout(cmd, srcImage, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-  app.copyImageToBuffer(cmd, srcImage, stagingBuffer, app.camera.width, app.camera.height);
-  app.transitionImageLayout(cmd, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+  app.transitionImageLayout(cmd, app.swapChainImages[app.frameIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  app.copyImageToBuffer(cmd, app.swapChainImages[app.frameIndex], stagingBuffer, app.camera.width, app.camera.height);
+  app.transitionImageLayout(cmd, app.swapChainImages[app.frameIndex], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   app.endSingleTimeCommands(cmd, app.queue);
 
   // Handle BGRA → RGBA swap if needed
   ubyte[] pixels = (cast(ubyte*)data)[0 .. size];
-  if(srcFormat == VK_FORMAT_B8G8R8A8_UNORM || srcFormat == VK_FORMAT_B8G8R8A8_SRGB) {
+  if(app.present.format == VK_FORMAT_B8G8R8A8_UNORM || app.present.format == VK_FORMAT_B8G8R8A8_SRGB) {
     for(size_t i = 0; i < size; i += 4) { swap(pixels[i], pixels[i+2]); }
   }
 

@@ -61,8 +61,7 @@ void endRecording(ref RenderPass pass, uint syncIndex) { enforceVK(vkEndCommandB
 
 
 /** Create a Scene RenderPass object
- * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment
- */
+ * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment */
 void createSceneRenderPass(ref App app) {
   VkAttachmentReference colorRef   = { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
   VkAttachmentReference resolveRef = { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
@@ -70,19 +69,19 @@ void createSceneRenderPass(ref App app) {
 
   RenderPassInfo info = {
     attachments: [
-      { format: app.offscreenFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+      { format: app.offscreen.format, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout:   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
-      { format: app.offscreenFormat, samples: VK_SAMPLE_COUNT_1_BIT, loadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        finalLayout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+      { format: app.offscreen.format, samples: VK_SAMPLE_COUNT_1_BIT, loadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         storeOp: VK_ATTACHMENT_STORE_OP_STORE,
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout:   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+        finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
       { format: app.findDepthFormat(), samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_STORE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout:   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
+        finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
     ],
     subpasses: [{
       pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -109,18 +108,18 @@ void createPostProcessRenderPass(ref App app) {
 
   RenderPassInfo info = {
     attachments: [{
-      format:        app.surfaceformats[app.format].format,
-      samples:       VK_SAMPLE_COUNT_1_BIT,
-      loadOp:        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-      storeOp:       VK_ATTACHMENT_STORE_OP_STORE,
+      format: app.present.format,
+      samples: VK_SAMPLE_COUNT_1_BIT,
+      loadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+      storeOp: VK_ATTACHMENT_STORE_OP_STORE,
       stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
       initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-      finalLayout:   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+      finalLayout: VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
     }],
     subpasses: [{
-      pipelineBindPoint:    VK_PIPELINE_BIND_POINT_GRAPHICS,
+      pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
       colorAttachmentCount: 1,
-      pColorAttachments:    &colorRef,
+      pColorAttachments: &colorRef,
     }],
     dependencies: [
       { srcSubpass: VK_SUBPASS_EXTERNAL, dstSubpass: 0,
@@ -145,18 +144,18 @@ void createImGuiRenderPass(ref App app) {
 
   RenderPassInfo info = {
     attachments: [{
-      format:        app.surfaceformats[app.format].format,
-      samples:       VK_SAMPLE_COUNT_1_BIT,
-      loadOp:        VK_ATTACHMENT_LOAD_OP_LOAD,
-      storeOp:       VK_ATTACHMENT_STORE_OP_STORE,
+      format: app.present.format,
+      samples: VK_SAMPLE_COUNT_1_BIT,
+      loadOp: VK_ATTACHMENT_LOAD_OP_LOAD,
+      storeOp: VK_ATTACHMENT_STORE_OP_STORE,
       stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
       initialLayout: VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-      finalLayout:   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+      finalLayout: VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
     }],
     subpasses: [{
-      pipelineBindPoint:    VK_PIPELINE_BIND_POINT_GRAPHICS,
+      pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
       colorAttachmentCount: 1,
-      pColorAttachments:    &colorRef,
+      pColorAttachments: &colorRef,
     }],
     dependencies: [{
       srcSubpass:    VK_SUBPASS_EXTERNAL,     dstSubpass:    0,

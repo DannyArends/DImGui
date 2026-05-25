@@ -15,7 +15,7 @@ import pipeline : createGraphicsPipeline, createPostProcessGraphicsPipeline;
 import renderpass : createSceneRenderPass, createPostProcessRenderPass, createImGuiRenderPass;
 import shadow : createShadowMapGraphicsPipeline, recordShadowCommandBuffer;
 import reflection : reflectShaders, createResources;
-import surface : querySurfaceFormats;
+import surface : queryPresentFormats;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 
@@ -38,7 +38,7 @@ void createOrResizeWindow(ref App app) {
   app.swapDeletionQueue.flush();
 
   SDL_Log("0: Query window settings then create a SwapChain, DepthBuffer, ColorBuffer, and Synchronization");
-  app.querySurfaceFormats();
+  app.queryPresentFormats();
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
   app.createColorResources();
