@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, deAllocate;
+import buffer : createBuffer;
 import validation : nameVulkanObject;
 
 /** GPU SSBO buffers, memory, data and dirty flags */
@@ -54,7 +54,12 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
 
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting SSBO at %s", toStringz(descriptor.base));
-    app.deAllocate(app.buffers, descriptor);
+    for(uint i = 0; i < app.framesInFlight; i++) {
+      vkUnmapMemory(app.device, app.buffers[descriptor.base].memory[i]);
+      vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
+      vkDestroyBuffer(app.device, app.buffers[descriptor.base].buffers[i], app.allocator);
+    }
+    app.buffers.remove(descriptor.base);
   });
 }
 

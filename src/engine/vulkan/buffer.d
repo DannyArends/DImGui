@@ -8,20 +8,18 @@ import engine;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import validation : nameVulkanObject;
 
-struct StageBuffer {
-  VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
-  VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
-  VkFence fence;                 /// Fence to complete before destoying the buffer
-  VkDeviceSize size = 0;         /// Current actual data size in bytes
-  VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
-  void* data;                    /// Pointer to mapped data
-}
-
 struct GeometryBuffer {
   VkBuffer vb = null;            /// Vulkan Buffer pointer
   VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
-  StageBuffer staging;           /// Staging buffer for the GeometryBuffer
-  alias staging this;
+
+  VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
+  VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
+
+  VkFence fence;                 /// Fence to complete before destoying the buffer
+
+  VkDeviceSize size = 0;         /// Current actual data size in bytes
+  VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
+  void* data;                    /// Pointer to mapped data - non-null means sbM is mapped
 }
 
 void nameGeometryBuffer(ref App app, GeometryBuffer buffer, string type, string name){
@@ -31,26 +29,13 @@ void nameGeometryBuffer(ref App app, GeometryBuffer buffer, string type, string 
   app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
 }
 
-void destroyStagingBuffer(ref App app, StageBuffer staging) {
-  if(staging.sbM) vkUnmapMemory(app.device, staging.sbM);
-  if(staging.sb)  vkDestroyBuffer(app.device, staging.sb, app.allocator);
-  if(staging.sbM) vkFreeMemory(app.device, staging.sbM, app.allocator);
-}
-
 void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
-  app.destroyStagingBuffer(buffer.staging);
+  if(buffer.data) vkUnmapMemory(app.device, buffer.sbM);
+  if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
+  if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
 
   if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, app.allocator);
   if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, app.allocator);
-}
-
-void deAllocate(T)(ref App app, T dst, Descriptor descriptor){
-  for(uint i = 0; i < app.framesInFlight; i++) {
-    vkUnmapMemory(app.device, dst[descriptor.base].memory[i]);
-    vkFreeMemory(app.device, dst[descriptor.base].memory[i], app.allocator);
-    vkDestroyBuffer(app.device, dst[descriptor.base].buffers[i], app.allocator);
-  }
-  dst.remove(descriptor.base);
 }
 
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
