@@ -28,7 +28,10 @@ void showSidepanel(ref App app, uint font = 0) {
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_VOLUME_HIGH, "Sounds"), 0)) app.showSFXContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_IMAGE, "Textures"), 0)) app.showTexturesContent(font);
   if(igCollapsingHeader_TreeNodeFlags(iconText(cast(string)ICON_FA_CODE, "Shaders"), 0)) app.showShaderContent(font);
-  foreach(window; app.gameWindows) { if(igCollapsingHeader_TreeNodeFlags(toStringz(window.label), 0)){ window.show(font); } }
+  foreach(window; app.gameWindows) {
+    if(window.floating || window.direct) continue;
+    if(igCollapsingHeader_TreeNodeFlags(toStringz(window.label), 0)) window.show(font);
+  }
   igEnd();
   igPopFont();
 }
