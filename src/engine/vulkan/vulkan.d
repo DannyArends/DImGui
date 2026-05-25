@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : destroyStagingBuffer;
+import buffer : destroyGeometryBuffers;
 import imgui : saveSettings;
 import geometry : cleanup;
 import threading : stopWorkers;
@@ -48,7 +48,7 @@ void cleanup(App app) {
 
   // Free any staging buffers still pending (GPU is idle, all fences signaled)
   foreach(ref p; app.textures.pending) {
-    app.destroyStagingBuffer(p.staging);
+    app.destroyGeometryBuffers(p.staging);
     SDL_DestroySurface(p.texture.surface);
     vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
     vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);

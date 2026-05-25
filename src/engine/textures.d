@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, copyBufferToImage, destroyStagingBuffer;
+import buffer : createBuffer, copyBufferToImage, destroyGeometryBuffers;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import images : nameImageBuffer, generateMipmaps, imageSize, createImage, deAllocate, transitionImageLayout;
@@ -45,7 +45,7 @@ struct Texture {
 struct PendingTexture {
   Texture texture;
   SingleTimeCommand cmdBuffer;
-  StageBuffer staging;
+  GeometryBuffer staging;
 }
 
 struct Textures {
@@ -92,7 +92,7 @@ void checkPendingTextures(ref App app) {
   while(i < app.textures.pending.length) {
     auto p = app.textures.pending[i];
     if(vkGetFenceStatus(app.device, p.cmdBuffer.fence) == VK_SUCCESS) {
-      app.destroyStagingBuffer(p.staging);
+      app.destroyGeometryBuffers(p.staging);
       SDL_DestroySurface(p.texture.surface);
       vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
       vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
@@ -118,7 +118,7 @@ void transferTextureAsync(ref App app, ref Texture texture) {
   auto queue = needsGraphics ? app.queue : app.transfer;
 
   SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(pool, true);
-  StageBuffer staging;
+  GeometryBuffer staging;
   app.toGPU(cmdBuffer, texture, staging);
   vkEndCommandBuffer(cmdBuffer);
   VkSubmitInfo submitInfo = {
@@ -173,7 +173,7 @@ void updateTextures(ref App app) {
   }
 }
 
-void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out StageBuffer staging) {
+void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GeometryBuffer staging) {
   // Create a buffer to transfer the image to the GPU
   app.createBuffer(&staging.sb, &staging.sbM, texture.surface.imageSize);
   app.nameVulkanObject(staging.sb, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);

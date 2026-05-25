@@ -6,7 +6,7 @@
 import engine;
 
 import quaternion : xyzw;
-import buffer : createBuffer, deAllocate;
+import buffer : createBuffer;
 import matrix : rotate, lookAt, perspective;
 import lights : computeLightSpace, LMode;
 import validation : nameVulkanObject;
@@ -62,7 +62,12 @@ void createUBO(ref App app, Descriptor descriptor) {
 
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting UBO at %s", toStringz(descriptor.base));
-    app.deAllocate(app.ubos, descriptor); 
+    for(uint i = 0; i < app.framesInFlight; i++) {
+      vkUnmapMemory(app.device, app.ubos[descriptor.base].memory[i]);
+      vkFreeMemory(app.device, app.ubos[descriptor.base].memory[i], app.allocator);
+      vkDestroyBuffer(app.device, app.ubos[descriptor.base].buffers[i], app.allocator);
+    }
+    app.ubos.remove(descriptor.base);
   });
 }
 

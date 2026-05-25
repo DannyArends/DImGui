@@ -124,13 +124,6 @@ class Geometry {
   string delegate() geometry;
 }
 
-void logDraw(T)(ref App app, ref T object) {
-  if(!app.trace) return;
-  foreach(ref inst; object.instances) {
-    for(uint m = inst.meshdef[0]; m < inst.meshdef[1]; m++) { if(m < app.meshes.length){ logMesh(m, app.meshes[m], toStringz(object.geometry())); } }
-  }
-}
-
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
   for(size_t x = 0; x < app.objects.length; x++) {
     if(app.objects[x].instances.length == 0) continue;
@@ -190,7 +183,6 @@ void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
 /** Render a Geometry to app.scenePass.commands[i] */
 void draw(T)(ref App app, ref T object, size_t i) {
   if(!object.isBuffered()) return;
-  app.logDraw(object);
 
   VkDeviceSize[] offsets = [0];
   auto cmd = app.scenePass.commands[i];
@@ -205,8 +197,8 @@ void draw(T)(ref App app, ref T object, size_t i) {
 
 /** Render a Geometry to app.shadows.commands[i] */
 void shadow(ref App app, Geometry object, size_t i) {
-  if(object.vertexBuffer.vb == null || object.instanceBuffer.vb == null || object.indexBuffer.vb == null) return;
-  if(app.trace) SDL_Log("SHADOW[%s]: %d instances", toStringz(object.geometry()), object.instances.length);
+  if(!object.isBuffered()) return;
+
   VkDeviceSize[] offsets = [0];
   auto cmd = app.shadows.renderPass.commands[i];
 
