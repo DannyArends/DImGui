@@ -223,7 +223,8 @@ ImDrawData* renderGUI(ref App app){
   if(app.gui.showSFX) app.makeWindow("SFX", &app.gui.showSFX, font, (uint f){ app.showSFXContent(f); });
   if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, (uint f){ app.showTexturesContent(f); });
   foreach(ref window; app.gameWindows) {
-    if(window.visible){ app.makeWindow(toStringz(window.label), &window.visible, font, window.show); }
+    if(window.direct && window.visible) { window.show(font); continue; }
+    if(window.floating && window.visible) app.makeWindow(toStringz(window.label), &window.visible, font, window.show);
   }
   if(app.gui.showDirectory) app.makeWindow("Directory", &app.gui.showDirectory, font, (uint f){ app.showDirectoryContent(f); });
 

@@ -23,11 +23,10 @@ void showMenu(ref App app, uint font = 0) {
       if(igMenuItem_Bool("Lights".toStringz,null, false, true)) { app.gui.showLights = !app.gui.showLights; }
       igEndMenu();
     }
-    if(igMenuItem_Bool("Settings".toStringz,null, false, true)) { app.gui.showSettings = !app.gui.showSettings; }
     foreach(ref window; app.gameWindows) {
-      if(igMenuItem_Bool(toStringz(window.label), null, window.visible, true)){ window.visible = !window.visible; }
+      if(!window.floating && !window.direct) continue;
+      if(igMenuItem_Bool(toStringz(window.label), null, window.visible, true)) window.visible = !window.visible;
     }
-    if(igMenuItem_Bool("FPS".toStringz,null, false, true)) {  app.gui.showFPS = !app.gui.showFPS; }
     if(igBeginMenu("?".toStringz, true)) {
       if(igMenuItem_Bool("Shaders".toStringz,null, false, true)) { app.gui.showShaders = !app.gui.showShaders; }
       igEndMenu();
