@@ -19,8 +19,6 @@ class Geometry {
   GeometryBuffer!uint indices;                  /// Indices of type uint stored on the CPU
   GeometryBuffer!DrawInstance instances;        /// Instance array
 
-  VkFence fence;                                /// Fence to complete before destoying the object
-
   uint uid;
   Node rootnode;                                /// OpenAsset Root
   string mName;                                 /// OpenAsset name
@@ -157,9 +155,9 @@ void cleanup(T)(ref App app, ref T object) {
 
 /** deAllocate all GPU buffers after waiting for the object to not be in use anymore */
 void deAllocate(ref App app, Geometry object) {
-  object.fence = app.fences[app.syncIndex].renderInFlight;
+  object.vertices.fence = app.fences[app.syncIndex].renderInFlight;
   app.bufferDeletionQueue.add((bool force){
-    if(force || vkGetFenceStatus(app.device, object.fence) == VK_SUCCESS) { app.cleanup(object); return(true); }
+    if(force || vkGetFenceStatus(app.device, object.vertices.fence) == VK_SUCCESS) { app.cleanup(object); return(true); }
     return(false);
   });
 }
