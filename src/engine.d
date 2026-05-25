@@ -76,7 +76,7 @@ struct App {
   SupportedFeatures supported;
   VkPhysicalDevice[] physicalDevices;
 
-  VkDevice device = null;
+  VkDevice device = null;                                                       /// Vulkan device
   VkQueue queue = null;                                                         /// Render Queue
   VkQueue transfer = null;                                                      /// Transfer Queue
 
@@ -87,7 +87,7 @@ struct App {
   // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;                                                  /// Vulkan Surface
   VkSurfaceFormatKHR[] surfaceformats = null;                                   /// Available Surface formats
-  VkFormat colorFormat;
+  VkFormat offscreenFormat;                                                     /// Format used for MSAA / offscreen rendering
   uint format = 0;                                                              /// selected format
   VkSwapchainKHR swapChain = null;                                              /// Our SwapChain
   VkCommandPool commandPool = null;                                             /// Our Rendering Command Pool

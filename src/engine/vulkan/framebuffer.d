@@ -14,8 +14,8 @@ import validation : nameVulkanObject;
 void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits flag, VkMemoryPropertyFlags properties) {
   if(app.verbose) SDL_Log("Creating Offscreen HDR Image");
 
-  app.createImage(app.camera.width, app.camera.height, &buffer.image, &buffer.memory, app.colorFormat, flag, VK_IMAGE_TILING_OPTIMAL, properties);
-  buffer.view = app.createImageView(buffer.image, app.colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+  app.createImage(app.camera.width, app.camera.height, &buffer.image, &buffer.memory, app.offscreenFormat, flag, VK_IMAGE_TILING_OPTIMAL, properties);
+  buffer.view = app.createImageView(buffer.image, app.offscreenFormat, VK_IMAGE_ASPECT_COLOR_BIT);
   app.nameImageBuffer(buffer, "Offscreen HDR Image");
 
   app.swapDeletionQueue.add((){ app.deAllocate(buffer); });

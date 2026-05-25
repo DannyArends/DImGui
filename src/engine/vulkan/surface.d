@@ -65,9 +65,7 @@ VkFormat getBestColorFormat(ref App app){
   version(Android){
     ordering = [VK_FORMAT_R5G6B5_UNORM_PACK16, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT];
   }
-  foreach(format; ordering){
-    if(app.queryDeviceFormats(format)){ return(app.colorFormat = format); }
-  }
+  foreach(format; ordering){ if(app.queryDeviceFormats(format)){ return(app.offscreenFormat = format); } }
   assert(0, "No suitable format found");
 }
 
