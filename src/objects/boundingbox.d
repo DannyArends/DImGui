@@ -44,6 +44,7 @@ class BoundingBox : Geometry {
                1, 5,  2, 3,  2, 6,  3, 7, 
                4, 5,  4, 7,  5, 6,  6, 7];
     instances = [DrawInstance()];
+    geometry = (){ return("BoundingBox"); };
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
   };
 
@@ -87,25 +88,15 @@ class BoundingBox : Geometry {
 /**  Compute the bounding box for object
  */
 void computeBoundingBox(T)(ref T object, bool verbose = false) {
-  bool initial = false;
-  if(object.box is null) {
-    if(verbose) SDL_Log("Computing new Bounding Box for %s", toStringz(object.geometry()));
-    object.box = new BoundingBox();
-    initial = true;
-  }
-  object.box.geometry = (){ return("BoundingBox"); };
-
-  if(initial || !object.vertices.buffered) { // The object vertex buffer is out of date, update the BoundingBox vertices
+  if(object.box is null) { object.box = new BoundingBox(); }
+  if(!object.vertices.buffered || !object.box.vertices.buffered) { // The object vertex buffer is out of date, update the BoundingBox vertices
     if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.geometry()), toStringz(object.geometry()));
     Bounds bounds;
     for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
     object.box.setDimensions(bounds.min, bounds.max);
     object.box.vertices.buffered = false;
   }
-  object.box.instances.length = object.instances.length;
-  for(size_t x = 0; x < object.instances.length; x++) { // TODO: direct assign ???
-    object.box.instances[x].matrix = object.instances[x].matrix;
-  }
+  object.box.instances = object.instances.dup;
   object.box.instances.buffered = false;
 }
 
