@@ -42,18 +42,9 @@ class Geometry {
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(geometry()));
-    if(!vertices.buffered && vertices.length > 0) {
-      vertices.buffered = app.toGPU(vertices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-      app.nameGeometryBuffer(vertices, "VERTEX", geometry());
-    }
-    if(!indices.buffered && indices.length > 0){
-      indices.buffered = app.toGPU(indices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-      app.nameGeometryBuffer(indices, "INDEX", geometry());
-    }
-    if(!instances.buffered && instances.length > 0){
-      instances.buffered = app.toGPU(instances, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-      app.nameGeometryBuffer(instances, "INSTANCE", geometry());
-    }
+    app.toGPU(vertices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, "VERTEX", geometry());
+    app.toGPU(indices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, "INDEX", geometry());
+    app.toGPU(instances, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, "INSTANCE", geometry());
   }
 
   bool isVisible = true;                            /// Boolean flag

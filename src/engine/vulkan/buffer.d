@@ -147,14 +147,15 @@ void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer c
     dstAccessMask: VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT,
   };
   vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 1, &barrier, 0, null, 0, null);
+  buffer.buffered = true;
   if(app.trace) SDL_Log("uploadBuffer: Buffer[%p]: %d bytes", buffer.vb, buffer.size);
 }
 
 /** Allocate if needed then upload — convenience wrapper */
-bool toGPU(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage,
+void toGPU(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage, string type = "", string name = "",
               VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+  if(buffer.buffered || buffer.length == 0) return;
   if(app.trace) SDL_Log("toGPU: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
-  app.allocateBuffer(buffer, usage, properties);
+  if(app.allocateBuffer(buffer, usage, properties)) app.nameGeometryBuffer(buffer, type, name);
   app.uploadBuffer(buffer, cmdBuffer);
-  return true;
 }
