@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : cleanupBuffer, nameGeometryBuffer, toGPU;
+import buffer : cleanup, nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
 import textures : idx;
 import mesh : logMesh;
@@ -138,20 +138,20 @@ void opacity(T)(T object, string name, string mname = "") { object.setTexture(na
 
 /** Cleanup all GPU buffers, now */
 void cleanup(T)(ref App app, ref T object) {
-  app.cleanupBuffer(object.vertices);
-  app.cleanupBuffer(object.indices);
-  app.cleanupBuffer(object.instances);
+  app.cleanup(object.vertices);
+  app.cleanup(object.indices);
+  app.cleanup(object.instances);
   if(object.box){ app.cleanup(object.box); }
 }
 
-/** deAllocate all GPU buffers after waiting for the object to not be in use anymore */
+/** deAllocate all GPU buffers after waiting for the object to not be in use anymore
 void deAllocate(ref App app, Geometry object) {
-  object.vertices.fence = app.fences[app.syncIndex].renderInFlight;
+  auto fence = app.fences[app.syncIndex].renderInFlight;
   app.bufferDeletionQueue.add((bool force){
-    if(force || vkGetFenceStatus(app.device, object.vertices.fence) == VK_SUCCESS) { app.cleanup(object); return(true); }
+    if(force || vkGetFenceStatus(app.device, fence) == VK_SUCCESS) { app.cleanup(object); return(true); }
     return(false);
   });
-}
+} */
 
 /** Add a vertex to a geometry of the object */
 uint addVertex(ref Geometry geometry, const Vertex v) nothrow {

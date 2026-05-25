@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, copyBufferToImage, cleanupBuffer;
+import buffer : createBuffer, copyBufferToImage, cleanup;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import images : nameImageBuffer, generateMipmaps, imageSize, createImage, deAllocate, transitionImageLayout;
@@ -92,7 +92,7 @@ void checkPendingTextures(ref App app) {
   while(i < app.textures.pending.length) {
     auto p = app.textures.pending[i];
     if(vkGetFenceStatus(app.device, p.cmdBuffer.fence) == VK_SUCCESS) {
-      app.cleanupBuffer(p.staging);
+      app.cleanup(p.staging);
       SDL_DestroySurface(p.texture.surface);
       vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
       vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
