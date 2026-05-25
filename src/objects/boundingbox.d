@@ -25,8 +25,7 @@ struct Bounds {
   @property @nogc pure float[3] size() nothrow const { float[3] s = max[] - min[]; return(s); }
 }
 
-/** BoundingBox
- */
+/** BoundingBox */
 class BoundingBox : Geometry {
   this(){
    vertices = [
@@ -40,9 +39,9 @@ class BoundingBox : Geometry {
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ])
     ];
-    indices = [0, 1,  0, 3,  0, 4,  1, 2, 
-               1, 5,  2, 3,  2, 6,  3, 7, 
-               4, 5,  4, 7,  5, 6,  6, 7];
+    indices = [0, 1, 0, 3, 0, 4, 1, 2,
+               1, 5, 2, 3, 2, 6, 3, 7,
+               4, 5, 4, 7, 5, 6, 6, 7];
     instances = [DrawInstance()];
     geometry = (){ return("BoundingBox"); };
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
@@ -54,8 +53,7 @@ class BoundingBox : Geometry {
   }
 
   /** Compute world-space AABB from object-space bounds and instance matrix.
-   * Uses OBB projection: transforms center, then sums absolute column extents.
-   */
+   * Uses OBB projection: transforms center, then sums absolute column extents. */
   @nogc pure private float[3][2] boundsWorld(size_t instance = 0) nothrow const {
     if(instances.length == 0 || instance >= instances.length) return [[0,0,0],[0,0,0]];
     auto m = instances[instance].matrix;
@@ -85,8 +83,7 @@ class BoundingBox : Geometry {
   }
 }
 
-/**  Compute the bounding box for object
- */
+/**  Compute the bounding box for object */
 void computeBoundingBox(T)(ref T object, bool verbose = false) {
   if(object.box is null) { object.box = new BoundingBox(); }
   if(!object.vertices.buffered || !object.box.vertices.buffered) { // The object vertex buffer is out of date, update the BoundingBox vertices
@@ -100,8 +97,7 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.instances.buffered = false;
 }
 
-/** Compute/Update the global scene bounds with an assimp node
- */
+/** Compute/Update the global scene bounds with an assimp node */
 void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, const Matrix pTransform) {
   Matrix gTransform = pTransform.multiply(toMatrix(node.mTransformation));
   for (uint i = 0; i < node.mNumMeshes; ++i) {
@@ -114,8 +110,7 @@ void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, const Matr
   for (uint i = 0; i < node.mNumChildren; ++i) { bounds.calculateBounds(scene, node.mChildren[i], gTransform); }
 }
 
-/** Compute assimp scale adjustment based on global scene bounds
- */
+/** Compute assimp scale adjustment based on global scene bounds */
 Matrix computeScaleAdjustment(const Bounds bounds){
   float[3] size = bounds.size();
   float maxDim = fmax(size.x, fmax(size.y, size.z));
