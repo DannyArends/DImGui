@@ -5,9 +5,8 @@
 
 import engine;
 
-import buffer : cleanupBuffer;
+import buffer : cleanup;
 import imgui : saveSettings;
-import geometry : cleanup;
 import threading : stopWorkers;
 
 struct SupportedFeatures {
@@ -47,7 +46,7 @@ void cleanup(App app) {
 
   // Free any staging buffers still pending (GPU is idle, all fences signaled)
   foreach(ref p; app.textures.pending) {
-    app.cleanupBuffer(p.staging);
+    app.cleanup(p.staging);
     SDL_DestroySurface(p.texture.surface);
     vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
     vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);

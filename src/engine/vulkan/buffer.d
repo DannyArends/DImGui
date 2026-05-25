@@ -15,8 +15,6 @@ struct GeometryBuffer(T = ubyte) {
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
 
-  VkFence fence;                 /// Fence to complete before destoying the buffer
-
   VkDeviceSize size = 0;         /// Current actual data size in bytes
   VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
   void* data;                    /// Pointer to mapped data - non-null means sbM is mapped
@@ -35,7 +33,7 @@ void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, st
   app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
 }
 
-void cleanupBuffer(T)(ref App app, ref GeometryBuffer!T buffer) {
+void cleanup(T)(ref App app, ref GeometryBuffer!T buffer) {
   if(buffer.data) vkUnmapMemory(app.device, buffer.sbM);
   if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
   if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
@@ -109,6 +107,16 @@ void copyImageToBuffer(ref App app, VkCommandBuffer commandBuffer, VkImage image
   vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
 }
 
+/** Defer cleanup of a GeometryBuffer until its fence signals or force is true
+ *  Note: buffer should be passed by value, so the closure captures a copy of the handles */
+void deAllocate(T)(ref App app, T object) {
+  auto fence = app.fences[app.syncIndex].renderInFlight;
+  app.bufferDeletionQueue.add((bool force){
+    if(force || vkGetFenceStatus(app.device, fence) == VK_SUCCESS) { app.cleanup(object); return(true); }
+    return(false);
+  });
+}
+
 /** Allocate or grow a GeometryBuffer if needed */
 bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFlags usage,
                        VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
@@ -117,14 +125,7 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   if(requiredSize <= buffer.capacity) return(false);
 
   VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
-  if(buffer.vb != null) {
-    auto oldbuffer = buffer;
-    oldbuffer.fence = app.fences[app.syncIndex].renderInFlight;
-    app.bufferDeletionQueue.add((bool force){
-      if(force || vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS) { app.cleanupBuffer(oldbuffer); return(true); }
-      return(false);
-    });
-  }
+  if(buffer.vb != null) app.deAllocate(buffer);
   app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
   enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
   app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
