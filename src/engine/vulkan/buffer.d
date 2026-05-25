@@ -8,7 +8,7 @@ import engine;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import validation : nameVulkanObject;
 
-struct GeometryBuffer {
+struct GeometryBuffer(T = ubyte) {
   VkBuffer vb = null;            /// Vulkan Buffer pointer
   VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
 
@@ -20,22 +20,29 @@ struct GeometryBuffer {
   VkDeviceSize size = 0;         /// Current actual data size in bytes
   VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
   void* data;                    /// Pointer to mapped data - non-null means sbM is mapped
+
+  T[] items = [];
+  alias items this;
+  void opAssign(T[] rhs) { items = rhs; }
+  
+  bool buffered = false;
 }
 
-void nameGeometryBuffer(ref App app, GeometryBuffer buffer, string type, string name){
+void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
   app.nameVulkanObject(buffer.vb, toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
   app.nameVulkanObject(buffer.vbM, toStringz("["~type~"-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
   app.nameVulkanObject(buffer.sb, toStringz("["~type~"-STAGE-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
   app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
 }
 
-void destroyGeometryBuffers(ref App app, GeometryBuffer buffer) {
+void cleanupBuffer(T)(ref App app, ref GeometryBuffer!T buffer) {
   if(buffer.data) vkUnmapMemory(app.device, buffer.sbM);
   if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
   if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
 
   if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, app.allocator);
   if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, app.allocator);
+  buffer = GeometryBuffer!T();
 }
 
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
@@ -79,19 +86,6 @@ void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDev
   if(app.trace) SDL_Log("Buffer %p [size=%d] created, allocated, and bound", (*buffer), size);
 }
 
-void updateBuffer(ref App app, ref GeometryBuffer buffer, VkCommandBuffer cmdBuffer) {
-  if(app.trace) SDL_Log("updateBuffer");
-  VkBufferCopy copyRegion = { size : buffer.size };
-  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
-
-  VkMemoryBarrier barrier = {
-    sType: VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-    srcAccessMask: VK_ACCESS_TRANSFER_WRITE_BIT,
-    dstAccessMask: VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT,
-  };
-  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 1, &barrier, 0, null, 0, null);
-}
-
 void copyBufferToImage(ref App app, VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint width, uint height) {
   VkBufferImageCopy region = {
     bufferOffset: 0, bufferRowLength: 0, bufferImageHeight: 0,
@@ -115,36 +109,52 @@ void copyImageToBuffer(ref App app, VkCommandBuffer commandBuffer, VkImage image
   vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
 }
 
-/** Create Vulkan buffer and memory pointer and transfer the array of objects into the GPU memory
- */
-bool toGPU(T)(ref App app, T[] objects, ref GeometryBuffer buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage, 
-              VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-  VkDeviceSize requiredSize = cast(uint)(objects[0].sizeof * objects.length);
-  if(app.trace) SDL_Log("toGPU: Transfering %d x %d = %d bytes", objects[0].sizeof, objects.length, requiredSize);
+/** Allocate or grow a GeometryBuffer if needed */
+bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFlags usage,
+                       VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+  if(app.trace) SDL_Log("allocateBuffer: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
+  VkDeviceSize requiredSize = cast(uint)(T.sizeof * buffer.items.length);
+  if(requiredSize <= buffer.capacity) return(false);
 
-  // Check if we need to allocate a new buffer or resize the current buffer
-  if(requiredSize > buffer.capacity) {
-    VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
-    if (buffer.vb != null) { // The old buffer was not empty
-      auto oldbuffer = buffer;
-      oldbuffer.fence = app.fences[app.syncIndex].renderInFlight;
-      app.bufferDeletionQueue.add((bool force){
-        if(force || vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS) { 
-        app.destroyGeometryBuffers(oldbuffer); return(true); }
-        return(false);
-      });
-    }
-    buffer = GeometryBuffer();
-    app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
-    enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
-
-    app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
-    buffer.capacity = newCapacity;
+  VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
+  if(buffer.vb != null) {
+    auto oldbuffer = buffer;
+    oldbuffer.fence = app.fences[app.syncIndex].renderInFlight;
+    app.bufferDeletionQueue.add((bool force){
+      if(force || vkGetFenceStatus(app.device, oldbuffer.fence) == VK_SUCCESS) { app.cleanupBuffer(oldbuffer); return(true); }
+      return(false);
+    });
   }
-  memcpy(buffer.data, cast(void*)objects, requiredSize);
-  buffer.size = requiredSize;
-  app.updateBuffer(buffer, cmdBuffer);
-
-  if(app.trace) SDL_Log("toGPU: Buffer[%p]: %d bytes uploaded to GPU", buffer.vb, requiredSize);
+  app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
+  enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
+  app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
+  buffer.capacity = newCapacity;
   return(true);
+}
+
+/** Upload CPU data to GPU via staging buffer */
+void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer) {
+  if(app.trace) SDL_Log("uploadBuffer: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
+  buffer.size = cast(uint)(T.sizeof * buffer.items.length);
+  memcpy(buffer.data, cast(void*)buffer.items, buffer.size);
+
+  VkBufferCopy copyRegion = { size : buffer.size };
+  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
+
+  VkMemoryBarrier barrier = {
+    sType: VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    srcAccessMask: VK_ACCESS_TRANSFER_WRITE_BIT,
+    dstAccessMask: VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT,
+  };
+  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 1, &barrier, 0, null, 0, null);
+  if(app.trace) SDL_Log("uploadBuffer: Buffer[%p]: %d bytes", buffer.vb, buffer.size);
+}
+
+/** Allocate if needed then upload — convenience wrapper */
+bool toGPU(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage,
+              VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+  if(app.trace) SDL_Log("toGPU: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
+  app.allocateBuffer(buffer, usage, properties);
+  app.uploadBuffer(buffer, cmdBuffer);
+  return true;
 }

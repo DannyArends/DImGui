@@ -20,5 +20,5 @@ void syncPathMarkers(ref World world, bool showPaths = false) {
       }
     }
   }
-  world.pathMarkers.markDirty();
+  world.pathMarkers.instances.buffered = false;
 }

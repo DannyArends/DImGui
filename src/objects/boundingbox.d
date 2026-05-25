@@ -95,18 +95,18 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   }
   object.box.geometry = (){ return("BoundingBox"); };
 
-  if(initial || !object.buffers[VERTEX]) { // The object vertex buffer is out of date, update the BoundingBox vertices
+  if(initial || !object.vertices.buffered) { // The object vertex buffer is out of date, update the BoundingBox vertices
     if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.geometry()), toStringz(object.geometry()));
     Bounds bounds;
     for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
     object.box.setDimensions(bounds.min, bounds.max);
-    object.box.buffers[VERTEX] = false;
+    object.box.vertices.buffered = false;
   }
   object.box.instances.length = object.instances.length;
-  for(size_t x = 0; x < object.instances.length; x++) {
+  for(size_t x = 0; x < object.instances.length; x++) { // TODO: direct assign ???
     object.box.instances[x].matrix = object.instances[x].matrix;
   }
-  object.box.buffers[INSTANCE] = false;
+  object.box.instances.buffered = false;
 }
 
 /** Compute/Update the global scene bounds with an assimp node

@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : destroyGeometryBuffers;
+import buffer : cleanupBuffer;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import textures : toRGBA, toGPU;
 import images : createImage, deAllocate, imageSize;
@@ -134,11 +134,11 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
 /** Create a TextureImage layout and view from the SDL_Surface and adds it to the App.textureArray */
 void uploadFont(ref App app) {
   if(app.verbose) SDL_Log("Uploading Font Texture to GPU");
-  GeometryBuffer staging;
+  GeometryBuffer!ubyte staging;
   auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
   app.toGPU(commandBuffer, app.glyphAtlas.texture, staging);
   app.endSingleTimeCommands(commandBuffer, app.transfer);
-  app.destroyGeometryBuffers(staging);
+  app.cleanupBuffer(staging);
   app.textures ~= app.glyphAtlas.texture;
   app.mainDeletionQueue.add((){ app.deAllocate(app.glyphAtlas.texture); });
 }

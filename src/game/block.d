@@ -119,7 +119,7 @@ void syncBlockInstances(ref GameApp app) {
       ? DrawInstance([cast(uint)b.type, cast(uint)b.type], Matrix().scale([0.0f, 0.0f, 0.0f]))
       : app.world.toDropInstance(b);
   }
-  foreach(ref mesh; app.world.dropMeshes.values) mesh.markDirty();
+  foreach(ref mesh; app.world.dropMeshes.values) mesh.instances.buffered = false;
 }
 
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
@@ -147,5 +147,5 @@ void settleBlocks(ref World world, float dt) {
     world.dropMeshes[resourceData(b.type).meshName].instances[b.instanceIdx].matrix[13] = posY;
     changed = true;
   }
-  if(changed) foreach(ref mesh; world.dropMeshes.values) mesh.markDirty();
+  if(changed) foreach(ref mesh; world.dropMeshes.values) mesh.instances.buffered = false;
 }
