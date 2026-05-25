@@ -136,23 +136,6 @@ void opacity(T)(T object, string name, string mname = "") { object.setTexture(na
   return euclidean(object.instances[0].getTranslation(), camera.position); 
 }
 
-/** Cleanup all GPU buffers, now */
-void cleanup(T)(ref App app, ref T object) {
-  app.cleanup(object.vertices);
-  app.cleanup(object.indices);
-  app.cleanup(object.instances);
-  if(object.box){ app.cleanup(object.box); }
-}
-
-/** deAllocate all GPU buffers after waiting for the object to not be in use anymore
-void deAllocate(ref App app, Geometry object) {
-  auto fence = app.fences[app.syncIndex].renderInFlight;
-  app.bufferDeletionQueue.add((bool force){
-    if(force || vkGetFenceStatus(app.device, fence) == VK_SUCCESS) { app.cleanup(object); return(true); }
-    return(false);
-  });
-} */
-
 /** Add a vertex to a geometry of the object */
 uint addVertex(ref Geometry geometry, const Vertex v) nothrow {
   geometry.vertices ~= v;
