@@ -71,7 +71,6 @@ struct DwarfData {
     if(slot >= inventory.length || inventory[slot].empty) return false;
     if(inventory[slot].isBlock) {
       foreach(ref b; app.world.blocks) { if(b.id == inventory[slot].blockID) { b.tile = tile; b.reserved = false; break; } }
-      app.world.blocksDirty = true;
     }
     inventory[slot] = InventorySlot.init;
     return true;
@@ -158,7 +157,6 @@ void dwarfFrame(ref GameApp app, float dt) {
       } else { d.state = (d.jobStack.length > 0) ? DwarfState.Working : DwarfState.Idle; }
     }
   }
-  app.world.pathsDirty = true;
 }
 
 /** A single dwarf being ticked */
@@ -211,10 +209,10 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 void dwarfTick(ref GameApp app) {
   if(app.world.dwarves is null) return;
   foreach(i; iota(app.world.dwarves.length).array.randomShuffle()) { app.tickDwarf(app.world.dwarves[i]); }
-  if(app.world.blocksDirty) { app.timed!syncBlockInstances(); app.world.blocksDirty = false; }
-  if(app.world.pathsDirty) { app.world.syncPathMarkers(app.showPaths); app.world.pathsDirty = false; }
-  if(app.world.inventory.ghostsDirty) { app.timed!syncBuildGhosts(); app.world.inventory.ghostsDirty = false; }
-  if(app.world.inventoryDirty) { app.timed!deriveInventory(); app.world.inventoryDirty = false; }
+  app.timed!syncBlockInstances();
+  app.world.syncPathMarkers(app.showPaths);
+  app.timed!syncBuildGhosts();
+  app.timed!deriveInventory();
 }
 
 void ensureDwarves(ref GameApp app) {

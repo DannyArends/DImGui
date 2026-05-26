@@ -168,7 +168,6 @@ void interactFeaturesAt(ref GameApp app, int[3] tile) {
       }
       app.world.features[ft.name][coord] = app.world.features[ft.name][coord][0..i] ~ app.world.features[ft.name][coord][i+1..$];
       app.world.unsettleBlocks(app.world.blocks, tile);
-      app.world.inventoryDirty = true;
       app.rebuildAllFeatures();
       return;
     }

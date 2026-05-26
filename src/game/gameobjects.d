@@ -60,7 +60,6 @@ class GhostCube : Cube {
   ToolMode activeTool = ToolMode.Select;
   PaintState paint;
   int[3] tile = noTile;
-  bool ghostsDirty = false;
   int cachedMatIdx = -1;
 
   this(float[2] dim) {
