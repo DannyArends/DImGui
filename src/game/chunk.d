@@ -141,6 +141,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   app.world.chunks[data.coord].dirty = false;
   app.world.pendingChunks.remove(data.coord);
   app.world.pendingBuildTiles = app.world.pendingBuildTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
+  app.world.pendingMineTiles = app.world.pendingMineTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
 
   // Add trees to the chunk
   foreach(ref ft; features) {

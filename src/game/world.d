@@ -84,6 +84,7 @@ struct World {
   PathMarkers pathMarkers;                                  /// Path markers
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   int[3][] pendingBuildTiles;                               /// Built tiles awaiting chunk rebuild
+  int[3][] pendingMineTiles;                                /// Mined tiles awaiting chunk rebuild
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
   alias data this;
 
