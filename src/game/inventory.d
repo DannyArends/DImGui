@@ -6,7 +6,7 @@
 import game;
 
 import ghost : syncBuildGhosts;
-import jobs : buildingJob, jobQueue;
+import jobs : buildingJob, jobQueue, syncDesignations;
 import tile : getTileAt;
 
 struct Inventory {
@@ -33,14 +33,12 @@ struct Inventory {
 
 void deriveInventory(ref GameApp app) {
   app.world.inventory.queued.clear();
-  foreach(ref j; jobQueue) { if(j.name == "Building") app.world.inventory.queued[j.tileType] = app.world.inventory.queued.get(j.tileType, 0) + 1; }
+  foreach(ref j; jobQueue.filter!(j => j.name == "Building")) { app.world.inventory.queued[j.tileType] = app.world.inventory.queued.get(j.tileType, 0) + 1; }
+
   auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileType, app) > 0).array;
-  if(jobQueue.length != prevLen) {
-    SDL_Log(toStringz(format("[Inventory] %d building jobs removed (inventory check)", cast(int)(prevLen - jobQueue.length))));
-  }
-  if(app.world.inventory.get(app.world.inventory.type, app) <= 0) app.world.inventory.type = ResourceType.None;
-  if(jobQueue.length != prevLen) app.world.inventory.ghostsDirty = true;
+  if(jobQueue.length != prevLen) { app.syncDesignations(); }
+  if(app.world.inventory.get(app.world.inventory.type, app) <= 0) { app.world.inventory.type = ResourceType.None; }
 }
 
 void placeTile(ref GameApp app, int[3] wc) {
