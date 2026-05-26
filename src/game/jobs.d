@@ -30,6 +30,17 @@ struct Job {
   void function(ref GameApp app, ref Dwarf d) onFail;
 }
 
+void syncDesignations(ref GameApp app) {
+  int[3][] activeTiles(string jobName) {
+    auto allJobs = jobQueue;
+    if(app.world.dwarves !is null){ foreach(ref dw; app.world.dwarves.dwarves){ allJobs ~= dw.jobStack; } }
+    return allJobs.filter!(j => j.name == jobName).map!(j => j.targetTile).array;
+  }
+  app.world.inventory.mineDesignations = app.world.inventory.mineDesignations.filter!(t => activeTiles("Mining").canFind(t)).array;
+  app.world.inventory.buildDesignations = app.world.inventory.buildDesignations.filter!(t => activeTiles("Building").canFind(t)).array;
+  app.world.inventory.ghostsDirty = true;
+}
+
 Job[] jobQueue;
 
 /** Apply pathfinding results */
@@ -271,8 +282,9 @@ void failAndRequeueParent(ref Dwarf d) { if(d.jobStack.length > 1) jobQueue ~= d
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref GameApp app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
+  auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  app.world.inventory.ghostsDirty = true;
+  if(jobQueue.length != prevLen) { app.syncDesignations(); }
 
   int bestIdx = -1;
   float bestDist = float.max;
