@@ -8,7 +8,7 @@ import game;
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
-import tile : setTile, tileAbove, getTileAt, isStandable;
+import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied;
 import timing : timed;
 import vector : manhattan, manhattan2D;
 
@@ -30,18 +30,13 @@ struct Job {
   void function(ref GameApp app, ref Dwarf d) onFail;
 }
 
-void syncDesignations(ref GameApp app) {
-  int[3][] activeTiles(string jobName) {
-    auto allJobs = jobQueue;
-    if(app.world.dwarves !is null){ foreach(ref dw; app.world.dwarves.dwarves){ allJobs ~= dw.jobStack; } }
-    return allJobs.filter!(j => j.name == jobName).map!(j => j.targetTile).array;
-  }
-  app.world.inventory.mineDesignations = app.world.inventory.mineDesignations.filter!(t => activeTiles("Mining").canFind(t)).array;
-  app.world.inventory.buildDesignations = app.world.inventory.buildDesignations.filter!(t => activeTiles("Building").canFind(t)).array;
-  app.world.inventory.ghostsDirty = true;
-}
-
 Job[] jobQueue;
+
+int[3][] activeTiles(ref GameApp app, string jobName) {
+  auto allJobs = jobQueue;
+  if(app.world.dwarves !is null) { foreach(ref dw; app.world.dwarves.dwarves) { allJobs ~= dw.jobStack; } }
+  return allJobs.filter!(j => j.name == jobName).map!(j => j.targetTile).array;
+}
 
 /** Apply pathfinding results */
 void applyPathResult(ref GameApp app, PathResult result) {
@@ -114,8 +109,6 @@ Job miningJob(int[3] targetTile) {
         if(tt != ResourceType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         app.world.inventoryDirty = true;
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
-        app.world.inventory.mineDesignations = app.world.inventory.mineDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
-        app.world.inventory.ghostsDirty = true;
       });
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.failAndRequeue(); }
@@ -181,26 +174,30 @@ Job cleanWorksiteJob(int[3] targetTile) {
   );
 }
 
+uint useCarriedBlock(ref GameApp app, ref Dwarf d, ResourceType type) {
+  auto found = d.carrying.filter!(id => app.blockType(id) == type);
+  if(found.empty) return noBlock;
+  auto blockID = found.front;
+  if(!d.use(app, blockID)) return noBlock;
+  foreach(ref b; app.world.blocks) { if(b.id == blockID) { b.tile = builtTile; break; } }
+  return blockID;
+}
+
+void evictDwarfAt(ref GameApp app, int[3] tile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref other; app.world.dwarves.dwarves){ if(other.tile == tile) { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; } }
+}
+
 /** Building Job (generates a pickup job prereq) */
 Job buildingJob(int[3] targetTile, ResourceType tileType) {
   return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), pickupJob(noTile, tileType)],
     onArrive: (ref GameApp app, ref Dwarf d) {
-      // find carried block of correct type
-      auto found = d.carrying.filter!(id => app.blockType(id) == d.jobStack[0].tileType);
-      if(found.empty) { d.jobStack[0].onFail(app, d); return; }
-      if(!d.use(app, found.front)) { d.jobStack[0].onFail(app, d); return; }
-      // mark block as InChunk — update its tile to build site
-      foreach(ref b; app.world.blocks) { if(b.id == found.front) { b.tile = builtTile; break; } }
-      if(app.world.dwarves !is null) {
-        foreach(ref other; app.world.dwarves.dwarves) {
-          if(other.tile == d.jobStack[0].targetTile) { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
-        }
-      }
+      if(app.isTileOccupied(d.jobStack[0].targetTile)) { app.evictDwarfAt(d.jobStack[0].targetTile); return; }
+      auto blockID = app.useCarriedBlock(d, d.jobStack[0].tileType);
+      if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
-      app.world.blocksDirty = true;
-      app.world.inventory.buildDesignations = app.world.inventory.buildDesignations.filter!(x => x != d.jobStack[0].targetTile).array;
       d.completeSubJob();
-      app.world.inventory.ghostsDirty = true;
+      app.world.blocksDirty = true;
       app.world.inventoryDirty = true;
     },
     onFail: (ref GameApp app, ref Dwarf d) {
@@ -209,7 +206,6 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       newJob.failedBy = d.jobStack[$-1].failedBy ~ [d.uid];
       jobQueue ~= newJob;
       d.clearGoal();
-      app.world.inventory.ghostsDirty = true;
     }
   );
 }
@@ -282,9 +278,7 @@ void failAndRequeueParent(ref Dwarf d) { if(d.jobStack.length > 1) jobQueue ~= d
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref GameApp app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
-  auto prevLen = jobQueue.length;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  if(jobQueue.length != prevLen) { app.syncDesignations(); }
 
   int bestIdx = -1;
   float bestDist = float.max;
@@ -313,3 +307,4 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
     }
   }
 }
+

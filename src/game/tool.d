@@ -101,16 +101,10 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
       break;
     case ToolMode.Build:
       if(app.world.inventory.paint.active) {
-        foreach(tile; app.world.inventory.paint.preview) {
-          app.world.inventory.buildDesignations ~= tile;
-          app.placeTile(tile);
-        }
+        foreach(tile; app.world.inventory.paint.preview) { app.placeTile(tile); }
         app.world.inventory.paint = PaintState.init;
         app.syncBuildGhosts();
-      } else if(app.world.inventory.tile != noTile) {
-        app.world.inventory.buildDesignations ~= app.world.inventory.tile;
-        app.placeTile(app.world.inventory.tile);
-      }
+      } else if(app.world.inventory.tile != noTile) { app.placeTile(app.world.inventory.tile); }
       break;
     case ToolMode.Mine:
     case ToolMode.Stockpile:
@@ -163,15 +157,11 @@ void commitPaint(ref GameApp app) {
   final switch(app.world.inventory.activeTool) {
     case ToolMode.Select: break;
     case ToolMode.Build:
-      foreach(tile; app.world.inventory.paint.preview) {
-        app.world.inventory.buildDesignations ~= tile;
-        app.placeTile(tile);
-      }
+      foreach(tile; app.world.inventory.paint.preview) { app.placeTile(tile); }
       break;
     case ToolMode.Mine:
       foreach(tile; app.world.inventory.paint.preview) {
         if(app.world.getTileAt(tile) == ResourceType.None) continue;
-        app.world.inventory.mineDesignations ~= tile;
         auto job = miningJob(tile);
         if(!app.tryAssign(job)) jobQueue ~= job;
       }
