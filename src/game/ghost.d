@@ -10,6 +10,7 @@ import game : GameApp;
 import vector : dot;
 import matrix : translateScale;
 import tile : tileIdx, tileToWorld;
+import jobs : activeTiles;
 
 int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   int[3] wc;
@@ -92,9 +93,12 @@ void syncBuildGhosts(ref GameApp app) {
   if(app.world.inventory is null) return;
   app.world.inventory.instances = [];
 
-  app.addTiles(app.world.inventory.buildDesignations, ToolMode.Build);
-  foreach(tile; app.world.inventory.buildDesignations) app.world.data.tilePenalties[tile] = 40.0f;
-  app.addTiles(app.world.inventory.mineDesignations, ToolMode.Mine);
+  auto buildTiles = app.activeTiles("Building");
+  auto mineTiles = app.activeTiles("Mining");
+
+  app.addTiles(buildTiles, ToolMode.Build);
+  foreach(tile; buildTiles) app.world.data.tilePenalties[tile] = 40.0f;
+  app.addTiles(mineTiles, ToolMode.Mine);
   app.addTiles(app.world.inventory.paint.preview, app.world.inventory.activeTool);
   app.syncCursorGhost();
 
