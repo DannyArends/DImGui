@@ -105,6 +105,7 @@ Job miningJob(int[3] targetTile) {
       app.progressJob(d, 0.25f, () {
         ResourceType tt = app.world.getTileAt(d.jobStack[0].targetTile);
         app.setTile(d.jobStack[0].targetTile);
+        app.world.pendingMineTiles ~= d.jobStack[0].targetTile;
         app.interactFeaturesAt(d.jobStack[0].targetTile.tileAbove);
         if(tt != ResourceType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
