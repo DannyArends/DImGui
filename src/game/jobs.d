@@ -107,7 +107,6 @@ Job miningJob(int[3] targetTile) {
         app.setTile(d.jobStack[0].targetTile);
         app.interactFeaturesAt(d.jobStack[0].targetTile.tileAbove);
         if(tt != ResourceType.None) app.spawnBlock(d.jobStack[0].targetTile, tt);
-        app.world.inventoryDirty = true;
         app.world.pendingUnsettle ~= d.jobStack[0].targetTile;
       });
     },
@@ -197,8 +196,6 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
       d.completeSubJob();
-      app.world.blocksDirty = true;
-      app.world.inventoryDirty = true;
     },
     onFail: (ref GameApp app, ref Dwarf d) {
       foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app, slot); }
@@ -234,7 +231,6 @@ void doPickup(ref GameApp app, ref Dwarf d) {
     if(b.id != blockID) continue;
     if(!d.pickup(blockID, app.blockType(blockID))) { d.jobStack[0].onFail(app, d); return; }
     b.tile = noTile;  // mark as carried
-    app.world.blocksDirty = true;
     d.completeSubJob();
     return;
   }
@@ -291,7 +287,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
   if(bestIdx != -1) {
     auto job = jobQueue[bestIdx];
     jobQueue = jobQueue[0..bestIdx] ~ jobQueue[bestIdx+1..$];
-    if(app.dispatchJob(d, job)) { app.world.inventoryDirty = true; }
+    app.dispatchJob(d, job);
     return;
   }
 

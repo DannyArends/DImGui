@@ -78,13 +78,10 @@ struct World {
   Feature[][int[3]][string] pendingFeatures;                /// pending features
   Block[] blocks;                                           /// Block registry
   uint blockNextID = 1;                                     /// next block ID
-  bool blocksDirty = false;
   Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
-  bool inventoryDirty = false;
   Dwarves dwarves;                                          /// Dwarves
   PathMarkers pathMarkers;                                  /// Path markers
-  bool pathsDirty = false;
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
   alias data this;
