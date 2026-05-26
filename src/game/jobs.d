@@ -195,6 +195,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       auto blockID = app.useCarriedBlock(d, d.jobStack[0].tileType);
       if(blockID == noBlock) { d.jobStack[0].onFail(app, d); return; }
       app.setTile(d.jobStack[0].targetTile, d.jobStack[0].tileType);
+      app.world.pendingBuildTiles ~= d.jobStack[0].targetTile;
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) {
