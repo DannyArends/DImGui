@@ -66,24 +66,30 @@ uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = Resource
   return bestID;
 }
 
-void ensureBlocks(ref GameApp app) {
-  foreach(rt; EnumMembers!ResourceType) {
-    auto meshName = resourceData(rt).meshName;
-    if(meshName in app.world.dropMeshes) continue;
-    if(meshName == "Blocks") {
+Geometry createDropMesh(string meshName) {
+  switch(meshName) {
+    case "Blocks":
       Geometry m = new Cube();
       m.initInstanced(() => meshName);
-      app.world.dropMeshes[meshName] = m;
-      app.objects ~= m;
-    }
-    if(meshName == "Berries") {
+      return m;
+    case "Berries":
       Geometry m = new Icosahedron();
       m.computeTangents();
       m.refineIcosahedron(3);
       m.initInstanced(() => meshName);
-      app.world.dropMeshes[meshName] = m;
-      app.objects ~= m;
-    }
+      return m;
+    default: SDL_Log("ensureBlocks: unknown mesh type '%s'", toStringz(meshName)); return null;
+  }
+}
+
+void ensureBlocks(ref GameApp app) {
+  foreach(rt; EnumMembers!ResourceType) {
+    auto meshName = resourceData(rt).meshName;
+    if(meshName in app.world.dropMeshes) continue;
+    auto m = createDropMesh(meshName);
+    if(m is null) continue;
+    app.world.dropMeshes[meshName] = m;
+    app.objects ~= m;
   }
 }
 
