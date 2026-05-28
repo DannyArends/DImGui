@@ -24,16 +24,15 @@ string generateColorsEnum(string raw) pure {
 string generateColorMaps(string raw) pure {
   auto tokens = parseTokens(raw);
   string residue = "@nogc float[4] residueToColor(string r) nothrow {\n  switch(r) {\n";
-  string atom    = "@nogc float[4] atomToColor(string a) nothrow {\n  switch(a) {\n";
+  string atom = "@nogc float[4] atomToColor(string a) nothrow {\n  switch(a) {\n";
   foreach(token; tokens) {
     auto p = splitColon(token);
     if(p.length != 3) continue;
     if(p[0] == "RESIDUE") residue ~= format("    case \"%s\": return Colors.%s;\n", p[1], p[2]);
-    if(p[0] == "ATOM")    atom    ~= format("    case \"%s\": return Colors.%s;\n", p[1], p[2]);
+    if(p[0] == "ATOM") atom ~= format("    case \"%s\": return Colors.%s;\n", p[1], p[2]);
   }
-  residue ~= "    default: return Colors.white;\n  }\n}\n";
-  atom    ~= "    default: return Colors.white;\n  }\n}\n";
-  return residue ~ atom;
+  string tail = "    default: return Colors.white;\n  }\n}\n";
+  return(residue ~ tail ~ atom ~ tail);
 }
 
 mixin(generateColorsEnum(import("data/raws/colors.txt")));
