@@ -35,7 +35,7 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   int idx = app.world.tileIdx(tile);
 
   app.world.chunks[coord].tileTypes[idx] = newType;
-  app.world.data.diffs ~= TileDiff(coord, idx, newType);
+  app.world.data.diffs[coord][idx] = newType;
   app.world.chunks[coord].dirty = true;
 
   // Mark neighbouring chunks dirty if tile is on a chunk boundary
@@ -109,7 +109,7 @@ pure PathNode[] getSuccessors(T)(T wd, PathNode parent) {
 @nogc pure ResourceType getTileAt(T)(T wd, int[3] tile) nothrow {
   auto coord = wd.chunkCoord(tile);
   auto idx = wd.tileIdx(tile);
-  ResourceType result = wd.getTile(tile);
-  foreach(d; wd.diffs) { if(d.coord == coord && d.idx == idx) result = cast(ResourceType)d.type; }
-  return result;
+  if(auto cm = coord in wd.diffs) if(auto t = cast(uint)idx in *cm) return *t;
+  return wd.getTile(tile);
 }
+
