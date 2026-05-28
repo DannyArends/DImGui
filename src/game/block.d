@@ -34,17 +34,18 @@ struct Block {
 /** Save blocks */
 void saveBlocks(ref GameApp app) {
   if(app.world.blocks.length == 0) return;
-  writeData(app.world.blocksPath(), app.world.blocks, app.world.blockNextID);
+  Block[] flat = app.world.blocks.values;
+  writeData(app.world.blocksPath(), flat, app.world.blockNextID);
 }
 
 /** Load blocks */
 void loadBlocks(ref GameApp app) {
   app.ensureBlocks();
-  Block[] blocks;
-  if(!readData(app.world.blocksPath(), blocks, app.world.blockNextID)) return;
-  app.world.blocks = blocks;
+  Block[] flat;
+  if(!readData(app.world.blocksPath(), flat, app.world.blockNextID)) return;
+  foreach(ref b; flat) app.world.blocks[b.id] = b;
   app.syncBlockInstances();
-  foreach(ref b; app.world.blocks) { if(b.isFalling) app.world.pendingUnsettle ~= b.tile; }
+  foreach(id, ref b; app.world.blocks) { if(b.isFalling) app.world.pendingUnsettle ~= b.tile; }
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
 }
 
@@ -56,7 +57,7 @@ uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = Resource
   if(app.world.blocks.length == 0) return noBlock;
   uint bestID = noBlock;
   float bestDist = float.max;
-  foreach(ref b; app.world.blocks) {
+  foreach(id, ref b; app.world.blocks) {
     if(!b.reachable || b.reserved || b.tile == noTile || b.tile == builtTile) continue;
     if(tt != ResourceType.None && b.type != tt) continue;
 
@@ -97,7 +98,7 @@ void ensureBlocks(ref GameApp app) {
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   auto b = Block(app.world.blockNextID++, tt, tile, [0.0f, 0.0f]);
-  app.world.blocks ~= b;
+  app.world.blocks[b.id] = b;
   app.syncBlockInstances();
   return b.id;
 }
@@ -116,7 +117,7 @@ DrawInstance toDropInstance(World world, ref Block b) {
 void syncBlockInstances(ref GameApp app) {
   if(app.world.dropMeshes.length == 0) return;
   foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
-  foreach(ref b; app.world.blocks) {
+  foreach(id, ref b; app.world.blocks) {
     if(b.tile != noTile && b.tile != builtTile){ b.reachable = app.world.data.hasStandableNeighbour(b.tile); }
     auto meshName = resourceData(b.type).meshName;
     bool hidden = b.tile == noTile || b.tile == builtTile;
@@ -131,8 +132,8 @@ void syncBlockInstances(ref GameApp app) {
 @nogc pure bool isAbove(int[3] tile, int[3] other) nothrow { return tile[0] == other[0] && tile[2] == other[2] && tile[1] > other[1]; }
 
 /** Mark blocks above a mined tile as falling */
-void unsettleBlocks(const World world, ref Block[] blocks, int[3] minedTile) {
-  foreach(ref b; blocks) {
+void unsettleBlocks(const World world, ref Block[uint] blocks, int[3] minedTile) {
+  foreach(id, ref b; blocks) {
     if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
     if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile, -world.blockOffset)[1], 0.001f];
   }
@@ -142,7 +143,7 @@ void unsettleBlocks(const World world, ref Block[] blocks, int[3] minedTile) {
 void settleBlocks(ref World world, float dt) {
   if(world.blocks.length == 0) return;
   bool changed = false;
-  foreach(ref b; world.blocks) {
+  foreach(id, ref b; world.blocks) {
     if(!b.isFalling) continue;
     b.v = b.v + 0.125f * dt;
     b.y = b.y - b.v * dt;

@@ -62,16 +62,14 @@ struct DwarfData {
   }
 
   bool use(ref GameApp app, uint blockID) {
-    foreach(ref b; app.world.blocks) { if(b.id == blockID) { b.reserved = false; break; } }
+    if(auto b = blockID in app.world.blocks) b.reserved = false;
     foreach(ref s; inventory) { if(s.isBlock && s.blockID == blockID) { s = InventorySlot.init; return true; } }
     return false;
   }
 
   bool drop(ref GameApp app, size_t slot) {
     if(slot >= inventory.length || inventory[slot].empty) return false;
-    if(inventory[slot].isBlock) {
-      foreach(ref b; app.world.blocks) { if(b.id == inventory[slot].blockID) { b.tile = tile; b.reserved = false; break; } }
-    }
+    if(inventory[slot].isBlock) { if(auto b = inventory[slot].blockID in app.world.blocks) { b.tile = tile; b.reserved = false; } }
     inventory[slot] = InventorySlot.init;
     return true;
   }

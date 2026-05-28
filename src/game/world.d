@@ -76,7 +76,7 @@ struct World {
   Geometry[string] featureMeshes;                           /// meshes keyed by mesh name
   Feature[][int[3]][string] features;                       /// features[featureName][chunkCoord]
   Feature[][int[3]][string] pendingFeatures;                /// pending features
-  Block[] blocks;                                           /// Block registry
+  Block[uint] blocks;                                       /// Block registry
   uint blockNextID = 1;                                     /// next block ID
   Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
