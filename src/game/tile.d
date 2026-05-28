@@ -53,7 +53,7 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
 /** Determine the tile type at a world coordinate from noise, no chunk data required */
 @nogc pure ResourceType getTile(T)(T wd, const int[3] wc) nothrow {
   auto ht = noiseHTT(wc.x, wc.z, wd.seed);
-  int surface = cast(int)(pow(ht[0], 1.5f) * (wd.chunkHeight - 1));
+  int surface = cast(int)(ht[0] * sqrt(ht[0]) * (wd.chunkHeight - 1));
   if (wc.y > surface) return ResourceType.None;
   if (wc.y == 0) return ResourceType.Lava;
   if (wc.y < surface) return ResourceType.Stone01;
