@@ -50,7 +50,7 @@ void loadBlocks(ref GameApp app) {
 }
 
 @nogc pure bool hasBlocks(ref GameApp app) nothrow { return app.world.blocks.length > 0; }
-@nogc pure bool hasBlocks(ref GameApp app, ResourceType tt) nothrow { return app.world.blocks.any!(b => b.type == tt); }
+@nogc pure bool hasBlocks(ref GameApp app, ResourceType tt) nothrow { return app.world.blocks.byValue.any!(b => b.type == tt); }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = ResourceType.None) {
