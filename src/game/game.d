@@ -67,16 +67,20 @@ struct GameApp {
 void initGame(ref GameApp app) {
   app.concurrency.factory = (Tid tid, bool verbose) => new GameTaskThread(tid, verbose);
   app.camera.canMoveTo = (float[3] pos){ return app.world.canMoveTo(pos); };
+  SDL_Log("initGame: loadWorld");
   app.loadWorld();
+  SDL_Log("initGame: updateSun");
   app.updateSun();
+  SDL_Log("initGame: gameWindows");
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
   app.gameWindows ~= GameWindow("FPS", (uint font){ app.showFPSContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
+  SDL_Log("initGame: loadDwarfs");
   if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
-  SDL_Log("createScene: The 8 Dwarves of 7");
+  SDL_Log("initGame: done");
 }
 
 void updateGame(ref GameApp app) {

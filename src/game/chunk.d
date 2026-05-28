@@ -12,6 +12,7 @@ import buffer : deAllocate;
 import intersection : intersects;
 import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile;
 import hits : getHits;
+import noise : noiseHTT;
 import textures : idx;
 import vector : expandBounds;
 import feature : buildFeatureData;
@@ -44,12 +45,33 @@ bool isFaceExposed(immutable(WorldData) wd, const ResourceType[][5] tileCache, c
   return tileCache[ci][ni] == ResourceType.None;
 }
 
+float[3][1024] buildNoiseCache(immutable(WorldData) wd, int[3] coord) {
+  float[3][1024] noiseCache;
+  for (int x = 0; x < wd.chunkSize; x++) {
+    for (int z = 0; z < wd.chunkSize; z++) {
+      auto wc = wd.worldCoord(coord, [x, 0, z]);
+      noiseCache[x + z * wd.chunkSize] = noiseHTT(wc[0], wc[2], wd.seed);
+    }
+  }
+  return noiseCache;
+}
+
 /** Load the TileCache */
 ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
   ResourceType[][5] tileCache;
   foreach (ci; 0 .. 5) {
     tileCache[ci].length = wd.tileCount;
-    for (int i = 0; i < wd.tileCount; i++) { tileCache[ci][i] = wd.getTile(wd.worldCoord(coords[ci], wd.tileCoord(i))); }
+    auto noiseCache = wd.buildNoiseCache(coords[ci]);
+    for (int i = 0; i < wd.tileCount; i++) {
+      auto local = wd.tileCoord(i);
+      auto wc = wd.worldCoord(coords[ci], local);
+      auto ht = noiseCache[local[0] + local[2] * wd.chunkSize];
+      int surface = cast(int)(pow(ht[0], 1.5f) * (wd.chunkHeight - 1));
+      if      (wc[1] > surface) tileCache[ci][i] = ResourceType.None;
+      else if (wc[1] == 0)      tileCache[ci][i] = ResourceType.Lava;
+      else if (wc[1] < surface) tileCache[ci][i] = ResourceType.Stone01;
+      else                      tileCache[ci][i] = heightToResource(ht[0], ht[1]);
+    }
     if(auto cm = coords[ci] in wd.diffs) foreach(idx, type; *cm) tileCache[ci][idx] = type;
   }
   return tileCache;
@@ -77,8 +99,9 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       [ ts,  0,   0,   0,  0, -1,   0,  th,  0,   px,      py,      pz-ts/2 ],
     ];
     size_t faceStart = data.tileInstances.length;
+    auto neighbours = wd.tileNeighbours(wc);
     foreach (f; 0 .. 6) {
-      if (!wd.isFaceExposed(tileCache, coords, wd.tileNeighbours(wc)[f], coord)) continue;
+      if (!wd.isFaceExposed(tileCache, coords, neighbours[f], coord)) continue;
       data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faces[f]);
       data.tileIndices ~= i;
     }
