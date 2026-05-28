@@ -15,7 +15,7 @@ import hits : getHits;
 import noise : noiseHTT;
 import textures : idx;
 import vector : expandBounds;
-import feature : buildFeatureData;
+import feature : buildFeatureData, NoiseCache;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
@@ -45,8 +45,8 @@ bool isFaceExposed(immutable(WorldData) wd, const ResourceType[][5] tileCache, c
   return tileCache[ci][ni] == ResourceType.None;
 }
 
-float[3][1024] buildNoiseCache(immutable(WorldData) wd, int[3] coord) {
-  float[3][1024] noiseCache;
+NoiseCache buildNoiseCache(immutable(WorldData) wd, int[3] coord) {
+  NoiseCache noiseCache;
   for (int x = 0; x < wd.chunkSize; x++) {
     for (int z = 0; z < wd.chunkSize; z++) {
       auto wc = wd.worldCoord(coord, [x, 0, z]);
@@ -57,15 +57,15 @@ float[3][1024] buildNoiseCache(immutable(WorldData) wd, int[3] coord) {
 }
 
 /** Load the TileCache */
-ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
+ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, const NoiseCache[5] noiseCaches) {
   ResourceType[][5] tileCache;
   foreach (ci; 0 .. 5) {
-    auto nc = wd.buildNoiseCache(coords[ci]);
+    auto nc = noiseCaches[ci];
     tileCache[ci].length = wd.tileCount;
     for (int i = 0; i < wd.tileCount; i++) {
       auto lc = wd.tileCoord(i);
       auto ht = nc[lc[0] + lc[2] * wd.chunkSize];
-      int s = cast(int)(pow(ht[0], 1.5f) * (wd.chunkHeight - 1));
+      int s = cast(int)(ht[0] * sqrt(ht[0]) * (wd.chunkHeight - 1));
       auto wc = wd.worldCoord(coords[ci], lc);
       tileCache[ci][i] = wc[1] > s ? ResourceType.None : wc[1] == 0 ? ResourceType.Lava : wc[1] < s ? ResourceType.Stone01 : heightToResource(ht[0], ht[1]);
     }
@@ -77,7 +77,9 @@ ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
-  ResourceType[][5] tileCache = wd.loadTileCache(coords, coord);
+  NoiseCache[5] noiseCaches;
+  foreach(ci; 0..5) noiseCaches[ci] = wd.buildNoiseCache(coords[ci]);
+  ResourceType[][5] tileCache = wd.loadTileCache(coords, noiseCaches);
 
   ChunkData data = ChunkData(coord, tileCache[0]);
 
@@ -120,7 +122,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       data.pickIndices ~= i;
     }
   }
-  foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
+  foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, noiseCaches[0], ft); }
   return data;
 }
 

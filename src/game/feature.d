@@ -12,6 +12,8 @@ import normals : computeTangents;
 import tile : getTile, tileCoord, tileToWorld;
 import vegetation : saveVegetation, loadVegetation;
 
+alias NoiseCache = float[3][1024];
+
 struct FeaturePartT {
   string mesh;
   float scaleX = 1.0f, scaleXVariance = 0.0f;
@@ -74,16 +76,16 @@ void initFeatureMeshes(ref GameApp app) {
   }
 }
 
-Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, ref immutable FeatureT ft) {
-  import noise : noiseHTT;
+Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const NoiseCache noiseCache, ref immutable FeatureT ft) {
   Feature[] result;
   for(int i = 0; i < wd.tileCount; i++) {
     if(tileTypes[i] == ResourceType.None) continue;
-    auto wc = wd.worldCoord(coord, wd.tileCoord(i));
-    if(wd.getTile([wc[0], wc[1]+1, wc[2]]) != ResourceType.None) continue;
+    auto lc = wd.tileCoord(i);
+    auto wc = wd.worldCoord(coord, lc);
+    if(i + wd.chunkSize < wd.tileCount && tileTypes[i + wd.chunkSize] != ResourceType.None) continue;
     auto tt = tileTypes[i];
     if(!ft.spawnOn.canFind(tt.to!string)) continue;
-    auto n = noiseHTT(wc[0], wc[2], wd.seed);
+    auto n = noiseCache[lc[0] + lc[2] * wd.chunkSize];
     if(n[2] < ft.noiseThreshold) continue;
     uint hash = (wc[0] * ft.hashSeed1) ^ (wc[2] * ft.hashSeed2);
     if(hash % ft.hashMod != ft.hashRem) continue;
