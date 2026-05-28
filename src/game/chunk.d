@@ -45,44 +45,47 @@ bool isFaceExposed(immutable(WorldData) wd, const ResourceType[][5] tileCache, c
   return tileCache[ci][ni] == ResourceType.None;
 }
 
-NoiseCache buildNoiseCache(immutable(WorldData) wd, int[3] coord) {
-  NoiseCache noiseCache;
-  for (int x = 0; x < wd.chunkSize; x++) {
-    for (int z = 0; z < wd.chunkSize; z++) {
-      auto wc = wd.worldCoord(coord, [x, 0, z]);
-      noiseCache[x + z * wd.chunkSize] = noiseHTT(wc[0], wc[2], wd.seed);
+/** Pre-compute noise per (x,z) column for a chunk and its 4 neighbours */
+NoiseCache[5] buildNoiseCaches(immutable(WorldData) wd, const int[3][5] coords) {
+  NoiseCache[5] caches;
+  foreach(ci; 0..5) {
+    for (int x = 0; x < wd.chunkSize; x++) {
+      for (int z = 0; z < wd.chunkSize; z++) {
+        auto wc = wd.worldCoord(coords[ci], [x, 0, z]);
+        caches[ci][x + z * wd.chunkSize] = noiseHTT(wc[0], wc[2], wd.seed);
+      }
     }
   }
-  return noiseCache;
+  return caches;
 }
 
-/** Load the TileCache */
-ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, const NoiseCache[5] noiseCaches) {
-  ResourceType[][5] tileCache;
-  foreach (ci; 0 .. 5) {
-    auto nc = noiseCaches[ci];
-    tileCache[ci].length = wd.tileCount;
-    for (int i = 0; i < wd.tileCount; i++) {
-      auto lc = wd.tileCoord(i);
-      auto ht = nc[lc[0] + lc[2] * wd.chunkSize];
+/** Build tile type array for one chunk direction from its noise cache */
+ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord, const NoiseCache nc) {
+  ResourceType[] types;
+  types.length = wd.tileCount;
+  for (int z = 0; z < wd.chunkSize; z++) {
+    for (int x = 0; x < wd.chunkSize; x++) {
+      auto ht = nc[x + z * wd.chunkSize];
       int s = cast(int)(ht[0] * sqrt(ht[0]) * (wd.chunkHeight - 1));
-      auto wc = wd.worldCoord(coords[ci], lc);
-      tileCache[ci][i] = wc[1] > s ? ResourceType.None : wc[1] == 0 ? ResourceType.Lava : wc[1] < s ? ResourceType.Stone01 : heightToResource(ht[0], ht[1]);
+      int base = z * wd.chunkHeight * wd.chunkSize + x;
+      for (int y = 0; y < wd.chunkHeight; y++) {
+        ResourceType rt = y > s ? ResourceType.None : y == 0 ? ResourceType.Lava : y < s ? ResourceType.Stone01 : heightToResource(ht[0], ht[1]);
+        types[base + y * wd.chunkSize] = rt;
+      }
     }
-    if(auto cm = coords[ci] in wd.diffs) foreach(idx, type; *cm) tileCache[ci][idx] = type;
   }
-  return tileCache;
+  if(auto cm = coord in wd.diffs) foreach(idx, type; *cm) types[idx] = type;
+  return types;
 }
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
-  NoiseCache[5] noiseCaches;
-  foreach(ci; 0..5) noiseCaches[ci] = wd.buildNoiseCache(coords[ci]);
-  ResourceType[][5] tileCache = wd.loadTileCache(coords, noiseCaches);
+  auto noiseCaches = wd.buildNoiseCaches(coords);
+  ResourceType[][5] tileCache;
+  foreach(ci; 0..5) tileCache[ci] = wd.buildTileTypes(coords[ci], noiseCaches[ci]);
 
   ChunkData data = ChunkData(coord, tileCache[0]);
-
   float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == ResourceType.None) continue;
@@ -113,7 +116,6 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faces[f]);
       data.tileIndices ~= i;
     }
-    // Always expand chunk AABB with full tile extents, regardless of face culling
     expandBounds(data.bmin, data.bmax, [px - ts/2, py - th/2, pz - ts/2]);
     expandBounds(data.bmin, data.bmax, [px + ts/2, py + th/2, pz + ts/2]);
     if (data.tileInstances.length > faceStart) {
