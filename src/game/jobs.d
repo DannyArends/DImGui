@@ -22,7 +22,7 @@ struct Job {
   Job[] prereqs;
   bool personal = false;
   uint[] blockIDs;
-  uint[] failedBy;
+  bool[uint] failedBy;
   JobState state = JobState.Pending;
 
   void function(ref GameApp app, ref Dwarf d, ref Job j) onClaim;
@@ -33,9 +33,10 @@ struct Job {
 Job[] jobQueue;
 
 int[3][] activeTiles(ref GameApp app, string jobName) {
-  auto allJobs = jobQueue;
-  if(app.world.dwarves !is null) { foreach(ref dw; app.world.dwarves.dwarves) { allJobs ~= dw.jobStack; } }
-  return allJobs.filter!(j => j.name == jobName).map!(j => j.targetTile).array;
+  auto matching = jobQueue.filter!(j => j.name == jobName).map!(j => j.targetTile);
+  if(app.world.dwarves is null) return matching.array;
+  auto dwarfMatching = app.world.dwarves.dwarves.map!(dw => dw.jobStack).joiner.filter!(j => j.name == jobName).map!(j => j.targetTile);
+  return chain(matching, dwarfMatching).array;
 }
 
 /** Apply pathfinding results */
@@ -45,8 +46,8 @@ void applyPathResult(ref GameApp app, PathResult result) {
     if(d.uid != result.dwarfUID) continue;
     if(!result.success) {
       if(d.jobStack.length > 0) {
-        if(!d.jobStack[0].failedBy.canFind(d.uid)) d.jobStack[0].failedBy ~= d.uid;
-        if(d.jobStack.length > 1 && !d.jobStack[$-1].failedBy.canFind(d.uid)) d.jobStack[$-1].failedBy ~= d.uid;
+        d.jobStack[0].failedBy[d.uid] = true;
+        if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
         d.jobStack[0].onFail(app, d);
       }
       d.state = DwarfState.Idle;
@@ -202,7 +203,8 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
     onFail: (ref GameApp app, ref Dwarf d) {
       foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app, slot); }
       auto newJob = buildingJob(d.jobStack[0].targetTile, d.jobStack[0].tileType);
-      newJob.failedBy = d.jobStack[$-1].failedBy ~ [d.uid];
+      newJob.failedBy = d.jobStack[$-1].failedBy.dup;
+      newJob.failedBy[d.uid] = true;
       jobQueue ~= newJob;
       d.clearGoal();
     }
@@ -247,7 +249,7 @@ bool tryAssign(ref GameApp app, ref Job job) {
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref d; app.world.dwarves.dwarves) {
-    if((d.state != DwarfState.Idle && d.state != DwarfState.Wandering) || job.failedBy.canFind(d.uid)) continue;
+    if((d.state != DwarfState.Idle && d.state != DwarfState.Wandering) || d.uid in job.failedBy) continue;
     float dist = manhattan(job.targetTile, d.tile);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
@@ -256,7 +258,7 @@ bool tryAssign(ref GameApp app, ref Job job) {
 
 /** Reject the job and requeue */
 bool rejectJob(ref GameApp app, ref Dwarf d, ref Job job) {
-  if(!job.failedBy.canFind(d.uid)) job.failedBy ~= d.uid;
+  job.failedBy[d.uid] = true;
   if(!job.personal) jobQueue ~= job;
   d.clearGoal();
   return false;
@@ -264,7 +266,7 @@ bool rejectJob(ref GameApp app, ref Dwarf d, ref Job job) {
 
 /** Fail the current job and requeue */
 void failAndRequeue(ref Dwarf d) {
-  if(!d.jobStack[0].failedBy.canFind(d.uid)) d.jobStack[0].failedBy ~= d.uid;
+  d.jobStack[0].failedBy[d.uid] = true;
   if(!d.jobStack[0].personal) jobQueue ~= d.jobStack[0];
   d.clearGoal();
   d.progress = 0.0f;
@@ -281,7 +283,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
-    if(job.failedBy.canFind(d.uid)) continue;
+    if(d.uid in job.failedBy) continue;
     if(job.name == "Building" && !app.hasBlocks(job.tileType)) continue;
     float dist = manhattan(job.targetTile, d.tile);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
