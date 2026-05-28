@@ -60,17 +60,14 @@ float[3][1024] buildNoiseCache(immutable(WorldData) wd, int[3] coord) {
 ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
   ResourceType[][5] tileCache;
   foreach (ci; 0 .. 5) {
+    auto nc = wd.buildNoiseCache(coords[ci]);
     tileCache[ci].length = wd.tileCount;
-    auto noiseCache = wd.buildNoiseCache(coords[ci]);
     for (int i = 0; i < wd.tileCount; i++) {
-      auto local = wd.tileCoord(i);
-      auto wc = wd.worldCoord(coords[ci], local);
-      auto ht = noiseCache[local[0] + local[2] * wd.chunkSize];
-      int surface = cast(int)(pow(ht[0], 1.5f) * (wd.chunkHeight - 1));
-      if      (wc[1] > surface) tileCache[ci][i] = ResourceType.None;
-      else if (wc[1] == 0)      tileCache[ci][i] = ResourceType.Lava;
-      else if (wc[1] < surface) tileCache[ci][i] = ResourceType.Stone01;
-      else                      tileCache[ci][i] = heightToResource(ht[0], ht[1]);
+      auto lc = wd.tileCoord(i);
+      auto ht = nc[lc[0] + lc[2] * wd.chunkSize];
+      int s = cast(int)(pow(ht[0], 1.5f) * (wd.chunkHeight - 1));
+      auto wc = wd.worldCoord(coords[ci], lc);
+      tileCache[ci][i] = wc[1] > s ? ResourceType.None : wc[1] == 0 ? ResourceType.Lava : wc[1] < s ? ResourceType.Stone01 : heightToResource(ht[0], ht[1]);
     }
     if(auto cm = coords[ci] in wd.diffs) foreach(idx, type; *cm) tileCache[ci][idx] = type;
   }
