@@ -18,7 +18,7 @@ struct Search(M, N) {
   size_t pathptr = size_t.max;                              /// index into pool: pointer to the current node in the path
   N[] pool;                                                 /// stable node storage
   size_t[] openlist;                                        /// Astar open list: indices into pool
-  size_t[] closedlist;                                      /// Astar closed list: indices into pool
+  size_t[float[3]] closedset;                               /// Astar closed list: indices into pool
   SearchState state = SearchState.NOT_INITIALISED;          /// Astar SearchState
   size_t steps = 0;                                         /// search steps taken
   size_t path = 0;                                          /// step in current path
@@ -83,11 +83,10 @@ SearchState step(alias getSuccessors, S)(ref S search) {
     float newG = search.pool[nIdx].g + s.cost;
     size_t i;
     if ((i = search.openlist.has(search.pool, s)) != size_t.max && search.pool[search.openlist[i]].g <= newG) continue;
-    if ((i = search.closedlist.has(search.pool, s)) != size_t.max && search.pool[search.closedlist[i]].g <= newG) continue;
+    if (auto c = s.position in search.closedset) { if(search.pool[*c].g <= newG) continue; search.closedset.remove(s.position); }
     s.parent = nIdx;
     s.g = newG;
     s.h = euclidean(s.position, search.pool[search.goal].position);
-    if((i = search.closedlist.has(search.pool, s)) != size_t.max) search.closedlist = search.closedlist.remove(i);
     if((i = search.openlist.has(search.pool, s)) != size_t.max) {
       search.pool[search.openlist[i]] = s;
     } else {
@@ -96,9 +95,8 @@ SearchState step(alias getSuccessors, S)(ref S search) {
     }
   }
 
-  search.closedlist ~= nIdx;
+  search.closedset[search.pool[nIdx].position] = nIdx;
   search.openlist = search.openlist.remove(0);
-
   search.openlist.sort!((a, b) => search.pool[a].f < search.pool[b].f);
   return search.state;
 }
