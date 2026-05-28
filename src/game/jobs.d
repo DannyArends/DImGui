@@ -163,7 +163,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
 Job cleanWorksiteJob(int[3] targetTile) {
   return Job("CleanWorksite", targetTile, ResourceType.None, [],
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      foreach(id, ref b; app.world.blocks) { if(b.tile == j.targetTile) { j.blockIDs = [b.id]; j.tileType = b.type; return; } }
+      foreach(id, ref b; app.world.blocks) { if(b.tile == j.targetTile) { j.blockIDs = [id]; j.tileType = b.type; return; } }
       j.state = JobState.Satisfied;
     },
     onArrive: (ref GameApp app, ref Dwarf d) {
