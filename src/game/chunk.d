@@ -84,7 +84,8 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == ResourceType.None) continue;
-    auto wc = wd.worldCoord(coord, wd.tileCoord(i));
+    auto lc = wd.tileCoord(i);
+    auto wc = wd.worldCoord(coord, lc);
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
     float[12][6] faces = [
@@ -95,10 +96,18 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       [-ts,  0,   0,   0,  0,  1,   0,  th,  0,   px,      py,      pz+ts/2 ],
       [ ts,  0,   0,   0,  0, -1,   0,  th,  0,   px,      py,      pz-ts/2 ],
     ];
-    size_t faceStart = data.tileInstances.length;
+    bool onBoundary = lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
     auto neighbours = wd.tileNeighbours(wc);
+    size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
-      if (!wd.isFaceExposed(tileCache, coords, neighbours[f], coord)) continue;
+      bool exposed;
+      if (onBoundary) {
+        exposed = wd.isFaceExposed(tileCache, coords, neighbours[f], coord);
+      } else {
+        auto ln = wd.localCoord(neighbours[f]);
+        exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : tileCache[0][wd.tileIndex(ln)] == ResourceType.None;
+      }
+      if (!exposed) continue;
       data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faces[f]);
       data.tileIndices ~= i;
     }
