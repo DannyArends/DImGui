@@ -30,9 +30,7 @@ struct ChunkData {
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
 
-/** Check if a face is exposed / uncovered
- * TODO: should use ResourceType[][int[3]] (coordinate as index) but that doesn't work on Android
- */
+/** Check if a face is exposed / uncovered */
 bool isFaceExposed(immutable(WorldData) wd, const ResourceType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
   int[3] nc = wd.chunkCoord(neighbour);
   int ci = (nc == coord) ? 0 : cast(int)coords[1..5].countUntil(nc) + 1;
@@ -46,15 +44,13 @@ bool isFaceExposed(immutable(WorldData) wd, const ResourceType[][5] tileCache, c
   return tileCache[ci][ni] == ResourceType.None;
 }
 
-/** Load the TileCache, 
- * TODO: should use ResourceType[][int[3]] (coordinate as index) but that doesn't work on Android
- */
+/** Load the TileCache */
 ResourceType[][5] loadTileCache(immutable(WorldData) wd, int[3][5] coords, int[3] coord) {
   ResourceType[][5] tileCache;
   foreach (ci; 0 .. 5) {
     tileCache[ci].length = wd.tileCount;
     for (int i = 0; i < wd.tileCount; i++) { tileCache[ci][i] = wd.getTile(wd.worldCoord(coords[ci], wd.tileCoord(i))); }
-    foreach (d; wd.diffs) { if (d.coord == coords[ci]) tileCache[ci][d.idx] = cast(ResourceType)d.type; }
+    if(auto cm = coords[ci] in wd.diffs) foreach(idx, type; *cm) tileCache[ci][idx] = type;
   }
   return tileCache;
 }

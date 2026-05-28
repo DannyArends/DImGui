@@ -27,7 +27,7 @@ struct WorldData {
   int chunkHeight    =  64;               /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;            /// Global world Y-offset
   uint[ResourceType.max + 1] resources;
-  TileDiff[] diffs;
+  ResourceType[uint][int[3]] diffs;
   float[int[3]] tilePenalties;
 
   /** Returns the filesystem path for the world TileDiffs difference */
@@ -104,11 +104,22 @@ struct World {
   void deleteWorld(ref GameApp app) {
     SDL_RemovePath(worldPath());
     SDL_RemovePath(blocksPath());
-    data.diffs = [];
+    data.diffs = null;
     app.world.inventory.type = ResourceType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
     clear();
   }
+}
+
+TileDiff[] flattenDiffs(ref WorldData wd) {
+  TileDiff[] flat;
+  foreach(coord, idxMap; wd.diffs){ foreach(idx, type; idxMap){ flat ~= TileDiff(coord, idx, type); } }
+  return flat;
+}
+
+void rebuildDiffs(ref WorldData wd, TileDiff[] flat) {
+  wd.diffs = null;
+  foreach(ref d; flat){ wd.diffs[d.coord][d.idx] = cast(ResourceType)d.type; }
 }
 
 void loadWorld(ref GameApp app) {
@@ -123,7 +134,7 @@ void loadWorld(ref GameApp app) {
   if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadWorld: invalid magic"); return; }
   auto diffData = raw[8 .. $];
   if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
-  app.world.diffs = cast(TileDiff[])diffData.dup;
+  app.world.data.rebuildDiffs(cast(TileDiff[])diffData.dup);
   app.loadBlocks();
   foreach(ref ft; features) {
     if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
@@ -135,10 +146,11 @@ void loadWorld(ref GameApp app) {
 
 /** Save world diffs to disk */
 void saveWorld(ref GameApp app) {
-  uint[2] header = [WORLD_MAGIC, cast(uint)app.world.data.diffs.length];
-  char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])app.world.data.diffs;
+  auto flat = app.world.data.flattenDiffs();
+  uint[2] header = [WORLD_MAGIC, cast(uint)flat.length];
+  char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])flat;
   writeFile(app.world.worldPath(), raw);
-  if(app.verbose) SDL_Log("saveWorld: %d diffs", app.world.data.diffs.length);
+  if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
   app.saveBlocks();
   foreach(ref ft; features) {
     app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
