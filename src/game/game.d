@@ -86,7 +86,7 @@ void initGame(ref GameApp app) {
 void updateGame(ref GameApp app) {
   float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   app.injectResourceMeshes();
-  app.updateMaterials();
+  if(app.textures.loaded) { app.updateMaterials(); app.textures.loaded = false; }
   app.world.settleBlocks(dt);
   app.updateWorld(app.camera.lookat);
   app.shadows.bounds = [app.world.height, app.world.radius];
