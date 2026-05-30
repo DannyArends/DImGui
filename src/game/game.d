@@ -33,7 +33,7 @@ import lightswindow : showLightsContent;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
-import threading : TaskThread;
+import threading : TaskThread, drainMessages;
 import world : loadWorld, saveWorld, updateWorld;
 import worldwindow : showWorldContent;
 
@@ -94,17 +94,8 @@ void updateGame(ref GameApp app) {
 
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
-  bool gotChunk = false;
-  while(receiveTimeout(dur!"msecs"(0), (immutable(ChunkData) data, Tid tid) {
-    app.concurrency.workers[tid] = false;
-    app.finalizeChunk(cast(ChunkData)data);
-    gotChunk = true;
-  })) {}
-  if(gotChunk) app.camera.isDirty = true;
-  while(receiveTimeout(dur!"msecs"(0), (immutable(PathResult) result, Tid tid) {
-    app.concurrency.workers[tid] = false;
-    app.applyPathResult(cast(PathResult)result);
-  })) {}
+  if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); })) app.camera.isDirty = true;
+  app.drainMessages!PathResult((r) { app.applyPathResult(r); });
 }
 
 void cleanupGame(ref GameApp app) { app.saveWorld(); }
