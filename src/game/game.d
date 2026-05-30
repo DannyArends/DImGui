@@ -94,14 +94,14 @@ void updateGame(ref GameApp app) {
 
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
-  receiveTimeout(dur!"msecs"(-1), (immutable(ChunkData) data, Tid tid) {
+  while(receiveTimeout(dur!"msecs"(0), (immutable(ChunkData) data, Tid tid) {
     app.concurrency.workers[tid] = false;
     app.finalizeChunk(cast(ChunkData)data);
-  });
-  receiveTimeout(dur!"msecs"(-1), (immutable(PathResult) result, Tid tid) {
+  })) {}
+  while(receiveTimeout(dur!"msecs"(0), (immutable(PathResult) result, Tid tid) {
     app.concurrency.workers[tid] = false;
     app.applyPathResult(cast(PathResult)result);
-  });
+  })) {}
 }
 
 void cleanupGame(ref GameApp app) { app.saveWorld(); }
