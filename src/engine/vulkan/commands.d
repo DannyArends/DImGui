@@ -21,7 +21,8 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd, uint syncIndex) {
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].pipeline(Specialization(true)));
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(app.objects[x].box is null) continue;
+    if(!app.objects[x].hasBoundingBox) continue;
+    if(!app.objects[x].isBuffered) continue;
     if(!app.objects[x].inFrustum) continue;
     if(!app.objects[x].isVisible) continue;
     app.draw(app.objects[x].box, syncIndex);
@@ -58,7 +59,8 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd, syncIndex);
     Specialization last; bool first = true;
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(app.objects[x].topology != topology) continue;
+      if(!app.objects[x].isTopology(topology)) continue;
+      if(!app.objects[x].isBuffered) continue;
       if(!app.objects[x].inFrustum) continue;
       if(!app.objects[x].isVisible) continue;
       auto s = Specialization(!app.objects[x].instancedMesh); // ALPHA_TEST = !instancedMesh
@@ -140,7 +142,7 @@ void createCommandBuffer(ref App app, ref VkCommandBuffer[] dst, VkCommandPool p
   dst = app.createCommandBuffer(pool, nBuffers);
 }
 
-// Structure returned as result of an (async) SingleTimeCommand submission
+/** Structure returned as result of an (async) SingleTimeCommand submission */
 struct SingleTimeCommand {
   bool async = false;       /// Is the transfer happening async ?
   VkFence fence;            /// If aSync the fence we need to wait for before data is on the GPU
@@ -151,8 +153,7 @@ struct SingleTimeCommand {
 
 /** beginSingleTimeCommands() begins a commandbuffer using the VkCommandPool pool
  * async: If true: add commands, submit to the correct queue. 
-          If false: add commands, the use endSingleTimeCommands to submit and WaitIdle for the Queue
- */
+          If false: add commands, the use endSingleTimeCommands to submit and WaitIdle for the Queue */
 SingleTimeCommand beginSingleTimeCommands(ref App app, VkCommandPool pool, bool async = false) {
   VkCommandBuffer commandBuffer = app.createCommandBuffer(pool, 1)[0];
 
