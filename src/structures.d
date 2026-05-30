@@ -40,7 +40,7 @@ public import pdb : AtomCloud, Backbone, AminoAcidCloud;
 public import pipeline : GraphicsPipeline;
 public import quaternion : Quaternion;
 public import renderpass : RenderPassInfo, RenderPass;
-public import shaders : Shader, ShaderDef, IncluderContext;
+public import shaders : Shader, ShaderDef, Specialization, IncluderContext;
 public import square : Square;
 public import search : SearchState;
 public import sdl : STARTUP, FRAMESTART, FRAMESTOP, LASTTICK, LASTFRAME;
