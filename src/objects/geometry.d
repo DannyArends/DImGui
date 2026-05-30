@@ -154,11 +154,11 @@ void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
 void draw(T)(ref App app, ref T object, size_t i) {
   if(!object.isBuffered()) return;
 
-  VkDeviceSize[] offsets = [0];
+  VkDeviceSize offset = 0;
   auto cmd = app.scenePass.commands[i];
 
-  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertices.vb, &offsets[0]);
-  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instances.vb, &offsets[0]);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertices.vb, &offset);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instances.vb, &offset);
   vkCmdBindIndexBuffer(cmd, object.indices.vb, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, cast(uint)object.indices.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
@@ -169,11 +169,11 @@ void draw(T)(ref App app, ref T object, size_t i) {
 void shadow(ref App app, Geometry object, size_t i) {
   if(!object.isBuffered()) return;
 
-  VkDeviceSize[] offsets = [0];
+  VkDeviceSize offset = 0;
   auto cmd = app.shadows.renderPass.commands[i];
 
-  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertices.vb, &offsets[0]);
-  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instances.vb, &offsets[0]);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertices.vb, &offset);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instances.vb, &offset);
   vkCmdBindIndexBuffer(cmd, object.indices.vb, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, cast(uint)object.indices.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
