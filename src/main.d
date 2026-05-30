@@ -75,7 +75,7 @@ void run(string[] args = null) {
   app.initializeAsync();                                        /// Start Async loading objects and textures
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
-  uint frames = 350;
+  uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & render loop
     app.timed!checkForResize();                                   /// Check for resize
     if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue
