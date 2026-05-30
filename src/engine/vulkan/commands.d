@@ -21,9 +21,7 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd, uint syncIndex) {
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].pipeline(Specialization(true)));
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isBuffered) continue;
-    if(!app.objects[x].inFrustum) continue;
-    if(!app.objects[x].isVisible) continue;
+    if(!app.objects[x].isBuffered || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue; // not Buffered, not in Frustum, not Visible
     if(app.objects[x].hasBoundingBox) app.draw(app.objects[x].box, syncIndex);
   }
   popLabel(cmd);
@@ -58,10 +56,8 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd, syncIndex);
     Specialization last; bool first = true;
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(!app.objects[x].isTopology(topology)) continue;
-      if(!app.objects[x].isBuffered) continue;
-      if(!app.objects[x].inFrustum) continue;
-      if(!app.objects[x].isVisible) continue;
+      if(!app.objects[x].isTopology(topology)) continue; // wrong Topology
+      if(!app.objects[x].isBuffered || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue; // not Buffered, not in Frustum, not Visible
       auto s = Specialization(!app.objects[x].instancedMesh); // ALPHA_TEST = !instancedMesh
       pushLabel(cmd, toStringz(format("%s [topo: %d, ALPHA_TEST=%d]", app.objects[x].geometry(), topology, s.alpha)), Colors.lightgray);
       if(first || last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; }
