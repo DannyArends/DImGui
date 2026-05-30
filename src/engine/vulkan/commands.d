@@ -40,20 +40,21 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
   foreach(topology; supportedTopologies) {
-    pushLabel(cmd, toStringz(format("T:%s", topology)), Colors.lightgray);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
-    bool first = true;
-    Specialization last = Specialization(first);
+    Specialization last;
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(last));
     for(size_t x = 0; x < app.objects.length; x++) {
+      if(!app.objects[x].isBuffered) continue;
       if(!app.objects[x].inFrustum) continue;
       if(!app.objects[x].isVisible) continue;
       if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds && app.objects[x].box !is null) app.draw(app.objects[x].box, syncIndex);
       if(app.objects[x].topology != topology) continue;
       auto s = Specialization(!app.objects[x].instancedMesh); // ALPHA_TEST = !instancedMesh
-      if(first || last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; first = false; }
+      pushLabel(cmd, toStringz(format("%s [topo: %d, ALPHA_TEST=%d]", app.objects[x].geometry(), topology, s.alpha)), Colors.lightgray);
+      if(last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; }
       app.draw(app.objects[x], syncIndex);
+      popLabel(cmd);
     }
-    popLabel(cmd);
   }
   app.scenePass.end(cmd);
   popLabel(cmd);
