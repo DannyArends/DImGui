@@ -15,6 +15,20 @@ import renderpass : beginRecording, endRecording;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import window: supportedTopologies;
 
+/** Draw per-object bounding boxes (debug, LINE_LIST, alpha-test variant) */
+void drawBoundingBoxes(ref App app, VkCommandBuffer cmd, uint syncIndex) {
+  pushLabel(cmd, toStringz(format("%d x Bounding Boxes", app.objects.length)), Colors.lightgray);
+
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].pipeline(Specialization(true)));
+  for(size_t x = 0; x < app.objects.length; x++) {
+    if(app.objects[x].box is null) continue;
+    if(!app.objects[x].inFrustum) continue;
+    if(!app.objects[x].isVisible) continue;
+    app.draw(app.objects[x].box, syncIndex);
+  }
+  popLabel(cmd);
+}
+
 /** Record scene command buffer: SSBO -> Objects -> Rendering
  */
 void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
@@ -41,17 +55,15 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
   foreach(topology; supportedTopologies) {
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
-    Specialization last;
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(last));
+    if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd, syncIndex);
+    Specialization last; bool first = true;
     for(size_t x = 0; x < app.objects.length; x++) {
-      if(!app.objects[x].isBuffered) continue;
+      if(app.objects[x].topology != topology) continue;
       if(!app.objects[x].inFrustum) continue;
       if(!app.objects[x].isVisible) continue;
-      if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds && app.objects[x].box !is null) app.draw(app.objects[x].box, syncIndex);
-      if(app.objects[x].topology != topology) continue;
       auto s = Specialization(!app.objects[x].instancedMesh); // ALPHA_TEST = !instancedMesh
       pushLabel(cmd, toStringz(format("%s [topo: %d, ALPHA_TEST=%d]", app.objects[x].geometry(), topology, s.alpha)), Colors.lightgray);
-      if(last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; }
+      if(first || last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; }
       app.draw(app.objects[x], syncIndex);
       popLabel(cmd);
     }
