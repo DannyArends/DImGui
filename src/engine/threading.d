@@ -31,7 +31,7 @@ class TaskThread : Thread {
     mytid = thisTid();
     main.send(mytid);
     while (active) {
-      receiveTimeout(dur!"msecs"(250),
+      receiveTimeout(dur!"msecs"(-1),
         (string path) {
           if (verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
           if (path.isTexture()) {
@@ -47,7 +47,7 @@ class TaskThread : Thread {
         (bool active) { this.active = active; }  // shutdown signal
       );
       handleGameObjects();
-      SDL_Delay(10);
+      SDL_Delay(1);
     }
   }
 }
