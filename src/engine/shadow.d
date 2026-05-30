@@ -46,9 +46,7 @@ void createShadowMap(ref App app) {
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
-/** 
- * Shadow map resource creation
- */
+/** Shadow map resource creation */
 void createShadowMapResources(ref App app) {
   if(app.verbose) SDL_Log("Shadow map resources creation");
   app.shadows.images.length = app.lights.length;
@@ -70,9 +68,7 @@ void createShadowMapResources(ref App app) {
   });
 }
 
-/** 
- * Shadow map render pass  creation
- */
+/** Shadow map render pass creation */
 void createShadowMapRenderPass(ref App app) {
   VkAttachmentReference depthRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
@@ -109,8 +105,7 @@ void createShadowMapRenderPass(ref App app) {
   app.shadows.renderPass.create(app, info, "Shadows", app.mainDeletionQueue);
 }
 
-/** Create the shadow mapping pipeline
- */
+/** Create the shadow mapping pipeline */
 void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline creation");
   VkPushConstantRange pushConstantRange = { stageFlags: VK_SHADER_STAGE_VERTEX_BIT, offset: 0, size: uint.sizeof };
