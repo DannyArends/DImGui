@@ -150,11 +150,12 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
 
 /** Build pipeline stage infos from shaders, overriding the fragment stage with ALPHA_TEST = alphaTest.
  *  Returns stages plus the spec data they point to (kept alive by the caller). */
-VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo, 
-                                                                    ref VkSpecializationMapEntry mapEntry, 
-                                                                    bool alphaTest = true) {
-  mapEntry = VkSpecializationMapEntry(0, 0, bool.sizeof);  // constant_id 0, offset 0
-  specInfo = VkSpecializationInfo(1, &mapEntry, bool.sizeof, &alphaTest);
+VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo,
+                                                                    ref VkSpecializationMapEntry mapEntry,
+                                                                    ref VkBool32 alphaTest, bool alpha = true) {
+  alphaTest = alpha ? VK_TRUE : VK_FALSE;
+  mapEntry = VkSpecializationMapEntry(0, 0, VkBool32.sizeof);   // constant_id 0, offset 0, 4 bytes
+  specInfo = VkSpecializationInfo(1, &mapEntry, VkBool32.sizeof, &alphaTest);
   VkPipelineShaderStageCreateInfo[] info;
   foreach(shader; shaders){
     auto stage = shader.info;

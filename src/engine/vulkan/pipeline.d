@@ -23,10 +23,10 @@ struct GraphicsPipeline {
   void set(VkPipeline p, Specialization s = Specialization.init) { variants[s] = p; }
 
   void create(ref App app, VkGraphicsPipelineCreateInfo info, string label, ref DeletionQueue queue, Specialization spec = Specialization.init) {
-    enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &info, app.allocator, &variants[spec]));
-    app.nameVulkanObject(layout,   toStringz(format("[LAYOUT] %s", label)),   VK_OBJECT_TYPE_PIPELINE_LAYOUT);
-    app.nameVulkanObject(pipeline, toStringz(format("[PIPELINE] %s", label)), VK_OBJECT_TYPE_PIPELINE);
-    queue.add((){ vkDestroyPipeline(app.device, variants[spec], app.allocator); });
+    VkPipeline p; enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &info, app.allocator, &p)); variants[spec] = p;
+    app.nameVulkanObject(layout, toStringz(format("[LAYOUT] %s", label)), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+    app.nameVulkanObject(p, toStringz(format("[PIPELINE] %s", label)), VK_OBJECT_TYPE_PIPELINE);
+    queue.add((){ vkDestroyPipeline(app.device, p, app.allocator); });
   }
 
   void createLayout(ref App app, VkPipelineLayoutCreateInfo info, ref DeletionQueue queue) {
@@ -37,7 +37,7 @@ struct GraphicsPipeline {
 
 /** Create a GraphicsPipeline object for a specified topology
  */
-void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
+void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, Specialization s = Specialization.init ) {
   app.pipelines[topology] = GraphicsPipeline();
   auto bindingDescription = Vertex.getBindingDescription();
   auto attributeDescriptions = Vertex.getRenderDescriptions();
@@ -122,7 +122,9 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     depthCompareOp: VK_COMPARE_OP_LESS,
   };
 
-  auto stages = createStageInfo(app.shaders);
+  VkSpecializationInfo specInfo; VkSpecializationMapEntry mapEntry; VkBool32 alphaTest;
+
+  auto stages = createStageInfo(app.shaders, specInfo, mapEntry, alphaTest, s.alpha);
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
     stageCount: cast(uint)stages.length,
@@ -137,7 +139,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     layout: app.pipelines[topology].layout,
     renderPass: app.scenePass.pass
   };
-  app.pipelines[topology].create(app, pipelineInfo, format("Render %s", topology), app.swapDeletionQueue);
+  app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, s.alpha), app.swapDeletionQueue);
 }
 
 /** Create a GraphicsPipeline object for Post-process
