@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : cleanup, nameGeometryBuffer, toGPU;
+import buffer : cleanup, nameGeometryBuffer, toGPU, uploadBarrier;
 import boundingbox : computeBoundingBox;
 import textures : idx;
 import mesh : logMesh;
@@ -110,12 +110,14 @@ class Geometry {
 }
 
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
+  bool uploaded = false;
   for(size_t x = 0; x < app.objects.length; x++) {
     if(app.objects[x].instances.length == 0) continue;
     if(app.objects[x].box is null || !app.objects[x].isBuffered) app.objects[x].computeBoundingBox(app.trace);
-    if(app.showBounds && !app.objects[x].box.isBuffered) app.objects[x].box.buffer(app, cmd);
-    if(!app.objects[x].isBuffered){ app.objects[x].buffer(app, cmd); app.shadows.dirty = true; }
+    if(app.showBounds && !app.objects[x].box.isBuffered) { app.objects[x].box.buffer(app, cmd); uploaded = true; }
+    if(!app.objects[x].isBuffered){ app.objects[x].buffer(app, cmd); app.shadows.dirty = true; uploaded = true; }
   }
+  if(uploaded) app.uploadBarrier(cmd);
 }
 
 /** Set different types of textures on an object */
