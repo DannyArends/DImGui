@@ -103,10 +103,10 @@ void checkAsync(ref App app) {
     app.mapTextures(app.objects[($-1)]);
   });
   // Accept any incoming texture transfers
-  receiveTimeout(dur!"msecs"(-1), (immutable(Texture) message, Tid tid) {
+  while(receiveTimeout(dur!"msecs"(0), (immutable(Texture) message, Tid tid) {
     app.concurrency.workers[tid] = false;
     Texture texture = cast(Texture)message;
     app.transferTextureAsync(texture);
     app.mainDeletionQueue.add((){ app.deAllocate(texture); });
-  });
+  })) {}
 }
