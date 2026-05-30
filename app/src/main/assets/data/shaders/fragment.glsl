@@ -24,10 +24,6 @@ void main() {
   if(fragInstance[1] >= 0) mat = materialSSBO.materials[uint(fragInstance[1])];
 
   vec3 baseColor = fragColor.rgb;
-  if(mat.oid >= 0) {
-    float alpha = texture(textureSampler[mat.oid], fragTexCoord).a;
-    if(alpha < 0.2f) discard;
-  }
 
   if(mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
@@ -35,13 +31,16 @@ void main() {
     baseColor *= texSample.rgb;
   }
 
+  if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
+
+  if(mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.2f) discard;
+
   vec3 normalForLighting = normalize(fragNormal);
   if(mat.nid >= 0) {
     normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
   }
 
   vec3 lightColor = baseColor * 0.01;
-  if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
   bool useShadows = ubo.lightingMode == 2u;
   for(int i = 0; i < ubo.nlights; ++i) {
     Light light = lightSSBO.lights[i];
