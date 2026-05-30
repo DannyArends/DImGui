@@ -37,9 +37,12 @@ import threading : TaskThread, drainMessages;
 import world : loadWorld, saveWorld, updateWorld;
 import worldwindow : showWorldContent;
 
+/** Worker thread variant that also handles chunk building and pathfinding requests */
 class GameTaskThread : TaskThread {
+  /** Construct a game worker bound to the main thread's Tid */
   this(Tid id, bool verbose = false) { super(id, verbose); }
 
+  /** Per-loop: build a chunk or run a pathfinding search on request, sending the result back */
   override void handleGameObjects() {
     receiveTimeout(dur!"msecs"(-1),
       (immutable(WorldData) wd, int[3] coord) {
@@ -54,6 +57,7 @@ class GameTaskThread : TaskThread {
   }
 }
 
+/** Top-level application state: engine App plus the game World and debug toggles */
 struct GameApp {
   App app;
   alias app this;
@@ -64,6 +68,7 @@ struct GameApp {
   bool paused = false;
 }
 
+/** Set up worker factory and camera, load the world, build game UI windows, and spawn or load dwarves */
 void initGame(ref GameApp app) {
   app.concurrency.factory = (Tid tid, bool verbose) => new GameTaskThread(tid, verbose);
   app.camera.canMoveTo = (float[3] pos){ return app.world.canMoveTo(pos); };
@@ -83,6 +88,7 @@ void initGame(ref GameApp app) {
   SDL_Log("initGame: done");
 }
 
+/** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
 void updateGame(ref GameApp app) {
   float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
   app.injectResourceMeshes();
@@ -92,10 +98,12 @@ void updateGame(ref GameApp app) {
   app.shadows.bounds = [app.world.height, app.world.radius];
 }
 
+/** Per-frame: dispatch queued paths and drain completed chunk-build and pathfinding results from workers */
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
   if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); })) app.camera.isDirty = true;
   app.drainMessages!PathResult((r) { app.applyPathResult(r); });
 }
 
+/** Persist the world to disk on shutdown */
 void cleanupGame(ref GameApp app) { app.saveWorld(); }

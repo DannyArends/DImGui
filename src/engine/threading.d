@@ -12,12 +12,14 @@ import material : registerAMaterials;
 import images : deAllocate;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures;
 
+/** Worker thread that loads textures and assimp assets off the main thread, returning results via messages */
 class TaskThread : Thread {
   protected Tid main;
   protected Tid mytid;
   private bool verbose = false;
   private bool active = true;
 
+  /** Spawn a daemon worker bound to the main thread's Tid */
   this(Tid id, bool verbose = false) {
     this.main = id;
     this.verbose = verbose;
@@ -25,8 +27,10 @@ class TaskThread : Thread {
     super(&run, 8 * 1024 * 1024);  // 8MB stack
   }
 
+  /** Hook for subclasses to do per-loop work (overridden by GameTaskThread) */
   void handleGameObjects() { }
 
+  /** Worker loop: receive a file path, load texture/asset, send result back; exits on shutdown signal */
   void run() { if(verbose) SDL_Log("Worker spawned: %p", thisTid);
     mytid = thisTid();
     main.send(mytid);
@@ -58,6 +62,7 @@ struct Threading {
   TaskThread function(Tid, bool) factory;
 }
 
+/** Spawn the worker pool and queue all asset/texture paths for background loading */
 void initializeAsync(ref App app, bool preLoadAssimp = true, uint numWorkers = 16){
   if(preLoadAssimp) app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
@@ -81,6 +86,7 @@ bool drainMessages(T)(ref App app, void delegate(T) handler) {
   return any;
 }
 
+/** Hand queued asset paths to idle workers, one per free worker */
 void dispatchPendingAssets(ref App app) {
   foreach(tid; app.concurrency.workers.keys) {
     if(app.concurrency.paths.length == 0) break;
@@ -93,8 +99,10 @@ void dispatchPendingAssets(ref App app) {
   }
 }
 
+/** Signal all workers to exit their loop */
 void stopWorkers(ref App app) { foreach(tid; app.concurrency.workers.keys) { tid.send(false); } }
 
+/** Per-frame: dispatch pending work, promote finished textures, and drain all completed worker results */
 void checkAsync(ref App app) {
   if(app.trace) SDL_Log("Checking Async, jobs: %d", app.concurrency.paths.length);
   app.dispatchPendingAssets();    // Submit pending textures / objects to available workers
