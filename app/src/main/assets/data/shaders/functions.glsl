@@ -37,7 +37,7 @@ float calculateShadow(vec4 position, uint i) {
 
   float shadowFactor = 0.0;
   vec2 texelSize = vec2(ubo.shadowTexelSize);
-  int sampleCount = 2;
+  int sampleCount = 1;
   float range = 1.0;
 
   // PCF sampling loop
