@@ -21,11 +21,10 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd, uint syncIndex) {
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].pipeline(Specialization(true)));
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].hasBoundingBox) continue;
     if(!app.objects[x].isBuffered) continue;
     if(!app.objects[x].inFrustum) continue;
     if(!app.objects[x].isVisible) continue;
-    app.draw(app.objects[x].box, syncIndex);
+    if(app.objects[x].hasBoundingBox) app.draw(app.objects[x].box, syncIndex);
   }
   popLabel(cmd);
 }
