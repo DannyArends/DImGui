@@ -24,6 +24,7 @@ enum int[3] builtTile = [int.max, 0, 0];
   return false;
 }
 
+/** True if a chunk-local tile sits on the x or z edge of the chunk (needs cross-chunk neighbour lookup) */
 @nogc pure bool onChunkBoundary(T)(T wd, int[3] lc) nothrow {
   return lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
 }
@@ -90,6 +91,7 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   return wd.getTileAt(wc) == ResourceType.None;
 }
 
+/** True if the world tile is solid (computed from noise); below-world counts as solid, above-world as air */
 @nogc pure bool isSolid(T)(T wd, const int[3] wc) nothrow {
   if (wc[1] < 0) return true; // below world = solid (cull face)
   if (wc[1] >= wd.chunkHeight) return false; // above world = air (expose face)
