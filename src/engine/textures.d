@@ -97,6 +97,7 @@ void checkPendingTextures(ref App app) {
       vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
       vkFreeCommandBuffers(app.device, p.cmdBuffer.pool, 1, &p.cmdBuffer.commands);
       app.textures ~= p.texture;
+      app.textures.loaded = true;
       app.textures.pending = app.textures.pending.remove(i);
     } else { i++; }
   }
