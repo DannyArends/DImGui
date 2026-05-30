@@ -138,7 +138,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
 }
 
 void rebuildAllFeatures(ref GameApp app) {
-  app.world.data.tilePenalties = null;   // rebuilt below from loaded features
+  app.world.data.tilePenalties = null;
   foreach(ref mesh; app.world.featureMeshes.values) mesh.instances = [];
   foreach(ref ft; features) {
     foreach(coord, ref chunkFeatures; app.world.features[ft.name]){

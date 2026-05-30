@@ -70,6 +70,17 @@ void initializeAsync(ref App app, bool preLoadAssimp = true, uint numWorkers = 1
   if(app.verbose) SDL_Log(toStringz(format("Workers %s", app.concurrency.workers)));
 }
 
+/** Drain all queued messages of type T, resetting the worker and running handler for each */
+bool drainMessages(T)(ref App app, void delegate(T) handler) {
+  bool any = false;
+  while(receiveTimeout(dur!"msecs"(0), (immutable(T) msg, Tid tid) {
+    app.concurrency.workers[tid] = false;
+    handler(cast(T)msg);
+    any = true;
+  })) {}
+  return any;
+}
+
 void dispatchPendingAssets(ref App app) {
   foreach(tid; app.concurrency.workers.keys) {
     if(app.concurrency.paths.length == 0) break;
@@ -89,24 +100,16 @@ void checkAsync(ref App app) {
   app.dispatchPendingAssets();    // Submit pending textures / objects to available workers
   app.checkPendingTextures();     // Check all pending texture transfers; promote to app.textures once GPU is done
 
-  receiveTimeout(dur!"msecs"(-1), (string message, Tid tid) {
-    app.concurrency.workers[tid] = false;
-    SDL_Log("Received back: %s", toStringz(message));
-  });
-  // Accept any incoming assimp objects, merge bones with the global array when received
-  receiveTimeout(dur!"msecs"(-1), (immutable(OpenAsset) message, Tid tid) {
-    app.concurrency.workers[tid] = false;
-    auto obj = cast(OpenAsset)message;
+  app.drainMessages!string((msg) { SDL_Log("Received back: %s", toStringz(msg)); });
+  app.drainMessages!OpenAsset((msg) {
+    auto obj = cast(OpenAsset)msg;
     app.mergeBones(obj);
     app.objects ~= obj;
     app.registerAMaterials(app.objects[($-1)]);
     app.mapTextures(app.objects[($-1)]);
   });
-  // Accept any incoming texture transfers
-  while(receiveTimeout(dur!"msecs"(0), (immutable(Texture) message, Tid tid) {
-    app.concurrency.workers[tid] = false;
-    Texture texture = cast(Texture)message;
-    app.transferTextureAsync(texture);
-    app.mainDeletionQueue.add((){ app.deAllocate(texture); });
-  })) {}
+  app.drainMessages!Texture((t) {
+    app.transferTextureAsync(t);
+    app.mainDeletionQueue.add((){ app.deAllocate(t); });
+  });
 }
