@@ -46,7 +46,8 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     for(size_t x = 0; x < app.objects.length; x++) {
       if(!app.objects[x].inFrustum) continue;
       if(!app.objects[x].isVisible) continue;
-      vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(Specialization(!app.objects[x].instancedMesh)));
+      auto s = Specialization(!app.objects[x].instancedMesh); // Pipeline compile time constants [ALPHA_TEST = !app.objects[x].instancedMesh]
+      vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s));
       if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds && app.objects[x].box !is null) app.draw(app.objects[x].box, syncIndex);
       if(app.objects[x].topology != topology) continue;
       app.draw(app.objects[x], syncIndex);
