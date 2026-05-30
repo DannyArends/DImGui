@@ -140,23 +140,23 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   return(true);
 }
 
-/** Upload CPU data to GPU via staging buffer */
+/** Upload CPU data to GPU via staging buffer (caller must issue a transfer→read barrier after batching) */
 void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer) {
-  if(app.trace) SDL_Log("uploadBuffer: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
   buffer.size = cast(uint)(T.sizeof * buffer.items.length);
   memcpy(buffer.data, cast(void*)buffer.items, buffer.size);
-
   VkBufferCopy copyRegion = { size : buffer.size };
   vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
+  buffer.buffered = true;
+}
 
+/** Single transfer→vertex/index-read barrier covering all uploads in this command buffer */
+void uploadBarrier(ref App app, VkCommandBuffer cmdBuffer) {
   VkMemoryBarrier barrier = {
     sType: VK_STRUCTURE_TYPE_MEMORY_BARRIER,
     srcAccessMask: VK_ACCESS_TRANSFER_WRITE_BIT,
     dstAccessMask: VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT,
   };
   vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 1, &barrier, 0, null, 0, null);
-  buffer.buffered = true;
-  if(app.trace) SDL_Log("uploadBuffer: Buffer[%p]: %d bytes", buffer.vb, buffer.size);
 }
 
 /** Allocate if needed then upload — convenience wrapper */
