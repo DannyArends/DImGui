@@ -85,8 +85,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == ResourceType.None) continue;
     auto lc = wd.tileCoord(i);
-    bool onBoundary = wd.onChunkBoundary(lc);
-    if (!onBoundary && wd.isBuried(data.tileTypes, i, lc)) continue;
+    if (!wd.onChunkBoundary(lc) && wd.isBuried(data.tileTypes, i, lc)) continue;
     auto wc = wd.worldCoord(coord, lc);
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
@@ -94,7 +93,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
     size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
       bool exposed;
-      if (!onBoundary) {
+      if (wd.chunkCoord(neighbours[f]) == coord) {
         auto ln = wd.localCoord(neighbours[f]);
         exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
       } else { exposed = !wd.isSolid(neighbours[f]); }
