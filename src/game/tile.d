@@ -90,6 +90,12 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   return wd.getTileAt(wc) == ResourceType.None;
 }
 
+@nogc pure bool isSolid(T)(T wd, const int[3] wc) nothrow {
+  if (wc[1] < 0) return true; // below world = solid (cull face)
+  if (wc[1] >= wd.chunkHeight) return false; // above world = air (expose face)
+  return wd.getTile(wc) != ResourceType.None;
+}
+
 @nogc pure bool isStandable(T)(T wd, const int[3] tile) nothrow {
   return(wd.isPassable(tile) && wd.getTileAt(tileBelow(tile)) != ResourceType.None && resourceData(wd.getTileAt(tileBelow(tile))).traversable);
 }

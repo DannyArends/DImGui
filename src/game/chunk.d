@@ -10,12 +10,12 @@ import game : GameApp;
 import gameobjects : Chunk;
 import buffer : deAllocate;
 import intersection : intersects;
-import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried;
+import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried, isSolid;
 import hits : getHits;
-import noise : noiseHTT, noise2D;
+import noise : noise2D;
 import textures : idx;
 import vector : expandBounds;
-import feature : buildFeatureData, NoiseCache;
+import feature : buildFeatureData;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
@@ -31,47 +31,16 @@ struct ChunkData {
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
 
-/** Check if a face is exposed / uncovered */
-bool isFaceExposed(immutable(WorldData) wd, const ResourceType[][5] tileCache, const int[3][5] coords, int[3] neighbour, int[3] coord) {
-  int[3] nc = wd.chunkCoord(neighbour);
-  int ci = (nc == coord) ? 0 : cast(int)coords[1..5].countUntil(nc) + 1;
-  if (ci == 0 && nc != coord) return true;  // not found in any cache
-  if (ci < 0 || ci >= 5) return true;
-  int[3] ln = wd.localCoord(neighbour);
-  if (ln[1] < 0) return false;
-  if (ln[1] >= wd.chunkHeight) return true;
-  int ni = wd.tileIndex(ln);
-  if (ni < 0 || ni >= cast(int)tileCache[ci].length) return true;
-  return tileCache[ci][ni] == ResourceType.None;
-}
-
-/** Pre-compute noise per (x,z) column for a chunk and its 4 neighbours */
-NoiseCache[5] buildNoiseCaches(immutable(WorldData) wd, const int[3][5] coords) {
-  NoiseCache[5] caches;
-  foreach(ci; 0..5) {
-    for (int x = 0; x < wd.chunkSize; x++) {
-      for (int z = 0; z < wd.chunkSize; z++) {
-        auto wc = wd.worldCoord(coords[ci], [x, 0, z]);
-        caches[ci][x + z * wd.chunkSize] = noise2D(wc[0], wc[2], wd.seed[0]);
-      }
-    }
-  }
-  return caches;
-}
-
 /** Build tile type array for one chunk direction from its noise cache */
-ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord, const NoiseCache nc, bool needMaterial) {
+ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   ResourceType[] types;
   types.length = wd.tileCount;
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int x = 0; x < wd.chunkSize; x++) {
-      float h0 = nc[x + z * wd.chunkSize];
+      auto wc = wd.worldCoord(coord, [x, 0, z]);
+      float h0 = noise2D(wc[0], wc[2], wd.seed[0]);
       int s = cast(int)(h0 * sqrt(h0) * (wd.chunkHeight - 1));
-      ResourceType surfaceType = ResourceType.Stone01;  // placeholder for neighbours
-      if (needMaterial) {
-        auto wc = wd.worldCoord(coord, [x, 0, z]);
-        surfaceType = heightToResource(h0, noise2D(wc[0], wc[2], wd.seed[1]));
-      }
+      ResourceType surfaceType = heightToResource(h0, noise2D(wc[0], wc[2], wd.seed[1]));
       int base = z * wd.chunkHeight * wd.chunkSize + x;
       for (int y = 0; y < wd.chunkHeight; y++) {
         types[base + y * wd.chunkSize] = y > s ? ResourceType.None : y == 0 ? ResourceType.Lava : y < s ? ResourceType.Stone01 : surfaceType;
@@ -106,9 +75,8 @@ void addTileBounds(ref ChunkData data, float[3] lo, float[3] hi, int i, size_t f
 }
 
 /** Generate tile face instances, AABB, and pick data with neighbour culling */
-void buildTileGeometry(immutable(WorldData) wd, int[3] coord, const ResourceType[][5] tileCache, const int[3][5] coords, ref ChunkData data) {
+void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
   float ts = wd.tileSize, th = wd.tileHeight;
-  int dz = wd.chunkHeight * wd.chunkSize, dy = wd.chunkSize;
   data.tileInstances.reserve(wd.tileCount);
   data.tileIndices.reserve(wd.tileCount);
   data.tileBmin.reserve(wd.chunkSize * wd.chunkSize);
@@ -128,8 +96,8 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, const ResourceType
       bool exposed;
       if (!onBoundary) {
         auto ln = wd.localCoord(neighbours[f]);
-        exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : tileCache[0][wd.tileIndex(ln)] == ResourceType.None;
-      } else { exposed = wd.isFaceExposed(tileCache, coords, neighbours[f], coord); }
+        exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
+      } else { exposed = !wd.isSolid(neighbours[f]); }
       if (!exposed) continue;
       data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faceData(f, px, py, pz, ts, th));
       data.tileIndices ~= i;
@@ -140,12 +108,8 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, const ResourceType
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
-  int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
-  auto noiseCaches = wd.buildNoiseCaches(coords);
-  ResourceType[][5] tileCache;
-  foreach(ci; 0..5) tileCache[ci] = wd.buildTileTypes(coords[ci], noiseCaches[ci], ci == 0);
-  ChunkData data = ChunkData(coord, tileCache[0]);
-  wd.buildTileGeometry(coord, tileCache, coords, data);
+  ChunkData data = ChunkData(coord, wd.buildTileTypes(coord));
+  wd.buildTileGeometry(coord, data);
   foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
 }
