@@ -93,8 +93,8 @@ void syncBuildGhosts(ref GameApp app) {
   if(app.world.inventory is null) return;
   app.world.inventory.instances = [];
 
-  auto buildTiles = app.activeTiles("Building") ~ app.world.pendingBuildTiles;
-  auto mineTiles = app.activeTiles("Mining") ~ app.world.pendingMineTiles;
+  auto buildTiles = app.activeTiles("Building");
+  auto mineTiles = app.activeTiles("Mining");
 
   app.addTiles(buildTiles, ToolMode.Build);
   foreach(tile; buildTiles) app.world.data.tilePenalties[tile] = 40.0f;
