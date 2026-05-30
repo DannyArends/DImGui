@@ -82,14 +82,31 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord, const Noise
   return types;
 }
 
-/** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
-ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
-  int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
-  auto noiseCaches = wd.buildNoiseCaches(coords);
-  ResourceType[][5] tileCache;
-  foreach(ci; 0..5) tileCache[ci] = wd.buildTileTypes(coords[ci], noiseCaches[ci], ci == 0);
+/** helper that builds just one face */
+@nogc float[12] faceData(int f, float px, float py, float pz, float ts, float th) nothrow {
+  final switch(f) {
+    case 0: return [  0,  0,  ts,   1,  0,  0,   0,  th,  0,   px+ts/2, py,      pz      ];
+    case 1: return [  0,  0, -ts,  -1,  0,  0,   0,  th,  0,   px-ts/2, py,      pz      ];
+    case 2: return [ ts,  0,   0,   0,  1,  0,   0,   0, ts,   px,      py+th/2, pz      ];
+    case 3: return [ ts,  0,   0,   0, -1,  0,   0,   0,-ts,   px,      py-th/2, pz      ];
+    case 4: return [-ts,  0,   0,   0,  0,  1,   0,  th,  0,   px,      py,      pz+ts/2 ];
+    case 5: return [ ts,  0,   0,   0,  0, -1,   0,  th,  0,   px,      py,      pz-ts/2 ];
+  }
+}
 
-  ChunkData data = ChunkData(coord, tileCache[0]);
+/** Record a tile's AABB into chunk bounds and per-tile pick data (if it produced faces) */
+void addTileBounds(ref ChunkData data, float[3] lo, float[3] hi, int i, size_t faceStart) {
+  expandBounds(data.bmin, data.bmax, lo);
+  expandBounds(data.bmin, data.bmax, hi);
+  if (data.tileInstances.length > faceStart) {
+    data.tileBmin ~= lo;
+    data.tileBmax ~= hi;
+    data.pickIndices ~= i;
+  }
+}
+
+/** Generate tile face instances, AABB, and pick data with neighbour culling */
+void buildTileGeometry(immutable(WorldData) wd, int[3] coord, const ResourceType[][5] tileCache, const int[3][5] coords, ref ChunkData data) {
   float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == ResourceType.None) continue;
@@ -97,37 +114,31 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
     auto wc = wd.worldCoord(coord, lc);
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
-    float[12][6] faces = [
-      [  0,  0,  ts,   1,  0,  0,   0,  th,  0,   px+ts/2, py,      pz      ],
-      [  0,  0, -ts,  -1,  0,  0,   0,  th,  0,   px-ts/2, py,      pz      ],
-      [ ts,  0,   0,   0,  1,  0,   0,   0, ts,   px,      py+th/2, pz      ],
-      [ ts,  0,   0,   0, -1,  0,   0,   0,-ts,   px,      py-th/2, pz      ],
-      [-ts,  0,   0,   0,  0,  1,   0,  th,  0,   px,      py,      pz+ts/2 ],
-      [ ts,  0,   0,   0,  0, -1,   0,  th,  0,   px,      py,      pz-ts/2 ],
-    ];
     bool onBoundary = lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
     auto neighbours = wd.tileNeighbours(wc);
     size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
       bool exposed;
-      if (onBoundary) {
-        exposed = wd.isFaceExposed(tileCache, coords, neighbours[f], coord);
-      } else {
+      if (!onBoundary) {
         auto ln = wd.localCoord(neighbours[f]);
         exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : tileCache[0][wd.tileIndex(ln)] == ResourceType.None;
-      }
+      } else { exposed = wd.isFaceExposed(tileCache, coords, neighbours[f], coord); }
       if (!exposed) continue;
-      data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faces[f]);
+      data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faceData(f, px, py, pz, ts, th));
       data.tileIndices ~= i;
     }
-    expandBounds(data.bmin, data.bmax, [px - ts/2, py - th/2, pz - ts/2]);
-    expandBounds(data.bmin, data.bmax, [px + ts/2, py + th/2, pz + ts/2]);
-    if (data.tileInstances.length > faceStart) {
-      data.tileBmin ~= [px - ts/2, py - th/2, pz - ts/2];
-      data.tileBmax ~= [px + ts/2, py + th/2, pz + ts/2];
-      data.pickIndices ~= i;
-    }
+    data.addTileBounds([px - ts/2, py - th/2, pz - ts/2], [px + ts/2, py + th/2, pz + ts/2], i, faceStart);
   }
+}
+
+/** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
+ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
+  int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
+  auto noiseCaches = wd.buildNoiseCaches(coords);
+  ResourceType[][5] tileCache;
+  foreach(ci; 0..5) tileCache[ci] = wd.buildTileTypes(coords[ci], noiseCaches[ci], ci == 0);
+  ChunkData data = ChunkData(coord, tileCache[0]);
+  wd.buildTileGeometry(coord, tileCache, coords, data);
   foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
 }
