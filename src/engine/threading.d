@@ -101,8 +101,7 @@ void checkAsync(ref App app) {
   app.checkPendingTextures();     // Check all pending texture transfers; promote to app.textures once GPU is done
 
   app.drainMessages!string((msg) { SDL_Log("Received back: %s", toStringz(msg)); });
-  app.drainMessages!OpenAsset((msg) {
-    auto obj = cast(OpenAsset)msg;
+  app.drainMessages!OpenAsset((obj) {
     app.mergeBones(obj);
     app.objects ~= obj;
     app.registerAMaterials(app.objects[($-1)]);
