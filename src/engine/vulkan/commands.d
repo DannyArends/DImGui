@@ -42,12 +42,13 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   foreach(topology; supportedTopologies) {
     pushLabel(cmd, toStringz(format("T:%s", topology)), Colors.lightgray);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
-
+    bool first = true;
+    Specialization last = Specialization(first);
     for(size_t x = 0; x < app.objects.length; x++) {
       if(!app.objects[x].inFrustum) continue;
       if(!app.objects[x].isVisible) continue;
       auto s = Specialization(!app.objects[x].instancedMesh); // Pipeline compile time constants [ALPHA_TEST = !app.objects[x].instancedMesh]
-      vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s));
+      if(first || last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; first = false; }
       if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds && app.objects[x].box !is null) app.draw(app.objects[x].box, syncIndex);
       if(app.objects[x].topology != topology) continue;
       app.draw(app.objects[x], syncIndex);
