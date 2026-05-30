@@ -64,7 +64,10 @@ void createComputePipeline(ref App app, Shader shader) {
     stage : shader.info,
     pNext : null
   };
-  enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &app.compute.pipelines[shader.path].pipeline));
+
+  VkPipeline computePipeline;
+  enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &computePipeline));
+  app.compute.pipelines[shader.path].set(computePipeline);
 
   app.nameVulkanObject(app.compute.pipelines[shader.path].layout, toStringz(format("[LAYOUT] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
   app.nameVulkanObject(app.compute.pipelines[shader.path].pipeline, toStringz(format("[PIPELINE] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE);

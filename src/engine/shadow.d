@@ -122,7 +122,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     pushConstantRangeCount: 1,
     pPushConstantRanges: &pushConstantRange,
   };
-  app.shadows.pipeline.createLayout(app, pipelineLayoutInfo);
+  app.shadows.pipeline.createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
   if(app.verbose) SDL_Log(" - shadow map pipeline layout created: %p", app.shadows.pipeline.layout);
 
   auto stages = createStageInfo(app.shadows.shaders);

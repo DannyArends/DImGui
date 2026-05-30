@@ -96,8 +96,7 @@ extern (C) void includeRelease(void* userData, shaderc_include_result* result) {
   }
 }
 
-/** Load GLSL, compile to SpirV, and create the vulkan shaderModule
- */
+/** Load GLSL, compile to SpirV, and create the vulkan shaderModule */
 Shader createShaderModule(App app, string path, shaderc_shader_kind type = shaderc_glsl_vertex_shader) {
   auto source = readFile(toStringz(path), app.verbose);
   auto result = shaderc_compile_into_spv(app.compiler, &source[0], source.length, type, toStringz(path), "main", app.options);
@@ -129,8 +128,7 @@ Shader createShaderModule(App app, string path, shaderc_shader_kind type = shade
   return(shader);
 }
 
-/** createShaderStageInfo helper function, since the VkPipelineShaderStageCreateInfo contains a variable "module"
- */
+/** createShaderStageInfo helper function, since the VkPipelineShaderStageCreateInfo contains a variable "module" */
 VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const(char)* name = "main") {
   return(VkPipelineShaderStageCreateInfo(
     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,    //sType
@@ -143,14 +141,23 @@ VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stag
   ));
 }
 
-VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
+/** Build pipeline stage infos from shaders, overriding the fragment stage with ALPHA_TEST = alphaTest.
+ *  Returns stages plus the spec data they point to (kept alive by the caller). */
+VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo, 
+                                                                    ref VkSpecializationMapEntry mapEntry, 
+                                                                    bool alphaTest = true) {
+  mapEntry = VkSpecializationMapEntry(0, 0, bool.sizeof);  // constant_id 0, offset 0
+  specInfo = VkSpecializationInfo(1, &mapEntry, bool.sizeof, &alphaTest);
   VkPipelineShaderStageCreateInfo[] info;
-  foreach(shader; shaders){ info ~= shader.info; }
+  foreach(shader; shaders){
+    auto stage = shader.info;
+    if(shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT) { stage.pSpecializationInfo = &specInfo; }
+    info ~= stage;
+  }
   return(info);
 }
 
-/** Load shaders to dst using the specified shader definitions
- */
+/** Load shaders to dst using the specified shader definitions */
 void loadShaders(ref App app, ref Shader[] dst, ShaderDef[] defs) {
   foreach(def; defs) { dst ~= app.createShaderModule(def.path, def.type); }
 
