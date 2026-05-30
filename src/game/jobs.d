@@ -28,6 +28,8 @@ struct Job {
   void function(ref GameApp app, ref Dwarf d, ref Job j) onClaim;
   void function(ref GameApp app, ref Dwarf d) onArrive;
   void function(ref GameApp app, ref Dwarf d) onFail;
+
+  bool isStale(ref GameApp app) { return name == "Mining" && app.world.getTileAt(targetTile) == ResourceType.None; }
 }
 
 Job[] jobQueue;
@@ -278,7 +280,7 @@ void failAndRequeueParent(ref Dwarf d) { if(d.jobStack.length > 1) jobQueue ~= d
 void claimNextJob(ref GameApp app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-
+  jobQueue = jobQueue.filter!(j => !j.isStale(app)).array;
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
