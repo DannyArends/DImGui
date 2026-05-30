@@ -9,10 +9,11 @@ import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import matrix : translateScale;
 import normals : computeTangents;
+import noise : noiseHTT;
 import tile : getTile, tileCoord, tileToWorld;
 import vegetation : saveVegetation, loadVegetation;
 
-alias NoiseCache = float[3][1024];
+alias NoiseCache = float[1024];
 
 struct FeaturePartT {
   string mesh;
@@ -76,7 +77,7 @@ void initFeatureMeshes(ref GameApp app) {
   }
 }
 
-Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const NoiseCache noiseCache, const FeatureT ft) {
+Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const FeatureT ft) {
   Feature[] result;
   ResourceType[] spawnTypes;
   foreach(s; ft.spawnOn) spawnTypes ~= s.to!ResourceType;
@@ -85,9 +86,9 @@ Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const Resource
     if(i + wd.chunkSize < wd.tileCount && tileTypes[i + wd.chunkSize] != ResourceType.None) continue;
     if(!spawnTypes.canFind(tileTypes[i])) continue;
     auto lc = wd.tileCoord(i);
-    auto n = noiseCache[lc[0] + lc[2] * wd.chunkSize];
-    if(n[2] < ft.noiseThreshold) continue;
     auto wc = wd.worldCoord(coord, lc);
+    auto n = noiseHTT(wc[0], wc[2], wd.seed);  // recompute — only for surface spawn candidates
+    if(n[2] < ft.noiseThreshold) continue;
     uint hash = (wc[0] * ft.hashSeed1) ^ (wc[2] * ft.hashSeed2);
     if(hash % ft.hashMod != ft.hashRem) continue;
     uint height = ft.heightMin + (ft.heightMin == ft.heightMax ? 0 : cast(uint)((n[0]+n[1]) * (ft.heightMax-ft.heightMin) * 0.5f));
