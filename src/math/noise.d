@@ -8,8 +8,10 @@ import phobos;
 enum float NOISE_SCALE = 0.02f;
 
 /** Deterministic hash of 3D integer coords -> float [0..1] */
-@nogc pure float valueNoise(int x, int y, int z, int seed = 0) nothrow {
-  int n = x + y * 57 + z * 131 + seed * 1013;
+@nogc pure float valueNoise(int N)(int[N] c, int seed = 0) nothrow {
+  static immutable int[4] primes = [1, 57, 131, 1009];
+  int n = seed * 1013;
+  static foreach (d; 0 .. N) { n += c[d] * primes[d]; }
   n = (n << 13) ^ n;
   return (1.0f - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0f) * 0.5f + 0.5f;
 }
@@ -17,35 +19,44 @@ enum float NOISE_SCALE = 0.02f;
 @nogc pure float lerp(float a, float b, float t) nothrow { return a + t * (b - a); }
 
 /** Smooth noise at float coords (trilinear interpolated) */
-@nogc pure float smoothNoise(float x, float y, float z, int seed = 0) nothrow {
-  int ix = cast(int)floor(x); float fx = x - ix;
-  int iy = cast(int)floor(y); float fy = y - iy;
-  int iz = cast(int)floor(z); float fz = z - iz;
-  float ux = fx * fx * (3.0f - 2.0f * fx);
-  float uy = fy * fy * (3.0f - 2.0f * fy);
-  float uz = fz * fz * (3.0f - 2.0f * fz);
-  return lerp(
-    lerp(lerp(valueNoise(ix,   iy,   iz,   seed), valueNoise(ix+1, iy,   iz,   seed), ux),
-         lerp(valueNoise(ix,   iy+1, iz,   seed), valueNoise(ix+1, iy+1, iz,   seed), ux), uy),
-    lerp(lerp(valueNoise(ix,   iy,   iz+1, seed), valueNoise(ix+1, iy,   iz+1, seed), ux),
-         lerp(valueNoise(ix,   iy+1, iz+1, seed), valueNoise(ix+1, iy+1, iz+1, seed), ux), uy),
-    uz);
+@nogc pure float smoothNoise(int N = 3)(float[N] p, int seed = 0) nothrow {
+  int[N] ip;
+  float[N] u;
+  static foreach (d; 0 .. N) {{
+    ip[d] = cast(int)floor(p[d]);
+    float f = p[d] - ip[d];
+    u[d] = f * f * (3.0f - 2.0f * f);
+  }}
+  float result = 0.0f;
+  static foreach (corner; 0 .. (1 << N)) {{
+    float weight = 1.0f;
+    int[N] c;
+    static foreach (d; 0 .. N) {{
+      enum bit = (corner >> d) & 1;
+      c[d] = ip[d] + bit;
+      weight *= bit ? u[d] : (1.0f - u[d]);
+    }}
+    result += weight * valueNoise(c, seed);
+  }}
+  return result;
 }
 
 /** Multi-octave fractal noise */
-@nogc pure float fbm(float x, float y, float z, int octaves = 6, float lacunarity = 2.0f, float gain = 0.5f, int seed = 0) nothrow {
+@nogc pure float fbm(int N = 3)(float[N] p, int octaves = 6, float lacunarity = 2.0f, float gain = 0.5f, int seed = 0) nothrow {
   float value = 0.0f, amplitude = 0.5f, frequency = 1.0f;
   for (int i = 0; i < octaves; i++) {
-    value += amplitude * smoothNoise(x * frequency, y * frequency, z * frequency, seed + i);
+    float[N] sp;
+    static foreach (d; 0 .. N) { sp[d] = p[d] * frequency; }
+    value += amplitude * smoothNoise!N(sp, seed + i);
     amplitude *= gain;
     frequency *= lacunarity;
   }
-  return(clamp(value, 0.0f, 1.0f));
+  return clamp(value, 0.0f, 1.0f);
 }
 
+/** 3 x 2D noise */
 @nogc pure float[3] noiseHTT(int x, int z, const int[3] seed) nothrow {
-  return [fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[0]), 
-          fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[1]),
-          fbm(x * NOISE_SCALE, z * NOISE_SCALE, 0.0f, 4, 2.0f, 0.5f, seed[2])];
+  float[2] p = [x * NOISE_SCALE, z * NOISE_SCALE];
+  return [fbm!2(p, 4, 2.0f, 0.5f, seed[0]), fbm!2(p, 4, 2.0f, 0.5f, seed[1]), fbm!2(p, 4, 2.0f, 0.5f, seed[2])];
 }
 
