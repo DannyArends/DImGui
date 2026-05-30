@@ -169,5 +169,4 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.pendingUnsettle.length);
   foreach(tile; app.world.pendingUnsettle) app.world.unsettleBlocks(app.world.blocks, tile);
   app.world.pendingUnsettle = [];
-  app.camera.isDirty = true;
 }

@@ -94,10 +94,13 @@ void updateGame(ref GameApp app) {
 
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
+  bool gotChunk = false;
   while(receiveTimeout(dur!"msecs"(0), (immutable(ChunkData) data, Tid tid) {
     app.concurrency.workers[tid] = false;
     app.finalizeChunk(cast(ChunkData)data);
+    gotChunk = true;
   })) {}
+  if(gotChunk) app.camera.isDirty = true;
   while(receiveTimeout(dur!"msecs"(0), (immutable(PathResult) result, Tid tid) {
     app.concurrency.workers[tid] = false;
     app.applyPathResult(cast(PathResult)result);
