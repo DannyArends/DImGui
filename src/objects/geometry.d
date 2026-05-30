@@ -59,7 +59,7 @@ class Geometry {
   //bool[3] buffers = [false, false, false];          /// Boolean flag
   @property @nogc bool isBuffered() nothrow { return(vertices.buffered && indices.buffered && instances.buffered); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
-  @property @nogc bool hasBoundingBox() nothrow { return(box is null); }
+  @property @nogc bool hasBoundingBox() nothrow { return(!(box is null)); }
 
   @nogc void initInstanced(string delegate() name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
