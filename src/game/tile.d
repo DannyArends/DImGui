@@ -19,9 +19,22 @@ enum int[3] noTile = [int.min, 0, 0];
 enum int[3] builtTile = [int.max, 0, 0];
 
 /** Is the Tile occupied ?  */
-bool isTileOccupied(ref GameApp app, int[3] tile) {
+@nogc pure bool isTileOccupied(const GameApp app, const int[3] tile) nothrow {
   if(app.world.dwarves !is null) { foreach(ref d; app.world.dwarves) { if(d.tile == tile) return true; } }
   return false;
+}
+
+@nogc pure bool onChunkBoundary(T)(T wd, int[3] lc) nothrow {
+  return lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
+}
+
+/** True if all 6 neighbours of interior tile i are solid (caller guarantees i is not on a boundary) */
+@nogc pure bool isBuried(T)(T wd, const ResourceType[] types, int i, int[3] lc) nothrow {
+  if (lc[1] == 0 || lc[1] >= wd.chunkHeight-1) return false;
+  int dy = wd.chunkSize, dz = wd.chunkHeight * wd.chunkSize;
+  return types[i-1]  != ResourceType.None && types[i+1]  != ResourceType.None &&
+         types[i-dy] != ResourceType.None && types[i+dy] != ResourceType.None &&
+         types[i-dz] != ResourceType.None && types[i+dz] != ResourceType.None;
 }
 
 /** Set a tile type in a chunk and mark the chunk dirty for rebuild */

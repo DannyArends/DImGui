@@ -10,7 +10,7 @@ import game : GameApp;
 import gameobjects : Chunk;
 import buffer : deAllocate;
 import intersection : intersects;
-import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile;
+import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried;
 import hits : getHits;
 import noise : noiseHTT, noise2D;
 import textures : idx;
@@ -108,13 +108,20 @@ void addTileBounds(ref ChunkData data, float[3] lo, float[3] hi, int i, size_t f
 /** Generate tile face instances, AABB, and pick data with neighbour culling */
 void buildTileGeometry(immutable(WorldData) wd, int[3] coord, const ResourceType[][5] tileCache, const int[3][5] coords, ref ChunkData data) {
   float ts = wd.tileSize, th = wd.tileHeight;
+  int dz = wd.chunkHeight * wd.chunkSize, dy = wd.chunkSize;
+  data.tileInstances.reserve(wd.tileCount);
+  data.tileIndices.reserve(wd.tileCount);
+  data.tileBmin.reserve(wd.chunkSize * wd.chunkSize);
+  data.tileBmax.reserve(wd.chunkSize * wd.chunkSize);
+  data.pickIndices.reserve(wd.chunkSize * wd.chunkSize);
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == ResourceType.None) continue;
     auto lc = wd.tileCoord(i);
+    bool onBoundary = wd.onChunkBoundary(lc);
+    if (!onBoundary && wd.isBuried(data.tileTypes, i, lc)) continue;
     auto wc = wd.worldCoord(coord, lc);
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
-    bool onBoundary = lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
     auto neighbours = wd.tileNeighbours(wc);
     size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
