@@ -18,6 +18,8 @@ layout(location = 5) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
+layout(constant_id = 0) const bool ALPHA_TEST = true;  // false = opaque variant (no discard, enables mobile HSR)
+
 void main() {
   Mesh mesh = meshSSBO.meshes[uint(fragInstance[0])];
   Material mat = materialSSBO.materials[uint(mesh.mid)];
@@ -27,13 +29,13 @@ void main() {
 
   if(mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
-    if(texSample.a < 0.2f) discard;
+    if(ALPHA_TEST && texSample.a < 0.2f) discard;
     baseColor *= texSample.rgb;
   }
 
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
 
-  if(mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.2f) discard;
+  if(ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.2f) discard;
 
   vec3 normalForLighting = normalize(fragNormal);
   if(mat.nid >= 0) {

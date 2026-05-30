@@ -9,24 +9,29 @@ import shaders : createStageInfo;
 import devices : getMSAASamples;
 import validation : nameVulkanObject;
 
-/** GraphicsPipeline
- */
+struct Specialization{ bool alpha = true; }
+
+/** GraphicsPipeline */
 struct GraphicsPipeline {
   VkPipelineLayout layout;
-  VkPipeline pipeline;
+  VkPipeline[Specialization] variants;
 
-  void create(ref App app, VkGraphicsPipelineCreateInfo info, string label, ref DeletionQueue queue) {
-    enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &info, app.allocator, &pipeline));
+  /** Default (alpha-test) pipeline — lets existing `.pipeline` call sites work untouched */
+  @property VkPipeline pipeline() { return variants[Specialization.init]; }
+
+  /** Store an externally-created pipeline (e.g. compute, which builds outside create) */
+  void set(VkPipeline p, Specialization s = Specialization.init) { variants[s] = p; }
+
+  void create(ref App app, VkGraphicsPipelineCreateInfo info, string label, ref DeletionQueue queue, Specialization spec = Specialization.init) {
+    enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &info, app.allocator, &pipeline[spec]));
     app.nameVulkanObject(layout,   toStringz(format("[LAYOUT] %s", label)),   VK_OBJECT_TYPE_PIPELINE_LAYOUT);
     app.nameVulkanObject(pipeline, toStringz(format("[PIPELINE] %s", label)), VK_OBJECT_TYPE_PIPELINE);
-    queue.add((){
-      vkDestroyPipelineLayout(app.device, layout, app.allocator);
-      vkDestroyPipeline(app.device, pipeline, app.allocator);
-    });
+    queue.add((){ vkDestroyPipeline(app.device, pipeline[spec], app.allocator); });
   }
 
-  void createLayout(ref App app, VkPipelineLayoutCreateInfo info) {
+  void createLayout(ref App app, VkPipelineLayoutCreateInfo info, ref DeletionQueue queue) {
     enforceVK(vkCreatePipelineLayout(app.device, &info, app.allocator, &layout));
+    queue.add((){ vkDestroyPipelineLayout(app.device, layout, app.allocator); });
   }
 }
 
@@ -108,7 +113,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     setLayoutCount: 1,
     pSetLayouts: &app.layouts[Stage.RENDER],
   };
-  app.pipelines[topology].createLayout(app, pipelineLayoutInfo);
+  app.pipelines[topology].createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
 
   VkPipelineDepthStencilStateCreateInfo depthStencil = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -203,7 +208,7 @@ void createPostProcessGraphicsPipeline(ref App app) {
     setLayoutCount: 1,
     pSetLayouts: &app.layouts[Stage.POST]
   };
-  app.postProcessPipeline.createLayout(app, pipelineLayoutInfo);
+  app.postProcessPipeline.createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
 
   // Shaders for post-processing (vertex shader for quad, fragment shader for tonemapping/sampling)
   auto stages = createStageInfo(app.postProcess);
