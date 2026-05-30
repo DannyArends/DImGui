@@ -31,7 +31,7 @@ struct ChunkData {
   float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
 
-/** Build tile type array for one chunk direction from its noise cache */
+/** Build the full tile-type array for a chunk column-by-column from height/material noise */
 ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   ResourceType[] types;
   types.length = wd.tileCount;
@@ -51,7 +51,7 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   return types;
 }
 
-/** helper that builds just one face */
+/** Returns the 12-float instance data (offset/normal/extent/centre) for one cube face f */
 @nogc float[12] faceData(int f, float px, float py, float pz, float ts, float th) nothrow {
   final switch(f) {
     case 0: return [  0,  0,  ts,   1,  0,  0,   0,  th,  0,   px+ts/2, py,      pz      ];
