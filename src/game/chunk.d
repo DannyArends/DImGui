@@ -60,20 +60,21 @@ NoiseCache[5] buildNoiseCaches(immutable(WorldData) wd, const int[3][5] coords) 
 }
 
 /** Build tile type array for one chunk direction from its noise cache */
-ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord, const NoiseCache nc) {
+ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord, const NoiseCache nc, bool needMaterial) {
   ResourceType[] types;
   types.length = wd.tileCount;
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int x = 0; x < wd.chunkSize; x++) {
       float h0 = nc[x + z * wd.chunkSize];
       int s = cast(int)(h0 * sqrt(h0) * (wd.chunkHeight - 1));
-      auto wc = wd.worldCoord(coord, [x, 0, z]);
-      float h1 = noise2D(wc[0], wc[2], wd.seed[1]);  // surface material noise, once per column
-      ResourceType surfaceType = heightToResource(h0, h1);
+      ResourceType surfaceType = ResourceType.Stone01;  // placeholder for neighbours
+      if (needMaterial) {
+        auto wc = wd.worldCoord(coord, [x, 0, z]);
+        surfaceType = heightToResource(h0, noise2D(wc[0], wc[2], wd.seed[1]));
+      }
       int base = z * wd.chunkHeight * wd.chunkSize + x;
       for (int y = 0; y < wd.chunkHeight; y++) {
-        ResourceType rt = y > s ? ResourceType.None : y == 0 ? ResourceType.Lava : y < s ? ResourceType.Stone01 : surfaceType;
-        types[base + y * wd.chunkSize] = rt;
+        types[base + y * wd.chunkSize] = y > s ? ResourceType.None : y == 0 ? ResourceType.Lava : y < s ? ResourceType.Stone01 : surfaceType;
       }
     }
   }
@@ -86,7 +87,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   int[3][5] coords = [coord, [coord[0]+1, 0, coord[2]], [coord[0]-1, 0, coord[2]], [coord[0], 0, coord[2]+1], [coord[0], 0, coord[2]-1]];
   auto noiseCaches = wd.buildNoiseCaches(coords);
   ResourceType[][5] tileCache;
-  foreach(ci; 0..5) tileCache[ci] = wd.buildTileTypes(coords[ci], noiseCaches[ci]);
+  foreach(ci; 0..5) tileCache[ci] = wd.buildTileTypes(coords[ci], noiseCaches[ci], ci == 0);
 
   ChunkData data = ChunkData(coord, tileCache[0]);
   float ts = wd.tileSize, th = wd.tileHeight;
