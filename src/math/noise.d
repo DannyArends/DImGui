@@ -7,7 +7,7 @@ import phobos;
 
 enum float NOISE_SCALE = 0.02f;
 
-/** Deterministic hash of 3D integer coords -> float [0..1] */
+/** Deterministic hash of N dimensional integer coords -> float [0..1] */
 @nogc pure float valueNoise(int N)(int[N] c, int seed = 0) nothrow {
   static immutable int[4] primes = [1, 57, 131, 1009];
   int n = seed * 1013;
@@ -18,7 +18,7 @@ enum float NOISE_SCALE = 0.02f;
 
 @nogc pure float lerp(float a, float b, float t) nothrow { return a + t * (b - a); }
 
-/** Smooth noise at float coords (trilinear interpolated) */
+/** Smooth noise at N dimensional float coords (trilinear interpolated) */
 @nogc pure float smoothNoise(int N = 3)(float[N] p, int seed = 0) nothrow {
   int[N] ip;
   float[N] u;
@@ -54,9 +54,13 @@ enum float NOISE_SCALE = 0.02f;
   return clamp(value, 0.0f, 1.0f);
 }
 
+/** Single 2D fbm value for one seed (replaces full noiseHTT in hot paths) */
+@nogc pure float noise2D(int x, int z, int seed) nothrow {
+  return fbm!2([x * NOISE_SCALE, z * NOISE_SCALE], 4, 2.0f, 0.5f, seed);
+}
+
 /** 3 x 2D noise */
 @nogc pure float[3] noiseHTT(int x, int z, const int[3] seed) nothrow {
   float[2] p = [x * NOISE_SCALE, z * NOISE_SCALE];
   return [fbm!2(p, 4, 2.0f, 0.5f, seed[0]), fbm!2(p, 4, 2.0f, 0.5f, seed[1]), fbm!2(p, 4, 2.0f, 0.5f, seed[2])];
 }
-

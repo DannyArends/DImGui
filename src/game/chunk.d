@@ -12,7 +12,7 @@ import buffer : deAllocate;
 import intersection : intersects;
 import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile;
 import hits : getHits;
-import noise : noiseHTT;
+import noise : noiseHTT, noise2D;
 import textures : idx;
 import vector : expandBounds;
 import feature : buildFeatureData, NoiseCache;
@@ -52,7 +52,7 @@ NoiseCache[5] buildNoiseCaches(immutable(WorldData) wd, const int[3][5] coords) 
     for (int x = 0; x < wd.chunkSize; x++) {
       for (int z = 0; z < wd.chunkSize; z++) {
         auto wc = wd.worldCoord(coords[ci], [x, 0, z]);
-        caches[ci][x + z * wd.chunkSize] = noiseHTT(wc[0], wc[2], wd.seed);
+        caches[ci][x + z * wd.chunkSize] = noise2D(wc[0], wc[2], wd.seed[0]);
       }
     }
   }
@@ -65,11 +65,14 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord, const Noise
   types.length = wd.tileCount;
   for (int z = 0; z < wd.chunkSize; z++) {
     for (int x = 0; x < wd.chunkSize; x++) {
-      auto ht = nc[x + z * wd.chunkSize];
-      int s = cast(int)(ht[0] * sqrt(ht[0]) * (wd.chunkHeight - 1));
+      float h0 = nc[x + z * wd.chunkSize];
+      int s = cast(int)(h0 * sqrt(h0) * (wd.chunkHeight - 1));
+      auto wc = wd.worldCoord(coord, [x, 0, z]);
+      float h1 = noise2D(wc[0], wc[2], wd.seed[1]);  // surface material noise, once per column
+      ResourceType surfaceType = heightToResource(h0, h1);
       int base = z * wd.chunkHeight * wd.chunkSize + x;
       for (int y = 0; y < wd.chunkHeight; y++) {
-        ResourceType rt = y > s ? ResourceType.None : y == 0 ? ResourceType.Lava : y < s ? ResourceType.Stone01 : heightToResource(ht[0], ht[1]);
+        ResourceType rt = y > s ? ResourceType.None : y == 0 ? ResourceType.Lava : y < s ? ResourceType.Stone01 : surfaceType;
         types[base + y * wd.chunkSize] = rt;
       }
     }
@@ -124,7 +127,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
       data.pickIndices ~= i;
     }
   }
-  foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, noiseCaches[0], ft); }
+  foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
 }
 

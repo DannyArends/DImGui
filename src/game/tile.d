@@ -5,7 +5,7 @@
 
 import game;
 
-import noise : noiseHTT;
+import noise : noise2D;
 import pathfinding : invalidatePaths;
 import vector : x,y,z;
 
@@ -52,12 +52,12 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
 
 /** Determine the tile type at a world coordinate from noise, no chunk data required */
 @nogc pure ResourceType getTile(T)(T wd, const int[3] wc) nothrow {
-  auto ht = noiseHTT(wc.x, wc.z, wd.seed);
-  int surface = cast(int)(ht[0] * sqrt(ht[0]) * (wd.chunkHeight - 1));
+  float h0 = noise2D(wc.x, wc.z, wd.seed[0]);
+  int surface = cast(int)(h0 * sqrt(h0) * (wd.chunkHeight - 1));
   if (wc.y > surface) return ResourceType.None;
   if (wc.y == 0) return ResourceType.Lava;
   if (wc.y < surface) return ResourceType.Stone01;
-  return heightToResource(ht[0], ht[1]);
+  return heightToResource(h0, noise2D(wc.x, wc.z, wd.seed[1]));
 }
 
 @nogc pure int[3] tileCoord(T)(T wd, int i) nothrow { 
