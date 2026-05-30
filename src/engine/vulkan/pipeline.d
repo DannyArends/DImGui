@@ -5,7 +5,7 @@
 
 import engine;
 
-import shaders : createStageInfo, Specialization;
+import shaders : createStageInfo;
 import devices : getMSAASamples;
 import validation : nameVulkanObject;
 
@@ -15,7 +15,7 @@ struct GraphicsPipeline {
   VkPipeline[Specialization] variants;
 
   /** Default (alpha-test) pipeline — lets existing `.pipeline` call sites work untouched */
-  @property VkPipeline pipeline() { return variants[Specialization.init]; }
+  @property VkPipeline pipeline(Specialization s = Specialization.init) { return variants[s]; }
 
   /** Store an externally-created pipeline (e.g. compute, which builds outside create) */
   void set(VkPipeline p, Specialization s = Specialization.init) { variants[s] = p; }

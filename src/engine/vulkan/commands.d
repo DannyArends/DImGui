@@ -41,13 +41,12 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
   foreach(topology; supportedTopologies) {
     pushLabel(cmd, toStringz(format("T:%s", topology)), Colors.lightgray);
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                            app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
-    
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
+
     for(size_t x = 0; x < app.objects.length; x++) {
       if(!app.objects[x].inFrustum) continue;
       if(!app.objects[x].isVisible) continue;
+      vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(Specialization(!app.objects[x].instancedMesh)));
       if(topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds && app.objects[x].box !is null) app.draw(app.objects[x].box, syncIndex);
       if(app.objects[x].topology != topology) continue;
       app.draw(app.objects[x], syncIndex);
