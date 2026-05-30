@@ -76,17 +76,18 @@ void initFeatureMeshes(ref GameApp app) {
   }
 }
 
-Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const NoiseCache noiseCache, ref immutable FeatureT ft) {
+Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const NoiseCache noiseCache, const FeatureT ft) {
   Feature[] result;
+  ResourceType[] spawnTypes;
+  foreach(s; ft.spawnOn) spawnTypes ~= s.to!ResourceType;
   for(int i = 0; i < wd.tileCount; i++) {
     if(tileTypes[i] == ResourceType.None) continue;
-    auto lc = wd.tileCoord(i);
-    auto wc = wd.worldCoord(coord, lc);
     if(i + wd.chunkSize < wd.tileCount && tileTypes[i + wd.chunkSize] != ResourceType.None) continue;
-    auto tt = tileTypes[i];
-    if(!ft.spawnOn.canFind(tt.to!string)) continue;
+    if(!spawnTypes.canFind(tileTypes[i])) continue;
+    auto lc = wd.tileCoord(i);
     auto n = noiseCache[lc[0] + lc[2] * wd.chunkSize];
     if(n[2] < ft.noiseThreshold) continue;
+    auto wc = wd.worldCoord(coord, lc);
     uint hash = (wc[0] * ft.hashSeed1) ^ (wc[2] * ft.hashSeed2);
     if(hash % ft.hashMod != ft.hashRem) continue;
     uint height = ft.heightMin + (ft.heightMin == ft.heightMax ? 0 : cast(uint)((n[0]+n[1]) * (ft.heightMax-ft.heightMin) * 0.5f));
