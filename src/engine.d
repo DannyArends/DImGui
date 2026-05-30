@@ -123,6 +123,7 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
+  bool enableValidation = true;                                                 /// Should validation be enabled ?
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
   LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
