@@ -141,6 +141,13 @@ VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stag
   ));
 }
 
+// Keep this original (for shadow, post, and the default scene call):
+VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
+  VkPipelineShaderStageCreateInfo[] info;
+  foreach(shader; shaders){ info ~= shader.info; }
+  return(info);
+}
+
 /** Build pipeline stage infos from shaders, overriding the fragment stage with ALPHA_TEST = alphaTest.
  *  Returns stages plus the spec data they point to (kept alive by the caller). */
 VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo, 
