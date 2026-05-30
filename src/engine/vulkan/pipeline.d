@@ -5,11 +5,9 @@
 
 import engine;
 
-import shaders : createStageInfo;
+import shaders : createStageInfo, Specialization;
 import devices : getMSAASamples;
 import validation : nameVulkanObject;
-
-struct Specialization{ bool alpha = true; }
 
 /** GraphicsPipeline */
 struct GraphicsPipeline {
@@ -37,7 +35,7 @@ struct GraphicsPipeline {
 
 /** Create a GraphicsPipeline object for a specified topology
  */
-void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, Specialization s = Specialization.init ) {
+void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST ) {
   app.pipelines[topology] = GraphicsPipeline();
   auto bindingDescription = Vertex.getBindingDescription();
   auto attributeDescriptions = Vertex.getRenderDescriptions();
@@ -113,7 +111,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     setLayoutCount: 1,
     pSetLayouts: &app.layouts[Stage.RENDER],
   };
-  app.pipelines[topology].createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
+  if(app.pipelines[topology].layout is null) app.pipelines[topology].createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
 
   VkPipelineDepthStencilStateCreateInfo depthStencil = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -124,26 +122,27 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
 
   VkSpecializationInfo specInfo; VkSpecializationMapEntry mapEntry; VkBool32 alphaTest;
 
-  auto stages = createStageInfo(app.shaders, specInfo, mapEntry, alphaTest, s.alpha);
-  VkGraphicsPipelineCreateInfo pipelineInfo = {
-    sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-    stageCount: cast(uint)stages.length,
-    pStages: &stages[0],
-    pVertexInputState: &vertexInputInfo,
-    pInputAssemblyState: &inputAssembly,
-    pViewportState: &viewportState,
-    pRasterizationState: &rasterizer,
-    pMultisampleState: &multisampling,
-    pDepthStencilState: &depthStencil,
-    pColorBlendState: &colorBlending,
-    layout: app.pipelines[topology].layout,
-    renderPass: app.scenePass.pass
-  };
-  app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, s.alpha), app.swapDeletionQueue);
+  static foreach(s; [Specialization(true), Specialization(false)]) {{
+    auto stages = createStageInfo(app.shaders, specInfo, mapEntry, alphaTest, s);
+    VkGraphicsPipelineCreateInfo pipelineInfo = {
+      sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+      stageCount: cast(uint)stages.length,
+      pStages: &stages[0],
+      pVertexInputState: &vertexInputInfo,
+      pInputAssemblyState: &inputAssembly,
+      pViewportState: &viewportState,
+      pRasterizationState: &rasterizer,
+      pMultisampleState: &multisampling,
+      pDepthStencilState: &depthStencil,
+      pColorBlendState: &colorBlending,
+      layout: app.pipelines[topology].layout,
+      renderPass: app.scenePass.pass
+    };
+    app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, s.alpha), app.swapDeletionQueue, s);
+  }}
 }
 
-/** Create a GraphicsPipeline object for Post-process
- */
+/** Create a GraphicsPipeline object for Post-process */
 void createPostProcessGraphicsPipeline(ref App app) {
   app.postProcessPipeline = GraphicsPipeline();
 

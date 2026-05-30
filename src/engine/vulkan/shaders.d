@@ -25,6 +25,10 @@ struct Shader {
   alias shaderModule this;
 }
 
+struct Specialization{ 
+  bool alpha = true;
+}
+
 struct ShaderDef {
   string path;
   shaderc_shader_kind type;
@@ -152,8 +156,8 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
  *  Returns stages plus the spec data they point to (kept alive by the caller). */
 VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo,
                                                                     ref VkSpecializationMapEntry mapEntry,
-                                                                    ref VkBool32 alphaTest, bool alpha = true) {
-  alphaTest = alpha ? VK_TRUE : VK_FALSE;
+                                                                    ref VkBool32 alphaTest, Specialization s) {
+  alphaTest = s.alpha ? VK_TRUE : VK_FALSE;
   mapEntry = VkSpecializationMapEntry(0, 0, VkBool32.sizeof);   // constant_id 0, offset 0, 4 bytes
   specInfo = VkSpecializationInfo(1, &mapEntry, VkBool32.sizeof, &alphaTest);
   VkPipelineShaderStageCreateInfo[] info;
