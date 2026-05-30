@@ -13,8 +13,6 @@ import noise : noiseHTT;
 import tile : getTile, tileCoord, tileToWorld;
 import vegetation : saveVegetation, loadVegetation;
 
-alias NoiseCache = float[1024];
-
 struct FeaturePartT {
   string mesh;
   float scaleX = 1.0f, scaleXVariance = 0.0f;
