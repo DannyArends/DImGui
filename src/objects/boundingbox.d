@@ -27,6 +27,9 @@ struct Bounds {
 
 /** BoundingBox */
 class BoundingBox : Geometry {
+  float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
+  float[3] wmax = [-float.max, -float.max, -float.max];   /// Union world-AABB max over all instances
+
   this(){
    vertices = [
       Vertex([  0.0f, 0.0f, 0.0f ], [  0.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
@@ -95,6 +98,10 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   }
   object.box.instances = object.instances.dup;
   object.box.instances.buffered = false;
+
+  Bounds wb;
+  foreach(i; 0 .. object.box.instances.length) { wb.update(object.box.bmin(i)); wb.update(object.box.bmax(i)); }
+  object.box.wmin = wb.min; object.box.wmax = wb.max;
 }
 
 /** Compute/Update the global scene bounds with an assimp node */
