@@ -27,8 +27,6 @@ struct ChunkData {
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
   Feature[][string] featureData;                            /// Chunk Features
-  float[3] bmin = [ float.max,  float.max,  float.max];     /// Chunk AABB minimum (broad-phase frustum culling)
-  float[3] bmax = [-float.max, -float.max, -float.max];     /// Chunk AABB maximum (broad-phase frustum culling)
 }
 
 /** Build the full tile-type array for a chunk column-by-column from height/material noise */
@@ -65,8 +63,6 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
 
 /** Record a tile's AABB into chunk bounds and per-tile pick data (if it produced faces) */
 void addTileBounds(ref ChunkData data, float[3] lo, float[3] hi, int i, size_t faceStart) {
-  expandBounds(data.bmin, data.bmax, lo);
-  expandBounds(data.bmin, data.bmax, hi);
   if (data.tileInstances.length > faceStart) {
     data.tileBmin ~= lo;
     data.tileBmax ~= hi;
@@ -140,7 +136,6 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
 
   Chunk chunk = new Chunk(data, app.world);
   chunk.tiles.box = new BoundingBox();
-  chunk.tiles.box.setDimensions(data.bmin, data.bmax);
 
   if (data.coord in app.world.chunks) {
     auto oldTiles = app.world.chunks[data.coord].tiles;
