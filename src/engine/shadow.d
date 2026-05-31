@@ -193,6 +193,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
   app.shadows.pipeline.create(app, pipelineInfo, "Shadows", app.swapDeletionQueue);
 }
 
+/** Update the shadow mapping UBO */
 void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
   LightUbo ubo = {
     scene : Matrix.init,
@@ -203,6 +204,7 @@ void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
   if(app.trace) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
 }
 
+/** Record the draw calls in the shadow command buffer */
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   auto cmd = app.shadows.renderPass.beginRecording(app, syncIndex, "Shadow");
 
@@ -219,8 +221,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   popLabel(cmd);
 
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
-  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
   auto shadowExtent = VkExtent2D(app.shadows.dimension, app.shadows.dimension);
   app.shadows.lastShadowInstances = 0;
@@ -243,15 +244,11 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
     uint currentLightIndex = cast(uint)l;
     vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
-    for(size_t x = 0; x < app.objects.length; x++) {
-      auto obj = app.objects[x];
-      if(!obj.isVisible) continue;                                         /// Skip invisible objects
-      if(!obj.castShadow) continue;                                        /// Skip non shadow casters
-      if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;    /// Skip non triangle objects
-      app.shadows.totalShadowInstances += obj.instances.length;            /// Could be rendered
-
+    foreach(obj; app.objects) {
+      if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
+      app.shadows.totalShadowInstances += obj.instances.length;
       if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box.bmin(0), obj.box.bmax(0))) continue;
-      app.shadows.lastShadowInstances += obj.instances.length;             /// Inside the light Frustum
+      app.shadows.lastShadowInstances += obj.instances.length;
       app.shadow(obj, syncIndex);
     }
     vkCmdEndRenderPass(cmd);
