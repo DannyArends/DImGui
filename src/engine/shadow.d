@@ -247,7 +247,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     foreach(obj; app.objects) {
       if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
       app.shadows.totalShadowInstances += obj.instances.length;
-      if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box.bmin(0), obj.box.bmax(0))) continue;
+      if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box.wmin, obj.box.wmax)) continue;
       app.shadows.lastShadowInstances += obj.instances.length;
       app.draw(obj, cmd);
     }
