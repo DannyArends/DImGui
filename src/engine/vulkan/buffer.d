@@ -22,8 +22,9 @@ struct GeometryBuffer(T = ubyte) {
   T[] items = [];
   alias items this;
   void opAssign(T[] rhs) { items = rhs; }
-  
+
   bool buffered = false;
+  bool isBuffered(){ return(buffered  || items.length  == 0); }
 }
 
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
