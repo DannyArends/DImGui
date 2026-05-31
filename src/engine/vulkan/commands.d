@@ -60,7 +60,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
       auto s = Specialization(!obj.instancedMesh);  // ALPHA_TEST = !instancedMesh
       pushLabel(cmd, toStringz(format("%s [topo: %d, ALPHA_TEST=%d]", obj.geometry(), topology, s.alpha)), Colors.lightgray);
       if(first || last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; first = false; }
-      app.draw(obj, app.scenePass.commands[syncIndex]);
+      app.draw(obj, cmd);
       popLabel(cmd);
     }
   }

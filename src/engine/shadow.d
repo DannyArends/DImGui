@@ -249,7 +249,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       app.shadows.totalShadowInstances += obj.instances.length;
       if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box.bmin(0), obj.box.bmax(0))) continue;
       app.shadows.lastShadowInstances += obj.instances.length;
-      app.draw(obj, app.shadows.renderPass.commands[syncIndex]);
+      app.draw(obj, cmd);
     }
     vkCmdEndRenderPass(cmd);
     popLabel(cmd);
