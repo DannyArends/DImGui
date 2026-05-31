@@ -39,6 +39,7 @@ class Text : Geometry {
     instances = [DrawInstance()];
     meshes["Text"] = Mesh([0, cast(uint)this.vertices.length]);
     this.opacity(app.glyphAtlas.path);
+    isOpaque = false;
     geometry = (){ return(typeof(this).stringof); };
   }
 }

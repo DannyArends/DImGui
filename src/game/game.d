@@ -28,6 +28,7 @@ import fpswindow : showFPSContent;
 import imgui : iconTextStr;
 import inventorywindow : showInventoryContent;
 import jobs : applyPathResult;
+import normals : computeNormals, computeTangents;
 import lights : updateSun;
 import lightswindow : showLightsContent;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
@@ -85,6 +86,12 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
   SDL_Log("initGame: loadDwarfs");
   if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
+
+
+  SDL_Log("createScene: Add Text");
+  app.objects ~= new Text(app);
+  app.objects[($-1)].computeNormals();
+  app.objects[($-1)].computeTangents();
   SDL_Log("initGame: done");
 }
 
