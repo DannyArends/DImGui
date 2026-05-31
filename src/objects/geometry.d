@@ -129,7 +129,7 @@ void setTexture(T)(T object, string name, aiTextureType tt) {
     object.materials.length = 1;
     object.materials[0] = AMat(name, [tt: TexureInfo(name)]);
   } else { object.materials[0].textures[tt] = TexureInfo(name); }
-  foreach(ref mesh; object.meshes) { mesh.mid = 0; }
+  foreach(ref mesh; object.meshes) { mesh.mid = 0; mesh.mat = 0; }
 }
 
 void texture(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_DIFFUSE); }

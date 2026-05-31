@@ -32,10 +32,9 @@ void main() {
     if(ALPHA_TEST && texSample.a < 0.2f) discard;
     baseColor *= texSample.rgb;
   }
+  if(ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.4f) discard;
 
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
-
-  if(ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.2f) discard;
 
   vec3 normalForLighting = normalize(fragNormal);
   if(mat.nid >= 0) {
