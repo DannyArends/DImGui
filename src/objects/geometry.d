@@ -56,7 +56,8 @@ class Geometry {
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
 
-  @property @nogc bool isBuffered() nothrow { return(vertices.isBuffered && indices.isBuffered && instances.isBuffered); }
+  @property @nogc bool isBuffered() nothrow { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
+  @property @nogc bool isDrawable() nothrow { return(isBuffered && vertices.length > 0 && indices.length > 0 && instances.length > 0); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow { return(!(box is null)); }
 
@@ -153,7 +154,7 @@ void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
 
 /** Render a Geometry to app.scenePass.commands[i] */
 void draw(T)(ref App app, ref T object, size_t i) {
-  if(!object.isBuffered()) return;
+  if(!object.isDrawable()) return;
 
   VkDeviceSize offset = 0;
   auto cmd = app.scenePass.commands[i];
@@ -168,7 +169,7 @@ void draw(T)(ref App app, ref T object, size_t i) {
 
 /** Render a Geometry to app.shadows.commands[i] */
 void shadow(ref App app, Geometry object, size_t i) {
-  if(!object.isBuffered()) return;
+  if(!object.isDrawable()) return;
 
   VkDeviceSize offset = 0;
   auto cmd = app.shadows.renderPass.commands[i];

@@ -24,7 +24,7 @@ struct GeometryBuffer(T = ubyte) {
   void opAssign(T[] rhs) { items = rhs; }
 
   bool buffered = false;
-  bool isBuffered(){ return(buffered  || items.length  == 0); }
+  bool needsBuffer(){ return(!buffered && items.length > 0); }
 }
 
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
@@ -163,7 +163,7 @@ void uploadBarrier(ref App app, VkCommandBuffer cmdBuffer) {
 /** Allocate if needed then upload — convenience wrapper */
 void toGPU(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage, string type = "", string name = "",
               VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-  if(buffer.buffered || buffer.length == 0) return;
+  if(!buffer.needsBuffer) return;
   if(app.trace) SDL_Log("toGPU: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
   if(app.allocateBuffer(buffer, usage, properties)) app.nameGeometryBuffer(buffer, type, name);
   app.uploadBuffer(buffer, cmdBuffer);
