@@ -163,5 +163,5 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   vkCmdBindIndexBuffer(cmd, cast(VkBuffer)object.indices.vb, 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, cast(uint)object.indices.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
-  if(app.trace) SDL_Log("DRAW[%s]: DONE", toStringz(object.geometry()));
+  if(app.trace) SDL_Log("[%s]: DONE", toStringz(object.geometry()));
 }
