@@ -7,7 +7,7 @@ import engine;
 
 import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
-import geometry : bufferGeometries, shadow;
+import geometry : bufferGeometries, draw;
 import images : createImage, deAllocate, nameImageBuffer;
 import renderpass : beginRecording, endRecording;
 import sampler : createShadowSampler;
@@ -249,7 +249,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       app.shadows.totalShadowInstances += obj.instances.length;
       if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box.bmin(0), obj.box.bmax(0))) continue;
       app.shadows.lastShadowInstances += obj.instances.length;
-      app.shadow(obj, syncIndex);
+      app.draw(obj, app.shadows.renderPass.commands[syncIndex]);
     }
     vkCmdEndRenderPass(cmd);
     popLabel(cmd);
