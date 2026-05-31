@@ -28,7 +28,6 @@ import fpswindow : showFPSContent;
 import imgui : iconTextStr;
 import inventorywindow : showInventoryContent;
 import jobs : applyPathResult;
-import normals : computeNormals, computeTangents;
 import lights : updateSun;
 import lightswindow : showLightsContent;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
@@ -89,9 +88,9 @@ void initGame(ref GameApp app) {
 
 
   SDL_Log("createScene: Add Text");
-  app.objects ~= new Text(app);
-  app.objects[($-1)].computeNormals();
-  app.objects[($-1)].computeTangents();
+  app.objects ~= new Text(app, "CalderaD");
+  app.objects[($-1)].rotate([90.0f, 0.0f, 0.0f]);
+  app.objects[($-1)].position([6.0f, 4.0f, 0.0f]);
   SDL_Log("initGame: done");
 }
 
