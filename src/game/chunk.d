@@ -14,7 +14,6 @@ import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBo
 import hits : getHits;
 import noise : noise2D;
 import textures : idx;
-import vector : expandBounds;
 import feature : buildFeatureData;
 
 /** Holds raw tile data and instanced rendering data for a chunk */
