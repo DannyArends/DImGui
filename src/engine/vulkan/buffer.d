@@ -24,7 +24,7 @@ struct GeometryBuffer(T = ubyte) {
   void opAssign(T[] rhs) { items = rhs; }
 
   bool buffered = false;
-  bool needsBuffer(){ return(!buffered && items.length > 0); }
+  @property @nogc bool needsBuffer() nothrow const { return(!buffered && items.length > 0); }
 }
 
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
