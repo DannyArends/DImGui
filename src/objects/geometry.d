@@ -48,6 +48,7 @@ class Geometry {
   }
 
   bool isVisible = true;                            /// Boolean flag
+  bool isOpaque = true;                             /// Boolean flag, alpha-cutout textures: (HSR) pipeline variant
   bool inFrustum = true;                            /// Boolean flag
   bool skipFrustum = false;                         /// Boolean flag
   bool hideInObjectsWindow = false;                 /// Boolean flag
