@@ -56,8 +56,7 @@ class Geometry {
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
 
-  //bool[3] buffers = [false, false, false];          /// Boolean flag
-  @property @nogc bool isBuffered() nothrow { return(vertices.buffered && indices.buffered && instances.buffered); }
+  @property @nogc bool isBuffered() nothrow { return(vertices.isBuffered && indices.isBuffered && instances.isBuffered); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow { return(!(box is null)); }
 
