@@ -15,11 +15,11 @@ void showShaderContent(ref App app, uint font = 0) {
     igPushID_Int(to!int(i));
     igTableNextRow(0, 5.0f);
     igTableNextColumn();
-    igText(toStringz(baseName(fromStringz(shader.path))), ImVec2(0.0f, 0.0f));
+    igText(toStringz(baseName(fromStringz(shader.path))));
     igTableNextColumn();
-    igText(toStringz(format("%s", shader.stage).replace("VK_SHADER_STAGE_", "").replace("_BIT", "")), ImVec2(0.0f, 0.0f));
+    igText(toStringz(format("%s", shader.stage).replace("VK_SHADER_STAGE_", "").replace("_BIT", "")));
     igTableNextColumn();
-    igText(toStringz(format("Descriptors: %s\nExecute as %s", shader.descriptors.length, shader.groupCount)), ImVec2(0.0f, 0.0f));
+    igText(toStringz(format("Descriptors: %s\nExecute as %s", shader.descriptors.length, shader.groupCount)));
     igPopID();
   }
   igEndTable();

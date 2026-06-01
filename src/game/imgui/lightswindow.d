@@ -7,7 +7,7 @@ import game;
 
 import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
-import widgets : sliderFloat3;
+import widgets : setting, sliderFloat3, infoRow;
 
 /** Show the GUI window which allows us to manipulate lighting */
 void showLightsContent(ref GameApp app, uint font = 0) {
@@ -18,24 +18,10 @@ void showLightsContent(ref GameApp app, uint font = 0) {
   if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_SUN, "Sun"), 0)) {
     igBeginTable("Sun_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
-    igTableNextColumn(); igText("Time of Day");
-    igTableNextColumn();
-      igPushItemWidth(200 * app.gui.uiscale);
-      igSliderFloat("##tod", &app.lights.sunTime, 0.0f, 24.0f, "%.1f h", 0);
-    igTableNextColumn(); igText("Bearing");
-    igTableNextColumn();
-      igPushItemWidth(200 * app.gui.uiscale);
-      igSliderFloat("##bear", &app.lights.sunBearing, 0.0f, 365.0f, "%.0f", 0);
-    app.updateSun();
-
-    igTableNextColumn(); igText("Elevation");
-    igTableNextColumn();
-      igText(toStringz(format("%.1f deg", sunElevation(app.lights.sunTime))));
-
-    igTableNextColumn(); igText("Azimuth");
-    igTableNextColumn();
-      igText(toStringz(format("%.1f deg", sunAzimuth(app.lights.sunTime))));
-
+    setting("Time of Day", app.lights.sunTime, 0.0f, 24.0f, 200, app.gui.uiscale, "%.1f h");
+    setting("Bearing", app.lights.sunBearing, 0.0f, 365.0f, 200, app.gui.uiscale, "%.0f");
+    infoRow("Elevation", "%.1f deg", sunElevation(app.lights.sunTime));
+    infoRow("Azimuth", "%.1f deg", sunAzimuth(app.lights.sunTime));
     igEndTable();
     igTreePop();
   }

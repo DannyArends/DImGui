@@ -40,15 +40,20 @@ template imDataType(T) {
   else static assert(false, "imDataType: no ImGuiDataType for " ~ T.stringof);
 }
 
+/** D-formatted C string. One home for the per-frame toStringz allocation. */
+const(char)* cstr(A...)(string fmt, A a) { return toStringz(format(fmt, a)); }
+
+/** igText with D-side formatting. */
+void text(A...)(string fmt, A a) { igText(cstr(fmt, a)); }
+
 /** Default printf format for a scalar type */
 template imFormat(T) { static if (isFloatingPoint!T) enum imFormat = "%.2f"; else enum imFormat = "%d"; }
 
 /** label + bounded slider as a 2-column table row. Returns true if changed. */
-bool setting(T)(string label, ref T v, T min, T max, float width = 150, float uiscale = 1.0f)
-if (isFloatingPoint!T || isIntegral!T) {
+bool setting(T)(string label, ref T v, T min, T max, float width = 150, float uiscale = 1.0f, string fmt = imFormat!T) if (isFloatingPoint!T || isIntegral!T) {
   labelCol(toStringz(label));
   igPushItemWidth(width * uiscale); scope(exit) igPopItemWidth();
-  return igSliderScalar(toStringz("##" ~ label), imDataType!T, &v, &min, &max, imFormat!T.ptr, 0);
+  return igSliderScalar(toStringz("##" ~ label), imDataType!T, &v, &min, &max, toStringz(fmt), 0);
 }
 
 /** label + checkbox as a 2-column table row. Returns true if changed. */
