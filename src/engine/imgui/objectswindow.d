@@ -6,7 +6,7 @@
 import engine;
 
 import imgui : faIcon;
-import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys;
+import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, cstr;
 import textures : mapTextures, ImTextureRefFromID;
 
 /** Show the GUI window which allows us to manipulate 3D objects
@@ -27,10 +27,10 @@ void showObjectsContent(ref App app, uint font = 0) {
       if (app.objects[i].instances.length == 0) { igPopID(); continue; }
       auto p = app.objects[i].position;
       igTableNextRow(0, 5.0f);
-      string text = to!string(i);
-      if(object.geometry()) text = object.geometry() ~ " " ~ text;
+      string lbl = to!string(i);
+      if(object.geometry()) lbl = object.geometry() ~ " " ~ lbl;
       igTableNextColumn();
-        igText(toStringz(format("%s: %s (%d)", text, object.mName, object.uid)), ImVec2(0.0f, 0.0f));
+        igText(cstr("%s: %s (%d)", lbl, object.mName, object.uid));
       igTableNextColumn();
         if(igButton(faIcon(cast(string)ICON_FA_INFO), ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
         if(igButton((app.objects[i].isVisible?faIcon(cast(string)ICON_FA_EYE_SLASH) : faIcon(cast(string)ICON_FA_EYE)), ImVec2(0.0f, 0.0f))) {
@@ -46,11 +46,11 @@ void showObjectsContent(ref App app, uint font = 0) {
 /** Individual Object
  */
 void showObjectwindow(ref App app, ref Geometry obj) {
-  igText(toStringz(format("Name: %s %s", obj.geometry(), obj.mName)), ImVec2(0.0f, 0.0f));
-  igText(toStringz(format("Vertices: %s", obj.vertices.length)), ImVec2(0.0f, 0.0f));
-  igText(toStringz(format("Indices: %s", obj.indices.length)), ImVec2(0.0f, 0.0f));
-  igText(toStringz(format("Instances: %s", obj.instances.length)), ImVec2(0.0f, 0.0f));
-  igText(toStringz(format("Topology: %s", obj.topology)), ImVec2(0.0f, 0.0f));
+  text("Name: %s %s", obj.geometry(), obj.mName);
+  text("Vertices: %s", obj.vertices.length);
+  text("Indices: %s", obj.indices.length);
+  text("Instances: %s", obj.instances.length);
+  text("Topology: %s", obj.topology);
 
   if(igButton(faIcon(cast(string)ICON_FA_CUBES), ImVec2(0.0f, 0.0f))) { obj.window = false; } igSameLine(0,5);
   if(igButton((obj.isVisible?faIcon(cast(string)ICON_FA_EYE_SLASH):faIcon(cast(string)ICON_FA_EYE)), ImVec2(0.0f, 0.0f))) { 
@@ -58,7 +58,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
   } igSameLine(0,5);
   if(igButton(faIcon(cast(string)ICON_FA_TRASH), ImVec2(0.0f, 0.0f))){ obj.deAllocate = true; }
   if(obj.animations.length > 0) {
-    igText(faIcon(cast(string)ICON_FA_FILM), ImVec2(0.0f, 0.0f)); igSameLine(0,5);
+    igText(faIcon(cast(string)ICON_FA_FILM)); igSameLine(0,5);
     igPushItemWidth(100 * app.gui.uiscale);
       int[2] limits = [0, cast(uint)(obj.animations.length-1)];
       igSliderScalar("##a", ImGuiDataType_U32,  &obj.animation, &limits[0], &limits[1], "%d", 0);
@@ -66,7 +66,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
   igBeginTable(toStringz(obj.geometry() ~ "_Tbl"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
     auto p = obj.position;
     igTableNextColumn();
-      igText(faIcon(cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT), ImVec2(0.0f, 0.0f)); 
+      igText(faIcon(cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT)); 
     igTableNextColumn();
       igPushItemWidth(100 * app.gui.uiscale);
         igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
@@ -115,19 +115,19 @@ void showObjectwindow(ref App app, ref Geometry obj) {
 
     igBeginTable(toStringz(obj.geometry() ~ "_TexTbl"), 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       igTableNextColumn();
-      igText("Diffuse:", ImVec2(0.0f, 0.0f));
+      igText("Diffuse:");
       igTableNextColumn();
       igPushItemWidth(250 * app.gui.uiscale);
         igCombo_FnStrPtr("##tid:all", &selected.tid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1);
       igPopItemWidth();
       igTableNextColumn();
-      igText("BumpMap:", ImVec2(0.0f, 0.0f));
+      igText("BumpMap:");
       igTableNextColumn();
       igPushItemWidth(250 * app.gui.uiscale);
         igCombo_FnStrPtr("##nid:all", &selected.nid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1);
       igPopItemWidth();
       igTableNextColumn();
-      igText("Opacity:", ImVec2(0.0f, 0.0f));
+      igText("Opacity:");
       igTableNextColumn();
       igPushItemWidth(250 * app.gui.uiscale);
         igCombo_FnStrPtr("##oid:all", &selected.oid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1);
@@ -141,16 +141,16 @@ void showObjectwindow(ref App app, ref Geometry obj) {
       igBeginTable(toStringz(obj.geometry() ~ "_Textures"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
       foreach(name; obj.meshes.byKey()){
         igTableNextColumn();
-          igText(toStringz(format("%s", name)), ImVec2(0.0f, 0.0f)); igSameLine(0,5);
+          text("%s", name); igSameLine(0,5);
         igTableNextColumn();
           igPushItemWidth(100 * app.gui.uiscale);
-igSliderScalar(toStringz(format("##tid:%s", name)), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].tid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
+igSliderScalar(cstr("##tid:%s", name), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].tid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
         igTableNextColumn();
           igPushItemWidth(100 * app.gui.uiscale);
-igSliderScalar(toStringz(format("##nid:%s", name)), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].nid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
+igSliderScalar(cstr("##nid:%s", name), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].nid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
         igTableNextColumn();
           igPushItemWidth(100 * app.gui.uiscale);
-igSliderScalar(toStringz(format("##oid:%s", name)), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].oid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
+igSliderScalar(cstr("##oid:%s", name), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].oid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
       }
       igEndTable();
       igTreePop();

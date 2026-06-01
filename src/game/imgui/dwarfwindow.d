@@ -9,6 +9,7 @@ import dwarf : spawnDwarf;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
+import widgets : text, cstr;
 
 void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f) {
   foreach(tt; tiles.sort.uniq) {
@@ -18,7 +19,7 @@ void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
     igImage(texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1));
-    if(igIsItemHovered(0)) igSetTooltip(toStringz(format("%s x%d", name, tiles.count(tt))));
+    if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d", name, tiles.count(tt)));
   }
 }
 
@@ -43,9 +44,9 @@ void showDwarfContent(ref GameApp app, uint font = 0) {
     }
     else if(d.state == DwarfState.Blocked) { status = "Blocked"; }
     igPushStyleColor_Vec4(ImGuiCol_Text, ImVec4(d.color[0], d.color[1], d.color[2], d.color[3]));
-    igText(toStringz(format("%s", fromStringz(faIcon(cast(string)ICON_FA_USER))))); igSameLine(0,5);
+    text("%s", fromStringz(faIcon(cast(string)ICON_FA_USER))); igSameLine(0,5);
     igPopStyleColor(1);
-    igText(toStringz(format("%s", d.name)));
+    text("%s", d.name);
 
     if(!d.inventory[].all!(s => s.empty)) {
       igSameLine(0, 5);
@@ -56,11 +57,11 @@ void showDwarfContent(ref GameApp app, uint font = 0) {
       }
       app.showTileIcons(types);
     }
-    igText(toStringz("%s"), toStringz(format("%s - %s\n", d.tile, status)));
+    text("%s - %s\n", d.tile, status);
   }
-  igText(toStringz(format("Queue: %d | Idle: %d | Walking: %d | Working: %d", jobQueue.length, idle, walking, working)));
+  text("Queue: %d | Idle: %d | Walking: %d | Working: %d", jobQueue.length, idle, walking, working);
 
   igSeparator();
-  foreach(ref j; jobQueue) { igText(toStringz(format("  [%s] -> %s (%s)", j.name, j.targetTile, j.tileType))); }
+  foreach(ref j; jobQueue) { text("  [%s] -> %s (%s)", j.name, j.targetTile, j.tileType); }
 }
 
