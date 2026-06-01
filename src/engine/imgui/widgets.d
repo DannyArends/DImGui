@@ -31,6 +31,35 @@ struct GameWindow {
 
 ImVec2 textSize(const(char)* txt) { ImVec2 textSize; igCalcTextSize(&textSize, txt, null, false, -1.0f); return(textSize); }
 
+/** Map a D scalar type to its cimgui ImGuiDataType (ImGui 1.92.1) */
+template imDataType(T) {
+       static if (is(T == float))  enum imDataType = ImGuiDataType_Float;
+  else static if (is(T == double)) enum imDataType = ImGuiDataType_Double;
+  else static if (is(T == uint))   enum imDataType = ImGuiDataType_U32;
+  else static if (is(T == int))    enum imDataType = ImGuiDataType_S32;
+  else static assert(false, "imDataType: no ImGuiDataType for " ~ T.stringof);
+}
+
+/** Default printf format for a scalar type */
+template imFormat(T) { static if (isFloatingPoint!T) enum imFormat = "%.2f"; else enum imFormat = "%d"; }
+
+/** label + bounded slider as a 2-column table row. Returns true if changed. */
+bool setting(T)(string label, ref T v, T min, T max, float width = 150, float uiscale = 1.0f)
+if (isFloatingPoint!T || isIntegral!T) {
+  labelCol(toStringz(label));
+  igPushItemWidth(width * uiscale); scope(exit) igPopItemWidth();
+  return igSliderScalar(toStringz("##" ~ label), imDataType!T, &v, &min, &max, imFormat!T.ptr, 0);
+}
+
+/** label + checkbox as a 2-column table row. Returns true if changed. */
+bool setting(string label, ref bool v) { labelCol(toStringz(label)); return igCheckbox(toStringz("##" ~ label), &v); }
+
+/** label + read-only formatted value as a 2-column table row. */
+void infoRow(Args...)(string label, string fmt, Args a) {
+  labelCol(toStringz(label));
+  igText(toStringz(format(fmt, a)));
+}
+
 /** Render three inline scaled float sliders for a vec3 */
 void sliderFloat3(string[3] ids, float* x, float* y, float* z, float* min, float* max, float width, float uiscale) {
   igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[0]), ImGuiDataType_Float, x, min, max, "%.2f", 0); igSameLine(0,5);
