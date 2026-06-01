@@ -7,6 +7,7 @@ import game;
 
 import imgui : faIcon;
 import textures : ImTextureRefFromID, idx;
+import widgets : text, cstr;
 
 void drawCenteredText(ImDrawList* drawList, ImVec2 min, ImVec2 max, const(char)* text) {
   auto font = igGetFont();
@@ -57,7 +58,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
     bool selected = app.world.inventory.type == tileType;
     if(selected) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.4f, 0.6f, 0.4f, 1.0f));
     auto tint = count > 0 ? ImVec4(1,1,1,1) : ImVec4(0.3f,0.3f,0.3f,0.5f);
-    igImageButton(toStringz(format("##inv_%d", tileType)), texID,
+    igImageButton(cstr("##inv_%d", tileType), texID,
                   ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1),
                   ImVec4(0,0,0,0), tint);
     if(count > 0 && igIsItemClicked(0)) {
@@ -70,7 +71,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
     ImVec2 pos, posMax;
     igGetItemRectMin(&pos);
     igGetItemRectMax(&posMax);
-    if(count > 0) drawCenteredText(igGetWindowDrawList(), pos, posMax, toStringz(format("%d", count)));
+    if(count > 0) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", count));
     if(igIsItemHovered(0)) igSetTooltip(toStringz(app.world.inventory.toString(tileType, app)));
     if(++col < cols) igSameLine(0, 4);
     else { col = 0; }
@@ -85,7 +86,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
         if(s.isStack && s.type == tileType) total += s.count;
       } }
     if(total == 0) continue;
-    igText(toStringz(format("%s: %d", resourceData(tileType).name, total)));
+    text("%s: %d", resourceData(tileType).name, total);
   }
 }
 

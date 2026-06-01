@@ -6,7 +6,7 @@
 import engine;
 
 import imgui : iconText;
-import widgets : textSize;
+import widgets : textSize, cstr;
 import io : dir, isdir, isfile, fsize;
 
 void listDirContent(ref App app, const(char)* path) {
@@ -27,7 +27,7 @@ void listDirContent(ref App app, const(char)* path) {
         SDL_Log("Clicked: %s", ptr);
         app.concurrency.paths ~= file;
       }
-      auto txt = toStringz(format("%.2fkb", fsize(ptr) / 1024.0f));
+      auto txt = cstr("%.2fkb", fsize(ptr) / 1024.0f);
       igSameLine((igGetWindowWidth() - textSize(txt).x - 25.0f), 0);
       igText(txt);
     }
