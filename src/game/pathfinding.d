@@ -87,7 +87,7 @@ bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Re
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
-int[3] findGoalTile(T)(ref GameApp app, ref T obj) {
+int[3] findGoalTile(T)(ref GameApp app, ref T obj, Reach reach = Reach.Adjacent) {
   if(reach == Reach.OnTile) return app.world.isStandable(obj.targetTile) ? obj.targetTile : noTile;
   int[3] goalTile = noTile;
   float bestScore = float.max;
