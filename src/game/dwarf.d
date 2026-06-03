@@ -24,10 +24,10 @@ uint nextDwarfUID = 1;
 
 struct InventorySlot {
   enum Kind : ubyte { Empty, Block, Stack }
-  Kind kind     = Kind.Empty;
-  uint blockID  = noBlock;
-  ResourceType type  = ResourceType.None;
-  ubyte count   = 0;
+  Kind kind = Kind.Empty;
+  uint blockID = noBlock;
+  ResourceType type = ResourceType.None;
+  ubyte count = 0;
 
   @property bool empty()   const { return kind == Kind.Empty; }
   @property bool isBlock() const { return kind == Kind.Block; }
@@ -42,11 +42,13 @@ struct DwarfData {
   uint uid = 0;
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
   int[3] tile = [0, 0, 0];
+  float hunger = 0.0f;                        /// 0 = full, 1.0 = starving
   char[64] first;
   char[64] last;
-  InventorySlot[32] inventory;  /// block IDs, noBlock = empty slot
+  InventorySlot[32] inventory;                /// block IDs, noBlock = empty slot
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
+  @property float mood() const { return 1.0f - hunger; }   // 1 = content, 0 = miserable
   @property uint[] carrying() { return inventory[].filter!(s => s.isBlock).map!(s => s.blockID).array; }
 
   bool pickup(uint blockID, ResourceType type) {
@@ -159,8 +161,11 @@ void dwarfFrame(ref GameApp app, float dt) {
 
 /** A single dwarf being ticked */
 void tickDwarf(ref GameApp app, ref Dwarf d) {
+  d.hunger = min(1.0f, d.hunger + 0.00083f);
   final switch(d.state) {
-    case DwarfState.Idle: app.claimNextJob(d); break;
+    case DwarfState.Idle:
+      if(d.hunger >= 0.6f && app.hasBlocks(ResourceType.Berry)) app.dispatchJob(d, eatJob());
+      app.claimNextJob(d); break;
     case DwarfState.WaitingForPath: break;
     case DwarfState.Moving:
     case DwarfState.Wandering:
@@ -168,11 +173,11 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
       break;
     case DwarfState.Working:
       if(d.jobStack.length == 0) { d.state = DwarfState.Idle; break; }
-      if(app.atDestination(d, d.jobStack[0].targetTile)) {
+      if(app.atDestination(d, d.jobStack[0].targetTile, d.jobStack[0].reach)) {
         d.blockedSince = 0;
         d.jobStack[0].onArrive(app, d);
       } else {
-        if(app.repathTo(d, d.jobStack[0].targetTile)) {
+        if(app.repathTo(d, d.jobStack[0].targetTile, d.jobStack[0].reach)) {
           d.state = DwarfState.WaitingForPath;
         } else { d.jobStack[0].onFail(app, d); }
       }
