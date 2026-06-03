@@ -70,23 +70,25 @@ void invalidatePaths(ref GameApp app, int[3] tile) {
     d.path = [];
     d.moveTo = d.moveFrom = d.visualPos;
     d.moveT = 1.0f;
-    if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile);
+    if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile, d.jobStack[0].reach);
   }
 }
 
 /** Attempt to re-path object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
-bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile) {
+bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
   obj.targetTile = targetTile;
-  auto goalTile = app.findGoalTile(obj);
-  if(goalTile == noTile) return(false);
+  auto goalTile = app.findGoalTile(obj, reach);
+  if(goalTile == noTile) return false;
+  if(goalTile == obj.tile) { obj.path = []; obj.state = DwarfState.Working; return true; }
   app.pathfindTo(obj, goalTile);
-  return(true);
+  return true;
 }
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
 int[3] findGoalTile(T)(ref GameApp app, ref T obj) {
+  if(reach == Reach.OnTile) return app.world.isStandable(obj.targetTile) ? obj.targetTile : noTile;
   int[3] goalTile = noTile;
   float bestScore = float.max;
   foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
