@@ -27,11 +27,10 @@ struct Job {
   JobState state = JobState.Pending;
   Reach reach = Reach.Adjacent;
 
+  bool function(ref GameApp app, ref Job j) isValid;
   void function(ref GameApp app, ref Dwarf d, ref Job j) onClaim;
   void function(ref GameApp app, ref Dwarf d) onArrive;
   void function(ref GameApp app, ref Dwarf d) onFail;
-
-  bool isStale(ref GameApp app) { return name == "Mining" && app.world.getTileAt(targetTile) == ResourceType.None; }
 }
 
 Job[] jobQueue;
@@ -111,6 +110,7 @@ void claimNeighbour(ref GameApp app, ref Job j) {
 /** Mining Job */
 Job miningJob(int[3] targetTile) {
   return Job("Mining", targetTile, ResourceType.None, [],
+    isValid: (ref GameApp app, ref Job j) => app.world.getTileAt(j.targetTile) != ResourceType.None,
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () {
         ResourceType tt = app.world.getTileAt(d.jobStack[0].targetTile);
@@ -251,6 +251,7 @@ bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
   d.jobStack = job.prereqs ~ [job];
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
   if(d.jobStack.any!(j => j.state == JobState.Unavailable)) { app.rejectJob(d, job); return false; }
+  if(d.jobStack.any!(j => j.isValid !is null && !j.isValid(app, j))) { app.rejectJob(d, job); return false; }
 
   d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
   if(d.jobStack.length == 0) { d.clearGoal(); return false; }
@@ -314,7 +315,8 @@ void failAndRequeueParent(ref Dwarf d) { if(d.jobStack.length > 1) jobQueue ~= d
 void claimNextJob(ref GameApp app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
-  jobQueue = jobQueue.filter!(j => !j.isStale(app)).array;
+  jobQueue = jobQueue.filter!(j => j.isValid is null || j.isValid(app, j)).array;
+
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref job; jobQueue) {
