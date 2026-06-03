@@ -5,7 +5,7 @@
 
 import game;
 
-import block : syncBlockInstances, noBlock;
+import block : syncBlockInstances, noBlock, hasBlocks;
 import color : randomColor;
 import inventory : deriveInventory;
 import game : GameApp;
@@ -14,7 +14,7 @@ import ghost : syncBuildGhosts;
 import matrix : position, scale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo;
-import jobs : Job, dispatchJob, jobQueue, claimNextJob, moveAwayJob, atDestination;
+import jobs : Job, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
@@ -189,7 +189,7 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
 void handleBlocking(ref GameApp app, ref Dwarf d) {
   foreach(ref other; app.world.dwarves.dwarves) {
     if(other.uid == d.uid) continue;
-    if(!app.atDestination(other, d.jobStack[0].targetTile)) continue;
+    if(!app.atDestination(other, d.jobStack[0].targetTile, d.jobStack[0].reach)) continue;
     if(d.blockedSince == 0) {
       d.blockedSince = cast(uint)SDL_GetTicks();
       if(other.jobStack.length == 0 || other.jobStack[0].name != "MoveAway") { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
@@ -202,7 +202,7 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
     return;
   }
   d.blockedSince = 0;
-  if(!app.repathTo(d, d.jobStack[0].targetTile)) {
+  if(!app.repathTo(d, d.jobStack[0].targetTile, d.jobStack[0].reach)) {
     d.state = DwarfState.Idle;
     d.jobStack[0].onFail(app, d);
   } else { d.state = DwarfState.WaitingForPath; } // No longer blocked — repath
