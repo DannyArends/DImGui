@@ -173,6 +173,7 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
       break;
     case DwarfState.Working:
       if(d.jobStack.length == 0) { d.state = DwarfState.Idle; break; }
+      if(d.jobStack[0].isValid !is null && !d.jobStack[0].isValid(app, d.jobStack[0])) { d.jobStack[0].onFail(app, d); break; }
       if(app.atDestination(d, d.jobStack[0].targetTile, d.jobStack[0].reach)) {
         d.blockedSince = 0;
         d.jobStack[0].onArrive(app, d);
