@@ -110,7 +110,7 @@ void claimNeighbour(ref GameApp app, ref Job j) {
 /** Mining Job */
 Job miningJob(int[3] targetTile) {
   return Job("Mining", targetTile, ResourceType.None, [],
-    isValid: (ref GameApp app, ref Job j) => app.world.getTileAt(j.targetTile) != ResourceType.None,
+    isValid: (ref GameApp app, ref Job j){ return(app.world.getTileAt(j.targetTile) != ResourceType.None); },
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () {
         ResourceType tt = app.world.getTileAt(d.jobStack[0].targetTile);
@@ -201,6 +201,7 @@ void evictDwarfAt(ref GameApp app, int[3] tile) {
 /** Building Job (generates a pickup job prereq) */
 Job buildingJob(int[3] targetTile, ResourceType tileType) {
   return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), pickupJob(noTile, tileType)],
+    isValid: (ref GameApp app, ref Job j){ return(!app.isTileOccupied(j.targetTile)); },
     onArrive: (ref GameApp app, ref Dwarf d) {
       if(app.isTileOccupied(d.jobStack[0].targetTile)) { app.evictDwarfAt(d.jobStack[0].targetTile); return; }
       auto blockID = app.useCarriedBlock(d, d.jobStack[0].tileType);
@@ -223,6 +224,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
 /** Eat Job — claim nearest free Berry on the floor, walk to it, consume it */
 Job eatJob() {
   return Job("Eating", noTile, ResourceType.Berry, [], true,
+    isValid: (ref GameApp app, ref Job j) { return(j.blockIDs.length > 0 && (j.blockIDs[0] in app.world.blocks) !is null); },
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
       auto carried = d.carrying.filter!(id => app.blockType(id) == ResourceType.Berry);
       if(!carried.empty) { j.blockIDs = [carried.front]; j.targetTile = d.tile; return; }
