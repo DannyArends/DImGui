@@ -86,7 +86,6 @@ struct World {
   int[3][] pendingBuildTiles;                               /// Built tiles awaiting chunk rebuild
   int[3][] pendingMineTiles;                                /// Mined tiles awaiting chunk rebuild
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
-  int[3] lastPlayerChunk = [int.min, 0, 0];                 /// Last chunk the player was in (streaming cache)
   alias data this;
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
@@ -176,11 +175,6 @@ bool dispatchWorker(ref GameApp app, int[3] coord){
 void updateWorld(ref GameApp app, float[3] lookat) {
   int effectiveRD = min(app.world.renderDistance, cast(int)(app.camera.nearfar[1] / app.world.chunkWorldSize));
   int[3] pc = app.world.chunkCoord([cast(int)floor(lookat[0] / app.world.tileSize), 0, cast(int)floor(lookat[2] / app.world.tileSize)]);
-
-  bool anyDirty = false;
-  foreach(coord, ref c; app.world.chunks) { if(c !is null && c.dirty) { anyDirty = true; break; } }
-  if(pc == app.world.lastPlayerChunk && !anyDirty && app.world.pendingFeatures.length == 0) return;
-  app.world.lastPlayerChunk = pc;
 
   // Load new chunks within render distance
   int[3][] toLoad;
