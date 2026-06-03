@@ -31,15 +31,13 @@ struct Compute {
 ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_glsl_compute_shader), 
                               ShaderDef("data/shaders/particle.glsl", shaderc_glsl_compute_shader)];
 
-/** Load shader modules for compute
- */
+/** Load shader modules for compute */
 void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
 }
 
-/** Create the compute pipeline specified by the selectedShader
- */
+/** Create the compute pipeline specified by the selectedShader */
 void createComputePipeline(ref App app, Shader shader) {
   if(app.verbose) SDL_Log("createComputePipeline for Shader %s", toStringz(shader.path));
   app.compute.pipelines[shader.path] = GraphicsPipeline();
@@ -140,8 +138,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
   app.mainDeletionQueue.add((){ app.deAllocate(texture); });
 }
 
-/** recordComputeCommandBuffer for syncIndex and the selected ComputeShader
- */
+/** recordComputeCommandBuffer for syncIndex and the selected ComputeShader */
 void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) {
   if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", toStringz(shader.path), syncIndex);
   VkCommandBuffer cmdBuffer = app.compute.commands[shader.path][syncIndex];
