@@ -41,16 +41,11 @@ version (Android) {
     return(0);
   }
 // Other OS can just call run() directly (No known issues with garbage collection)
-} else { 
-  int main (string[] args) { run(args); return(0); }
-}
+} else { int main (string[] args) { run(args); return(0); } }
 
-/** 
- * Main entry point for Windows and Linux
- */
+/** Main entry point for Windows and Linux */
 void run(string[] args = null) {
   GameApp app = GameApp(initializeSDL());                       /// Initialize SDL library and create a window
-
   app.createCompiler();                                         /// Create the SPIR-V compiler
   app.createReflectionContext();                                /// Create a SPIR-V reflection context
   app.loadGlyphAtlas();                                         /// Load & parse the Glyph Atlas
