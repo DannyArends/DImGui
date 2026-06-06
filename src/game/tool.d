@@ -40,6 +40,13 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
     case ToolMode.Select:
       auto hits = app.getHits(ray, app.showRays);
       if(hits.length > 0) {
+        app.world.dwarves.selected = -1;
+        foreach(ref hit; hits) {
+          if(app.objects[hit.idx[0]] is app.world.dwarves) {
+            if(hit.idx[1] < app.world.dwarves.dwarves.length) app.world.dwarves.selected = cast(int)hit.idx[1];
+            break;
+          }
+        }
         Job job;
         if(app.getBestTile(ray, wc)) job = miningJob(wc);
         foreach(ref ft; features) {
