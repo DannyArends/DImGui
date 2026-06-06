@@ -107,6 +107,8 @@ struct Dwarf {
   uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
 
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
+  @property bool hasJob() const { return(jobStack.length > 0); }
+  @property ref Job currentJob() { return(jobStack[0]); }
 }
 
 /** Follow the next step in object T's path.
@@ -154,7 +156,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.moveT >= 1.0f) {
       if(d.path.length > 0) {
         app.followPath(d);
-      } else { d.state = (d.jobStack.length > 0) ? DwarfState.Working : DwarfState.Idle; }
+      } else { d.state = d.hasJob ? DwarfState.Working : DwarfState.Idle; }
     }
   }
 }
@@ -172,15 +174,15 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
       if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
       break;
     case DwarfState.Working:
-      if(d.jobStack.length == 0) { d.state = DwarfState.Idle; break; }
-      if(d.jobStack[0].isValid !is null && !d.jobStack[0].isValid(app, d.jobStack[0])) { d.jobStack[0].onFail(app, d); break; }
-      if(app.atDestination(d, d.jobStack[0].targetTile, d.jobStack[0].reach)) {
+      if(!d.hasJob) { d.state = DwarfState.Idle; break; }
+      if(d.currentJob.isValid !is null && !d.currentJob.isValid(app, d.currentJob)) { d.currentJob.onFail(app, d); break; }
+      if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) {
         d.blockedSince = 0;
-        d.jobStack[0].onArrive(app, d);
+        d.currentJob.onArrive(app, d);
       } else {
-        if(app.repathTo(d, d.jobStack[0].targetTile, d.jobStack[0].reach)) {
+        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) {
           d.state = DwarfState.WaitingForPath;
-        } else { d.jobStack[0].onFail(app, d); }
+        } else { d.currentJob.onFail(app, d); }
       }
       break;
     case DwarfState.Blocked: app.handleBlocking(d); break;
@@ -190,22 +192,22 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
 void handleBlocking(ref GameApp app, ref Dwarf d) {
   foreach(ref other; app.world.dwarves.dwarves) {
     if(other.uid == d.uid) continue;
-    if(!app.atDestination(other, d.jobStack[0].targetTile, d.jobStack[0].reach)) continue;
+    if(!app.atDestination(other, d.currentJob.targetTile, d.currentJob.reach)) continue;
     if(d.blockedSince == 0) {
       d.blockedSince = cast(uint)SDL_GetTicks();
-      if(other.jobStack.length == 0 || other.jobStack[0].name != "MoveAway") { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
+      if(!other.hasJob || other.currentJob.name != "MoveAway") { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
     }
     if(SDL_GetTicks() - d.blockedSince > 4000) {
       d.blockedSince = 0;
       d.state = DwarfState.Idle;
-      d.jobStack[0].onFail(app, d);
+      d.currentJob.onFail(app, d);
     }
     return;
   }
   d.blockedSince = 0;
-  if(!app.repathTo(d, d.jobStack[0].targetTile, d.jobStack[0].reach)) {
+  if(!app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) {
     d.state = DwarfState.Idle;
-    d.jobStack[0].onFail(app, d);
+    d.currentJob.onFail(app, d);
   } else { d.state = DwarfState.WaitingForPath; } // No longer blocked — repath
 }
 

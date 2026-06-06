@@ -62,7 +62,7 @@ void showDwarfSheet(ref GameApp app, Dwarf* d) {
   text("%s", d.name);
   text("Tile: %s", d.tile);
   text("Hunger: %.0f", d.hunger * 100.0f);
-  text("Job: %s", d.jobStack.length > 0 ? d.jobStack[0].name : "Idle");
+  text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
   igSeparator();
   igText("Inventory:");
   foreach(ref s; d.inventory) { if(!s.empty) { text("  %s x%d", resourceData(s.type).name, s.count); } }
