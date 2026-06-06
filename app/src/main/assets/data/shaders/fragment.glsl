@@ -47,7 +47,8 @@ void main() {
     Light light = lightSSBO.lights[i];
     vec3 lightContribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
     if(useShadows && any(greaterThan(lightContribution, vec3(0.01)))) {
-      lightContribution *= calculateShadow(light.lightProjView * fragPosWorld, i);
+      float bias = max(0.0015 * (1.0 - dot(normalForLighting, normalize(-light.direction.xyz))), 0.0003);
+      lightContribution *= calculateShadow(light.lightProjView * fragPosWorld, i, bias);
     }
     lightColor += lightContribution;
   }

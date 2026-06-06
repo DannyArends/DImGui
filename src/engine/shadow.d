@@ -157,11 +157,11 @@ void createShadowMapGraphicsPipeline(ref App app) {
     depthClampEnable: VK_FALSE,
     polygonMode: VK_POLYGON_MODE_FILL,
     lineWidth: 1.0f,
-    cullMode: VK_CULL_MODE_NONE,
+    cullMode: VK_CULL_MODE_FRONT_BIT,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
-    depthBiasConstantFactor: 4.0f,
-    depthBiasSlopeFactor: 3.5f,
+    depthBiasConstantFactor: 1.0f,
+    depthBiasSlopeFactor: 1.5f,
   };
 
   VkPipelineMultisampleStateCreateInfo multisampling = {
