@@ -18,6 +18,7 @@ layout(location = 5) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
+// Compile time constants
 layout(constant_id = 0) const bool ALPHA_TEST = true;  // false = opaque variant (no discard, enables mobile HSR)
 
 void main() {
