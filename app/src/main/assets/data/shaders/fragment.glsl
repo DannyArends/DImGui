@@ -37,17 +37,23 @@ void main() {
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
 
   vec3 normalForLighting = normalize(fragNormal);
+  // Surface normalForLighting
+  //outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
   if(mat.nid >= 0) {
     normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
   }
+  // normalForLighting after bump mapping
+  // outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
 
+  // Shadow cast by light 0
+  // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
   vec3 lightColor = baseColor * 0.01;
   bool useShadows = ubo.lightingMode == 2u;
   for(int i = 0; i < ubo.nlights; ++i) {
     Light light = lightSSBO.lights[i];
     vec3 lightContribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
     if(useShadows && any(greaterThan(lightContribution, vec3(0.01)))) {
-      float bias = max(0.0015 * (1.0 - dot(normalForLighting, normalize(-light.direction.xyz))), 0.0003);
+      float bias = max(0.01 * (1.0 - dot(normalForLighting, normalize(-light.direction.xyz))), 0.01);
       lightContribution *= calculateShadow(light.lightProjView * fragPosWorld, i, bias);
     }
     lightColor += lightContribution;
