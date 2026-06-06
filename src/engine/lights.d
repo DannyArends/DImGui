@@ -52,32 +52,28 @@ struct Lighting {
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(float[2] size, ref Light light, ref Camera cam, float shadowDistance = 160.0f, uint shadowDimension = 4096) nothrow {
+@nogc void computeLightSpace(float[2] size, ref Light light, ref Camera cam, uint shadowDimension = 4096) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   float[3] upVector = abs(lightDir[1]) < 0.99f ? [0.0f, 1.0f, 0.0f] : [0.0f, 0.0f, 1.0f];
 
   if(!light.directional) {
     Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), upVector);
-    light.lightSpaceMatrix = perspective(2 * light.properties[2], 1.0f, 0.1f, shadowDistance).multiply(v);
+    light.lightSpaceMatrix = perspective(2 * light.properties[2], 1.0f, 0.1f, size[1]).multiply(v);
     return;
   }
+  float extent = size[1];
+  float depth  = size[0] + 2.0f * size[1];
 
-  float[3][8] corners = cam.frustumCorners(min(cam.nearfar[1], shadowDistance));
-  float[3] centre = [0.0f, 0.0f, 0.0f];
-  foreach(ref c; corners) centre = centre.vAdd(c);
-  centre = centre.vMul(1.0f / 8.0f);
-  centre[1] = size[0] * 0.5f;                               // pin centre to mid-terrain height, not camera altitude
+  float[3] centre = [cam.lookat[0], cam.lookat[1], cam.lookat[2]];
 
-  Matrix lightView = lookAt(centre.vSub(lightDir.vMul(size[0])), centre, upVector);
+  float texelsPerUnit = cast(float)shadowDimension / (2.0f * extent);
+  centre[0] = floor(centre[0] * texelsPerUnit) / texelsPerUnit;
+  centre[2] = floor(centre[2] * texelsPerUnit) / texelsPerUnit;
 
-  float[3][8] ls;
-  foreach(i, ref c; corners) { float[4] p = lightView.multiply([c[0], c[1], c[2], 1.0f]); ls[i] = [p[0], p[1], p[2]]; }
-  float[3][2] box = aabbOf(ls[]);
-  float[3] mn = box[0], mx = box[1];
+  float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f));
+  Matrix lightView = lookAt(eye, centre, upVector);
 
-  // Depth slab must span the full world height so ground below the frustum is captured
-  float pad = size[0];
-  light.lightSpaceMatrix = orthogonal(mn[0], mx[0], mn[1], mx[1], -mx[2] - pad, -mn[2] + pad).multiply(lightView);
+  light.lightSpaceMatrix = orthogonal(-extent, extent, -extent, extent, 0.0f, depth).multiply(lightView);
 }
 
 /** Update light geometries for rendering */
@@ -166,7 +162,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
-  foreach(i, ref light; app.lights) { computeLightSpace(app.shadows.bounds, light, app.camera, 96.0f, app.shadows.dimension); }
+  foreach(i, ref light; app.lights) { computeLightSpace(app.shadows.bounds, light, app.camera, app.shadows.dimension); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 
