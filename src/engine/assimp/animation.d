@@ -41,11 +41,10 @@ struct Animation {
     NodeAnimation[string] nodeAnimations;
 }
 
-@nogc double calculateCurrentTick(ulong t, double tps, double dur) nothrow { return fmod((t / 1000.0f) * tps, dur); }
+@nogc double calculateCurrentTick(double seconds, double tps, double dur) nothrow { return fmod(seconds * tps, dur); }
 
 /** calculateGlobalTransform
- * Recursively apply all transformations at animationTime
- */
+ * Recursively apply all transformations at animationTime */
 void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform, double animationTime) {
   Animation animation = obj.animations[obj.animation];
   Matrix localTransform = node.transform;

@@ -33,7 +33,7 @@ void waitForFrame(ref App app) {
 
 /** Main Frame rendering loop a 3D Frame:
  * Aquire Image -> CPU -> GPU Compute -> Shadows -> Graphic -> ImGui */
-void renderFrame(ref App app) {
+void renderFrame(ref App app, double dt) {
   bool shadowsThisFrame = app.lMode == LMode.LightsAndShadows;
   if(app.trace) SDL_Log("renderFrame");
   VkSemaphore computeComplete  = app.sync[app.syncIndex].computeComplete;
@@ -49,11 +49,11 @@ void renderFrame(ref App app) {
 
   if(app.trace) SDL_Log("Phase 1.1: Do CPU work");
 
-  app.timed!updateTracks();                     /// Check for sound effects that have finished
-  app.timed!updateTextures();                   /// If a texture was loaded, update it
-  app.timed!updateMeshInfo();                   /// Check for Mesh Information change
-  app.timed!updateBoneOffsets(app.syncIndex);   /// Check for animation causing BoneOffsets changes
-  app.timed!updateDisco();                      /// Update when disco mode 🕺 🪩 💃
+  app.timed!updateTracks();                         /// Check for sound effects that have finished
+  app.timed!updateTextures();                       /// If a texture was loaded, update it
+  app.timed!updateMeshInfo();                       /// Check for Mesh Information change
+  app.timed!updateBoneOffsets(app.syncIndex, dt);   /// Check for animation causing BoneOffsets changes
+  app.timed!updateDisco();                          /// Update when disco mode 🕺 🪩 💃
   if(app.hasCompute) app.timed!updateComputeUBO(app.syncIndex);
   app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.timed!updateRenderUBO(app.shaders, app.syncIndex);

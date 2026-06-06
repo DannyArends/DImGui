@@ -77,11 +77,11 @@ void run(string[] args = null) {
     app.timed!removeGeometry();                                   /// Remove stale geometry
     app.timed!checkAsync();                                       /// Check ASync handlers
     app.timed!checkGameAsync();                                   /// Game specific ASync handlers
-    app.timed!handleEvents();                                     /// Handle SDL / user events
-    app.timed!updateGame();                                       /// Handle Game Updates
+    auto dt = app.timed!handleEvents();                           /// Handle SDL / user events
+    app.timed!updateGame(dt);                                     /// Handle Game Updates
     app.waitForFrame();                                           /// Wait for a new frame (outside timing)
     app.time[FRAMESTART] = SDL_GetTicks();                        /// Start the clock
-    app.timed!renderFrame();                                      /// Render frame
+    app.timed!renderFrame(dt);                                    /// Render frame
     app.timed!presentFrame();                                     /// Show frame
     app.time[LASTFRAME] = app.time[FRAMESTOP];                    /// Remember last time we stopped ?
     app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
