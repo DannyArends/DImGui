@@ -11,6 +11,7 @@ import matrix : translateScale;
 class Dwarves : Cylinder {
   Dwarf[] dwarves;
   alias dwarves this;
+  int selected = -1;
 
   this() {
     super(0.5f, 1.0f, 6);
