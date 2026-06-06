@@ -120,10 +120,10 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     depthCompareOp: VK_COMPARE_OP_LESS,
   };
 
-  VkSpecializationInfo specInfo; VkSpecializationMapEntry mapEntry; VkBool32 alphaTest;
+  VkSpecializationInfo specInfo; VkSpecializationMapEntry[] mapEntry; VkBool32[] settings;
 
   static foreach(s; [Specialization(true), Specialization(false)]) {{
-    auto stages = createStageInfo(app.shaders, specInfo, mapEntry, alphaTest, s);
+    auto stages = createStageInfo(app.shaders, specInfo, mapEntry, settings, s);
     VkGraphicsPipelineCreateInfo pipelineInfo = {
       sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
       stageCount: cast(uint)stages.length,

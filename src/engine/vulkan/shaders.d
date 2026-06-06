@@ -27,6 +27,7 @@ struct Shader {
 
 struct Specialization{ 
   bool alpha = true;
+  bool instanced = true;
 }
 
 struct ShaderDef {
@@ -155,15 +156,19 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
 /** Build pipeline stage infos from shaders, overriding the fragment stage with ALPHA_TEST = alphaTest.
  *  Returns stages plus the spec data they point to (kept alive by the caller). */
 VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo,
-                                                                    ref VkSpecializationMapEntry mapEntry,
-                                                                    ref VkBool32 alphaTest, Specialization s) {
-  alphaTest = s.alpha ? VK_TRUE : VK_FALSE;
-  mapEntry = VkSpecializationMapEntry(0, 0, VkBool32.sizeof);   // constant_id 0, offset 0, 4 bytes
-  specInfo = VkSpecializationInfo(1, &mapEntry, VkBool32.sizeof, &alphaTest);
+                                                                    ref VkSpecializationMapEntry[] mapEntry,
+                                                                    ref VkBool32[] flags, Specialization s) {
+  flags = [ s.alpha ? VK_TRUE : VK_FALSE, s.instanced ? VK_TRUE : VK_FALSE ];
+  mapEntry = [
+    VkSpecializationMapEntry(0, 0,               VkBool32.sizeof),   // ALPHA_TEST → fragment
+    VkSpecializationMapEntry(1, VkBool32.sizeof, VkBool32.sizeof),   // INSTANCED  → vertex
+  ];
+  specInfo = VkSpecializationInfo(cast(uint)mapEntry.length, mapEntry.ptr, flags.length * VkBool32.sizeof, flags.ptr);
   VkPipelineShaderStageCreateInfo[] info;
   foreach(shader; shaders){
     auto stage = shader.info;
-    if(shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT) { stage.pSpecializationInfo = &specInfo; }
+    if(shader.stage == VK_SHADER_STAGE_VERTEX_BIT || shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
+      stage.pSpecializationInfo = &specInfo;
     info ~= stage;
   }
   return(info);
