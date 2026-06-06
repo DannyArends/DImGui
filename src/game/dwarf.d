@@ -144,7 +144,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
     if(d.moveT >= 1.0f) continue;
     float cost = max(1.0f, resourceData(app.world.getTileAt(d.tile.tileBelow)).cost);
-    d.moveT = min(1.0f, d.moveT + dt * 1.0f / cost);
+    d.moveT = min(1.0f, d.moveT + dt * 5.0f / cost);
     float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
     d.visualPos = [
       d.moveFrom[0] + t * (d.moveTo[0] - d.moveFrom[0]),

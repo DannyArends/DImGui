@@ -5,6 +5,8 @@
 
 import engine;
 
+import camera : frustumCorners;
+import frustum : aabbOf;
 import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
@@ -44,31 +46,43 @@ enum Lights : Light {
 struct Lighting {
   SSBOList!Light lights;
   float sunTime = 8.0f;
+  float discoTime = 0.0f;
   float sunBearing = 135.0f;
   alias lights this;
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(float[2] size, ref Light light, float nearPlane = 0.1f, float farPlane = 500.0f, uint shadowDimension = 2048) nothrow {  
+@nogc void computeLightSpace(float[2] size, ref Light light, ref Camera cam, float shadowDistance = 160.0f, uint shadowDimension = 4096) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   float[3] upVector = abs(lightDir[1]) < 0.99f ? [0.0f, 1.0f, 0.0f] : [0.0f, 0.0f, 1.0f];
 
-  float[3] worldCenter = [0.0f, size[0] * 0.5f, 0.0f];
-  float[3] lightEye = light.directional ? worldCenter.vSub(lightDir.vMul(farPlane * 0.5f)) : light.position.xyz;
-  float[3] lookTarget = light.directional ? worldCenter : light.position.xyz.vAdd(lightDir);
+  if(!light.directional) {
+    Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), upVector);
+    light.lightSpaceMatrix = perspective(2 * light.properties[2], 1.0f, 0.1f, shadowDistance).multiply(v);
+    return;
+  }
 
-  Matrix lightView = lookAt(lightEye, lookTarget, upVector);
+  float[3][8] corners = cam.frustumCorners(min(cam.nearfar[1], shadowDistance));
+  float[3] centre = [0.0f, 0.0f, 0.0f];
+  foreach(ref c; corners) centre = centre.vAdd(c);
+  centre = centre.vMul(1.0f / 8.0f);
+  centre[1] = size[0] * 0.5f;                               // pin centre to mid-terrain height, not camera altitude
 
-  Matrix lightProjection = light.directional
-    ? orthogonal(-size[1], size[1], -size[1], size[1], -size[0], farPlane)
-    : perspective(2 * light.properties[2], 1.0f, nearPlane, farPlane);
+  Matrix lightView = lookAt(centre.vSub(lightDir.vMul(size[0])), centre, upVector);
 
-  light.lightSpaceMatrix = lightProjection.multiply(lightView);
+  float[3][8] ls;
+  foreach(i, ref c; corners) { float[4] p = lightView.multiply([c[0], c[1], c[2], 1.0f]); ls[i] = [p[0], p[1], p[2]]; }
+  float[3][2] box = aabbOf(ls[]);
+  float[3] mn = box[0], mx = box[1];
+
+  // Depth slab must span the full world height so ground below the frustum is captured
+  float pad = size[0];
+  light.lightSpaceMatrix = orthogonal(mn[0], mx[0], mn[1], mx[1], -mx[2] - pad, -mn[2] + pad).multiply(lightView);
 }
 
 /** Update light geometries for rendering */
-void updateLightGeometries(ref App app, float minsPerTick = 0.005f) {
-  app.lights.sunTime = fmod(app.lights.sunTime + (minsPerTick / 60.0f), 24.0f);
+void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
+  app.lights.sunTime = fmod(app.lights.sunTime + (minsPerSec * dt / 60.0f), 24.0f);
   app.updateSun();
   if(!app.showLights) return;
   int l = 1;
@@ -152,7 +166,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
-  foreach(i, ref light; app.lights) { computeLightSpace(app.shadows.bounds, light, app.camera.nearfar[0], app.camera.nearfar[1], app.shadows.dimension); }
+  foreach(i, ref light; app.lights) { computeLightSpace(app.shadows.bounds, light, app.camera, 96.0f, app.shadows.dimension); }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 
@@ -160,9 +174,9 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
 @nogc pure float beam(float t, float speed, float freq, float phase) nothrow { return abs(sin(t * speed * freq + phase)) * 500.0f; }
 
 /** Disco mode 🕺 🪩 💃 */
-void updateDisco(ref App app) {
+void updateDisco(ref App app, float dt) {
   if (!app.disco || app.lights.length < 3) return;
-  float t = (SDL_GetTicks() - app.time[STARTUP]) / 1000.0f;
+  auto t = app.lights.discoTime += dt;
   foreach (i; 1 .. app.lights.length) {
     if(!app.lights[i].enabled) continue;
     float fi = cast(float)i;
@@ -170,7 +184,7 @@ void updateDisco(ref App app) {
     float radius = 12.0f + fmod(fi * 0.31415f, 1.0f) * 22.0f;
     float height = 12.0f + fmod(fi * 0.71828f, 1.0f) * 25.0f;
     float phase  = fi * 2.39996f;
-    float a = t * speed + phase;
+    float a = app.lights.discoTime * speed + phase;
 
     float[3] orbit = [radius * cos(a), height, radius * sin(a)];
     float[3] wobble = [sin(t * 3.1f + phase) * 0.3f, 0.0f, cos(t * 2.7f + phase) * 0.3f];

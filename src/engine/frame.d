@@ -53,7 +53,7 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateTextures();                       /// If a texture was loaded, update it
   app.timed!updateMeshInfo();                       /// Check for Mesh Information change
   app.timed!updateBoneOffsets(app.syncIndex, dt);   /// Check for animation causing BoneOffsets changes
-  app.timed!updateDisco();                          /// Update when disco mode 🕺 🪩 💃
+  app.timed!updateDisco(dt);                        /// Update when disco mode 🕺 🪩 💃
   if(app.hasCompute) app.timed!updateComputeUBO(app.syncIndex);
   app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.timed!updateRenderUBO(app.shaders, app.syncIndex);
@@ -83,7 +83,7 @@ void renderFrame(ref App app, double dt) {
   // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
   if(shadowsThisFrame) {
-    app.timed!updateLightGeometries();
+    app.timed!updateLightGeometries(dt);
     app.timed!recordShadowCommandBuffer(app.syncIndex);
   }else{ shadowsThisFrame = false; }
 
