@@ -27,7 +27,7 @@ struct Shader {
 
 struct Specialization {
   bool alpha = true;
-  bool instanced = true;
+  bool instanced = false;
 }
 
 struct ShaderDef {
