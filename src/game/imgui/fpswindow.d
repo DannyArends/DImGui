@@ -6,7 +6,7 @@
 import game;
 
 import imgui : faIcon;
-import widgets : text;
+import widgets : text, cstr;
 
 size_t vertexCount(Geometry o, bool showBounds) {
   return o.vertices.length * o.instances.length + (showBounds && o.box ? o.box.vertices.length * o.box.instances.length : 0);
@@ -20,6 +20,17 @@ string humanCount(size_t n) {
   if (n >= 1_000_000) return format("%.1fM", n / 1_000_000.0);
   if (n >= 1_000) return format("%.1fK", n / 1_000.0);
   return format("%d", n);
+}
+
+void showTimingsContent(ref App app) {
+  ulong total = 0;
+  foreach(ms; app.timings) total += ms;
+  foreach(name, ms; app.timings) {
+    if(ms < 10) continue;
+    igProgressBar(total ? cast(float)ms / total : 0.0f, ImVec2(60, igGetTextLineHeightWithSpacing()), "");
+    igSameLine(0, 6);
+    igText(cstr("%s %dms", name, ms));
+  }
 }
 
 /** Show the GUI window with FPS statistics */
@@ -53,6 +64,7 @@ void showFPSContent(ref GameApp app, uint font = 0) {
     text("Shadow objects: %s / %s", humanCount(app.shadows.lastShadowInstances), humanCount(app.shadows.totalShadowInstances));
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
+    app.showTimingsContent();
   igEnd();
   igPopFont();
 }
