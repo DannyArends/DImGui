@@ -22,7 +22,8 @@ layout(location = 6) in vec4 inWeights;             /// assimp: BoneWeights
 layout(location = 7) in uvec2 meshdef;              /// Mesh [start, stop, material, texure override]
 layout(location = 8) in int material;               /// per-Instance material
 layout(location = 9) in vec4 instanceColor;         /// per-Instance color
-layout(location = 10) in mat4 instance;             /// Instance matrix
+layout(location = 10) in vec4 instanceTangent;      /// Per-instance world tangent xyz + handedness w
+layout(location = 11) in mat4 instance;             /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;         /// Fragment world position
@@ -43,7 +44,7 @@ void main() {
   /// Calculate the world-space normal, bitangent, tangent, and normal matrix
   vec3 N = normalize(mat3(instance) * inNormal);
   vec3 T = normalize(mat3(instance) * inTangent.xyz);
-  vec3 B = normalize(cross(N, T)) * inTangent.w;
+  vec3 B = cross(N, T);
 
   /// World position & point size
   gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * position;
