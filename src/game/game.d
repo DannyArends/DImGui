@@ -95,8 +95,7 @@ void initGame(ref GameApp app) {
 }
 
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
-void updateGame(ref GameApp app) {
-  float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
+void updateGame(ref GameApp app, double dt) {
   app.injectResourceMeshes();
   if(app.textures.loaded) { app.updateMaterials(); app.textures.loaded = false; }
   app.world.settleBlocks(dt);

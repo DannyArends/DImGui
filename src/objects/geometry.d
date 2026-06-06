@@ -27,6 +27,7 @@ class Geometry {
 
   Animation[] animations;                       /// Animations
   uint animation = 0;                           /// Current Animation
+  double animTime = 0.0;                        /// ms of animation played, dt-advanced
   Mesh[string] meshes;                          /// Meshes
   AMat[] materials;                             /// Materials
 

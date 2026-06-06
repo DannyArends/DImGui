@@ -52,7 +52,7 @@ void handleKeyEvents(ref GameApp app, SDL_Event e) {
     auto symbol = e.key.key;
     if(symbol == SDLK_PAGEUP) app.tryMove([ 0.0f,  1.0f, 0.0f]);
     if(symbol == SDLK_PAGEDOWN) app.tryMove([ 0.0f, -1.0f, 0.0f]);
-    if(symbol == SDLK_P) app.paused = !app.paused;
+    if(symbol == SDLK_P || symbol == SDLK_SPACE) app.paused = !app.paused;
     if(symbol == SDLK_W || symbol == SDLK_UP) app.tryMove(app.camera.forward());
     if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
@@ -88,7 +88,7 @@ void handleTouchEvents(ref GameApp app, const SDL_Event event) {
 }
 
 /** Handles all ImGui IO and SDL events */
-void handleEvents(ref GameApp app) {
+double handleEvents(ref GameApp app) {
   if(app.trace) SDL_Log("handleEvents");
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
@@ -102,8 +102,7 @@ void handleEvents(ref GameApp app) {
     if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e);
   }
 
-  if(app.paused) return;
-  if(app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
+  if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     foreach(i; iota(app.objects.length)) {
@@ -113,8 +112,9 @@ void handleEvents(ref GameApp app) {
   }
 
   // Call all onFrame() handlers
-  float dt = (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 100.0f;
+  float dt = app.paused ? 0.0f : (app.time[FRAMESTOP] - app.time[LASTFRAME]) / 1000.0f;
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
 
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }
+  return(dt);
 }
