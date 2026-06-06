@@ -15,16 +15,12 @@ void showLightsContent(ref GameApp app, uint font = 0) {
 
   igCheckbox(iconText(cast(string)ICON_FA_MUSIC, "Disco"), &app.disco);
 
-  if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_SUN, "Sun"), 0)) {
-    igBeginTable("Sun_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-
-    setting("Time of Day", app.lights.sunTime, 0.0f, 24.0f, 200, app.gui.uiscale, "%.1f h");
-    setting("Bearing", app.lights.sunBearing, 0.0f, 365.0f, 200, app.gui.uiscale, "%.0f");
-    infoRow("Elevation", "%.1f deg", sunElevation(app.lights.sunTime));
-    infoRow("Azimuth", "%.1f deg", sunAzimuth(app.lights.sunTime));
-    igEndTable();
-    igTreePop();
-  }
+  igBeginTable("Sun_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+  setting("Time of Day", app.lights.sunTime, 0.0f, 24.0f, 200, app.gui.uiscale, "%.1f h");
+  setting("Bearing", app.lights.sunBearing, 0.0f, 365.0f, 200, app.gui.uiscale, "%.0f");
+  infoRow("Elevation", "%.1f deg", sunElevation(app.lights.sunTime));
+  infoRow("Azimuth", "%.1f deg", sunAzimuth(app.lights.sunTime));
+  igEndTable();
 
   foreach(i, ref Light light; app.lights) {
     if(i == 0) continue;
