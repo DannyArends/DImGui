@@ -10,28 +10,28 @@
 #include "functions.glsl"
 
 // Per Vertex attributes
-layout(location = 0) in vec3 inPosition;            /// Vertex position
-layout(location = 1) in vec4 inColor;               /// TODO: get from materialSSB0.materials[] with meshSSBO.meshes[i].material
-layout(location = 2) in vec3 inNormal;              /// Normal
-layout(location = 3) in vec2 inTexCoord;            /// Texture coordinate
-layout(location = 4) in vec4 inTangent;             /// Tangent vector
-layout(location = 5) in uvec4 inBones;              /// assimp: BoneIDs
-layout(location = 6) in vec4 inWeights;             /// assimp: BoneWeights
+layout(location = 0) in vec3  inPosition;             /// Vertex Position
+layout(location = 1) in vec4  inColor;                /// Vertex Color
+layout(location = 2) in vec3  inNormal;               /// Normal
+layout(location = 3) in vec2  inTexCoord;             /// Texture coordinate
+layout(location = 4) in vec4  inTangent;              /// Tangent xyz + handedness w
+layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
+layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance attributes
-layout(location = 7) in uvec2 meshdef;              /// Mesh [start, stop, material, texure override]
-layout(location = 8) in int material;               /// per-Instance material
-layout(location = 9) in vec4 instanceColor;         /// per-Instance color
-layout(location = 10) in vec4 instanceTangent;      /// Per-instance world tangent xyz + handedness w
-layout(location = 11) in mat4 instance;             /// Instance matrix
+layout(location = 7) in uvec2 meshdef;                /// Mesh [start, stop, material, texure override]
+layout(location = 8) in int   material;               /// per-Instance material
+layout(location = 9) in vec4  instanceColor;          /// per-Instance Color
+layout(location = 10) in vec4 instanceTangent;        /// Per-instance Tangent xyz + handedness w
+layout(location = 11) in mat4 instance;               /// Instance matrix
 
 // Output to Fragment shader
-layout(location = 0) out vec4 fragPosWorld;         /// Fragment world position
-layout(location = 1) out vec4 fragColor;            /// Fragment color
-layout(location = 2) out vec3 fragNormal;           /// Fragment normal
-layout(location = 3) out vec2 fragTexCoord;         /// Texture coordinate
-layout(location = 4) flat out ivec2 fragInstance;   /// [meshID, material override]
-layout(location = 5) out mat3 fragTBN;              /// Tangent, Bitangent, Normal matrix
+layout(location = 0) out vec4 fragPosWorld;           /// Fragment world position
+layout(location = 1) out vec4 fragColor;              /// Fragment color
+layout(location = 2) out vec3 fragNormal;             /// Fragment normal
+layout(location = 3) out vec2 fragTexCoord;           /// Texture coordinate
+layout(location = 4) flat out ivec2 fragInstance;     /// [meshID, material override]
+layout(location = 5) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
 
 void main() {
   /// Compute bone effects on vertex
