@@ -61,17 +61,6 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   }
 }
 
-@nogc float[4] faceTangent(int f, float ts, float th) nothrow {
-  auto d = faceData(f, 0, 0, 0, ts, th);
-  float[3] t = [d[0], d[1], d[2]];
-  float[3] n = [d[3], d[4], d[5]];
-  float[3] bt= [d[6], d[7], d[8]];
-  float[3] c = n.cross(t);
-  float w = (c.dot(bt) < 0.0f) ? -1.0f : 1.0f;
-  float l = sqrt(t[0]*t[0] + t[1]*t[1] + t[2]*t[2]);
-  return [t[0]/l, t[1]/l, t[2]/l, w];
-}
-
 /** Record a tile's AABB into chunk bounds and per-tile pick data (if it produced faces) */
 void addTileBounds(ref ChunkData data, float[3] lo, float[3] hi, int i, size_t faceStart) {
   if (data.tileInstances.length > faceStart) {
@@ -105,7 +94,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
         exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
       } else { exposed = !wd.isSolid(neighbours[f]); }
       if (!exposed) continue;
-      data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faceData(f, px, py, pz, ts, th), faceTangent(f, ts, th));
+      data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faceData(f, px, py, pz, ts, th));
       data.tileIndices ~= i;
     }
     data.addTileBounds([px - ts/2, py - th/2, pz - ts/2], [px + ts/2, py + th/2, pz + ts/2], i, faceStart);

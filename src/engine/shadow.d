@@ -25,8 +25,8 @@ struct ShadowMap {
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  uint dimension = isAndroid ? 512 : 4096;  /// Allow shadows to be disabled
-  float[2] bounds = [0.0f, 0.0f];  /// [height, radius] for shadow projection
+  uint dimension = isAndroid ? 512 : 4096;  /// Shadowmap dimension
+  float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
   bool dirty = true;
 
@@ -160,8 +160,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
     cullMode: VK_CULL_MODE_NONE,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
-    depthBiasConstantFactor: 1.0f,
-    depthBiasSlopeFactor: 1.5f,
+    depthBiasConstantFactor: 3.0f,
+    depthBiasSlopeFactor: 4.5f,
   };
 
   VkPipelineMultisampleStateCreateInfo multisampling = {
