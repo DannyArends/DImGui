@@ -100,7 +100,7 @@ void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
 @nogc pure float sunAzimuth(float sunTime, float bearing = 0.0f) nothrow { return (sunTime / 24.0f) * 360.0f + bearing;}
 
 /** Compute Elevation of the sun */
-@nogc pure float sunElevation(float sunTime, float sunriseH = 4.0f, float sunsetH = 22.0f) nothrow {
+@nogc pure float sunElevation(float sunTime, float sunriseH = 5.0f, float sunsetH = 23.0f) nothrow {
   float dayFrac = (sunTime - sunriseH) / (sunsetH - sunriseH);
   return (dayFrac >= 0.0f && dayFrac <= 1.0f) ? sin(dayFrac * PI) * 60.0f : -10.0f;
 }
@@ -139,7 +139,7 @@ void toggleLightGeometries(ref App app) {
   return lerpColor(dawn, day, (t - dawnThreshold) / (1.0f - dawnThreshold));
 }
 /** Update time of day / sun */
-void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold = 0.55f, float ambientScale = 0.1f, float sunDistance = 100.0f,
+void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold = 0.55f, float ambientScale = 0.1f, float sunDistance = 200.0f,
                float[4] skyNight = Colors.skyNight, float[4] skyDawn = Colors.skyDawn, float[4] skyDay = Colors.skyDay,
                float[4] sunNight = Colors.sunNight, float[4] sunDawn = Colors.sunDawn, float[4] sunNoon = Colors.sunNoon) {
   float azRad = radian(azimuth);
