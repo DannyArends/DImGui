@@ -43,8 +43,8 @@ void main() {
 
   /// Calculate the world-space normal, bitangent, tangent, and normal matrix
   vec3 N = normalize(mat3(instance) * inNormal);
-  vec3 T = normalize(mat3(instance) * inTangent.xyz);
-  vec3 B = cross(N, T);
+  vec3 T = normalize(mat3(instance) * instanceTangent.xyz);
+  vec3 B = cross(N, T) * instanceTangent.w;
 
   /// World position & point size
   gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * position;

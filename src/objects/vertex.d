@@ -39,8 +39,8 @@ struct Vertex {
       { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32_UINT, offset: DrawInstance.meshdef.offsetof },
       { binding: INSTANCE, location: 8, format: VK_FORMAT_R32_SINT, offset: DrawInstance.material.offsetof },
       { binding: INSTANCE, location: 9, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.color.offsetof },
-      { binding: INSTANCE, location: 10, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
-      { binding: INSTANCE, location: 11, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.tangent.offsetof },
+      { binding: INSTANCE, location: 10, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.tangent.offsetof },
+      { binding: INSTANCE, location: 11, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
       { binding: INSTANCE, location: 12, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 4 * float.sizeof },
       { binding: INSTANCE, location: 13, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 8 * float.sizeof },
       { binding: INSTANCE, location: 14, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12 * float.sizeof }
