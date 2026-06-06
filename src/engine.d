@@ -115,6 +115,7 @@ struct App {
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
   float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
   ulong[6] time = [0, 0, 0, 0, 0, 0];                                           /// Time monitoring
+  ulong[string] timings;                                                        /// Stage name into last frame's CPU timings
   uint totalFramesRendered = 0;                                                 /// Total frames rendered so far
 
   const(char)*[] instanceExtensions;                                            /// Enabled instance extensions

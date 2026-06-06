@@ -6,13 +6,13 @@
 import engine;
 
 auto timed(alias fn, T, Args...)(ref T app, Args args) {
-  debug { if(app.trace) {
+  debug {
     ulong t0 = SDL_GetTicks();
     scope(exit) {
-      ulong dt = SDL_GetTicks() - t0;
-      if(dt > 3) SDL_Log("SLOW %s=%dms", __traits(identifier, fn).ptr, dt);
+      ulong dt = app.timings[__traits(identifier, fn)] = SDL_GetTicks() - t0;
+      if(app.trace && dt > 3) SDL_Log("SLOW %s=%dms", __traits(identifier, fn).ptr, dt);
     }
-  } }
+  }
   return fn(app, args);
 }
 
