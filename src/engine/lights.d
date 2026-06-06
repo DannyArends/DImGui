@@ -62,7 +62,7 @@ struct Lighting {
     return;
   }
   float extent = size[1];
-  float depth  = size[0] + 2.0f * size[1];
+  float depth  = size[0] * 2.0f; 
 
   float[3] centre = [cam.lookat[0], cam.lookat[1], cam.lookat[2]];
 
