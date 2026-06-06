@@ -141,8 +141,8 @@ void settleBlocks(ref World world, float dt) {
   bool changed = false;
   foreach(id, ref b; world.blocks) {
     if(!b.isFalling) continue;
-    b.v = b.v + 0.125f * dt;
-    b.y = b.y - b.v * dt;
+    b.v = b.v + (1.5f * dt);
+    b.y = b.y - (b.v * dt);
     int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
     float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
     if(b.y <= landY) { b.tile = [b.tile[0], landTileY + 1, b.tile[2]]; b.fallState = [0.0f, 0.0f]; }
