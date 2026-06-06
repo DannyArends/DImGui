@@ -25,7 +25,7 @@ struct Shader {
   alias shaderModule this;
 }
 
-struct Specialization{ 
+struct Specialization {
   bool alpha = true;
   bool instanced = true;
 }
