@@ -55,7 +55,7 @@ void main() {
 
   /// Transfer data to fragment shader
   fragPosWorld = (model * position);
-  fragColor = instanceColor * (INSTANCED ? instanceColor : inColor);
+  fragColor = INSTANCED ? instanceColor : inColor;
   fragNormal = normalize(normalMatrix * inNormal);
   fragTexCoord = inTexCoord;
   uint meshID = meshdef[0];
