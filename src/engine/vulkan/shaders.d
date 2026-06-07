@@ -154,13 +154,16 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
  *  Returns stages plus the spec data they point to (kept alive by the caller). */
 VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo,
                                                                     ref VkSpecializationMapEntry[] mapEntry,
-                                                                    ref VkBool32[] flags, Specialization s) {
-  flags = [ s.alpha ? VK_TRUE : VK_FALSE, s.instanced ? VK_TRUE : VK_FALSE ];
+                                                                    ref uint[] flags, VkPrimitiveTopology topology, Specialization s) {
+  flags = [ topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST ? VK_TRUE : VK_FALSE, 
+            s.alpha ? VK_TRUE : VK_FALSE, 
+            s.instanced ? VK_TRUE : VK_FALSE ];
   mapEntry = [
-    VkSpecializationMapEntry(0, 0,               VkBool32.sizeof),   // ALPHA_TEST → fragment
-    VkSpecializationMapEntry(1, VkBool32.sizeof, VkBool32.sizeof),   // INSTANCED  → vertex
+    VkSpecializationMapEntry(0, 0 * uint.sizeof, uint.sizeof),   // LINE → fragment
+    VkSpecializationMapEntry(1, 1 * uint.sizeof, uint.sizeof),   // ALPHA_TEST → fragment
+    VkSpecializationMapEntry(2, 2 * uint.sizeof, uint.sizeof),   // INSTANCED  → vertex
   ];
-  specInfo = VkSpecializationInfo(cast(uint)mapEntry.length, mapEntry.ptr, flags.length * VkBool32.sizeof, flags.ptr);
+  specInfo = VkSpecializationInfo(cast(uint)mapEntry.length, mapEntry.ptr, flags.length * uint.sizeof, flags.ptr);
   VkPipelineShaderStageCreateInfo[] info;
   foreach(shader; shaders){
     auto stage = shader.info;
