@@ -5,8 +5,6 @@
 
 import engine;
 
-import camera : frustumCorners;
-import frustum : aabbOf;
 import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
@@ -62,9 +60,8 @@ struct Lighting {
     return;
   }
   float extent = size[1];
-  float depth  = size[0] + 2.0f * size[1];
-
-  float[3] centre = [0.0f, size[0] * 0.5f, 0.0f];
+  float depth = size[0] + 2.0f * size[1];
+  float[3] centre = [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
 
   float texelsPerUnit = cast(float)shadowDimension / (2.0f * extent);
   centre[0] = floor(centre[0] * texelsPerUnit) / texelsPerUnit;
@@ -72,7 +69,6 @@ struct Lighting {
 
   float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f));
   Matrix lightView = lookAt(eye, centre, upVector);
-
   light.lightSpaceMatrix = orthogonal(-extent, extent, -extent, extent, 0.0f, depth).multiply(lightView);
 }
 

@@ -95,16 +95,3 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
   camera.distance = clamp(camera.distance + delta, 2.0f, 60.0f);
   camera.isDirty = true;
 }
-
-/** World-space corners of the camera frustum, far plane capped to maxFar (Vulkan NDC z 0..1) */
-@nogc float[3][8] frustumCorners(const ref Camera camera, float maxFar) nothrow {
-  Matrix proj = perspective(camera.fov, camera.width / cast(float)camera.height, camera.nearfar[0], maxFar);
-  Matrix invVP = proj.multiply(camera.view).inverse();
-  float[3][8] corners;
-  int k = 0;
-  foreach(z; [0.0f, 1.0f]) { foreach(y; [-1.0f, 1.0f]) { foreach(x; [-1.0f, 1.0f]) {
-    float[4] w = invVP.multiply([x, y, z, 1.0f]);
-    corners[k++] = [w[0]/w[3], w[1]/w[3], w[2]/w[3]];
-  } } }
-  return corners;
-}
