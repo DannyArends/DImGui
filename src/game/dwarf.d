@@ -86,9 +86,14 @@ struct DwarfData {
     if(slot >= inventory.length || inventory[slot].empty) return false;
     auto s = &inventory[slot];
     uint id = s.resourceIDs[s.count - 1];
-    if(auto b = id in app.world.blocks) { b.tile = tile; b.reserved = false; }
+    if(auto b = id in app.world.blocks) {
+      b.tile = tile;
+      b.reserved = false;
+      b.fallState = [app.world.tileToWorld(tile, -app.world.blockOffset)[1], 0.001f];
+    }
     s.count--;
     if(s.count == 0) *s = InventorySlot.init;
+    app.syncBlockInstances();
     return true;
   }
 
