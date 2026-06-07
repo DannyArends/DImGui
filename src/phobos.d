@@ -23,7 +23,7 @@ public import std.format : format;
 public import std.math : abs, ceil, sqrt, pow, PI, cos, sin, tan, acos, asin, atan, atan2, floor, fmod, isFinite, isNaN;
 public import std.path : baseName, dirName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform, randomShuffle, dice;
-public import std.range : iota, chain;
+public import std.range : iota, chain, front;
 public import std.regex : regex, matchAll;
 public import std.string : toStringz, fromStringz, capitalize, lastIndexOf, toLower, toUpper, indexOf, startsWith, strip, chomp, splitLines;
 public import std.sumtype : SumType, match;

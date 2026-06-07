@@ -161,7 +161,10 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
   return Job("DropBlock", fromTile, ResourceType.None, [], true, [blockID],
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
     onArrive: (ref GameApp app, ref Dwarf d) {
-      foreach(slot, ref s; d.inventory) { if(s.isBlock && s.blockID == d.currentJob.blockIDs[0]) { d.drop(app, slot); break; } }
+      auto target = d.currentJob.blockIDs[0];
+      foreach(slot, ref s; d.inventory) {
+        if(!s.empty && s.resourceIDs[0 .. s.count].canFind(target)) { d.drop(app, slot); break; }
+      }
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
@@ -236,6 +239,7 @@ Job eatJob() {
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.5f, () {                    // ~2 ticks to eat
         auto id = d.currentJob.blockIDs[0];
+        d.use(app, id);
         if(id in app.world.blocks) app.world.blocks.remove(id);
         d.hunger = 0.0f;
         app.syncBlockInstances();

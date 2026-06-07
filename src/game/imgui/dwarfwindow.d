@@ -9,7 +9,7 @@ import dwarf : spawnDwarf;
 import jobs : jobQueue;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
-import widgets : text, cstr;
+import widgets : cstr, drawCenteredText, text;
 
 /** Tile icon */
 void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f) {
@@ -65,7 +65,24 @@ void showDwarfSheet(ref GameApp app, Dwarf* d) {
   text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
   igSeparator();
   igText("Inventory:");
-  foreach(ref s; d.inventory) { if(!s.empty) { text("  %s x%d", resourceData(s.type).name, s.count); } }
+  float cellSize = 32.0f;
+  int cols = cast(int)floor((app.gui.panelW - cellSize) / cast(float)(cellSize + 4)) - 1;
+  if(cols < 1) cols = 1;
+  int col = 0;
+  foreach(i, ref s; d.inventory) {
+    if(s.empty) {
+      igButton(cstr("##dwf_inv_%d", cast(int)i), ImVec2(cellSize, cellSize));    // empty cell
+    } else {
+      auto texIdx = idx(app.textures, resourceData(s.type).name ~ "_base");
+      auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
+      igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
+      if(igIsItemClicked(0)) d.drop(app, i);
+      ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
+      if(s.count > 1) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", s.count));
+      if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d (click to drop)", resourceData(s.type).name, s.count));
+    }
+    if(++col < cols) igSameLine(0, 4); else col = 0;
+  }
 }
 
 /** Roster of all dwarves + queue summary */

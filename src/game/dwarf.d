@@ -24,17 +24,17 @@ uint nextDwarfUID = 1;
 
 struct InventorySlot {
   enum Kind : ubyte { Empty, Block, Stack }
-  Kind kind = Kind.Empty;
-  uint blockID = noBlock;
-  ResourceType type = ResourceType.None;
-  ubyte count = 0;
+  Kind kind = Kind.Empty;                           /// Resource kind
+  ResourceType type = ResourceType.None;            /// Resource type
+  ubyte count = 0;                                  /// number of valid ids in resourceIDs
+  uint[16] resourceIDs = noBlock;                   /// block/berry ids in this slot (POD, fixed-size)
 
-  @property bool empty()   const { return kind == Kind.Empty; }
+  @property bool empty() const { return kind == Kind.Empty; }
   @property bool isBlock() const { return kind == Kind.Block; }
   @property bool isStack() const { return kind == Kind.Stack; }
-  bool accepts(ResourceType type) {
+  bool accepts(ResourceType t) {
     if(empty) return true;
-    return isStack && this.type == type && count < resourceData(type).maxStack;
+    return isStack && this.type == t && count < resourceData(t).maxStack;
   }
 }
 
@@ -49,14 +49,18 @@ struct DwarfData {
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
   @property float mood() const { return 1.0f - hunger; }   // 1 = content, 0 = miserable
-  @property uint[] carrying() { return inventory[].filter!(s => s.isBlock).map!(s => s.blockID).array; }
+
+@property uint[] carrying() {
+    uint[] ids;
+    foreach(ref s; inventory) if(!s.empty) ids ~= s.resourceIDs[0 .. s.count];
+    return ids;
+  }
 
   bool pickup(uint blockID, ResourceType type) {
     foreach(ref s; inventory) {
       if(!s.accepts(type)) continue;
-      s.kind = resourceData(type).maxStack > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block;
-      s.blockID = blockID;
-      s.type = type;
+      if(s.empty) { s.kind = resourceData(type).maxStack > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.type = type; }
+      s.resourceIDs[s.count] = blockID;
       s.count++;
       return true;
     }
@@ -65,14 +69,26 @@ struct DwarfData {
 
   bool use(ref GameApp app, uint blockID) {
     if(auto b = blockID in app.world.blocks) b.reserved = false;
-    foreach(ref s; inventory) { if(s.isBlock && s.blockID == blockID) { s = InventorySlot.init; return true; } }
+    foreach(ref s; inventory) {
+      if(s.empty) continue;
+      auto k = s.resourceIDs[0 .. s.count].countUntil(blockID);
+      if(k >= 0) {
+        s.resourceIDs[k] = s.resourceIDs[s.count - 1];
+        s.count--;
+        if(s.count == 0) s = InventorySlot.init;
+        return true;
+      }
+    }
     return false;
   }
 
   bool drop(ref GameApp app, size_t slot) {
     if(slot >= inventory.length || inventory[slot].empty) return false;
-    if(inventory[slot].isBlock) { if(auto b = inventory[slot].blockID in app.world.blocks) { b.tile = tile; b.reserved = false; } }
-    inventory[slot] = InventorySlot.init;
+    auto s = &inventory[slot];
+    uint id = s.resourceIDs[s.count - 1];
+    if(auto b = id in app.world.blocks) { b.tile = tile; b.reserved = false; }
+    s.count--;
+    if(s.count == 0) *s = InventorySlot.init;
     return true;
   }
 
