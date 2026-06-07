@@ -88,6 +88,21 @@ extern(C) const(char)* dropDownItems(void* user_data, int idx) {
   }
 }
 
+void drawCenteredText(ImDrawList* drawList, ImVec2 min, ImVec2 max, const(char)* text) {
+  auto font = igGetFont();
+  float fontSize = igGetFontSize();
+  ImVec2 textSize;
+  igCalcTextSize(&textSize, text, null, false, -1.0f);
+  float tx = min.x + (max.x - min.x - textSize.x) * 0.5f;
+  float ty = min.y + (max.y - min.y - textSize.y) * 0.5f;
+  ImDrawList_PushClipRectFullScreen(drawList);
+  foreach (off; [ImVec2(-1,-1), ImVec2(1,-1), ImVec2(-1,1), ImVec2(1,1)]) {
+    ImDrawList_AddText_FontPtr(drawList, font, fontSize, ImVec2(tx+off.x, ty+off.y), 0xFF000000, text, null, 0.0f, null);
+  }
+  ImDrawList_AddText_FontPtr(drawList, font, fontSize, ImVec2(tx, ty), 0xFFFFFFFF, text, null, 0.0f, null);
+  ImDrawList_PopClipRect(drawList);
+}
+
 DropDownItem[] texturesToDropdown(ref App app){
   DropDownItem[] items;
   foreach(i, texture; app.textures){

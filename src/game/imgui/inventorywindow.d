@@ -7,22 +7,7 @@ import game;
 
 import imgui : faIcon;
 import textures : ImTextureRefFromID, idx;
-import widgets : text, cstr;
-
-void drawCenteredText(ImDrawList* drawList, ImVec2 min, ImVec2 max, const(char)* text) {
-  auto font = igGetFont();
-  float fontSize = igGetFontSize();
-  ImVec2 textSize;
-  igCalcTextSize(&textSize, text, null, false, -1.0f);
-  float tx = min.x + (max.x - min.x - textSize.x) * 0.5f;
-  float ty = min.y + (max.y - min.y - textSize.y) * 0.5f;
-  ImDrawList_PushClipRectFullScreen(drawList);
-  foreach (off; [ImVec2(-1,-1), ImVec2(1,-1), ImVec2(-1,1), ImVec2(1,1)]) {
-    ImDrawList_AddText_FontPtr(drawList, font, fontSize, ImVec2(tx+off.x, ty+off.y), 0xFF000000, text, null, 0.0f, null);
-  }
-  ImDrawList_AddText_FontPtr(drawList, font, fontSize, ImVec2(tx, ty), 0xFFFFFFFF, text, null, 0.0f, null);
-  ImDrawList_PopClipRect(drawList);
-}
+import widgets : cstr, drawCenteredText, text;
 
 /** Show tool mode switcher */
 void showToolSwitcher(ref GameApp app) {
