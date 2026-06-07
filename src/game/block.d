@@ -16,6 +16,7 @@ import vector : manhattan;
 enum uint noBlock = uint.max;
 
 struct Block {
+  uint id = uint.max;               /// Stable block id (persisted, == its key in world.blocks)
   ResourceType type;                /// Block type
   int[3] tile;                      /// Current tile position
   float[2] fallState;               /// [y, v] fall physics, [0,0] if not falling
@@ -41,7 +42,10 @@ void loadBlocks(ref GameApp app) {
   app.ensureBlocks();
   Block[] flat;
   if(!readData(app.world.blocksPath(), flat, app.world.blockNextID)) return;
-  foreach(ref b; flat) app.world.blocks[app.world.blockNextID++] = b;
+  foreach(ref b; flat) {
+    app.world.blocks[b.id] = b;
+    if(b.id >= app.world.blockNextID) app.world.blockNextID = b.id + 1;
+  }
   app.syncBlockInstances();
   foreach(id, ref b; app.world.blocks) { if(b.isFalling) app.world.pendingUnsettle ~= b.tile; }
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
@@ -95,7 +99,7 @@ void ensureBlocks(ref GameApp app) {
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   uint id = app.world.blockNextID++;
-  app.world.blocks[id] = Block(tt, tile, [app.world.tileToWorld(tile, -app.world.blockOffset)[1], 0.001f]);
+  app.world.blocks[id] = Block(id, tt, tile, [app.world.tileToWorld(tile, -app.world.blockOffset)[1], 0.001f]);
   app.syncBlockInstances();
   return id;
 }

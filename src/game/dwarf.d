@@ -83,13 +83,16 @@ struct DwarfData {
   }
 
   bool drop(ref GameApp app, size_t slot) {
-    if(slot >= inventory.length || inventory[slot].empty) return false;
+    if(slot >= inventory.length || inventory[slot].empty) { SDL_Log("drop: empty/oob slot %d", cast(int)slot); return false; }
     auto s = &inventory[slot];
     uint id = s.resourceIDs[s.count - 1];
+    auto present = (id in app.world.blocks) !is null;
+    SDL_Log("drop: slot=%d id=%d inWorld=%d type=%s tile=%d,%d,%d", cast(int)slot, id, present, resourceData(s.type).name.ptr, tile[0], tile[1], tile[2]);
     if(auto b = id in app.world.blocks) {
       b.tile = tile;
       b.reserved = false;
       b.fallState = [app.world.tileToWorld(tile, -app.world.blockOffset)[1], 0.001f];
+      SDL_Log("drop: placed block %d at tile %d,%d,%d  meshName=%s", id, tile[0], tile[1], tile[2], resourceData(b.type).meshName.ptr);
     }
     s.count--;
     if(s.count == 0) *s = InventorySlot.init;
