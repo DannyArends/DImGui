@@ -27,8 +27,7 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
   popLabel(cmd);
 }
 
-/** Record scene command buffer: SSBO -> Objects -> Rendering
- */
+/** Record scene command buffer: SSBO -> Objects -> Rendering */
 void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   auto cmd = app.scenePass.beginRecording(app, syncIndex, "Render");
 
@@ -70,8 +69,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   app.scenePass.endRecording(syncIndex);
 }
 
-/** Record post-process command buffer
- */
+/** Record post-process command buffer */
 void recordPostCommandBuffer(ref App app, uint syncIndex) {
   auto cmd = app.postPass.beginRecording(app, syncIndex, "Post");
 

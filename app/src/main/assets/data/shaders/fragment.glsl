@@ -20,7 +20,6 @@ layout(location = 0) out vec4 outColor;
 
 // Compile time constants
 layout(constant_id = 0) const bool ALPHA_TEST = true;  // false = opaque variant (no discard, enables mobile HSR)
-layout(constant_id = 1) const bool INSTANCED = true;  /// INSTANCED rendering (uses per instance attributes over-writes)
 
 void main() {
   Mesh mesh = meshSSBO.meshes[uint(fragInstance[0])];
