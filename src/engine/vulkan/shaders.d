@@ -10,7 +10,7 @@ import reflection : convert, reflectShader;
 import validation : nameVulkanObject;
 
 struct Shader {
-  string path;                      /// Path of the shader
+  string path;                            /// Path of the shader
   VkShaderStageFlagBits stage;            /// Shader Stage (Vertex, Fragment, Compute)
   VkShaderModule shaderModule;            /// Vulkan Shader Module
   VkPipelineShaderStageCreateInfo info;   /// Shader Stage Create Info Object
@@ -45,8 +45,7 @@ struct IncluderContext {
   bool verbose = false;
 }
 
-/** Create the ShaderC compiler
- */
+/** Create the ShaderC compiler */
 void createCompiler(ref App app) {
   app.compiler = shaderc_compiler_initialize();
   if(!app.compiler) { SDL_Log("Failed to initialize shaderc compiler."); abort(); }
@@ -66,8 +65,7 @@ void createCompiler(ref App app) {
   });
 }
 
-/** Callback to resolve shader file includes using our own I/O
- */
+/** Callback to resolve shader file includes using our own I/O */
 extern (C) shaderc_include_result* includeResolve(void* userData, const(char)* source, int type, const(char)* reqSource, size_t depth){
   auto context = cast(IncluderContext*)userData;
   char[] code;
@@ -89,8 +87,7 @@ extern (C) shaderc_include_result* includeResolve(void* userData, const(char)* s
   return(result);
 }
 
-/** Callback to release shader files included
- */
+/** Callback to release shader files included */
 extern (C) void includeRelease(void* userData, shaderc_include_result* result) {
   auto context = cast(IncluderContext*)userData;
   if (result) {
@@ -167,8 +164,7 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecia
   VkPipelineShaderStageCreateInfo[] info;
   foreach(shader; shaders){
     auto stage = shader.info;
-    if(shader.stage == VK_SHADER_STAGE_VERTEX_BIT || shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
-      stage.pSpecializationInfo = &specInfo;
+    if(shader.stage == VK_SHADER_STAGE_VERTEX_BIT || shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT){ stage.pSpecializationInfo = &specInfo; }
     info ~= stage;
   }
   return(info);
@@ -179,9 +175,7 @@ void loadShaders(ref App app, ref Shader[] dst, ShaderDef[] defs) {
   foreach(def; defs) { dst ~= app.createShaderModule(def.path, def.type); }
 
   app.mainDeletionQueue.add(() {
-    for(uint i = 0; i < dst.length; i++) {
-      vkDestroyShaderModule(app.device, dst[i], app.allocator);
-    }
+    for(uint i = 0; i < dst.length; i++) { vkDestroyShaderModule(app.device, dst[i], app.allocator); }
   });
 }
 
