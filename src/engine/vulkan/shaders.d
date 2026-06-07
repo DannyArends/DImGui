@@ -155,9 +155,7 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
 VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo,
                                                                     ref VkSpecializationMapEntry[] mapEntry,
                                                                     ref uint[] flags, VkPrimitiveTopology topology, Specialization s) {
-  flags = [ topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST ? VK_TRUE : VK_FALSE, 
-            s.alpha ? VK_TRUE : VK_FALSE, 
-            s.instanced ? VK_TRUE : VK_FALSE ];
+  flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, s.instanced ? VK_TRUE : VK_FALSE ];
   mapEntry = [
     VkSpecializationMapEntry(0, 0 * uint.sizeof, uint.sizeof),   // LINE → fragment
     VkSpecializationMapEntry(1, 1 * uint.sizeof, uint.sizeof),   // ALPHA_TEST → fragment
