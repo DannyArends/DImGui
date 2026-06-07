@@ -56,6 +56,23 @@ void showDwarfRow(ref GameApp app, size_t i, ref Dwarf d) {
   text("%s - %s", d.tile, dwarfStatus(d));
 }
 
+/** One inventory slot cell: empty placeholder, or item icon with count + click-to-drop */
+void showInventorySlot(ref GameApp app, Dwarf* d, size_t i, float cellSize) {
+  auto s = &d.inventory[i];
+  if(s.empty) {
+    igImageButton(cstr("##dwf_inv_%d", cast(int)i), ImTextureRefFromID(0), ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(0,0,0,0));
+    return;
+  }
+  auto texName = resourceData(s.type).buildable ? resourceData(s.type).name ~ "_base" : resourceData(s.type).name;
+  auto texIdx  = idx(app.textures, texName);
+  auto texID   = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
+  igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
+  if(igIsItemClicked(0)) d.drop(app, i);
+  ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
+  if(s.count > 1) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", s.count));
+  if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d (click to drop)", resourceData(s.type).name, s.count));
+}
+
 /** Detailed sheet for the selected dwarf */
 void showDwarfSheet(ref GameApp app, Dwarf* d) {
   dwarfGlyph(*d); igSameLine(0, 5);
@@ -70,17 +87,7 @@ void showDwarfSheet(ref GameApp app, Dwarf* d) {
   if(cols < 1) cols = 1;
   int col = 0;
   foreach(i, ref s; d.inventory) {
-    if(s.empty) {
-      igButton(cstr("##dwf_inv_%d", cast(int)i), ImVec2(cellSize, cellSize));    // empty cell
-    } else {
-      auto texIdx = idx(app.textures, resourceData(s.type).name ~ "_base");
-      auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
-      igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
-      if(igIsItemClicked(0)) d.drop(app, i);
-      ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
-      if(s.count > 1) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", s.count));
-      if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d (click to drop)", resourceData(s.type).name, s.count));
-    }
+    app.showInventorySlot(d, i, cellSize);
     if(++col < cols) igSameLine(0, 4); else col = 0;
   }
 }
