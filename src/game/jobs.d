@@ -258,14 +258,13 @@ bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
   d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
   if(!d.hasJob) { d.clearGoal(); return false; }
   d.targetTile = d.currentJob.targetTile;
-  auto reach = d.currentJob.reach;
-  auto goal = app.findGoalTile(d, reach);
+
+  auto goal = app.findGoalTile(d, d.currentJob.reach);
   if(goal == noTile) { app.rejectJob(d, job); return false; }
   if(goal == d.tile) { d.state = DwarfState.Working; return true; }
   app.pathfindTo(d, goal);
   return true;
 }
-
 /** Execute a block pickup for the active job; marks the block as carried and completes the sub-job */
 void doPickup(ref GameApp app, ref Dwarf d) {
   auto blockID = d.currentJob.blockIDs.length > 0 ? d.currentJob.blockIDs[0] : noBlock;
@@ -296,6 +295,7 @@ bool tryAssign(ref GameApp app, ref Job job) {
 
 /** Reject the job and requeue */
 bool rejectJob(ref GameApp app, ref Dwarf d, ref Job job) {
+  foreach(ref j; d.jobStack) { foreach(id; j.blockIDs) { if(auto b = id in app.world.blocks) { b.reserved = false; } } }
   job.failedBy[d.uid] = true;
   if(!job.personal) jobQueue ~= job;
   d.clearGoal();
