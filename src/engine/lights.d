@@ -52,7 +52,7 @@ struct Lighting {
 /** Compute lightspace for the provided light */
 @nogc void computeLightSpace(float[2] size, ref Light light, ref Camera cam, uint shadowDimension = 4096) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
-  float[3] upVector = abs(lightDir[1]) < 0.99f ? [0.0f, 1.0f, 0.0f] : [0.0f, 0.0f, 1.0f];
+  float[3] upVector = [0.0f, 1.0f, 0.0f];
 
   if(!light.directional) {
     Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), upVector);

@@ -27,19 +27,19 @@ void main() {
 
   vec3 baseColor = fragColor.rgb;
 
-  if(mat.tid >= 0) {
+  if (mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
     if(ALPHA_TEST && texSample.a < 0.2f) discard;
     baseColor *= texSample.rgb;
   }
-  if(ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.4f) discard;
+  if (ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.4f) discard;
 
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
 
   vec3 normalForLighting = normalize(fragNormal);
   /// Surface normalForLighting
   //outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
-  if(mat.nid >= 0) {
+  if (mat.nid >= 0) {
     normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
   }
   /// normalForLighting after bump mapping
@@ -49,10 +49,10 @@ void main() {
   // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
   vec3 lightColor = baseColor * 0.01;
   bool useShadows = ubo.lightingMode == 2u;
-  for(int i = 0; i < ubo.nlights; ++i) {
+  for (int i = 0; i < ubo.nlights; ++i) {
     Light light = lightSSBO.lights[i];
     vec3 lightContribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
-    if(useShadows && any(greaterThan(lightContribution, vec3(0.01)))) {
+    if (useShadows) {
       lightContribution *= calculateShadow(light.lightProjView * fragPosWorld, i);
     }
     lightColor += lightContribution;
