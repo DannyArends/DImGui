@@ -166,7 +166,7 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
   d.hunger = min(1.0f, d.hunger + 0.00083f);
   final switch(d.state) {
     case DwarfState.Idle:
-      if(d.hunger >= 0.6f && app.hasBlocks(ResourceType.Berry)) app.dispatchJob(d, eatJob());
+      if(d.hunger >= 0.6f && app.hasBlocks(ResourceType.Berry)) { app.dispatchJob(d, eatJob()); break; }
       app.claimNextJob(d); break;
     case DwarfState.WaitingForPath: break;
     case DwarfState.Moving:
