@@ -33,14 +33,6 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
   return true;
 }
 
-/** Axis-aligned bounds of a set of points: returns [min, max] */
-@nogc pure float[3][2] aabbOf(const float[3][] pts) nothrow {
-  float[3] mn = [float.max, float.max, float.max];
-  float[3] mx = [-float.max, -float.max, -float.max];
-  foreach(ref p; pts) foreach(a; 0..3) { if(p[a] < mn[a]) mn[a] = p[a]; if(p[a] > mx[a]) mx[a] = p[a]; }
-  return [mn, mx];
-}
-
 @nogc void cullFrustum(T)(ref T[] objects, const Plane[6] frustum) nothrow {
   for (size_t x = 0; x < objects.length; x++) {
     if(objects[x].box is null) continue;
