@@ -107,8 +107,9 @@ void checkPendingTextures(ref App app) {
 @nogc pure int idx(const Texture[] textures, string name) nothrow {
   int besthit = -1;
   for(uint i = 0; i < textures.length; i++) {
-    if(stripExtension(baseName(textures[i].path)) == name) return(i);
-    if(textures[i].path.indexOf(name) >= 0) besthit = i;
+    auto base = stripExtension(baseName(textures[i].path));
+    if(base == name) return(i);
+    if(textures[i].path.indexOf(name) >= 0 && base.indexOf("_normal") < 0) besthit = i;
   }
   return(besthit);
 }
