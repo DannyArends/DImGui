@@ -6,6 +6,10 @@
 #ifndef STRUCTURES_GLSL
 #define STRUCTURES_GLSL
 
+// Compile time constants
+layout(constant_id = 0) const bool ALPHA_TEST = true;   /// false = opaque variant (no discard, enables mobile HSR)
+layout(constant_id = 1) const bool INSTANCED = true;    /// INSTANCED rendering (uses per instance attributes over-writes)
+
 /// Uniform Buffer Objects
 #define BINDING_SCENE_UBO         0
 #define BINDING_LIGHT_UBO         1
