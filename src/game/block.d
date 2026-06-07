@@ -95,7 +95,7 @@ void ensureBlocks(ref GameApp app) {
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   uint id = app.world.blockNextID++;
-  app.world.blocks[id] = Block(tt, tile, [0.0f, 0.0f]);
+  app.world.blocks[id] = Block(tt, tile, [app.world.tileToWorld(tile, -app.world.blockOffset)[1], 0.001f]);
   app.syncBlockInstances();
   return id;
 }
