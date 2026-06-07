@@ -149,7 +149,7 @@ void rebuildAllFeatures(ref GameApp app) {
 }
 
 void removeAllFeatures(ref GameApp app, int[3] coord) {
-  foreach(ref ft; features) app.world.features[ft.name].remove(coord);
+  foreach(ref ft; features) { if(auto p = coord in app.world.features[ft.name]) { if((*p).length > 0) app.world.features[ft.name].remove(coord); } }
   app.rebuildAllFeatures();
 }
 
@@ -170,6 +170,7 @@ void interactFeaturesAt(ref GameApp app, int[3] tile) {
         }
       }
       app.world.features[ft.name][coord] = app.world.features[ft.name][coord][0..i] ~ app.world.features[ft.name][coord][i+1..$];
+      if(auto p = coord in app.world.pendingFeatures[ft.name]) *p = (*p).filter!(pf => pf.rootTile != tile).array;
       app.world.unsettleBlocks(app.world.blocks, tile);
       app.rebuildAllFeatures();
       return;
