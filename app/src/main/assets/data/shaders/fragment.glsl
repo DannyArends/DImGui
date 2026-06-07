@@ -27,7 +27,7 @@ void main() {
 
   vec3 baseColor = fragColor.rgb;
 
-  if (mat.tid >= 0) {
+  if (!(TOPOLOGY == 1) && mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
     if(ALPHA_TEST && texSample.a < 0.2f) discard;
     baseColor *= texSample.rgb;
@@ -47,15 +47,15 @@ void main() {
 
   /// Shadow cast by light 0
   // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
-  vec3 lightColor = baseColor * 0.01;
+  vec3 surfaceColor = baseColor * 0.01;
   bool useShadows = ubo.lightingMode == 2u;
   for (int i = 0; i < ubo.nlights; ++i) {
     Light light = lightSSBO.lights[i];
     vec3 lightContribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
-    if (useShadows) {
-      lightContribution *= calculateShadow(light.lightProjView * fragPosWorld, i);
-    }
-    lightColor += lightContribution;
+    vec3 ambient = light.intensity.rgb * baseColor * light.properties[0];
+    vec3 direct = lightContribution - ambient;
+    if (useShadows) direct *= calculateShadow(light.lightProjView * fragPosWorld, i);
+    surfaceColor += ambient + direct;
   }
-  outColor = vec4(lightColor, 1.0);
+  outColor = vec4(surfaceColor, 1.0);
 }
