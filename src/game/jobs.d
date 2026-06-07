@@ -290,7 +290,8 @@ bool tryAssign(ref GameApp app, ref Job job) {
     float dist = manhattan(job.targetTile, d.tile);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
-  return bestIdx >= 0 && app.dispatchJob(app.world.dwarves.dwarves[bestIdx], job);
+  if(bestIdx < 0) { jobQueue ~= job; return true; }
+  return app.dispatchJob(app.world.dwarves.dwarves[bestIdx], job);
 }
 
 /** Reject the job and requeue */

@@ -10,7 +10,7 @@ import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
 import normals : computeTangents;
 import serialization : readData, writeData;
-import tile : surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile;
+import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile;
 import vector : manhattan;
 
 enum uint noBlock = uint.max;
@@ -21,7 +21,6 @@ struct Block {
   float[2] fallState;               /// [y, v] fall physics, [0,0] if not falling
   size_t instanceIdx = size_t.max;  /// Instance IDX
   bool reserved = false;            /// Reserved for a job ?
-  bool reachable = false;           /// Has a standable neighbour ?
 
   @property @nogc bool isFalling() nothrow { return fallState[1] != 0.0f; }
   @property @nogc float y() nothrow { return fallState[0]; }
@@ -56,9 +55,9 @@ uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = Resource
   uint bestID = noBlock;
   float bestDist = float.max;
   foreach(id, ref b; app.world.blocks) {
-    if(!b.reachable || b.reserved || b.tile == noTile || b.tile == builtTile) continue;
+    if(b.reserved || b.tile == noTile || b.tile == builtTile) continue;
     if(tt != ResourceType.None && b.type != tt) continue;
-
+    if(!app.world.isStandable(b.tile)) continue;
     float dist = manhattan(b.tile, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = id; }
   }
@@ -106,7 +105,7 @@ DrawInstance toDropInstance(World world, uint id, ref Block b) {
   auto base = world.tileToWorld(b.tile, -world.blockOffset);
   float sz = rd.dropScale * world.blockSize;
   float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
-  float bz = ((id * 22695477u + 1u)          % 100u) / 100.0f - 0.5f;
+  float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
   float[3] pos = [base[0] + bx, base[1], base[2] + bz];
   return DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, [sz, sz, sz]));
 }
@@ -116,7 +115,6 @@ void syncBlockInstances(ref GameApp app) {
   if(app.world.dropMeshes.length == 0) return;
   foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
   foreach(id, ref b; app.world.blocks) {
-    if(b.tile != noTile && b.tile != builtTile){ b.reachable = app.world.data.hasStandableNeighbour(b.tile); }
     auto meshName = resourceData(b.type).meshName;
     bool hidden = b.tile == noTile || b.tile == builtTile;
     b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
@@ -141,7 +139,7 @@ void settleBlocks(ref World world, float dt) {
   bool changed = false;
   foreach(id, ref b; world.blocks) {
     if(!b.isFalling) continue;
-    b.v = b.v + (1.5f * dt);
+    b.v = b.v + (2.5f * dt);
     b.y = b.y - (b.v * dt);
     int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
     float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];

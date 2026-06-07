@@ -55,7 +55,7 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
             job = interactFeatureJob(wc); break;
           }
         }
-        if(job.name !is null && !app.tryAssign(job)) jobQueue ~= job;
+        if(job.name !is null) app.tryAssign(job);
         app.selectObject(hits);
       }
       break;
