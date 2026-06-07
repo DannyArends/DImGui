@@ -9,17 +9,16 @@
 #include "structures.glsl"
 #include "functions.glsl"
 
-layout(location = 0) in vec4 fragPosWorld;
-layout(location = 1) in vec4 fragColor;
-layout(location = 2) in vec3 fragNormal;
-layout(location = 3) in vec2 fragTexCoord;
-layout(location = 4) flat in ivec2 fragInstance;  /// [Mesh, Material, Texture override]
-layout(location = 5) in mat3 fragTBN;
+// Per Fragment input attributes
+layout(location = 0) in vec4 fragPosWorld;              /// Fragment Position (in world space)
+layout(location = 1) in vec4 fragColor;                 /// Fragment Color
+layout(location = 2) in vec3 fragNormal;                /// Fragment Normal
+layout(location = 3) in vec2 fragTexCoord;              /// Texture coordinates
+layout(location = 4) flat in ivec2 fragInstance;        /// [Mesh, Material]
+layout(location = 5) in mat3 fragTBN;                   /// Fragment: Tangent, Bitangent, Normal matrix
 
+// Fragment output (to post-processing shader)
 layout(location = 0) out vec4 outColor;
-
-// Compile time constants
-layout(constant_id = 0) const bool ALPHA_TEST = true;  // false = opaque variant (no discard, enables mobile HSR)
 
 void main() {
   Mesh mesh = meshSSBO.meshes[uint(fragInstance[0])];
@@ -38,15 +37,15 @@ void main() {
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
 
   vec3 normalForLighting = normalize(fragNormal);
-  // Surface normalForLighting
+  /// Surface normalForLighting
   //outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
   if(mat.nid >= 0) {
     normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
   }
-  // normalForLighting after bump mapping
+  /// normalForLighting after bump mapping
   // outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
 
-  // Shadow cast by light 0
+  /// Shadow cast by light 0
   // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
   vec3 lightColor = baseColor * 0.01;
   bool useShadows = ubo.lightingMode == 2u;

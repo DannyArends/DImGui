@@ -9,7 +9,7 @@
 #include "structures.glsl"
 #include "functions.glsl"
 
-// Per Vertex attributes
+// Per Vertex input attributes
 layout(location = 0) in vec3  inPosition;             /// Vertex Position
 layout(location = 1) in vec4  inColor;                /// Vertex Color
 layout(location = 2) in vec3  inNormal;               /// Normal
@@ -18,8 +18,8 @@ layout(location = 4) in vec4  inTangent;              /// Tangent xyz + handedne
 layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
 layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
-// Per Instance attributes
-layout(location = 7) in uvec2 meshdef;                /// Mesh [start, stop, material, texure override]
+// Per Instance input attributes
+layout(location = 7) in uvec2 meshdef;                /// Mesh [start, stop]
 layout(location = 8) in int   material;               /// per-Instance material
 layout(location = 9) in vec4  instanceColor;          /// per-Instance Color
 layout(location = 10) in mat4 instance;               /// Instance matrix
@@ -32,9 +32,6 @@ layout(location = 3) out vec2 fragTexCoord;           /// Texture coordinate
 layout(location = 4) flat out ivec2 fragInstance;     /// [meshID, material override]
 layout(location = 5) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
 
-// Compile time constants
-layout(constant_id = 1) const bool INSTANCED = true;  /// INSTANCED rendering (uses per instance attributes over-writes)
-
 void main() {
   /// Compute bone effects on vertex
   vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
@@ -46,7 +43,7 @@ void main() {
   /// Calculate the world-space normal, bitangent, tangent, and normal matrix
   vec3 N = normalize(mat3(instance) * inNormal);
   vec3 T = normalize(mat3(instance) * inTangent.xyz);
-  vec3 B = cross(N, T) * inTangent.w;
+  vec3 B = normalize(cross(N, T)) * inTangent.w;
 
   /// World position & point size
   gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * position;
