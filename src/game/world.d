@@ -139,8 +139,8 @@ void loadWorld(ref GameApp app) {
   foreach(ref ft; features) {
     if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
     if(ft.name !in app.world.features) app.world.features[ft.name] = null;
-    foreach(coord; app.world.pendingFeatures[ft.name].keys) app.world.featuresModified[coord] = true;
     app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
+    foreach(coord; app.world.pendingFeatures[ft.name].keys) app.world.featuresModified[coord] = true;
   }
   app.deriveInventory();
 }
