@@ -142,6 +142,7 @@ void rebuildAllFeatures(ref GameApp app) {
   foreach(ref mesh; app.world.featureMeshes.values) mesh.instances = [];
   foreach(ref ft; features) {
     foreach(coord, ref chunkFeatures; app.world.features[ft.name]){
+      if(coord !in app.world.chunks) continue;
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.featureMeshes);
     }
   }

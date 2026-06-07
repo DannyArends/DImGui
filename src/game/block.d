@@ -116,7 +116,7 @@ void syncBlockInstances(ref GameApp app) {
   foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
   foreach(id, ref b; app.world.blocks) {
     auto meshName = resourceData(b.type).meshName;
-    bool hidden = b.tile == noTile || b.tile == builtTile;
+    bool hidden = b.tile == noTile || b.tile == builtTile || app.world.chunkCoord(b.tile) !in app.world.chunks;
     b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
     app.world.dropMeshes[meshName].instances ~= hidden
       ? DrawInstance([cast(uint)b.type, cast(uint)b.type], Matrix().scale([0.0f, 0.0f, 0.0f]))
