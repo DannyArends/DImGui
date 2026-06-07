@@ -76,6 +76,7 @@ struct World {
   Geometry[string] featureMeshes;                           /// meshes keyed by mesh name
   Feature[][int[3]][string] features;                       /// features[featureName][chunkCoord]
   Feature[][int[3]][string] pendingFeatures;                /// pending features
+  bool[int[3]] featuresModified;                            /// Does a chunk have modified features ?
   Block[uint] blocks;                                       /// Block registry
   uint blockNextID = 1;                                     /// next block ID
   Geometry[string] dropMeshes;                              /// registered drop meshes
@@ -138,6 +139,7 @@ void loadWorld(ref GameApp app) {
   foreach(ref ft; features) {
     if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
     if(ft.name !in app.world.features) app.world.features[ft.name] = null;
+    foreach(coord; app.world.pendingFeatures[ft.name].keys) app.world.featuresModified[coord] = true;
     app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
   }
   app.deriveInventory();
