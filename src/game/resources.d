@@ -35,6 +35,6 @@ void updateMaterials(ref GameApp app) {
     auto ttype = cast(ResourceType)tt;
     uint idx =  app.world.resources[ttype];
     app.materials[app.meshes[idx].mid].tid = app.textures.idx(resourceData(ttype).name ~ "_base");
-    app.materials[app.meshes[idx].mid].nid = app.textures.idx(resourceData(ttype).name ~ "_normal");
+    if((resourceData(ttype).meshName != "Blocks")) app.materials[app.meshes[idx].mid].nid = app.textures.idx(resourceData(ttype).name ~ "_normal");
   }
 }

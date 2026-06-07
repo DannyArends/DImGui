@@ -23,9 +23,10 @@ string generateHeightToResource(string raw) pure {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     if(p[0] == "HEIGHT_RULE" && p.length == 3) {
-      if(hi != "" && results.length > 0)
+      if(hi != "" && results.length > 0) {
         result ~= format("  if(h < %sf) { ResourceType[%s] v = [%s]; return v[cast(uint)(t * %s) %% %s]; }\n",
           hi, results.length, results.map!(r => "ResourceType." ~ r).join(", "), results.length, results.length);
+      }
       hi = p[2]; results = [];
     } else if(p[0] == "RESULT" && p.length == 2) { results ~= p[1]; }
   }
