@@ -52,24 +52,23 @@ struct Lighting {
 /** Compute lightspace for the provided light */
 @nogc void computeLightSpace(float[2] size, ref Light light, ref Camera cam, uint shadowDimension = 4096) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
-  float[3] upVector = [0.0f, 1.0f, 0.0f];
 
   if(!light.directional) {
-    Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), upVector);
+    Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), cam.up);
     light.lightSpaceMatrix = perspective(2 * light.properties[2], 1.0f, 0.1f, size[1]).multiply(v);
     return;
   }
-  float extent = size[1];
+
   float depth = size[0] + 2.0f * size[1];
   float[3] centre = [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
 
-  float texelsPerUnit = cast(float)shadowDimension / (2.0f * extent);
+  float texelsPerUnit = cast(float)shadowDimension / (2.0f * size[1]);
   centre[0] = floor(centre[0] * texelsPerUnit) / texelsPerUnit;
   centre[2] = floor(centre[2] * texelsPerUnit) / texelsPerUnit;
 
   float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f));
-  Matrix lightView = lookAt(eye, centre, upVector);
-  light.lightSpaceMatrix = orthogonal(-extent, extent, -extent, extent, 0.0f, depth).multiply(lightView);
+  Matrix lightView = lookAt(eye, centre, cam.up);
+  light.lightSpaceMatrix = orthogonal(-size[1], size[1], -size[1], size[1], 0.0f, depth).multiply(lightView);
 }
 
 /** Update light geometries for rendering */
