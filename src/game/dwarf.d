@@ -11,7 +11,7 @@ import inventory : deriveInventory;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
-import matrix : position, scale;
+import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo;
 import jobs : Job, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination;
@@ -151,14 +151,18 @@ void dwarfFrame(ref GameApp app, float dt) {
       d.moveFrom[1] + t * (d.moveTo[1] - d.moveFrom[1]) + 0.5f,
       d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
     ];
-    app.world.dwarves.instances[i] = position(app.world.dwarves.instances[i], d.visualPos);
-    app.world.dwarves.instances.buffered = false;
     if(d.moveT >= 1.0f) {
       if(d.path.length > 0) {
         app.followPath(d);
       } else { d.state = d.hasJob ? DwarfState.Working : DwarfState.Idle; }
     }
   }
+  foreach(i, ref d; app.world.dwarves) {
+    float[3] s = (app.world.chunkCoord(d.tile) in app.world.chunks) ? [1.0f,1.0f,1.0f] : [0.0f,0.0f,0.0f];
+    Matrix m = scale(Matrix.init, s);
+    app.world.dwarves.instances[i] = position(m, d.visualPos);
+  }
+  app.world.dwarves.instances.buffered = false;
 }
 
 /** A single dwarf being ticked */
