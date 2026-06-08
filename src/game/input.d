@@ -90,17 +90,21 @@ void handleTouchEvents(ref GameApp app, const SDL_Event event) {
 /** Handles all ImGui IO and SDL events */
 double handleEvents(ref GameApp app) {
   if(app.trace) SDL_Log("handleEvents");
-  SDL_Event e;
+  SDL_Event e, lastMotion;
+  bool haveMotion = false;
   while (SDL_PollEvent(&e)) {
     if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
     if(e.type == SDL_EVENT_QUIT) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
     if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.minimized = false; }
     if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.minimized = true; }
+    if(e.type == SDL_EVENT_MOUSE_MOTION) { haveMotion = true; lastMotion = e; continue; }
     if(!app.gui.io.WantCaptureKeyboard) app.timed!handleKeyEvents(e);
     if(!app.gui.io.WantCaptureMouse) app.timed!handleMouseEvents(e);
     if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e);
   }
+  // When the Mouse moved, we process one motion/frame
+  if(haveMotion && !app.gui.io.WantCaptureMouse) app.timed!handleMouseEvents(lastMotion);
 
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
