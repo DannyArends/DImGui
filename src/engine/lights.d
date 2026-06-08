@@ -151,7 +151,6 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
   app.lights[0].properties[0] = t * ambientScale;
 
   app.buffers["LightMatrices"].dirty[] = true;
-  app.shadows.dirty = true;
 }
 
 /** Transfer the lighting into the SSBO for buffer */
@@ -188,5 +187,5 @@ void updateDisco(ref App app, float dt) {
     app.lights[i].properties[2] = 25.0f + sin(t * speed) * 10.0f;
   }
   app.buffers["LightMatrices"].dirty[] = true;
-  app.shadows.dirty = true;
 }
+
