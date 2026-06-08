@@ -11,6 +11,8 @@ layout(constant_id = 0) const int TOPOLOGY = 3;
 layout(constant_id = 1) const bool ALPHA_TEST = true;
 layout(constant_id = 2) const bool INSTANCED = true;
 
+#define MAX_LIGHTS_PER_CLUSTER  100
+
 /// Uniform Buffer Objects
 #define BINDING_SCENE_UBO         0
 #define BINDING_LIGHT_UBO         1
@@ -24,6 +26,9 @@ layout(constant_id = 2) const bool INSTANCED = true;
 #define BINDING_TEXTURES          5
 #define BINDING_SHADOWMAP         6
 #define BINDING_MATERIAL_SSBO     7
+
+/// Lights
+#define BINDING_CLUSTER_LIGHTS    8
 
 struct Light {
   mat4 lightProjView; /// Combined light's projection * light's view matrix
@@ -51,6 +56,12 @@ struct Material {
   int pad;
 };
 
+struct ClusterList { 
+  uint count;
+  uint indices[MAX_LIGHTS_PER_CLUSTER];
+};
+
+
 /// Shader Storage Buffer Objects
 layout (std430, set = 0, binding = BINDING_BONES_SSBO) readonly buffer BoneMatrices {
     Bone transforms[];
@@ -67,6 +78,10 @@ layout (std430, set = 0, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatr
 layout (std430, set = 0, binding = BINDING_MATERIAL_SSBO) readonly buffer MaterialBuffer {
     Material materials[];
 } materialSSBO;   // 7
+
+layout(std430, set=0, binding=BINDING_CLUSTER_LIGHTS) buffer ClusterLights { 
+  ClusterList clusters[];
+}; // 8
 
 /// UBO
 layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
