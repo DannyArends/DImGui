@@ -60,6 +60,7 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
   } else {                                                // Point lighting
     s = normalize( light.position.xyz - position );
     float l = length( light.position.xyz - position );
+    if (l > light.cull.x) return vec3(0.0);   // outside cull radius
     attenuation = 1.0 / (light.properties[1] + l * l);
 
     // Cone lighting

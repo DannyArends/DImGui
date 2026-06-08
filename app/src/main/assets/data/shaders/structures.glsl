@@ -31,6 +31,7 @@ struct Light {
   vec4 intensity;     /// Light intensity (color)
   vec4 direction;     /// Light direction
   vec4 properties;    /// [ambient, attenuation, angle, enabled]
+  vec4 cull;          /// [radius, shadowSlot, reserved, reserved]
 };
 
 struct Bone {
