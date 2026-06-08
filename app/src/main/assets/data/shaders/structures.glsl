@@ -78,7 +78,11 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   float shadowTexelSize;      /// Shadow texel size
   uint nlights;               /// Number of actual lights
   uint lightingMode;          /// Show shadows ?
+  uint maxLightsPerCluster;   /// Cluster light-list capacity
+  uvec4 grid;                 /// [gridX, gridY, gridZ, unused]
+  vec4 clusterCfg;            /// [sliceScale, sliceBias, screenW, screenH]
 } ubo;
+
 
 /// Samplers/Images
 layout(binding = BINDING_TEXTURES) uniform sampler2D textureSampler[];
