@@ -22,12 +22,14 @@ struct Light {
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
   float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, angle, enabled]
+  float[4] cull       = [0.0f,-1.0f, 0.0f, 0.0f];    /// [radius, shadowSlot, reserved, reserved]
 
   @property @nogc pure void angle(float v) nothrow { properties[2] = v; }
   @property @nogc pure float angle() nothrow { return properties[2]; }
   @property @nogc pure void enabled(bool v) nothrow { properties[3] = v?1.0f:0.0f; }
   @property @nogc pure bool enabled() nothrow { return(properties.w == 1.0f); }
   @property @nogc pure bool directional() nothrow { return(position.w == 0.0f); }
+  @property @nogc pure float radius() nothrow { return cull[0]; }
   @property @nogc pure float pitch() nothrow { return(degree(asin(-direction.xyz.normalize()[1]))); }
   @property @nogc pure float yaw() nothrow { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
 }
@@ -47,6 +49,13 @@ struct Lighting {
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
   alias lights this;
+}
+
+/** Compute the size of the light radius */
+void computeRadius(ref Light l, float cutoff = 0.01f) {
+  if (l.directional) { l.cull[0] = float.infinity; return; }
+  float maxI = max(l.intensity[0], l.intensity[1], l.intensity[2]);
+  l.cull[0]  = sqrt(fmax(0.0f, maxI / cutoff - l.properties[1]));
 }
 
 /** Compute lightspace for the provided light */
