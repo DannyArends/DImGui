@@ -119,7 +119,7 @@ void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
     if(app.objects[x].instances.length == 0) continue;
     if(app.objects[x].box is null || !app.objects[x].isBuffered) app.objects[x].computeBoundingBox(app.trace);
     if(app.showBounds && !app.objects[x].box.isBuffered) { app.objects[x].box.buffer(app, cmd); uploaded = true; }
-    if(!app.objects[x].isBuffered){ app.objects[x].buffer(app, cmd); app.shadows.dirty = true; uploaded = true; }
+    if(!app.objects[x].isBuffered){ app.objects[x].buffer(app, cmd); uploaded = true; }
   }
   if(uploaded) app.uploadBarrier(cmd);
 }

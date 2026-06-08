@@ -28,8 +28,6 @@ struct ShadowMap {
   uint dimension = isAndroid ? 512 : 4096;  /// Shadowmap dimension
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
-  bool dirty = true;
-
   uint lastShadowInstances = 0;
   uint totalShadowInstances = 0;
 }

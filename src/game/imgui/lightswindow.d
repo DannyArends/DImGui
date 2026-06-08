@@ -29,7 +29,6 @@ void showLightsContent(ref GameApp app, uint font = 0) {
     if(igCheckbox("##enabled", &enabled)) {
       app.lights[i].enabled(enabled);
       app.buffers["LightMatrices"].dirty[] = true;
-      app.shadows.dirty = true;
     }
     igSameLine(0, 5);
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB, format("Light %d", i)), 0)) {
@@ -60,7 +59,6 @@ void showLightsContent(ref GameApp app, uint font = 0) {
     }
     igPopID();
   }
-  if(igIsAnyItemActive()) app.shadows.dirty = true;
   if(app.lights.lights != lightsBefore) { app.buffers["LightMatrices"].dirty[] = true; }
 }
 
