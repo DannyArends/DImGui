@@ -9,6 +9,7 @@ import quaternion : xyzw;
 import buffer : createBuffer;
 import matrix : rotate, lookAt, perspective;
 import lights : computeLightSpace, LMode;
+import reflection : MAX_LIGHTS_PER_CLUSTER, LIGHT_GRID;
 import validation : nameVulkanObject;
 
 struct UniformBufferObject {
@@ -75,10 +76,9 @@ void createUBO(ref App app, Descriptor descriptor) {
 }
 
 void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
-  uint[4] grid = [16, 9, 24, 0];
   float logFN = log2(app.camera.nearfar[1] / app.camera.nearfar[0]);
-  float sliceScale = grid[2] / logFN;
-  float sliceBias  = -(grid[2] * log2(app.camera.nearfar[0])) / logFN;
+  float sliceScale = LIGHT_GRID[2] / logFN;
+  float sliceBias  = -(LIGHT_GRID[2] * log2(app.camera.nearfar[0])) / logFN;
 
   UniformBufferObject ubo = {
     position: app.camera.position.xyzw,
@@ -89,8 +89,8 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     shadowTexelSize: 1.0f / cast(float)app.shadows.dimension,
     nlights: cast(uint)app.lights.length,
     lMode: cast(LMode)app.lMode,
-    maxLightsPerCluster: 100,
-    grid: grid,
+    maxLightsPerCluster: MAX_LIGHTS_PER_CLUSTER,
+    grid: LIGHT_GRID,
     clusterCfg: [sliceScale, sliceBias, cast(float)app.camera.width, cast(float)app.camera.height],
   };
 
