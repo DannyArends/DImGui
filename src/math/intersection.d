@@ -66,6 +66,7 @@ float[3] rayAtY(float[3][2] ray, float y) {
 /** Compute the intersection between a ray and a bounding box */
 pure Intersection[] intersects(T)(const float[3][2] ray, const T box, size_t index) {
   Intersection[] intersections;
+  if(!ray.intersects(box.wmin, box.wmax, index, 0).intersects) { return(intersections); }
   for(size_t instance = 0; instance < box.instances.length; instance++) {
     auto intersection = ray.intersects(box.bmin(instance), box.bmax(instance), index, instance);
     if(intersection.intersects){ intersections ~= intersection; }
