@@ -59,7 +59,7 @@ void computeRadius(ref Light l, float cutoff = 0.01f) {
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(float[2] size, ref Light light, ref Camera cam, uint shadowDimension = 4096) nothrow {
+@nogc void computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension = 4096) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
 
   if(!light.directional) {
@@ -165,7 +165,10 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
-  foreach(i, ref light; app.lights) { computeLightSpace(app.shadows.bounds, light, app.camera, app.shadows.dimension); }
+  foreach(i, ref light; app.lights) {
+    light.computeRadius(); 
+    app.camera.computeLightSpace(light, app.shadows.bounds, app.shadows.dimension);
+  }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
 
