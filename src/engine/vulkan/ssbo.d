@@ -41,7 +41,7 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
  *  a host-visible buffer driven by updateSSBO needs framesInFlight copies or the CPU races the GPU. */
 void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, uint copies = 0, bool deviceLocal = false) {
   if(copies == 0) copies = app.framesInFlight;
-  if(app.verbose) SDL_Log("createSSBO at %s, stride = %d, objects: %d, deviceLocal: %d", toStringz(d.base), d.bytes, nObjects, copies, deviceLocal);
+  if(app.verbose) SDL_Log("createSSBO %s, stride = %d, objects: %d, copies: %d, deviceLocal: %d", toStringz(d.base), d.bytes, nObjects, copies, deviceLocal);
   if(d.base in app.buffers) return;
   app.buffers[d.base] = SSBO();
   app.buffers[d.base].nObjects = nObjects;
