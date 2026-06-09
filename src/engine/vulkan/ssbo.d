@@ -47,9 +47,11 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024, bo
   buf.buffers.length = buf.memory.length = buf.dirty.length = app.framesInFlight;
   if(!deviceLocal) buf.data.length = app.framesInFlight;
 
-  VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  auto usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  auto props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&buf.buffers[i], &buf.memory[i], buf.size, props, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    app.createBuffer(&buf.buffers[i], &buf.memory[i], buf.size, usage, props);
     if(!deviceLocal) enforceVK(vkMapMemory(app.device, buf.memory[i], 0, buf.size, 0, &buf.data[i]));
     buf.dirty[i] = true;
   }
@@ -74,6 +76,7 @@ void createSSBO(T)(ref App app, ref Descriptor descriptor, ref SSBOList!T contai
 
 /** Upload container data to GPU, grow and rebuild if overflow */
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint syncIndex) {
+  if(app.buffers[descriptor.base].deviceLocal){ SDL_Log(toStringz(format("Error: Trying to update a device local SSBO: %s", descriptor.base))); return; }
   uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;
   if(size > app.buffers[descriptor.base].size) {
