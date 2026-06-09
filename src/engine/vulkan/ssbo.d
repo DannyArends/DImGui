@@ -14,6 +14,9 @@ struct SSBO {
   VkDeviceMemory[] memory;
   void*[] data;
   bool[] dirty;
+  uint nObjects;
+  uint stride;
+  @property uint size(){ return(nObjects * stride); }
 }
 
 /** CPU+GPU SSBO container with capacity tracking */
@@ -33,24 +36,22 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
 
 /** Create GPU SSBO buffer for nObjects */
 void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
-  if(app.verbose) SDL_Log("createSSBO at %s, size = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, nObjects);
-  descriptor.nObjects = nObjects;
+  if(app.verbose) SDL_Log("createSSBO at %s, stride = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, nObjects);
   if(descriptor.base in app.buffers) return;
   app.buffers[descriptor.base] = SSBO();
-  app.buffers[descriptor.base].data.length = app.framesInFlight;
-  app.buffers[descriptor.base].buffers.length = app.framesInFlight;
-  app.buffers[descriptor.base].memory.length = app.framesInFlight;
-  app.buffers[descriptor.base].dirty.length = app.framesInFlight;
+  auto buf = &app.buffers[descriptor.base];
+  buf.nObjects = nObjects;
+  buf.stride = cast(uint)descriptor.bytes;
+  buf.data.length = buf.buffers.length = buf.memory.length = buf.dirty.length = app.framesInFlight;
 
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.buffers[descriptor.base].buffers[i], &app.buffers[descriptor.base].memory[i], descriptor.size, 
-                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+    app.createBuffer(&buf.buffers[i], &buf.memory[i], buf.size,
+                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    enforceVK(vkMapMemory(app.device, app.buffers[descriptor.base].memory[i], 0, descriptor.size, 0, &app.buffers[descriptor.base].data[i]));
-    if(app.trace) SDL_Log("createSSBO: %s, nObjects=%d, size=%d", toStringz(descriptor.base), nObjects, descriptor.size);
-    app.buffers[descriptor.base].dirty[i] = true;
+    enforceVK(vkMapMemory(app.device, buf.memory[i], 0, buf.size, 0, &buf.data[i]));
+    buf.dirty[i] = true;
   }
-  app.nameSSBO(app.buffers[descriptor.base], descriptor.base);
+  app.nameSSBO(*buf, descriptor.base);
 
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting SSBO at %s", toStringz(descriptor.base));
@@ -73,7 +74,7 @@ void createSSBO(T)(ref App app, ref Descriptor descriptor, ref SSBOList!T contai
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;
-  if(size > descriptor.size) {
+  if(size > app.buffers[descriptor.base].size) {
     while(container.capacity * T.sizeof < size) container.capacity *= 2;
     app.rebuild = true;
     return;
