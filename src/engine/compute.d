@@ -161,8 +161,8 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
       nJobs[0] = app.textures[idx].width;
       nJobs[1] = app.textures[idx].height;
     }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-      nJobs[0] = shader.descriptors[d].nObjects; // Set based on the size of the SSBO and the Object being Send
-      size = shader.descriptors[d].size;
+      nJobs[0] = app.buffers[shader.descriptors[d].base].nObjects;
+      size = app.buffers[shader.descriptors[d].base].size;
       if(shader.descriptors[d].base == "currentFrame") { 
         src = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
       }
