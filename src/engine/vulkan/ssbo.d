@@ -16,7 +16,9 @@ struct SSBO {
   bool[] dirty;
   uint nObjects;
   uint stride;
+
   @property uint size(){ return(nObjects * stride); }
+  @property deviceLocal(){ return data is null; }
 }
 
 /** CPU+GPU SSBO container with capacity tracking */
@@ -35,20 +37,20 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
 }
 
 /** Create GPU SSBO buffer for nObjects */
-void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
-  if(app.verbose) SDL_Log("createSSBO at %s, stride = %d, objects: %d", toStringz(descriptor.base), descriptor.bytes, nObjects);
+void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024, bool deviceLocal = false) {
+  if(app.verbose) SDL_Log("createSSBO at %s, stride = %d, objects: %d, deviceLocal: %d", toStringz(descriptor.base), descriptor.bytes, nObjects, deviceLocal);
   if(descriptor.base in app.buffers) return;
   app.buffers[descriptor.base] = SSBO();
   auto buf = &app.buffers[descriptor.base];
   buf.nObjects = nObjects;
   buf.stride = cast(uint)descriptor.bytes;
-  buf.data.length = buf.buffers.length = buf.memory.length = buf.dirty.length = app.framesInFlight;
+  buf.buffers.length = buf.memory.length = buf.dirty.length = app.framesInFlight;
+  if(!deviceLocal) buf.data.length = app.framesInFlight;
 
+  VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&buf.buffers[i], &buf.memory[i], buf.size,
-                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    enforceVK(vkMapMemory(app.device, buf.memory[i], 0, buf.size, 0, &buf.data[i]));
+    app.createBuffer(&buf.buffers[i], &buf.memory[i], buf.size, props, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    if(!deviceLocal) enforceVK(vkMapMemory(app.device, buf.memory[i], 0, buf.size, 0, &buf.data[i]));
     buf.dirty[i] = true;
   }
   app.nameSSBO(*buf, descriptor.base);
@@ -56,7 +58,7 @@ void createSSBO(ref App app, ref Descriptor descriptor, uint nObjects = 1024) {
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting SSBO at %s", toStringz(descriptor.base));
     for(uint i = 0; i < app.framesInFlight; i++) {
-      vkUnmapMemory(app.device, app.buffers[descriptor.base].memory[i]);
+      if(app.buffers[descriptor.base].data.length) vkUnmapMemory(app.device, app.buffers[descriptor.base].memory[i]);
       vkFreeMemory(app.device, app.buffers[descriptor.base].memory[i], app.allocator);
       vkDestroyBuffer(app.device, app.buffers[descriptor.base].buffers[i], app.allocator);
     }
