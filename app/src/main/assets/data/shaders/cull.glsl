@@ -16,13 +16,42 @@ void main() {
   if (li >= nlights) return;
   Light L = lightSSBO.lights[li];
   if (L.properties.w == 0.0) return;   // disabled
-  if (L.position.w == 0.0) return;     // directional → handled as global light, not clustered
+  if (L.position.w == 0.0) return;     // directional, handled as global light, not clustered
 
   vec3  cV = (view * vec4(L.position.xyz, 1.0)).xyz;   // center in view space
-  float r  = L.cull.x;                                  // radius
+  float r  = L.cull.x;                                 // radius
 
   uvec3 lo, hi;                          // froxel index range the sphere covers
-  // (compute lo/hi — the one tricky block, detailed below)
+
+  float depth = -cV.z;                       // view-space distance (looks down -Z)
+  float dmin = max(depth - r, 0.0001);
+  float dmax = depth + r;
+
+  // sphere entirely behind camera → skip
+  if (dmax < 0.0001) return;
+
+  // Z slices via the log mapping  slice = log2(d)*sliceScale + sliceBias
+  int zlo = int(floor(log2(dmin) * clusterCfg.x + clusterCfg.y));
+  int zhi = int(floor(log2(dmax) * clusterCfg.x + clusterCfg.y));
+
+  // X/Y: conservative screen-space AABB of the view-space sphere via proj
+  // project (cV ± r) extents; clip-space → NDC → screen tiles
+  vec4 pc = proj * vec4(cV, 1.0);
+  vec4 pr = proj * vec4(r, r, cV.z, 1.0);     // crude radius in clip; conservative
+
+  // screen-space center & half-extent in pixels
+  vec2 ndc = pc.xy / max(pc.w, 0.0001);
+  vec2 scr = (ndc * 0.5 + 0.5) * clusterCfg.zw;
+  vec2 hpx = abs(pr.xy / max(pc.w, 0.0001)) * 0.5 * clusterCfg.zw;
+
+  vec2 tile = clusterCfg.zw / vec2(grid.xy);
+  int xlo = int(floor((scr.x - hpx.x) / tile.x));
+  int xhi = int(floor((scr.x + hpx.x) / tile.x));
+  int ylo = int(floor((scr.y - hpx.y) / tile.y));
+  int yhi = int(floor((scr.y + hpx.y) / tile.y));
+
+  lo = uvec3(clamp(xlo, 0, int(grid.x)-1), clamp(ylo, 0, int(grid.y)-1), clamp(zlo, 0, int(grid.z)-1));
+  hi = uvec3(clamp(xhi, 0, int(grid.x)-1), clamp(yhi, 0, int(grid.y)-1), clamp(zhi, 0, int(grid.z)-1));
 
   for (uint z = lo.z; z <= hi.z; ++z) { for (uint y = lo.y; y <= hi.y; ++y) { for (uint x = lo.x; x <= hi.x; ++x) {
     uint cid = (z * grid.y + y) * grid.x + x;
