@@ -7,7 +7,7 @@ import engine;
 
 import quaternion : xyzw;
 import buffer : createBuffer;
-import matrix : rotate, lookAt, perspective;
+import matrix : rotate, inverse, lookAt, perspective;
 import lights : computeLightSpace, LMode;
 import reflection : LIGHT_GRID;
 import validation : nameVulkanObject;
@@ -17,6 +17,7 @@ struct UniformBufferObject {
   Matrix scene;
   Matrix view;
   Matrix proj;
+  Matrix invProj;
   Matrix orientation;
   float shadowTexelSize;
   uint nlights;
@@ -85,6 +86,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     scene: Matrix.init,
     view: app.camera.view,
     proj: app.camera.proj,
+    invProj: app.camera.proj().inverse(),
     orientation: Matrix.init,
     shadowTexelSize: 1.0f / cast(float)app.shadows.dimension,
     nlights: cast(uint)app.lights.length,
