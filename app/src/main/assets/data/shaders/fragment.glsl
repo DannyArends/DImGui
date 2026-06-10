@@ -6,7 +6,8 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#include "structures.glsl"
+#include "scene.glsl"
+#include "samplers.glsl"
 #include "functions.glsl"
 
 // Per Fragment input attributes

@@ -6,7 +6,7 @@
 #ifndef FUNCTIONS_GLSL
 #define FUNCTIONS_GLSL
 
-#include "structures.glsl"
+#include "samplers.glsl"
 
 // Function to calculate vector position after animation
 vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
