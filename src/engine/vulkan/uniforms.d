@@ -9,7 +9,7 @@ import quaternion : xyzw;
 import buffer : createBuffer;
 import matrix : rotate, lookAt, perspective;
 import lights : computeLightSpace, LMode;
-import reflection : MAX_LIGHTS_PER_CLUSTER, LIGHT_GRID;
+import reflection : LIGHT_GRID;
 import validation : nameVulkanObject;
 
 struct UniformBufferObject {
@@ -19,10 +19,10 @@ struct UniformBufferObject {
   Matrix proj;
   Matrix orientation;
   float shadowTexelSize;
-  uint  nlights;
+  uint nlights;
   LMode lMode = LMode.LightsAndShadows;
-  uint  maxLightsPerCluster;
-  uint[4]  grid;
+  uint indexBufferLength;
+  uint[4] grid;
   float[4] clusterCfg;
 }
 
@@ -89,7 +89,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     shadowTexelSize: 1.0f / cast(float)app.shadows.dimension,
     nlights: cast(uint)app.lights.length,
     lMode: cast(LMode)app.lMode,
-    maxLightsPerCluster: MAX_LIGHTS_PER_CLUSTER,
+    indexBufferLength: app.buffers["ClusterLights"].nObjects,
     grid: LIGHT_GRID,
     clusterCfg: [sliceScale, sliceBias, cast(float)app.camera.width, cast(float)app.camera.height],
   };

@@ -93,7 +93,7 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   float shadowTexelSize;      /// Shadow texel size
   uint nlights;               /// Number of actual lights
   uint lightingMode;          /// Show shadows ?
-  uint maxLightsPerCluster;   /// Cluster light-list capacity
+  uint indexBufferLength;     /// Total entries in ClusterLights.indices[]
   uvec4 grid;                 /// [gridX, gridY, gridZ, unused]
   vec4 clusterCfg;            /// [sliceScale, sliceBias, screenW, screenH]
 } ubo;
