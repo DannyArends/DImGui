@@ -6,7 +6,7 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#include "structures.glsl"
+#include "scene.glsl"
 #include "functions.glsl"
 
 // Per Vertex input attributes

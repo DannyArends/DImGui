@@ -3,8 +3,8 @@
 // Distributed under the GNU General Public License, Version 3
 // See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html
 
-#ifndef STRUCTURES_GLSL
-#define STRUCTURES_GLSL
+#ifndef SCENE_GLSL
+#define SCENE_GLSL
 
 // Compile time constants
 layout(constant_id = 0) const int TOPOLOGY = 3;
@@ -20,9 +20,11 @@ layout(constant_id = 2) const bool INSTANCED = true;
 #define BINDING_MESH_SSBO         3
 #define BINDING_LIGHT_SSBO        4
 
-/// Samplers/Images
-#define BINDING_TEXTURES          5
-#define BINDING_SHADOWMAP         6
+/// Samplers/Images (defined in samplers.glsl)
+// #define BINDING_TEXTURES          5
+// #define BINDING_SHADOWMAP         6
+
+/// Materials
 #define BINDING_MATERIAL_SSBO     7
 
 /// Lights
@@ -98,9 +100,4 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   vec4 clusterCfg;            /// [sliceScale, sliceBias, screenW, screenH]
 } ubo;
 
-
-/// Samplers/Images
-layout(binding = BINDING_TEXTURES) uniform sampler2D textureSampler[];
-layout(binding = BINDING_SHADOWMAP) uniform sampler2DShadow shadowMap[];
-
-#endif // STRUCTURES_GLSL
+#endif // SCENE_GLSL
