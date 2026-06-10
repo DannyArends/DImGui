@@ -89,7 +89,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     shadowTexelSize: 1.0f / cast(float)app.shadows.dimension,
     nlights: cast(uint)app.lights.length,
     lMode: cast(LMode)app.lMode,
-    indexBufferLength: app.buffers["ClusterLights"].nObjects,
+    indexBufferLength: ("ClusterLights" in app.buffers) ? app.buffers["ClusterLights"].nObjects : 0,
     grid: LIGHT_GRID,
     clusterCfg: [sliceScale, sliceBias, cast(float)app.camera.width, cast(float)app.camera.height],
   };
