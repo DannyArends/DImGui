@@ -11,7 +11,6 @@ import ssbo : createSSBO;
 import uniforms : createUBO;
 
 enum uint[4] LIGHT_GRID = [16, 9, 24, 0];
-enum uint MAX_LIGHTS_PER_CLUSTER = 100;
 enum uint CLUSTER_COUNT = LIGHT_GRID[0] * LIGHT_GRID[1] * LIGHT_GRID[2];  // 3456
 
 enum spvc_resource_type[const(char)*] types = [
@@ -168,9 +167,9 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
         }else if(app.hasCompute && d.base == "currentFrame") {
           app.createSSBO(d, app.compute.system.particles);
         } else if(d.base == "ClusterLights") {
-          app.createSSBO(d, CLUSTER_COUNT * MAX_LIGHTS_PER_CLUSTER);
-        } else if(d.base == "ClusterCount") {
-          app.createSSBO(d, CLUSTER_COUNT);
+          app.createSSBO(d, CLUSTER_COUNT, 0, true);
+        } else if(d.base == "ClusterRanges") {
+          app.createSSBO(d, CLUSTER_COUNT, 0, true);
         }
       }
     }
