@@ -6,7 +6,6 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#include "scene.glsl"
 #include "functions.glsl"
 
 layout(binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
