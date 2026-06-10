@@ -19,13 +19,10 @@ struct Descriptor {
   string name;              /// Name
   string base;              /// Base / Struct Name
   size_t bytes;             /// Size  of the structure
-  size_t nObjects;          /// Number of objects stored
 
   uint set;                 /// DescriptorSet
   uint binding;             /// DescriptorSet Binding
   uint count;               /// Descriptor count
-
-  @property uint size(){ return(cast(uint)(bytes * nObjects)); }
 }
 
 struct DescriptorLayoutBuilder {
@@ -108,8 +105,7 @@ void createDSPool(ref App app, string poolID, VkDescriptorPoolSize[] poolSizes, 
   if(app.verbose) SDL_Log("Created %s DescriptorPool: %p", toStringz(poolID), app.pools[poolID]);
 }
 
-/** ImGui DescriptorPool (Images)
- */
+/** ImGui DescriptorPool (Images) */
 void createImGuiDescriptorPool(ref App app) {
   VkDescriptorPoolSize[] poolSizes = [{
     type : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -119,8 +115,7 @@ void createImGuiDescriptorPool(ref App app) {
   app.mainDeletionQueue.add((){ vkDestroyDescriptorPool(app.device, app.pools[Stage.IMGUI], app.allocator); });
 }
 
-/** ImGui DescriptorSetLayout (1000 * Combined Image Samplers)
- */
+/** ImGui DescriptorSetLayout (1000 * Combined Image Samplers) */
 void createImGuiDescriptorSetLayout(ref App app) {
   if(app.verbose) SDL_Log("Creating ImGui DescriptorSetLayout");
   DescriptorLayoutBuilder builder;
@@ -131,8 +126,7 @@ void createImGuiDescriptorSetLayout(ref App app) {
   app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.layouts[Stage.IMGUI], app.allocator); });
 }
 
-/** Create a descriptor pool based on the shaders provided
- */
+/** Create a descriptor pool based on the shaders provided */
 void createDSPool(ref App app, string poolID, Shader[] shaders) {
   uint nShaders = 1;
   if(poolID == Stage.COMPUTE){ nShaders = cast(uint)shaders.length; }
@@ -144,8 +138,7 @@ void createDSPool(ref App app, string poolID, Shader[] shaders) {
   });
 }
 
-/** Allocate a Descriptor Set
- */
+/** Allocate a Descriptor Set */
 VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, VkDescriptorSetLayout layout, uint size){
   VkDescriptorSetLayout[] layouts;
   VkDescriptorSet[] set;
@@ -183,8 +176,7 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
   }
 }
 
-/** Create our DescriptorSet (UBO and Combined image sampler)
- */
+/** Create our DescriptorSet (UBO and Combined image sampler) */
 void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER) {
   if(app.verbose) SDL_Log("createDescriptors: %d pipeline", stage);
   app.layouts[stage] = app.createDescriptorSetLayout(shaders);
@@ -201,8 +193,7 @@ void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER
   });
 }
 
-/** Helper to assemble a VkWriteDescriptorSet
- */
+/** Helper to assemble a VkWriteDescriptorSet */
 VkWriteDescriptorSet makeWrite(VkDescriptorSet dst, uint binding, VkDescriptorType type, VkDescriptorImageInfo* img, VkDescriptorBufferInfo* buf) {
   VkWriteDescriptorSet set = {
     sType: VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -217,8 +208,7 @@ void append(T)(ref VkDescriptorImageInfo[] infos, T[] images, VkSampler sampler,
   foreach(ref img; images){ infos ~= VkDescriptorImageInfo(sampler, img.view, layout); }
 }
 
-/** Populate imageInfos for a given descriptor target
- */
+/** Populate imageInfos for a given descriptor target */
 void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descriptor d) {
   final switch(d.target) {
     case DescriptorTarget.Textures: imageInfos.append(app.textures.textures, app.sampler); break;
@@ -229,8 +219,7 @@ void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descri
   }
 }
 
-/** Write a single descriptor (buffer or image) into the write + info arrays
- */
+/** Write a single descriptor (buffer or image) into the write + info arrays */
 void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write,
                      ref VkDescriptorBufferInfo[] bufferInfos,
                      ref VkDescriptorImageInfo[] imageInfos,
@@ -238,8 +227,8 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write,
   size_t start = imageInfos.length;
   // SSBO Buffer Write
   if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-    if(app.verbose) SDL_Log("writeDescriptor SSBO %s = %d (%d x %d)", toStringz(d.base), d.size, d.bytes, d.nObjects);
-    bufferInfos ~= VkDescriptorBufferInfo(app.buffers[d.base].buffers[syncIndex], 0, d.size);
+    if(app.verbose) SDL_Log("writeDescriptor %s = %d (%d x %d)", toStringz(d.base), app.buffers[d.base].size, app.buffers[d.base].stride, app.buffers[d.base].nObjects);
+    bufferInfos ~= VkDescriptorBufferInfo(app.buffers[d.base].buffers[syncIndex], 0, app.buffers[d.base].size);
     write ~= makeWrite(dst, d.binding, d.type, null, &bufferInfos[$-1]);
   }
   // Uniform Buffer Write
