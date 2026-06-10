@@ -6,9 +6,8 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#include "scene.glsl"
-#include "samplers.glsl"
 #include "functions.glsl"
+#include "samplers.glsl"
 
 // Per Fragment input attributes
 layout(location = 0) in vec4 fragPosWorld;              /// Fragment Position (in world space)

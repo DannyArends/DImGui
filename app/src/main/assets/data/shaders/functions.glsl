@@ -6,7 +6,7 @@
 #ifndef FUNCTIONS_GLSL
 #define FUNCTIONS_GLSL
 
-#include "samplers.glsl"
+#include "scene.glsl"
 
 // Function to calculate vector position after animation
 vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
@@ -24,30 +24,6 @@ vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
   vec4 finalPosition = inPos;
   if(hasbone){ finalPosition = bonepos; }
   return(finalPosition);
-}
-
-// Function to calculate the shadow factor
-float calculateShadow(vec4 position, uint i) {
-  vec3 projCoords = position.xyz / position.w;
-  projCoords.xy = projCoords.xy * 0.5 + 0.5;
-
-  if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z < 0.0 || projCoords.z > 1.0){
-    return 1.0; // Not in shadow
-  }
-
-  float shadowFactor = 0.0;
-  vec2 texelSize = vec2(ubo.shadowTexelSize);
-  int sampleCount = 1;
-  float range = 1.0;
-
-  // PCF sampling loop
-  for (int x = -sampleCount; x <= sampleCount; ++x) {
-    for (int y = -sampleCount; y <= sampleCount; ++y) {
-      vec2 offset = vec2(x, y) * texelSize * range;
-      shadowFactor += texture(shadowMap[i], vec3(projCoords.xy + offset, projCoords.z));
-    }
-  }
-  return shadowFactor / float((2 * sampleCount + 1) * (2 * sampleCount + 1));
 }
 
 // Our illumination function
@@ -76,14 +52,6 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
   vec3 ambientCol = light.intensity.rgb * baseColor * light.properties[0];
   vec3 diffuseCol = light.intensity.rgb * baseColor * sDotN;
   return ambientCol + attenuation * diffuseCol;
-}
-
-vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
-  vec3 normalFromMap = texture(textureSampler[fragNid], fragTexCoord).rgb;
-  normalFromMap = normalize(normalFromMap * 2.0 - 1.0);
-
-  vec3 finalNormal = normalize(fragTBN * normalFromMap);
-  return(finalNormal);
 }
 
 vec3 applyFog(vec3 color, vec3 fragPos, vec3 cameraPos, float fogStart, float fogEnd, vec3 fogColor) {
