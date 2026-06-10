@@ -28,7 +28,7 @@ layout(constant_id = 2) const bool INSTANCED = true;
 
 /// Lights
 #define BINDING_CLUSTER_LIGHTS     8
-#define BINDING_CLUSTER_RANGE      9
+#define BINDING_CLUSTER_HEADS      9
 #define BINDING_CLUSTER_COUNTER   10
 
 struct Light {
@@ -57,9 +57,9 @@ struct Material {
   int pad;
 };
 
-struct LightIndex { uint light; };
+struct LightIndex { uint light; uint next; };
 struct Cursor { uint cursor; };
-struct ClusterRange { uint offset; uint count; };
+struct ClusterHead { uint head; };
 
 /// Shader Storage Buffer Objects
 layout (std430, set = 0, binding = BINDING_BONES_SSBO) readonly buffer BoneMatrices {
@@ -82,8 +82,8 @@ layout(std430, set=0, binding=BINDING_CLUSTER_LIGHTS) buffer ClusterLights {
   LightIndex indices[];
 }; // 8
 
-layout(std430, set=0, binding=BINDING_CLUSTER_RANGE) buffer ClusterRanges {
-  ClusterRange ranges[];
+layout(std430, set=0, binding=BINDING_CLUSTER_HEADS) buffer ClusterHeads {
+  ClusterHead head[];
 }; // 9
 
 layout(std430, set=0, binding=BINDING_CLUSTER_COUNTER) buffer ClusterCounter {
