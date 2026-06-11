@@ -173,6 +173,7 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
           app.createSSBO(d, CLUSTER_COUNT, 1, true);
         }else if(d.base == "ClusterCounter"){
           app.createSSBO(d, 1, 1, false);
+          *cast(uint*)app.buffers["ClusterCounter"].data[0] = 0;
         }
       }
     }

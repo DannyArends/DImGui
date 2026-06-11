@@ -51,7 +51,6 @@ void main() {
   bool useShadows = ubo.lightingMode == 2u;
 
   // Directional/global lights (position.w == 0, not clustered)
-  // Directional/global lights (position.w == 0, not clustered)
   for (int i = 0; i < ubo.nlights; ++i) {
     if (lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
     if (lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
