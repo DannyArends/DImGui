@@ -61,13 +61,18 @@ vec3 applyFog(vec3 color, vec3 fragPos, vec3 cameraPos, float fogStart, float fo
   return mix(fogColor, color, fogFactor);
 }
 
+// Linear froxel index from 3D grid coords — MUST match between cull (write) and fragment (read)
+uint clusterId(uint gx, uint gy, uint gz) {
+  return (gz * ubo.grid.y + gy) * ubo.grid.x + gx;
+}
+
 uint froxelIndex(vec2 fragCoordXY, float viewDepth) {
   vec2 tile = ubo.clusterCfg.zw / vec2(ubo.grid.xy);
   uint gx = uint(clamp(fragCoordXY.x / tile.x, 0.0, float(ubo.grid.x - 1u)));
   uint gy = uint(clamp(fragCoordXY.y / tile.y, 0.0, float(ubo.grid.y - 1u)));
   int zs = int(floor(log2(viewDepth) * ubo.clusterCfg.x + ubo.clusterCfg.y));
   uint gz = uint(clamp(zs, 0, int(ubo.grid.z) - 1));
-  return (gz * ubo.grid.y + gy) * ubo.grid.x + gx;
+  return clusterId(gx, gy, gz);
 }
 
 // returns NDC min/max for one axis; p = projection scale (P00 or P11), cz = -depth
