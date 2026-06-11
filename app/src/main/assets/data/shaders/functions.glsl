@@ -70,4 +70,19 @@ uint froxelIndex(vec2 fragCoordXY, float viewDepth) {
   return (gz * ubo.grid.y + gy) * ubo.grid.x + gx;
 }
 
+// returns NDC min/max for one axis; p = projection scale (P00 or P11), cz = -depth
+// cc = center coord on this axis (cV.x or cV.y), cz = cV.z (negative)
+vec2 projectAxis(float cc, float cz, float r, float p, float depth) {
+  float t  = sqrt(cc*cc + cz*cz - r*r);
+  float a  = r / sqrt(cc*cc + cz*cz);
+  float s  = sqrt(1.0 - a*a);
+
+  vec2 d1 = vec2( s*cc - a*cz,  a*cc + s*cz);
+  vec2 d2 = vec2( s*cc + a*cz, -a*cc + s*cz);
+
+  float n1 = p * d1.x / -d1.y;                  // NDC = p * x / -z
+  float n2 = p * d2.x / -d2.y;
+  return vec2(min(n1, n2), max(n1, n2));
+}
+
 #endif // FUNCTIONS_GLSL
