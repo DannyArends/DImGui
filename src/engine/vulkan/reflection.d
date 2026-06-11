@@ -167,7 +167,8 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
         }else if(app.hasCompute && d.base == "currentFrame") {
           app.createSSBO(d, app.compute.system.particles);
         } else if(d.base == "ClusterLights") {
-          app.createSSBO(d, CLUSTER_COUNT, 1, true);
+          if(app.clusterCapacity == 0) app.clusterCapacity = CLUSTER_COUNT;
+          app.createSSBO(d, app.clusterCapacity, 1, true);
         } else if(d.base == "ClusterHeads") {
           app.createSSBO(d, CLUSTER_COUNT, 1, true);
         }else if(d.base == "ClusterCounter"){

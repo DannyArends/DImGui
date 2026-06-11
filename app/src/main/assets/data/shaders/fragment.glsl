@@ -47,15 +47,33 @@ void main() {
 
   /// Shadow cast by light 0
   // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
+  const uint NIL = 0xFFFFFFFFu;
   vec3 surfaceColor = baseColor * 0.01;
   bool useShadows = ubo.lightingMode == 2u;
+
+  // Directional/global lights (position.w == 0, not clustered)
   for (int i = 0; i < ubo.nlights; ++i) {
     Light light = lightSSBO.lights[i];
-    vec3 lightContribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
+    if (light.properties.w == 0.0) continue;     // disabled
+    if (light.position.w != 0.0) continue;       // point lights via clusters below
+    vec3 contribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
     vec3 ambient = light.intensity.rgb * baseColor * light.properties[0];
-    vec3 direct = lightContribution - ambient;
+    vec3 direct  = contribution - ambient;
     if (useShadows) direct *= calculateShadow(light.lightProjView * fragPosWorld, i);
+    surfaceColor += ambient + direct;
+  }
+
+  // Point lights via this fragment's froxel linked list
+  float viewDepth = -(ubo.view * fragPosWorld).z;
+  uint cid = froxelIndex(gl_FragCoord.xy, viewDepth);
+  for (uint n = head[cid].head; n != NIL; n = indices[n].next) {
+    Light light = lightSSBO.lights[indices[n].light];
+    vec3 contribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
+    vec3 ambient = light.intensity.rgb * baseColor * light.properties[0];
+    vec3 direct  = contribution - ambient;
+    if (useShadows) direct *= calculateShadow(light.lightProjView * fragPosWorld, indices[n].light);
     surfaceColor += ambient + direct;
   }
   outColor = vec4(surfaceColor, 1.0);
 }
+

@@ -58,6 +58,14 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.timed!updateRenderUBO(app.shaders, app.syncIndex);
 
+  if(app.hasCompute && "ClusterCounter" in app.buffers) {
+    uint used = *cast(uint*)app.buffers["ClusterCounter"].data[0];
+    if(used > app.clusterCapacity) {
+      app.clusterCapacity = used + (used >> 1);   // grow to 1.5× the measured need
+      app.rebuild = true;
+    }
+  }
+
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
