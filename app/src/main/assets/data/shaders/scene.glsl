@@ -13,6 +13,7 @@ layout(constant_id = 2) const bool INSTANCED = true;
 
 // Constants
 const uint NIL = 0xFFFFFFFFu;
+const float EPS = 1e-6;
 
 /// Uniform Buffer Objects
 #define BINDING_SCENE_UBO          0
