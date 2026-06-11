@@ -35,7 +35,10 @@ void main() {
   // X/Y: conservative screen-space AABB of the view-space sphere via proj
   // project (cV ± r) extents; clip-space → NDC → screen tiles
   vec4 pc = ubo.proj * vec4(cV, 1.0);
-  vec4 pr = ubo.proj * vec4(r, r, cV.z, 1.0);     // crude radius in clip; conservative
+  // TODO: conservative radius projection — over-includes froxels for near lights,
+  // inflating cull cost and ClusterLights usage. Replace with proper view-space
+  // sphere → screen-AABB (tangent-plane) projection. Suspected movement-hiccup cause.
+  vec4 pr = ubo.proj * vec4(r, r, cV.z, 1.0);
 
   // screen-space center & half-extent in pixels
   vec2 ndc = pc.xy / max(pc.w, 0.0001);
