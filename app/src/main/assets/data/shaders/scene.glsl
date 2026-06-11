@@ -11,6 +11,9 @@ layout(constant_id = 0) const int TOPOLOGY = 3;
 layout(constant_id = 1) const bool ALPHA_TEST = true;
 layout(constant_id = 2) const bool INSTANCED = true;
 
+// Constants
+const uint NIL = 0xFFFFFFFFu;
+
 /// Uniform Buffer Objects
 #define BINDING_SCENE_UBO          0
 #define BINDING_LIGHT_UBO          1
