@@ -47,4 +47,14 @@ float calculateShadow(vec4 position, uint i) {
   return shadowFactor / float((2 * sampleCount + 1) * (2 * sampleCount + 1));
 }
 
+// Per-light shading: ambient + shadowed direct contribution
+vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, bool useShadows) {
+  Light light = lightSSBO.lights[idx];
+  vec3 contribution = illuminate(light, baseColor, fragPosWorld.xyz, normal, ubo.position.xyz);
+  vec3 ambient = light.intensity.rgb * baseColor * light.properties[0];
+  vec3 direct  = contribution - ambient;
+  if (useShadows) direct *= calculateShadow(light.lightProjView * fragPosWorld, idx);
+  return ambient + direct;
+}
+
 #endif // SAMPLERS_GLSL

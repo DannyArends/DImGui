@@ -9,8 +9,6 @@
 
 layout(local_size_x = 64) in;
 
-const uint NIL = 0xFFFFFFFFu;
-
 void main() {
   uint li = gl_GlobalInvocationID.x;
   if (li >= ubo.nlights) return;

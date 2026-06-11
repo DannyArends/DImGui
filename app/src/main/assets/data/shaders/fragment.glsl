@@ -47,32 +47,22 @@ void main() {
 
   /// Shadow cast by light 0
   // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
-  const uint NIL = 0xFFFFFFFFu;
   vec3 surfaceColor = baseColor * 0.01;
   bool useShadows = ubo.lightingMode == 2u;
 
   // Directional/global lights (position.w == 0, not clustered)
+  // Directional/global lights (position.w == 0, not clustered)
   for (int i = 0; i < ubo.nlights; ++i) {
-    Light light = lightSSBO.lights[i];
-    if (light.properties.w == 0.0) continue;     // disabled
-    if (light.position.w != 0.0) continue;       // point lights via clusters below
-    vec3 contribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
-    vec3 ambient = light.intensity.rgb * baseColor * light.properties[0];
-    vec3 direct  = contribution - ambient;
-    if (useShadows) direct *= calculateShadow(light.lightProjView * fragPosWorld, i);
-    surfaceColor += ambient + direct;
+    if (lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
+    if (lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
+    surfaceColor += shadeLight(uint(i), baseColor, fragPosWorld, normalForLighting, useShadows);
   }
 
   // Point lights via this fragment's froxel linked list
   float viewDepth = -(ubo.view * fragPosWorld).z;
   uint cid = froxelIndex(gl_FragCoord.xy, viewDepth);
   for (uint n = head[cid].head; n != NIL; n = indices[n].next) {
-    Light light = lightSSBO.lights[indices[n].light];
-    vec3 contribution = illuminate(light, baseColor, fragPosWorld.xyz, normalForLighting, ubo.position.xyz);
-    vec3 ambient = light.intensity.rgb * baseColor * light.properties[0];
-    vec3 direct  = contribution - ambient;
-    if (useShadows) direct *= calculateShadow(light.lightProjView * fragPosWorld, indices[n].light);
-    surfaceColor += ambient + direct;
+    surfaceColor += shadeLight(indices[n].light, baseColor, fragPosWorld, normalForLighting, useShadows);
   }
   outColor = vec4(surfaceColor, 1.0);
 }
