@@ -57,12 +57,17 @@ void main() {
   lo = uvec3(clamp(xlo, 0, int(ubo.grid.x)-1), clamp(ylo, 0, int(ubo.grid.y)-1), clamp(zlo, 0, int(ubo.grid.z)-1));
   hi = uvec3(clamp(xhi, 0, int(ubo.grid.x)-1), clamp(yhi, 0, int(ubo.grid.y)-1), clamp(zhi, 0, int(ubo.grid.z)-1));
 
-  for (uint z = lo.z; z <= hi.z; ++z) { for (uint y = lo.y; y <= hi.y; ++y) { for (uint x = lo.x; x <= hi.x; ++x) {
-    uint cid = (z * ubo.grid.y + y) * ubo.grid.x + x;
-    uint n = atomicAdd(cursor[0].cursor, 1u);
-    if (n >= ubo.indexBufferLength) continue;             // drop-for-now; cursor still counts → grow-ready
-    indices[n].light = li;
-    indices[n].next = atomicExchange(head[cid].head, n);
-  } } }
+  for (uint z = lo.z; z <= hi.z; ++z) {
+    uint zBase = z * ubo.grid.y;
+    for (uint y = lo.y; y <= hi.y; ++y) {
+      uint rowBase = (zBase + y) * ubo.grid.x;
+      for (uint x = lo.x; x <= hi.x; ++x) {
+        uint n = atomicAdd(cursor[0].cursor, 1u);
+        if (n >= ubo.indexBufferLength) continue;
+        indices[n].light = li;
+        indices[n].next = atomicExchange(head[rowBase + x].head, n);
+      }
+    }
+  }
 }
 
