@@ -13,12 +13,12 @@ const uint NIL = 0xFFFFFFFFu;
 
 void main() {
   uint li = gl_GlobalInvocationID.x;
-  if (li >= nlights) return;
+  if (li >= ubo.nlights) return;
   Light L = lightSSBO.lights[li];
   if (L.properties.w == 0.0) return;   // disabled
   if (L.position.w == 0.0) return;     // directional, handled as global light, not clustered
 
-  vec3  cV = (view * vec4(L.position.xyz, 1.0)).xyz;   // center in view space
+  vec3  cV = (ubo.view * vec4(L.position.xyz, 1.0)).xyz;   // center in view space
   float r  = L.cull.x;                                 // radius
 
   uvec3 lo, hi;                          // froxel index range the sphere covers
@@ -31,32 +31,32 @@ void main() {
   if (dmax < 0.0001) return;
 
   // Z slices via the log mapping  slice = log2(d)*sliceScale + sliceBias
-  int zlo = int(floor(log2(dmin) * clusterCfg.x + clusterCfg.y));
-  int zhi = int(floor(log2(dmax) * clusterCfg.x + clusterCfg.y));
+  int zlo = int(floor(log2(dmin) * ubo.clusterCfg.x + ubo.clusterCfg.y));
+  int zhi = int(floor(log2(dmax) * ubo.clusterCfg.x + ubo.clusterCfg.y));
 
   // X/Y: conservative screen-space AABB of the view-space sphere via proj
   // project (cV ± r) extents; clip-space → NDC → screen tiles
-  vec4 pc = proj * vec4(cV, 1.0);
-  vec4 pr = proj * vec4(r, r, cV.z, 1.0);     // crude radius in clip; conservative
+  vec4 pc = ubo.proj * vec4(cV, 1.0);
+  vec4 pr = ubo.proj * vec4(r, r, cV.z, 1.0);     // crude radius in clip; conservative
 
   // screen-space center & half-extent in pixels
   vec2 ndc = pc.xy / max(pc.w, 0.0001);
-  vec2 scr = (ndc * 0.5 + 0.5) * clusterCfg.zw;
-  vec2 hpx = abs(pr.xy / max(pc.w, 0.0001)) * 0.5 * clusterCfg.zw;
+  vec2 scr = (ndc * 0.5 + 0.5) * ubo.clusterCfg.zw;
+  vec2 hpx = abs(pr.xy / max(pc.w, 0.0001)) * 0.5 * ubo.clusterCfg.zw;
 
-  vec2 tile = clusterCfg.zw / vec2(grid.xy);
+  vec2 tile = ubo.clusterCfg.zw / vec2(ubo.grid.xy);
   int xlo = int(floor((scr.x - hpx.x) / tile.x));
   int xhi = int(floor((scr.x + hpx.x) / tile.x));
   int ylo = int(floor((scr.y - hpx.y) / tile.y));
   int yhi = int(floor((scr.y + hpx.y) / tile.y));
 
-  lo = uvec3(clamp(xlo, 0, int(grid.x)-1), clamp(ylo, 0, int(grid.y)-1), clamp(zlo, 0, int(grid.z)-1));
-  hi = uvec3(clamp(xhi, 0, int(grid.x)-1), clamp(yhi, 0, int(grid.y)-1), clamp(zhi, 0, int(grid.z)-1));
+  lo = uvec3(clamp(xlo, 0, int(ubo.grid.x)-1), clamp(ylo, 0, int(ubo.grid.y)-1), clamp(zlo, 0, int(ubo.grid.z)-1));
+  hi = uvec3(clamp(xhi, 0, int(ubo.grid.x)-1), clamp(yhi, 0, int(ubo.grid.y)-1), clamp(zhi, 0, int(ubo.grid.z)-1));
 
   for (uint z = lo.z; z <= hi.z; ++z) { for (uint y = lo.y; y <= hi.y; ++y) { for (uint x = lo.x; x <= hi.x; ++x) {
-    uint cid = (z * grid.y + y) * grid.x + x;
+    uint cid = (z * ubo.grid.y + y) * ubo.grid.x + x;
     uint n = atomicAdd(cursor[0].cursor, 1u);
-    if (n >= indexBufferLength) return;             // drop-for-now; cursor still counts → grow-ready
+    if (n >= ubo.indexBufferLength) return;             // drop-for-now; cursor still counts → grow-ready
     indices[n].light = li;
     indices[n].next  = atomicExchange(head[cid].head, n);
   } } }

@@ -129,7 +129,7 @@ struct App {
   bool showLights = false;                                                      /// Show lights
   LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool disco = false;                                                           /// Disco mode
-  bool hasCompute = false;                                                      /// Is compute enabled / available ?
+  bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint verbose = 0;                                                             /// Be very verbose
   bool minimized = false;                                                       /// minimized ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?

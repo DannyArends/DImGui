@@ -28,8 +28,9 @@ struct Compute {
   GraphicsPipeline[string] pipelines;   /// Pipelines
 }
 
-ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_glsl_compute_shader), 
-                              ShaderDef("data/shaders/particle.glsl", shaderc_glsl_compute_shader)];
+ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_glsl_compute_shader),
+                              ShaderDef("data/shaders/particle.glsl", shaderc_glsl_compute_shader),
+                              ShaderDef("data/shaders/cull.glsl", shaderc_glsl_compute_shader)];
 
 /** Load shader modules for compute */
 void initializeCompute(ref App app) {
