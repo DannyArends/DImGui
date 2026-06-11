@@ -130,6 +130,7 @@ struct App {
   LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool disco = false;                                                           /// Disco mode
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
+  uint clusterCapacity = 0;                                                     /// 0 = use default CLUSTER_COUNT on first create
   uint verbose = 0;                                                             /// Be very verbose
   bool minimized = false;                                                       /// minimized ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?
