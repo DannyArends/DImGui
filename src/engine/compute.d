@@ -12,7 +12,7 @@ import reflection : createResources;
 import swapchain : createImageView;
 import shaders : loadShaders;
 import ssbo : updateSSBO;
-import sync : insertWriteBarrier, insertReadBarrier;
+import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
 import textures : idx, registerTexture;
 import quaternion : xyzw;
 import uniforms : forEachUBO;
@@ -150,6 +150,26 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   app.nameVulkanObject(cmdBuffer, toStringz(format("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
   pushLabel(cmdBuffer, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
+
+  if (baseName(fromStringz(shader.path)) == "cull.glsl") {
+    VkBuffer headBuf = app.buffers["ClusterHeads"].buffers[0];   // single copy
+    VkBuffer cursorBuf = app.buffers["ClusterCounter"].buffers[0];
+
+    vkCmdFillBuffer(cmdBuffer, headBuf, 0, VK_WHOLE_SIZE, 0xFFFFFFFF); // NIL
+    vkCmdFillBuffer(cmdBuffer, cursorBuf, 0, VK_WHOLE_SIZE, 0);
+    cmdBuffer.insertFillBarrier(headBuf);
+    cmdBuffer.insertFillBarrier(cursorBuf);
+
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
+    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
+
+    uint nlights = cast(uint)app.lights.length;
+    vkCmdDispatch(cmdBuffer, cast(uint)ceil(cast(float)nlights / shader.groupCount[0]), 1, 1);
+
+    popLabel(cmdBuffer);
+    enforceVK(vkEndCommandBuffer(cmdBuffer));
+    return;
+  }
 
   float[3] nJobs = [1, 1, 1];
   uint size;

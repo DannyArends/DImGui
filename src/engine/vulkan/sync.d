@@ -86,3 +86,13 @@ void insertReadBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceS
   vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, null, 1, &readBarrier, 0, null);
 }
 
+void insertFillBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
+  VkBufferMemoryBarrier barrier = {
+    sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+    srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,                          // vkCmdFillBuffer write
+    dstAccessMask : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // cull reads+writes
+    buffer : buffer,
+    size : size
+  };
+  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, null, 1, &barrier, 0, null);
+}
