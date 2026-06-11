@@ -6,6 +6,7 @@
 #version 460
 
 #include "scene.glsl"
+#include "functions.glsl"
 
 layout(local_size_x = 64) in;
 
@@ -25,31 +26,28 @@ void main() {
   float dmin = max(depth - r, 0.0001);
   float dmax = depth + r;
 
-  // sphere entirely behind camera → skip
+  // sphere entirely behind camera, skip it
   if (dmax < 0.0001) return;
 
   // Z slices via the log mapping  slice = log2(d)*sliceScale + sliceBias
   int zlo = int(floor(log2(dmin) * ubo.clusterCfg.x + ubo.clusterCfg.y));
   int zhi = int(floor(log2(dmax) * ubo.clusterCfg.x + ubo.clusterCfg.y));
 
-  // X/Y: conservative screen-space AABB of the view-space sphere via proj
-  // project (cV ± r) extents; clip-space → NDC → screen tiles
-  vec4 pc = ubo.proj * vec4(cV, 1.0);
-  // TODO: conservative radius projection — over-includes froxels for near lights,
-  // inflating cull cost and ClusterLights usage. Replace with proper view-space
-  // sphere → screen-AABB (tangent-plane) projection. Suspected movement-hiccup cause.
-  vec4 pr = ubo.proj * vec4(r, r, cV.z, 1.0);
+  vec2 nx, ny;
+  if (depth <= r) {
+    nx = vec2(-1.0, 1.0); 
+    ny = vec2(-1.0, 1.0);
+  } else {
+    nx = projectAxis(cV.x, cV.z, r, ubo.proj[0][0], depth);
+    ny = projectAxis(cV.y, cV.z, r, ubo.proj[1][1], depth);
+  }
 
-  // screen-space center & half-extent in pixels
-  vec2 ndc = pc.xy / max(pc.w, 0.0001);
-  vec2 scr = (ndc * 0.5 + 0.5) * ubo.clusterCfg.zw;
-  vec2 hpx = abs(pr.xy / max(pc.w, 0.0001)) * 0.5 * ubo.clusterCfg.zw;
-
+  // NDC [-1,1] → screen tiles
   vec2 tile = ubo.clusterCfg.zw / vec2(ubo.grid.xy);
-  int xlo = int(floor((scr.x - hpx.x) / tile.x));
-  int xhi = int(floor((scr.x + hpx.x) / tile.x));
-  int ylo = int(floor((scr.y - hpx.y) / tile.y));
-  int yhi = int(floor((scr.y + hpx.y) / tile.y));
+  int xlo = int(floor((nx.x * 0.5 + 0.5) * ubo.clusterCfg.z / tile.x));
+  int xhi = int(floor((nx.y * 0.5 + 0.5) * ubo.clusterCfg.z / tile.x));
+  int ylo = int(floor((ny.x * 0.5 + 0.5) * ubo.clusterCfg.w / tile.y));
+  int yhi = int(floor((ny.y * 0.5 + 0.5) * ubo.clusterCfg.w / tile.y));
 
   // reject lights whose froxel range is entirely outside the grid (before clamping)
   if (zhi < 0 || zlo > int(ubo.grid.z)-1) return;
