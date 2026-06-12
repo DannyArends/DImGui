@@ -19,6 +19,8 @@ import uniforms : forEachUBO;
 import vector : xyz;
 import validation : popLabel, pushLabel;
 
+enum MAX_SHADOW_MAPS = 64;
+
 struct ShadowMap {
   ImageBuffer[] images;
 
@@ -51,51 +53,37 @@ void createShadowMap(ref App app) {
 }
 
 void addShadowMap(ref App app) {
-  if(app.shadows.images.length >= 64) return;
+  if(app.shadows.images.length >= MAX_SHADOW_MAPS) return;
   size_t l = app.shadows.images.length;
   app.shadows.images ~= ImageBuffer();
-  app.createImage(app.shadows.images[l], 32, 32, app.shadows.format, VK_SAMPLE_COUNT_1_BIT,
+  app.shadows.renderPass.framebuffers ~= VkFramebuffer.init;   // slot for makeShadowMap to fill
+  app.makeShadowMap(l, 32);
+  app.shadows.shadowDescriptorsDirty[] = true;
+}
+
+/** Create shadow image+view+framebuffer for slot l at the given square size. */
+void makeShadowMap(ref App app, size_t l, uint size) {
+  app.createImage(app.shadows.images[l], size, size, app.shadows.format, VK_SAMPLE_COUNT_1_BIT,
                   VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
   app.shadows.images[l].view = app.createImageView(app.shadows.images[l].image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-  app.shadows.renderPass.framebuffers ~= app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], 32, 32, "Shadow", l);
-  app.shadows.shadowDescriptorsDirty[] = true;
+  app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
+  app.shadows.renderPass.framebuffers[l] = app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], size, size, "Shadow", l);
 }
 
 /** Resize light l's shadow map to `size`; defers old resources, re-points the descriptor next safe frame. */
 void resizeShadowMap(ref App app, size_t l, uint size) {
   if(app.shadows.images[l].extent.width == size) return;
-
-  // defer-destroy the old image+view and framebuffer (fence-gated, by value)
   app.deAllocate(app.shadows.images[l]);
   app.deAllocate(app.shadows.renderPass.framebuffers[l]);
-
-  // create new image+view at the new size
-  app.createImage(app.shadows.images[l], size, size, app.shadows.format, VK_SAMPLE_COUNT_1_BIT,
-                  VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-  app.shadows.images[l].view = app.createImageView(app.shadows.images[l].image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-  app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
-
-  // new framebuffer bound to the new view at the new size
-  app.shadows.renderPass.framebuffers[l] = app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], size, size, "Shadow", l);
+  app.makeShadowMap(l, size);
   app.shadows.shadowDescriptorsDirty[] = true;
 }
 
 /** Shadow map resource creation */
 void createShadowMapResources(ref App app) {
-  if(app.verbose) SDL_Log("Shadow map resources creation");
   app.shadows.images.length = app.lights.length;
-
-  for(size_t x = 0; x < app.lights.length; x++) {
-    app.createImage(app.shadows.images[x], app.shadows.dimension, app.shadows.dimension,
-                    app.shadows.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-    if(app.verbose) SDL_Log(" - shadow map image created: %p", app.shadows.images[x].image);
-
-    app.shadows.images[x].view = app.createImageView(app.shadows.images[x].image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-    app.nameImageBuffer(app.shadows.images[x], format("ShadowImage #%d", x));
-    if(app.verbose) SDL_Log(" - shadow map image view created: %p", app.shadows.images[x].view);
-  }
-
+  app.shadows.renderPass.framebuffers.length = app.lights.length;
+  foreach(x; 0 .. app.lights.length) app.makeShadowMap(x, app.shadows.dimension);
   app.mainDeletionQueue.add((){ foreach(ref img; app.shadows.images) app.cleanup(img); });
 }
 

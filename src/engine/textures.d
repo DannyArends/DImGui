@@ -13,6 +13,8 @@ import io : dir;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
 
+enum MAX_TEXTURES = 512;
+
 ImTextureRef ImTextureRefFromID(ulong tex_id) { 
   ImTextureRef tex_ref = { null, cast(ImTextureID)tex_id }; 
   return tex_ref; 
