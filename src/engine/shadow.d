@@ -5,8 +5,10 @@
 
 import engine;
 
+import deletion : deAllocate;
 import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
+import framebuffer : createFramebuffer;
 import geometry : bufferGeometries, draw;
 import images : createImage, cleanup, nameImageBuffer;
 import renderpass : beginRecording, endRecording;
@@ -29,6 +31,8 @@ struct ShadowMap {
   uint budget = 8;                          /// Max lights casting shadows per frame (stage 1: first-K)
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
+  bool shadowDescriptorsDirty = false;
+
   uint lastShadowInstances = 0;
   uint totalShadowInstances = 0;
 }
@@ -43,6 +47,26 @@ void createShadowMap(ref App app) {
   app.createShadowMapRenderPass();
   app.createShadowSampler();
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
+}
+
+/** Resize light l's shadow map to `size`; defers old resources, re-points the descriptor next safe frame. */
+void resizeShadowMap(ref App app, size_t l, uint size) {
+  if(app.shadows.images[l].extent.width == size) return;
+
+  // defer-destroy the old image+view and framebuffer (fence-gated, by value)
+  app.deAllocate(app.shadows.images[l]);
+  app.deAllocate(app.shadows.renderPass.framebuffers[l]);
+
+  // create new image+view at the new size
+  app.createImage(app.shadows.images[l], size, size, app.shadows.format, VK_SAMPLE_COUNT_1_BIT,
+                  VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+  app.shadows.images[l].view = app.createImageView(app.shadows.images[l].image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+  app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
+
+  // new framebuffer bound to the new view at the new size
+  app.shadows.renderPass.framebuffers[l] = app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], size, size, "Shadow", l);
+
+  app.shadows.shadowDescriptorsDirty = true;
 }
 
 /** Shadow map resource creation */
