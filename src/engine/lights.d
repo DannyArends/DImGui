@@ -54,10 +54,10 @@ struct Lighting {
 
 Light torchLight(float[3] pos) {
   Light l;
-  l.position = [pos[0], pos[1] + 2.0f, pos[2], 1.0f];
-  l.intensity  = [400.0f, 20.0f, 0.0f, 1.0f];          // Red's intensity
-  l.direction  = [2.0f, -10.0f, -0.5f, 0.0f];
-  l.properties = [0.0f, 0.001f, 45.0f, 1.0f];          // Red's properties, enabled
+  l.position   = [pos[0], pos[1] + 2.0f, pos[2], 1.0f];
+  l.intensity  = [10.0f, 10.0f, 5.0f, 1.0f];   // warm torch glow
+  l.direction  = [0.0f, -1.0f, 0.0f, 0.0f];    // point down — needed for lightSpace/shadow
+  l.properties = [0.0f, 0.01f, 45.0f, 1.0f];  // attenuation, 45° cone (NOT 90 → 180° FOV = NaN)
   l.computeRadius();
   return l;
 }
