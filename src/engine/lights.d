@@ -17,12 +17,14 @@ import matrix : degree, translate;
 
 enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
 
+enum TORCH_HEIGHT = 2.0f;
+
 struct Light {
   Matrix lightSpaceMatrix;
   float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light Position
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
-  float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, angle, enabled]
+  float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, cone half-angle, enabled]
   float[4] cull       = [0.0f,-1.0f, 0.0f, 0.0f];    /// [radius, shadowSlot, reserved, reserved]
 
   @property @nogc pure void angle(float v) nothrow { properties[2] = v; }
@@ -39,8 +41,8 @@ enum Lights : Light {
   Sun  = Light(Matrix.init, [50.0f, 80.0f, 50.0f, 0.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 1.0f]),
   Fill = Light(Matrix.init, [-30.0f, 40.0f, -30.0f, 0.0f], [0.1f, 0.15f, 0.3f, 1.0f], [1.0f, -1.0f, 1.0f, 0.0f], [0.04f, 0.0f, 90.0f, 0.0f]),
   Red = Light(Matrix.init, [10.0f, 20.0f, 10.0f, 1.0f], [400.0f, 20.0f, 0.0f, 1.0f], [2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
-  Green  = Light(Matrix.init, [10.0f, 20.0f, 0.0f, 1.0f], [0.0f, 400.0f, 20.0f, 1.0f], [-3.0f, -9.0f, 3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
-  Blue   = Light(Matrix.init, [0.0f, 10.0f, 10.0f, 1.0f], [20.0f, 0.0f, 400.0f, 1.0f], [0.5f, -2.0f, 1.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
+  Green = Light(Matrix.init, [10.0f, 20.0f, 0.0f, 1.0f], [0.0f, 400.0f, 20.0f, 1.0f], [-3.0f, -9.0f, 3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
+  Blue = Light(Matrix.init, [0.0f, 10.0f, 10.0f, 1.0f], [20.0f, 0.0f, 400.0f, 1.0f], [0.5f, -2.0f, 1.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
   Bright = Light(Matrix.init, [0.0f, 100.0f, 0.0f, 1.0f], [1000.0f,1000.0f, 1000.0f, 1.0f], [0.2f, -1.0f, 0.2f, 0.0f], [0.0f, 0.1f, 90.0f, 0.0f])
 };
 
@@ -54,7 +56,7 @@ struct Lighting {
 
 Light torchLight(float[3] pos) {
   Light l;
-  l.position   = [pos[0], pos[1] + 2.0f, pos[2], 1.0f];
+  l.position   = [pos[0], pos[1] + TORCH_HEIGHT, pos[2], 1.0f];
   l.intensity  = [10.0f, 10.0f, 5.0f, 1.0f];   // warm torch glow
   l.direction  = [0.0f, -1.0f, 0.0f, 0.0f];    // point down — needed for lightSpace/shadow
   l.properties = [0.0f, 0.01f, 45.0f, 1.0f];  // attenuation, 45° cone (NOT 90 → 180° FOV = NaN)
