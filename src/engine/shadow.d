@@ -49,6 +49,17 @@ void createShadowMap(ref App app) {
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
+void addShadowMap(ref App app) {
+  if(app.shadows.images.length >= 64) return;
+  size_t l = app.shadows.images.length;
+  app.shadows.images ~= ImageBuffer();
+  app.createImage(app.shadows.images[l], 32, 32, app.shadows.format, VK_SAMPLE_COUNT_1_BIT,
+                  VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+  app.shadows.images[l].view = app.createImageView(app.shadows.images[l].image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+  app.shadows.renderPass.framebuffers ~= app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], 32, 32, "Shadow", l);
+  app.shadows.shadowDescriptorsDirty[] = true;
+}
+
 /** Resize light l's shadow map to `size`; defers old resources, re-points the descriptor next safe frame. */
 void resizeShadowMap(ref App app, size_t l, uint size) {
   if(app.shadows.images[l].extent.width == size) return;

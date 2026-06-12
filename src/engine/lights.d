@@ -9,7 +9,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : updateSSBO;
-import shadow : resizeShadowMap;
+import shadow : resizeShadowMap, addShadowMap;
 import textures : mapTextures;
 import vector : dot, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -50,6 +50,23 @@ struct Lighting {
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
   alias lights this;
+}
+
+Light torchLight(float[3] pos) {
+  Light l;
+  l.position = [pos[0], pos[1] + 2.0f, pos[2], 1.0f];
+  l.intensity = [400.0f, 200.0f, 0.0f, 1.0f];
+  l.properties[1] = 0.001f;   // attenuation (match working lights)
+  l.properties[2] = 45.0f;    // angle/cone — was 0 → lit nothing
+  l.enabled = true;
+  l.computeRadius();
+  return l;
+}
+
+void addLight(ref App app, Light light) {
+  app.lights ~= light;
+  app.buffers["LightMatrices"].dirty[] = true;
+  app.addShadowMap();
 }
 
 /** Compute the size of the light radius */

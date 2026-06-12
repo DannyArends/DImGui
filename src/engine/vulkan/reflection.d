@@ -123,7 +123,7 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     }
     if(!descr.count) {
       descr.count = cast(uint)512;
-      if(to!string(descr.name) == "shadowMap"){ descr.count = cast(uint)app.lights.length; }
+      if(to!string(descr.name) == "shadowMap"){ descr.count = 64u; }
       if(to!string(descr.name) == "hdrSampler"){ descr.count = 1; }
     }
     // Resolve image target once at load time (avoids per-frame string dispatch in updateDescriptorSet)
