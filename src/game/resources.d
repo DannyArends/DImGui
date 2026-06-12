@@ -7,7 +7,6 @@ import game;
 
 import io : dir, fixPath;
 import textures : transferTextureAsync, idx, toRGBA;
-import images : deAllocate;
 
 struct ResourceT {
   string name      = "None";

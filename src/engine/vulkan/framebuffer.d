@@ -5,9 +5,13 @@
 
 import engine;
 
-import images : createImage, nameImageBuffer, deAllocate, ImageBuffer;
+import images : createImage, nameImageBuffer, cleanup, ImageBuffer;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
+
+void cleanup(ref App app, VkFramebuffer fb) {
+  if(fb) vkDestroyFramebuffer(app.device, fb, app.allocator);
+}
 
 /** Function to create an HDR color image and its view (MSAA if enabled) */
 void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits flag, VkMemoryPropertyFlags properties) {
@@ -17,22 +21,26 @@ void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits f
   buffer.view = app.createImageView(buffer.image, app.offscreen.format, VK_IMAGE_ASPECT_COLOR_BIT);
   app.nameImageBuffer(buffer, "Offscreen HDR Image");
 
-  app.swapDeletionQueue.add((){ app.deAllocate(buffer); });
+  app.swapDeletionQueue.add((){ app.cleanup(buffer); });
+}
+
+VkFramebuffer createFramebuffer(ref App app, ref RenderPass pass, VkImageView[] views, uint width, uint height, string label, size_t idx = 0) {
+  VkFramebufferCreateInfo info = {
+    sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+    renderPass: pass,
+    attachmentCount: cast(uint)views.length,
+    pAttachments: views.ptr,
+    width: width, height: height, layers: 1
+  };
+  VkFramebuffer fb;
+  enforceVK(vkCreateFramebuffer(app.device, &info, app.allocator, &fb));
+  app.nameVulkanObject(fb, toStringz(format("[FRAMEBUFFER] %s #%d", label, idx)), VK_OBJECT_TYPE_FRAMEBUFFER);
+  return fb;
 }
 
 void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, uint width, uint height, string label, ref DeletionQueue queue) {
   pass.framebuffers.length = attachmentSets.length;
-  foreach(i, views; attachmentSets) {
-    VkFramebufferCreateInfo info = {
-      sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-      renderPass: pass,
-      attachmentCount: cast(uint)views.length,
-      pAttachments: views.ptr,
-      width: width, height: height, layers: 1
-    };
-    enforceVK(vkCreateFramebuffer(app.device, &info, app.allocator, &pass.framebuffers[i]));
-    app.nameVulkanObject(pass.framebuffers[i], toStringz(format("[FRAMEBUFFER] %s #%d", label, i)), VK_OBJECT_TYPE_FRAMEBUFFER);
-  }
+  foreach(i, views; attachmentSets) { pass.framebuffers[i] = app.createFramebuffer(pass, views, width, height, label, i); }
   queue.add((){ foreach(fb; pass.framebuffers) vkDestroyFramebuffer(app.device, fb, app.allocator); });
 }
 

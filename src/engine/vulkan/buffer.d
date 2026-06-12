@@ -6,6 +6,7 @@
 import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
+import deletion : deAllocate;
 import validation : nameVulkanObject;
 
 struct GeometryBuffer(T = ubyte) {
@@ -113,16 +114,6 @@ void copyImageToBuffer(ref App app, VkCommandBuffer commandBuffer, VkImage image
   };
   if(app.trace) SDL_Log("copyImageToBuffer image[%p] to buffer[%p] %dx%d", image, buffer, width, height);
   vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
-}
-
-/** Defer cleanup of a GeometryBuffer / Geometry until its fence signals or force is true
- *  Note: buffer should be passed by value, so the closure captures a copy of the handles */
-void deAllocate(T)(ref App app, T object) {
-  auto fence = app.fences[app.syncIndex].renderInFlight;
-  app.bufferDeletionQueue.add((bool force){
-    if(force || vkGetFenceStatus(app.device, fence) == VK_SUCCESS) { app.cleanup(object); return(true); }
-    return(false);
-  });
 }
 
 /** Allocate or grow a GeometryBuffer if needed */

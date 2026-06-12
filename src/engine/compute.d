@@ -7,7 +7,7 @@ import engine;
 
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSetLayout, createDescriptorSet;
-import images : createImage, nameImageBuffer, deAllocate, transitionImageLayout;
+import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
 import reflection : createResources;
 import swapchain : createImageView;
 import shaders : loadShaders;
@@ -136,7 +136,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
 
   // Update the Texture Array for rendering
   app.textures ~= texture;
-  app.mainDeletionQueue.add((){ app.deAllocate(texture); });
+  app.mainDeletionQueue.add((){ app.cleanup(texture); });
 }
 
 /** recordComputeCommandBuffer for syncIndex and the selected ComputeShader */
