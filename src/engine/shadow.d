@@ -97,9 +97,7 @@ void createShadowMapResources(ref App app) {
     if(app.verbose) SDL_Log(" - shadow map image view created: %p", app.shadows.images[x].view);
   }
 
-  app.mainDeletionQueue.add((){
-    for(size_t x = 0; x < app.lights.length; x++) { app.cleanup(app.shadows.images[x]); }
-  });
+  app.mainDeletionQueue.add((){ foreach(ref img; app.shadows.images) app.cleanup(img); });
 }
 
 /** Shadow map render pass creation */
