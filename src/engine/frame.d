@@ -28,6 +28,12 @@ void waitForFrame(ref App app) {
   }
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
+
+  if(app.shadows.shadowDescriptorsDirty[app.syncIndex]) {     // re-point this set; it's now idle
+    app.updateDescriptorSet(app.shaders, app.sets[Stage.RENDER], app.syncIndex);
+    app.shadows.shadowDescriptorsDirty[app.syncIndex] = false;
+  }
+
   app.bufferDeletionQueue.flush();
 }
 
