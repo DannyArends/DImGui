@@ -26,6 +26,7 @@ struct ShadowMap {
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
   uint dimension = isAndroid ? 512 : 4096;  /// Shadowmap dimension
+  uint budget = 8;                          /// Max lights casting shadows per frame (stage 1: first-K)
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
   uint lastShadowInstances = 0;
@@ -222,10 +223,10 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
   auto shadowExtent = VkExtent2D(app.shadows.dimension, app.shadows.dimension);
-  app.shadows.lastShadowInstances = 0;
-  app.shadows.totalShadowInstances = 0;
+  app.shadows.lastShadowInstances = app.shadows.totalShadowInstances = 0;
   for(size_t l = 0; l < app.lights.length; l++) {
-    if(!app.lights[l].enabled) continue;
+    if(!app.lights[l].enabled || app.lights[l].cull[1] < 0.0f) continue;   // not enabled or selected to cast this frame
+
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
 
     auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);

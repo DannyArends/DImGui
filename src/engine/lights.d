@@ -158,13 +158,10 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
   app.clearValue[0].color = VkClearColorValue(dawnDayBlend(skyNight, skyDawn, skyDay, t, dawnThreshold));
   app.lights[0].intensity = dawnDayBlend(sunNight, sunDawn, sunNoon, t, dawnThreshold);
   app.lights[0].properties[0] = t * ambientScale;
-
-  app.buffers["LightMatrices"].dirty[] = true;
 }
 
 /** Transfer the lighting into the SSBO for buffer */
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
-  if(!app.buffers[descriptor.base].dirty[app.syncIndex]) return;
   foreach(i, ref light; app.lights) {
     light.computeRadius(); 
     app.camera.computeLightSpace(light, app.shadows.bounds, app.shadows.dimension);
@@ -174,6 +171,16 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
 
 /** Disco beam */
 @nogc pure float beam(float t, float speed, float freq, float phase) nothrow { return abs(sin(t * speed * freq + phase)) * 500.0f; }
+
+/** Select which lights cast shadows this frame; writes cull[1] as the shadow flag. */
+void computeActiveLighting(ref App app) {
+  uint shadowed = 0;
+  foreach(ref light; app.lights) {
+    bool doesCast = light.enabled && shadowed < app.shadows.budget;
+    light.cull[1] = doesCast ? 1.0f : -1.0f;
+    if(doesCast) shadowed++;
+  }
+}
 
 /** Disco mode 🕺 🪩 💃 */
 void updateDisco(ref App app, float dt) {
@@ -198,6 +205,5 @@ void updateDisco(ref App app, float dt) {
     app.lights[i].intensity = [beam(t, speed, 4.0f, phase), beam(t, speed, 3.0f, phase), beam(t, speed, 5.0f, phase + 1.0f)].xyzw;
     app.lights[i].properties[2] = 25.0f + sin(t * speed) * 10.0f;
   }
-  app.buffers["LightMatrices"].dirty[] = true;
 }
 

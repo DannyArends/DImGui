@@ -10,7 +10,7 @@ import descriptor : updateDescriptorSet, createDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 import imgui : recordImGuiCommandBuffer;
-import lights : updateDisco, updateLightGeometries, LMode;
+import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
 import mesh : updateMeshInfo;
 import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
 import sfx : updateTracks;
@@ -57,6 +57,7 @@ void renderFrame(ref App app, double dt) {
   if(app.hasCompute) app.timed!updateComputeUBO(app.syncIndex);
   app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.timed!updateRenderUBO(app.shaders, app.syncIndex);
+  app.computeActiveLighting();
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
     // TODO: growing ClusterLights via app.rebuild recreates the whole swapchain/pipeline.
