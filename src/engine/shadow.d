@@ -8,7 +8,7 @@ import engine;
 import deletion : deAllocate;
 import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
-import framebuffer : createFramebuffer;
+import framebuffer : createFramebuffer, cleanup;
 import geometry : bufferGeometries, draw;
 import images : createImage, cleanup, nameImageBuffer;
 import renderpass : beginRecording, endRecording;
@@ -84,7 +84,11 @@ void createShadowMapResources(ref App app) {
   app.shadows.images.length = app.lights.length;
   app.shadows.renderPass.framebuffers.length = app.lights.length;
   foreach(x; 0 .. app.lights.length) app.makeShadowMap(x, app.shadows.dimension);
-  app.mainDeletionQueue.add((){ foreach(ref img; app.shadows.images) app.cleanup(img); });
+
+  app.mainDeletionQueue.add((){
+    foreach(ref img; app.shadows.images) app.cleanup(img);
+    foreach(fb; app.shadows.renderPass.framebuffers) app.cleanup(fb);
+  });
 }
 
 /** Shadow map render pass creation */

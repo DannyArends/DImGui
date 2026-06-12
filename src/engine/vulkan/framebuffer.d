@@ -50,11 +50,9 @@ void createFramebuffers(ref App app) {
   auto sceneViews  = iota(app.imageCount).map!(i => [app.offscreenHDR.view, app.resolvedHDR.view, app.depthBuffer.view]).array;
   auto postViews   = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
   auto imguiViews  = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
-  auto shadowViews = iota(app.lights.length).map!(i => [app.shadows.images[i].view]).array;
 
   app.create(app.scenePass, sceneViews, app.camera.width, app.camera.height, "Render", app.swapDeletionQueue);
   app.create(app.postPass, postViews, app.camera.width, app.camera.height, "Post-process", app.swapDeletionQueue);
   app.create(app.imguiPass, imguiViews, app.camera.width, app.camera.height, "ImGui", app.swapDeletionQueue);
-  app.create(app.shadows.renderPass, shadowViews, app.shadows.dimension, app.shadows.dimension, "Shadow", app.swapDeletionQueue);
 }
 
