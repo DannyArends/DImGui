@@ -38,7 +38,11 @@ void showLightsContent(ref GameApp app, uint font = 0) {
       igTableNextColumn();
         sliderFloat3(["##pX","##pY","##pZ"], &light.position[0], &light.position[1], &light.position[2], 
                      &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
-
+      igTableNextColumn(); igText(iconText("Shadow", cast(string)ICON_FA_MOON));
+      igTableNextColumn();
+      igText(toStringz(format("%s  %dx%d", light.cull[1] >= 0.0f ? "CASTING" : "evicted",
+                              i < app.shadows.images.length ? app.shadows.images[i].extent.width : 0,
+                              i < app.shadows.images.length ? app.shadows.images[i].extent.height : 0)));
       igTableNextColumn(); igText(iconText("Intensity", cast(string)ICON_FA_BOLT));
       igTableNextColumn();
         sliderFloat3(["##I0","##I1","##I2"], &light.intensity[0], &light.intensity[1], &light.intensity[2], 

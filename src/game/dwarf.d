@@ -19,6 +19,8 @@ import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
 import timing : timed;
+import lights : addLight, torchLight;
+
 
 uint nextDwarfUID = 1;
 
@@ -122,6 +124,8 @@ struct Dwarf {
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 
+  size_t lightIndex = size_t.max; 
+
   DwarfState state = DwarfState.Idle;
   uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
 
@@ -177,11 +181,13 @@ void dwarfFrame(ref GameApp app, float dt) {
     }
   }
   foreach(i, ref d; app.world.dwarves) {
+    if(d.lightIndex != size_t.max) app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1]+5.0f, d.visualPos[2], 1.0f];
     float[3] s = (app.world.chunkCoord(d.tile) in app.world.chunks) ? [1.0f,1.0f,1.0f] : [0.0f,0.0f,0.0f];
     Matrix m = scale(Matrix.init, s);
     app.world.dwarves.instances[i] = position(m, d.visualPos);
   }
   app.world.dwarves.instances.buffered = false;
+  app.buffers["LightMatrices"].dirty[] = true;
 }
 
 /** A single dwarf being ticked */
@@ -265,6 +271,8 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   inst = position(inst, d.visualPos);
   app.world.dwarves.instances ~= inst;
   app.world.dwarves ~= d;
+  app.addLight(torchLight(d.visualPos));
+  d.lightIndex = app.lights.length - 1;
 }
 
 /** Spawn a Dwarf */
