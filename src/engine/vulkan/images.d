@@ -17,6 +17,7 @@ struct ImageBuffer {
   VkImage image = null;             /// Image
   VkImageView view = null;          /// View
   VkDeviceMemory memory = null;     /// Memory
+  VkExtent3D extent;                /// Extent
 }
 
 void nameImageBuffer(ref App app, ImageBuffer buffer, string path){
@@ -25,8 +26,7 @@ void nameImageBuffer(ref App app, ImageBuffer buffer, string path){
   app.nameVulkanObject(buffer.view, toStringz("[VIEW] " ~ baseName(path)), VK_OBJECT_TYPE_IMAGE_VIEW);
 }
 
-/** DeAllocate an ImageBuffer / Texture
- */
+/** DeAllocate an ImageBuffer / Texture */
 void deAllocate(App app, ImageBuffer buffer) {
   vkDestroyImageView(app.device, buffer.view, app.allocator);
   vkDestroyImage(app.device, buffer.image, app.allocator);
@@ -38,35 +38,26 @@ void createColorResources(ref App app) {
   app.createHDRImage(app.resolvedHDR, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 }
 
-/** Create & bind an Image on GPU backed with memory
- */
-void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceMemory* imageMemory, 
-                 VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
-                 VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
-                 VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+/** Create & bind an Image on GPU backed with memory */
+void createImage(ref App app, ref ImageBuffer buffer, uint width, uint height, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
+                 VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
                  VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
                  VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint mipLevels = 1) {
 
-  VkExtent3D extent = { width: width, height: height, depth: 1 };
+  buffer.extent = VkExtent3D(width, height, 1);
 
   VkImageCreateInfo imageInfo = {
     sType: VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
     imageType: VK_IMAGE_TYPE_2D,
-    extent: extent,
-    mipLevels: mipLevels,
-    arrayLayers: 1,
-    format: format,
-    tiling: tiling,
-    initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-    usage: usage,
-    sharingMode: VK_SHARING_MODE_EXCLUSIVE,
-    samples: samples,
-    flags: 0
+    extent: buffer.extent,
+    mipLevels: mipLevels, arrayLayers: 1, format: format, tiling: tiling,
+    initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, usage: usage,
+    sharingMode: VK_SHARING_MODE_EXCLUSIVE, samples: samples, flags: 0
   };
-  enforceVK(vkCreateImage(app.device, &imageInfo, null, image));
+  enforceVK(vkCreateImage(app.device, &imageInfo, null, &buffer.image));
 
   VkMemoryRequirements memoryRequirements;
-  vkGetImageMemoryRequirements(app.device, (*image), &memoryRequirements);
+  vkGetImageMemoryRequirements(app.device, buffer.image, &memoryRequirements);
 
   VkMemoryAllocateInfo allocInfo = {
     sType: VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -76,8 +67,8 @@ void createImage(ref App app, uint width, uint height, VkImage* image, VkDeviceM
   };
   if(app.trace) SDL_Log("createImage: Allocating %d Bytes", memoryRequirements.size);
 
-  enforceVK(vkAllocateMemory(app.device, &allocInfo, null, imageMemory));
-  vkBindImageMemory(app.device, (*image), (*imageMemory), 0);
+  enforceVK(vkAllocateMemory(app.device, &allocInfo, null, &buffer.memory));
+  vkBindImageMemory(app.device, buffer.image, buffer.memory, 0);
 }
 
 void imageBarrier(VkCommandBuffer cmd, VkImage image,
@@ -100,8 +91,7 @@ void imageBarrier(VkCommandBuffer cmd, VkImage image,
   vkCmdPipelineBarrier(cmd, srcStage, dstStage, 0, 0, null, 0, null, 1, &b);
 }
 
-/** generateMipmaps
- */
+/** generateMipmaps */
 void generateMipmaps(ref App app, VkCommandBuffer cmd, VkImage image, int width, int height, uint mipLevels) {
   int mipW = width, mipH = height;
   for (uint i = 1; i < mipLevels; i++) {
@@ -129,8 +119,7 @@ void generateMipmaps(ref App app, VkCommandBuffer cmd, VkImage image, int width,
                            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevels - 1);
 }
 
-/** Transition Image Layout from old to new layout
- */
+/** Transition Image Layout from old to new layout */
 void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage image,
                            VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                            VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -176,3 +165,4 @@ void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage i
   imageBarrier(commandBuffer, image, oldLayout, newLayout, srcAccess, dstAccess, srcStage, dstStage, 0, levelCount, aspect);
   if (app.trace) SDL_Log(" - transitionImageLayout finished for commandBuffer[%p]", commandBuffer);
 }
+

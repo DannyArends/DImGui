@@ -51,8 +51,7 @@ void createShadowMapResources(ref App app) {
   app.shadows.images.length = app.lights.length;
 
   for(size_t x = 0; x < app.lights.length; x++) {
-    app.createImage(app.shadows.dimension, app.shadows.dimension,
-                    &app.shadows.images[x].image, &app.shadows.images[x].memory,
+    app.createImage(app.shadows.images[x], app.shadows.dimension, app.shadows.dimension,
                     app.shadows.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
     if(app.verbose) SDL_Log(" - shadow map image created: %p", app.shadows.images[x].image);

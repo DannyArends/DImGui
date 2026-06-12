@@ -122,7 +122,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
 
   Texture texture = Texture(path : descriptor.name, width: app.camera.width, height: app.camera.height);
 
-  app.createImage(texture.width, texture.height, &texture.image, &texture.memory, 
+  app.createImage(texture, texture.width, texture.height,
                   VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
   texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_UNORM);
   app.nameImageBuffer(texture, "Compute Image");
