@@ -191,7 +191,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out Geom
   if(texture.image){ app.mainDeletionQueue.add((){ app.deAllocate(texture); }); }
 
   // Create an image, transition the layout, only generate mipmaps for tile textures (_base suffix)
-  app.createImage(texture.surface.w, texture.surface.h, &texture.image, &texture.memory,
+  app.createImage(texture, texture.surface.w, texture.surface.h,
                   VK_FORMAT_R8G8B8A8_SRGB, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
                   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.mipLevels);

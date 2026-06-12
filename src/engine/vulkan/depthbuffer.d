@@ -37,7 +37,7 @@ void createDepthResources(ref App app) {
   if(app.verbose) SDL_Log("Depth resources creation");
   VkFormat depthFormat = app.findDepthFormat();
   if(app.verbose) SDL_Log(" - depthFormat: %d", depthFormat);
-  app.createImage(app.camera.width, app.camera.height, &app.depthBuffer.image, &app.depthBuffer.memory, 
+  app.createImage(app.depthBuffer, app.camera.width, app.camera.height,
                   depthFormat, app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.image);
   app.depthBuffer.view = app.createImageView(app.depthBuffer.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
