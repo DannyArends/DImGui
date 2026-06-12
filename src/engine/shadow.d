@@ -31,7 +31,7 @@ struct ShadowMap {
   uint budget = 8;                          /// Max lights casting shadows per frame (stage 1: first-K)
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
-  bool shadowDescriptorsDirty = false;
+  bool[] shadowDescriptorsDirty;
 
   uint lastShadowInstances = 0;
   uint totalShadowInstances = 0;
@@ -66,7 +66,7 @@ void resizeShadowMap(ref App app, size_t l, uint size) {
   // new framebuffer bound to the new view at the new size
   app.shadows.renderPass.framebuffers[l] = app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], size, size, "Shadow", l);
 
-  app.shadows.shadowDescriptorsDirty = true;
+  app.shadows.shadowDescriptorsDirty[] = true;
 }
 
 /** Shadow map resource creation */
@@ -130,6 +130,9 @@ void createShadowMapRenderPass(ref App app) {
 /** Create the shadow mapping pipeline */
 void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline creation");
+  app.shadows.shadowDescriptorsDirty.length = app.framesInFlight;   // per-syncIndex
+  app.shadows.shadowDescriptorsDirty[] = true; // force initial descriptor write
+
   VkPushConstantRange pushConstantRange = { stageFlags: VK_SHADER_STAGE_VERTEX_BIT, offset: 0, size: uint.sizeof };
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
