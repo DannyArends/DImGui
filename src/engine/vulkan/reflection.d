@@ -8,6 +8,8 @@ import engine;
 import descriptor : createDSPool, DescriptorTarget;
 import compute : createStorageImage, transferToSSBO;
 import ssbo : createSSBO;
+import shadow : MAX_SHADOW_MAPS;
+import textures : MAX_TEXTURES;
 import uniforms : createUBO;
 
 enum uint[4] LIGHT_GRID = [16, 9, 24, 0];
@@ -122,14 +124,14 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
       }
     }
     if(!descr.count) {
-      descr.count = cast(uint)512;
-      if(to!string(descr.name) == "shadowMap"){ descr.count = 64u; }
+      descr.count = cast(uint)MAX_TEXTURES;
+      if(to!string(descr.name) == "shadowMap"){ descr.count = MAX_SHADOW_MAPS; }
       if(to!string(descr.name) == "hdrSampler"){ descr.count = 1; }
     }
     // Resolve image target once at load time (avoids per-frame string dispatch in updateDescriptorSet)
     if(descr.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-      if(to!string(descr.name) == "textureSampler")  descr.target = DescriptorTarget.Textures;
-      else if(to!string(descr.name) == "shadowMap")  descr.target = DescriptorTarget.Shadow;
+      if(to!string(descr.name) == "textureSampler") descr.target = DescriptorTarget.Textures;
+      else if(to!string(descr.name) == "shadowMap") descr.target = DescriptorTarget.Shadow;
       else if(to!string(descr.name) == "hdrSampler") descr.target = DescriptorTarget.HDR;
     }
     if(descr.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) descr.target = DescriptorTarget.Compute;
