@@ -171,7 +171,7 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
   if("MaterialBuffer" in elements) {
     app.updateSSBO!Material(cmdBuffer[syncIndex], app.materials, elements["MaterialBuffer"], syncIndex);
   }
-  if("LightMatrices" in elements) {
+  if("LightMatrices" in elements) { // TODO: Hoist the light SSBO upload to the CPU phase, leave binding per-pass,
     app.updateLighting(cmdBuffer[syncIndex], elements["LightMatrices"]);
   }
 }
