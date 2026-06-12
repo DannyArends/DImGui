@@ -136,18 +136,17 @@ void createShadowMapGraphicsPipeline(ref App app) {
     topology: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
   };
 
-  VkViewport viewport = {
-    minDepth: 0.0f, maxDepth: 1.0f,
-    width: cast(float)app.shadows.dimension,
-    height: cast(float)app.shadows.dimension,
-  };
-
-  VkRect2D scissor = { extent: { width: app.shadows.dimension, height: app.shadows.dimension } };
-
   VkPipelineViewportStateCreateInfo viewportState = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-    viewportCount: 1, pViewports: &viewport,
-    scissorCount: 1, pScissors: &scissor
+    viewportCount: 1, scissorCount: 1
+  };
+
+  VkDynamicState[2] dynamicStates = [VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR];
+
+  VkPipelineDynamicStateCreateInfo dynamicState = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+    dynamicStateCount: 2,
+    pDynamicStates: dynamicStates.ptr
   };
 
   VkPipelineRasterizationStateCreateInfo rasterizer = {
@@ -184,6 +183,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     pRasterizationState: &rasterizer,
     pMultisampleState: &multisampling,
     pDepthStencilState: &depthStencil,
+    pDynamicState: &dynamicState,
     layout: app.shadows.pipeline.layout,
     renderPass: app.shadows.renderPass,
     subpass: 0
@@ -223,7 +223,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
   auto shadowExtent = VkExtent2D(app.shadows.dimension, app.shadows.dimension);
   app.shadows.lastShadowInstances = app.shadows.totalShadowInstances = 0;
-  for(size_t l = 0; l < app.lights.length; l++) {
+  for(uint l = 0; l < app.lights.length; l++) {
     if(!app.lights[l].enabled || app.lights[l].cull[1] < 0.0f) continue;   // not enabled or selected to cast this frame
 
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
@@ -234,14 +234,20 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
       renderPass: app.shadows.renderPass,
       framebuffer: app.shadows.renderPass.framebuffers[l],
-      renderArea: { extent: shadowExtent },
+      renderArea: { extent: { width: app.shadows.images[l].extent.width, height: app.shadows.images[l].extent.height } },
       clearValueCount: 1,
       pClearValues: &clearDepth,
     };
     vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
-    uint currentLightIndex = cast(uint)l;
-    vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &currentLightIndex);
+
+    auto ext = app.shadows.images[l].extent;
+    VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
+    VkRect2D   sc = { extent: { width: ext.width, height: ext.height } };
+    vkCmdSetViewport(cmd, 0, 1, &vp);
+    vkCmdSetScissor(cmd, 0, 1, &sc);
+
+    vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &l);
     foreach(obj; app.objects) {
       if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
       app.shadows.totalShadowInstances += obj.instances.length;
