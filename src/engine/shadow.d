@@ -8,7 +8,7 @@ import engine;
 import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
 import geometry : bufferGeometries, draw;
-import images : createImage, deAllocate, nameImageBuffer;
+import images : createImage, cleanup, nameImageBuffer;
 import renderpass : beginRecording, endRecording;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
@@ -62,7 +62,7 @@ void createShadowMapResources(ref App app) {
   }
 
   app.mainDeletionQueue.add((){
-    for(size_t x = 0; x < app.lights.length; x++) { app.deAllocate(app.shadows.images[x]); }
+    for(size_t x = 0; x < app.lights.length; x++) { app.cleanup(app.shadows.images[x]); }
   });
 }
 
@@ -221,7 +221,6 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
-  auto shadowExtent = VkExtent2D(app.shadows.dimension, app.shadows.dimension);
   app.shadows.lastShadowInstances = app.shadows.totalShadowInstances = 0;
   for(uint l = 0; l < app.lights.length; l++) {
     if(!app.lights[l].enabled || app.lights[l].cull[1] < 0.0f) continue;   // not enabled or selected to cast this frame

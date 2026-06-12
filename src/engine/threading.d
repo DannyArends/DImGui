@@ -9,7 +9,7 @@ import assimp : loadOpenAsset, isOpenAsset;
 import bone : mergeBones;
 import io : dir, fixPath;
 import material : registerAMaterials;
-import images : deAllocate;
+import images : cleanup;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures;
 
 /** Worker thread that loads textures and assimp assets off the main thread, returning results via messages */
@@ -116,6 +116,6 @@ void checkAsync(ref App app) {
   });
   app.drainMessages!Texture((t) {
     app.transferTextureAsync(t);
-    app.mainDeletionQueue.add((){ app.deAllocate(t); });
+    app.mainDeletionQueue.add((){ app.cleanup(t); });
   });
 }

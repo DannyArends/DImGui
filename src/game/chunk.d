@@ -8,7 +8,7 @@ import game;
 import block : unsettleBlocks;
 import game : GameApp;
 import gameobjects : Chunk;
-import buffer : deAllocate;
+import deletion : deAllocate;
 import intersection : intersects;
 import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried, isSolid;
 import hits : getHits;

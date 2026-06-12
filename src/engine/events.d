@@ -6,7 +6,7 @@
 import engine;
 
 import camera : tryMove;
-import buffer : deAllocate;
+import deletion : deAllocate;
 import imgui : initializeImGui, saveSettings;
 import screenshot : saveScreenshot;
 import surface : createSurface;

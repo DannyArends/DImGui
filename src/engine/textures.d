@@ -8,7 +8,7 @@ import engine;
 import buffer : createBuffer, copyBufferToImage, cleanup;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
-import images : nameImageBuffer, generateMipmaps, imageSize, createImage, deAllocate, transitionImageLayout;
+import images : nameImageBuffer, generateMipmaps, imageSize, createImage, cleanup, transitionImageLayout;
 import io : dir;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
@@ -187,8 +187,8 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out Geom
   memcpy(data, texture.surface.pixels, texture.surface.imageSize);
   if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);
 
-  // If we already had an image, view and memory, make sure to deAllocate it on shutdown
-  if(texture.image){ app.mainDeletionQueue.add((){ app.deAllocate(texture); }); }
+  // If we already had an image, view and memory, make sure to cleanup it on shutdown
+  if(texture.image){ app.mainDeletionQueue.add((){ app.cleanup(texture); }); }
 
   // Create an image, transition the layout, only generate mipmaps for tile textures (_base suffix)
   app.createImage(texture, texture.surface.w, texture.surface.h,

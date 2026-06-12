@@ -8,7 +8,7 @@ import engine;
 import buffer : cleanup;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import textures : toRGBA, toGPU;
-import images : createImage, deAllocate, imageSize;
+import images : createImage, cleanup, imageSize;
 import io : fixPath;
 import swapchain : createImageView;
 
@@ -140,5 +140,5 @@ void uploadFont(ref App app) {
   app.endSingleTimeCommands(commandBuffer, app.transfer);
   app.cleanup(staging);
   app.textures ~= app.glyphAtlas.texture;
-  app.mainDeletionQueue.add((){ app.deAllocate(app.glyphAtlas.texture); });
+  app.mainDeletionQueue.add((){ app.cleanup(app.glyphAtlas.texture); });
 }
