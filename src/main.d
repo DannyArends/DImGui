@@ -30,7 +30,7 @@ import validation : createDebugCallback;
 import vulkan : cleanup;
 import window: createOrResizeWindow, checkForResize;
 
-/* Main entry point to the program */
+/** Main entry point to the program */
 version (Android) {
   import core.runtime : rt_init;
 

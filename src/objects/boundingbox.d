@@ -111,7 +111,7 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.wmin = wb.min; object.box.wmax = wb.max;
 }
 
-/** Compute/Update the global scene bounds with an assimp node */
+/** Compute / update the global scene bounds with an assimp node */
 void calculateBounds(ref Bounds bounds, aiScene* scene, aiNode* node, const Matrix pTransform) {
   Matrix gTransform = pTransform.multiply(toMatrix(node.mTransformation));
   for (uint i = 0; i < node.mNumMeshes; ++i) {
