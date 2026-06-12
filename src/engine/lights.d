@@ -9,6 +9,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : updateSSBO;
+import shadow : resizeShadowMap;
 import textures : mapTextures;
 import vector : dot, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -193,6 +194,12 @@ void computeActiveLighting(ref App app) {
     if(best == size_t.max) break;
     app.lights[best].cull[1] = 1.0f;
     score[best] = -1.0f;
+  }
+
+  // Drive shadow map sizes from the selection (immediate shrink)
+  foreach(l, ref light; app.lights) {
+    uint desired = (light.cull[1] < 0.0f) ? 32u : (light.directional ? 4096u : 1024u);
+    app.resizeShadowMap(l, desired);   // no-ops if already that size
   }
 }
 
