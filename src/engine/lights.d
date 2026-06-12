@@ -17,7 +17,7 @@ import matrix : degree, translate;
 
 enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
 
-enum TORCH_HEIGHT = 2.0f;
+enum TORCH_HEIGHT = 5.0f;
 
 struct Light {
   Matrix lightSpaceMatrix;
@@ -54,12 +54,12 @@ struct Lighting {
   alias lights this;
 }
 
-Light torchLight(float[3] pos) {
+Light torchLight(float[3] pos, float[4] color) {
   Light l;
   l.position   = [pos[0], pos[1] + TORCH_HEIGHT, pos[2], 1.0f];
-  l.intensity  = [10.0f, 10.0f, 5.0f, 1.0f];   // warm torch glow
-  l.direction  = [0.0f, -1.0f, 0.0f, 0.0f];    // point down — needed for lightSpace/shadow
-  l.properties = [0.0f, 0.01f, 45.0f, 1.0f];  // attenuation, 45° cone (NOT 90 → 180° FOV = NaN)
+  l.intensity  = [color[0] * 10.0f, color[1] * 10.0f, color[2] * 10.0f, 1.0f];
+  l.direction  = [0.0f, -1.0f, 0.0f, 0.0f];
+  l.properties = [0.0f, 0.01f, 20.0f, 1.0f];
   l.computeRadius();
   return l;
 }
