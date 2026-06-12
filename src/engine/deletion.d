@@ -6,6 +6,7 @@
 import engine;
 
 import buffer : cleanup;
+import framebuffer : cleanup;
 
 struct DeletionQueue {
   void delegate()[] queue;
