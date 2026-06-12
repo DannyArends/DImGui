@@ -10,7 +10,7 @@ import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : updateSSBO;
 import textures : mapTextures;
-import vector : normalize, vAdd, vSub, negate, vMul, xyz;
+import vector : dot, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
 import matrix : degree, translate;
 
@@ -172,13 +172,27 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
 /** Disco beam */
 @nogc pure float beam(float t, float speed, float freq, float phase) nothrow { return abs(sin(t * speed * freq + phase)) * 500.0f; }
 
-/** Select which lights cast shadows this frame; writes cull[1] as the shadow flag. */
+/** Shadow importance: brighter & nearer scores higher; <=0 means ineligible. */
+@nogc float shadowScore(ref Light light, float[3] eye) nothrow {
+  if(light.directional || !light.enabled) return -1.0f;
+  float[3] d = vSub(light.position.xyz, eye);
+  return max(light.intensity[0], light.intensity[1], light.intensity[2]) / (dot(d, d) + 1.0f);
+}
+
+/** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
 void computeActiveLighting(ref App app) {
-  uint shadowed = 0;
-  foreach(ref light; app.lights) {
-    bool doesCast = light.enabled && shadowed < app.shadows.budget;
-    light.cull[1] = doesCast ? 1.0f : -1.0f;
-    if(doesCast) shadowed++;
+  auto score = new float[app.lights.length];   // >0 eligible point light, <=0 ineligible/taken
+  foreach(i, ref light; app.lights) {
+    light.cull[1] = (light.directional && light.enabled) ? 1.0f : -1.0f;
+    score[i] = light.shadowScore(app.camera.position);
+  }
+
+  for(uint picked = 0; picked < app.shadows.budget; picked++) {
+    size_t best = size_t.max;
+    foreach(i; 0 .. app.lights.length) { if(score[i] > 0.0f && (best == size_t.max || score[i] > score[best])) best = i; }
+    if(best == size_t.max) break;
+    app.lights[best].cull[1] = 1.0f;
+    score[best] = -1.0f;
   }
 }
 
