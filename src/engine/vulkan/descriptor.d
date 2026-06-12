@@ -247,8 +247,7 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write,
   }
 }
 
-/** Update the DescriptorSet
- */
+/** Update the DescriptorSet */
 void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet, uint syncIndex = 0) {
   if(app.trace) SDL_Log("updateDescriptorSet");
   VkWriteDescriptorSet[] descriptorWrites;  // DescriptorSet write commands

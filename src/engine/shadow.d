@@ -77,7 +77,6 @@ void resizeShadowMap(ref App app, size_t l, uint size) {
 
   // new framebuffer bound to the new view at the new size
   app.shadows.renderPass.framebuffers[l] = app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], size, size, "Shadow", l);
-
   app.shadows.shadowDescriptorsDirty[] = true;
 }
 
