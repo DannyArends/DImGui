@@ -35,7 +35,7 @@ VkSampleCountFlagBits getMSAASamples(ref App app) {
   return VK_SAMPLE_COUNT_1_BIT;
 }
 
-// Create Logical Device (with 1 queue)
+/** Create Logical Device (with 1 queue) */
 void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   app.pickPhysicalDevice(device);
 
