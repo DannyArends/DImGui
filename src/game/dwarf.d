@@ -270,9 +270,9 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   DrawInstance inst = DrawInstance([0, 0], d.color, Matrix.init);
   inst = position(inst, d.visualPos);
   app.world.dwarves.instances ~= inst;
-  app.world.dwarves ~= d;
   app.addLight(torchLight(d.visualPos));
   d.lightIndex = app.lights.length - 1;
+  app.world.dwarves ~= d;
 }
 
 /** Spawn a Dwarf */
