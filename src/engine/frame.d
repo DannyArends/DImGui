@@ -6,7 +6,7 @@
 import engine;
 
 import bone : updateBoneOffsets;
-import descriptor : updateDescriptorSetByKey, createDescriptors;
+import descriptor : repointDirtyDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 import imgui : recordImGuiCommandBuffer;
@@ -28,13 +28,6 @@ void waitForFrame(ref App app) {
   }
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
-
-  if((app.buffers.descriptorsDirty.length && app.buffers.descriptorsDirty[app.syncIndex]) || app.shadows.shadowDescriptorsDirty[app.syncIndex]) {
-    foreach(key; app.sets.keys) app.updateDescriptorSetByKey(key, app.syncIndex);
-    if(app.buffers.descriptorsDirty.length) app.buffers.descriptorsDirty[app.syncIndex] = false;
-    app.shadows.shadowDescriptorsDirty[app.syncIndex] = false;
-  }
-
   app.bufferDeletionQueue.flush();
 }
 
@@ -65,7 +58,7 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
   app.timed!updateRenderUBO(app.shaders, app.syncIndex);
   app.computeActiveLighting();
-
+  app.repointDirtyDescriptors();
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
