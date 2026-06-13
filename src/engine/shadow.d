@@ -260,19 +260,19 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
 
     auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
+    auto ext = app.shadows.images[s].extent;
 
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
       renderPass: app.shadows.renderPass,
-      framebuffer: app.shadows.renderPass.framebuffers[l],
-      renderArea: { extent: { width: app.shadows.images[l].extent.width, height: app.shadows.images[l].extent.height } },
+      framebuffer: app.shadows.renderPass.framebuffers[s],
+      renderArea: { extent: { width: ext.width, height: ext.height } },
       clearValueCount: 1,
       pClearValues: &clearDepth,
     };
     vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
 
-    auto ext = app.shadows.images[l].extent;
     VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
     VkRect2D   sc = { extent: { width: ext.width, height: ext.height } };
     vkCmdSetViewport(cmd, 0, 1, &vp);
