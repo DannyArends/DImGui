@@ -6,7 +6,7 @@
 import engine;
 
 import bone : updateBoneOffsets;
-import descriptor : updateDescriptorSet, createDescriptors;
+import descriptor : updateDescriptorSetByKey, createDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
 import compute : recordComputeCommandBuffer, updateComputeUBO;
 import imgui : recordImGuiCommandBuffer;
@@ -29,18 +29,10 @@ void waitForFrame(ref App app) {
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
 
-  if(app.shadows.shadowDescriptorsDirty[app.syncIndex]) {     // re-point this set; it's now idle
-    app.updateDescriptorSet(app.shaders, app.sets[Stage.RENDER], app.syncIndex);
+  if((app.buffers.descriptorsDirty.length && app.buffers.descriptorsDirty[app.syncIndex]) || app.shadows.shadowDescriptorsDirty[app.syncIndex]) {
+    foreach(key; app.sets.keys) app.updateDescriptorSetByKey(key, app.syncIndex);
+    if(app.buffers.descriptorsDirty.length) app.buffers.descriptorsDirty[app.syncIndex] = false;
     app.shadows.shadowDescriptorsDirty[app.syncIndex] = false;
-  }
-
-  if(app.buffers.descriptorsDirty.length && app.buffers.descriptorsDirty[app.syncIndex]) {
-    app.updateDescriptorSet(app.shaders, app.sets[Stage.RENDER], app.syncIndex);
-    app.updateDescriptorSet(app.shadows.shaders, app.sets[Stage.SHADOWS], app.syncIndex);
-    if(app.hasCompute) {
-      foreach(ref shader; app.compute.shaders){ app.updateDescriptorSet([shader], app.sets[shader.path], app.syncIndex); }
-    }
-    app.buffers.descriptorsDirty[app.syncIndex] = false;
   }
 
   app.bufferDeletionQueue.flush();

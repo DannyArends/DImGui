@@ -219,6 +219,17 @@ void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descri
   }
 }
 
+/** Re-point one descriptor set (by key) for a syncIndex, using whichever shaders own it. */
+void updateDescriptorSetByKey(ref App app, string key, uint syncIndex) {
+  switch(key) {
+    case Stage.RENDER: app.updateDescriptorSet(app.shaders, app.sets[key], syncIndex); break;
+    case Stage.SHADOWS: app.updateDescriptorSet(app.shadows.shaders, app.sets[key], syncIndex); break;
+    case Stage.POST: app.updateDescriptorSet(app.postProcess, app.sets[key], syncIndex); break;
+    case Stage.IMGUI: break;
+    default: foreach(ref s; app.compute.shaders) { if(s.path == key){ app.updateDescriptorSet([s], app.sets[key], syncIndex); break; } }
+  }
+}
+
 /** Write a single descriptor (buffer or image) into the write + info arrays */
 void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[] infoIndex,
                      ref VkDescriptorBufferInfo[] bufferInfos, ref VkDescriptorImageInfo[] imageInfos,
