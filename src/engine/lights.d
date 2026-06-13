@@ -35,6 +35,10 @@ struct Light {
   @property @nogc pure float radius() nothrow { return cull[0]; }
   @property @nogc pure float pitch() nothrow { return(degree(asin(-direction.xyz.normalize()[1]))); }
   @property @nogc pure float yaw() nothrow { return(degree(atan2(direction.xyz.normalize()[0], direction.xyz.normalize()[2]))); }
+  @nogc pure void computeCone() nothrow {
+    cull[2] = cos(properties[2] * cast(float)(PI / 180.0)); // cosOuter
+    cull[3] = cos(properties[2] * 0.5f * cast(float)(PI / 180.0)); // cosInner
+  }
 }
 
 enum Lights : Light {
@@ -61,7 +65,7 @@ Light torchLight(float[3] pos, float[4] color) {
   l.position   = [pos[0], pos[1] + TORCH_HEIGHT, pos[2], 1.0f];
   l.intensity  = [color[0] * 10.0f, color[1] * 10.0f, color[2] * 10.0f, 1.0f];
   l.direction  = [0.0f, -1.0f, 0.0f, 0.0f];
-  l.properties = [0.0f, 0.01f, 20.0f, 1.0f];
+  l.properties = [0.0f, 0.01f, 35.0f, 1.0f];
   l.computeRadius();
   return l;
 }
@@ -204,6 +208,7 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
 void computeActiveLighting(ref App app) {
   auto score = new float[app.lights.length];   // >0 eligible point light, <=0 ineligible/taken
   foreach(i, ref light; app.lights) {
+    light.computeCone();
     light.cull[1] = (light.directional && light.enabled) ? 1.0f : -1.0f;
     score[i] = light.shadowScore(app.camera.position);
   }
