@@ -9,9 +9,7 @@ import images : createImage, nameImageBuffer, cleanup, ImageBuffer;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
 
-void cleanup(ref App app, VkFramebuffer fb) {
-  if(fb) vkDestroyFramebuffer(app.device, fb, app.allocator);
-}
+void cleanup(ref App app, VkFramebuffer fb) { vkDestroyFramebuffer(app.device, fb, app.allocator); }
 
 /** Function to create an HDR color image and its view (MSAA if enabled) */
 void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits flag, VkMemoryPropertyFlags properties) {
@@ -41,7 +39,7 @@ VkFramebuffer createFramebuffer(ref App app, ref RenderPass pass, VkImageView[] 
 void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, uint width, uint height, string label, ref DeletionQueue queue) {
   pass.framebuffers.length = attachmentSets.length;
   foreach(i, views; attachmentSets) { pass.framebuffers[i] = app.createFramebuffer(pass, views, width, height, label, i); }
-  queue.add((){ foreach(fb; pass.framebuffers) vkDestroyFramebuffer(app.device, fb, app.allocator); });
+  queue.add((){ foreach(fb; pass.framebuffers){ vkDestroyFramebuffer(app.device, fb, app.allocator); } });
 }
 
 /** Create framebuffers for Rendering, Post-processing, and ImGui, for each SwapChain ImageView 

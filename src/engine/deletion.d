@@ -33,9 +33,9 @@ struct CheckedDeletionQueue {
 
 /** Defer destruction of any resource until its frame's fence signals (or force). */
 void deAllocate(T)(ref App app, T object) {
-  auto fence = app.fences[app.syncIndex].renderInFlight;
+  auto deadline = app.totalFramesRendered + app.framesInFlight;
   app.bufferDeletionQueue.add((bool force){
-    if(force || vkGetFenceStatus(app.device, fence) == VK_SUCCESS) { app.cleanup(object); return true; }
+    if(force || app.totalFramesRendered >= deadline) { app.cleanup(object); return true; }
     return false;
   });
 }
