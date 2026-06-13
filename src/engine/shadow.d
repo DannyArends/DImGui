@@ -19,7 +19,7 @@ import uniforms : forEachUBO;
 import vector : xyz;
 import validation : popLabel, pushLabel;
 
-enum MAX_SHADOW_MAPS = 64;
+enum MAX_SHADOW_MAPS = 256; // TODO: This puts a hard cap on lights due to the requirement that every light has a shadowmap
 
 struct ShadowMap {
   ImageBuffer[] images;
