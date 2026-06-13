@@ -37,11 +37,11 @@ const float EPS = 1e-6;
 
 struct Light {
   mat4 lightProjView; /// Combined light's projection * light's view matrix
-  vec4 position;      /// Position of the light
+  vec4 position;      /// Position of the light; w==0: directional, w!=0: point/spot
   vec4 intensity;     /// Light intensity (color)
   vec4 direction;     /// Light direction
   vec4 properties;    /// [ambient, attenuation, angle, enabled]
-  vec4 cull;          /// [radius, shadowSlot, reserved, reserved]
+  vec4 cull;          /// [radius, shadow map index (-1 = none), cosOuter, cosInner]
 };
 
 struct Bone {
