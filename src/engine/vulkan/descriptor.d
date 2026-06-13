@@ -220,9 +220,8 @@ void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descri
 }
 
 /** Write a single descriptor (buffer or image) into the write + info arrays */
-void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write,
-                     ref VkDescriptorBufferInfo[] bufferInfos,
-                     ref VkDescriptorImageInfo[] imageInfos,
+void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[] infoIndex,
+                     ref VkDescriptorBufferInfo[] bufferInfos, ref VkDescriptorImageInfo[] imageInfos,
                      Descriptor d, VkDescriptorSet dst, uint syncIndex) {
   size_t start = imageInfos.length;
   // SSBO Buffer Write
@@ -230,20 +229,23 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write,
     if(app.verbose) SDL_Log("writeDescriptor %s = %d (%d x %d)", toStringz(d.base), app.buffers[d.base].size, app.buffers[d.base].stride, app.buffers[d.base].nObjects);
     uint idx = syncIndex % cast(uint)app.buffers[d.base].length;
     bufferInfos ~= VkDescriptorBufferInfo(app.buffers[d.base][idx].buffer, 0, app.buffers[d.base].size);
-    write ~= makeWrite(dst, d.binding, d.type, null, &bufferInfos[$-1]);
+    write ~= makeWrite(dst, d.binding, d.type, null, null);
+    infoIndex ~= bufferInfos.length - 1;
   }
   // Uniform Buffer Write
   if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
     if(app.verbose) SDL_Log("writeDescriptor UBO[%s] #%d", toStringz(d.base), syncIndex);
     bufferInfos ~= VkDescriptorBufferInfo(app.ubos[d.base].buffers[syncIndex], 0, d.bytes);
-    write ~= makeWrite(dst, d.binding, d.type, null, &bufferInfos[$-1]);
+    write ~= makeWrite(dst, d.binding, d.type, null, null);
+    infoIndex ~= bufferInfos.length - 1;
   }
   // Image sampler / Compute Stored Image Write
   if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
     app.writeImageInfos(imageInfos, d);
-    VkWriteDescriptorSet set = makeWrite(dst, d.binding, d.type, &imageInfos[start], null);
+    VkWriteDescriptorSet set = makeWrite(dst, d.binding, d.type, null, null);
     set.descriptorCount = cast(uint)(imageInfos.length - start);
     write ~= set;
+    infoIndex ~= start;
   }
 }
 
@@ -253,13 +255,21 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
   VkWriteDescriptorSet[] descriptorWrites;  // DescriptorSet write commands
   VkDescriptorBufferInfo[] bufferInfos;     // Buffer information for this update
   VkDescriptorImageInfo[] imageInfos;       // Image information for this update
+  size_t[] infoIndex;                       // per-write: slot into bufferInfos/imageInfos (array picked by type)
 
   foreach(shader; shaders) {
     foreach(d; shader.descriptors) {
       if(app.trace) SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", d.binding, d)));
-      app.writeDescriptor(descriptorWrites, bufferInfos, imageInfos, d, dstSet[syncIndex], syncIndex);
+      app.writeDescriptor(descriptorWrites, infoIndex, bufferInfos, imageInfos, d, dstSet[syncIndex], syncIndex);
     }
+  }
+
+  foreach(i, idx; infoIndex) {              // arrays are final now — addresses are stable
+    auto t = descriptorWrites[i].descriptorType;
+    if(t == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER || t == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+      descriptorWrites[i].pBufferInfo = &bufferInfos[idx];
+    else
+      descriptorWrites[i].pImageInfo = &imageInfos[idx];
   }
   vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null);
 }
-
