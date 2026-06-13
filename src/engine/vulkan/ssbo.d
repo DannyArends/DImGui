@@ -63,7 +63,9 @@ void createAllocation(ref App app, ref GPUAllocation a, ref bool dirty, uint siz
  *  a host-visible buffer driven by updateSSBO needs framesInFlight copies or the CPU races the GPU. */
 void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, uint copies = 0, bool deviceLocal = false) {
   if(copies == 0) copies = app.framesInFlight;
-  if(app.verbose) SDL_Log("createSSBO %s, stride = %d, objects: %d, copies: %d, deviceLocal: %d", toStringz(d.base), d.bytes, nObjects, copies, deviceLocal);
+  if(app.verbose) {
+    SDL_Log("createSSBO %s, stride = %d, objects: %d, copies: %d, deviceLocal: %d", toStringz(d.base), d.bytes, nObjects, copies, deviceLocal);
+  }
   if(d.base in app.buffers) return;
   app.buffers[d.base] = SSBO();
   app.buffers[d.base].nObjects = nObjects;
@@ -107,7 +109,7 @@ void createSSBO(T)(ref App app, const Descriptor descriptor, ref SSBOList!T cont
 
 /** Upload container data to GPU, grow and rebuild if overflow */
 void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint syncIndex) {
-  if(app.buffers[descriptor.base].deviceLocal){ SDL_Log(toStringz(format("Error: Trying to update a device local SSBO: %s", descriptor.base))); return; }
+  if(app.buffers[descriptor.base].deviceLocal){ SDL_Log(toStringz(format("Error: Cannot update device local SSBO: %s", descriptor.base))); return; }
   uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;
   if(size > app.buffers[descriptor.base].size) {
