@@ -19,7 +19,7 @@ import uniforms : forEachUBO;
 import vector : xyz;
 import validation : popLabel, pushLabel;
 
-enum MAX_SHADOW_MAPS = 16; // TODO: This puts a hard cap on lights due to the requirement that every light has a shadowmap
+enum MAX_SHADOW_MAPS = 16; // Maximum number of shadown maps, limits budget
 
 struct ShadowMap {
   ImageBuffer[] images;
@@ -31,7 +31,7 @@ struct ShadowMap {
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
   uint dimension = isAndroid ? 512 : 4096;  /// Shadowmap dimension
-  uint budget = 8;                          /// Max lights casting shadows per frame (stage 1: first-K)
+  uint budget = MAX_SHADOW_MAPS;            /// Max lights casting shadows per frame (stage 1: first-K)
   uint shrinkDelay = 30;                    /// Number of frames before shrinking
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
