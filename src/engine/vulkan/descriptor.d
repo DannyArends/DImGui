@@ -259,17 +259,16 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
 
   foreach(shader; shaders) {
     foreach(d; shader.descriptors) {
-      if(app.trace) SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", d.binding, d)));
+      if(app.trace) { SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", d.binding, d))); }
       app.writeDescriptor(descriptorWrites, infoIndex, bufferInfos, imageInfos, d, dstSet[syncIndex], syncIndex);
     }
   }
 
   foreach(i, idx; infoIndex) {              // arrays are final now — addresses are stable
     auto t = descriptorWrites[i].descriptorType;
-    if(t == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER || t == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+    if(t == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER || t == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){
       descriptorWrites[i].pBufferInfo = &bufferInfos[idx];
-    else
-      descriptorWrites[i].pImageInfo = &imageInfos[idx];
+    }else{ descriptorWrites[i].pImageInfo = &imageInfos[idx]; }
   }
   vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null);
 }

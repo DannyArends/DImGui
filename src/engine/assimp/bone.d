@@ -71,13 +71,10 @@ void mergeBones(ref App app, ref OpenAsset obj) {
   foreach(ref v; obj.vertices) {
     for(uint i = 0; i < v.bones.length; i++) { if(v.bones[i] in indexMap) v.bones[i] = indexMap[v.bones[i]]; }
   }
-  // Grow boneOffsets and trigger SSBO rebuild if needed
+  // Grow CPU-side boneOffsets; the GPU BoneMatrices buffer grows lazily in updateSSBO when it overflows.
   if(app.bones.length > app.boneOffsets.length) {
     if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
     while(app.boneOffsets.length < app.bones.length) app.boneOffsets.length *= 2;
-    // TODO: growing boneOffsets via app.rebuild recreates the whole swapchain/pipeline.
-    // Replace with a targeted buffer recreate + descriptor update to avoid the frame hitch.
-    app.rebuild = true;
   }
 }
 

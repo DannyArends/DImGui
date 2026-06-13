@@ -8,7 +8,7 @@ import engine;
 import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
-import ssbo : updateSSBO;
+import ssbo : growSSBO, updateSSBO;
 import shadow : resizeShadowMap, addShadowMap;
 import textures : mapTextures;
 import vector : dot, normalize, vAdd, vSub, negate, vMul, xyz;
@@ -220,6 +220,14 @@ void computeActiveLighting(ref App app) {
   foreach(l, ref light; app.lights) {
     uint desired = (light.cull[1] < 0.0f) ? 32u : (light.directional ? 4096u : 1024u);
     app.resizeShadowMap(l, desired);   // no-ops if already that size
+  }
+
+  if(app.hasCompute && "ClusterCounter" in app.buffers) {
+    uint used = *cast(uint*)app.buffers["ClusterCounter"][0].data;
+    if(used > app.clusterCapacity) {
+      app.clusterCapacity = used * 2;
+      app.growSSBO("ClusterLights", app.clusterCapacity);
+    }
   }
 }
 
