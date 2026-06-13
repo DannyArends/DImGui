@@ -75,6 +75,8 @@ void mergeBones(ref App app, ref OpenAsset obj) {
   if(app.bones.length > app.boneOffsets.length) {
     if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
     while(app.boneOffsets.length < app.bones.length) app.boneOffsets.length *= 2;
+    // TODO: growing boneOffsets via app.rebuild recreates the whole swapchain/pipeline.
+    // Replace with a targeted buffer recreate + descriptor update to avoid the frame hitch.
     app.rebuild = true;
   }
 }
