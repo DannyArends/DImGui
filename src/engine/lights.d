@@ -48,6 +48,7 @@ enum Lights : Light {
 
 struct Lighting {
   SSBOList!Light lights;
+  uint[] shadowIdle;
   float sunTime = 8.0f;
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
@@ -215,11 +216,13 @@ void computeActiveLighting(ref App app) {
     score[best] = -1.0f;
   }
 
-  // Drive shadow map sizes from the selection (shrinks immediately)
-  // TODO: Add lazy shrink (only shrink after N idle frames)
+  if(app.lights.shadowIdle.length != app.lights.length){ app.lights.shadowIdle.length = app.lights.length; }
   foreach(l, ref light; app.lights) {
-    uint desired = (light.cull[1] < 0.0f) ? 32u : (light.directional ? 4096u : 1024u);
-    app.resizeShadowMap(l, desired);   // no-ops if already that size
+    bool active = light.cull[1] > 0.0f;
+    if(active) {
+      app.lights.shadowIdle[l] = 0;
+      app.resizeShadowMap(l, light.directional ? 4096u : 1024u);
+    } else if(++app.lights.shadowIdle[l] > app.shadows.shrinkDelay) { app.resizeShadowMap(l, 32u); }
   }
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
