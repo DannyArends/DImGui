@@ -73,8 +73,8 @@ void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, uint copi
   app.buffers[d.base].deviceLocal = deviceLocal;
   app.buffers[d.base].length = app.buffers[d.base].dirty.length = copies;
 
-  for(uint i = 0; i < copies; i++) { 
-    app.createAllocation(app.buffers[d.base][i], app.buffers[d.base].dirty[i], app.buffers[d.base].size, deviceLocal); 
+  foreach(i, ref allocation; app.buffers[d.base]) {
+    app.createAllocation(allocation, app.buffers[d.base].dirty[i], app.buffers[d.base].size, deviceLocal); 
   }
   app.nameSSBO(app.buffers[d.base], d.base);
 
@@ -90,15 +90,14 @@ void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, uint copi
 void growSSBO(ref App app, string base, uint nObjects) {
   bool deviceLocal = app.buffers[base].deviceLocal;
   app.buffers[base].nObjects = nObjects;
-  uint size = app.buffers[base].size;
 
   foreach(i, ref allocation; app.buffers[base]) {
     app.deAllocate(allocation);
-    app.createAllocation(allocation, app.buffers[base].dirty[i], size, deviceLocal);
+    app.createAllocation(allocation, app.buffers[base].dirty[i], app.buffers[base].size, deviceLocal);
   }
   app.nameSSBO(app.buffers[base], base);
   app.buffers.descriptorsDirty[] = true;
-  if(app.verbose) SDL_Log("growSSBO %s -> %d objects (%d bytes)", toStringz(base), nObjects, size);
+  if(app.verbose) SDL_Log("growSSBO %s -> %d objects (%d bytes)", toStringz(base), nObjects, app.buffers[base].size);
 }
 
 /** Create GPU SSBO from container */
