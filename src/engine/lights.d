@@ -21,11 +21,11 @@ enum TORCH_HEIGHT = 5.0f;
 
 struct Light {
   Matrix lightSpaceMatrix;
-  float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light Position
+  float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Position of the light; w==0: directional, w!=0: point/spot
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
   float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, cone half-angle, enabled]
-  float[4] cull       = [0.0f,-1.0f, 0.0f, 0.0f];    /// [radius, shadowSlot, reserved, reserved]
+  float[4] cull       = [0.0f,-1.0f, 0.0f, 0.0f];    /// [radius, shadow map index (-1 = none), cosOuter, cosInner]
 
   @property @nogc pure void angle(float v) nothrow { properties[2] = v; }
   @property @nogc pure float angle() nothrow { return properties[2]; }
