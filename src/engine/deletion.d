@@ -25,9 +25,9 @@ struct CheckedDeletionQueue {
 
   void add(bool delegate(bool) fn){ queue ~= fn; }
   void flush(bool force = false) {
-    size_t[] idx;
-    foreach_reverse(i, fn; queue){ if(fn(force)) idx ~= i;}
-    foreach(i; idx) { queue = queue.remove(i); }
+    bool delegate(bool)[] keep;
+    foreach(fn; queue){ if(!fn(force)) keep ~= fn; }
+    queue = keep;
   }
 }
 
