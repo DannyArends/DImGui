@@ -43,7 +43,7 @@ float calculateShadow(vec4 position, uint i) {
   for (int x = -sampleCount; x <= sampleCount; ++x) {
     for (int y = -sampleCount; y <= sampleCount; ++y) {
       vec2 offset = vec2(x, y) * texelSize * range;
-      shadowFactor += texture(shadowMap[i], vec3(projCoords.xy + offset, projCoords.z));
+      shadowFactor += texture(shadowMap[s], vec3(projCoords.xy + offset, projCoords.z));
     }
   }
   return shadowFactor / float((2 * sampleCount + 1) * (2 * sampleCount + 1));
