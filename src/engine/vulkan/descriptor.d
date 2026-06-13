@@ -219,25 +219,20 @@ void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descri
   }
 }
 
-/** Re-point one descriptor set (by key) for a syncIndex, using whichever shaders own it. */
-void updateDescriptorSetByKey(ref App app, string key, uint syncIndex) {
-  switch(key) {
-    case Stage.RENDER: app.updateDescriptorSet(app.shaders, app.sets[key], syncIndex); break;
-    case Stage.SHADOWS: app.updateDescriptorSet(app.shadows.shaders, app.sets[key], syncIndex); break;
-    case Stage.POST: app.updateDescriptorSet(app.postProcess, app.sets[key], syncIndex); break;
-    case Stage.IMGUI: break;
-    default: foreach(ref s; app.compute.shaders) { if(s.path == key){ app.updateDescriptorSet([s], app.sets[key], syncIndex); break; } }
-  }
-}
-
 /** Re-point descriptor sets whose buffers/images were swapped this frame. Safe here: this syncIndex's
  *  render+compute fences cleared in waitForFrame and nothing has bound sets[syncIndex] yet this frame. */
 void repointDirtyDescriptors(ref App app) {
-  bool ssbo   = app.buffers.descriptorsDirty.length && app.buffers.descriptorsDirty[app.syncIndex];
-  bool shadow = app.shadows.shadowDescriptorsDirty[app.syncIndex];
-  if(!ssbo && !shadow) return;
-  foreach(key; app.sets.keys) app.updateDescriptorSetByKey(key, app.syncIndex);
-  if(app.buffers.descriptorsDirty.length) app.buffers.descriptorsDirty[app.syncIndex] = false;
+  if(!app.buffers.descriptorsDirty[app.syncIndex] && !app.shadows.shadowDescriptorsDirty[app.syncIndex]) return;
+  foreach(key, sets; app.sets) {
+    switch(key) {
+      case Stage.RENDER:  app.updateDescriptorSet(app.shaders, sets, app.syncIndex); break;
+      case Stage.SHADOWS: app.updateDescriptorSet(app.shadows.shaders, sets, app.syncIndex); break;
+      case Stage.POST:    app.updateDescriptorSet(app.postProcess, sets, app.syncIndex); break;
+      case Stage.IMGUI:   break;
+      default: foreach(ref s; app.compute.shaders) if(s.path == key){ app.updateDescriptorSet([s], sets, app.syncIndex); break; }
+    }
+  }
+  app.buffers.descriptorsDirty[app.syncIndex] = false;
   app.shadows.shadowDescriptorsDirty[app.syncIndex] = false;
 }
 

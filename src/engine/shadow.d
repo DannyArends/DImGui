@@ -132,7 +132,7 @@ void createShadowMapRenderPass(ref App app) {
 /** Create the shadow mapping pipeline */
 void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline creation");
-  app.shadows.shadowDescriptorsDirty.length = app.framesInFlight;   // per-syncIndex
+  app.buffers.descriptorsDirty.length = app.shadows.shadowDescriptorsDirty.length = app.framesInFlight;   // per-syncIndex
   app.shadows.shadowDescriptorsDirty[] = true; // force initial descriptor write
 
   VkPushConstantRange pushConstantRange = { stageFlags: VK_SHADER_STAGE_VERTEX_BIT, offset: 0, size: uint.sizeof };
