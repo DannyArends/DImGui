@@ -69,8 +69,8 @@ void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, uint copi
     if(app.verbose) SDL_Log("Deleting SSBO at %s", toStringz(d.base));
     foreach(ref allocation; app.buffers[d.base]) {
       if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
-      vkFreeMemory(app.device, allocation.memory, app.allocator);
       vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
+      vkFreeMemory(app.device, allocation.memory, app.allocator);
     }
     app.buffers.ssbos.remove(d.base);
   });
