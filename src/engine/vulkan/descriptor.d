@@ -287,5 +287,5 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
       descriptorWrites[i].pBufferInfo = &bufferInfos[idx];
     }else{ descriptorWrites[i].pImageInfo = &imageInfos[idx]; }
   }
-  vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null);
+  if(descriptorWrites.length){ vkUpdateDescriptorSets(app.device, cast(uint)descriptorWrites.length, &descriptorWrites[0], 0, null); }
 }
