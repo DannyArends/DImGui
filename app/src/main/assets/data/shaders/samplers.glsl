@@ -25,7 +25,8 @@ vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoor
 
 // Function to calculate the shadow factor
 float calculateShadow(vec4 position, uint i) {
-  if (lightSSBO.lights[i].cull[1] < 0.0) return 1.0; // not a shadow-caster this frame
+  int s = int(lightSSBO.lights[i].cull[1]);
+  if (s < 0) return 1.0;
   vec3 projCoords = position.xyz / position.w;
   projCoords.xy = projCoords.xy * 0.5 + 0.5;
 

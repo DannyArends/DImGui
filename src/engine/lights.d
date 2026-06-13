@@ -9,7 +9,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : resizeShadowMap, addShadowMap;
+import shadow : resizeShadowMap, initShadowPool, MAX_SHADOW_MAPS;
 import textures : mapTextures;
 import vector : dot, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -73,7 +73,7 @@ Light torchLight(float[3] pos, float[4] color) {
 void addLight(ref App app, Light light) {
   app.lights ~= light;
   app.buffers["LightMatrices"].dirty[] = true;
-  app.addShadowMap();
+  app.initShadowPool();
 }
 
 /** Compute the size of the light radius */
@@ -206,28 +206,32 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
 
 /** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
 void computeActiveLighting(ref App app) {
-  auto score = new float[app.lights.length];   // >0 eligible point light, <=0 ineligible/taken
+  auto score = new float[app.lights.length];
+  float slot = 0.0f;
   foreach(i, ref light; app.lights) {
     light.computeCone();
-    light.cull[1] = (light.directional && light.enabled) ? 1.0f : -1.0f;
-    score[i] = light.shadowScore(app.camera.position);
+    if(light.directional && light.enabled && slot < MAX_SHADOW_MAPS) {
+      light.cull[1] = slot++;                 // sun/directionals always cast, first slots
+      score[i] = -1.0f;
+    } else {
+      light.cull[1] = -1.0f;                  // -1 = not casting
+      score[i] = light.shadowScore(app.camera.position);
+    }
   }
 
-  for(uint picked = 0; picked < app.shadows.budget; picked++) {
+  for(uint picked = 0; picked < app.shadows.budget && slot < MAX_SHADOW_MAPS; picked++) {
     size_t best = size_t.max;
     foreach(i; 0 .. app.lights.length) { if(score[i] > 0.0f && (best == size_t.max || score[i] > score[best])) best = i; }
     if(best == size_t.max) break;
-    app.lights[best].cull[1] = 1.0f;
+    app.lights[best].cull[1] = slot++;
     score[best] = -1.0f;
   }
 
   if(app.lights.shadowIdle.length != app.lights.length){ app.lights.shadowIdle.length = app.lights.length; }
-  foreach(l, ref light; app.lights) {
-    bool active = light.cull[1] > 0.0f;
-    if(active) {
-      app.lights.shadowIdle[l] = 0;
-      app.resizeShadowMap(l, light.directional ? 4096u : 1024u);
-    } else if(++app.lights.shadowIdle[l] > app.shadows.shrinkDelay) { app.resizeShadowMap(l, 32u); }
+  foreach(ref light; app.lights) {
+    int s = cast(int)light.cull[1];
+    if(s < 0) continue;
+    app.resizeShadowMap(s, light.directional ? 4096u : 1024u);
   }
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
