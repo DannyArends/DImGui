@@ -230,6 +230,17 @@ void updateDescriptorSetByKey(ref App app, string key, uint syncIndex) {
   }
 }
 
+/** Re-point descriptor sets whose buffers/images were swapped this frame. Safe here: this syncIndex's
+ *  render+compute fences cleared in waitForFrame and nothing has bound sets[syncIndex] yet this frame. */
+void repointDirtyDescriptors(ref App app) {
+  bool ssbo   = app.buffers.descriptorsDirty.length && app.buffers.descriptorsDirty[app.syncIndex];
+  bool shadow = app.shadows.shadowDescriptorsDirty[app.syncIndex];
+  if(!ssbo && !shadow) return;
+  foreach(key; app.sets.keys) app.updateDescriptorSetByKey(key, app.syncIndex);
+  if(app.buffers.descriptorsDirty.length) app.buffers.descriptorsDirty[app.syncIndex] = false;
+  app.shadows.shadowDescriptorsDirty[app.syncIndex] = false;
+}
+
 /** Write a single descriptor (buffer or image) into the write + info arrays */
 void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[] infoIndex,
                      ref VkDescriptorBufferInfo[] bufferInfos, ref VkDescriptorImageInfo[] imageInfos,
