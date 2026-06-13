@@ -19,7 +19,7 @@ import uniforms : forEachUBO;
 import vector : xyz;
 import validation : popLabel, pushLabel;
 
-enum MAX_SHADOW_MAPS = 256; // TODO: This puts a hard cap on lights due to the requirement that every light has a shadowmap
+enum MAX_SHADOW_MAPS = 16; // TODO: This puts a hard cap on lights due to the requirement that every light has a shadowmap
 
 struct ShadowMap {
   ImageBuffer[] images;
@@ -55,12 +55,11 @@ void createShadowMap(ref App app) {
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
-void addShadowMap(ref App app) {
-  if(app.shadows.images.length >= MAX_SHADOW_MAPS) return;
-  size_t l = app.shadows.images.length;
-  app.shadows.images ~= ImageBuffer();
-  app.shadows.renderPass.framebuffers ~= VkFramebuffer.init;   // slot for makeShadowMap to fill
-  app.makeShadowMap(l, 32);
+void initShadowPool(ref App app) {
+  if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
+  app.shadows.images.length = MAX_SHADOW_MAPS;
+  app.shadows.renderPass.framebuffers.length = MAX_SHADOW_MAPS;
+  for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(s, 32);
   app.shadows.shadowDescriptorsDirty[] = true;
 }
 
@@ -255,7 +254,8 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   app.shadows.lastShadowInstances = app.shadows.totalShadowInstances = 0;
   app.shadows.staticShadowInstances = app.shadows.dynamicShadowInstances = 0;
   for(uint l = 0; l < app.lights.length; l++) {
-    if(!app.lights[l].enabled || app.lights[l].cull[1] < 0.0f) continue;   // not enabled or selected to cast this frame
+    int s = cast(int)app.lights[l].cull[1];
+    if(!app.lights[l].enabled || s < 0) continue;
 
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
 
