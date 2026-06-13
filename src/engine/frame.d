@@ -34,6 +34,15 @@ void waitForFrame(ref App app) {
     app.shadows.shadowDescriptorsDirty[app.syncIndex] = false;
   }
 
+  if(app.buffers.descriptorsDirty.length && app.buffers.descriptorsDirty[app.syncIndex]) {
+    app.updateDescriptorSet(app.shaders, app.sets[Stage.RENDER], app.syncIndex);
+    if(app.hasCompute) {
+      foreach(ref shader; app.compute.shaders)
+        app.updateDescriptorSet([shader], app.sets[shader.path], app.syncIndex);
+    }
+    app.buffers.descriptorsDirty[app.syncIndex] = false;
+  }
+
   app.bufferDeletionQueue.flush();
 }
 
