@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : GPUAllocation, createBuffer;
+import buffer : createBuffer, deAllocate;
 import validation : nameVulkanObject;
 
 /** GPU SSBO: per-copy allocations, per-copy dirty flags, and layout. */
@@ -19,6 +19,13 @@ struct SSBO {
   bool deviceLocal;
 
   @property uint size(){ return nObjects * stride; }
+}
+
+/** All SSBOs + the per-syncIndex "an SSBO grew, re-point this set" flags. */
+struct SSBOStore {
+  SSBO[string] ssbos;
+  bool[] descriptorsDirty;   // per-syncIndex (length = framesInFlight)
+  alias ssbos this;
 }
 
 /** CPU+GPU SSBO container with capacity tracking */
@@ -65,8 +72,31 @@ void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, uint copi
       vkFreeMemory(app.device, allocation.memory, app.allocator);
       vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
     }
-    app.buffers.remove(d.base);
+    app.buffers.ssbos.remove(d.base);
   });
+}
+
+/** Grow an SSBO in place: recreate each copy at the new size, defer-delete the old copies,
+ *  remap host-visible data, flag descriptors for a targeted re-point. No swapchain/pipeline touch. */
+void growSSBO(ref App app, string base, uint nObjects) {
+  bool deviceLocal = app.buffers[base].deviceLocal;
+  app.buffers[base].nObjects = nObjects;
+  uint size = app.buffers[base].size;
+
+  VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+  foreach(i, ref allocation; app.buffers[base]) {
+    app.deAllocate(allocation);
+    app.createBuffer(&allocation.buffer, &allocation.memory, size, usage, props);
+    if(!deviceLocal) enforceVK(vkMapMemory(app.device, allocation.memory, 0, size, 0, &allocation.data));
+    app.buffers[base].dirty[i] = true;
+  }
+  app.nameSSBO(app.buffers[base], base);
+
+  if(app.buffers.descriptorsDirty.length != app.framesInFlight) app.buffers.descriptorsDirty.length = app.framesInFlight;
+  app.buffers.descriptorsDirty[] = true;
+  if(app.verbose) SDL_Log("growSSBO %s -> %d objects (%d bytes)", toStringz(base), nObjects, size);
 }
 
 /** Create GPU SSBO from container */
@@ -82,10 +112,8 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T contai
   if(size == 0) return;
   if(size > app.buffers[descriptor.base].size) {
     while(container.capacity * T.sizeof < size) container.capacity *= 2;
-    // TODO: growing SSBOs via app.rebuild recreates the whole swapchain/pipeline.
-    // Replace with a targeted buffer recreate + descriptor update to avoid the frame hitch.
-    app.rebuild = true;
-    return;
+    app.growSSBO(descriptor.base, cast(uint)container.capacity);
+    return;   // upload resumes next pass; dirty stays set
   }
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)container.length);

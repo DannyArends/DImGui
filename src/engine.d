@@ -42,7 +42,7 @@ struct App {
   Audio audio;                                                                  /// Sounds
   GameWindow[] gameWindows;                                                     /// Game windows
   WavFMT[] soundfx;                                                             /// Sound effects
-  SSBO[string] buffers;                                                         /// SSBO buffers
+  SSBOStore buffers;                                                            /// SSBO buffers + per-syncIndex descriptor re-point flags
   UBO[string] ubos;                                                             /// UBO buffers
   Lighting lights = {lights : {items: cast(Light[])[Lights.Sun, Lights.Red, Lights.Green, Lights.Blue]}};  /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
