@@ -10,20 +10,12 @@
 
 // Function to calculate vector position after animation
 vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
-  bool hasbone = false;
-  vec4 bonepos = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+  if (inWeights == vec4(0.0)) return inPos;
+  vec4 bonepos = vec4(0.0);
   for (int i = 0; i < 4; i++) {
-    float weight = inWeights[i];
-    if(weight > 0.0f) {
-      uint boneID = inBones[i];
-      mat4 boneTransform = boneSSBO.transforms[boneID].offset;
-      bonepos += (boneTransform * inPos) * weight;
-      hasbone = true;
-    }
+    if (inWeights[i] > 0.0) bonepos += (boneSSBO.transforms[inBones[i]].offset * inPos) * inWeights[i];
   }
-  vec4 finalPosition = inPos;
-  if(hasbone){ finalPosition = bonepos; }
-  return(finalPosition);
+  return bonepos;
 }
 
 // ambient returned via out; direct (diffuse) is the return value
