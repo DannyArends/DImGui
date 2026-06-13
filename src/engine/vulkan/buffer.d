@@ -9,6 +9,13 @@ import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
 import validation : nameVulkanObject;
 
+/** A bound GPU buffer: handle + its memory + mapped pointer (data == null, means device-local / unmapped). */
+struct GPUAllocation {
+  VkBuffer buffer;
+  VkDeviceMemory memory;
+  void* data;
+}
+
 struct GeometryBuffer(T = ubyte) {
   VkBuffer vb = null;            /// Vulkan Buffer pointer
   VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer

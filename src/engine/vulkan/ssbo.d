@@ -5,20 +5,20 @@
 
 import engine;
 
-import buffer : createBuffer;
+import buffer : GPUAllocation, createBuffer;
 import validation : nameVulkanObject;
 
-/** GPU SSBO buffers, memory, data and dirty flags */
+/** GPU SSBO: per-copy allocations, per-copy dirty flags, and layout. */
 struct SSBO {
-  VkBuffer[] buffers;
-  VkDeviceMemory[] memory;
-  void*[] data;
+  GPUAllocation[] allocations;
+  alias allocations this;
+
   bool[] dirty;
   uint nObjects;
   uint stride;
+  bool deviceLocal;
 
-  @property uint size(){ return(nObjects * stride); }
-  @property deviceLocal(){ return data is null; }
+  @property uint size(){ return nObjects * stride; }
 }
 
 /** CPU+GPU SSBO container with capacity tracking */
@@ -30,9 +30,9 @@ struct SSBOList(T) {
 
 /** Name SSBO buffers and memory for debugging */
 void nameSSBO(ref App app, SSBO ssbo, string name){
-  for(uint i = 0; i < ssbo.buffers.length; i++) {
-    app.nameVulkanObject(ssbo.buffers[i], toStringz(format("[SSBO-BUF] %s #%d", name, i)), VK_OBJECT_TYPE_BUFFER);
-    app.nameVulkanObject(ssbo.memory[i], toStringz(format("[SSBO-MEM] %s #%d", name, i)), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  for(uint i = 0; i < ssbo.length; i++) {
+    app.nameVulkanObject(ssbo[i].buffer, toStringz(format("[SSBO-BUF] %s #%d", name, i)), VK_OBJECT_TYPE_BUFFER);
+    app.nameVulkanObject(ssbo[i].memory, toStringz(format("[SSBO-MEM] %s #%d", name, i)), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
 }
 
@@ -46,24 +46,24 @@ void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, uint copi
   app.buffers[d.base] = SSBO();
   app.buffers[d.base].nObjects = nObjects;
   app.buffers[d.base].stride = cast(uint)d.bytes;
-  app.buffers[d.base].buffers.length = app.buffers[d.base].memory.length = app.buffers[d.base].dirty.length = copies;
-  if(!deviceLocal) app.buffers[d.base].data.length = copies;
+  app.buffers[d.base].deviceLocal = deviceLocal;
+  app.buffers[d.base].length = app.buffers[d.base].dirty.length = copies;
 
   VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   for(uint i = 0; i < copies; i++) {
-    app.createBuffer(&app.buffers[d.base].buffers[i], &app.buffers[d.base].memory[i], app.buffers[d.base].size, usage, props);
-    if(!deviceLocal) enforceVK(vkMapMemory(app.device, app.buffers[d.base].memory[i], 0, app.buffers[d.base].size, 0, &app.buffers[d.base].data[i]));
+    app.createBuffer(&app.buffers[d.base][i].buffer, &app.buffers[d.base][i].memory, app.buffers[d.base].size, usage, props);
+    if(!deviceLocal) enforceVK(vkMapMemory(app.device, app.buffers[d.base][i].memory, 0, app.buffers[d.base].size, 0, &app.buffers[d.base][i].data));
     app.buffers[d.base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[d.base], d.base);
 
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting SSBO at %s", toStringz(d.base));
-    for(uint i = 0; i < app.buffers[d.base].buffers.length; i++) {
-      if(app.buffers[d.base].data.length) vkUnmapMemory(app.device, app.buffers[d.base].memory[i]);
-      vkFreeMemory(app.device, app.buffers[d.base].memory[i], app.allocator);
-      vkDestroyBuffer(app.device, app.buffers[d.base].buffers[i], app.allocator);
+    foreach(ref allocation; app.buffers[d.base]) {
+      if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
+      vkFreeMemory(app.device, allocation.memory, app.allocator);
+      vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
     }
     app.buffers.remove(d.base);
   });
@@ -89,7 +89,7 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T contai
   }
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)container.length);
-  memcpy(app.buffers[descriptor.base].data[syncIndex], &container[0], size);
+  memcpy(app.buffers[descriptor.base][syncIndex].data, &container[0], size);
   app.buffers[descriptor.base].dirty[syncIndex] = false;
 }
 

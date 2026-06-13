@@ -152,8 +152,8 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   pushLabel(cmdBuffer, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
 
   if (baseName(fromStringz(shader.path)) == "cull.glsl") {
-    VkBuffer headBuf = app.buffers["ClusterHeads"].buffers[0];   // single copy
-    VkBuffer cursorBuf = app.buffers["ClusterCounter"].buffers[0];
+    VkBuffer headBuf   = app.buffers["ClusterHeads"][0].buffer;
+    VkBuffer cursorBuf = app.buffers["ClusterCounter"][0].buffer;
 
     vkCmdFillBuffer(cmdBuffer, headBuf, 0, VK_WHOLE_SIZE, 0xFFFFFFFF); // NIL
     vkCmdFillBuffer(cmdBuffer, cursorBuf, 0, VK_WHOLE_SIZE, 0);
@@ -185,10 +185,10 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
       nJobs[0] = app.buffers[shader.descriptors[d].base].nObjects;
       size = app.buffers[shader.descriptors[d].base].size;
       if(shader.descriptors[d].base == "currentFrame") { 
-        src = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
+        src = app.buffers[shader.descriptors[d].base][syncIndex].buffer;
       }
       if(shader.descriptors[d].base == "lastFrame") { 
-        dst = app.buffers[shader.descriptors[d].base].buffers[syncIndex];
+        dst = app.buffers[shader.descriptors[d].base][syncIndex].buffer;
       }
     }
   }

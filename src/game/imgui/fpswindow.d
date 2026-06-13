@@ -57,8 +57,8 @@ void showFPSContent(ref GameApp app, uint font = 0) {
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
     igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
     if("ClusterCounter" in app.buffers) {
-      uint used = *cast(uint*)app.buffers["ClusterCounter"].data[0];
-      uint cap  = app.buffers["ClusterLights"].nObjects;
+    uint used = *cast(uint*)app.buffers["ClusterCounter"][0].data;
+    uint cap  = app.buffers["ClusterLights"].nObjects;
       text("Light clusters: %s / %s%s", humanCount(used), humanCount(cap), used > cap ? " OVERFLOW" : "");
     }
     auto iV = app.objects.map!(o => o.vertexCount(app.showBounds)).sum();

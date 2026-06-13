@@ -68,7 +68,7 @@ void renderFrame(ref App app, double dt) {
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
     // TODO: growing ClusterLights via app.rebuild recreates the whole swapchain/pipeline.
     // Replace with a targeted buffer recreate + descriptor update to avoid the frame hitch.
-    uint used = *cast(uint*)app.buffers["ClusterCounter"].data[0];
+    uint used = *cast(uint*)app.buffers["ClusterCounter"][0].data;
     if(used > app.clusterCapacity) { app.clusterCapacity = used * 2; app.rebuild = true; }
   }
 

@@ -228,8 +228,8 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write,
   // SSBO Buffer Write
   if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
     if(app.verbose) SDL_Log("writeDescriptor %s = %d (%d x %d)", toStringz(d.base), app.buffers[d.base].size, app.buffers[d.base].stride, app.buffers[d.base].nObjects);
-    uint idx = syncIndex % cast(uint)app.buffers[d.base].buffers.length;
-    bufferInfos ~= VkDescriptorBufferInfo(app.buffers[d.base].buffers[idx], 0, app.buffers[d.base].size);
+    uint idx = syncIndex % cast(uint)app.buffers[d.base].length;
+    bufferInfos ~= VkDescriptorBufferInfo(app.buffers[d.base][idx].buffer, 0, app.buffers[d.base].size);
     write ~= makeWrite(dst, d.binding, d.type, null, &bufferInfos[$-1]);
   }
   // Uniform Buffer Write
