@@ -54,6 +54,7 @@ struct Lighting {
   alias lights this;
 }
 
+// TODO: torches are downward SPOT lights, true omni shadows need cube maps (engine uses one 2D map per light)
 Light torchLight(float[3] pos, float[4] color) {
   Light l;
   l.position   = [pos[0], pos[1] + TORCH_HEIGHT, pos[2], 1.0f];
@@ -214,7 +215,8 @@ void computeActiveLighting(ref App app) {
     score[best] = -1.0f;
   }
 
-  // Drive shadow map sizes from the selection (immediate shrink)
+  // Drive shadow map sizes from the selection (shrinks immediately)
+  // TODO: Add lazy shrink (only shrink after N idle frames)
   foreach(l, ref light; app.lights) {
     uint desired = (light.cull[1] < 0.0f) ? 32u : (light.directional ? 4096u : 1024u);
     app.resizeShadowMap(l, desired);   // no-ops if already that size

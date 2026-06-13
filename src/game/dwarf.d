@@ -269,6 +269,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   DrawInstance inst = DrawInstance([0, 0], d.color, Matrix.init);
   inst = position(inst, d.visualPos);
   app.world.dwarves.instances ~= inst;
+  // TODO: lightIndex is stable only because dwarves spawn at startup and never die. When a light is removed, all higher lightIndex values shift
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
   app.world.dwarves ~= d;
