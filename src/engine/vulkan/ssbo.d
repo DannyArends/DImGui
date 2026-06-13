@@ -93,8 +93,6 @@ void growSSBO(ref App app, string base, uint nObjects) {
     app.buffers[base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[base], base);
-
-  if(app.buffers.descriptorsDirty.length != app.framesInFlight) app.buffers.descriptorsDirty.length = app.framesInFlight;
   app.buffers.descriptorsDirty[] = true;
   if(app.verbose) SDL_Log("growSSBO %s -> %d objects (%d bytes)", toStringz(base), nObjects, size);
 }
