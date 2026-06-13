@@ -219,8 +219,8 @@ void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descri
   }
 }
 
-/** Re-point descriptor sets whose buffers/images were swapped this frame. Safe here: this syncIndex's
- *  render+compute fences cleared in waitForFrame and nothing has bound sets[syncIndex] yet this frame. */
+/** Re-point descriptor sets whose buffers/images were swapped this frame. Safe when syncIndex's render+compute fences are 
+ * cleared in waitForFrame and nothing has bound sets[syncIndex] yet this frame. */
 void repointDirtyDescriptors(ref App app) {
   if(!app.buffers.descriptorsDirty[app.syncIndex] && !app.shadows.shadowDescriptorsDirty[app.syncIndex]) return;
   foreach(key, sets; app.sets) {
