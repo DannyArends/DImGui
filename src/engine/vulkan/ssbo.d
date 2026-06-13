@@ -5,7 +5,8 @@
 
 import engine;
 
-import buffer : createBuffer, deAllocate;
+import buffer : createBuffer, cleanup;
+import deletion : deAllocate;
 import validation : nameVulkanObject;
 
 /** GPU SSBO: per-copy allocations, per-copy dirty flags, and layout. */
@@ -43,6 +44,20 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
   }
 }
 
+/** Memory properties for an SSBO copy: device-local, or host-visible+coherent for mapped copies. */
+VkMemoryPropertyFlags ssboMemoryProps(bool deviceLocal) {
+  return deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+}
+
+immutable VkBufferUsageFlags ssboUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+/** Create (and map, if host-visible) one SSBO copy at `size`, and mark it dirty for upload. */
+void createAllocation(ref App app, ref GPUAllocation a, ref bool dirty, uint size, bool deviceLocal) {
+  app.createBuffer(&a.buffer, &a.memory, size, ssboUsage, ssboMemoryProps(deviceLocal));
+  if(!deviceLocal) enforceVK(vkMapMemory(app.device, a.memory, 0, size, 0, &a.data));
+  dirty = true;
+}
+
 /** Create GPU SSBO buffer for nObjects. copies = per-frame buffer count (0 = app.framesInFlight).
  *  copies < framesInFlight is only safe for deviceLocal buffers ordered by a barrier within a frame;
  *  a host-visible buffer driven by updateSSBO needs framesInFlight copies or the CPU races the GPU. */
@@ -56,22 +71,14 @@ void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, uint copi
   app.buffers[d.base].deviceLocal = deviceLocal;
   app.buffers[d.base].length = app.buffers[d.base].dirty.length = copies;
 
-  VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  for(uint i = 0; i < copies; i++) {
-    app.createBuffer(&app.buffers[d.base][i].buffer, &app.buffers[d.base][i].memory, app.buffers[d.base].size, usage, props);
-    if(!deviceLocal) enforceVK(vkMapMemory(app.device, app.buffers[d.base][i].memory, 0, app.buffers[d.base].size, 0, &app.buffers[d.base][i].data));
-    app.buffers[d.base].dirty[i] = true;
+  for(uint i = 0; i < copies; i++) { 
+    app.createAllocation(app.buffers[d.base][i], app.buffers[d.base].dirty[i], app.buffers[d.base].size, deviceLocal); 
   }
   app.nameSSBO(app.buffers[d.base], d.base);
 
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting SSBO at %s", toStringz(d.base));
-    foreach(ref allocation; app.buffers[d.base]) {
-      if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
-      vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
-      vkFreeMemory(app.device, allocation.memory, app.allocator);
-    }
+    foreach(ref allocation; app.buffers[d.base]){ app.cleanup(allocation); }
     app.buffers.ssbos.remove(d.base);
   });
 }
@@ -83,14 +90,9 @@ void growSSBO(ref App app, string base, uint nObjects) {
   app.buffers[base].nObjects = nObjects;
   uint size = app.buffers[base].size;
 
-  VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
   foreach(i, ref allocation; app.buffers[base]) {
     app.deAllocate(allocation);
-    app.createBuffer(&allocation.buffer, &allocation.memory, size, usage, props);
-    if(!deviceLocal) enforceVK(vkMapMemory(app.device, allocation.memory, 0, size, 0, &allocation.data));
-    app.buffers[base].dirty[i] = true;
+    app.createAllocation(allocation, app.buffers[base].dirty[i], size, deviceLocal);
   }
   app.nameSSBO(app.buffers[base], base);
   app.buffers.descriptorsDirty[] = true;
