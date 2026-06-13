@@ -41,10 +41,13 @@ void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
 void cleanup(App app) {
   SDL_Log("Wait on device idle & swapchain deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
+  SDL_Log("Cleanup of bufferDeletionQueue");
   app.bufferDeletionQueue.flush(true);  /// Delete bufferDeletionQueue associated resources
+  SDL_Log("Cleanup of swapDeletionQueue");
   app.swapDeletionQueue.flush();        /// Delete SwapChain associated resources
 
   // Free any staging buffers still pending (GPU is idle, all fences signaled)
+  SDL_Log("Cleanup of app.textures.pending");
   foreach(ref p; app.textures.pending) {
     app.cleanup(p.staging);
     SDL_DestroySurface(p.texture.surface);
