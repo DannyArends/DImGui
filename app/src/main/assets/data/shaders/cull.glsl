@@ -17,20 +17,16 @@ void main() {
   if (L.properties.w == 0.0) return;   // disabled
   if (L.position.w == 0.0) return;     // directional, handled as global light, not clustered
 
-  vec3  cV = (ubo.view * vec4(L.position.xyz, 1.0)).xyz;   // center in view space
-  float r  = L.cull.x;                                 // radius
-
-  uvec3 lo, hi;                          // froxel index range the sphere covers
-
-  float depth = -cV.z;                       // view-space distance (looks down -Z)
-  float dmin = max(depth - r, 0.0001);
+  vec3 cV = (ubo.view * vec4(L.position.xyz, 1.0)).xyz;   // center in view space
+  float r  = L.cull.x; // radius
+  float depth = -cV.z; // view-space distance (looks down -Z)
   float dmax = depth + r;
 
   // sphere entirely behind camera, skip it
   if (dmax < 0.0001) return;
 
   // Z slices via the log mapping  slice = log2(d)*sliceScale + sliceBias
-  int zlo = int(floor(log2(dmin) * ubo.clusterCfg.x + ubo.clusterCfg.y));
+  int zlo = int(floor(log2(max(depth - r, 0.0001)) * ubo.clusterCfg.x + ubo.clusterCfg.y));
   int zhi = int(floor(log2(dmax) * ubo.clusterCfg.x + ubo.clusterCfg.y));
 
   vec2 nx, ny;
@@ -54,8 +50,9 @@ void main() {
   if (xhi < 0 || xlo > int(ubo.grid.x)-1) return;
   if (yhi < 0 || ylo > int(ubo.grid.y)-1) return;
 
-  lo = uvec3(clamp(xlo, 0, int(ubo.grid.x)-1), clamp(ylo, 0, int(ubo.grid.y)-1), clamp(zlo, 0, int(ubo.grid.z)-1));
-  hi = uvec3(clamp(xhi, 0, int(ubo.grid.x)-1), clamp(yhi, 0, int(ubo.grid.y)-1), clamp(zhi, 0, int(ubo.grid.z)-1));
+  // froxel index range the sphere covers
+  uvec3 lo = uvec3(clamp(xlo, 0, int(ubo.grid.x)-1), clamp(ylo, 0, int(ubo.grid.y)-1), clamp(zlo, 0, int(ubo.grid.z)-1));
+  uvec3 hi = uvec3(clamp(xhi, 0, int(ubo.grid.x)-1), clamp(yhi, 0, int(ubo.grid.y)-1), clamp(zhi, 0, int(ubo.grid.z)-1));
 
   for (uint z = lo.z; z <= hi.z; ++z) { for (uint y = lo.y; y <= hi.y; ++y) {
     uint rowBase = clusterId(0u, y, z);   // canonical layout; per-row hoist preserved
