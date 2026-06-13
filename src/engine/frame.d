@@ -74,13 +74,6 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateRenderUBO(app.shaders, app.syncIndex);
   app.computeActiveLighting();
 
-  if(app.hasCompute && "ClusterCounter" in app.buffers) {
-    // TODO: growing ClusterLights via app.rebuild recreates the whole swapchain/pipeline.
-    // Replace with a targeted buffer recreate + descriptor update to avoid the frame hitch.
-    uint used = *cast(uint*)app.buffers["ClusterCounter"][0].data;
-    if(used > app.clusterCapacity) { app.clusterCapacity = used * 2; app.rebuild = true; }
-  }
-
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---

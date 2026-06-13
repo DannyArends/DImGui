@@ -113,7 +113,6 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T contai
   if(size > app.buffers[descriptor.base].size) {
     while(container.capacity * T.sizeof < size) container.capacity *= 2;
     app.growSSBO(descriptor.base, cast(uint)container.capacity);
-    return;   // upload resumes next pass; dirty stays set
   }
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)container.length);
