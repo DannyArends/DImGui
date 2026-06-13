@@ -82,6 +82,8 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T contai
   if(size == 0) return;
   if(size > app.buffers[descriptor.base].size) {
     while(container.capacity * T.sizeof < size) container.capacity *= 2;
+    // TODO: growing SSBOs via app.rebuild recreates the whole swapchain/pipeline.
+    // Replace with a targeted buffer recreate + descriptor update to avoid the frame hitch.
     app.rebuild = true;
     return;
   }
