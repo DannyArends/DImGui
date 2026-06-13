@@ -37,8 +37,10 @@ struct ShadowMap {
 
   bool[] shadowDescriptorsDirty;
 
-  uint lastShadowInstances = 0;
-  uint totalShadowInstances = 0;
+  uint lastShadowInstances = 0;             /// Last number of shadow instances used across all shadow casting lights
+  uint totalShadowInstances = 0;            /// Total instance count of shadow instances across all shadow casting lights
+  uint staticShadowInstances = 0;           /// TODO: Static/dynamic shadow caching
+  uint dynamicShadowInstances = 0;          /// TODO: Static/dynamic shadow caching
 }
 
 struct LightUbo {
@@ -251,6 +253,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
   app.shadows.lastShadowInstances = app.shadows.totalShadowInstances = 0;
+  app.shadows.staticShadowInstances = app.shadows.dynamicShadowInstances = 0;
   for(uint l = 0; l < app.lights.length; l++) {
     if(!app.lights[l].enabled || app.lights[l].cull[1] < 0.0f) continue;   // not enabled or selected to cast this frame
 
@@ -284,6 +287,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
         if(!lFrustum.aabbInFrustum(obj.box.wmin, obj.box.wmax)) continue;
       }
       app.shadows.lastShadowInstances += obj.instances.length;
+      ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
       app.draw(obj, cmd);
     }
     vkCmdEndRenderPass(cmd);

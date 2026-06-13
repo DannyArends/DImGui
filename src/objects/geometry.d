@@ -58,6 +58,7 @@ class Geometry {
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
 
+  @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null && animations.length == 0 && isBuffered(); }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
   @property @nogc bool isDrawable() nothrow const { return(isBuffered && vertices.length > 0 && indices.length > 0 && instances.length > 0); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
