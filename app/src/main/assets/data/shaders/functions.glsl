@@ -26,32 +26,26 @@ vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
   return(finalPosition);
 }
 
-// Our illumination function
-vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 cameraPos) {
+// ambient returned via out; direct (diffuse) is the return value
+vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 cameraPos, out vec3 ambientOut) {
+  ambientOut = vec3(0.0);
   if (light.properties.w == 0.0) return vec3(0.0);
   float attenuation = 1.0;
   vec3 s;
-  if (light.position.w == 0.0) {                          // Directional lighting
-    s = normalize( light.position.xyz );
-  } else {                                                // Point lighting
-    s = normalize( light.position.xyz - position );
-    float l = length( light.position.xyz - position );
-    if (l > light.cull.x) return vec3(0.0);   // outside cull radius
+  if (light.position.w == 0.0) {                          // Directional
+    s = normalize(light.position.xyz);
+  } else {                                                // Point / spot
+    vec3 toLight = light.position.xyz - position;
+    float l = length(toLight);
+    if (l > light.cull.x) return vec3(0.0);               // outside cull radius
+    s = toLight / l;                                      // reuse length, skip second normalize
     attenuation = 1.0 / (light.properties[1] + l * l);
-
-    // Cone lighting
-    float cosOuter = cos(radians(light.properties[2]));
-    float cosInner = cos(radians(light.properties[2] / 2.0f));
-    float cosAngle = dot(-s, normalize(light.direction.xyz));
-    float coneFactor = smoothstep(cosOuter, cosInner, cosAngle);
-
-    attenuation *= coneFactor;
+    float cosAngle  = dot(-s, normalize(light.direction.xyz));
+    attenuation    *= smoothstep(light.cull.z, light.cull.w, cosAngle);  // precomputed cosines (see note)
   }
-  float sDotN = max( dot( s, normal ), 0.0 );
-
-  vec3 ambientCol = light.intensity.rgb * baseColor * light.properties[0];
-  vec3 diffuseCol = light.intensity.rgb * baseColor * sDotN;
-  return ambientCol + attenuation * diffuseCol;
+  float sDotN = max(dot(s, normal), 0.0);
+  ambientOut  = light.intensity.rgb * baseColor * light.properties[0];
+  return light.intensity.rgb * baseColor * sDotN * attenuation;  // direct only
 }
 
 vec3 applyFog(vec3 color, vec3 fragPos, vec3 cameraPos, float fogStart, float fogEnd, vec3 fogColor) {

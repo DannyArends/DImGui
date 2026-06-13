@@ -50,11 +50,10 @@ float calculateShadow(vec4 position, uint i) {
 
 // Per-light shading: ambient + shadowed direct contribution
 vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, bool useShadows) {
-  Light light = lightSSBO.lights[idx];
-  vec3 contribution = illuminate(light, baseColor, fragPosWorld.xyz, normal, ubo.position.xyz);
-  vec3 ambient = light.intensity.rgb * baseColor * light.properties[0];
-  vec3 direct  = contribution - ambient;
-  if (useShadows) direct *= calculateShadow(light.lightProjView * fragPosWorld, idx);
+  vec3 ambient;
+  vec3 direct = illuminate(lightSSBO.lights[idx], baseColor, fragPosWorld.xyz, normal, ubo.position.xyz, ambient);
+  if (useShadows && direct != vec3(0.0))
+    direct *= calculateShadow(lightSSBO.lights[idx].lightProjView * fragPosWorld, idx);
   return ambient + direct;
 }
 
