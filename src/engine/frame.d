@@ -129,7 +129,7 @@ void renderFrame(ref App app, double dt) {
   app.totalFramesRendered++;
 }
 
-void presentFrame(ref App app) {
+@nogc void presentFrame(ref App app) nothrow {
   if (app.trace) SDL_Log("presentFrame");
   if (app.rebuild) return;
   VkSemaphore renderComplete = app.renderComplete[app.frameIndex];
