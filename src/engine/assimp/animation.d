@@ -45,10 +45,10 @@ struct Animation {
 
 /** Advance one animated asset's animation by dt and recompute its bone transforms. */
 void animateAsset(ref App app, ref Geometry obj, float dt) {
+  if(dt == 0.0f) return;
   obj.animTime += dt;
   double cT = calculateCurrentTick(obj.animTime, obj.animations[obj.animation].ticksPerSecond, obj.animations[obj.animation].duration);
   app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT);
-  obj.boneDirty = true;
 }
 
 /** calculateGlobalTransform - Recursively apply all transformations at animationTime */

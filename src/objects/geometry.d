@@ -28,7 +28,6 @@ class Geometry {
   Animation[] animations;                       /// Animations
   uint animation = 0;                           /// Current Animation
   double animTime = 0.0;                        /// ms of animation played, dt-advanced
-  bool boneDirty = false;                       /// Are bones dirty, should be set by onFrame
   Mesh[string] meshes;                          /// Meshes
   AMat[] materials;                             /// Materials
 
