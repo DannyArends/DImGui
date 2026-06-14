@@ -57,17 +57,19 @@ void showFPSContent(ref GameApp app, uint font = 0) {
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
     igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
     if("ClusterCounter" in app.buffers) {
-      uint used = *cast(uint*)app.buffers["ClusterCounter"][0].data;
+      static float avgClusters = 0;
+      uint sample = *cast(uint*)app.buffers["ClusterCounter"][0].data;
+      avgClusters += (sample - avgClusters) * 0.02f;        // exponential moving average
       uint cap = app.buffers["ClusterLights"].nObjects;
-      text("Light clusters: %s / %s%s", humanCount(used), humanCount(cap), used > cap ? " OVERFLOW" : "");
+      text("Light clusters: %s / %s%s", humanCount(cast(uint)(avgClusters)), humanCount(cap), cast(uint)(avgClusters) > cap ? " OVERFLOW" : "");
     }
     auto iV = app.objects.map!(o => o.vertexCount(app.showBounds)).sum();
     auto iI = app.objects.map!(o => o.indexCount(app.showBounds)).sum();
     auto hV = app.objects.filter!(o => !o.isVisible || !o.inFrustum).map!(o => o.vertexCount(app.showBounds)).sum();
     auto hI = app.objects.filter!(o => !o.isVisible || !o.inFrustum).map!(o => o.indexCount(app.showBounds)).sum();
     text("Shown: %s/%s vertices, %s/%s indices", humanCount(iV - hV), humanCount(iV), humanCount(iI - hI), humanCount(iI));
-    text("Shadow objects: %s / %s", humanCount(app.shadows.lastShadowInstances), humanCount(app.shadows.totalShadowInstances));
-    text("  static %s / dynamic %s", humanCount(app.shadows.staticShadowInstances), humanCount(app.shadows.dynamicShadowInstances));
+    text("Shadow objects: %s / %s", humanCount(app.shadows.lastShadowInstances), humanCount(app.shadows.totalShadowInstances)); igSameLine(0, 4);
+    text(" (s/d %s/%s)", humanCount(app.shadows.staticShadowInstances), humanCount(app.shadows.dynamicShadowInstances));
     igText("C: [%.1f, %.1f, %.1f]", app.camera.position[0], app.camera.position[1], app.camera.position[2]);
     igText("F: [%.1f, %.1f, %.1f]", app.camera.lookat[0], app.camera.lookat[1], app.camera.lookat[2]);
     app.showTimingsContent();
