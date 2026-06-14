@@ -52,7 +52,7 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateTracks();                         /// Check for sound effects that have finished
   app.timed!updateTextures();                       /// If a texture was loaded, update it
   app.timed!updateMeshInfo();                       /// Check for Mesh Information change
-  app.timed!updateBoneOffsets(app.syncIndex, dt);   /// Check for animation causing BoneOffsets changes
+  app.timed!updateBoneOffsets(app.syncIndex);       /// Check for animation causing BoneOffsets changes
   app.timed!updateDisco(dt);                        /// Update when disco mode 🕺 🪩 💃
   if(app.hasCompute) app.timed!updateComputeUBO(app.syncIndex);
   app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
