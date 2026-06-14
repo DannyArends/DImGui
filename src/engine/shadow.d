@@ -32,7 +32,6 @@ struct ShadowMap {
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
   uint dimension = isAndroid ? 512 : 4096;  /// Shadowmap dimension
   uint budget = isAndroid ? 4 : 12;         /// Max lights casting shadows per frame (stage 1: first-K)
-  uint shrinkDelay = 30;                    /// Number of frames before shrinking
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
   bool[] shadowDescriptorsDirty;
@@ -50,7 +49,7 @@ struct LightUbo {
 
 void createShadowMap(ref App app) {
   app.createShadowMapRenderPass();
-  app.createShadowMapResources();
+  app.initShadowPool();                  // was: app.createShadowMapResources();
   app.createShadowSampler();
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
@@ -61,6 +60,10 @@ void initShadowPool(ref App app) {
   app.shadows.renderPass.framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(s, 32);
   app.shadows.shadowDescriptorsDirty[] = true;
+  app.mainDeletionQueue.add((){
+    foreach(ref img; app.shadows.images) app.cleanup(img);
+    foreach(fb; app.shadows.renderPass.framebuffers) app.cleanup(fb);
+  });
 }
 
 /** Create shadow image+view+framebuffer for slot l at the given square size. */
@@ -79,18 +82,6 @@ void resizeShadowMap(ref App app, size_t l, uint size) {
   app.deAllocate(app.shadows.renderPass.framebuffers[l]);
   app.makeShadowMap(l, size);
   app.shadows.shadowDescriptorsDirty[] = true;
-}
-
-/** Shadow map resource creation */
-void createShadowMapResources(ref App app) {
-  app.shadows.images.length = app.lights.length;
-  app.shadows.renderPass.framebuffers.length = app.lights.length;
-  foreach(x; 0 .. app.lights.length) app.makeShadowMap(x, app.shadows.dimension);
-
-  app.mainDeletionQueue.add((){
-    foreach(ref img; app.shadows.images) app.cleanup(img);
-    foreach(fb; app.shadows.renderPass.framebuffers) app.cleanup(fb);
-  });
 }
 
 /** Shadow map render pass creation */

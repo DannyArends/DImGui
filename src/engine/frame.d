@@ -64,15 +64,16 @@ void renderFrame(ref App app, double dt) {
   // --- Phase 2: Prepare & Submit Compute Work ---
   if (app.hasCompute) {
     if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
-    VkCommandBuffer[] computeCommandBuffers = [];
+    VkCommandBuffer[8] computeCommandBuffers;
+    uint nCompute = 0;
     foreach(ref shader; app.compute.shaders){
       app.timed!recordComputeCommandBuffer(shader, app.syncIndex);
-      computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
+      computeCommandBuffers[nCompute++] = app.compute.commands[shader.path][app.syncIndex];
     }
 
     VkSubmitInfo submitComputeInfo = {
       sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      commandBufferCount : cast(uint)computeCommandBuffers.length,
+      commandBufferCount : nCompute,
       pCommandBuffers : &computeCommandBuffers[0],
       signalSemaphoreCount : 1,
       pSignalSemaphores : &computeComplete
@@ -95,29 +96,24 @@ void renderFrame(ref App app, double dt) {
   app.timed!recordImGuiCommandBuffer(app.syncIndex);
 
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
-  VkCommandBuffer[] submitCommandBuffers = [];
-  if (shadowsThisFrame){ submitCommandBuffers ~= app.shadows.renderPass.commands[app.syncIndex]; }
-  submitCommandBuffers ~= [
-    app.scenePass.commands[app.syncIndex],
-    app.postPass.commands[app.syncIndex],
-    app.imguiPass.commands[app.syncIndex]
-  ];
+  VkCommandBuffer[4] submitCommandBuffers;
+  uint nSubmit = 0;
+  if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.renderPass.commands[app.syncIndex]; }
+  submitCommandBuffers[nSubmit++] = app.scenePass.commands[app.syncIndex];
+  submitCommandBuffers[nSubmit++] = app.postPass.commands[app.syncIndex];
+  submitCommandBuffers[nSubmit++] = app.imguiPass.commands[app.syncIndex];
 
-  VkSemaphore[] waitSemaphores = [ imageAcquired ];
-  VkPipelineStageFlags[] waitStages = [ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT ];
-
-  if (app.hasCompute) {
-    waitSemaphores ~= computeComplete;
-    waitStages ~= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-  }
+  WaitList!2 wait;
+  wait.add(imageAcquired, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+  if (app.hasCompute){ wait.add(computeComplete, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT); }
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    waitSemaphoreCount : cast(uint)waitSemaphores.length,
-    pWaitSemaphores : &waitSemaphores[0],
-    pWaitDstStageMask : &waitStages[0],
+    waitSemaphoreCount : wait.count,
+    pWaitSemaphores : &wait.sems[0],
+    pWaitDstStageMask : &wait.stages[0],
 
-    commandBufferCount : cast(uint)submitCommandBuffers.length,
+    commandBufferCount : nSubmit,
     pCommandBuffers : &submitCommandBuffers[0],
     signalSemaphoreCount : 1,
     pSignalSemaphores : &renderComplete
