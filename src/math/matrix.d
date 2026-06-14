@@ -19,7 +19,7 @@ struct Matrix {
 }
 
 /** Convert from row-major aiMatrix to our column-major Matrix type */
-Matrix toMatrix(aiMatrix4x4 m){
+@nogc pure Matrix toMatrix(aiMatrix4x4 m) nothrow {
   float[16] myMatrixArray = [
     m.a1, m.b1, m.c1, m.d1,
     m.a2, m.b2, m.c2, m.d2,

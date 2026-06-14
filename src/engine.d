@@ -148,14 +148,14 @@ struct App {
 }
 
 /** Check result of Vulkan call and print if an error occured */
-extern(C) void enforceVK(VkResult err) {
+extern(C) @nogc void enforceVK(VkResult err) nothrow {
   if (err == VK_SUCCESS) return;
   SDL_Log("[enforceVK] Error: VkResult = %d", err);
   if (err < 0) abort();
 }
 
 /** Check result of SpirV-Compiler call and print if an error occured */
-void enforceSPIRV(App app, spvc_result err) {
+@nogc void enforceSPIRV(App app, spvc_result err) nothrow {
   if(err == SPVC_SUCCESS) return;
   SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));
   abort();

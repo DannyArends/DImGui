@@ -22,7 +22,7 @@ void checkSDLError() {
 }
 
 /** Log function to allow SDL_Log to be redirected to a file */
-extern(C) void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) {
+extern(C) @nogc void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) nothrow {
   printf("[%llu] %s\n", SDL_GetTicks(), message);
 }
 

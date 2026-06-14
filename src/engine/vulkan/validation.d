@@ -11,8 +11,8 @@ PFN_vkSetDebugUtilsObjectNameEXT    vkSetDebugUtilsObjectName;
 PFN_vkCmdBeginDebugUtilsLabelEXT    vkCmdBeginDebugUtilsLabel;
 PFN_vkCmdEndDebugUtilsLabelEXT      vkCmdEndDebugUtilsLabel;
 
-extern(C) uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, 
-                             size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) {
+extern(C) @nogc uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, 
+                             size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) nothrow {
     SDL_Log("[debugCallback] Debug report from ObjectType: %d\nMessage %d: %s\n", objectType, messageCode, pMessage);
     if(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) { assert(false, "Validation error"); }
     return VK_FALSE;
