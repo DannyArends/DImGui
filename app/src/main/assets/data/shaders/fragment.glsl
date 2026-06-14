@@ -58,8 +58,11 @@ void main() {
   }
 
   // Point lights via this fragment's froxel linked list
+  vec4 clip = ubo.proj * (ubo.view * fragPosWorld);
+  vec2 ndc01 = (clip.xy / clip.w) * 0.5 + 0.5;   // [0,1], same projection space as cull
   float viewDepth = -(ubo.view * fragPosWorld).z;
-  uint cid = froxelIndex(gl_FragCoord.xy, viewDepth);
+  uint cid = froxelIndex(ndc01, viewDepth);
+
   for (uint n = head[cid].head; n != NIL; n = indices[n].next) {
     surfaceColor += shadeLight(indices[n].light, baseColor, fragPosWorld, normalForLighting, useShadows);
   }

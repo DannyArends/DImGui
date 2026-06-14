@@ -52,10 +52,10 @@ uint clusterId(uint gx, uint gy, uint gz) {
   return (gz * ubo.grid.y + gy) * ubo.grid.x + gx;
 }
 
-uint froxelIndex(vec2 fragCoordXY, float viewDepth) {
-  vec2 ndc = fragCoordXY / ubo.clusterCfg.zw;   // [0,1] in framebuffer space
-  uint gx = uint(clamp(ndc.x * float(ubo.grid.x), 0.0, float(ubo.grid.x - 1u)));
-  uint gy = uint(clamp(ndc.y * float(ubo.grid.y), 0.0, float(ubo.grid.y - 1u)));
+uint froxelIndex(vec2 ndcXY, float viewDepth) {
+  // ndcXY is projection NDC in [0,1] (same space cull uses)
+  uint gx = uint(clamp(ndcXY.x * float(ubo.grid.x), 0.0, float(ubo.grid.x - 1u)));
+  uint gy = uint(clamp(ndcXY.y * float(ubo.grid.y), 0.0, float(ubo.grid.y - 1u)));
   int zs = int(floor(log2(viewDepth) * ubo.clusterCfg.x + ubo.clusterCfg.y));
   uint gz = uint(clamp(zs, 0, int(ubo.grid.z) - 1));
   return clusterId(gx, gy, gz);
