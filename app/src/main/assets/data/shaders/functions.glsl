@@ -53,7 +53,6 @@ uint clusterId(uint gx, uint gy, uint gz) {
 }
 
 uint froxelIndex(vec2 ndcXY, float viewDepth) {
-  // ndcXY is projection NDC in [0,1] (same space cull uses)
   uint gx = uint(clamp(ndcXY.x * float(ubo.grid.x), 0.0, float(ubo.grid.x - 1u)));
   uint gy = uint(clamp(ndcXY.y * float(ubo.grid.y), 0.0, float(ubo.grid.y - 1u)));
   int zs = int(floor(log2(viewDepth) * ubo.clusterCfg.x + ubo.clusterCfg.y));
