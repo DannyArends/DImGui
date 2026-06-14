@@ -152,8 +152,8 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   pushLabel(cmdBuffer, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
 
   if (baseName(fromStringz(shader.path)) == "cull.glsl") {
-    VkBuffer headBuf   = app.buffers["ClusterHeads"][0].buffer;
-    VkBuffer cursorBuf = app.buffers["ClusterCounter"][0].buffer;
+    VkBuffer headBuf   = app.buffers["ClusterHeads"][syncIndex].buffer;
+    VkBuffer cursorBuf = app.buffers["ClusterCounter"][syncIndex].buffer;
 
     vkCmdFillBuffer(cmdBuffer, headBuf, 0, VK_WHOLE_SIZE, 0xFFFFFFFF); // NIL
     vkCmdFillBuffer(cmdBuffer, cursorBuf, 0, VK_WHOLE_SIZE, 0);
@@ -166,7 +166,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
     uint nlights = cast(uint)app.lights.length;
     vkCmdDispatch(cmdBuffer, cast(uint)ceil(cast(float)nlights / shader.groupCount[0]), 1, 1);
 
-    VkBuffer lightsBuf = app.buffers["ClusterLights"][0].buffer;
+    VkBuffer lightsBuf = app.buffers["ClusterLights"][syncIndex].buffer;
     VkBufferMemoryBarrier[2] clusterBarriers = [
       { sType: VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, srcAccessMask: VK_ACCESS_SHADER_WRITE_BIT, dstAccessMask: VK_ACCESS_SHADER_READ_BIT, srcQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED, dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED, buffer: headBuf,   size: VK_WHOLE_SIZE },
       { sType: VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, srcAccessMask: VK_ACCESS_SHADER_WRITE_BIT, dstAccessMask: VK_ACCESS_SHADER_READ_BIT, srcQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED, dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED, buffer: lightsBuf, size: VK_WHOLE_SIZE }
