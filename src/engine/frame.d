@@ -41,9 +41,9 @@ void renderFrame(ref App app, double dt) {
 
   if(app.trace) SDL_Log("Phase 1: Aquire the image");
   auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
-  if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
-  if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
+  if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR || err == VK_ERROR_SURFACE_LOST_KHR) app.rebuild = true;
+  if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_ERROR_SURFACE_LOST_KHR) return;
+  if(err != VK_SUBOPTIMAL_KHR) enforceVK(err);
   if(app.trace) SDL_Log("Phase 1: Aquired %d", app.frameIndex);
   VkSemaphore renderComplete = app.renderComplete[app.frameIndex];
 
@@ -138,9 +138,9 @@ void renderFrame(ref App app, double dt) {
     pImageIndices : &app.frameIndex,
   };
   auto err = vkQueuePresentKHR(app.queue, &info);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) app.rebuild = true;
-  if (err == VK_ERROR_OUT_OF_DATE_KHR) return;
-  if (err != VK_SUBOPTIMAL_KHR) enforceVK(err);
+  if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR || err == VK_ERROR_SURFACE_LOST_KHR) app.rebuild = true;
+  if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_ERROR_SURFACE_LOST_KHR) return;
+  if(err != VK_SUBOPTIMAL_KHR) enforceVK(err);
   app.syncIndex = (app.syncIndex + 1) % app.sync.length; // Now we can use the next set of semaphores
   if(app.trace) SDL_Log("Done presentFrame");
 }
