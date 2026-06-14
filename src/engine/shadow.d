@@ -49,7 +49,7 @@ struct LightUbo {
 
 void createShadowMap(ref App app) {
   app.createShadowMapRenderPass();
-  app.initShadowPool();                  // was: app.createShadowMapResources();
+  app.initShadowPool();
   app.createShadowSampler();
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
