@@ -9,7 +9,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : resizeShadowMap, initShadowPool, MAX_SHADOW_MAPS;
+import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS;
 import textures : mapTextures;
 import vector : dot, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -84,7 +84,7 @@ void computeRadius(ref Light l, float cutoff = 0.01f) {
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension = 4096) nothrow {
+@nogc void computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
 
   if(!light.directional) {
@@ -189,7 +189,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   foreach(i, ref light; app.lights) {
     light.computeRadius(); 
-    app.camera.computeLightSpace(light, app.shadows.bounds, light.directional ? 4096u : 1024u);
+    app.camera.computeLightSpace(light, app.shadows.bounds, app.shadowResolution(light));
   }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
@@ -229,9 +229,8 @@ void computeActiveLighting(ref App app) {
   }
 
   foreach(ref light; app.lights) {
-    int s = cast(int)light.cull[1];
-    if(s < 0) continue;
-    app.resizeShadowMap(s, light.directional ? 4096u : 1024u);
+    int s = cast(int)light.cull[1]; if(s < 0) continue;
+    app.resizeShadowMap(s, app.shadowResolution(light));
   }
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
