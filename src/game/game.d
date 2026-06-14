@@ -66,6 +66,7 @@ struct GameApp {
   bool showPaths = false;
   bool showRays = false;
   bool paused = false;
+  float timeScale = 1.0f;
 }
 
 /** Set up worker factory and camera, load the world, build game UI windows, and spawn or load dwarves */
