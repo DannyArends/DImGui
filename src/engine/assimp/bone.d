@@ -43,19 +43,11 @@ BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] glob
   return(weights);
 }
 
-/** updateBoneOffsets
- * compute the new bone offsets for the current frame */
-void updateBoneOffsets(App app, uint syncIndex, float dt) {
-  bool hasAnimation = false;
-  foreach(ref obj; app.objects) {
-    if(obj.animations.length > 0 && obj.rootnode.name !is null) {
-      obj.animTime += dt;
-      double cT = calculateCurrentTick(obj.animTime, obj.animations[obj.animation].ticksPerSecond, obj.animations[obj.animation].duration);
-      app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT);
-      hasAnimation = true;
-    }
-  }
-  if(hasAnimation) app.buffers["BoneMatrices"].dirty[syncIndex] = true;
+/** Propagate any animation changes (made by onFrame handlers) into the per-syncIndex BoneMatrices SSBO. */
+void updateBoneOffsets(App app, uint syncIndex) {
+  bool any = false;
+  foreach(ref obj; app.objects) if(obj.boneDirty) { any = true; break; }
+  if(any) app.buffers["BoneMatrices"].dirty[syncIndex] = true;
 }
 
 void mergeBones(ref App app, ref OpenAsset obj) {

@@ -7,6 +7,7 @@ import engine;
 
 import assimp : loadOpenAsset, isOpenAsset;
 import bone : mergeBones;
+import animation : animateAsset;
 import io : dir, fixPath;
 import material : registerAMaterials;
 import images : cleanup;
@@ -111,8 +112,10 @@ void checkAsync(ref App app) {
   app.drainMessages!OpenAsset((obj) {
     app.mergeBones(obj);
     app.objects ~= obj;
-    app.registerAMaterials(app.objects[($-1)]);
-    app.mapTextures(app.objects[($-1)]);
+    auto asset = app.objects[($-1)];
+    if(asset.animations.length > 0 && asset.rootnode.name !is null){ asset.onFrame = (float dt) { app.animateAsset(asset, dt); }; }
+    app.registerAMaterials(asset);
+    app.mapTextures(asset);
   });
   app.drainMessages!Texture((t) {
     app.transferTextureAsync(t);

@@ -43,8 +43,15 @@ struct Animation {
 
 @nogc double calculateCurrentTick(double seconds, double tps, double dur) nothrow { return fmod(seconds * tps, dur); }
 
-/** calculateGlobalTransform
- * Recursively apply all transformations at animationTime */
+/** Advance one animated asset's animation by dt and recompute its bone transforms. */
+void animateAsset(ref App app, ref Geometry obj, float dt) {
+  obj.animTime += dt;
+  double cT = calculateCurrentTick(obj.animTime, obj.animations[obj.animation].ticksPerSecond, obj.animations[obj.animation].duration);
+  app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT);
+  obj.boneDirty = true;
+}
+
+/** calculateGlobalTransform - Recursively apply all transformations at animationTime */
 void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform, double animationTime) {
   Animation animation = obj.animations[obj.animation];
   Matrix localTransform = node.transform;
@@ -69,8 +76,7 @@ void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, co
   }
 }
 
-/** load all animations from aiScene*
- */
+/** load all animations from aiScene* */
 Animation[] loadAnimations(aiScene* scene, const OpenAsset asset, bool verbose = false) {
   Animation[] animations;
   animations.length = scene.mNumAnimations;
