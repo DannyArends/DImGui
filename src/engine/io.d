@@ -43,12 +43,12 @@ char[] readFile(const(char)* path, uint verbose = 0) {
   for(int retry = 0; retry < 3 && fp == null; retry++) {
     fp = SDL_IOFromFile(path, "rb"); if(fp == null) SDL_Delay(1);
   }
+  if(fp == null){ return []; }
 
-  char[] content;
   auto sz = SDL_GetIOSize(fp);
   if(sz <= 0) { SDL_CloseIO(fp); return []; }
-  content.length = cast(size_t)sz;
 
+  char[] content = new char[](cast(size_t)sz);
   size_t readTotal = 0, nRead = 1;
   char* buffer = &content[0];
   while (readTotal < content.length && nRead != 0) {
@@ -90,50 +90,46 @@ version(Android) {
     return(listDirContent(path, pattern, shallow)); 
   }
 
+  struct JNI {
+    JNIEnv* env;
+    auto opDispatch(string m, Args...)(Args args) { mixin("return (*env)." ~ m ~ "(env, args);"); }
+  }
+
   // listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls
   string[] listDirContent(const(char)* path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
-    //SDL_Log("listDirContent %s", path);
-    JNIEnv* env = cast(JNIEnv*)SDL_GetAndroidJNIEnv();
-    //SDL_Log("JNIEnv %p", env);
-    jobject activity = cast(jobject)SDL_GetAndroidActivity();
-    jclass activity_class = (*env).GetObjectClass(env, activity);
-    jobject asset_manager = (*env).CallObjectMethod(env, activity, (*env).GetMethodID(env, activity_class, "getAssets", "()Landroid/content/res/AssetManager;"));
+    auto j = JNI(cast(JNIEnv*)SDL_GetAndroidJNIEnv());
+    auto activity = SDL_GetAndroidActivity();
+    auto activity_class = j.GetObjectClass(activity);
+    auto getAssets = j.GetMethodID(activity_class, "getAssets".toStringz, "()Landroid/content/res/AssetManager;".toStringz);
+    auto asset_manager = j.CallObjectMethod(activity, getAssets);
+    auto asset_class = j.GetObjectClass(asset_manager);
+    auto list_method = j.GetMethodID(asset_class, "list".toStringz, "(Ljava/lang/String;)[Ljava/lang/String;".toStringz);
+    jstring path_object = j.NewStringUTF(path);
+    auto files_object = cast(jobjectArray)j.CallObjectMethod(asset_manager, list_method, path_object);
+    auto length = j.GetArrayLength(files_object);
+    if (verbose) SDL_Log("listDirContent %s: %d entries", path, length);
 
-    // Query the asset_manager for the list() method
-    auto list_method = (*env).GetMethodID(env, (*env).GetObjectClass(env, asset_manager), "list", "(Ljava/lang/String;)[Ljava/lang/String;");
-    jstring path_object = (*env).NewStringUTF(env, path);
-    auto files_object = cast(jobjectArray)(*env).CallObjectMethod(env, asset_manager, list_method, path_object);
-    auto length = (*env).GetArrayLength(env, files_object);
-
-    // List all files in the folder
-    //SDL_Log("Path %s, mngr: %X, list_method: %X, nObjects: %d \n", path, asset_manager, list_method, length);
     string[] files;
     for (int i = 0; i < length; i++) {
-      // Allocate the java string, and get the filename
-      jstring jstr = cast(jstring)(*env).GetObjectArrayElement(env, files_object, i);
-      const(char)* cstr = (*env).GetStringUTFChars(env, jstr, null); // Get C string memory
-      if (cstr == null) { (*env).DeleteLocalRef(env, jstr); continue; }
+      jstring jstr = cast(jstring)j.GetObjectArrayElement(files_object, i);
+      if (jstr == null) continue;
+      const(char)* cstr = j.GetStringUTFChars(jstr, null);
+      if (cstr == null) { j.DeleteLocalRef(jstr); continue; }
       string fn = to!string(cstr);
-      (*env).ReleaseStringUTFChars(env, jstr, cstr); // Release C string memory
-
-      if (fn) {
+      j.ReleaseStringUTFChars(jstr, cstr);
+      if (fn.length) {
         string s = to!string(path);
-        fn = format("%s%s%s", s, (s[$-1] == '/'? "": "/"), fromStringz(fn));
-        if (globMatch(fn.fromStringz(), pattern)) { 
-          //SDL_Log("matching file: %s @ %s", toStringz(s), toStringz(fn));
-          files ~= fn;
-        }
-        if (!shallow && isdir(toStringz(fn))) files ~= listDirContent(toStringz(fn), pattern, shallow, verbose);
+        fn = format("%s%s%s", s, (s.length && s[$-1] == '/' ? "" : "/"), fn);
+        if (globMatch(fn, pattern)) files ~= fn;
+        if (!shallow && isdir(fn.toStringz)) files ~= listDirContent(fn.toStringz, pattern, shallow, verbose);
       }
-      (*env).DeleteLocalRef(env, jstr); // De-Allocate the java string
+      j.DeleteLocalRef(jstr);
     }
-    
-    (*env).DeleteLocalRef(env, files_object);  // Delete the array of files
-    (*env).DeleteLocalRef(env, path_object);   // Delete the path string
-    (*env).DeleteLocalRef(env, activity);      // Delete the activity object
-    
-    (*env).DeleteLocalRef(env, asset_manager);
-    (*env).DeleteLocalRef(env, activity_class);
+    j.DeleteLocalRef(files_object);
+    j.DeleteLocalRef(path_object);
+    j.DeleteLocalRef(activity);
+    j.DeleteLocalRef(asset_manager);
+    j.DeleteLocalRef(activity_class);
     return(files);
   }
 
