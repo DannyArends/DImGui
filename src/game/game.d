@@ -93,6 +93,7 @@ void initGame(ref GameApp app) {
   app.objects[($-1)].rotate([90.0f, 0.0f, 0.0f]);
   app.objects[($-1)].position([6.0f, 4.0f, 0.0f]);
   SDL_Log("initGame: done");
+  app.mainDeletionQueue.add((){ app.saveWorld(); });
 }
 
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
