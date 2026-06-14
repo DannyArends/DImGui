@@ -18,6 +18,13 @@ struct Fence {
   VkFence computeInFlight;
 }
 
+struct WaitList(uint N) {
+  VkSemaphore[N] sems;
+  VkPipelineStageFlags[N] stages;
+  uint count = 0;
+  void add(VkSemaphore s, VkPipelineStageFlags st) { sems[count] = s; stages[count] = st; count++; }
+}
+
 /** Create Vulkan synchronization objects */
 void createSyncObjects(ref App app) {
   app.sync.length = app.framesInFlight;

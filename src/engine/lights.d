@@ -52,7 +52,7 @@ enum Lights : Light {
 
 struct Lighting {
   SSBOList!Light lights;
-  uint[] shadowIdle;
+  float[] scoreBuf;
   float sunTime = 7.0f;
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
@@ -72,8 +72,8 @@ Light torchLight(float[3] pos, float[4] color) {
 
 void addLight(ref App app, Light light) {
   app.lights ~= light;
+  if(app.lights.scoreBuf.length != app.lights.length) app.lights.scoreBuf.length = app.lights.length;
   app.buffers["LightMatrices"].dirty[] = true;
-  app.initShadowPool();
 }
 
 /** Compute the size of the light radius */
@@ -189,7 +189,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
   foreach(i, ref light; app.lights) {
     light.computeRadius(); 
-    app.camera.computeLightSpace(light, app.shadows.bounds, app.shadows.dimension);
+    app.camera.computeLightSpace(light, app.shadows.bounds, light.directional ? 4096u : 1024u);
   }
   app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
 }
@@ -206,7 +206,8 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
 
 /** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
 void computeActiveLighting(ref App app) {
-  auto score = new float[app.lights.length];
+  assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
+  auto score = app.lights.scoreBuf[0 .. app.lights.length];
   float slot = 0.0f;
   foreach(i, ref light; app.lights) {
     light.computeCone();
@@ -227,7 +228,6 @@ void computeActiveLighting(ref App app) {
     score[best] = -1.0f;
   }
 
-  if(app.lights.shadowIdle.length != app.lights.length){ app.lights.shadowIdle.length = app.lights.length; }
   foreach(ref light; app.lights) {
     int s = cast(int)light.cull[1];
     if(s < 0) continue;
