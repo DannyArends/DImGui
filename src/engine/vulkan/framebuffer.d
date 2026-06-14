@@ -9,7 +9,7 @@ import images : createImage, nameImageBuffer, cleanup, ImageBuffer;
 import swapchain : createImageView;
 import validation : nameVulkanObject;
 
-void cleanup(ref App app, VkFramebuffer fb) { vkDestroyFramebuffer(app.device, fb, app.allocator); }
+@nogc void cleanup(ref App app, VkFramebuffer fb) nothrow { vkDestroyFramebuffer(app.device, fb, app.allocator); }
 
 /** Function to create an HDR color image and its view (MSAA if enabled) */
 void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits flag, VkMemoryPropertyFlags properties) {
