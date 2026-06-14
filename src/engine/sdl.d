@@ -79,7 +79,7 @@ App initializeSDL() {
     abort();
   }
   version(Android) {
-    SDL_SetEventFilter(&sdlEventsFilter, &app); /// Handle Android immediate events by callback
+    SDL_SetEventFilter(cast(SDL_EventFilter)&sdlEventsFilter, &app); /// Handle Android immediate events [we ignore @nogc and nothrow]
   } else { app.window.setIcon(); } /// If not Android we can set an icon
   return(app);
 }
