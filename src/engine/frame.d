@@ -20,7 +20,7 @@ import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
 
 /** waitForFrame */
-void waitForFrame(ref App app) {
+@nogc void waitForFrame(ref App app) nothrow {
   if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
   if(app.hasCompute) {
     enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, ulong.max));

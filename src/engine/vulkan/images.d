@@ -27,7 +27,7 @@ void nameImageBuffer(ref App app, ImageBuffer buffer, string path){
 }
 
 /** DeAllocate an ImageBuffer / Texture */
-void cleanup(ref App app, ImageBuffer buffer) {
+@nogc void cleanup(ref App app, ImageBuffer buffer) nothrow {
   vkDestroyImageView(app.device, buffer.view, app.allocator);
   vkDestroyImage(app.device, buffer.image, app.allocator);
   vkFreeMemory(app.device, buffer.memory, app.allocator);

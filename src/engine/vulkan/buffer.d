@@ -42,7 +42,7 @@ void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, st
   app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
 }
 
-void cleanup(T)(ref App app, ref GeometryBuffer!T buffer) {
+@nogc void cleanup(T)(ref App app, ref GeometryBuffer!T buffer) nothrow {
   if(buffer.data) vkUnmapMemory(app.device, buffer.sbM);
   if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
   if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
@@ -60,7 +60,7 @@ void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
 }
 
 /** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
-void cleanup(ref App app, GPUAllocation allocation) {
+@nogc void cleanup(ref App app, GPUAllocation allocation) nothrow {
   if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
   vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
   vkFreeMemory(app.device, allocation.memory, app.allocator);
