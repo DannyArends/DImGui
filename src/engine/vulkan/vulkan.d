@@ -41,13 +41,12 @@ void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
 void cleanup(App app) {
   SDL_Log("Wait on device idle & swapchain deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
-  SDL_Log("Cleanup of bufferDeletionQueue");
-  app.bufferDeletionQueue.flush(true);  /// Delete bufferDeletionQueue associated resources
-  SDL_Log("Cleanup of swapDeletionQueue");
-  app.swapDeletionQueue.flush();        /// Delete SwapChain associated resources
+  SDL_Log("Delete bufferDeletionQueue associated resources");
+  app.bufferDeletionQueue.flush(true);
+  SDL_Log("Delete SwapChain associated resources");
+  app.swapDeletionQueue.flush();
 
-  // Free any staging buffers still pending (GPU is idle, all fences signaled)
-  SDL_Log("Cleanup of app.textures.pending");
+  SDL_Log("Free any pending texture buffers (GPU is idle, all fences signaled)");
   foreach(ref p; app.textures.pending) {
     app.cleanup(p.staging);
     SDL_DestroySurface(p.texture.surface);
@@ -65,13 +64,13 @@ void cleanup(App app) {
     ImGui_ImplSDL3_Shutdown();
     igDestroyContext(null);
   }
-  SDL_Log("Delete all Geometry objects");
+  SDL_Log("Direct cleanup all Geometry objects");
   foreach(object; app.objects) { app.cleanup(object); }
 
-  SDL_Log("Flush the main deletion queue");
-  app.mainDeletionQueue.flush();  // Delete permanent Vulkan resources
+  SDL_Log("Flush the main deletion queue, and delete permanent Vulkan resources");
+  app.mainDeletionQueue.flush();
 
-  SDL_Log("Joining Threads");
+  SDL_Log("Joining worker threads");
   app.stopWorkers();
   thread_joinAll();
 
@@ -82,6 +81,5 @@ void cleanup(App app) {
 
   SDL_Log("Destroying Window & Quit SDL");
   SDL_DestroyWindow(app);
-
   SDL_Quit();
 }

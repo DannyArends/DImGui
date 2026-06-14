@@ -143,14 +143,14 @@ VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stag
   ));
 }
 
-// Keep this original (for shadow, post, and the default scene call):
+/** Build non-specialized pipeline stage infos from shaders (for shadow, post, and the default scene call) */
 VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
   VkPipelineShaderStageCreateInfo[] info;
   foreach(shader; shaders){ info ~= shader.info; }
   return(info);
 }
 
-/** Build pipeline stage infos from shaders, overriding the fragment stage with ALPHA_TEST = alphaTest.
+/** Build pipeline stage infos from shaders, using pipeline Topology and Specialization structure
  *  Returns stages plus the spec data they point to (kept alive by the caller). */
 VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo,
                                                                     ref VkSpecializationMapEntry[] mapEntry,
@@ -163,10 +163,10 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecia
   ];
   specInfo = VkSpecializationInfo(cast(uint)mapEntry.length, mapEntry.ptr, flags.length * uint.sizeof, flags.ptr);
   VkPipelineShaderStageCreateInfo[] info;
-  foreach(shader; shaders){
-    auto stage = shader.info;
-    if(shader.stage == VK_SHADER_STAGE_VERTEX_BIT || shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT){ stage.pSpecializationInfo = &specInfo; }
-    info ~= stage;
+  foreach(shader; shaders) {
+    auto spec = shader.info;
+    if(shader.stage == VK_SHADER_STAGE_VERTEX_BIT || shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT){ spec.pSpecializationInfo = &specInfo; }
+    info ~= spec;
   }
   return(info);
 }
