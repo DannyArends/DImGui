@@ -54,6 +54,11 @@ void createShadowMap(ref App app) {
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
+/** Shadow map resolution for a light: full dimension for the directional sun, quarter for point/spot. */
+@nogc uint shadowResolution(ref App app, ref Light light) nothrow {
+  return light.directional ? app.shadows.dimension : app.shadows.dimension / 4;
+}
+
 void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
   app.shadows.images.length = MAX_SHADOW_MAPS;
