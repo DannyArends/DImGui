@@ -168,9 +168,6 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
           app.transferToSSBO(d); 
         }else if(app.hasCompute && d.base == "currentFrame") {
           app.createSSBO(d, app.compute.system.particles);
-        // NOTE: cluster buffers use copies=1 (single buffer). Cull (compute) writes and
-        // scene (fragment) reads the same buffer, ordered by the computeComplete semaphore,
-        // so frames cannot overlap on these buffers. Acceptable; revisit if profiling shows a stall.
         } else if(d.base == "ClusterLights") {
           if(app.clusterCapacity == 0) app.clusterCapacity = CLUSTER_COUNT;
           app.createSSBO(d, app.clusterCapacity, 0, true);
@@ -178,7 +175,7 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
           app.createSSBO(d, CLUSTER_COUNT, 0, true);
         }else if(d.base == "ClusterCounter"){
           app.createSSBO(d, 1, 0, false);
-          *cast(uint*)app.buffers["ClusterCounter"][0].data = 0;
+          foreach(i; 0 .. app.buffers["ClusterCounter"].length){ *cast(uint*)app.buffers["ClusterCounter"][i].data = 0; }
         }
       }
     }
