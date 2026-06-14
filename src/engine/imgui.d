@@ -145,6 +145,8 @@ void initializeImGui(ref App app){
 
   version(Android){ 
     app.gui.uiscale = 2.5;
+    app.gui.panelW *= app.gui.uiscale;
+    app.gui.menuH *= app.gui.uiscale;
     auto style = igGetStyle();
     ImGuiStyle_ScaleAllSizes(style, app.gui.uiscale);
     style.ScrollbarSize = 40.0f;
@@ -216,7 +218,9 @@ ImDrawData* renderGUI(ref App app){
   version(Android) { app.showJoystickwindow(font); }
 
   app.showMenu(font);
-  version(Android){ }else{ app.showSidepanel(font); }
+  version(Android){
+    if(app.gui.io.DisplaySize.x > app.gui.io.DisplaySize.y) app.showSidepanel(font);
+  }else{ app.showSidepanel(font); }
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
   if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, (uint f){ app.showObjectsContent(f); });
   if(app.gui.showShaders) app.makeWindow("Shader", &app.gui.showShaders, font, (uint f){ app.showShaderContent(f); });

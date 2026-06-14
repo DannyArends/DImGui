@@ -127,7 +127,7 @@ struct App {
   bool enableValidation = false;                                                /// Should validation be enabled ?
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
-  LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
+  LMode lMode = isAndroid ? LMode.Lights : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool disco = false;                                                           /// Disco mode
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint clusterCapacity = 0;                                                     /// 0 = use default CLUSTER_COUNT on first create
