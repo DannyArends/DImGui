@@ -75,6 +75,33 @@ void sliderFloat3(string[3] ids, float* x, float* y, float* z, float* min, float
 /** Render a label + widget as a 2-column table row */
 void labelCol(const(char)* label) { igTableNextColumn(); igText(label); igTableNextColumn(); }
 
+/** */
+bool cDropDown(T)(string label, ref T v, const(T)[] values, const(char*)[] labels, float width = 150, float uiscale = 1.0f) {
+  assert(values.length == labels.length, "choice: values/labels length mismatch");
+  labelCol(toStringz(label));
+  int idx = 0;
+  foreach(i, val; values) if(val == v) { idx = cast(int)i; break; }
+  igPushItemWidth(width * uiscale); scope(exit) igPopItemWidth();
+  if(igCombo_Str_arr(toStringz("##" ~ label), &idx, labels.ptr, cast(int)labels.length, -1)) {
+    v = values[idx];
+    return true;
+  }
+  return false;
+}
+
+/** label + snap slider over a fixed set of values, as a 2-column table row. Returns true if changed. */
+bool cSlider(T)(string label, ref T v, const(T)[] values, const(char*)[] labels, float width = 150, float uiscale = 1.0f) {
+  labelCol(toStringz(label));
+  int idx = 0;
+  foreach(i, val; values) if(val == v) { idx = cast(int)i; break; }
+  igPushItemWidth(width * uiscale); scope(exit) igPopItemWidth();
+  if(igSliderInt(toStringz("##" ~ label), &idx, 0, cast(int)values.length - 1, labels[idx], 0)) {
+    v = values[idx];
+    return true;
+  }
+  return false;
+}
+
 extern(C) const(char)* dropDownItems(void* user_data, int idx) {
   DropDownItem* items = cast(DropDownItem*)user_data;
   DropDownItem* cItem = &items[idx];
