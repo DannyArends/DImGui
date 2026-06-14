@@ -173,11 +173,11 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
         // so frames cannot overlap on these buffers. Acceptable; revisit if profiling shows a stall.
         } else if(d.base == "ClusterLights") {
           if(app.clusterCapacity == 0) app.clusterCapacity = CLUSTER_COUNT;
-          app.createSSBO(d, app.clusterCapacity, 1, true);
+          app.createSSBO(d, app.clusterCapacity, 0, true);
         } else if(d.base == "ClusterHeads") {
-          app.createSSBO(d, CLUSTER_COUNT, 1, true);
+          app.createSSBO(d, CLUSTER_COUNT, 0, true);
         }else if(d.base == "ClusterCounter"){
-          app.createSSBO(d, 1, 1, false);
+          app.createSSBO(d, 1, 0, false);
           *cast(uint*)app.buffers["ClusterCounter"][0].data = 0;
         }
       }
