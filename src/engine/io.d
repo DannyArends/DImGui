@@ -18,7 +18,7 @@ ulong fsize(const(char)* path, bool verbose = true){
     if(verbose) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); }
     return 0;
   }
-  uint size = cast(uint)SDL_GetIOSize(fp);
+  ulong size = SDL_GetIOSize(fp);
   SDL_CloseIO(fp);
   return(size);
 }
@@ -145,7 +145,7 @@ version(Android) {
     return true;
   }
 
-  bool exists (const(char)* path) { return(isfile(path) | dirExists(path)); }
+  bool exists(const(char)* path) { return(isfile(path) || dirExists(path)); }
 
 }else{ // Version SDL/OS, just use D to get the dir() functionality
 
