@@ -86,9 +86,8 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
 }
 
 version(Android) {
-  // SDL does not provide the ability to scan folders, and on android we need to use the jni
-  // dir() is the wrapper function provided
-  string[] dir(const(char)* path, string pattern = "*", bool shallow = true) { 
+  /** SDL does not provide the ability to scan folders, and on android we need to use the jni dir() is the wrapper function provided */
+  string[] dir(const(char)* path, string pattern = "*", bool shallow = true) {
     return(listDirContent(path, pattern, shallow)); 
   }
 
@@ -97,7 +96,7 @@ version(Android) {
     auto opDispatch(string m, Args...)(Args args) { mixin("return (*env)." ~ m ~ "(env, args);"); }
   }
 
-  // listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls
+  /** listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls */
   string[] listDirContent(const(char)* path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {
     auto j = JNI(cast(JNIEnv*)SDL_GetAndroidJNIEnv());
     auto activity = SDL_GetAndroidActivity();
@@ -142,9 +141,8 @@ version(Android) {
   // isFile uses SDL on Android
   bool isfile(const(char)* path) {
     SDL_IOStream *rw = SDL_IOFromFile(path, "rb");
-    if (rw == null) return false;
-    SDL_CloseIO(rw);
-    return true;
+    if (rw == null) return(false);
+    SDL_CloseIO(rw); return(true);
   }
 
   bool exists(const(char)* path) { return(isfile(path) || dirExists(path)); }
