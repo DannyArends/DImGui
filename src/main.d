@@ -88,7 +88,6 @@ void run(string[] args = null) {
     app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
-  app.cleanupGame();
   app.cleanup();
 }
 

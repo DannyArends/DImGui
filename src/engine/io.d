@@ -43,6 +43,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
   for(int retry = 0; retry < 3 && fp == null; retry++) {
     fp = SDL_IOFromFile(path, "rb"); if(fp == null) SDL_Delay(1);
   }
+  version(Android) SDL_Log("readFile: '%s' -> %s", path, fp == null ? "NOT FOUND".ptr : "opened".ptr);
   if(fp == null){ return []; }
 
   auto sz = SDL_GetIOSize(fp);
@@ -67,6 +68,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   path = fixPath(path);
   version (Android) { path = toStringz(format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path))); }
+  version (Android) SDL_Log("writeFile: writing to '%s' (%d bytes)", path, content.length);
   SDL_IOStream* fp = SDL_IOFromFile(path, "w");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
 
