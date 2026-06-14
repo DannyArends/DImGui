@@ -103,8 +103,10 @@ void createOrResizeWindow(ref App app) {
  * Check if the window was resized, and if so recreate the window resources
  */
 void checkForResize(ref App app){
+  if(!app.rebuild) return;
   int width, height;
   SDL_GetWindowSizeInPixels(app.window, &width, &height);
+  if(width == 0 || height == 0) return;
   if(width > 0 && height > 0 && (app.rebuild || app.camera.width != width || app.camera.height != height)) {
     ImGui_ImplVulkan_SetMinImageCount(app.camera.minImageCount);
     app.gui.io.DisplaySize = ImVec2(cast(float)width, cast(float)height);
