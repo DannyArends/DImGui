@@ -45,8 +45,9 @@ char[] readFile(const(char)* path, uint verbose = 0) {
   }
 
   char[] content;
-  content.length = cast(size_t)SDL_GetIOSize(fp);
-  if(content.length == 0) { SDL_CloseIO(fp); return []; }   // ADD: guard empty file
+  auto sz = SDL_GetIOSize(fp);
+  if(sz <= 0) { SDL_CloseIO(fp); return []; }
+  content.length = cast(size_t)sz;
 
   size_t readTotal = 0, nRead = 1;
   char* buffer = &content[0];
