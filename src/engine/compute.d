@@ -165,14 +165,6 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
 
     uint nlights = cast(uint)app.lights.length;
     vkCmdDispatch(cmdBuffer, cast(uint)ceil(cast(float)nlights / shader.groupCount[0]), 1, 1);
-
-    VkBuffer lightsBuf = app.buffers["ClusterLights"][syncIndex].buffer;
-    VkBufferMemoryBarrier[2] clusterBarriers = [
-      { sType: VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, srcAccessMask: VK_ACCESS_SHADER_WRITE_BIT, dstAccessMask: VK_ACCESS_SHADER_READ_BIT, srcQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED, dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED, buffer: headBuf,   size: VK_WHOLE_SIZE },
-      { sType: VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, srcAccessMask: VK_ACCESS_SHADER_WRITE_BIT, dstAccessMask: VK_ACCESS_SHADER_READ_BIT, srcQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED, dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED, buffer: lightsBuf, size: VK_WHOLE_SIZE }
-    ];
-    vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, null, 2, &clusterBarriers[0], 0, null);
-
     popLabel(cmdBuffer);
     enforceVK(vkEndCommandBuffer(cmdBuffer));
     return;
