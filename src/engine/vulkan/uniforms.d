@@ -80,6 +80,10 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
   float sliceScale = LIGHT_GRID[2] / logFN;
   float sliceBias  = -(LIGHT_GRID[2] * log2(app.camera.nearfar[0])) / logFN;
 
+  float cw = cast(float)app.camera.width, ch = cast(float)app.camera.height;
+  auto xform = app.camera.currentTransform;
+  if(xform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR || xform == VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) { auto tmp = cw; cw = ch; ch = tmp; }
+
   UniformBufferObject ubo = {
     position: app.camera.position.xyzw,
     scene: Matrix.init,
@@ -91,7 +95,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     lMode: cast(LMode)app.lMode,
     indexBufferLength: ("ClusterLights" in app.buffers) ? app.buffers["ClusterLights"].nObjects : 0,
     grid: LIGHT_GRID,
-    clusterCfg: [sliceScale, sliceBias, cast(float)app.camera.width, cast(float)app.camera.height],
+    clusterCfg: [sliceScale, sliceBias, cw, ch]
   };
 
   // Adjust for screen orientation so that the world is always up
