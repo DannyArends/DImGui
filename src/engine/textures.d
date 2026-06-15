@@ -10,8 +10,8 @@ import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import images : nameImageBuffer, generateMipmaps, imageSize, createImage, cleanup, transitionImageLayout;
 import io : dir;
-import swapchain : createImageView;
 import validation : nameVulkanObject;
+import views : createImageView;
 
 enum MAX_TEXTURES = 512;
 

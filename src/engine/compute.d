@@ -8,7 +8,6 @@ import engine;
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorData;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
-import swapchain : createImageView;
 import shaders : loadShaders, createStageInfo;
 import ssbo : updateSSBO, createSSBO;
 import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
@@ -16,9 +15,9 @@ import textures : idx, registerTexture;
 import quaternion : xyzw;
 import uniforms : createUBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
+import views : createImageView;
 
-/** Compute structure with shaders, command buffer and pipelines
- */
+/** Compute structure with shaders, command buffer and pipelines */
 struct Compute {
   size_t lastTick;                      /// Last tick
   ParticleSystem system;                /// Particles
