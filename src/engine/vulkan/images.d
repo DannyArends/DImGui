@@ -122,6 +122,22 @@ void generateMipmaps(ref App app, VkCommandBuffer cmd, VkImage image, int width,
                            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevels - 1);
 }
 
+/** Copy layer from srcLayer to dstLayer */
+void copyImageLayer(ref App app, VkCommandBuffer cmd, VkImage img, uint srcLayer, uint dstLayer,
+                    VkExtent3D ext, VkFormat format, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_DEPTH_BIT) {
+  imageBarrier(cmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+               0, 1, dstLayer, 1, aspect);
+
+  app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, format, 1, srcLayer, 1);
+
+  VkImageCopy region = { srcSubresource: {aspect,0,srcLayer,1}, dstSubresource: {aspect,0,dstLayer,1}, extent: ext };
+  vkCmdCopyImage(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+  app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, format, 1, dstLayer, 1);
+}
+
 /** Transition Image Layout from old to new layout */
 void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage image,
                            VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
