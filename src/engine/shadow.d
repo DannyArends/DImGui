@@ -15,7 +15,6 @@ import renderpass : beginRecording, endRecording;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
 import swapchain : createImageView;
-import uniforms : forEachUBO;
 import vector : xyz;
 import validation : popLabel, pushLabel;
 
@@ -218,14 +217,9 @@ void createShadowMapGraphicsPipeline(ref App app) {
 }
 
 /** Update the shadow mapping UBO */
-void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
-  LightUbo ubo = {
-    scene : Matrix.init,
-    nlights : cast(uint)app.lights.length
-  };
-
-  shaders.forEachUBO((d) { memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes); });
-  if(app.trace) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
+void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
+  LightUbo ubo = { scene : Matrix.init, nlights : cast(uint)app.lights.length };
+  memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
 
 /** Record the draw calls in the shadow command buffer */

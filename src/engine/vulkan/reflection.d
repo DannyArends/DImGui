@@ -153,11 +153,10 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
   foreach(ref shader; shaders) {
     foreach(ref d; shader.descriptors) {
       if(auto p = d.base in app.providers) { p.create(app, d); continue; }
-      if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){ 
-        app.createUBO(d);
-      }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ 
+      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ 
         app.createStorageImage(d);
-      }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){ SDL_Log("reflect: no provider for SSBO %s", toStringz(d.base)); }
+      }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){ SDL_Log("reflect: no provider for SSBO %s", toStringz(d.base));
+      }else if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){ SDL_Log("reflect: no provider for UBO %s", toStringz(d.base)); }
     }
   }
 }

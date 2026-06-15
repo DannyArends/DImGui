@@ -14,7 +14,7 @@ import ssbo : updateSSBO, createSSBO;
 import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
 import textures : idx, registerTexture;
 import quaternion : xyzw;
-import uniforms : forEachUBO;
+import uniforms : createUBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
 
 /** Compute structure with shaders, command buffer and pipelines
@@ -35,6 +35,13 @@ ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_gls
 void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
+
+  // UBO
+  app.providers["ParticleUniformBuffer"] = DescriptorProvider(
+    (ref a, ref d){ a.createUBO(d); },
+    (ref a, ref d, cmd){ a.updateComputeUBO(d, a.syncIndex); });
+
+  // SSBO
   app.providers["lastFrame"] = DescriptorProvider(
     (ref a, ref d){
       a.createSSBO(d, a.compute.system.particles);
@@ -100,7 +107,7 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
   });
 }
 
-void updateComputeUBO(ref App app, uint syncIndex = 0){
+void updateComputeUBO(ref App app, Descriptor d, uint syncIndex) {
   size_t now = SDL_GetTicks();
   ParticleUniformBuffer buffer = {
     position:  app.compute.system.position.xyzw,
@@ -109,7 +116,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
     deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
   };
   app.compute.lastTick = now;
-  app.compute.shaders.forEachUBO((d) { memcpy(app.ubos[d.base][syncIndex].data, &buffer, d.bytes); });
+  memcpy(app.ubos[d.base][syncIndex].data, &buffer, d.bytes);
 }
 
 void createStorageImage(ref App app, Descriptor descriptor){

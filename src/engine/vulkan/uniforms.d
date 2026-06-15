@@ -33,10 +33,6 @@ struct ParticleUniformBuffer {
 
 alias UBO = GPUAllocation[];
 
-void forEachUBO(Shader[] shaders, void delegate(Descriptor) fn) {
-  foreach(shader; shaders) { foreach(d; shader.descriptors) { if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) fn(d); } }
-}
-
 void createUBO(ref App app, Descriptor descriptor) {
   SDL_Log("Create UBO at %s, size = %d, D struct size = %d", toStringz(descriptor.base), descriptor.bytes, UniformBufferObject.sizeof);
   if(descriptor.base in app.ubos) return;
@@ -57,7 +53,7 @@ void createUBO(ref App app, Descriptor descriptor) {
   });
 }
 
-void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
+void updateRenderUBO(ref App app, Descriptor d, uint syncIndex) {
   float logFN = log2(app.camera.nearfar[1] / app.camera.nearfar[0]);
 
   UniformBufferObject ubo = {
@@ -81,8 +77,5 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
   } else if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR) {
     ubo.orientation = rotate(Matrix.init, [0.0f, 180.0f, 0.0f]);
   }
-
-  shaders.forEachUBO((d) { if(d.name == "ubo") { memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes); } });
+  memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
-
-
