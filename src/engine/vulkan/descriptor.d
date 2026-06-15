@@ -8,6 +8,8 @@ import engine;
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import ssbo : updateSSBO, createSSBO;
 import textures : idx;
+import uniforms : createUBO, updateRenderUBO;
+import shadow : updateShadowMapUBO;
 import validation : nameVulkanObject;
 
 enum DescriptorTarget { None, Textures, Shadow, HDR, Compute }
@@ -163,6 +165,14 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
 
 /** Register creators for the render SSBOs */
 void registerRenderProviders(ref App app) {
+  // UBO
+  app.providers["UniformBufferObject"] = DescriptorProvider(
+    (ref a, ref d){ a.createUBO(d); },
+    (ref a, ref d, cmd){ a.updateRenderUBO(d, a.syncIndex); });
+  app.providers["LightSpaceMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createUBO(d); },
+    (ref a, ref d, cmd){ a.updateShadowMapUBO(d, a.syncIndex); });
+  // SSBO
   app.providers["BoneMatrices"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.boneOffsets); },
     (ref a, ref d, cmd){ a.updateSSBO!Matrix(cmd, a.boneOffsets, d, a.syncIndex); });
@@ -195,7 +205,7 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
   foreach(shader; shaders){ foreach(ref d; shader.descriptors){
     if(!(d.base in elements)){ elements[d.base] = d; }
   } }
-  foreach(base, ref d; elements){ if(auto p = base in app.providers) { if(p.onFrame) { 
+  foreach(base, ref d; elements){ if(auto p = base in app.providers) { if(p.onFrame) {
     if(p.lastFrame == app.totalFramesRendered) continue;
     p.lastFrame = app.totalFramesRendered;
     p.onFrame(app, d, cmdBuffer[syncIndex]);

@@ -54,9 +54,6 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateMeshInfo();                       /// Check for Mesh Information change
   app.timed!updateBoneOffsets(app.syncIndex);       /// Check for animation causing BoneOffsets changes
   app.timed!updateDisco(dt);                        /// Update when disco mode 🕺 🪩 💃
-  if(app.hasCompute) app.timed!updateComputeUBO(app.syncIndex);
-  app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
-  app.timed!updateRenderUBO(app.shaders, app.syncIndex);
   app.computeActiveLighting();
   app.repointDirtyDescriptors();
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
