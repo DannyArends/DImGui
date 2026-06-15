@@ -49,6 +49,7 @@ struct App {
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
   ShadowMap shadows;                                                            /// ShadowMap object
+  DescriptorProvider[string] providers;                                         /// GPU resource creator
 
   VkSampler sampler;
   Shader[] shaders;
@@ -82,7 +83,7 @@ struct App {
 
   VkDescriptorPool[string] pools;                                               /// Descriptor pools (IMGUI, COMPUTE, RENDER)
   VkDescriptorSetLayout[string] layouts;                                        /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
-  VkDescriptorSet[][string] sets;                                               /// Descriptor sets per Frames In Flight for (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorSet[][string] sets;                                               /// Descriptor sets for (IMGUI, RENDER, N x computeShader.PATH)
 
   // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;                                                  /// Vulkan Surface

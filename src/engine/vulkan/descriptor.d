@@ -6,8 +6,9 @@
 import engine;
 
 import lights : updateLighting;
-import ssbo : updateSSBO;
+import ssbo : updateSSBO, createSSBO;
 import textures : idx;
+import reflection : CLUSTER_COUNT;
 import validation : nameVulkanObject;
 
 enum DescriptorTarget { None, Textures, Shadow, HDR, Compute }
@@ -24,6 +25,8 @@ struct Descriptor {
   uint binding;             /// DescriptorSet Binding
   uint count;               /// Descriptor count
 }
+
+alias DescriptorProvider = void delegate(ref App, ref Descriptor);
 
 struct DescriptorLayoutBuilder {
   VkDescriptorSetLayoutBinding[] bindings;
@@ -153,6 +156,24 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
   };
   enforceVK(vkAllocateDescriptorSets(device, &allocInfo, &set[0]));
   return(set);
+}
+
+/** Register creators for the render SSBOs (mirrors updateDescriptorData) */
+void registerRenderProviders(ref App app) {
+  app.providers["BoneMatrices"] = (ref a, ref d){ a.createSSBO(d, a.boneOffsets); };
+  app.providers["LightMatrices"] = (ref a, ref d){ a.createSSBO(d, a.lights); };
+  app.providers["MeshMatrices"] = (ref a, ref d){ a.createSSBO(d, a.meshes); };
+  app.providers["MaterialBuffer"] = (ref a, ref d){ a.createSSBO(d, a.materials); };
+
+  // Compute based, but needed for rendering
+  app.providers["ClusterLights"]  = (ref a, ref d){
+      if(a.clusterCapacity == 0){ a.clusterCapacity = CLUSTER_COUNT;} a.createSSBO(d, a.clusterCapacity, 0, true); 
+  };
+  app.providers["ClusterHeads"] = (ref a, ref d){ a.createSSBO(d, CLUSTER_COUNT, 0, true); };
+  app.providers["ClusterCounter"] = (ref a, ref d){
+      a.createSSBO(d, 1, 0, false);
+      foreach(i; 0 .. a.buffers["ClusterCounter"].length){ *cast(uint*)a.buffers["ClusterCounter"][i].data = 0; }
+  };
 }
 
 void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, VkDescriptorType type, uint syncIndex) {
