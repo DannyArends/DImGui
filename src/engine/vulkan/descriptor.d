@@ -28,6 +28,7 @@ struct Descriptor {
 struct DescriptorProvider {
   void delegate(ref App, ref Descriptor) create; /// once, at resource creation
   void delegate(ref App, ref Descriptor, VkCommandBuffer) onFrame; /// per pass per frame (null = none)
+  size_t lastFrame = size_t.max;
 }
 
 struct DescriptorLayoutBuilder {
@@ -194,9 +195,11 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
   foreach(shader; shaders){ foreach(ref d; shader.descriptors){
     if(!(d.base in elements)){ elements[d.base] = d; }
   } }
-  foreach(base, ref d; elements) { if(auto p = base in app.providers) {
-    if(p.onFrame){ p.onFrame(app, d, cmdBuffer[syncIndex]); }
-  } }
+  foreach(base, ref d; elements){ if(auto p = base in app.providers) { if(p.onFrame) { 
+    if(p.lastFrame == app.totalFramesRendered) continue;
+    p.lastFrame = app.totalFramesRendered;
+    p.onFrame(app, d, cmdBuffer[syncIndex]);
+  } } }
 }
 
 /** Create our DescriptorSet (UBO and Combined image sampler) */
