@@ -94,7 +94,7 @@ void renderFrame(ref App app, double dt) {
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[4] submitCommandBuffers;
   uint nSubmit = 0;
-  if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.renderPass.commands[app.syncIndex]; }
+  if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.staticPass.commands[app.syncIndex]; }
   submitCommandBuffers[nSubmit++] = app.scenePass.commands[app.syncIndex];
   submitCommandBuffers[nSubmit++] = app.postPass.commands[app.syncIndex];
   submitCommandBuffers[nSubmit++] = app.imguiPass.commands[app.syncIndex];
