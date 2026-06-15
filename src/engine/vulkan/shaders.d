@@ -153,7 +153,7 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
 struct ShaderStage {
   uint[] flags;
   VkSpecializationMapEntry[] mapEntry;
-  VkSpecializationInfo specInfo;
+  VkSpecializationInfo* specInfo;
   VkPipelineShaderStageCreateInfo[] info;
 }
 
@@ -169,11 +169,11 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
     VkSpecializationMapEntry(4, 4*uint.sizeof, uint.sizeof),  // GRID_Y : compute & fragment
     VkSpecializationMapEntry(5, 5*uint.sizeof, uint.sizeof),  // GRID_Z : compute & fragment
   ];
-  stage.specInfo = VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
+  stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
 
   foreach(shader; shaders) {
     auto spec = shader.info;
-    spec.pSpecializationInfo = &stage.specInfo;
+    spec.pSpecializationInfo = stage.specInfo;
     stage.info ~= spec;
   }
   return(stage);
