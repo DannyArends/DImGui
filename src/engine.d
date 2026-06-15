@@ -130,7 +130,7 @@ struct App {
   bool showLights = false;                                                      /// Show lights
   LMode lMode = isAndroid ? LMode.Lights : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool disco = false;                                                           /// Disco mode
-  bool hasCompute = true;                                                       /// Is compute enabled / available ?
+  bool hasCompute = false;                                                       /// Is compute enabled / available ?
   uint clusterCapacity = CLUSTER_COUNT;                                         /// Froxel light index capacity, grows on overflow
   uint verbose = 0;                                                             /// Be very verbose
   bool minimized = false;                                                       /// minimized ?
