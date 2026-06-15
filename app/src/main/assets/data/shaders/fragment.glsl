@@ -65,15 +65,6 @@ void main() {
   for (uint n = head[cid].head; n != NIL; n = indices[n].next) {
     surfaceColor += shadeLight(indices[n].light, baseColor, fragPosWorld, normalForLighting, useShadows);
   }
-  // DEBUG: visualize froxel grid — remove after diagnosis
- // vec2 tile = ubo.clusterCfg.zw / vec2(ubo.grid.xy);
-  //uint dgx = uint(clamp(gl_FragCoord.x / tile.x, 0.0, float(ubo.grid.x - 1u)));
-  //uint dgy = uint(clamp(gl_FragCoord.y / tile.y, 0.0, float(ubo.grid.y - 1u)));
-  //outColor = vec4(float(dgx) / float(ubo.grid.x), float(dgy) / float(ubo.grid.y), float(head[cid].head != NIL), 1.0);
-  //return;
-  
-  //outColor = vec4(gl_FragCoord.x / 2000.0, gl_FragCoord.y / 2000.0, 0.0, 1.0);
-  //return;
   outColor = vec4(surfaceColor, 1.0);
 }
 

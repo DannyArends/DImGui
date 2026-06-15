@@ -10,6 +10,9 @@
 layout(constant_id = 0) const int TOPOLOGY = 3;
 layout(constant_id = 1) const bool ALPHA_TEST = true;
 layout(constant_id = 2) const bool INSTANCED = true;
+layout(constant_id = 3) const uint GRID_X = 16u;
+layout(constant_id = 4) const uint GRID_Y = 9u;
+layout(constant_id = 5) const uint GRID_Z = 24u;
 
 // Constants
 const uint NIL = 0xFFFFFFFFu;
@@ -105,7 +108,6 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   uint nlights;               /// Number of actual lights
   uint lightingMode;          /// Show shadows ?
   uint indexBufferLength;     /// Total entries in ClusterLights.indices[]
-  uvec4 grid;                 /// [gridX, gridY, gridZ, unused]
   vec4 clusterCfg;            /// [sliceScale, sliceBias, screenW, screenH]
 } ubo;
 
