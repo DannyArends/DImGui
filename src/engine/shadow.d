@@ -134,6 +134,21 @@ void createShadowMapRenderPass(ref App app, ref RenderPass pass, VkAttachmentLoa
   pass.create(app, info, (load? "Dynamic Shadows" : "Static Shadows"), app.mainDeletionQueue);
 }
 
+/** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
+void recordCasters(ref App app, VkCommandBuffer cmd, uint l, Plane[6] lFrustum, bool staticPhase) {
+  foreach(obj; app.objects) {
+    if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
+    if(obj.box !is null) {
+      if(obj.box.distanceSq(app.lights[l].position.xyz) > app.lights[l].cull[0] * app.lights[l].cull[0]) continue;
+      if(!lFrustum.aabbInFrustum(obj.box.wmin, obj.box.wmax)) continue;
+    }
+    if(obj.isStatic != staticPhase) continue;
+    app.shadows.lastShadowInstances += obj.instances.length;
+    ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
+    app.draw(obj, cmd);
+  }
+}
+
 /** Create the shadow mapping pipeline */
 void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline creation");
