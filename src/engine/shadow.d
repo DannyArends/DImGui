@@ -24,7 +24,7 @@ struct ShadowMap {
 
   VkSampler sampler;
   Shader[] shaders;
-  CommandBuffer cmd;
+  CommandBuffer!2 cmd;
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
@@ -37,8 +37,8 @@ struct ShadowMap {
 
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
-  uint staticShadowInstances = 0;           /// TODO: Static/dynamic shadow caching
-  uint dynamicShadowInstances = 0;          /// TODO: Static/dynamic shadow caching
+  uint staticShadowInstances = 0;           /// Static shadow instances count
+  uint dynamicShadowInstances = 0;          /// Dynamic shadow instances count
 }
 
 struct LightUbo {
@@ -47,7 +47,6 @@ struct LightUbo {
 };
 
 void createShadowMap(ref App app) {
-  app.shadows.cmd.renderpass.length = 2;
   app.createShadowMapRenderPass(app.shadows.cmd.pass(0), VK_ATTACHMENT_LOAD_OP_CLEAR);
   app.createShadowMapRenderPass(app.shadows.cmd.pass(1), VK_ATTACHMENT_LOAD_OP_LOAD);
   app.initShadowPool();
