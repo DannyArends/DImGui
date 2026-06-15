@@ -224,7 +224,7 @@ void updateShadowMapUBO(ref App app, Shader[] shaders, uint syncIndex) {
     nlights : cast(uint)app.lights.length
   };
 
-  shaders.forEachUBO((d) { memcpy(app.ubos[d.base].data[syncIndex], &ubo, d.bytes); });
+  shaders.forEachUBO((d) { memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes); });
   if(app.trace) SDL_Log("Light space matrix updated for frame %d", app.totalFramesRendered);
 }
 

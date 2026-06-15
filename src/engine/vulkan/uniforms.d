@@ -31,18 +31,7 @@ struct ParticleUniformBuffer {
   float deltaTime;
 };
 
-struct UBO {
-  VkBuffer[] buffers;
-  VkDeviceMemory[] memory;
-  void*[] data;
-}
-
-void nameUBO(ref App app, UBO ubo, string name){
-  for(uint i = 0; i < ubo.buffers.length; i++) {
-    app.nameVulkanObject(ubo.buffers[i], toStringz(format("[UBO-BUF] %s #%d", name, i)), VK_OBJECT_TYPE_BUFFER);
-    app.nameVulkanObject(ubo.memory[i], toStringz(format("[UBO-MEM] %s #%d", name, i)), VK_OBJECT_TYPE_DEVICE_MEMORY);
-  }
-}
+alias UBO = GPUAllocation[];
 
 void forEachUBO(Shader[] shaders, void delegate(Descriptor) fn) {
   foreach(shader; shaders) { foreach(d; shader.descriptors) { if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) fn(d); } }
@@ -51,23 +40,22 @@ void forEachUBO(Shader[] shaders, void delegate(Descriptor) fn) {
 void createUBO(ref App app, Descriptor descriptor) {
   SDL_Log("Create UBO at %s, size = %d, D struct size = %d", toStringz(descriptor.base), descriptor.bytes, UniformBufferObject.sizeof);
   if(descriptor.base in app.ubos) return;
-  app.ubos[descriptor.base] = UBO();
-  app.ubos[descriptor.base].buffers.length = app.framesInFlight;
-  app.ubos[descriptor.base].memory.length = app.framesInFlight;
-  app.ubos[descriptor.base].data.length = app.framesInFlight;
-  for(uint i = 0; i < app.framesInFlight; i++) {
-    app.createBuffer(&app.ubos[descriptor.base].buffers[i], &app.ubos[descriptor.base].memory[i], descriptor.bytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    enforceVK(vkMapMemory(app.device, app.ubos[descriptor.base].memory[i], 0, descriptor.bytes, 0, &app.ubos[descriptor.base].data[i]));
+  app.ubos[descriptor.base] = new GPUAllocation[](app.framesInFlight);
+
+  foreach(i, ref a; app.ubos[descriptor.base]) {
+    app.createBuffer(&a.buffer, &a.memory, descriptor.bytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    enforceVK(vkMapMemory(app.device, a.memory, 0, descriptor.bytes, 0, &a.data));
+    app.nameVulkanObject(a.buffer, toStringz(format("[UBO-BUF] %s #%d", descriptor.base, i)), VK_OBJECT_TYPE_BUFFER);
+    app.nameVulkanObject(a.memory, toStringz(format("[UBO-MEM] %s #%d", descriptor.base, i)), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
-  app.nameUBO(app.ubos[descriptor.base], descriptor.base);
   if(app.verbose) SDL_Log("Created %d UBO of size: %d bytes", app.imageCount, descriptor.bytes);
 
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting UBO at %s", toStringz(descriptor.base));
-    for(uint i = 0; i < app.framesInFlight; i++) {
-      vkUnmapMemory(app.device, app.ubos[descriptor.base].memory[i]);
-      vkFreeMemory(app.device, app.ubos[descriptor.base].memory[i], app.allocator);
-      vkDestroyBuffer(app.device, app.ubos[descriptor.base].buffers[i], app.allocator);
+    foreach(a; app.ubos[descriptor.base]) {
+      vkUnmapMemory(app.device, a.memory);
+      vkFreeMemory(app.device, a.memory, app.allocator);
+      vkDestroyBuffer(app.device, a.buffer, app.allocator);
     }
     app.ubos.remove(descriptor.base);
   });
@@ -99,7 +87,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
   }
 
   shaders.forEachUBO((d) {
-    if(d.name == "ubo") { memcpy(app.ubos[d.base].data[syncIndex], &ubo, d.bytes); }
+    if(d.name == "ubo") { memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes); }
   });
 }
 

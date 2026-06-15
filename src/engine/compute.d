@@ -109,7 +109,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
     deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
   };
   app.compute.lastTick = now;
-  app.compute.shaders.forEachUBO((d) { memcpy(app.ubos[d.base].data[syncIndex], &buffer, d.bytes); });
+  app.compute.shaders.forEachUBO((d) { memcpy(app.ubos[d.base][syncIndex].data, &buffer, d.bytes); });
 }
 
 void createStorageImage(ref App app, Descriptor descriptor){
