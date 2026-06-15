@@ -15,7 +15,7 @@ import textures : idx, registerTexture;
 import quaternion : xyzw;
 import uniforms : createUBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
-import views : createImageView;
+import views : createImageView, createLayerViews;
 
 /** Compute structure with shaders, command buffer and pipelines */
 struct Compute {
@@ -130,7 +130,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
 
   app.createImage(texture, texture.width, texture.height,
                   VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
-  texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_UNORM);
+  app.createLayerViews(texture, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
   app.nameImageBuffer(texture, "Compute Image");
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);

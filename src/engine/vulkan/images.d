@@ -15,21 +15,22 @@ VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * SDL
 
 struct ImageBuffer {
   VkImage image = null;             /// Image
-  VkImageView[] view = null;        /// View
+  VkImageView[] views = null;       /// Views
   VkDeviceMemory memory = null;     /// Memory
   VkExtent3D extent;                /// Extent
   uint arrayLayers = 1;             /// Layers
+  @property ref VkImageView view(uint id = 0) { return(views[id]); }
 }
 
 void nameImageBuffer(ref App app, ImageBuffer buffer, string path){
   app.nameVulkanObject(buffer.image, toStringz("[IMAGE] " ~ baseName(path)), VK_OBJECT_TYPE_IMAGE);
   app.nameVulkanObject(buffer.memory, toStringz("[MEMORY] " ~ baseName(path)), VK_OBJECT_TYPE_DEVICE_MEMORY);
-  app.nameVulkanObject(buffer.view, toStringz("[VIEW] " ~ baseName(path)), VK_OBJECT_TYPE_IMAGE_VIEW);
+  foreach(i, v; buffer.views) { app.nameVulkanObject(v, toStringz(format("[VIEW] %s #%d", baseName(path), i)), VK_OBJECT_TYPE_IMAGE_VIEW); }
 }
 
 /** DeAllocate an ImageBuffer / Texture */
 @nogc void cleanup(ref App app, ImageBuffer buffer) nothrow {
-  vkDestroyImageView(app.device, buffer.view, app.allocator);
+  foreach(v; buffer.views) { vkDestroyImageView(app.device, v, app.allocator); }
   vkDestroyImage(app.device, buffer.image, app.allocator);
   vkFreeMemory(app.device, buffer.memory, app.allocator);
 }

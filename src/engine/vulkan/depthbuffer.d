@@ -8,7 +8,7 @@ import engine;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
-import views : createImageView;
+import views : createImageView, createLayerViews;
 
 alias ImageBuffer DepthBuffer;
 
@@ -40,7 +40,7 @@ void createDepthResources(ref App app) {
   app.createImage(app.depthBuffer, app.camera.width, app.camera.height,
                   depthFormat, app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.image);
-  app.depthBuffer.view = app.createImageView(app.depthBuffer.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+  app.createLayerViews(app.depthBuffer, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
   if(app.verbose) SDL_Log(" - image view created: %p", app.depthBuffer.view);
   app.nameImageBuffer(app.depthBuffer, "DepthBuffer");
 
