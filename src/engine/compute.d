@@ -8,10 +8,10 @@ import engine;
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSetLayout, createDescriptorSet;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
-import reflection : createResources;
+import reflection : createResources, CLUSTER_COUNT;
 import swapchain : createImageView;
 import shaders : loadShaders, createStageInfo;
-import ssbo : updateSSBO;
+import ssbo : updateSSBO, createSSBO;
 import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
 import textures : idx, registerTexture;
 import quaternion : xyzw;
@@ -36,6 +36,9 @@ ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_gls
 void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
+  app.providers["lastFrame"] = (ref a, ref d){ a.createSSBO(d, a.compute.system.particles); a.transferToSSBO(d); };
+  app.providers["currentFrame"] = (ref a, ref d){ a.createSSBO(d, a.compute.system.particles); };
+
 }
 
 /** Create the compute pipeline specified by the selectedShader */

@@ -6,8 +6,7 @@
 import engine;
 
 import descriptor : createDSPool, DescriptorTarget;
-import compute : createStorageImage, transferToSSBO;
-import ssbo : createSSBO;
+import compute : createStorageImage;
 import shadow : MAX_SHADOW_MAPS;
 import textures : MAX_TEXTURES;
 import uniforms : createUBO;
@@ -152,32 +151,12 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
   app.createDSPool(poolID, shaders);
   foreach(ref shader; shaders) {
     foreach(ref d; shader.descriptors) {
-      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) { app.createStorageImage(d); }
-      if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) { app.createUBO(d); }
-      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if (d.base == "BoneMatrices") { 
-          app.createSSBO(d, app.boneOffsets);
-        }else if(d.base == "LightMatrices") {
-          app.createSSBO(d, app.lights);
-        }else if(d.base == "MeshMatrices") {
-          app.createSSBO(d, app.meshes);
-        } else if(d.base == "MaterialBuffer") {
-          app.createSSBO(d, app.materials);
-        }else if(app.hasCompute && d.base == "lastFrame") {
-          app.createSSBO(d, app.compute.system.particles);
-          app.transferToSSBO(d); 
-        }else if(app.hasCompute && d.base == "currentFrame") {
-          app.createSSBO(d, app.compute.system.particles);
-        } else if(d.base == "ClusterLights") {
-          if(app.clusterCapacity == 0) app.clusterCapacity = CLUSTER_COUNT;
-          app.createSSBO(d, app.clusterCapacity, 0, true);
-        } else if(d.base == "ClusterHeads") {
-          app.createSSBO(d, CLUSTER_COUNT, 0, true);
-        }else if(d.base == "ClusterCounter"){
-          app.createSSBO(d, 1, 0, false);
-          foreach(i; 0 .. app.buffers["ClusterCounter"].length){ *cast(uint*)app.buffers["ClusterCounter"][i].data = 0; }
-        }
-      }
+      if(auto p = d.base in app.providers) { (*p)(app, d); continue; }
+      if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){ 
+        app.createUBO(d);
+      }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ 
+        app.createStorageImage(d);
+      }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){ SDL_Log("reflect: no provider for SSBO %s", toStringz(d.base)); }
     }
   }
 }
