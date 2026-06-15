@@ -5,8 +5,7 @@
 
 import engine;
 
-/** Main Menu
- */
+/** Main Menu */
 void showMenu(ref App app, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(igBeginMainMenuBar()) {
