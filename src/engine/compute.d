@@ -6,7 +6,7 @@
 import engine;
 
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
-import descriptor : createDescriptorSetLayout, createDescriptorSet;
+import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorData;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
 import swapchain : createImageView;
 import shaders : loadShaders, createStageInfo;
@@ -160,6 +160,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
   pushLabel(cmd, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
+  app.updateDescriptorData([shader], app.compute.commands[shader.path], syncIndex);
 
   if (baseName(fromStringz(shader.path)) == "cull.glsl") {
     VkBuffer headBuf = app.buffers["ClusterHeads"][syncIndex].buffer;
