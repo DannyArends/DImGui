@@ -58,10 +58,7 @@ void updateRenderUBO(ref App app, Descriptor d, uint syncIndex) {
 
   UniformBufferObject ubo = {
     position: app.camera.position.xyzw,
-    scene: Matrix.init,
-    view: app.camera.view,
-    proj: app.camera.proj,
-    orientation: Matrix.init,
+    scene: Matrix.init, view: app.camera.view, proj: app.camera.proj, orientation: Matrix.init,
     shadowTexelSize: 1.0f / cast(float)app.shadows.dimension,
     nlights: cast(uint)app.lights.length,
     lMode: cast(LMode)app.lMode,
