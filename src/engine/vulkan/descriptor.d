@@ -26,7 +26,10 @@ struct Descriptor {
   uint count;               /// Descriptor count
 }
 
-alias DescriptorProvider = void delegate(ref App, ref Descriptor);
+struct DescriptorProvider {
+  void delegate(ref App, ref Descriptor) create; /// once, at resource creation
+  void delegate(ref App, ref Descriptor, VkCommandBuffer) onFrame; /// per pass per frame (null = none)
+}
 
 struct DescriptorLayoutBuilder {
   VkDescriptorSetLayoutBinding[] bindings;
@@ -160,41 +163,38 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
 
 /** Register creators for the render SSBOs (mirrors updateDescriptorData) */
 void registerRenderProviders(ref App app) {
-  app.providers["BoneMatrices"] = (ref a, ref d){ a.createSSBO(d, a.boneOffsets); };
-  app.providers["LightMatrices"] = (ref a, ref d){ a.createSSBO(d, a.lights); };
-  app.providers["MeshMatrices"] = (ref a, ref d){ a.createSSBO(d, a.meshes); };
-  app.providers["MaterialBuffer"] = (ref a, ref d){ a.createSSBO(d, a.materials); };
+  app.providers["BoneMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.boneOffsets); },
+    (ref a, ref d, cmd){ a.updateSSBO!Matrix(cmd, a.boneOffsets, d, a.syncIndex); });
+  app.providers["LightMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.lights); },
+    (ref a, ref d, cmd){ a.updateLighting(cmd, d); });
+  app.providers["MeshMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.meshes); },
+    (ref a, ref d, cmd){ a.updateSSBO!Mesh(cmd, a.meshes, d, a.syncIndex); });
+  app.providers["MaterialBuffer"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.materials); },
+    (ref a, ref d, cmd){ a.updateSSBO!Material(cmd, a.materials, d, a.syncIndex); });
 
-  // Compute based, but needed for rendering
-  app.providers["ClusterLights"]  = (ref a, ref d){
-      if(a.clusterCapacity == 0){ a.clusterCapacity = CLUSTER_COUNT;} a.createSSBO(d, a.clusterCapacity, 0, true); 
-  };
-  app.providers["ClusterHeads"] = (ref a, ref d){ a.createSSBO(d, CLUSTER_COUNT, 0, true); };
-  app.providers["ClusterCounter"] = (ref a, ref d){
-      a.createSSBO(d, 1, 0, false);
-      foreach(i; 0 .. a.buffers["ClusterCounter"].length){ *cast(uint*)a.buffers["ClusterCounter"][i].data = 0; }
-  };
+  app.providers["ClusterLights"] = DescriptorProvider(
+    (ref a, ref d){ if(a.clusterCapacity == 0){ a.clusterCapacity = CLUSTER_COUNT; } a.createSSBO(d, a.clusterCapacity, 0, true); },
+    null);
+  app.providers["ClusterHeads"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, CLUSTER_COUNT, 0, true); },
+    null);
+  app.providers["ClusterCounter"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, 1, 0, false); foreach(i; 0 .. a.buffers["ClusterCounter"].length){ *cast(uint*)a.buffers["ClusterCounter"][i].data = 0; } },
+    null);
 }
 
-void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, VkDescriptorType type, uint syncIndex) {
+void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, uint syncIndex) {
   Descriptor[string] elements;
-  foreach(shader; shaders){
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(!(shader.descriptors[d].base in elements)) elements[shader.descriptors[d].base] = shader.descriptors[d];
-    }
-  }
-  if("BoneMatrices" in elements) {
-    app.updateSSBO!Matrix(cmdBuffer[syncIndex], app.boneOffsets, elements["BoneMatrices"], syncIndex);
-  }
-  if("MeshMatrices" in elements) {
-    app.updateSSBO!Mesh(cmdBuffer[syncIndex], app.meshes, elements["MeshMatrices"], syncIndex);
-  }
-  if("MaterialBuffer" in elements) {
-    app.updateSSBO!Material(cmdBuffer[syncIndex], app.materials, elements["MaterialBuffer"], syncIndex);
-  }
-  if("LightMatrices" in elements) { // TODO: Hoist the light SSBO upload to the CPU phase, leave binding per-pass,
-    app.updateLighting(cmdBuffer[syncIndex], elements["LightMatrices"]);
-  }
+  foreach(shader; shaders){ foreach(ref d; shader.descriptors){
+    if(!(d.base in elements)){ elements[d.base] = d; }
+  } }
+  foreach(base, ref d; elements) { if(auto p = base in app.providers) {
+    if(p.onFrame){ p.onFrame(app, d, cmdBuffer[syncIndex]); }
+  } }
 }
 
 /** Create our DescriptorSet (UBO and Combined image sampler) */
