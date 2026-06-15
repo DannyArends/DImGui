@@ -65,8 +65,8 @@ void initShadowPool(ref App app) {
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(s, 32);
   app.shadows.shadowDescriptorsDirty[] = true;
   app.mainDeletionQueue.add((){
-    foreach(ref img; app.shadows.images) app.cleanup(img);
-    foreach(fb; app.shadows.renderPass.framebuffers) app.cleanup(fb);
+    foreach(fb; app.shadows.renderPass.framebuffers) { app.cleanup(fb); }
+    foreach(ref img; app.shadows.images) { app.cleanup(img); }
   });
 }
 
