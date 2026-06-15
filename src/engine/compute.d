@@ -139,7 +139,9 @@ void createStorageImage(ref App app, Descriptor descriptor){
   app.mainDeletionQueue.add((){ app.cleanup(texture); });
 }
 
-/** recordComputeCommandBuffer for syncIndex and the selected ComputeShader */
+/** recordComputeCommandBuffer for syncIndex and the selected ComputeShader 
+ * TODO: pipeline-agnostic recorder. Drop the =="cull.glsl"/buffer-name hardcoding + duplicated bind/dispatch;
+ * use ComputePass{pre, workItems, post} keyed by shader.path (like DescriptorProvider), recorder = scaffold only. */
 void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) {
   if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", toStringz(shader.path), syncIndex);
   auto cmd = app.compute.commands[shader.path][syncIndex];
