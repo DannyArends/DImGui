@@ -13,6 +13,7 @@ import uniforms : createUBO;
 
 enum uint[4] LIGHT_GRID = [16, 9, 24, 0];
 enum uint CLUSTER_COUNT = LIGHT_GRID[0] * LIGHT_GRID[1] * LIGHT_GRID[2];  // 3456
+enum uint NIL = 0xFFFFFFFF;
 
 enum spvc_resource_type[const(char)*] types = [
   "Uniform Buffer" : SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,

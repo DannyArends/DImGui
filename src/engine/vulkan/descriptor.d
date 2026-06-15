@@ -5,7 +5,7 @@
 
 import engine;
 
-import ssbo : updateSSBO, createSSBO;
+import ssbo : updateSSBO, createSSBO, transferToSSBO;
 import textures : idx;
 import validation : nameVulkanObject;
 
@@ -177,7 +177,8 @@ void registerRenderProviders(ref App app) {
   app.providers["ClusterLights"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, true); }, null);
   app.providers["ClusterHeads"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, CLUSTER_COUNT, true); }, null);
+    (ref a, ref d){ a.createSSBO(d, CLUSTER_COUNT, true); SSBOList!uint nil; nil.length = CLUSTER_COUNT; nil[] = NIL; a.transferToSSBO(d, nil); },
+    null);
   app.providers["ClusterCounter"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, 1, false); }, null);
 }

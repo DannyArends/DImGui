@@ -6,6 +6,7 @@
 import engine;
 
 import buffer : createBuffer, cleanup;
+import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
 import sync : insertWriteBarrier;
 import validation : nameVulkanObject;
@@ -107,6 +108,14 @@ void createSSBO(T)(ref App app, const Descriptor descriptor, ref SSBOList!T cont
   app.createSSBO(descriptor, cast(uint)container.capacity);
 }
 
+/** One-time upload of a container to every frame copy (host-visible or device-local). */
+void transferToSSBO(T)(ref App app, Descriptor descriptor, ref SSBOList!T container) {
+  auto cmd = app.beginSingleTimeCommands(app.commandPool);
+  for(uint i = 0; i < app.framesInFlight; i++) app.updateSSBO(cmd, container, descriptor, i);
+  app.endSingleTimeCommands(cmd, app.queue);
+}
+
+/** One-time upload of a container */
 void updateSSBOcontent(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint size, uint syncIndex) {
   if(app.buffers[descriptor.base].deviceLocal) {
     GPUAllocation staging;
