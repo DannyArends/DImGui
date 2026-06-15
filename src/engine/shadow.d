@@ -134,19 +134,19 @@ void createShadowMapRenderPass(ref App app, ref RenderPass pass, VkAttachmentLoa
 /** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
 void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, uint l, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
+  VkRect2D sc = { extent: { width: ext.width, height: ext.height } };
 
   VkRenderPassBeginInfo rp = {
     sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
     renderPass: pass, framebuffer: pass.framebuffers[s],
-    renderArea: { extent: { width: ext.width, height: ext.height } },
+    renderArea: sc,
     clearValueCount: staticPhase ? 1 : 0,
-    pClearValues:    staticPhase ? &clearDepth : null,
+    pClearValues: staticPhase ? &clearDepth : null,
   };
   vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
 
   VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
-  VkRect2D   sc = { extent: { width: ext.width, height: ext.height } };
   vkCmdSetViewport(cmd, 0, 1, &vp);
   vkCmdSetScissor(cmd, 0, 1, &sc);
   vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &l);
@@ -267,8 +267,6 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
   if(app.trace) SDL_Log("Beginning shadow map render pass");
 
-  VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
-
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   app.bufferGeometries(cmd);
   popLabel(cmd);
@@ -280,8 +278,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
-  app.shadows.staticShadowInstances = app.shadows.dynamicShadowInstances = 0;
-  app.shadows.staticRebuilds = app.shadows.activeShadowMaps = 0;
+  app.shadows.staticShadowInstances = app.shadows.dynamicShadowInstances = app.shadows.staticRebuilds = app.shadows.activeShadowMaps = 0;
   for(uint l = 0; l < app.lights.length; l++) {
     int s = cast(int)app.lights[l].cull[1];
     if(!app.lights[l].enabled || s < 0) continue;
@@ -289,8 +286,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
     auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
-    if(app.shadows.staticDirty[s]) {
-      // Static -> layer 0
+    if(app.shadows.staticDirty[s]) { // Static -> layer 0
       app.recordCasters(cmd, app.shadows.cmd.pass(0), s, l, lFrustum, app.shadows.images[s].extent, true);
       app.shadows.staticDirty[s] = false;
       app.shadows.staticRebuilds++;
