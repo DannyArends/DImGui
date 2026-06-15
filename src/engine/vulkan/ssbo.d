@@ -108,28 +108,8 @@ void createSSBO(T)(ref App app, const Descriptor descriptor, ref SSBOList!T cont
   app.createSSBO(descriptor, cast(uint)container.capacity);
 }
 
-/** One-time upload of a container to every frame copy (host-visible or device-local). */
-void transferToSSBO(T)(ref App app, Descriptor descriptor, ref SSBOList!T container) {
-  auto cmd = app.beginSingleTimeCommands(app.commandPool);
-  for(uint i = 0; i < app.framesInFlight; i++) app.updateSSBO(cmd, container, descriptor, i);
-  app.endSingleTimeCommands(cmd, app.queue);
-}
-
-/** One-time upload of a container */
-void updateSSBOcontent(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint size, uint syncIndex) {
-  if(app.buffers[descriptor.base].deviceLocal) {
-    GPUAllocation staging;
-    app.createAllocation(staging, size, false);
-    memcpy(staging.data, &container[0], size);
-    VkBufferCopy region = { size : size };
-    vkCmdCopyBuffer(cmdBuffer, staging.buffer, app.buffers[descriptor.base][syncIndex].buffer, 1, &region);
-    cmdBuffer.insertWriteBarrier(app.buffers[descriptor.base][syncIndex].buffer);
-    app.deAllocate(staging);
-  } else { memcpy(app.buffers[descriptor.base][syncIndex].data, &container[0], size); }
-}
-
 /** Upload container data to GPU, grow and rebuild if overflow */
-void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T container, Descriptor descriptor, uint syncIndex) {
+void updateSSBO(T)(ref App app, VkCommandBuffer cmd, ref SSBOList!T container, Descriptor descriptor, uint syncIndex) {
   uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;
   if(size > app.buffers[descriptor.base].size) {
@@ -138,7 +118,15 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmdBuffer, ref SSBOList!T contai
   }
   if(!app.buffers[descriptor.base].dirty[syncIndex]) return;
   if(app.trace) SDL_Log("updateSSBO: %s syncIndex=%d objects=%d", toStringz(descriptor.base), syncIndex, cast(uint)container.length);
-  app.updateSSBOcontent(cmdBuffer, container, descriptor, size, syncIndex);
+  if(app.buffers[descriptor.base].deviceLocal) {
+    GPUAllocation staging;
+    app.createAllocation(staging, size, false);
+    memcpy(staging.data, &container[0], size);
+    VkBufferCopy region = { size : size };
+    vkCmdCopyBuffer(cmd, staging.buffer, app.buffers[descriptor.base][syncIndex].buffer, 1, &region);
+    cmd.insertWriteBarrier(app.buffers[descriptor.base][syncIndex].buffer);
+    app.deAllocate(staging);
+  } else { memcpy(app.buffers[descriptor.base][syncIndex].data, &container[0], size); }
   app.buffers[descriptor.base].dirty[syncIndex] = false;
 }
 

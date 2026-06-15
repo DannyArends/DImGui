@@ -5,12 +5,13 @@
 
 import engine;
 
+import buffer : fillBuffer;
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSetLayout, createDescriptorSet;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
 import swapchain : createImageView;
 import shaders : loadShaders, createStageInfo;
-import ssbo : updateSSBO, createSSBO, transferToSSBO;
+import ssbo : updateSSBO, createSSBO;
 import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
 import textures : idx, registerTexture;
 import quaternion : xyzw;
@@ -36,7 +37,12 @@ void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
   app.providers["lastFrame"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, a.compute.system.particles); a.transferToSSBO(d, a.compute.system.particles); },
+    (ref a, ref d){ 
+      a.createSSBO(d, a.compute.system.particles); 
+      auto cmd = app.beginSingleTimeCommands(app.commandPool);
+      for(uint i = 0; i < app.framesInFlight; i++) { app.updateSSBO(cmd, a.compute.system.particles, d, i); }
+      app.endSingleTimeCommands(cmd, app.queue);
+    },
     null);
   app.providers["currentFrame"] = DescriptorProvider((ref a, ref d){ a.createSSBO(d, a.compute.system.particles); }, null);
 }
@@ -147,11 +153,11 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   pushLabel(cmdBuffer, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
 
   if (baseName(fromStringz(shader.path)) == "cull.glsl") {
-    VkBuffer headBuf   = app.buffers["ClusterHeads"][syncIndex].buffer;
+    VkBuffer headBuf = app.buffers["ClusterHeads"][syncIndex].buffer;
     VkBuffer cursorBuf = app.buffers["ClusterCounter"][syncIndex].buffer;
 
-    vkCmdFillBuffer(cmdBuffer, headBuf, 0, VK_WHOLE_SIZE, 0xFFFFFFFF); // NIL
-    vkCmdFillBuffer(cmdBuffer, cursorBuf, 0, VK_WHOLE_SIZE, 0);
+    app.fillBuffer(cmdBuffer, headBuf, NIL);
+    app.fillBuffer(cmdBuffer, cursorBuf, 0);
     cmdBuffer.insertFillBarrier(headBuf);
     cmdBuffer.insertFillBarrier(cursorBuf);
 

@@ -59,6 +59,11 @@ void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
   if(object.box) app.cleanup(object.box);
 }
 
+/** Fill a whole buffer with a 4-byte constant (device-local or host-visible). */
+void fillBuffer(ref App app, VkCommandBuffer cmdBuffer, VkBuffer buffer, uint value) {
+  vkCmdFillBuffer(cmdBuffer, buffer, 0, VK_WHOLE_SIZE, value);
+}
+
 /** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
 @nogc void cleanup(ref App app, GPUAllocation allocation) nothrow {
   if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
