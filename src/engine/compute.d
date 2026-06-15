@@ -37,8 +37,8 @@ void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
   app.providers["lastFrame"] = DescriptorProvider(
-    (ref a, ref d){ 
-      a.createSSBO(d, a.compute.system.particles); 
+    (ref a, ref d){
+      a.createSSBO(d, a.compute.system.particles);
       auto cmd = app.beginSingleTimeCommands(app.commandPool);
       for(uint i = 0; i < app.framesInFlight; i++) { app.updateSSBO(cmd, a.compute.system.particles, d, i); }
       app.endSingleTimeCommands(cmd, app.queue);
