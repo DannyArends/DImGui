@@ -85,7 +85,8 @@ void createSceneRenderPass(ref App app) {
       dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
     }],
   };
-  app.scenePass.create(app, info, "Scene", app.swapDeletionQueue);
+  app.sceneCmd.renderpass.length = 1;
+  app.sceneCmd.pass.create(app, info, "Scene", app.swapDeletionQueue);
 }
 
 /** Create the Post-Processing RenderPass 
@@ -121,7 +122,8 @@ void createPostProcessRenderPass(ref App app) {
         dstAccessMask: VK_ACCESS_MEMORY_READ_BIT },
     ],
   };
-  app.postPass.create(app, info, "Post-process", app.swapDeletionQueue);
+  app.postCmd.renderpass.length = 1;
+  app.postCmd.pass.create(app, info, "Post-process", app.swapDeletionQueue);
 }
 
 /** Create the ImGui RenderPass
@@ -153,6 +155,7 @@ void createImGuiRenderPass(ref App app) {
       dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
     }],
   };
-  app.imguiPass.create(app, info, "ImGui", app.swapDeletionQueue);
+  app.imguiCmd.renderpass.length = 1;
+  app.imguiCmd.pass.create(app, info, "ImGui", app.swapDeletionQueue);
 }
 

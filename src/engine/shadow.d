@@ -24,8 +24,6 @@ struct ShadowMap {
 
   VkSampler sampler;
   Shader[] shaders;
-  RenderPass staticPass;
-  RenderPass dynamicPass;
   CommandBuffer cmd;
   GraphicsPipeline pipeline;
 
@@ -49,8 +47,9 @@ struct LightUbo {
 };
 
 void createShadowMap(ref App app) {
-  app.createShadowMapRenderPass(app.shadows.staticPass, VK_ATTACHMENT_LOAD_OP_CLEAR);
-  app.createShadowMapRenderPass(app.shadows.dynamicPass, VK_ATTACHMENT_LOAD_OP_LOAD);
+  app.shadows.cmd.renderpass.length = 2;
+  app.createShadowMapRenderPass(app.shadows.cmd.pass(0), VK_ATTACHMENT_LOAD_OP_CLEAR);
+  app.createShadowMapRenderPass(app.shadows.cmd.pass(1), VK_ATTACHMENT_LOAD_OP_LOAD);
   app.initShadowPool();
   app.createShadowSampler();
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
@@ -64,12 +63,12 @@ void createShadowMap(ref App app) {
 void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
   app.shadows.images.length = app.shadows.staticDirty.length = MAX_SHADOW_MAPS;
-  app.shadows.staticPass.framebuffers.length = app.shadows.dynamicPass.framebuffers.length = MAX_SHADOW_MAPS;
+  app.shadows.cmd.pass(0).framebuffers.length = app.shadows.cmd.pass(1).framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(app.shadows, s, 32);
 
   app.mainDeletionQueue.add((){
-    foreach(fb; app.shadows.staticPass.framebuffers) { app.cleanup(fb); }
-    foreach(fb; app.shadows.dynamicPass.framebuffers) { app.cleanup(fb); }
+    foreach(fb; app.shadows.cmd.pass(0).framebuffers) { app.cleanup(fb); }
+    foreach(fb; app.shadows.cmd.pass(1).framebuffers) { app.cleanup(fb); }
     foreach(ref img; app.shadows.images) { app.cleanup(img); }
   });
 }
@@ -81,15 +80,15 @@ void makeShadowMap(ref App app, ref ShadowMap map, size_t s, uint size) {
                   | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
   app.createLayerViews(map.images[s], map.format, VK_IMAGE_ASPECT_DEPTH_BIT);
   app.nameImageBuffer(map.images[s], format("ShadowImage #%d", s));
-  map.staticPass.framebuffers[s] = app.createFramebuffer(map.staticPass, [map.images[s].view(0)], size, size, "Static Shadow", s);
-  map.dynamicPass.framebuffers[s] = app.createFramebuffer(map.dynamicPass, [map.images[s].view(1)], size, size, "Dynamic Shadow", s);
+  map.cmd.pass(0).framebuffers[s] = app.createFramebuffer(map.cmd.pass(0), [map.images[s].view(0)], size, size, "Static Shadow", s);
+  map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.images[s].view(1)], size, size, "Dynamic Shadow", s);
 }
 
 /** Resize shadow map s to `size`; defers old resources, re-points the descriptor next safe frame. */
 void resizeShadowMap(ref App app, size_t s, uint size) {
   if(app.shadows.images[s].extent.width == size) return;
-  app.deAllocate(app.shadows.staticPass.framebuffers[s]);
-  app.deAllocate(app.shadows.dynamicPass.framebuffers[s]);
+  app.deAllocate(app.shadows.cmd.pass(0).framebuffers[s]);
+  app.deAllocate(app.shadows.cmd.pass(1).framebuffers[s]);
   app.deAllocate(app.shadows.images[s]);
   app.makeShadowMap(app.shadows, s, size);
   app.shadows.shadowDescriptorsDirty[] = true;
@@ -251,7 +250,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     pDepthStencilState: &depthStencil,
     pDynamicState: &dynamicState,
     layout: app.shadows.pipeline.layout,
-    renderPass: app.shadows.staticPass,
+    renderPass: app.shadows.cmd.pass(0),
     subpass: 0
   };
   app.shadows.pipeline.create(app, pipelineInfo, "Shadows", app.swapDeletionQueue);
@@ -293,14 +292,14 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
     if(app.shadows.staticDirty[s]) {
       // Static -> layer 0
-      app.recordCasters(cmd, app.shadows.staticPass, s, l, lFrustum, app.shadows.images[s].extent, true);
+      app.recordCasters(cmd, app.shadows.cmd.pass(0), s, l, lFrustum, app.shadows.images[s].extent, true);
       app.shadows.staticDirty[s] = false;
       app.shadows.staticRebuilds++;
     }
     // Copy
     app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
     // Dynamic -> layer 1
-    app.recordCasters(cmd, app.shadows.dynamicPass, s, l, lFrustum, app.shadows.images[s].extent, false);
+    app.recordCasters(cmd, app.shadows.cmd.pass(1), s, l, lFrustum, app.shadows.images[s].extent, false);
     popLabel(cmd);
   }
   popLabel(cmd);

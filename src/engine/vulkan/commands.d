@@ -22,6 +22,8 @@ struct CommandBuffer {
 
   void create(ref App app, VkCommandPool pool, uint nBuffers) { app.createCommandBuffer(commands, pool, nBuffers); }
 
+  @property ref RenderPass pass(uint id = 0) { return(renderpass[id]); }
+
   VkCommandBuffer begin(ref App app, uint syncIndex, string label) {
     enforceVK(vkResetCommandBuffer(commands[syncIndex], 0));
     VkCommandBufferBeginInfo beginInfo = { sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -64,7 +66,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
   if(app.camera.isDirty) { app.objects.cullFrustum(extractFrustum(app.camera.proj.multiply(app.camera.view))); app.camera.isDirty = false; }
 
-  app.scenePass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
+  app.sceneCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
 
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
@@ -81,7 +83,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
       popLabel(cmd);
     }
   }
-  app.scenePass.end(cmd);
+  app.sceneCmd.pass.end(cmd);
   popLabel(cmd);
 
   app.sceneCmd.end(syncIndex);
@@ -94,14 +96,14 @@ void recordPostCommandBuffer(ref App app, uint syncIndex) {
   pushLabel(cmd, "Post-processing", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Post-processing");
 
-  app.postPass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[0..1]);
+  app.postCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[0..1]);
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
                           app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][syncIndex], 0, null);
 
   vkCmdDraw(cmd, 3, 1, 0, 0);
-  app.postPass.end(cmd);
+  app.postCmd.pass.end(cmd);
   popLabel(cmd);
   if(app.trace) SDL_Log("Finished Post-processing");
   app.postCmd.end(syncIndex);

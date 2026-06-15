@@ -135,7 +135,7 @@ void initializeImGui(ref App app){
     Allocator : app.allocator,
     MinImageCount : app.imageCount,
     ImageCount : cast(uint)app.framesInFlight,
-    RenderPass : app.imguiPass.pass,
+    RenderPass : app.imguiCmd.pass,
     MSAASamples : VK_SAMPLE_COUNT_1_BIT,
     CheckVkResultFn : &enforceVK
   };
@@ -163,10 +163,10 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
   // Render UI - must be called before begin() so rotation is applied before GPU submission
   ImDrawData* drawData = app.renderGUI();
 
-  app.imguiPass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
+  app.imguiCmd.renderpass[0].begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   ImGui_ImplVulkan_RenderDrawData(drawData, cmd, null);
 
-  app.imguiPass.end(cmd);
+  app.imguiCmd.renderpass[0].end(cmd);
 
   popLabel(cmd);
 

@@ -135,7 +135,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
       pDepthStencilState: &depthStencil,
       pColorBlendState: &colorBlending,
       layout: app.pipelines[topology].layout,
-      renderPass: app.scenePass.pass
+      renderPass: app.sceneCmd.pass
     };
     app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, i.alpha), app.swapDeletionQueue, i);
   }}
@@ -223,7 +223,7 @@ void createPostProcessGraphicsPipeline(ref App app) {
     pMultisampleState: &multisampling,
     pColorBlendState: &colorBlending,
     layout: app.postProcessPipeline.layout,
-    renderPass: app.postPass.pass
+    renderPass: app.postCmd.pass
   };
   app.postProcessPipeline.create(app, pipelineInfo, "Post-process", app.swapDeletionQueue);
 }
