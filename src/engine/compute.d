@@ -10,7 +10,7 @@ import descriptor : createDescriptorSetLayout, createDescriptorSet;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
 import swapchain : createImageView;
 import shaders : loadShaders, createStageInfo;
-import ssbo : updateSSBO, createSSBO;
+import ssbo : updateSSBO, createSSBO, transferToSSBO;
 import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
 import textures : idx, registerTexture;
 import quaternion : xyzw;
@@ -35,7 +35,9 @@ ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_gls
 void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
-  app.providers["lastFrame"] = DescriptorProvider((ref a, ref d){ a.createSSBO(d, a.compute.system.particles); a.transferToSSBO(d); }, null);
+  app.providers["lastFrame"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.compute.system.particles); a.transferToSSBO(d, a.compute.system.particles); },
+    null);
   app.providers["currentFrame"] = DescriptorProvider((ref a, ref d){ a.createSSBO(d, a.compute.system.particles); }, null);
 }
 
@@ -91,16 +93,6 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.compute.commands[shader.path][i]);
     }
   });
-}
-
-void transferToSSBO(ref App app, Descriptor descriptor) {
-  import commands : beginSingleTimeCommands, endSingleTimeCommands;
-
-  auto commandBuffer = app.beginSingleTimeCommands(app.commandPool);
-  for(uint i = 0; i < app.framesInFlight; i++) {
-    app.updateSSBO(commandBuffer, app.compute.system.particles, descriptor, i);
-  }
-  app.endSingleTimeCommands(commandBuffer, app.queue);
 }
 
 void updateComputeUBO(ref App app, uint syncIndex = 0){
