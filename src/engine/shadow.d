@@ -26,6 +26,7 @@ struct ShadowMap {
   VkSampler sampler;
   Shader[] shaders;
   RenderPass staticPass;
+  RenderPass dynamicPass;
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
@@ -47,7 +48,8 @@ struct LightUbo {
 };
 
 void createShadowMap(ref App app) {
-  app.createShadowMapRenderPass();
+  app.createShadowMapRenderPass(app.shadows.staticPass, VK_ATTACHMENT_LOAD_OP_CLEAR);
+  app.createShadowMapRenderPass(app.shadows.dynamicPass, VK_ATTACHMENT_LOAD_OP_LOAD);
   app.initShadowPool();
   app.createShadowSampler();
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
@@ -62,49 +64,56 @@ void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
   app.shadows.images.length = MAX_SHADOW_MAPS;
   app.shadows.staticPass.framebuffers.length = MAX_SHADOW_MAPS;
+  app.shadows.dynamicPass.framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(s, 32);
   app.shadows.shadowDescriptorsDirty[] = true;
   app.mainDeletionQueue.add((){
     foreach(fb; app.shadows.staticPass.framebuffers) { app.cleanup(fb); }
+    foreach(fb; app.shadows.dynamicPass.framebuffers) { app.cleanup(fb); }
     foreach(ref img; app.shadows.images) { app.cleanup(img); }
   });
 }
 
 /** Create shadow image+view+framebuffer for slot l at the given square size. */
 void makeShadowMap(ref App app, size_t l, uint size) {
-  app.createImage(app.shadows.images[l], size, size, app.shadows.format, VK_SAMPLE_COUNT_1_BIT,
-                  VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+  auto s = app.shadows;
+  app.createImage(s.images[l], size, size, s.format, VK_SAMPLE_COUNT_1_BIT,
+                  VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
   app.createLayerViews(app.shadows.images[l], app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
   app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
-  app.shadows.staticPass.framebuffers[l] = app.createFramebuffer(app.shadows.staticPass, [app.shadows.images[l].view], size, size, "Shadow", l);
+  s.staticPass.framebuffers[l] = app.createFramebuffer(s.staticPass, [s.images[l].view(0)], size, size, "Static Shadow", l);
+  s.dynamicPass.framebuffers[l] = app.createFramebuffer(s.dynamicPass, [s.images[l].view(1)], size, size, "Dynamic Shadow", l);
 }
 
 /** Resize light l's shadow map to `size`; defers old resources, re-points the descriptor next safe frame. */
 void resizeShadowMap(ref App app, size_t l, uint size) {
   if(app.shadows.images[l].extent.width == size) return;
-  app.deAllocate(app.shadows.images[l]);
   app.deAllocate(app.shadows.staticPass.framebuffers[l]);
+  app.deAllocate(app.shadows.dynamicPass.framebuffers[l]);
+  app.deAllocate(app.shadows.images[l]);
   app.makeShadowMap(l, size);
   app.shadows.shadowDescriptorsDirty[] = true;
 }
 
 /** Shadow map render pass creation */
-void createShadowMapRenderPass(ref App app) {
+void createShadowMapRenderPass(ref App app, ref RenderPass pass, VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR) {
   VkAttachmentReference depthRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+  bool load = (loadOp == VK_ATTACHMENT_LOAD_OP_LOAD);
 
   RenderPassInfo info = {
     attachments: [{
       format:        app.shadows.format,
       samples:       VK_SAMPLE_COUNT_1_BIT,
-      loadOp:        VK_ATTACHMENT_LOAD_OP_CLEAR,
+      loadOp:        loadOp,
       storeOp:       VK_ATTACHMENT_STORE_OP_STORE,
       stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-      initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+      initialLayout: (load? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED),
       finalLayout:   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     }],
     subpasses: [{
-      pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
-      colorAttachmentCount:    0,
+      pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
+      colorAttachmentCount: 0,
       pDepthStencilAttachment: &depthRef
     }],
     dependencies: [{ //  Write-after-Read
@@ -122,7 +131,7 @@ void createShadowMapRenderPass(ref App app) {
       dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
     }],
   };
-  app.shadows.staticPass.create(app, info, "Shadows", app.mainDeletionQueue);
+  pass.create(app, info, (load? "Dynamic Shadows" : "Static Shadows"), app.mainDeletionQueue);
 }
 
 /** Create the shadow mapping pipeline */
