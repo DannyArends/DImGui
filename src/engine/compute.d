@@ -5,7 +5,6 @@
 
 import engine;
 
-import buffer : fillBuffer;
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSetLayout, createDescriptorSet;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
@@ -143,31 +142,31 @@ void createStorageImage(ref App app, Descriptor descriptor){
 /** recordComputeCommandBuffer for syncIndex and the selected ComputeShader */
 void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) {
   if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", toStringz(shader.path), syncIndex);
-  VkCommandBuffer cmdBuffer = app.compute.commands[shader.path][syncIndex];
-  enforceVK(vkResetCommandBuffer(cmdBuffer, 0));
+  auto cmd = app.compute.commands[shader.path][syncIndex];
+  auto pipeline = app.compute.pipelines[shader.path];
+  enforceVK(vkResetCommandBuffer(cmd, 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-  enforceVK(vkBeginCommandBuffer(cmdBuffer, &commandBufferInfo));
-  app.nameVulkanObject(cmdBuffer, toStringz(format("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
+  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  pushLabel(cmdBuffer, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
+  pushLabel(cmd, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
 
   if (baseName(fromStringz(shader.path)) == "cull.glsl") {
     VkBuffer headBuf = app.buffers["ClusterHeads"][syncIndex].buffer;
     VkBuffer cursorBuf = app.buffers["ClusterCounter"][syncIndex].buffer;
 
-    app.fillBuffer(cmdBuffer, headBuf, NIL);
-    app.fillBuffer(cmdBuffer, cursorBuf, 0);
-    cmdBuffer.insertFillBarrier(headBuf);
-    cmdBuffer.insertFillBarrier(cursorBuf);
+    vkCmdFillBuffer(cmd, headBuf, 0, VK_WHOLE_SIZE, NIL);
+    vkCmdFillBuffer(cmd, cursorBuf, 0, VK_WHOLE_SIZE, 0);
+    cmd.insertFillBarrier(headBuf);
+    cmd.insertFillBarrier(cursorBuf);
 
-    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
-    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
 
-    uint nlights = cast(uint)app.lights.length;
-    vkCmdDispatch(cmdBuffer, cast(uint)ceil(cast(float)nlights / shader.groupCount[0]), 1, 1);
-    popLabel(cmdBuffer);
-    enforceVK(vkEndCommandBuffer(cmdBuffer));
+    vkCmdDispatch(cmd, cast(uint)ceil(cast(float)app.lights.length / shader.groupCount[0]), 1, 1);
+    popLabel(cmd);
+    enforceVK(vkEndCommandBuffer(cmd));
     return;
   }
 
@@ -178,27 +177,22 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(cmdBuffer, app.textures[idx].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+      app.transitionImageLayout(cmd, app.textures[idx].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
       nJobs[0] = app.textures[idx].width;
       nJobs[1] = app.textures[idx].height;
     }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
       nJobs[0] = app.buffers[shader.descriptors[d].base].nObjects;
       size = app.buffers[shader.descriptors[d].base].size;
-      if(shader.descriptors[d].base == "currentFrame") { 
-        src = app.buffers[shader.descriptors[d].base][syncIndex].buffer;
-      }
-      if(shader.descriptors[d].base == "lastFrame") { 
-        dst = app.buffers[shader.descriptors[d].base][syncIndex].buffer;
-      }
+      if(shader.descriptors[d].base == "currentFrame") { src = app.buffers[shader.descriptors[d].base][syncIndex].buffer; }
+      if(shader.descriptors[d].base == "lastFrame") { dst = app.buffers[shader.descriptors[d].base][syncIndex].buffer; }
     }
   }
 
   // Bind the compute pipeline
-  vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
+  vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
 
   // Bind the descriptor set containing the compute resources for the compute pipeline
-  vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, 
-                          app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
 
   // Execute the compute pipeline dispatch
   vkCmdDispatch(app.compute.commands[shader.path][syncIndex], cast(uint)ceil(nJobs[0] / shader.groupCount[0])
@@ -206,20 +200,20 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
                                                     , cast(uint)ceil(nJobs[2] / shader.groupCount[2]));
 
   if (src && dst) {
-    cmdBuffer.insertWriteBarrier(dst);
+    cmd.insertWriteBarrier(dst);
     VkBufferCopy copyRegion = {size: size};
-    vkCmdCopyBuffer(cmdBuffer, src, dst, 1, &copyRegion);
-    cmdBuffer.insertReadBarrier(src);
+    vkCmdCopyBuffer(cmd, src, dst, 1, &copyRegion);
+    cmd.insertReadBarrier(src);
   }
 
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(cmdBuffer, app.textures[idx].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      app.transitionImageLayout(cmd, app.textures[idx].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
   }
-  popLabel(cmdBuffer);
-  vkEndCommandBuffer(cmdBuffer);
+  popLabel(cmd);
+  vkEndCommandBuffer(cmd);
   if(app.trace) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
 }
 

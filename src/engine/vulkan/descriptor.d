@@ -5,7 +5,6 @@
 
 import engine;
 
-import buffer : fillBuffer;
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import ssbo : updateSSBO, createSSBO;
 import textures : idx;
@@ -182,7 +181,7 @@ void registerRenderProviders(ref App app) {
     (ref a, ref d){
       a.createSSBO(d, CLUSTER_COUNT, true);
       auto cmd = a.beginSingleTimeCommands(a.commandPool);
-      foreach(i; 0 .. a.buffers[d.base].length){ a.fillBuffer(cmd, a.buffers[d.base][i].buffer, NIL); }
+      foreach(i; 0 .. a.buffers[d.base].length){ vkCmdFillBuffer(cmd, a.buffers[d.base][i].buffer, 0, VK_WHOLE_SIZE, NIL); }
       a.endSingleTimeCommands(cmd, a.queue);
     },
     null);
