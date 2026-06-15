@@ -15,7 +15,7 @@ VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * SDL
 
 struct ImageBuffer {
   VkImage image = null;             /// Image
-  VkImageView view = null;          /// View
+  VkImageView[] view = null;        /// View
   VkDeviceMemory memory = null;     /// Memory
   VkExtent3D extent;                /// Extent
   uint arrayLayers = 1;             /// Layers

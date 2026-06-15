@@ -6,7 +6,7 @@
 import engine;
 
 import images : createImage, nameImageBuffer, cleanup, ImageBuffer;
-import swapchain : createImageView;
+import views : createImageView;
 import validation : nameVulkanObject;
 
 @nogc void cleanup(ref App app, VkFramebuffer fb) nothrow { vkDestroyFramebuffer(app.device, fb, app.allocator); }

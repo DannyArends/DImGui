@@ -14,9 +14,9 @@ import images : createImage, cleanup, nameImageBuffer;
 import renderpass : beginRecording, endRecording;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
-import swapchain : createImageView;
-import vector : xyz;
 import validation : popLabel, pushLabel;
+import vector : xyz;
+import views : createImageView;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32; // Maximum number of shadown maps, limits budget
 

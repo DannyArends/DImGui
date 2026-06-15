@@ -7,6 +7,7 @@ import engine;
 
 import surface : isSupported;
 import validation : nameVulkanObject;
+import views : createImageView;
 
 /** Create a swapchain for IMGui */
 void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
@@ -45,28 +46,6 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
 
   if(app.verbose) SDL_Log("Swapchain %p created, requested %d images", app.swapChain, app.camera.minImageCount);
   if(oldChain) { vkDestroySwapchainKHR(app.device, oldChain, app.allocator); }
-}
-
-/** Create an ImageView to a VkImage */
-VkImageView createImageView(App app, VkImage image, VkFormat format, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, 
-                            uint levelCount = 1, uint baseLayer = 0, uint layerCount = 1, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D) {
-  VkImageSubresourceRange subresourceRange = {
-    aspectMask: aspectMask,
-    baseMipLevel: 0,
-    levelCount: levelCount, baseArrayLayer: baseLayer, layerCount: layerCount
-  };
-
-  VkImageViewCreateInfo viewInfo = {
-    sType: VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-    image: image,
-    viewType: viewType,
-    format: format,
-    subresourceRange: subresourceRange
-  };
-  VkImageView imageView;
-  enforceVK(vkCreateImageView(app.device, &viewInfo, null, &imageView));
-  if(app.trace) SDL_Log("imageView %p to %p created", imageView, image);
-  return imageView;
 }
 
 /** Aquire swapchain images */

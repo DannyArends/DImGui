@@ -8,7 +8,7 @@ import engine;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
-import swapchain : createImageView;
+import views : createImageView;
 
 alias ImageBuffer DepthBuffer;
 
