@@ -109,7 +109,6 @@ void computeRadius(ref Light l, float cutoff = 0.01f) {
 /** Update light geometries for rendering */
 void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
   app.lights.sunTime = fmod(app.lights.sunTime + (minsPerSec * dt / 60.0f), 24.0f);
-  app.updateSun();
   if(!app.showLights) return;
   int l = 1;
   foreach(o; app.objects) {
