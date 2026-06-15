@@ -5,7 +5,6 @@
 
 import engine;
 
-import lights : updateLighting;
 import ssbo : updateSSBO, createSSBO;
 import textures : idx;
 import reflection : CLUSTER_COUNT;
@@ -161,14 +160,14 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
   return(set);
 }
 
-/** Register creators for the render SSBOs (mirrors updateDescriptorData) */
+/** Register creators for the render SSBOs */
 void registerRenderProviders(ref App app) {
   app.providers["BoneMatrices"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.boneOffsets); },
     (ref a, ref d, cmd){ a.updateSSBO!Matrix(cmd, a.boneOffsets, d, a.syncIndex); });
   app.providers["LightMatrices"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.lights); },
-    (ref a, ref d, cmd){ a.updateLighting(cmd, d); });
+    (ref a, ref d, cmd){ a.updateSSBO!Light(cmd, a.lights, d, a.syncIndex); });
   app.providers["MeshMatrices"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.meshes); },
     (ref a, ref d, cmd){ a.updateSSBO!Mesh(cmd, a.meshes, d, a.syncIndex); });
