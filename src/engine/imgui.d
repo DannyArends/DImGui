@@ -22,9 +22,10 @@ struct GUI {
   ImGuiIO* io;
   ImFont*[] fonts;
 
-  float panelW = 375.0f;
+  float panelW = 400.0f;
   float panelH = 300.0f;
   float menuH = 20.0f;
+
   int selectedSound = 0;
   int selectedTexture = 0;
 
@@ -38,13 +39,14 @@ struct GUI {
   bool showTexture = false;
   bool showDirectory = false;
 
-  float uiscale = 1;
-  uint fontsize(float scale = 1.0f){ 
+  float uiscale = 1.0f;
+  uint fontsize(float scale = 1.0f) {
     version(Android){ return(cast(uint)(20 * scale * uiscale)); }else{ return(cast(uint)(16 * scale * uiscale)); }
   }
+
+  // Geometry constants scale & rotation
   float scaleF = 1.0f;
   float[3] rotF = [0.0f, 0.0f, 0.0f];
-
   float[2] rot = [-360.0, 360.0f];
   float[2] pos = [-10.0, 10];
   float[2] col = [0.0, 20.0f];

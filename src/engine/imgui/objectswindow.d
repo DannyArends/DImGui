@@ -9,8 +9,7 @@ import imgui : faIcon;
 import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, cstr;
 import textures : mapTextures, ImTextureRefFromID;
 
-/** Show the GUI window which allows us to manipulate 3D objects
- */
+/** Show the GUI window which allows us to manipulate 3D objects */
 void showObjectsContent(ref App app, uint font = 0) {
   bool list = true;
   for(size_t x = 0; x < app.objects.length; x++) {
@@ -43,8 +42,7 @@ void showObjectsContent(ref App app, uint font = 0) {
   }
 }
 
-/** Individual Object
- */
+/** Individual Object */
 void showObjectwindow(ref App app, ref Geometry obj) {
   text("Name: %s %s", obj.geometry(), obj.mName);
   text("Vertices: %s", obj.vertices.length);

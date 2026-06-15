@@ -21,10 +21,10 @@ void showSidepanel(ref App app, uint font = 0) {
   bool landscape = dispW > dispH;
 
   if(landscape) { // Right edge, drag the LEFT edge (variable width)
-    float panelH = dispH - app.gui.menuH;
+    float colH = dispH - app.gui.menuH;
     igSetNextWindowPos(ImVec2(dispW - app.gui.panelW, app.gui.menuH), ImGuiCond_Always, ImVec2(0,0));
-    igSetNextWindowSize(ImVec2(app.gui.panelW, panelH), ImGuiCond_FirstUseEver);
-    igSetNextWindowSizeConstraints(ImVec2(150, panelH), ImVec2(dispW * 0.8f, panelH), null, null);
+    igSetNextWindowSize(ImVec2(app.gui.panelW, colH), ImGuiCond_FirstUseEver);
+    igSetNextWindowSizeConstraints(ImVec2(150, colH), ImVec2(dispW * 0.8f, colH), null, null);
   } else { // Bottom edge, drag the TOP edge (variable height)
     igSetNextWindowPos(ImVec2(0, dispH - app.gui.panelH), ImGuiCond_Always, ImVec2(0,0));
     igSetNextWindowSize(ImVec2(dispW, app.gui.panelH), ImGuiCond_FirstUseEver);
