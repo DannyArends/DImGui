@@ -293,17 +293,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     vkCmdSetScissor(cmd, 0, 1, &sc);
 
     vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &l);
-    foreach(obj; app.objects) {
-      if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-      app.shadows.totalShadowInstances += obj.instances.length;
-      if(obj.box !is null) {
-        if(obj.box.distanceSq(app.lights[l].position.xyz) > app.lights[l].cull[0] * app.lights[l].cull[0]) continue;
-        if(!lFrustum.aabbInFrustum(obj.box.wmin, obj.box.wmax)) continue;
-      }
-      app.shadows.lastShadowInstances += obj.instances.length;
-      ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
-      app.draw(obj, cmd);
-    }
+    app.recordCasters(cmd, l, lFrustum, true);
     vkCmdEndRenderPass(cmd);
     popLabel(cmd);
   }
