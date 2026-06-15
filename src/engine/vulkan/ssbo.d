@@ -54,7 +54,7 @@ immutable VkBufferUsageFlags ssboUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK
 /** Create (and map, if host-visible) one SSBO copy at `size`, and mark it dirty for upload. */
 void createAllocation(ref App app, ref GPUAllocation a, ref bool dirty, uint size, bool deviceLocal) {
   app.createBuffer(&a.buffer, &a.memory, size, ssboUsage, ssboMemoryProps(deviceLocal));
-  if(!deviceLocal) enforceVK(vkMapMemory(app.device, a.memory, 0, size, 0, &a.data));
+  if(!deviceLocal){ enforceVK(vkMapMemory(app.device, a.memory, 0, size, 0, &a.data)); (cast(ubyte*)a.data)[0 .. size] = 0; }
   dirty = true;
 }
 

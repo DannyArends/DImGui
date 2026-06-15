@@ -9,7 +9,6 @@ import quaternion : xyzw;
 import buffer : createBuffer;
 import matrix : rotate, lookAt, perspective;
 import lights : computeLightSpace, LMode;
-import reflection : LIGHT_GRID;
 import validation : nameVulkanObject;
 
 struct UniformBufferObject {
