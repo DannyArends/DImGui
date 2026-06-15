@@ -289,9 +289,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     if(!app.lights[l].enabled || s < 0) continue;
     app.shadows.activeShadowMaps++;
 
-    pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
     auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
-
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
     if(app.shadows.staticDirty[s]) {
       // Static -> layer 0
