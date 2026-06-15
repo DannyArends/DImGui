@@ -16,7 +16,7 @@ import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
 import validation : popLabel, pushLabel;
 import vector : xyz;
-import views : createImageView;
+import views : createImageView, createLayerViews;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32; // Maximum number of shadown maps, limits budget
 
@@ -74,7 +74,7 @@ void initShadowPool(ref App app) {
 void makeShadowMap(ref App app, size_t l, uint size) {
   app.createImage(app.shadows.images[l], size, size, app.shadows.format, VK_SAMPLE_COUNT_1_BIT,
                   VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-  app.shadows.images[l].view = app.createImageView(app.shadows.images[l].image, app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+  app.createLayerViews(app.shadows.images[l], app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
   app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
   app.shadows.renderPass.framebuffers[l] = app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], size, size, "Shadow", l);
 }

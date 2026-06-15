@@ -11,7 +11,7 @@ import descriptor : createDescriptorSet, updateDescriptorSet;
 import images : nameImageBuffer, generateMipmaps, imageSize, createImage, cleanup, transitionImageLayout;
 import io : dir;
 import validation : nameVulkanObject;
-import views : createImageView;
+import views : createImageView, createLayerViews;
 
 enum MAX_TEXTURES = 512;
 
@@ -201,7 +201,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out Geom
   app.generateMipmaps(cmdBuffer, texture.image, texture.surface.w, texture.surface.h, texture.mipLevels);
 
   // Create an imageview and register the texture with ImGui
-  texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, texture.mipLevels);
+  app.createLayerViews(texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, texture.mipLevels);
   app.nameImageBuffer(texture, texture.path);
   app.registerTexture(texture);
 }

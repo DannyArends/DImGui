@@ -7,9 +7,9 @@ import engine;
 
 /** Create one VK_IMAGE_VIEW_TYPE_2D view per array layer, populating buffer.view[]. */
 void createLayerViews(ref App app, ref ImageBuffer buffer, VkFormat format, VkImageAspectFlags aspectMask, uint levelCount = 1) {
-  buffer.view.length = buffer.arrayLayers;
+  buffer.views.length = buffer.arrayLayers;
   for(uint i = 0; i < buffer.arrayLayers; i++) {
-    buffer.view[i] = app.createImageView(buffer.image, format, aspectMask, levelCount, i, 1, VK_IMAGE_VIEW_TYPE_2D);
+    buffer.views[i] = app.createImageView(buffer.image, format, aspectMask, levelCount, i, 1, VK_IMAGE_VIEW_TYPE_2D);
   }
 }
 
