@@ -10,7 +10,7 @@ import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
 import framebuffer : createFramebuffer, cleanup;
 import geometry : bufferGeometries, draw;
-import images : createImage, cleanup, nameImageBuffer;
+import images : createImage, cleanup, nameImageBuffer, copyImageLayer;
 import renderpass : beginRecording, endRecording;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
@@ -77,9 +77,9 @@ void initShadowPool(ref App app) {
 /** Create shadow image+view+framebuffer for slot l at the given square size. */
 void makeShadowMap(ref App app, size_t l, uint size) {
   auto s = app.shadows;
-  app.createImage(s.images[l], size, size, s.format, VK_SAMPLE_COUNT_1_BIT,
-                  VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
+app.createImage(app.shadows.images[l], size, size, app.shadows.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT 
+                | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
   app.createLayerViews(app.shadows.images[l], app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
   app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
   s.staticPass.framebuffers[l] = app.createFramebuffer(s.staticPass, [s.images[l].view(0)], size, size, "Static Shadow", l);
@@ -135,7 +135,25 @@ void createShadowMapRenderPass(ref App app, ref RenderPass pass, VkAttachmentLoa
 }
 
 /** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
-void recordCasters(ref App app, VkCommandBuffer cmd, uint l, Plane[6] lFrustum, bool staticPhase) {
+void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, uint l, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
+  VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
+
+  VkRenderPassBeginInfo rp = {
+    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+    renderPass: pass, framebuffer: pass.framebuffers[s],
+    renderArea: { extent: { width: ext.width, height: ext.height } },
+    clearValueCount: staticPhase ? 1 : 0,
+    pClearValues:    staticPhase ? &clearDepth : null,
+  };
+  vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
+
+  VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
+  VkRect2D   sc = { extent: { width: ext.width, height: ext.height } };
+  vkCmdSetViewport(cmd, 0, 1, &vp);
+  vkCmdSetScissor(cmd, 0, 1, &sc);
+  vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &l);
+
   foreach(obj; app.objects) {
     if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
     if(obj.box !is null) {
@@ -147,6 +165,7 @@ void recordCasters(ref App app, VkCommandBuffer cmd, uint l, Plane[6] lFrustum, 
     ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
     app.draw(obj, cmd);
   }
+  vkCmdEndRenderPass(cmd);
 }
 
 /** Create the shadow mapping pipeline */
@@ -272,29 +291,15 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     if(!app.lights[l].enabled || s < 0) continue;
 
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
-
     auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
-    auto ext = app.shadows.images[s].extent;
 
-    VkRenderPassBeginInfo renderPassInfo = {
-      sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-      renderPass: app.shadows.staticPass,
-      framebuffer: app.shadows.staticPass.framebuffers[s],
-      renderArea: { extent: { width: ext.width, height: ext.height } },
-      clearValueCount: 1,
-      pClearValues: &clearDepth,
-    };
-    vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
-
-    VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
-    VkRect2D   sc = { extent: { width: ext.width, height: ext.height } };
-    vkCmdSetViewport(cmd, 0, 1, &vp);
-    vkCmdSetScissor(cmd, 0, 1, &sc);
-
-    vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &l);
-    app.recordCasters(cmd, l, lFrustum, true);
-    vkCmdEndRenderPass(cmd);
+    pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
+    // Static -> layer 0
+    app.recordCasters(cmd, app.shadows.staticPass, s, l, lFrustum, app.shadows.images[s].extent, true);
+    // Copy
+    app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
+    // Dynamic -> layer 1
+    app.recordCasters(cmd, app.shadows.dynamicPass, s, l, lFrustum, app.shadows.images[s].extent, false);
     popLabel(cmd);
   }
   popLabel(cmd);
