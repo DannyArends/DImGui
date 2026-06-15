@@ -8,15 +8,14 @@ import engine;
 import bone : updateBoneOffsets;
 import descriptor : repointDirtyDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
-import compute : recordComputeCommandBuffer, updateComputeUBO;
+import compute : recordComputeCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
 import mesh : updateMeshInfo;
-import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
+import shadow :  recordShadowCommandBuffer;
 import sfx : updateTracks;
 import textures : updateTextures;
 import timing : timed;
-import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
 
 /** waitForFrame */
@@ -54,8 +53,8 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateMeshInfo();                       /// Check for Mesh Information change
   app.timed!updateBoneOffsets(app.syncIndex);       /// Check for animation causing BoneOffsets changes
   app.timed!updateDisco(dt);                        /// Update when disco mode 🕺 🪩 💃
-  app.computeActiveLighting();
-  app.repointDirtyDescriptors();
+  app.timed!computeActiveLighting();                /// Compute active lighting
+  app.timed!repointDirtyDescriptors();              /// Repoint dirty descriptors
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---

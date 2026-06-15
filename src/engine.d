@@ -141,7 +141,7 @@ struct App {
   @property bool isMinimized() { return minimized || (SDL_GetWindowFlags(this.window) & SDL_WINDOW_MINIMIZED) != 0; }
   @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }
   @property pure @nogc bool trace() nothrow const { return(verbose > 1); }
-  @property pure @nogc uint framesInFlight() nothrow const { return(cast(uint)swapChainImages.length + 1); }
+  @property pure @nogc uint framesInFlight() nothrow const { return (swapChainImages.length > 2) ? cast(uint)(swapChainImages.length-1) : 1; }
   @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
   @property VkPhysicalDeviceProperties properties() {
     VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p);
