@@ -65,7 +65,7 @@ void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
   app.shadows.images.length = app.shadows.staticDirty.length = MAX_SHADOW_MAPS;
   app.shadows.staticPass.framebuffers.length = app.shadows.dynamicPass.framebuffers.length = MAX_SHADOW_MAPS;
-  for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(s, 32);
+  for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(app.shadows, s, 32);
 
   app.mainDeletionQueue.add((){
     foreach(fb; app.shadows.staticPass.framebuffers) { app.cleanup(fb); }
@@ -75,23 +75,23 @@ void initShadowPool(ref App app) {
 }
 
 /** Create shadow image+view+framebuffer for slot l at the given square size. */
-void makeShadowMap(ref App app, size_t l, uint size) {
-  app.createImage(app.shadows.images[l], size, size, app.shadows.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
+void makeShadowMap(ref App app, ref ShadowMap map, size_t s, uint size) {
+  app.createImage(map.images[s], size, size, map.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT 
                   | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
-  app.createLayerViews(app.shadows.images[l], app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-  app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
-  app.shadows.staticPass.framebuffers[l] = app.createFramebuffer(app.shadows.staticPass, [app.shadows.images[l].view(0)], size, size, "Static Shadow", l);
-  app.shadows.dynamicPass.framebuffers[l] = app.createFramebuffer(app.shadows.dynamicPass, [app.shadows.images[l].view(1)], size, size, "Dynamic Shadow", l);
+  app.createLayerViews(map.images[s], map.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+  app.nameImageBuffer(map.images[s], format("ShadowImage #%d", s));
+  map.staticPass.framebuffers[s] = app.createFramebuffer(map.staticPass, [map.images[s].view(0)], size, size, "Static Shadow", s);
+  map.dynamicPass.framebuffers[s] = app.createFramebuffer(map.dynamicPass, [map.images[s].view(1)], size, size, "Dynamic Shadow", s);
 }
 
-/** Resize light l's shadow map to `size`; defers old resources, re-points the descriptor next safe frame. */
-void resizeShadowMap(ref App app, size_t l, uint size) {
-  if(app.shadows.images[l].extent.width == size) return;
-  app.deAllocate(app.shadows.staticPass.framebuffers[l]);
-  app.deAllocate(app.shadows.dynamicPass.framebuffers[l]);
-  app.deAllocate(app.shadows.images[l]);
-  app.makeShadowMap(l, size);
+/** Resize shadow map s to `size`; defers old resources, re-points the descriptor next safe frame. */
+void resizeShadowMap(ref App app, size_t s, uint size) {
+  if(app.shadows.images[s].extent.width == size) return;
+  app.deAllocate(app.shadows.staticPass.framebuffers[s]);
+  app.deAllocate(app.shadows.dynamicPass.framebuffers[s]);
+  app.deAllocate(app.shadows.images[s]);
+  app.makeShadowMap(app.shadows, s, size);
   app.shadows.shadowDescriptorsDirty[] = true;
 }
 
