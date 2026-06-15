@@ -163,10 +163,10 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
   // Render UI - must be called before begin() so rotation is applied before GPU submission
   ImDrawData* drawData = app.renderGUI();
 
-  app.imguiCmd.renderpass[0].begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
+  app.imguiCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   ImGui_ImplVulkan_RenderDrawData(drawData, cmd, null);
 
-  app.imguiCmd.renderpass[0].end(cmd);
+  app.imguiCmd.pass.end(cmd);
 
   popLabel(cmd);
 
