@@ -174,10 +174,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-    setLayoutCount: 1,
-    pSetLayouts: &app.layouts[Stage.SHADOWS],
-    pushConstantRangeCount: 1,
-    pPushConstantRanges: &pushConstantRange,
+    setLayoutCount: 1, pSetLayouts: &app.layouts[Stage.SHADOWS],
+    pushConstantRangeCount: 1, pPushConstantRanges: &pushConstantRange,
   };
   app.shadows.pipeline.createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
   if(app.verbose) SDL_Log(" - shadow map pipeline layout created: %p", app.shadows.pipeline.layout);
@@ -209,8 +207,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
 
   VkPipelineDynamicStateCreateInfo dynamicState = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-    dynamicStateCount: 2,
-    pDynamicStates: dynamicStates.ptr
+    dynamicStateCount: 2, pDynamicStates: dynamicStates.ptr
   };
 
   VkPipelineRasterizationStateCreateInfo rasterizer = {
