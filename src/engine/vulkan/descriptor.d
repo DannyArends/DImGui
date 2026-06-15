@@ -7,7 +7,6 @@ import engine;
 
 import ssbo : updateSSBO, createSSBO;
 import textures : idx;
-import reflection : CLUSTER_COUNT;
 import validation : nameVulkanObject;
 
 enum DescriptorTarget { None, Textures, Shadow, HDR, Compute }
@@ -176,14 +175,11 @@ void registerRenderProviders(ref App app) {
     (ref a, ref d, cmd){ a.updateSSBO!Material(cmd, a.materials, d, a.syncIndex); });
 
   app.providers["ClusterLights"] = DescriptorProvider(
-    (ref a, ref d){ if(a.clusterCapacity == 0){ a.clusterCapacity = CLUSTER_COUNT; } a.createSSBO(d, a.clusterCapacity, 0, true); },
-    null);
+    (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, 0, true); }, null);
   app.providers["ClusterHeads"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, CLUSTER_COUNT, 0, true); },
-    null);
+    (ref a, ref d){ a.createSSBO(d, CLUSTER_COUNT, 0, true); }, null);
   app.providers["ClusterCounter"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, 1, 0, false); foreach(i; 0 .. a.buffers["ClusterCounter"].length){ *cast(uint*)a.buffers["ClusterCounter"][i].data = 0; } },
-    null);
+    (ref a, ref d){ a.createSSBO(d, 1, 0, false); }, null);
 }
 
 void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, uint syncIndex) {
