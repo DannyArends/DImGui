@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : findMemoryType, hasStencilComponent;
+import buffer : findMemoryType, hasStencilComponent, isDepth;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
 import framebuffer : createHDRImage;
@@ -144,7 +144,7 @@ void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage i
                            VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            VkFormat format = VK_FORMAT_R8G8B8A8_SRGB, uint levelCount = 1, uint baseLayer = 0, uint layerCount = 1) {
   VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-  if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+  if (format.isDepth()) { 
     aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
     if (format.hasStencilComponent()) aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
   }
@@ -176,6 +176,12 @@ void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage i
   } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
     src = VK_ACCESS_TRANSFER_READ_BIT; dst = VK_ACCESS_MEMORY_READ_BIT;
     srcStage  = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+   } else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+    src = VK_ACCESS_SHADER_READ_BIT; dst = VK_ACCESS_TRANSFER_READ_BIT;
+    srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+    src = VK_ACCESS_TRANSFER_WRITE_BIT; dst = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   } else {
     SDL_Log("unsupported layout transition!");
     return;
