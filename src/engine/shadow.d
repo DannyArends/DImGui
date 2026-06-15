@@ -25,7 +25,7 @@ struct ShadowMap {
 
   VkSampler sampler;
   Shader[] shaders;
-  RenderPass renderPass;
+  RenderPass staticPass;
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
@@ -61,11 +61,11 @@ void createShadowMap(ref App app) {
 void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
   app.shadows.images.length = MAX_SHADOW_MAPS;
-  app.shadows.renderPass.framebuffers.length = MAX_SHADOW_MAPS;
+  app.shadows.staticPass.framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(s, 32);
   app.shadows.shadowDescriptorsDirty[] = true;
   app.mainDeletionQueue.add((){
-    foreach(fb; app.shadows.renderPass.framebuffers) { app.cleanup(fb); }
+    foreach(fb; app.shadows.staticPass.framebuffers) { app.cleanup(fb); }
     foreach(ref img; app.shadows.images) { app.cleanup(img); }
   });
 }
@@ -76,14 +76,14 @@ void makeShadowMap(ref App app, size_t l, uint size) {
                   VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
   app.createLayerViews(app.shadows.images[l], app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
   app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
-  app.shadows.renderPass.framebuffers[l] = app.createFramebuffer(app.shadows.renderPass, [app.shadows.images[l].view], size, size, "Shadow", l);
+  app.shadows.staticPass.framebuffers[l] = app.createFramebuffer(app.shadows.staticPass, [app.shadows.images[l].view], size, size, "Shadow", l);
 }
 
 /** Resize light l's shadow map to `size`; defers old resources, re-points the descriptor next safe frame. */
 void resizeShadowMap(ref App app, size_t l, uint size) {
   if(app.shadows.images[l].extent.width == size) return;
   app.deAllocate(app.shadows.images[l]);
-  app.deAllocate(app.shadows.renderPass.framebuffers[l]);
+  app.deAllocate(app.shadows.staticPass.framebuffers[l]);
   app.makeShadowMap(l, size);
   app.shadows.shadowDescriptorsDirty[] = true;
 }
@@ -122,7 +122,7 @@ void createShadowMapRenderPass(ref App app) {
       dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
     }],
   };
-  app.shadows.renderPass.create(app, info, "Shadows", app.mainDeletionQueue);
+  app.shadows.staticPass.create(app, info, "Shadows", app.mainDeletionQueue);
 }
 
 /** Create the shadow mapping pipeline */
@@ -210,7 +210,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
     pDepthStencilState: &depthStencil,
     pDynamicState: &dynamicState,
     layout: app.shadows.pipeline.layout,
-    renderPass: app.shadows.renderPass,
+    renderPass: app.shadows.staticPass,
     subpass: 0
   };
   app.shadows.pipeline.create(app, pipelineInfo, "Shadows", app.swapDeletionQueue);
@@ -224,7 +224,7 @@ void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
 
 /** Record the draw calls in the shadow command buffer */
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.shadows.renderPass.beginRecording(app, syncIndex, "Shadow");
+  auto cmd = app.shadows.staticPass.beginRecording(app, syncIndex, "Shadow");
 
   if(app.trace) SDL_Log("Beginning shadow map render pass");
 
@@ -235,7 +235,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   popLabel(cmd);
 
   pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  app.updateDescriptorData(app.shadows.shaders, app.shadows.renderPass.commands, syncIndex);
+  app.updateDescriptorData(app.shadows.shaders, app.shadows.staticPass.commands, syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
@@ -254,8 +254,8 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
     VkRenderPassBeginInfo renderPassInfo = {
       sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-      renderPass: app.shadows.renderPass,
-      framebuffer: app.shadows.renderPass.framebuffers[s],
+      renderPass: app.shadows.staticPass,
+      framebuffer: app.shadows.staticPass.framebuffers[s],
       renderArea: { extent: { width: ext.width, height: ext.height } },
       clearValueCount: 1,
       pClearValues: &clearDepth,
@@ -284,6 +284,6 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     popLabel(cmd);
   }
   popLabel(cmd);
-  app.shadows.renderPass.endRecording(syncIndex);
+  app.shadows.staticPass.endRecording(syncIndex);
 }
 
