@@ -119,15 +119,14 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     depthCompareOp: VK_COMPARE_OP_LESS,
   };
 
-  VkSpecializationInfo specInfo; VkSpecializationMapEntry[] mapEntry; uint[] settings;
 
-  static foreach(s; [Specialization(true,true), Specialization(true,false),
+  static foreach(i; [Specialization(true,true), Specialization(true,false),
                      Specialization(false,true), Specialization(false,false)]) {{
-    auto stages = createStageInfo(app.shaders, specInfo, mapEntry, settings, topology, s);
+    ShaderStage stages = createStageInfo(app.shaders, topology, i);
     VkGraphicsPipelineCreateInfo pipelineInfo = {
       sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-      stageCount: cast(uint)stages.length,
-      pStages: &stages[0],
+      stageCount: cast(uint)stages.info.length,
+      pStages: &stages.info[0],
       pVertexInputState: &vertexInputInfo,
       pInputAssemblyState: &inputAssembly,
       pViewportState: &viewportState,
@@ -138,7 +137,7 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
       layout: app.pipelines[topology].layout,
       renderPass: app.scenePass.pass
     };
-    app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, s.alpha), app.swapDeletionQueue, s);
+    app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, i.alpha), app.swapDeletionQueue, i);
   }}
 }
 

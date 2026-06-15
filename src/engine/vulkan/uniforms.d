@@ -22,7 +22,6 @@ struct UniformBufferObject {
   uint nlights;
   LMode lMode = LMode.LightsAndShadows;
   uint indexBufferLength;
-  uint[4] grid;
   float[4] clusterCfg;
 }
 
@@ -77,8 +76,6 @@ void createUBO(ref App app, Descriptor descriptor) {
 
 void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
   float logFN = log2(app.camera.nearfar[1] / app.camera.nearfar[0]);
-  float sliceScale = LIGHT_GRID[2] / logFN;
-  float sliceBias  = -(LIGHT_GRID[2] * log2(app.camera.nearfar[0])) / logFN;
 
   UniformBufferObject ubo = {
     position: app.camera.position.xyzw,
@@ -90,8 +87,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     nlights: cast(uint)app.lights.length,
     lMode: cast(LMode)app.lMode,
     indexBufferLength: ("ClusterLights" in app.buffers) ? app.buffers["ClusterLights"].nObjects : 0,
-    grid: LIGHT_GRID,
-    clusterCfg: [sliceScale, sliceBias, cast(float)app.camera.width, cast(float)app.camera.height]
+    clusterCfg: [LIGHT_GRID[2] / logFN, -(LIGHT_GRID[2] * log2(app.camera.nearfar[0])) / logFN, 0.0f, 0.0f]
   };
 
   // Adjust for screen orientation so that the world is always up
