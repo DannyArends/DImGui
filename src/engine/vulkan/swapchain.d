@@ -48,19 +48,18 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
 }
 
 /** Create an ImageView to a VkImage */
-VkImageView createImageView(App app, VkImage image, VkFormat format, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, uint levelCount = 1) {
+VkImageView createImageView(App app, VkImage image, VkFormat format, VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, 
+                            uint levelCount = 1, uint baseLayer = 0, uint layerCount = 1, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D) {
   VkImageSubresourceRange subresourceRange = {
     aspectMask: aspectMask,
     baseMipLevel: 0,
-    levelCount: levelCount,
-    baseArrayLayer: 0,
-    layerCount: 1,
+    levelCount: levelCount, baseArrayLayer: baseLayer, layerCount: layerCount
   };
 
   VkImageViewCreateInfo viewInfo = {
     sType: VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
     image: image,
-    viewType: VK_IMAGE_VIEW_TYPE_2D,
+    viewType: viewType,
     format: format,
     subresourceRange: subresourceRange
   };
