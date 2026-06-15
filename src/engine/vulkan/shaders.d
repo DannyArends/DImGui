@@ -6,7 +6,7 @@
 import engine;
 
 import io : readFile;
-import reflection : convert, reflectShader, LIGHT_GRID;
+import reflection : convert, reflectShader;
 import validation : nameVulkanObject;
 
 struct Shader {
