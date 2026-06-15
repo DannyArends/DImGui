@@ -37,8 +37,8 @@ struct ShadowMap {
   bool[] shadowDescriptorsDirty;
   bool[] staticDirty;
 
-  uint lastShadowInstances = 0;             /// Last number of shadow instances used across all shadow casting lights
-  uint totalShadowInstances = 0;            /// Total instance count of shadow instances across all shadow casting lights
+  uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
+  uint activeShadowMaps = 0;                /// slots rendered this frame
   uint staticShadowInstances = 0;           /// TODO: Static/dynamic shadow caching
   uint dynamicShadowInstances = 0;          /// TODO: Static/dynamic shadow caching
 }
@@ -161,7 +161,6 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
       if(!lFrustum.aabbInFrustum(obj.box.wmin, obj.box.wmax)) continue;
     }
     if(obj.isStatic != staticPhase) continue;
-    app.shadows.lastShadowInstances += obj.instances.length;
     ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
     app.draw(obj, cmd);
   }
@@ -284,11 +283,12 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
-  app.shadows.lastShadowInstances = app.shadows.totalShadowInstances = 0;
   app.shadows.staticShadowInstances = app.shadows.dynamicShadowInstances = 0;
+  app.shadows.staticRebuilds = app.shadows.activeShadowMaps = 0;
   for(uint l = 0; l < app.lights.length; l++) {
     int s = cast(int)app.lights[l].cull[1];
     if(!app.lights[l].enabled || s < 0) continue;
+    app.shadows.activeShadowMaps++;
 
     pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
     auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
@@ -298,6 +298,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       // Static -> layer 0
       app.recordCasters(cmd, app.shadows.staticPass, s, l, lFrustum, app.shadows.images[s].extent, true);
       app.shadows.staticDirty[s] = false;
+      app.shadows.staticRebuilds++;
     }
     // Copy
     app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
