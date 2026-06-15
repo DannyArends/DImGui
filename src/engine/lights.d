@@ -52,7 +52,8 @@ enum Lights : Light {
 
 struct Lighting {
   SSBOList!Light lights;
-  float[] scoreBuf;
+  float[] scoreBuf;             /// Shadow ranking scores
+  bool staticDirty = false;     /// scene static geometry changed
   float sunTime = 7.0f;
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
@@ -198,6 +199,7 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
 void computeActiveLighting(ref App app) {
   assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
+  if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
   auto score = app.lights.scoreBuf[0 .. app.lights.length];
   float slot = 0.0f;
   foreach(i, ref light; app.lights) {
@@ -222,8 +224,15 @@ void computeActiveLighting(ref App app) {
   foreach(ref light; app.lights) {
     light.computeRadius();
     uint res = app.shadowResolution(light);
+    Matrix prev = light.lightSpaceMatrix;
     app.camera.computeLightSpace(light, app.shadows.bounds, res);
-    int s = cast(int)light.cull[1]; if(s >= 0) app.resizeShadowMap(s, res);
+    int s = cast(int)light.cull[1];
+    if(s >= 0) {
+      if(light.lightSpaceMatrix != prev) app.shadows.staticDirty[s] = true;
+      uint before = app.shadows.images[s].extent.width;
+      app.resizeShadowMap(s, res);
+      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // resize recreated layer 0
+    }
   }
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
