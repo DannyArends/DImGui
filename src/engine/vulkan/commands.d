@@ -15,8 +15,8 @@ import validation : pushLabel, popLabel, nameVulkanObject;
 import window: supportedTopologies;
 
 /** A recordable command buffer (one per syncIndex); records one or more RenderPass instances. */
-struct CommandBuffer {
-  RenderPass[] renderpass;
+struct CommandBuffer(size_t N){
+  RenderPass[N] renderpass;
   VkCommandBuffer[] commands;       /// per-syncIndex buffers
   alias commands this;
 

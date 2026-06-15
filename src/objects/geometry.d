@@ -155,7 +155,7 @@ void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
   geometry.vertices.buffered = false;
 }
 
-/** Render a Geometry to app.scenePass.commands[i] */
+/** Render a Geometry to VkCommandBuffer cmd */
 void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   if(!object.isDrawable()) return;
 
