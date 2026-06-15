@@ -185,15 +185,6 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
   app.lights[0].properties[0] = t * ambientScale;
 }
 
-/** Transfer the lighting into the SSBO for buffer */
-void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
-  foreach(i, ref light; app.lights) {
-    light.computeRadius(); 
-    app.camera.computeLightSpace(light, app.shadows.bounds, app.shadowResolution(light));
-  }
-  app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
-}
-
 /** Disco beam */
 @nogc pure float beam(float t, float speed, float freq, float phase) nothrow { return abs(sin(t * speed * freq + phase)) * 500.0f; }
 
@@ -229,8 +220,10 @@ void computeActiveLighting(ref App app) {
   }
 
   foreach(ref light; app.lights) {
-    int s = cast(int)light.cull[1]; if(s < 0) continue;
-    app.resizeShadowMap(s, app.shadowResolution(light));
+    light.computeRadius();
+    uint res = app.shadowResolution(light);
+    app.camera.computeLightSpace(light, app.shadows.bounds, res);
+    int s = cast(int)light.cull[1]; if(s >= 0) app.resizeShadowMap(s, res);
   }
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
