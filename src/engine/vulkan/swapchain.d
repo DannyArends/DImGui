@@ -22,10 +22,10 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
     }
   }
 
-  VkSwapchainCreateInfoKHR swapchainCreateInfo = { // SwapChain CreateInfo
+  VkSwapchainCreateInfoKHR swapchainCreateInfo = { // SwapChain CreateInfo: Try for 3 images, accept app.camera.minImageCount
     sType: VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
     surface: app.surface,
-    minImageCount: app.camera.minImageCount,
+    minImageCount: min(max(app.camera.minImageCount, 3u), ((app.camera.maxImageCount > 0)? app.camera.maxImageCount : uint.max)),
     imageFormat: app.present.format,
     imageColorSpace: app.present.colorSpace,
     imageExtent: app.camera.currentExtent,
@@ -79,10 +79,7 @@ void aquireSwapChainImages(ref App app) {
   if(app.verbose) SDL_Log("SwapChain images: %d, Frames in flight: %d", app.imageCount, app.framesInFlight);
 
   VkComponentMapping components = {
-    r: VK_COMPONENT_SWIZZLE_IDENTITY,
-    g: VK_COMPONENT_SWIZZLE_IDENTITY,
-    b: VK_COMPONENT_SWIZZLE_IDENTITY,
-    a: VK_COMPONENT_SWIZZLE_IDENTITY,
+    r: VK_COMPONENT_SWIZZLE_IDENTITY, g: VK_COMPONENT_SWIZZLE_IDENTITY, b: VK_COMPONENT_SWIZZLE_IDENTITY, a: VK_COMPONENT_SWIZZLE_IDENTITY,
   };
   
   VkImageSubresourceRange subresourceRange = {
@@ -93,19 +90,14 @@ void aquireSwapChainImages(ref App app) {
   app.swapChainImageViews.length = app.imageCount;
   for (uint i = 0; i < app.imageCount; i++) {
     app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.present.format);
-  }
-  if(app.verbose) SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
-  app.nameSwapChain();
-  app.swapDeletionQueue.add((){
-    for (uint i = 0; i < app.imageCount; i++) {
-      vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator);
-    }
-  });
-}
 
-void nameSwapChain(ref App app){
-  for (uint i = 0; i < app.imageCount; i++) {
+    // Set name to Image and ImageView
     app.nameVulkanObject(app.swapChainImages[i], toStringz(format("[IMAGE] SwapChain #%d", i)), VK_OBJECT_TYPE_IMAGE);
     app.nameVulkanObject(app.swapChainImageViews[i], toStringz(format("[VIEW] SwapChain #%d", i)), VK_OBJECT_TYPE_IMAGE_VIEW);
   }
+  if(app.verbose) SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
+
+  app.swapDeletionQueue.add((){
+    for (uint i = 0; i < app.imageCount; i++) { vkDestroyImageView(app.device, app.swapChainImageViews[i], app.allocator); }
+  });
 }

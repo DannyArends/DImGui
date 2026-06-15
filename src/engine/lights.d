@@ -234,7 +234,7 @@ void computeActiveLighting(ref App app) {
   }
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
-    uint used = *cast(uint*)app.buffers["ClusterCounter"][0].data;
+    uint used = *cast(uint*)app.buffers["ClusterCounter"][app.syncIndex].data;
     if(used > app.clusterCapacity) {
       app.clusterCapacity = used * 2;
       app.growSSBO("ClusterLights", app.clusterCapacity);

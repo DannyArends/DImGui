@@ -6,7 +6,7 @@
 import engine;
 
 import io : readFile;
-import reflection : convert, reflectShader;
+import reflection : convert, reflectShader, LIGHT_GRID;
 import validation : nameVulkanObject;
 
 struct Shader {
@@ -150,25 +150,33 @@ VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
   return(info);
 }
 
-/** Build pipeline stage infos from shaders, using pipeline Topology and Specialization structure
- *  Returns stages plus the spec data they point to (kept alive by the caller). */
-VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo,
-                                                                    ref VkSpecializationMapEntry[] mapEntry,
-                                                                    ref uint[] flags, VkPrimitiveTopology topology, Specialization s) {
-  flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, s.instanced ? VK_TRUE : VK_FALSE ];
-  mapEntry = [
-    VkSpecializationMapEntry(0, 0 * uint.sizeof, uint.sizeof),   // LINE → fragment
-    VkSpecializationMapEntry(1, 1 * uint.sizeof, uint.sizeof),   // ALPHA_TEST → fragment
-    VkSpecializationMapEntry(2, 2 * uint.sizeof, uint.sizeof),   // INSTANCED  → vertex
-  ];
-  specInfo = VkSpecializationInfo(cast(uint)mapEntry.length, mapEntry.ptr, flags.length * uint.sizeof, flags.ptr);
+struct ShaderStage {
+  uint[] flags;
+  VkSpecializationMapEntry[] mapEntry;
+  VkSpecializationInfo specInfo;
   VkPipelineShaderStageCreateInfo[] info;
+}
+
+/** Build pipeline stage infos from shaders, using pipeline Topology and Specialization structure */
+ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Specialization s) {
+  ShaderStage stage;
+  stage.flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, s.instanced ? VK_TRUE : VK_FALSE, LIGHT_GRID[0], LIGHT_GRID[1], LIGHT_GRID[2] ];
+  stage.mapEntry = [
+    VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),  // LINE : fragment
+    VkSpecializationMapEntry(1, 1*uint.sizeof, uint.sizeof),  // ALPHA_TEST : fragment
+    VkSpecializationMapEntry(2, 2*uint.sizeof, uint.sizeof),  // INSTANCED  : vertex
+    VkSpecializationMapEntry(3, 3*uint.sizeof, uint.sizeof),  // GRID_X : compute & fragment
+    VkSpecializationMapEntry(4, 4*uint.sizeof, uint.sizeof),  // GRID_Y : compute & fragment
+    VkSpecializationMapEntry(5, 5*uint.sizeof, uint.sizeof),  // GRID_Z : compute & fragment
+  ];
+  stage.specInfo = VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
+
   foreach(shader; shaders) {
     auto spec = shader.info;
-    if(shader.stage == VK_SHADER_STAGE_VERTEX_BIT || shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT){ spec.pSpecializationInfo = &specInfo; }
-    info ~= spec;
+    spec.pSpecializationInfo = &stage.specInfo;
+    stage.info ~= spec;
   }
-  return(info);
+  return(stage);
 }
 
 /** Load shaders to dst using the specified shader definitions */

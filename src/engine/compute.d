@@ -10,7 +10,7 @@ import descriptor : createDescriptorSetLayout, createDescriptorSet;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
 import reflection : createResources;
 import swapchain : createImageView;
-import shaders : loadShaders;
+import shaders : loadShaders, createStageInfo;
 import ssbo : updateSSBO;
 import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
 import textures : idx, registerTexture;
@@ -56,11 +56,13 @@ void createComputePipeline(ref App app, Shader shader) {
     pNext : null
   };
   enforceVK(vkCreatePipelineLayout(app.device, &computeLayout, null, &app.compute.pipelines[shader.path].layout));
-  
+
+  ShaderStage stage = createStageInfo([shader], VK_PRIMITIVE_TOPOLOGY_POINT_LIST, Specialization.init);
+
   VkComputePipelineCreateInfo computeInfo = {
     sType : VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
     layout : app.compute.pipelines[shader.path].layout,
-    stage : shader.info,
+    stage : stage.info[0],
     pNext : null
   };
 
