@@ -95,10 +95,10 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     spvc_type_id type_id = list[i].type_id;
     spvc_type_id base_type_id = list[i].base_type_id;
 
-    descr.name      = to!string(spvc_compiler_get_name(compiler, list[i].id));
-    descr.base      = to!string(spvc_compiler_get_name(compiler, base_type_id));
-    descr.set       = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationDescriptorSet);
-    descr.binding   = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationBinding);
+    descr.name = to!string(spvc_compiler_get_name(compiler, list[i].id));
+    descr.base = to!string(spvc_compiler_get_name(compiler, base_type_id));
+    descr.set = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationDescriptorSet);
+    descr.binding = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationBinding);
 
     spvc_type type_handle = spvc_compiler_get_type_handle(compiler, type_id);
     spvc_type base_handle = spvc_compiler_get_type_handle(compiler, base_type_id);
