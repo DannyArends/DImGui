@@ -11,7 +11,6 @@ import frustum : aabbInFrustum, extractFrustum;
 import framebuffer : createFramebuffer, cleanup;
 import geometry : bufferGeometries, draw;
 import images : createImage, cleanup, nameImageBuffer, copyImageLayer;
-import renderpass : beginRecording, endRecording;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
 import validation : popLabel, pushLabel;
@@ -27,6 +26,7 @@ struct ShadowMap {
   Shader[] shaders;
   RenderPass staticPass;
   RenderPass dynamicPass;
+  CommandBuffer cmd;
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
@@ -265,7 +265,7 @@ void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
 
 /** Record the draw calls in the shadow command buffer */
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.shadows.staticPass.beginRecording(app, syncIndex, "Shadow");
+  auto cmd = app.shadows.cmd.begin(app, syncIndex, "Shadow");
 
   if(app.trace) SDL_Log("Beginning shadow map render pass");
 
@@ -276,7 +276,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   popLabel(cmd);
 
   pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  app.updateDescriptorData(app.shadows.shaders, app.shadows.staticPass.commands, syncIndex);
+  app.updateDescriptorData(app.shadows.shaders, app.shadows.cmd.commands, syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
@@ -304,6 +304,6 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     popLabel(cmd);
   }
   popLabel(cmd);
-  app.shadows.staticPass.endRecording(syncIndex);
+  app.shadows.cmd.end(syncIndex);
 }
 

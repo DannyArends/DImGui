@@ -94,10 +94,10 @@ void renderFrame(ref App app, double dt) {
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[4] submitCommandBuffers;
   uint nSubmit = 0;
-  if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.staticPass.commands[app.syncIndex]; }
-  submitCommandBuffers[nSubmit++] = app.scenePass.commands[app.syncIndex];
-  submitCommandBuffers[nSubmit++] = app.postPass.commands[app.syncIndex];
-  submitCommandBuffers[nSubmit++] = app.imguiPass.commands[app.syncIndex];
+  if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.cmd[app.syncIndex]; }
+  submitCommandBuffers[nSubmit++] = app.sceneCmd[app.syncIndex];
+  submitCommandBuffers[nSubmit++] = app.postCmd[app.syncIndex];
+  submitCommandBuffers[nSubmit++] = app.imguiCmd[app.syncIndex];
 
   WaitList!2 wait;
   wait.add(imageAcquired, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);

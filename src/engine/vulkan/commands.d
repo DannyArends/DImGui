@@ -11,9 +11,27 @@ import descriptor : updateDescriptorData;
 import geometry : draw, bufferGeometries;
 import ssbo : updateSSBO;
 import matrix : multiply;
-import renderpass : beginRecording, endRecording;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import window: supportedTopologies;
+
+/** A recordable command buffer (one per syncIndex); records one or more RenderPass instances. */
+struct CommandBuffer {
+  RenderPass[] renderpass;
+  VkCommandBuffer[] commands;       /// per-syncIndex buffers
+  alias commands this;
+
+  void create(ref App app, VkCommandPool pool, uint nBuffers) { app.createCommandBuffer(commands, pool, nBuffers); }
+
+  VkCommandBuffer begin(ref App app, uint syncIndex, string label) {
+    enforceVK(vkResetCommandBuffer(commands[syncIndex], 0));
+    VkCommandBufferBeginInfo beginInfo = { sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+    enforceVK(vkBeginCommandBuffer(commands[syncIndex], &beginInfo));
+    app.nameVulkanObject(commands[syncIndex], toStringz(format("[COMMANDBUFFER] %s %d", label, syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+    return commands[syncIndex];
+  }
+
+  void end(uint syncIndex) { enforceVK(vkEndCommandBuffer(commands[syncIndex])); }
+}
 
 /** Draw per-object bounding boxes (debug, LINE_LIST, alpha-test variant) */
 void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
@@ -29,7 +47,7 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
 
 /** Record scene command buffer: SSBO -> Objects -> Rendering */
 void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
-  auto cmd = app.scenePass.beginRecording(app, syncIndex, "Render");
+  auto cmd = app.sceneCmd.begin(app, syncIndex, "Render");
 
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("Objects Buffering");
@@ -38,7 +56,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
   pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("SSBO Buffering");
-  app.updateDescriptorData(shaders, app.scenePass.commands, syncIndex);
+  app.updateDescriptorData(shaders, app.sceneCmd.commands, syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Rendering", Colors.lightgray);
@@ -66,12 +84,12 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   app.scenePass.end(cmd);
   popLabel(cmd);
 
-  app.scenePass.endRecording(syncIndex);
+  app.sceneCmd.end(syncIndex);
 }
 
 /** Record post-process command buffer */
 void recordPostCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.postPass.beginRecording(app, syncIndex, "Post");
+  auto cmd = app.postCmd.begin(app, syncIndex, "Post");
 
   pushLabel(cmd, "Post-processing", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Post-processing");
@@ -86,7 +104,7 @@ void recordPostCommandBuffer(ref App app, uint syncIndex) {
   app.postPass.end(cmd);
   popLabel(cmd);
   if(app.trace) SDL_Log("Finished Post-processing");
-  app.postPass.endRecording(syncIndex);
+  app.postCmd.end(syncIndex);
 }
 
 void createCommandPools(ref App app) {

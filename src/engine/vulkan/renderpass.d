@@ -19,7 +19,6 @@ struct RenderPass {
   VkRenderPass pass;
   alias pass this;
   VkFramebuffer[] framebuffers;
-  VkCommandBuffer[] commands;
 
   void create(ref App app, RenderPassInfo info, string label, ref DeletionQueue queue) {
     VkRenderPassCreateInfo createInfo = {
@@ -48,17 +47,6 @@ struct RenderPass {
 
   void end(VkCommandBuffer cmd) { vkCmdEndRenderPass(cmd); }
 }
-
-VkCommandBuffer beginRecording(ref RenderPass pass, ref App app, uint syncIndex, string label) {
-  VkCommandBufferBeginInfo beginInfo = { sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-  enforceVK(vkResetCommandBuffer(pass.commands[syncIndex], 0));
-  enforceVK(vkBeginCommandBuffer(pass.commands[syncIndex], &beginInfo));
-  app.nameVulkanObject(pass.commands[syncIndex], toStringz(format("[COMMANDBUFFER] %s %d", label, syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
-  return(pass.commands[syncIndex]);
-}
-
-void endRecording(ref RenderPass pass, uint syncIndex) { enforceVK(vkEndCommandBuffer(pass.commands[syncIndex])); }
-
 
 /** Create a Scene RenderPass object
  * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment */
