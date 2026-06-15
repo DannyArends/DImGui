@@ -5,8 +5,8 @@
 
 import engine;
 
+import buffer : createBuffer, cleanup;
 import quaternion : xyzw;
-import buffer : createBuffer;
 import matrix : rotate, lookAt, perspective;
 import lights : computeLightSpace, LMode;
 import validation : nameVulkanObject;
@@ -52,11 +52,7 @@ void createUBO(ref App app, Descriptor descriptor) {
 
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting UBO at %s", toStringz(descriptor.base));
-    foreach(a; app.ubos[descriptor.base]) {
-      vkUnmapMemory(app.device, a.memory);
-      vkFreeMemory(app.device, a.memory, app.allocator);
-      vkDestroyBuffer(app.device, a.buffer, app.allocator);
-    }
+    foreach(a; app.ubos[descriptor.base]){ app.cleanup(a); }
     app.ubos.remove(descriptor.base);
   });
 }
@@ -86,9 +82,7 @@ void updateRenderUBO(ref App app, Shader[] shaders, uint syncIndex) {
     ubo.orientation = rotate(Matrix.init, [0.0f, 180.0f, 0.0f]);
   }
 
-  shaders.forEachUBO((d) {
-    if(d.name == "ubo") { memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes); }
-  });
+  shaders.forEachUBO((d) { if(d.name == "ubo") { memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes); } });
 }
 
 
