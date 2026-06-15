@@ -134,7 +134,7 @@ void copyImageLayer(ref App app, VkCommandBuffer cmd, VkImage img, uint srcLayer
 
   VkImageCopy region = { srcSubresource: {aspect,0,srcLayer,1}, dstSubresource: {aspect,0,dstLayer,1}, extent: ext };
   vkCmdCopyImage(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
+  app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, format, 1, srcLayer, 1);
   app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, format, 1, dstLayer, 1);
 }
 
@@ -182,6 +182,9 @@ void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage i
   } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
     src = VK_ACCESS_TRANSFER_WRITE_BIT; dst = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+    src = VK_ACCESS_TRANSFER_READ_BIT; dst = VK_ACCESS_SHADER_READ_BIT;
+    srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else {
     SDL_Log("unsupported layout transition!");
     return;
