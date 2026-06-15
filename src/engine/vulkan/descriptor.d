@@ -275,7 +275,7 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[]
   // Uniform Buffer Write
   if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
     if(app.verbose) SDL_Log("writeDescriptor UBO[%s] #%d", toStringz(d.base), syncIndex);
-    bufferInfos ~= VkDescriptorBufferInfo(app.ubos[d.base].buffers[syncIndex], 0, d.bytes);
+    bufferInfos ~= VkDescriptorBufferInfo(app.ubos[d.base][syncIndex].buffer, 0, d.bytes);
     write ~= makeWrite(dst, d.binding, d.type, null, null);
     infoIndex ~= bufferInfos.length - 1;
   }
