@@ -76,14 +76,13 @@ void initShadowPool(ref App app) {
 
 /** Create shadow image+view+framebuffer for slot l at the given square size. */
 void makeShadowMap(ref App app, size_t l, uint size) {
-  auto s = app.shadows;
   app.createImage(app.shadows.images[l], size, size, app.shadows.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT 
                   | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
   app.createLayerViews(app.shadows.images[l], app.shadows.format, VK_IMAGE_ASPECT_DEPTH_BIT);
   app.nameImageBuffer(app.shadows.images[l], format("ShadowImage #%d", l));
-  s.staticPass.framebuffers[l] = app.createFramebuffer(s.staticPass, [s.images[l].view(0)], size, size, "Static Shadow", l);
-  s.dynamicPass.framebuffers[l] = app.createFramebuffer(s.dynamicPass, [s.images[l].view(1)], size, size, "Dynamic Shadow", l);
+  app.shadows.staticPass.framebuffers[l] = app.createFramebuffer(app.shadows.staticPass, [app.shadows.images[l].view(0)], size, size, "Static Shadow", l);
+  app.shadows.dynamicPass.framebuffers[l] = app.createFramebuffer(app.shadows.dynamicPass, [app.shadows.images[l].view(1)], size, size, "Dynamic Shadow", l);
 }
 
 /** Resize light l's shadow map to `size`; defers old resources, re-points the descriptor next safe frame. */
