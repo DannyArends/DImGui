@@ -12,7 +12,6 @@ import directorywindow : showDirectoryContent;
 import joystickwindow : showJoystickwindow;
 import objectswindow : showObjectsContent;
 import mainmenu : showMenu;
-import renderpass : beginRecording, endRecording;
 import sidepanel : showSidepanel;
 import shaderswindow : showShaderContent;
 import texturewindow : showTexturesContent;
@@ -157,7 +156,7 @@ void initializeImGui(ref App app){
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers */
 void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.imguiPass.beginRecording(app, syncIndex, "ImGui");
+  auto cmd = app.imguiCmd.begin(app, syncIndex, "ImGui");
 
   pushLabel(cmd, "ImGui", Colors.lightgray);
 
@@ -171,7 +170,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 
   popLabel(cmd);
 
-  app.imguiPass.endRecording(syncIndex);
+  app.imguiCmd.end(syncIndex);
 }
 
 /** Rotate all ImGui vertices to handle Vulkan pre-rotation on Android.

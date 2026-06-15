@@ -11,7 +11,7 @@ public import boundingbox : Bounds, BoundingBox;
 public import buffer : GPUAllocation, GeometryBuffer;
 public import camera : Camera;
 public import compute : Compute;
-public import commands : SingleTimeCommand;
+public import commands : CommandBuffer, SingleTimeCommand;
 public import cone : Cone;
 public import color : Colors;
 public import cube : Cube;
