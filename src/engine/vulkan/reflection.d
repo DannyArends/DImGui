@@ -151,7 +151,7 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
   app.createDSPool(poolID, shaders);
   foreach(ref shader; shaders) {
     foreach(ref d; shader.descriptors) {
-      if(auto p = d.base in app.providers) { (*p)(app, d); continue; }
+      if(auto p = d.base in app.providers) { p.create(app, d); continue; }
       if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){ 
         app.createUBO(d);
       }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ 

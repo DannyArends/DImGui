@@ -38,7 +38,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
   pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("SSBO Buffering");
-  app.updateDescriptorData(shaders, app.scenePass.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
+  app.updateDescriptorData(shaders, app.scenePass.commands, syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Rendering", Colors.lightgray);

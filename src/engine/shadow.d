@@ -241,7 +241,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   popLabel(cmd);
 
   pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  app.updateDescriptorData(app.shadows.shaders, app.shadows.renderPass.commands, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, syncIndex);
+  app.updateDescriptorData(app.shadows.shaders, app.shadows.renderPass.commands, syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
