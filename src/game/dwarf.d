@@ -205,6 +205,10 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
 /** A single dwarf being ticked */
 void tickDwarf(ref GameApp app, ref Dwarf d) {
   d.hunger = min(1.0f, d.hunger + 0.00083f);
+
+  // Drop a job the moment it becomes invalid, in any state
+  if(d.hasJob && d.currentJob.isValid !is null && !d.currentJob.isValid(app, d.currentJob)) { d.currentJob.onFail(app, d); }
+
   final switch(d.state) {
     case DwarfState.Idle:
       bool haveBerry = app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock || d.carrying.any!(id => app.blockType(id) == ResourceType.Berry);
@@ -218,7 +222,6 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
       break;
     case DwarfState.Working:
       if(!d.hasJob) { d.state = DwarfState.Idle; break; }
-      if(d.currentJob.isValid !is null && !d.currentJob.isValid(app, d.currentJob)) { d.currentJob.onFail(app, d); break; }
       if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) {
         d.blockedSince = 0;
         d.currentJob.onArrive(app, d);
