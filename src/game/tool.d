@@ -24,8 +24,8 @@ struct Tool {
 
 immutable Tool[] tools = [
   Tool(ToolMode.Select,    cast(string)ICON_FA_MAGNIFYING_GLASS),
-  Tool(ToolMode.Mine,      cast(string)ICON_FA_MOUND),
-  Tool(ToolMode.Stockpile, cast(string)ICON_FA_BOXES_STACKED),
+  Tool(ToolMode.Mine,      cast(string)ICON_FA_PERSON_DIGGING),
+  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE),
 ];
 
 struct PaintState {
