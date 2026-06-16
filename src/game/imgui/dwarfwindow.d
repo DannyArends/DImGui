@@ -8,6 +8,7 @@ import game;
 import dwarf : spawnDwarf;
 import jobs : dispatchJob, jobQueue, dropBlockJob;
 import imgui : faIcon, iconText;
+import tile : tileToWorld;
 import textures : ImTextureRefFromID, idx;
 import widgets : drawCenteredText, text;
 
@@ -22,6 +23,15 @@ void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f
     igImage(texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1));
     if(igIsItemHovered(0)) { igSetTooltip(cstr("%s x%d", name, tiles.count(tt))); }
   }
+}
+
+/** Center the camera on a dwarf */
+void focusCamera(ref GameApp app, const int[3] tile) {
+  auto old = app.camera.lookat;
+  app.camera.lookat = app.world.tileToWorld(tile);
+  app.camera.isDirty = true;
+  if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position))
+    app.camera.lookat = old;   // refuse if it would put the camera somewhere illegal
 }
 
 /** Human-readable state label */
@@ -57,7 +67,7 @@ void showDwarfRow(ref GameApp app, size_t i, ref Dwarf d) {
 }
 
 /** One inventory slot cell: empty placeholder, or item icon with count + click-to-drop */
-void showInventorySlot(ref GameApp app, Dwarf* d, size_t i, float cellSize) {
+void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
   auto s = &d.inventory[i];
   if(s.empty) {
     igImageButton(cstr("##dwf_inv_%d", cast(int)i), ImTextureRefFromID(0), ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(0,0,0,0));
@@ -67,16 +77,21 @@ void showInventorySlot(ref GameApp app, Dwarf* d, size_t i, float cellSize) {
   auto texIdx  = idx(app.textures, texName);
   auto texID   = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
   igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
-  if(igIsItemClicked(0)) app.dispatchJob(*d, dropBlockJob(d.tile, s.resourceIDs[s.count - 1]));
+  if(igIsItemClicked(0)) app.dispatchJob(d, dropBlockJob(d.tile, s.resourceIDs[s.count - 1]));
   ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
   if(s.count > 1) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", s.count));
   if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d (click to drop)", resourceData(s.type).name, s.count));
 }
 
 /** Detailed sheet for the selected dwarf */
-void showDwarfSheet(ref GameApp app, Dwarf* d) {
-  dwarfGlyph(*d); igSameLine(0, 5);
-  text("%s", d.name);
+void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
+  dwarfGlyph(d); igSameLine(0, 5);
+  if(igSelectable_Bool(cstr("%s##follow", d.name), 0, 0, ImVec2(0, 0))) { 
+    app.camera.onFrame = (dt) {
+      app.camera.lookat = d.visualPos; app.camera.isDirty = true;
+      app.world.dwarves.selected = selected; // TODO: Decide if we really need this
+    };
+  }
   text("Tile: %s", d.tile);
   text("Hunger: %.0f", d.hunger * 100.0f);
   text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
@@ -115,7 +130,7 @@ void showDwarfContent(ref GameApp app, uint font = 0) {
   int sel = app.world.dwarves !is null ? app.world.dwarves.selected : -1;
   if(sel >= 0 && sel < app.world.dwarves.dwarves.length) {
     if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back"), ImVec2(0,0))) { app.world.dwarves.selected = -1; }
-    app.showDwarfSheet(&app.world.dwarves.dwarves[sel]);
+    app.showDwarfSheet(app.world.dwarves.dwarves[sel], sel);
   } else { app.showDwarfOverview(); }
 
   igSeparator();

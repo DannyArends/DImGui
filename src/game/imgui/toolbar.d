@@ -16,9 +16,8 @@ void showToolbar(ref GameApp app, uint font = 0) {
   immutable ImVec4 unselected = ImVec4(0.55f, 0.55f, 0.55f, 1.0f);  // gray
   immutable ImVec4 selected   = ImVec4(1.0f,  0.84f, 0.0f,  1.0f);  // yellow/gold
 
-  auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
-               ImGuiWindowFlags_NoResize  | ImGuiWindowFlags_NoBringToFrontOnFocus |
-               ImGuiWindowFlags_AlwaysAutoResize;
+  auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize  | ImGuiWindowFlags_NoBringToFrontOnFocus |
+               ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_AlwaysAutoResize;
   float dispW = app.gui.io.DisplaySize.x, dispH = app.gui.io.DisplaySize.y;
   bool landscape = dispW > dispH;
 

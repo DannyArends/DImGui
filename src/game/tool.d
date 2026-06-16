@@ -174,11 +174,11 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
 
 /** Secondary press: right click */
 void handleSecondaryPress(ref GameApp app, float sx, float sy) {
-  final switch(tools[app.world.inventory.activeTool].kind) {
-    case ToolKind.Query:      break;
-    case ToolKind.RayPaint:   app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
-    case ToolKind.BuildPaint: app.world.inventory.type = ResourceType.None; break;
-  }
+  app.world.inventory.paint = PaintState.init;
+  app.world.inventory.type = ResourceType.None;
+  app.world.inventory.cachedMatIdx = -1;
+  app.world.inventory.activeTool = ToolMode.Select;
+  app.syncBuildGhosts();
 }
 
 void updateHoverHighlight(ref GameApp app, float sx, float sy) {
