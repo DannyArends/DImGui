@@ -67,7 +67,7 @@ void openBuildSelection(ref GameApp app) {
 }
 
 immutable Tool[] tools = [
-  Tool(ToolMode.Select, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.white, null, ToolKind.Query, null),
+  Tool(ToolMode.Select, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.black, null, ToolKind.Query, null),
   Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit),
   Tool(ToolMode.Woodcut, cast(string)ICON_FA_TREE, Colors.forestgreen, &woodcutHighlight, ToolKind.RayPaint, &woodcutCommit),
   Tool(ToolMode.Harvest, cast(string)ICON_FA_WHEAT_AWN, Colors.wheat, &harvestHighlight, ToolKind.RayPaint, &harvestCommit),
