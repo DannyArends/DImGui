@@ -59,7 +59,6 @@ class Chunk : Cube {
 struct PendingBuild {
   int[3] tile;
   ResourceType type = ResourceType.None;
-  bool selected = false;
 }
 
 class GhostCube : Cube {
