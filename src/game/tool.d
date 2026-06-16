@@ -8,40 +8,100 @@ import game;
 import camera : castRay;
 import chunk : getBestTile;
 import ghost : syncBuildGhosts;
+import feature : hasFeature;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import hits : getHits;
 import geometry : setColor;
-import tile : tileToWorld, getTileAt;
+import tile : tileToWorld, getTileAt, tileAbove;
 import matrix : translateScale;
 import vegetation : getBestVegetation;
 
 enum ToolMode : ubyte { Select, Mine, Woodcut, Harvest, Build, Stockpile }
+enum ToolKind : ubyte { Query, RayPaint, BuildPaint }
 
 struct Tool {
   ToolMode mode;                                    /// ToolMode
   string icon;                                      /// FontAwesome glyph
   float[4] color;                                   /// Highlight & Preview color
   Matrix function(float[3], float, float) matrix;   /// Matrix builder
+  ToolKind kind;                                    /// Dispatch mechanism
+  void function(ref GameApp, int[3]) commit;        /// Per-tile commit action (null = none
 }
 
 immutable float os = 1.05f;
 immutable float flat = 0.1f;
 
 Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
-Matrix woodCutHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
-Matrix harvestHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
+Matrix woodcutHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1]+ th, wp[2]], [ts, th, ts]); }
+Matrix harvestHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1]+ th, wp[2]], [ts, th, ts]); }
 Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
 Matrix stockpileHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts*os, th*flat, ts*os]); }
 
+void mineCommit(ref GameApp app, int[3] tile) {
+  if(app.world.getTileAt(tile) == ResourceType.None) return;
+  auto job = miningJob(tile);
+  if(!app.tryAssign(job)) jobQueue ~= job;
+}
+void woodcutCommit(ref GameApp app, int[3] tile) {
+  auto ft = tile.tileAbove;
+  if(!app.hasFeature(ft, "Fell")) return;
+  auto job = interactFeatureJob(ft);
+  if(!app.tryAssign(job)) jobQueue ~= job;
+}
+void harvestCommit(ref GameApp app, int[3] tile) {
+  auto ft = tile.tileAbove;
+  if(!app.hasFeature(ft, "Gather")) return;
+  auto job = interactFeatureJob(ft);
+  if(!app.tryAssign(job)) jobQueue ~= job;
+}
+void buildCommit(ref GameApp app, int[3] tile) { app.placeTile(tile); }
+
 immutable Tool[] tools = [
-  Tool(ToolMode.Select, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.white, null),
-  Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight),
-  Tool(ToolMode.Woodcut, cast(string)ICON_FA_TREE, Colors.forestgreen, &woodCutHighlight),
-  Tool(ToolMode.Harvest, cast(string)ICON_FA_WHEAT_AWN, Colors.wheat, &harvestHighlight),
-  Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight),
-  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight),
+  Tool(ToolMode.Select, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.white, null, ToolKind.Query, null),
+  Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit),
+  Tool(ToolMode.Woodcut, cast(string)ICON_FA_TREE, Colors.forestgreen, &woodcutHighlight, ToolKind.RayPaint, &woodcutCommit),
+  Tool(ToolMode.Harvest, cast(string)ICON_FA_WHEAT_AWN, Colors.wheat, &harvestHighlight, ToolKind.RayPaint, &harvestCommit),
+  Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, &buildCommit),
+  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null),
 ];
+
+void queryPress(ref GameApp app, float[3][2] ray) {
+  int[3] wc;
+  auto hits = app.getHits(ray, app.showRays);
+  if(hits.length == 0) return;
+  app.world.dwarves.selected = -1;
+  foreach(ref hit; hits) {
+    if(app.objects[hit.idx[0]] is app.world.dwarves) {
+      if(hit.idx[1] < app.world.dwarves.dwarves.length) app.world.dwarves.selected = cast(int)hit.idx[1];
+      break;
+    }
+  }
+  Job job;
+  if(app.getBestTile(ray, wc)) job = miningJob(wc);
+  foreach(ref ft; features) {
+    bool matchFeature(string g) { return ft.parts.any!(p => g == ft.name ~ ":" ~ p.mesh); }
+    if(app.getBestVegetation!(Feature, matchFeature)(ray, hits, app.world.features.get(ft.name, null), wc)) {
+      job = interactFeatureJob(wc); break;
+    }
+  }
+  if(job.name !is null) app.tryAssign(job);
+  app.selectObject(hits);
+}
+
+void buildPress(ref GameApp app) {
+  if(app.world.inventory.tile == noTile || app.world.inventory.type == ResourceType.None) return;
+  app.world.inventory.paint.active = true;
+  app.world.inventory.paint.start = app.world.inventory.tile;
+  app.world.inventory.paint.preview = [app.world.inventory.tile];
+  app.syncBuildGhosts();
+}
+
+void buildDrag(ref GameApp app) {
+  if(!app.world.inventory.paint.active || app.world.inventory.tile == noTile) return;
+  app.computeDragPreview(app.world.inventory.paint.start, app.world.inventory.tile);
+  app.syncBuildGhosts();
+}
 
 struct PaintState {
   bool active = false;
@@ -78,101 +138,43 @@ void paintDrag(ref GameApp app, float[3][2] ray) {
 /** Primary press: left click / single tap */
 void handlePrimaryPress(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
-  int[3] wc;
-
-  final switch(app.world.inventory.activeTool) {
-    case ToolMode.Select:
-      auto hits = app.getHits(ray, app.showRays);
-      if(hits.length > 0) {
-        app.world.dwarves.selected = -1;
-        foreach(ref hit; hits) {
-          if(app.objects[hit.idx[0]] is app.world.dwarves) {
-            if(hit.idx[1] < app.world.dwarves.dwarves.length) app.world.dwarves.selected = cast(int)hit.idx[1];
-            break;
-          }
-        }
-        Job job;
-        if(app.getBestTile(ray, wc)) job = miningJob(wc);
-        foreach(ref ft; features) {
-          bool matchFeature(string g) { return ft.parts.any!(p => g == ft.name ~ ":" ~ p.mesh); }
-          if(app.getBestVegetation!(Feature, matchFeature)(ray, hits, app.world.features.get(ft.name, null), wc)) {
-            job = interactFeatureJob(wc); break;
-          }
-        }
-        if(job.name !is null) app.tryAssign(job);
-        app.selectObject(hits);
-      }
-      break;
-    case ToolMode.Mine: app.paintPress(ray); break;
-    case ToolMode.Woodcut: app.paintPress(ray); break;
-    case ToolMode.Harvest: app.paintPress(ray); break;
-    case ToolMode.Build:
-      if(app.world.inventory.tile != noTile && app.world.inventory.type != ResourceType.None) {
-        app.world.inventory.paint.active = true;
-        app.world.inventory.paint.start = app.world.inventory.tile;
-        app.world.inventory.paint.preview = [app.world.inventory.tile];
-        app.syncBuildGhosts();
-      }
-      break;
-    case ToolMode.Stockpile: app.paintPress(ray); break;
+  final switch(tools[app.world.inventory.activeTool].kind) {
+    case ToolKind.Query:      app.queryPress(ray); break;
+    case ToolKind.RayPaint:   app.paintPress(ray); break;
+    case ToolKind.BuildPaint: app.buildPress();    break;
   }
 }
 
 /** Primary drag: left hold + move / single finger move */
 void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
-  int[3] wc;
-
-  final switch(app.world.inventory.activeTool) {
-    case ToolMode.Select: break;
-    case ToolMode.Mine: app.paintDrag(ray); break;
-    case ToolMode.Woodcut: app.paintDrag(ray); break;
-    case ToolMode.Harvest: app.paintDrag(ray); break;
-    case ToolMode.Build:
-      if(!app.world.inventory.paint.active) break;
-      if(app.world.inventory.tile == noTile) break;
-      app.computeDragPreview(app.world.inventory.paint.start, app.world.inventory.tile);
-      app.syncBuildGhosts();
-      break;
-    case ToolMode.Stockpile: app.paintDrag(ray); break;
+  final switch(tools[app.world.inventory.activeTool].kind) {
+    case ToolKind.Query:      break;
+    case ToolKind.RayPaint:   app.paintDrag(ray); break;
+    case ToolKind.BuildPaint: app.buildDrag();    break;
   }
 }
 
 /** Primary release: left up / finger up */
 void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
-  final switch(app.world.inventory.activeTool) {
-    case ToolMode.Select: break;
-    case ToolMode.Mine: if(app.world.inventory.paint.active) app.commitPaint(); break;
-    case ToolMode.Woodcut: if(app.world.inventory.paint.active) app.commitPaint(); break;
-    case ToolMode.Harvest: if(app.world.inventory.paint.active) app.commitPaint(); break;
-    case ToolMode.Build:
-      if(app.world.inventory.paint.active) {
-        foreach(tile; app.world.inventory.paint.preview) { app.placeTile(tile); }
-        app.world.inventory.paint = PaintState.init;
-        app.syncBuildGhosts();
-      } else if(app.world.inventory.tile != noTile) { app.placeTile(app.world.inventory.tile); }
-      break;
-    case ToolMode.Stockpile: if(app.world.inventory.paint.active) app.commitPaint(); break;
+  final switch(tools[app.world.inventory.activeTool].kind) {
+    case ToolKind.Query:      break;
+    case ToolKind.RayPaint:   if(app.world.inventory.paint.active) app.commitPaint(); break;
+    case ToolKind.BuildPaint: if(app.world.inventory.paint.active) app.commitPaint(); break;
   }
 }
 
 /** Secondary press: right click */
 void handleSecondaryPress(ref GameApp app, float sx, float sy) {
-  final switch(app.world.inventory.activeTool) {
-    case ToolMode.Select: break;
-    case ToolMode.Mine: app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
-    case ToolMode.Woodcut: app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
-    case ToolMode.Harvest: app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
-    case ToolMode.Build:
-      app.world.inventory.type = ResourceType.None;
-      break;
-    case ToolMode.Stockpile: app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
+  final switch(tools[app.world.inventory.activeTool].kind) {
+    case ToolKind.Query:      break;
+    case ToolKind.RayPaint:   app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
+    case ToolKind.BuildPaint: app.world.inventory.type = ResourceType.None; break;
   }
 }
 
 void updateHoverHighlight(ref GameApp app, float sx, float sy) {
-  auto t = app.world.inventory.activeTool;
-  if(t != ToolMode.Mine && t != ToolMode.Woodcut && t != ToolMode.Harvest && t != ToolMode.Stockpile) return;
+  if(tools[app.world.inventory.activeTool].kind != ToolKind.RayPaint) return;
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
   if(!app.getBestTile(ray, wc)) { app.world.inventory.paint.preview = []; app.syncBuildGhosts(); return; }
@@ -196,23 +198,8 @@ void updatePaintPreview(ref GameApp app, int[3] current) {
 /** Commit the current paint preview */
 void commitPaint(ref GameApp app) {
   if(app.world.inventory.paint.preview.length == 0) return;
-  final switch(app.world.inventory.activeTool) {
-    case ToolMode.Select: break;
-    case ToolMode.Mine:
-      foreach(tile; app.world.inventory.paint.preview) {
-        if(app.world.getTileAt(tile) == ResourceType.None) continue;
-        auto job = miningJob(tile);
-        if(!app.tryAssign(job)) jobQueue ~= job;
-      }
-      break;
-    case ToolMode.Woodcut: break;
-    case ToolMode.Harvest: break;
-    case ToolMode.Build:
-      foreach(tile; app.world.inventory.paint.preview) { app.placeTile(tile); }
-      break;
-    case ToolMode.Stockpile:
-      break; // TODO: designate stockpile zone
-  }
+  auto commit = tools[app.world.inventory.activeTool].commit;
+  if(commit !is null) foreach(tile; app.world.inventory.paint.preview) commit(app, tile);
   app.world.inventory.paint = PaintState.init;
   app.syncBuildGhosts();
 }
