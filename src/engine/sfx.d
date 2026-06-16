@@ -94,6 +94,7 @@ void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSou
 /** Play a loaded sound effect by (partial) filename match */
 int play(ref App app, string name, float gain = 1.0f) {
   foreach(ref s; app.soundfx){ if(s.path.fromStringz.canFind(name)){ return(app.play(s, gain)); } }
+  SDL_Log(cstr("Unable to find %s", name));
   return(-1);
 }
 
