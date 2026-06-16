@@ -99,6 +99,7 @@ void queryPress(ref GameApp app, float[3][2] ray) {
 }
 
 void buildPress(ref GameApp app) {
+  if(app.world.inventory.tile == noTile) return;
   app.world.inventory.paint.active = true;
   app.world.inventory.paint.start = app.world.inventory.tile;
   app.world.inventory.paint.preview = [app.world.inventory.tile];
