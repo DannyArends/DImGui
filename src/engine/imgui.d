@@ -25,7 +25,8 @@ struct GUI {
   float panelW = 400.0f;
   float panelH = 300.0f;
   float menuH = 20.0f;
-
+  bool panelOpen = true;
+ 
   int selectedSound = 0;
   int selectedTexture = 0;
 
