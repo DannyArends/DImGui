@@ -67,9 +67,37 @@ void infoRow(Args...)(string label, string fmt, Args a) {
 
 /** Render three inline scaled float sliders for a vec3 */
 void sliderFloat3(string[3] ids, float* x, float* y, float* z, float* min, float* max, float width, float uiscale) {
-  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[0]), ImGuiDataType_Float, x, min, max, "%.2f", 0); igSameLine(0,5);
-  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[1]), ImGuiDataType_Float, y, min, max, "%.2f", 0); igSameLine(0,5);
-  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[2]), ImGuiDataType_Float, z, min, max, "%.2f", 0);
+  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[0]), ImGuiDataType_Float, x, min, max, "%.2f", 0); igPopItemWidth(); igSameLine(0,5);
+  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[1]), ImGuiDataType_Float, y, min, max, "%.2f", 0); igPopItemWidth(); igSameLine(0,5);
+  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[2]), ImGuiDataType_Float, z, min, max, "%.2f", 0); igPopItemWidth();
+}
+
+/** Eye (visibility) + trash (delete) buttons for an object; shared by list and detail views. */
+void objectActions(ref App app, ref Geometry obj) {
+  if(igButton(obj.isVisible ? faIcon(cast(string)ICON_FA_EYE_SLASH) : faIcon(cast(string)ICON_FA_EYE), ImVec2(0,0)))
+    obj.isVisible = !obj.isVisible;
+  igSameLine(0,5);
+  if(igButton(faIcon(cast(string)ICON_FA_TRASH), ImVec2(0,0))) obj.deAllocate = true;
+}
+
+/** Scaled, label-less int slider in the current table column. */
+void colSliderInt(ref App app, const(char)* id, int* v, int lo, int hi) {
+  igPushItemWidth(100 * app.gui.uiscale); scope(exit) igPopItemWidth();
+  igSliderScalar(id, ImGuiDataType_S32, v, &lo, &hi, "%d", 0);
+}
+
+/** Scaled, label-less float slider in the current table column. */
+void colSlider(ref App app, const(char)* id, float* v, float lo, float hi, string fmt = "%.2f") {
+  igPushItemWidth(100 * app.gui.uiscale); scope(exit) igPopItemWidth();
+  igSliderScalar(id, ImGuiDataType_Float, v, &lo, &hi, toStringz(fmt), 0);
+}
+
+/** One mesh's tid/nid/oid sliders across a 4-column row; material by ref so edits persist. */
+void materialRow(ref App app, const(char)* name, ref Material mat, int lo, int hi) {
+  igTableNextColumn(); igText(name); igSameLine(0,5);   // name inline, same column
+  igTableNextColumn(); app.colSliderInt(cstr("##tid:%s", name), &mat.tid, lo, hi);
+  igTableNextColumn(); app.colSliderInt(cstr("##nid:%s", name), &mat.nid, lo, hi);
+  igTableNextColumn(); app.colSliderInt(cstr("##oid:%s", name), &mat.oid, lo, hi);
 }
 
 /** Render a label + widget as a 2-column table row */
