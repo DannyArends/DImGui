@@ -140,7 +140,7 @@ void followPath(T)(ref GameApp app, ref T obj) {
   auto next = obj.path[0];
   obj.path = obj.path[1..$];
   obj.moveFrom = obj.visualPos;
-  obj.moveTo = [next[0], next[1] - 0.5f, next[2]];
+  obj.moveTo = [next[0], next[1], next[2]];
   obj.moveT = 0.0f;
   obj.tile = app.world.worldToTile(next);
   app.camera.isDirty = true;
@@ -159,6 +159,9 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
   return(noTile);
 }
 
+enum stepSpeed = 5.0f;   // base step rate
+enum hopHeight = 2.5f;  // peak of the hop
+
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
@@ -166,12 +169,12 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
     if(d.moveT >= 1.0f) continue;
     float cost = max(1.0f, resourceData(app.world.getTileAt(d.tile.tileBelow)).cost);
-    d.moveT = min(1.0f, d.moveT + dt * 5.0f / cost);
-    float t = d.moveT * d.moveT * (3.0f - 2.0f * d.moveT);
+    d.moveT = min(1.0f, d.moveT + dt * stepSpeed / cost);
+    float arc = hopHeight * d.moveT * (1.0f - d.moveT); 
     d.visualPos = [
-      d.moveFrom[0] + t * (d.moveTo[0] - d.moveFrom[0]),
-      d.moveFrom[1] + t * (d.moveTo[1] - d.moveFrom[1]) + 0.5f,
-      d.moveFrom[2] + t * (d.moveTo[2] - d.moveFrom[2])
+      d.moveFrom[0] + d.moveT * (d.moveTo[0] - d.moveFrom[0]),
+      d.moveFrom[1] + d.moveT * (d.moveTo[1] - d.moveFrom[1]) + arc,
+      d.moveFrom[2] + d.moveT * (d.moveTo[2] - d.moveFrom[2])
     ];
     if(d.moveT >= 1.0f) {
       if(d.path.length > 0) {
