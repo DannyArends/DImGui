@@ -28,12 +28,14 @@ void showToolbar(ref GameApp app, uint font = 0) {
 
   igBegin("##toolbar", null, flags);
   foreach(i, ref t; tools) {
-    igPushStyleColor_Vec4(ImGuiCol_Text, (app.world.inventory.activeTool == t.mode) ? t.color.asIm() : unselected);
+    igPushStyleColor_Vec4(ImGuiCol_Button, (app.world.inventory.activeTool == t.mode) ? t.color.asIm() : unselected);
+    igPushStyleColor_Vec4(ImGuiCol_ButtonActive, (app.world.inventory.activeTool == t.mode) ? t.color.asIm() : unselected);
+    igPushStyleColor_Vec4(ImGuiCol_ButtonHovered, t.color.asIm());
     if(igButton(faIcon(t.icon), ImVec2(36, 36))) {
       app.world.inventory.activeTool = t.mode;
       app.world.inventory.type = ResourceType.None;
     }
-    igPopStyleColor(1);
+    igPopStyleColor(3);
     if(landscape && i < tools.length - 1) igSameLine(0, 4);
   }
   igEnd();
