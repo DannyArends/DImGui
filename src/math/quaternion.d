@@ -8,8 +8,7 @@ import phobos;
 import vector : x,y,z, magnitude, normalize, vMul, sum;
 import matrix : Matrix, radian;
 
-/** Quaternion, stored as float[4]
- */
+/** Quaternion, stored as float[4] */
 struct Quaternion { 
   float[4] data = [ 0.0f, 0.0f, 0.0f, 1.0f ];
   alias data this;

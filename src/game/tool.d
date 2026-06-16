@@ -13,22 +13,34 @@ import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import hits : getHits;
 import geometry : setColor;
 import tile : tileToWorld, getTileAt;
+import matrix : translateScale;
 import vegetation : getBestVegetation;
 
 enum ToolMode : ubyte { Select, Mine, Woodcut, Harvest, Build, Stockpile }
 
 struct Tool {
-  ToolMode mode;
-  string   icon;   /// FontAwesome glyph
+  ToolMode mode;                                    /// ToolMode
+  string icon;                                      /// FontAwesome glyph
+  float[4] color;                                   /// Highlight & Preview color
+  Matrix function(float[3], float, float) matrix;   /// Matrix builder
 }
 
+immutable float os = 1.05f;
+immutable float flat = 0.1f;
+
+Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
+Matrix woodCutHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
+Matrix harvestHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
+Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
+Matrix stockpileHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts*os, th*flat, ts*os]); }
+
 immutable Tool[] tools = [
-  Tool(ToolMode.Select,    cast(string)ICON_FA_MAGNIFYING_GLASS),
-  Tool(ToolMode.Mine,      cast(string)ICON_FA_PERSON_DIGGING),
-  Tool(ToolMode.Woodcut,   cast(string)ICON_FA_TREE),
-  Tool(ToolMode.Harvest,   cast(string)ICON_FA_WHEAT_AWN),
-  Tool(ToolMode.Build,     cast(string)ICON_FA_TROWEL),
-  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE),
+  Tool(ToolMode.Select, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.white, null),
+  Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight),
+  Tool(ToolMode.Woodcut, cast(string)ICON_FA_TREE, Colors.forestgreen, &woodCutHighlight),
+  Tool(ToolMode.Harvest, cast(string)ICON_FA_WHEAT_AWN, Colors.wheat, &harvestHighlight),
+  Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight),
+  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight),
 ];
 
 struct PaintState {

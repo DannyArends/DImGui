@@ -8,7 +8,7 @@ import game;
 import chunk : getBestTile;
 import game : GameApp;
 import vector : dot;
-import matrix : translateScale;
+import tool : tools, buildHighlight;
 import tile : tileIdx, tileToWorld;
 import jobs : activeTiles;
 
@@ -45,32 +45,8 @@ void updateGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   app.syncBuildGhosts();
 }
 
-Matrix mineHighlight(float[3] wp, float ts, float th) {
-  return translateScale([wp[0], wp[1], wp[2]], [ts * 1.05f, th * 1.05f, ts * 1.05f]);
-}
-
-Matrix buildHighlight(float[3] wp, float ts, float th) {
-  return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]);
-}
-
-Matrix stockpileHighlight(float[3] wp, float ts, float th) {
-  return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts * 1.05f, th * 0.1f, ts * 1.05f]);
-}
-/** Per-tool highlight: color and matrix builder */
-struct ToolHighlight {
-  float[4]  color;
-  Matrix function(float[3], float, float) matrix;
-}
-
-immutable ToolHighlight[ToolMode.max + 1] toolHighlight = [
-  ToolMode.Select: { Colors.white, &buildHighlight },
-  ToolMode.Mine: { Colors.orangered, &mineHighlight },
-  ToolMode.Build: { Colors.dodgerblue, &buildHighlight },
-  ToolMode.Stockpile: { Colors.gold, &stockpileHighlight },
-];
-
 void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
-  auto h = toolHighlight[mode];
+  auto h = tools[mode];
   float ts = app.world.tileSize, th = app.world.tileHeight;
   foreach(tile; tiles) {
     auto inst = DrawInstance([0, 0], h.color, Matrix.init);

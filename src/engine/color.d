@@ -6,6 +6,10 @@
 import engine;
 
 import ctfe : parseTokens, splitColon;
+import quaternion: w;
+import vector : x,y,z;
+
+@nogc pure ImVec4 asIm(T)(const T[4] v) nothrow { return(ImVec4(v.x, v.y, v.z, v.w)); }
 
 /** CTFE: generate Colors enum from raws text */
 string generateColorsEnum(string raw) pure {
