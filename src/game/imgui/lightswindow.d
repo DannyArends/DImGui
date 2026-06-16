@@ -7,7 +7,7 @@ import game;
 
 import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
-import widgets : setting, text, sliderFloat3, infoRow;
+import widgets : colValue, setting, text, sliderFloat3, infoRow;
 
 /** Show the GUI window which allows us to manipulate lighting */
 void showLightsContent(ref GameApp app, uint font = 0) {
@@ -56,8 +56,7 @@ void showLightsContent(ref GameApp app, uint font = 0) {
 
         igTableNextColumn(); igText(iconText("Cone", cast(string)ICON_FA_EXPAND));
         igTableNextColumn();
-          igPushItemWidth(75 * app.gui.uiscale); 
-          igSliderScalar("##A0", ImGuiDataType_Float, &light.properties[2], &app.gui.cone[0], &app.gui.cone[1], "%.2f", 0);
+          app.colValue("##A0", &light.properties[2], app.gui.cone[0], app.gui.cone[1]);
         igEndTable();
       }
       igTreePop();
