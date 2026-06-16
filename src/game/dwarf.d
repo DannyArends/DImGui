@@ -14,7 +14,7 @@ import ghost : syncBuildGhosts;
 import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo;
-import jobs : Job, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination;
+import jobs : Job, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination, blockType;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
@@ -192,16 +192,28 @@ void dwarfFrame(ref GameApp app, float dt) {
   app.buffers["LightMatrices"].dirty[] = true;
 }
 
+/** Overburdened: fumble a random item when more than half-full */
+void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
+  size_t filled = 0;
+  foreach(ref s; d.inventory) if(!s.empty) filled++;
+  if((filled > cast(size_t)(above * d.inventory.length)) && uniform(0, 100) < 2) {   // ~2%/tick over 50%
+    size_t slot = uniform(0, d.inventory.length);
+    d.drop(app, slot);   // no-op if that slot is empty
+  }
+}
+
 /** A single dwarf being ticked */
 void tickDwarf(ref GameApp app, ref Dwarf d) {
   d.hunger = min(1.0f, d.hunger + 0.00083f);
   final switch(d.state) {
     case DwarfState.Idle:
-      if(d.hunger >= 0.6f && app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock) { app.dispatchJob(d, eatJob()); break; }
+      bool haveBerry = app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock || d.carrying.any!(id => app.blockType(id) == ResourceType.Berry);
+      if(d.hunger >= 0.6f && haveBerry) { app.dispatchJob(d, eatJob()); break; }
       app.claimNextJob(d); break;
     case DwarfState.WaitingForPath: break;
     case DwarfState.Moving:
     case DwarfState.Wandering:
+      app.overBurdened(d);
       if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
       break;
     case DwarfState.Working:

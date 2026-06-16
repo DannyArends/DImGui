@@ -7,7 +7,6 @@ import game;
 
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
 import game : GameApp;
-import ghost : updateGhostTile;
 import hits : getHits;
 import screenshot : saveScreenshot;
 import timing : timed;
@@ -35,13 +34,11 @@ void handleMouseEvents(ref GameApp app, SDL_Event e) {
     app.camera.isdrag[0] = false;
     if(e.button.button == SDL_BUTTON_LEFT) app.handlePrimaryRelease(e.button.x, e.button.y);
     if(e.button.button == SDL_BUTTON_RIGHT) app.camera.isdrag[1] = false;
-    auto hits = app.getHits(ray, false);
-    app.updateGhostTile(ray, hits);
+    app.updateHoverHighlight(e.button.x, e.button.y);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION) {
     if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel);
-    auto hits = app.getHits(ray, false);
-    app.updateGhostTile(ray, hits);
+    app.updateHoverHighlight(e.motion.x, e.motion.y);
     if(app.camera.isdrag[0]) app.handlePrimaryDrag(e.motion.x, e.motion.y);
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y);

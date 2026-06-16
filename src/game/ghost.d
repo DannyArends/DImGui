@@ -37,14 +37,6 @@ int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   return(noTile);
 }
 
-void updateGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
-  if(app.world.inventory.activeTool != ToolMode.Build) return;
-  int[3] newTile = app.getGhostTile(ray, hits);
-  if(newTile == app.world.inventory.tile) return;
-  app.world.inventory.tile = newTile;
-  app.syncBuildGhosts();
-}
-
 void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
   auto h = tools[mode];
   float ts = app.world.tileSize, th = app.world.tileHeight;
@@ -53,14 +45,6 @@ void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
     inst.matrix = h.matrix(app.world.tileToWorld(tile), ts, th);
     app.world.inventory.instances ~= inst;
   }
-}
-
-/** Cursor ghost (single tile with texture) */
-void syncCursorGhost(ref GameApp app) {
-  if(app.world.inventory.activeTool != ToolMode.Build) return;
-  if(app.world.inventory.tile == noTile) return;
-  auto wp = app.world.tileToWorld(app.world.inventory.tile);
-  app.world.inventory.instances ~= DrawInstance(app.world.inventory.cachedMatIdx, buildHighlight(wp, app.world.tileSize, app.world.tileHeight));
 }
 
 /** Update Orchestrator */
@@ -75,7 +59,6 @@ void syncBuildGhosts(ref GameApp app) {
   foreach(tile; buildTiles) app.world.data.tilePenalties[tile] = 40.0f;
   app.addTiles(mineTiles, ToolMode.Mine);
   app.addTiles(app.world.inventory.paint.preview, app.world.inventory.activeTool);
-  app.syncCursorGhost();
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
   app.world.inventory.instances.buffered = false;
