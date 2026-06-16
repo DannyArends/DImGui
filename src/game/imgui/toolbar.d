@@ -5,17 +5,11 @@
 
 import game;
 import imgui : faIcon;
+import tool : tools;
 
 /** DF-style icon tool bar: bottom edge in landscape, left edge in portrait. Avoids the side panel. */
 void showToolbar(ref GameApp app, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
-
-  immutable string[3] icons = [
-    cast(string)ICON_FA_MAGNIFYING_GLASS,   // Select
-    cast(string)ICON_FA_MOUND,              // Mine
-    cast(string)ICON_FA_BOXES_STACKED,      // Stockpile
-  ];
-  immutable ToolMode[3] modes = [ ToolMode.Select, ToolMode.Mine, ToolMode.Stockpile ];
 
   immutable ImVec4 unselected = ImVec4(0.55f, 0.55f, 0.55f, 1.0f);  // gray
   immutable ImVec4 selected   = ImVec4(1.0f,  0.84f, 0.0f,  1.0f);  // yellow/gold
@@ -33,15 +27,15 @@ void showToolbar(ref GameApp app, uint font = 0) {
   }
 
   igBegin("##toolbar", null, flags);
-  foreach(i, mode; modes) {
-    bool active = app.world.inventory.activeTool == mode;
+  foreach(i, ref t; tools) {
+    bool active = app.world.inventory.activeTool == t.mode;
     igPushStyleColor_Vec4(ImGuiCol_Text, active ? selected : unselected);
-    if(igButton(faIcon(icons[i]), ImVec2(36, 36))) {
-      app.world.inventory.activeTool = mode;
+    if(igButton(faIcon(t.icon), ImVec2(36, 36))) {
+      app.world.inventory.activeTool = t.mode;
       app.world.inventory.type = ResourceType.None;
     }
     igPopStyleColor(1);
-    if(landscape && i < modes.length - 1) igSameLine(0, 4);
+    if(landscape && i < tools.length - 1) igSameLine(0, 4);
   }
   igEnd();
   igPopFont();
