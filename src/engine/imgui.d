@@ -149,7 +149,7 @@ void initializeImGui(ref App app){
 
   version(Android){ 
     app.gui.uiscale = 2.5;
-    app.gui.panelW *= app.gui.uiscale;
+    app.gui.panelW(app.gui.panelW * app.gui.uiscale);
     app.gui.menuH *= app.gui.uiscale;
     auto style = igGetStyle();
     ImGuiStyle_ScaleAllSizes(style, app.gui.uiscale);
