@@ -48,7 +48,6 @@ void placeTile(ref GameApp app, int[3] wc) {
 }
 
 void computeDragPreview(ref GameApp app, int[3] from, int[3] to) {
-  int available = app.world.inventory.get(app.world.inventory.type, app);
   int dx = abs(to[0] - from[0]);
   int dz = abs(to[2] - from[2]);
   app.world.inventory.paint.preview = [];
@@ -57,14 +56,12 @@ void computeDragPreview(ref GameApp app, int[3] from, int[3] to) {
     for(int x = from[0]; x != to[0] + step; x += step) {
       if(app.world.getTileAt([x, from[1], from[2]]) != ResourceType.None) continue;
       app.world.inventory.paint.preview ~= [x, from[1], from[2]];
-      if(app.world.inventory.paint.preview.length >= available) break;
     }
   } else {
     int step = to[2] > from[2] ? 1 : -1;
     for(int z = from[2]; z != to[2] + step; z += step) {
       if(app.world.getTileAt([from[0], from[1], z]) != ResourceType.None) continue;
       app.world.inventory.paint.preview ~= [from[0], from[1], z];
-      if(app.world.inventory.paint.preview.length >= available) break;
     }
   }
 }

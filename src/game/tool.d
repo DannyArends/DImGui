@@ -12,6 +12,7 @@ import feature : hasFeature;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import hits : getHits;
+import gameobjects : PendingBuild;
 import geometry : setColor;
 import tile : tileToWorld, getTileAt, tileAbove;
 import matrix : translateScale;
@@ -55,14 +56,22 @@ void harvestCommit(ref GameApp app, int[3] tile) {
   auto job = interactFeatureJob(ft);
   if(!app.tryAssign(job)) jobQueue ~= job;
 }
-void buildCommit(ref GameApp app, int[3] tile) { app.placeTile(tile); }
+
+void openBuildSelection(ref GameApp app) {
+  if(app.world.inventory.paint.preview.length == 0) return;
+  app.world.inventory.buildSelection = [];
+  foreach(t; app.world.inventory.paint.preview) app.world.inventory.buildSelection ~= PendingBuild(t);
+  app.world.inventory.showBuildWindow = true;
+  app.world.inventory.paint = PaintState.init;
+  app.syncBuildGhosts();
+}
 
 immutable Tool[] tools = [
   Tool(ToolMode.Select, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.white, null, ToolKind.Query, null),
   Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit),
   Tool(ToolMode.Woodcut, cast(string)ICON_FA_TREE, Colors.forestgreen, &woodcutHighlight, ToolKind.RayPaint, &woodcutCommit),
   Tool(ToolMode.Harvest, cast(string)ICON_FA_WHEAT_AWN, Colors.wheat, &harvestHighlight, ToolKind.RayPaint, &harvestCommit),
-  Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, &buildCommit),
+  Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null),
   Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null),
 ];
 
@@ -90,7 +99,6 @@ void queryPress(ref GameApp app, float[3][2] ray) {
 }
 
 void buildPress(ref GameApp app) {
-  if(app.world.inventory.tile == noTile || app.world.inventory.type == ResourceType.None) return;
   app.world.inventory.paint.active = true;
   app.world.inventory.paint.start = app.world.inventory.tile;
   app.world.inventory.paint.preview = [app.world.inventory.tile];
@@ -160,7 +168,7 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query:      break;
     case ToolKind.RayPaint:   if(app.world.inventory.paint.active) app.commitPaint(); break;
-    case ToolKind.BuildPaint: if(app.world.inventory.paint.active) app.commitPaint(); break;
+    case ToolKind.BuildPaint: if(app.world.inventory.paint.active) app.openBuildSelection(); break;
   }
 }
 

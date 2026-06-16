@@ -56,10 +56,18 @@ class Chunk : Cube {
   }
 }
 
+struct PendingBuild {
+  int[3] tile;
+  ResourceType type = ResourceType.None;
+  bool selected = false;
+}
+
 class GhostCube : Cube {
   ResourceType type = ResourceType.None;
   ToolMode activeTool = ToolMode.Select;
   PaintState paint;
+  PendingBuild[] buildSelection;   /// Tiles awaiting a block-type choice
+  bool showBuildWindow = false;    /// Build-type picker open
   int[3] tile = noTile;
   int cachedMatIdx = -1;
 
