@@ -35,7 +35,7 @@ extern(C) bool sdlEventsFilter(void* userdata, SDL_Event* event) {
       case SDL_EVENT_LOW_MEMORY:
       case SDL_EVENT_WILL_ENTER_BACKGROUND: case SDL_EVENT_DID_ENTER_BACKGROUND:
       case SDL_EVENT_WILL_ENTER_FOREGROUND: case SDL_EVENT_DID_ENTER_FOREGROUND:
-      SDL_Log(toStringz(format("Android SDL immediate event hook: %s", event.type)));
+      SDL_Log(cstr("Android SDL immediate event hook: %s", event.type));
       (*app).handleApp(*event); return(0);
 
       default: return(1);

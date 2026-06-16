@@ -22,8 +22,8 @@ struct GraphicsPipeline {
 
   void create(ref App app, VkGraphicsPipelineCreateInfo info, string label, ref DeletionQueue queue, Specialization spec = Specialization.init) {
     VkPipeline p; enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &info, app.allocator, &p)); variants[spec] = p;
-    app.nameVulkanObject(layout, toStringz(format("[LAYOUT] %s", label)), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
-    app.nameVulkanObject(p, toStringz(format("[PIPELINE] %s", label)), VK_OBJECT_TYPE_PIPELINE);
+    app.nameVulkanObject(layout, cstr("[LAYOUT] %s", label), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+    app.nameVulkanObject(p, cstr("[PIPELINE] %s", label), VK_OBJECT_TYPE_PIPELINE);
     queue.add((){ vkDestroyPipeline(app.device, p, app.allocator); });
   }
 
@@ -119,15 +119,14 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     depthCompareOp: VK_COMPARE_OP_LESS,
   };
 
-  VkSpecializationInfo specInfo; VkSpecializationMapEntry[] mapEntry; uint[] settings;
 
-  static foreach(s; [Specialization(true,true), Specialization(true,false),
+  static foreach(i; [Specialization(true,true), Specialization(true,false),
                      Specialization(false,true), Specialization(false,false)]) {{
-    auto stages = createStageInfo(app.shaders, specInfo, mapEntry, settings, topology, s);
+    ShaderStage stages = createStageInfo(app.shaders, topology, i);
     VkGraphicsPipelineCreateInfo pipelineInfo = {
       sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-      stageCount: cast(uint)stages.length,
-      pStages: &stages[0],
+      stageCount: cast(uint)stages.info.length,
+      pStages: &stages.info[0],
       pVertexInputState: &vertexInputInfo,
       pInputAssemblyState: &inputAssembly,
       pViewportState: &viewportState,
@@ -136,9 +135,9 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
       pDepthStencilState: &depthStencil,
       pColorBlendState: &colorBlending,
       layout: app.pipelines[topology].layout,
-      renderPass: app.scenePass.pass
+      renderPass: app.sceneCmd.pass
     };
-    app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, s.alpha), app.swapDeletionQueue, s);
+    app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, i.alpha), app.swapDeletionQueue, i);
   }}
 }
 
@@ -224,7 +223,7 @@ void createPostProcessGraphicsPipeline(ref App app) {
     pMultisampleState: &multisampling,
     pColorBlendState: &colorBlending,
     layout: app.postProcessPipeline.layout,
-    renderPass: app.postPass.pass
+    renderPass: app.postCmd.pass
   };
   app.postProcessPipeline.create(app, pipelineInfo, "Post-process", app.swapDeletionQueue);
 }

@@ -38,21 +38,20 @@ void main() {
     ny = projectAxis(cV.y, cV.z, r, ubo.proj[1][1], depth);
   }
 
-  // NDC [-1,1] → screen tiles
-  vec2 tile = ubo.clusterCfg.zw / vec2(ubo.grid.xy);
-  int xlo = int(floor((nx.x * 0.5 + 0.5) * ubo.clusterCfg.z / tile.x));
-  int xhi = int(floor((nx.y * 0.5 + 0.5) * ubo.clusterCfg.z / tile.x));
-  int ylo = int(floor((ny.x * 0.5 + 0.5) * ubo.clusterCfg.w / tile.y));
-  int yhi = int(floor((ny.y * 0.5 + 0.5) * ubo.clusterCfg.w / tile.y));
+  // NDC [-1,1] to froxel grid (resolution-independent; grid is NDC-uniform)
+  int xlo = int(floor((nx.x * 0.5 + 0.5) * GRID_X));
+  int xhi = int(floor((nx.y * 0.5 + 0.5) * GRID_X));
+  int ylo = int(floor((ny.x * 0.5 + 0.5) * GRID_Y));
+  int yhi = int(floor((ny.y * 0.5 + 0.5) * GRID_Y));
 
   // reject lights whose froxel range is entirely outside the grid (before clamping)
-  if (zhi < 0 || zlo > int(ubo.grid.z)-1) return;
-  if (xhi < 0 || xlo > int(ubo.grid.x)-1) return;
-  if (yhi < 0 || ylo > int(ubo.grid.y)-1) return;
+  if (zhi < 0 || zlo > int(GRID_Z)-1) return;
+  if (xhi < 0 || xlo > int(GRID_X)-1) return;
+  if (yhi < 0 || ylo > int(GRID_Y)-1) return;
 
   // froxel index range the sphere covers
-  uvec3 lo = uvec3(clamp(xlo, 0, int(ubo.grid.x)-1), clamp(ylo, 0, int(ubo.grid.y)-1), clamp(zlo, 0, int(ubo.grid.z)-1));
-  uvec3 hi = uvec3(clamp(xhi, 0, int(ubo.grid.x)-1), clamp(yhi, 0, int(ubo.grid.y)-1), clamp(zhi, 0, int(ubo.grid.z)-1));
+  uvec3 lo = uvec3(clamp(xlo, 0, int(GRID_X)-1), clamp(ylo, 0, int(GRID_Y)-1), clamp(zlo, 0, int(GRID_Z)-1));
+  uvec3 hi = uvec3(clamp(xhi, 0, int(GRID_X)-1), clamp(yhi, 0, int(GRID_Y)-1), clamp(zhi, 0, int(GRID_Z)-1));
 
   for (uint z = lo.z; z <= hi.z; ++z) { for (uint y = lo.y; y <= hi.y; ++y) {
     uint rowBase = clusterId(0u, y, z);   // canonical layout; per-row hoist preserved

@@ -34,7 +34,7 @@ BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] glob
       globalBones[name].offset = multiply(toMatrix(aiBone.mOffsetMatrix), pTransform.inverse());
       globalBones[name].index = cast(uint)(globalBones.length-1);
     }
-    //SDL_Log(toStringz(format("%s.bone: %d -> %d", name, globalBones[name].index, aiBone.mNumWeights)));
+    //SDL_Log(cstr("%s.bone: %d -> %d", name, globalBones[name].index, aiBone.mNumWeights));
     for (uint w = 0; w < aiBone.mNumWeights; w++) {
       auto aiWeight = aiBone.mWeights[w];
       weights[name][aiWeight.mVertexId] = aiWeight.mWeight;

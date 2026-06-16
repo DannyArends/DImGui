@@ -49,6 +49,7 @@ struct App {
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
   ShadowMap shadows;                                                            /// ShadowMap object
+  DescriptorProvider[string] providers;                                         /// GPU resource creator
 
   VkSampler sampler;
   Shader[] shaders;
@@ -82,7 +83,7 @@ struct App {
 
   VkDescriptorPool[string] pools;                                               /// Descriptor pools (IMGUI, COMPUTE, RENDER)
   VkDescriptorSetLayout[string] layouts;                                        /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
-  VkDescriptorSet[][string] sets;                                               /// Descriptor sets per Frames In Flight for (IMGUI, RENDER, N x computeShader.PATH)
+  VkDescriptorSet[][string] sets;                                               /// Descriptor sets for (IMGUI, RENDER, N x computeShader.PATH)
 
   // Surface, Formats, SwapChain, and commandpool resources
   VkSurfaceKHR surface = null;                                                  /// Vulkan Surface
@@ -99,9 +100,9 @@ struct App {
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
-  RenderPass scenePass;                                                         /// Scene renderpass + framebuffers + commands
-  RenderPass postPass;                                                          /// Post-process renderpass + framebuffers + commands
-  RenderPass imguiPass;                                                         /// ImGui renderpass + framebuffers + commands
+  CommandBuffer!1 sceneCmd;                                                       /// Scene commandbuffer
+  CommandBuffer!1 postCmd;                                                        /// Post-process commandbuffer
+  CommandBuffer!1 imguiCmd;                                                       /// ImGui commandbuffer
 
   VkAllocationCallbacks* allocator = null;
   VkDebugReportCallbackEXT debugCallback = null;
@@ -127,10 +128,10 @@ struct App {
   bool enableValidation = false;                                                /// Should validation be enabled ?
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
-  LMode lMode = isAndroid ? LMode.Global : LMode.LightsAndShadows;              /// Allow shadows to be disabled
+  LMode lMode = isAndroid ? LMode.Lights : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool disco = false;                                                           /// Disco mode
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
-  uint clusterCapacity = 0;                                                     /// 0 = use default CLUSTER_COUNT on first create
+  uint clusterCapacity = CLUSTER_COUNT;                                         /// Froxel light index capacity, grows on overflow
   uint verbose = 0;                                                             /// Be very verbose
   bool minimized = false;                                                       /// minimized ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?
@@ -140,7 +141,7 @@ struct App {
   @property bool isMinimized() { return minimized || (SDL_GetWindowFlags(this.window) & SDL_WINDOW_MINIMIZED) != 0; }
   @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }
   @property pure @nogc bool trace() nothrow const { return(verbose > 1); }
-  @property pure @nogc uint framesInFlight() nothrow const { return(cast(uint)swapChainImages.length + 1); }
+  @property pure @nogc uint framesInFlight() nothrow const { return (swapChainImages.length > 2) ? cast(uint)(swapChainImages.length-1) : 1; }
   @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
   @property VkPhysicalDeviceProperties properties() {
     VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p);

@@ -6,45 +6,30 @@
 import engine;
 
 import imgui : faIcon;
-import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, cstr;
+import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, labelCol, objectActions, materialRow, colValue;
 import textures : mapTextures, ImTextureRefFromID;
 
-/** Show the GUI window which allows us to manipulate 3D objects
- */
+/** Window to manipulate 3D objects: list view, or per-object detail when an object's window flag is set. */
 void showObjectsContent(ref App app, uint font = 0) {
-  bool list = true;
-  for(size_t x = 0; x < app.objects.length; x++) {
-    if(app.objects[x].window){
-      app.showObjectwindow(app.objects[x]);
-      list = false;
-    }
+  foreach(ref obj; app.objects) if(obj.window) { app.showObjectwindow(obj); return; }
+
+  if(!igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) return;
+  foreach(i, ref object; app.objects) {
+    if(object.hideInObjectsWindow || object.instances.length == 0) continue;
+    igPushID_Int(to!int(i)); scope(exit) igPopID();
+    igTableNextRow(0, 5.0f);
+    string lbl = object.geometry() ? object.geometry() ~ " " ~ to!string(i) : to!string(i);
+    igTableNextColumn();
+      text("%s: %s (%d)", lbl, object.mName, object.uid);
+    igTableNextColumn();
+      if(igButton(faIcon(cast(string)ICON_FA_INFO), ImVec2(0,0))) object.window = true;
+      igSameLine(0,5);
+      app.objectActions(object);
   }
-  if(list){
-    igBeginTable("Object_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-    foreach(i, object; app.objects) {
-      if(object.hideInObjectsWindow) continue;
-      igPushID_Int(to!int(i));
-      if (app.objects[i].instances.length == 0) { igPopID(); continue; }
-      auto p = app.objects[i].position;
-      igTableNextRow(0, 5.0f);
-      string lbl = to!string(i);
-      if(object.geometry()) lbl = object.geometry() ~ " " ~ lbl;
-      igTableNextColumn();
-        igText(cstr("%s: %s (%d)", lbl, object.mName, object.uid));
-      igTableNextColumn();
-        if(igButton(faIcon(cast(string)ICON_FA_INFO), ImVec2(0.0f, 0.0f))){ app.objects[i].window = true; } igSameLine(0,5);
-        if(igButton((app.objects[i].isVisible?faIcon(cast(string)ICON_FA_EYE_SLASH) : faIcon(cast(string)ICON_FA_EYE)), ImVec2(0.0f, 0.0f))) {
-          app.objects[i].isVisible = !app.objects[i].isVisible; 
-        } igSameLine(0,5);
-        if(igButton(faIcon(cast(string)ICON_FA_TRASH), ImVec2(0.0f, 0.0f))){ app.objects[i].deAllocate = true; } igSameLine(0,5);
-      igPopID();
-    }
-    igEndTable();
-  }
+  igEndTable();
 }
 
-/** Individual Object
- */
+/** Per-object detail: transform, animation, and material editing. */
 void showObjectwindow(ref App app, ref Geometry obj) {
   text("Name: %s %s", obj.geometry(), obj.mName);
   text("Vertices: %s", obj.vertices.length);
@@ -52,109 +37,65 @@ void showObjectwindow(ref App app, ref Geometry obj) {
   text("Instances: %s", obj.instances.length);
   text("Topology: %s", obj.topology);
 
-  if(igButton(faIcon(cast(string)ICON_FA_CUBES), ImVec2(0.0f, 0.0f))) { obj.window = false; } igSameLine(0,5);
-  if(igButton((obj.isVisible?faIcon(cast(string)ICON_FA_EYE_SLASH):faIcon(cast(string)ICON_FA_EYE)), ImVec2(0.0f, 0.0f))) { 
-    obj.isVisible = !obj.isVisible; 
-  } igSameLine(0,5);
-  if(igButton(faIcon(cast(string)ICON_FA_TRASH), ImVec2(0.0f, 0.0f))){ obj.deAllocate = true; }
+  if(igButton(faIcon(cast(string)ICON_FA_CUBES), ImVec2(0,0))) obj.window = false; igSameLine(0,5);
+  app.objectActions(obj);
+
   if(obj.animations.length > 0) {
     igText(faIcon(cast(string)ICON_FA_FILM)); igSameLine(0,5);
     igPushItemWidth(100 * app.gui.uiscale);
-      int[2] limits = [0, cast(uint)(obj.animations.length-1)];
-      igSliderScalar("##a", ImGuiDataType_U32,  &obj.animation, &limits[0], &limits[1], "%d", 0);
+    int[2] limits = [0, cast(int)(obj.animations.length-1)];
+    igSliderScalar("##a", ImGuiDataType_U32, &obj.animation, &limits[0], &limits[1], "%d", 0);
+    igPopItemWidth();
   }
-  igBeginTable(toStringz(obj.geometry() ~ "_Tbl"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+
+  if(igBeginTable(cstr("%s_Tbl", obj.geometry()), 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
     auto p = obj.position;
     igTableNextColumn();
-      igText(faIcon(cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT)); 
-    igTableNextColumn();
-      igPushItemWidth(100 * app.gui.uiscale);
-        igSliderScalar("##x", ImGuiDataType_Float,  &p[0], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-      igPopItemWidth();
-    igTableNextColumn();
-      igPushItemWidth(100 * app.gui.uiscale);
-        igSliderScalar("##y", ImGuiDataType_Float,  &p[1], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-      igPopItemWidth();
-    igTableNextColumn();
-      igPushItemWidth(100 * app.gui.uiscale);
-        igSliderScalar("##z", ImGuiDataType_Float,  &p[2], &app.gui.pos[0], &app.gui.pos[1], "%.2f", 0);
-      igPopItemWidth();
+    if(igButton(faIcon(cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT), ImVec2(0,0))) {}
+    igTableNextColumn(); app.colValue("##x", &p[0], app.gui.pos[0], app.gui.pos[1]);
+    igTableNextColumn(); app.colValue("##y", &p[1], app.gui.pos[0], app.gui.pos[1]);
+    igTableNextColumn(); app.colValue("##z", &p[2], app.gui.pos[0], app.gui.pos[1]);
     obj.position = p;
 
     igTableNextColumn();
-      if(igButton(faIcon(cast(string)ICON_FA_COMPRESS), ImVec2(0.0f, 0.0f))){
-        obj.scale([app.gui.scaleF, app.gui.scaleF, app.gui.scaleF]); app.gui.scaleF = 1.0f; }
-    igTableNextColumn();
-      igPushItemWidth(100 * app.gui.uiscale);
-        igSliderScalar("##zS", ImGuiDataType_Float, &app.gui.scaleF, &app.gui.scale[0], &app.gui.scale[1], "%.3f", 0); 
-      igPopItemWidth();
-    igTableNextColumn();
-    igTableNextColumn();
-
-    igTableNextColumn();
-      if(igButton(faIcon(cast(string)ICON_FA_ARROWS_ROTATE), ImVec2(0.0f, 0.0f))){ obj.rotate(app.gui.rotF); app.gui.rotF = [0.0f,0.0f,0.0f]; }
-    igTableNextColumn();
-      igPushItemWidth(100 * app.gui.uiscale);
-        igSliderScalar("##xR", ImGuiDataType_Float,  &app.gui.rotF[0], &app.gui.rot[0], &app.gui.rot[1], "%.0f", 0);
-      igPopItemWidth();
-    igTableNextColumn();
-      igPushItemWidth(100 * app.gui.uiscale);
-        igSliderScalar("##yR", ImGuiDataType_Float,  &app.gui.rotF[1], &app.gui.rot[0], &app.gui.rot[1], "%.0f", 0);
-      igPopItemWidth();
-    igTableNextColumn();
-      igPushItemWidth(100 * app.gui.uiscale);
-        igSliderScalar("##zR", ImGuiDataType_Float,  &app.gui.rotF[2], &app.gui.rot[0], &app.gui.rot[1], "%.0f", 0);
-      igPopItemWidth();
-  igEndTable();
-
-  if(obj.meshes.length > 0) {
-    int[2] limits = [-1, cast(int)(app.textures.length-1)];
-    auto mesh0 = obj.meshes.keys[0];
-    DropDownItem[] items = app.texturesToDropdown();
-    auto selected = app.getKeys(items, obj.meshes[mesh0]);
-
-    igBeginTable(toStringz(obj.geometry() ~ "_TexTbl"), 2,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-      igTableNextColumn();
-      igText("Diffuse:");
-      igTableNextColumn();
-      igPushItemWidth(250 * app.gui.uiscale);
-        igCombo_FnStrPtr("##tid:all", &selected.tid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1);
-      igPopItemWidth();
-      igTableNextColumn();
-      igText("BumpMap:");
-      igTableNextColumn();
-      igPushItemWidth(250 * app.gui.uiscale);
-        igCombo_FnStrPtr("##nid:all", &selected.nid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1);
-      igPopItemWidth();
-      igTableNextColumn();
-      igText("Opacity:");
-      igTableNextColumn();
-      igPushItemWidth(250 * app.gui.uiscale);
-        igCombo_FnStrPtr("##oid:all", &selected.oid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1);
-      igPopItemWidth();
-    igEndTable();
-    if(app.applySelection(obj, items, obj.meshes[mesh0], selected)) { app.mapTextures(obj); }
-
-    auto flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-    bool node_open = igTreeNodeEx_Str("Mesh textures", flags);
-    if (node_open) {
-      igBeginTable(toStringz(obj.geometry() ~ "_Textures"), 4,  ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
-      foreach(name; obj.meshes.byKey()){
-        igTableNextColumn();
-          text("%s", name); igSameLine(0,5);
-        igTableNextColumn();
-          igPushItemWidth(100 * app.gui.uiscale);
-igSliderScalar(cstr("##tid:%s", name), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].tid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
-        igTableNextColumn();
-          igPushItemWidth(100 * app.gui.uiscale);
-igSliderScalar(cstr("##nid:%s", name), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].nid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
-        igTableNextColumn();
-          igPushItemWidth(100 * app.gui.uiscale);
-igSliderScalar(cstr("##oid:%s", name), ImGuiDataType_S32, &app.materials[obj.meshes[name].mid].oid, &limits[0], &limits[1], "%d", 0);          igPopItemWidth();
+      if(igButton(faIcon(cast(string)ICON_FA_COMPRESS), ImVec2(0,0))) {
+        obj.scale([app.gui.scaleF, app.gui.scaleF, app.gui.scaleF]); app.gui.scaleF = 1.0f;
       }
+    igTableNextColumn(); app.colValue("##zS", &app.gui.scaleF, app.gui.scale[0], app.gui.scale[1], "%.3f");
+    igTableNextColumn(); igTableNextColumn();
+
+    igTableNextColumn();
+      if(igButton(faIcon(cast(string)ICON_FA_ARROWS_ROTATE), ImVec2(0,0))) { obj.rotate(app.gui.rotF); app.gui.rotF = [0.0f,0.0f,0.0f]; }
+    igTableNextColumn(); app.colValue("##xR", &app.gui.rotF[0], app.gui.rot[0], app.gui.rot[1], "%.0f");
+    igTableNextColumn(); app.colValue("##yR", &app.gui.rotF[1], app.gui.rot[0], app.gui.rot[1], "%.0f");
+    igTableNextColumn(); app.colValue("##zR", &app.gui.rotF[2], app.gui.rot[0], app.gui.rot[1], "%.0f");
+    igEndTable();
+  }
+
+  if(obj.meshes.length == 0) return;
+
+  auto mesh0 = obj.meshes.keys[0];
+  DropDownItem[] items = app.texturesToDropdown();
+  auto selected = app.getKeys(items, obj.meshes[mesh0]);
+
+  if(igBeginTable(cstr("%s_TexTbl", obj.geometry()), 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
+    labelCol("Diffuse:"); igPushItemWidth(250 * app.gui.uiscale);
+    igCombo_FnStrPtr("##tid:all", &selected.tid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1); igPopItemWidth();
+    labelCol("BumpMap:"); igPushItemWidth(250 * app.gui.uiscale);
+    igCombo_FnStrPtr("##nid:all", &selected.nid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1); igPopItemWidth();
+    labelCol("Opacity:"); igPushItemWidth(250 * app.gui.uiscale);
+    igCombo_FnStrPtr("##oid:all", &selected.oid, &dropDownItems, cast(void*)&items[0], cast(int)items.length, -1); igPopItemWidth();
+    igEndTable();
+  }
+  if(app.applySelection(obj, items, obj.meshes[mesh0], selected)) app.mapTextures(obj);
+
+  auto treeFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+  if(igTreeNodeEx_Str("Mesh textures", treeFlags)) {
+    int[2] limits = [-1, cast(int)(app.textures.length-1)];
+    if(igBeginTable(cstr("%s_Textures", obj.geometry()), 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
+      foreach(name; obj.meshes.byKey()) app.materialRow(cstr("%s", name), app.materials[obj.meshes[name].mid], limits[0], limits[1]);
       igEndTable();
-      igTreePop();
     }
+    igTreePop();
   }
 }
-

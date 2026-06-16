@@ -6,8 +6,8 @@
 import engine;
 
 import images : createImage, nameImageBuffer, cleanup, ImageBuffer;
-import swapchain : createImageView;
 import validation : nameVulkanObject;
+import views : createImageView, createLayerViews;
 
 @nogc void cleanup(ref App app, VkFramebuffer fb) nothrow { vkDestroyFramebuffer(app.device, fb, app.allocator); }
 
@@ -16,7 +16,7 @@ void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits f
   if(app.verbose) SDL_Log("Creating Offscreen HDR Image");
 
   app.createImage(buffer, app.camera.width, app.camera.height, app.offscreen.format, flag, VK_IMAGE_TILING_OPTIMAL, properties);
-  buffer.view = app.createImageView(buffer.image, app.offscreen.format, VK_IMAGE_ASPECT_COLOR_BIT);
+  app.createLayerViews(buffer, app.offscreen.format, VK_IMAGE_ASPECT_COLOR_BIT);
   app.nameImageBuffer(buffer, "Offscreen HDR Image");
 
   app.swapDeletionQueue.add((){ app.cleanup(buffer); });
@@ -32,7 +32,7 @@ VkFramebuffer createFramebuffer(ref App app, ref RenderPass pass, VkImageView[] 
   };
   VkFramebuffer fb;
   enforceVK(vkCreateFramebuffer(app.device, &info, app.allocator, &fb));
-  app.nameVulkanObject(fb, toStringz(format("[FRAMEBUFFER] %s #%d", label, idx)), VK_OBJECT_TYPE_FRAMEBUFFER);
+  app.nameVulkanObject(fb, cstr("[FRAMEBUFFER] %s #%d", label, idx), VK_OBJECT_TYPE_FRAMEBUFFER);
   return fb;
 }
 
@@ -49,8 +49,8 @@ void createFramebuffers(ref App app) {
   auto postViews   = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
   auto imguiViews  = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
 
-  app.create(app.scenePass, sceneViews, app.camera.width, app.camera.height, "Render", app.swapDeletionQueue);
-  app.create(app.postPass, postViews, app.camera.width, app.camera.height, "Post-process", app.swapDeletionQueue);
-  app.create(app.imguiPass, imguiViews, app.camera.width, app.camera.height, "ImGui", app.swapDeletionQueue);
+  app.create(app.sceneCmd.pass, sceneViews, app.camera.width, app.camera.height, "Render", app.swapDeletionQueue);
+  app.create(app.postCmd.pass, postViews, app.camera.width, app.camera.height, "Post-process", app.swapDeletionQueue);
+  app.create(app.imguiCmd.pass, imguiViews, app.camera.width, app.camera.height, "ImGui", app.swapDeletionQueue);
 }
 

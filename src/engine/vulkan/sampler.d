@@ -7,8 +7,7 @@ import engine;
 
 import validation : nameVulkanObject;
 
-/** Create a TextureSampler for sampling from a texture
- */
+/** Create a TextureSampler for sampling from a texture */
 void createSampler(ref App app) {
   if(app.verbose) SDL_Log("createSampler");
   VkPhysicalDeviceProperties properties = {};
@@ -35,6 +34,7 @@ void createSampler(ref App app) {
   if(app.verbose) SDL_Log("Created TextureSampler: %p", app.sampler);
 }
 
+/** Create a ShadowSampler for sampling from a depth texture */
 void createShadowSampler(ref App app) {
   if(app.verbose) SDL_Log("createSampler");
   VkPhysicalDeviceProperties properties = {};

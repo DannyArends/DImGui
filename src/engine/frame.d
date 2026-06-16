@@ -8,15 +8,14 @@ import engine;
 import bone : updateBoneOffsets;
 import descriptor : repointDirtyDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
-import compute : recordComputeCommandBuffer, updateComputeUBO;
+import compute : recordComputeCommandBuffer;
 import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
 import mesh : updateMeshInfo;
-import shadow : updateShadowMapUBO, recordShadowCommandBuffer;
+import shadow :  recordShadowCommandBuffer;
 import sfx : updateTracks;
 import textures : updateTextures;
 import timing : timed;
-import uniforms : updateRenderUBO;
 import window : createOrResizeWindow;
 
 /** waitForFrame */
@@ -54,11 +53,8 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateMeshInfo();                       /// Check for Mesh Information change
   app.timed!updateBoneOffsets(app.syncIndex);       /// Check for animation causing BoneOffsets changes
   app.timed!updateDisco(dt);                        /// Update when disco mode 🕺 🪩 💃
-  if(app.hasCompute) app.timed!updateComputeUBO(app.syncIndex);
-  app.timed!updateShadowMapUBO(app.shadows.shaders, app.syncIndex);
-  app.timed!updateRenderUBO(app.shaders, app.syncIndex);
-  app.computeActiveLighting();
-  app.repointDirtyDescriptors();
+  app.timed!computeActiveLighting();                /// Compute active lighting
+  app.timed!repointDirtyDescriptors();              /// Repoint dirty descriptors
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Prepare & Submit Compute Work ---
@@ -98,14 +94,14 @@ void renderFrame(ref App app, double dt) {
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[4] submitCommandBuffers;
   uint nSubmit = 0;
-  if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.renderPass.commands[app.syncIndex]; }
-  submitCommandBuffers[nSubmit++] = app.scenePass.commands[app.syncIndex];
-  submitCommandBuffers[nSubmit++] = app.postPass.commands[app.syncIndex];
-  submitCommandBuffers[nSubmit++] = app.imguiPass.commands[app.syncIndex];
+  if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.cmd[app.syncIndex]; }
+  submitCommandBuffers[nSubmit++] = app.sceneCmd[app.syncIndex];
+  submitCommandBuffers[nSubmit++] = app.postCmd[app.syncIndex];
+  submitCommandBuffers[nSubmit++] = app.imguiCmd[app.syncIndex];
 
   WaitList!2 wait;
   wait.add(imageAcquired, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-  if (app.hasCompute){ wait.add(computeComplete, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT); }
+  if (app.hasCompute){ wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,

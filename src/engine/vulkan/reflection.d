@@ -6,14 +6,14 @@
 import engine;
 
 import descriptor : createDSPool, DescriptorTarget;
-import compute : createStorageImage, transferToSSBO;
-import ssbo : createSSBO;
+import compute : createStorageImage;
 import shadow : MAX_SHADOW_MAPS;
 import textures : MAX_TEXTURES;
 import uniforms : createUBO;
 
 enum uint[4] LIGHT_GRID = [16, 9, 24, 0];
 enum uint CLUSTER_COUNT = LIGHT_GRID[0] * LIGHT_GRID[1] * LIGHT_GRID[2];  // 3456
+enum uint NIL = 0xFFFFFFFF;
 
 enum spvc_resource_type[const(char)*] types = [
   "Uniform Buffer" : SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,
@@ -95,10 +95,10 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     spvc_type_id type_id = list[i].type_id;
     spvc_type_id base_type_id = list[i].base_type_id;
 
-    descr.name      = to!string(spvc_compiler_get_name(compiler, list[i].id));
-    descr.base      = to!string(spvc_compiler_get_name(compiler, base_type_id));
-    descr.set       = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationDescriptorSet);
-    descr.binding   = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationBinding);
+    descr.name = to!string(spvc_compiler_get_name(compiler, list[i].id));
+    descr.base = to!string(spvc_compiler_get_name(compiler, base_type_id));
+    descr.set = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationDescriptorSet);
+    descr.binding = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationBinding);
 
     spvc_type type_handle = spvc_compiler_get_type_handle(compiler, type_id);
     spvc_type base_handle = spvc_compiler_get_type_handle(compiler, base_type_id);
@@ -152,35 +152,11 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
   app.createDSPool(poolID, shaders);
   foreach(ref shader; shaders) {
     foreach(ref d; shader.descriptors) {
-      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) { app.createStorageImage(d); }
-      if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) { app.createUBO(d); }
-      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        if (d.base == "BoneMatrices") { 
-          app.createSSBO(d, app.boneOffsets);
-        }else if(d.base == "LightMatrices") {
-          app.createSSBO(d, app.lights);
-        }else if(d.base == "MeshMatrices") {
-          app.createSSBO(d, app.meshes);
-        } else if(d.base == "MaterialBuffer") {
-          app.createSSBO(d, app.materials);
-        }else if(app.hasCompute && d.base == "lastFrame") {
-          app.createSSBO(d, app.compute.system.particles);
-          app.transferToSSBO(d); 
-        }else if(app.hasCompute && d.base == "currentFrame") {
-          app.createSSBO(d, app.compute.system.particles);
-        // NOTE: cluster buffers use copies=1 (single buffer). Cull (compute) writes and
-        // scene (fragment) reads the same buffer, ordered by the computeComplete semaphore,
-        // so frames cannot overlap on these buffers. Acceptable; revisit if profiling shows a stall.
-        } else if(d.base == "ClusterLights") {
-          if(app.clusterCapacity == 0) app.clusterCapacity = CLUSTER_COUNT;
-          app.createSSBO(d, app.clusterCapacity, 1, true);
-        } else if(d.base == "ClusterHeads") {
-          app.createSSBO(d, CLUSTER_COUNT, 1, true);
-        }else if(d.base == "ClusterCounter"){
-          app.createSSBO(d, 1, 1, false);
-          *cast(uint*)app.buffers["ClusterCounter"][0].data = 0;
-        }
-      }
+      if(auto p = d.base in app.providers) { p.create(app, d); continue; }
+      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ 
+        app.createStorageImage(d);
+      }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){ SDL_Log("reflect: no provider for SSBO %s", toStringz(d.base));
+      }else if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){ SDL_Log("reflect: no provider for UBO %s", toStringz(d.base)); }
     }
   }
 }

@@ -40,9 +40,6 @@ template imDataType(T) {
   else static assert(false, "imDataType: no ImGuiDataType for " ~ T.stringof);
 }
 
-/** D-formatted C string. One home for the per-frame toStringz allocation. */
-const(char)* cstr(A...)(string fmt, A a) { return toStringz(format(fmt, a)); }
-
 /** igText with D-side formatting. */
 void text(A...)(string fmt, A a) { igText(cstr(fmt, a)); }
 
@@ -60,16 +57,35 @@ bool setting(T)(string label, ref T v, T min, T max, float width = 150, float ui
 bool setting(string label, ref bool v) { labelCol(toStringz(label)); return igCheckbox(toStringz("##" ~ label), &v); }
 
 /** label + read-only formatted value as a 2-column table row. */
-void infoRow(Args...)(string label, string fmt, Args a) {
-  labelCol(toStringz(label));
-  igText(toStringz(format(fmt, a)));
-}
+void infoRow(Args...)(string label, string fmt, Args a) { labelCol(toStringz(label)); text(fmt, a); }
 
 /** Render three inline scaled float sliders for a vec3 */
 void sliderFloat3(string[3] ids, float* x, float* y, float* z, float* min, float* max, float width, float uiscale) {
-  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[0]), ImGuiDataType_Float, x, min, max, "%.2f", 0); igSameLine(0,5);
-  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[1]), ImGuiDataType_Float, y, min, max, "%.2f", 0); igSameLine(0,5);
-  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[2]), ImGuiDataType_Float, z, min, max, "%.2f", 0);
+  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[0]), ImGuiDataType_Float, x, min, max, "%.2f", 0); igPopItemWidth(); igSameLine(0,5);
+  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[1]), ImGuiDataType_Float, y, min, max, "%.2f", 0); igPopItemWidth(); igSameLine(0,5);
+  igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[2]), ImGuiDataType_Float, z, min, max, "%.2f", 0); igPopItemWidth();
+}
+
+/** Eye (visibility) + trash (delete) buttons for an object; shared by list and detail views. */
+void objectActions(ref App app, ref Geometry obj) {
+  if(igButton(obj.isVisible ? faIcon(cast(string)ICON_FA_EYE_SLASH) : faIcon(cast(string)ICON_FA_EYE), ImVec2(0,0)))
+    obj.isVisible = !obj.isVisible;
+  igSameLine(0,5);
+  if(igButton(faIcon(cast(string)ICON_FA_TRASH), ImVec2(0,0))) obj.deAllocate = true;
+}
+
+/** Scaled, label-less slider in the current table column. */
+void colValue(T)(ref App app, const(char)* id, T* v, T lo, T hi, string fmt = imFormat!T) if (isFloatingPoint!T || isIntegral!T) {
+  igPushItemWidth(100 * app.gui.uiscale); scope(exit) igPopItemWidth();
+  igSliderScalar(id, imDataType!T, v, &lo, &hi, toStringz(fmt), 0);
+}
+
+/** One mesh's tid/nid/oid sliders across a 4-column row; material by ref so edits persist. */
+void materialRow(ref App app, const(char)* name, ref Material mat, int lo, int hi) {
+  igTableNextColumn(); igText(name); igSameLine(0,5);
+  igTableNextColumn(); app.colValue(cstr("##tid:%s", name), &mat.tid, lo, hi);
+  igTableNextColumn(); app.colValue(cstr("##nid:%s", name), &mat.nid, lo, hi);
+  igTableNextColumn(); app.colValue(cstr("##oid:%s", name), &mat.oid, lo, hi);
 }
 
 /** Render a label + widget as a 2-column table row */

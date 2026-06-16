@@ -12,7 +12,6 @@ import directorywindow : showDirectoryContent;
 import joystickwindow : showJoystickwindow;
 import objectswindow : showObjectsContent;
 import mainmenu : showMenu;
-import renderpass : beginRecording, endRecording;
 import sidepanel : showSidepanel;
 import shaderswindow : showShaderContent;
 import texturewindow : showTexturesContent;
@@ -23,8 +22,10 @@ struct GUI {
   ImGuiIO* io;
   ImFont*[] fonts;
 
-  float panelW = 375.0f;
+  float panelW = 400.0f;
+  float panelH = 300.0f;
   float menuH = 20.0f;
+
   int selectedSound = 0;
   int selectedTexture = 0;
 
@@ -38,13 +39,14 @@ struct GUI {
   bool showTexture = false;
   bool showDirectory = false;
 
-  float uiscale = 1;
-  uint fontsize(float scale = 1.0f){ 
+  float uiscale = 1.0f;
+  uint fontsize(float scale = 1.0f) {
     version(Android){ return(cast(uint)(20 * scale * uiscale)); }else{ return(cast(uint)(16 * scale * uiscale)); }
   }
+
+  // Geometry constants scale & rotation
   float scaleF = 1.0f;
   float[3] rotF = [0.0f, 0.0f, 0.0f];
-
   float[2] rot = [-360.0, 360.0f];
   float[2] pos = [-10.0, 10];
   float[2] col = [0.0, 20.0f];
@@ -91,8 +93,8 @@ void loadSettings(const(char)* path = "imgui.ini") {
 }
 
 /** FontAwesome icon as const(char)* */
-const(char)* faIcon(string s = cast(string)ICON_FA_MAGNIFYING_GLASS) { return(toStringz(format("%s", s))); }
-const(char)* iconText(string icon, string text) { return(toStringz(format("%s %s", fromStringz(faIcon(icon)), text))); }
+const(char)* faIcon(string s = cast(string)ICON_FA_MAGNIFYING_GLASS) { return(cstr("%s", s)); }
+const(char)* iconText(string icon, string text) { return(cstr("%s %s", fromStringz(faIcon(icon)), text)); }
 string iconTextStr(string icon, string text) { return format("%s %s", fromStringz(faIcon(icon)), text); }
 
 /** Code to initialize the ImGui backend */
@@ -136,7 +138,7 @@ void initializeImGui(ref App app){
     Allocator : app.allocator,
     MinImageCount : app.imageCount,
     ImageCount : cast(uint)app.framesInFlight,
-    RenderPass : app.imguiPass.pass,
+    RenderPass : app.imguiCmd.pass,
     MSAASamples : VK_SAMPLE_COUNT_1_BIT,
     CheckVkResultFn : &enforceVK
   };
@@ -145,6 +147,8 @@ void initializeImGui(ref App app){
 
   version(Android){ 
     app.gui.uiscale = 2.5;
+    app.gui.panelW *= app.gui.uiscale;
+    app.gui.menuH *= app.gui.uiscale;
     auto style = igGetStyle();
     ImGuiStyle_ScaleAllSizes(style, app.gui.uiscale);
     style.ScrollbarSize = 40.0f;
@@ -155,21 +159,21 @@ void initializeImGui(ref App app){
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers */
 void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.imguiPass.beginRecording(app, syncIndex, "ImGui");
+  auto cmd = app.imguiCmd.begin(app, syncIndex, "ImGui");
 
   pushLabel(cmd, "ImGui", Colors.lightgray);
 
   // Render UI - must be called before begin() so rotation is applied before GPU submission
   ImDrawData* drawData = app.renderGUI();
 
-  app.imguiPass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
+  app.imguiCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   ImGui_ImplVulkan_RenderDrawData(drawData, cmd, null);
 
-  app.imguiPass.end(cmd);
+  app.imguiCmd.pass.end(cmd);
 
   popLabel(cmd);
 
-  app.imguiPass.endRecording(syncIndex);
+  app.imguiCmd.end(syncIndex);
 }
 
 /** Rotate all ImGui vertices to handle Vulkan pre-rotation on Android.
@@ -216,7 +220,7 @@ ImDrawData* renderGUI(ref App app){
   version(Android) { app.showJoystickwindow(font); }
 
   app.showMenu(font);
-  version(Android){ }else{ app.showSidepanel(font); }
+  app.showSidepanel(font);
   if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
   if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, (uint f){ app.showObjectsContent(f); });
   if(app.gui.showShaders) app.makeWindow("Shader", &app.gui.showShaders, font, (uint f){ app.showShaderContent(f); });

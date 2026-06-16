@@ -84,8 +84,7 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   if(app.verbose) SDL_Log("Queueues 1");
 
 /*  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
-  app.nameVulkanObject(app.physicalDevice, toStringz(format("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr))), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
-
+  app.nameVulkanObject(app.physicalDevice, cstr("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr)), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
   app.nameVulkanObject(app.instance, toStringz("[INSTANCE]"), VK_OBJECT_TYPE_INSTANCE);
 */
   app.nameVulkanObject(app.queue, toStringz("[QUEUE] Render"), VK_OBJECT_TYPE_QUEUE);
@@ -130,7 +129,7 @@ void printQueues(ref App app){
     if(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) capabilities ~= "Graphics";
     if(queueProperty.queueFlags & VK_QUEUE_COMPUTE_BIT) capabilities ~= "Compute";
     if(queueProperty.queueFlags & VK_QUEUE_TRANSFER_BIT) capabilities ~= "Transfer";
-    SDL_Log(toStringz(format("Queue[%d] size: %d: %s", i, queueProperty.queueCount, capabilities)));
+    SDL_Log(cstr("Queue[%d] size: %d: %s", i, queueProperty.queueCount, capabilities));
   }
 }
 
