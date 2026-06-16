@@ -75,14 +75,11 @@ void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
 }
 
 /** Detailed sheet for the selected dwarf */
-void followDwarf(ref GameApp app, size_t uid) {
-  if(app.camera.onFrame !is null) { app.camera.onFrame = null; // a follow was on -> turn it off
-  } else {
-    app.camera.onFrame = (dt) {
-      foreach(ref dw; app.world.dwarves.dwarves){ if(dw.uid == uid) { app.camera.lookat = dw.visualPos; app.camera.isDirty = true; return; } }
-      app.camera.onFrame = null;
-    };
-  }
+void followDwarf(ref GameApp app, uint uid) {
+  app.camera.onFrame = (dt) {
+    foreach(ref dw; app.world.dwarves.dwarves){ if(dw.uid == uid) { app.camera.lookat = dw.visualPos; app.camera.isDirty = true; return; } }
+    app.camera.onFrame = null;
+  };
 }
 
 /** Detailed sheet for the selected dwarf */
