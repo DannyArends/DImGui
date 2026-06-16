@@ -32,7 +32,7 @@ VkFramebuffer createFramebuffer(ref App app, ref RenderPass pass, VkImageView[] 
   };
   VkFramebuffer fb;
   enforceVK(vkCreateFramebuffer(app.device, &info, app.allocator, &fb));
-  app.nameVulkanObject(fb, toStringz(format("[FRAMEBUFFER] %s #%d", label, idx)), VK_OBJECT_TYPE_FRAMEBUFFER);
+  app.nameVulkanObject(fb, cstr("[FRAMEBUFFER] %s #%d", label, idx), VK_OBJECT_TYPE_FRAMEBUFFER);
   return fb;
 }
 

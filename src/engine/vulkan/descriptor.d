@@ -80,7 +80,7 @@ VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders) {
   DescriptorLayoutBuilder builder;
   foreach(shader; shaders) {
     foreach(descriptor; shader.descriptors) {
-      if(app.verbose) SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
+      if(app.verbose) SDL_Log(cstr("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type));
       builder.add(descriptor.binding, descriptor.count, shader.stage, descriptor.type);
     }
   }
@@ -129,7 +129,7 @@ void createImGuiDescriptorSetLayout(ref App app) {
   DescriptorLayoutBuilder builder;
   builder.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   app.layouts[Stage.IMGUI] = builder.build(app.device);
-  app.nameVulkanObject(app.layouts[Stage.IMGUI], toStringz(format("[DESCRIPTOR] Layout %s", Stage.IMGUI)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+  app.nameVulkanObject(app.layouts[Stage.IMGUI], cstr("[DESCRIPTOR] Layout %s", Stage.IMGUI), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
 
   app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.layouts[Stage.IMGUI], app.allocator); });
 }
@@ -216,12 +216,12 @@ void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBu
 void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER) {
   if(app.verbose) SDL_Log("createDescriptors: %d pipeline", stage);
   app.layouts[stage] = app.createDescriptorSetLayout(shaders);
-  app.nameVulkanObject(app.layouts[stage], toStringz(format("[DESCRIPTORLAYOUT] %s", stage)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+  app.nameVulkanObject(app.layouts[stage], cstr("[DESCRIPTORLAYOUT] %s", stage), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
   app.sets[stage] = createDescriptorSet(app.device, app.pools[stage], app.layouts[stage],  app.framesInFlight);
 
   for (uint i = 0; i < app.framesInFlight; i++) {
     app.updateDescriptorSet(shaders, app.sets[stage], i);
-    app.nameVulkanObject(app.sets[stage][i], toStringz(format("[DESCRIPTORSET] %s #%d", stage, i)), VK_OBJECT_TYPE_DESCRIPTOR_SET);
+    app.nameVulkanObject(app.sets[stage][i], cstr("[DESCRIPTORSET] %s #%d", stage, i), VK_OBJECT_TYPE_DESCRIPTOR_SET);
   }
 
   app.swapDeletionQueue.add((){ 
@@ -313,7 +313,7 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
 
   foreach(shader; shaders) {
     foreach(d; shader.descriptors) {
-      if(app.trace) { SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", d.binding, d))); }
+      if(app.trace) { SDL_Log(cstr("- Descriptor[%d]: '%s'", d.binding, d)); }
       app.writeDescriptor(descriptorWrites, infoIndex, bufferInfos, imageInfos, d, dstSet[syncIndex], syncIndex);
     }
   }

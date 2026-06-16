@@ -9,7 +9,7 @@ import dwarf : spawnDwarf;
 import jobs : dispatchJob, jobQueue, dropBlockJob;
 import imgui : faIcon, iconText;
 import textures : ImTextureRefFromID, idx;
-import widgets : cstr, drawCenteredText, text;
+import widgets : drawCenteredText, text;
 
 /** Tile icon */
 void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f) {

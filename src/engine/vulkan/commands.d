@@ -28,7 +28,7 @@ struct CommandBuffer(size_t N){
     enforceVK(vkResetCommandBuffer(commands[syncIndex], 0));
     VkCommandBufferBeginInfo beginInfo = { sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
     enforceVK(vkBeginCommandBuffer(commands[syncIndex], &beginInfo));
-    app.nameVulkanObject(commands[syncIndex], toStringz(format("[COMMANDBUFFER] %s %d", label, syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+    app.nameVulkanObject(commands[syncIndex], cstr("[COMMANDBUFFER] %s %d", label, syncIndex), VK_OBJECT_TYPE_COMMAND_BUFFER);
     return commands[syncIndex];
   }
 
@@ -37,7 +37,7 @@ struct CommandBuffer(size_t N){
 
 /** Draw per-object bounding boxes (debug, LINE_LIST, alpha-test variant) */
 void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
-  pushLabel(cmd, toStringz(format("%d x Bounding Boxes", app.objects.length)), Colors.lightgray);
+  pushLabel(cmd, cstr("%d x Bounding Boxes", app.objects.length), Colors.lightgray);
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].pipeline(Specialization(false, true)));
   for(size_t x = 0; x < app.objects.length; x++) {
@@ -77,7 +77,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     foreach(obj; app.objects) {
       if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
       auto s = Specialization(!obj.isOpaque, obj.instancedMesh);
-      pushLabel(cmd, toStringz(format("%s [topo: %d, A=%d, I=%d]", obj.geometry(), topology, s.alpha, s.instanced)), Colors.lightgray);
+      pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d]", obj.geometry(), topology, s.alpha, s.instanced), Colors.lightgray);
       if(first || last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; first = false; }
       app.draw(obj, cmd);
       popLabel(cmd);

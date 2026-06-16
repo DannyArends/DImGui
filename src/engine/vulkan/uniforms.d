@@ -41,8 +41,8 @@ void createUBO(ref App app, Descriptor descriptor) {
   foreach(i, ref a; app.ubos[descriptor.base]) {
     app.createBuffer(&a.buffer, &a.memory, descriptor.bytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     enforceVK(vkMapMemory(app.device, a.memory, 0, descriptor.bytes, 0, &a.data));
-    app.nameVulkanObject(a.buffer, toStringz(format("[UBO-BUF] %s #%d", descriptor.base, i)), VK_OBJECT_TYPE_BUFFER);
-    app.nameVulkanObject(a.memory, toStringz(format("[UBO-MEM] %s #%d", descriptor.base, i)), VK_OBJECT_TYPE_DEVICE_MEMORY);
+    app.nameVulkanObject(a.buffer, cstr("[UBO-BUF] %s #%d", descriptor.base, i), VK_OBJECT_TYPE_BUFFER);
+    app.nameVulkanObject(a.memory, cstr("[UBO-MEM] %s #%d", descriptor.base, i), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
   if(app.verbose) SDL_Log("Created %d UBO of size: %d bytes", app.imageCount, descriptor.bytes);
 

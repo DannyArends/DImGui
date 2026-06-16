@@ -93,8 +93,8 @@ void loadSettings(const(char)* path = "imgui.ini") {
 }
 
 /** FontAwesome icon as const(char)* */
-const(char)* faIcon(string s = cast(string)ICON_FA_MAGNIFYING_GLASS) { return(toStringz(format("%s", s))); }
-const(char)* iconText(string icon, string text) { return(toStringz(format("%s %s", fromStringz(faIcon(icon)), text))); }
+const(char)* faIcon(string s = cast(string)ICON_FA_MAGNIFYING_GLASS) { return(cstr("%s", s)); }
+const(char)* iconText(string icon, string text) { return(cstr("%s %s", fromStringz(faIcon(icon)), text)); }
 string iconTextStr(string icon, string text) { return format("%s %s", fromStringz(faIcon(icon)), text); }
 
 /** Code to initialize the ImGui backend */

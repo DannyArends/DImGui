@@ -57,11 +57,11 @@ void createComputePipeline(ref App app, Shader shader) {
   if(app.verbose) SDL_Log("createComputePipeline for Shader %s", toStringz(shader.path));
   app.compute.pipelines[shader.path] = GraphicsPipeline();
   app.layouts[shader.path] = app.createDescriptorSetLayout([shader]);
-  app.nameVulkanObject(app.layouts[shader.path], toStringz(format("[DESCRIPTORLAYOUT] %s", fromStringz(shader.path))), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+  app.nameVulkanObject(app.layouts[shader.path], cstr("[DESCRIPTORLAYOUT] %s", fromStringz(shader.path)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
 
   app.sets[shader.path] = createDescriptorSet(app.device, app.pools[Stage.COMPUTE], app.layouts[shader.path],  app.framesInFlight);
   for (uint i = 0; i < app.framesInFlight; i++) {
-    app.nameVulkanObject(app.sets[shader.path][i], toStringz(format("[DESCRIPTORSET] %s #%d", fromStringz(shader.path), i)), VK_OBJECT_TYPE_DESCRIPTOR_SET);
+    app.nameVulkanObject(app.sets[shader.path][i], cstr("[DESCRIPTORSET] %s #%d", fromStringz(shader.path), i), VK_OBJECT_TYPE_DESCRIPTOR_SET);
   }
   VkPipelineLayoutCreateInfo computeLayout = {
     sType : VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -84,8 +84,8 @@ void createComputePipeline(ref App app, Shader shader) {
   enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &computePipeline));
   app.compute.pipelines[shader.path].set(computePipeline);
 
-  app.nameVulkanObject(app.compute.pipelines[shader.path].layout, toStringz(format("[LAYOUT] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
-  app.nameVulkanObject(app.compute.pipelines[shader.path].pipeline, toStringz(format("[PIPELINE] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE);
+  app.nameVulkanObject(app.compute.pipelines[shader.path].layout, cstr("[LAYOUT] Compute %s", fromStringz(shader.path)), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+  app.nameVulkanObject(app.compute.pipelines[shader.path].pipeline, cstr("[PIPELINE] Compute %s", fromStringz(shader.path)), VK_OBJECT_TYPE_PIPELINE);
 
   if(app.verbose) SDL_Log("Compute pipeline [sel: %s] at: %p", toStringz(shader.path), app.compute.pipelines[shader.path].pipeline);
 
@@ -156,9 +156,9 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
 
   VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
   enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
-  app.nameVulkanObject(cmd, toStringz(format("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  app.nameVulkanObject(cmd, cstr("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  pushLabel(cmd, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
+  pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
   app.updateDescriptorData([shader], app.compute.commands[shader.path], syncIndex);
 
   if (baseName(fromStringz(shader.path)) == "cull.glsl") {

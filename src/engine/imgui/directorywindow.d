@@ -6,7 +6,7 @@
 import engine;
 
 import imgui : iconText;
-import widgets : textSize, cstr;
+import widgets : textSize;
 import io : dir, isdir, isfile, fsize;
 
 void listDirContent(ref App app, const(char)* path) {

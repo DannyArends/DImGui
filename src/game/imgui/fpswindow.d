@@ -6,7 +6,7 @@
 import game;
 
 import imgui : faIcon;
-import widgets : text, cstr;
+import widgets : text;
 
 size_t vertexCount(Geometry o, bool showBounds) {
   return o.vertices.length * o.instances.length + (showBounds && o.box ? o.box.vertices.length * o.box.instances.length : 0);
@@ -29,7 +29,7 @@ void showTimingsContent(ref App app) {
     if(ms < 10) continue;
     igProgressBar(total ? cast(float)ms / total : 0.0f, ImVec2(60, igGetTextLineHeightWithSpacing()), "");
     igSameLine(0, 6);
-    igText(cstr("%s %dms", name, ms));
+    text("%s %dms", name, ms);
   }
 }
 

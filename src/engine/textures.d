@@ -127,7 +127,7 @@ void transferTextureAsync(ref App app, ref Texture texture) {
     commandBufferCount: 1,
     pCommandBuffers: &cmdBuffer.commands,
   };
-  app.nameVulkanObject(cmdBuffer.fence, toStringz(format("[FENCE] %s", texture.path)), VK_OBJECT_TYPE_FENCE);
+  app.nameVulkanObject(cmdBuffer.fence, cstr("[FENCE] %s", texture.path), VK_OBJECT_TYPE_FENCE);
   enforceVK(vkQueueSubmit(queue, 1, &submitInfo, cmdBuffer.fence));
   app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }

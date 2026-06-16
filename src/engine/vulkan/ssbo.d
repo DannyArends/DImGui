@@ -41,8 +41,8 @@ struct SSBOList(T) {
 /** Name SSBO buffers and memory for debugging */
 void nameSSBO(ref App app, SSBO ssbo, string name){
   for(uint i = 0; i < ssbo.length; i++) {
-    app.nameVulkanObject(ssbo[i].buffer, toStringz(format("[SSBO-BUF] %s #%d", name, i)), VK_OBJECT_TYPE_BUFFER);
-    app.nameVulkanObject(ssbo[i].memory, toStringz(format("[SSBO-MEM] %s #%d", name, i)), VK_OBJECT_TYPE_DEVICE_MEMORY);
+    app.nameVulkanObject(ssbo[i].buffer, cstr("[SSBO-BUF] %s #%d", name, i), VK_OBJECT_TYPE_BUFFER);
+    app.nameVulkanObject(ssbo[i].memory, cstr("[SSBO-MEM] %s #%d", name, i), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
 }
 

@@ -73,7 +73,7 @@ extern (C) shaderc_include_result* includeResolve(void* userData, const(char)* s
 
   if (type == shaderc_include_type_relative) {
     path = format("%s/%s", dirName(fromStringz(reqSource)), fromStringz(source));
-    if(context.verbose) SDL_Log(toStringz(format("Shader include: %s", path)));
+    if(context.verbose) SDL_Log(cstr("Shader include: %s", path));
     code = readFile(toStringz(path), context.verbose);
   }
   context.includedFiles[path] = code;
@@ -92,7 +92,7 @@ extern (C) void includeRelease(void* userData, shaderc_include_result* result) {
   auto context = cast(IncluderContext*)userData;
   if (result) {
     string path = to!string(result.source_name[0..result.source_name_length]);
-    if(context.verbose) SDL_Log(toStringz(format("Shader release: %s", path)));
+    if(context.verbose) SDL_Log(cstr("Shader release: %s", path));
     context.includedFiles.remove(path);
     free(result);
   }
@@ -122,7 +122,7 @@ Shader createShaderModule(App app, string path, shaderc_shader_kind type = shade
   };
 
   enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shader.shaderModule));
-  app.nameVulkanObject(shader.shaderModule, toStringz(format("[SHADER] %s", fromStringz(path))), VK_OBJECT_TYPE_SHADER_MODULE);
+  app.nameVulkanObject(shader.shaderModule, cstr("[SHADER] %s", fromStringz(path)), VK_OBJECT_TYPE_SHADER_MODULE);
 
   shader.info = createShaderStageInfo(convert(type), shader);
 

@@ -282,7 +282,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     app.shadows.activeShadowMaps++;
 
     auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
-    pushLabel(cmd, toStringz(format("Shadow RenderPass: %d", l)), Colors.lightgray);
+    pushLabel(cmd, cstr("Shadow RenderPass: %d", l), Colors.lightgray);
     if(app.shadows.staticDirty[s]) { // Static -> layer 0
       app.recordCasters(cmd, app.shadows.cmd.pass(0), s, l, lFrustum, app.shadows.images[s].extent, true);
       app.shadows.staticDirty[s] = false;

@@ -19,7 +19,7 @@ void showShaderContent(ref App app, uint font = 0) {
     igTableNextColumn();
     igText(toStringz(format("%s", shader.stage).replace("VK_SHADER_STAGE_", "").replace("_BIT", "")));
     igTableNextColumn();
-    igText(toStringz(format("Descriptors: %s\nExecute as %s", shader.descriptors.length, shader.groupCount)));
+    igText(cstr("Descriptors: %s\nExecute as %s", shader.descriptors.length, shader.groupCount));
     igPopID();
   }
   igEndTable();
