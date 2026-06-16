@@ -6,7 +6,7 @@
 import engine;
 
 import imgui : faIcon;
-import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, cstr, labelCol, objectActions, materialRow, colSlider;
+import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, cstr, labelCol, objectActions, materialRow, colValue;
 import textures : mapTextures, ImTextureRefFromID;
 
 /** Window to manipulate 3D objects: list view, or per-object detail when an object's window flag is set. */
@@ -52,23 +52,23 @@ void showObjectwindow(ref App app, ref Geometry obj) {
     auto p = obj.position;
     igTableNextColumn();
     if(igButton(faIcon(cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT), ImVec2(0,0))) {}
-    igTableNextColumn(); app.colSlider("##x", &p[0], app.gui.pos[0], app.gui.pos[1]);
-    igTableNextColumn(); app.colSlider("##y", &p[1], app.gui.pos[0], app.gui.pos[1]);
-    igTableNextColumn(); app.colSlider("##z", &p[2], app.gui.pos[0], app.gui.pos[1]);
+    igTableNextColumn(); app.colValue("##x", &p[0], app.gui.pos[0], app.gui.pos[1]);
+    igTableNextColumn(); app.colValue("##y", &p[1], app.gui.pos[0], app.gui.pos[1]);
+    igTableNextColumn(); app.colValue("##z", &p[2], app.gui.pos[0], app.gui.pos[1]);
     obj.position = p;
 
     igTableNextColumn();
       if(igButton(faIcon(cast(string)ICON_FA_COMPRESS), ImVec2(0,0))) {
         obj.scale([app.gui.scaleF, app.gui.scaleF, app.gui.scaleF]); app.gui.scaleF = 1.0f;
       }
-    igTableNextColumn(); app.colSlider("##zS", &app.gui.scaleF, app.gui.scale[0], app.gui.scale[1], "%.3f");
+    igTableNextColumn(); app.colValue("##zS", &app.gui.scaleF, app.gui.scale[0], app.gui.scale[1], "%.3f");
     igTableNextColumn(); igTableNextColumn();
 
     igTableNextColumn();
       if(igButton(faIcon(cast(string)ICON_FA_ARROWS_ROTATE), ImVec2(0,0))) { obj.rotate(app.gui.rotF); app.gui.rotF = [0.0f,0.0f,0.0f]; }
-    igTableNextColumn(); app.colSlider("##xR", &app.gui.rotF[0], app.gui.rot[0], app.gui.rot[1], "%.0f");
-    igTableNextColumn(); app.colSlider("##yR", &app.gui.rotF[1], app.gui.rot[0], app.gui.rot[1], "%.0f");
-    igTableNextColumn(); app.colSlider("##zR", &app.gui.rotF[2], app.gui.rot[0], app.gui.rot[1], "%.0f");
+    igTableNextColumn(); app.colValue("##xR", &app.gui.rotF[0], app.gui.rot[0], app.gui.rot[1], "%.0f");
+    igTableNextColumn(); app.colValue("##yR", &app.gui.rotF[1], app.gui.rot[0], app.gui.rot[1], "%.0f");
+    igTableNextColumn(); app.colValue("##zR", &app.gui.rotF[2], app.gui.rot[0], app.gui.rot[1], "%.0f");
     igEndTable();
   }
 

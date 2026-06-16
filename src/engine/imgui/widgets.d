@@ -80,24 +80,18 @@ void objectActions(ref App app, ref Geometry obj) {
   if(igButton(faIcon(cast(string)ICON_FA_TRASH), ImVec2(0,0))) obj.deAllocate = true;
 }
 
-/** Scaled, label-less int slider in the current table column. */
-void colSliderInt(ref App app, const(char)* id, int* v, int lo, int hi) {
+/** Scaled, label-less slider in the current table column. */
+void colValue(T)(ref App app, const(char)* id, T* v, T lo, T hi, string fmt = imFormat!T) if (isFloatingPoint!T || isIntegral!T) {
   igPushItemWidth(100 * app.gui.uiscale); scope(exit) igPopItemWidth();
-  igSliderScalar(id, ImGuiDataType_S32, v, &lo, &hi, "%d", 0);
-}
-
-/** Scaled, label-less float slider in the current table column. */
-void colSlider(ref App app, const(char)* id, float* v, float lo, float hi, string fmt = "%.2f") {
-  igPushItemWidth(100 * app.gui.uiscale); scope(exit) igPopItemWidth();
-  igSliderScalar(id, ImGuiDataType_Float, v, &lo, &hi, toStringz(fmt), 0);
+  igSliderScalar(id, imDataType!T, v, &lo, &hi, toStringz(fmt), 0);
 }
 
 /** One mesh's tid/nid/oid sliders across a 4-column row; material by ref so edits persist. */
 void materialRow(ref App app, const(char)* name, ref Material mat, int lo, int hi) {
-  igTableNextColumn(); igText(name); igSameLine(0,5);   // name inline, same column
-  igTableNextColumn(); app.colSliderInt(cstr("##tid:%s", name), &mat.tid, lo, hi);
-  igTableNextColumn(); app.colSliderInt(cstr("##nid:%s", name), &mat.nid, lo, hi);
-  igTableNextColumn(); app.colSliderInt(cstr("##oid:%s", name), &mat.oid, lo, hi);
+  igTableNextColumn(); igText(name); igSameLine(0,5);
+  igTableNextColumn(); app.colValue(cstr("##tid:%s", name), &mat.tid, lo, hi);
+  igTableNextColumn(); app.colValue(cstr("##nid:%s", name), &mat.nid, lo, hi);
+  igTableNextColumn(); app.colValue(cstr("##oid:%s", name), &mat.oid, lo, hi);
 }
 
 /** Render a label + widget as a 2-column table row */
