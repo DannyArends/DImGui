@@ -7,7 +7,7 @@ import game;
 
 import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
-import widgets : setting, sliderFloat3, infoRow;
+import widgets : setting, text, sliderFloat3, infoRow;
 
 /** Show the GUI window which allows us to manipulate lighting */
 void showLightsContent(ref GameApp app, uint font = 0) {
@@ -32,7 +32,7 @@ void showLightsContent(ref GameApp app, uint font = 0) {
     }
     igSameLine(0, 5);
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB, format("Light %d", i)), 0)) {
-      igBeginTable(toStringz(format("Light_Tbl_%d", i)), 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
+      igBeginTable(cstr("Light_Tbl_%d", i), 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0.0f, 0.0f), 0.0f);
 
       igTableNextColumn(); igText(iconText("Position", cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT));
       igTableNextColumn();
@@ -40,9 +40,9 @@ void showLightsContent(ref GameApp app, uint font = 0) {
                      &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
       igTableNextColumn(); igText(iconText("Shadow", cast(string)ICON_FA_MOON));
       igTableNextColumn();
-      igText(toStringz(format("%s  %dx%d", light.cull[1] >= 0.0f ? "CASTING" : "evicted",
-                              i < app.shadows.images.length ? app.shadows.images[i].extent.width : 0,
-                              i < app.shadows.images.length ? app.shadows.images[i].extent.height : 0)));
+      text("%s  %dx%d", light.cull[1] >= 0.0f ? "CASTING" : "evicted",
+                        i < app.shadows.images.length ? app.shadows.images[i].extent.width : 0,
+                        i < app.shadows.images.length ? app.shadows.images[i].extent.height : 0);
       igTableNextColumn(); igText(iconText("Intensity", cast(string)ICON_FA_BOLT));
       igTableNextColumn();
         sliderFloat3(["##I0","##I1","##I2"], &light.intensity[0], &light.intensity[1], &light.intensity[2], 

@@ -69,7 +69,7 @@ void openAudio(ref App app, int rate = 44100, int size = 1024, bool verbose = fa
   app.audio.audioFmt = actual.format;
   app.audio.audioChannels = actual.channels;
   if(verbose) {
-    SDL_Log(toStringz(format("Audio Devices: %s", devices)));
+    SDL_Log(cstr("Audio Devices: %s", devices));
     SDL_Log("Audio @ %d Hz, Decoders: %d", app.audio.audioRate, nDecoders);
     SDL_Log("Audio %d bit %s with %d bits audio buffer\n", app.audio.bits, app.audio.audioChannels > 1?"stereo".ptr:"mono".ptr, size);
   }

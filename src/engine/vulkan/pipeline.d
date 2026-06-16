@@ -22,8 +22,8 @@ struct GraphicsPipeline {
 
   void create(ref App app, VkGraphicsPipelineCreateInfo info, string label, ref DeletionQueue queue, Specialization spec = Specialization.init) {
     VkPipeline p; enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &info, app.allocator, &p)); variants[spec] = p;
-    app.nameVulkanObject(layout, toStringz(format("[LAYOUT] %s", label)), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
-    app.nameVulkanObject(p, toStringz(format("[PIPELINE] %s", label)), VK_OBJECT_TYPE_PIPELINE);
+    app.nameVulkanObject(layout, cstr("[LAYOUT] %s", label), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+    app.nameVulkanObject(p, cstr("[PIPELINE] %s", label), VK_OBJECT_TYPE_PIPELINE);
     queue.add((){ vkDestroyPipeline(app.device, p, app.allocator); });
   }
 

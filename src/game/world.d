@@ -166,7 +166,7 @@ bool dispatchWorker(ref GameApp app, int[3] coord){
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, coord);
       app.world.pendingChunks[coord] = true;
-      if(app.verbose) SDL_Log(toStringz(format("Loading chunk: %s A-sync", coord)));
+      if(app.verbose) SDL_Log(cstr("Loading chunk: %s A-sync", coord));
       return(true);
     }
   }

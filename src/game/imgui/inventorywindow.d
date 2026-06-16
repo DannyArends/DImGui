@@ -7,7 +7,7 @@ import game;
 
 import imgui : faIcon;
 import textures : ImTextureRefFromID, idx;
-import widgets : cstr, drawCenteredText, text;
+import widgets : drawCenteredText, text;
 
 /** Show tool mode switcher */
 void showToolSwitcher(ref GameApp app) {

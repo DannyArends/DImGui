@@ -40,9 +40,6 @@ template imDataType(T) {
   else static assert(false, "imDataType: no ImGuiDataType for " ~ T.stringof);
 }
 
-/** D-formatted C string. One home for the per-frame toStringz allocation. */
-const(char)* cstr(A...)(string fmt, A a) { return toStringz(format(fmt, a)); }
-
 /** igText with D-side formatting. */
 void text(A...)(string fmt, A a) { igText(cstr(fmt, a)); }
 

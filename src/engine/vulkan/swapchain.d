@@ -14,12 +14,12 @@ void createSwapChain(ref App app, VkSwapchainKHR oldChain = null) {
   VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   version(Android) {
     auto x = app.isSupported(VK_FORMAT_R5G6B5_UNORM_PACK16);
-    if(x >= 0){ app.present = app.surfaceformats[x]; SDL_Log(toStringz(format("Using format: %s", app.present))); }
+    if(x >= 0){ app.present = app.surfaceformats[x]; SDL_Log(cstr("Using format: %s", app.present)); }
     compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
   } else {
     foreach(fmt; [VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM]) {
       auto x = app.isSupported(fmt);
-      if(x >= 0){ app.present = app.surfaceformats[x]; SDL_Log(toStringz(format("Using format: %s", app.present))); break; }
+      if(x >= 0){ app.present = app.surfaceformats[x]; SDL_Log(cstr("Using format: %s", app.present)); break; }
     }
   }
 
@@ -70,8 +70,8 @@ void aquireSwapChainImages(ref App app) {
     app.swapChainImageViews[i] = app.createImageView(app.swapChainImages[i], app.present.format);
 
     // Set name to Image and ImageView
-    app.nameVulkanObject(app.swapChainImages[i], toStringz(format("[IMAGE] SwapChain #%d", i)), VK_OBJECT_TYPE_IMAGE);
-    app.nameVulkanObject(app.swapChainImageViews[i], toStringz(format("[VIEW] SwapChain #%d", i)), VK_OBJECT_TYPE_IMAGE_VIEW);
+    app.nameVulkanObject(app.swapChainImages[i], cstr("[IMAGE] SwapChain #%d", i), VK_OBJECT_TYPE_IMAGE);
+    app.nameVulkanObject(app.swapChainImageViews[i], cstr("[VIEW] SwapChain #%d", i), VK_OBJECT_TYPE_IMAGE_VIEW);
   }
   if(app.verbose) SDL_Log("Swapchain image views: %d", app.swapChainImageViews.length);
 

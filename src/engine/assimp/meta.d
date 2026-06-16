@@ -30,10 +30,10 @@ MetaData loadMetaData(aiScene* scene, bool verbose = false) {
     if (key == "UnitScaleFactor") { meta.scalefactor = *cast(float*)(mData.mValues[i].mData); }
   }
   if (verbose) {
-    SDL_Log(toStringz(format("MetaData UP: %s", meta.upAxis)));
-    SDL_Log(toStringz(format("MetaData Front: %s", meta.frontAxis)));
-    SDL_Log(toStringz(format("MetaData Coord: %s", meta.coordAxis)));
-    SDL_Log(toStringz(format("MetaData Scale: %s", meta.scalefactor)));
+    SDL_Log(cstr("MetaData UP: %s", meta.upAxis));
+    SDL_Log(cstr("MetaData Front: %s", meta.frontAxis));
+    SDL_Log(cstr("MetaData Coord: %s", meta.coordAxis));
+    SDL_Log(cstr("MetaData Scale: %s", meta.scalefactor));
   }
   return(meta);
 }
