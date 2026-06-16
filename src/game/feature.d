@@ -155,6 +155,17 @@ void removeAllFeatures(ref GameApp app, int[3] coord) {
   app.rebuildAllFeatures();
 }
 
+/** True if a feature with the given interaction is rooted at this tile */
+bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
+  foreach(ref ft; features) {
+    if(ft.interaction != interaction || ft.name !in app.world.features) continue;
+    int[3] coord = app.world.chunkCoord(tile);
+    if(coord !in app.world.features[ft.name]) continue;
+    foreach(ref f; app.world.features[ft.name][coord]) if(f.rootTile == tile) return true;
+  }
+  return false;
+}
+
 void interactFeaturesAt(ref GameApp app, int[3] tile) {
   foreach(ref ft; features) {
     if(ft.name !in app.world.features) continue;
