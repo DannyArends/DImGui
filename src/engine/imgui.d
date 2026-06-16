@@ -22,7 +22,7 @@ struct GUI {
   ImGuiIO* io;
   ImFont*[] fonts;
 
-  float[2] panel = [400.0f, 300.0f];
+  float[2] panel = [375.0f, 300.0f];
   @property float panelW(float s = -1.0f) { if(s>0){ panel[0] = s; } return panelOpen ? panel[0] : 0.0f; }
   @property float panelH(float s = -1.0f) { if(s>0){ panel[1] = s; } return panelOpen ? panel[1] : 0.0f; }
   float menuH = 20.0f;

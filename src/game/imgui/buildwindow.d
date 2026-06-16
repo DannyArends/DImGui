@@ -42,7 +42,6 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
   float dispW = app.gui.io.DisplaySize.x, dispH = app.gui.io.DisplaySize.y;
   igSetNextWindowPos(ImVec2(dispW * 0.5f, dispH * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-  igSetNextWindowSize(ImVec2(300, 360), ImGuiCond_Appearing);
 
   int remaining = 0;
   foreach(ref b; app.world.inventory.buildSelection){ if(b.type == ResourceType.None){ remaining++; } }

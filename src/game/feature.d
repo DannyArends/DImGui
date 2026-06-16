@@ -10,6 +10,7 @@ import game : GameApp;
 import matrix : translateScale;
 import normals : computeTangents;
 import noise : noiseHTT;
+import sfx : play;
 import tile : getTile, tileCoord, tileToWorld;
 import vegetation : saveVegetation, loadVegetation;
 
@@ -186,6 +187,7 @@ void interactFeaturesAt(ref GameApp app, int[3] tile) {
       if(auto p = coord in app.world.pendingFeatures[ft.name]) *p = (*p).filter!(pf => pf.rootTile != tile).array;
       app.world.featuresModified[coord] = true;
       app.world.unsettleBlocks(app.world.blocks, tile);
+      //app.play("DM-CGS-02", 0.2f);
       app.rebuildAllFeatures();
       return;
     }
