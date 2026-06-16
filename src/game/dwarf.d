@@ -17,6 +17,7 @@ import pathfinding : pathfindTo, repathTo;
 import jobs : Job, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination, blockType;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
+import sfx : play;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
 import timing : timed;
 import lights : addLight, torchLight, TORCH_HEIGHT;
@@ -199,6 +200,7 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
   if((filled > cast(size_t)(above * d.inventory.length)) && uniform(0, 100) < 2) {   // ~2%/tick over 50%
     size_t slot = uniform(0, d.inventory.length);
     d.drop(app, slot);   // no-op if that slot is empty
+    app.play("DM-CGS-03", 0.2f);
   }
 }
 

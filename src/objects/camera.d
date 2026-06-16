@@ -35,6 +35,8 @@ struct Camera {
   @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
   @property @nogc float[3] right() const nothrow { return orientation.multiply([ speed, 0.0f, 0.0f]); }
   @property @nogc float[3] left() const nothrow { return orientation.multiply([-speed, 0.0f, 0.0f]); }
+  @property @nogc float[3] pgup() const nothrow { return [0.0f,  speed, 0.0f]; }
+  @property @nogc float[3] down() const nothrow { return [0.0f, -speed, 0.0f]; }
   @property @nogc uint width() const nothrow { return(currentExtent.width); };
   @property @nogc uint height() const nothrow { return(currentExtent.height); };
   @property float aspectRatio() const nothrow { return(this.width / cast(float) this.height); }

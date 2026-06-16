@@ -7,6 +7,7 @@ import game;
 
 import color : asIm;
 import imgui : faIcon;
+import sfx : play;
 import tool : tools;
 
 /** DF-style icon tool bar: bottom edge in landscape, left edge in portrait. Avoids the side panel. */
@@ -34,6 +35,7 @@ void showToolbar(ref GameApp app, uint font = 0) {
     if(igButton(faIcon(t.icon), ImVec2(btn, btn))) {
       app.world.inventory.activeTool = t.mode;
       app.world.inventory.type = ResourceType.None;
+      app.play("DM-CGS-31", 0.1f);
     }
     igPopStyleColor(3);
     if(landscape && !isAndroid && i < tools.length - 1) igSameLine(0, 4);

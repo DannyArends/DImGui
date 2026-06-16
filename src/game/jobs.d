@@ -8,10 +8,10 @@ import game;
 import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
+import sfx : play;
 import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied;
 import timing : timed;
 import vector : manhattan, manhattan2D;
-
 
 enum JobState { Pending, Satisfied, Unavailable }
 enum Reach { Adjacent, OnTile } 
@@ -242,6 +242,7 @@ Job eatJob() {
         d.use(app, id);
         if(id in app.world.blocks) app.world.blocks.remove(id);
         d.hunger = 0.0f;
+        app.play("DM-CGS-16", 0.4f);
         app.syncBlockInstances();
       });
     },
