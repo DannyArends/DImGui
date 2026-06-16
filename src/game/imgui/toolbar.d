@@ -24,14 +24,13 @@ void showToolbar(ref GameApp app, uint font = 0) {
 
   if(landscape) { // bottom-centred over the play area (left of the side panel)
     igSetNextWindowPos(ImVec2((dispW - app.gui.panelW) * 0.5f, dispH), ImGuiCond_Always, ImVec2(0.5f, 1.0f));
-  } else {        // left edge, vertically centred above the bottom panel
-    igSetNextWindowPos(ImVec2(0, (dispH - app.gui.panelH) * 0.5f), ImGuiCond_Always, ImVec2(0.0f, 0.5f));
+  } else {        // left edge, centred between the menu bar and the bottom panel
+    igSetNextWindowPos(ImVec2(0, (app.gui.menuH + (dispH - app.gui.panelH)) * 0.5f), ImGuiCond_Always, ImVec2(0.0f, 0.5f));
   }
 
   igBegin("##toolbar", null, flags);
   foreach(i, ref t; tools) {
-    bool active = app.world.inventory.activeTool == t.mode;
-    igPushStyleColor_Vec4(ImGuiCol_Text, active ? t.color.asIm() : unselected);
+    igPushStyleColor_Vec4(ImGuiCol_Text, (app.world.inventory.activeTool == t.mode) ? t.color.asIm() : unselected);
     if(igButton(faIcon(t.icon), ImVec2(36, 36))) {
       app.world.inventory.activeTool = t.mode;
       app.world.inventory.type = ResourceType.None;

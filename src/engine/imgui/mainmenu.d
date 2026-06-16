@@ -23,7 +23,11 @@ void showMenu(ref App app, uint font = 0) {
     }
     foreach(ref window; app.gameWindows) {
       if(!window.floating && !window.direct) continue;
+       if(window.label.length >= 2 && window.label[0 .. 2] == "##") continue;
       if(igMenuItem_Bool(toStringz(window.label), null, window.visible, true)) window.visible = !window.visible;
+    }
+    if(igMenuItem_Bool("Panel".toStringz, null, app.gui.panelOpen, true)){ 
+      app.gui.panelOpen = !app.gui.panelOpen; app.gui.panelH = 0; app.gui.panelW = 0;
     }
     if(igBeginMenu("?".toStringz, true)) {
       if(igMenuItem_Bool("Shaders".toStringz,null, false, true)) { app.gui.showShaders = !app.gui.showShaders; }
