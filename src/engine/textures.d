@@ -10,8 +10,8 @@ import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
 import images : nameImageBuffer, generateMipmaps, imageSize, createImage, cleanup, transitionImageLayout;
 import io : dir;
-import swapchain : createImageView;
 import validation : nameVulkanObject;
+import views : createImageView, createLayerViews;
 
 enum MAX_TEXTURES = 512;
 
@@ -127,7 +127,7 @@ void transferTextureAsync(ref App app, ref Texture texture) {
     commandBufferCount: 1,
     pCommandBuffers: &cmdBuffer.commands,
   };
-  app.nameVulkanObject(cmdBuffer.fence, toStringz(format("[FENCE] %s", texture.path)), VK_OBJECT_TYPE_FENCE);
+  app.nameVulkanObject(cmdBuffer.fence, cstr("[FENCE] %s", texture.path), VK_OBJECT_TYPE_FENCE);
   enforceVK(vkQueueSubmit(queue, 1, &submitInfo, cmdBuffer.fence));
   app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }
@@ -201,7 +201,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out Geom
   app.generateMipmaps(cmdBuffer, texture.image, texture.surface.w, texture.surface.h, texture.mipLevels);
 
   // Create an imageview and register the texture with ImGui
-  texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, texture.mipLevels);
+  app.createLayerViews(texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, texture.mipLevels);
   app.nameImageBuffer(texture, texture.path);
   app.registerTexture(texture);
 }

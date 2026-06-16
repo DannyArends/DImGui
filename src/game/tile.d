@@ -41,7 +41,7 @@ enum int[3] builtTile = [int.max, 0, 0];
 /** Set a tile type in a chunk and mark the chunk dirty for rebuild */
 void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.None) {
   if(app.world.getTile(tile) == ResourceType.Lava) return;  // cannot remove lava
-  if(app.verbose) SDL_Log(toStringz(format("setTile: %s", tile)));
+  if(app.verbose) SDL_Log(cstr("setTile: %s", tile));
 
   int[3] coord = app.world.chunkCoord(tile);
   if(coord !in app.world.chunks) return;

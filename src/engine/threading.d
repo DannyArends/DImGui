@@ -72,7 +72,7 @@ void initializeAsync(ref App app, bool preLoadAssimp = true, uint numWorkers = 1
     auto id = receiveOnly!Tid();
     app.concurrency.workers[id] = false;
   }
-  if(app.verbose) SDL_Log(toStringz(format("Workers %s", app.concurrency.workers)));
+  if(app.verbose) SDL_Log(cstr("Workers %s", app.concurrency.workers));
 }
 
 /** Drain all queued messages of type T, resetting the worker and running handler for each */

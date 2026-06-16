@@ -52,7 +52,8 @@ enum Lights : Light {
 
 struct Lighting {
   SSBOList!Light lights;
-  float[] scoreBuf;
+  float[] scoreBuf;             /// Shadow ranking scores
+  bool staticDirty = false;     /// scene static geometry changed
   float sunTime = 7.0f;
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
@@ -108,7 +109,6 @@ void computeRadius(ref Light l, float cutoff = 0.01f) {
 /** Update light geometries for rendering */
 void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
   app.lights.sunTime = fmod(app.lights.sunTime + (minsPerSec * dt / 60.0f), 24.0f);
-  app.updateSun();
   if(!app.showLights) return;
   int l = 1;
   foreach(o; app.objects) {
@@ -185,15 +185,6 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
   app.lights[0].properties[0] = t * ambientScale;
 }
 
-/** Transfer the lighting into the SSBO for buffer */
-void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) {
-  foreach(i, ref light; app.lights) {
-    light.computeRadius(); 
-    app.camera.computeLightSpace(light, app.shadows.bounds, app.shadowResolution(light));
-  }
-  app.updateSSBO!Light(buffer, app.lights, descriptor, app.syncIndex);
-}
-
 /** Disco beam */
 @nogc pure float beam(float t, float speed, float freq, float phase) nothrow { return abs(sin(t * speed * freq + phase)) * 500.0f; }
 
@@ -207,6 +198,7 @@ void updateLighting(ref App app, VkCommandBuffer buffer, Descriptor descriptor) 
 /** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
 void computeActiveLighting(ref App app) {
   assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
+  if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
   auto score = app.lights.scoreBuf[0 .. app.lights.length];
   float slot = 0.0f;
   foreach(i, ref light; app.lights) {
@@ -229,12 +221,21 @@ void computeActiveLighting(ref App app) {
   }
 
   foreach(ref light; app.lights) {
-    int s = cast(int)light.cull[1]; if(s < 0) continue;
-    app.resizeShadowMap(s, app.shadowResolution(light));
+    light.computeRadius();
+    uint res = app.shadowResolution(light);
+    Matrix prev = light.lightSpaceMatrix;
+    app.camera.computeLightSpace(light, app.shadows.bounds, res);
+    int s = cast(int)light.cull[1];
+    if(s >= 0) {
+      if(light.lightSpaceMatrix != prev) app.shadows.staticDirty[s] = true;
+      uint before = app.shadows.images[s].extent.width;
+      app.resizeShadowMap(s, res);
+      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // resize recreated layer 0
+    }
   }
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
-    uint used = *cast(uint*)app.buffers["ClusterCounter"][0].data;
+    uint used = *cast(uint*)app.buffers["ClusterCounter"][app.syncIndex].data;
     if(used > app.clusterCapacity) {
       app.clusterCapacity = used * 2;
       app.growSSBO("ClusterLights", app.clusterCapacity);

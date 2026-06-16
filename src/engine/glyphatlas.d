@@ -10,7 +10,7 @@ import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import textures : toRGBA, toGPU;
 import images : createImage, cleanup, imageSize;
 import io : fixPath;
-import swapchain : createImageView;
+import views : createImageView;
 
 /** Glyph stores SDL2_TTF glyph data */
 struct Glyph {

@@ -7,7 +7,7 @@ import engine;
 
 import commands : createCommandPools;
 import compute : initializeCompute;
-import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
+import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout, registerRenderProviders;
 import devices : createLogicalDevice;
 import events : sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
@@ -56,6 +56,7 @@ void run(string[] args = null) {
   app.getBestColorFormat();                                     /// Figure out the best available color format for HDR
   app.loadShaders(app.shaders, RenderShaders);                  /// Load the Rendering shaders
   app.loadShaders(app.postProcess, PostProcessShaders);         /// Load the Post-processing shaders
+  app.registerRenderProviders();
   if(app.hasCompute) app.initializeCompute();                   /// Load the compute shader
   app.createShadowMap();                                        /// Create the shadow resources, renderpass, and shader
   app.createCommandPools();                                     /// Create the rendering CommandPool
@@ -88,7 +89,6 @@ void run(string[] args = null) {
     app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
-  app.cleanupGame();
   app.cleanup();
 }
 

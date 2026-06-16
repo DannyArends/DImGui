@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : findMemoryType, hasStencilComponent;
+import buffer : findMemoryType, hasStencilComponent, isDepth;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
 import framebuffer : createHDRImage;
@@ -15,20 +15,22 @@ VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * SDL
 
 struct ImageBuffer {
   VkImage image = null;             /// Image
-  VkImageView view = null;          /// View
+  VkImageView[] views = null;       /// Views
   VkDeviceMemory memory = null;     /// Memory
   VkExtent3D extent;                /// Extent
+  uint arrayLayers = 1;             /// Layers
+  @property ref VkImageView view(uint id = 0) { return(views[id]); }
 }
 
 void nameImageBuffer(ref App app, ImageBuffer buffer, string path){
-  app.nameVulkanObject(buffer.image, toStringz("[IMAGE] " ~ baseName(path)), VK_OBJECT_TYPE_IMAGE);
-  app.nameVulkanObject(buffer.memory, toStringz("[MEMORY] " ~ baseName(path)), VK_OBJECT_TYPE_DEVICE_MEMORY);
-  app.nameVulkanObject(buffer.view, toStringz("[VIEW] " ~ baseName(path)), VK_OBJECT_TYPE_IMAGE_VIEW);
+  app.nameVulkanObject(buffer.image, cstr("[IMAGE] %s", baseName(path)), VK_OBJECT_TYPE_IMAGE);
+  app.nameVulkanObject(buffer.memory, cstr("[MEMORY] %s", baseName(path)), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  foreach(i, v; buffer.views) { app.nameVulkanObject(v, cstr("[VIEW] %s #%d", baseName(path), i), VK_OBJECT_TYPE_IMAGE_VIEW); }
 }
 
 /** DeAllocate an ImageBuffer / Texture */
 @nogc void cleanup(ref App app, ImageBuffer buffer) nothrow {
-  vkDestroyImageView(app.device, buffer.view, app.allocator);
+  foreach(v; buffer.views) { vkDestroyImageView(app.device, v, app.allocator); }
   vkDestroyImage(app.device, buffer.image, app.allocator);
   vkFreeMemory(app.device, buffer.memory, app.allocator);
 }
@@ -42,15 +44,16 @@ void createColorResources(ref App app) {
 void createImage(ref App app, ref ImageBuffer buffer, uint width, uint height, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
                  VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
                  VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-                 VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint mipLevels = 1) {
+                 VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint mipLevels = 1, uint arrayLayers = 1) {
 
   buffer.extent = VkExtent3D(width, height, 1);
+  buffer.arrayLayers = arrayLayers;
 
   VkImageCreateInfo imageInfo = {
     sType: VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
     imageType: VK_IMAGE_TYPE_2D,
     extent: buffer.extent,
-    mipLevels: mipLevels, arrayLayers: 1, format: format, tiling: tiling,
+    mipLevels: mipLevels, arrayLayers: arrayLayers, format: format, tiling: tiling,
     initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, usage: usage,
     sharingMode: VK_SHARING_MODE_EXCLUSIVE, samples: samples, flags: 0
   };
@@ -75,7 +78,7 @@ void imageBarrier(VkCommandBuffer cmd, VkImage image,
                   VkImageLayout oldLayout, VkImageLayout newLayout,
                   VkAccessFlags srcAccess, VkAccessFlags dstAccess,
                   VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-                  uint baseMipLevel = 0, uint levelCount = 1,
+                  uint baseMipLevel = 0, uint levelCount = 1, uint baseLayer = 0, uint layerCount = 1,
                   VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT) {
   VkImageMemoryBarrier b = {
     sType: VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -86,7 +89,7 @@ void imageBarrier(VkCommandBuffer cmd, VkImage image,
     dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
     srcAccessMask: srcAccess,
     dstAccessMask: dstAccess,
-    subresourceRange: { aspectMask: aspectMask, baseMipLevel: baseMipLevel, levelCount: levelCount, baseArrayLayer: 0, layerCount: 1 }
+    subresourceRange: { aspectMask: aspectMask, baseMipLevel: baseMipLevel, levelCount: levelCount, baseArrayLayer: baseLayer, layerCount: layerCount }
   };
   vkCmdPipelineBarrier(cmd, srcStage, dstStage, 0, 0, null, 0, null, 1, &b);
 }
@@ -119,50 +122,75 @@ void generateMipmaps(ref App app, VkCommandBuffer cmd, VkImage image, int width,
                            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevels - 1);
 }
 
+/** Copy layer from srcLayer to dstLayer */
+void copyImageLayer(ref App app, VkCommandBuffer cmd, VkImage img, uint srcLayer, uint dstLayer,
+                    VkExtent3D ext, VkFormat format, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_DEPTH_BIT) {
+  imageBarrier(cmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+               0, 1, dstLayer, 1, aspect);
+
+  app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, format, 1, srcLayer, 1);
+
+  VkImageCopy region = { srcSubresource: {aspect,0,srcLayer,1}, dstSubresource: {aspect,0,dstLayer,1}, extent: ext };
+  vkCmdCopyImage(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+  app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, format, 1, srcLayer, 1);
+  app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, format, 1, dstLayer, 1);
+}
+
 /** Transition Image Layout from old to new layout */
 void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage image,
                            VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
                            VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           VkFormat format = VK_FORMAT_R8G8B8A8_SRGB, uint levelCount = 1) {
+                           VkFormat format = VK_FORMAT_R8G8B8A8_SRGB, uint levelCount = 1, uint baseLayer = 0, uint layerCount = 1) {
   VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-  if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+  if (format.isDepth()) { 
     aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
     if (format.hasStencilComponent()) aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
   }
 
-  VkAccessFlags srcAccess, dstAccess;
+  VkAccessFlags src, dst;
   VkPipelineStageFlags srcStage, dstStage;
 
   if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && (newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_GENERAL)) {
-    srcAccess = VK_ACCESS_NONE; dstAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
+    src = VK_ACCESS_NONE; dst = VK_ACCESS_TRANSFER_WRITE_BIT;
     srcStage  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-    srcAccess = VK_ACCESS_TRANSFER_WRITE_BIT; dstAccess = VK_ACCESS_SHADER_READ_BIT;
+    src = VK_ACCESS_TRANSFER_WRITE_BIT; dst = VK_ACCESS_SHADER_READ_BIT;
     srcStage  = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-    srcAccess = VK_ACCESS_NONE; dstAccess = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    src = VK_ACCESS_NONE; dst = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     srcStage  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
-    srcAccess = VK_ACCESS_SHADER_READ_BIT; dstAccess = VK_ACCESS_SHADER_WRITE_BIT;
+    src = VK_ACCESS_SHADER_READ_BIT; dst = VK_ACCESS_SHADER_WRITE_BIT;
     srcStage  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; dstStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-    srcAccess = VK_ACCESS_NONE; dstAccess = VK_ACCESS_SHADER_READ_BIT;
+    src = VK_ACCESS_NONE; dst = VK_ACCESS_SHADER_READ_BIT;
     srcStage  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-    srcAccess = VK_ACCESS_SHADER_WRITE_BIT; dstAccess = VK_ACCESS_SHADER_READ_BIT;
+    src = VK_ACCESS_SHADER_WRITE_BIT; dst = VK_ACCESS_SHADER_READ_BIT;
     srcStage  = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-    srcAccess = VK_ACCESS_MEMORY_READ_BIT; dstAccess = VK_ACCESS_TRANSFER_READ_BIT;
+    src = VK_ACCESS_MEMORY_READ_BIT; dst = VK_ACCESS_TRANSFER_READ_BIT;
     srcStage  = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage  = VK_PIPELINE_STAGE_TRANSFER_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
-    srcAccess = VK_ACCESS_TRANSFER_READ_BIT; dstAccess = VK_ACCESS_MEMORY_READ_BIT;
+    src = VK_ACCESS_TRANSFER_READ_BIT; dst = VK_ACCESS_MEMORY_READ_BIT;
     srcStage  = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+   } else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+    src = VK_ACCESS_SHADER_READ_BIT; dst = VK_ACCESS_TRANSFER_READ_BIT;
+    srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+    src = VK_ACCESS_TRANSFER_WRITE_BIT; dst = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+    src = VK_ACCESS_TRANSFER_READ_BIT; dst = VK_ACCESS_SHADER_READ_BIT;
+    srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT; dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else {
     SDL_Log("unsupported layout transition!");
     return;
   }
 
-  imageBarrier(commandBuffer, image, oldLayout, newLayout, srcAccess, dstAccess, srcStage, dstStage, 0, levelCount, aspect);
+  imageBarrier(commandBuffer, image, oldLayout, newLayout, src, dst, srcStage, dstStage, 0, levelCount, baseLayer, layerCount, aspect);
   if (app.trace) SDL_Log(" - transitionImageLayout finished for commandBuffer[%p]", commandBuffer);
 }
 

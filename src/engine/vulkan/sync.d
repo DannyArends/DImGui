@@ -35,13 +35,13 @@ void createSyncObjects(ref App app) {
   VkSemaphoreCreateInfo semaphoreInfo = { sType: VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
   for (size_t i = 0; i < app.imageCount; i++) {
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.renderComplete[i]));
-    app.nameVulkanObject(app.renderComplete[i], toStringz(format("[SEMAPHORE] renderComplete #%d", i)), VK_OBJECT_TYPE_SEMAPHORE);
+    app.nameVulkanObject(app.renderComplete[i], cstr("[SEMAPHORE] renderComplete #%d", i), VK_OBJECT_TYPE_SEMAPHORE);
   }
   for (size_t i = 0; i < app.sync.length; i++) {
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].computeComplete));
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].imageAcquired));
-    app.nameVulkanObject(app.sync[i].computeComplete, toStringz(format("[SEMAPHORE] computeComplete #%d",i)), VK_OBJECT_TYPE_SEMAPHORE);
-    app.nameVulkanObject(app.sync[i].imageAcquired, toStringz(format("[SEMAPHORE] imageAcquired #%d",i)), VK_OBJECT_TYPE_SEMAPHORE);
+    app.nameVulkanObject(app.sync[i].computeComplete, cstr("[SEMAPHORE] computeComplete #%d",i), VK_OBJECT_TYPE_SEMAPHORE);
+    app.nameVulkanObject(app.sync[i].imageAcquired, cstr("[SEMAPHORE] imageAcquired #%d",i), VK_OBJECT_TYPE_SEMAPHORE);
   }
   if(app.verbose) SDL_Log("Done vkCreateSemaphore");
 
@@ -49,8 +49,8 @@ void createSyncObjects(ref App app) {
     VkFenceCreateInfo fenceInfo = { sType: VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, flags: VK_FENCE_CREATE_SIGNALED_BIT };
     enforceVK(vkCreateFence(app.device, &fenceInfo, null, &app.fences[i].renderInFlight));
     enforceVK(vkCreateFence(app.device, &fenceInfo, null, &app.fences[i].computeInFlight));
-    app.nameVulkanObject(app.fences[i].renderInFlight, toStringz(format("[FENCE] renderInFlight #%d",i)), VK_OBJECT_TYPE_FENCE);
-    app.nameVulkanObject(app.fences[i].computeInFlight, toStringz(format("[FENCE] computeInFlight #%d",i)), VK_OBJECT_TYPE_FENCE);
+    app.nameVulkanObject(app.fences[i].renderInFlight, cstr("[FENCE] renderInFlight #%d",i), VK_OBJECT_TYPE_FENCE);
+    app.nameVulkanObject(app.fences[i].computeInFlight, cstr("[FENCE] computeInFlight #%d",i), VK_OBJECT_TYPE_FENCE);
   }
   if(app.verbose) SDL_Log("Done vkCreateFence");
 

@@ -6,20 +6,18 @@
 import engine;
 
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
-import descriptor : createDescriptorSetLayout, createDescriptorSet;
+import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorData;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
-import reflection : createResources;
-import swapchain : createImageView;
-import shaders : loadShaders;
-import ssbo : updateSSBO;
+import shaders : loadShaders, createStageInfo;
+import ssbo : updateSSBO, createSSBO;
 import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
 import textures : idx, registerTexture;
 import quaternion : xyzw;
-import uniforms : forEachUBO;
+import uniforms : createUBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
+import views : createImageView, createLayerViews;
 
-/** Compute structure with shaders, command buffer and pipelines
- */
+/** Compute structure with shaders, command buffer and pipelines */
 struct Compute {
   size_t lastTick;                      /// Last tick
   ParticleSystem system;                /// Particles
@@ -36,6 +34,22 @@ ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_gls
 void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
+
+  // UBO
+  app.providers["ParticleUniformBuffer"] = DescriptorProvider(
+    (ref a, ref d){ a.createUBO(d); },
+    (ref a, ref d, cmd){ a.updateComputeUBO(d, a.syncIndex); });
+
+  // SSBO
+  app.providers["lastFrame"] = DescriptorProvider(
+    (ref a, ref d){
+      a.createSSBO(d, a.compute.system.particles);
+      auto cmd = app.beginSingleTimeCommands(app.commandPool);
+      for(uint i = 0; i < app.framesInFlight; i++) { app.updateSSBO(cmd, a.compute.system.particles, d, i); }
+      app.endSingleTimeCommands(cmd, app.queue);
+    },
+    null);
+  app.providers["currentFrame"] = DescriptorProvider((ref a, ref d){ a.createSSBO(d, a.compute.system.particles); }, null);
 }
 
 /** Create the compute pipeline specified by the selectedShader */
@@ -43,11 +57,11 @@ void createComputePipeline(ref App app, Shader shader) {
   if(app.verbose) SDL_Log("createComputePipeline for Shader %s", toStringz(shader.path));
   app.compute.pipelines[shader.path] = GraphicsPipeline();
   app.layouts[shader.path] = app.createDescriptorSetLayout([shader]);
-  app.nameVulkanObject(app.layouts[shader.path], toStringz(format("[DESCRIPTORLAYOUT] %s", fromStringz(shader.path))), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+  app.nameVulkanObject(app.layouts[shader.path], cstr("[DESCRIPTORLAYOUT] %s", fromStringz(shader.path)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
 
   app.sets[shader.path] = createDescriptorSet(app.device, app.pools[Stage.COMPUTE], app.layouts[shader.path],  app.framesInFlight);
   for (uint i = 0; i < app.framesInFlight; i++) {
-    app.nameVulkanObject(app.sets[shader.path][i], toStringz(format("[DESCRIPTORSET] %s #%d", fromStringz(shader.path), i)), VK_OBJECT_TYPE_DESCRIPTOR_SET);
+    app.nameVulkanObject(app.sets[shader.path][i], cstr("[DESCRIPTORSET] %s #%d", fromStringz(shader.path), i), VK_OBJECT_TYPE_DESCRIPTOR_SET);
   }
   VkPipelineLayoutCreateInfo computeLayout = {
     sType : VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -56,11 +70,13 @@ void createComputePipeline(ref App app, Shader shader) {
     pNext : null
   };
   enforceVK(vkCreatePipelineLayout(app.device, &computeLayout, null, &app.compute.pipelines[shader.path].layout));
-  
+
+  ShaderStage stage = createStageInfo([shader], VK_PRIMITIVE_TOPOLOGY_POINT_LIST, Specialization.init);
+
   VkComputePipelineCreateInfo computeInfo = {
     sType : VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
     layout : app.compute.pipelines[shader.path].layout,
-    stage : shader.info,
+    stage : stage.info[0],
     pNext : null
   };
 
@@ -68,8 +84,8 @@ void createComputePipeline(ref App app, Shader shader) {
   enforceVK(vkCreateComputePipelines(app.device, null, 1, &computeInfo, null, &computePipeline));
   app.compute.pipelines[shader.path].set(computePipeline);
 
-  app.nameVulkanObject(app.compute.pipelines[shader.path].layout, toStringz(format("[LAYOUT] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
-  app.nameVulkanObject(app.compute.pipelines[shader.path].pipeline, toStringz(format("[PIPELINE] Compute %s", fromStringz(shader.path))), VK_OBJECT_TYPE_PIPELINE);
+  app.nameVulkanObject(app.compute.pipelines[shader.path].layout, cstr("[LAYOUT] Compute %s", fromStringz(shader.path)), VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+  app.nameVulkanObject(app.compute.pipelines[shader.path].pipeline, cstr("[PIPELINE] Compute %s", fromStringz(shader.path)), VK_OBJECT_TYPE_PIPELINE);
 
   if(app.verbose) SDL_Log("Compute pipeline [sel: %s] at: %p", toStringz(shader.path), app.compute.pipelines[shader.path].pipeline);
 
@@ -90,17 +106,7 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
   });
 }
 
-void transferToSSBO(ref App app, Descriptor descriptor) {
-  import commands : beginSingleTimeCommands, endSingleTimeCommands;
-
-  auto commandBuffer = app.beginSingleTimeCommands(app.commandPool);
-  for(uint i = 0; i < app.framesInFlight; i++) {
-    app.updateSSBO(commandBuffer, app.compute.system.particles, descriptor, i);
-  }
-  app.endSingleTimeCommands(commandBuffer, app.queue);
-}
-
-void updateComputeUBO(ref App app, uint syncIndex = 0){
+void updateComputeUBO(ref App app, Descriptor d, uint syncIndex) {
   size_t now = SDL_GetTicks();
   ParticleUniformBuffer buffer = {
     position:  app.compute.system.position.xyzw,
@@ -109,7 +115,7 @@ void updateComputeUBO(ref App app, uint syncIndex = 0){
     deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
   };
   app.compute.lastTick = now;
-  app.compute.shaders.forEachUBO((d) { memcpy(app.ubos[d.base].data[syncIndex], &buffer, d.bytes); });
+  memcpy(app.ubos[d.base][syncIndex].data, &buffer, d.bytes);
 }
 
 void createStorageImage(ref App app, Descriptor descriptor){
@@ -124,7 +130,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
 
   app.createImage(texture, texture.width, texture.height,
                   VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
-  texture.view = app.createImageView(texture.image, VK_FORMAT_R8G8B8A8_UNORM);
+  app.createLayerViews(texture, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
   app.nameImageBuffer(texture, "Compute Image");
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
@@ -139,35 +145,37 @@ void createStorageImage(ref App app, Descriptor descriptor){
   app.mainDeletionQueue.add((){ app.cleanup(texture); });
 }
 
-/** recordComputeCommandBuffer for syncIndex and the selected ComputeShader */
+/** recordComputeCommandBuffer for syncIndex and the selected ComputeShader 
+ * TODO: pipeline-agnostic recorder. Drop the =="cull.glsl"/buffer-name hardcoding + duplicated bind/dispatch;
+ * use ComputePass{pre, workItems, post} keyed by shader.path (like DescriptorProvider), recorder = scaffold only. */
 void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) {
   if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", toStringz(shader.path), syncIndex);
-  VkCommandBuffer cmdBuffer = app.compute.commands[shader.path][syncIndex];
-  enforceVK(vkResetCommandBuffer(cmdBuffer, 0));
+  auto cmd = app.compute.commands[shader.path][syncIndex];
+  auto pipeline = app.compute.pipelines[shader.path];
+  enforceVK(vkResetCommandBuffer(cmd, 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-  enforceVK(vkBeginCommandBuffer(cmdBuffer, &commandBufferInfo));
-  app.nameVulkanObject(cmdBuffer, toStringz(format("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex)), VK_OBJECT_TYPE_COMMAND_BUFFER);
+  enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
+  app.nameVulkanObject(cmd, cstr("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), syncIndex), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  pushLabel(cmdBuffer, toStringz(format("Compute: %s", baseName(fromStringz(shader.path)))), Colors.palegoldenrod);
+  pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
+  app.updateDescriptorData([shader], app.compute.commands[shader.path], syncIndex);
 
   if (baseName(fromStringz(shader.path)) == "cull.glsl") {
-    VkBuffer headBuf   = app.buffers["ClusterHeads"][0].buffer;
-    VkBuffer cursorBuf = app.buffers["ClusterCounter"][0].buffer;
+    VkBuffer headBuf = app.buffers["ClusterHeads"][syncIndex].buffer;
+    VkBuffer cursorBuf = app.buffers["ClusterCounter"][syncIndex].buffer;
 
-    vkCmdFillBuffer(cmdBuffer, headBuf, 0, VK_WHOLE_SIZE, 0xFFFFFFFF); // NIL
-    vkCmdFillBuffer(cmdBuffer, cursorBuf, 0, VK_WHOLE_SIZE, 0);
-    cmdBuffer.insertFillBarrier(headBuf);
-    cmdBuffer.insertFillBarrier(cursorBuf);
+    vkCmdFillBuffer(cmd, headBuf, 0, VK_WHOLE_SIZE, NIL);
+    vkCmdFillBuffer(cmd, cursorBuf, 0, VK_WHOLE_SIZE, 0);
+    cmd.insertFillBarrier(headBuf);
+    cmd.insertFillBarrier(cursorBuf);
 
-    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
-    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
 
-    uint nlights = cast(uint)app.lights.length;
-    vkCmdDispatch(cmdBuffer, cast(uint)ceil(cast(float)nlights / shader.groupCount[0]), 1, 1);
-
-    popLabel(cmdBuffer);
-    enforceVK(vkEndCommandBuffer(cmdBuffer));
+    vkCmdDispatch(cmd, cast(uint)ceil(cast(float)app.lights.length / shader.groupCount[0]), 1, 1);
+    popLabel(cmd);
+    enforceVK(vkEndCommandBuffer(cmd));
     return;
   }
 
@@ -178,27 +186,22 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(cmdBuffer, app.textures[idx].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+      app.transitionImageLayout(cmd, app.textures[idx].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
       nJobs[0] = app.textures[idx].width;
       nJobs[1] = app.textures[idx].height;
     }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
       nJobs[0] = app.buffers[shader.descriptors[d].base].nObjects;
       size = app.buffers[shader.descriptors[d].base].size;
-      if(shader.descriptors[d].base == "currentFrame") { 
-        src = app.buffers[shader.descriptors[d].base][syncIndex].buffer;
-      }
-      if(shader.descriptors[d].base == "lastFrame") { 
-        dst = app.buffers[shader.descriptors[d].base][syncIndex].buffer;
-      }
+      if(shader.descriptors[d].base == "currentFrame") { src = app.buffers[shader.descriptors[d].base][syncIndex].buffer; }
+      if(shader.descriptors[d].base == "lastFrame") { dst = app.buffers[shader.descriptors[d].base][syncIndex].buffer; }
     }
   }
 
   // Bind the compute pipeline
-  vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
+  vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
 
   // Bind the descriptor set containing the compute resources for the compute pipeline
-  vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, 
-                          app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
 
   // Execute the compute pipeline dispatch
   vkCmdDispatch(app.compute.commands[shader.path][syncIndex], cast(uint)ceil(nJobs[0] / shader.groupCount[0])
@@ -206,20 +209,20 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
                                                     , cast(uint)ceil(nJobs[2] / shader.groupCount[2]));
 
   if (src && dst) {
-    cmdBuffer.insertWriteBarrier(dst);
+    cmd.insertWriteBarrier(dst);
     VkBufferCopy copyRegion = {size: size};
-    vkCmdCopyBuffer(cmdBuffer, src, dst, 1, &copyRegion);
-    cmdBuffer.insertReadBarrier(src);
+    vkCmdCopyBuffer(cmd, src, dst, 1, &copyRegion);
+    cmd.insertReadBarrier(src);
   }
 
   for(uint d = 0; d < shader.descriptors.length; d++) {
     if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
       uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(cmdBuffer, app.textures[idx].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      app.transitionImageLayout(cmd, app.textures[idx].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
   }
-  popLabel(cmdBuffer);
-  vkEndCommandBuffer(cmdBuffer);
+  popLabel(cmd);
+  vkEndCommandBuffer(cmd);
   if(app.trace) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
 }
 

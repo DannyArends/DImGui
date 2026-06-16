@@ -8,8 +8,7 @@ import engine;
 import extensions : loadInstanceExtensions, queryInstanceLayerProperties, queryInstanceExtensionProperties, has;
 import validation : createDebugUtils;
 
-/** Load instance extensions and create the Vulkan instance
- */
+/** Load instance extensions and create the Vulkan instance */
 void createInstance(ref App app){
   app.loadInstanceExtensions();
   auto layers = app.queryInstanceLayerProperties();

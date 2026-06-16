@@ -5,9 +5,11 @@
 
 import engine;
 
-import lights : updateLighting;
-import ssbo : updateSSBO;
+import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
+import ssbo : updateSSBO, createSSBO;
 import textures : idx;
+import uniforms : createUBO, updateRenderUBO;
+import shadow : updateShadowMapUBO;
 import validation : nameVulkanObject;
 
 enum DescriptorTarget { None, Textures, Shadow, HDR, Compute }
@@ -23,6 +25,12 @@ struct Descriptor {
   uint set;                 /// DescriptorSet
   uint binding;             /// DescriptorSet Binding
   uint count;               /// Descriptor count
+}
+
+struct DescriptorProvider {
+  void delegate(ref App, ref Descriptor) create; /// once, at resource creation
+  void delegate(ref App, ref Descriptor, VkCommandBuffer) onFrame; /// per pass per frame (null = none)
+  size_t lastFrame = size_t.max;
 }
 
 struct DescriptorLayoutBuilder {
@@ -72,7 +80,7 @@ VkDescriptorSetLayout createDescriptorSetLayout(ref App app, Shader[] shaders) {
   DescriptorLayoutBuilder builder;
   foreach(shader; shaders) {
     foreach(descriptor; shader.descriptors) {
-      if(app.verbose) SDL_Log(toStringz(format("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type)));
+      if(app.verbose) SDL_Log(cstr("[%d] cnt: %d = %s %s", descriptor.binding, descriptor.count, shader.stage, descriptor.type));
       builder.add(descriptor.binding, descriptor.count, shader.stage, descriptor.type);
     }
   }
@@ -121,7 +129,7 @@ void createImGuiDescriptorSetLayout(ref App app) {
   DescriptorLayoutBuilder builder;
   builder.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   app.layouts[Stage.IMGUI] = builder.build(app.device);
-  app.nameVulkanObject(app.layouts[Stage.IMGUI], toStringz(format("[DESCRIPTOR] Layout %s", Stage.IMGUI)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+  app.nameVulkanObject(app.layouts[Stage.IMGUI], cstr("[DESCRIPTOR] Layout %s", Stage.IMGUI), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
 
   app.mainDeletionQueue.add((){ vkDestroyDescriptorSetLayout(app.device, app.layouts[Stage.IMGUI], app.allocator); });
 }
@@ -155,37 +163,65 @@ VkDescriptorSet[] createDescriptorSet(VkDevice device, VkDescriptorPool pool, Vk
   return(set);
 }
 
-void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, VkDescriptorType type, uint syncIndex) {
+/** Register creators for the render SSBOs */
+void registerRenderProviders(ref App app) {
+  // UBO
+  app.providers["UniformBufferObject"] = DescriptorProvider(
+    (ref a, ref d){ a.createUBO(d); },
+    (ref a, ref d, cmd){ a.updateRenderUBO(d, a.syncIndex); });
+  app.providers["LightSpaceMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createUBO(d); },
+    (ref a, ref d, cmd){ a.updateShadowMapUBO(d, a.syncIndex); });
+  // SSBO
+  app.providers["BoneMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.boneOffsets); },
+    (ref a, ref d, cmd){ a.updateSSBO!Matrix(cmd, a.boneOffsets, d, a.syncIndex); });
+  app.providers["LightMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.lights); },
+    (ref a, ref d, cmd){ a.updateSSBO!Light(cmd, a.lights, d, a.syncIndex); });
+  app.providers["MeshMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.meshes); },
+    (ref a, ref d, cmd){ a.updateSSBO!Mesh(cmd, a.meshes, d, a.syncIndex); });
+  app.providers["MaterialBuffer"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.materials); },
+    (ref a, ref d, cmd){ a.updateSSBO!Material(cmd, a.materials, d, a.syncIndex); });
+
+  app.providers["ClusterLights"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, true); }, null);
+  app.providers["ClusterHeads"] = DescriptorProvider(
+    (ref a, ref d){
+      a.createSSBO(d, CLUSTER_COUNT, true);
+      auto cmd = a.beginSingleTimeCommands(a.commandPool);
+      foreach(i; 0 .. a.buffers[d.base].length){ vkCmdFillBuffer(cmd, a.buffers[d.base][i].buffer, 0, VK_WHOLE_SIZE, NIL); }
+      a.endSingleTimeCommands(cmd, a.queue);
+    },
+    null);
+  app.providers["ClusterCounter"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, 1, false); }, null);
+}
+
+void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, uint syncIndex) {
   Descriptor[string] elements;
-  foreach(shader; shaders){
-    for(uint d = 0; d < shader.descriptors.length; d++) {
-      if(!(shader.descriptors[d].base in elements)) elements[shader.descriptors[d].base] = shader.descriptors[d];
-    }
-  }
-  if("BoneMatrices" in elements) {
-    app.updateSSBO!Matrix(cmdBuffer[syncIndex], app.boneOffsets, elements["BoneMatrices"], syncIndex);
-  }
-  if("MeshMatrices" in elements) {
-    app.updateSSBO!Mesh(cmdBuffer[syncIndex], app.meshes, elements["MeshMatrices"], syncIndex);
-  }
-  if("MaterialBuffer" in elements) {
-    app.updateSSBO!Material(cmdBuffer[syncIndex], app.materials, elements["MaterialBuffer"], syncIndex);
-  }
-  if("LightMatrices" in elements) { // TODO: Hoist the light SSBO upload to the CPU phase, leave binding per-pass,
-    app.updateLighting(cmdBuffer[syncIndex], elements["LightMatrices"]);
-  }
+  foreach(shader; shaders){ foreach(ref d; shader.descriptors){
+    if(!(d.base in elements)){ elements[d.base] = d; }
+  } }
+  foreach(base, ref d; elements){ if(auto p = base in app.providers) { if(p.onFrame) {
+    if(p.lastFrame == app.totalFramesRendered) continue;
+    p.lastFrame = app.totalFramesRendered;
+    p.onFrame(app, d, cmdBuffer[syncIndex]);
+  } } }
 }
 
 /** Create our DescriptorSet (UBO and Combined image sampler) */
 void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER) {
   if(app.verbose) SDL_Log("createDescriptors: %d pipeline", stage);
   app.layouts[stage] = app.createDescriptorSetLayout(shaders);
-  app.nameVulkanObject(app.layouts[stage], toStringz(format("[DESCRIPTORLAYOUT] %s", stage)), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+  app.nameVulkanObject(app.layouts[stage], cstr("[DESCRIPTORLAYOUT] %s", stage), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
   app.sets[stage] = createDescriptorSet(app.device, app.pools[stage], app.layouts[stage],  app.framesInFlight);
 
   for (uint i = 0; i < app.framesInFlight; i++) {
     app.updateDescriptorSet(shaders, app.sets[stage], i);
-    app.nameVulkanObject(app.sets[stage][i], toStringz(format("[DESCRIPTORSET] %s #%d", stage, i)), VK_OBJECT_TYPE_DESCRIPTOR_SET);
+    app.nameVulkanObject(app.sets[stage][i], cstr("[DESCRIPTORSET] %s #%d", stage, i), VK_OBJECT_TYPE_DESCRIPTOR_SET);
   }
 
   app.swapDeletionQueue.add((){ 
@@ -204,17 +240,18 @@ VkWriteDescriptorSet makeWrite(VkDescriptorSet dst, uint binding, VkDescriptorTy
   return set;
 }
 
-void append(T)(ref VkDescriptorImageInfo[] infos, T[] images, VkSampler sampler, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-  foreach(ref img; images){ infos ~= VkDescriptorImageInfo(sampler, img.view, layout); }
+void append(T)(ref VkDescriptorImageInfo[] infos, T[] images, VkSampler sampler, uint layer = 0, 
+               VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+  foreach(ref img; images){ infos ~= VkDescriptorImageInfo(sampler, img.view(layer), layout); }
 }
 
 /** Populate imageInfos for a given descriptor target */
 void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descriptor d) {
   final switch(d.target) {
     case DescriptorTarget.Textures: imageInfos.append(app.textures.textures, app.sampler); break;
-    case DescriptorTarget.Shadow: imageInfos.append(app.shadows.images, app.shadows.sampler); break;
+    case DescriptorTarget.Shadow: imageInfos.append(app.shadows.images, app.shadows.sampler, 1); break;
     case DescriptorTarget.HDR: imageInfos.append([app.resolvedHDR], app.sampler); break;
-    case DescriptorTarget.Compute: imageInfos.append([app.textures[app.textures.idx(d.name)]], app.sampler, VK_IMAGE_LAYOUT_GENERAL); break;
+    case DescriptorTarget.Compute: imageInfos.append([app.textures[app.textures.idx(d.name)]], app.sampler, 0, VK_IMAGE_LAYOUT_GENERAL); break;
     case DescriptorTarget.None: break;
   }
 }
@@ -252,7 +289,7 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[]
   // Uniform Buffer Write
   if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
     if(app.verbose) SDL_Log("writeDescriptor UBO[%s] #%d", toStringz(d.base), syncIndex);
-    bufferInfos ~= VkDescriptorBufferInfo(app.ubos[d.base].buffers[syncIndex], 0, d.bytes);
+    bufferInfos ~= VkDescriptorBufferInfo(app.ubos[d.base][syncIndex].buffer, 0, d.bytes);
     write ~= makeWrite(dst, d.binding, d.type, null, null);
     infoIndex ~= bufferInfos.length - 1;
   }
@@ -276,7 +313,7 @@ void updateDescriptorSet(ref App app, Shader[] shaders, VkDescriptorSet[] dstSet
 
   foreach(shader; shaders) {
     foreach(d; shader.descriptors) {
-      if(app.trace) { SDL_Log(toStringz(format("- Descriptor[%d]: '%s'", d.binding, d))); }
+      if(app.trace) { SDL_Log(cstr("- Descriptor[%d]: '%s'", d.binding, d)); }
       app.writeDescriptor(descriptorWrites, infoIndex, bufferInfos, imageInfos, d, dstSet[syncIndex], syncIndex);
     }
   }

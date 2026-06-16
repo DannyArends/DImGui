@@ -75,10 +75,12 @@ uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPr
   assert(0, "Failed to find suitable memory type");
 }
 
-@nogc bool hasStencilComponent(VkFormat format) nothrow {
-  return format == VK_FORMAT_D32_SFLOAT_S8_UINT  || 
-         format == VK_FORMAT_D24_UNORM_S8_UINT || 
-         format == VK_FORMAT_D16_UNORM_S8_UINT;
+@nogc bool hasStencilComponent(VkFormat f) nothrow {
+  return(f == VK_FORMAT_D32_SFLOAT_S8_UINT  || f == VK_FORMAT_D24_UNORM_S8_UINT || f == VK_FORMAT_D16_UNORM_S8_UINT);
+}
+
+@nogc bool isDepth(VkFormat f) nothrow {
+  return(f == VK_FORMAT_D32_SFLOAT || f == VK_FORMAT_D32_SFLOAT_S8_UINT || f == VK_FORMAT_D24_UNORM_S8_UINT);
 }
 
 void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDeviceSize size, 

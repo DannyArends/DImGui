@@ -73,7 +73,7 @@ extern (C) shaderc_include_result* includeResolve(void* userData, const(char)* s
 
   if (type == shaderc_include_type_relative) {
     path = format("%s/%s", dirName(fromStringz(reqSource)), fromStringz(source));
-    if(context.verbose) SDL_Log(toStringz(format("Shader include: %s", path)));
+    if(context.verbose) SDL_Log(cstr("Shader include: %s", path));
     code = readFile(toStringz(path), context.verbose);
   }
   context.includedFiles[path] = code;
@@ -92,7 +92,7 @@ extern (C) void includeRelease(void* userData, shaderc_include_result* result) {
   auto context = cast(IncluderContext*)userData;
   if (result) {
     string path = to!string(result.source_name[0..result.source_name_length]);
-    if(context.verbose) SDL_Log(toStringz(format("Shader release: %s", path)));
+    if(context.verbose) SDL_Log(cstr("Shader release: %s", path));
     context.includedFiles.remove(path);
     free(result);
   }
@@ -122,7 +122,7 @@ Shader createShaderModule(App app, string path, shaderc_shader_kind type = shade
   };
 
   enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shader.shaderModule));
-  app.nameVulkanObject(shader.shaderModule, toStringz(format("[SHADER] %s", fromStringz(path))), VK_OBJECT_TYPE_SHADER_MODULE);
+  app.nameVulkanObject(shader.shaderModule, cstr("[SHADER] %s", fromStringz(path)), VK_OBJECT_TYPE_SHADER_MODULE);
 
   shader.info = createShaderStageInfo(convert(type), shader);
 
@@ -143,32 +143,40 @@ VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stag
   ));
 }
 
-// Keep this original (for shadow, post, and the default scene call):
+/** Build non-specialized pipeline stage infos from shaders (for shadow, post, and the default scene call) */
 VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders) {
   VkPipelineShaderStageCreateInfo[] info;
   foreach(shader; shaders){ info ~= shader.info; }
   return(info);
 }
 
-/** Build pipeline stage infos from shaders, overriding the fragment stage with ALPHA_TEST = alphaTest.
- *  Returns stages plus the spec data they point to (kept alive by the caller). */
-VkPipelineShaderStageCreateInfo[] createStageInfo(Shader[] shaders, ref VkSpecializationInfo specInfo,
-                                                                    ref VkSpecializationMapEntry[] mapEntry,
-                                                                    ref uint[] flags, VkPrimitiveTopology topology, Specialization s) {
-  flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, s.instanced ? VK_TRUE : VK_FALSE ];
-  mapEntry = [
-    VkSpecializationMapEntry(0, 0 * uint.sizeof, uint.sizeof),   // LINE → fragment
-    VkSpecializationMapEntry(1, 1 * uint.sizeof, uint.sizeof),   // ALPHA_TEST → fragment
-    VkSpecializationMapEntry(2, 2 * uint.sizeof, uint.sizeof),   // INSTANCED  → vertex
-  ];
-  specInfo = VkSpecializationInfo(cast(uint)mapEntry.length, mapEntry.ptr, flags.length * uint.sizeof, flags.ptr);
+struct ShaderStage {
+  uint[] flags;
+  VkSpecializationMapEntry[] mapEntry;
+  VkSpecializationInfo* specInfo;
   VkPipelineShaderStageCreateInfo[] info;
-  foreach(shader; shaders){
-    auto stage = shader.info;
-    if(shader.stage == VK_SHADER_STAGE_VERTEX_BIT || shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT){ stage.pSpecializationInfo = &specInfo; }
-    info ~= stage;
+}
+
+/** Build pipeline stage infos from shaders, using pipeline Topology and Specialization structure */
+ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Specialization s) {
+  ShaderStage stage;
+  stage.flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, s.instanced ? VK_TRUE : VK_FALSE, LIGHT_GRID[0], LIGHT_GRID[1], LIGHT_GRID[2] ];
+  stage.mapEntry = [
+    VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),  // LINE : fragment
+    VkSpecializationMapEntry(1, 1*uint.sizeof, uint.sizeof),  // ALPHA_TEST : fragment
+    VkSpecializationMapEntry(2, 2*uint.sizeof, uint.sizeof),  // INSTANCED  : vertex
+    VkSpecializationMapEntry(3, 3*uint.sizeof, uint.sizeof),  // GRID_X : compute & fragment
+    VkSpecializationMapEntry(4, 4*uint.sizeof, uint.sizeof),  // GRID_Y : compute & fragment
+    VkSpecializationMapEntry(5, 5*uint.sizeof, uint.sizeof),  // GRID_Z : compute & fragment
+  ];
+  stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
+
+  foreach(shader; shaders) {
+    auto spec = shader.info;
+    spec.pSpecializationInfo = stage.specInfo;
+    stage.info ~= spec;
   }
-  return(info);
+  return(stage);
 }
 
 /** Load shaders to dst using the specified shader definitions */

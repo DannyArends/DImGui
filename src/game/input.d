@@ -11,6 +11,7 @@ import ghost : updateGhostTile;
 import hits : getHits;
 import screenshot : saveScreenshot;
 import timing : timed;
+import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, updateHoverHighlight;
 
 /** Handle mouse events */
@@ -113,6 +114,7 @@ double handleEvents(ref GameApp app) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick();
     }
+    app.updateSun();
   }
 
   // Call all onFrame() handlers
