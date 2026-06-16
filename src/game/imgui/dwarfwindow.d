@@ -25,15 +25,6 @@ void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f
   }
 }
 
-/** Center the camera on a dwarf */
-void focusCamera(ref GameApp app, const int[3] tile) {
-  auto old = app.camera.lookat;
-  app.camera.lookat = app.world.tileToWorld(tile);
-  app.camera.isDirty = true;
-  if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position))
-    app.camera.lookat = old;   // refuse if it would put the camera somewhere illegal
-}
-
 /** Human-readable state label */
 string dwarfStatus(ref Dwarf d) {
   switch(d.state) {
@@ -88,8 +79,7 @@ void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
   dwarfGlyph(d); igSameLine(0, 5);
   if(igSelectable_Bool(cstr("%s##follow", d.name), 0, 0, ImVec2(0, 0))) { 
     app.camera.onFrame = (dt) {
-      app.camera.lookat = d.visualPos; app.camera.isDirty = true;
-      app.world.dwarves.selected = selected; // TODO: Decide if we really need this
+      app.camera.lookat = app.world.dwarves.dwarves[selected].visualPos; app.camera.isDirty = true;
     };
   }
   text("Tile: %s", d.tile);
