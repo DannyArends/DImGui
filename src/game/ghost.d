@@ -39,7 +39,7 @@ int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
 
 void updateGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   if(app.world.inventory.activeTool != ToolMode.Build) return;
-  int[3] newTile = app.world.inventory.type == ResourceType.None ? noTile : app.getGhostTile(ray, hits);
+  int[3] newTile = app.getGhostTile(ray, hits);
   if(newTile == app.world.inventory.tile) return;
   app.world.inventory.tile = newTile;
   app.syncBuildGhosts();
@@ -59,7 +59,6 @@ void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
 void syncCursorGhost(ref GameApp app) {
   if(app.world.inventory.activeTool != ToolMode.Build) return;
   if(app.world.inventory.tile == noTile) return;
-  if(app.world.inventory.type == ResourceType.None) return;
   auto wp = app.world.tileToWorld(app.world.inventory.tile);
   app.world.inventory.instances ~= DrawInstance(app.world.inventory.cachedMatIdx, buildHighlight(wp, app.world.tileSize, app.world.tileHeight));
 }
