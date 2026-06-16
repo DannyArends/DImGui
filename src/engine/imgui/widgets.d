@@ -57,10 +57,7 @@ bool setting(T)(string label, ref T v, T min, T max, float width = 150, float ui
 bool setting(string label, ref bool v) { labelCol(toStringz(label)); return igCheckbox(toStringz("##" ~ label), &v); }
 
 /** label + read-only formatted value as a 2-column table row. */
-void infoRow(Args...)(string label, string fmt, Args a) {
-  labelCol(toStringz(label));
-  igText(toStringz(format(fmt, a)));
-}
+void infoRow(Args...)(string label, string fmt, Args a) { labelCol(toStringz(label)); text(fmt, a); }
 
 /** Render three inline scaled float sliders for a vec3 */
 void sliderFloat3(string[3] ids, float* x, float* y, float* z, float* min, float* max, float width, float uiscale) {
