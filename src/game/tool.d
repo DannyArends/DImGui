@@ -17,6 +17,17 @@ import vegetation : getBestVegetation;
 
 enum ToolMode : ubyte { Select, Mine, Build, Stockpile }
 
+struct Tool {
+  ToolMode mode;
+  string   icon;   /// FontAwesome glyph
+}
+
+immutable Tool[] tools = [
+  Tool(ToolMode.Select,    cast(string)ICON_FA_MAGNIFYING_GLASS),
+  Tool(ToolMode.Mine,      cast(string)ICON_FA_MOUND),
+  Tool(ToolMode.Stockpile, cast(string)ICON_FA_BOXES_STACKED),
+];
+
 struct PaintState {
   bool active = false;
   int[3] start = [int.min, 0, int.min];
