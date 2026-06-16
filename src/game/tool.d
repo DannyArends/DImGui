@@ -7,7 +7,7 @@ import game;
 
 import camera : castRay;
 import chunk : getBestTile;
-import ghost : syncBuildGhosts;
+import ghost : getGhostTile, syncBuildGhosts;
 import feature : hasFeature;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
@@ -148,8 +148,8 @@ void paintDrag(ref GameApp app, float[3][2] ray) {
 void handlePrimaryPress(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
   final switch(tools[app.world.inventory.activeTool].kind) {
-    case ToolKind.Query:      app.queryPress(ray); break;
-    case ToolKind.RayPaint:   app.paintPress(ray); break;
+    case ToolKind.Query: app.queryPress(ray); break;
+    case ToolKind.RayPaint: app.paintPress(ray); break;
     case ToolKind.BuildPaint: app.buildPress();    break;
   }
 }
@@ -158,8 +158,8 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
 void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
   final switch(tools[app.world.inventory.activeTool].kind) {
-    case ToolKind.Query:      break;
-    case ToolKind.RayPaint:   app.paintDrag(ray); break;
+    case ToolKind.Query: break;
+    case ToolKind.RayPaint: app.paintDrag(ray); break;
     case ToolKind.BuildPaint: app.buildDrag();    break;
   }
 }
@@ -167,8 +167,8 @@ void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
 /** Primary release: left up / finger up */
 void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
   final switch(tools[app.world.inventory.activeTool].kind) {
-    case ToolKind.Query:      break;
-    case ToolKind.RayPaint:   if(app.world.inventory.paint.active) app.commitPaint(); break;
+    case ToolKind.Query: break;
+    case ToolKind.RayPaint: if(app.world.inventory.paint.active) app.commitPaint(); break;
     case ToolKind.BuildPaint: if(app.world.inventory.paint.active) app.openBuildSelection(); break;
   }
 }
@@ -183,11 +183,20 @@ void handleSecondaryPress(ref GameApp app, float sx, float sy) {
 }
 
 void updateHoverHighlight(ref GameApp app, float sx, float sy) {
-  if(tools[app.world.inventory.activeTool].kind != ToolKind.RayPaint) return;
+  auto kind = tools[app.world.inventory.activeTool].kind;
+  if(kind == ToolKind.Query) return;
+
   auto ray = app.camera.castRay(sx, sy);
-  int[3] wc;
-  if(!app.getBestTile(ray, wc)) { app.world.inventory.paint.preview = []; app.syncBuildGhosts(); return; }
-  app.world.inventory.paint.preview = [wc];
+  int[3] wc; bool ok;
+  if(kind == ToolKind.BuildPaint) {
+    wc = app.getGhostTile(ray, app.getHits(ray, false));   // placement tile (above surface)
+    ok = (wc != noTile);
+    app.world.inventory.tile = ok ? wc : noTile;           // anchor for buildPress/buildDrag
+  } else {                                                 // RayPaint
+    ok = app.getBestTile(ray, wc);
+  }
+  if(!app.world.inventory.paint.active)                    // don't fight an active drag
+    app.world.inventory.paint.preview = ok ? [wc] : [];
   app.syncBuildGhosts();
 }
 
