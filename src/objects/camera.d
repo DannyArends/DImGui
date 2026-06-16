@@ -29,6 +29,7 @@ struct Camera {
   float           lastPinchDist = -1.0f;                  /// -1 = no active pinch
   bool            isDirty       = true;                   /// Camera moved/rotated this frame
   bool            godMode       = true;                   /// Move through walls
+  void delegate(float dt) onFrame;                        /// onFrame hook
 
   @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -speed]); }
   @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
@@ -50,6 +51,7 @@ struct Camera {
 
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
+  app.camera.onFrame = null;
   auto old = app.camera.lookat;
   app.camera.move(direction);
   if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.lookat = old;

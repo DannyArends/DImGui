@@ -120,7 +120,7 @@ double handleEvents(ref GameApp app) {
   // Call all onFrame() handlers
   float dt = app.paused ? 0.0f : app.timeScale * ((app.time[FRAMESTOP] - app.time[LASTFRAME]) / 1000.0f);
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
-
+  if(app.camera.onFrame !is null) app.camera.onFrame(dt);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }
   return(dt);
 }
