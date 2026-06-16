@@ -57,6 +57,24 @@ void selectObject(ref GameApp app, Intersection[] hits) {
   }
 }
 
+/** Begin a rectangular paint at the hovered tile (designation & zone tools) */
+void paintPress(ref GameApp app, float[3][2] ray) {
+  int[3] wc;
+  if(!app.getBestTile(ray, wc)) return;
+  app.world.inventory.paint.active = true;
+  app.world.inventory.paint.start = wc;
+  app.world.inventory.paint.preview = [wc];
+  app.syncBuildGhosts();
+}
+
+/** Extend the rectangular paint to the hovered tile */
+void paintDrag(ref GameApp app, float[3][2] ray) {
+  int[3] wc;
+  if(!app.world.inventory.paint.active) return;
+  if(!app.getBestTile(ray, wc)) return;
+  app.updatePaintPreview(wc);
+}
+
 /** Primary press: left click / single tap */
 void handlePrimaryPress(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
@@ -85,9 +103,9 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
         app.selectObject(hits);
       }
       break;
-    case ToolMode.Mine: break;
-    case ToolMode.Woodcut: break;
-    case ToolMode.Harvest: break;
+    case ToolMode.Mine: app.paintPress(ray); break;
+    case ToolMode.Woodcut: app.paintPress(ray); break;
+    case ToolMode.Harvest: app.paintPress(ray); break;
     case ToolMode.Build:
       if(app.world.inventory.tile != noTile && app.world.inventory.type != ResourceType.None) {
         app.world.inventory.paint.active = true;
@@ -96,13 +114,7 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
         app.syncBuildGhosts();
       }
       break;
-    case ToolMode.Stockpile:
-      if(!app.getBestTile(ray, wc)) break;
-      app.world.inventory.paint.active  = true;
-      app.world.inventory.paint.start = wc;
-      app.world.inventory.paint.preview = [wc];
-      app.syncBuildGhosts();
-      break;
+    case ToolMode.Stockpile: app.paintPress(ray); break;
   }
 }
 
@@ -113,20 +125,16 @@ void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
 
   final switch(app.world.inventory.activeTool) {
     case ToolMode.Select: break;
-    case ToolMode.Mine: break;
-    case ToolMode.Woodcut: break;
-    case ToolMode.Harvest: break;
+    case ToolMode.Mine: app.paintDrag(ray); break;
+    case ToolMode.Woodcut: app.paintDrag(ray); break;
+    case ToolMode.Harvest: app.paintDrag(ray); break;
     case ToolMode.Build:
       if(!app.world.inventory.paint.active) break;
       if(app.world.inventory.tile == noTile) break;
       app.computeDragPreview(app.world.inventory.paint.start, app.world.inventory.tile);
       app.syncBuildGhosts();
       break;
-    case ToolMode.Stockpile:
-        if(!app.world.inventory.paint.active) break;
-        if(!app.getBestTile(ray, wc)) break;
-        app.updatePaintPreview(wc);
-      break;
+    case ToolMode.Stockpile: app.paintDrag(ray); break;
   }
 }
 
@@ -134,9 +142,9 @@ void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
 void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
   final switch(app.world.inventory.activeTool) {
     case ToolMode.Select: break;
-    case ToolMode.Mine: break;
-    case ToolMode.Woodcut: break;
-    case ToolMode.Harvest: break;
+    case ToolMode.Mine: if(app.world.inventory.paint.active) app.commitPaint(); break;
+    case ToolMode.Woodcut: if(app.world.inventory.paint.active) app.commitPaint(); break;
+    case ToolMode.Harvest: if(app.world.inventory.paint.active) app.commitPaint(); break;
     case ToolMode.Build:
       if(app.world.inventory.paint.active) {
         foreach(tile; app.world.inventory.paint.preview) { app.placeTile(tile); }
@@ -144,9 +152,7 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
         app.syncBuildGhosts();
       } else if(app.world.inventory.tile != noTile) { app.placeTile(app.world.inventory.tile); }
       break;
-    case ToolMode.Stockpile:
-      if(app.world.inventory.paint.active) app.commitPaint();
-      break;
+    case ToolMode.Stockpile: if(app.world.inventory.paint.active) app.commitPaint(); break;
   }
 }
 
@@ -154,21 +160,19 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
 void handleSecondaryPress(ref GameApp app, float sx, float sy) {
   final switch(app.world.inventory.activeTool) {
     case ToolMode.Select: break;
-    case ToolMode.Mine: break;
-    case ToolMode.Woodcut: break;
-    case ToolMode.Harvest: break;
+    case ToolMode.Mine: app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
+    case ToolMode.Woodcut: app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
+    case ToolMode.Harvest: app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
     case ToolMode.Build:
       app.world.inventory.type = ResourceType.None;
       break;
-    case ToolMode.Stockpile:
-      app.world.inventory.paint = PaintState.init;
-      app.syncBuildGhosts();
-      break;
+    case ToolMode.Stockpile: app.world.inventory.paint = PaintState.init; app.syncBuildGhosts(); break;
   }
 }
 
 void updateHoverHighlight(ref GameApp app, float sx, float sy) {
-  if(app.world.inventory.activeTool != ToolMode.Mine && app.world.inventory.activeTool != ToolMode.Stockpile) return;
+  auto t = app.world.inventory.activeTool;
+  if(t != ToolMode.Mine && t != ToolMode.Woodcut && t != ToolMode.Harvest && t != ToolMode.Stockpile) return;
   auto ray = app.camera.castRay(sx, sy);
   int[3] wc;
   if(!app.getBestTile(ray, wc)) { app.world.inventory.paint.preview = []; app.syncBuildGhosts(); return; }
