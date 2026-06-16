@@ -75,13 +75,20 @@ void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
 }
 
 /** Detailed sheet for the selected dwarf */
-void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
-  dwarfGlyph(d); igSameLine(0, 5);
-  if(igSelectable_Bool(cstr("%s##follow", d.name), 0, 0, ImVec2(0, 0))) { 
+void followDwarf(ref GameApp app, size_t uid) {
+  if(app.camera.onFrame !is null) { app.camera.onFrame = null; // a follow was on -> turn it off
+  } else {
     app.camera.onFrame = (dt) {
-      app.camera.lookat = app.world.dwarves.dwarves[selected].visualPos; app.camera.isDirty = true;
+      foreach(ref dw; app.world.dwarves.dwarves){ if(dw.uid == uid) { app.camera.lookat = dw.visualPos; app.camera.isDirty = true; return; } }
+      app.camera.onFrame = null;
     };
   }
+}
+
+/** Detailed sheet for the selected dwarf */
+void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
+  dwarfGlyph(d); igSameLine(0, 5);
+  if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followDwarf(d.uid); }
   text("Tile: %s", d.tile);
   text("Hunger: %.0f", d.hunger * 100.0f);
   text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
