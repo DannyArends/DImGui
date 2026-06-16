@@ -21,6 +21,7 @@ public import resources : ResourceT;
 public import world : World, WorldData;
 
 import block : settleBlocks;
+import buildwindow : showBuildContent;
 import chunk : buildChunkData, finalizeChunk;
 import dwarf : spawnDwarf, loadDwarfs;
 import dwarfwindow : showDwarfContent;
@@ -80,6 +81,7 @@ void initGame(ref GameApp app) {
   app.updateSun();
   SDL_Log("initGame: gameWindows");
   app.gameWindows ~= GameWindow("##toolbar", (uint font){ app.showToolbar(font); }, true, false, true);
+  app.gameWindows ~= GameWindow("##buildselect", (uint font){ app.showBuildContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
