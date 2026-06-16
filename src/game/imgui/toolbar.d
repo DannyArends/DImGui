@@ -4,6 +4,8 @@
  */
 
 import game;
+
+import color : asIm;
 import imgui : faIcon;
 import tool : tools;
 
@@ -29,7 +31,7 @@ void showToolbar(ref GameApp app, uint font = 0) {
   igBegin("##toolbar", null, flags);
   foreach(i, ref t; tools) {
     bool active = app.world.inventory.activeTool == t.mode;
-    igPushStyleColor_Vec4(ImGuiCol_Text, active ? selected : unselected);
+    igPushStyleColor_Vec4(ImGuiCol_Text, active ? t.color.asIm() : unselected);
     if(igButton(faIcon(t.icon), ImVec2(36, 36))) {
       app.world.inventory.activeTool = t.mode;
       app.world.inventory.type = ResourceType.None;
