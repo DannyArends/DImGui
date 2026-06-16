@@ -67,7 +67,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
 /** Write content of a char[] to a file */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   path = fixPath(path);
-  version (Android) { path = toStringz(format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path))); }
+  version (Android) { path = cstr("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path)); }
   if(verbose) SDL_Log("writeFile: writing to '%s' (%d bytes)", path, content.length);
   SDL_IOStream* fp = SDL_IOFromFile(path, "w");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }

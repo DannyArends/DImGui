@@ -23,9 +23,9 @@ struct ImageBuffer {
 }
 
 void nameImageBuffer(ref App app, ImageBuffer buffer, string path){
-  app.nameVulkanObject(buffer.image, toStringz("[IMAGE] " ~ baseName(path)), VK_OBJECT_TYPE_IMAGE);
-  app.nameVulkanObject(buffer.memory, toStringz("[MEMORY] " ~ baseName(path)), VK_OBJECT_TYPE_DEVICE_MEMORY);
-  foreach(i, v; buffer.views) { app.nameVulkanObject(v, toStringz(format("[VIEW] %s #%d", baseName(path), i)), VK_OBJECT_TYPE_IMAGE_VIEW); }
+  app.nameVulkanObject(buffer.image, cstr("[IMAGE] %s", baseName(path)), VK_OBJECT_TYPE_IMAGE);
+  app.nameVulkanObject(buffer.memory, cstr("[MEMORY] %s", baseName(path)), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  foreach(i, v; buffer.views) { app.nameVulkanObject(v, cstr("[VIEW] %s #%d", baseName(path), i), VK_OBJECT_TYPE_IMAGE_VIEW); }
 }
 
 /** DeAllocate an ImageBuffer / Texture */
