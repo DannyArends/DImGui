@@ -34,6 +34,7 @@ import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
 import threading : TaskThread, drainMessages;
+import toolbar : showToolbar;
 import world : loadWorld, saveWorld, updateWorld;
 import worldwindow : showWorldContent;
 
@@ -78,6 +79,7 @@ void initGame(ref GameApp app) {
   SDL_Log("initGame: updateSun");
   app.updateSun();
   SDL_Log("initGame: gameWindows");
+  app.gameWindows ~= GameWindow("##toolbar", (uint font){ app.showToolbar(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
