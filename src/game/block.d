@@ -11,7 +11,7 @@ import matrix : translateScale, scale;
 import normals : computeTangents;
 import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset;
-import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile;
+import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
 enum uint noBlock = uint.max;
@@ -123,7 +123,7 @@ void syncStockpileInstances(ref GameApp app) {
       auto b = blockID in app.world.blocks;
       if(b is null) continue;
       auto meshName = resourceData(b.type).meshName;
-      int[3] tile   = sp.tiles[i / slotsPerTile];
+      int[3] tile   = sp.tiles[i / slotsPerTile].tileAbove;
       float[3] base = app.world.tileToWorld(tile, -app.world.blockOffset);
       float[3] off  = app.subCellOffset(cast(uint)(i % slotsPerTile));
       float[3] pos  = [base[0] + off[0], base[1] + off[1], base[2] + off[2]];
