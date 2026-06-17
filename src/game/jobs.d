@@ -128,13 +128,15 @@ Job miningJob(int[3] targetTile) {
 
 /** Store in stockpile */
 Job storeJob(int[3] fromTile, ResourceType type, int[3] toTile) {
-  return Job("Store", toTile, type, [pickupJob(fromTile, type)], false, [],
+  return Job("Store", toTile, type, [pickupJob(fromTile, type)],
     onArrive: (ref GameApp app, ref Dwarf d) {
-      auto id = app.useCarriedBlock(d, d.currentJob.tileType);
-      if(id != noBlock) app.storeBlockAt(d.currentJob.targetTile, id);
+      auto blockID = app.useCarriedBlock(d, d.currentJob.tileType);
+      if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
+      app.storeBlockAt(d.currentJob.targetTile, blockID);
       d.completeSubJob();
     },
-    onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); });
+    onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
+  );
 }
 
 /** Interact with features Job (gathering / woodcutting) */
@@ -334,11 +336,10 @@ void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {
     if(b.tile == noTile || b.tile == storedTile || b.tile == builtTile || b.reserved) continue;
-    auto type = b.type;
-    if(app.isSettled(id, type)) continue;
+    if(app.isSettled(id, b.type)) continue;
     int[3] dst;
-    uint sp = app.findStockpileSlot(type, d.tile, dst);
-    if(sp != 0) { app.dispatchJob(d, storeJob(b.tile, type, dst)); return true; }
+    uint sp = app.findStockpileSlot(b.type, d.tile, dst);
+    if(sp != 0) { app.dispatchJob(d, storeJob(b.tile, b.type, dst)); return true; }
   }
   return false;
 }
