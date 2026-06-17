@@ -95,7 +95,7 @@ ResourceType blockType(ref GameApp app, uint id) { auto b = id in app.world.bloc
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   if(d.carrying.any!(id => app.blockType(id) == j.tileType)) { j.state = JobState.Satisfied; return; }
-  auto id = app.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
+  uint id = j.blockIDs.length ? j.blockIDs[0] : app.findFreeBlock(d.tile, j.tileType);
   if(id == noBlock) { j.state = JobState.Unavailable; return; }
   j.blockIDs = [id];
   if(auto b = id in app.world.blocks) { b.reserved = true;
@@ -130,13 +130,18 @@ Job miningJob(int[3] targetTile) {
   );
 }
 
+/** A pickup bound to one specific block id (not "any block of type") */
+Job pinnedPickup(uint blockID, int[3] fromTile, ResourceType type) {
+  auto j = pickupJob(fromTile, type); j.blockIDs = [blockID]; return j;
+}
+
 /** Store in stockpile */
-Job storeJob(int[3] fromTile, ResourceType type, int[3] toTile) {
-  return Job("Store", toTile, type, [pickupJob(fromTile, type)],
+Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
+  return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)],
     onArrive: (ref GameApp app, ref Dwarf d) {
-      auto blockID = app.useCarriedBlock(d, d.currentJob.tileType);
-      if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
-      app.storeBlockAt(d.currentJob.targetTile, blockID);
+      auto picked = app.useCarriedBlock(d, d.currentJob.tileType);
+      if(picked == noBlock) { d.currentJob.onFail(app, d); return; }
+      app.storeBlockAt(d.currentJob.targetTile, picked);
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
@@ -334,12 +339,12 @@ void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1
 /** Try storing a block inot a stockpile */
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {
-    if(b.tile == noTile || b.tile == storedTile || b.tile == builtTile || b.reserved) continue;
-    if(!app.world.hasStandableNeighbour(b.tile)) continue;
+    if(b.tile == noTile || b.tile == builtTile || b.reserved) continue;
     if(app.isSettled(id, b.type)) continue;
+    if(b.tile != storedTile && !app.world.hasStandableNeighbour(b.tile)) continue;
     int[3] dst;
     uint sp = app.findStockpileSlot(b.type, d.tile, dst);
-    if(sp != 0) { app.dispatchJob(d, storeJob(b.tile, b.type, dst)); return true; }
+    if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.type, dst)); return true; }
   }
   return false;
 }
