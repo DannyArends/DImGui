@@ -9,7 +9,7 @@ import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
-import stockpile : isSettled, findStockpileSlot, storeBlock;
+import stockpile : isSettled, findStockpileSlot, storeBlock, storeBlockAt;
 import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied;
 import timing : timed;
 import vector : manhattan, manhattan2D;
@@ -128,10 +128,10 @@ Job miningJob(int[3] targetTile) {
 
 /** Store in stockpile */
 Job storeJob(int[3] fromTile, ResourceType type, uint stockpileID, int[3] toTile) {
-  return Job("Store", toTile, ResourceType.None, [pickupJob(fromTile, type)], false, [],
+  return Job("Store", toTile, type, [pickupJob(fromTile, type)], false, [],
     onArrive: (ref GameApp app, ref Dwarf d) {
-      auto id = app.useCarriedBlock(d, type);     // pull the carried block of this type
-      if(id != noBlock) app.storeBlock(stockpileID, id);
+      auto id = app.useCarriedBlock(d, d.currentJob.tileType);
+      if(id != noBlock) app.storeBlockAt(d.currentJob.targetTile, id);   // looks up stockpileAt
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); });
