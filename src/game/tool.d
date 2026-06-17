@@ -183,7 +183,7 @@ void handleSecondaryPress(ref GameApp app, float sx, float sy) { }
 void handleSecondaryRelease(ref GameApp app, float sx, float sy) {
   app.world.inventory.paint = PaintState.init;
   app.world.inventory.type = ResourceType.None;
-  app.world.inventory.activeTool = ToolMode.Info;
+  app.world.inventory.activeTool = ToolMode.Select;
   app.syncBuildGhosts();
 }
 
