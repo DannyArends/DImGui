@@ -55,16 +55,21 @@ void loadBlocks(ref GameApp app) {
 @nogc pure bool hasBlocks(ref GameApp app) nothrow { return app.world.blocks.length > 0; }
 @nogc pure bool hasBlocks(ref GameApp app, ResourceType tt) nothrow { return app.world.blocks.byValue.any!(b => b.type == tt); }
 
+/** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
+int[3] pickupTileFor(ref GameApp app, uint id, ref Block b, bool includeStored) {
+  if(b.reserved || b.tile == noTile || b.tile == builtTile) return noTile;
+  if(b.tile == storedTile) return includeStored ? app.storedTileOf(id) : noTile;
+  return app.world.isStandable(b.tile) ? b.tile : noTile;
+}
+
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
-uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = ResourceType.None) {
+uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
   uint bestID = noBlock;
   float bestDist = float.max;
   foreach(id, ref b; app.world.blocks) {
-    if(b.reserved || b.tile == noTile || b.tile == builtTile) continue;
     if(tt != ResourceType.None && b.type != tt) continue;
-    int[3] at = (b.tile == storedTile) ? app.storedTileOf(id) : b.tile;
+    int[3] at = app.pickupTileFor(id, b, includeStored);
     if(at == noTile) continue;
-    if(b.tile != storedTile && !app.world.isStandable(at)) continue;
     float dist = manhattan(at, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = id; }
   }

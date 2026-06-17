@@ -95,11 +95,11 @@ ResourceType blockType(ref GameApp app, uint id) { auto b = id in app.world.bloc
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   if(d.carrying.any!(id => app.blockType(id) == j.tileType)) { j.state = JobState.Satisfied; return; }
-  auto id = app.findFreeBlock(d.tile, j.tileType);
+  auto id = app.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
   if(id == noBlock) { j.state = JobState.Unavailable; return; }
   j.blockIDs = [id];
   if(auto b = id in app.world.blocks) { b.reserved = true;
-    j.targetTile = ((b.tile == storedTile) ? app.storedTileOf(id) : b.tile); return;
+    j.targetTile = ((b.tile == storedTile) ? app.storedTileOf(id).tileAbove : b.tile); return;
   }
   j.state = JobState.Unavailable;
 }
