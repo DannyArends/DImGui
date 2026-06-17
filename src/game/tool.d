@@ -127,20 +127,18 @@ void selectObject(ref GameApp app, Intersection[] hits) {
 
 /** Begin a rectangular paint at the hovered tile (designation & zone tools) */
 void paintPress(ref GameApp app, float[3][2] ray) {
-  int[3] wc;
-  if(!app.getBestTile(ray, wc)) return;
+  if(app.world.inventory.tile == noTile) return;
   app.world.inventory.paint.active = true;
-  app.world.inventory.paint.start = wc;
-  app.world.inventory.paint.preview = [wc];
+  app.world.inventory.paint.start = app.world.inventory.tile;
+  app.world.inventory.paint.preview = [app.world.inventory.tile];
   app.syncBuildGhosts();
 }
 
 /** Extend the rectangular paint to the hovered tile */
 void paintDrag(ref GameApp app, float[3][2] ray) {
-  int[3] wc;
   if(!app.world.inventory.paint.active) return;
-  if(!app.getBestTile(ray, wc)) return;
-  app.updatePaintPreview(wc);
+  if(app.world.inventory.tile == noTile) return;
+  app.updatePaintPreview(app.world.inventory.tile);   // same cell the hover ghost used
 }
 
 /** Primary press: left click / single tap */
