@@ -38,11 +38,11 @@ void handleMouseEvents(ref GameApp app, SDL_Event e) {
       auto dy = e.button.y - app.camera.lastMousePos[1];
       if((dx*dx + dy*dy) < 64) app.handleSecondaryRelease(e.button.x, e.button.y);  // tap, not a drag
     }
-    app.updateHoverHighlight(e.button.x, e.button.y);
+    app.updateHoverHighlight(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION) {
     if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel);
-    app.updateHoverHighlight(e.motion.x, e.motion.y);
+    app.updateHoverHighlight(ray);
     if(app.camera.isdrag[0]) app.handlePrimaryDrag(e.motion.x, e.motion.y);
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y);

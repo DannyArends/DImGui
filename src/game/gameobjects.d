@@ -68,7 +68,6 @@ class GhostCube : Cube {
   PendingBuild[] buildSelection;   /// Tiles awaiting a block-type choice
   bool showBuildWindow = false;    /// Build-type picker open
   int[3] tile = noTile;
-  int cachedMatIdx = -1;
 
   this(float[2] dim) {
     super(color: [1.0f, 1.0f, 1.0f, 1.0f]);

@@ -180,26 +180,21 @@ void handleSecondaryPress(ref GameApp app, float sx, float sy) { }
 void handleSecondaryRelease(ref GameApp app, float sx, float sy) {
   app.world.inventory.paint = PaintState.init;
   app.world.inventory.type = ResourceType.None;
-  app.world.inventory.cachedMatIdx = -1;
   app.world.inventory.activeTool = ToolMode.Info;
   app.syncBuildGhosts();
 }
 
-void updateHoverHighlight(ref GameApp app, float sx, float sy) {
+void updateHoverHighlight(ref GameApp app, float[3][2] ray) {
   auto kind = tools[app.world.inventory.activeTool].kind;
   if(kind == ToolKind.Query) return;
 
-  auto ray = app.camera.castRay(sx, sy);
   int[3] wc; bool ok;
   if(kind == ToolKind.BuildPaint) {
-    wc = app.getGhostTile(ray, app.getHits(ray, false));   // placement tile (above surface)
+    wc = app.getGhostTile(ray, app.getHits(ray, false)); // placement tile (above surface)
     ok = (wc != noTile);
-    app.world.inventory.tile = ok ? wc : noTile;           // anchor for buildPress/buildDrag
-  } else {                                                 // RayPaint
-    ok = app.getBestTile(ray, wc);
-  }
-  if(!app.world.inventory.paint.active)                    // don't fight an active drag
-    app.world.inventory.paint.preview = ok ? [wc] : [];
+    app.world.inventory.tile = ok ? wc : noTile; // anchor for buildPress/buildDrag
+  } else { ok = app.getBestTile(ray, wc); }
+  if(!app.world.inventory.paint.active) { app.world.inventory.paint.preview = ok ? [wc] : []; }
   app.syncBuildGhosts();
 }
 
