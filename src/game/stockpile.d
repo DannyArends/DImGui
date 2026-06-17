@@ -7,7 +7,7 @@ import game;
 
 import block : syncBlockInstances;
 import io : writeFile, readFile;
-import jobs : jobQueue, liveJobs;
+import jobs : jobQueue, liveJobs, blockType;
 import serialization : WORLD_MAGIC;
 import tile : tileToWorld, tileAbove, tileBelow, isStandable;
 import vector : sqDist;
@@ -90,6 +90,12 @@ void storeBlock(ref GameApp app, uint stockpileID, uint blockID) {
 bool isSettled(ref GameApp app, uint blockID, ResourceType type) {
   foreach(ref sp; app.world.stockpiles){ if(sp.acceptsType(type) && sp.contents.canFind(blockID)){ return true; } }
   return false;
+}
+
+uint countOf(ref GameApp app, ref Stockpile sp, ResourceType t) {
+  uint n = 0;
+  foreach(id; sp.contents){ if(app.blockType(id) == t) { n++; } }
+  return n;
 }
 
 bool withdrawBlock(ref GameApp app, uint blockID) {
