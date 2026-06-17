@@ -7,6 +7,7 @@ import game;
 
 import block : syncBlockInstances;
 import io : writeFile, readFile;
+import jobs : jobQueue;
 import serialization : writeData, readData, WORLD_MAGIC;
 import tile : tileToWorld, tileAbove, tileBelow, isStandable;
 import vector : sqDist;
