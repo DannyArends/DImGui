@@ -57,7 +57,7 @@ void loadBlocks(ref GameApp app) {
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
 int[3] pickupTileFor(ref GameApp app, uint id, ref Block b, bool includeStored) {
-  if(b.reserved || b.tile == noTile || b.tile == builtTile) return noTile;
+  if(b.reserved || b.isFalling || b.tile == noTile || b.tile == builtTile) return noTile;
   if(b.tile == storedTile) {
     if(!includeStored) return noTile;
     auto pt = app.storedTileOf(id);
@@ -111,7 +111,7 @@ void ensureBlocks(ref GameApp app) {
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   uint id = app.world.blockNextID++;
-  app.world.blocks[id] = Block(id, tt, tile, [app.world.tileToWorld(tile, -app.world.blockOffset)[1], 0.001f]);
+  app.world.blocks[id] = Block(id, tt, tile, [0.0f, 0.0f]);
   app.syncBlockInstances();
   return id;
 }
@@ -156,7 +156,9 @@ void syncBlockInstances(ref GameApp app) {
   foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances.buffered = false; }
 }
 
-/** Mark blocks above a mined tile as falling */
+/** Mark blocks above a mined tile as falling 
+ * TODO: Animate fall for dwarves using a Dwarf.fallState and settleDwarves(world, dt) updater:
+ * integrate velocity, land on surfaceAt, zero fallState, snap visualPos, clearGoal on land. */
 void unsettleBlocks(const World world, ref Block[uint] blocks, int[3] minedTile) {
   foreach(id, ref b; blocks) {
     if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;

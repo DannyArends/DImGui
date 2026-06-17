@@ -120,7 +120,7 @@ void claimNeighbour(ref GameApp app, ref Job j) {
 
 /** Mining Job */
 Job miningJob(int[3] targetTile) {
-  return Job("Mining", targetTile, ResourceType.None, [],
+  return Job("Mining", targetTile, ResourceType.None, [], reach: Reach.AdjacentOrAbove,
     isValid: (ref GameApp app, ref Job j){ return(app.world.getTileAt(j.targetTile) != ResourceType.None); },
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () {
@@ -169,7 +169,7 @@ Job interactFeatureJob(int[3] targetTile) {
 
 /** Pickup Job */
 Job pickupJob(int[3] targetTile, ResourceType tileType) {
-  return Job("Fetching", targetTile, tileType, [], true,
+  return Job("Fetching", targetTile, tileType, [], true, reach: Reach.AdjacentOrAbove,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref GameApp app, ref Dwarf d) { app.doPickup(d); },
     onFail: (ref GameApp app, ref Dwarf d) {
@@ -348,7 +348,7 @@ void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1
 /** Try storing a block inot a stockpile */
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {
-    if(b.tile == noTile || b.tile == builtTile || b.reserved) continue;
+    if(b.tile == noTile || b.tile == builtTile || b.reserved || b.isFalling) continue;
     if(app.isSettled(id, b.type)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     int[3] dst;
