@@ -106,7 +106,7 @@ void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
 
   b.reserved = true;
   j.blockIDs = [id];
-  j.targetTile = target;
+  j.targetTile = (b.tile == storedTile) ? target.tileAbove : target;
 }
 
 /** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
