@@ -10,7 +10,7 @@ import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
 import stockpile : isSettled, findStockpileSlot, storeBlock, storeBlockAt;
-import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied;
+import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour;
 import timing : timed;
 import vector : manhattan, manhattan2D;
 

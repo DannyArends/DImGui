@@ -9,7 +9,7 @@ import chunk : getBestTile;
 import game : GameApp;
 import vector : dot;
 import tool : tools, buildHighlight;
-import tile : tileIdx, tileToWorld;
+import tile : tileIdx, tileToWorld, tileAbove;
 import jobs : activeTiles;
 
 int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {

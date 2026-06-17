@@ -6,6 +6,8 @@
 import game;
 
 import block : syncBlockInstances;
+import io : writeFile, readFile;
+import serialization : writeData, readData, WORLD_MAGIC;
 import tile : tileToWorld, tileAbove, tileBelow, isStandable;
 import vector : sqDist;
 
@@ -17,6 +19,15 @@ struct Stockpile {
   uint[] contents;                // stored block ids (mixed)
 
   bool acceptsType(ResourceType t) const { return accepts.length == 0 || accepts.get(t, false); }
+}
+
+/** POD header per stockpile; variable-length parts follow in companion streams */
+struct StockpileRec {
+  uint id;
+  uint nameLen;
+  uint tileCount;
+  uint acceptCount;
+  uint contentCount;
 }
 
 enum subPerAxis = 4;                          // 1 / 0.25 (blockSize ratio)
@@ -83,4 +94,60 @@ float[3] subCellOffset(ref GameApp app, uint slot) {
   float bs = app.world.blockSize;
   uint sx = slot % subPerAxis, sy = (slot / subPerAxis) % subPerAxis, sz = slot / (subPerAxis*subPerAxis);
   return [(sx + 0.5f) * bs - app.world.tileSize * 0.5f, sy * bs, (sz + 0.5f) * bs - app.world.tileSize * 0.5f];
+}
+
+/** Serialize all stockpiles to one file (records + packed name/tiles/accepts/contents). */
+void saveStockpiles(ref GameApp app) {
+  if(app.world.stockpiles.length == 0) return;
+  ubyte[] blob;
+  blob ~= cast(ubyte[])([WORLD_MAGIC, app.world.nextStockpileID]);
+  blob ~= cast(ubyte[])([cast(uint)app.world.stockpiles.length]);
+  foreach(id, ref sp; app.world.stockpiles) {
+    uint[] acc;
+    foreach(t, on; sp.accepts) if(on) acc ~= cast(uint)t;
+    StockpileRec rec = { id: sp.id, nameLen: cast(uint)sp.name.length,
+                         tileCount: cast(uint)sp.tiles.length,
+                         acceptCount: cast(uint)acc.length,
+                         contentCount: cast(uint)sp.contents.length };
+    blob ~= cast(ubyte[])([rec]);
+    blob ~= cast(ubyte[])sp.name.dup;          // nameLen bytes
+    blob ~= cast(ubyte[])sp.tiles;             // tileCount * int[3]
+    blob ~= cast(ubyte[])acc;                  // acceptCount * uint
+    blob ~= cast(ubyte[])sp.contents;          // contentCount * uint
+  }
+  writeFile(app.world.stockpilePath(), cast(char[])blob);
+}
+
+/** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids). */
+void loadStockpiles(ref GameApp app) {
+  auto raw = cast(ubyte[])readFile(app.world.stockpilePath());
+  if(raw.length < 12) return;
+  auto u = cast(uint[])raw[0 .. 12];
+  if(u[0] != WORLD_MAGIC) { SDL_Log("loadStockpiles: bad magic"); return; }
+  app.world.nextStockpileID = u[1];
+  uint count = u[2];
+  size_t off = 12;
+
+  foreach(_; 0 .. count) {
+    auto rec = (cast(StockpileRec[])raw[off .. off + StockpileRec.sizeof])[0];
+    off += StockpileRec.sizeof;
+
+    string name = cast(string)(cast(char[])raw[off .. off + rec.nameLen]).idup;
+    off += rec.nameLen;
+
+    auto tiles = (cast(int[3][])raw[off .. off + rec.tileCount * int[3].sizeof]).dup;
+    off += rec.tileCount * int[3].sizeof;
+
+    auto acc = (cast(uint[])raw[off .. off + rec.acceptCount * uint.sizeof]).dup;
+    off += rec.acceptCount * uint.sizeof;
+
+    auto contents = (cast(uint[])raw[off .. off + rec.contentCount * uint.sizeof]).dup;
+    off += rec.contentCount * uint.sizeof;
+
+    Stockpile sp = { id: rec.id, name: name, tiles: tiles, contents: contents };
+    foreach(t; acc) sp.accepts[cast(ResourceType)t] = true;   // empty acc => accept-all (matches acceptsType)
+    app.world.stockpiles[rec.id] = sp;
+    foreach(t; tiles) app.world.stockpileAt[t] = rec.id;
+  }
+  SDL_Log("loadStockpiles: %d piles", cast(int)app.world.stockpiles.length);
 }
