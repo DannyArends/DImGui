@@ -28,6 +28,7 @@ struct Tool {
   Matrix function(float[3], float, float) matrix;   /// Matrix builder
   ToolKind kind;                                    /// Dispatch mechanism
   void function(ref GameApp, int[3]) commit;        /// Per-tile commit action (null = none
+  bool solidAnchor;                                 /// true = target the solid hit cell
 }
 
 immutable float os = 1.05f;
@@ -62,10 +63,10 @@ void openBuildSelection(ref GameApp app) {
 immutable Tool[] tools = [
   Tool(ToolMode.Info, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.black, null, ToolKind.Query, null),
   Tool(ToolMode.Select, cast(string)ICON_FA_ARROW_POINTER, Colors.hotpink, null, ToolKind.Query, null),
-  Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit),
-  Tool(ToolMode.Interact, cast(string)ICON_FA_TREE, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit),
-  Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null),
-  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null),
+  Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit, true),
+  Tool(ToolMode.Interact, cast(string)ICON_FA_TREE, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit, false),
+  Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null, false),
+  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null, true),
 ];
 
 /** Info: pick a dwarf/object for the sidebar */
@@ -182,9 +183,12 @@ void handleSecondaryRelease(ref GameApp app, float sx, float sy) {
 }
 
 void updateHoverHighlight(ref GameApp app, float[3][2] ray) {
-  if(tools[app.world.inventory.activeTool].kind == ToolKind.Query) return;
-  int[3] wc = app.getGhostTile(ray, app.getHits(ray, false));   // aimed empty/target cell
-  bool ok = (wc != noTile);
+  auto t = tools[app.world.inventory.activeTool];
+  if(t.kind == ToolKind.Query) return;
+  int[3] wc; bool ok;
+  if(t.solidAnchor){
+    ok = app.getBestTile(ray, wc);
+  } else { wc = app.getGhostTile(ray, app.getHits(ray, false)); ok = (wc != noTile); }
   app.world.inventory.tile = ok ? wc : noTile;
   if(!app.world.inventory.paint.active) app.world.inventory.paint.preview = ok ? [wc] : [];
   app.syncBuildGhosts();
