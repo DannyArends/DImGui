@@ -22,15 +22,6 @@ struct Stockpile {
   bool acceptsType(ResourceType t) const { return accepts.length == 0 || accepts.get(t, false); }
 }
 
-/** POD header per stockpile; variable-length parts follow in companion streams */
-struct StockpileRec {
-  uint id;
-  uint nameLen;
-  uint tileCount;
-  uint acceptCount;
-  uint contentCount;
-}
-
 enum subPerAxis = 4;                          // 1 / 0.25 (blockSize ratio)
 enum slotsPerTile = subPerAxis^^3;            // 64
 
@@ -119,55 +110,50 @@ float[3] subCellOffset(ref GameApp app, uint slot) {
 void saveStockpiles(ref GameApp app) {
   if(app.world.stockpiles.length == 0) return;
   ubyte[] blob;
-  uint[3] hdr = [cast(uint)WORLD_MAGIC, app.world.nextStockpileID, cast(uint)app.world.stockpiles.length];
-  blob ~= (cast(ubyte*)hdr.ptr)[0 .. hdr.sizeof];
-  blob ~= cast(ubyte[])([cast(uint)app.world.stockpiles.length]);
+  void put(uint[] xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * uint.sizeof]; }
+
+  put([cast(uint)WORLD_MAGIC, app.world.nextStockpileID, cast(uint)app.world.stockpiles.length]);
   foreach(id, ref sp; app.world.stockpiles) {
     uint[] acc;
     foreach(t, on; sp.accepts) if(on) acc ~= cast(uint)t;
-    StockpileRec rec = { id: sp.id, nameLen: cast(uint)sp.name.length,
-                         tileCount: cast(uint)sp.tiles.length,
-                         acceptCount: cast(uint)acc.length,
-                         contentCount: cast(uint)sp.contents.length };
-    blob ~= (cast(ubyte*)&rec)[0 .. StockpileRec.sizeof];
-    blob ~= cast(ubyte[])sp.name.dup;          // nameLen bytes
-    blob ~= cast(ubyte[])sp.tiles;             // tileCount * int[3]
-    blob ~= cast(ubyte[])acc;                  // acceptCount * uint
-    blob ~= cast(ubyte[])sp.contents;          // contentCount * uint
+    put([sp.id, cast(uint)sp.name.length, cast(uint)sp.tiles.length, cast(uint)acc.length, cast(uint)sp.contents.length]);
+    blob ~= cast(ubyte[])sp.name.dup;
+    blob ~= cast(ubyte[])sp.tiles;
+    put(acc);
+    put(sp.contents);
   }
   writeFile(app.world.stockpilePath(), cast(char[])blob);
 }
+
 
 /** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids). */
 void loadStockpiles(ref GameApp app) {
   auto raw = cast(ubyte[])readFile(app.world.stockpilePath());
   if(raw.length < 12) return;
-  auto u = cast(uint[])raw[0 .. 12];
-  if(u[0] != WORLD_MAGIC) { SDL_Log("loadStockpiles: bad magic"); return; }
-  app.world.nextStockpileID = u[1];
-  uint count = u[2];
-  size_t off = 12;
+  size_t off = 0;
+  bool need(size_t n) { return off + n <= raw.length; }
+  uint[] take(size_t n) { auto s = cast(uint[])raw[off .. off + n*uint.sizeof].dup; off += n*uint.sizeof; return s; }
+
+  auto hdr = take(3);
+  if(hdr[0] != WORLD_MAGIC) { SDL_Log("loadStockpiles: bad magic"); return; }
+  app.world.nextStockpileID = hdr[1];
+  uint count = hdr[2];
 
   foreach(_; 0 .. count) {
-    auto rec = (cast(StockpileRec[])raw[off .. off + StockpileRec.sizeof])[0];
-    off += StockpileRec.sizeof;
+    if(!need(5 * uint.sizeof)) { SDL_Log("loadStockpiles: truncated rec"); return; }
+    auto r = take(5);                       // id, nameLen, tileCount, acceptCount, contentCount
+    size_t nameN = r[1], tilesN = r[2] * int[3].sizeof;
+    if(!need(nameN + tilesN + (r[3] + r[4]) * uint.sizeof)) { SDL_Log("loadStockpiles: truncated body"); return; }
 
-    string name = cast(string)(cast(char[])raw[off .. off + rec.nameLen]).idup;
-    off += rec.nameLen;
+    string name = cast(string)(cast(char[])raw[off .. off + nameN]).idup; off += nameN;
+    auto tiles  = (cast(int[3][])raw[off .. off + tilesN]).dup;           off += tilesN;
+    auto acc    = take(r[3]);
+    auto contents = take(r[4]);
 
-    auto tiles = (cast(int[3][])raw[off .. off + rec.tileCount * int[3].sizeof]).dup;
-    off += rec.tileCount * int[3].sizeof;
-
-    auto acc = (cast(uint[])raw[off .. off + rec.acceptCount * uint.sizeof]).dup;
-    off += rec.acceptCount * uint.sizeof;
-
-    auto contents = (cast(uint[])raw[off .. off + rec.contentCount * uint.sizeof]).dup;
-    off += rec.contentCount * uint.sizeof;
-
-    Stockpile sp = { id: rec.id, name: name, tiles: tiles, contents: contents };
-    foreach(t; acc) sp.accepts[cast(ResourceType)t] = true;   // empty acc => accept-all (matches acceptsType)
-    app.world.stockpiles[rec.id] = sp;
-    foreach(t; tiles) app.world.stockpileAt[t] = rec.id;
+    Stockpile sp = { id: r[0], name: name, tiles: tiles, contents: contents };
+    foreach(t; acc) sp.accepts[cast(ResourceType)t] = true;
+    app.world.stockpiles[r[0]] = sp;
+    foreach(t; tiles) app.world.stockpileAt[t] = r[0];
   }
   SDL_Log("loadStockpiles: %d piles", cast(int)app.world.stockpiles.length);
 }
