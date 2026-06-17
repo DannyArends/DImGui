@@ -30,7 +30,6 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
                   ImVec4(0,0,0,0), tint);
     if(count > 0 && igIsItemClicked(0)) {
       app.world.inventory.type = selected ? ResourceType.None : tileType;
-      app.world.inventory.cachedMatIdx = selected ? -1 : cast(int)app.meshes[cast(int)tileType].mid;
       app.world.inventory.activeTool = selected ? ToolMode.Select : ToolMode.Build;
     }
     if(selected) igPopStyleColor(1);
