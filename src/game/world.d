@@ -137,11 +137,12 @@ void loadWorld(ref GameApp app) {
   app.objects ~= app.world.inventory.ghost;
 
   auto raw = readFile(app.world.worldPath());
-  if(raw.length < 8) return;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadWorld: invalid magic"); return; }
-  auto diffData = raw[8 .. $];
-  if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
-  app.world.data.rebuildDiffs(cast(TileDiff[])diffData.dup);
+  if(raw.length >= 8 && (cast(uint[])raw)[0] == WORLD_MAGIC) {
+    auto diffData = raw[8 .. $];
+    if(diffData.length % TileDiff.sizeof == 0){ app.world.data.rebuildDiffs(cast(TileDiff[])diffData.dup); }
+    else SDL_Log("loadWorld: corrupt diffs");
+  } else if(raw.length != 0) { SDL_Log("loadWorld: invalid magic"); }
+
   app.loadBlocks();
   foreach(ref ft; features) {
     if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
