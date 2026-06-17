@@ -9,6 +9,7 @@ import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
+import stockpile : isSettled, findStockpileSlot, storeBlock;
 import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied;
 import timing : timed;
 import vector : manhattan, manhattan2D;
@@ -126,11 +127,11 @@ Job miningJob(int[3] targetTile) {
 }
 
 /** Store in stockpile */
-Job storeJob(int[3] fromTile, uint blockID, uint stockpileID, int[3] toTile) {
-  return Job("Store", toTile, ResourceType.None, [pickupJob(fromTile, ResourceType.None, blockID)], false, [blockID],
+Job storeJob(int[3] fromTile, ResourceType type, uint stockpileID, int[3] toTile) {
+  return Job("Store", toTile, ResourceType.None, [pickupJob(fromTile, type)], false, [],
     onArrive: (ref GameApp app, ref Dwarf d) {
-      app.storeBlock(stockpileID, d.currentJob.blockIDs[0]);
-      d.use(app, d.currentJob.blockIDs[0]);      // remove from dwarf inventory
+      auto id = app.useCarriedBlock(d, type);     // pull the carried block of this type
+      if(id != noBlock) app.storeBlock(stockpileID, id);
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); });
@@ -329,14 +330,14 @@ void failAndRequeue(ref Dwarf d) {
 /** Fail the current job and requeue parent */
 void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1]; d.clearGoal(); }
 
-void tryStoreInStockpile(ref App app, ref Dwarf d) {
+void tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {
     if(b.tile == noTile || b.tile == storedTile || b.tile == builtTile || b.reserved) continue;
     auto type = b.type;
     if(app.isSettled(id, type)) continue;                       // already in an accepting pile
     int[3] dst;
     uint sp = app.findStockpileSlot(type, d.tile, dst);
-    if(sp != 0) { app.dispatchJob(d, storeJob(b.tile, id, sp, dst)); break; }
+    if(sp != 0) { app.dispatchJob(d, storeJob(b.tile, type, sp, dst)); break; }
   }
 }
 

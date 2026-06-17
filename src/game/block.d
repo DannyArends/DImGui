@@ -10,6 +10,7 @@ import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
 import normals : computeTangents;
 import serialization : readData, writeData;
+import stockpile : slotsPerTile, subCellOffset;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile;
 import vector : manhattan;
 
