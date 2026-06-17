@@ -60,7 +60,9 @@ void removeStockpile(ref GameApp app, uint id) {
 uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[3] tile) {
   uint best = 0; float bestD = float.max;
   foreach(id, ref sp; app.world.stockpiles) {
-    if(!sp.acceptsType(type) || !sp.hasFreeSlot) continue;
+    if(!sp.acceptsType(type)) continue;
+    uint pending = app.pendingStores(id);
+    if(sp.contents.length + pending >= sp.capacity) continue;
     foreach(t; sp.tiles) {
       if(!app.world.isStandable(t.tileAbove)) continue;
       auto d = sqDist(from, t.tileAbove);
@@ -70,6 +72,21 @@ uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[
   return best;
 }
 
+uint pendingStores(ref GameApp app, uint stockpileID) {
+  uint n = 0;
+  bool toThisPile(int[3] target) {
+    auto id = target.tileBelow in app.world.stockpileAt;
+    return(id !is null && *id == stockpileID);
+  }
+  foreach(ref j; jobQueue){ if(j.name == "Store" && toThisPile(j.targetTile)) { n++; } }
+  if(app.world.dwarves !is null) {
+    foreach(ref dw; app.world.dwarves.dwarves){ foreach(ref j; dw.jobStack) { 
+      if(j.name == "Store" && toThisPile(j.targetTile)){ n++; }
+    } }
+  }
+  return n;
+}
+
 void storeBlockAt(ref GameApp app, int[3] tile, uint blockID) {
   if(auto id = tile.tileBelow in app.world.stockpileAt) app.storeBlock(*id, blockID);
 }
@@ -77,6 +94,7 @@ void storeBlockAt(ref GameApp app, int[3] tile, uint blockID) {
 /** Park a carried block into a pile */
 void storeBlock(ref GameApp app, uint stockpileID, uint blockID) {
   if(auto sp = stockpileID in app.world.stockpiles) {
+    if(!hasFreeSlot(*sp)) return;
     sp.contents ~= blockID;
     if(auto b = blockID in app.world.blocks) b.tile = storedTile;
   }

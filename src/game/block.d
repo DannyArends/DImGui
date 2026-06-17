@@ -123,10 +123,12 @@ void syncStockpileInstances(ref GameApp app) {
       auto b = blockID in app.world.blocks;
       if(b is null) continue;
       auto meshName = resourceData(b.type).meshName;
-      int[3] tile   = sp.tiles[i / slotsPerTile].tileAbove;
+      auto ti = i / slotsPerTile;
+      if(ti >= sp.tiles.length) break;
+      int[3] tile = sp.tiles[ti].tileAbove;
       float[3] base = app.world.tileToWorld(tile, -app.world.blockOffset);
-      float[3] off  = app.subCellOffset(cast(uint)(i % slotsPerTile));
-      float[3] pos  = [base[0] + off[0], base[1] + off[1], base[2] + off[2]];
+      float[3] off = app.subCellOffset(cast(uint)(i % slotsPerTile));
+      float[3] pos = [base[0] + off[0], base[1] + off[1], base[2] + off[2]];
       b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
       app.world.dropMeshes[meshName].instances ~= DrawInstance(
         [cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color,
