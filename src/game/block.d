@@ -58,7 +58,11 @@ void loadBlocks(ref GameApp app) {
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
 int[3] pickupTileFor(ref GameApp app, uint id, ref Block b, bool includeStored) {
   if(b.reserved || b.tile == noTile || b.tile == builtTile) return noTile;
-  if(b.tile == storedTile) return includeStored ? app.storedTileOf(id) : noTile;
+  if(b.tile == storedTile) {
+    if(!includeStored) return noTile;
+    auto pt = app.storedTileOf(id); //  skip !isStandable piles
+    return (pt != noTile && app.world.isStandable(pt.tileAbove)) ? pt : noTile;
+  }
   return app.world.isStandable(b.tile) ? b.tile : noTile;
 }
 

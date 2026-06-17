@@ -141,14 +141,17 @@ Job pinnedPickup(uint blockID, int[3] fromTile, ResourceType type) {
 
 /** Store in stockpile */
 Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
-  return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)],
+  return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID],
     onArrive: (ref GameApp app, ref Dwarf d) {
       auto picked = app.useCarriedBlock(d, d.currentJob.tileType);
       if(picked == noBlock) { d.currentJob.onFail(app, d); return; }
       app.storeBlockAt(d.currentJob.targetTile, picked);
       d.completeSubJob();
     },
-    onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
+    onFail: (ref GameApp app, ref Dwarf d) {
+      foreach(id; d.currentJob.blockIDs) if(auto b = id in app.world.blocks) b.reserved = false;
+      d.completeSubJob();
+    }
   );
 }
 
