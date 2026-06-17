@@ -105,52 +105,44 @@ uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   return id;
 }
 
-DrawInstance toDropInstance(World world, uint id, ref Block b) {
-  auto rd = resourceData(b.type);
-  auto base = world.tileToWorld(b.tile, -world.blockOffset);
-  float sz = rd.dropScale * world.blockSize;
-  float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
-  float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
-  float[3] pos = [base[0] + bx, base[1], base[2] + bz];
-  return DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, [sz, sz, sz]));
+void emitBlock(ref Geometry mesh, uint id, ref Block b, float[3] pos, float[3] scale) {
+  b.instanceIdx = mesh.instances.length;
+  mesh.instances ~= DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, scale));
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */
-void syncStockpileInstances(ref GameApp app) {
-  float bs = app.world.blockSize;
-  foreach(ref sp; app.world.stockpiles) {
-    foreach(i, blockID; sp.contents) {
-      auto b = blockID in app.world.blocks;
-      if(b is null) continue;
-      auto meshName = resourceData(b.type).meshName;
-      auto ti = i / slotsPerTile;
-      if(ti >= sp.tiles.length) break;
-      int[3] tile = sp.tiles[ti].tileAbove;
-      float[3] base = app.world.tileToWorld(tile, -app.world.blockOffset);
-      float[3] off = app.subCellOffset(cast(uint)(i % slotsPerTile));
-      float[3] pos = [base[0] + off[0], base[1] + off[1], base[2] + off[2]];
-      b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
-      app.world.dropMeshes[meshName].instances ~= DrawInstance(
-        [cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color,
-        translateScale(pos, [bs, bs, bs]));
-    }
-  }
+void syncStockpileInstances(ref World world) {
+  float bs = world.blockSize;
+  foreach(ref sp; world.stockpiles) { foreach(i, blockID; sp.contents) {
+    auto b = blockID in world.blocks;
+    if(b is null) continue;
+    auto ti = i / slotsPerTile;
+    if(ti >= sp.tiles.length) break;
+    float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
+    float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
+    emitBlock(world.dropMeshes[resourceData(b.type).meshName], blockID, *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
+  } }
 }
 
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref GameApp app) {
   if(app.world.dropMeshes.length == 0) return;
-  foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
+  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances = []; }
   foreach(id, ref b; app.world.blocks) {
     auto meshName = resourceData(b.type).meshName;
-    bool hidden = b.tile == noTile || b.tile == builtTile || b.tile == storedTile || app.world.chunkCoord(b.tile) !in app.world.chunks;
-    b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
-    app.world.dropMeshes[meshName].instances ~= hidden
-      ? DrawInstance([cast(uint)b.type, cast(uint)b.type], Matrix().scale([0.0f, 0.0f, 0.0f]))
-      : app.world.toDropInstance(id, b);
+    bool hidden = (b.tile == noTile || b.tile == builtTile || b.tile == storedTile || app.world.chunkCoord(b.tile) !in app.world.chunks);
+    if(hidden) {
+      emitBlock(app.world.dropMeshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
+    } else {
+      auto base = app.world.tileToWorld(b.tile, -app.world.blockOffset);
+      float sz = resourceData(b.type).dropScale * app.world.blockSize;
+      float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
+      float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
+      emitBlock(app.world.dropMeshes[meshName], id, b, [base[0] + bx, base[1], base[2] + bz], [sz, sz, sz]);
+    }
   }
-  app.syncStockpileInstances();
-  foreach(ref mesh; app.world.dropMeshes.values) mesh.instances.buffered = false;
+  app.world.syncStockpileInstances();
+  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances.buffered = false; }
 }
 
 /** Mark blocks above a mined tile as falling */

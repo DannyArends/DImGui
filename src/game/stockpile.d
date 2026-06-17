@@ -94,8 +94,8 @@ bool isSettled(ref GameApp app, uint blockID, ResourceType type) {
 }
 
 /** Sub-cell world offset for the n-th block in a tile */
-float[3] subCellOffset(ref GameApp app, uint slot) {
-  immutable float bs = app.world.blockSize, half = app.world.tileSize * 0.5f;
+float[3] subCellOffset(ref World world, uint slot) {
+  immutable float bs = world.blockSize, half = world.tileSize * 0.5f;
   immutable uint sx = slot % subPerAxis, sy = (slot / subPerAxis) % subPerAxis, sz = slot / (subPerAxis^^2);
   return [(sx + 0.5f) * bs - half, sy * bs, (sz + 0.5f) * bs - half];
 }
