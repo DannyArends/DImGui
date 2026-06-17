@@ -95,13 +95,17 @@ ResourceType blockType(ref GameApp app, uint id) { auto b = id in app.world.bloc
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   if(d.carrying.any!(id => app.blockType(id) == j.tileType)) { j.state = JobState.Satisfied; return; }
-  uint id = j.blockIDs.length ? j.blockIDs[0] : app.findFreeBlock(d.tile, j.tileType);
-  if(id == noBlock) { j.state = JobState.Unavailable; return; }
+
+  uint id = j.blockIDs.length ? j.blockIDs[0] : app.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
+  auto b = (id == noBlock ? null : id in app.world.blocks);
+  if(b is null) { j.state = JobState.Unavailable; return; }
+
+  int[3] target = (b.tile == storedTile) ? app.storedTileOf(id) : b.tile;
+  if(target == noTile) { j.state = JobState.Unavailable; return; }   // stored-but-not-in-pile desync, or no tile
+
+  b.reserved = true;
   j.blockIDs = [id];
-  if(auto b = id in app.world.blocks) { b.reserved = true;
-    j.targetTile = ((b.tile == storedTile) ? app.storedTileOf(id).tileAbove : b.tile); return;
-  }
-  j.state = JobState.Unavailable;
+  j.targetTile = (b.tile == storedTile) ? target.tileAbove : target;
 }
 
 /** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
