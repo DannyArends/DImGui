@@ -15,8 +15,7 @@ import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handl
 
 /** Handle mouse events */
 void handleMouseEvents(ref GameApp app, SDL_Event e) {
-  app.camera.lastMousePos = [app.gui.io.MousePos.x, app.gui.io.MousePos.y];
-  auto ray = app.camera.castRay(app.camera.lastMousePos[0], app.camera.lastMousePos[1]);
+  auto ray = app.camera.castRay(app.gui.io.MousePos.x, app.gui.io.MousePos.y);
 
   if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
     if(e.button.button == SDL_BUTTON_LEFT) {
@@ -32,7 +31,7 @@ void handleMouseEvents(ref GameApp app, SDL_Event e) {
   }
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
     app.camera.isdrag[0] = false;
-    if(e.button.button == SDL_BUTTON_LEFT) app.handlePrimaryRelease(e.button.x, e.button.y);
+    if(e.button.button == SDL_BUTTON_LEFT){ app.handlePrimaryRelease(e.button.x, e.button.y); }
     if(e.button.button == SDL_BUTTON_RIGHT) {
       app.camera.isdrag[1] = false;
       auto dx = e.button.x - app.camera.lastMousePos[0];

@@ -64,7 +64,7 @@ immutable Tool[] tools = [
   Tool(ToolMode.Info, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.black, null, ToolKind.Query, null),
   Tool(ToolMode.Select, cast(string)ICON_FA_ARROW_POINTER, Colors.hotpink, null, ToolKind.Query, null),
   Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit),
-  Tool(ToolMode.Interact, cast(string)ICON_FA_HAND, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit),
+  Tool(ToolMode.Interact, cast(string)ICON_FA_TREE, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit),
   Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null),
   Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null),
 ];
