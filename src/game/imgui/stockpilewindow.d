@@ -7,13 +7,19 @@ import game;
 import std.string : stripRight;
 
 import imgui : iconText;
-import stockpile : Stockpile, capacity, removeStockpile;
+import stockpile : Stockpile, capacity, removeStockpile, countOf;
 import widgets : text, cTag, cNode;
 
 private bool ok(ref Stockpile sp, ResourceType t) { return sp.accepts.length == 0 || sp.accepts.get(t, false); }
 private void seed(ref Stockpile sp) { if(!sp.accepts.length) foreach(a; [EnumMembers!ResourceType]) if(a != ResourceType.None) sp.accepts[a] = true; }
 private string base(ResourceType t) { return resourceData(t).name.stripRight("0123456789_"); }
 private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on == total ? Colors.green : Colors.yellow; }
+
+/** Leaf label: "Name  (n)##id", count shown only when stocked. */
+private const(char)* leaf(ref GameApp app, ref Stockpile sp, ResourceType t, string label) {
+  uint n = app.countOf(sp, t);
+  return n > 0 ? cstr("%s  (%d)##%d", label, n, cast(int)t) : cstr("%s##%d", label, cast(int)t);
+}
 
 /** Walk types matching `keep`, set them all to `on`. */
 private void setAll(ref Stockpile sp, bool delegate(ResourceType) keep, bool on) {
@@ -25,7 +31,7 @@ private void tally(ref Stockpile sp, bool delegate(ResourceType) keep, out int t
   foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && keep(t)) { total++; if(sp.ok(t)) on++; }
 }
 
-private void acceptGroup(ref Stockpile sp, string label, bool buildable) {
+private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool buildable) {
   bool inGroup(ResourceType t) { return resourceData(t).buildable == buildable; }
   int gT, gOn; sp.tally(t => inGroup(t), gT, gOn);
   if(gT == 0) return;
@@ -40,9 +46,9 @@ private void acceptGroup(ref Stockpile sp, string label, bool buildable) {
     int bT, bOn; sp.tally(t => inBase(t), bT, bOn);
     igPushID_Str(b.toStringz);
     if(bT == 1) {                                            // single variant -> base name as leaf
-      foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && inBase(t) && cTag(cstr("%s##l", b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
+      foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && inBase(t) && cTag(app.leaf(sp, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
     } else if(cNode(cstr("%s##b", b), tri(bOn, bT), () => sp.setAll(t => inBase(t), bOn != bT))) {
-      foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && inBase(t) && cTag(cstr("  %s##%d", resourceData(t).name, cast(int)t), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
+      foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && inBase(t) && cTag(app.leaf(sp, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
       igTreePop();
     }
     igPopID();
@@ -59,8 +65,8 @@ void showStockpileContent(ref GameApp app, uint font = 0) {
     igPushID_Int(cast(int)id);
     igSeparator();
     text("%s   %d / %d", sp.name, cast(int)sp.contents.length, cast(int)sp.capacity);
-    acceptGroup(sp, "Blocks", true);
-    acceptGroup(sp, "Items", false);
+    app.acceptGroup(sp, "Blocks", true);
+    app.acceptGroup(sp, "Items", false);
     if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0,0))) toDelete ~= id;
     igPopID();
   }
