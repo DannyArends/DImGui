@@ -9,7 +9,7 @@ import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
-import stockpile : isSettled, findStockpileSlot, storeBlock, storeBlockAt;
+import stockpile : isSettled, findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock;
 import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour;
 import timing : timed;
 import vector : manhattan, manhattan2D;
@@ -98,7 +98,9 @@ void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   auto id = app.findFreeBlock(d.tile, j.tileType);
   if(id == noBlock) { j.state = JobState.Unavailable; return; }
   j.blockIDs = [id];
-  if(auto b = id in app.world.blocks) { b.reserved = true; j.targetTile = b.tile; return; }
+  if(auto b = id in app.world.blocks) { b.reserved = true;
+    j.targetTile = ((b.tile == storedTile) ? app.storedTileOf(id) : b.tile); return;
+  }
   j.state = JobState.Unavailable;
 }
 
@@ -292,6 +294,7 @@ void doPickup(ref GameApp app, ref Dwarf d) {
   if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
   if(auto b = blockID in app.world.blocks) {
     if(!d.pickup(blockID, b.type)) { d.currentJob.onFail(app, d); return; }
+    if(b.tile == storedTile) app.withdrawBlock(blockID);
     b.tile = noTile;
     d.completeSubJob();
     return;

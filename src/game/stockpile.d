@@ -88,9 +88,24 @@ void storeBlock(ref GameApp app, uint stockpileID, uint blockID) {
 
 /** Anti-reshuffle: a block already in an accepting pile is settled */
 bool isSettled(ref GameApp app, uint blockID, ResourceType type) {
-  foreach(ref sp; app.world.stockpiles)
-    if(sp.acceptsType(type) && sp.contents.canFind(blockID)) return true;
+  foreach(ref sp; app.world.stockpiles){ if(sp.acceptsType(type) && sp.contents.canFind(blockID)){ return true; } }
   return false;
+}
+
+bool withdrawBlock(ref GameApp app, uint blockID) {
+  foreach(ref sp; app.world.stockpiles) {
+    auto idx = sp.contents.countUntil(blockID);
+    if(idx >= 0) { sp.contents = sp.contents.remove(idx); return true; }
+  }
+  return false;
+}
+
+int[3] storedTileOf(ref GameApp app, uint blockID) {
+  foreach(ref sp; app.world.stockpiles) {
+    auto idx = sp.contents.countUntil(blockID);
+    if(idx >= 0){ return(sp.tiles[idx / slotsPerTile]); }
+  }
+  return(noTile);
 }
 
 /** Sub-cell world offset for the n-th block in a tile */

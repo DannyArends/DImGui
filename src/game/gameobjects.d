@@ -63,7 +63,7 @@ struct PendingBuild {
 
 class GhostCube : Cube {
   ResourceType type = ResourceType.None;
-  ToolMode activeTool = ToolMode.Info;
+  ToolMode activeTool = ToolMode.Select;
   PaintState paint;
   PendingBuild[] buildSelection;   /// Tiles awaiting a block-type choice
   bool showBuildWindow = false;    /// Build-type picker open
