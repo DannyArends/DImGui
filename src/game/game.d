@@ -35,6 +35,7 @@ import lightswindow : showLightsContent;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
+import stockpilewindow : showStockpileContent;
 import threading : TaskThread, drainMessages;
 import toolbar : showToolbar;
 import world : loadWorld, saveWorld, updateWorld;
@@ -84,6 +85,7 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow("##toolbar", (uint font){ app.showToolbar(font); }, true, false, true);
   app.gameWindows ~= GameWindow("##buildselect", (uint font){ app.showBuildContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
+  app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WAREHOUSE, "Stockpiles"), (uint font){ app.showStockpileContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
   app.gameWindows ~= GameWindow("FPS", (uint font){ app.showFPSContent(font); }, true, false, true);
