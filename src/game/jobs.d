@@ -101,7 +101,6 @@ void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   if(b is null) { j.state = JobState.Unavailable; return; }
 
   int[3] target = (b.tile == storedTile) ? app.storedTileOf(id) : b.tile;
-  if(b.tile == storedTile) SDL_Log("reloc claim: block %d storedTileOf=[%d,%d,%d] standableAbove=%d", id, target[0], target[1], target[2], app.world.isStandable(target.tileAbove));
   if(target == noTile) { j.state = JobState.Unavailable; return; }   // stored-but-not-in-pile desync, or no tile
 
   b.reserved = true;
@@ -349,14 +348,10 @@ void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {
     if(b.tile == noTile || b.tile == builtTile || b.reserved) continue;
-    if(b.tile == storedTile && app.isSettled(id, b.type) && !app.acceptedByHolder(id, b.type))
-      SDL_Log("ANOMALY: block %d type %d settled but holder rejects it", id, cast(int)b.type);
-    bool stored = (b.tile == storedTile);
     if(app.isSettled(id, b.type)) continue;
-    if(!stored && !app.world.hasStandableNeighbour(b.tile)) continue;
+    if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     int[3] dst;
     uint sp = app.findStockpileSlot(b.type, d.tile, dst);
-    if(stored) SDL_Log("reloc: block %d type %d stored, slot=%d dst=[%d,%d,%d]", id, cast(int)b.type, sp, dst[0], dst[1], dst[2]);
     if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.type, dst)); return true; }
   }
   return false;
