@@ -51,6 +51,8 @@ void interactCommit(ref GameApp app, int[3] tile) {
   if(!app.tryAssign(job)) jobQueue ~= job;
 }
 
+void stockpileCommit(ref GameApp app, int[3] tile) { app.createStockpile(app.world.inventory.paint.preview); }
+
 void openBuildSelection(ref GameApp app) {
   if(app.world.inventory.paint.preview.length == 0) return;
   app.world.inventory.buildSelection = [];
@@ -66,7 +68,7 @@ immutable Tool[] tools = [
   Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit, true),
   Tool(ToolMode.Interact, cast(string)ICON_FA_TREE, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit, false),
   Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null, false),
-  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null, true),
+  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, &stockpileCommit, true),
 ];
 
 /** Info: pick a dwarf/object for the sidebar */

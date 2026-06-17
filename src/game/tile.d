@@ -17,6 +17,7 @@ struct TileDiff {
 
 enum int[3] noTile = [int.min, 0, 0];
 enum int[3] builtTile = [int.max, 0, 0];
+enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
 
 /** Is the Tile occupied ?  */
 @nogc pure bool isTileOccupied(const GameApp app, const int[3] tile) nothrow {
