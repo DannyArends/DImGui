@@ -7,8 +7,8 @@ import game;
 
 import block : syncBlockInstances;
 import io : writeFile, readFile;
-import jobs : jobQueue;
-import serialization : writeData, readData, WORLD_MAGIC;
+import jobs : jobQueue, liveJobs;
+import serialization : WORLD_MAGIC;
 import tile : tileToWorld, tileAbove, tileBelow, isStandable;
 import vector : sqDist;
 
@@ -27,6 +27,8 @@ enum slotsPerTile = subPerAxis^^3;            // 64
 
 uint capacity(ref Stockpile sp) { return cast(uint)sp.tiles.length * slotsPerTile; }
 bool hasFreeSlot(ref Stockpile sp) { return sp.contents.length < sp.capacity; }
+void stampTiles(ref GameApp app, uint id, int[3][] tiles) { foreach(t; tiles){ app.world.stockpileAt[t] = id; } }
+void clearTiles(ref GameApp app, int[3][] tiles) { foreach(t; tiles) { app.world.stockpileAt.remove(t); } }
 
 /** One new pile from the painted preview */
 void createStockpile(ref GameApp app, int[3][] tiles) {
@@ -34,16 +36,14 @@ void createStockpile(ref GameApp app, int[3][] tiles) {
   uint id = app.world.nextStockpileID++;
   Stockpile sp = { id: id, name: format("Stockpile %d", id), tiles: tiles.dup };
   app.world.stockpiles[id] = sp;
-  foreach(t; tiles) app.world.stockpileAt[t] = id;
+  app.stampTiles(id, sp.tiles);
 }
 
 /** Delete a pile: spill its blocks back to the floor and clear the zone */
 void removeStockpile(ref GameApp app, uint id) {
   if(auto sp = id in app.world.stockpiles) {
-    foreach(i, blockID; sp.contents){
-      if(auto b = blockID in app.world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; }
-    }
-    foreach(t; sp.tiles){ app.world.stockpileAt.remove(t); }
+    foreach(i, blockID; sp.contents) { if(auto b = blockID in app.world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
+    app.clearTiles(sp.tiles);
     app.world.stockpiles.remove(id);
     app.syncBlockInstances();
   }
@@ -57,27 +57,20 @@ uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[
     uint pending = app.pendingStores(id);
     if(sp.contents.length + pending >= sp.capacity) continue;
     foreach(t; sp.tiles) {
-      if(!app.world.isStandable(t.tileAbove)) continue;
-      auto d = sqDist(from, t.tileAbove);
-      if(d < bestD) { bestD = d; best = id; tile = t.tileAbove; }
+      auto above = t.tileAbove;
+      if(!app.world.isStandable(above)) continue;
+      auto d = sqDist(from, above);
+      if(d < bestD) { bestD = d; best = id; tile = above; }
     }
   }
   return best;
 }
 
 uint pendingStores(ref GameApp app, uint stockpileID) {
-  uint n = 0;
-  bool toThisPile(int[3] target) {
-    auto id = target.tileBelow in app.world.stockpileAt;
+  return cast(uint)app.liveJobs("Store").count!((ref j) {
+    auto id = j.targetTile.tileBelow in app.world.stockpileAt;
     return(id !is null && *id == stockpileID);
-  }
-  foreach(ref j; jobQueue){ if(j.name == "Store" && toThisPile(j.targetTile)) { n++; } }
-  if(app.world.dwarves !is null) {
-    foreach(ref dw; app.world.dwarves.dwarves){ foreach(ref j; dw.jobStack) { 
-      if(j.name == "Store" && toThisPile(j.targetTile)){ n++; }
-    } }
-  }
-  return n;
+  });
 }
 
 void storeBlockAt(ref GameApp app, int[3] tile, uint blockID) {
@@ -102,9 +95,9 @@ bool isSettled(ref GameApp app, uint blockID, ResourceType type) {
 
 /** Sub-cell world offset for the n-th block in a tile */
 float[3] subCellOffset(ref GameApp app, uint slot) {
-  float bs = app.world.blockSize;
-  uint sx = slot % subPerAxis, sy = (slot / subPerAxis) % subPerAxis, sz = slot / (subPerAxis*subPerAxis);
-  return [(sx + 0.5f) * bs - app.world.tileSize * 0.5f, sy * bs, (sz + 0.5f) * bs - app.world.tileSize * 0.5f];
+  immutable float bs = app.world.blockSize, half = app.world.tileSize * 0.5f;
+  immutable uint sx = slot % subPerAxis, sy = (slot / subPerAxis) % subPerAxis, sz = slot / (subPerAxis^^2);
+  return [(sx + 0.5f) * bs - half, sy * bs, (sz + 0.5f) * bs - half];
 }
 
 /** Serialize all stockpiles to one file (records + packed name/tiles/accepts/contents). */
@@ -126,7 +119,6 @@ void saveStockpiles(ref GameApp app) {
   writeFile(app.world.stockpilePath(), cast(char[])blob);
 }
 
-
 /** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids). */
 void loadStockpiles(ref GameApp app) {
   auto raw = cast(ubyte[])readFile(app.world.stockpilePath());
@@ -147,14 +139,14 @@ void loadStockpiles(ref GameApp app) {
     if(!need(nameN + tilesN + (r[3] + r[4]) * uint.sizeof)) { SDL_Log("loadStockpiles: truncated body"); return; }
 
     string name = cast(string)(cast(char[])raw[off .. off + nameN]).idup; off += nameN;
-    auto tiles  = (cast(int[3][])raw[off .. off + tilesN]).dup;           off += tilesN;
-    auto acc    = take(r[3]);
+    auto tiles = (cast(int[3][])raw[off .. off + tilesN]).dup; off += tilesN;
+    auto acc = take(r[3]);
     auto contents = take(r[4]);
 
     Stockpile sp = { id: r[0], name: name, tiles: tiles, contents: contents };
     foreach(t; acc) sp.accepts[cast(ResourceType)t] = true;
     app.world.stockpiles[r[0]] = sp;
-    foreach(t; tiles) app.world.stockpileAt[t] = r[0];
+    app.stampTiles(r[0], sp.tiles);
   }
   SDL_Log("loadStockpiles: %d piles", cast(int)app.world.stockpiles.length);
 }
