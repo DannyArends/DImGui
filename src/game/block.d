@@ -60,10 +60,10 @@ int[3] pickupTileFor(ref GameApp app, uint id, ref Block b, bool includeStored) 
   if(b.reserved || b.tile == noTile || b.tile == builtTile) return noTile;
   if(b.tile == storedTile) {
     if(!includeStored) return noTile;
-    auto pt = app.storedTileOf(id); //  skip !isStandable piles
-    return (pt != noTile && app.world.isStandable(pt.tileAbove)) ? pt : noTile;
+    auto pt = app.storedTileOf(id);
+    return (pt != noTile && app.world.hasStandableNeighbour(pt.tileAbove)) ? pt : noTile;
   }
-  return app.world.isStandable(b.tile) ? b.tile : noTile;
+  return app.world.hasStandableNeighbour(b.tile) ? b.tile : noTile;
 }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
