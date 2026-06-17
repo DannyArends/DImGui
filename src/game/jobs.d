@@ -245,17 +245,14 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
 /** Eat Job — claim nearest free Berry on the floor, walk to it, consume it */
 Job eatJob() {
   return Job("Eating", noTile, ResourceType.Berry, [], true, reach: Reach.OnTile,
-    isValid: (ref GameApp app, ref Job j) { return(j.blockIDs.length > 0 && (j.blockIDs[0] in app.world.blocks) !is null); },
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
       auto carried = d.carrying.filter!(id => app.blockType(id) == ResourceType.Berry);
-      if(!carried.empty) { j.blockIDs = [carried.front]; j.targetTile = d.tile; return; }
-      auto id = app.findFreeBlock(d.tile, ResourceType.Berry);
-      if(id == noBlock) { j.state = JobState.Unavailable; return; }
-      if(auto b = id in app.world.blocks) { b.reserved = true; j.blockIDs = [id]; j.targetTile = b.tile; return; }
-      j.state = JobState.Unavailable;
+      if(carried.empty) { j.state = JobState.Unavailable; return; }
+      j.blockIDs = [carried.front];
+      j.targetTile = d.tile;
     },
     onArrive: (ref GameApp app, ref Dwarf d) {
-      app.progressJob(d, 0.5f, () {                    // ~2 ticks to eat
+      app.progressJob(d, 0.5f, () {
         auto id = d.currentJob.blockIDs[0];
         d.use(app, id);
         if(id in app.world.blocks) app.world.blocks.remove(id);
@@ -264,10 +261,7 @@ Job eatJob() {
         app.syncBlockInstances();
       });
     },
-    onFail: (ref GameApp app, ref Dwarf d) {
-      foreach(id; d.currentJob.blockIDs) if(auto b = id in app.world.blocks) b.reserved = false;
-      d.completeSubJob();
-    }
+    onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
   );
 }
 

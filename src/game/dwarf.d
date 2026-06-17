@@ -14,7 +14,7 @@ import ghost : syncBuildGhosts;
 import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo;
-import jobs : Job, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination, blockType;
+import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination, blockType;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import sfx : play;
@@ -213,8 +213,10 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
 
   final switch(d.state) {
     case DwarfState.Idle:
-      bool haveBerry = app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock || d.carrying.any!(id => app.blockType(id) == ResourceType.Berry);
-      if(d.hunger >= 0.6f && haveBerry) { app.dispatchJob(d, eatJob()); break; }
+      if(d.hunger >= 0.6f) {
+        if(d.carrying.any!(id => app.blockType(id) == ResourceType.Berry)) { app.dispatchJob(d, eatJob()); break; }
+        if(app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock) { app.dispatchJob(d, pickupJob(noTile, ResourceType.Berry)); break; }
+      }
       app.claimNextJob(d); break;
     case DwarfState.WaitingForPath: break;
     case DwarfState.Moving:
