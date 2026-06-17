@@ -4,74 +4,66 @@
  */
 import game;
 
+import std.string : stripRight;
+
 import imgui : iconText;
-import stockpile : Stockpile, capacity, removeStockpile, slotsPerTile;
-import widgets : text;
+import stockpile : Stockpile, capacity, removeStockpile;
+import widgets : text, cTag, cNode;
 
-private enum GroupState { none, some, all }
+private bool ok(ref Stockpile sp, ResourceType t) { return sp.accepts.length == 0 || sp.accepts.get(t, false); }
+private void seed(ref Stockpile sp) { if(!sp.accepts.length) foreach(a; [EnumMembers!ResourceType]) if(a != ResourceType.None) sp.accepts[a] = true; }
+private string base(ResourceType t) { return resourceData(t).name.stripRight("0123456789_"); }
+private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on == total ? Colors.green : Colors.yellow; }
 
-private bool accepted(ref Stockpile sp, ResourceType t) {
-  return sp.accepts.length == 0 || sp.accepts.get(t, false);
+/** Walk types matching `keep`, set them all to `on`. */
+private void setAll(ref Stockpile sp, bool delegate(ResourceType) keep, bool on) {
+  sp.seed();
+  foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && keep(t)) sp.accepts[t] = on;
 }
 
-private void seed(ref Stockpile sp) {                 // materialize implicit accept-all before editing
-  if(sp.accepts.length) return;
-  foreach(a; [EnumMembers!ResourceType]) if(a != ResourceType.None) sp.accepts[a] = true;
+private void tally(ref Stockpile sp, bool delegate(ResourceType) keep, out int total, out int on) {
+  foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && keep(t)) { total++; if(sp.ok(t)) on++; }
 }
 
-private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool wantBuildable) {
-  // tally group state
-  int total = 0, on = 0;
-  foreach(t; [EnumMembers!ResourceType])
-    if(t != ResourceType.None && resourceData(t).buildable == wantBuildable) { total++; if(sp.accepted(t)) on++; }
-  auto gs = (on == 0) ? GroupState.none : (on == total) ? GroupState.all : GroupState.some;
+private void acceptGroup(ref Stockpile sp, string label, bool buildable) {
+  bool inGroup(ResourceType t) { return resourceData(t).buildable == buildable; }
+  int gT, gOn; sp.tally(t => inGroup(t), gT, gOn);
+  if(gT == 0) return;
 
-  ImVec4 col = (gs == GroupState.all) ? ImVec4(0.3f,0.8f,0.3f,1) : (gs == GroupState.none) ? ImVec4(0.85f,0.3f,0.3f,1) : ImVec4(0.9f,0.8f,0.2f,1);
+  if(!cNode(cstr("%s##g%d", label, buildable), tri(gOn, gT), () => sp.setAll(t => inGroup(t), gOn != gT))) return;
 
-  // clickable colored header: click sets all on (unless already all -> all off)
-  igPushStyleColor_Vec4(ImGuiCol_Text, col);
-  bool open = igTreeNodeEx_Str(cstr("%s##grp%d", label, wantBuildable ? 1 : 0), ImGuiTreeNodeFlags_OpenOnArrow);
-  igPopStyleColor(1);
-  if(igIsItemClicked(0) && !igIsItemToggledOpen()) {
-    sp.seed();
-    bool target = (gs != GroupState.all);            // green->all off, otherwise all on
-    foreach(t; [EnumMembers!ResourceType])
-      if(t != ResourceType.None && resourceData(t).buildable == wantBuildable) sp.accepts[t] = target;
-  }
-  if(!open) return;
+  string[] bases;
+  foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && inGroup(t) && !bases.canFind(base(t))) bases ~= base(t);
 
-  // per-type: colored clickable label, no checkbox
-  foreach(t; [EnumMembers!ResourceType]) {
-    if(t == ResourceType.None || resourceData(t).buildable != wantBuildable) continue;
-    bool a = sp.accepted(t);
-    igPushStyleColor_Vec4(ImGuiCol_Text, a ? ImVec4(0.3f,0.8f,0.3f,1) : ImVec4(0.85f,0.3f,0.3f,1));
-    if(igSelectable_Bool(cstr("%s##acc%d", resourceData(t).name, cast(int)t), false, 0, ImVec2(0,0))) {
-      sp.seed();
-      sp.accepts[t] = !a;
+  foreach(b; bases) {
+    bool inBase(ResourceType t) { return inGroup(t) && base(t) == b; }
+    int bT, bOn; sp.tally(t => inBase(t), bT, bOn);
+    igPushID_Str(b.toStringz);
+    if(bT == 1) {                                            // single variant -> base name as leaf
+      foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && inBase(t) && cTag(cstr("%s##l", b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
+    } else if(cNode(cstr("%s##b", b), tri(bOn, bT), () => sp.setAll(t => inBase(t), bOn != bT))) {
+      foreach(t; [EnumMembers!ResourceType]) if(t != ResourceType.None && inBase(t) && cTag(cstr("  %s##%d", resourceData(t).name, cast(int)t), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
+      igTreePop();
     }
-    igPopStyleColor(1);
+    igPopID();
   }
   igTreePop();
 }
 
 void showStockpileContent(ref GameApp app, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
-
-  if(app.world.stockpiles.length == 0){ text("No stockpiles"); }
+  if(!app.world.stockpiles.length) text("No stockpiles");
 
   uint[] toDelete;
   foreach(id, ref sp; app.world.stockpiles) {
     igPushID_Int(cast(int)id);
     igSeparator();
     text("%s   %d / %d", sp.name, cast(int)sp.contents.length, cast(int)sp.capacity);
-
-    app.acceptGroup(sp, "Blocks", true);
-    app.acceptGroup(sp, "Items",  false);
-
+    acceptGroup(sp, "Blocks", true);
+    acceptGroup(sp, "Items", false);
     if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0,0))) toDelete ~= id;
     igPopID();
   }
   foreach(id; toDelete) app.removeStockpile(id);
-
   igPopFont();
 }

@@ -5,6 +5,7 @@
 
 import engine;
 
+import color : asIm;
 import geometry : texture, bumpmap, opacity;
 import imgui : faIcon;
 import textures : ImTextureRefFromID;
@@ -64,6 +65,23 @@ void sliderFloat3(string[3] ids, float* x, float* y, float* z, float* min, float
   igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[0]), ImGuiDataType_Float, x, min, max, "%.2f", 0); igPopItemWidth(); igSameLine(0,5);
   igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[1]), ImGuiDataType_Float, y, min, max, "%.2f", 0); igPopItemWidth(); igSameLine(0,5);
   igPushItemWidth(width * uiscale); igSliderScalar(toStringz(ids[2]), ImGuiDataType_Float, z, min, max, "%.2f", 0); igPopItemWidth();
+}
+
+/** Colored clickable label; true when clicked. */
+bool cTag(const(char)* id, Colors c) {
+  igPushStyleColor_Vec4(ImGuiCol_Text, c.asIm());
+  bool hit = igSelectable_Bool(id, false, 0, ImVec2(0, 0));
+  igPopStyleColor(1);
+  return hit;
+}
+
+/** Colored tree node whose label-click fires onToggle (arrow still expands); true when open. */
+bool cNode(const(char)* id, Colors c, scope void delegate() onToggle) {
+  igPushStyleColor_Vec4(ImGuiCol_Text, c.asIm());
+  bool open = igTreeNodeEx_Str(id, ImGuiTreeNodeFlags_OpenOnArrow);
+  igPopStyleColor(1);
+  if(igIsItemClicked(0) && !igIsItemToggledOpen()) onToggle();
+  return open;
 }
 
 /** Eye (visibility) + trash (delete) buttons for an object; shared by list and detail views. */
