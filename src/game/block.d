@@ -10,7 +10,7 @@ import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
 import normals : computeTangents;
 import serialization : readData, writeData;
-import stockpile : slotsPerTile, subCellOffset;
+import stockpile : slotsPerTile, subCellOffset,storedTileOf;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
@@ -62,8 +62,10 @@ uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = Resource
   foreach(id, ref b; app.world.blocks) {
     if(b.reserved || b.tile == noTile || b.tile == builtTile) continue;
     if(tt != ResourceType.None && b.type != tt) continue;
-    if(!app.world.isStandable(b.tile)) continue;
-    float dist = manhattan(b.tile, dwarfTile);
+    int[3] at = (b.tile == storedTile) ? app.storedTileOf(id) : b.tile;
+    if(at == noTile) continue;
+    if(b.tile != storedTile && !app.world.isStandable(at)) continue;
+    float dist = manhattan(at, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = id; }
   }
   return bestID;
