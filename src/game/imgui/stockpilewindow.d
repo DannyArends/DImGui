@@ -4,35 +4,41 @@
  */
 import game;
 
-import imgui : iconText;     // or wherever dwarfwindow imports it from
+import imgui : iconText;
 import stockpile : Stockpile, capacity, removeStockpile, slotsPerTile;
+import widgets : text;
+
+private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool wantBuildable) {
+  if(!igTreeNode_Str(label.toStringz)) return;
+  foreach(t; [EnumMembers!ResourceType]) {
+    if(t == ResourceType.None || resourceData(t).buildable != wantBuildable) continue;
+    bool on = sp.accepts.length == 0 || sp.accepts.get(t, false);
+    if(igCheckbox(cstr("%s##acc%d", resourceData(t).name, cast(int)t), &on)) {
+      if(sp.accepts.length == 0) { foreach(a; [EnumMembers!ResourceType]) if(a != ResourceType.None){ sp.accepts[a] = true; } }
+      sp.accepts[t] = on;
+    }
+  }
+  igTreePop();
+}
 
 void showStockpileContent(ref GameApp app, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
 
-  if(app.world.stockpiles.length == 0) igText("No stockpiles. Use the warehouse tool to drag one out.".toStringz);
+  if(app.world.stockpiles.length == 0){ text("No stockpiles"); }
 
   uint[] toDelete;
   foreach(id, ref sp; app.world.stockpiles) {
     igPushID_Int(cast(int)id);
     igSeparator();
-    igText(cstr("%s   %d / %d", sp.name, cast(int)sp.contents.length, cast(int)sp.capacity));
+    text("%s   %d / %d", sp.name, cast(int)sp.contents.length, cast(int)sp.capacity);
 
-    // accept-type checkboxes; empty map = accept all
-    foreach(t; [EnumMembers!ResourceType]) {
-      if(t == ResourceType.None) continue;
-      bool on = sp.accepts.length == 0 || sp.accepts.get(t, false);
-      if(igCheckbox(cstr("%s##acc", resourceData(t).name), &on)) {
-        if(sp.accepts.length == 0)                       // first edit: seed from "accept all"
-          foreach(a; [EnumMembers!ResourceType]) if(a != ResourceType.None) sp.accepts[a] = true;
-        sp.accepts[t] = on;
-      }
-    }
+    app.acceptGroup(sp, "Blocks", true);
+    app.acceptGroup(sp, "Items",  false);
 
     if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0,0))) toDelete ~= id;
     igPopID();
   }
-  foreach(id; toDelete) app.removeStockpile(id);   // delete after iterating (don't mutate the map mid-loop)
+  foreach(id; toDelete) app.removeStockpile(id);
 
   igPopFont();
 }
