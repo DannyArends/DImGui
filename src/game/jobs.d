@@ -336,6 +336,7 @@ void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {
     if(b.tile == noTile || b.tile == storedTile || b.tile == builtTile || b.reserved) continue;
+    if(!app.world.hasStandableNeighbour(b.tile)) continue;
     if(app.isSettled(id, b.type)) continue;
     int[3] dst;
     uint sp = app.findStockpileSlot(b.type, d.tile, dst);
