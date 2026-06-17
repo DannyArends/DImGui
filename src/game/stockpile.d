@@ -5,8 +5,9 @@
 
 import game;
 
-import vector : sqDist;
+import block : syncBlockInstances;
 import tile : tileToWorld;
+import vector : sqDist;
 
 struct Stockpile {
   uint id;
@@ -31,6 +32,17 @@ void createStockpile(ref GameApp app, int[3][] tiles) {
   Stockpile sp = { id: id, name: format("Stockpile %d", id), tiles: tiles.dup };
   app.world.stockpiles[id] = sp;
   foreach(t; tiles) app.world.stockpileAt[t] = id;
+}
+
+/** Delete a pile: spill its blocks back to the floor and clear the zone */
+void removeStockpile(ref GameApp app, uint id) {
+  if(auto sp = id in app.world.stockpiles) {
+    foreach(i, blockID; sp.contents)
+      if(auto b = blockID in app.world.blocks) b.tile = sp.tiles[i / slotsPerTile];  // drop onto its tile
+    foreach(t; sp.tiles) app.world.stockpileAt.remove(t);
+    app.world.stockpiles.remove(id);
+    app.syncBlockInstances();
+  }
 }
 
 /** Nearest accepting pile with a free slot; returns id (or 0) and fills `tile` with a target tile */
