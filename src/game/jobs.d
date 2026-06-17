@@ -289,7 +289,6 @@ bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
   d.targetTile = d.currentJob.targetTile;
 
   auto goal = app.findGoalTile(d, d.currentJob.reach);
-  if(goal == noTile) { SDL_Log("dispatch reject: job '%s' target=[%d,%d,%d] no goal tile", d.currentJob.name.ptr, d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2]); app.rejectJob(d, job); return false; }
   if(goal == noTile) { app.rejectJob(d, job); return false; }
   if(goal == d.tile) { d.state = DwarfState.Working; return true; }
   app.pathfindTo(d, goal);
