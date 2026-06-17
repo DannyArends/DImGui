@@ -34,6 +34,7 @@ struct WorldData {
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
   const(char)* blocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
   const(char)* dwarfsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_dwarfs.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* stockpilePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_stockpiles.bin", seed[0], seed[1], seed[2]))); }
   const(char)* featurePath(string name) const { return toStringz(fixPath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], name))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
@@ -106,7 +107,9 @@ struct World {
 
   void deleteWorld(ref GameApp app) {
     SDL_RemovePath(worldPath());
+    SDL_RemovePath(dwarfsPath());
     SDL_RemovePath(blocksPath());
+    SDL_RemovePath(stockpilePath());
     data.diffs = null;
     app.world.inventory.type = ResourceType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
@@ -145,7 +148,9 @@ void loadWorld(ref GameApp app) {
     app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
     foreach(coord; app.world.pendingFeatures[ft.name].keys) app.world.featuresModified[coord] = true;
   }
+  app.loadStockpiles();
   app.deriveInventory();
+  app.syncBlockInstances();
 }
 
 /** Save world diffs to disk */
@@ -159,6 +164,7 @@ void saveWorld(ref GameApp app) {
   foreach(ref ft; features) {
     app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
   }
+  app.saveStockpiles();
   app.saveDwarfs();
 }
 
