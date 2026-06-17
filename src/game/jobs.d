@@ -15,7 +15,7 @@ import timing : timed;
 import vector : manhattan, manhattan2D;
 
 enum JobState { Pending, Satisfied, Unavailable }
-enum Reach { Adjacent, OnTile } 
+enum Reach { Adjacent, OnTile, AdjacentOrAbove }
 
 struct Job {
   string name;
@@ -78,8 +78,9 @@ void completeSubJob(ref Dwarf d) {
  * Requires T to have: tile */
 bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
   final switch(reach) {
-    case Reach.Adjacent: return manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1];
-    case Reach.OnTile: return obj.tile == targetTile;
+    case Reach.Adjacent: return(manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]);
+    case Reach.OnTile: return(obj.tile == targetTile);
+    case Reach.AdjacentOrAbove: return(obj.tile == targetTile.tileAbove || (manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]));
   }
 }
 

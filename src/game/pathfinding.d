@@ -7,7 +7,7 @@ import game;
 
 import vector : manhattan2D;
 import search : performSearch, atGoal, stepThroughPath;
-import tile : getSuccessors, isStandable, isPassable, tileToWorld, worldToTile;
+import tile : getSuccessors, isStandable, isPassable, tileToWorld, worldToTile, tileAbove;
 
 struct PathRequest {
   uint dwarfUID;
@@ -89,12 +89,19 @@ bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Re
  * Requires T to have: tile, targetTile */
 int[3] findGoalTile(T)(ref GameApp app, ref T obj, Reach reach = Reach.Adjacent) {
   if(reach == Reach.OnTile) return app.world.isStandable(obj.targetTile) ? obj.targetTile : noTile;
+
   int[3] goalTile = noTile;
   float bestScore = float.max;
-  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
-    if(!app.world.isStandable(n)) continue;
+  void consider(int[3] n) {
+    if(!app.world.isStandable(n)) return;
     float score = manhattan2D(n, obj.tile) + app.world.data.tilePenalties.get(n, 0.0f);
     if(score < bestScore) { bestScore = score; goalTile = n; }
+  }
+
+  if(reach == Reach.AdjacentOrAbove) consider(obj.targetTile.tileAbove);   // standing on top is valid
+  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
+    if(n[1] != obj.targetTile[1]) continue;                                // same-Y adjacency, matches atDestination
+    consider(n);
   }
   return goalTile;
 }
