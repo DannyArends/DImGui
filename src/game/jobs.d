@@ -36,12 +36,14 @@ struct Job {
 
 Job[] jobQueue;
 
-int[3][] activeTiles(ref GameApp app, string jobName) {
-  auto matching = jobQueue.filter!(j => j.name == jobName).map!(j => j.targetTile);
-  if(app.world.dwarves is null) return matching.array;
-  auto dwarfMatching = app.world.dwarves.dwarves.map!(dw => dw.jobStack).joiner.filter!(j => j.name == jobName).map!(j => j.targetTile);
-  return chain(matching, dwarfMatching).array;
+/** All live jobs matching a name: queued + on every dwarf's stack */
+Job[] liveJobs(ref GameApp app, string name) {
+  Job[] r = jobQueue.filter!(j => j.name == name).array;
+  if(app.world.dwarves !is null){ foreach(ref dw; app.world.dwarves.dwarves){ r ~= dw.jobStack.filter!(j => j.name == name).array; } }
+  return(r);
 }
+
+int[3][] activeTiles(ref GameApp app, string jobName) { return app.liveJobs(jobName).map!(j => j.targetTile).array; }
 
 /** Apply pathfinding results */
 void applyPathResult(ref GameApp app, PathResult result) {
