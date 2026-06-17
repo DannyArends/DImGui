@@ -34,7 +34,7 @@ immutable float os = 1.05f;
 immutable float flat = 0.1f;
 
 Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
-Matrix interactHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1]+ th, wp[2]], [ts, th, ts]); }
+Matrix interactHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
 Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
 Matrix stockpileHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts*os, th*flat, ts*os]); }
 
@@ -45,9 +45,8 @@ void mineCommit(ref GameApp app, int[3] tile) {
 }
 
 void interactCommit(ref GameApp app, int[3] tile) {
-  auto ft = tile.tileAbove;
-  if(!app.hasFeature(ft, "Fell") && !app.hasFeature(ft, "Gather")) return;
-  auto job = interactFeatureJob(ft);
+  if(!app.hasFeature(tile, "Fell") && !app.hasFeature(tile, "Gather")) return;
+  auto job = interactFeatureJob(tile);
   if(!app.tryAssign(job)) jobQueue ~= job;
 }
 
@@ -69,7 +68,7 @@ immutable Tool[] tools = [
   Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null),
 ];
 
-/// Info: pick a dwarf/object for the sidebar
+/** Info: pick a dwarf/object for the sidebar */
 void infoPress(ref GameApp app, float[3][2] ray) {
   auto hits = app.getHits(ray, app.showRays);
   if(hits.length == 0) return;
@@ -83,7 +82,7 @@ void infoPress(ref GameApp app, float[3][2] ray) {
   app.selectObject(hits);
 }
 
-/// Select: click-designate mine/interact (no object selection)
+/**  Select: click-designate mine/interact (no object selection) */
 void selectPress(ref GameApp app, float[3][2] ray) {
   int[3] wc;
   auto hits = app.getHits(ray, app.showRays);
@@ -185,16 +184,11 @@ void handleSecondaryRelease(ref GameApp app, float sx, float sy) {
 }
 
 void updateHoverHighlight(ref GameApp app, float[3][2] ray) {
-  auto kind = tools[app.world.inventory.activeTool].kind;
-  if(kind == ToolKind.Query) return;
-
-  int[3] wc; bool ok;
-  if(kind == ToolKind.BuildPaint) {
-    wc = app.getGhostTile(ray, app.getHits(ray, false)); // placement tile (above surface)
-    ok = (wc != noTile);
-    app.world.inventory.tile = ok ? wc : noTile; // anchor for buildPress/buildDrag
-  } else { ok = app.getBestTile(ray, wc); }
-  if(!app.world.inventory.paint.active) { app.world.inventory.paint.preview = ok ? [wc] : []; }
+  if(tools[app.world.inventory.activeTool].kind == ToolKind.Query) return;
+  int[3] wc = app.getGhostTile(ray, app.getHits(ray, false));   // aimed empty/target cell
+  bool ok = (wc != noTile);
+  app.world.inventory.tile = ok ? wc : noTile;
+  if(!app.world.inventory.paint.active) app.world.inventory.paint.preview = ok ? [wc] : [];
   app.syncBuildGhosts();
 }
 

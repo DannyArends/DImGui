@@ -55,21 +55,14 @@ void placeTile(ref GameApp app, int[3] wc) {
 }
 
 void computeDragPreview(ref GameApp app, int[3] from, int[3] to) {
-  int dx = abs(to[0] - from[0]);
-  int dz = abs(to[2] - from[2]);
+  int axis = abs(to[0] - from[0]) >= abs(to[2] - from[2]) ? 0 : 2;   // step along X or Z
+  int step = to[axis] > from[axis] ? 1 : -1;
   app.world.inventory.paint.preview = [];
-  if(dx >= dz) {
-    int step = to[0] > from[0] ? 1 : -1;
-    for(int x = from[0]; x != to[0] + step; x += step) {
-      if(app.world.getTileAt([x, from[1], from[2]]) != ResourceType.None) continue;
-      app.world.inventory.paint.preview ~= [x, from[1], from[2]];
-    }
-  } else {
-    int step = to[2] > from[2] ? 1 : -1;
-    for(int z = from[2]; z != to[2] + step; z += step) {
-      if(app.world.getTileAt([from[0], from[1], z]) != ResourceType.None) continue;
-      app.world.inventory.paint.preview ~= [from[0], from[1], z];
-    }
+  for(int v = from[axis]; v != to[axis] + step; v += step) {
+    int[3] cell = from;
+    cell[axis] = v;
+    if(app.world.getTileAt(cell) != ResourceType.None) continue;   // target cell must be empty
+    app.world.inventory.paint.preview ~= cell;
   }
 }
 
