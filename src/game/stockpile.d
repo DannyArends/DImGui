@@ -119,7 +119,8 @@ float[3] subCellOffset(ref GameApp app, uint slot) {
 void saveStockpiles(ref GameApp app) {
   if(app.world.stockpiles.length == 0) return;
   ubyte[] blob;
-  blob ~= cast(ubyte[])([WORLD_MAGIC, app.world.nextStockpileID]);
+  uint[3] hdr = [cast(uint)WORLD_MAGIC, app.world.nextStockpileID, cast(uint)app.world.stockpiles.length];
+  blob ~= (cast(ubyte*)hdr.ptr)[0 .. hdr.sizeof];
   blob ~= cast(ubyte[])([cast(uint)app.world.stockpiles.length]);
   foreach(id, ref sp; app.world.stockpiles) {
     uint[] acc;
