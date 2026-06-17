@@ -52,7 +52,7 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   igText("Click to queue next:".toStringz);
 
   // Available types ONLY (count > 0) — clicking queues + lowers count
-  float cellSize = 32.0f;
+  float cellSize = app.gui.fontsize * 2.0f;
   int col = 0, cols = 6;
   foreach(tileType; EnumMembers!ResourceType) {
     if(!resourceData(tileType).buildable) continue;

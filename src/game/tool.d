@@ -18,7 +18,7 @@ import tile : tileToWorld, getTileAt, tileAbove;
 import matrix : translateScale;
 import vegetation : getBestVegetation;
 
-enum ToolMode : ubyte { Select, Mine, Woodcut, Harvest, Build, Stockpile }
+enum ToolMode : ubyte { Info, Select, Mine, Interact, Build, Stockpile }
 enum ToolKind : ubyte { Query, RayPaint, BuildPaint }
 
 struct Tool {
@@ -34,8 +34,7 @@ immutable float os = 1.05f;
 immutable float flat = 0.1f;
 
 Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
-Matrix woodcutHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1]+ th, wp[2]], [ts, th, ts]); }
-Matrix harvestHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1]+ th, wp[2]], [ts, th, ts]); }
+Matrix interactHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1]+ th, wp[2]], [ts, th, ts]); }
 Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
 Matrix stockpileHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts*os, th*flat, ts*os]); }
 
@@ -44,15 +43,10 @@ void mineCommit(ref GameApp app, int[3] tile) {
   auto job = miningJob(tile);
   if(!app.tryAssign(job)) jobQueue ~= job;
 }
-void woodcutCommit(ref GameApp app, int[3] tile) {
+
+void interactCommit(ref GameApp app, int[3] tile) {
   auto ft = tile.tileAbove;
-  if(!app.hasFeature(ft, "Fell")) return;
-  auto job = interactFeatureJob(ft);
-  if(!app.tryAssign(job)) jobQueue ~= job;
-}
-void harvestCommit(ref GameApp app, int[3] tile) {
-  auto ft = tile.tileAbove;
-  if(!app.hasFeature(ft, "Gather")) return;
+  if(!app.hasFeature(ft, "Fell") && !app.hasFeature(ft, "Gather")) return;
   auto job = interactFeatureJob(ft);
   if(!app.tryAssign(job)) jobQueue ~= job;
 }
@@ -67,16 +61,16 @@ void openBuildSelection(ref GameApp app) {
 }
 
 immutable Tool[] tools = [
-  Tool(ToolMode.Select, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.black, null, ToolKind.Query, null),
+  Tool(ToolMode.Info, cast(string)ICON_FA_MAGNIFYING_GLASS, Colors.black, null, ToolKind.Query, null),
+  Tool(ToolMode.Select, cast(string)ICON_FA_ARROW_POINTER, Colors.hotpink, null, ToolKind.Query, null),
   Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit),
-  Tool(ToolMode.Woodcut, cast(string)ICON_FA_TREE, Colors.forestgreen, &woodcutHighlight, ToolKind.RayPaint, &woodcutCommit),
-  Tool(ToolMode.Harvest, cast(string)ICON_FA_WHEAT_AWN, Colors.wheat, &harvestHighlight, ToolKind.RayPaint, &harvestCommit),
+  Tool(ToolMode.Interact, cast(string)ICON_FA_HAND, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit),
   Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null),
   Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null),
 ];
 
-void queryPress(ref GameApp app, float[3][2] ray) {
-  int[3] wc;
+/// Info: pick a dwarf/object for the sidebar
+void infoPress(ref GameApp app, float[3][2] ray) {
   auto hits = app.getHits(ray, app.showRays);
   if(hits.length == 0) return;
   app.world.dwarves.selected = -1;
@@ -86,6 +80,13 @@ void queryPress(ref GameApp app, float[3][2] ray) {
       break;
     }
   }
+  app.selectObject(hits);
+}
+
+/// Select: click-designate mine/interact (no object selection)
+void selectPress(ref GameApp app, float[3][2] ray) {
+  int[3] wc;
+  auto hits = app.getHits(ray, app.showRays);
   Job job;
   if(app.getBestTile(ray, wc)) job = miningJob(wc);
   foreach(ref ft; features) {
@@ -95,7 +96,6 @@ void queryPress(ref GameApp app, float[3][2] ray) {
     }
   }
   if(job.name !is null) app.tryAssign(job);
-  app.selectObject(hits);
 }
 
 void buildPress(ref GameApp app) {
@@ -148,9 +148,9 @@ void paintDrag(ref GameApp app, float[3][2] ray) {
 void handlePrimaryPress(ref GameApp app, float sx, float sy) {
   auto ray = app.camera.castRay(sx, sy);
   final switch(tools[app.world.inventory.activeTool].kind) {
-    case ToolKind.Query: app.queryPress(ray); break;
+    case ToolKind.Query: (app.world.inventory.activeTool == ToolMode.Info)?app.infoPress(ray): app.selectPress(ray); break;
     case ToolKind.RayPaint: app.paintPress(ray); break;
-    case ToolKind.BuildPaint: app.buildPress();    break;
+    case ToolKind.BuildPaint: app.buildPress(); break;
   }
 }
 
@@ -174,11 +174,14 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
 }
 
 /** Secondary press: right click */
-void handleSecondaryPress(ref GameApp app, float sx, float sy) {
+void handleSecondaryPress(ref GameApp app, float sx, float sy) { }
+
+/** Secondary press: right click */
+void handleSecondaryRelease(ref GameApp app, float sx, float sy) {
   app.world.inventory.paint = PaintState.init;
   app.world.inventory.type = ResourceType.None;
   app.world.inventory.cachedMatIdx = -1;
-  app.world.inventory.activeTool = ToolMode.Select;
+  app.world.inventory.activeTool = ToolMode.Info;
   app.syncBuildGhosts();
 }
 
