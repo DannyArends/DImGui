@@ -5,7 +5,7 @@
 
 import game;
 
-import block : loadBlocks, saveBlocks;
+import block : loadBlocks, saveBlocks, syncBlockInstances;
 import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
@@ -13,6 +13,7 @@ import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
 import pathfinding : invalidatePaths, repathTo;
 import serialization : WORLD_MAGIC;
+import stockpile : saveStockpiles, loadStockpiles;
 import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : saveVegetation, loadVegetation;

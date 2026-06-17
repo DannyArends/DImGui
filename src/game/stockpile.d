@@ -109,7 +109,7 @@ void saveStockpiles(ref GameApp app) {
                          tileCount: cast(uint)sp.tiles.length,
                          acceptCount: cast(uint)acc.length,
                          contentCount: cast(uint)sp.contents.length };
-    blob ~= cast(ubyte[])([rec]);
+    blob ~= (cast(ubyte*)&rec)[0 .. StockpileRec.sizeof];
     blob ~= cast(ubyte[])sp.name.dup;          // nameLen bytes
     blob ~= cast(ubyte[])sp.tiles;             // tileCount * int[3]
     blob ~= cast(ubyte[])acc;                  // acceptCount * uint
