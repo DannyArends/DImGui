@@ -86,10 +86,15 @@ void storeBlock(ref GameApp app, uint stockpileID, uint blockID) {
   }
 }
 
+bool acceptedByHolder(ref GameApp app, uint blockID, ResourceType type) {
+  foreach(ref sp; app.world.stockpiles){ if(sp.contents.canFind(blockID)) { return sp.acceptsType(type); } }
+  return false;
+}
+
 /** Anti-reshuffle: a block already in an accepting pile is settled */
 bool isSettled(ref GameApp app, uint blockID, ResourceType type) {
-  foreach(ref sp; app.world.stockpiles){ if(sp.acceptsType(type) && sp.contents.canFind(blockID)){ return true; } }
-  return false;
+  foreach(ref sp; app.world.stockpiles) { if(sp.contents.canFind(blockID)){ return sp.acceptsType(type); } }  // verdict from the HOLDER
+  return false;                                                     // not in any pile -> not settled
 }
 
 uint countOf(ref GameApp app, ref Stockpile sp, ResourceType t) {
