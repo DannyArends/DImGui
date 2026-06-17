@@ -14,6 +14,7 @@ import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
 import hits : getHits;
 import gameobjects : PendingBuild;
 import geometry : setColor;
+import stockpile : createStockpile;
 import tile : tileToWorld, getTileAt, tileAbove;
 import matrix : translateScale;
 import vegetation : getBestVegetation;
@@ -51,8 +52,6 @@ void interactCommit(ref GameApp app, int[3] tile) {
   if(!app.tryAssign(job)) jobQueue ~= job;
 }
 
-void stockpileCommit(ref GameApp app, int[3] tile) { app.createStockpile(app.world.inventory.paint.preview); }
-
 void openBuildSelection(ref GameApp app) {
   if(app.world.inventory.paint.preview.length == 0) return;
   app.world.inventory.buildSelection = [];
@@ -68,7 +67,7 @@ immutable Tool[] tools = [
   Tool(ToolMode.Mine, cast(string)ICON_FA_PERSON_DIGGING, Colors.orangered, &mineHighlight, ToolKind.RayPaint, &mineCommit, true),
   Tool(ToolMode.Interact, cast(string)ICON_FA_TREE, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit, false),
   Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null, false),
-  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, &stockpileCommit, true),
+  Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null, true),
 ];
 
 /** Info: pick a dwarf/object for the sidebar */
@@ -168,7 +167,11 @@ void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
 void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: break;
-    case ToolKind.RayPaint: if(app.world.inventory.paint.active) app.commitPaint(); break;
+    case ToolKind.RayPaint:
+      if(app.world.inventory.activeTool == ToolMode.Stockpile){
+        app.createStockpile(app.world.inventory.paint.preview);
+      }else if(app.world.inventory.paint.active){ app.commitPaint(); }
+    break;
     case ToolKind.BuildPaint: if(app.world.inventory.paint.active) app.openBuildSelection(); break;
   }
 }
