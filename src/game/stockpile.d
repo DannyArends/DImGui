@@ -5,6 +5,7 @@
 
 import game;
 
+import vector : sqDist;
 import tile : tileToWorld;
 
 struct Stockpile {
@@ -38,11 +39,15 @@ uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[
   foreach(id, ref sp; app.world.stockpiles) {
     if(!sp.acceptsType(type) || !sp.hasFreeSlot) continue;
     foreach(t; sp.tiles) {
-      float d = dist2(from, t);
+      auto d = sqDist(from, t); 
       if(d < bestD) { bestD = d; best = id; tile = t; }   // any tile of the pile; sub-slot chosen at store time
     }
   }
   return best;
+}
+
+void storeBlockAt(ref GameApp app, int[3] tile, uint blockID) {
+  if(auto id = tile in app.world.stockpileAt) app.storeBlock(*id, blockID);
 }
 
 /** Park a carried block into a pile */
