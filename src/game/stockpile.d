@@ -40,9 +40,10 @@ void createStockpile(ref GameApp app, int[3][] tiles) {
 /** Delete a pile: spill its blocks back to the floor and clear the zone */
 void removeStockpile(ref GameApp app, uint id) {
   if(auto sp = id in app.world.stockpiles) {
-    foreach(i, blockID; sp.contents)
-      if(auto b = blockID in app.world.blocks) b.tile = sp.tiles[i / slotsPerTile];  // drop onto its tile
-    foreach(t; sp.tiles) app.world.stockpileAt.remove(t);
+    foreach(i, blockID; sp.contents){
+      if(auto b = blockID in app.world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; }
+    }
+    foreach(t; sp.tiles){ app.world.stockpileAt.remove(t); }
     app.world.stockpiles.remove(id);
     app.syncBlockInstances();
   }
