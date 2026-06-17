@@ -59,6 +59,7 @@ void syncBuildGhosts(ref GameApp app) {
   app.addTiles(buildTiles, ToolMode.Build);
   foreach(tile; buildTiles) app.world.data.tilePenalties[tile] = 40.0f;
   app.addTiles(mineTiles, ToolMode.Mine);
+  foreach(ref sp; app.world.stockpiles){ app.addTiles(sp.tiles, ToolMode.Stockpile); }
   app.addTiles(app.world.inventory.paint.preview, app.world.inventory.activeTool);
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
