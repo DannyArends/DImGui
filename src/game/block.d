@@ -114,6 +114,26 @@ DrawInstance toDropInstance(World world, uint id, ref Block b) {
   return DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, [sz, sz, sz]));
 }
 
+/** Append instances for every stored block at its sub-cell within the owning pile */
+void syncStockpileInstances(ref GameApp app) {
+  float bs = app.world.blockSize;
+  foreach(ref sp; app.world.stockpiles) {
+    foreach(i, blockID; sp.contents) {
+      auto b = blockID in app.world.blocks;
+      if(b is null) continue;
+      auto meshName = resourceData(b.type).meshName;
+      int[3] tile   = sp.tiles[i / slotsPerTile];
+      float[3] base = app.world.tileToWorld(tile, -app.world.blockOffset);
+      float[3] off  = app.subCellOffset(cast(uint)(i % slotsPerTile));
+      float[3] pos  = [base[0] + off[0], base[1] + off[1], base[2] + off[2]];
+      b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
+      app.world.dropMeshes[meshName].instances ~= DrawInstance(
+        [cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color,
+        translateScale(pos, [bs, bs, bs]));
+    }
+  }
+}
+
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref GameApp app) {
   if(app.world.dropMeshes.length == 0) return;
@@ -126,6 +146,7 @@ void syncBlockInstances(ref GameApp app) {
       ? DrawInstance([cast(uint)b.type, cast(uint)b.type], Matrix().scale([0.0f, 0.0f, 0.0f]))
       : app.world.toDropInstance(id, b);
   }
+  app.syncStockpileInstances();
   foreach(ref mesh; app.world.dropMeshes.values) mesh.instances.buffered = false;
 }
 
