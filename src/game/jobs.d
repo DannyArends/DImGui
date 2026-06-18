@@ -109,7 +109,7 @@ void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
 
   b.reserved = true;
   j.blockIDs = [id];
-  j.targetTile = (b.tile == storedTile) ? target.tileAbove : target;
+  j.targetTile = target;
 }
 
 /** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
@@ -147,9 +147,11 @@ Job pinnedPickup(uint blockID, int[3] fromTile, ResourceType type) {
 Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
   return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID],
     onArrive: (ref GameApp app, ref Dwarf d) {
-      auto picked = app.useCarriedBlock(d, d.currentJob.tileType);
-      if(picked == noBlock) { d.currentJob.onFail(app, d); return; }
-      app.storeBlockAt(d.currentJob.targetTile, picked);
+      auto picked = d.carrying.filter!(id => app.blockType(id) == d.currentJob.tileType);
+      if(picked.empty) { d.currentJob.onFail(app, d); return; }
+      auto blockID = picked.front;
+      d.use(app, blockID);                                  // remove from inventory (no builtTile)
+      app.storeBlockAt(d.currentJob.targetTile, blockID);   // sets tile = storedTile, adds to pile
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) {

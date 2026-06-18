@@ -55,6 +55,10 @@ void showDwarfRow(ref GameApp app, size_t i, ref Dwarf d) {
 
   igSameLine(0, 5);
   text("%s - %s", d.tile, dwarfStatus(d));
+  if(d.hasJob) {
+    auto j = d.currentJob;
+    text("    -> %s tgt=%s blk=%s reach=%d", j.name, j.targetTile, j.blockIDs.length ? format("%d", j.blockIDs[0]) : "-", cast(int)j.reach);
+  }
 }
 
 /** One inventory slot cell: empty placeholder, or item icon with count + click-to-drop */
