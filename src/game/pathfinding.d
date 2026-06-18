@@ -80,6 +80,7 @@ bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Re
   obj.targetTile = targetTile;
   auto goalTile = app.findGoalTile(obj, reach);
   if(goalTile == noTile) return false;
+  if(obj.hasJob) obj.currentJob.goalTile = goalTile;
   if(goalTile == obj.tile) { obj.path = []; obj.state = DwarfState.Working; return true; }
   app.pathfindTo(obj, goalTile);
   return true;
