@@ -78,33 +78,30 @@ void invalidatePaths(ref GameApp app, int[3] tile) {
  * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
 bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
   obj.targetTile = targetTile;
-  auto goalTile = app.findGoalTile(obj, reach);
-  if(goalTile == noTile) return false;
-  if(obj.hasJob) obj.currentJob.goalTile = goalTile;
-  if(goalTile == obj.tile) { obj.path = []; obj.state = DwarfState.Working; return true; }
-  app.pathfindTo(obj, goalTile);
+  auto goal = app.findGoalTile(targetTile, obj.tile, reach);
+  if(goal == noTile) return false;
+  if(goal == obj.tile) { obj.path = []; obj.state = DwarfState.Working; return true; }
+  app.pathfindTo(obj, goal);
   return true;
 }
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
-int[3] findGoalTile(T)(ref GameApp app, ref T obj, Reach reach = Reach.Adjacent) {
-  if(reach == Reach.OnTile) return app.world.isStandable(obj.targetTile) ? obj.targetTile : noTile;
+int[3] findGoalTile(ref GameApp app, int[3] targetTile, int[3] from, Reach reach = Reach.Adjacent) {
+  if(reach == Reach.OnTile) return app.world.isStandable(targetTile) ? targetTile : noTile;
 
-  int[3] goalTile = noTile;
+  int[3] best = noTile;
   float bestScore = float.max;
   void consider(int[3] n) {
     if(!app.world.isStandable(n)) return;
-    float score = manhattan2D(n, obj.tile) + app.world.data.tilePenalties.get(n, 0.0f);
-    if(score < bestScore) { bestScore = score; goalTile = n; }
+    float score = manhattan2D(n, from) + app.world.data.tilePenalties.get(n, 0.0f);
+    if(score < bestScore) { bestScore = score; best = n; }
   }
 
-  if(reach == Reach.AdjacentOrAbove) consider(obj.targetTile.tileAbove);   // standing on top is valid
-  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
-    if(n[1] != obj.targetTile[1]) continue;                                // same-Y adjacency, matches atDestination
-    consider(n);
-  }
-  return goalTile;
+  if(reach == Reach.AdjacentOrAbove) consider(targetTile.tileAbove);   // standing on top is valid
+  auto nb = app.world.tileNeighbours(targetTile);
+  foreach(i; [0, 1, 4, 5]) { if(nb[i][1] == targetTile[1]) consider(nb[i]); }   // ±x/±z, same-Y = manhattan2D==1
+  return best;
 }
 
 bool canMoveTo(T)(T wd, float[3] pos) {

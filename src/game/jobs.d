@@ -27,7 +27,6 @@ struct Job {
   bool[uint] failedBy;
   JobState state = JobState.Pending;
   Reach reach = Reach.Adjacent;
-  int[3] goalTile = noTile;        /// resolved standable tile the dwarf paths to (set at dispatch/repath)
 
   bool function(ref GameApp app, ref Job j) isValid;
   void function(ref GameApp app, ref Dwarf d, ref Job j) onClaim;
@@ -294,9 +293,8 @@ bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
   if(!d.hasJob) { d.clearGoal(); return false; }
   d.targetTile = d.currentJob.targetTile;
 
-  auto goal = app.findGoalTile(d, d.currentJob.reach);
+  auto goal = app.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
   if(goal == noTile) { app.rejectJob(d, job); return false; }
-  d.currentJob.goalTile = goal;
   if(goal == d.tile) { d.state = DwarfState.Working; return true; }
   app.pathfindTo(d, goal);
   return true;
