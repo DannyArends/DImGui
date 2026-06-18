@@ -124,6 +124,7 @@ struct Dwarf {
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 
+  Fall fall;                                /// PhysX
   size_t lightIndex = size_t.max; 
 
   DwarfState state = DwarfState.Idle;
@@ -132,6 +133,7 @@ struct Dwarf {
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }
   @property ref Job currentJob() { return(jobStack[0]); }
+  @property bool isFalling() const { return fall.isFalling; }
 }
 
 /** Follow the next step in object T's path.
@@ -326,3 +328,23 @@ bool loadDwarfs(ref GameApp app) {
   return true;
 }
 
+void unsettleDwarves(ref GameApp app, int[3] minedTile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(d.tile[0] != minedTile[0] || d.tile[2] != minedTile[2] || d.tile[1] < minedTile[1]) continue;
+    if(!d.fall.isFalling) { d.fall.start(app.world, d.tile); d.clearGoal(); }
+  }
+}
+
+void settleDwarves(ref GameApp app, float dt) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(!d.fall.isFalling) continue;
+    int[3] landed;
+    if(d.fall.step(app.world, d.tile, dt, 0.0f, landed)) {
+      d.tile = landed;
+      d.visualPos = app.world.tileToWorld(d.tile);
+      d.moveT = 1.0f;
+    } else { d.visualPos[1] = d.fall.y; }
+  }
+}
