@@ -9,6 +9,7 @@ import inventory : deriveInventory;
 import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
 import normals : computeTangents;
+import physx : inColumn;
 import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset,storedTileOf;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
@@ -155,7 +156,7 @@ void syncBlockInstances(ref GameApp app) {
 /** Mark blocks above a mined tile as falling */
 void unsettleBlocks(ref World world, ref Block[uint] blocks, int[3] minedTile) {
   foreach(id, ref b; blocks) {
-    if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
+    if(!inColumn(b.tile, minedTile)) continue;
     b.fall.start(world, b.tile, -world.blockOffset);
   }
 }
