@@ -13,6 +13,7 @@ public import inventory : Inventory;
 public import jobs : Job, JobState, Reach;
 public import gameobjects : Chunk, Dwarves, PathMarkers, GhostCube;
 public import pathfinding : PathRequest, PathResult;
+public import physx : Fall;
 public import searchnode : PathNode;
 public import stockpile : Stockpile;
 public import tool : ToolMode, PaintState;
@@ -108,6 +109,7 @@ void updateGame(ref GameApp app, double dt) {
   app.injectResourceMeshes();
   if(app.textures.loaded) { app.updateMaterials(); app.textures.loaded = false; }
   app.world.settleBlocks(dt);
+  app.settleDwarves(dt);
   app.updateWorld(app.camera.lookat);
   app.shadows.bounds = [app.world.height, app.world.radius];
 }

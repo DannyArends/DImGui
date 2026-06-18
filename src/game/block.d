@@ -21,14 +21,11 @@ struct Block {
   ResourceType type;                /// Block type
   int[3] tile;                      /// Current tile position
   float[2] fallState;               /// [y, v] fall physics, [0,0] if not falling
+  Fall fall;                        /// PhysX
   size_t instanceIdx = size_t.max;  /// Instance IDX
   bool reserved = false;            /// Reserved for a job ?
 
-  @property @nogc bool isFalling() nothrow { return fallState[1] != 0.0f; }
-  @property @nogc float y() nothrow { return fallState[0]; }
-  @property @nogc float v() nothrow { return fallState[1]; }
-  @property @nogc void y(float val) nothrow { fallState[0] = val; }
-  @property @nogc void v(float val) nothrow { fallState[1] = val; }
+  @property @nogc bool isFalling() nothrow { return fall.isFalling; }
 }
 
 /** Save blocks */
@@ -159,10 +156,10 @@ void syncBlockInstances(ref GameApp app) {
 /** Mark blocks above a mined tile as falling 
  * TODO: Animate fall for dwarves using a Dwarf.fallState and settleDwarves(world, dt) updater:
  * integrate velocity, land on surfaceAt, zero fallState, snap visualPos, clearGoal on land. */
-void unsettleBlocks(const World world, ref Block[uint] blocks, int[3] minedTile) {
+void unsettleBlocks(ref World world, ref Block[uint] blocks, int[3] minedTile) {
   foreach(id, ref b; blocks) {
     if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
-    if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile, -world.blockOffset)[1], 0.001f];
+    b.fall.start(world, b.tile, -world.blockOffset);
   }
 }
 
@@ -171,13 +168,10 @@ void settleBlocks(ref World world, float dt) {
   if(world.blocks.length == 0) return;
   bool changed = false;
   foreach(id, ref b; world.blocks) {
-    if(!b.isFalling) continue;
-    b.v = b.v + (2.5f * dt);
-    b.y = b.y - (b.v * dt);
-    int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
-    float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
-    if(b.y <= landY) { b.tile = [b.tile[0], landTileY + 1, b.tile[2]]; b.fallState = [0.0f, 0.0f]; }
-    float posY = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1];
+    if(!b.fall.isFalling) continue;
+    int[3] landed;
+    if(b.fall.step(world, b.tile, dt, -world.blockOffset, landed)) b.tile = landed;
+    float posY = b.fall.isFalling ? b.fall.y : world.tileToWorld(b.tile, -world.blockOffset)[1];
     world.dropMeshes[resourceData(b.type).meshName].instances[b.instanceIdx].matrix[13] = posY;
     changed = true;
   }
