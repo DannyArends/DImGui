@@ -21,14 +21,22 @@ struct PathResult {
   bool success;
 }
 
+/** Log a failed path search with closest-approach diagnostics */
+void logPathFail(S)(ref S result, PathRequest req) {
+  float minH = float.max;
+  foreach(idx; result.closedset.byValue) if(result.pool[idx].h < minH) minH = result.pool[idx].h;
+  SDL_Log("PATHFAIL state=%d from=[%d,%d,%d] goal=[%d,%d,%d] steps=%d open=%d closed=%d minH=%.2f",
+    cast(int)result.state, req.fromTile[0], req.fromTile[1], req.fromTile[2],
+    req.goalTile[0], req.goalTile[1], req.goalTile[2], cast(int)result.steps,
+    cast(int)result.openlist.length, cast(int)result.closedset.length, minH);
+}
+
 PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3] start = wd.tileToWorld(req.fromTile);
   float[3] goal  = wd.tileToWorld(req.goalTile);
   auto result = performSearch!(WorldData, PathNode, getSuccessors)(start, goal, cast(WorldData)wd, false);
   if(result.state != SearchState.SUCCEEDED) {
-    SDL_Log("PATHFAIL state=%d from=[%d,%d,%d] goal=[%d,%d,%d] steps=%d open=%d",
-      cast(int)result.state, req.fromTile[0], req.fromTile[1], req.fromTile[2],
-      req.goalTile[0], req.goalTile[1], req.goalTile[2], cast(int)result.steps, cast(int)result.openlist.length);
+    result.logPathFail(req);
     return PathResult(req.dwarfUID, [], false);
   }
   float[3][] path;
