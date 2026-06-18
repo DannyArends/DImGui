@@ -6,6 +6,7 @@
 import game;
 
 import block : unsettleBlocks;
+import dwarf : unsettleDwarves;
 import game : GameApp;
 import gameobjects : Chunk;
 import deletion : deAllocate;

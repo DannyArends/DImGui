@@ -25,7 +25,7 @@ public import world : World, WorldData;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
 import chunk : buildChunkData, finalizeChunk;
-import dwarf : spawnDwarf, loadDwarfs;
+import dwarf : spawnDwarf, loadDwarfs, settleDwarves;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
 import imgui : iconTextStr;
