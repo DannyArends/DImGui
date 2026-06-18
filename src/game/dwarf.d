@@ -13,7 +13,7 @@ import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
 import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
-import pathfinding : pathfindTo, repathTo;
+import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
 import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination, blockType;
 import rnjesus : randomizeName;
@@ -231,14 +231,22 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
       break;
     case DwarfState.Working:
       if(!d.hasJob) { d.state = DwarfState.Idle; break; }
-      if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) {
-        d.blockedSince = 0;
-        d.currentJob.onArrive(app, d);
-      } else {
-        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) {
-          d.state = DwarfState.WaitingForPath;
-        } else { d.currentJob.onFail(app, d); }
+      bool at = app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach);
+      static uint last = 0;
+      if(!at && app.totalFramesRendered - last > 60) {
+        last = app.totalFramesRendered;
+        auto g = app.findGoalTile(d, d.currentJob.reach);
+          SDL_Log("STUCK %s job=%s d=[%d,%d,%d] tgt=[%d,%d,%d] reach=%d goal=[%d,%d,%d] pathLen=%d",
+          d.name.ptr, d.currentJob.name.ptr,
+          d.tile[0], d.tile[1], d.tile[2],
+          d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2],
+          cast(int)d.currentJob.reach,
+          g[0], g[1], g[2],
+          cast(int)d.path.length);
       }
+      if(at) { d.blockedSince = 0; d.currentJob.onArrive(app, d); }
+      else if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) d.state = DwarfState.WaitingForPath;
+      else d.currentJob.onFail(app, d);
       break;
     case DwarfState.Blocked: app.handleBlocking(d); break;
   }
