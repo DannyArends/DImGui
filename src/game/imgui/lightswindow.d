@@ -9,7 +9,8 @@ import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
 import widgets : colValue, setting, text, sliderFloat3, infoRow;
 
-/** Show the GUI window which allows us to manipulate lighting */
+/** Show the GUI window which allows us to manipulate lighting 
+ *  TODO: lightswindow rows -> labelCol/infoRow */
 void showLightsContent(ref GameApp app, uint font = 0) {
   auto lightsBefore = app.lights.lights.dup;
 
