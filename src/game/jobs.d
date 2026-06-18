@@ -146,7 +146,7 @@ Job pinnedPickup(uint blockID, int[3] fromTile, ResourceType type) {
 
 /** Store in stockpile */
 Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
-  return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID],
+  return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID], reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Dwarf d) {
       auto picked = d.carrying.filter!(id => app.blockType(id) == d.currentJob.tileType);
       if(picked.empty) { d.currentJob.onFail(app, d); return; }
@@ -174,7 +174,7 @@ Job interactFeatureJob(int[3] targetTile) {
 
 /** Pickup Job */
 Job pickupJob(int[3] targetTile, ResourceType tileType) {
-  return Job("Fetching", targetTile, tileType, [], true, reach: Reach.AdjacentOrAbove,
+  return Job("Fetching", targetTile, tileType, [], true, reach: Reach.Adjacent,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref GameApp app, ref Dwarf d) { app.doPickup(d); },
     onFail: (ref GameApp app, ref Dwarf d) {
