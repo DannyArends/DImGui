@@ -130,8 +130,9 @@ struct Dwarf {
 
   DwarfState state = DwarfState.Idle;
   uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
+  uint repathAttempts = 0;                  /// Consecutive repaths on current sub-job without arriving
 
-  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; state = DwarfState.Idle; }
+  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = DwarfState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }
   @property ref Job currentJob() { return(jobStack[0]); }
   @property bool isFalling() const { return fall.isFalling; }
@@ -246,12 +247,12 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
     case DwarfState.Working:
       if(!d.hasJob) { d.state = DwarfState.Idle; break; }
       if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) { 
-        d.blockedSince = 0; d.currentJob.onArrive(app, d); 
+        d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d); 
       } else { 
-        app.logStuck(d);
+        if(++d.repathAttempts > 3) app.logStuck(d);
         if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)){
           d.state = DwarfState.WaitingForPath;
-        }else{ SDL_Log("REPATHFAIL uid=%d", d.uid); d.currentJob.onFail(app, d); }
+        }else{ d.currentJob.onFail(app, d); }
       }
       break;
     case DwarfState.Blocked: app.handleBlocking(d); break;
