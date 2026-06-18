@@ -168,13 +168,13 @@ bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
   return false;
 }
 
-void dropPending(ref GameApp app, in FeatureT ft, int[3] coord, int[3] tile) {
+void dropPending(ref GameApp app, const FeatureT ft, int[3] coord, int[3] tile) {
   if(ft.name !in app.world.pendingFeatures || coord !in app.world.pendingFeatures[ft.name]) return;
   app.world.pendingFeatures[ft.name][coord] = app.world.pendingFeatures[ft.name][coord].filter!(pf => pf.rootTile != tile).array;
 }
 
 /** Harvest every feature of type `ft` rooted at `tile` (spawns drops, removes the feature). Returns true if any harvested. */
-bool harvestFeatureType(ref GameApp app, in FeatureT ft, int[3] tile, int[3] coord) {
+bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] coord) {
   if(ft.name !in app.world.features || coord !in app.world.features[ft.name]) return false;
   bool any = false;
   for(size_t i = 0; i < app.world.features[ft.name][coord].length; ) {
@@ -198,7 +198,7 @@ bool harvestFeatureType(ref GameApp app, in FeatureT ft, int[3] tile, int[3] coo
 void interactFeaturesAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   bool any = false;
-  foreach(ref ft; features) any |= app.harvestFeatureType(ft, tile, coord);
+  foreach(const ft; features) any |= app.harvestFeatureType(ft, tile, coord);
   if(any) {
     app.world.unsettleBlocks(app.world.blocks, tile);
     app.rebuildAllFeatures();
