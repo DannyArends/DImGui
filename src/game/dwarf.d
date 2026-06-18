@@ -208,6 +208,20 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
   }
 }
 
+void logStuck(ref GameApp app, ref Dwarf d) {
+  static uint last = 0;
+  if(app.totalFramesRendered - last < 60) return;
+  last = app.totalFramesRendered;
+  auto g = app.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
+  SDL_Log("STUCK %s job=%s d=[%d,%d,%d] tgt=[%d,%d,%d] reach=%d goal=[%d,%d,%d] pathLen=%d",
+    d.name.ptr, d.currentJob.name.ptr,
+    d.tile[0], d.tile[1], d.tile[2],
+    d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2],
+    cast(int)d.currentJob.reach,
+    g[0], g[1], g[2],
+    cast(int)d.path.length);
+}
+
 /** A single dwarf being ticked */
 void tickDwarf(ref GameApp app, ref Dwarf d) {
   d.hunger = min(1.0f, d.hunger + 0.00040f);
@@ -231,22 +245,13 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
       break;
     case DwarfState.Working:
       if(!d.hasJob) { d.state = DwarfState.Idle; break; }
-      bool at = app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach);
-      static uint last = 0;
-      if(!at && app.totalFramesRendered - last > 60) {
-        last = app.totalFramesRendered;
-        auto g = app.findGoalTile(d, d.currentJob.reach);
-          SDL_Log("STUCK %s job=%s d=[%d,%d,%d] tgt=[%d,%d,%d] reach=%d goal=[%d,%d,%d] pathLen=%d",
-          d.name.ptr, d.currentJob.name.ptr,
-          d.tile[0], d.tile[1], d.tile[2],
-          d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2],
-          cast(int)d.currentJob.reach,
-          g[0], g[1], g[2],
-          cast(int)d.path.length);
-      }
-      if(at) { d.blockedSince = 0; d.currentJob.onArrive(app, d); }
-      else if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) d.state = DwarfState.WaitingForPath;
-      else d.currentJob.onFail(app, d);
+      if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) { 
+        d.blockedSince = 0; d.currentJob.onArrive(app, d); 
+      } else { 
+        app.logStuck(d);
+        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)){ 
+          d.state = DwarfState.WaitingForPath;
+        }else{ d.currentJob.onFail(app, d); }
       break;
     case DwarfState.Blocked: app.handleBlocking(d); break;
   }

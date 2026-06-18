@@ -7,8 +7,9 @@ import game;
 
 import block : syncBlockInstances;
 import io : writeFile, readFile;
-import jobs : jobQueue, liveJobs, blockType;
+import jobs : jobQueue, liveJobs, blockType, Reach;
 import serialization : WORLD_MAGIC;
+import pathfinding : findGoalTile;
 import tile : tileToWorld, tileAbove, tileBelow, isStandable, hasStandableNeighbour;
 import vector : sqDist;
 
@@ -58,7 +59,7 @@ uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[
     if(sp.contents.length + pending >= sp.capacity) continue;
     foreach(t; sp.tiles) {
       auto above = t.tileAbove;
-      if(!app.world.hasStandableNeighbour(above)) continue;
+      if(app.findGoalTile(above, from, Reach.Adjacent) == noTile) continue;
       auto d = sqDist(from, above);
       if(d < bestD) { bestD = d; best = id; tile = above; }
     }
