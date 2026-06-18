@@ -390,9 +390,9 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
     if(app.timed!hasBlocks() && d.hasInventorySpace() && uniform(0, 2) == 0) {
       app.dispatchJob(d, pickupJob(noTile, ResourceType.None));
     } else {
-      int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
-      app.pathfindTo(d, wander);
-      d.targetTile = wander;
+      //int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
+      //app.pathfindTo(d, wander);
+      //d.targetTile = wander;
     }
   }
 }
