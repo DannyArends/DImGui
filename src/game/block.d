@@ -63,6 +63,9 @@ int[3] pickupTileFor(ref GameApp app, uint id, ref Block b, bool includeStored) 
   return app.world.hasStandableNeighbour(b.tile) ? b.tile : noTile;
 }
 
+/** Clear the reserved flag on a set of blocks (released on job failure/completion). */
+void releaseBlocks(ref GameApp app, uint[] ids) { foreach(id; ids){ if(auto b = id in app.world.blocks){ b.reserved = false; } } }
+
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
   uint bestID = noBlock;
