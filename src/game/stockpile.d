@@ -67,7 +67,7 @@ uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[
 
 uint pendingStores(ref GameApp app, uint stockpileID) {
   return cast(uint)app.liveJobs("Store").count!((ref j) {
-    auto id = j.targetTile.tileBelow in app.world.stockpileAt;
+    auto id = j.targetTile in app.world.stockpileAt;
     return(id !is null && *id == stockpileID);
   });
 }
