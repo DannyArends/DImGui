@@ -14,6 +14,7 @@ import ghost : syncBuildGhosts;
 import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo;
+import physx : inColumn;
 import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination, blockType;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
@@ -124,7 +125,7 @@ struct Dwarf {
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 
-  Fall fall;                                /// PhysX
+  Fall fall = { weight: 5.0f };             /// PhysX
   size_t lightIndex = size_t.max; 
 
   DwarfState state = DwarfState.Idle;
@@ -333,7 +334,7 @@ bool loadDwarfs(ref GameApp app) {
 void unsettleDwarves(ref GameApp app, int[3] minedTile) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves.dwarves) {
-    if(d.tile[0] != minedTile[0] || d.tile[2] != minedTile[2] || d.tile[1] < minedTile[1]) continue;
+    if(!inColumn(d.tile, minedTile)) continue;
     if(!d.fall.isFalling) { d.fall.start(app.world, d.tile); d.clearGoal(); }
   }
 }
