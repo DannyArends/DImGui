@@ -31,6 +31,9 @@ struct Block {
 /** Save blocks */
 void saveBlocks(ref GameApp app) {
   if(app.world.blocks.length == 0) return;
+  foreach(id, ref b; app.world.blocks) {
+    if(b.fall.isFalling) { b.tile = b.fall.landingTile(app.world, b.tile); b.fall = Fall.init; }
+  }
   Block[] flat = app.world.blocks.values;
   writeData(app.world.blocksPath(), flat, app.world.blockNextID);
 }
@@ -41,11 +44,12 @@ void loadBlocks(ref GameApp app) {
   Block[] flat;
   if(!readData(app.world.blocksPath(), flat, app.world.blockNextID)) return;
   foreach(ref b; flat) {
+    b.reserved = false;             // jobs aren't persisted; clear orphaned reservations
+    b.fall = Fall.init;             // no block loads mid-fall
     app.world.blocks[b.id] = b;
     if(b.id >= app.world.blockNextID) app.world.blockNextID = b.id + 1;
   }
   app.syncBlockInstances();
-  foreach(id, ref b; app.world.blocks) { if(b.isFalling) app.world.pendingUnsettle ~= b.tile; }
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
 }
 

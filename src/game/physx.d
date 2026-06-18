@@ -19,6 +19,11 @@ struct Fall {
   @property @nogc void y(float val) nothrow { state[0] = val; }
   @property @nogc void v(float val) nothrow { state[1] = val; }
 
+  int[3] landingTile(ref World world, int[3] tile) {
+    int landTileY = world.surfaceAt(tile[0], tile[1] - 1, tile[2]);
+    return [tile[0], landTileY + 1, tile[2]];
+  }
+
   void start(ref World world, int[3] tile, float yOff = 0.0f) {
     if(isFalling) return;
     state = [world.tileToWorld(tile, yOff)[1], 0.001f];
@@ -27,9 +32,9 @@ struct Fall {
   bool step(ref World world, int[3] tile, float dt, float yOff, out int[3] landed) {
     v = v + gravity * weight * dt;
     y = y - v * dt;
-    int landTileY = world.surfaceAt(tile[0], tile[1] - 1, tile[2]);
-    float landY = world.tileToWorld([tile[0], landTileY + 1, tile[2]], yOff)[1];
-    if(y <= landY) { landed = [tile[0], landTileY + 1, tile[2]]; state = [landY, 0.0f]; return true; }
+    landed = landingTile(world, tile);
+    float landY = world.tileToWorld(landed, yOff)[1];
+    if(y <= landY) { state = [landY, 0.0f]; return true; }
     return false;
   }
 }
