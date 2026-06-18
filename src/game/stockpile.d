@@ -9,7 +9,7 @@ import block : syncBlockInstances;
 import io : writeFile, readFile;
 import jobs : jobQueue, liveJobs, blockType;
 import serialization : WORLD_MAGIC;
-import tile : tileToWorld, tileAbove, tileBelow, isStandable;
+import tile : tileToWorld, tileAbove, tileBelow, isStandable, hasStandableNeighbour;
 import vector : sqDist;
 
 struct Stockpile {
@@ -57,10 +57,9 @@ uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[
     uint pending = app.pendingStores(id);
     if(sp.contents.length + pending >= sp.capacity) continue;
     foreach(t; sp.tiles) {
-      auto above = t.tileAbove;
-      if(!app.world.isStandable(above)) continue;
-      auto d = sqDist(from, above);
-      if(d < bestD) { bestD = d; best = id; tile = above; }
+      if(!app.world.hasStandableNeighbour(t.tileAbove)) continue;   // reachable to stand beside/on
+      auto d = sqDist(from, t);
+      if(d < bestD) { bestD = d; best = id; tile = t; }
     }
   }
   return best;
@@ -74,7 +73,7 @@ uint pendingStores(ref GameApp app, uint stockpileID) {
 }
 
 void storeBlockAt(ref GameApp app, int[3] tile, uint blockID) {
-  if(auto id = tile.tileBelow in app.world.stockpileAt) app.storeBlock(*id, blockID);
+  if(auto id = tile in app.world.stockpileAt) app.storeBlock(*id, blockID);
 }
 
 /** Park a carried block into a pile */
