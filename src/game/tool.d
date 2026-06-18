@@ -35,6 +35,8 @@ struct Tool {
 immutable float os = 1.05f;
 immutable float flat = 0.02f;
 
+// TODO: Fold tool.d buildPress/buildDrag into paintPress/paintDrag
+
 Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
 Matrix interactHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
 Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }

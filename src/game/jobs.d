@@ -36,6 +36,8 @@ struct Job {
 
 Job[] jobQueue;
 
+// TODO: Collapse repeated onFail/onClaim/onArrive into shared handlers (failRequeue/failComplete/failReleaseRequeue/failReleaseComplete)
+
 /** All live jobs matching a name: queued + on every dwarf's stack */
 Job[] liveJobs(ref GameApp app, string name) {
   Job[] r = jobQueue.filter!(j => j.name == name).array;
