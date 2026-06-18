@@ -98,14 +98,13 @@ ResourceType blockType(ref GameApp app, uint id) { auto b = id in app.world.bloc
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
-  int[3] target = (b.tile == storedTile) ? app.storedTileOf(id).tileAbove : b.tile;
+  uint id = j.blockIDs.length ? j.blockIDs[0] : app.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
   auto b = (id == noBlock ? null : id in app.world.blocks);
 
-  // already carrying the needed type AND this isn't a pinned fetch of a specific block -> done
   if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.blockType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
 
   if(b is null) { j.state = JobState.Unavailable; return; }
-  int[3] target = (b.tile == storedTile) ? app.storedTileOf(id) : b.tile;
+  int[3] target = (b.tile == storedTile) ? app.storedTileOf(id).tileAbove : b.tile;
   if(target == noTile) { j.state = JobState.Unavailable; return; }
 
   b.reserved = true;
