@@ -10,7 +10,7 @@ import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
 import stockpile : isSettled, findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
-import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour;
+import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, tileToWorld, getSuccessors, worldToTile;
 import timing : timed;
 import vector : manhattan, manhattan2D;
 
@@ -364,6 +364,23 @@ bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   return false;
 }
 
+/** Ambient roaming: walk up to n random valid steps from the current tile, no goal */
+void roam(ref GameApp app, ref Dwarf d, int n = 5) {
+  float[3] at = app.world.tileToWorld(d.tile);
+  float[3][] path;
+  foreach(_; 0..n) {
+    auto opts = getSuccessors(app.world.data, PathNode(position: at)).filter!(s => !app.isTileOccupied(app.world.worldToTile(s.position))).array;
+    if(opts.empty) break;
+    at = opts[uniform(0, opts.length)].position;
+    path ~= at;
+  }
+  if(path.length == 0) return;
+  d.path = path;
+  d.state = DwarfState.Wandering;
+  d.moveFrom = d.moveTo = d.visualPos;
+  d.moveT = 1.0f;
+}
+
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref GameApp app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
@@ -392,11 +409,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
     d.idleTicks[0] = 0;
     if(app.timed!hasBlocks() && d.hasInventorySpace() && uniform(0, 2) == 0) {
       app.dispatchJob(d, pickupJob(noTile, ResourceType.None));
-    } else {
-      //int[3] wander = [d.tile[0] + uniform(-3, 3), d.tile[1], d.tile[2] + uniform(-3, 3)];
-      //app.pathfindTo(d, wander);
-      //d.targetTile = wander;
-    }
+    } else { app.roam(d); }
   }
 }
 
