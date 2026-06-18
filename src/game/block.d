@@ -45,7 +45,6 @@ void loadBlocks(ref GameApp app) {
   if(!readData(app.world.blocksPath(), flat, app.world.blockNextID)) return;
   foreach(ref b; flat) {
     b.reserved = false;             // jobs aren't persisted; clear orphaned reservations
-    b.fall = Fall.init;             // no block loads mid-fall
     app.world.blocks[b.id] = b;
     if(b.id >= app.world.blockNextID) app.world.blockNextID = b.id + 1;
   }
