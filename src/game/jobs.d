@@ -5,7 +5,7 @@
 
 import game;
 
-import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock;
+import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, releaseBlocks;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
@@ -151,7 +151,7 @@ Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) {
-      foreach(id; d.currentJob.blockIDs) if(auto b = id in app.world.blocks) b.reserved = false;
+      app.releaseBlocks(d.currentJob.blockIDs);
       d.completeSubJob();
     }
   );
@@ -173,7 +173,7 @@ Job pickupJob(int[3] targetTile, ResourceType tileType) {
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref GameApp app, ref Dwarf d) { app.doPickup(d); },
     onFail: (ref GameApp app, ref Dwarf d) {
-      foreach(id; d.currentJob.blockIDs) { if(auto b = id in app.world.blocks) b.reserved = false; }
+      app.releaseBlocks(d.currentJob.blockIDs);
       d.failAndRequeue();
     }
   );
@@ -327,7 +327,7 @@ bool tryAssign(ref GameApp app, ref Job job) {
 
 /** Reject the job and requeue */
 bool rejectJob(ref GameApp app, ref Dwarf d, ref Job job) {
-  foreach(ref j; d.jobStack) { foreach(id; j.blockIDs) { if(auto b = id in app.world.blocks) { b.reserved = false; } } }
+  foreach(ref j; d.jobStack){ app.releaseBlocks(j.blockIDs); }
   job.failedBy[d.uid] = true;
   if(!job.personal) jobQueue ~= job;
   d.clearGoal();
