@@ -169,6 +169,7 @@ enum hopHeight = 2.5f;  // peak of the hop
 void dwarfFrame(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
   foreach(i, ref d; app.world.dwarves) {
+    if(d.isFalling) continue;
     if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
     if(d.moveT >= 1.0f) continue;
     float cost = max(1.0f, resourceData(app.world.getTileAt(d.tile.tileBelow)).cost);
@@ -208,7 +209,8 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
 
 /** A single dwarf being ticked */
 void tickDwarf(ref GameApp app, ref Dwarf d) {
-  d.hunger = min(1.0f, d.hunger + 0.00083f);
+  d.hunger = min(1.0f, d.hunger + 0.00040f);
+  if(d.isFalling) return;
 
   // Drop a job the moment it becomes invalid, in any state
   if(d.hasJob && d.currentJob.isValid !is null && !d.currentJob.isValid(app, d.currentJob)) { d.currentJob.onFail(app, d); }

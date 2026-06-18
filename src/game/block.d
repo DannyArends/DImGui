@@ -20,7 +20,6 @@ struct Block {
   uint id = uint.max;               /// Stable block id (persisted, == its key in world.blocks)
   ResourceType type;                /// Block type
   int[3] tile;                      /// Current tile position
-  float[2] fallState;               /// [y, v] fall physics, [0,0] if not falling
   Fall fall;                        /// PhysX
   size_t instanceIdx = size_t.max;  /// Instance IDX
   bool reserved = false;            /// Reserved for a job ?
@@ -108,7 +107,7 @@ void ensureBlocks(ref GameApp app) {
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   uint id = app.world.blockNextID++;
-  app.world.blocks[id] = Block(id, tt, tile, [0.0f, 0.0f]);
+  app.world.blocks[id] = Block(id, tt, tile);
   app.syncBlockInstances();
   return id;
 }
@@ -153,9 +152,7 @@ void syncBlockInstances(ref GameApp app) {
   foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances.buffered = false; }
 }
 
-/** Mark blocks above a mined tile as falling 
- * TODO: Animate fall for dwarves using a Dwarf.fallState and settleDwarves(world, dt) updater:
- * integrate velocity, land on surfaceAt, zero fallState, snap visualPos, clearGoal on land. */
+/** Mark blocks above a mined tile as falling */
 void unsettleBlocks(ref World world, ref Block[uint] blocks, int[3] minedTile) {
   foreach(id, ref b; blocks) {
     if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
