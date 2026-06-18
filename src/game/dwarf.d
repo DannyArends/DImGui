@@ -249,9 +249,10 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
         d.blockedSince = 0; d.currentJob.onArrive(app, d); 
       } else { 
         app.logStuck(d);
-        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)){ 
+        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)){
           d.state = DwarfState.WaitingForPath;
         }else{ d.currentJob.onFail(app, d); }
+      }
       break;
     case DwarfState.Blocked: app.handleBlocking(d); break;
   }
