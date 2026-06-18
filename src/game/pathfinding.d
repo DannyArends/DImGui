@@ -25,7 +25,12 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3] start = wd.tileToWorld(req.fromTile);
   float[3] goal  = wd.tileToWorld(req.goalTile);
   auto result = performSearch!(WorldData, PathNode, getSuccessors)(start, goal, cast(WorldData)wd, false);
-  if(result.state != SearchState.SUCCEEDED) return PathResult(req.dwarfUID, [], false);
+  if(result.state != SearchState.SUCCEEDED) {
+    SDL_Log("PATHFAIL state=%d from=[%d,%d,%d] goal=[%d,%d,%d] steps=%d open=%d",
+      cast(int)result.state, req.fromTile[0], req.fromTile[1], req.fromTile[2],
+      req.goalTile[0], req.goalTile[1], req.goalTile[2], cast(int)result.steps, cast(int)result.openlist.length);
+    return PathResult(req.dwarfUID, [], false);
+  }
   float[3][] path;
   while(result.pathptr != size_t.max && !result.atGoal()) path ~= result.stepThroughPath(false);
   path ~= result.pool[result.goal].position;

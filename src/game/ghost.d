@@ -52,6 +52,7 @@ void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
 void syncBuildGhosts(ref GameApp app) {
   if(app.world.inventory is null) return;
   app.world.inventory.instances = [];
+  app.world.data.tilePenalties = null;
 
   auto buildTiles = app.activeTiles("Building");
   auto mineTiles = app.activeTiles("Mining");
