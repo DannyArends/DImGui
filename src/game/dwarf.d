@@ -213,13 +213,13 @@ void logStuck(ref GameApp app, ref Dwarf d) {
   if(app.totalFramesRendered - last < 60) return;
   last = app.totalFramesRendered;
   auto g = app.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
-  SDL_Log("STUCK %s job=%s d=[%d,%d,%d] tgt=[%d,%d,%d] reach=%d goal=[%d,%d,%d] pathLen=%d",
-    d.name.ptr, d.currentJob.name.ptr,
+  SDL_Log(cstr("STUCK %s job=%s d=[%d,%d,%d] tgt=[%d,%d,%d] reach=%d goal=[%d,%d,%d] pathLen=%d",
+    d.name, d.currentJob.name,
     d.tile[0], d.tile[1], d.tile[2],
     d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2],
     cast(int)d.currentJob.reach,
     g[0], g[1], g[2],
-    cast(int)d.path.length);
+    cast(int)d.path.length));
 }
 
 /** A single dwarf being ticked */
@@ -251,7 +251,7 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
         app.logStuck(d);
         if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)){
           d.state = DwarfState.WaitingForPath;
-        }else{ d.currentJob.onFail(app, d); }
+        }else{ SDL_Log("REPATHFAIL uid=%d", d.uid); d.currentJob.onFail(app, d); }
       }
       break;
     case DwarfState.Blocked: app.handleBlocking(d); break;

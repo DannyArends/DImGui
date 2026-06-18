@@ -61,6 +61,7 @@ void applyPathResult(ref GameApp app, PathResult result) {
       d.state = DwarfState.Idle;
       return;
     }
+    SDL_Log(cstr("APPLYPATH uid=%d pathLen=%d to=[%.1f,%.1f,%.1f]", d.uid, cast(int)result.path.length, result.path.length?result.path[$-1][0]:0, result.path.length?result.path[$-1][1]:0, result.path.length?result.path[$-1][2]:0));
     d.state = d.hasJob ? DwarfState.Moving : DwarfState.Wandering;
     d.path = result.path;
     d.moveTo = d.moveFrom = d.visualPos;
@@ -146,6 +147,7 @@ Job pinnedPickup(uint blockID, int[3] fromTile, ResourceType type) {
 Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
   return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID], reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Dwarf d) {
+      SDL_Log(cstr("STORED %s tgt=[%d,%d,%d]", d.name, d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2]));
       auto picked = d.carrying.filter!(id => app.blockType(id) == d.currentJob.tileType);
       if(picked.empty) { d.currentJob.onFail(app, d); return; }
       auto blockID = picked.front;
