@@ -149,6 +149,12 @@ T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
   T[3] vPow = v[] * v[]; return(vPow);
 }
 
+@nogc pure bool approx(size_t N)(const float[N] a, const float[N] b) nothrow {
+  import std.math : isClose;
+  foreach (i; 0 .. N) if (!isClose(a[i], b[i], 1e-5f, 1e-5f)) return false;
+  return true;
+}
+
 unittest { import std.math : isClose;
 
   // dot / cross: orthonormal basis identities

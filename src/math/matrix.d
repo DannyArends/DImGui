@@ -270,13 +270,9 @@ float[3] scale(const Matrix m) {
   return inv;
 }
 
-unittest { import std.math : isClose;
-
-  // local helper: element-wise compare with absolute tolerance (handles 0.0 cases)
-  static bool approx(const Matrix a, const Matrix b) {
-    foreach(i; 0 .. 16) { if (!isClose(a[i], b[i], 1e-5f, 1e-5f)) { return(false); } }
-    return(true);
-  }
+unittest {
+  import std.math : isClose;
+  import vector : approx;
 
   Matrix I;                                   // default ctor is identity
   assert(approx(I.multiply(I), I));           // I x I = I

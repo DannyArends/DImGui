@@ -114,3 +114,41 @@ T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
 @nogc pure T[4] vMul(T)(const T[4] v1, const T b) nothrow { T[4] vMul = v1[] * b; return(vMul); }
 @nogc pure T[4] vDiv(T)(const T[4] v1, const T b) nothrow { T[4] vDiv = v1[] / b; return(vDiv); }
 @nogc pure T[4] vPow(T)(const T[4] v1) nothrow { T[4] vPow = v1[] * v1[]; return(vPow); }
+
+unittest {
+  import std.math : isClose;
+  import vector : approx;
+
+  float[4] ident = [0.0f, 0.0f, 0.0f, 1.0f];   // default Quaternion
+
+  // qMul by identity returns the original quaternion
+  float[4] q = [0.1f, 0.2f, 0.3f, 0.4f];
+  assert(approx(qMul(q, ident), q));
+  assert(approx(qMul(ident, q), q));
+
+  // normalize: result is unit length, zero passes through, unit is idempotent
+  auto n = normalize([0.0f, 3.0f, 0.0f, 4.0f]);
+  assert(isClose(sqrt(dot(n, n)), 1.0f));
+  assert(normalize([0.0f, 0.0f, 0.0f, 0.0f]) == [0.0f, 0.0f, 0.0f, 0.0f]);
+  assert(normalize(ident) == ident);
+
+  // dot of identity with itself is 1
+  assert(isClose(dot(ident, ident), 1.0f));
+
+  // angleAxis: 90 degrees about Y gives [0, sin45, 0, cos45]
+  auto qy = angleAxis(90.0f, [0.0f, 1.0f, 0.0f]);
+  float h = sqrt(0.5f);    // sin(45) == cos(45)
+  assert(approx(qy, [0.0f, h, 0.0f, h]));
+
+  // angleAxis with a zero axis falls back to identity (guard at quaternion.d:101)
+  assert(approx(angleAxis(90.0f, [0.0f, 0.0f, 0.0f]), ident));
+
+  // rotate(identity quaternion) is the identity matrix
+  auto m = rotate(ident);
+  foreach (i; 0 .. 16) assert(isClose(m[i], (i % 5 == 0) ? 1.0f : 0.0f, 1e-5f, 1e-5f));
+
+  // slerp endpoints: factor 0 returns start, factor 1 returns end
+  auto qz = angleAxis(90.0f, [0.0f, 0.0f, 1.0f]);
+  assert(approx(slerp(qy, qz, 0.0f), qy));
+  assert(approx(slerp(qy, qz, 1.0f), qz));
+}
