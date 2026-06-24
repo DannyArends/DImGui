@@ -6,6 +6,7 @@
 import game;
 
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
+import clouds : rainTick,settleRain;
 import game : GameApp;
 import hits : getHits;
 import screenshot : saveScreenshot;
@@ -112,7 +113,9 @@ double handleEvents(ref GameApp app) {
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    app.waterTick();
+    app.rainTick();      // spawn new falling drops
+    app.settleRain();    // convert any that have landed this tick
+    app.waterTick();     // sim the resulting water
     app.flushWaterDirty();   // re-mesh chunks whose water moved
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
