@@ -38,6 +38,20 @@ enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
   return app.world.chunks[coord].waterLevel[app.world.tileIdx(tile)];
 }
 
+/** Wake a cell and its 6 neighbours so the sim re-evaluates them next tick. */
+void activate(ref GameApp app, int[3] tile) {
+  static immutable int[3][7] SELF_AND_N = [[0,0,0],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+  foreach(d; SELF_AND_N) {
+    int[3] t = [tile[0]+d[0], tile[1]+d[1], tile[2]+d[2]];
+    if(t[1] < 0 || t[1] >= app.world.chunkHeight) continue;
+    int[3] cc = app.world.chunkCoord(t);
+    if(cc !in app.world.chunks) continue;
+    auto ch = app.world.chunks[cc];
+    int i = app.world.tileIdx(t);
+    if(ch.waterLevel[i] > 0) ch.activeCells ~= i;           // only water cells need simulating
+  }
+}
+
 /** Set water level (0..6) at a world tile; marks the chunk dirty for re-mesh */
 void setWater(ref GameApp app, int[3] tile, ubyte level) {
   int[3] coord = app.world.chunkCoord(tile);
@@ -47,10 +61,11 @@ void setWater(ref GameApp app, int[3] tile, ubyte level) {
   auto chunk = app.world.chunks[coord];
   ubyte old = chunk.waterLevel[idx];
   if(old == level) return;
-  if(old == 0 && level > 0) chunk.wetCells ~= idx;                       // became wet
-  else if(old > 0 && level == 0) chunk.wetCells = chunk.wetCells.remove!(x => x == idx);  // became dry
+  if(old == 0 && level > 0) chunk.wetCells ~= idx;
+  else if(old > 0 && level == 0) chunk.wetCells = chunk.wetCells.remove!(x => x == idx);
   chunk.waterLevel[idx] = cast(ubyte)level;
   chunk.waterDirty = true;
+  app.activate(tile);
 }
 
 /** True if all 6 neighbours of interior tile i are solid (caller guarantees i is not on a boundary) */

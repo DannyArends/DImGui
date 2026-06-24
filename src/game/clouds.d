@@ -16,7 +16,7 @@ enum int CLOUD_LAYERS = 8;
 enum int CLOUD_STEP = 6;
 enum float CLOUD_THRESHOLD = 0.75f;
 enum float CLOUD_FREQ = 0.08f;
-enum int RAIN_DROPS_PER_TICK = 500;     // sparse
+enum int RAIN_DROPS_PER_TICK = 100;     // sparse
 
 private bool isCloud(int tx, int y, int tz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
@@ -77,7 +77,7 @@ void rainTick(ref GameApp app) {
     int[3] spawn = [tx, cloudY, tz];
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;   // need air to spawn into
     uint id = app.spawnBlock(spawn, ResourceType.Water);
-    if(auto b = id in app.world.blocks) b.fall.start(app.world, spawn, -app.world.blockOffset);
+    if(auto b = id in app.world.blocks) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
   }
 }
 
