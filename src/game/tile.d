@@ -30,6 +30,25 @@ enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
   return lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
 }
 
+/** Water level (0..6) at a world tile; 0 if chunk not loaded or out of range */
+@nogc int getWater(T)(ref GameApp app, int[3] tile) nothrow {
+  int[3] coord = app.world.chunkCoord(tile);
+  if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return 0;
+  if(coord !in app.world.chunks) return 0;
+  return app.world.chunks[coord].waterLevel[app.world.tileIdx(tile)];
+}
+
+/** Set water level (0..6) at a world tile; marks the chunk dirty for re-mesh */
+void setWater(T)(ref GameApp app, int[3] tile, ubyte level) {
+  int[3] coord = app.world.chunkCoord(tile);
+  if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return;
+  if(coord !in app.world.chunks) return;
+  int idx = app.world.tileIdx(tile);
+  if(app.world.chunks[coord].waterLevel[idx] == level) return;   // no change, no dirty
+  app.world.chunks[coord].waterLevel[idx] = level;
+  app.world.chunks[coord].dirty = true;
+}
+
 /** True if all 6 neighbours of interior tile i are solid (caller guarantees i is not on a boundary) */
 @nogc pure bool isBuried(T)(T wd, const ResourceType[] types, int i, int[3] lc) nothrow {
   if (lc[1] == 0 || lc[1] >= wd.chunkHeight-1) return false;
