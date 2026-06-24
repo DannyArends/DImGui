@@ -15,7 +15,7 @@ import hits : getHits;
 import gameobjects : PendingBuild;
 import geometry : setColor;
 import stockpile : createStockpile;
-import tile : tileToWorld, getTileAt, tileAbove;
+import tile : tileToWorld, getTileAt, tileAbove, getWater, setWater;
 import matrix : translateScale;
 import vegetation : getBestVegetation;
 
