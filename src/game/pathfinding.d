@@ -36,7 +36,7 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3] start = wd.tileToWorld(req.fromTile);
   float[3] goal  = wd.tileToWorld(req.goalTile);
   auto result = performSearch!(WorldData, PathNode, getSuccessors)(start, goal, cast(WorldData)wd, false);
-  if(result.state != SearchState.SUCCEEDED) {
+  if(result.state != SearchState.SUCCEEDED && result.state != SearchState.PARTIAL) {
     result.logPathFail(req);
     return PathResult(req.dwarfUID, [], false);
   }
