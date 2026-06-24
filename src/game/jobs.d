@@ -92,7 +92,7 @@ bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach
 
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
 void progressJob(ref GameApp app, ref Dwarf d, float amount, void delegate() onComplete) {
-  float speed = (d.currentJob.name == "Eating" || d.currentJob.name == "Sleeping") ? 1.0f : (0.5f + 0.5f * d.mood);
+  float speed = d.currentJob.personal ? 1.0f : (0.5f + 0.5f * d.mood);
   d.progress += amount * speed;
   if(d.progress >= 1.0f) { onComplete(); d.completeSubJob(); d.progress = 0.0f; }
 }
