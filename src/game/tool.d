@@ -19,7 +19,7 @@ import tile : tileToWorld, getTileAt, tileAbove;
 import matrix : translateScale;
 import vegetation : getBestVegetation;
 
-enum ToolMode : ubyte { Info, Select, Mine, Interact, Build, Stockpile }
+enum ToolMode : ubyte { Info, Select, Mine, Interact, Build, Stockpile, Water }
 enum ToolKind : ubyte { Query, RayPaint, BuildPaint }
 
 struct Tool {
@@ -41,6 +41,7 @@ Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale([w
 Matrix interactHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
 Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
 Matrix stockpileHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts*os, th*flat, ts*os]); }
+Matrix waterHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
 
 void mineCommit(ref GameApp app, int[3] tile) {
   if(app.world.getTileAt(tile) == ResourceType.None) return;
@@ -52,6 +53,12 @@ void interactCommit(ref GameApp app, int[3] tile) {
   if(!app.hasFeature(tile, "Fell") && !app.hasFeature(tile, "Gather")) return;
   auto job = interactFeatureJob(tile);
   if(!app.tryAssign(job)) jobQueue ~= job;
+}
+
+void waterCommit(ref GameApp app, int[3] tile) {
+  if(app.world.getTileAt(tile) != ResourceType.None) return;   // only into air, not solid ground
+  ubyte cur = cast(ubyte)app.getWater(tile);
+  app.setWater(tile, cast(ubyte)min(6, cur + 3));              // add 3, cap at 6
 }
 
 void openBuildSelection(ref GameApp app) {
@@ -70,6 +77,7 @@ immutable Tool[] tools = [
   Tool(ToolMode.Interact, cast(string)ICON_FA_TREE, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit, false),
   Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null, false),
   Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null, true),
+  Tool(ToolMode.Water, cast(string)ICON_FA_WATER, Colors.dodgerblue, &waterHighlight, ToolKind.RayPaint, &waterCommit, false),
 ];
 
 /** Info: pick a dwarf/object for the sidebar */

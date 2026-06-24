@@ -12,6 +12,7 @@ import screenshot : saveScreenshot;
 import timing : timed;
 import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
+import water : waterTick;
 
 /** Handle mouse events */
 void handleMouseEvents(ref GameApp app, SDL_Event e) {
@@ -111,6 +112,7 @@ double handleEvents(ref GameApp app) {
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
+    app.waterTick();
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick();
