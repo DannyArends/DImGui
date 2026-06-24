@@ -66,6 +66,7 @@ void applyPathResult(ref GameApp app, PathResult result) {
     /* SDL_Log(cstr("APPLYPATH %s pathLen=%d to=[%.1f,%.1f,%.1f]", d.name, cast(int)result.path.length, result.path.length?result.path[$-1][0]:0, result.path.length?result.path[$-1][1]:0, result.path.length?result.path[$-1][2]:0)); */
     d.state = d.hasJob ? DwarfState.Moving : DwarfState.Wandering;
     d.path = result.path;
+    d.lastPathPartial = result.partial;
     d.moveTo = d.moveFrom = d.visualPos;
     d.moveT = 1.0f;
     return;

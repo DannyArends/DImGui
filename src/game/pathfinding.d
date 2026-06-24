@@ -19,6 +19,7 @@ struct PathResult {
   uint dwarfUID;
   float[3][] path;
   bool success;
+  bool partial;
 }
 
 /** Log a failed path search with closest-approach diagnostics */
@@ -43,7 +44,7 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3][] path;
   while(result.pathptr != size_t.max && !result.atGoal()) path ~= result.stepThroughPath(false);
   path ~= result.pool[result.goal].position;
-  return PathResult(req.dwarfUID, path, true);
+  return PathResult(req.dwarfUID, path, true, (result.state == SearchState.PARTIAL));
 }
 
 /** Pathfind object T to goalTile, returns false if unreachable.

@@ -132,6 +132,7 @@ struct Dwarf {
   size_t lightIndex = size_t.max; 
 
   DwarfState state = DwarfState.Idle;
+  bool lastPathPartial = false;
   uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
   uint repathAttempts = 0;                  /// Consecutive repaths on current sub-job without arriving
 
@@ -258,13 +259,13 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
       break;
     case DwarfState.Working:
       if(!d.hasJob) { d.state = DwarfState.Idle; break; }
-      if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) { 
-        d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d); 
-      } else { 
-        if(++d.repathAttempts > 3) app.logStuck(d);
-        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)){
+      if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) {
+        d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d);
+      } else {
+        if(!d.lastPathPartial && ++d.repathAttempts > 3) { app.logStuck(d); d.currentJob.onFail(app, d); break; }
+        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) {
           d.state = DwarfState.WaitingForPath;
-        }else{ d.currentJob.onFail(app, d); }
+        } else { d.currentJob.onFail(app, d); }
       }
       break;
     case DwarfState.Blocked: app.handleBlocking(d); break;
