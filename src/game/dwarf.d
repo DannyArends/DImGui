@@ -32,10 +32,10 @@ struct InventorySlot {
   ubyte count = 0;                                  /// number of valid ids in resourceIDs
   uint[16] resourceIDs = noBlock;                   /// block/berry ids in this slot (POD, fixed-size)
 
-  @property bool empty() const { return kind == Kind.Empty; }
-  @property bool isBlock() const { return kind == Kind.Block; }
-  @property bool isStack() const { return kind == Kind.Stack; }
-  bool accepts(ResourceType t) {
+  @nogc @property bool empty() const { return kind == Kind.Empty; }
+  @nogc @property bool isBlock() const { return kind == Kind.Block; }
+  @nogc @property bool isStack() const { return kind == Kind.Stack; }
+  @nogc bool accepts(ResourceType t) const {
     if(empty) return true;
     return isStack && this.type == t && count < resourceData(t).maxStack;
   }
@@ -53,10 +53,10 @@ struct DwarfData {
   InventorySlot[32] inventory;                  /// Inventory
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
-  @property float hunger() const { return needs[Need.Hunger]; }
-  @property void hunger(float v) { needs[Need.Hunger] = v; }
-  @property float mood() const { return 1.0f - needs[].maxElement; }
-  @property uint[] carrying() {
+  @nogc @property float hunger() const { return needs[Need.Hunger]; }
+  @nogc @property void hunger(float v) { needs[Need.Hunger] = v; }
+  @nogc @property float mood() const { return 1.0f - needs[].maxElement; }
+  @property uint[] carrying() const {
     uint[] ids;
     foreach(ref s; inventory) if(!s.empty) ids ~= s.resourceIDs[0 .. s.count];
     return ids;

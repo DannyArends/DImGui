@@ -21,10 +21,10 @@ enum Need { Hunger, Rest }                                  /// Current needs
 struct Job {
   string name;                            /// Job name
   int[3] targetTile = noTile;             /// Target tile
-  ResourceType tileType;                  /// TileType required
+  ResourceType tileType;                  /// Resource type this job acts on (block to fetch/place/withdraw); None = any
   Job[] prereqs;                          /// Job prerequisites
   bool personal = false;                  /// Personal ?
-  uint[] blockIDs;                        /// Hmmm ?
+  uint[] blockIDs;                        /// Reserved world-block instance ID(s) claimed; released on fail.
   bool[uint] failedBy;                    /// Who has attempted (and failed) the job
   JobState state = JobState.Pending;      /// State of job
   Reach reach = Reach.Adjacent;           /// How the targetTile should be interacted with
