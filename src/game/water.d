@@ -45,7 +45,7 @@ void waterTick(ref GameApp app) {
   // process only ACTIVE cells (snapshot the lists; setWater will rebuild activeCells for next tick)
   int[][int[3]] active;
   foreach(coord, _; next) { 
-    active[coord] = app.world.chunks[coord].activeCells;
+    active[coord] = app.world.chunks[coord].activeCells.sort.uniq.array;
     app.world.chunks[coord].activeCells = [];
   }
 
@@ -78,7 +78,18 @@ void waterTick(ref GameApp app) {
     }
   }
 
-  // 3. COMMIT — setWater re-activates changed cells + neighbours for next tick
+  // 3. EVAPORATE: water below full has a chance to lose a unit (shallower = faster)
+  foreach(coord, idxs; active) {
+    foreach(idx; idxs) {
+      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
+      int have = app.rdWater(next, wc);
+      if(have <= 0 || have >= WATER_MAX) continue;
+      app.world.chunks[coord].activeCells ~= idx;
+      if(uniform(0, 1000) < (WATER_MAX - have) * 2){ app.wrWater(next, touched, wc, -1); }
+    }
+  }
+
+  // 4. COMMIT — setWater re-activates changed cells + neighbours for next tick
   foreach(coord, idxs; touched) {
     ubyte[] old = app.world.chunks[coord].waterLevel;
     ubyte[] buf = next[coord];
