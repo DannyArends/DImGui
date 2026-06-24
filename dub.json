@@ -81,11 +81,6 @@
 							 "-P-I$PACKAGE_DIR/app/jni/assimp/build/include/"],
 		"lflags": [ "-L$PACKAGE_DIR/app/build/intermediates/cxx/Release/9t656d2k/obj/arm64-v8a" ],
 		"libs": ["SDL3", "SDL3_image", "SDL3_mixer", "SDL3_ttf", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "cimgui", "assimp"]
-	},
-	{
-		"name": "unittest",
-		"targetType": "executable",
-		"targetPath": "bin",
 	}
 ]
 }
