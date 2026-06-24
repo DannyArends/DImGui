@@ -45,7 +45,7 @@ void waterTick(ref GameApp app) {
   // process only ACTIVE cells (snapshot the lists; setWater will rebuild activeCells for next tick)
   int[][int[3]] active;
   foreach(coord, _; next) { 
-    active[coord] = app.world.chunks[coord].activeCells.sort.uniq.array;
+    active[coord] = app.world.chunks[coord].activeCells;
     app.world.chunks[coord].activeCells = [];
   }
 
