@@ -1,4 +1,4 @@
-/** 
+/**
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
@@ -11,70 +11,83 @@ import tile : tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
 enum ubyte WATER_MAX = 6;
 
-/** One water simulation step over all loaded chunks. Double-buffered: reads current, writes next. */
-void waterTick(ref GameApp app) {
-  foreach(coord; app.world.chunks.keys) {
-    auto chunk = app.world.chunks[coord];
-    ubyte[] cur = chunk.waterLevel;
-    ubyte[] next = cur.dup;
-    bool changed = false;
+alias WaterNext = ubyte[][int[3]];
 
-    // 1. SPREAD first
+/** Read level at any world tile from the next-buffer map (0 if unloaded / out of range). */
+private int rdWater(ref GameApp app, ref WaterNext next, int[3] wc) {
+  if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return 0;
+  auto p = app.world.chunkCoord(wc) in next;
+  return p is null ? 0 : (*p)[app.world.tileIdx(wc)];
+}
+
+/** Add delta at any world tile in the next-buffer map. Stops at edge of loaded world. */
+private void wrWater(ref GameApp app, ref WaterNext next, int[3] wc, int delta) {
+  auto p = app.world.chunkCoord(wc) in next;
+  if(p is null) return;
+  int idx = app.world.tileIdx(wc);
+  (*p)[idx] = cast(ubyte)max(0, min(WATER_MAX, (*p)[idx] + delta));
+}
+
+/** One water simulation step over all loaded chunks. Spread then fall, crosses chunk boundaries. */
+void waterTick(ref GameApp app) {
+  // snapshot every loaded chunk's water into a world-addressable next-buffer map
+  WaterNext next;
+  foreach(coord; app.world.chunks.keys) next[coord] = app.world.chunks[coord].waterLevel.dup;
+
+  static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
+
+  // 1. SPREAD: equalize horizontally with lower neighbours
+  foreach(coord; app.world.chunks.keys) {
+    ubyte[] cur = app.world.chunks[coord].waterLevel;
     foreach(i; 0 .. cast(int)cur.length) {
       if(cur[i] == 0) continue;
       int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
-      ubyte have = cur[i];
-      static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
+      int have = cur[i];
       foreach(h; H) {
         int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
         if(!app.canHoldWater(nb)) continue;
-        if(have - app.getWaterNext(chunk, next, nb) >= 2) {
-          addNext(app, chunk, next, wc, -1);
-          addNext(app, chunk, next, nb, 1);
+        if(have - app.rdWater(next, nb) >= 2) {
+          app.wrWater(next, wc, -1);
+          app.wrWater(next, nb, +1);
           have -= 1;
-          changed = true;
         }
       }
     }
+  }
 
-    // 2. FALL after — settles everything, including what just spread
-    foreach(i; 0 .. cast(int)next.length) {
-      if(next[i] == 0) continue;
+  // 2. FALL: settle everything downward (incl. water that spread across a boundary)
+  foreach(coord; app.world.chunks.keys) {
+    ubyte[] buf = next[coord];
+    foreach(i; 0 .. cast(int)buf.length) {
+      if(buf[i] == 0) continue;
       int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
       int[3] below = wc.tileBelow;
       if(!app.canHoldWater(below)) continue;
-      int room = WATER_MAX - app.getWaterNext(chunk, next, below);
-      int move = min(cast(int)next[i], room);
+      int move = min(app.rdWater(next, wc), WATER_MAX - app.rdWater(next, below));
       if(move > 0) {
-        addNext(app, chunk, next, wc, -move);
-        addNext(app, chunk, next, below, move);
-        changed = true;
+        app.wrWater(next, wc, -move);
+        app.wrWater(next, below, +move);
       }
     }
+  }
 
-    if(changed) { chunk.waterLevel = next; chunk.waterDirty = true; }
+  // 3. COMMIT only changed cells via setWater
+  foreach(coord; app.world.chunks.keys) {
+    ubyte[] buf = next[coord];
+    ubyte[] old = app.world.chunks[coord].waterLevel;
+    foreach(i; 0 .. cast(int)buf.length) {
+      if(buf[i] == old[i]) continue;                 // unchanged -> skip
+      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
+      app.setWater(wc, buf[i]);
+    }
   }
 }
 
-/** A cell can hold water if it is in this chunk, in range, and air (not solid ground) */
+/** A cell can hold water if it is in range and air (not solid ground). */
 private bool canHoldWater(ref GameApp app, int[3] wc) {
   import tile : getTileAt;
   if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return false;
   return app.world.getTileAt(wc) == ResourceType.None;
-}
-
-/** Read the next-buffer level at wc IF it belongs to this chunk; else fall back to committed getWater (cross-chunk = read-only for v1) */
-private int getWaterNext(ref GameApp app, Chunk chunk, ubyte[] next, int[3] wc) {
-  if(app.world.chunkCoord(wc) == chunk.coord) return next[app.world.tileIdx(wc)];
-  return app.getWater(wc);     // neighbouring chunk: read current, don't write (v1 scope)
-}
-
-/** Add delta to the next-buffer at wc IF it belongs to this chunk (skip cross-chunk writes for v1) */
-private void addNext(ref GameApp app, Chunk chunk, ubyte[] next, int[3] wc, int delta) {
-  if(app.world.chunkCoord(wc) != chunk.coord) return;   // v1: water stops at chunk edges
-  int idx = app.world.tileIdx(wc);
-  int v = next[idx] + delta;
-  next[idx] = cast(ubyte)max(0, min(WATER_MAX, v));
 }
 
 /** Rebuild water face instances for one chunk from its waterLevel. */
