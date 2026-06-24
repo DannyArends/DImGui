@@ -149,10 +149,10 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     oldTiles.instances.buffered = false;
     chunk.tiles = oldTiles;
     chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
+    chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve sim active set too
     chunk.water = app.world.chunks[data.coord].water;             // reuse the water render object too
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; app.objects ~= chunk.water; }
-  app.objects ~= chunk.water;
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;
