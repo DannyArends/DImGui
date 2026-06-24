@@ -31,7 +31,7 @@ enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
 }
 
 /** Water level (0..6) at a world tile; 0 if chunk not loaded or out of range */
-@nogc int getWater(T)(ref GameApp app, int[3] tile) nothrow {
+@nogc int getWater(ref GameApp app, int[3] tile) nothrow {
   int[3] coord = app.world.chunkCoord(tile);
   if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return 0;
   if(coord !in app.world.chunks) return 0;
@@ -39,7 +39,7 @@ enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
 }
 
 /** Set water level (0..6) at a world tile; marks the chunk dirty for re-mesh */
-void setWater(T)(ref GameApp app, int[3] tile, ubyte level) {
+void setWater(ref GameApp app, int[3] tile, ubyte level) {
   int[3] coord = app.world.chunkCoord(tile);
   if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return;
   if(coord !in app.world.chunks) return;

@@ -40,6 +40,7 @@ import stockpilewindow : showStockpileContent;
 import threading : TaskThread, drainMessages;
 import toolbar : showToolbar;
 import world : loadWorld, saveWorld, updateWorld;
+import waterwindow : showWaterContent;
 import worldwindow : showWorldContent;
 
 /** Worker thread variant that also handles chunk building and pathfinding requests */
@@ -92,6 +93,7 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow("FPS", (uint font){ app.showFPSContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
+  app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
   SDL_Log("initGame: loadDwarfs");
   if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
 
