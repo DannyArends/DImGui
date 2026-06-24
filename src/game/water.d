@@ -16,40 +16,19 @@ void waterTick(ref GameApp app) {
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
     ubyte[] cur = chunk.waterLevel;
-    ubyte[] next = cur.dup;                       // write target
+    ubyte[] next = cur.dup;
     bool changed = false;
 
+    // 1. SPREAD first
     foreach(i; 0 .. cast(int)cur.length) {
-      if(cur[i] == 0) continue;                   // no water here
-      int[3] local = app.world.tileCoord(i);
-      int[3] wc = app.world.worldCoord(coord, local);
-
+      if(cur[i] == 0) continue;
+      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
       ubyte have = cur[i];
-
-      // 1. FALL: push down if the cell below is air and not full
-      int[3] below = wc.tileBelow;
-      if(app.canHoldWater(below)) {
-        int room = WATER_MAX - app.getWaterNext(chunk, next, below);
-        int move = min(cast(int)have, room);
-        if(move > 0) {
-          SDL_Log(cstr("FALL [%d,%d,%d] have=%d -> below [%d,%d,%d] move=%d", wc[0],wc[1],wc[2], have, below[0],below[1],below[2], move));
-          addNext(app, chunk, next, wc, -move);
-          addNext(app, chunk, next, below, move);
-          have -= cast(ubyte)move;
-          changed = true;
-          if(have == 0) continue;
-        }
-      }
-
-      // 2. SPREAD: equalize with the 4 horizontal neighbours that are lower
       static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
       foreach(h; H) {
         int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
         if(!app.canHoldWater(nb)) continue;
-        int nl = app.getWaterNext(chunk, next, nb);
-        int diff = have - nl;
-        if(diff >= 2) {                           // only flow if >=2 apart (avoids 1<->0 oscillation)
-          SDL_Log(cstr("SPREAD [%d,%d,%d] -> [%d,%d,%d] diff=%d", wc[0],wc[1],wc[2], nb[0],nb[1],nb[2], diff));
+        if(have - app.getWaterNext(chunk, next, nb) >= 2) {
           addNext(app, chunk, next, wc, -1);
           addNext(app, chunk, next, nb, 1);
           have -= 1;
@@ -58,9 +37,22 @@ void waterTick(ref GameApp app) {
       }
     }
 
+    // 2. FALL after — settles everything, including what just spread
+    foreach(i; 0 .. cast(int)next.length) {
+      if(next[i] == 0) continue;
+      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
+      int[3] below = wc.tileBelow;
+      if(!app.canHoldWater(below)) continue;
+      int room = WATER_MAX - app.getWaterNext(chunk, next, below);
+      int move = min(cast(int)next[i], room);
+      if(move > 0) {
+        addNext(app, chunk, next, wc, -move);
+        addNext(app, chunk, next, below, move);
+        changed = true;
+      }
+    }
+
     if(changed) { chunk.waterLevel = next; chunk.waterDirty = true; }
-    //int wet = 0; foreach(v; chunk.waterLevel) if(v > 0) wet++;
-    //if(wet > 0) SDL_Log(cstr("waterTick: chunk=[%d,%d,%d] wet=%d changed=%d", coord[0], coord[1], coord[2], wet, changed));
   }
 }
 
