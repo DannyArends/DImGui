@@ -30,6 +30,7 @@ void waterTick(ref GameApp app) {
         int room = WATER_MAX - app.getWaterNext(chunk, next, below);
         int move = min(cast(int)have, room);
         if(move > 0) {
+          SDL_Log(cstr("FALL [%d,%d,%d] have=%d -> below [%d,%d,%d] move=%d", wc[0],wc[1],wc[2], have, below[0],below[1],below[2], move));
           addNext(app, chunk, next, wc, -move);
           addNext(app, chunk, next, below, move);
           have -= cast(ubyte)move;
@@ -46,6 +47,7 @@ void waterTick(ref GameApp app) {
         int nl = app.getWaterNext(chunk, next, nb);
         int diff = have - nl;
         if(diff >= 2) {                           // only flow if >=2 apart (avoids 1<->0 oscillation)
+          SDL_Log(cstr("SPREAD [%d,%d,%d] -> [%d,%d,%d] diff=%d", wc[0],wc[1],wc[2], nb[0],nb[1],nb[2], diff));
           addNext(app, chunk, next, wc, -1);
           addNext(app, chunk, next, nb, 1);
           have -= 1;
@@ -54,7 +56,7 @@ void waterTick(ref GameApp app) {
       }
     }
 
-    if(changed) { chunk.waterLevel = next; chunk.dirty = true; }
+    if(changed) { chunk.waterLevel = next; chunk.waterDirty = true; }
     int wet = 0; foreach(v; chunk.waterLevel) if(v > 0) wet++;
     if(wet > 0) SDL_Log(cstr("waterTick: chunk=[%d,%d,%d] wet=%d changed=%d", coord[0], coord[1], coord[2], wet, changed));
   }
