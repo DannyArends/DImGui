@@ -5,14 +5,18 @@
 
 import game;
 
-import noise : smoothNoise;
-import gameobjects : Clouds;
+import block : spawnBlock, syncBlockInstances;
 import chunk : faceData;
+import gameobjects : Clouds;
+import noise : smoothNoise;
+import tile : getWater, setWater, getTileAt;
+import water : WATER_MAX;
 
 enum int CLOUD_LAYERS = 8;
 enum int CLOUD_STEP = 6;
 enum float CLOUD_THRESHOLD = 0.75f;
 enum float CLOUD_FREQ = 0.08f;
+enum int RAIN_DROPS_PER_TICK = 3;     // sparse
 
 private bool isCloud(int tx, int y, int tz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
@@ -51,4 +55,38 @@ void rebuildClouds(ref GameApp app) {
   }
   app.world.clouds.instances = inst;
   app.world.clouds.instances.buffered = false;
+}
+
+void rainTick(ref GameApp app) {
+  auto coords = app.world.chunks.keys;
+  if(coords.length == 0) return;
+  int cs = app.world.chunkSize;
+  int cloudY = app.world.chunkHeight - 1;   // spawn near top of world (under cloud layer)
+
+  foreach(_; 0 .. RAIN_DROPS_PER_TICK) {
+    int[3] cc = coords[uniform(0, coords.length)];
+    int lx = uniform(0, cs), lz = uniform(0, cs);
+    int tx = cc[0]*cs + lx, tz = cc[2]*cs + lz;
+
+    // only rain where there's actually cloud overhead
+    if(!isCloud(tx/CLOUD_STEP, 0, tz/CLOUD_STEP)) continue;   // sample cloud field at this column
+
+    int[3] spawn = [tx, cloudY, tz];
+    if(app.world.getTileAt(spawn) != ResourceType.None) continue;   // need air to spawn into
+    uint id = app.spawnBlock(spawn, ResourceType.Water);
+    if(auto b = id in app.world.blocks) b.fall.start(app.world, spawn, -app.world.blockOffset);
+  }
+}
+
+/** Convert any landed rain (Water blocks no longer falling) into water level. */
+void settleRain(ref GameApp app) {
+  uint[] done;
+  foreach(id, ref b; app.world.blocks) {
+    if(b.type != ResourceType.Water) continue;
+    if(b.isFalling) continue;                 // still in the air
+    app.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.getWater(b.tile) + 1));
+    done ~= id;
+  }
+  foreach(id; done) app.world.blocks.remove(id);
+  if(done.length) app.syncBlockInstances();
 }
