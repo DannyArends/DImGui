@@ -23,6 +23,7 @@ import vector : cross, dot;
 struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
   ResourceType[] tileTypes;                                 /// Tile type for each tile in the chunk
+  ubyte[] waterLevel;                                       /// 0 = none, 1..6 = depth; parallel to tileTypes
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
@@ -106,6 +107,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   ChunkData data = ChunkData(coord, wd.buildTileTypes(coord));
+  data.waterLevel.length = data.tileTypes.length;   // all zero = no water
   wd.buildTileGeometry(coord, data);
   foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
