@@ -50,7 +50,7 @@ float[3] rayAtY(float[3][2] ray, float y) {
   if (tzmin > i.tmin) i.tmin = tzmin;
   if (tzmax < i.tmax) i.tmax = tzmax;
 
-  if (i.tmax > -0.5f){
+  if (i.tmax >= 0.0f) {
    /* Debug for intercept calculation
     SDL_Log("tmin: %s, tmax: %s", tmin, tmax);
     SDL_Log("tymin: %s, tymax: %s", tymin, tymax);
@@ -74,3 +74,36 @@ pure Intersection[] intersects(T)(const float[3][2] ray, const T box, size_t ind
   return(intersections);
 }
 
+unittest {
+  import std.math : isClose;
+  import vector : approx;
+
+  float[3] bmin = [-1.0f, -1.0f, -1.0f];
+  float[3] bmax = [ 1.0f,  1.0f,  1.0f];
+
+  // default Intersection is falsey via `alias intersects this`
+  assert(!Intersection.init);
+
+  // head-on hit: ray from -Z aimed at +Z. Note dir.x==dir.y==0, so the X/Y
+  // slabs go through inf arithmetic -- this is the case worth pinning.
+  float[3][2] hit = [[0.0f, 0.0f, -5.0f], [0.0f, 0.0f, 1.0f]];
+  auto a = hit.intersects(bmin, bmax, 7, 3);
+  assert(a.intersects);
+  assert(approx(a.intersection,    [0.0f, 0.0f, -1.0f]));   // enters front face
+  assert(approx(a.intersectionOut, [0.0f, 0.0f,  1.0f]));   // exits back face
+  assert(isClose(a.tmin, 4.0f) && isClose(a.tmax, 6.0f));
+  assert(a.idx == [cast(size_t)7, cast(size_t)3]);          // index + instance stored
+
+  // miss: same ray direction but pointing AWAY from the box (box is behind).
+  // tmax ends up <= -0.5f, so it is rejected.
+  float[3][2] behind = [[0.0f, 0.0f, 5.0f], [0.0f, 0.0f, 1.0f]];
+  assert(!behind.intersects(bmin, bmax, 0, 0).intersects);
+
+  // miss: ray offset on X so it never enters the box's X slab
+  float[3][2] offset = [[5.0f, 0.0f, -5.0f], [0.0f, 0.0f, 1.0f]];
+  assert(!offset.intersects(bmin, bmax, 0, 0).intersects);
+
+  // rayAtY: drop a diagonal ray onto the y=0 plane
+  float[3][2] down = [[0.0f, 10.0f, 0.0f], [1.0f, -1.0f, 0.0f]];
+  assert(approx(rayAtY(down, 0.0f), [10.0f, 0.0f, 0.0f]));
+}
