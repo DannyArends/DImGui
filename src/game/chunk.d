@@ -24,6 +24,7 @@ struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
   ResourceType[] tileTypes;                                 /// Tile type for each tile in the chunk
   ubyte[] waterLevel;                                       /// 0 = none, 1..6 = depth; parallel to tileTypes
+  bool waterDirty = false;
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
