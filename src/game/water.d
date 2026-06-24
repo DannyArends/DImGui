@@ -5,6 +5,8 @@
 
 import game;
 
+import chunk : faceData;
+import gameobjects : WaterTiles;
 import tile : tileBelow, tileCoord, tileIdx, getWater, setWater;
 
 enum ubyte WATER_MAX = 6;
@@ -81,4 +83,31 @@ private void addNext(ref GameApp app, Chunk chunk, ubyte[] next, int[3] wc, int 
   int idx = app.world.tileIdx(wc);
   int v = next[idx] + delta;
   next[idx] = cast(ubyte)max(0, min(WATER_MAX, v));
+}
+
+/** Rebuild water face instances for one chunk from its waterLevel. */
+void rebuildChunkWater(ref GameApp app, Chunk chunk) {
+  float ts = app.world.tileSize, th = app.world.tileHeight;
+  DrawInstance[] inst;
+  foreach(i; 0 .. cast(int)chunk.waterLevel.length) {
+    ubyte lvl = chunk.waterLevel[i];
+    if(lvl == 0) continue;
+    int[3] wc = app.world.worldCoord(chunk.coord, app.world.tileCoord(i));
+    float[3] p = app.world.tileToWorld(wc);
+    float wh = th * (lvl / 6.0f);
+    float cy = p[1] - th*0.5f + wh*0.5f;
+    foreach(f; 0 .. 6)
+      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], ts, wh));
+  }
+  chunk.water.instances = inst;
+  chunk.water.instances.buffered = false;
+  chunk.waterDirty = false;
+}
+
+/** Re-mesh any chunk whose water changed this frame. */
+void flushWaterDirty(ref GameApp app) {
+  foreach(coord; app.world.chunks.keys) {
+    auto chunk = app.world.chunks[coord];
+    if(chunk.waterDirty) app.rebuildChunkWater(chunk);
+  }
 }

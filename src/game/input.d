@@ -113,6 +113,7 @@ double handleEvents(ref GameApp app) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
     app.waterTick();
+    app.flushWaterDirty();   // re-mesh chunks whose water moved
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick();

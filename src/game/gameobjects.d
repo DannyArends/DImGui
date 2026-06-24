@@ -34,6 +34,7 @@ class Tiles : Square {
 class Chunk : Cube {
   ChunkData data;
   Geometry tiles;
+  WaterTiles water;
   bool dirty = false;
   alias data this;
 
@@ -51,6 +52,7 @@ class Chunk : Cube {
     float cy = sy * 0.5f + wd.yOffset;
     instances = [DrawInstance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
     tiles = new Tiles(cd);
+    water = new WaterTiles(cd);
     onFrustumUpdate = (bool v){ tiles.inFrustum = v; };
     geometry = (){ return "Chunk"; };
   }
@@ -64,6 +66,14 @@ class Clouds : Square {
     isSelectable = false;
     castShadow = false;
     hideInObjectsWindow = true;
+  }
+}
+
+class WaterTiles : Square {
+  this(ChunkData cd) {
+    super();
+    initInstanced(() => "WaterTiles", buildWaterInstances(cd));
+    isSelectable = false; castShadow = false; hideInObjectsWindow = true;
   }
 }
 
