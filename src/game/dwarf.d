@@ -15,7 +15,7 @@ import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
-import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, claimNextJob, moveAwayJob, atDestination, blockType;
+import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, moveAwayJob, sleepJob, atDestination, blockType;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import sfx : play;
@@ -41,19 +41,22 @@ struct InventorySlot {
   }
 }
 
+static immutable float[Need.max + 1] decay = [0.00040f, 0.00018f];  /// Need decay per tick [Hunger, Rest]
+
 struct DwarfData {
-  uint uid = 0;
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
-  int[3] tile = [0, 0, 0];
-  float hunger = 0.0f;                        /// 0 = full, 1.0 = starving
-  char[64] first;
-  char[64] last;
-  InventorySlot[32] inventory;                /// block IDs, noBlock = empty slot
+  uint uid = 0;                                 /// Unique ID
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// Dwarf color
+  int[3] tile = [0, 0, 0];                      /// Current tile
+  float[Need.max + 1] needs = 0.0f;             /// Needs array: 0 = satisfied, 1 = critical
+  char[64] first;                               /// First name
+  char[64] last;                                /// Last name
+  InventorySlot[32] inventory;                  /// Inventory
 
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
-  @property float mood() const { return 1.0f - hunger; }   // 1 = content, 0 = miserable
-
-@property uint[] carrying() {
+  @property float hunger() const { return needs[Need.Hunger]; }
+  @property void hunger(float v) { needs[Need.Hunger] = v; }
+  @property float mood() const { return 1.0f - needs[].maxElement; }
+  @property uint[] carrying() {
     uint[] ids;
     foreach(ref s; inventory) if(!s.empty) ids ~= s.resourceIDs[0 .. s.count];
     return ids;
@@ -223,9 +226,21 @@ void logStuck(ref GameApp app, ref Dwarf d) {
     cast(int)d.path.length));
 }
 
+/** Dispatch the most urgent over-threshold need as a job. Returns true if one was dispatched. */
+bool tryNeeds(ref GameApp app, ref Dwarf d) {
+  // Hunger
+  if(d.needs[Need.Hunger] >= 0.6f) {
+    if(d.carrying.any!(id => app.blockType(id) == ResourceType.Berry)) { app.dispatchJob(d, eatJob()); return true; }
+    if(app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock) { app.dispatchJob(d, pickupJob(noTile, ResourceType.Berry)); return true; }
+  }
+  // Rest
+  if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return true; }
+  return false;
+}
+
 /** A single dwarf being ticked */
 void tickDwarf(ref GameApp app, ref Dwarf d) {
-  d.hunger = min(1.0f, d.hunger + 0.00040f);
+  foreach(n; 0 .. d.needs.length){ d.needs[n] = min(1.0f, d.needs[n] + decay[n]); }
   if(d.isFalling) return;
 
   // Drop a job the moment it becomes invalid, in any state
@@ -233,10 +248,7 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
 
   final switch(d.state) {
     case DwarfState.Idle:
-      if(d.hunger >= 0.6f) {
-        if(d.carrying.any!(id => app.blockType(id) == ResourceType.Berry)) { app.dispatchJob(d, eatJob()); break; }
-        if(app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock) { app.dispatchJob(d, pickupJob(noTile, ResourceType.Berry)); break; }
-      }
+      if(app.tryNeeds(d)) break;     // replaces the hardcoded hunger block
       app.claimNextJob(d); break;
     case DwarfState.WaitingForPath: break;
     case DwarfState.Moving:

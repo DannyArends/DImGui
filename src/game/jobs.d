@@ -14,19 +14,21 @@ import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasSta
 import timing : timed;
 import vector : manhattan, manhattan2D;
 
-enum JobState { Pending, Satisfied, Unavailable }
-enum Reach { Adjacent, OnTile, AdjacentOrAbove }
+enum JobState { Pending, Satisfied, Unavailable }           /// Job states
+enum Reach { Adjacent, OnTile, AdjacentOrAbove }            /// How a job can be reached
+enum Need { Hunger, Rest }                                  /// Current needs
 
 struct Job {
-  string name;
-  int[3] targetTile = noTile;
-  ResourceType tileType;
-  Job[] prereqs;
-  bool personal = false;
-  uint[] blockIDs;
-  bool[uint] failedBy;
-  JobState state = JobState.Pending;
-  Reach reach = Reach.Adjacent;
+  string name;                            /// Job name
+  int[3] targetTile = noTile;             /// Target tile
+  ResourceType tileType;                  /// TileType required
+  Job[] prereqs;                          /// Job prerequisites
+  bool personal = false;                  /// Personal ?
+  uint[] blockIDs;                        /// Hmmm ?
+  bool[uint] failedBy;                    /// Who has attempted (and failed) the job
+  JobState state = JobState.Pending;      /// State of job
+  Reach reach = Reach.Adjacent;           /// How the targetTile should be interacted with
+  int basePriority = 0;                   /// higher = more important; needs-jobs set this high
 
   bool function(ref GameApp app, ref Job j) isValid;
   void function(ref GameApp app, ref Dwarf d, ref Job j) onClaim;
@@ -90,7 +92,7 @@ bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach
 
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
 void progressJob(ref GameApp app, ref Dwarf d, float amount, void delegate() onComplete) {
-  d.progress += amount;
+  d.progress += amount * (0.5f + 0.5f * d.mood);   // miserable = half speed, content = full
   if(d.progress >= 1.0f) { onComplete(); d.completeSubJob(); d.progress = 0.0f; }
 }
 
@@ -285,6 +287,17 @@ Job eatJob() {
   );
 }
 
+Job sleepJob(int[3] atTile) {
+  return Job("Sleeping", atTile, ResourceType.None, [], true, reach: Reach.OnTile,
+    basePriority: 100,
+    onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { j.targetTile = d.tile; },  // sleep where you stand for v1
+    onArrive: (ref GameApp app, ref Dwarf d) {
+      app.progressJob(d, 0.01f, () { d.needs[Need.Rest] = 0.0f; });   // ~100 ticks of standing still
+    },
+    onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
+  );
+}
+
 /** Dispatch a job to a dwarf */
 bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
   d.jobStack = job.prereqs ~ [job];
@@ -381,6 +394,12 @@ void roam(ref GameApp app, ref Dwarf d, int n = 5) {
   d.moveT = 1.0f;
 }
 
+/** Higher is better. Distance is a soft penalty; basePriority and need-urgency dominate. */
+float scoreJob(ref GameApp app, ref Dwarf d, ref Job job) {
+  float dist = manhattan(job.targetTile, d.tile);
+  return job.basePriority - dist * 0.1f;
+}
+
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref GameApp app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
@@ -388,12 +407,12 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
   jobQueue = jobQueue.filter!(j => j.isValid is null || j.isValid(app, j)).array;
 
   int bestIdx = -1;
-  float bestDist = float.max;
+  float bestScore = -float.max;
   foreach(i, ref job; jobQueue) {
     if(d.uid in job.failedBy) continue;
     if(job.name == "Building" && !app.hasBlocks(job.tileType)) continue;
-    float dist = manhattan(job.targetTile, d.tile);
-    if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
+    float s = app.scoreJob(d, job);
+    if(s > bestScore) { bestScore = s; bestIdx = cast(int)i; }
   }
   if(bestIdx != -1) {
     auto job = jobQueue[bestIdx];
