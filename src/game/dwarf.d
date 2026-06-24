@@ -97,7 +97,7 @@ struct DwarfData {
     }
     inventory[slot].count--;
     if(inventory[slot].count == 0) inventory[slot] = InventorySlot.init;
-    app.syncBlockInstances();
+    app.world.blocksDirty = true;
     return(true);
   }
 
@@ -298,7 +298,6 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 void dwarfTick(ref GameApp app) {
   if(app.world.dwarves is null) return;
   foreach(i; iota(app.world.dwarves.length).array.randomShuffle()) { app.tickDwarf(app.world.dwarves[i]); }
-  app.timed!syncBlockInstances();
   app.world.syncPathMarkers(app.showPaths);
   app.timed!syncBuildGhosts();
   app.timed!deriveInventory();

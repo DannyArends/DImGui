@@ -46,7 +46,7 @@ void removeStockpile(ref GameApp app, uint id) {
     foreach(i, blockID; sp.contents) { if(auto b = blockID in app.world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
     app.clearTiles(sp.tiles);
     app.world.stockpiles.remove(id);
-    app.syncBlockInstances();
+    app.world.blocksDirty = true;
   }
 }
 

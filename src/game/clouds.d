@@ -16,7 +16,7 @@ enum int CLOUD_LAYERS = 8;
 enum int CLOUD_STEP = 6;
 enum float CLOUD_THRESHOLD = 0.75f;
 enum float CLOUD_FREQ = 0.08f;
-enum int RAIN_DROPS_PER_TICK = 50;     // sparse
+enum int RAIN_DROPS_PER_TICK = 500;     // sparse
 
 private bool isCloud(int tx, int y, int tz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
@@ -91,5 +91,5 @@ void settleRain(ref GameApp app) {
     done ~= id;
   }
   foreach(id; done) app.world.blocks.remove(id);
-  if(done.length) app.syncBlockInstances();
+  app.world.blocksDirty = true;
 }

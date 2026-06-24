@@ -48,7 +48,7 @@ void loadBlocks(ref GameApp app) {
     app.world.blocks[b.id] = b;
     if(b.id >= app.world.blockNextID) app.world.blockNextID = b.id + 1;
   }
-  app.syncBlockInstances();
+  app.world.blocksDirty = true;
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
 }
 
@@ -115,7 +115,7 @@ uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   uint id = app.world.blockNextID++;
   app.world.blocks[id] = Block(id, tt, tile);
-  app.syncBlockInstances();
+  app.world.blocksDirty = true;
   return id;
 }
 
