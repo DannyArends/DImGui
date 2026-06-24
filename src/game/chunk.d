@@ -147,8 +147,10 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     oldTiles.instances = chunk.tiles.instances.dup;
     oldTiles.instances.buffered = false;
     chunk.tiles = oldTiles;
+    chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
+    chunk.water = app.world.chunks[data.coord].water;             // reuse the water render object too
     app.world.chunks[data.coord].deAllocate = true;
-  } else { app.objects ~= chunk.tiles; }
+  } else { app.objects ~= chunk.tiles; app.objects ~= chunk.water; }
   app.objects ~= chunk.water;
   app.objects ~= chunk;
 

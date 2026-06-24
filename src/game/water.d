@@ -33,24 +33,30 @@ void waterTick(ref GameApp app) {
   // snapshot every loaded chunk's water into a world-addressable next-buffer map
   WaterNext next;
   foreach(coord; app.world.chunks.keys) next[coord] = app.world.chunks[coord].waterLevel.dup;
-
   static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
-  // 1. SPREAD: equalize horizontally with lower neighbours
+  // 1. SPREAD: excess (level > 1) random-walks toward the lowest neighbour(s)
   foreach(coord; app.world.chunks.keys) {
     ubyte[] cur = app.world.chunks[coord].waterLevel;
     foreach(i; 0 .. cast(int)cur.length) {
       if(cur[i] == 0) continue;
       int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
-      int have = cur[i];
+      int have = app.rdWater(next, wc);
+      if(have <= 1) continue;                          // baseline 1s never spread
+
+      // collect all holdable neighbours at the minimum level strictly below us
+      int[3][4] best; int bestLvl = have; int n = 0;
       foreach(h; H) {
         int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
         if(!app.canHoldWater(nb)) continue;
-        if(have - app.rdWater(next, nb) >= 2) {
-          app.wrWater(next, wc, -1);
-          app.wrWater(next, nb, +1);
-          have -= 1;
-        }
+        int nl = app.rdWater(next, nb);
+        if(nl < bestLvl) { bestLvl = nl; best[0] = nb; n = 1; }        // new lowest -> reset list
+        else if(nl == bestLvl && bestLvl < have) best[n++] = nb;       // tie at current lowest
+      }
+      if(n > 0) {
+        int[3] dst = best[uniform(0, n)];               // random among equally-low neighbours
+        app.wrWater(next, wc, -1);
+        app.wrWater(next, dst, +1);
       }
     }
   }
@@ -76,7 +82,7 @@ void waterTick(ref GameApp app) {
     ubyte[] buf = next[coord];
     ubyte[] old = app.world.chunks[coord].waterLevel;
     foreach(i; 0 .. cast(int)buf.length) {
-      if(buf[i] == old[i]) continue;                 // unchanged -> skip
+      if(buf[i] == old[i]) continue;
       int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
       app.setWater(wc, buf[i]);
     }
