@@ -43,7 +43,6 @@
 													"$PACKAGE_DIR/app/jni/shaderc/build/libshaderc/shaderc_shared.dll",
 													"$PACKAGE_DIR/app/jni/shaderc/build/third_party/spirv-tools/source/SPIRV-Tools.dll",
 													"$PACKAGE_DIR/app/jni/shaderc/build/third_party/spirv-tools/source/opt/SPIRV-Tools-opt.dll"],
-
 		"lflags-linux": ["-rpath=$PACKAGE_DIR/bin",
 										 "-L$PACKAGE_DIR/app/jni/SDL/build/",
 										 "-L$PACKAGE_DIR/app/jni/SDL_image/build/",
@@ -82,6 +81,11 @@
 							 "-P-I$PACKAGE_DIR/app/jni/assimp/build/include/"],
 		"lflags": [ "-L$PACKAGE_DIR/app/build/intermediates/cxx/Release/9t656d2k/obj/arm64-v8a" ],
 		"libs": ["SDL3", "SDL3_image", "SDL3_mixer", "SDL3_ttf", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "cimgui", "assimp"]
+	},
+	{
+		"name": "unittest",
+		"targetType": "executable",
+		"targetPath": "bin",
 	}
 ]
 }
