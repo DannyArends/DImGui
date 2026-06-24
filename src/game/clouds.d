@@ -87,7 +87,7 @@ void settleRain(ref GameApp app) {
   foreach(id, ref b; app.world.blocks) {
     if(b.type != ResourceType.Water) continue;
     if(b.isFalling) continue;                 // still in the air
-    app.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.getWater(b.tile) + 1));
+    app.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.getWater(b.tile) + 4));
     done ~= id;
   }
   foreach(id; done) app.world.blocks.remove(id);
