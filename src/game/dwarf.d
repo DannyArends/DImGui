@@ -7,7 +7,6 @@ import game;
 
 import block : syncBlockInstances, findFreeBlock, noBlock, hasBlocks;
 import color : randomColor;
-import clouds : cloudFrame;
 import inventory : deriveInventory;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
@@ -314,8 +313,6 @@ void ensureDwarves(ref GameApp app) {
   app.objects ~= app.world.pathMarkers;
 
   app.world.clouds = new Clouds();
-  foreach(i; 0 .. 4){ app.world.clouds.clouds ~= Cloud(origin: [i*30.0f, 0, i*20.0f], seed: cast(uint)(i*7+1)); }
-  app.world.clouds.onFrame  = (float dt){ cloudFrame(app, dt); };
   app.objects ~= app.world.clouds;
 }
 

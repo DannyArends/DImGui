@@ -5,33 +5,48 @@
 
 import game;
 
-import matrix : translateScale;
-import noise : noise2D;
+import noise : smoothNoise;
 import gameobjects : Clouds;
+import chunk : faceData;
 
-struct Cloud {
-  float[3] origin;                          /// world-space corner (min X/Z), fixed Y
-  float[3] drift = [0.4f, 0.0f, 0.15f];     /// units/sec
-  uint seed;
-  enum int W = 12, D = 12;                  /// cells in X, Z
+enum int CLOUD_LAYERS = 8;
+enum int CLOUD_STEP = 6;
+enum float CLOUD_THRESHOLD = 0.75f;
+enum float CLOUD_FREQ = 0.08f;
+
+private bool isCloud(int tx, int y, int tz) {
+  if(y < 0 || y >= CLOUD_LAYERS) return false;
+  float fy = (y - (CLOUD_LAYERS-1)*0.5f) / (CLOUD_LAYERS*0.5f);
+  float d = smoothNoise([tx*CLOUD_FREQ, y*0.6f, tz*CLOUD_FREQ], 1337) * (1.0f - fy*fy*0.7f);
+  return d >= CLOUD_THRESHOLD;
 }
 
-/** Build/refresh the cloud instance buffer and advance drift. */
-void cloudFrame(ref GameApp app, float dt) {
+void rebuildClouds(ref GameApp app) {
   if(app.world.clouds is null) return;
-  float th = app.world.tileHeight;
-  float cloudY = app.world.height + 8.0f * th;   // above the tallest terrain
-  float ts = app.world.tileSize;
+  float ts = app.world.tileSize, th = app.world.tileHeight;
+  int cs = app.world.chunkSize;
+  float baseY = app.world.height + 8.0f * th;
+  float vox = CLOUD_STEP * ts, voxH = th * CLOUD_STEP;
+
+  // neighbour offsets in (x,y,z) matching faceData's f = 0..5 ordering
+  static immutable int[3][6] N = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 
   DrawInstance[] inst;
-  foreach(ref c; app.world.clouds.clouds) {
-    c.origin[] += c.drift[] * dt;
-    c.origin[1] = cloudY;
-    foreach(z; 0 .. Cloud.D) foreach(x; 0 .. Cloud.W) {
-      // blobby outline: threshold noise so it isn't a solid slab
-      if(noise2D(cast(int)(c.origin[0]/ts) + x, cast(int)(c.origin[2]/ts) + z, c.seed) < 0.45f) continue;
-      float[3] p = [c.origin[0] + x*ts, cloudY, c.origin[2] + z*ts];
-      inst ~= DrawInstance([0,0], translateScale(p, [ts, th, ts]));
+  foreach(coord; app.world.chunks.keys) {
+    int baseX = coord[0] * cs, baseZ = coord[2] * cs;
+    for(int lz = 0; lz < cs; lz += CLOUD_STEP)
+    for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
+      // grid index in "cloud-cell" space so neighbours are ±1 cell
+      int gx = (baseX + lx) / CLOUD_STEP;
+      int gz = (baseZ + lz) / CLOUD_STEP;
+      foreach(y; 0 .. CLOUD_LAYERS) {
+        if(!isCloud(gx, y, gz)) continue;
+        float px = (baseX + lx) * ts, py = baseY + y*voxH, pz = (baseZ + lz) * ts;
+        foreach(f; 0 .. 6) {
+          if(isCloud(gx + N[f][0], y + N[f][1], gz + N[f][2])) continue;  // neighbour present -> face hidden
+          inst ~= DrawInstance(0, faceData(f, px, py, pz, vox, voxH));
+        }
+      }
     }
   }
   app.world.clouds.instances = inst;
