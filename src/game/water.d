@@ -7,7 +7,7 @@ import game;
 
 import chunk : faceData;
 import gameobjects : WaterTiles;
-import tile : tileBelow, tileCoord, tileIdx, getWater, setWater;
+import tile : tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
 enum ubyte WATER_MAX = 6;
 
@@ -59,8 +59,8 @@ void waterTick(ref GameApp app) {
     }
 
     if(changed) { chunk.waterLevel = next; chunk.waterDirty = true; }
-    int wet = 0; foreach(v; chunk.waterLevel) if(v > 0) wet++;
-    if(wet > 0) SDL_Log(cstr("waterTick: chunk=[%d,%d,%d] wet=%d changed=%d", coord[0], coord[1], coord[2], wet, changed));
+    //int wet = 0; foreach(v; chunk.waterLevel) if(v > 0) wet++;
+    //if(wet > 0) SDL_Log(cstr("waterTick: chunk=[%d,%d,%d] wet=%d changed=%d", coord[0], coord[1], coord[2], wet, changed));
   }
 }
 
@@ -92,12 +92,11 @@ void rebuildChunkWater(ref GameApp app, Chunk chunk) {
   foreach(i; 0 .. cast(int)chunk.waterLevel.length) {
     ubyte lvl = chunk.waterLevel[i];
     if(lvl == 0) continue;
-    int[3] wc = app.world.worldCoord(chunk.coord, app.world.tileCoord(i));
-    float[3] p = app.world.tileToWorld(wc);
+    int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(i));
+    float[3] p = app.world.data.tileToWorld(wc);
     float wh = th * (lvl / 6.0f);
     float cy = p[1] - th*0.5f + wh*0.5f;
-    foreach(f; 0 .. 6)
-      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], ts, wh));
+    foreach(f; 0 .. 6){ inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], ts, wh)); }
   }
   chunk.water.instances = inst;
   chunk.water.instances.buffered = false;

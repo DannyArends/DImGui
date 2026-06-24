@@ -53,7 +53,7 @@ class Chunk : Cube {
     instances = [DrawInstance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
     tiles = new Tiles(cd);
     water = new WaterTiles(cd);
-    onFrustumUpdate = (bool v){ tiles.inFrustum = v; };
+    onFrustumUpdate = (bool v){ tiles.inFrustum = v; water.inFrustum = v; };
     geometry = (){ return "Chunk"; };
   }
 }
@@ -72,7 +72,7 @@ class Clouds : Square {
 class WaterTiles : Square {
   this(ChunkData cd) {
     super();
-    initInstanced(() => "WaterTiles", buildWaterInstances(cd));
+    initInstanced(() => "WaterTiles");
     isSelectable = false; castShadow = false; hideInObjectsWindow = true;
   }
 }

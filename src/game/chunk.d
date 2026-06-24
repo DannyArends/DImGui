@@ -149,6 +149,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.tiles = oldTiles;
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; }
+  app.objects ~= chunk.water;
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;

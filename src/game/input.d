@@ -12,7 +12,7 @@ import screenshot : saveScreenshot;
 import timing : timed;
 import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
-import water : waterTick;
+import water : waterTick, flushWaterDirty;
 
 /** Handle mouse events */
 void handleMouseEvents(ref GameApp app, SDL_Event e) {
