@@ -25,6 +25,7 @@ struct ChunkData {
   ResourceType[] tileTypes;                                 /// Tile type for each tile in the chunk
   ubyte[] waterLevel;                                       /// 0 = none, 1..6 = depth; parallel to tileTypes
   int[] wetCells;                                           /// indices where waterLevel > 0
+  int[] activeCells;                                        /// indices the sim still needs to process (subset of wet + their neighbours)
   bool waterDirty = false;                                  /// Water dirty ?
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
@@ -149,7 +150,8 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     oldTiles.instances.buffered = false;
     chunk.tiles = oldTiles;
     chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
-    chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve sim active set too
+    chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
+    chunk.activeCells = app.world.chunks[data.coord].activeCells; // preserve active cells
     chunk.water = app.world.chunks[data.coord].water;             // reuse the water render object too
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; app.objects ~= chunk.water; }
