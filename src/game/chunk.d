@@ -25,7 +25,7 @@ struct ChunkData {
   ResourceType[] tileTypes;                                 /// Tile type for each tile in the chunk
   ubyte[] waterLevel;                                       /// 0 = none, 1..6 = depth; parallel to tileTypes
   int[] wetCells;                                           /// indices where waterLevel > 0
-  int[] activeCells;                                        /// indices the sim still needs to process (subset of wet + their neighbours)
+  bool[] active;                                            /// parallel to waterLevel; true = needs simulating. Always implies waterLevel[i] > 0.
   bool waterDirty = false;                                  /// Water dirty ?
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)

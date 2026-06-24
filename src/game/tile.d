@@ -48,7 +48,7 @@ void activate(ref GameApp app, int[3] tile) {
     if(cc !in app.world.chunks) continue;
     auto ch = app.world.chunks[cc];
     int i = app.world.tileIdx(t);
-    if(ch.waterLevel[i] > 0) ch.activeCells ~= i;           // only water cells need simulating
+    if(ch.waterLevel[i] > 0) ch.active[i] = true;   // bit-set: inherently dedup, can't exceed cell count
   }
 }
 
@@ -59,6 +59,7 @@ void setWater(ref GameApp app, int[3] tile, ubyte level) {
   if(coord !in app.world.chunks) return;
   int idx = app.world.tileIdx(tile);
   auto chunk = app.world.chunks[coord];
+  if(level == 0) chunk.active[idx] = false;
   ubyte old = chunk.waterLevel[idx];
   if(old == level) return;
   if(old == 0 && level > 0) chunk.wetCells ~= idx;
