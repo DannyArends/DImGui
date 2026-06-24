@@ -17,8 +17,8 @@ void showWaterContent(ref GameApp app, uint font = 0) {
     if(chunk.wetCells.length == 0) continue;
     wetChunks++;
     cells += cast(int)chunk.wetCells.length;
-    active += cast(int)chunk.activeCells.length;
     foreach(idx; chunk.wetCells) {
+      if(chunk.active[idx]) active++;
       ubyte l = chunk.waterLevel[idx];
       total += l;
       if(l > maxLvl) maxLvl = l;

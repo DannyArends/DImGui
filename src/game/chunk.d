@@ -111,6 +111,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   ChunkData data = ChunkData(coord, wd.buildTileTypes(coord));
   data.waterLevel.length = data.tileTypes.length;   // all zero = no water
+  data.active.length = data.tileTypes.length;
   wd.buildTileGeometry(coord, data);
   foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
@@ -151,7 +152,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.tiles = oldTiles;
     chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
-    chunk.activeCells = app.world.chunks[data.coord].activeCells; // preserve active cells
+    chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
     chunk.water = app.world.chunks[data.coord].water;             // reuse the water render object too
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; app.objects ~= chunk.water; }

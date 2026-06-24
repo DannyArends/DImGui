@@ -33,24 +33,27 @@ private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touch
 
 /** One water simulation step. Spread then fall, crosses chunk boundaries. Iterates only wet cells. */
 void waterTick(ref GameApp app) {
-  WaterNext next;
+ WaterNext next;
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
-    if(chunk.activeCells.length == 0) continue;             // dormant chunk: skip entirely
+    if(chunk.wetCells.length == 0) continue;
+    bool anyActive = false;
+    foreach(idx; chunk.wetCells) if(chunk.active[idx]) { anyActive = true; break; }
+    if(!anyActive) continue;
     next[coord] = chunk.waterLevel.dup;
   }
   WaterTouched touched;
   static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
-  // process only ACTIVE cells (snapshot the lists; setWater will rebuild activeCells for next tick)
-  int[][int[3]] active;
-  foreach(coord, _; next) { 
-    active[coord] = app.world.chunks[coord].activeCells;
-    app.world.chunks[coord].activeCells = [];
+  int[][int[3]] act;
+  foreach(coord, _; next) {
+    auto ch = app.world.chunks[coord];
+    foreach(idx; ch.wetCells) if(ch.active[idx]) act[coord] ~= idx;
+    foreach(idx; ch.wetCells) ch.active[idx] = false;
   }
 
   // 1. SPREAD
-  foreach(coord, idxs; active) {
+  foreach(coord, idxs; act) {
     foreach(idx; idxs) {
       int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
       int have = app.rdWater(next, wc);
@@ -68,7 +71,7 @@ void waterTick(ref GameApp app) {
   }
 
   // 2. FALL
-  foreach(coord, idxs; active) {
+  foreach(coord, idxs; act) {
     foreach(idx; idxs) {
       int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
       int[3] below = wc.tileBelow;
@@ -79,12 +82,12 @@ void waterTick(ref GameApp app) {
   }
 
   // 3. EVAPORATE: water below full has a chance to lose a unit (shallower = faster)
-  foreach(coord, idxs; active) {
+  foreach(coord, idxs; act) {
     foreach(idx; idxs) {
       int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
       int have = app.rdWater(next, wc);
       if(have <= 0 || have >= WATER_MAX) continue;
-      app.world.chunks[coord].activeCells ~= idx;
+      app.world.chunks[coord].active[idx] = true;
       if(uniform(0, 1000) < (WATER_MAX - have) * 2){ app.wrWater(next, touched, wc, -1); }
     }
   }
