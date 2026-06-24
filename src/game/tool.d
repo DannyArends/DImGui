@@ -15,7 +15,7 @@ import hits : getHits;
 import gameobjects : PendingBuild;
 import geometry : setColor;
 import stockpile : createStockpile;
-import tile : tileToWorld, getTileAt, tileAbove, getWater, setWater;
+import tile : tileToWorld, getTileAt, tileAbove, getWater, setWater, tileBelow;
 import matrix : translateScale;
 import vegetation : getBestVegetation;
 
@@ -56,9 +56,13 @@ void interactCommit(ref GameApp app, int[3] tile) {
 }
 
 void waterCommit(ref GameApp app, int[3] tile) {
-  if(app.world.getTileAt(tile) != ResourceType.None) return;   // only into air, not solid ground
+  SDL_Log(cstr("waterCommit: tile=[%d,%d,%d] type=%d below=[%d,%d,%d] belowType=%d",
+    tile[0],tile[1],tile[2], cast(int)app.world.getTileAt(tile),
+    tile[0],tile[1]-1,tile[2], cast(int)app.world.getTileAt(tile.tileBelow())));
+  if(app.world.getTileAt(tile) != ResourceType.None) return;
   ubyte cur = cast(ubyte)app.getWater(tile);
-  app.setWater(tile, cast(ubyte)min(6, cur + 3));              // add 3, cap at 6
+  app.setWater(tile, cast(ubyte)min(6, cur + 3));
+  SDL_Log(cstr("waterCommit: set level -> %d", app.getWater(tile)));
 }
 
 void openBuildSelection(ref GameApp app) {

@@ -44,9 +44,9 @@ void setWater(ref GameApp app, int[3] tile, ubyte level) {
   if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return;
   if(coord !in app.world.chunks) return;
   int idx = app.world.tileIdx(tile);
-  if(app.world.chunks[coord].waterLevel[idx] == level) return;   // no change, no dirty
+  if(app.world.chunks[coord].waterLevel[idx] == level) return;
   app.world.chunks[coord].waterLevel[idx] = level;
-  app.world.chunks[coord].dirty = true;
+  app.world.chunks[coord].waterDirty = true;   // separate flag, NOT dirty
 }
 
 /** True if all 6 neighbours of interior tile i are solid (caller guarantees i is not on a boundary) */

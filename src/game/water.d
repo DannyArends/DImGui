@@ -55,6 +55,8 @@ void waterTick(ref GameApp app) {
     }
 
     if(changed) { chunk.waterLevel = next; chunk.dirty = true; }
+    int wet = 0; foreach(v; chunk.waterLevel) if(v > 0) wet++;
+    if(wet > 0) SDL_Log(cstr("waterTick: chunk=[%d,%d,%d] wet=%d changed=%d", coord[0], coord[1], coord[2], wet, changed));
   }
 }
 
