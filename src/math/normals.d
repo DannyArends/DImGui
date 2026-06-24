@@ -12,8 +12,8 @@ import vertex : VERTEX;
 pure uint[3][] faces(T)(const T geometry) nothrow {
   uint[3][] fList;
   if(geometry.indices.length <= 2) return(fList); // Objects (e.g. lines) can have less elements than a triangle 
-  fList.length = (geometry.indices.length - 2);
-  for (uint i = 0, x = 0; x < (geometry.indices.length - 2); x += 3, i++) {
+  fList.length = (geometry.indices.length / 3);
+  for (uint i = 0, x = 0; x + 2 < geometry.indices.length; x += 3, i++) {
     fList[i] = [geometry.indices[x], geometry.indices[x+1], geometry.indices[x+2]]; // Add to the faces list
   }
   return(fList);
@@ -40,7 +40,7 @@ void computeNormals(T)(ref T geometry, bool invert = false, bool verbose = false
     geometry.vertices[face[2]].normal = geometry.vertices[face[2]].normal.vAdd(normals[i]);
   }
   for (size_t i = 0; i < geometry.vertices.length; i++) {  // Normalize each normal
-    geometry.vertices[i].normal.normalize();
+    geometry.vertices[i].normal = geometry.vertices[i].normal.normalize();
     if(invert) geometry.vertices[i].normal[] = -geometry.vertices[i].normal[];
   }
   geometry.vertices.buffered = false;
@@ -120,4 +120,46 @@ void computeTangents(T)(ref T geometry, bool verbose = false) {
 
   geometry.vertices.buffered = false; // Mark vertex buffer as dirty, needs re-upload
   if(verbose) SDL_Log("computeTangents %d vertex tangents computed", geometry.vertices.length);
+}
+
+unittest {
+  import vector : approx, magnitude;
+  import std.math : isClose;
+
+  // minimal structural stand-ins for the templated functions
+  struct Vtx { float[3] position; float[3] normal; float[2] texCoord; float[4] tangent; }
+  struct Buf { Vtx[] data; bool buffered; alias data this; }
+  struct Geo { Buf vertices; uint[] indices; }
+
+  // single CCW triangle in the XY plane -> normal points +Z
+  Geo g;
+  g.vertices.data = [ Vtx([0,0,0]), Vtx([1,0,0]), Vtx([0,1,0]) ];
+  g.indices = [0u, 1u, 2u];
+
+  g.computeNormals();
+  foreach (v; g.vertices.data) assert(approx(v.normal, [0.0f, 0.0f, 1.0f]));
+  assert(g.vertices.buffered == false);   // marked dirty for re-upload
+
+  // invert flag flips the winding-derived normal
+  Geo gi;
+  gi.vertices.data = [ Vtx([0,0,0]), Vtx([1,0,0]), Vtx([0,1,0]) ];
+  gi.indices = [0u, 1u, 2u];
+  gi.computeNormals(true);
+  foreach (v; gi.vertices.data) assert(approx(v.normal, [0.0f, 0.0f, -1.0f]));
+
+  // degenerate: fewer than 3 indices yields no faces
+  Geo line;
+  line.vertices.data = [ Vtx([0,0,0]), Vtx([1,0,0]) ];
+  line.indices = [0u, 1u];
+  assert(line.faces.length == 0);
+
+  // Two triangles (quad) must produce exactly 2 faces, not 4
+  Geo quad;
+  quad.vertices.data = [ Vtx([0,0,0]), Vtx([1,0,0]), Vtx([1,1,0]), Vtx([0,1,0]) ];
+  quad.indices = [0u,1u,2u, 0u,2u,3u];
+  assert(quad.faces.length == 2);
+
+  // A vertex shared by both triangles must end up UNIT length
+  quad.computeNormals();
+  assert(isClose(magnitude(quad.vertices.data[0].normal), 1.0f));
 }
