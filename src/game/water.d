@@ -87,7 +87,7 @@ void waterTick(ref GameApp app) {
       int have = app.rdWater(next, wc);
       if(have <= 0 || have >= WATER_MAX) continue;
       app.world.chunks[coord].active[idx] = true;
-      if(uniform(0, 1000) < (WATER_MAX - have) * 2){ app.wrWater(next, touched, wc, -1); }
+      if(uniform(0, 100) < (WATER_MAX - have) * 2){ app.wrWater(next, touched, wc, -1); }
     }
   }
 
