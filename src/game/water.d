@@ -48,8 +48,7 @@ void waterTick(ref GameApp app) {
   int[][int[3]] act;
   foreach(coord, _; next) {
     auto ch = app.world.chunks[coord];
-    foreach(idx; ch.wetCells) if(ch.active[idx]) act[coord] ~= idx;
-    foreach(idx; ch.wetCells) ch.active[idx] = false;
+    foreach(idx; ch.wetCells){ if(ch.active[idx]){ act[coord] ~= idx; } }
   }
 
   // 1. SPREAD
@@ -102,6 +101,29 @@ void waterTick(ref GameApp app) {
       app.setWater(wc, cast(ubyte)buf[i]);                  // -> activate(wc) repopulates activeCells
     }
   }
+
+  // 5. DEACTIVATE settled cells (nothing left to spread/fall/evaporate)
+  foreach(coord, idxs; act) {
+    auto ch = app.world.chunks[coord];
+    foreach(idx; idxs) {
+      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
+      if(app.isSettled(wc)) ch.active[idx] = false;
+    }
+  }
+}
+
+/** Test if a cell is settled. */
+private bool isSettled(ref GameApp app, int[3] wc) {
+  int have = app.getWater(wc);
+  if(have <= 0) return true; // dry: not active
+  if(have < WATER_MAX) return false; // can still evaporate
+  if(app.canHoldWater(wc.tileBelow) && app.getWater(wc.tileBelow) < WATER_MAX) return false; // can fall
+  static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
+  foreach(h; H) {
+    int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
+    if(app.canHoldWater(nb) && app.getWater(nb) < have) return false; // can spread
+  }
+  return true; // nothing to do
 }
 
 /** A cell can hold water if it is in range and air (not solid ground). */
