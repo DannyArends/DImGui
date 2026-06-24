@@ -8,7 +8,7 @@ import phobos;
 import searchnode : PathNode, isEqual, has;
 import vector : euclidean;
 
-enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3, INVALID = 4 };
+enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3, INVALID = 4, PARTIAL = 5 };
 
 /** Implementation of the search state structure */
 struct Search(M, N) {
@@ -138,8 +138,11 @@ Search!(M, N) performSearch(M, N, alias getSuccessors)(float[3] start = [0.0f, -
   }while(search.state == SearchState.SEARCHING && search.steps < search.maxsteps);
 
   if (search.state == SearchState.SEARCHING && search.openlist.length > 0) {
-    search.goal = search.openlist[0];
-    search.storeRoute(search.openlist[0]);
+    size_t best = search.openlist[0];
+    foreach(idx; search.openlist){ if(search.pool[idx].h < search.pool[best].h){ best = idx; } }
+    search.goal = best;
+    search.storeRoute(best);
+    search.state = SearchState.PARTIAL;          // exhausted budget, but have a route toward goal
   }
   return search;
 }

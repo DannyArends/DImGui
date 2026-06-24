@@ -16,7 +16,7 @@ enum int CLOUD_LAYERS = 8;
 enum int CLOUD_STEP = 6;
 enum float CLOUD_THRESHOLD = 0.75f;
 enum float CLOUD_FREQ = 0.08f;
-enum int RAIN_DROPS_PER_TICK = 3;     // sparse
+enum int RAIN_DROPS_PER_TICK = 250;     // sparse
 
 private bool isCloud(int tx, int y, int tz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
@@ -69,7 +69,10 @@ void rainTick(ref GameApp app) {
     int tx = cc[0]*cs + lx, tz = cc[2]*cs + lz;
 
     // only rain where there's actually cloud overhead
-    if(!isCloud(tx/CLOUD_STEP, 0, tz/CLOUD_STEP)) continue;   // sample cloud field at this column
+    //SDL_Log(cstr("rain col [%d,%d] tile=%d", tx, tz, cast(int)app.world.getTileAt([tx, app.world.chunkHeight-1, tz])));
+    bool cloudAbove = false;
+    foreach(cy; 0 .. CLOUD_LAYERS) if(isCloud(tx/CLOUD_STEP, cy, tz/CLOUD_STEP)) { cloudAbove = true; break; }
+    if(!cloudAbove) continue;
 
     int[3] spawn = [tx, cloudY, tz];
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;   // need air to spawn into
