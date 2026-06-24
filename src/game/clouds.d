@@ -44,7 +44,7 @@ void rebuildClouds(ref GameApp app) {
         float px = (baseX + lx) * ts, py = baseY + y*voxH, pz = (baseZ + lz) * ts;
         foreach(f; 0 .. 6) {
           if(isCloud(gx + N[f][0], y + N[f][1], gz + N[f][2])) continue;  // neighbour present -> face hidden
-          inst ~= DrawInstance(0, faceData(f, px, py, pz, vox, voxH));
+          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, vox, voxH));
         }
       }
     }
