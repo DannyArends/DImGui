@@ -87,6 +87,7 @@ struct World {
   Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
+  Clouds clouds;                                            /// Clouds
   PathMarkers pathMarkers;                                  /// Path markers
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   int[3][] pendingBuildTiles;                               /// Built tiles awaiting chunk rebuild

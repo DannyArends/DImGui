@@ -56,6 +56,20 @@ class Chunk : Cube {
   }
 }
 
+/** Drifting voxel clouds above the world */
+class Clouds : Cube {
+  Cloud[] clouds;
+  alias clouds this;
+
+  this() {
+    super(color: [1.0f, 1.0f, 1.0f, 0.85f]);   // soft white, slightly translucent
+    isSelectable = false;
+    castShadow = false;          // shadows are Phase 4+; keep cheap for now
+    hideInObjectsWindow = true;
+    initInstanced(() => "Clouds");
+  }
+}
+
 struct PendingBuild {
   int[3] tile;
   ResourceType type = ResourceType.None;

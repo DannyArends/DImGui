@@ -7,11 +7,12 @@ public import engine;
 
 public import block : Block;
 public import chunk : ChunkData;
+public import clouds : Cloud;
 public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, FeatureDropT, Feature;
 public import inventory : Inventory;
 public import jobs : Job, JobState, Reach;
-public import gameobjects : Chunk, Dwarves, PathMarkers, GhostCube;
+public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube;
 public import pathfinding : PathRequest, PathResult;
 public import physx : Fall;
 public import searchnode : PathNode;
