@@ -29,44 +29,45 @@ private void wrWater(ref GameApp app, ref WaterNext next, int[3] wc, int delta) 
 }
 
 /** One water simulation step over all loaded chunks. Spread then fall, crosses chunk boundaries. */
+/** One water simulation step. Spread then fall, crosses chunk boundaries. Iterates only wet cells. */
 void waterTick(ref GameApp app) {
-  // snapshot every loaded chunk's water into a world-addressable next-buffer map
+  // snapshot wet cells into a world-addressable next-buffer map (copy only chunks that have water)
   WaterNext next;
-  foreach(coord; app.world.chunks.keys) next[coord] = app.world.chunks[coord].waterLevel.dup;
+  foreach(coord; app.world.chunks.keys) {
+    auto chunk = app.world.chunks[coord];
+    if(chunk.wetCells.length == 0) continue;            // skip dry chunks entirely
+    next[coord] = chunk.waterLevel.dup;
+  }
   static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
   // 1. SPREAD: excess (level > 1) random-walks toward the lowest neighbour(s)
   foreach(coord; app.world.chunks.keys) {
-    ubyte[] cur = app.world.chunks[coord].waterLevel;
-    foreach(i; 0 .. cast(int)cur.length) {
-      if(cur[i] == 0) continue;
-      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
+    auto chunk = app.world.chunks[coord];
+    foreach(idx; chunk.wetCells) {                       // only wet cells
+      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
       int have = app.rdWater(next, wc);
-      if(have <= 1) continue;                          // baseline 1s never spread
-
-      // collect all holdable neighbours at the minimum level strictly below us
+      if(have <= 1) continue;
       int[3][4] best; int bestLvl = have; int n = 0;
       foreach(h; H) {
         int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
         if(!app.canHoldWater(nb)) continue;
         int nl = app.rdWater(next, nb);
-        if(nl < bestLvl) { bestLvl = nl; best[0] = nb; n = 1; }        // new lowest -> reset list
-        else if(nl == bestLvl && bestLvl < have) best[n++] = nb;       // tie at current lowest
+        if(nl < bestLvl) { bestLvl = nl; best[0] = nb; n = 1; }
+        else if(nl == bestLvl && bestLvl < have) best[n++] = nb;
       }
       if(n > 0) {
-        int[3] dst = best[uniform(0, n)];               // random among equally-low neighbours
+        int[3] dst = best[uniform(0, n)];
         app.wrWater(next, wc, -1);
         app.wrWater(next, dst, +1);
       }
     }
   }
 
-  // 2. FALL: settle everything downward (incl. water that spread across a boundary)
+  // 2. FALL: settle downward
   foreach(coord; app.world.chunks.keys) {
-    ubyte[] buf = next[coord];
-    foreach(i; 0 .. cast(int)buf.length) {
-      if(buf[i] == 0) continue;
-      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
+    auto chunk = app.world.chunks[coord];
+    foreach(idx; chunk.wetCells) {
+      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
       int[3] below = wc.tileBelow;
       if(!app.canHoldWater(below)) continue;
       int move = min(app.rdWater(next, wc), WATER_MAX - app.rdWater(next, below));
@@ -77,9 +78,8 @@ void waterTick(ref GameApp app) {
     }
   }
 
-  // 3. COMMIT only changed cells via setWater
-  foreach(coord; app.world.chunks.keys) {
-    ubyte[] buf = next[coord];
+  // 3. COMMIT changed cells via setWater (maintains wetCells + waterDirty)
+  foreach(coord, buf; next) {
     ubyte[] old = app.world.chunks[coord].waterLevel;
     foreach(i; 0 .. cast(int)buf.length) {
       if(buf[i] == old[i]) continue;
@@ -100,10 +100,10 @@ private bool canHoldWater(ref GameApp app, int[3] wc) {
 void rebuildChunkWater(ref GameApp app, Chunk chunk) {
   float ts = app.world.tileSize, th = app.world.tileHeight;
   DrawInstance[] inst;
-  foreach(i; 0 .. cast(int)chunk.waterLevel.length) {
-    ubyte lvl = chunk.waterLevel[i];
-    if(lvl == 0) continue;
-    int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(i));
+  foreach(idx; chunk.wetCells) {
+    ubyte lvl = chunk.waterLevel[idx];
+    if(lvl == 0) continue;                               // defensive (shouldn't happen)
+    int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
     float[3] p = app.world.data.tileToWorld(wc);
     float wh = th * (lvl / 6.0f);
     float cy = p[1] - th*0.5f + wh*0.5f;
