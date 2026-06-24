@@ -6,6 +6,7 @@
 import game;
 
 import block : unsettleBlocks;
+import clouds : rebuildClouds;
 import dwarf : unsettleDwarves;
 import game : GameApp;
 import gameobjects : Chunk;
@@ -148,6 +149,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;
+  app.rebuildClouds();
   app.world.chunks[data.coord].dirty = false;
   app.world.pendingChunks.remove(data.coord);
   app.world.pendingBuildTiles = app.world.pendingBuildTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
