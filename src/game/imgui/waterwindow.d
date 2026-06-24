@@ -12,7 +12,9 @@ import tile : getWater, tileBelow, tileAbove, getTileAt;
 void showWaterContent(ref GameApp app, uint font = 0) {
   int total = 0, cells = 0;
   foreach(coord; app.world.chunks.keys) {
-    foreach(v; app.world.chunks[coord].waterLevel) if(v > 0) { total += v; cells++; }
+    auto chunk = app.world.chunks[coord];
+    cells += cast(int)chunk.wetCells.length;
+    foreach(idx; chunk.wetCells) total += chunk.waterLevel[idx];
   }
   if(igBeginTable("Water_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
     infoRow("Wet cells",   "%d", cells);

@@ -282,7 +282,7 @@ Job eatJob() {
         if(id in app.world.blocks) app.world.blocks.remove(id);
         d.hunger = 0.0f;
         app.play("DM-CGS-16", 0.4f);
-        app.syncBlockInstances();
+        app.world.blocksDirty = true;
       });
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }

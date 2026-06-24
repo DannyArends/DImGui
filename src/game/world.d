@@ -80,6 +80,7 @@ struct World {
   Feature[][int[3]][string] pendingFeatures;                /// pending features
   bool[int[3]] featuresModified;                            /// Does a chunk have modified features ?
   Block[uint] blocks;                                       /// Block registry
+  bool blocksDirty = false;                                 /// Dirty blocks ?
   Stockpile[uint] stockpiles;                               /// id -> pile
   uint[int[3]] stockpileAt;                                 /// tile -> stockpile id
   uint nextStockpileID = 1;                                 /// next stockpile ID
