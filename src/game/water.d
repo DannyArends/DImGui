@@ -90,10 +90,11 @@ void waterTick(ref GameApp app) {
   }
   debug app.timings["waterCommit"] = SDL_GetTicks() - t;
 
-  // PHASE 5: DEACTIVATE — a cell that made no move this tick has nothing to do -> settle it
+  // PHASE 5: DEACTIVATE: unmoved cells MIGHT be settled — confirm before deactivating
   t = SDL_GetTicks();
   foreach(i, a; act) {
-    if(!moved[i]) a.chunk.active[a.idx] = false;
+    if(moved[i]) continue; // moved -> definitely active
+    if(app.isSettled(next, a.chunk, a.idx, a.wc)){ a.chunk.active[a.idx] = false; }
   }
   debug app.timings["waterDeactivate"] = SDL_GetTicks() - t;
 }
