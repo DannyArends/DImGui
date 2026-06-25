@@ -325,6 +325,7 @@ void doPickup(ref GameApp app, ref Dwarf d) {
     if(!d.pickup(blockID, b.type)) { d.currentJob.onFail(app, d); return; }
     if(b.tile == storedTile) app.withdrawBlock(blockID);
     b.tile = noTile;
+    b.fall = Fall.init;
     d.completeSubJob();
     return;
   }
