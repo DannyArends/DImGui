@@ -6,6 +6,7 @@
 import game;
 
 import block : loadBlocks, saveBlocks, syncBlockInstances;
+import clouds : saveClouds, loadClouds;
 import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
@@ -38,6 +39,7 @@ struct WorldData {
   /** Returns the filesystem path for the world TileDiffs difference */
   const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
   const(char)* blocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* cloudsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_clouds.bin", seed[0], seed[1], seed[2]))); }
   const(char)* dwarfsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_dwarfs.bin", seed[0], seed[1], seed[2]))); }
   const(char)* stockpilePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_stockpiles.bin", seed[0], seed[1], seed[2]))); }
   const(char)* featurePath(string name) const { return toStringz(fixPath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], name))); }
@@ -93,6 +95,7 @@ struct World {
   Dwarves dwarves;                                          /// Dwarves
   Clouds clouds;                                            /// Clouds
   float[int[2]] cloudDensity;                               /// mutable cloud density delta over noise base, by [gx,gz] cloud-cell
+  float[int[3]] cloudNoise;                                 /// cached static noise base per [gx,y,gz] cloud cell (sampled once)
   WaterTiles water;                                         /// single batched water render object
   PathMarkers pathMarkers;                                  /// Path markers
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
@@ -117,6 +120,7 @@ struct World {
     SDL_RemovePath(worldPath());
     SDL_RemovePath(dwarfsPath());
     SDL_RemovePath(blocksPath());
+    SDL_RemovePath(cloudsPath());
     SDL_RemovePath(stockpilePath());
     SDL_RemovePath(waterPath());
     data.diffs = null;
@@ -153,6 +157,7 @@ void loadWorld(ref GameApp app) {
 
   app.loadBlocks();
   app.loadWater();
+  app.loadClouds();
   foreach(ref ft; features) {
     if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
     if(ft.name !in app.world.features) app.world.features[ft.name] = null;
@@ -173,6 +178,7 @@ void saveWorld(ref GameApp app) {
   if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
   app.saveBlocks();
   app.saveWater();
+  app.saveClouds();
   foreach(ref ft; features) {
     app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
   }
