@@ -52,38 +52,29 @@ void waterTick(ref GameApp app) {
   // 1. SPREAD
   foreach(wc; act) {
     int have = app.rdWater(next, wc);
-    if(have <= 1) continue;
-    int[3][4] best; int bestLvl = have; int n = 0;
-    foreach(h; H) {
-      int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
-      if(!app.canHoldWater(nb)) continue;
-      int nl = app.rdWater(next, nb);
-      if(nl < bestLvl) { bestLvl = nl; best[0] = nb; n = 1; }
-      else if(nl == bestLvl && bestLvl < have) best[n++] = nb;
-    }
-    if(n > 0) { int[3] dst = best[uniform(0, n)]; app.wrWater(next, touched, wc, -1); app.wrWater(next, touched, dst, +1); }
+    int[3][4] tgt;
+    int n = app.spreadTargets(next, wc, have, tgt);
+    if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, wc, -1); app.wrWater(next, touched, dst, +1); }
   }
 
   // 2. FALL
   foreach(wc; act) {
+    if(!app.canFall(next, wc)) continue;
     int[3] below = wc.tileBelow;
-    if(!app.canHoldWater(below)) continue;
-    int move = min(app.rdWater(next, wc), WATER_MAX - app.rdWater(next, below));
-    if(move > 0) { app.wrWater(next, touched, wc, -move); app.wrWater(next, touched, below, +move); }
   }
 
-  // 3. COMMIT — only cells that actually changed; setWater re-activates them + neighbours
-  foreach(wc, _; touched) {
-    if(app.rdWater(next, wc) == app.getWater(wc)) continue;
-    app.setWater(wc, cast(ubyte)next[wc]);
-  }
-
-  // 4. DEACTIVATE settled active cells
+  // 3. DEACTIVATE settled active cells (reads next — same level source as the sim)
   foreach(wc; act) {
-    if(!app.isSettled(wc)) continue;
+    if(!app.isSettled(next, wc)) continue;
     int[3] coord = app.world.chunkCoord(wc);
     if(coord !in app.world.chunks) continue;
     app.world.chunks[coord].active[app.world.tileIdx(wc)] = false;
+  }
+
+  // 4. COMMIT — only cells that actually changed; setWater re-activates them + neighbours
+  foreach(wc, _; touched) {
+    if(app.rdWater(next, wc) == app.getWater(wc)) continue;
+    app.setWater(wc, cast(ubyte)next[wc]);
   }
 }
 
