@@ -87,6 +87,7 @@ struct World {
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
   Clouds clouds;                                            /// Clouds
+  WaterTiles water;                                         /// single batched water render object
   PathMarkers pathMarkers;                                  /// Path markers
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   int[3][] pendingBuildTiles;                               /// Built tiles awaiting chunk rebuild

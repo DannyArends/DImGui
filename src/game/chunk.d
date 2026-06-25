@@ -153,9 +153,8 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
     chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
-    chunk.water = app.world.chunks[data.coord].water;             // reuse the water render object too
     app.world.chunks[data.coord].deAllocate = true;
-  } else { app.objects ~= chunk.tiles; app.objects ~= chunk.water; }
+  } else { app.objects ~= chunk.tiles; }
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;

@@ -133,33 +133,36 @@ private bool canHoldWater(ref GameApp app, int[3] wc) {
   return app.world.getTileAt(wc) == ResourceType.None;
 }
 
-/** Rebuild water face instances for one chunk; emits only faces exposed to air / lower water. */
-void rebuildChunkWater(ref GameApp app, Chunk chunk) {
+/** Rebuild the single world water object from all chunks' waterLevel. */
+void rebuildWater(ref GameApp app) {
+  if(app.world.water is null) return;
   float ts = app.world.tileSize, th = app.world.tileHeight;
   DrawInstance[] inst;
-  inst.reserve(chunk.wetCells.length * 2);
-  foreach(idx; chunk.wetCells) {
-    ubyte lvl = chunk.waterLevel[idx];
-    if(lvl == 0) continue;
-    int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
-    float[3] p = app.world.data.tileToWorld(wc);
-    float wh = th * (lvl / 6.0f);
-    float cy = p[1] - th*0.5f + wh*0.5f;
-    auto nbs = app.world.tileNeighbours(wc);
-    foreach(f, nb; nbs) {
-      if(app.getWater(nb) >= lvl) continue;
-      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(cast(int)f, p[0], cy, p[2], ts, wh));
-    }
-  }
-  chunk.water.instances = inst;
-  chunk.water.instances.buffered = false;
-  chunk.waterDirty = false;
-}
-
-/** Re-mesh any chunk whose water changed this frame. */
-void flushWaterDirty(ref GameApp app) {
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
-    if(chunk.waterDirty) app.rebuildChunkWater(chunk);
+    foreach(idx; chunk.wetCells) {
+      ubyte lvl = chunk.waterLevel[idx];
+      if(lvl == 0) continue;
+      int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
+      float[3] p = app.world.data.tileToWorld(wc);
+      float wh = th * (lvl / cast(float)WATER_MAX);
+      float cy = p[1] - th*0.5f + wh*0.5f;
+      foreach(f, nb; app.world.tileNeighbours(wc)) {
+        if(app.getWater(nb) >= lvl) continue;
+        inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(cast(int)f, p[0], cy, p[2], ts, wh));
+      }
+    }
   }
+  app.world.water.instances = inst;
+  app.world.water.instances.buffered = false;
+}
+
+/** If any chunk's water changed, rebuild the single water object. */
+void flushWaterDirty(ref GameApp app) {
+  bool any = false;
+  foreach(coord; app.world.chunks.keys) {
+    auto chunk = app.world.chunks[coord];
+    if(chunk.waterDirty) { chunk.waterDirty = false; any = true; }
+  }
+  if(any) app.rebuildWater();
 }
