@@ -17,8 +17,8 @@ struct GPUAllocation {
 }
 
 struct GeometryBuffer(T = ubyte) {
-  VkBuffer vb = null;            /// Vulkan Buffer pointer
-  VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
+  VkBuffer[] vb = null;          /// Vulkan Buffer pointer
+  VkDeviceMemory[] vbM = null;   /// Vulkan Buffer memory pointer
 
   VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
   VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
@@ -31,7 +31,18 @@ struct GeometryBuffer(T = ubyte) {
   alias items this;
   void opAssign(T[] rhs) { items = rhs; }
 
-  bool buffered = false;
+  bool[] dirty;                  /// per-frame upload-needed flags (length = framesInFlight)
+
+  /** Shim: reading `buffered` = no frame needs upload; writing false = mark all frames dirty. */
+  @property @nogc bool buffered() nothrow const {
+    foreach(d; dirty) if(d) return false;
+    return true;
+  }
+  @property void buffered(bool v) nothrow {
+    if(!v) { foreach(ref d; dirty) d = true; }      // mark dirty (all frames)
+    else   { foreach(ref d; dirty) d = false; }     // mark clean (rarely used directly)
+  }
+
   @property @nogc bool needsBuffer() nothrow const { return(!buffered && items.length > 0); }
 }
 
@@ -47,8 +58,10 @@ void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, st
   if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
   if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
 
-  if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, app.allocator);
-  if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, app.allocator);
+  foreach(i; 0 .. buffer.vb.length) {
+    if(buffer.vb[i]) vkDestroyBuffer(app.device, buffer.vb[i], app.allocator);
+    if(buffer.vbM[i]) vkFreeMemory(app.device, buffer.vbM[i], app.allocator);
+  }
   buffer = GeometryBuffer!T();
 }
 
