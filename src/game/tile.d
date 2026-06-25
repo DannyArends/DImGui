@@ -55,7 +55,7 @@ void activate(ref GameApp app, int[3] tile) {
 }
 
 /** Set water level (0..6) at a world tile; marks the chunk dirty for re-mesh */
-void setWater(ref GameApp app, int[3] tile, ubyte level) {
+void setWater(ref GameApp app, int[3] tile, ubyte level, bool wake = true) {
   int[3] coord = app.world.chunkCoord(tile);
   if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return;
   if(coord !in app.world.chunks) return;
@@ -68,7 +68,7 @@ void setWater(ref GameApp app, int[3] tile, ubyte level) {
   else if(old > 0 && level == 0) chunk.wetCells = chunk.wetCells.remove!(x => x == idx);
   chunk.waterLevel[idx] = cast(ubyte)level;
   chunk.waterDirty = true;
-  app.activate(tile);
+  if(wake){ app.activate(tile); }
 }
 
 /** True if all 6 neighbours of interior tile i are solid (caller guarantees i is not on a boundary) */
