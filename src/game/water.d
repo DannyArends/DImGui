@@ -13,92 +13,77 @@ enum ubyte WATER_MAX = 7;
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
-alias WaterNext    = ubyte[][int[3]];
-alias WaterTouched = int[][int[3]];                        // per-chunk list of touched local indices
+alias WaterNext    = ubyte[int[3]];     // world-cell -> pending level; absent = read committed
+alias WaterTouched = bool[int[3]];      // world-cells written this tick (dedup set)
 
-/** Read level at any world tile from the next-buffer map (0 if unloaded / out of range). */
+/** Read pending level at a world tile: next-buffer if present, else committed getWater. */
 private int rdWater(ref GameApp app, ref WaterNext next, int[3] wc) {
   if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return 0;
-  auto p = app.world.chunkCoord(wc) in next;
-  return p is null ? 0 : (*p)[app.world.tileIdx(wc)];
+  auto p = wc in next;
+  return p is null ? app.getWater(wc) : *p;
 }
 
-/** Add delta at any world tile in the next-buffer map; records the touched cell. Stops at edge of loaded world. */
+/** Apply delta to a world tile in the sparse next-buffer; records it touched.
+    Seeds from committed level on first write so we never need a full dup. */
 private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touched, int[3] wc, int delta) {
-  int[3] cc = app.world.chunkCoord(wc);
-  auto p = cc in next;
-  if(p is null) return;
-  int idx = app.world.tileIdx(wc);
-  (*p)[idx] = cast(ubyte)max(0, min(WATER_MAX, (*p)[idx] + delta));
-  touched[cc] ~= idx;                                      // duplicates harmless (setWater no-ops on unchanged)
+  if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return;
+  if(app.world.chunkCoord(wc) !in app.world.chunks) return;   // edge of loaded world: drop
+  auto p = wc in next;
+  int cur = p is null ? app.getWater(wc) : *p;
+  next[wc] = cast(ubyte)max(0, min(WATER_MAX, cur + delta));
+  touched[wc] = true;
 }
 
 /** One water simulation step. Spread then fall, crosses chunk boundaries. Iterates only wet cells. */
 void waterTick(ref GameApp app) {
- WaterNext next;
-  foreach(coord; app.world.chunks.keys) {
-    auto chunk = app.world.chunks[coord];
-    if(chunk.wetCells.length == 0) continue;
-    bool anyActive = false;
-    foreach(idx; chunk.wetCells) if(chunk.active[idx]) { anyActive = true; break; }
-    if(!anyActive) continue;
-    next[coord] = chunk.waterLevel.dup;
-  }
+  WaterNext next;
   WaterTouched touched;
 
-  int[][int[3]] act;
-  foreach(coord, _; next) {
+  // collect active cells as world coords (only the cells in play; no full-volume dup)
+  int[3][] act;
+  foreach(coord; app.world.chunks.keys) {
     auto ch = app.world.chunks[coord];
-    foreach(idx; ch.wetCells){ if(ch.active[idx]){ act[coord] ~= idx; } }
+    if(ch.wetCells.length == 0) continue;
+    foreach(idx; ch.wetCells)
+      if(ch.active[idx]) act ~= app.world.worldCoord(coord, app.world.tileCoord(idx));
   }
+  if(act.length == 0) return;
 
   // 1. SPREAD
-  foreach(coord, idxs; act) {
-    foreach(idx; idxs) {
-      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
-      int have = app.rdWater(next, wc);
-      if(have <= 1) continue;
-      int[3][4] best; int bestLvl = have; int n = 0;
-      foreach(h; H) {
-        int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
-        if(!app.canHoldWater(nb)) continue;
-        int nl = app.rdWater(next, nb);
-        if(nl < bestLvl) { bestLvl = nl; best[0] = nb; n = 1; }
-        else if(nl == bestLvl && bestLvl < have) best[n++] = nb;
-      }
-      if(n > 0) { int[3] dst = best[uniform(0, n)]; app.wrWater(next, touched, wc, -1); app.wrWater(next, touched, dst, +1); }
+  foreach(wc; act) {
+    int have = app.rdWater(next, wc);
+    if(have <= 1) continue;
+    int[3][4] best; int bestLvl = have; int n = 0;
+    foreach(h; H) {
+      int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
+      if(!app.canHoldWater(nb)) continue;
+      int nl = app.rdWater(next, nb);
+      if(nl < bestLvl) { bestLvl = nl; best[0] = nb; n = 1; }
+      else if(nl == bestLvl && bestLvl < have) best[n++] = nb;
     }
+    if(n > 0) { int[3] dst = best[uniform(0, n)]; app.wrWater(next, touched, wc, -1); app.wrWater(next, touched, dst, +1); }
   }
 
   // 2. FALL
-  foreach(coord, idxs; act) {
-    foreach(idx; idxs) {
-      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
-      int[3] below = wc.tileBelow;
-      if(!app.canHoldWater(below)) continue;
-      int move = min(app.rdWater(next, wc), WATER_MAX - app.rdWater(next, below));
-      if(move > 0) { app.wrWater(next, touched, wc, -move); app.wrWater(next, touched, below, +move); }
-    }
+  foreach(wc; act) {
+    int[3] below = wc.tileBelow;
+    if(!app.canHoldWater(below)) continue;
+    int move = min(app.rdWater(next, wc), WATER_MAX - app.rdWater(next, below));
+    if(move > 0) { app.wrWater(next, touched, wc, -move); app.wrWater(next, touched, below, +move); }
   }
 
-  // 3. COMMIT — setWater re-activates changed cells + neighbours for next tick
-  foreach(coord, idxs; touched) {
-    ubyte[] old = app.world.chunks[coord].waterLevel;
-    ubyte[] buf = next[coord];
-    foreach(i; idxs) {
-      if(buf[i] == old[i]) continue;
-      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(i));
-      app.setWater(wc, cast(ubyte)buf[i]);                  // -> activate(wc) repopulates activeCells
-    }
+  // 3. COMMIT — only cells that actually changed; setWater re-activates them + neighbours
+  foreach(wc, _; touched) {
+    if(app.rdWater(next, wc) == app.getWater(wc)) continue;
+    app.setWater(wc, cast(ubyte)next[wc]);
   }
 
-  // 4. DEACTIVATE settled cells (nothing left to spread/fall/evaporate)
-  foreach(coord, idxs; act) {
-    auto ch = app.world.chunks[coord];
-    foreach(idx; idxs) {
-      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
-      if(app.isSettled(wc)) ch.active[idx] = false;
-    }
+  // 4. DEACTIVATE settled active cells
+  foreach(wc; act) {
+    if(!app.isSettled(wc)) continue;
+    int[3] coord = app.world.chunkCoord(wc);
+    if(coord !in app.world.chunks) continue;
+    app.world.chunks[coord].active[app.world.tileIdx(wc)] = false;
   }
 }
 
