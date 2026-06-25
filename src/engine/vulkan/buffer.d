@@ -20,12 +20,10 @@ struct GeometryBuffer(T = ubyte) {
   VkBuffer[] vb = null;          /// Vulkan Buffer pointer
   VkDeviceMemory[] vbM = null;   /// Vulkan Buffer memory pointer
 
-  VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
-  VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
+  GPUAllocation[] staging;       /// per-frame staging (buffer + memory + mapped data)
 
   VkDeviceSize size = 0;         /// Current actual data size in bytes
   VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
-  void* data;                    /// Pointer to mapped data - non-null means sbM is mapped
 
   T[] items = [];
   alias items this;
@@ -51,15 +49,14 @@ void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, st
     app.nameVulkanObject(buffer.vb[i], toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
     app.nameVulkanObject(buffer.vbM[i], toStringz("["~type~"-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
-  app.nameVulkanObject(buffer.sb, toStringz("["~type~"-STAGE-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
-  app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  foreach(i; 0 .. buffer.staging.length) {
+    app.nameVulkanObject(buffer.staging[i].buffer, toStringz("["~type~"-STAGE-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
+    app.nameVulkanObject(buffer.staging[i].memory, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  }
 }
 
 @nogc void cleanup(T)(ref App app, ref GeometryBuffer!T buffer) nothrow {
-  if(buffer.data) vkUnmapMemory(app.device, buffer.sbM);
-  if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
-  if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
-
+  foreach(i; 0 .. buffer.staging.length) app.cleanup(buffer.staging[i]);
   foreach(i; 0 .. buffer.vb.length) {
     if(buffer.vb[i]) vkDestroyBuffer(app.device, buffer.vb[i], app.allocator);
     if(buffer.vbM[i]) vkFreeMemory(app.device, buffer.vbM[i], app.allocator);
@@ -160,10 +157,10 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   buffer.vb = new VkBuffer[app.framesInFlight];
   buffer.vbM = new VkDeviceMemory[app.framesInFlight];
   buffer.dirty = new bool[app.framesInFlight];
+  buffer.staging = new GPUAllocation[app.framesInFlight];
 
-  app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
-  enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
   foreach(i; 0 .. app.framesInFlight) {
+    app.createAllocation(buffer.staging[i], cast(uint)newCapacity, false);   // host-visible + mapped
     app.createBuffer(&buffer.vb[i], &buffer.vbM[i], newCapacity, usage, properties);
     buffer.dirty[i] = true;
   }
@@ -173,12 +170,13 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
 
 /** Upload CPU data to GPU via staging buffer (caller must issue a transfer→read barrier after batching) */
 void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer) {
-  if(!buffer.dirty[app.syncIndex]) return;
+  uint idx = app.syncIndex;
+  if(!buffer.dirty[idx]) return;
   buffer.size = cast(uint)(T.sizeof * buffer.items.length);
-  memcpy(buffer.data, cast(void*)buffer.items, buffer.size);
+  memcpy(buffer.staging[idx].data, cast(void*)buffer.items, buffer.size);
   VkBufferCopy copyRegion = { size : buffer.size };
-  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb[app.syncIndex], 1, &copyRegion);
-  buffer.dirty[app.syncIndex] = false;
+  vkCmdCopyBuffer(cmdBuffer, buffer.staging[idx].buffer, buffer.vb[idx], 1, &copyRegion);
+  buffer.dirty[idx] = false;
 }
 
 /** Single transfer→vertex/index-read barrier covering all uploads in this command buffer */
