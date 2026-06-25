@@ -155,9 +155,11 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   if(requiredSize <= buffer.capacity) return(false);
 
   VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
-  if(buffer.vb.length > 0) app.deAllocate(buffer);
+  if(buffer.vb.length > 0) app.deAllocate(buffer);          // queues cleanup of the OLD copies (snapshot below)
 
-  buffer.vb.length = buffer.vbM.length = buffer.dirty.length = app.framesInFlight;
+  buffer.vb = new VkBuffer[app.framesInFlight];
+  buffer.vbM = new VkDeviceMemory[app.framesInFlight];
+  buffer.dirty = new bool[app.framesInFlight];
 
   app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
   enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
