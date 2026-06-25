@@ -43,7 +43,7 @@ struct GeometryBuffer(T = ubyte) {
     else   { foreach(ref d; dirty) d = false; }     // mark clean (rarely used directly)
   }
 
-  @property @nogc bool needsBuffer() nothrow const { return(!buffered && items.length > 0); }
+  @property @nogc bool needsBuffer() nothrow const { return(items.length > 0 && (vb.length == 0 || !buffered)); }
 }
 
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
@@ -157,12 +157,11 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
   if(buffer.vb.length > 0) app.deAllocate(buffer);
 
-  uint copies = app.framesInFlight;
-  buffer.vb.length = buffer.vbM.length = buffer.dirty.length = copies;
+  buffer.vb.length = buffer.vbM.length = buffer.dirty.length = app.framesInFlight;
 
   app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
   enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
-  foreach(i; 0 .. copies) {
+  foreach(i; 0 .. app.framesInFlight) {
     app.createBuffer(&buffer.vb[i], &buffer.vbM[i], newCapacity, usage, properties);
     buffer.dirty[i] = true;
   }
@@ -172,13 +171,12 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
 
 /** Upload CPU data to GPU via staging buffer (caller must issue a transfer→read barrier after batching) */
 void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer) {
-  uint frameIndex = app.frameIndex;
-  if(!buffer.dirty[frameIndex]) return;
+  if(!buffer.dirty[app.syncIndex]) return;
   buffer.size = cast(uint)(T.sizeof * buffer.items.length);
   memcpy(buffer.data, cast(void*)buffer.items, buffer.size);
   VkBufferCopy copyRegion = { size : buffer.size };
-  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb[frameIndex], 1, &copyRegion);
-  buffer.dirty[frameIndex] = false;
+  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb[app.syncIndex], 1, &copyRegion);
+  buffer.dirty[app.syncIndex] = false;
 }
 
 /** Single transfer→vertex/index-read barrier covering all uploads in this command buffer */

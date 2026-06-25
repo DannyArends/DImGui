@@ -161,9 +161,9 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
 
   VkDeviceSize offset = 0;
 
-  vkCmdBindVertexBuffers(cmd, VERTEX, 1, &object.vertices.vb[app.frameIndex], &offset);
-  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, &object.instances.vb[app.frameIndex], &offset);
-  vkCmdBindIndexBuffer(cmd, object.indices.vb[app.frameIndex], 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, cast(VkBuffer*)&object.vertices.vb[app.syncIndex], &offset);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[app.syncIndex], &offset);
+  vkCmdBindIndexBuffer(cmd, cast(VkBuffer)object.indices.vb[app.syncIndex], 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, cast(uint)object.indices.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("[%s]: DONE", toStringz(object.geometry()));
