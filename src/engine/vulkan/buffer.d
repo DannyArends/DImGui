@@ -47,8 +47,10 @@ struct GeometryBuffer(T = ubyte) {
 }
 
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
-  app.nameVulkanObject(buffer.vb, toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
-  app.nameVulkanObject(buffer.vbM, toStringz("["~type~"-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  foreach(i; 0 .. buffer.vb.length) {
+    app.nameVulkanObject(buffer.vb[i], toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
+    app.nameVulkanObject(buffer.vbM[i], toStringz("["~type~"-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  }
   app.nameVulkanObject(buffer.sb, toStringz("["~type~"-STAGE-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
   app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
 }
@@ -153,21 +155,29 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   if(requiredSize <= buffer.capacity) return(false);
 
   VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
-  if(buffer.vb != null) app.deAllocate(buffer);
+  if(buffer.vb.length > 0) app.deAllocate(buffer);
+
+  uint copies = app.framesInFlight;
+  buffer.vb.length = buffer.vbM.length = buffer.dirty.length = copies;
+
   app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
   enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
-  app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
+  foreach(i; 0 .. copies) {
+    app.createBuffer(&buffer.vb[i], &buffer.vbM[i], newCapacity, usage, properties);
+    buffer.dirty[i] = true;
+  }
   buffer.capacity = newCapacity;
   return(true);
 }
 
 /** Upload CPU data to GPU via staging buffer (caller must issue a transfer→read barrier after batching) */
-void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer) {
+void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer, uint frameIndex) {
+  if(!buffer.dirty[frameIndex]) return;
   buffer.size = cast(uint)(T.sizeof * buffer.items.length);
   memcpy(buffer.data, cast(void*)buffer.items, buffer.size);
   VkBufferCopy copyRegion = { size : buffer.size };
-  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
-  buffer.buffered = true;
+  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb[frameIndex], 1, &copyRegion);
+  buffer.dirty[frameIndex] = false;
 }
 
 /** Single transfer→vertex/index-read barrier covering all uploads in this command buffer */
@@ -182,9 +192,9 @@ void uploadBarrier(ref App app, VkCommandBuffer cmdBuffer) {
 
 /** Allocate if needed then upload — convenience wrapper */
 void toGPU(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage, string type = "", string name = "",
-              VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+              VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint frameIndex = 0) {
   if(!buffer.needsBuffer) return;
   if(app.trace) SDL_Log("toGPU: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
   if(app.allocateBuffer(buffer, usage, properties)) app.nameGeometryBuffer(buffer, type, name);
-  app.uploadBuffer(buffer, cmdBuffer);
+  app.uploadBuffer(buffer, cmdBuffer, frameIndex);
 }
