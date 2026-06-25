@@ -42,7 +42,7 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].pipeline(Specialization(false, true)));
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isBuffered || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue; // not Buffered, not in Frustum, not Visible
-    if(app.objects[x].hasBoundingBox) app.draw(app.objects[x].box, cmd);
+    if(app.objects[x].hasBoundingBox && app.objects[x].box.isDrawable) app.draw(app.objects[x].box, cmd);
   }
   popLabel(cmd);
 }
