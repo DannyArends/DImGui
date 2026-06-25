@@ -15,6 +15,12 @@ static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 alias WaterNext    = ubyte[int[3]];     // world-cell -> pending level; absent = read committed
 alias WaterTouched = bool[int[3]];      // world-cells written this tick (dedup set)
 
+/** This cell's pending level: next-buffer if touched, else direct array read (no getWater hash). */
+private int ownLevel(ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
+  auto p = wc in next;
+  return p is null ? chunk.waterLevel[idx] : *p;
+}
+
 /** Read pending level at a world tile: next-buffer if present, else committed getWater. */
 private int rdWater(ref GameApp app, ref WaterNext next, int[3] wc) {
   if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return 0;
@@ -59,7 +65,7 @@ void waterTick(ref GameApp app) {
   // PHASE 2: SPREAD
   t = SDL_GetTicks();
   foreach(i, a; act) {
-    int have = app.rdWater(next, a.wc);
+    int have = ownLevel(next, a.chunk, a.idx, a.wc);
     int[3][4] tgt;
     int n = app.spreadTargets(next, a.chunk, a.idx, a.wc, have, tgt);
     if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, a.wc, -1); app.wrWater(next, touched, dst, +1); moved[i] = true; }
@@ -71,8 +77,8 @@ void waterTick(ref GameApp app) {
   foreach(i, a; act) {
     if(!app.canFall(next, a.chunk, a.idx, a.wc)) continue;
     int[3] below = a.wc.tileBelow;
-    int move = min(app.rdWater(next, a.wc), WATER_MAX - app.rdWater(next, below));
-    if(move > 0) { app.wrWater(next, touched, a.wc, -move); app.wrWater(next, touched, below, +move); moved[i] = true; }
+    int mv = min(ownLevel(next, a.chunk, a.idx, a.wc), WATER_MAX - app.rdWater(next, below));
+    if(mv > 0) { app.wrWater(next, touched, a.wc, -mv); app.wrWater(next, touched, below, +mv); moved[i] = true; }
   }
   debug app.timings["waterFall"] = SDL_GetTicks() - t;
 
@@ -145,7 +151,7 @@ private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, 
 }
 
 private bool isSettled(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
-  int have = app.rdWater(next, wc);
+  int have = ownLevel(next, chunk, idx, wc);
   if(have <= 0) return true;
   if(app.canFall(next, chunk, idx, wc)) return false;
   int[3][4] tgt;
