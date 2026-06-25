@@ -12,11 +12,12 @@ import noise : smoothNoise;
 import tile : FACE_OFFSETS, getWater, setWater, getTileAt;
 import water : WATER_MAX;
 
-enum int CLOUD_LAYERS = 8;
-enum int CLOUD_STEP = 6;
-enum float CLOUD_THRESHOLD = 0.80f;
-enum float CLOUD_FREQ = 0.06f;
+enum int CLOUD_LAYERS = 8;              // Layers
+enum int CLOUD_STEP = 6;                // Step
+enum float CLOUD_THRESHOLD = 0.80f;     // Threshold
+enum float CLOUD_FREQ = 0.06f;          // frequency
 enum int RAIN_DROPS_PER_TICK = 250;     // sparse
+enum float RAIN_DEPLETE = 0.01f;        // density removed from a cloud cell per drop spawned
 
 private bool isCloud(ref GameApp app, int gx, int y, int gz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
@@ -74,6 +75,7 @@ void rainTick(ref GameApp app) {
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;   // need air to spawn into
     uint id = app.spawnBlock(spawn, ResourceType.Water);
     if(auto b = id in app.world.blocks) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
+    app.world.cloudDensity[[tx/CLOUD_STEP, tz/CLOUD_STEP]] -= RAIN_DEPLETE;   // raining thins the cloud
   }
 }
 
