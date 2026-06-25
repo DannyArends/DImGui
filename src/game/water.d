@@ -54,27 +54,29 @@ void waterTick(ref GameApp app) {
   debug app.timings["waterGather"] = SDL_GetTicks() - t;
   if(act.length == 0) return;
 
+  bool[] moved; moved.length = act.length;
+
   // PHASE 2: SPREAD
   t = SDL_GetTicks();
-  foreach(a; act) {
+  foreach(i, a; act) {
     int have = app.rdWater(next, a.wc);
     int[3][4] tgt;
     int n = app.spreadTargets(next, a.chunk, a.idx, a.wc, have, tgt);
-    if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, a.wc, -1); app.wrWater(next, touched, dst, +1); }
+    if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, a.wc, -1); app.wrWater(next, touched, dst, +1); moved[i] = true; }
   }
   debug app.timings["waterSpread"] = SDL_GetTicks() - t;
 
   // PHASE 3: FALL
   t = SDL_GetTicks();
-  foreach(a; act) {
+  foreach(i, a; act) {
     if(!app.canFall(next, a.chunk, a.idx, a.wc)) continue;
     int[3] below = a.wc.tileBelow;
     int move = min(app.rdWater(next, a.wc), WATER_MAX - app.rdWater(next, below));
-    if(move > 0) { app.wrWater(next, touched, a.wc, -move); app.wrWater(next, touched, below, +move); }
+    if(move > 0) { app.wrWater(next, touched, a.wc, -move); app.wrWater(next, touched, below, +move); moved[i] = true; }
   }
   debug app.timings["waterFall"] = SDL_GetTicks() - t;
 
-  // PHASE 4+5: COMMIT changed cells, then deactivate the ones that settled (only touched cells, not all active)
+  // PHASE 4: COMMIT changed cells
   t = SDL_GetTicks();
   foreach(wc, _; touched) {
     if(app.rdWater(next, wc) == app.getWater(wc)) continue;
@@ -82,14 +84,10 @@ void waterTick(ref GameApp app) {
   }
   debug app.timings["waterCommit"] = SDL_GetTicks() - t;
 
+  // PHASE 5: DEACTIVATE — a cell that made no move this tick has nothing to do -> settle it
   t = SDL_GetTicks();
-  foreach(wc, _; touched) {
-    int[3] coord = app.world.chunkCoord(wc);
-    auto p = coord in app.world.chunks;
-    if(p is null) continue;
-    auto ch = *p;
-    int idx = app.world.tileIdx(wc);
-    if(ch.active[idx] && app.isSettled(next, ch, idx, wc)) ch.active[idx] = false;
+  foreach(i, a; act) {
+    if(!moved[i]) a.chunk.active[a.idx] = false;
   }
   debug app.timings["waterDeactivate"] = SDL_GetTicks() - t;
 }
