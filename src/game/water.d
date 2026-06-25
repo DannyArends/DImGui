@@ -12,14 +12,14 @@ import tile : FACE_OFFSETS, neighbourCell, tileBelow, tileCoord, tileIdx, tileTo
 
 enum ubyte WATER_MAX = 7;               // Maximum water density
 enum float EVAP_DENSITY = 0.005f;       // density added through water evaporation
-enum uint EVAP_DEPLETE = 1500;          // Speed of evaporation
+enum uint EVAP_DEPLETE = 2500;          // Speed of evaporation
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
 struct WaterDiff { int[3] coord; uint idx; ubyte level; }
 struct Active { Chunk chunk; int idx; int[3] wc; }
 
-alias WaterNext    = ubyte[int[3]];     // world-cell -> pending level; absent = read committed
+alias WaterNext = ubyte[int[3]];        // world-cell -> pending level; absent = read committed
 alias WaterTouched = bool[int[3]];      // world-cells written this tick (dedup set)
 
 /** This cell's pending level: next-buffer if touched, else direct array read (no getWater hash). */
@@ -111,7 +111,7 @@ void evaporateTick(ref GameApp app) {
     auto chunk = app.world.chunks[coord];
     foreach(idx; chunk.wetCells.dup) {
       ubyte have = chunk.waterLevel[idx];
-      if(have == 0 || have >= (WATER_MAX/2)) continue;
+      if(have == 0) continue;
       if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - have) * 2) {
         int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
         app.setWater(wc, cast(ubyte)(have - 1), false);
