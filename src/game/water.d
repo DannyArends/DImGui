@@ -6,7 +6,7 @@
 import game;
 
 import chunk : faceData;
-import tile : FACE_OFFSETS, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
+import tile : FACE_OFFSETS, neighbourCell, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
 enum ubyte WATER_MAX = 7;
 
@@ -35,46 +35,57 @@ private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touch
 
 /** One water simulation step. Spread then fall, crosses chunk boundaries. Iterates only wet cells. */
 void waterTick(ref GameApp app) {
-app.timings["wetRemove"] = 0;
-app.timings["setWaterTotal"] = 0;
   WaterNext next;
   WaterTouched touched;
   int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  ulong t;
 
   struct Active { Chunk chunk; int idx; int[3] wc; }
   Active[] act;
+
+  // PHASE 1: GATHER
+  t = SDL_GetTicks();
   foreach(coord; app.world.chunks.keys) {
     auto ch = app.world.chunks[coord];
     if(ch.wetCells.length == 0) continue;
     foreach(idx; ch.wetCells)
       if(ch.active[idx]) act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx)));
   }
+  debug app.timings["waterGather"] = SDL_GetTicks() - t;
   if(act.length == 0) return;
 
-  // 1. SPREAD
+  // PHASE 2: SPREAD
+  t = SDL_GetTicks();
   foreach(a; act) {
     int have = app.rdWater(next, a.wc);
     int[3][4] tgt;
     int n = app.spreadTargets(next, a.chunk, a.idx, a.wc, have, tgt);
     if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, a.wc, -1); app.wrWater(next, touched, dst, +1); }
   }
+  debug app.timings["waterSpread"] = SDL_GetTicks() - t;
 
-  // 2. FALL
+  // PHASE 3: FALL
+  t = SDL_GetTicks();
   foreach(a; act) {
     if(!app.canFall(next, a.chunk, a.idx, a.wc)) continue;
     int[3] below = a.wc.tileBelow;
     int move = min(app.rdWater(next, a.wc), WATER_MAX - app.rdWater(next, below));
     if(move > 0) { app.wrWater(next, touched, a.wc, -move); app.wrWater(next, touched, below, +move); }
   }
+  debug app.timings["waterFall"] = SDL_GetTicks() - t;
 
-  // 3. DEACTIVATE
+  // PHASE 4: DEACTIVATE
+  t = SDL_GetTicks();
   foreach(a; act) { if(app.isSettled(next, a.chunk, a.idx, a.wc)) a.chunk.active[a.idx] = false; }
+  debug app.timings["waterDeactivate"] = SDL_GetTicks() - t;
 
-  // 4. COMMIT
+  // PHASE 5: COMMIT
+  t = SDL_GetTicks();
   foreach(wc, _; touched) {
     if(app.rdWater(next, wc) == app.getWater(wc)) continue;
     app.setWater(wc, cast(ubyte)next[wc]);
   }
+  debug app.timings["waterCommit"] = SDL_GetTicks() - t;
 }
 
 /** Lower one cell's water without waking the sim */
@@ -94,20 +105,17 @@ void evaporateTick(ref GameApp app) {
 
 /** Neighbour level: next-buffer if touched, else in-chunk direct read, else slow getWater. */
 private int nbLevel(ref GameApp app, ref WaterNext next, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, int[3] base) {
-  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
-  int nx = lx+dx, ny = ly+dy, nz = lz+dz;
   int[3] nwc = [base[0]+dx, base[1]+dy, base[2]+dz];
-  if(auto p = nwc in next) return *p;                       // pending write: must honour it
-  if(nx>=0 && nx<S && ny>=0 && ny<Hh && nz>=0 && nz<S) return chunk.waterLevel[nz*Hh*S + ny*S + nx];
-  return app.getWater(nwc);
+  if(auto p = nwc in next) return *p;
+  Chunk nch; int nidx;
+  if(app.neighbourCell(chunk, lx, ly, lz, dx, dy, dz, nch, nidx)) return nch.waterLevel[nidx];
+  return 0;
 }
 
 private bool nbAir(ref GameApp app, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, int[3] base) {
-  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
-  int nx = lx+dx, ny = ly+dy, nz = lz+dz;
-  if(ny < 0 || ny >= Hh) return false;
-  if(nx>=0 && nx<S && nz>=0 && nz<S) return chunk.tileTypes[nz*Hh*S + ny*S + nx] == ResourceType.None;
-  return app.canHoldWater([base[0]+dx, base[1]+dy, base[2]+dz]);
+  Chunk nch; int nidx;
+  if(!app.neighbourCell(chunk, lx, ly, lz, dx, dy, dz, nch, nidx)) return false;
+  return nch.tileTypes[nidx] == ResourceType.None;
 }
 
 private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc, int have, out int[3][4] tgt) {
@@ -163,11 +171,8 @@ private void rebuildChunkWaterInstances(ref GameApp app, Chunk chunk) {
     float wh = th * (lvl / cast(float)WATER_MAX);
     float cy = p[1] - th*0.5f + wh*0.5f;
     foreach(f; 0 .. 6) {
-      int nx = lx+FACE_OFFSETS[f][0], ny = ly+FACE_OFFSETS[f][1], nz = lz+FACE_OFFSETS[f][2];
-      int nlvl;
-      if(nx>=0 && nx<S && ny>=0 && ny<Hh && nz>=0 && nz<S){
-        nlvl = chunk.waterLevel[nz*Hh*S + ny*S + nx];
-      }else{ nlvl = app.getWater(app.world.data.worldCoord(chunk.coord, [nx, ny, nz])); }
+      Chunk nch; int nidx;
+      int nlvl = app.neighbourCell(chunk, lx, ly, lz, FACE_OFFSETS[f][0], FACE_OFFSETS[f][1], FACE_OFFSETS[f][2], nch, nidx)? nch.waterLevel[nidx] : 0;
       if(nlvl >= lvl) continue;
       inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], ts, wh));
     }

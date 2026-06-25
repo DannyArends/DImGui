@@ -41,15 +41,17 @@ static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,
 
 /** Wake a cell and its 6 neighbours so the sim re-evaluates them next tick. */
 void activate(ref GameApp app, int[3] tile) {
-  static immutable int[3][7] SELF_AND_N = [[0,0,0],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-  foreach(d; SELF_AND_N) {
-    int[3] t = [tile[0]+d[0], tile[1]+d[1], tile[2]+d[2]];
-    if(t[1] < 0 || t[1] >= app.world.chunkHeight) continue;
-    int[3] cc = app.world.chunkCoord(t);
-    if(cc !in app.world.chunks) continue;
-    auto ch = app.world.chunks[cc];
-    int i = app.world.tileIdx(t);
-    if(ch.waterLevel[i] > 0) ch.active[i] = true;   // bit-set: inherently dedup, can't exceed cell count
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  if(tile[1] < 0 || tile[1] >= Hh) return;
+  auto p = app.world.chunkCoord(tile) in app.world.chunks;
+  if(p is null) return;
+  auto ch = *p;
+  int idx = app.world.tileIdx(tile);
+  int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
+  if(ch.waterLevel[idx] > 0) ch.active[idx] = true;
+  foreach(d; FACE_OFFSETS) {
+    Chunk nch; int nidx;
+    if(app.neighbourCell(ch, lx, ly, lz, d[0], d[1], d[2], nch, nidx) && nch.waterLevel[nidx] > 0){ nch.active[nidx] = true; }
   }
 }
 
@@ -105,6 +107,24 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
 
 @nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
 @nogc pure int[3] tileAbove(int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
+
+/** Resolve a neighbour of local (lx,ly,lz) in `chunk` by offset (dx,dy,dz) to (out chunk, out idx).
+    In-chunk: pure integer offset, no hash. Boundary: one chunk-pointer hop. False if out of loaded world. */
+@nogc bool neighbourCell(ref GameApp app, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, out Chunk nch, out int nidx) nothrow {
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  int ny = ly + dy;
+  if(ny < 0 || ny >= Hh) return false;
+  int nx = lx + dx, nz = lz + dz;
+  if(nx >= 0 && nx < S && nz >= 0 && nz < S) {              // in-chunk
+    nch = chunk; nidx = nz*Hh*S + ny*S + nx; return true;
+  }
+  int cdx = nx < 0 ? -1 : (nx >= S ? 1 : 0);               // boundary hop
+  int cdz = nz < 0 ? -1 : (nz >= S ? 1 : 0);
+  auto p = [chunk.coord[0]+cdx, 0, chunk.coord[2]+cdz] in app.world.chunks;
+  if(p is null) return false;
+  nch = *p; nidx = ((nz+S)%S)*Hh*S + ny*S + ((nx+S)%S);
+  return true;
+}
 
 /** Determine the tile type at a world coordinate from noise, no chunk data required */
 @nogc pure ResourceType getTile(T)(T wd, const int[3] wc) nothrow {
