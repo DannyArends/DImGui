@@ -6,11 +6,15 @@
 import game;
 
 import chunk : faceData;
+import serialization : readData, writeData;
 import tile : FACE_OFFSETS, neighbourCell, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
 enum ubyte WATER_MAX = 7;
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
+
+struct WaterCell { int x, y, z; ubyte level; }
+struct Active { Chunk chunk; int idx; int[3] wc; }
 
 alias WaterNext    = ubyte[int[3]];     // world-cell -> pending level; absent = read committed
 alias WaterTouched = bool[int[3]];      // world-cells written this tick (dedup set)
@@ -46,7 +50,6 @@ void waterTick(ref GameApp app) {
   int S = app.world.chunkSize, Hh = app.world.chunkHeight;
   ulong t;
 
-  struct Active { Chunk chunk; int idx; int[3] wc; }
   Active[] act;
 
   // PHASE 1: GATHER
@@ -200,4 +203,28 @@ void flushWaterDirty(ref GameApp app) {
   foreach(coord; app.world.chunks.keys) all ~= app.world.chunks[coord].waterInstances;
   app.world.water.instances = all;
   app.world.water.instances.buffered = false;
+}
+
+/** Save all water as a flat (coord, level) list. */
+void saveWater(ref GameApp app) {
+  WaterCell[] flat;
+  foreach(coord; app.world.chunks.keys) {
+    auto chunk = app.world.chunks[coord];
+    foreach(idx; chunk.wetCells) {
+      ubyte lvl = chunk.waterLevel[idx];
+      if(lvl == 0) continue;
+      int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
+      flat ~= WaterCell(wc[0], wc[1], wc[2], lvl);
+    }
+  }
+  if(flat.length == 0) { SDL_RemovePath(app.world.waterPath()); return; }   // no water -> no file
+  writeData(app.world.waterPath(), flat, cast(uint)flat.length);
+}
+
+/** Load water; setWater rebuilds wetCells/active/dirty per cell. */
+void loadWater(ref GameApp app) {
+  WaterCell[] flat;
+  if(!readData(app.world.waterPath(), flat, *(new uint))) return;
+  foreach(ref c; flat) app.setWater([c.x, c.y, c.z], c.level);
+  SDL_Log("loadWater: %d cells", cast(int)flat.length);
 }

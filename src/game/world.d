@@ -17,6 +17,7 @@ import stockpile : saveStockpiles, loadStockpiles;
 import tile : FACE_OFFSETS, tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : saveVegetation, loadVegetation;
+import water : saveWater, loadWater;
 
 @nogc pure int iDiv(int a, int b) nothrow { return((a >= 0) ? a/b : -((-a + b - 1)/b)); }
 
@@ -39,6 +40,7 @@ struct WorldData {
   const(char)* dwarfsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_dwarfs.bin", seed[0], seed[1], seed[2]))); }
   const(char)* stockpilePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_stockpiles.bin", seed[0], seed[1], seed[2]))); }
   const(char)* featurePath(string name) const { return toStringz(fixPath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], name))); }
+  const(char)* waterPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_water.bin", seed[0], seed[1], seed[2]))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
   @nogc pure int[3] localCoord(int[3] tile) const nothrow {
@@ -114,6 +116,7 @@ struct World {
     SDL_RemovePath(dwarfsPath());
     SDL_RemovePath(blocksPath());
     SDL_RemovePath(stockpilePath());
+    SDL_RemovePath(waterPath());
     data.diffs = null;
     app.world.inventory.type = ResourceType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
@@ -147,6 +150,7 @@ void loadWorld(ref GameApp app) {
   } else if(raw.length != 0) { SDL_Log("loadWorld: invalid magic"); }
 
   app.loadBlocks();
+  app.loadWater();
   foreach(ref ft; features) {
     if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
     if(ft.name !in app.world.features) app.world.features[ft.name] = null;
@@ -166,6 +170,7 @@ void saveWorld(ref GameApp app) {
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
   app.saveBlocks();
+  app.saveWater();
   foreach(ref ft; features) {
     app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
   }
