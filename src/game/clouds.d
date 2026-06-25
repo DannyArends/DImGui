@@ -18,7 +18,7 @@ enum int CLOUD_STEP = 6;                // Step
 enum float CLOUD_THRESHOLD = 0.80f;     // Threshold
 enum float CLOUD_FREQ = 0.06f;          // frequency
 enum int RAIN_DROPS_PER_TICK = 250;     // sparse
-enum float RAIN_DEPLETE = 0.01f;        // density removed from a cloud cell per drop spawned
+enum float RAIN_DEPLETE = 0.02f;        // density removed from a cloud cell per drop spawned
 enum float CLOUD_DMAX =  1.0f;          // max positive density (thickest cloud)
 enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
 
