@@ -154,7 +154,8 @@ void syncBlockInstances(ref GameApp app) {
       float sz = resourceData(b.type).dropScale * app.world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
-      emitBlock(app.world.dropMeshes[meshName], id, b, [base[0] + bx, base[1], base[2] + bz], [sz, sz, sz]);
+      float by = b.fall.isFalling ? b.fall.y : base[1];
+      emitBlock(app.world.dropMeshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
     }
   }
   app.world.syncStockpileInstances();
@@ -172,14 +173,10 @@ void unsettleBlocks(ref World world, ref Block[uint] blocks, int[3] minedTile) {
 /** Update falling blocks */
 void settleBlocks(ref World world, float dt) {
   if(world.blocks.length == 0) return;
-  bool changed = false;
   foreach(id, ref b; world.blocks) {
     if(!b.fall.isFalling) continue;
     int[3] landed;
     if(b.fall.step(world, b.tile, dt, -world.blockOffset, landed)) b.tile = landed;
-    float posY = b.fall.isFalling ? b.fall.y : world.tileToWorld(b.tile, -world.blockOffset)[1];
-    world.dropMeshes[resourceData(b.type).meshName].instances[b.instanceIdx].matrix[13] = posY;
-    changed = true;
+    world.blocksDirty = true;
   }
-  if(changed) foreach(ref mesh; world.dropMeshes.values) mesh.instances.buffered = false;
 }
