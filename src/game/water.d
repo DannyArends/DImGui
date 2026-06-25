@@ -93,8 +93,8 @@ void evaporateTick(ref GameApp app) {
     auto chunk = app.world.chunks[coord];
     foreach(idx; chunk.wetCells.dup) {
       ubyte have = chunk.waterLevel[idx];
-      if(have == 0 || have >= WATER_MAX) continue;
-      if(uniform(0, 500) < (WATER_MAX - have) * 2) {
+      if(have == 0 || have >= (WATER_MAX/2)) continue;
+      if(uniform(0, 5000) < (WATER_MAX - have) * 2) {
         int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
         app.setWater(wc, cast(ubyte)(have - 1), false);
       }
@@ -102,15 +102,31 @@ void evaporateTick(ref GameApp app) {
   }
 }
 
-/** Test if a cell is settled. */
-private bool isSettled(ref GameApp app, int[3] wc) {
-  int have = app.getWater(wc);
-  if(have <= 0) return true;
-  if(app.canHoldWater(wc.tileBelow) && app.getWater(wc.tileBelow) < WATER_MAX) return false; // can fall
+private int spreadTargets(ref GameApp app, ref WaterNext next, int[3] wc, int have, out int[3][4] tgt) {
+  if(have < 2) return 0;
+  int bestLvl = have, n = 0;
   foreach(h; H) {
     int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
-    if(app.canHoldWater(nb) && app.getWater(nb) < have) return false; // can spread
+    if(!app.canHoldWater(nb)) continue;
+    int nl = app.rdWater(next, nb);
+    if(nl < bestLvl) { bestLvl = nl; tgt[0] = nb; n = 1; }
+    else if(nl == bestLvl && bestLvl < have) tgt[n++] = nb;
   }
+  return n;
+}
+
+private bool canFall(ref GameApp app, ref WaterNext next, int[3] wc) {
+  int[3] below = wc.tileBelow;
+  return app.canHoldWater(below) && app.rdWater(next, below) < WATER_MAX;
+}
+
+/** Test if a cell is settled. */
+private bool isSettled(ref GameApp app, ref WaterNext next, int[3] wc) {
+  int have = app.rdWater(next, wc);
+  if(have <= 0) return true;
+  if(app.canFall(next, wc)) return false;
+  int[3][4] tgt;
+  if(app.spreadTargets(next, wc, have, tgt) > 0) return false;
   return true;
 }
 
