@@ -18,10 +18,11 @@ enum float CLOUD_THRESHOLD = 0.80f;
 enum float CLOUD_FREQ = 0.06f;
 enum int RAIN_DROPS_PER_TICK = 250;     // sparse
 
-private bool isCloud(int tx, int y, int tz) {
+private bool isCloud(ref GameApp app, int gx, int y, int gz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
   float fy = (y - (CLOUD_LAYERS-1)*0.5f) / (CLOUD_LAYERS*0.5f);
-  float d = smoothNoise([tx*CLOUD_FREQ, y*0.6f, tz*CLOUD_FREQ], 1337) * (1.0f - fy*fy*0.7f);
+  float d = smoothNoise([gx*CLOUD_FREQ, y*0.6f, gz*CLOUD_FREQ], 1337) * (1.0f - fy*fy*0.7f);
+  if(auto p = [gx, gz] in app.world.cloudDensity) d += *p;
   return d >= CLOUD_THRESHOLD;
 }
 
@@ -41,10 +42,10 @@ void rebuildClouds(ref GameApp app) {
       int gx = (baseX + lx) / CLOUD_STEP;
       int gz = (baseZ + lz) / CLOUD_STEP;
       foreach(y; 0 .. CLOUD_LAYERS) {
-        if(!isCloud(gx, y, gz)) continue;
+        if(!app.isCloud(gx, y, gz)) continue;
         float px = (baseX + lx) * ts, py = baseY + y*voxH, pz = (baseZ + lz) * ts;
         foreach(f; 0 .. 6) {
-          if(isCloud(gx + FACE_OFFSETS[f][0], y + FACE_OFFSETS[f][1], gz + FACE_OFFSETS[f][2])) continue;
+          if(app.isCloud(gx + FACE_OFFSETS[f][0], y + FACE_OFFSETS[f][1], gz + FACE_OFFSETS[f][2])) continue;
           inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, vox, voxH));
         }
       }
@@ -66,7 +67,7 @@ void rainTick(ref GameApp app) {
     int tx = cc[0]*cs + lx, tz = cc[2]*cs + lz;
 
     bool cloudAbove = false;
-    foreach(cy; 0 .. CLOUD_LAYERS) if(isCloud(tx/CLOUD_STEP, cy, tz/CLOUD_STEP)) { cloudAbove = true; break; }
+    foreach(cy; 0 .. CLOUD_LAYERS) if(app.isCloud(tx/CLOUD_STEP, cy, tz/CLOUD_STEP)) { cloudAbove = true; break; }
     if(!cloudAbove) continue;
 
     int[3] spawn = [tx, cloudY, tz];
