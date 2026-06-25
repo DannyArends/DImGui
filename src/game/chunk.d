@@ -6,7 +6,7 @@
 import game;
 
 import block : unsettleBlocks;
-import clouds : rebuildClouds;
+import clouds : rebuildClouds, seedClouds;
 import dwarf : unsettleDwarves;
 import game : GameApp;
 import gameobjects : Chunk;
