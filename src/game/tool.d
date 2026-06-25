@@ -18,6 +18,7 @@ import stockpile : createStockpile;
 import tile : tileToWorld, getTileAt, tileAbove, getWater, setWater, tileBelow;
 import matrix : translateScale;
 import vegetation : getBestVegetation;
+import water : WATER_MAX;
 
 enum ToolMode : ubyte { Info, Select, Mine, Interact, Build, Stockpile, Water }
 enum ToolKind : ubyte { Query, RayPaint, BuildPaint }
@@ -58,7 +59,7 @@ void interactCommit(ref GameApp app, int[3] tile) {
 void waterCommit(ref GameApp app, int[3] tile) {
   if(app.world.getTileAt(tile) != ResourceType.None) return;
   ubyte cur = cast(ubyte)app.getWater(tile);
-  app.setWater(tile, cast(ubyte)min(6, cur + 3));
+  app.setWater(tile, cast(ubyte)min(WATER_MAX, cur + 3));
 }
 
 void openBuildSelection(ref GameApp app) {

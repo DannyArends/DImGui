@@ -188,11 +188,15 @@ void flushWaterDirty(ref GameApp app) {
   bool any = false;
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
-    if(chunk.waterDirty) { app.rebuildChunkWaterInstances(chunk); chunk.waterDirty = false; any = true; }
+    if(!chunk.waterDirty) continue;
+    if(!chunk.tiles.inFrustum) continue;  // skip off-screen: defer re-mesh until visible
+    app.rebuildChunkWaterInstances(chunk);
+    chunk.waterDirty = false;  // cleared only when actually re-meshed
+    any = true;
   }
   if(!any || app.world.water is null) return;
   DrawInstance[] all;
-  foreach(coord; app.world.chunks.keys) all ~= app.world.chunks[coord].waterInstances;  // concat cached
+  foreach(coord; app.world.chunks.keys) all ~= app.world.chunks[coord].waterInstances;
   app.world.water.instances = all;
   app.world.water.instances.buffered = false;
 }
