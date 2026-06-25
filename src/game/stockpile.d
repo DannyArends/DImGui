@@ -25,9 +25,10 @@ struct Stockpile {
 
 enum subPerAxis = 4;                          // 1 / 0.25 (blockSize ratio)
 enum slotsPerTile = subPerAxis^^3;            // 64
+enum uint emptySlot = uint.max;
 
 uint capacity(ref Stockpile sp) { return cast(uint)sp.tiles.length * slotsPerTile; }
-bool hasFreeSlot(ref Stockpile sp) { return sp.contents.length < sp.capacity; }
+bool hasFreeSlot(ref Stockpile sp) { return sp.contents.countUntil(emptySlot) >= 0 || sp.contents.length < sp.capacity; }
 void stampTiles(ref GameApp app, uint id, int[3][] tiles) { foreach(t; tiles){ app.world.stockpileAt[t] = id; } }
 void clearTiles(ref GameApp app, int[3][] tiles) { foreach(t; tiles) { app.world.stockpileAt.remove(t); } }
 
@@ -82,7 +83,10 @@ void storeBlockAt(ref GameApp app, int[3] tile, uint blockID) {
 void storeBlock(ref GameApp app, uint stockpileID, uint blockID) {
   if(auto sp = stockpileID in app.world.stockpiles) {
     if(!hasFreeSlot(*sp)) return;
-    sp.contents ~= blockID;
+    size_t slot = sp.contents.countUntil(emptySlot);
+    if(slot == -1) { slot = sp.contents.length; sp.contents ~= emptySlot; }
+    if(slot >= capacity(*sp)) return;
+    sp.contents[slot] = blockID;
     if(auto b = blockID in app.world.blocks) b.tile = storedTile;
   }
 }
@@ -107,7 +111,7 @@ uint countOf(ref GameApp app, ref Stockpile sp, ResourceType t) {
 bool withdrawBlock(ref GameApp app, uint blockID) {
   foreach(ref sp; app.world.stockpiles) {
     auto idx = sp.contents.countUntil(blockID);
-    if(idx >= 0) { sp.contents = sp.contents.remove(idx); return true; }
+    if(idx >= 0) { sp.contents[idx] = emptySlot; return true; }
   }
   return false;
 }
