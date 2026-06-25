@@ -61,6 +61,8 @@ void waterTick(ref GameApp app) {
   foreach(wc; act) {
     if(!app.canFall(next, wc)) continue;
     int[3] below = wc.tileBelow;
+    int move = min(app.rdWater(next, wc), WATER_MAX - app.rdWater(next, below));
+    if(move > 0) { app.wrWater(next, touched, wc, -move); app.wrWater(next, touched, below, +move); }
   }
 
   // 3. DEACTIVATE settled active cells (reads next — same level source as the sim)
