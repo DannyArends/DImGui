@@ -132,27 +132,22 @@ private bool canHoldWater(ref GameApp app, int[3] wc) {
 }
 
 /** Rebuild the single world water object from all chunks' waterLevel. */
-void rebuildWater(ref GameApp app) {
-  if(app.world.water is null) return;
+private void rebuildChunkWaterInstances(ref GameApp app, Chunk chunk) {
   float ts = app.world.tileSize, th = app.world.tileHeight;
   DrawInstance[] inst;
-  foreach(coord; app.world.chunks.keys) {
-    auto chunk = app.world.chunks[coord];
-    foreach(idx; chunk.wetCells) {
-      ubyte lvl = chunk.waterLevel[idx];
-      if(lvl == 0) continue;
-      int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
-      float[3] p = app.world.data.tileToWorld(wc);
-      float wh = th * (lvl / cast(float)WATER_MAX);
-      float cy = p[1] - th*0.5f + wh*0.5f;
-      foreach(f, nb; app.world.tileNeighbours(wc)) {
-        if(app.getWater(nb) >= lvl) continue;
-        inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(cast(int)f, p[0], cy, p[2], ts, wh));
-      }
+  foreach(idx; chunk.wetCells) {
+    ubyte lvl = chunk.waterLevel[idx];
+    if(lvl == 0) continue;
+    int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
+    float[3] p = app.world.data.tileToWorld(wc);
+    float wh = th * (lvl / cast(float)WATER_MAX);
+    float cy = p[1] - th*0.5f + wh*0.5f;
+    foreach(f, nb; app.world.tileNeighbours(wc)) {
+      if(app.getWater(nb) >= lvl) continue;
+      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(cast(int)f, p[0], cy, p[2], ts, wh));
     }
   }
-  app.world.water.instances = inst;
-  app.world.water.instances.buffered = false;
+  chunk.waterInstances = inst;
 }
 
 /** If any chunk's water changed, rebuild the single water object. */
@@ -160,7 +155,11 @@ void flushWaterDirty(ref GameApp app) {
   bool any = false;
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
-    if(chunk.waterDirty) { chunk.waterDirty = false; any = true; }
+    if(chunk.waterDirty) { app.rebuildChunkWaterInstances(chunk); chunk.waterDirty = false; any = true; }
   }
-  if(any) app.rebuildWater();
+  if(!any || app.world.water is null) return;
+  DrawInstance[] all;
+  foreach(coord; app.world.chunks.keys) all ~= app.world.chunks[coord].waterInstances;  // concat cached
+  app.world.water.instances = all;
+  app.world.water.instances.buffered = false;
 }
