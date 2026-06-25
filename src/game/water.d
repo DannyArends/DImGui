@@ -10,9 +10,9 @@ import clouds : CLOUD_STEP;
 import serialization : readData, writeData;
 import tile : FACE_OFFSETS, neighbourCell, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
-enum ubyte WATER_MAX = 7;
+enum ubyte WATER_MAX = 7;               // Maximum water density
 enum float EVAP_DENSITY = 0.005f;       // density added through water evaporation
-enum uint EVAP_DEPLETE = 500;         // density added through water evaporation
+enum uint EVAP_DEPLETE = 1500;          // Speed of evaporation
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
