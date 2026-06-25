@@ -22,11 +22,11 @@ void showWaterContent(ref GameApp app, uint font = 0) {
     instances += cast(int)chunk.waterInstances.length;
     cells += cast(int)chunk.wetCells.length;
     foreach(idx; chunk.wetCells) {
-      if(chunk.active[idx]) active++;
       ubyte l = chunk.waterLevel[idx];
       total += l;
       if(l > maxLvl) maxLvl = l;
     }
+    active += cast(int)chunk.active.length;
   }
   int dormant = cells - active;
   float activePct = cells > 0 ? (100.0f * active / cells) : 0.0f;
