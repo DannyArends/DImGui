@@ -152,8 +152,11 @@ void rebuildAllFeatures(ref GameApp app) {
 }
 
 void removeAllFeatures(ref GameApp app, int[3] coord) {
-  if(coord in app.world.featuresModified) return;
-  foreach(ref ft; features) { if(auto p = coord in app.world.features[ft.name]) { if((*p).length > 0) app.world.features[ft.name].remove(coord); } }
+  if(coord !in app.world.featuresModified) {
+    foreach(ref ft; features) { 
+      if(auto p = coord in app.world.features[ft.name]) { if((*p).length > 0){ app.world.features[ft.name].remove(coord); } }
+    }
+  }
   app.rebuildAllFeatures();
 }
 

@@ -94,25 +94,22 @@ void decayCloudDensity(ref GameApp app) {
 }
 
 void rainTick(ref GameApp app) {
-  auto coords = app.world.chunks.keys;
-  if(coords.length == 0) return;
   int cs = app.world.chunkSize;
-  int cloudY = app.world.chunkHeight - 1;   // spawn near top of world (under cloud layer)
+  int cloudY = app.world.chunkHeight - 1;
+  int drops = 0;
 
-  foreach(_; 0 .. RAIN_DROPS_PER_TICK) {
-    int[3] cc = coords[uniform(0, coords.length)];
-    int lx = uniform(0, cs), lz = uniform(0, cs);
-    int tx = cc[0]*cs + lx, tz = cc[2]*cs + lz;
-
-    bool cloudAbove = false;
-    foreach(cy; 0 .. CLOUD_LAYERS) if(app.isCloud(tx/CLOUD_STEP, cy, tz/CLOUD_STEP)) { cloudAbove = true; break; }
-    if(!cloudAbove) continue;
-
+  foreach(key, d; app.world.cloudDensity) {
+    if(drops >= RAIN_DROPS_PER_TICK) break;        // hit the cap -> stop raining
+    if(d <= 0) continue;
+    if(uniform(0.0f, 1.0f) >= d) continue;          // rain chance scales with density
+    int tx = key[0]*CLOUD_STEP + uniform(0, CLOUD_STEP);
+    int tz = key[1]*CLOUD_STEP + uniform(0, CLOUD_STEP);
     int[3] spawn = [tx, cloudY, tz];
-    if(app.world.getTileAt(spawn) != ResourceType.None) continue;   // need air to spawn into
+    if(app.world.getTileAt(spawn) != ResourceType.None) continue;
     uint id = app.spawnBlock(spawn, ResourceType.Water);
     if(auto b = id in app.world.blocks) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
-    app.world.cloudDensity[[tx/CLOUD_STEP, tz/CLOUD_STEP]] -= RAIN_DEPLETE;   // raining thins the cloud
+    app.world.cloudDensity[key] -= RAIN_DEPLETE;
+    drops++;
   }
 }
 

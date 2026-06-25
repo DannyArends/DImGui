@@ -32,6 +32,16 @@ void showWaterContent(ref GameApp app, uint font = 0) {
   float activePct = cells > 0 ? (100.0f * active / cells) : 0.0f;
   float avgDepth  = cells > 0 ? (cast(float)total / cells) : 0.0f;
 
+  // raindrops in flight + the water they carry (settleRain deposits +4 each)
+  int raindrops = 0;
+  foreach(id, ref b; app.world.blocks) if(b.type == ResourceType.Water) raindrops++;
+  int airWater = raindrops * 4;
+  int totalWater = total + airWater;
+
+  // cloud moisture (normalized 0..1 density summed across cells — separate unit)
+  float cloudMoisture = 0;
+  foreach(key, d; app.world.cloudDensity) cloudMoisture += d;
+
   if(igBeginTable("Water_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
     infoRow("Wet cells",     "%d", cells);
     infoRow("Active (sim)",  "%d", active);
@@ -41,7 +51,11 @@ void showWaterContent(ref GameApp app, uint font = 0) {
     infoRow("Visible wet",   "%d", visibleWetChunks);
     infoRow("Dirty chunks",  "%d", dirtyChunks);
     infoRow("Render faces",  "%d", instances);
-    infoRow("Total water",   "%d", total);
+    infoRow("Ground water",  "%d", total);
+    infoRow("Raindrops",     "%d", raindrops);
+    infoRow("Air water",     "%d", airWater);
+    infoRow("Total water",   "%d", totalWater);
+    infoRow("Cloud moisture","%.1f", cloudMoisture);
     infoRow("Avg depth",     "%.2f", avgDepth);
     infoRow("Max depth",     "%d", cast(int)maxLvl);
 
