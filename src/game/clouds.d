@@ -19,10 +19,8 @@ enum float CLOUD_THRESHOLD = 0.80f;     // Threshold
 enum float CLOUD_FREQ = 0.06f;          // frequency
 enum int RAIN_DROPS_PER_TICK = 250;     // sparse
 enum float RAIN_DEPLETE = 0.01f;        // density removed from a cloud cell per drop spawned
-enum float EVAP_DENSITY = 0.005f;       // density added through water evaporation
-enum float EVAP_DEPLETE = 500f;         // density added through water evaporation
-enum float CLOUD_DMAX =  0.30f;         // max positive density (thickest cloud)
-enum float CLOUD_DMIN = -0.30f;         // max negative density (fully cleared)
+enum float CLOUD_DMAX =  1.0f;          // max positive density (thickest cloud)
+enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
 
 private bool isCloud(ref GameApp app, int gx, int y, int gz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
@@ -39,7 +37,7 @@ void seedClouds(ref GameApp app, int[3] coord) {
     int gx = (baseX + lx) / CLOUD_STEP, gz = (baseZ + lz) / CLOUD_STEP;
     if([gx, gz] in app.world.cloudDensity) continue;        // already seeded
     float n = smoothNoise([gx*CLOUD_FREQ, gz*CLOUD_FREQ], 1337);   // 2D, one sample per column
-    float d = (n - 0.8f) / 0.2f;
+    float d = (n - CLOUD_THRESHOLD) / 0.2f;
     app.world.cloudDensity[[gx, gz]] = d < 0 ? 0 : (d > 1 ? 1 : d);
   }
 }
