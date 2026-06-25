@@ -7,7 +7,7 @@ import game;
 
 import chunk : faceData;
 import gameobjects : WaterTiles;
-import tile : tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
+import tile : FACE_OFFSETS, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
 enum ubyte WATER_MAX = 7;
 
@@ -38,42 +38,38 @@ private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touch
 void waterTick(ref GameApp app) {
   WaterNext next;
   WaterTouched touched;
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
 
-  // collect active cells as world coords (only the cells in play; no full-volume dup)
-  int[3][] act;
+  struct Active { Chunk chunk; int idx; int[3] wc; }
+  Active[] act;
   foreach(coord; app.world.chunks.keys) {
     auto ch = app.world.chunks[coord];
     if(ch.wetCells.length == 0) continue;
     foreach(idx; ch.wetCells)
-      if(ch.active[idx]) act ~= app.world.worldCoord(coord, app.world.tileCoord(idx));
+      if(ch.active[idx]) act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx)));
   }
   if(act.length == 0) return;
 
   // 1. SPREAD
-  foreach(wc; act) {
-    int have = app.rdWater(next, wc);
+  foreach(a; act) {
+    int have = app.rdWater(next, a.wc);
     int[3][4] tgt;
-    int n = app.spreadTargets(next, wc, have, tgt);
-    if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, wc, -1); app.wrWater(next, touched, dst, +1); }
+    int n = app.spreadTargets(next, a.chunk, a.idx, a.wc, have, tgt);
+    if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, a.wc, -1); app.wrWater(next, touched, dst, +1); }
   }
 
   // 2. FALL
-  foreach(wc; act) {
-    if(!app.canFall(next, wc)) continue;
-    int[3] below = wc.tileBelow;
-    int move = min(app.rdWater(next, wc), WATER_MAX - app.rdWater(next, below));
-    if(move > 0) { app.wrWater(next, touched, wc, -move); app.wrWater(next, touched, below, +move); }
+  foreach(a; act) {
+    if(!app.canFall(next, a.chunk, a.idx, a.wc)) continue;
+    int[3] below = a.wc.tileBelow;
+    int move = min(app.rdWater(next, a.wc), WATER_MAX - app.rdWater(next, below));
+    if(move > 0) { app.wrWater(next, touched, a.wc, -move); app.wrWater(next, touched, below, +move); }
   }
 
-  // 3. DEACTIVATE settled active cells (reads next — same level source as the sim)
-  foreach(wc; act) {
-    if(!app.isSettled(next, wc)) continue;
-    int[3] coord = app.world.chunkCoord(wc);
-    if(coord !in app.world.chunks) continue;
-    app.world.chunks[coord].active[app.world.tileIdx(wc)] = false;
-  }
+  // 3. DEACTIVATE
+  foreach(a; act) { if(app.isSettled(next, a.chunk, a.idx, a.wc)) a.chunk.active[a.idx] = false; }
 
-  // 4. COMMIT — only cells that actually changed; setWater re-activates them + neighbours
+  // 4. COMMIT
   foreach(wc, _; touched) {
     if(app.rdWater(next, wc) == app.getWater(wc)) continue;
     app.setWater(wc, cast(ubyte)next[wc]);
@@ -95,31 +91,52 @@ void evaporateTick(ref GameApp app) {
   }
 }
 
-private int spreadTargets(ref GameApp app, ref WaterNext next, int[3] wc, int have, out int[3][4] tgt) {
+/** Neighbour level: next-buffer if touched, else in-chunk direct read, else slow getWater. */
+private int nbLevel(ref GameApp app, ref WaterNext next, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, int[3] base) {
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  int nx = lx+dx, ny = ly+dy, nz = lz+dz;
+  int[3] nwc = [base[0]+dx, base[1]+dy, base[2]+dz];
+  if(auto p = nwc in next) return *p;                       // pending write: must honour it
+  if(nx>=0 && nx<S && ny>=0 && ny<Hh && nz>=0 && nz<S) return chunk.waterLevel[nz*Hh*S + ny*S + nx];
+  return app.getWater(nwc);
+}
+
+private bool nbAir(ref GameApp app, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, int[3] base) {
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  int nx = lx+dx, ny = ly+dy, nz = lz+dz;
+  if(ny < 0 || ny >= Hh) return false;
+  if(nx>=0 && nx<S && nz>=0 && nz<S) return chunk.tileTypes[nz*Hh*S + ny*S + nx] == ResourceType.None;
+  return app.canHoldWater([base[0]+dx, base[1]+dy, base[2]+dz]);
+}
+
+private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc, int have, out int[3][4] tgt) {
   if(have < 2) return 0;
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
   int bestLvl = have, n = 0;
   foreach(h; H) {
+    if(!app.nbAir(chunk, lx, ly, lz, h[0], 0, h[1], wc)) continue;
+    int nl = app.nbLevel(next, chunk, lx, ly, lz, h[0], 0, h[1], wc);
     int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
-    if(!app.canHoldWater(nb)) continue;
-    int nl = app.rdWater(next, nb);
     if(nl < bestLvl) { bestLvl = nl; tgt[0] = nb; n = 1; }
     else if(nl == bestLvl && bestLvl < have) tgt[n++] = nb;
   }
   return n;
 }
 
-private bool canFall(ref GameApp app, ref WaterNext next, int[3] wc) {
-  int[3] below = wc.tileBelow;
-  return app.canHoldWater(below) && app.rdWater(next, below) < WATER_MAX;
+private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
+  if(!app.nbAir(chunk, lx, ly, lz, 0, -1, 0, wc)) return false;
+  return app.nbLevel(next, chunk, lx, ly, lz, 0, -1, 0, wc) < WATER_MAX;
 }
 
-/** Test if a cell is settled. */
-private bool isSettled(ref GameApp app, ref WaterNext next, int[3] wc) {
+private bool isSettled(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
   int have = app.rdWater(next, wc);
   if(have <= 0) return true;
-  if(app.canFall(next, wc)) return false;
+  if(app.canFall(next, chunk, idx, wc)) return false;
   int[3][4] tgt;
-  if(app.spreadTargets(next, wc, have, tgt) > 0) return false;
+  if(app.spreadTargets(next, chunk, idx, wc, have, tgt) > 0) return false;
   return true;
 }
 
@@ -134,17 +151,24 @@ private bool canHoldWater(ref GameApp app, int[3] wc) {
 /** Rebuild the single world water object from all chunks' waterLevel. */
 private void rebuildChunkWaterInstances(ref GameApp app, Chunk chunk) {
   float ts = app.world.tileSize, th = app.world.tileHeight;
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
   DrawInstance[] inst;
   foreach(idx; chunk.wetCells) {
     ubyte lvl = chunk.waterLevel[idx];
     if(lvl == 0) continue;
-    int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
+    int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
+    int[3] wc = app.world.data.worldCoord(chunk.coord, [lx, ly, lz]);
     float[3] p = app.world.data.tileToWorld(wc);
     float wh = th * (lvl / cast(float)WATER_MAX);
     float cy = p[1] - th*0.5f + wh*0.5f;
-    foreach(f, nb; app.world.tileNeighbours(wc)) {
-      if(app.getWater(nb) >= lvl) continue;
-      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(cast(int)f, p[0], cy, p[2], ts, wh));
+    foreach(f; 0 .. 6) {
+      int nx = lx+FACE_OFFSETS[f][0], ny = ly+FACE_OFFSETS[f][1], nz = lz+FACE_OFFSETS[f][2];
+      int nlvl;
+      if(nx>=0 && nx<S && ny>=0 && ny<Hh && nz>=0 && nz<S){
+        nlvl = chunk.waterLevel[nz*Hh*S + ny*S + nx];
+      }else{ nlvl = app.getWater(app.world.data.worldCoord(chunk.coord, [nx, ny, nz])); }
+      if(nlvl >= lvl) continue;
+      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], ts, wh));
     }
   }
   chunk.waterInstances = inst;

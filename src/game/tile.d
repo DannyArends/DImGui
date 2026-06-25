@@ -64,7 +64,7 @@ void setWater(ref GameApp app, int[3] tile, ubyte level, bool wake = true) {
   ubyte old = chunk.waterLevel[idx];
   if(old == level) return;
   if(old == 0 && level > 0) chunk.wetCells ~= idx;
-  else if(old > 0 && level == 0) chunk.wetCells = chunk.wetCells.remove!(x => x == idx);
+  else if(old > 0 && level == 0){ chunk.wetCells = chunk.wetCells.remove!(x => x == idx, SwapStrategy.unstable); }
   chunk.waterLevel[idx] = cast(ubyte)level;
   chunk.waterDirty = true;
   if(wake){ app.activate(tile); }
