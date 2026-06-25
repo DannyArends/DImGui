@@ -24,7 +24,7 @@ struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
   ResourceType[] tileTypes;                                 /// Tile type for each tile in the chunk
   ubyte[] waterLevel;                                       /// 0 = none, 1..6 = depth; parallel to tileTypes
-  int[] wetCells;                                           /// indices where waterLevel > 0
+  SparseSet wetCells;                                       /// indices where waterLevel > 0
   bool[] active;                                            /// parallel to waterLevel; true = needs simulating. Always implies waterLevel[i] > 0.
   bool waterDirty = false;                                  /// Water dirty ?
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
@@ -112,6 +112,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   ChunkData data = ChunkData(coord, wd.buildTileTypes(coord));
   data.waterLevel.length = data.tileTypes.length;   // all zero = no water
+  data.wetCells.init(data.tileTypes.length);
   data.active.length = data.tileTypes.length;
   wd.buildTileGeometry(coord, data);
   foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }

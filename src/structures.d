@@ -42,6 +42,7 @@ public import quaternion : Quaternion;
 public import renderpass : RenderPassInfo, RenderPass;
 public import reflection : LIGHT_GRID, CLUSTER_COUNT, NIL;
 public import shaders : Shader, ShaderDef, ShaderStage, Specialization, IncluderContext;
+public import sparseset : SparseSet;
 public import square : Square;
 public import search : SearchState;
 public import sdl : STARTUP, FRAMESTART, FRAMESTOP, LASTTICK, LASTFRAME;

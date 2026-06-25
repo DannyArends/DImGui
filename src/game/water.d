@@ -35,6 +35,8 @@ private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touch
 
 /** One water simulation step. Spread then fall, crosses chunk boundaries. Iterates only wet cells. */
 void waterTick(ref GameApp app) {
+app.timings["wetRemove"] = 0;
+app.timings["setWaterTotal"] = 0;
   WaterNext next;
   WaterTouched touched;
   int S = app.world.chunkSize, Hh = app.world.chunkHeight;
