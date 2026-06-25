@@ -19,7 +19,7 @@ enum float CLOUD_THRESHOLD = 0.90f;     // Threshold
 enum float CLOUD_FREQ = 0.06f;          // frequency
 enum int CLOUD_SPAWN_CHANCE = 4;        // % of ticks that spawn a new cloud seed
 enum float CLOUD_SPAWN_AMOUNT = 0.05f;  // density added per seed (>= 1/CLOUD_LAYERS so a layer shows)
-enum int RAIN_DROPS_PER_TICK = 250;     // sparse
+enum int RAIN_DROPS_PER_TICK = 500;     // sparse
 enum float RAIN_DEPLETE = 0.03f;        // density removed from a cloud cell per drop spawned
 enum float CLOUD_DMAX =  1.0f;          // max positive density (thickest cloud)
 enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
