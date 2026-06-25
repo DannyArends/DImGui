@@ -95,7 +95,6 @@ struct World {
   Dwarves dwarves;                                          /// Dwarves
   Clouds clouds;                                            /// Clouds
   float[int[2]] cloudDensity;                               /// mutable cloud density delta over noise base, by [gx,gz] cloud-cell
-  float[int[3]] cloudNoise;                                 /// cached static noise base per [gx,y,gz] cloud cell (sampled once)
   WaterTiles water;                                         /// single batched water render object
   PathMarkers pathMarkers;                                  /// Path markers
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
