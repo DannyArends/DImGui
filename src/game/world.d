@@ -32,6 +32,7 @@ struct WorldData {
   float yOffset      = -20.0f;                    /// Global world Y-offset
   uint[ResourceType.max + 1] resources;
   ResourceType[uint][int[3]] diffs;
+  ubyte[uint][int[3]] waterDiffs;
   float[int[3]] tilePenalties;
 
   /** Returns the filesystem path for the world TileDiffs difference */

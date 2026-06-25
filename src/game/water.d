@@ -13,7 +13,7 @@ enum ubyte WATER_MAX = 7;
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
-struct WaterCell { int x, y, z; ubyte level; }
+struct WaterDiff { int[3] coord; uint idx; ubyte level; }
 struct Active { Chunk chunk; int idx; int[3] wc; }
 
 alias WaterNext    = ubyte[int[3]];     // world-cell -> pending level; absent = read committed
@@ -205,26 +205,40 @@ void flushWaterDirty(ref GameApp app) {
   app.world.water.instances.buffered = false;
 }
 
-/** Save all water as a flat (coord, level) list. */
+/** Snapshot all loaded chunks' water into waterDiffs, then flatten + save (mirrors saveDiffs). */
 void saveWater(ref GameApp app) {
-  WaterCell[] flat;
+  app.world.data.waterDiffs = null;
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
     foreach(idx; chunk.wetCells) {
       ubyte lvl = chunk.waterLevel[idx];
-      if(lvl == 0) continue;
-      int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
-      flat ~= WaterCell(wc[0], wc[1], wc[2], lvl);
+      if(lvl > 0) app.world.data.waterDiffs[chunk.coord][cast(uint)idx] = lvl;
     }
   }
-  if(flat.length == 0) { SDL_RemovePath(app.world.waterPath()); return; }   // no water -> no file
+  WaterDiff[] flat;
+  foreach(coord, idxMap; app.world.data.waterDiffs){ foreach(idx, lvl; idxMap){ flat ~= WaterDiff(coord, idx, lvl); } }
+  if(flat.length == 0) { SDL_RemovePath(app.world.waterPath()); return; }
   writeData(app.world.waterPath(), flat, cast(uint)flat.length);
 }
 
-/** Load water; setWater rebuilds wetCells/active/dirty per cell. */
+/** Load waterDiffs from disk; chunks apply them at build, resident chunks applied immediately (mirrors rebuildDiffs). */
 void loadWater(ref GameApp app) {
-  WaterCell[] flat;
-  if(!readData(app.world.waterPath(), flat, *(new uint))) return;
-  foreach(ref c; flat) app.setWater([c.x, c.y, c.z], c.level);
+  WaterDiff[] flat;
+  uint h;
+  if(!readData(app.world.waterPath(), flat, h)) return;
+  app.world.data.waterDiffs = null;
+  foreach(ref d; flat) app.world.data.waterDiffs[d.coord][d.idx] = d.level;
+  // apply to any already-resident chunks (newly-streamed ones get it in buildChunkData)
+  foreach(coord; app.world.chunks.keys) {
+    if(auto wm = coord in app.world.data.waterDiffs) {
+      auto chunk = app.world.chunks[coord];
+      foreach(idx, lvl; *wm) {
+        chunk.waterLevel[cast(int)idx] = lvl;
+        chunk.wetCells ~= cast(int)idx;
+        chunk.active[cast(int)idx] = true;
+        chunk.waterDirty = true;
+      }
+    }
+  }
   SDL_Log("loadWater: %d cells", cast(int)flat.length);
 }

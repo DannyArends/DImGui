@@ -114,6 +114,13 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   data.waterLevel.length = data.tileTypes.length;   // all zero = no water
   data.wetCells.init(data.tileTypes.length);
   data.active.length = data.tileTypes.length;
+  if(auto wm = coord in wd.waterDiffs){
+    foreach(idx, lvl; *wm) {
+      data.waterLevel[cast(int)idx] = lvl;
+      data.wetCells ~= cast(int)idx;
+      data.active[cast(int)idx] = true;
+    }
+  }
   wd.buildTileGeometry(coord, data);
   foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
