@@ -314,6 +314,9 @@ void ensureDwarves(ref GameApp app) {
 
   app.world.clouds = new Clouds();
   app.objects ~= app.world.clouds;
+
+  app.world.water = new WaterTiles();
+  app.objects ~= app.world.water;
 }
 
 void addDwarf(ref GameApp app, ref Dwarf d) {
