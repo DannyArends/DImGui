@@ -5,7 +5,7 @@
 
 import game;
 
-import block : spawnBlock, syncBlockInstances;
+import block : spawnBlock;
 import chunk : faceData;
 import gameobjects : Clouds;
 import noise : smoothNoise;
@@ -31,9 +31,6 @@ void rebuildClouds(ref GameApp app) {
   int cs = app.world.chunkSize;
   float baseY = app.world.height + 8.0f * th;
   float vox = CLOUD_STEP * ts, voxH = th * CLOUD_STEP;
-
-  // neighbour offsets in (x,y,z) matching faceData's f = 0..5 ordering
-  static immutable int[3][6] N = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 
   DrawInstance[] inst;
   foreach(coord; app.world.chunks.keys) {
@@ -68,8 +65,6 @@ void rainTick(ref GameApp app) {
     int lx = uniform(0, cs), lz = uniform(0, cs);
     int tx = cc[0]*cs + lx, tz = cc[2]*cs + lz;
 
-    // only rain where there's actually cloud overhead
-    //SDL_Log(cstr("rain col [%d,%d] tile=%d", tx, tz, cast(int)app.world.getTileAt([tx, app.world.chunkHeight-1, tz])));
     bool cloudAbove = false;
     foreach(cy; 0 .. CLOUD_LAYERS) if(isCloud(tx/CLOUD_STEP, cy, tz/CLOUD_STEP)) { cloudAbove = true; break; }
     if(!cloudAbove) continue;

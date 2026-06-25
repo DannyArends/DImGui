@@ -6,7 +6,6 @@
 import game;
 
 import chunk : faceData;
-import gameobjects : WaterTiles;
 import tile : FACE_OFFSETS, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
 enum ubyte WATER_MAX = 7;
