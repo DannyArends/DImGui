@@ -43,6 +43,7 @@ struct GeometryBuffer(T = ubyte) {
   }
 
   @property @nogc bool needsBuffer() nothrow const { return(items.length > 0 && (vb.length == 0 || !buffered)); }
+  @nogc bool ready(uint idx) nothrow const { return(items.length > 0 && idx < vb.length && !dirty[idx]); }
 }
 
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){

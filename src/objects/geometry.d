@@ -60,7 +60,10 @@ class Geometry {
 
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null && isBuffered(); }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
-  @property @nogc bool isDrawable() nothrow const { return(isBuffered && vertices.length > 0 && indices.length > 0 && instances.length > 0); }
+  @property @nogc bool isDrawable() nothrow const {
+    return(vertices.vb.length > 0 && indices.vb.length > 0 && instances.vb.length > 0
+           && vertices.length > 0 && indices.length > 0 && instances.length > 0);
+  }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
 
