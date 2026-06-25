@@ -11,7 +11,7 @@ import matrix : translateScale, scale;
 import normals : computeTangents;
 import physx : inColumn;
 import serialization : readData, writeData;
-import stockpile : slotsPerTile, subCellOffset,storedTileOf;
+import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
@@ -128,6 +128,7 @@ void emitBlock(ref Geometry mesh, uint id, ref Block b, float[3] pos, float[3] s
 void syncStockpileInstances(ref World world) {
   float bs = world.blockSize;
   foreach(ref sp; world.stockpiles) { foreach(i, blockID; sp.contents) {
+    if(blockID == emptySlot) continue;
     auto b = blockID in world.blocks;
     if(b is null) continue;
     auto ti = i / slotsPerTile;
@@ -139,18 +140,25 @@ void syncStockpileInstances(ref World world) {
 }
 
 /** Sync instances from blocks registry */
-void syncStockpileInstances(ref World world) {
-  float bs = world.blockSize;
-  foreach(ref sp; world.stockpiles) { foreach(i, blockID; sp.contents) {
-    if(blockID == emptySlot) continue;
-    auto b = blockID in world.blocks;
-    if(b is null) continue;
-    auto ti = i / slotsPerTile;
-    if(ti >= sp.tiles.length) break;
-    float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
-    float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.dropMeshes[resourceData(b.type).meshName], blockID, *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
-  } }
+void syncBlockInstances(ref GameApp app) {
+  if(app.world.dropMeshes.length == 0) return;
+  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances = []; }
+  foreach(id, ref b; app.world.blocks) {
+    if(b.tile == storedTile) continue;
+    auto meshName = resourceData(b.type).meshName;
+    bool hidden = (b.tile == noTile || b.tile == builtTile || app.world.chunkCoord(b.tile) !in app.world.chunks);
+    if(hidden) {
+      emitBlock(app.world.dropMeshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
+    } else {
+      auto base = app.world.tileToWorld(b.tile, -app.world.blockOffset);
+      float sz = resourceData(b.type).dropScale * app.world.blockSize;
+      float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
+      float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
+      emitBlock(app.world.dropMeshes[meshName], id, b, [base[0] + bx, base[1], base[2] + bz], [sz, sz, sz]);
+    }
+  }
+  app.world.syncStockpileInstances();
+  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances.buffered = false; }
 }
 
 /** Mark blocks above a mined tile as falling */
