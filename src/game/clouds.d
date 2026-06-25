@@ -18,7 +18,11 @@ enum float CLOUD_THRESHOLD = 0.80f;     // Threshold
 enum float CLOUD_FREQ = 0.06f;          // frequency
 enum int RAIN_DROPS_PER_TICK = 250;     // sparse
 enum float RAIN_DEPLETE = 0.001f;       // density removed from a cloud cell per drop spawned
-enum float EVAP_DENSITY = 0.0005f;      
+enum float EVAP_DENSITY = 0.0005f;      // density added through water evaporation
+enum float CLOUD_DECAY    = 0.001f;     // density drifts toward 0 per tick (clouds dissipate)
+enum float CLOUD_DMAX     =  0.30f;     // max positive density (thickest cloud)
+enum float CLOUD_DMIN     = -0.30f;     // max negative density (fully cleared)
+
 
 private bool isCloud(ref GameApp app, int gx, int y, int gz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
@@ -55,6 +59,19 @@ void rebuildClouds(ref GameApp app) {
   }
   app.world.clouds.instances = inst;
   app.world.clouds.instances.buffered = false;
+}
+
+/** Relax cloud density toward 0 and clamp; prune negligible entries. */
+void decayCloudDensity(ref GameApp app) {
+  int[2][] dead;
+  foreach(key, ref d; app.world.cloudDensity) {
+    if(d > 0)      { d -= CLOUD_DECAY; if(d < 0) d = 0; }
+    else if(d < 0) { d += CLOUD_DECAY; if(d > 0) d = 0; }
+    if(d > CLOUD_DMAX) d = CLOUD_DMAX;
+    if(d < CLOUD_DMIN) d = CLOUD_DMIN;
+    if(d == 0) dead ~= key;            // back to baseline -> drop from map
+  }
+  foreach(k; dead) app.world.cloudDensity.remove(k);
 }
 
 void rainTick(ref GameApp app) {

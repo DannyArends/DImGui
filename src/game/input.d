@@ -7,7 +7,7 @@ import game;
 
 import block : syncBlockInstances;
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
-import clouds : rainTick, settleRain, rebuildClouds;
+import clouds : rainTick, settleRain, rebuildClouds, decayCloudDensity;
 import game : GameApp;
 import hits : getHits;
 import screenshot : saveScreenshot;
@@ -118,6 +118,7 @@ double handleEvents(ref GameApp app) {
     app.timed!settleRain();         // convert any that have landed this tick
     app.timed!waterTick();          // sim the resulting water
     app.timed!evaporateTick();      // sim the resulting water
+    app.timed!decayCloudDensity();  // relax + clamp cloud density
     app.timed!flushWaterDirty();    // re-mesh chunks whose water moved
     app.timed!rebuildClouds();      // re-mesh clouds
     foreach(i; iota(app.objects.length)) {
