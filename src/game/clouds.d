@@ -47,31 +47,19 @@ void rebuildClouds(ref GameApp app) {
   float baseY = app.world.height + 8.0f * th;
   float vox = CLOUD_STEP * ts, voxH = th * CLOUD_STEP;
 
-  // PASS 1: occupancy per cloud cell, computed once (one noise eval each)
-  bool[int[3]] occ;
-  foreach(coord; app.world.chunks.keys) {
-    int baseX = coord[0] * cs, baseZ = coord[2] * cs;
-    for(int lz = 0; lz < cs; lz += CLOUD_STEP)
-    for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
-      int gx = (baseX + lx) / CLOUD_STEP, gz = (baseZ + lz) / CLOUD_STEP;
-      foreach(y; 0 .. CLOUD_LAYERS)
-        if(app.isCloud(gx, y, gz)) occ[[gx, y, gz]] = true;
-    }
-  }
-
-  // PASS 2: emit faces, neighbour occupancy read from cache (no re-eval)
   DrawInstance[] inst;
-  inst.reserve(occ.length * 3);
   foreach(coord; app.world.chunks.keys) {
     int baseX = coord[0] * cs, baseZ = coord[2] * cs;
     for(int lz = 0; lz < cs; lz += CLOUD_STEP)
     for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
-      int gx = (baseX + lx) / CLOUD_STEP, gz = (baseZ + lz) / CLOUD_STEP;
+      // grid index in "cloud-cell" space so neighbours are ±1 cell
+      int gx = (baseX + lx) / CLOUD_STEP;
+      int gz = (baseZ + lz) / CLOUD_STEP;
       foreach(y; 0 .. CLOUD_LAYERS) {
-        if([gx, y, gz] !in occ) continue;
+        if(!app.isCloud(gx, y, gz)) continue;
         float px = (baseX + lx) * ts, py = baseY + y*voxH, pz = (baseZ + lz) * ts;
         foreach(f; 0 .. 6) {
-          if([gx+FACE_OFFSETS[f][0], y+FACE_OFFSETS[f][1], gz+FACE_OFFSETS[f][2]] in occ) continue;
+          if(app.isCloud(gx + FACE_OFFSETS[f][0], y + FACE_OFFSETS[f][1], gz + FACE_OFFSETS[f][2])) continue;
           inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, vox, voxH));
         }
       }
