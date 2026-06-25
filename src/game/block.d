@@ -143,8 +143,9 @@ void syncBlockInstances(ref GameApp app) {
   if(app.world.dropMeshes.length == 0) return;
   foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances = []; }
   foreach(id, ref b; app.world.blocks) {
+    if(b.tile == storedTile) continue;
     auto meshName = resourceData(b.type).meshName;
-    bool hidden = (b.tile == noTile || b.tile == builtTile || b.tile == storedTile || app.world.chunkCoord(b.tile) !in app.world.chunks);
+    bool hidden = (b.tile == noTile || b.tile == builtTile || app.world.chunkCoord(b.tile) !in app.world.chunks);
     if(hidden) {
       emitBlock(app.world.dropMeshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
     } else {
