@@ -59,7 +59,7 @@ void waterTick(ref GameApp app) {
   t = SDL_GetTicks();
   foreach(coord; app.world.chunks.keys) {
     auto ch = app.world.chunks[coord];
-    if(ch.wetCells.length == 0) continue;
+    if(ch.active.length == 0) continue;
     foreach(idx; ch.active){ act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx))); }
   }
   debug app.timings["waterGather"] = SDL_GetTicks() - t;
