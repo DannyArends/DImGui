@@ -16,20 +16,22 @@ enum uint EVAP_DEPLETE = 250;          // Speed of evaporation
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
+/** Persisted water cell: world-coord + level, serialised in the water save file. */
 struct WaterDiff { int[3] coord; uint idx; ubyte level; }
+/** An active cell queued for this tick's simulation: its chunk, local index, and world-coord. */
 struct Active { Chunk chunk; int idx; int[3] wc; }
 
 alias WaterNext = ubyte[int[3]];        // world-cell -> pending level; absent = read committed
 alias WaterTouched = bool[int[3]];      // world-cells written this tick (dedup set)
 
 /** This cell's pending level: next-buffer if touched, else direct array read (no getWater hash). */
-private int ownLevel(ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
+private @nogc int ownLevel(ref WaterNext next, Chunk chunk, int idx, int[3] wc) nothrow {
   auto p = wc in next;
   return p is null ? chunk.waterLevel[idx] : *p;
 }
 
 /** Read pending level at a world tile: next-buffer if present, else committed getWater. */
-private int rdWater(ref GameApp app, ref WaterNext next, int[3] wc) {
+private @nogc int rdWater(ref GameApp app, ref WaterNext next, int[3] wc) nothrow {
   if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return 0;
   auto p = wc in next;
   return p is null ? app.getWater(wc) : *p;
@@ -39,9 +41,8 @@ private int rdWater(ref GameApp app, ref WaterNext next, int[3] wc) {
     Seeds from committed level on first write so we never need a full dup. */
 private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touched, int[3] wc, int delta) {
   if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return;
-  if(app.world.chunkCoord(wc) !in app.world.chunks) return;   // edge of loaded world: drop
-  auto p = wc in next;
-  int cur = p is null ? app.getWater(wc) : *p;
+  if(app.world.chunkCoord(wc) !in app.world.chunks) return;
+  int cur = app.rdWater(next, wc);
   next[wc] = cast(ubyte)max(0, min(WATER_MAX, cur + delta));
   touched[wc] = true;
 }
@@ -120,7 +121,10 @@ void evaporateTick(ref GameApp app) {
   }
 }
 
-private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc, int have, out int[3][4] tgt) {
+/** Collect the lowest-level air neighbours water could spread into (4-connected, horizontal).
+    Returns the count and fills `tgt` with up to 4 equally-low targets strictly below `have`;
+    0 if the cell holds < 2 or no neighbour is lower. Reads pending levels from `next`. */
+private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc, int have, out int[3][4] tgt) nothrow {
   if(have < 2) return 0;
   int S = app.world.chunkSize, Hh = app.world.chunkHeight;
   int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
@@ -132,13 +136,14 @@ private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int 
     int[3] nwc = [wc[0]+h[0], wc[1], wc[2]+h[1]];
     auto p = nwc in next;                                                           // pending?
     int nl = p is null ? nch.waterLevel[nidx] : *p;                                 // level (direct or pending)
-    if(nl < bestLvl) { bestLvl = nl; tgt[0] = nwc; n = 1; }
-    else if(nl == bestLvl && bestLvl < have) tgt[n++] = nwc;
+    if(nl < bestLvl) { bestLvl = nl; tgt[0] = nwc; n = 1; 
+    }else if(nl == bestLvl && bestLvl < have){ tgt[n++] = nwc; }
   }
   return n;
 }
 
-private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
+/** True if the cell below is air and not yet full, so water here can fall into it. */
+private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) nothrow {
   int S = app.world.chunkSize, Hh = app.world.chunkHeight;
   int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
   Chunk nch; int nidx;
@@ -150,7 +155,8 @@ private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, 
   return bl < WATER_MAX;
 }
 
-private bool isSettled(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
+/** True if the cell has water but can neither fall nor spread - i.e. nothing left to simulate this tick. */
+private bool isSettled(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) nothrow {
   int have = ownLevel(next, chunk, idx, wc);
   if(have <= 0) return true;
   if(app.canFall(next, chunk, idx, wc)) return false;
