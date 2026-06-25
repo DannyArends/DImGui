@@ -18,6 +18,8 @@ import tile : FACE_OFFSETS, tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : saveVegetation, loadVegetation;
 
+@nogc pure int iDiv(int a, int b) nothrow { return((a >= 0) ? a/b : -((-a + b - 1)/b)); }
+
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
   int[3] seed        = [42, 67, 69];              /// [height seed, tile seed]
@@ -55,8 +57,8 @@ struct WorldData {
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
-  @nogc pure int[3] chunkCoord(int[3] tile) const nothrow { 
-    return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
+  @nogc pure int[3] chunkCoord(int[3] tile) const nothrow {
+    return [iDiv(tile[0], chunkSize), 0, iDiv(tile[2], chunkSize)];
   }
   @property @nogc pure float blockSize() const nothrow { return(tileSize * 0.25f); }
   @property @nogc pure float blockOffset() const nothrow { return(tileHeight - blockSize) * 0.5f; }

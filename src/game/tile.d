@@ -32,12 +32,11 @@ static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,
   return lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
 }
 
-/** Water level (0..6) at a world tile; 0 if chunk not loaded or out of range */
+/** Water level (0..WATER_MAX) at a world tile; 0 if chunk not loaded or out of range */
 @nogc int getWater(ref GameApp app, int[3] tile) nothrow {
-  int[3] coord = app.world.chunkCoord(tile);
   if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return 0;
-  if(coord !in app.world.chunks) return 0;
-  return app.world.chunks[coord].waterLevel[app.world.tileIdx(tile)];
+  auto p = app.world.chunkCoord(tile) in app.world.chunks;
+  return p is null ? 0 : (*p).waterLevel[app.world.tileIdx(tile)];
 }
 
 /** Wake a cell and its 6 neighbours so the sim re-evaluates them next tick. */
