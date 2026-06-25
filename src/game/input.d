@@ -7,7 +7,7 @@ import game;
 
 import block : syncBlockInstances;
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
-import clouds : rainTick,settleRain;
+import clouds : rainTick, settleRain, rebuildClouds;
 import game : GameApp;
 import hits : getHits;
 import screenshot : saveScreenshot;
@@ -114,11 +114,12 @@ double handleEvents(ref GameApp app) {
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    app.timed!rainTick();      // spawn new falling drops
-    app.timed!settleRain();    // convert any that have landed this tick
-    app.timed!waterTick();     // sim the resulting water
-    app.timed!evaporateTick();     // sim the resulting water
-    app.timed!flushWaterDirty();   // re-mesh chunks whose water moved
+    app.timed!rainTick();           // spawn new falling drops
+    app.timed!settleRain();         // convert any that have landed this tick
+    app.timed!waterTick();          // sim the resulting water
+    app.timed!evaporateTick();      // sim the resulting water
+    app.timed!flushWaterDirty();    // re-mesh chunks whose water moved
+    app.timed!rebuildClouds();      // re-mesh clouds
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick();
