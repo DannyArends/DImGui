@@ -9,14 +9,14 @@ import block : spawnBlock, syncBlockInstances;
 import chunk : faceData;
 import gameobjects : Clouds;
 import noise : smoothNoise;
-import tile : getWater, setWater, getTileAt;
+import tile : FACE_OFFSETS, getWater, setWater, getTileAt;
 import water : WATER_MAX;
 
 enum int CLOUD_LAYERS = 8;
 enum int CLOUD_STEP = 6;
-enum float CLOUD_THRESHOLD = 0.75f;
-enum float CLOUD_FREQ = 0.08f;
-enum int RAIN_DROPS_PER_TICK = 100;     // sparse
+enum float CLOUD_THRESHOLD = 0.80f;
+enum float CLOUD_FREQ = 0.06f;
+enum int RAIN_DROPS_PER_TICK = 500;     // sparse
 
 private bool isCloud(int tx, int y, int tz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
@@ -47,7 +47,7 @@ void rebuildClouds(ref GameApp app) {
         if(!isCloud(gx, y, gz)) continue;
         float px = (baseX + lx) * ts, py = baseY + y*voxH, pz = (baseZ + lz) * ts;
         foreach(f; 0 .. 6) {
-          if(isCloud(gx + N[f][0], y + N[f][1], gz + N[f][2])) continue;  // neighbour present -> face hidden
+          if(isCloud(gx + FACE_OFFSETS[f][0], y + FACE_OFFSETS[f][1], gz + FACE_OFFSETS[f][2])) continue;
           inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, vox, voxH));
         }
       }

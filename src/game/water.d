@@ -9,7 +9,9 @@ import chunk : faceData;
 import gameobjects : WaterTiles;
 import tile : tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
-enum ubyte WATER_MAX = 6;
+enum ubyte WATER_MAX = 7;
+
+static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
 alias WaterNext    = ubyte[][int[3]];
 alias WaterTouched = int[][int[3]];                        // per-chunk list of touched local indices
@@ -43,7 +45,6 @@ void waterTick(ref GameApp app) {
     next[coord] = chunk.waterLevel.dup;
   }
   WaterTouched touched;
-  static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
   int[][int[3]] act;
   foreach(coord, _; next) {
@@ -85,9 +86,9 @@ void waterTick(ref GameApp app) {
     foreach(idx; idxs) {
       int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
       int have = app.rdWater(next, wc);
-      if(have <= 0 || have >= WATER_MAX) continue;
+      if(have <= 0 || have >= (WATER_MAX/2)) continue;
       app.world.chunks[coord].active[idx] = true;
-      if(uniform(0, 100) < (WATER_MAX - have) * 2){ app.wrWater(next, touched, wc, -1); }
+      if(uniform(0, 500) < (WATER_MAX - have) * 2){ app.wrWater(next, touched, wc, -1); }
     }
   }
 
@@ -118,7 +119,6 @@ private bool isSettled(ref GameApp app, int[3] wc) {
   if(have <= 0) return true; // dry: not active
   if(have < WATER_MAX) return false; // can still evaporate
   if(app.canHoldWater(wc.tileBelow) && app.getWater(wc.tileBelow) < WATER_MAX) return false; // can fall
-  static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
   foreach(h; H) {
     int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
     if(app.canHoldWater(nb) && app.getWater(nb) < have) return false; // can spread
@@ -135,7 +135,6 @@ private bool canHoldWater(ref GameApp app, int[3] wc) {
 
 /** Rebuild water face instances for one chunk; emits only faces exposed to air / lower water. */
 void rebuildChunkWater(ref GameApp app, Chunk chunk) {
-  static immutable int[3][6] N = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
   float ts = app.world.tileSize, th = app.world.tileHeight;
   DrawInstance[] inst;
   inst.reserve(chunk.wetCells.length * 2);
@@ -146,10 +145,10 @@ void rebuildChunkWater(ref GameApp app, Chunk chunk) {
     float[3] p = app.world.data.tileToWorld(wc);
     float wh = th * (lvl / 6.0f);
     float cy = p[1] - th*0.5f + wh*0.5f;
-    foreach(f; 0 .. 6) {
-      int[3] nb = [wc[0]+N[f][0], wc[1]+N[f][1], wc[2]+N[f][2]];
-      if(app.getWater(nb) >= lvl) continue;                // hidden by equal/higher water neighbour
-      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], ts, wh));
+    auto nbs = app.world.tileNeighbours(wc);
+    foreach(f, nb; nbs) {
+      if(app.getWater(nb) >= lvl) continue;
+      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(cast(int)f, p[0], cy, p[2], ts, wh));
     }
   }
   chunk.water.instances = inst;
