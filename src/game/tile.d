@@ -103,6 +103,7 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   }
   app.world.pendingPaths = [];
   app.invalidatePaths(tile);
+  if(newType == ResourceType.None) app.activate(tile);   // mined out: wake neighbouring water to flow in
 }
 
 @nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
