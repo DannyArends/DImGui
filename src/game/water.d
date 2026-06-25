@@ -207,9 +207,9 @@ void flushWaterDirty(ref GameApp app) {
 
 /** Snapshot all loaded chunks' water into waterDiffs, then flatten + save (mirrors saveDiffs). */
 void saveWater(ref GameApp app) {
-  app.world.data.waterDiffs = null;
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
+    app.world.data.waterDiffs.remove(chunk.coord);          // drop this chunk's stale snapshot
     foreach(idx; chunk.wetCells) {
       ubyte lvl = chunk.waterLevel[idx];
       if(lvl > 0) app.world.data.waterDiffs[chunk.coord][cast(uint)idx] = lvl;
