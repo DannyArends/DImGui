@@ -123,9 +123,10 @@ private bool isSettled(ref GameApp app, ref WaterNext next, int[3] wc) {
 
 /** A cell can hold water if it is in range and air (not solid ground). */
 private bool canHoldWater(ref GameApp app, int[3] wc) {
-  import tile : getTileAt;
   if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return false;
-  return app.world.getTileAt(wc) == ResourceType.None;
+  auto p = app.world.chunkCoord(wc) in app.world.chunks;
+  if(p is null) return false;                              // unloaded -> can't hold (edge of world)
+  return (*p).tileTypes[app.world.tileIdx(wc)] == ResourceType.None;
 }
 
 /** Rebuild the single world water object from all chunks' waterLevel. */
