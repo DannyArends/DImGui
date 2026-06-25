@@ -15,10 +15,12 @@ import water : WATER_MAX;
 
 enum int CLOUD_LAYERS = 8;              // Layers
 enum int CLOUD_STEP = 6;                // Step
-enum float CLOUD_THRESHOLD = 0.80f;     // Threshold
+enum float CLOUD_THRESHOLD = 0.90f;     // Threshold
 enum float CLOUD_FREQ = 0.06f;          // frequency
+enum int CLOUD_SPAWN_CHANCE = 1;        // % of ticks that spawn a new cloud seed
+enum float CLOUD_SPAWN_AMOUNT = 0.05f;  // density added per seed (>= 1/CLOUD_LAYERS so a layer shows)
 enum int RAIN_DROPS_PER_TICK = 250;     // sparse
-enum float RAIN_DEPLETE = 0.02f;        // density removed from a cloud cell per drop spawned
+enum float RAIN_DEPLETE = 0.05f;        // density removed from a cloud cell per drop spawned
 enum float CLOUD_DMAX =  1.0f;          // max positive density (thickest cloud)
 enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
 
@@ -40,6 +42,17 @@ void seedClouds(ref GameApp app, int[3] coord) {
     float d = (n - CLOUD_THRESHOLD) / 0.2f;
     app.world.cloudDensity[[gx, gz]] = d < 0 ? 0 : (d > 1 ? 1 : d);
   }
+}
+
+void spawnClouds(ref GameApp app) {
+  if(uniform(0, 100) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
+  auto coords = app.world.chunks.keys;
+  if(coords.length == 0) return;
+  int cs = app.world.chunkSize;
+  int[3] cc = coords[uniform(0, coords.length)];
+  int gx = (cc[0]*cs + uniform(0, cs)) / CLOUD_STEP;
+  int gz = (cc[2]*cs + uniform(0, cs)) / CLOUD_STEP;
+  app.world.cloudDensity[[gx, gz]] += CLOUD_SPAWN_AMOUNT;
 }
 
 void rebuildClouds(ref GameApp app) {
