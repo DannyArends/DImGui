@@ -7,6 +7,7 @@ import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
+import ssbo : createAllocation;
 import validation : nameVulkanObject;
 
 /** A bound GPU buffer: handle + its memory + mapped pointer (data == null, means device-local / unmapped). */
