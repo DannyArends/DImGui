@@ -9,6 +9,7 @@ import block : spawnBlock;
 import chunk : faceData;
 import gameobjects : Clouds;
 import noise : smoothNoise;
+import serialization : readData, writeData;
 import tile : FACE_OFFSETS, getWater, setWater, getTileAt;
 import water : WATER_MAX;
 
@@ -26,8 +27,15 @@ enum float CLOUD_DMIN = -0.30f;         // max negative density (fully cleared)
 
 private bool isCloud(ref GameApp app, int gx, int y, int gz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
-  float fy = (y - (CLOUD_LAYERS-1)*0.5f) / (CLOUD_LAYERS*0.5f);
-  float d = smoothNoise([gx*CLOUD_FREQ, y*0.6f, gz*CLOUD_FREQ], 1337) * (1.0f - fy*fy*0.7f);
+  int[3] key = [gx, y, gz];
+  float base;
+  if(auto p = key in app.world.cloudNoise) base = *p;
+  else {
+    float fy = (y - (CLOUD_LAYERS-1)*0.5f) / (CLOUD_LAYERS*0.5f);
+    base = smoothNoise([gx*CLOUD_FREQ, y*0.6f, gz*CLOUD_FREQ], 1337) * (1.0f - fy*fy*0.7f);
+    app.world.cloudNoise[key] = base;                       // sample once, reuse every tick after
+  }
+  float d = base;
   if(auto p = [gx, gz] in app.world.cloudDensity) d += *p;
   return d >= CLOUD_THRESHOLD;
 }
@@ -39,19 +47,31 @@ void rebuildClouds(ref GameApp app) {
   float baseY = app.world.height + 8.0f * th;
   float vox = CLOUD_STEP * ts, voxH = th * CLOUD_STEP;
 
-  DrawInstance[] inst;
+  // PASS 1: occupancy per cloud cell, computed once (one noise eval each)
+  bool[int[3]] occ;
   foreach(coord; app.world.chunks.keys) {
     int baseX = coord[0] * cs, baseZ = coord[2] * cs;
     for(int lz = 0; lz < cs; lz += CLOUD_STEP)
     for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
-      // grid index in "cloud-cell" space so neighbours are ±1 cell
-      int gx = (baseX + lx) / CLOUD_STEP;
-      int gz = (baseZ + lz) / CLOUD_STEP;
+      int gx = (baseX + lx) / CLOUD_STEP, gz = (baseZ + lz) / CLOUD_STEP;
+      foreach(y; 0 .. CLOUD_LAYERS)
+        if(app.isCloud(gx, y, gz)) occ[[gx, y, gz]] = true;
+    }
+  }
+
+  // PASS 2: emit faces, neighbour occupancy read from cache (no re-eval)
+  DrawInstance[] inst;
+  inst.reserve(occ.length * 3);
+  foreach(coord; app.world.chunks.keys) {
+    int baseX = coord[0] * cs, baseZ = coord[2] * cs;
+    for(int lz = 0; lz < cs; lz += CLOUD_STEP)
+    for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
+      int gx = (baseX + lx) / CLOUD_STEP, gz = (baseZ + lz) / CLOUD_STEP;
       foreach(y; 0 .. CLOUD_LAYERS) {
-        if(!app.isCloud(gx, y, gz)) continue;
+        if([gx, y, gz] !in occ) continue;
         float px = (baseX + lx) * ts, py = baseY + y*voxH, pz = (baseZ + lz) * ts;
         foreach(f; 0 .. 6) {
-          if(app.isCloud(gx + FACE_OFFSETS[f][0], y + FACE_OFFSETS[f][1], gz + FACE_OFFSETS[f][2])) continue;
+          if([gx+FACE_OFFSETS[f][0], y+FACE_OFFSETS[f][1], gz+FACE_OFFSETS[f][2]] in occ) continue;
           inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, vox, voxH));
         }
       }
@@ -106,4 +126,25 @@ void settleRain(ref GameApp app) {
   }
   foreach(id; done) app.world.blocks.remove(id);
   app.world.blocksDirty = true;
+}
+
+/** Persisted cloud density cell. */
+struct CloudDiff { int gx, gz; float density; }
+
+/** Save mutable cloud density deltas. */
+void saveClouds(ref GameApp app) {
+  CloudDiff[] flat;
+  foreach(key, d; app.world.cloudDensity) if(d != 0) flat ~= CloudDiff(key[0], key[1], d);
+  if(flat.length == 0) { SDL_RemovePath(app.world.cloudsPath()); return; }
+  writeData(app.world.cloudsPath(), flat, cast(uint)flat.length);
+}
+
+/** Load cloud density deltas. */
+void loadClouds(ref GameApp app) {
+  CloudDiff[] flat;
+  uint h;
+  if(!readData(app.world.cloudsPath(), flat, h)) return;
+  app.world.cloudDensity = null;
+  foreach(ref c; flat) app.world.cloudDensity[[c.gx, c.gz]] = c.density;
+  SDL_Log("loadClouds: %d cells", cast(int)flat.length);
 }
