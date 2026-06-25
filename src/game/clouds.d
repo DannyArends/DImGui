@@ -24,20 +24,24 @@ enum float EVAP_DEPLETE = 500f;         // density added through water evaporati
 enum float CLOUD_DMAX =  0.30f;         // max positive density (thickest cloud)
 enum float CLOUD_DMIN = -0.30f;         // max negative density (fully cleared)
 
-
 private bool isCloud(ref GameApp app, int gx, int y, int gz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
-  int[3] key = [gx, y, gz];
-  float base;
-  if(auto p = key in app.world.cloudNoise) base = *p;
-  else {
-    float fy = (y - (CLOUD_LAYERS-1)*0.5f) / (CLOUD_LAYERS*0.5f);
-    base = smoothNoise([gx*CLOUD_FREQ, y*0.6f, gz*CLOUD_FREQ], 1337) * (1.0f - fy*fy*0.7f);
-    app.world.cloudNoise[key] = base;                       // sample once, reuse every tick after
+  auto p = [gx, gz] in app.world.cloudDensity;
+  if(p is null) return false;
+  return y < (*p) * CLOUD_LAYERS;
+}
+
+void seedClouds(ref GameApp app, int[3] coord) {
+  int cs = app.world.chunkSize;
+  int baseX = coord[0] * cs, baseZ = coord[2] * cs;
+  for(int lz = 0; lz < cs; lz += CLOUD_STEP)
+  for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
+    int gx = (baseX + lx) / CLOUD_STEP, gz = (baseZ + lz) / CLOUD_STEP;
+    if([gx, gz] in app.world.cloudDensity) continue;        // already seeded
+    float n = smoothNoise([gx*CLOUD_FREQ, gz*CLOUD_FREQ], 1337);   // 2D, one sample per column
+    float d = (n - 0.8f) / 0.2f;
+    app.world.cloudDensity[[gx, gz]] = d < 0 ? 0 : (d > 1 ? 1 : d);
   }
-  float d = base;
-  if(auto p = [gx, gz] in app.world.cloudDensity) d += *p;
-  return d >= CLOUD_THRESHOLD;
 }
 
 void rebuildClouds(ref GameApp app) {
@@ -50,9 +54,7 @@ void rebuildClouds(ref GameApp app) {
   DrawInstance[] inst;
   foreach(coord; app.world.chunks.keys) {
     int baseX = coord[0] * cs, baseZ = coord[2] * cs;
-    for(int lz = 0; lz < cs; lz += CLOUD_STEP)
-    for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
-      // grid index in "cloud-cell" space so neighbours are ±1 cell
+    for(int lz = 0; lz < cs; lz += CLOUD_STEP) { for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
       int gx = (baseX + lx) / CLOUD_STEP;
       int gz = (baseZ + lz) / CLOUD_STEP;
       foreach(y; 0 .. CLOUD_LAYERS) {
@@ -63,7 +65,7 @@ void rebuildClouds(ref GameApp app) {
           inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, vox, voxH));
         }
       }
-    }
+    } }
   }
   app.world.clouds.instances = inst;
   app.world.clouds.instances.buffered = false;
