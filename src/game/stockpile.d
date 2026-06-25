@@ -87,7 +87,7 @@ void storeBlock(ref GameApp app, uint stockpileID, uint blockID) {
     if(slot == -1) { slot = sp.contents.length; sp.contents ~= emptySlot; }
     if(slot >= capacity(*sp)) return;
     sp.contents[slot] = blockID;
-    if(auto b = blockID in app.world.blocks) b.tile = storedTile;
+    if(auto b = blockID in app.world.blocks) { b.tile = storedTile; b.fall = Fall.init; }
   }
 }
 
