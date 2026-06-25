@@ -113,32 +113,20 @@ void evaporateTick(ref GameApp app) {
   }
 }
 
-/** Neighbour level: next-buffer if touched, else in-chunk direct read, else slow getWater. */
-private int nbLevel(ref GameApp app, ref WaterNext next, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, int[3] base) {
-  int[3] nwc = [base[0]+dx, base[1]+dy, base[2]+dz];
-  if(auto p = nwc in next) return *p;
-  Chunk nch; int nidx;
-  if(app.neighbourCell(chunk, lx, ly, lz, dx, dy, dz, nch, nidx)) return nch.waterLevel[nidx];
-  return 0;
-}
-
-private bool nbAir(ref GameApp app, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, int[3] base) {
-  Chunk nch; int nidx;
-  if(!app.neighbourCell(chunk, lx, ly, lz, dx, dy, dz, nch, nidx)) return false;
-  return nch.tileTypes[nidx] == ResourceType.None;
-}
-
 private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc, int have, out int[3][4] tgt) {
   if(have < 2) return 0;
   int S = app.world.chunkSize, Hh = app.world.chunkHeight;
   int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
   int bestLvl = have, n = 0;
   foreach(h; H) {
-    if(!app.nbAir(chunk, lx, ly, lz, h[0], 0, h[1], wc)) continue;
-    int nl = app.nbLevel(next, chunk, lx, ly, lz, h[0], 0, h[1], wc);
-    int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
-    if(nl < bestLvl) { bestLvl = nl; tgt[0] = nb; n = 1; }
-    else if(nl == bestLvl && bestLvl < have) tgt[n++] = nb;
+    Chunk nch; int nidx;
+    if(!app.neighbourCell(chunk, lx, ly, lz, h[0], 0, h[1], nch, nidx)) continue;   // resolve ONCE
+    if(nch.tileTypes[nidx] != ResourceType.None) continue;                          // air check (direct)
+    int[3] nwc = [wc[0]+h[0], wc[1], wc[2]+h[1]];
+    auto p = nwc in next;                                                           // pending?
+    int nl = p is null ? nch.waterLevel[nidx] : *p;                                 // level (direct or pending)
+    if(nl < bestLvl) { bestLvl = nl; tgt[0] = nwc; n = 1; }
+    else if(nl == bestLvl && bestLvl < have) tgt[n++] = nwc;
   }
   return n;
 }
@@ -146,8 +134,13 @@ private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int 
 private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
   int S = app.world.chunkSize, Hh = app.world.chunkHeight;
   int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
-  if(!app.nbAir(chunk, lx, ly, lz, 0, -1, 0, wc)) return false;
-  return app.nbLevel(next, chunk, lx, ly, lz, 0, -1, 0, wc) < WATER_MAX;
+  Chunk nch; int nidx;
+  if(!app.neighbourCell(chunk, lx, ly, lz, 0, -1, 0, nch, nidx)) return false;
+  if(nch.tileTypes[nidx] != ResourceType.None) return false;       // not air
+  int[3] bwc = [wc[0], wc[1]-1, wc[2]];
+  auto p = bwc in next;
+  int bl = p is null ? nch.waterLevel[nidx] : *p;
+  return bl < WATER_MAX;
 }
 
 private bool isSettled(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) {
