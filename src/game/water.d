@@ -81,18 +81,7 @@ void waterTick(ref GameApp app) {
     }
   }
 
-  // 3. EVAPORATE: water below full has a chance to lose a unit (shallower = faster)
-  foreach(coord, idxs; act) {
-    foreach(idx; idxs) {
-      int[3] wc = app.world.worldCoord(coord, app.world.tileCoord(idx));
-      int have = app.rdWater(next, wc);
-      if(have <= 0 || have >= (WATER_MAX/2)) continue;
-      app.world.chunks[coord].active[idx] = true;
-      if(uniform(0, 500) < (WATER_MAX - have) * 2){ app.wrWater(next, touched, wc, -1); }
-    }
-  }
-
-  // 4. COMMIT — setWater re-activates changed cells + neighbours for next tick
+  // 3. COMMIT — setWater re-activates changed cells + neighbours for next tick
   foreach(coord, idxs; touched) {
     ubyte[] old = app.world.chunks[coord].waterLevel;
     ubyte[] buf = next[coord];
@@ -103,7 +92,7 @@ void waterTick(ref GameApp app) {
     }
   }
 
-  // 5. DEACTIVATE settled cells (nothing left to spread/fall/evaporate)
+  // 4. DEACTIVATE settled cells (nothing left to spread/fall/evaporate)
   foreach(coord, idxs; act) {
     auto ch = app.world.chunks[coord];
     foreach(idx; idxs) {
@@ -113,17 +102,31 @@ void waterTick(ref GameApp app) {
   }
 }
 
+/** Lower one cell's water without waking the sim */
+void evaporateTick(ref GameApp app) {
+  foreach(coord; app.world.chunks.keys) {
+    auto chunk = app.world.chunks[coord];
+    foreach(idx; chunk.wetCells.dup) {
+      ubyte have = chunk.waterLevel[idx];
+      if(have == 0 || have >= WATER_MAX) continue;
+      if(uniform(0, 500) < (WATER_MAX - have) * 2) {
+        int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
+        app.setWater(wc, cast(ubyte)(have - 1), false);
+      }
+    }
+  }
+}
+
 /** Test if a cell is settled. */
 private bool isSettled(ref GameApp app, int[3] wc) {
   int have = app.getWater(wc);
-  if(have <= 0) return true; // dry: not active
-  if(have < WATER_MAX) return false; // can still evaporate
+  if(have <= 0) return true;
   if(app.canHoldWater(wc.tileBelow) && app.getWater(wc.tileBelow) < WATER_MAX) return false; // can fall
   foreach(h; H) {
     int[3] nb = [wc[0]+h[0], wc[1], wc[2]+h[1]];
     if(app.canHoldWater(nb) && app.getWater(nb) < have) return false; // can spread
   }
-  return true; // nothing to do
+  return true;
 }
 
 /** A cell can hold water if it is in range and air (not solid ground). */
