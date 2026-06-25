@@ -11,7 +11,7 @@ public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, FeatureDropT, Feature;
 public import inventory : Inventory;
 public import jobs : Job, JobState, Reach;
-public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube;
+public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import pathfinding : PathRequest, PathResult;
 public import physx : Fall;
 public import searchnode : PathNode;

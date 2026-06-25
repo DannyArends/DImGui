@@ -19,6 +19,8 @@ enum int[3] noTile = [int.min, 0, 0];
 enum int[3] builtTile = [int.max, 0, 0];
 enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
 
+static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+
 /** Is the Tile occupied ?  */
 @nogc pure bool isTileOccupied(const GameApp app, const int[3] tile) nothrow {
   if(app.world.dwarves !is null) { foreach(ref d; app.world.dwarves) { if(d.tile == tile) return true; } }

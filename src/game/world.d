@@ -14,7 +14,7 @@ import jobs : jobQueue;
 import pathfinding : invalidatePaths, repathTo;
 import serialization : WORLD_MAGIC;
 import stockpile : saveStockpiles, loadStockpiles;
-import tile : tileBelow, getTile, isStandable, isPassable;
+import tile : FACE_OFFSETS, tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : saveVegetation, loadVegetation;
 
@@ -39,18 +39,16 @@ struct WorldData {
   const(char)* featurePath(string name) const { return toStringz(fixPath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], name))); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
-  @nogc pure int [3] localCoord(int[3] tile) const nothrow {
+  @nogc pure int[3] localCoord(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
   }
 
   /** Get tile neighbours */
   @nogc pure int[3][6] tileNeighbours(const int[3] wc) const nothrow {
-    return [
-      [wc[0]+1, wc[1], wc[2]], [wc[0]-1, wc[1], wc[2]],
-      [wc[0], wc[1]+1, wc[2]], [wc[0], wc[1]-1, wc[2]],
-      [wc[0], wc[1], wc[2]+1], [wc[0], wc[1], wc[2]-1]
-    ];
+    int[3][6] r;
+    foreach(f; 0 .. 6) r[f] = [wc[0]+FACE_OFFSETS[f][0], wc[1]+FACE_OFFSETS[f][1], wc[2]+FACE_OFFSETS[f][2]];
+    return r;
   }
 
   /** Convert a world tile coordinate to its chunk coordinate */
