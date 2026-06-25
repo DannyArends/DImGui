@@ -17,7 +17,8 @@ enum int CLOUD_STEP = 6;                // Step
 enum float CLOUD_THRESHOLD = 0.80f;     // Threshold
 enum float CLOUD_FREQ = 0.06f;          // frequency
 enum int RAIN_DROPS_PER_TICK = 250;     // sparse
-enum float RAIN_DEPLETE = 0.01f;        // density removed from a cloud cell per drop spawned
+enum float RAIN_DEPLETE = 0.001f;       // density removed from a cloud cell per drop spawned
+enum float EVAP_DENSITY = 0.0005f;      
 
 private bool isCloud(ref GameApp app, int gx, int y, int gz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;
