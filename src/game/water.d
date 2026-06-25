@@ -12,7 +12,7 @@ import tile : FACE_OFFSETS, neighbourCell, tileBelow, tileCoord, tileIdx, tileTo
 
 enum ubyte WATER_MAX = 7;               // Maximum water density
 enum float EVAP_DENSITY = 0.005f;       // density added through water evaporation
-enum uint EVAP_DEPLETE = 2500;          // Speed of evaporation
+enum uint EVAP_DEPLETE = 250;          // Speed of evaporation
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
@@ -60,8 +60,7 @@ void waterTick(ref GameApp app) {
   foreach(coord; app.world.chunks.keys) {
     auto ch = app.world.chunks[coord];
     if(ch.wetCells.length == 0) continue;
-    foreach(idx; ch.wetCells)
-      if(ch.active[idx]) act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx)));
+    foreach(idx; ch.active){ act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx))); }
   }
   debug app.timings["waterGather"] = SDL_GetTicks() - t;
   if(act.length == 0) return;
@@ -100,7 +99,7 @@ void waterTick(ref GameApp app) {
   t = SDL_GetTicks();
   foreach(i, a; act) {
     if(moved[i]) continue; // moved -> definitely active
-    if(app.isSettled(next, a.chunk, a.idx, a.wc)){ a.chunk.active[a.idx] = false; }
+    if(app.isSettled(next, a.chunk, a.idx, a.wc)){ a.chunk.active.remove(a.idx); }
   }
   debug app.timings["waterDeactivate"] = SDL_GetTicks() - t;
 }
@@ -111,7 +110,7 @@ void evaporateTick(ref GameApp app) {
     auto chunk = app.world.chunks[coord];
     foreach(idx; chunk.wetCells.dup) {
       ubyte have = chunk.waterLevel[idx];
-      if(have == 0) continue;
+      if(have == 0 || have >= (WATER_MAX-2)) continue;
       if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - have) * 2) {
         int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
         app.setWater(wc, cast(ubyte)(have - 1), false);
@@ -239,7 +238,7 @@ void loadWater(ref GameApp app) {
       foreach(idx, lvl; *wm) {
         chunk.waterLevel[cast(int)idx] = lvl;
         chunk.wetCells ~= cast(int)idx;
-        chunk.active[cast(int)idx] = true;
+        chunk.active ~= cast(int)idx;
         chunk.waterDirty = true;
       }
     }

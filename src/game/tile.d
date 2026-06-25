@@ -48,10 +48,10 @@ void activate(ref GameApp app, int[3] tile) {
   auto ch = *p;
   int idx = app.world.tileIdx(tile);
   int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
-  if(ch.waterLevel[idx] > 0) ch.active[idx] = true;
+  if(ch.waterLevel[idx] > 0) ch.active ~= idx;
   foreach(d; FACE_OFFSETS) {
     Chunk nch; int nidx;
-    if(app.neighbourCell(ch, lx, ly, lz, d[0], d[1], d[2], nch, nidx) && nch.waterLevel[nidx] > 0){ nch.active[nidx] = true; }
+    if(app.neighbourCell(ch, lx, ly, lz, d[0], d[1], d[2], nch, nidx) && nch.waterLevel[nidx] > 0){ nch.active ~= nidx; }
   }
 }
 
@@ -62,7 +62,7 @@ void setWater(ref GameApp app, int[3] tile, ubyte level, bool wake = true) {
   if(coord !in app.world.chunks) return;
   int idx = app.world.tileIdx(tile);
   auto chunk = app.world.chunks[coord];
-  if(level == 0) chunk.active[idx] = false;
+  if(level == 0) chunk.active.remove(idx);
   ubyte old = chunk.waterLevel[idx];
   if(old == level) return;
   if(old == 0 && level > 0){
