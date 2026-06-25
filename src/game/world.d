@@ -36,14 +36,19 @@ struct WorldData {
   ubyte[uint][int[3]] waterDiffs;
   float[int[3]] tilePenalties;
 
+  /** Build a world-data file path: data/world/<seed>_<suffix>.bin (empty suffix = the main world file). */
+  private const(char)* worldFile(string suffix) const {
+    return toStringz(fixPath(format("data/world/%d_%d_%d%s.bin", seed[0], seed[1], seed[2], suffix)));
+  }
+
   /** Returns the filesystem path for the world TileDiffs difference */
-  const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* blocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* cloudsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_clouds.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* dwarfsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_dwarfs.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* stockpilePath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_stockpiles.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* featurePath(string name) const { return toStringz(fixPath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], name))); }
-  const(char)* waterPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_water.bin", seed[0], seed[1], seed[2]))); }
+  const(char)* worldPath() const { return worldFile(""); }
+  const(char)* blocksPath() const { return worldFile("_drops"); }
+  const(char)* cloudsPath() const { return worldFile("_clouds"); }
+  const(char)* dwarfsPath() const { return worldFile("_dwarfs"); }
+  const(char)* stockpilePath() const { return worldFile("_stockpiles"); }
+  const(char)* featurePath(string name) const { return worldFile("_" ~ name.toLower); }
+  const(char)* waterPath() const { return worldFile("_water"); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
   @nogc pure int[3] localCoord(int[3] tile) const nothrow {
