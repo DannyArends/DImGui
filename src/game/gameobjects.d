@@ -71,7 +71,10 @@ class WaterTiles : Square {
   this() {
     super();
     initInstanced(() => "WaterTiles");
-    isSelectable = false; castShadow = false; hideInObjectsWindow = true;
+    isSelectable = false;
+    castShadow = false;
+    hideInObjectsWindow = true;
+    skipFrustum = true;
   }
 }
 
