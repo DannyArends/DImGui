@@ -17,7 +17,7 @@ enum int CLOUD_LAYERS = 8;              // Layers
 enum int CLOUD_STEP = 6;                // Step
 enum float CLOUD_THRESHOLD = 0.85f;     // Threshold
 enum float CLOUD_FREQ = 0.06f;          // frequency
-enum int CLOUD_SPAWN_CHANCE = 1;        // % of ticks that spawn a new cloud seed
+enum int CLOUD_SPAWN_CHANCE = 5;        // %% of ticks that spawn a new cloud seed
 enum float CLOUD_SPAWN_AMOUNT = 0.01f;  // density added per seed (>= 1/CLOUD_LAYERS so a layer shows)
 enum int RAIN_DROPS_PER_TICK = 500;     // sparse
 enum float RAIN_DEPLETE = 0.05f;        // density removed from a cloud cell per drop spawned
@@ -45,7 +45,7 @@ void seedClouds(ref GameApp app, int[3] coord) {
 }
 
 void spawnClouds(ref GameApp app) {
-  if(uniform(0, 100) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
+  if(uniform(0, 1000) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
   auto coords = app.world.chunks.keys;
   if(coords.length == 0) return;
   int cs = app.world.chunkSize;
