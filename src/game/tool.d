@@ -181,6 +181,8 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
     case ToolKind.RayPaint:
       if(app.world.inventory.activeTool == ToolMode.Stockpile){
         app.createStockpile(app.world.inventory.paint.preview);
+        app.world.inventory.paint = PaintState.init;
+        app.syncBuildGhosts();
       }else if(app.world.inventory.paint.active){ app.commitPaint(); }
     break;
     case ToolKind.BuildPaint: if(app.world.inventory.paint.active) app.openBuildSelection(); break;
