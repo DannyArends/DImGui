@@ -16,7 +16,7 @@ enum int CLOUD_LAYERS = 8;
 enum int CLOUD_STEP = 6;
 enum float CLOUD_THRESHOLD = 0.80f;
 enum float CLOUD_FREQ = 0.06f;
-enum int RAIN_DROPS_PER_TICK = 500;     // sparse
+enum int RAIN_DROPS_PER_TICK = 1000;     // sparse
 
 private bool isCloud(int tx, int y, int tz) {
   if(y < 0 || y >= CLOUD_LAYERS) return false;

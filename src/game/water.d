@@ -74,18 +74,24 @@ void waterTick(ref GameApp app) {
   }
   debug app.timings["waterFall"] = SDL_GetTicks() - t;
 
-  // PHASE 4: DEACTIVATE
-  t = SDL_GetTicks();
-  foreach(a; act) { if(app.isSettled(next, a.chunk, a.idx, a.wc)) a.chunk.active[a.idx] = false; }
-  debug app.timings["waterDeactivate"] = SDL_GetTicks() - t;
-
-  // PHASE 5: COMMIT
+  // PHASE 4+5: COMMIT changed cells, then deactivate the ones that settled (only touched cells, not all active)
   t = SDL_GetTicks();
   foreach(wc, _; touched) {
     if(app.rdWater(next, wc) == app.getWater(wc)) continue;
     app.setWater(wc, cast(ubyte)next[wc]);
   }
   debug app.timings["waterCommit"] = SDL_GetTicks() - t;
+
+  t = SDL_GetTicks();
+  foreach(wc, _; touched) {
+    int[3] coord = app.world.chunkCoord(wc);
+    auto p = coord in app.world.chunks;
+    if(p is null) continue;
+    auto ch = *p;
+    int idx = app.world.tileIdx(wc);
+    if(ch.active[idx] && app.isSettled(next, ch, idx, wc)) ch.active[idx] = false;
+  }
+  debug app.timings["waterDeactivate"] = SDL_GetTicks() - t;
 }
 
 /** Lower one cell's water without waking the sim */
