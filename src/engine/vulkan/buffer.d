@@ -171,7 +171,8 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
 }
 
 /** Upload CPU data to GPU via staging buffer (caller must issue a transfer→read barrier after batching) */
-void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer, uint frameIndex) {
+void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer) {
+  uint frameIndex = app.frameIndex;
   if(!buffer.dirty[frameIndex]) return;
   buffer.size = cast(uint)(T.sizeof * buffer.items.length);
   memcpy(buffer.data, cast(void*)buffer.items, buffer.size);
@@ -192,9 +193,9 @@ void uploadBarrier(ref App app, VkCommandBuffer cmdBuffer) {
 
 /** Allocate if needed then upload — convenience wrapper */
 void toGPU(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer, VkBufferUsageFlags usage, string type = "", string name = "",
-              VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint frameIndex = 0) {
+              VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
   if(!buffer.needsBuffer) return;
   if(app.trace) SDL_Log("toGPU: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
   if(app.allocateBuffer(buffer, usage, properties)) app.nameGeometryBuffer(buffer, type, name);
-  app.uploadBuffer(buffer, cmdBuffer, frameIndex);
+  app.uploadBuffer(buffer, cmdBuffer);
 }
