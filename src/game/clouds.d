@@ -11,7 +11,7 @@ import gameobjects : Clouds;
 import noise : smoothNoise;
 import serialization : readData, writeData;
 import tile : FACE_OFFSETS, getWater, setWater, getTileAt;
-import water : WATER_MAX;
+import water : WATER_MAX, WATER_TARGET_ACTIVE;
 
 enum int CLOUD_LAYERS = 8;              // Layers
 enum int CLOUD_STEP = 6;                // Step
@@ -23,7 +23,6 @@ enum int RAIN_DROPS_PER_TICK = 500;     // sparse
 enum float RAIN_DEPLETE = 0.05f;        // density removed from a cloud cell per drop spawned
 enum float CLOUD_DMAX =  1.0f;          // max positive density (thickest cloud)
 enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
-enum int WATER_TARGET_ACTIVE = 2500;    // desired number of live cloud cells (sim size)
 
 /** Cloud column height in layers for grid column (gx,gz); 0 if no cloud there. */
 private float cloudHeight(ref GameApp app, int gx, int gz) {
