@@ -60,10 +60,7 @@ class Geometry {
 
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null && isBuffered(); }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
-  @property @nogc bool isDrawable() nothrow const {
-    return(vertices.vb.length > 0 && indices.vb.length > 0 && instances.vb.length > 0
-           && vertices.length > 0 && indices.length > 0 && instances.length > 0);
-  }
+  @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
 
@@ -168,6 +165,6 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[app.syncIndex], &offset);
   vkCmdBindIndexBuffer(cmd, cast(VkBuffer)object.indices.vb[app.syncIndex], 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(cmd, cast(uint)object.indices.size / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
+  vkCmdDrawIndexed(cmd, cast(uint)object.indices.size[app.syncIndex] / uint.sizeof, cast(uint)object.instances.length, 0, 0, 0);
   if(app.trace) SDL_Log("[%s]: DONE", toStringz(object.geometry()));
 }
