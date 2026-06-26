@@ -128,10 +128,12 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   return true;
 }
 
+@nogc pure int surfaceLevel(float h0, int chunkHeight) nothrow { return cast(int)(h0 * sqrt(h0) * (chunkHeight - 1)); }
+
 /** Determine the tile type at a world coordinate from noise, no chunk data required */
 @nogc pure ResourceType getTile(T)(T wd, const int[3] wc) nothrow {
   float h0 = noise2D(wc.x, wc.z, wd.seed[0]);
-  int surface = cast(int)(h0 * sqrt(h0) * (wd.chunkHeight - 1));
+  int surface = surfaceLevel(h0, wd.chunkHeight);
   if (wc.y > surface) return ResourceType.None;
   if (wc.y == 0) return ResourceType.Lava;
   if (wc.y < surface) return ResourceType.Stone01;
@@ -141,15 +143,26 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
 @nogc pure int[3] tileCoord(T)(T wd, int i) nothrow { 
   return [i % wd.chunkSize, (i / wd.chunkSize) % wd.chunkHeight, i / (wd.chunkSize * wd.chunkHeight)];
 }
+
 @nogc pure float[3] tileToWorld(T)(T wd, int[3] tile, float yOff = 0.0f) nothrow {
   return [tile.x * wd.tileSize, tile.y * wd.tileHeight + wd.yOffset + yOff, tile.z * wd.tileSize];
 }
+
 @nogc pure int[3] worldToTile(T)(T wd, float[3] pos, float yOff = 0.0f) nothrow {
   return [cast(int)(pos[0] / wd.tileSize), cast(int)((pos[1] - wd.yOffset - yOff) / wd.tileHeight), cast(int)(pos[2] / wd.tileSize)];
 }
+
 @nogc pure int tileIndex(T)(T wd, int[3] local) nothrow { return(local.z * wd.chunkHeight * wd.chunkSize + local.y * wd.chunkSize + local.x); }
+
 @nogc pure int tileIdx(T)(T wd, int[3] tile) nothrow { return wd.tileIndex(wd.localCoord(tile)); }
-@nogc pure int surfaceAt(T)(T wd, int x, int y, int z) nothrow { while(y > 0 && wd.getTileAt([x, y, z]) == ResourceType.None){ y--; } return y; }
+
+@nogc pure int surfaceAt(T)(T wd, int x, int y, int z) nothrow {
+  int ns = surfaceLevel(noise2D(x, z, wd.seed[0]), wd.chunkHeight);
+  if((wd.chunkCoord([x, y, z]) in wd.diffs) is null) return y < ns ? y : ns;
+  while(y > 0 && wd.getTileAt([x, y, z]) == ResourceType.None){ y--; }
+  return y;
+}
+
 @nogc pure bool isPassable(T)(T wd, int[3] wc) nothrow {
   if(wc[1] <= 0 || wc[1] >= wd.chunkHeight){ return(false); }
   return wd.getTileAt(wc) == ResourceType.None;

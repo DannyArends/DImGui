@@ -12,7 +12,7 @@ import game : GameApp;
 import gameobjects : Chunk;
 import deletion : deAllocate;
 import intersection : intersects;
-import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried, isSolid;
+import tile : getTile, surfaceLevel, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried, isSolid;
 import hits : getHits;
 import noise : noise2D;
 import textures : idx;
@@ -44,7 +44,7 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
     for (int x = 0; x < wd.chunkSize; x++) {
       auto wc = wd.worldCoord(coord, [x, 0, z]);
       float h0 = noise2D(wc[0], wc[2], wd.seed[0]);
-      int s = cast(int)(h0 * sqrt(h0) * (wd.chunkHeight - 1));
+      int s = surfaceLevel(h0, wd.chunkHeight);
       ResourceType surfaceType = heightToResource(h0, noise2D(wc[0], wc[2], wd.seed[1]));
       int base = z * wd.chunkHeight * wd.chunkSize + x;
       for (int y = 0; y < wd.chunkHeight; y++) {
