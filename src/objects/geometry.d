@@ -76,6 +76,7 @@ class Geometry {
     assert(instance <  instances.length, "No such instance");
     instances[instance] = position(instances[instance], p);
     instances.invalidate();
+    if(box !is null) box.dirty = true;
   }
 
   @nogc float[3] position(uint instance = 0) nothrow {
@@ -90,6 +91,7 @@ class Geometry {
     assert(instance <  instances.length, "No such instance");
     instances[instance] = rotate(instances[instance], r);
     instances.invalidate();
+    if(box !is null) box.dirty = true;
   }
 
   /** Scale instance from object.instances by s */
@@ -98,6 +100,7 @@ class Geometry {
     assert(instance <  instances.length, "No such instance");
     instances[instance] = scale(instances[instance], s);
     instances.invalidate();
+    if(box !is null) box.dirty = true;
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
@@ -118,7 +121,7 @@ void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
   bool uploaded = false;
   for(size_t x = 0; x < app.objects.length; x++) {
     if(app.objects[x].instances.length == 0) continue;
-    if(app.objects[x].box is null || !app.objects[x].isBuffered) app.objects[x].computeBoundingBox(app.trace);
+    if(app.objects[x].box is null || app.objects[x].box.dirty) app.objects[x].computeBoundingBox(app.trace);
     if(app.showBounds && app.objects[x].box !is null && !app.objects[x].box.isBuffered) { app.objects[x].box.buffer(app, cmd); uploaded = true; }
     if(!app.objects[x].isBuffered){ app.objects[x].buffer(app, cmd); uploaded = true; }
   }
@@ -147,6 +150,7 @@ void opacity(T)(T object, string name, string mname = "") { object.setTexture(na
 uint addVertex(ref Geometry geometry, const Vertex v) nothrow {
   geometry.vertices ~= v;
   geometry.vertices.invalidate();
+  if(geometry.box !is null) geometry.box.dirty = true;
   return(cast(uint)(geometry.vertices.length-1));
 }
 

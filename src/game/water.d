@@ -212,6 +212,7 @@ void flushWaterDirty(ref GameApp app) {
   foreach(coord; app.world.chunks.keys) all ~= app.world.chunks[coord].waterInstances;
   app.world.water.instances = all;
   app.world.water.instances.invalidate();
+  if(app.world.water.box !is null) app.world.water.box.dirty = true;
 }
 
 /** Snapshot all loaded chunks' water into waterDiffs, then flatten + save (mirrors saveDiffs). */

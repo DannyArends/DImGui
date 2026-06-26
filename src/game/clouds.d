@@ -80,6 +80,7 @@ void rebuildClouds(ref GameApp app) {
   }
   app.world.clouds.instances = inst;
   app.world.clouds.instances.invalidate();
+  if(app.world.clouds.box !is null) app.world.clouds.box.dirty = true;
 }
 
 /** Relax cloud density toward 0 and clamp; prune negligible entries. */
