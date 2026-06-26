@@ -8,7 +8,7 @@ import game;
 import block : loadBlocks, saveBlocks, syncBlockInstances;
 import clouds : saveClouds, loadClouds;
 import dwarf : saveDwarfs;
-import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
+import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
@@ -232,13 +232,16 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   }
 
   // Evict chunks outside render distance
+  bool evicted = false;
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.remove(coord);
       app.removeAllFeatures(coord);
+      evicted = true;
     }
   }
+  if(evicted) app.rebuildAllFeatures();
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
