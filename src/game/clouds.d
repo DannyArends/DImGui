@@ -95,8 +95,7 @@ void decayCloudDensity(ref GameApp app) {
 
   int active = 0;
   foreach(coord; app.world.chunks.keys) active += cast(int)app.world.chunks[coord].active.length;
-  float err = (active - WATER_TARGET_ACTIVE) / cast(float)WATER_TARGET_ACTIVE;
-  app.world.cloudDecay = clamp(app.world.cloudDecay * (1.0f + 0.1f * err), 0.0001f, 0.5f);
+  app.world.cloudDecay = clamp(0.005f + 0.01f * ((active - WATER_TARGET_ACTIVE) / cast(float)WATER_TARGET_ACTIVE), 0.0f, 0.03f);
 }
 
 void rainTick(ref GameApp app) {
