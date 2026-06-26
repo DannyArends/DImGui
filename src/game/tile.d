@@ -103,6 +103,7 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   }
   app.world.pendingPaths = [];
   app.invalidatePaths(tile);
+  app.shadows.staticDirty[] = true;
   if(newType == ResourceType.None) app.activate(tile);   // mined out: wake neighbouring water to flow in
 }
 
