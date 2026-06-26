@@ -117,7 +117,7 @@ void evaporateTick(ref GameApp app) {
         app.setWater(wc, cast(ubyte)(have - 1), false);
         int gx = wc[0]/CLOUD_STEP, gz = wc[2]/CLOUD_STEP;
         auto dd = H[uniform(0, 4)];
-        app.world.cloudDensity[[gx + dd[0], gz + dd[1]]] += uniform(1, 10) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
+        app.world.cloudDensity[[gx + dd[0], gz + dd[1]]] += uniform(1, 5) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
       }
     }
   }
