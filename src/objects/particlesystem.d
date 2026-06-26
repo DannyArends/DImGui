@@ -66,6 +66,6 @@ class ParticleSystem : Geometry {
   /** Age all particles */
   void age() {
     for (uint i = 0; i < particles.length; i++) { vertices[i].position[] = particles[i].position[0..3]; }
-    vertices.buffered = false;
+    vertices.invalidate();
   }
 }

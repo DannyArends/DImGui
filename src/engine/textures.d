@@ -147,7 +147,7 @@ void mapTextures(ref App app, ref Geometry object) {
     auto oid = app.getTexture(object.materials[mesh.mat], aiTextureType_OPACITY);
     if(app.materials[mesh.mid].tid != tid || app.materials[mesh.mid].nid != nid || app.materials[mesh.mid].oid != oid) {
       app.materials[mesh.mid].tid = tid; app.materials[mesh.mid].nid = nid; app.materials[mesh.mid].oid = oid;
-      app.buffers["MaterialBuffer"].dirty[] = true;
+      app.buffers["MaterialBuffer"].invalidate();
     }
   }
 }
@@ -160,7 +160,7 @@ void updateTextures(ref App app) {
       needsUpdate = true;
       if(app.trace) { SDL_Log("updateTextures: syncIndex=%d texture.syncIndex=%d pending=%d", app.syncIndex, texture.syncIndex, nPending); }
       if(texture.syncIndex == app.syncIndex) {
-        app.buffers["MaterialBuffer"].dirty[] = true;
+        app.buffers["MaterialBuffer"].invalidate();
         app.mapTextures();
         texture.dirty = false;
         texture.syncIndex = -1;
@@ -180,10 +180,9 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUA
   app.nameVulkanObject(staging.buffer, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);
 
   // Copy the image data to the StagingBuffer memory
-  void* data;
-  enforceVK(vkMapMemory(app.device, staging.memory, 0, texture.surface.imageSize, 0, &data));
+  enforceVK(vkMapMemory(app.device, staging.memory, 0, texture.surface.imageSize, 0, &staging.data));
   if(SDL_MUSTLOCK(texture.surface)) SDL_LockSurface(texture.surface);
-  memcpy(data, texture.surface.pixels, texture.surface.imageSize);
+  memcpy(staging.data, texture.surface.pixels, texture.surface.imageSize);
   if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);
 
   // If we already had an image, view and memory, make sure to cleanup it on shutdown

@@ -75,7 +75,7 @@ class Geometry {
     import matrix : position;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = position(instances[instance], p);
-    instances.buffered = false;
+    instances.invalidate();
   }
 
   @nogc float[3] position(uint instance = 0) nothrow {
@@ -89,7 +89,7 @@ class Geometry {
     import matrix : rotate;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = rotate(instances[instance], r);
-    instances.buffered = false;
+    instances.invalidate();
   }
 
   /** Scale instance from object.instances by s */
@@ -97,7 +97,7 @@ class Geometry {
     import matrix : scale;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = scale(instances[instance], s);
-    instances.buffered = false;
+    instances.invalidate();
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
@@ -146,13 +146,13 @@ void opacity(T)(T object, string name, string mname = "") { object.setTexture(na
 /** Add a vertex to a geometry of the object */
 uint addVertex(ref Geometry geometry, const Vertex v) nothrow {
   geometry.vertices ~= v;
-  geometry.vertices.buffered = false;
+  geometry.vertices.invalidate();
   return(cast(uint)(geometry.vertices.length-1));
 }
 
 void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
   for (uint x = 0; x < geometry.vertices.length; x++) { geometry.vertices[x].color = color; }
-  geometry.vertices.buffered = false;
+  geometry.vertices.invalidate();
 }
 
 /** Render a Geometry to VkCommandBuffer cmd */

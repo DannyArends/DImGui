@@ -16,12 +16,15 @@ struct SSBO {
   GPUAllocation[] allocations;
   alias allocations this;
 
-  bool[] dirty;
+  private bool[] dirty;
   uint nObjects;
   uint stride;
   bool deviceLocal;
 
-  @property uint size(){ return nObjects * stride; }
+  @property @nogc uint size() nothrow const { return nObjects * stride; }
+  @property @nogc bool buffered() nothrow const { foreach(d; dirty){ if(d){ return(false); } } return(true); }
+  @nogc void invalidate() nothrow { dirty[] = true; }
+  @nogc void invalidate(uint idx) nothrow { dirty[idx] = true; }
 }
 
 /** All SSBOs + the per-syncIndex "an SSBO grew, re-point this set" flags. */

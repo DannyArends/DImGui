@@ -67,6 +67,6 @@ void syncBuildGhosts(ref GameApp app) {
   app.addTiles(app.world.inventory.paint.preview, app.world.inventory.activeTool);
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
-  app.world.inventory.instances.buffered = false;
+  app.world.inventory.instances.invalidate();
 }
 
