@@ -8,6 +8,7 @@ import game;
 import dwarf : spawnDwarf;
 import jobs : dispatchJob, jobQueue, dropBlockJob;
 import imgui : faIcon, iconText;
+import tile : tileToWorld;
 import textures : ImTextureRefFromID, idx;
 import widgets : drawCenteredText, text;
 
@@ -54,10 +55,14 @@ void showDwarfRow(ref GameApp app, size_t i, ref Dwarf d) {
 
   igSameLine(0, 5);
   text("%s - %s", d.tile, dwarfStatus(d));
+  if(d.hasJob) {
+    auto j = d.currentJob;
+    text("    -> %s tgt=%s blk=%s reach=%d", j.name, j.targetTile, j.blockIDs.length ? format("%d", j.blockIDs[0]) : "-", cast(int)j.reach);
+  }
 }
 
 /** One inventory slot cell: empty placeholder, or item icon with count + click-to-drop */
-void showInventorySlot(ref GameApp app, Dwarf* d, size_t i, float cellSize) {
+void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
   auto s = &d.inventory[i];
   if(s.empty) {
     igImageButton(cstr("##dwf_inv_%d", cast(int)i), ImTextureRefFromID(0), ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(0,0,0,0));
@@ -67,16 +72,24 @@ void showInventorySlot(ref GameApp app, Dwarf* d, size_t i, float cellSize) {
   auto texIdx  = idx(app.textures, texName);
   auto texID   = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
   igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
-  if(igIsItemClicked(0)) app.dispatchJob(*d, dropBlockJob(d.tile, s.resourceIDs[s.count - 1]));
+  if(igIsItemClicked(0)) app.dispatchJob(d, dropBlockJob(d.tile, s.resourceIDs[s.count - 1]));
   ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
   if(s.count > 1) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", s.count));
   if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d (click to drop)", resourceData(s.type).name, s.count));
 }
 
 /** Detailed sheet for the selected dwarf */
-void showDwarfSheet(ref GameApp app, Dwarf* d) {
-  dwarfGlyph(*d); igSameLine(0, 5);
-  text("%s", d.name);
+void followDwarf(ref GameApp app, uint uid) {
+  app.camera.onFrame = (dt) {
+    foreach(ref dw; app.world.dwarves.dwarves){ if(dw.uid == uid) { app.camera.lookat = dw.visualPos; app.camera.isDirty = true; return; } }
+    app.camera.onFrame = null;
+  };
+}
+
+/** Detailed sheet for the selected dwarf */
+void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
+  dwarfGlyph(d); igSameLine(0, 5);
+  if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followDwarf(d.uid); }
   text("Tile: %s", d.tile);
   text("Hunger: %.0f", d.hunger * 100.0f);
   text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
@@ -115,9 +128,9 @@ void showDwarfContent(ref GameApp app, uint font = 0) {
   int sel = app.world.dwarves !is null ? app.world.dwarves.selected : -1;
   if(sel >= 0 && sel < app.world.dwarves.dwarves.length) {
     if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back"), ImVec2(0,0))) { app.world.dwarves.selected = -1; }
-    app.showDwarfSheet(&app.world.dwarves.dwarves[sel]);
+    app.showDwarfSheet(app.world.dwarves.dwarves[sel], sel);
   } else { app.showDwarfOverview(); }
-
+  igNewLine();
   igSeparator();
   foreach(ref j; jobQueue) text("  [%s] -> %s (%s)", j.name, j.targetTile, j.tileType);
 }

@@ -10,6 +10,7 @@ import game : GameApp;
 import matrix : translateScale;
 import normals : computeTangents;
 import noise : noiseHTT;
+import sfx : play;
 import tile : getTile, tileCoord, tileToWorld;
 import vegetation : saveVegetation, loadVegetation;
 
@@ -39,6 +40,7 @@ struct FeatureT {
   float tilePenalty = 0.0f;
   float progressRate = 0.25f;
   string interaction;
+  string sound;
   FeaturePartT[] parts;
   FeatureDropT[] drops;
 }
@@ -131,7 +133,8 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
         if(ft.tilePenalty > 0.0f) app.world.data.tilePenalties[f.rootTile] = ft.tilePenalty;
         mesh.instances ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]));
       }
-      mesh.instances.buffered = false;
+      mesh.instances.invalidate();
+      if(mesh.box !is null) mesh.box.dirty = true;
     }
   }
   return features;
@@ -146,37 +149,61 @@ void rebuildAllFeatures(ref GameApp app) {
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.featureMeshes);
     }
   }
-  foreach(ref mesh; app.world.featureMeshes.values) mesh.instances.buffered = false;
+  foreach(ref mesh; app.world.featureMeshes.values){ mesh.instances.invalidate(); if(mesh.box !is null) mesh.box.dirty = true; }
 }
 
 void removeAllFeatures(ref GameApp app, int[3] coord) {
-  if(coord in app.world.featuresModified) return;
-  foreach(ref ft; features) { if(auto p = coord in app.world.features[ft.name]) { if((*p).length > 0) app.world.features[ft.name].remove(coord); } }
-  app.rebuildAllFeatures();
+  if(coord !in app.world.featuresModified) {
+    foreach(ref ft; features) { 
+      if(auto p = coord in app.world.features[ft.name]) { if((*p).length > 0){ app.world.features[ft.name].remove(coord); } }
+    }
+  }
 }
 
-void interactFeaturesAt(ref GameApp app, int[3] tile) {
+/** True if a feature with the given interaction is rooted at this tile */
+bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
   foreach(ref ft; features) {
-    if(ft.name !in app.world.features) continue;
+    if(ft.interaction != interaction || ft.name !in app.world.features) continue;
     int[3] coord = app.world.chunkCoord(tile);
     if(coord !in app.world.features[ft.name]) continue;
-    foreach(i, ref f; app.world.features[ft.name][coord]) {
-      if(f.rootTile != tile) continue;
-      foreach(ref drop; ft.drops) {
-        auto rt = drop.material.to!ResourceType;
-        if(drop.perHeight) {
-          for(uint h = 0; h < f.height; h++) app.spawnBlock([tile[0], tile[1]+cast(int)h, tile[2]], rt);
-        } else {
-          uint count = drop.countMin + (f.hash % max(1, drop.countMax - drop.countMin + 1));
-          foreach(n; 0..count) app.spawnBlock(tile, rt);
-        }
-      }
-      app.world.features[ft.name][coord] = app.world.features[ft.name][coord][0..i] ~ app.world.features[ft.name][coord][i+1..$];
-      if(auto p = coord in app.world.pendingFeatures[ft.name]) *p = (*p).filter!(pf => pf.rootTile != tile).array;
-      app.world.featuresModified[coord] = true;
-      app.world.unsettleBlocks(app.world.blocks, tile);
-      app.rebuildAllFeatures();
-      return;
+    foreach(ref f; app.world.features[ft.name][coord]) if(f.rootTile == tile) return true;
+  }
+  return false;
+}
+
+void dropPending(ref GameApp app, const FeatureT ft, int[3] coord, int[3] tile) {
+  if(ft.name !in app.world.pendingFeatures || coord !in app.world.pendingFeatures[ft.name]) return;
+  app.world.pendingFeatures[ft.name][coord] = app.world.pendingFeatures[ft.name][coord].filter!(pf => pf.rootTile != tile).array;
+}
+
+/** Harvest every feature of type `ft` rooted at `tile` (spawns drops, removes the feature). Returns true if any harvested. */
+bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] coord) {
+  if(ft.name !in app.world.features || coord !in app.world.features[ft.name]) return false;
+  bool any = false;
+  for(size_t i = 0; i < app.world.features[ft.name][coord].length; ) {
+    auto f = app.world.features[ft.name][coord][i];
+    if(f.rootTile != tile) { i++; continue; }
+    foreach(ref drop; ft.drops) {
+      auto rt = drop.material.to!ResourceType;
+      if(!drop.perHeight) {
+        uint count = drop.countMin + (f.hash % max(1, drop.countMax - drop.countMin + 1));
+        foreach(n; 0..count){ app.spawnBlock(tile, rt); }
+      } else { for(uint h = 0; h < f.height; h++){ app.spawnBlock([tile[0], tile[1]+cast(int)h, tile[2]], rt); } }
     }
+    app.world.features[ft.name][coord] = app.world.features[ft.name][coord][0..i] ~ app.world.features[ft.name][coord][i+1..$];
+    app.dropPending(ft, coord, tile);
+    app.world.featuresModified[coord] = true;
+    if(ft.sound.length){ app.play(ft.sound, 0.2f); }
+    any = true;
+  }
+  return any;
+}
+void interactFeaturesAt(ref GameApp app, int[3] tile) {
+  int[3] coord = app.world.chunkCoord(tile);
+  bool any = false;
+  foreach(const ft; features) any |= app.harvestFeatureType(ft, tile, coord);
+  if(any) {
+    app.world.unsettleBlocks(app.world.blocks, tile);
+    app.rebuildAllFeatures();
   }
 }

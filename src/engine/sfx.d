@@ -12,7 +12,7 @@ struct WavFMT {
   string path;
   MIX_Audio* chunk;
   float pitch = 1.0;
-  float gain = 0.5;
+  float gain = 1.0;
   bool loaded = false;
   bool looping = false;
 }
@@ -76,34 +76,34 @@ void openAudio(ref App app, int rate = 44100, int size = 1024, bool verbose = fa
 }
 
 /** Load a WAV formatted file */
-WavFMT loadWav(MIX_Mixer* mixer, string path, float pitch = 1.0, float gain = 0.5, bool looping = false) {
-  WavFMT sfx = { path: path,
-                 chunk: MIX_LoadAudio(mixer, toStringz(path), true),
-                 pitch: pitch, gain: gain, loaded: false, looping: looping
-                };
-  if (!sfx.chunk) {
-    SDL_Log("Unable to create buffer for '%s' cause '%s'", toStringz(path), SDL_GetError());
-    return sfx;
-  }
+WavFMT loadWav(MIX_Mixer* mixer, string path, float pitch = 1.0, float gain = 1.0, bool looping = false) {
+  WavFMT sfx = { path: path, chunk: MIX_LoadAudio(mixer, toStringz(path), true),
+                 pitch: pitch, gain: gain, loaded: false, looping: looping };
+  if (!sfx.chunk) { SDL_Log("Unable to create buffer for '%s' cause '%s'", toStringz(path), SDL_GetError()); return(sfx); }
   sfx.loaded = true;
   return(sfx);
 }
 
 /** Load all CasualGameSounds WAV sound effects */
-void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSounds", float pitch = 1.0, float gain = 0.5, bool looping = false, bool play = false) {
+void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSounds", float pitch = 1.0, float gain = 1.0, bool looping = false) {
   auto files = dir(path, "*.wav");
-  foreach(file; files) {
-    app.soundfx ~= loadWav(app.audio.mixer, file, pitch, gain, looping);
-  }
+  foreach(file; files) { app.soundfx ~= loadWav(app.audio.mixer, file, pitch, gain, looping); }
   SDL_Log("Loaded %d sounds effects from: %s", app.soundfx.length, path);
 }
 
+/** Play a loaded sound effect by (partial) filename match */
+int play(ref App app, string name, float gain = 1.0f) {
+  foreach(ref s; app.soundfx){ if(s.path.fromStringz.canFind(name)){ return(app.play(s, gain)); } }
+  SDL_Log(cstr("Unable to find %s", name));
+  return(-1);
+}
+
 /** Play a sound effect */
-int play(ref App app, WavFMT sfx) {
+int play(ref App app, WavFMT sfx, float gain = 1.0f) {
   if(!sfx.loaded) return(-1);
   MIX_Track* track = MIX_CreateTrack(app.audio.mixer);
   if(!track) return(-1);
-  MIX_SetTrackGain(track, sfx.gain * app.soundEffectGain);
+  MIX_SetTrackGain(track, gain * sfx.gain * app.soundEffectGain);
   MIX_SetTrackAudio(track, sfx.chunk);
   if(!MIX_PlayTrack(track, 0)) { MIX_DestroyTrack(track); return(-1); }
   app.audio.activeTracks ~= track;

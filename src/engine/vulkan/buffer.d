@@ -7,6 +7,7 @@ import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
+import ssbo : createAllocation;
 import validation : nameVulkanObject;
 
 /** A bound GPU buffer: handle + its memory + mapped pointer (data == null, means device-local / unmapped). */
@@ -17,38 +18,45 @@ struct GPUAllocation {
 }
 
 struct GeometryBuffer(T = ubyte) {
-  VkBuffer vb = null;            /// Vulkan Buffer pointer
-  VkDeviceMemory vbM = null;     /// Vulkan Buffer memory pointer
+  VkBuffer[] vb = null;          /// Vulkan Buffer pointer
+  VkDeviceMemory[] vbM = null;   /// Vulkan Buffer memory pointer
 
-  VkBuffer sb = null;            /// Vulkan Staging Buffer pointer
-  VkDeviceMemory sbM = null;     /// Vulkan Staging Buffer memory pointer
+  GPUAllocation[] staging;       /// per-frame staging (buffer + memory + mapped data)
 
-  VkDeviceSize size = 0;         /// Current actual data size in bytes
+  VkDeviceSize[] size;           /// Current actual data size in bytes
   VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
-  void* data;                    /// Pointer to mapped data - non-null means sbM is mapped
 
   T[] items = [];
   alias items this;
   void opAssign(T[] rhs) { items = rhs; }
 
-  bool buffered = false;
-  @property @nogc bool needsBuffer() nothrow const { return(!buffered && items.length > 0); }
+  private bool[] dirty;          /// per-frame upload-needed flags (length = framesInFlight)
+
+  @property @nogc bool buffered() nothrow const { foreach(d; dirty){ if(d){ return(false); } } return(true); }
+  @nogc void invalidate() nothrow { dirty[] = true; }
+  @nogc void invalidate(uint idx) nothrow { dirty[idx] = true; }
+  @property @nogc bool needsBuffer() nothrow const { return(items.length > 0 && (vb.length == 0 || !buffered)); }
+  @property @nogc bool drawable() nothrow const { return(vb.length > 0 && items.length > 0); }
+  @nogc uint count(uint idx) nothrow const { return(idx < size.length ? cast(uint)(size[idx] / T.sizeof) : 0); }
 }
 
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
-  app.nameVulkanObject(buffer.vb, toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
-  app.nameVulkanObject(buffer.vbM, toStringz("["~type~"-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
-  app.nameVulkanObject(buffer.sb, toStringz("["~type~"-STAGE-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
-  app.nameVulkanObject(buffer.sbM, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  foreach(i; 0 .. buffer.vb.length) {
+    app.nameVulkanObject(buffer.vb[i], toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
+    app.nameVulkanObject(buffer.vbM[i], toStringz("["~type~"-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  }
+  foreach(i; 0 .. buffer.staging.length) {
+    app.nameVulkanObject(buffer.staging[i].buffer, toStringz("["~type~"-STAGE-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
+    app.nameVulkanObject(buffer.staging[i].memory, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
+  }
 }
 
 @nogc void cleanup(T)(ref App app, ref GeometryBuffer!T buffer) nothrow {
-  if(buffer.data) vkUnmapMemory(app.device, buffer.sbM);
-  if(buffer.sb) vkDestroyBuffer(app.device, buffer.sb, app.allocator);
-  if(buffer.sbM) vkFreeMemory(app.device, buffer.sbM, app.allocator);
-
-  if(buffer.vb) vkDestroyBuffer(app.device, buffer.vb, app.allocator);
-  if(buffer.vbM) vkFreeMemory(app.device, buffer.vbM, app.allocator);
+  foreach(i; 0 .. buffer.staging.length){ app.cleanup(buffer.staging[i]); }
+  foreach(i; 0 .. buffer.vb.length) {
+    if(buffer.vb[i]) vkDestroyBuffer(app.device, buffer.vb[i], app.allocator);
+    if(buffer.vbM[i]) vkFreeMemory(app.device, buffer.vbM[i], app.allocator);
+  }
   buffer = GeometryBuffer!T();
 }
 
@@ -56,7 +64,7 @@ void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
   app.cleanup(object.vertices);
   app.cleanup(object.indices);
   app.cleanup(object.instances);
-  if(object.box) app.cleanup(object.box);
+  if(object.box){ app.cleanup(object.box); }
 }
 
 /** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
@@ -140,21 +148,31 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   if(requiredSize <= buffer.capacity) return(false);
 
   VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
-  if(buffer.vb != null) app.deAllocate(buffer);
-  app.createBuffer(&buffer.sb, &buffer.sbM, newCapacity);
-  enforceVK(vkMapMemory(app.device, buffer.sbM, 0, newCapacity, 0, &buffer.data));
-  app.createBuffer(&buffer.vb, &buffer.vbM, newCapacity, usage, properties);
+  if(buffer.vb.length > 0){ app.deAllocate(buffer); }
+
+  buffer.vb = new VkBuffer[app.framesInFlight];
+  buffer.vbM = new VkDeviceMemory[app.framesInFlight];
+  buffer.size = new VkDeviceSize[app.framesInFlight];
+  buffer.dirty = new bool[app.framesInFlight];
+  buffer.staging = new GPUAllocation[app.framesInFlight];
+
+  foreach(i; 0 .. app.framesInFlight) {
+    app.createAllocation(buffer.staging[i], cast(uint)newCapacity, false);   // host-visible + mapped
+    app.createBuffer(&buffer.vb[i], &buffer.vbM[i], newCapacity, usage, properties);
+    buffer.dirty[i] = true;
+  }
   buffer.capacity = newCapacity;
   return(true);
 }
 
 /** Upload CPU data to GPU via staging buffer (caller must issue a transfer→read barrier after batching) */
 void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer) {
-  buffer.size = cast(uint)(T.sizeof * buffer.items.length);
-  memcpy(buffer.data, cast(void*)buffer.items, buffer.size);
-  VkBufferCopy copyRegion = { size : buffer.size };
-  vkCmdCopyBuffer(cmdBuffer, buffer.sb, buffer.vb, 1, &copyRegion);
-  buffer.buffered = true;
+  if(!buffer.dirty[app.syncIndex]) return;
+  buffer.size[app.syncIndex] = cast(uint)(T.sizeof * buffer.items.length);
+  memcpy(buffer.staging[app.syncIndex].data, cast(void*)buffer.items, buffer.size[app.syncIndex]);
+  VkBufferCopy copyRegion = { size : buffer.size[app.syncIndex] };
+  vkCmdCopyBuffer(cmdBuffer, buffer.staging[app.syncIndex].buffer, buffer.vb[app.syncIndex], 1, &copyRegion);
+  buffer.dirty[app.syncIndex] = false;
 }
 
 /** Single transfer→vertex/index-read barrier covering all uploads in this command buffer */

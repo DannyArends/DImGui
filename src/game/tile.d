@@ -17,6 +17,9 @@ struct TileDiff {
 
 enum int[3] noTile = [int.min, 0, 0];
 enum int[3] builtTile = [int.max, 0, 0];
+enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
+
+static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 
 /** Is the Tile occupied ?  */
 @nogc pure bool isTileOccupied(const GameApp app, const int[3] tile) nothrow {
@@ -27,6 +30,47 @@ enum int[3] builtTile = [int.max, 0, 0];
 /** True if a chunk-local tile sits on the x or z edge of the chunk (needs cross-chunk neighbour lookup) */
 @nogc pure bool onChunkBoundary(T)(T wd, int[3] lc) nothrow {
   return lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
+}
+
+/** Water level (0..WATER_MAX) at a world tile; 0 if chunk not loaded or out of range */
+@nogc int getWater(ref GameApp app, int[3] tile) nothrow {
+  if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return 0;
+  auto p = app.world.chunkCoord(tile) in app.world.chunks;
+  return p is null ? 0 : (*p).waterLevel[app.world.tileIdx(tile)];
+}
+
+/** Wake a cell and its 6 neighbours so the sim re-evaluates them next tick. */
+void activate(ref GameApp app, int[3] tile) {
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  if(tile[1] < 0 || tile[1] >= Hh) return;
+  auto p = app.world.chunkCoord(tile) in app.world.chunks;
+  if(p is null) return;
+  auto ch = *p;
+  int idx = app.world.tileIdx(tile);
+  int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
+  if(ch.waterLevel[idx] > 0) ch.active ~= idx;
+  foreach(d; FACE_OFFSETS) {
+    Chunk nch; int nidx;
+    if(app.neighbourCell(ch, lx, ly, lz, d[0], d[1], d[2], nch, nidx) && nch.waterLevel[nidx] > 0){ nch.active ~= nidx; }
+  }
+}
+
+/** Set water level (0 .. WATER_MAX) at a world tile; marks the chunk dirty for re-mesh */
+void setWater(ref GameApp app, int[3] tile, ubyte level, bool wake = true) {
+  int[3] coord = app.world.chunkCoord(tile);
+  if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return;
+  if(coord !in app.world.chunks) return;
+  int idx = app.world.tileIdx(tile);
+  auto chunk = app.world.chunks[coord];
+  if(level == 0) chunk.active.remove(idx);
+  ubyte old = chunk.waterLevel[idx];
+  if(old == level) return;
+  if(old == 0 && level > 0){
+    chunk.wetCells ~= idx;
+  }else if(old > 0 && level == 0){ chunk.wetCells.remove(idx); }
+  chunk.waterLevel[idx] = cast(ubyte)level;
+  chunk.waterDirty = true;
+  if(wake){ app.activate(tile); }
 }
 
 /** True if all 6 neighbours of interior tile i are solid (caller guarantees i is not on a boundary) */
@@ -59,10 +103,30 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   }
   app.world.pendingPaths = [];
   app.invalidatePaths(tile);
+  app.shadows.staticDirty[] = true;
+  if(newType == ResourceType.None) app.activate(tile);   // mined out: wake neighbouring water to flow in
 }
 
 @nogc pure int[3] tileBelow(int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
 @nogc pure int[3] tileAbove(int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
+
+/** Resolve a neighbour of local (lx,ly,lz) in `chunk` by offset (dx,dy,dz) to (out chunk, out idx).
+    In-chunk: pure integer offset, no hash. Boundary: one chunk-pointer hop. False if out of loaded world. */
+@nogc bool neighbourCell(ref GameApp app, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, out Chunk nch, out int nidx) nothrow {
+  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+  int ny = ly + dy;
+  if(ny < 0 || ny >= Hh) return false;
+  int nx = lx + dx, nz = lz + dz;
+  if(nx >= 0 && nx < S && nz >= 0 && nz < S) {              // in-chunk
+    nch = chunk; nidx = nz*Hh*S + ny*S + nx; return true;
+  }
+  int cdx = nx < 0 ? -1 : (nx >= S ? 1 : 0);               // boundary hop
+  int cdz = nz < 0 ? -1 : (nz >= S ? 1 : 0);
+  auto p = [chunk.coord[0]+cdx, 0, chunk.coord[2]+cdz] in app.world.chunks;
+  if(p is null) return false;
+  nch = *p; nidx = ((nz+S)%S)*Hh*S + ny*S + ((nx+S)%S);
+  return true;
+}
 
 /** Determine the tile type at a world coordinate from noise, no chunk data required */
 @nogc pure ResourceType getTile(T)(T wd, const int[3] wc) nothrow {

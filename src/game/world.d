@@ -5,17 +5,22 @@
 
 import game;
 
-import block : loadBlocks, saveBlocks;
+import block : loadBlocks, saveBlocks, syncBlockInstances;
+import clouds : saveClouds, loadClouds;
 import dwarf : saveDwarfs;
-import feature : Feature, removeAllFeatures, addFeatureInstances, initFeatureMeshes;
+import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
 import jobs : jobQueue;
 import pathfinding : invalidatePaths, repathTo;
 import serialization : WORLD_MAGIC;
-import tile : tileBelow, getTile, isStandable, isPassable;
+import stockpile : saveStockpiles, loadStockpiles;
+import tile : FACE_OFFSETS, tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : saveVegetation, loadVegetation;
+import water : saveWater, loadWater;
+
+@nogc pure int iDiv(int a, int b) nothrow { return((a >= 0) ? a/b : -((-a + b - 1)/b)); }
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
@@ -28,35 +33,42 @@ struct WorldData {
   float yOffset      = -20.0f;                    /// Global world Y-offset
   uint[ResourceType.max + 1] resources;
   ResourceType[uint][int[3]] diffs;
+  ubyte[uint][int[3]] waterDiffs;
   float[int[3]] tilePenalties;
 
+  /** Build a world-data file path: data/world/<seed>_<suffix>.bin (empty suffix = the main world file). */
+  private const(char)* worldFile(string suffix) const {
+    return toStringz(fixPath(format("data/world/%d_%d_%d%s.bin", seed[0], seed[1], seed[2], suffix)));
+  }
+
   /** Returns the filesystem path for the world TileDiffs difference */
-  const(char)* worldPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* blocksPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_drops.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* dwarfsPath() const { return toStringz(fixPath(format("data/world/%d_%d_%d_dwarfs.bin", seed[0], seed[1], seed[2]))); }
-  const(char)* featurePath(string name) const { return toStringz(fixPath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], name))); }
+  const(char)* worldPath() const { return worldFile(""); }
+  const(char)* blocksPath() const { return worldFile("_drops"); }
+  const(char)* cloudsPath() const { return worldFile("_clouds"); }
+  const(char)* dwarfsPath() const { return worldFile("_dwarfs"); }
+  const(char)* stockpilePath() const { return worldFile("_stockpiles"); }
+  const(char)* featurePath(string name) const { return worldFile("_" ~ name.toLower); }
+  const(char)* waterPath() const { return worldFile("_water"); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
-  @nogc pure int [3] localCoord(int[3] tile) const nothrow {
+  @nogc pure int[3] localCoord(int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
   }
 
   /** Get tile neighbours */
   @nogc pure int[3][6] tileNeighbours(const int[3] wc) const nothrow {
-    return [
-      [wc[0]+1, wc[1], wc[2]], [wc[0]-1, wc[1], wc[2]],
-      [wc[0], wc[1]+1, wc[2]], [wc[0], wc[1]-1, wc[2]],
-      [wc[0], wc[1], wc[2]+1], [wc[0], wc[1], wc[2]-1]
-    ];
+    int[3][6] r;
+    foreach(f; 0 .. 6) r[f] = [wc[0]+FACE_OFFSETS[f][0], wc[1]+FACE_OFFSETS[f][1], wc[2]+FACE_OFFSETS[f][2]];
+    return r;
   }
 
   /** Convert a world tile coordinate to its chunk coordinate */
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
-  @nogc pure int[3] chunkCoord(int[3] tile) const nothrow { 
-    return [cast(int)floor(tile[0] / cast(float)chunkSize), 0, cast(int)floor(tile[2] / cast(float)chunkSize)]; 
+  @nogc pure int[3] chunkCoord(int[3] tile) const nothrow {
+    return [iDiv(tile[0], chunkSize), 0, iDiv(tile[2], chunkSize)];
   }
   @property @nogc pure float blockSize() const nothrow { return(tileSize * 0.25f); }
   @property @nogc pure float blockOffset() const nothrow { return(tileHeight - blockSize) * 0.5f; }
@@ -78,10 +90,17 @@ struct World {
   Feature[][int[3]][string] pendingFeatures;                /// pending features
   bool[int[3]] featuresModified;                            /// Does a chunk have modified features ?
   Block[uint] blocks;                                       /// Block registry
+  bool blocksDirty = false;                                 /// Dirty blocks ?
+  Stockpile[uint] stockpiles;                               /// id -> pile
+  uint[int[3]] stockpileAt;                                 /// tile -> stockpile id
+  uint nextStockpileID = 1;                                 /// next stockpile ID
   uint blockNextID = 1;                                     /// next block ID
   Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
+  Clouds clouds;                                            /// Clouds
+  float[int[2]] cloudDensity;                               /// mutable cloud density delta over noise base, by [gx,gz] cloud-cell
+  WaterTiles water;                                         /// single batched water render object
   PathMarkers pathMarkers;                                  /// Path markers
   int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
   int[3][] pendingBuildTiles;                               /// Built tiles awaiting chunk rebuild
@@ -103,7 +122,11 @@ struct World {
 
   void deleteWorld(ref GameApp app) {
     SDL_RemovePath(worldPath());
+    SDL_RemovePath(dwarfsPath());
     SDL_RemovePath(blocksPath());
+    SDL_RemovePath(cloudsPath());
+    SDL_RemovePath(stockpilePath());
+    SDL_RemovePath(waterPath());
     data.diffs = null;
     app.world.inventory.type = ResourceType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
@@ -130,19 +153,24 @@ void loadWorld(ref GameApp app) {
   app.objects ~= app.world.inventory.ghost;
 
   auto raw = readFile(app.world.worldPath());
-  if(raw.length < 8) return;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) { SDL_Log("loadWorld: invalid magic"); return; }
-  auto diffData = raw[8 .. $];
-  if(diffData.length % TileDiff.sizeof != 0) { SDL_Log("loadWorld: corrupt diffs"); return; }
-  app.world.data.rebuildDiffs(cast(TileDiff[])diffData.dup);
+  if(raw.length >= 8 && (cast(uint[])raw)[0] == WORLD_MAGIC) {
+    auto diffData = raw[8 .. $];
+    if(diffData.length % TileDiff.sizeof == 0){ app.world.data.rebuildDiffs(cast(TileDiff[])diffData.dup); }
+    else SDL_Log("loadWorld: corrupt diffs");
+  } else if(raw.length != 0) { SDL_Log("loadWorld: invalid magic"); }
+
   app.loadBlocks();
+  app.loadWater();
+  app.loadClouds();
   foreach(ref ft; features) {
     if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
     if(ft.name !in app.world.features) app.world.features[ft.name] = null;
     app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
     foreach(coord; app.world.pendingFeatures[ft.name].keys) app.world.featuresModified[coord] = true;
   }
+  app.loadStockpiles();
   app.deriveInventory();
+  app.syncBlockInstances();
 }
 
 /** Save world diffs to disk */
@@ -153,9 +181,12 @@ void saveWorld(ref GameApp app) {
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
   app.saveBlocks();
+  app.saveWater();
+  app.saveClouds();
   foreach(ref ft; features) {
     app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
   }
+  app.saveStockpiles();
   app.saveDwarfs();
 }
 
@@ -201,13 +232,16 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   }
 
   // Evict chunks outside render distance
+  bool evicted = false;
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.remove(coord);
       app.removeAllFeatures(coord);
+      evicted = true;
     }
   }
+  if(evicted) app.rebuildAllFeatures();
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {

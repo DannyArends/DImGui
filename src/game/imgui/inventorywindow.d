@@ -9,26 +9,8 @@ import imgui : faIcon;
 import textures : ImTextureRefFromID, idx;
 import widgets : drawCenteredText, text;
 
-/** Show tool mode switcher */
-void showToolSwitcher(ref GameApp app) {
-  immutable string[3] labels = [ " Select ", " Mine ", " Stockpile " ];
-  immutable ToolMode[3] modes = [ ToolMode.Select, ToolMode.Mine, ToolMode.Stockpile ];
-  foreach(i, mode; modes) {
-    bool active = app.world.inventory.activeTool == mode;
-    if(active) igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 0.3f, 1.0f));
-    if(igButton(toStringz(labels[i]), ImVec2(0, 0))) {
-      app.world.inventory.activeTool = mode;
-      app.world.inventory.type = ResourceType.None;
-    }
-    if(active) igPopStyleColor(1);
-    if(i < modes.length - 1) igSameLine(0, 4);
-  }
-  igSeparator();
-}
-
 /** Show inventory */
 void showInventoryContent(ref GameApp app, uint font = 0) {
-  app.showToolSwitcher();
   float cellSize = 32.0f;
   int cols = cast(int)floor((app.gui.panelW - cellSize) / cast(float)(cellSize + 4)) - 1;
   int col = 0;
@@ -48,8 +30,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
                   ImVec4(0,0,0,0), tint);
     if(count > 0 && igIsItemClicked(0)) {
       app.world.inventory.type = selected ? ResourceType.None : tileType;
-      app.world.inventory.cachedMatIdx = selected ? -1 : cast(int)app.meshes[cast(int)tileType].mid;
-      app.world.inventory.activeTool = selected ? ToolMode.Select : ToolMode.Build;
+      app.world.inventory.activeTool = selected ? app.world.inventory.activeTool : ToolMode.Build;
     }
     if(selected) igPopStyleColor(1);
 

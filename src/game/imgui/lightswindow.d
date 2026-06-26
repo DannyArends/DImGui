@@ -9,7 +9,8 @@ import imgui : iconText;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
 import widgets : colValue, setting, text, sliderFloat3, infoRow;
 
-/** Show the GUI window which allows us to manipulate lighting */
+/** Show the GUI window which allows us to manipulate lighting 
+ *  TODO: lightswindow rows -> labelCol/infoRow */
 void showLightsContent(ref GameApp app, uint font = 0) {
   auto lightsBefore = app.lights.lights.dup;
 
@@ -29,7 +30,7 @@ void showLightsContent(ref GameApp app, uint font = 0) {
     bool enabled = app.lights[i].enabled();
     if(igCheckbox("##enabled", &enabled)) {
       app.lights[i].enabled(enabled);
-      app.buffers["LightMatrices"].dirty[] = true;
+      app.buffers["LightMatrices"].invalidate();
     }
     igSameLine(0, 5);
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB, format("Light %d", i)), 0)) {
@@ -63,6 +64,6 @@ void showLightsContent(ref GameApp app, uint font = 0) {
     }
     igPopID();
   }
-  if(app.lights.lights != lightsBefore) { app.buffers["LightMatrices"].dirty[] = true; }
+  if(app.lights.lights != lightsBefore) { app.buffers["LightMatrices"].invalidate(); }
 }
 

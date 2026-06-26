@@ -11,18 +11,21 @@ public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, FeatureDropT, Feature;
 public import inventory : Inventory;
 public import jobs : Job, JobState, Reach;
-public import gameobjects : Chunk, Dwarves, PathMarkers, GhostCube;
+public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import pathfinding : PathRequest, PathResult;
+public import physx : Fall;
 public import searchnode : PathNode;
+public import stockpile : Stockpile;
 public import tool : ToolMode, PaintState;
-public import tile : builtTile, noTile, TileDiff;
+public import tile : builtTile, noTile, storedTile, TileDiff;
 public import raws : ResourceType, resourceData, heightToResource, features;
 public import resources : ResourceT;
 public import world : World, WorldData;
 
 import block : settleBlocks;
+import buildwindow : showBuildContent;
 import chunk : buildChunkData, finalizeChunk;
-import dwarf : spawnDwarf, loadDwarfs;
+import dwarf : spawnDwarf, loadDwarfs, settleDwarves;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
 import imgui : iconTextStr;
@@ -33,8 +36,11 @@ import lightswindow : showLightsContent;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
+import stockpilewindow : showStockpileContent;
 import threading : TaskThread, drainMessages;
+import toolbar : showToolbar;
 import world : loadWorld, saveWorld, updateWorld;
+import waterwindow : showWaterContent;
 import worldwindow : showWorldContent;
 
 /** Worker thread variant that also handles chunk building and pathfinding requests */
@@ -78,12 +84,16 @@ void initGame(ref GameApp app) {
   SDL_Log("initGame: updateSun");
   app.updateSun();
   SDL_Log("initGame: gameWindows");
+  app.gameWindows ~= GameWindow("##toolbar", (uint font){ app.showToolbar(font); }, true, false, true);
+  app.gameWindows ~= GameWindow("##buildselect", (uint font){ app.showBuildContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_INBOX, "Inventory"), (uint font){ app.showInventoryContent(font); });
+  app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WAREHOUSE, "Stockpiles"), (uint font){ app.showStockpileContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
   app.gameWindows ~= GameWindow("FPS", (uint font){ app.showFPSContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
+  app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
   SDL_Log("initGame: loadDwarfs");
   if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
 
@@ -101,6 +111,7 @@ void updateGame(ref GameApp app, double dt) {
   app.injectResourceMeshes();
   if(app.textures.loaded) { app.updateMaterials(); app.textures.loaded = false; }
   app.world.settleBlocks(dt);
+  app.settleDwarves(dt);
   app.updateWorld(app.camera.lookat);
   app.shadows.bounds = [app.world.height, app.world.radius];
 }
@@ -108,7 +119,7 @@ void updateGame(ref GameApp app, double dt) {
 /** Per-frame: dispatch queued paths and drain completed chunk-build and pathfinding results from workers */
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
-  if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); })) app.camera.isDirty = true;
+  if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); }, 2)) app.camera.isDirty = true;
   app.drainMessages!PathResult((r) { app.applyPathResult(r); });
 }
 

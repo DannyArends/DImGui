@@ -44,3 +44,31 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
     if(objects[x].onFrustumUpdate) objects[x].onFrustumUpdate(objects[x].inFrustum);
   }
 }
+
+unittest {
+  import std.math : isClose;
+  import vector : approx;
+  import matrix : orthogonal;
+
+  // symmetric ortho box: x in [-10,10], y in [-10,10], z in [-100,0] (identity view, so VP == projection)
+  auto planes = extractFrustum(orthogonal(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 100.0f));
+
+  // pin the extracted LEFT plane independently of aabbInFrustum:
+  // 0.1*x + 1 >= 0  ->  x >= -10
+  assert(approx(cast(float[4])planes[0], [0.1f, 0.0f, 0.0f, 1.0f]));
+
+  // box sitting at the centre of the frustum is inside
+  assert( aabbInFrustum(planes, [-1.0f, -1.0f, -51.0f], [1.0f, 1.0f, -49.0f]));
+
+  // box far off to +X fails the right plane
+  assert(!aabbInFrustum(planes, [50.0f, -1.0f, -51.0f], [52.0f, 1.0f, -49.0f]));
+
+  // box behind the near plane (z > 0) is culled
+  assert(!aabbInFrustum(planes, [-1.0f, -1.0f, 10.0f], [1.0f, 1.0f, 20.0f]));
+
+  // box beyond the far plane (z < -100) is culled
+  assert(!aabbInFrustum(planes, [-1.0f, -1.0f, -150.0f], [1.0f, 1.0f, -120.0f]));
+
+  // a box spanning the whole world is (at least partially) inside
+  assert( aabbInFrustum(planes, [-999.0f, -999.0f, -999.0f], [999.0f, 999.0f, 999.0f]));
+}

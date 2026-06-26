@@ -148,3 +148,44 @@ T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
 @nogc pure T[3] vPow(T)(const T[3] v) nothrow {
   T[3] vPow = v[] * v[]; return(vPow);
 }
+
+@nogc pure bool approx(size_t N)(const float[N] a, const float[N] b) nothrow {
+  import std.math : isClose;
+  foreach (i; 0 .. N) if (!isClose(a[i], b[i], 1e-5f, 1e-5f)) return false;
+  return true;
+}
+
+unittest { import std.math : isClose;
+
+  // dot / cross: orthonormal basis identities
+  assert(dot([1.0f, 0.0f, 0.0f], [0.0f, 1.0f, 0.0f]) == 0.0f);
+  assert(dot([1.0f, 2.0f, 3.0f], [1.0f, 2.0f, 3.0f]) == 14.0f);
+  assert(cross([1.0f, 0.0f, 0.0f], [0.0f, 1.0f, 0.0f]) == [0.0f, 0.0f, 1.0f]);
+
+  // euclidean vs sqDist consistency, manhattan variants
+  assert(euclidean([0.0f, 0.0f, 0.0f], [3.0f, 4.0f, 0.0f]) == 5.0f);
+  assert(sqDist([0.0f, 0.0f, 0.0f], [3.0f, 4.0f, 0.0f]) == 25.0f);
+  assert(manhattan([0.0f, 0.0f, 0.0f], [1.0f, 2.0f, 3.0f]) == 6.0f);
+  assert(manhattan2D([0.0f, 0.0f, 0.0f], [1.0f, 2.0f, 3.0f]) == 4.0f);
+
+  // normalize: unit length result, and idempotent on already unit input
+  assert(isClose(magnitude(normalize([3.0f, 0.0f, 0.0f])), 1.0f));
+  assert(normalize([1.0f, 0.0f, 0.0f]) == [1.0f, 0.0f, 0.0f]);
+
+  // EDGE CASE: zero vector must pass through, not divide-by-zero
+  assert(normalize([0.0f, 0.0f, 0.0f]) == [0.0f, 0.0f, 0.0f]);
+
+  // midpoint, with and without normalization
+  assert(midpoint([0.0f, 0.0f, 0.0f], [2.0f, 2.0f, 2.0f]) == [1.0f, 1.0f, 1.0f]);
+  assert(isClose(magnitude(midpoint([4.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f], true)), 1.0f));
+
+  // expandBounds mutates min/max in place
+  float[3] lo = [0.0f, 0.0f, 0.0f], hi = [0.0f, 0.0f, 0.0f];
+  expandBounds(lo, hi, [-1.0f, 5.0f, 2.0f]);
+  assert(lo == [-1.0f, 0.0f, 0.0f] && hi == [0.0f, 5.0f, 2.0f]);
+
+  // sum overloads, mean
+  assert(sum([1.0f, 2.0f, 3.0f]) == 6.0f);
+  assert(sum([1.0f, 2.0f, 3.0f], 2u) == 14.0f);
+  assert(mean([2.0f, 4.0f, 6.0f]) == 4.0f);
+}

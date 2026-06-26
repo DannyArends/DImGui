@@ -7,7 +7,7 @@ import game;
 
 import vector : manhattan2D;
 import search : performSearch, atGoal, stepThroughPath;
-import tile : getSuccessors, isStandable, isPassable, tileToWorld, worldToTile;
+import tile : getSuccessors, isStandable, isPassable, tileToWorld, worldToTile, tileAbove;
 
 struct PathRequest {
   uint dwarfUID;
@@ -19,17 +19,32 @@ struct PathResult {
   uint dwarfUID;
   float[3][] path;
   bool success;
+  bool partial;
+}
+
+/** Log a failed path search with closest-approach diagnostics */
+void logPathFail(S)(ref S result, PathRequest req) {
+  float minH = float.max;
+  foreach(idx; result.closedset.byValue) if(result.pool[idx].h < minH) minH = result.pool[idx].h;
+  SDL_Log("PATHFAIL state=%d from=[%d,%d,%d] goal=[%d,%d,%d] steps=%d open=%d closed=%d minH=%.2f stand=%d",
+    cast(int)result.state, req.fromTile[0], req.fromTile[1], req.fromTile[2],
+    req.goalTile[0], req.goalTile[1], req.goalTile[2], cast(int)result.steps,
+    cast(int)result.openlist.length, cast(int)result.closedset.length, minH,
+    cast(int)result.map.isStandable(req.goalTile));
 }
 
 PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3] start = wd.tileToWorld(req.fromTile);
   float[3] goal  = wd.tileToWorld(req.goalTile);
   auto result = performSearch!(WorldData, PathNode, getSuccessors)(start, goal, cast(WorldData)wd, false);
-  if(result.state == SearchState.FAILED || result.state == SearchState.INVALID) return PathResult(req.dwarfUID, [], false);
+  if(result.state != SearchState.SUCCEEDED && result.state != SearchState.PARTIAL) {
+    result.logPathFail(req);
+    return PathResult(req.dwarfUID, [], false);
+  }
   float[3][] path;
   while(result.pathptr != size_t.max && !result.atGoal()) path ~= result.stepThroughPath(false);
   path ~= result.pool[result.goal].position;
-  return PathResult(req.dwarfUID, path, true);
+  return PathResult(req.dwarfUID, path, true, (result.state == SearchState.PARTIAL));
 }
 
 /** Pathfind object T to goalTile, returns false if unreachable.
@@ -78,25 +93,30 @@ void invalidatePaths(ref GameApp app, int[3] tile) {
  * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
 bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
   obj.targetTile = targetTile;
-  auto goalTile = app.findGoalTile(obj, reach);
-  if(goalTile == noTile) return false;
-  if(goalTile == obj.tile) { obj.path = []; obj.state = DwarfState.Working; return true; }
-  app.pathfindTo(obj, goalTile);
+  auto goal = app.findGoalTile(targetTile, obj.tile, reach);
+  if(goal == noTile) return false;
+  if(goal == obj.tile) { obj.path = []; obj.state = DwarfState.Working; return true; }
+  app.pathfindTo(obj, goal);
   return true;
 }
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
-int[3] findGoalTile(T)(ref GameApp app, ref T obj, Reach reach = Reach.Adjacent) {
-  if(reach == Reach.OnTile) return app.world.isStandable(obj.targetTile) ? obj.targetTile : noTile;
-  int[3] goalTile = noTile;
+int[3] findGoalTile(ref GameApp app, int[3] targetTile, int[3] from, Reach reach = Reach.Adjacent) {
+  if(reach == Reach.OnTile) return app.world.isStandable(targetTile) ? targetTile : noTile;
+
+  int[3] best = noTile;
   float bestScore = float.max;
-  foreach(n; app.world.tileNeighbours(obj.targetTile)[0..2] ~ app.world.tileNeighbours(obj.targetTile)[4..6]) {
-    if(!app.world.isStandable(n)) continue;
-    float score = manhattan2D(n, obj.tile) + app.world.data.tilePenalties.get(n, 0.0f);
-    if(score < bestScore) { bestScore = score; goalTile = n; }
+  void consider(int[3] n) {
+    if(!app.world.isStandable(n)) return;
+    float score = manhattan2D(n, from) + app.world.data.tilePenalties.get(n, 0.0f);
+    if(score < bestScore) { bestScore = score; best = n; }
   }
-  return goalTile;
+
+  if(reach == Reach.AdjacentOrAbove) consider(targetTile.tileAbove);   // standing on top is valid
+  auto nb = app.world.tileNeighbours(targetTile);
+  foreach(i; [0, 1, 4, 5]) { if(nb[i][1] == targetTile[1]) consider(nb[i]); }   // ±x/±z, same-Y = manhattan2D==1
+  return best;
 }
 
 bool canMoveTo(T)(T wd, float[3] pos) {
