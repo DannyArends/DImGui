@@ -53,18 +53,14 @@ struct Matrix {
 /** Matrix x V3 */
 @nogc pure float[3] multiply(const Matrix m, const float[3] v) nothrow {
   float[3] res;
-  for (size_t i = 0; i < 3; ++i) {
-    res[i] = v.vMul([ m[i + 0], m[i + 4], m[i + 8]]).sum() + m[i+12];
-  }
+  for (size_t i = 0; i < 3; ++i) { res[i] = v[0]*m[i] + v[1]*m[i + 4] + v[2]*m[i + 8] + m[i + 12]; }
   return res;
 }
 
 /** Matrix x V4 */
 @nogc pure float[4] multiply(const Matrix m, const float[4] v) nothrow {
   float[4] res;
-  for (size_t i = 0; i < 4; ++i) {
-    res[i] = v.vMul([ m[i + 0], m[i + 4], m[i + 8], m[i + 12] ]).sum();
-  }
+  for (size_t i = 0; i < 4; ++i) { res[i] = v[0]*m[i] + v[1]*m[i + 4] + v[2]*m[i + 8] + v[3]*m[i + 12]; }
   return res;
 }
 
