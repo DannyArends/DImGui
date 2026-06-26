@@ -72,9 +72,9 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   // Rasterizer (Point, Line, Fill)
   VkPipelineRasterizationStateCreateInfo rasterizer = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-    polygonMode: VK_POLYGON_MODE_FILL,                        // Point/Line/Fill
+    polygonMode: VK_POLYGON_MODE_FILL,                 // Point/Line/Fill
     lineWidth: 1.0f,
-    cullMode: VK_CULL_MODE_NONE,                              //VK_CULL_MODE_BACK_BIT,
+    cullMode: VK_CULL_MODE_NONE,                       // VK_CULL_MODE_BACK_BIT (can save ~20%)
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
   };
 
