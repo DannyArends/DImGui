@@ -204,10 +204,18 @@ pure PathNode[] getSuccessors(T)(T wd, PathNode parent) {
   return successors;
 }
 
+/** Tile type at a world coordinate. For loaded chunks reads the resolved grid (diffs baked in,
+ *  kept in sync by setTile); otherwise falls back to the diff overlay, then to raw noise. */
 @nogc pure ResourceType getTileAt(T)(T wd, int[3] tile) nothrow {
-  auto coord = wd.chunkCoord(tile);
-  auto idx = wd.tileIdx(tile);
-  if(auto cm = coord in wd.diffs) if(auto t = cast(uint)idx in *cm) return *t;
-  return wd.getTile(tile);
+  int[3] coord = wd.chunkCoord(tile);
+  int idx = wd.tileIdx(tile);
+  static if(is(typeof(wd.chunks))) {  // Fast path: World keeps a per-voxel grid per loaded chunk
+    if(auto chunk = coord in wd.chunks) {
+      if(*chunk !is null && idx >= 0 && idx < (*chunk).tileTypes.length) { return((*chunk).tileTypes[idx]); }
+    }
+  }
+  // Fallback (worker snapshot / unloaded chunk)
+  if(auto diff = coord in wd.diffs) { if(auto type = cast(uint)idx in *diff) { return(*type); } }
+  return wd.getTile(tile);  // If none, derive it from noise
 }
 
