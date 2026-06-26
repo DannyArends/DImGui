@@ -21,4 +21,5 @@ void syncPathMarkers(ref World world, bool showPaths = false) {
     }
   }
   world.pathMarkers.instances.invalidate();
+  if(world.pathMarkers.box !is null) world.pathMarkers.box.dirty = true;
 }

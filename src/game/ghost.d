@@ -68,5 +68,6 @@ void syncBuildGhosts(ref GameApp app) {
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
   app.world.inventory.instances.invalidate();
+  if(app.world.inventory.box !is null) app.world.inventory.box.dirty = true;
 }
 

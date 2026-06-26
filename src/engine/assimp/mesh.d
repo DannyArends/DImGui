@@ -34,6 +34,7 @@ void updateMeshInfo(ref App app) {
     if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
       foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
       app.objects[o].instances.invalidate();
+      if(app.objects[o].box !is null) app.objects[o].box.dirty = true;
       needsUpdate = true;
     }
     app.meshes ~= app.objects[o].meshes.values;

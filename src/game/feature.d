@@ -134,6 +134,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
         mesh.instances ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]));
       }
       mesh.instances.invalidate();
+      if(mesh.box !is null) mesh.box.dirty = true;
     }
   }
   return features;
@@ -148,7 +149,7 @@ void rebuildAllFeatures(ref GameApp app) {
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.featureMeshes);
     }
   }
-  foreach(ref mesh; app.world.featureMeshes.values){ mesh.instances.invalidate(); }
+  foreach(ref mesh; app.world.featureMeshes.values){ mesh.instances.invalidate(); if(mesh.box !is null) mesh.box.dirty = true; }
 }
 
 void removeAllFeatures(ref GameApp app, int[3] coord) {

@@ -199,6 +199,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     app.world.dwarves.instances[i] = position(m, d.visualPos);
   }
   app.world.dwarves.instances.invalidate();
+  if(app.world.dwarves.box !is null) app.world.dwarves.box.dirty = true;
   app.buffers["LightMatrices"].invalidate();
 }
 
@@ -344,6 +345,7 @@ void spawnDwarf(ref GameApp app) {
   randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.instances.invalidate();
+  if(app.world.dwarves.box !is null) app.world.dwarves.box.dirty = true;
 }
 
 void saveDwarfs(ref GameApp app) {
@@ -358,6 +360,7 @@ bool loadDwarfs(ref GameApp app) {
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
   app.world.dwarves.instances.invalidate();
+  if(app.world.dwarves.box !is null) app.world.dwarves.box.dirty = true;
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
   foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;

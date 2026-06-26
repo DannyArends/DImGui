@@ -29,6 +29,7 @@ struct Bounds {
 class BoundingBox : Geometry {
   float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
   float[3] wmax = [-float.max, -float.max, -float.max];   /// Union world-AABB max over all instances
+  bool dirty = true;
 
   this(){
    vertices = [
@@ -96,6 +97,7 @@ class BoundingBox : Geometry {
 /**  Compute the bounding box for object */
 void computeBoundingBox(T)(ref T object, bool verbose = false) {
   if(object.box is null) { object.box = new BoundingBox(); }
+  if(!object.box.dirty) return;
   if(!object.vertices.buffered || !object.box.vertices.buffered) { // The object vertex buffer is out of date, update the BoundingBox vertices
     if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.geometry()), toStringz(object.geometry()));
     Bounds bounds;
@@ -109,6 +111,7 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   Bounds wb;
   foreach(i; 0 .. object.box.instances.length) { wb.update(object.box.bmin(i)); wb.update(object.box.bmax(i)); }
   object.box.wmin = wb.min; object.box.wmax = wb.max;
+  object.box.dirty = false; 
 }
 
 /** Compute / update the global scene bounds with an assimp node */
