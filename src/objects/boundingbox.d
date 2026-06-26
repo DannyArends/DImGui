@@ -101,10 +101,10 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
     Bounds bounds;
     for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
     object.box.setDimensions(bounds.min, bounds.max);
-    object.box.vertices.buffered = false;
+    object.box.vertices.invalidate();
   }
   object.box.instances = object.instances.dup;
-  object.box.instances.buffered = false;
+  object.box.instances.invalidate();
 
   Bounds wb;
   foreach(i; 0 .. object.box.instances.length) { wb.update(object.box.bmin(i)); wb.update(object.box.bmax(i)); }

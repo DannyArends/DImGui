@@ -46,7 +46,7 @@ BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] glob
 /** Propagate any animation changes (made by onFrame handlers) into the per-syncIndex BoneMatrices SSBO. */
 void updateBoneOffsets(App app, uint syncIndex) {
   foreach(ref obj; app.objects){
-    if(obj.animations.length > 0 && obj.onFrame !is null) { app.buffers["BoneMatrices"].dirty[syncIndex] = true; break; }
+    if(obj.animations.length > 0 && obj.onFrame !is null) { app.buffers["BoneMatrices"].invalidate(syncIndex); break; }
   }
 }
 

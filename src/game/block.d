@@ -159,7 +159,7 @@ void syncBlockInstances(ref GameApp app) {
     }
   }
   app.world.syncStockpileInstances();
-  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances.buffered = false; }
+  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances.invalidate(); }
 }
 
 /** Mark blocks above a mined tile as falling */

@@ -198,8 +198,8 @@ void dwarfFrame(ref GameApp app, float dt) {
     Matrix m = scale(Matrix.init, s);
     app.world.dwarves.instances[i] = position(m, d.visualPos);
   }
-  app.world.dwarves.instances.buffered = false;
-  app.buffers["LightMatrices"].dirty[] = true;
+  app.world.dwarves.instances.invalidate();
+  app.buffers["LightMatrices"].invalidate();
 }
 
 /** Overburdened: fumble a random item when more than half-full */
@@ -343,7 +343,7 @@ void spawnDwarf(ref GameApp app) {
   Dwarf d = Dwarf(DwarfData(nextDwarfUID++, randomColor(), tile));
   randomizeName(d);
   app.addDwarf(d);
-  app.world.dwarves.instances.buffered = false;
+  app.world.dwarves.instances.invalidate();
 }
 
 void saveDwarfs(ref GameApp app) {
@@ -357,7 +357,7 @@ bool loadDwarfs(ref GameApp app) {
   if(!readData(app.world.dwarfsPath(), data, i)) return false;
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
-  app.world.dwarves.instances.buffered = false;
+  app.world.dwarves.instances.invalidate();
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
   foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;

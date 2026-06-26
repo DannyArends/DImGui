@@ -30,17 +30,11 @@ struct GeometryBuffer(T = ubyte) {
   alias items this;
   void opAssign(T[] rhs) { items = rhs; }
 
-  bool[] dirty;                  /// per-frame upload-needed flags (length = framesInFlight)
+  private bool[] dirty;          /// per-frame upload-needed flags (length = framesInFlight)
 
-  @property @nogc bool buffered() nothrow const {
-    foreach(d; dirty){ if(d){ return(false); } }
-    return(true);
-  }
-  @property void buffered(bool v) nothrow {
-    if(!v) { foreach(ref d; dirty) { d = true; }
-    } else { assert(0, "Cannot simply set GeometryBuffer.buffered to true"); }
-  }
-
+  @property @nogc bool buffered() nothrow const { foreach(d; dirty){ if(d){ return(false); } } return(true); }
+  @nogc void invalidate() nothrow { dirty[] = true; }
+  @nogc void invalidate(uint idx) nothrow { dirty[idx] = true; }
   @property @nogc bool needsBuffer() nothrow const { return(items.length > 0 && (vb.length == 0 || !buffered)); }
   @property @nogc bool drawable() nothrow const { return(vb.length > 0 && items.length > 0); }
   @nogc uint count(uint idx) nothrow const { return(idx < size.length ? cast(uint)(size[idx] / T.sizeof) : 0); }

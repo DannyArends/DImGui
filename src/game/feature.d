@@ -133,7 +133,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
         if(ft.tilePenalty > 0.0f) app.world.data.tilePenalties[f.rootTile] = ft.tilePenalty;
         mesh.instances ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]));
       }
-      mesh.instances.buffered = false;
+      mesh.instances.invalidate();
     }
   }
   return features;
@@ -148,7 +148,7 @@ void rebuildAllFeatures(ref GameApp app) {
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.featureMeshes);
     }
   }
-  foreach(ref mesh; app.world.featureMeshes.values) mesh.instances.buffered = false;
+  foreach(ref mesh; app.world.featureMeshes.values){ mesh.instances.invalidate(); }
 }
 
 void removeAllFeatures(ref GameApp app, int[3] coord) {

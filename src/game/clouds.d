@@ -79,7 +79,7 @@ void rebuildClouds(ref GameApp app) {
     } }
   }
   app.world.clouds.instances = inst;
-  app.world.clouds.instances.buffered = false;
+  app.world.clouds.instances.invalidate();
 }
 
 /** Relax cloud density toward 0 and clamp; prune negligible entries. */
