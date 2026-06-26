@@ -119,7 +119,7 @@ void updateGame(ref GameApp app, double dt) {
 /** Per-frame: dispatch queued paths and drain completed chunk-build and pathfinding results from workers */
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
-  if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); })) app.camera.isDirty = true;
+  if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); }, 2)) app.camera.isDirty = true;
   app.drainMessages!PathResult((r) { app.applyPathResult(r); });
 }
 

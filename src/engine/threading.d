@@ -76,12 +76,14 @@ void initializeAsync(ref App app, bool preLoadAssimp = true, uint numWorkers = 1
 }
 
 /** Drain all queued messages of type T, resetting the worker and running handler for each */
-bool drainMessages(T)(ref App app, void delegate(T) handler) {
+bool drainMessages(T)(ref App app, void delegate(T) handler, uint max = uint.max) {
   bool any = false;
-  while(receiveTimeout(dur!"msecs"(0), (immutable(T) msg, Tid tid) {
+  uint n = 0;
+  while(n < max && receiveTimeout(dur!"msecs"(0), (immutable(T) msg, Tid tid) {
     app.concurrency.workers[tid] = false;
     handler(cast(T)msg);
     any = true;
+    n++;
   })) {}
   return any;
 }
