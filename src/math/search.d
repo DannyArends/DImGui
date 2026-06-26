@@ -8,7 +8,7 @@ import phobos;
 import searchnode : PathNode, isEqual, has;
 import vector : euclidean;
 
-enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3, INVALID = 4 };
+enum SearchState { NOT_INITIALISED = 0, SEARCHING = 1, SUCCEEDED = 2, FAILED = 3, INVALID = 4, PARTIAL = 5 };
 
 /** Implementation of the search state structure */
 struct Search(M, N) {
@@ -77,7 +77,11 @@ SearchState step(alias getSuccessors, S)(ref S search) {
   }
 
   auto successors = getSuccessors(search.map, search.pool[nIdx]);
-  if (successors.empty()) { search.state = SearchState.FAILED; return search.state; }
+  if (successors.empty()) {
+    search.closedset[search.pool[nIdx].position] = nIdx;
+    search.openlist = search.openlist.remove(0);
+    return search.state;
+  }
 
   foreach (ref s; successors) {
     float newG = search.pool[nIdx].g + s.cost;
@@ -87,6 +91,12 @@ SearchState step(alias getSuccessors, S)(ref S search) {
     s.parent = nIdx;
     s.g = newG;
     s.h = euclidean(s.position, search.pool[search.goal].position);
+    if(s.isEqual(search.pool[search.goal])) { // accept on generation
+      search.pool[search.goal].parent = nIdx;
+      search.state = SearchState.SUCCEEDED;
+      search.storeRoute(search.goal);
+      return search.state;
+    }
     if((i = search.openlist.has(search.pool, s)) != size_t.max) {
       search.pool[search.openlist[i]] = s;
     } else {
@@ -128,8 +138,11 @@ Search!(M, N) performSearch(M, N, alias getSuccessors)(float[3] start = [0.0f, -
   }while(search.state == SearchState.SEARCHING && search.steps < search.maxsteps);
 
   if (search.state == SearchState.SEARCHING && search.openlist.length > 0) {
-    search.goal = search.openlist[0];
-    search.storeRoute(search.openlist[0]);
+    size_t best = search.openlist[0];
+    foreach(idx; search.openlist){ if(search.pool[idx].h < search.pool[best].h){ best = idx; } }
+    search.goal = best;
+    search.storeRoute(best);
+    search.state = SearchState.PARTIAL;          // exhausted budget, but have a route toward goal
   }
   return search;
 }

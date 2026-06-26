@@ -79,7 +79,7 @@ string generateResourceEnum(string raw) pure {
 string generateFeatureData(string raw) pure {
   auto tokens = parseTokens(raw);
   string result = "immutable FeatureT[] features = [\n";
-  string name = "", interaction = "";
+  string name = "", interaction = "", sound = "";
   float noiseThreshold = 0.65f, tilePenalty = 0.0f, progressRate = 0.25f;
   uint hs1, hs2, hmod, hrem, hmin = 1, hmax = 1;
   string[] spawnOn;
@@ -103,9 +103,9 @@ string generateFeatureData(string raw) pure {
   void emitFeature() {
     if(name == "") return;
     string spawnList = spawnOn.map!(s => format("\"%s\"", s)).join(", ");
-    result ~= format("  FeatureT(\"%s\", [%s], %sf, %su, %su, %su, %su, %su, %su, %sf, %sf, \"%s\",\n  [\n%s  ],\n  [\n%s  ]),\n",
-      name, spawnList, noiseThreshold, hs1, hs2, hmod, hrem, hmin, hmax, tilePenalty, progressRate, interaction, parts, drops);
-    name=""; interaction=""; spawnOn=[]; parts=""; drops="";
+    result ~= format("  FeatureT(\"%s\", [%s], %sf, %su, %su, %su, %su, %su, %su, %sf, %sf, \"%s\", \"%s\",\n  [\n%s  ],\n  [\n%s  ]),\n",
+      name, spawnList, noiseThreshold, hs1, hs2, hmod, hrem, hmin, hmax, tilePenalty, progressRate, interaction, sound, parts, drops);
+    name=""; interaction="";sound=""; spawnOn=[]; parts=""; drops="";
     noiseThreshold=0.65f; tilePenalty=0.0f; progressRate=0.25f;
     hs1=0; hs2=0; hmod=1; hrem=0; hmin=1; hmax=1;
   }
@@ -126,6 +126,7 @@ string generateFeatureData(string raw) pure {
       case "TILE_PENALTY": tilePenalty = to!float(p[1]); break;
       case "PROGRESS_RATE": progressRate = to!float(p[1]); break;
       case "INTERACTION": interaction = p[1]; break;
+      case "SOUND": sound = p[1]; break;
       case "PART_END": emitPart(); break;
       case "DROP_END": emitDrop(); break;
       case "MESH": pMesh = p[1]; break;

@@ -74,7 +74,7 @@ Light torchLight(float[3] pos, float[4] color) {
 void addLight(ref App app, Light light) {
   app.lights ~= light;
   if(app.lights.scoreBuf.length != app.lights.length) app.lights.scoreBuf.length = app.lights.length;
-  app.buffers["LightMatrices"].dirty[] = true;
+  app.buffers["LightMatrices"].invalidate();
 }
 
 /** Compute the size of the light radius */

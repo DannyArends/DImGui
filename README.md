@@ -1,5 +1,5 @@
 ## DImGui ✨
-![Screenshot](/app/src/main/assets/data/screenshots/March13_2026.png? "Screenshot")
+![Screenshot](/app/src/main/assets/data/screenshots/June16_2026.png? "Screenshot")
 
 Another 3D renderer developed in the D Programming Language, designed for cross-platform compatibility 
 across Windows, Linux, and Android. The core "engine" is inspired by the excellent vulkan-tutorial.com, 
@@ -10,9 +10,9 @@ and leverages SDL3 for robust cross-platform support.
 The engine boasts the following features:
 - Basic geometries (cube, cone, torus, etc.) and complex 3D objects (FBX, 3DS, etc.)
 - Skeletal and key-frame animations
-- HDR Lighting Engine, Shadow maps & Normal mapping
-- Bindless textures with async GPU upload
-- Compute shaders for particle engines and texture generation
+- HDR Lighting Engine, Dynamic Shadows & Normal mapping
+- Texture & Depth arrays with async GPU upload
+- Compute shaders for culling, particle engines, and texture generation
 - Shader reflection for UBOs, SSBOs, and textures
 - Instanced rendering of objects with dynamic vertex/index buffers
 - L-system procedural geometry

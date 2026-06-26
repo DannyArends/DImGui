@@ -14,6 +14,7 @@ import texturewindow : showTexturesContent;
 
 /** Single docked side panel with collapsible sections; draggable (left edge) variable width. */
 void showSidepanel(ref App app, uint font = 0) {
+  if(!app.gui.panelOpen) return;
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
 
   auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
@@ -28,7 +29,7 @@ void showSidepanel(ref App app, uint font = 0) {
   } else { // Bottom edge, drag the TOP edge (variable height)
     igSetNextWindowPos(ImVec2(0, dispH - app.gui.panelH), ImGuiCond_Always, ImVec2(0,0));
     igSetNextWindowSize(ImVec2(dispW, app.gui.panelH), ImGuiCond_FirstUseEver);
-    igSetNextWindowSizeConstraints(ImVec2(dispW, 120), ImVec2(dispW, dispH - app.gui.menuH), null, null);
+    igSetNextWindowSizeConstraints(ImVec2(dispW, 5), ImVec2(dispW, dispH - app.gui.menuH), null, null);
   }
 
   igBegin("##sidepanel", null, flags);

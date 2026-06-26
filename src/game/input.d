@@ -5,19 +5,20 @@
 
 import game;
 
+import block : syncBlockInstances;
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
+import clouds : rainTick, settleRain, rebuildClouds, decayCloudDensity, spawnClouds;
 import game : GameApp;
-import ghost : updateGhostTile;
 import hits : getHits;
 import screenshot : saveScreenshot;
 import timing : timed;
 import lights : updateSun;
-import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, updateHoverHighlight;
+import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
+import water : waterTick, flushWaterDirty, evaporateTick;
 
 /** Handle mouse events */
 void handleMouseEvents(ref GameApp app, SDL_Event e) {
-  app.camera.lastMousePos = [app.gui.io.MousePos.x, app.gui.io.MousePos.y];
-  auto ray = app.camera.castRay(app.camera.lastMousePos[0], app.camera.lastMousePos[1]);
+  auto ray = app.camera.castRay(app.gui.io.MousePos.x, app.gui.io.MousePos.y);
 
   if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
     if(e.button.button == SDL_BUTTON_LEFT) {
@@ -33,15 +34,18 @@ void handleMouseEvents(ref GameApp app, SDL_Event e) {
   }
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
     app.camera.isdrag[0] = false;
-    if(e.button.button == SDL_BUTTON_LEFT) app.handlePrimaryRelease(e.button.x, e.button.y);
-    if(e.button.button == SDL_BUTTON_RIGHT) app.camera.isdrag[1] = false;
-    auto hits = app.getHits(ray, false);
-    app.updateGhostTile(ray, hits);
+    if(e.button.button == SDL_BUTTON_LEFT){ app.handlePrimaryRelease(e.button.x, e.button.y); }
+    if(e.button.button == SDL_BUTTON_RIGHT) {
+      app.camera.isdrag[1] = false;
+      auto dx = e.button.x - app.camera.lastMousePos[0];
+      auto dy = e.button.y - app.camera.lastMousePos[1];
+      if((dx*dx + dy*dy) < 64) app.handleSecondaryRelease(e.button.x, e.button.y);  // tap, not a drag
+    }
+    app.updateHoverHighlight(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION) {
     if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel);
-    auto hits = app.getHits(ray, false);
-    app.updateGhostTile(ray, hits);
+    app.updateHoverHighlight(ray);
     if(app.camera.isdrag[0]) app.handlePrimaryDrag(e.motion.x, e.motion.y);
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y);
@@ -110,6 +114,14 @@ double handleEvents(ref GameApp app) {
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
+    app.timed!rainTick();           // spawn new falling drops
+    app.timed!settleRain();         // convert any that have landed this tick
+    app.timed!waterTick();          // sim the resulting water
+    app.timed!evaporateTick();      // sim the resulting water
+    app.timed!decayCloudDensity();  // relax + clamp cloud density
+    app.timed!spawnClouds();        // Add some random moisture
+    app.timed!flushWaterDirty();    // re-mesh chunks whose water moved
+    app.timed!rebuildClouds();      // re-mesh clouds
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick();
@@ -120,7 +132,8 @@ double handleEvents(ref GameApp app) {
   // Call all onFrame() handlers
   float dt = app.paused ? 0.0f : app.timeScale * ((app.time[FRAMESTOP] - app.time[LASTFRAME]) / 1000.0f);
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
-
-  foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }
+  foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }   // Execute all onFrame() on Geometries
+  if(app.camera.onFrame !is null) app.camera.onFrame(dt);                   // Execute onFrame() on Camera
+  if(app.world.blocksDirty) { app.syncBlockInstances(); app.world.blocksDirty = false; }
   return(dt);
 }

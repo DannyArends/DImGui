@@ -64,3 +64,41 @@ enum float NOISE_SCALE = 0.02f;
   float[2] p = [x * NOISE_SCALE, z * NOISE_SCALE];
   return [fbm!2(p, 4, 2.0f, 0.5f, seed[0]), fbm!2(p, 4, 2.0f, 0.5f, seed[1]), fbm!2(p, 4, 2.0f, 0.5f, seed[2])];
 }
+
+unittest {
+  import std.math : isClose;
+
+  // valueNoise is in [0,1] across a spread of coords/seeds, and deterministic
+  foreach (s; 0 .. 4) { foreach (x; -20 .. 20) {
+    float v = valueNoise([x, x * 3, -x], s);
+    assert(v >= 0.0f && v <= 1.0f);
+  } }
+  assert(valueNoise([5, 9, -2], 7) == valueNoise([5, 9, -2], 7));   // pure -> identical
+
+  // different seed (or coord) generally changes the hash
+  assert(valueNoise([0, 0, 0], 0) != valueNoise([0, 0, 0], 1));
+  assert(valueNoise([0, 0, 0], 0) != valueNoise([1, 0, 0], 0));
+
+  // lerp endpoints and midpoint
+  assert(lerp(2.0f, 10.0f, 0.0f) == 2.0f);
+  assert(lerp(2.0f, 10.0f, 1.0f) == 10.0f);
+  assert(lerp(2.0f, 10.0f, 0.5f) == 6.0f);
+
+  // smoothNoise at integer coords collapses to valueNoise of that cell
+  // (fractional part 0 -> all weight on the lower corner)
+  assert(isClose(smoothNoise([3.0f, 4.0f, 5.0f], 0), valueNoise([3, 4, 5], 0)));
+  assert(smoothNoise([1.5f, 2.5f, 0.0f], 0) >= 0.0f);
+  assert(smoothNoise([1.5f, 2.5f, 0.0f], 0) <= 1.0f);
+
+  // fbm stays clamped to [0,1] and is deterministic
+  foreach (x; 0 .. 30) { foreach (z; 0 .. 30) {
+    float h = noise2D(x, z, 42);
+    assert(h >= 0.0f && h <= 1.0f);
+  } }
+  assert(noise2D(10, 20, 3) == noise2D(10, 20, 3));
+
+  // noiseHTT: three independent channels; distinct seeds -> distinct values
+  auto htt = noiseHTT(7, 11, [1, 2, 3]);
+  foreach (c; htt) assert(c >= 0.0f && c <= 1.0f);
+  assert(htt[0] != htt[1] || htt[1] != htt[2]);   // not all three identical
+}

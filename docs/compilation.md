@@ -19,6 +19,12 @@ Once dependencies are built:
 dub
 ```
 
+### Unitests
+Run unittests with:
+```
+dub --build=unittest --force
+```
+
 ### Compilation [MS Windows x64]
  
 * Install [Visual Studio 2019 Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) with **MSVC v142** and the **Windows 10 SDK**

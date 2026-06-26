@@ -56,12 +56,40 @@ class Chunk : Cube {
   }
 }
 
+/** Drifting voxel clouds above the world */
+class Clouds : Square {
+  this() {
+    super();
+    initInstanced(() => "Clouds");
+    isSelectable = false;
+    castShadow = false;
+    hideInObjectsWindow = true;
+  }
+}
+
+class WaterTiles : Square {
+  this() {
+    super();
+    initInstanced(() => "WaterTiles");
+    isSelectable = false;
+    castShadow = false;
+    hideInObjectsWindow = true;
+    skipFrustum = true;
+  }
+}
+
+struct PendingBuild {
+  int[3] tile;
+  ResourceType type = ResourceType.None;
+}
+
 class GhostCube : Cube {
   ResourceType type = ResourceType.None;
   ToolMode activeTool = ToolMode.Select;
   PaintState paint;
+  PendingBuild[] buildSelection;   /// Tiles awaiting a block-type choice
+  bool showBuildWindow = false;    /// Build-type picker open
   int[3] tile = noTile;
-  int cachedMatIdx = -1;
 
   this(float[2] dim) {
     super(color: [1.0f, 1.0f, 1.0f, 1.0f]);

@@ -8,8 +8,8 @@ import game;
 import chunk : getBestTile;
 import game : GameApp;
 import vector : dot;
-import matrix : translateScale;
-import tile : tileIdx, tileToWorld;
+import tool : tools, buildHighlight;
+import tile : tileIdx, tileToWorld, tileAbove;
 import jobs : activeTiles;
 
 int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
@@ -37,40 +37,9 @@ int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   return(noTile);
 }
 
-void updateGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
-  if(app.world.inventory.activeTool != ToolMode.Build) return;
-  int[3] newTile = app.world.inventory.type == ResourceType.None ? noTile : app.getGhostTile(ray, hits);
-  if(newTile == app.world.inventory.tile) return;
-  app.world.inventory.tile = newTile;
-  app.syncBuildGhosts();
-}
-
-Matrix mineHighlight(float[3] wp, float ts, float th) {
-  return translateScale([wp[0], wp[1], wp[2]], [ts * 1.05f, th * 1.05f, ts * 1.05f]);
-}
-
-Matrix buildHighlight(float[3] wp, float ts, float th) {
-  return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]);
-}
-
-Matrix stockpileHighlight(float[3] wp, float ts, float th) {
-  return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts * 1.05f, th * 0.1f, ts * 1.05f]);
-}
-/** Per-tool highlight: color and matrix builder */
-struct ToolHighlight {
-  float[4]  color;
-  Matrix function(float[3], float, float) matrix;
-}
-
-immutable ToolHighlight[ToolMode.max + 1] toolHighlight = [
-  ToolMode.Select: { Colors.white, &buildHighlight },
-  ToolMode.Mine: { Colors.orangered, &mineHighlight },
-  ToolMode.Build: { Colors.dodgerblue, &buildHighlight },
-  ToolMode.Stockpile: { Colors.gold, &stockpileHighlight },
-];
-
 void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
-  auto h = toolHighlight[mode];
+  auto h = tools[mode];
+  if(h.matrix is null) return;               // tools with no ghost (e.g. Select/Query)
   float ts = app.world.tileSize, th = app.world.tileHeight;
   foreach(tile; tiles) {
     auto inst = DrawInstance([0, 0], h.color, Matrix.init);
@@ -79,19 +48,11 @@ void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
   }
 }
 
-/** Cursor ghost (single tile with texture) */
-void syncCursorGhost(ref GameApp app) {
-  if(app.world.inventory.activeTool != ToolMode.Build) return;
-  if(app.world.inventory.tile == noTile) return;
-  if(app.world.inventory.type == ResourceType.None) return;
-  auto wp = app.world.tileToWorld(app.world.inventory.tile);
-  app.world.inventory.instances ~= DrawInstance(app.world.inventory.cachedMatIdx, buildHighlight(wp, app.world.tileSize, app.world.tileHeight));
-}
-
 /** Update Orchestrator */
 void syncBuildGhosts(ref GameApp app) {
   if(app.world.inventory is null) return;
   app.world.inventory.instances = [];
+  app.world.data.tilePenalties = null;
 
   auto buildTiles = app.activeTiles("Building");
   auto mineTiles = app.activeTiles("Mining");
@@ -99,10 +60,14 @@ void syncBuildGhosts(ref GameApp app) {
   app.addTiles(buildTiles, ToolMode.Build);
   foreach(tile; buildTiles) app.world.data.tilePenalties[tile] = 40.0f;
   app.addTiles(mineTiles, ToolMode.Mine);
+  foreach(ref sp; app.world.stockpiles){ foreach(t; sp.tiles) {
+    app.addTiles([t], ToolMode.Stockpile);
+    app.world.data.tilePenalties[t.tileAbove] = 100.0f;
+  } }
   app.addTiles(app.world.inventory.paint.preview, app.world.inventory.activeTool);
-  app.syncCursorGhost();
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
-  app.world.inventory.instances.buffered = false;
+  app.world.inventory.instances.invalidate();
+  if(app.world.inventory.box !is null) app.world.inventory.box.dirty = true;
 }
 

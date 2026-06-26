@@ -97,6 +97,7 @@ class Turtle : Geometry {
       }
     }
     meshes["Turtle"].vertices[1] = cast(uint)vertices.length;
-    vertices.buffered = indices.buffered = false;
+    vertices.invalidate(); indices.invalidate();
+    if(box !is null) box.dirty = true;
   }
 }

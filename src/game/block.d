@@ -9,8 +9,10 @@ import inventory : deriveInventory;
 import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
 import normals : computeTangents;
+import physx : inColumn;
 import serialization : readData, writeData;
-import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile;
+import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
+import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
 enum uint noBlock = uint.max;
@@ -19,20 +21,19 @@ struct Block {
   uint id = uint.max;               /// Stable block id (persisted, == its key in world.blocks)
   ResourceType type;                /// Block type
   int[3] tile;                      /// Current tile position
-  float[2] fallState;               /// [y, v] fall physics, [0,0] if not falling
+  Fall fall;                        /// PhysX
   size_t instanceIdx = size_t.max;  /// Instance IDX
   bool reserved = false;            /// Reserved for a job ?
 
-  @property @nogc bool isFalling() nothrow { return fallState[1] != 0.0f; }
-  @property @nogc float y() nothrow { return fallState[0]; }
-  @property @nogc float v() nothrow { return fallState[1]; }
-  @property @nogc void y(float val) nothrow { fallState[0] = val; }
-  @property @nogc void v(float val) nothrow { fallState[1] = val; }
+  @property @nogc bool isFalling() nothrow { return fall.isFalling; }
 }
 
 /** Save blocks */
 void saveBlocks(ref GameApp app) {
   if(app.world.blocks.length == 0) return;
+  foreach(id, ref b; app.world.blocks) {
+    if(b.fall.isFalling) { b.tile = b.fall.landingTile(app.world, b.tile); b.fall = Fall.init; }
+  }
   Block[] flat = app.world.blocks.values;
   writeData(app.world.blocksPath(), flat, app.world.blockNextID);
 }
@@ -43,26 +44,40 @@ void loadBlocks(ref GameApp app) {
   Block[] flat;
   if(!readData(app.world.blocksPath(), flat, app.world.blockNextID)) return;
   foreach(ref b; flat) {
+    b.reserved = false;             // jobs aren't persisted; clear orphaned reservations
     app.world.blocks[b.id] = b;
     if(b.id >= app.world.blockNextID) app.world.blockNextID = b.id + 1;
   }
-  app.syncBlockInstances();
-  foreach(id, ref b; app.world.blocks) { if(b.isFalling) app.world.pendingUnsettle ~= b.tile; }
+  app.world.blocksDirty = true;
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
 }
 
 @nogc pure bool hasBlocks(ref GameApp app) nothrow { return app.world.blocks.length > 0; }
 @nogc pure bool hasBlocks(ref GameApp app, ResourceType tt) nothrow { return app.world.blocks.byValue.any!(b => b.type == tt); }
 
+/** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
+int[3] pickupTileFor(ref GameApp app, uint id, ref Block b, bool includeStored) {
+  if(b.reserved || b.isFalling || b.tile == noTile || b.tile == builtTile) return noTile;
+  if(b.tile == storedTile) {
+    if(!includeStored) return noTile;
+    auto pt = app.storedTileOf(id);
+    return (pt != noTile && app.world.hasStandableNeighbour(pt.tileAbove)) ? pt : noTile;
+  }
+  return app.world.hasStandableNeighbour(b.tile) ? b.tile : noTile;
+}
+
+/** Clear the reserved flag on a set of blocks (released on job failure/completion). */
+void releaseBlocks(ref GameApp app, uint[] ids) { foreach(id; ids){ if(auto b = id in app.world.blocks){ b.reserved = false; } } }
+
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
-uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = ResourceType.None) {
+uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
   uint bestID = noBlock;
   float bestDist = float.max;
   foreach(id, ref b; app.world.blocks) {
-    if(b.reserved || b.tile == noTile || b.tile == builtTile) continue;
     if(tt != ResourceType.None && b.type != tt) continue;
-    if(!app.world.isStandable(b.tile)) continue;
-    float dist = manhattan(b.tile, dwarfTile);
+    int[3] at = app.pickupTileFor(id, b, includeStored);
+    if(at == noTile) continue;
+    float dist = manhattan(at, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = id; }
   }
   return bestID;
@@ -99,58 +114,69 @@ void ensureBlocks(ref GameApp app) {
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   uint id = app.world.blockNextID++;
-  app.world.blocks[id] = Block(id, tt, tile, [app.world.tileToWorld(tile, -app.world.blockOffset)[1], 0.001f]);
-  app.syncBlockInstances();
+  app.world.blocks[id] = Block(id, tt, tile);
+  app.world.blocksDirty = true;
   return id;
 }
 
-DrawInstance toDropInstance(World world, uint id, ref Block b) {
-  auto rd = resourceData(b.type);
-  auto base = world.tileToWorld(b.tile, -world.blockOffset);
-  float sz = rd.dropScale * world.blockSize;
-  float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
-  float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
-  float[3] pos = [base[0] + bx, base[1], base[2] + bz];
-  return DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, [sz, sz, sz]));
+void emitBlock(ref Geometry mesh, uint id, ref Block b, float[3] pos, float[3] scale) {
+  b.instanceIdx = mesh.instances.length;
+  mesh.instances ~= DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, scale));
+}
+
+/** Append instances for every stored block at its sub-cell within the owning pile */
+void syncStockpileInstances(ref World world) {
+  float bs = world.blockSize;
+  foreach(ref sp; world.stockpiles) { foreach(i, blockID; sp.contents) {
+    if(blockID == emptySlot) continue;
+    auto b = blockID in world.blocks;
+    if(b is null) continue;
+    auto ti = i / slotsPerTile;
+    if(ti >= sp.tiles.length) break;
+    float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
+    float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
+    emitBlock(world.dropMeshes[resourceData(b.type).meshName], blockID, *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
+  } }
 }
 
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref GameApp app) {
   if(app.world.dropMeshes.length == 0) return;
-  foreach(ref mesh; app.world.dropMeshes.values) mesh.instances = [];
+  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances = []; }
   foreach(id, ref b; app.world.blocks) {
+    if(b.tile == storedTile) continue;
     auto meshName = resourceData(b.type).meshName;
-    bool hidden = b.tile == noTile || b.tile == builtTile || app.world.chunkCoord(b.tile) !in app.world.chunks;
-    b.instanceIdx = app.world.dropMeshes[meshName].instances.length;
-    app.world.dropMeshes[meshName].instances ~= hidden
-      ? DrawInstance([cast(uint)b.type, cast(uint)b.type], Matrix().scale([0.0f, 0.0f, 0.0f]))
-      : app.world.toDropInstance(id, b);
+    bool hidden = (b.tile == noTile || b.tile == builtTile || app.world.chunkCoord(b.tile) !in app.world.chunks);
+    if(hidden) {
+      emitBlock(app.world.dropMeshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
+    } else {
+      auto base = app.world.tileToWorld(b.tile, -app.world.blockOffset);
+      float sz = resourceData(b.type).dropScale * app.world.blockSize;
+      float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
+      float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
+      float by = b.fall.isFalling ? b.fall.y : base[1];
+      emitBlock(app.world.dropMeshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
+    }
   }
-  foreach(ref mesh; app.world.dropMeshes.values) mesh.instances.buffered = false;
+  app.world.syncStockpileInstances();
+  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances.invalidate(); if(mesh.box !is null) mesh.box.dirty = true; }
 }
 
 /** Mark blocks above a mined tile as falling */
-void unsettleBlocks(const World world, ref Block[uint] blocks, int[3] minedTile) {
+void unsettleBlocks(ref World world, ref Block[uint] blocks, int[3] minedTile) {
   foreach(id, ref b; blocks) {
-    if(b.tile[0] != minedTile[0] || b.tile[2] != minedTile[2] || b.tile[1] < minedTile[1]) continue;
-    if(!b.isFalling) b.fallState = [world.tileToWorld(b.tile, -world.blockOffset)[1], 0.001f];
+    if(!inColumn(b.tile, minedTile)) continue;
+    b.fall.start(world, b.tile, -world.blockOffset);
   }
 }
 
 /** Update falling blocks */
 void settleBlocks(ref World world, float dt) {
   if(world.blocks.length == 0) return;
-  bool changed = false;
   foreach(id, ref b; world.blocks) {
-    if(!b.isFalling) continue;
-    b.v = b.v + (2.5f * dt);
-    b.y = b.y - (b.v * dt);
-    int landTileY = world.surfaceAt(b.tile[0], b.tile[1] - 1, b.tile[2]);
-    float landY = world.tileToWorld([b.tile[0], landTileY + 1, b.tile[2]], -world.blockOffset)[1];
-    if(b.y <= landY) { b.tile = [b.tile[0], landTileY + 1, b.tile[2]]; b.fallState = [0.0f, 0.0f]; }
-    float posY = b.isFalling ? b.y : world.tileToWorld(b.tile, -world.blockOffset)[1];
-    world.dropMeshes[resourceData(b.type).meshName].instances[b.instanceIdx].matrix[13] = posY;
-    changed = true;
+    if(!b.fall.isFalling) continue;
+    int[3] landed;
+    if(b.fall.step(world, b.tile, dt, -world.blockOffset, landed)) b.tile = landed;
+    world.blocksDirty = true;
   }
-  if(changed) foreach(ref mesh; world.dropMeshes.values) mesh.instances.buffered = false;
 }

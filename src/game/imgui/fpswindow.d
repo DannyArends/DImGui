@@ -33,6 +33,14 @@ void showTimingsContent(ref App app) {
   }
 }
 
+ulong geometryBytes(ref GameApp app) {
+  ulong total = 0;
+  uint copies = app.framesInFlight;
+  foreach(ref o; app.objects)
+    total += (o.vertices.capacity + o.indices.capacity + o.instances.capacity) * copies;
+  return total;
+}
+
 /** Show the GUI window with FPS statistics */
 void showFPSContent(ref GameApp app, uint font = 0) {
   version(Android){
@@ -54,6 +62,7 @@ void showFPSContent(ref GameApp app, uint font = 0) {
                                 VK_API_VERSION_MINOR(app.properties.apiVersion),
                                 VK_API_VERSION_PATCH(app.properties.apiVersion));
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
+    text("Geometry VRAM: %s", humanCount(geometryBytes(app)));
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
     igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
     if("ClusterCounter" in app.buffers) {

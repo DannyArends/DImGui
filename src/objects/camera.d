@@ -29,11 +29,14 @@ struct Camera {
   float           lastPinchDist = -1.0f;                  /// -1 = no active pinch
   bool            isDirty       = true;                   /// Camera moved/rotated this frame
   bool            godMode       = true;                   /// Move through walls
+  void delegate(float dt) onFrame;                        /// onFrame hook
 
   @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -speed]); }
   @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
   @property @nogc float[3] right() const nothrow { return orientation.multiply([ speed, 0.0f, 0.0f]); }
   @property @nogc float[3] left() const nothrow { return orientation.multiply([-speed, 0.0f, 0.0f]); }
+  @property @nogc float[3] pgup() const nothrow { return [0.0f,  speed, 0.0f]; }
+  @property @nogc float[3] down() const nothrow { return [0.0f, -speed, 0.0f]; }
   @property @nogc uint width() const nothrow { return(currentExtent.width); };
   @property @nogc uint height() const nothrow { return(currentExtent.height); };
   @property float aspectRatio() const nothrow { return(this.width / cast(float) this.height); }
@@ -50,6 +53,7 @@ struct Camera {
 
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
+  app.camera.onFrame = null;
   auto old = app.camera.lookat;
   app.camera.move(direction);
   if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.lookat = old;

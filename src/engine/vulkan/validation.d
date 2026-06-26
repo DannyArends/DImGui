@@ -43,9 +43,9 @@ void createDebugUtils(ref App app) {
   vkCmdEndDebugUtilsLabel = cast(PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(app.instance, "vkCmdEndDebugUtilsLabelEXT");
 }
 
-/** Name a vulkan object on GPU (Uses: DEBUG_UTILS_OBJECT_NAME)
- */
+/** Name a vulkan object on GPU (Uses: DEBUG_UTILS_OBJECT_NAME) */
 void nameVulkanObject(T)(ref App app, T object, const(char)* name, VkObjectType objectType = VK_OBJECT_TYPE_RENDER_PASS) {
+  if(!app.nameVulkanObjects) return;
   VkDebugUtilsObjectNameInfoEXT nameInfo = {
       sType: VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
       pNext: null,

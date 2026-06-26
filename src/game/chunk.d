@@ -6,6 +6,8 @@
 import game;
 
 import block : unsettleBlocks;
+import clouds : rebuildClouds, seedClouds;
+import dwarf : unsettleDwarves;
 import game : GameApp;
 import gameobjects : Chunk;
 import deletion : deAllocate;
@@ -21,10 +23,15 @@ import vector : cross, dot;
 struct ChunkData {
   int[3] coord;                                             /// Chunk coordinate in chunk-space
   ResourceType[] tileTypes;                                 /// Tile type for each tile in the chunk
+  ubyte[] waterLevel;                                       /// 0 = none, 1..6 = depth; parallel to tileTypes
+  SparseSet wetCells;                                       /// indices where waterLevel > 0
+  SparseSet active;                                         /// parallel to waterLevel; true = needs simulating. Always implies waterLevel[i] > 0.
+  bool waterDirty = false;                                  /// Water dirty ?
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
+  DrawInstance[] waterInstances;                            /// GPU instances for all visible water faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
   Feature[][string] featureData;                            /// Chunk Features
 }
@@ -104,6 +111,16 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
 ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   ChunkData data = ChunkData(coord, wd.buildTileTypes(coord));
+  data.waterLevel.length = data.tileTypes.length;   // all zero = no water
+  data.wetCells.init(data.tileTypes.length);
+  data.active.init(data.tileTypes.length);
+  if(auto wm = coord in wd.waterDiffs){
+    foreach(idx, lvl; *wm) {
+      data.waterLevel[cast(int)idx] = lvl;
+      data.wetCells ~= cast(int)idx;
+      data.active ~= cast(int)idx;
+    }
+  }
   wd.buildTileGeometry(coord, data);
   foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
   return data;
@@ -140,13 +157,20 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   if (data.coord in app.world.chunks) {
     auto oldTiles = app.world.chunks[data.coord].tiles;
     oldTiles.instances = chunk.tiles.instances.dup;
-    oldTiles.instances.buffered = false;
+    oldTiles.instances.invalidate();
+    if(oldTiles.box !is null) oldTiles.box.dirty = true;
     chunk.tiles = oldTiles;
+    chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
+    chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
+    chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
+    chunk.waterInstances = app.world.chunks[data.coord].waterInstances;
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; }
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;
+  app.seedClouds(data.coord);
+  app.rebuildClouds();
   app.world.chunks[data.coord].dirty = false;
   app.world.pendingChunks.remove(data.coord);
   app.world.pendingBuildTiles = app.world.pendingBuildTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
@@ -162,6 +186,9 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   }
 
   if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.pendingUnsettle.length);
-  foreach(tile; app.world.pendingUnsettle) app.world.unsettleBlocks(app.world.blocks, tile);
+  foreach(tile; app.world.pendingUnsettle){
+    app.world.unsettleBlocks(app.world.blocks, tile);
+    app.unsettleDwarves(tile);
+  }
   app.world.pendingUnsettle = [];
 }

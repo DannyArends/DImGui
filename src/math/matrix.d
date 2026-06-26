@@ -270,3 +270,45 @@ float[3] scale(const Matrix m) {
   return inv;
 }
 
+unittest {
+  import std.math : isClose;
+  import vector : approx;
+
+  Matrix I;                                   // default ctor is identity
+  assert(approx(I.multiply(I), I));           // I x I = I
+
+  // degree/radian round-trip
+  assert(isClose(degree(radian(90.0f)), 90.0f));
+
+  // translate stores into the column-major translation column (12,13,14)
+  auto t = translate([2.0f, 3.0f, 4.0f]);
+  assert(t.position == [2.0f, 3.0f, 4.0f]);
+
+  // M x v3 is affine: identity-rotation translate moves the point by v
+  assert(t.multiply([1.0f, 1.0f, 1.0f]) == [3.0f, 4.0f, 5.0f]);
+
+  // scale matrix builds the diagonal
+  auto s = scale([2.0f, 3.0f, 4.0f]);
+  assert(s.multiply([1.0f, 1.0f, 1.0f]) == [2.0f, 3.0f, 4.0f]);
+
+  // multiply is NOT commutative, translate then scale is not scale then translate
+  assert(!approx(t.multiply(s), s.multiply(t)));
+
+  // build a non-trivial affine matrix (rotate + translate)
+  auto m = rotate([30.0f, 45.0f, 10.0f]).multiply(translate([5.0f, -2.0f, 3.0f]));
+
+  // transpose is its own inverse
+  assert(approx(m.transpose.transpose, m));
+
+  // M x inverse(M) = identity
+  assert(approx(m.multiply(m.inverse), Matrix()));
+
+  // rotation matrices are orthonormal: inverse == transpose
+  auto r = rotate([0.0f, 90.0f, 0.0f]);
+  assert(approx(r.inverse, r.transpose));
+
+  // singular matrix.inverse() returns identity (det==0 guard at matrix.d:268)
+  Matrix zero;
+  zero.data[] = 0.0f;
+  assert(approx(zero.inverse, Matrix()));
+}

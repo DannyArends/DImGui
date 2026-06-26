@@ -33,12 +33,13 @@ void updateMeshInfo(ref App app) {
     uint[2] expected = [cast(uint)app.meshes.length, cast(uint)(app.meshes.length + app.objects[o].meshes.length)];
     if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef != expected) {
       foreach (ref inst; app.objects[o].instances) inst.meshdef = expected;
-      app.objects[o].instances.buffered = false;
+      app.objects[o].instances.invalidate();
+      if(app.objects[o].box !is null) app.objects[o].box.dirty = true;
       needsUpdate = true;
     }
     app.meshes ~= app.objects[o].meshes.values;
   }
-  if(needsUpdate) { app.buffers["MeshMatrices"].dirty[] = true; }
+  if(needsUpdate) { app.buffers["MeshMatrices"].invalidate(); }
 }
 
 string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool verbose = false) {
