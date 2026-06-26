@@ -44,7 +44,7 @@ void seedClouds(ref GameApp app, int[3] coord) {
 }
 
 void spawnClouds(ref GameApp app) {
-  if(uniform(0, 1000) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
+  if(uniform(0, 10000) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
   auto coords = app.world.chunks.keys;
   if(coords.length == 0) return;
   int cs = app.world.chunkSize;

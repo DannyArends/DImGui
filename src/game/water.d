@@ -115,7 +115,9 @@ void evaporateTick(ref GameApp app) {
       if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - have) * 2) {
         int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
         app.setWater(wc, cast(ubyte)(have - 1), false);
-        app.world.cloudDensity[[wc[0]/CLOUD_STEP, wc[2]/CLOUD_STEP]] += EVAP_DENSITY;   // moisture rises to cloud
+        int gx = wc[0]/CLOUD_STEP, gz = wc[2]/CLOUD_STEP;
+        auto dd = H[uniform(0, 4)];
+        app.world.cloudDensity[[gx + dd[0], gz + dd[1]]] += uniform(1, 10) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
       }
     }
   }
