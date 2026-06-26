@@ -158,7 +158,6 @@ void removeAllFeatures(ref GameApp app, int[3] coord) {
       if(auto p = coord in app.world.features[ft.name]) { if((*p).length > 0){ app.world.features[ft.name].remove(coord); } }
     }
   }
-  app.rebuildAllFeatures();
 }
 
 /** True if a feature with the given interaction is rooted at this tile */
