@@ -83,15 +83,6 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
   return inst;
 }
 
-void applyCloudInstances(ref GameApp app, DrawInstance[] inst) {
-  if(app.world.clouds is null) return;
-  app.world.clouds.instances = inst;
-  app.world.clouds.instances.invalidate();
-  if(app.world.clouds.box !is null) app.world.clouds.box.dirty = true;
-}
-
-void rebuildClouds(ref GameApp app) { app.applyCloudInstances(buildCloudInstances(app.world.data, app.world.cloudDensity, app.world.chunks.keys)); }
-
 /** Relax cloud density toward 0 and clamp; prune negligible entries. */
 void decayCloudDensity(ref GameApp app) {
   int[2][] dead;
@@ -155,4 +146,34 @@ void loadClouds(ref GameApp app) {
   app.world.cloudDensity = null;
   foreach(ref c; flat) app.world.cloudDensity[[c.gx, c.gz]] = c.density;
   SDL_Log("loadClouds: %d cells", cast(int)flat.length);
+}
+
+void applyCloudInstances(ref GameApp app, DrawInstance[] inst) {
+  app.world.cloudRebuildPending = false;
+  if(app.world.clouds is null) return;
+  app.world.clouds.instances = inst;
+  app.world.clouds.instances.invalidate();
+  if(app.world.clouds.box !is null) app.world.clouds.box.dirty = true;
+}
+
+/** Cloud re-mesh worker message: a flattened density snapshot + the loaded chunk coords. */
+struct CloudCell { int[2] key; float density; }
+struct CloudRequest { immutable(CloudCell)[] cells; immutable(int[3])[] coords; }
+struct CloudResult { DrawInstance[] instances; }
+
+/** Build the worker payload from current density and dispatch to a free worker (one in flight at a time). */
+void requestCloudRebuild(ref GameApp app) {
+  if(app.world.clouds is null || app.world.cloudRebuildPending) return;
+  CloudCell[] cells;
+  foreach(k, v; app.world.cloudDensity){ cells ~= CloudCell([k[0], k[1]], v); }
+  auto coords = app.world.chunks.keys;
+  foreach(tid; app.concurrency.workers.keys) {
+    if(!app.concurrency.workers[tid]) {
+      app.concurrency.workers[tid] = true;
+      app.world.cloudRebuildPending = true;
+      tid.send(cast(immutable(WorldData))app.world.data, immutable(CloudRequest)(cells.idup, coords.idup));
+      return;
+    }
+  }
+  // no free worker this tick: retry next tick (pending stays false)
 }

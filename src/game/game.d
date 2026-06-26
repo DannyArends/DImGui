@@ -6,6 +6,7 @@
 public import engine;
 
 public import block : Block;
+public import clouds : CloudRequest, CloudResult;
 public import chunk : ChunkData;
 public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, FeatureDropT, Feature;
@@ -24,6 +25,7 @@ public import world : World, WorldData;
 
 import block : settleBlocks;
 import buildwindow : showBuildContent;
+import clouds : buildCloudInstances, applyCloudInstances;
 import chunk : buildChunkData, finalizeChunk;
 import dwarf : spawnDwarf, loadDwarfs, settleDwarves;
 import dwarfwindow : showDwarfContent;
@@ -58,6 +60,12 @@ class GameTaskThread : TaskThread {
       (immutable(WorldData) wd, PathRequest req) {
         auto result = pathfindWorker(wd, req);
         main.send(cast(immutable(PathResult))result, mytid);
+      },
+      (immutable(WorldData) wd, immutable(CloudRequest) req) {
+        float[int[2]] density;
+        foreach(c; req.cells) density[c.key] = c.density;
+        auto inst = buildCloudInstances(wd, density, req.coords);
+        main.send(cast(immutable(CloudResult))CloudResult(inst), mytid);
       }
     );
   }
@@ -121,6 +129,7 @@ void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
   if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); }, 2)) app.camera.isDirty = true;
   app.drainMessages!PathResult((r) { app.applyPathResult(r); });
+  app.drainMessages!CloudResult((r) { app.applyCloudInstances(r.instances); });
 }
 
 /** Persist the world to disk on shutdown */

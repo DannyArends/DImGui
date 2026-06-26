@@ -7,7 +7,7 @@ import game;
 
 import block : syncBlockInstances;
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
-import clouds : rainTick, settleRain, rebuildClouds, decayCloudDensity, spawnClouds;
+import clouds : rainTick, settleRain, requestCloudRebuild, decayCloudDensity, spawnClouds;
 import game : GameApp;
 import hits : getHits;
 import screenshot : saveScreenshot;
@@ -114,14 +114,14 @@ double handleEvents(ref GameApp app) {
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    app.timed!rainTick();           // spawn new falling drops
-    app.timed!settleRain();         // convert any that have landed this tick
-    app.timed!waterTick();          // sim the resulting water
-    app.timed!evaporateTick();      // sim the resulting water
-    app.timed!decayCloudDensity();  // relax + clamp cloud density
-    app.timed!spawnClouds();        // Add some random moisture
-    app.timed!flushWaterDirty();    // re-mesh chunks whose water moved
-    app.timed!rebuildClouds();      // re-mesh clouds
+    app.timed!rainTick();             // spawn new falling drops
+    app.timed!settleRain();           // convert any that have landed this tick
+    app.timed!waterTick();            // sim the resulting water
+    app.timed!evaporateTick();        // sim the resulting water
+    app.timed!decayCloudDensity();    // relax + clamp cloud density
+    app.timed!spawnClouds();          // Add some random moisture
+    app.timed!flushWaterDirty();      // re-mesh chunks whose water moved
+    app.timed!requestCloudRebuild();  // Request a cloud update
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick();
