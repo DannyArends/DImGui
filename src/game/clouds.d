@@ -54,35 +54,43 @@ void spawnClouds(ref GameApp app) {
   app.world.cloudDensity[[gx, gz]] += CLOUD_SPAWN_AMOUNT;
 }
 
-void rebuildClouds(ref GameApp app) {
-  if(app.world.clouds is null) return;
-  float baseY = app.world.height + 8.0f * app.world.tileHeight;
-  float voxH = app.world.tileHeight * CLOUD_STEP;
+DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] density, const int[3][] coords) {
+  float h(int gx, int gz){ auto p = [gx,gz] in density; return p is null ? 0.0f : (*p)*CLOUD_LAYERS; }
+  float baseY = wd.height + 8.0f * wd.tileHeight; 
+  float voxH = wd.tileHeight*CLOUD_STEP;
+  float vox = CLOUD_STEP*wd.tileSize;
 
   DrawInstance[] inst;
-  foreach(coord; app.world.chunks.keys) {
-    int baseX = coord[0] * app.world.chunkSize, baseZ = coord[2] * app.world.chunkSize;
-    for(int lz = 0; lz < app.world.chunkSize; lz += CLOUD_STEP) { for(int lx = 0; lx < app.world.chunkSize; lx += CLOUD_STEP) {
-      int gx = (baseX + lx) / CLOUD_STEP;
-      int gz = (baseZ + lz) / CLOUD_STEP;
-      float hC = app.cloudHeight(gx, gz);
-      if(hC <= 0) continue; // empty column -> no voxels
-      float[6] hN = [app.cloudHeight(gx+1, gz), app.cloudHeight(gx-1, gz), hC, hC, app.cloudHeight(gx, gz+1), app.cloudHeight(gx, gz-1)];
-      foreach(y; 0 .. CLOUD_LAYERS) {
-        if(y >= hC) continue; // self not a cloud voxel at this layer
-        float px = (baseX + lx) * app.world.tileSize, py = baseY + y*voxH, pz = (baseZ + lz) * app.world.tileSize;
-        foreach(f; 0 .. 6) {
-          int ny = y + FACE_OFFSETS[f][1]; // only vertical faces shift y
-          if(ny >= 0 && ny < CLOUD_LAYERS && ny < hN[f]) continue; // neighbor present -> hide face
-          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, CLOUD_STEP * app.world.tileSize, voxH));
+  foreach(coord; coords) {
+    int baseX = coord[0]*wd.chunkSize;
+    int baseZ = coord[2]*wd.chunkSize;
+    for(int lz=0; lz<wd.chunkSize; lz+=CLOUD_STEP) { for(int lx=0; lx<wd.chunkSize; lx+=CLOUD_STEP) {
+      int gx = (baseX+lx)/CLOUD_STEP;
+      int gz = (baseZ+lz)/CLOUD_STEP;
+      float hC = h(gx,gz); if(hC<=0) continue;
+      float[6] hN=[h(gx+1,gz),h(gx-1,gz),hC,hC,h(gx,gz+1),h(gx,gz-1)];
+      foreach(y; 0..CLOUD_LAYERS) { 
+        if(y>=hC) continue;
+        float px=(baseX+lx)*wd.tileSize, py=baseY+y*voxH, pz=(baseZ+lz)*wd.tileSize;
+        foreach(f; 0..6) {
+          int ny = y + FACE_OFFSETS[f][1];
+          if(ny >= 0 && ny < CLOUD_LAYERS && ny < hN[f]) continue;
+          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px , py, pz, vox, voxH));
         }
       }
     } }
   }
+  return inst;
+}
+
+void applyCloudInstances(ref GameApp app, DrawInstance[] inst) {
+  if(app.world.clouds is null) return;
   app.world.clouds.instances = inst;
   app.world.clouds.instances.invalidate();
   if(app.world.clouds.box !is null) app.world.clouds.box.dirty = true;
 }
+
+void rebuildClouds(ref GameApp app) { app.applyCloudInstances(buildCloudInstances(app.world.data, app.world.cloudDensity, app.world.chunks.keys)); }
 
 /** Relax cloud density toward 0 and clamp; prune negligible entries. */
 void decayCloudDensity(ref GameApp app) {
