@@ -24,11 +24,10 @@ enum float RAIN_DEPLETE = 0.05f;        // density removed from a cloud cell per
 enum float CLOUD_DMAX =  1.0f;          // max positive density (thickest cloud)
 enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
 
-private bool isCloud(ref GameApp app, int gx, int y, int gz) {
-  if(y < 0 || y >= CLOUD_LAYERS) return false;
+/** Cloud column height in layers for grid column (gx,gz); 0 if no cloud there. */
+private float cloudHeight(ref GameApp app, int gx, int gz) {
   auto p = [gx, gz] in app.world.cloudDensity;
-  if(p is null) return false;
-  return y < (*p) * CLOUD_LAYERS;
+  return p is null ? 0.0f : (*p) * CLOUD_LAYERS;
 }
 
 void seedClouds(ref GameApp app, int[3] coord) {
@@ -57,23 +56,25 @@ void spawnClouds(ref GameApp app) {
 
 void rebuildClouds(ref GameApp app) {
   if(app.world.clouds is null) return;
-  float ts = app.world.tileSize, th = app.world.tileHeight;
-  int cs = app.world.chunkSize;
-  float baseY = app.world.height + 8.0f * th;
-  float vox = CLOUD_STEP * ts, voxH = th * CLOUD_STEP;
+  float baseY = app.world.height + 8.0f * app.world.tileHeight;
+  float voxH = app.world.tileHeight * CLOUD_STEP;
 
   DrawInstance[] inst;
   foreach(coord; app.world.chunks.keys) {
-    int baseX = coord[0] * cs, baseZ = coord[2] * cs;
-    for(int lz = 0; lz < cs; lz += CLOUD_STEP) { for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
+    int baseX = coord[0] * app.world.chunkSize, baseZ = coord[2] * app.world.chunkSize;
+    for(int lz = 0; lz < app.world.chunkSize; lz += CLOUD_STEP) { for(int lx = 0; lx < app.world.chunkSize; lx += CLOUD_STEP) {
       int gx = (baseX + lx) / CLOUD_STEP;
       int gz = (baseZ + lz) / CLOUD_STEP;
+      float hC = app.cloudHeight(gx, gz);
+      if(hC <= 0) continue; // empty column -> no voxels
+      float[6] hN = [app.cloudHeight(gx+1, gz), app.cloudHeight(gx-1, gz), hC, hC, app.cloudHeight(gx, gz+1), app.cloudHeight(gx, gz-1)];
       foreach(y; 0 .. CLOUD_LAYERS) {
-        if(!app.isCloud(gx, y, gz)) continue;
-        float px = (baseX + lx) * ts, py = baseY + y*voxH, pz = (baseZ + lz) * ts;
+        if(y >= hC) continue; // self not a cloud voxel at this layer
+        float px = (baseX + lx) * app.world.tileSize, py = baseY + y*voxH, pz = (baseZ + lz) * app.world.tileSize;
         foreach(f; 0 .. 6) {
-          if(app.isCloud(gx + FACE_OFFSETS[f][0], y + FACE_OFFSETS[f][1], gz + FACE_OFFSETS[f][2])) continue;
-          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, vox, voxH));
+          int ny = y + FACE_OFFSETS[f][1]; // only vertical faces shift y
+          if(ny >= 0 && ny < CLOUD_LAYERS && ny < hN[f]) continue; // neighbor present -> hide face
+          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, CLOUD_STEP * app.world.tileSize, voxH));
         }
       }
     } }
