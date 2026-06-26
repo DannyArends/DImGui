@@ -67,5 +67,6 @@ class ParticleSystem : Geometry {
   void age() {
     for (uint i = 0; i < particles.length; i++) { vertices[i].position[] = particles[i].position[0..3]; }
     vertices.invalidate();
+    if(box !is null) box.dirty = true;
   }
 }
