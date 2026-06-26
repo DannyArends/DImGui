@@ -23,6 +23,7 @@ enum int RAIN_DROPS_PER_TICK = 500;     // sparse
 enum float RAIN_DEPLETE = 0.05f;        // density removed from a cloud cell per drop spawned
 enum float CLOUD_DMAX =  1.0f;          // max positive density (thickest cloud)
 enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
+enum int WATER_TARGET_ACTIVE = 2500;    // desired number of live cloud cells (sim size)
 
 /** Cloud column height in layers for grid column (gx,gz); 0 if no cloud there. */
 private float cloudHeight(ref GameApp app, int gx, int gz) {
@@ -87,11 +88,16 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
 void decayCloudDensity(ref GameApp app) {
   int[2][] dead;
   foreach(key, ref d; app.world.cloudDensity) {
-    if(d > CLOUD_DMAX){ d = CLOUD_DMAX; }
-    if(d < CLOUD_DMIN){ d = CLOUD_DMIN; }
-    if(d == 0){ dead ~= key; }            // back to baseline -> drop from map
+    d -= app.world.cloudDecay;                 // relax toward baseline
+    if(d > CLOUD_DMAX) d = CLOUD_DMAX;
+    if(d <= CLOUD_DMIN) { d = 0; dead ~= key; }   // faded out -> prune
   }
   foreach(k; dead) app.world.cloudDensity.remove(k);
+
+  int active = 0;
+  foreach(coord; app.world.chunks.keys) active += cast(int)app.world.chunks[coord].active.length;
+  float err = (active - WATER_TARGET_ACTIVE) / cast(float)WATER_TARGET_ACTIVE;
+  app.world.cloudDecay = clamp(app.world.cloudDecay * (1.0f + 0.1f * err), 0.0001f, 0.5f);
 }
 
 void rainTick(ref GameApp app) {
