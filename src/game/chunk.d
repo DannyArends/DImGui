@@ -6,7 +6,7 @@
 import game;
 
 import block : unsettleBlocks;
-import clouds : rebuildClouds, seedClouds;
+import clouds : requestCloudRebuild, seedClouds;
 import dwarf : unsettleDwarves;
 import game : GameApp;
 import gameobjects : Chunk;
@@ -170,7 +170,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
 
   app.world.chunks[data.coord] = chunk;
   app.seedClouds(data.coord);
-  app.rebuildClouds();
+  app.requestCloudRebuild();
   app.world.chunks[data.coord].dirty = false;
   app.world.pendingChunks.remove(data.coord);
   app.world.pendingBuildTiles = app.world.pendingBuildTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
