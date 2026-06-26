@@ -58,7 +58,7 @@ class BoundingBox : Geometry {
 
   /** Compute world-space AABB from object-space bounds and instance matrix.
    * Uses OBB projection: transforms center, then sums absolute column extents. */
-  @nogc pure private float[3][2] boundsWorld(size_t instance = 0) nothrow const {
+  @nogc pure float[3][2] boundsWorld(size_t instance = 0) nothrow const {
     if(instances.length == 0 || instance >= instances.length) return [[0,0,0],[0,0,0]];
     auto m = instances[instance].matrix;
     float[3] lo = vertices[0].position;
@@ -77,9 +77,6 @@ class BoundingBox : Geometry {
     foreach(i; 0 .. 3) d[i] = (p[i] < wmin[i]) ? wmin[i] - p[i] : (p[i] > wmax[i]) ? p[i] - wmax[i] : 0.0f;
     return(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
   }
-
-  @nogc pure float[3] bmin(size_t instance = 0) nothrow const { return boundsWorld(instance)[0]; }
-  @nogc pure float[3] bmax(size_t instance = 0) nothrow const { return boundsWorld(instance)[1]; }
 
   @nogc pure void setDimensions(float[3] min, float[3] max) nothrow {
     vertices[0].position = [min[0], min[1], min[2]]; vertices[1].position = [max[0], min[1], min[2]];
@@ -108,7 +105,7 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.instances.invalidate();
 
   Bounds wb;
-  foreach(i; 0 .. object.box.instances.length) { wb.update(object.box.bmin(i)); wb.update(object.box.bmax(i)); }
+  foreach(i; 0 .. object.box.instances.length) { auto b = object.box.boundsWorld(i); wb.update(b[0]); wb.update(b[1]); }
   object.box.wmin = wb.min; object.box.wmax = wb.max;
   object.box.dirty = false;
 }
