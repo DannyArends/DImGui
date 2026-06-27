@@ -85,7 +85,6 @@ string generateFeatureData(string raw) pure {
   string[] spawnOn;
   string parts = "", drops = "";
   string pMesh, pRes = "None"; float pSX=1, pSXV=0, pSY=1, pSYV=0, pTaper=0, pOffY=0; bool pRepeat=false;
-  string lsystem = "";                                  // accumulated LSystemPartT[] literal
   string brushes = ""; float lsAngle = 25.0f;           // current L-system part being built
   string dMat; int dMin=1, dMax=1; bool dPerHeight=false;
 
@@ -107,18 +106,11 @@ string generateFeatureData(string raw) pure {
     brushes ~= format("      LSystemBrushT('%s', \"%s\", \"%s\", %sf, %sf, %s),\n", p[1], p[2], p[3], p[4], p[5], p[6]);
   }
 
-  void emitLSystem() {
-    if(brushes == "") return;
-    lsystem ~= format("    LSystemPartT(%sf, [\n%s    ]),\n", lsAngle, brushes);
-    brushes = ""; lsAngle = 25.0f;
-  }
-
   void emitFeature() {
     if(name == "") return;
     string spawnList = spawnOn.map!(s => format("\"%s\"", s)).join(", ");
-    result ~= format("  FeatureT(\"%s\", [%s], %sf, %su, %su, %su, %su, %su, %su, %sf, %sf, \"%s\", \"%s\",\n  [\n%s  ],\n  [\n%s  ],\n  [\n%s  ]),\n",
-      name, spawnList, noiseThreshold, hs1, hs2, hmod, hrem, hmin, hmax, tilePenalty, progressRate, interaction, sound, parts, drops, lsystem);
-    name=""; interaction="";sound=""; spawnOn=[]; parts=""; drops=""; lsystem="";
+    result ~= format("  FeatureT(\"%s\", [%s], %sf, %su, %su, %su, %su, %su, %su, %sf, %sf, \"%s\", \"%s\",\n  [\n%s  ],\n  [\n%s  ], %sf,\n  [\n%s  ]),\n", name, spawnList, noiseThreshold, hs1, hs2, hmod, hrem, hmin, hmax, tilePenalty, progressRate, interaction, sound, parts, drops, lsAngle, brushes);
+    name=""; interaction="";sound=""; spawnOn=[]; parts=""; drops=""; brushes=""; lsAngle=25.0f;
     noiseThreshold=0.65f; tilePenalty=0.0f; progressRate=0.25f;
     hs1=0; hs2=0; hmod=1; hrem=0; hmin=1; hmax=1;
   }
@@ -144,7 +136,7 @@ string generateFeatureData(string raw) pure {
       case "DROP_END": emitDrop(); break;
       case "BRUSH": emitBrush(p); break;
       case "LSYSTEM_ANGLE": lsAngle = to!float(p[1]); break;
-      case "LSYSTEM_END": emitLSystem(); break;
+      case "LSYSTEM_END": break;
       case "MESH": pMesh = p[1]; break;
       case "RESOURCE": pRes = p[1]; break;
       case "SCALE_X": pSX = to!float(p[1]); break;

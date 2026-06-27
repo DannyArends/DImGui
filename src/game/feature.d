@@ -131,8 +131,8 @@ float getFeatureProgressRate(ref GameApp app, int[3] tile) {
   return 0.25f;
 }
 
-private string brushMesh(ref immutable LSystemPartT ls, char sym) {
-  foreach(ref br; ls.brushes) if(br.symbol == sym) return br.mesh;
+private string brushMesh(ref immutable FeatureT ft, char sym) {
+  foreach(ref br; ft.brushes) if(br.symbol == sym) return br.mesh;
   return "";
 }
 
