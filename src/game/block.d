@@ -69,7 +69,7 @@ int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStor
 }
 
 /** Clear the reserved flag on a set of blocks (released on job failure/completion). */
-void releaseBlocks(ref GameApp app, uint[] ids) { foreach(id; ids){ if(auto b = id in app.world.blocks){ b.reserved = false; } } }
+void release(ref Block[uint] blocks, uint[] ids) { foreach(id; ids){ if(auto b = id in blocks){ b.reserved = false; } } }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
@@ -142,26 +142,26 @@ void syncStockpileInstances(ref World world) {
 }
 
 /** Sync instances from blocks registry */
-void syncBlockInstances(ref GameApp app) {
-  if(app.world.dropMeshes.length == 0) return;
-  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances = []; }
-  foreach(id, ref b; app.world.blocks) {
+void syncBlockInstances(ref World world) {
+  if(world.dropMeshes.length == 0) return;
+  foreach(ref mesh; world.dropMeshes.values) { mesh.instances = []; }
+  foreach(id, ref b; world.blocks) {
     if(b.tile == storedTile) continue;
     auto meshName = resourceData(b.type).meshName;
-    bool hidden = (b.tile == noTile || b.tile == builtTile || app.world.chunkCoord(b.tile) !in app.world.chunks);
+    bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
     if(hidden) {
-      emitBlock(app.world.dropMeshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
+      emitBlock(world.dropMeshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
     } else {
-      auto base = app.world.tileToWorld(b.tile, -app.world.blockOffset);
-      float sz = resourceData(b.type).dropScale * app.world.blockSize;
+      auto base = world.tileToWorld(b.tile, -world.blockOffset);
+      float sz = resourceData(b.type).dropScale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
-      emitBlock(app.world.dropMeshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
+      emitBlock(world.dropMeshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
     }
   }
-  app.world.syncStockpileInstances();
-  foreach(ref mesh; app.world.dropMeshes.values) { mesh.instances.invalidate(); if(mesh.box !is null) mesh.box.dirty = true; }
+  world.syncStockpileInstances();
+  foreach(ref mesh; world.dropMeshes.values) { mesh.instances.invalidate(); if(mesh.box !is null) mesh.box.dirty = true; }
 }
 
 /** Mark blocks above a mined tile as falling */

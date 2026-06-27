@@ -171,7 +171,7 @@ void loadWorld(ref GameApp app) {
   }
   app.world.loadStockpiles();
   app.deriveInventory();
-  app.syncBlockInstances();
+  app.world.syncBlockInstances();
 }
 
 /** Save world diffs to disk */

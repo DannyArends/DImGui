@@ -5,7 +5,7 @@
 
 import game;
 
-import block : blockType, spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, releaseBlocks;
+import block : blockType, spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
@@ -158,7 +158,7 @@ Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) {
-      app.releaseBlocks(d.currentJob.blockIDs);
+      app.world.blocks.release(d.currentJob.blockIDs);
       d.completeSubJob();
     }
   );
@@ -180,7 +180,7 @@ Job pickupJob(int[3] targetTile, ResourceType tileType) {
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref GameApp app, ref Dwarf d) { app.doPickup(d); },
     onFail: (ref GameApp app, ref Dwarf d) {
-      app.releaseBlocks(d.currentJob.blockIDs);
+      app.world.blocks.release(d.currentJob.blockIDs);
       d.failAndRequeue();
     }
   );
@@ -346,7 +346,7 @@ bool tryAssign(ref GameApp app, ref Job job) {
 
 /** Reject the job and requeue */
 bool rejectJob(ref GameApp app, ref Dwarf d, ref Job job) {
-  foreach(ref j; d.jobStack){ app.releaseBlocks(j.blockIDs); }
+  foreach(ref j; d.jobStack){ app.world.blocks.release(j.blockIDs); }
   job.failedBy[d.uid] = true;
   if(!job.personal) jobQueue ~= job;
   d.clearGoal();
