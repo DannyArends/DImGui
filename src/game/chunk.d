@@ -132,7 +132,7 @@ bool getBestTile(ref GameApp app, float[3][2] ray, out int[3] wc) { return(app.g
 bool getBestTile(const GameApp app, float[3][2] ray, Intersection[] hits, out int[3] wc) {
   Intersection best;
   foreach(ref hit; hits) {
-    auto chunk = cast(Chunk)app.objects[hit.idx[0]];
+    auto chunk = cast(const(Chunk))app.objects[hit.idx[0]];
     if(chunk is null) continue;
     for(size_t j = 0; j < chunk.tileBmin.length; j++) {
       auto i = ray.intersects(chunk.tileBmin[j], chunk.tileBmax[j], hit.idx[0], j);
@@ -140,7 +140,7 @@ bool getBestTile(const GameApp app, float[3][2] ray, Intersection[] hits, out in
     }
   }
   if(!best.intersects) return false;
-  auto chunk = cast(Chunk)app.objects[best.idx[0]];
+  auto chunk = cast(const(Chunk))app.objects[best.idx[0]];
   auto local = app.world.tileCoord(chunk.pickIndices[best.idx[1]]);
   wc = app.world.worldCoord(chunk.coord, local);
   return true;
