@@ -7,11 +7,13 @@ import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
+import lsystem : buildGrammar;
 import matrix : translateScale;
 import normals : computeTangents;
 import noise : noiseHTT;
 import sfx : play;
 import tile : getTile, tileCoord, tileToWorld;
+import turtle : interpret;
 import vegetation : saveVegetation, loadVegetation;
 
 struct FeaturePartT {
@@ -92,6 +94,16 @@ void initFeatureMeshes(ref GameApp app) {
       app.world.featureMeshes[meshKey] = mesh;
       app.objects ~= mesh;
     }
+    foreach(ref ls; ft.lsystem) foreach(ref br; ls.brushes) {     // L-system brush meshes
+      string meshKey = ft.name ~ ":" ~ br.mesh;
+      if(meshKey in app.world.featureMeshes) continue;
+      Geometry mesh;
+      if(br.mesh == "Cylinder") { mesh = new Cylinder(0.4f, 1.0f, 12); mesh.initInstanced(captureKey(meshKey)); }
+      if(br.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); mesh.initInstanced(captureKey(meshKey)); }
+      if(br.mesh == "Cone") { mesh = new Cone(0.5f, 1.0f, 12); mesh.initInstanced(captureKey(meshKey)); }
+      app.world.featureMeshes[meshKey] = mesh;
+      app.objects ~= mesh;
+    }
   }
 }
 
@@ -125,6 +137,11 @@ float getFeatureProgressRate(ref GameApp app, int[3] tile) {
   return 0.25f;
 }
 
+private string brushMesh(ref immutable LSystemPartT ls, char sym) {
+  foreach(ref br; ls.brushes) if(br.symbol == sym) return br.mesh;
+  return "";
+}
+
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
     auto wp = app.world.tileToWorld(f.rootTile);
@@ -153,6 +170,24 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       }
       mesh.instances.invalidate();
       if(mesh.box !is null) mesh.box.dirty = true;
+    }
+    foreach(ref ls; ft.lsystem) {
+      TurtleConfig cfg;
+      cfg.angle = ls.angle;
+      foreach(ref br; ls.brushes) {
+        auto brt = br.resourceType == "None" ? ResourceType.None : br.resourceType.to!ResourceType;
+        cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance);
+      }
+      auto str = buildGrammar(f.hash, f.height);
+      char[] chars; foreach(s; str) chars ~= s.symbol;     // Symbol[] -> char[]
+      float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];
+      auto grouped = interpret(chars, cfg, [wp[0], wp[1], wp[2]], q0);
+      foreach(sym, insts; grouped) {
+        string meshKey = ft.name ~ ":" ~ brushMesh(ls, sym);   // symbol -> mesh name
+        if(auto mp = meshKey in meshes) {
+          if(*mp !is null) { (*mp).instances ~= insts[]; (*mp).instances.invalidate(); }
+        }
+      }
     }
   }
   return features;
