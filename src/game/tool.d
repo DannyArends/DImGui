@@ -58,7 +58,7 @@ void interactCommit(ref GameApp app, int[3] tile) {
 
 void waterCommit(ref GameApp app, int[3] tile) {
   if(app.world.getTileAt(tile) != ResourceType.None) return;
-  ubyte cur = cast(ubyte)app.getWater(tile);
+  ubyte cur = cast(ubyte)app.world.getWater(tile);
   app.setWater(tile, cast(ubyte)min(WATER_MAX, cur + 3));
 }
 
