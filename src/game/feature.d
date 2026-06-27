@@ -88,7 +88,7 @@ void initFeatureMeshes(ref GameApp app) {
       app.world.featureMeshes[meshKey] = mesh;
       app.objects ~= mesh;
     }
-    foreach(ref ls; ft.lsystem) foreach(ref br; ls.brushes) {     // L-system brush meshes
+    foreach(ref br; ft.brushes) {     // L-system brush meshes
       string meshKey = ft.name ~ ":" ~ br.mesh;
       if(meshKey in app.world.featureMeshes) continue;
       Geometry mesh;
@@ -165,10 +165,10 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       mesh.instances.invalidate();
       if(mesh.box !is null) mesh.box.dirty = true;
     }
-    foreach(ref ls; ft.lsystem) {
+    if(ft.brushes.length) {
       TurtleConfig cfg;
-      cfg.angle = ls.angle;
-      foreach(ref br; ls.brushes) {
+      cfg.angle = ft.lsystemAngle;
+      foreach(ref br; ft.brushes) {
         auto brt = br.resourceType == "None" ? ResourceType.None : br.resourceType.to!ResourceType;
         cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance);
       }
@@ -177,7 +177,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];
       auto grouped = interpret(chars, cfg, [wp[0], wp[1], wp[2]], q0);
       foreach(sym, insts; grouped) {
-        string meshKey = ft.name ~ ":" ~ brushMesh(ls, sym);   // symbol -> mesh name
+        string meshKey = ft.name ~ ":" ~ brushMesh(ft, sym);
         if(auto mp = meshKey in meshes) {
           if(*mp !is null) { (*mp).instances ~= insts[]; (*mp).instances.invalidate(); }
         }
