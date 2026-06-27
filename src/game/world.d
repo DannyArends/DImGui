@@ -100,7 +100,6 @@ struct World {
   Dwarves dwarves;                                          /// Dwarves
   Clouds clouds;                                            /// Clouds
   float[int[2]] cloudDensity;                               /// mutable cloud density delta over noise base, by [gx,gz] cloud-cell
-  float cloudDecay = 0.01f;                                 /// adaptive relax rate, steered toward CLOUD_TARGET_ACTIVE
   bool cloudRebuildPending = false;                         /// Rebuild clouds ?
   WaterTiles water;                                         /// single batched water render object
   PathMarkers pathMarkers;                                  /// Path markers

@@ -85,17 +85,16 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
 
 /** Relax cloud density toward 0 and clamp; prune negligible entries. */
 void decayCloudDensity(ref GameApp app) {
+  int active = 0;
+  foreach(coord; app.world.chunks.keys) active += cast(int)app.world.chunks[coord].active.length;
+
   int[2][] dead;
   foreach(key, ref d; app.world.cloudDensity) {
-    d -= app.world.cloudDecay;                 // relax toward baseline
+    d -= clamp(0.005f + 0.01f * ((active - WATER_TARGET_ACTIVE) / cast(float)WATER_TARGET_ACTIVE), 0.0f, 0.03f); // relax toward baseline
     if(d > CLOUD_DMAX) d = CLOUD_DMAX;
     if(d <= CLOUD_DMIN) { d = 0; dead ~= key; }   // faded out -> prune
   }
   foreach(k; dead) app.world.cloudDensity.remove(k);
-
-  int active = 0;
-  foreach(coord; app.world.chunks.keys) active += cast(int)app.world.chunks[coord].active.length;
-  app.world.cloudDecay = clamp(0.005f + 0.01f * ((active - WATER_TARGET_ACTIVE) / cast(float)WATER_TARGET_ACTIVE), 0.0f, 0.03f);
 }
 
 void rainTick(ref GameApp app) {
