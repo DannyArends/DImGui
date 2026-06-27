@@ -62,14 +62,12 @@ struct FeatureT {
 struct Feature {
   int[3] rootTile;
   uint height;
-  size_t[] instanceIdxs;  // per part — for repeated parts, trunkStart only
+  size_t[2][] instanceRuns;  // [start, count) ranges across this feature's meshes
   uint hash;
 
   bool matchIndex(size_t idx) const {
-    foreach(pi, startIdx; instanceIdxs) {
-      if(idx == startIdx) return true;
-      if(idx > startIdx && idx < startIdx + height) return true;
-    }
+    foreach(run; instanceRuns)
+      if(idx >= run[0] && idx < run[0] + run[1]) return true;
     return false;
   }
   @property float bboxHeight() const { return cast(float)height; }
@@ -140,13 +138,13 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
   foreach(ref f; features) {
     auto wp = app.world.tileToWorld(f.rootTile);
     float th = app.world.tileHeight;
-    f.instanceIdxs = [];
+    f.instanceRuns = [];
     foreach(ref part; ft.parts) {
       string meshKey = ft.name ~ ":" ~ part.mesh;
       if(meshKey !in meshes) continue;
       auto mesh = meshes[meshKey];
       if(mesh is null) continue;
-      f.instanceIdxs ~= mesh.instances.length;
+      size_t partStart = mesh.instances.length;
       float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
       float sy = part.scaleY < 0 ? th : part.scaleY + (f.hash % 5) * part.scaleYVariance;
       float oy = part.offsetY < 0 ? f.height * th : part.offsetY;
@@ -162,6 +160,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
         if(ft.tilePenalty > 0.0f) app.world.data.tilePenalties[f.rootTile] = ft.tilePenalty;
         mesh.instances ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]));
       }
+      f.instanceRuns ~= [partStart, mesh.instances.length - partStart];
       mesh.instances.invalidate();
       if(mesh.box !is null) mesh.box.dirty = true;
     }
@@ -181,7 +180,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
         string meshKey = ft.name ~ ":" ~ brushMesh(ft, sym);
         if(auto mp = meshKey in meshes) {
           if(*mp !is null) {
-            if(insts.length == f.height) f.instanceIdxs ~= (*mp).instances.length;  // trunk run (height segments)
+            f.instanceRuns ~= [(*mp).instances.length, insts.length];
             (*mp).instances ~= insts[];
             (*mp).instances.invalidate();
           }
