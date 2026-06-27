@@ -180,6 +180,7 @@ private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[str
   }
   char[] preds; string[] prods; uint[] probs;
   foreach(ref r; ft.rules) { preds ~= r.predecessor; prods ~= r.production; probs ~= r.probability; }
+  debug SDL_Log("LSYS %s axiom=%s rules=%u (preds=%u)", ft.name.toStringz, ft.axiom.toStringz, cast(uint)ft.rules.length, cast(uint)preds.length);
   auto str = buildGrammar(f.hash, f.height, ft.axiom, preds, prods, probs);
   char[] chars; foreach(s; str) chars ~= s.symbol;
   float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];

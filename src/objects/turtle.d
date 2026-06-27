@@ -40,8 +40,8 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
       case '^': st.orient = qMul(st.orient, angleAxis(-a, [1.0f, 0.0f, 0.0f])); break;
       case '<': st.orient = qMul(st.orient, angleAxis( a, [0.0f, 1.0f, 0.0f])); break;  // roll
       case '>': st.orient = qMul(st.orient, angleAxis(-a, [0.0f, 1.0f, 0.0f])); break;
-      case '[': stack ~= st; break;
-      case ']': if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; } break;
+      case '(': stack ~= st; break;
+      case ')': if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; } break;
       case 'X': break;                               // rewrite driver, draws nothing
       default:
         if(auto br = c in cfg.brush) {
