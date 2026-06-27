@@ -36,6 +36,13 @@ struct LSystemBrushT {
   bool advance = true;                          /// move turtle forward after drawing
 }
 
+/** One weighted production rule: predecessor symbol -> production string, with probability. */
+struct LSystemRuleT {
+  char predecessor;                             /// e.g. 'X'
+  string production;                            /// e.g. "Y[+X][-X]"
+  uint probability = 100;                       /// weight (rules with same predecessor sum to 100)
+}
+
 struct FeatureDropT {
   string material;
   int countMin = 1, countMax = 1;
@@ -57,6 +64,8 @@ struct FeatureT {
   FeatureDropT[] drops;
   float lsystemAngle = 25.0f;                   /// L-system turn angle; brushes empty = no L-system
   LSystemBrushT[] brushes;                      /// single-level array, converts to immutable like parts/drops
+  string axiom = "X";                           /// L-system start symbol(s)
+  LSystemRuleT[] rules;                         /// L-system production rules
 }
 
 struct Feature {
