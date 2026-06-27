@@ -36,15 +36,15 @@ private float cloudHeight(ref GameApp app, int gx, int gz) {
 /** Cloud-cell key -> a random world tile X/Z inside that cell. */
 int[2] cloudTile(int[2] key) { return [key[0]*CLOUD_STEP + uniform(0, CLOUD_STEP), key[1]*CLOUD_STEP + uniform(0, CLOUD_STEP)]; }
 
-void seedClouds(ref GameApp app, int[3] coord) {
-  int cs = app.world.chunkSize;
+void seedClouds(ref World world, int[3] coord) {
+  int cs = world.chunkSize;
   int baseX = coord[0] * cs, baseZ = coord[2] * cs;
   for(int lz = 0; lz < cs; lz += CLOUD_STEP) {
   for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
     auto cell = cloudCell(baseX + lx, baseZ + lz);
-    if(cell in app.world.cloudDensity) continue;
+    if(cell in world.cloudDensity) continue;
     float d = (smoothNoise([cell[0]*CLOUD_FREQ, cell[1]*CLOUD_FREQ], 1337) - CLOUD_THRESHOLD) / 0.2f;
-    app.world.cloudDensity[[cell[0], cell[1]]] = d < 0 ? 0 : (d > 1 ? 1 : d);
+    world.cloudDensity[[cell[0], cell[1]]] = d < 0 ? 0 : (d > 1 ? 1 : d);
   } }
 }
 
@@ -86,23 +86,24 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
 }
 
 /** Update cloud density by spawning some new ones and clamp; prune negligible entries. */
-void updateCloudDensity(ref GameApp app) {
-  app.world.spawnClouds(); // Add some random moisture
-  int active = app.world.chunks.activeSim();
+void updateCloudDensity(ref World world) {
+  world.spawnClouds(); // Add some random moisture
+  int active = world.chunks.activeSim();
 
   int[2][] dead;
-  foreach(key, ref d; app.world.cloudDensity) {
+  foreach(key, ref d; world.cloudDensity) {
     d -= clamp(0.005f + 0.01f * ((active - WATER_TARGET_ACTIVE) / cast(float)WATER_TARGET_ACTIVE), 0.0f, 0.03f); // relax toward baseline
     if(d > CLOUD_DMAX) d = CLOUD_DMAX;
     if(d <= CLOUD_DMIN) { d = 0; dead ~= key; }   // faded out -> prune
   }
-  foreach(k; dead) app.world.cloudDensity.remove(k);
+  foreach(k; dead) world.cloudDensity.remove(k);
 }
 
+/** Update density of clouds and then make it rain. */
 void rainTick(ref GameApp app) {
   int cloudY = app.world.chunkHeight - 1;
   int drops = 0;
-
+  app.world.updateCloudDensity(); // relax + clamp cloud density
   foreach(key, d; app.world.cloudDensity) {
     if(drops >= RAIN_DROPS_PER_TICK) break;        // hit the cap -> stop raining
     if(d <= 0) continue;
