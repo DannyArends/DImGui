@@ -36,13 +36,6 @@ struct LSystemBrushT {
   bool advance = true;                          /// move turtle forward after drawing
 }
 
-/** An L-system part: a turn angle + the symbol->primitive brush table.
-    Axiom/rules are built in D (buildGrammar) for now, seeded by Feature.hash. */
-struct LSystemPartT {
-  float angle = 25.0f;                          /// degrees per turn symbol
-  LSystemBrushT[] brushes;
-}
-
 struct FeatureDropT {
   string material;
   int countMin = 1, countMax = 1;
@@ -62,7 +55,8 @@ struct FeatureT {
   string sound;
   FeaturePartT[] parts;
   FeatureDropT[] drops;
-  LSystemPartT[] lsystem;
+  float lsystemAngle = 25.0f;                   /// L-system turn angle; brushes empty = no L-system
+  LSystemBrushT[] brushes;                      /// single-level array, converts to immutable like parts/drops
 }
 
 struct Feature {
