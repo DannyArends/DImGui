@@ -51,7 +51,7 @@ struct WorldData {
   const(char)* waterPath() const { return worldFile("_water"); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
-  @nogc pure int[3] localCoord(int[3] tile) const nothrow {
+  @nogc pure int[3] localCoord(const int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
   }
@@ -67,7 +67,7 @@ struct WorldData {
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
-  @nogc pure int[3] chunkCoord(int[3] tile) const nothrow {
+  @nogc pure int[3] chunkCoord(const int[3] tile) const nothrow {
     return [iDiv(tile[0], chunkSize), 0, iDiv(tile[2], chunkSize)];
   }
   @property @nogc pure float blockSize() const nothrow { return(tileSize * 0.25f); }
@@ -110,7 +110,7 @@ struct World {
   alias data this;
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
-  void deallocateChunk(int[3] coord) {
+  void deallocateChunk(const int[3] coord) {
     chunks[coord].tiles.deAllocate = true;
     chunks[coord].deAllocate = true;
   }
@@ -135,15 +135,15 @@ struct World {
   }
 }
 
-TileDiff[] flattenDiffs(ref WorldData wd) {
+TileDiff[] flattenDiffs(const WorldData wd) {
   TileDiff[] flat;
   foreach(coord, idxMap; wd.diffs){ foreach(idx, type; idxMap){ flat ~= TileDiff(coord, idx, type); } }
   return flat;
 }
 
-void rebuildDiffs(ref WorldData wd, TileDiff[] flat) {
+void rebuildDiffs(ref WorldData wd, const TileDiff[] flat) {
   wd.diffs = null;
-  foreach(ref d; flat){ wd.diffs[d.coord][d.idx] = cast(ResourceType)d.type; }
+  foreach(d; flat){ wd.diffs[d.coord][d.idx] = cast(ResourceType)d.type; }
 }
 
 void loadWorld(ref GameApp app) {
