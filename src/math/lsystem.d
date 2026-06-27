@@ -89,5 +89,7 @@ Symbol[] buildGrammar(uint seed, uint height, string axiom, const(char)[] preds,
   }
   auto rnd = Random(seed | 1);
   for(uint k = 0; k < height; k++) ls.iterate(rnd);
+  foreach(ref s; ls.state) if(s == Symbols.Axiom) s = Symbols.End;  // force open tips to cap-point
+  ls.iterate(rnd);      
   return ls.state;
 }
