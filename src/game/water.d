@@ -93,7 +93,7 @@ void waterTick(ref GameApp app) {
   // PHASE 4: COMMIT changed cells
   foreach(wc, _; touched) {
     if(app.rdWater(next, wc) == app.world.getWater(wc)) continue;
-    app.setWater(wc, cast(ubyte)next[wc]);
+    app.world.setWater(wc, cast(ubyte)next[wc]);
   }
 
   // PHASE 5: DEACTIVATE: unmoved cells MIGHT be settled — confirm before deactivating
@@ -115,7 +115,7 @@ void evaporateTick(ref GameApp app) {
       if(chunk.waterLevel[idx] == 0 || chunk.waterLevel[idx] >= (WATER_MAX-2)) continue;
       if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - chunk.waterLevel[idx]) * 2) {
         int[3] wc = app.world.worldCoord(chunk.coord, app.world.tileCoord(idx));
-        app.setWater(wc, cast(ubyte)(chunk.waterLevel[idx] - 1), false);
+        app.world.setWater(wc, cast(ubyte)(chunk.waterLevel[idx] - 1), false);
         auto cell = cloudCell(wc[0], wc[2]);
         auto dd = H[uniform(0, 4)];
         app.world.cloudDensity[[cell[0] + dd[0], cell[1] + dd[1]]] += uniform(1, hi) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
