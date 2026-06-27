@@ -37,7 +37,7 @@ int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   return(noTile);
 }
 
-void addTiles(ref GameApp app, int[3][] tiles, ToolMode mode) {
+void addTiles(ref GameApp app, const(int[3])[] tiles, ToolMode mode) {
   auto h = tools[mode];
   if(h.matrix is null) return;               // tools with no ghost (e.g. Select/Query)
   float ts = app.world.tileSize, th = app.world.tileHeight;
@@ -54,8 +54,8 @@ void syncBuildGhosts(ref GameApp app) {
   app.world.inventory.instances = [];
   app.world.data.tilePenalties = null;
 
-  auto buildTiles = app.activeTiles("Building");
-  auto mineTiles = app.activeTiles("Mining");
+  auto buildTiles = app.world.activeTiles("Building");
+  auto mineTiles = app.world.activeTiles("Mining");
 
   app.addTiles(buildTiles, ToolMode.Build);
   foreach(tile; buildTiles) app.world.data.tilePenalties[tile] = 40.0f;

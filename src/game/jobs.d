@@ -41,13 +41,13 @@ Job[] jobQueue;
 // TODO: Collapse repeated onFail/onClaim/onArrive into shared handlers (failRequeue/failComplete/failReleaseRequeue/failReleaseComplete)
 
 /** All live jobs matching a name: queued + on every dwarf's stack */
-Job[] liveJobs(ref GameApp app, string name) {
-  Job[] r = jobQueue.filter!(j => j.name == name).array;
-  if(app.world.dwarves !is null){ foreach(ref dw; app.world.dwarves.dwarves){ r ~= dw.jobStack.filter!(j => j.name == name).array; } }
+const(Job)[] liveJobs(const World world, string name) {
+  const(Job)[] r = jobQueue.filter!(j => j.name == name).array;
+  if(world.dwarves !is null) { foreach(dw; world.dwarves.dwarves) { r ~= dw.jobStack.filter!(j => j.name == name).array; } }
   return(r);
 }
 
-int[3][] activeTiles(ref GameApp app, string jobName) { return app.liveJobs(jobName).map!(j => j.targetTile).array; }
+const(int[3])[] activeTiles(const World world, string jobName) { return world.liveJobs(jobName).map!(j => j.targetTile).array; }
 
 /** Apply pathfinding results */
 void applyPathResult(ref GameApp app, PathResult result) {
@@ -308,7 +308,7 @@ bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
   if(!d.hasJob) { d.clearGoal(); return false; }
   d.targetTile = d.currentJob.targetTile;
 
-  auto goal = app.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
+  auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
   if(goal == noTile) { app.rejectJob(d, job); return false; }
   if(goal == d.tile) { d.state = DwarfState.Working; return true; }
   app.pathfindTo(d, goal);
@@ -371,7 +371,7 @@ bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
     if(app.world.stockpiles.acceptedByHolder(id, b.type)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     int[3] dst;
-    uint sp = app.findStockpileSlot(b.type, d.tile, dst);
+    uint sp = app.world.findStockpileSlot(b.type, d.tile, dst);
     if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.type, dst)); return true; }
   }
   return false;

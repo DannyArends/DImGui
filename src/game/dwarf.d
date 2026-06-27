@@ -218,7 +218,7 @@ void logStuck(ref GameApp app, ref Dwarf d) {
   static uint last = 0;
   if(app.totalFramesRendered - last < 60) return;
   last = app.totalFramesRendered;
-  auto g = app.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
+  auto g = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
   SDL_Log(cstr("STUCK %s job=%s d=[%d,%d,%d] tgt=[%d,%d,%d] reach=%d goal=[%d,%d,%d] pathLen=%d",
     d.name, d.currentJob.name,
     d.tile[0], d.tile[1], d.tile[2],
