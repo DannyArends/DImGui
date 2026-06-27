@@ -114,7 +114,7 @@ void evaporateTick(ref GameApp app) {
       ubyte have = chunk.waterLevel[idx];
       if(have == 0 || have >= (WATER_MAX-2)) continue;
       if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - have) * 2) {
-        int[3] wc = app.world.data.worldCoord(chunk.coord, app.world.data.tileCoord(idx));
+        int[3] wc = app.world.worldCoord(chunk.coord, app.world.tileCoord(idx));
         app.setWater(wc, cast(ubyte)(have - 1), false);
         int gx = wc[0]/CLOUD_STEP, gz = wc[2]/CLOUD_STEP;
         auto dd = H[uniform(0, 4)];
