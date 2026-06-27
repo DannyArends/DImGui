@@ -169,7 +169,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;
-  app.seedClouds(data.coord);
+  app.world.seedClouds(data.coord);
   app.requestCloudRebuild();
   app.world.chunks[data.coord].dirty = false;
   app.world.pendingChunks.remove(data.coord);
