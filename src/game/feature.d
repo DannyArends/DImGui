@@ -175,11 +175,16 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       auto str = buildGrammar(f.hash, f.height);
       char[] chars; foreach(s; str) chars ~= s.symbol;     // Symbol[] -> char[]
       float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];
-      auto grouped = interpret(chars, cfg, [wp[0], wp[1], wp[2]], q0);
+      float baseY = ft.brushes.length ? ft.brushes[0].length * 0.5f : 0.0f;
+      auto grouped = interpret(chars, cfg, [wp[0], wp[1] - baseY, wp[2]], q0);
       foreach(sym, insts; grouped) {
         string meshKey = ft.name ~ ":" ~ brushMesh(ft, sym);
         if(auto mp = meshKey in meshes) {
-          if(*mp !is null) { (*mp).instances ~= insts[]; (*mp).instances.invalidate(); }
+          if(*mp !is null) {
+            if(insts.length == f.height) f.instanceIdxs ~= (*mp).instances.length;  // trunk run (height segments)
+            (*mp).instances ~= insts[];
+            (*mp).instances.invalidate();
+          }
         }
       }
     }
