@@ -53,7 +53,7 @@ public import sfx : Audio, WavFMT;
 public import text : Text;
 public import textures : Texture, Textures;
 public import torus : Torus;
-public import turtle : Turtle;
+public import turtle : TurtleBrush, TurtleConfig;
 public import threading : Threading;
 public import uniforms : ParticleUniformBuffer, UBO;
 public import vertex : Vertex, VERTEX, INSTANCE, INDEX;

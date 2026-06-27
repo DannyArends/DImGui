@@ -1,103 +1,60 @@
-/** 
+/**
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
-
 import engine;
 
-import vector : vAdd, vMul, normalize;
+import matrix : Matrix, translate, scale, multiply;
+import quaternion : angleAxis, qMul, rotate;
+import vector : vAdd;
 
-/** Turtle
- */
-class Turtle : Geometry {
-  uint seed;
-  LSystem lsystem;
-  float[3][] stack;
-  float[3] origin = [0.0f, 0.0f, 0.0f];
-  float[4][2] colors = [[0.5f, 0.5f, 0.0f, 1.0f],
-                       [1.0f, 1.0f, 0.2f, 1.0f]];
-  uint frame = 0;
-  this(LSystem system) {
-    seed = uniform(0, 256);
-    lsystem = system;
+/** Per-drawing-symbol spec: which material/size, and whether it advances the turtle. No Geometry here — the turtle is pure. */
+struct TurtleBrush {
+  int material = -1;
+  float radius = 0.1f;
+  float length = 1.0f;
+  bool advance = true;
+}
 
-    vertices = [Vertex(origin, [0.0f, 0.0f], colors[0]), Vertex([0.0f, 0.0f, 0.0f], [0.0f, 0.0f], colors[1])];
-    indices = [0, 1];
-    instances = [DrawInstance()];
+/** Turtle config: turn angle (degrees) + the per-drawing-symbol brush table. */
+struct TurtleConfig {
+  float angle = 25.0f;
+  TurtleBrush[char] brush;     /// e.g. 'C' -> cone spec, 'I' -> leaf spec
+}
 
-    topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+private struct State { float[3] pos; float[4] orient; }   // orient = quaternion
 
-    /** onFrame handler aging the particles every frame */
-    onFrame = (float dt){ 
-      if(fmod(this.frame, 10) == 0) this.age(dt);
-      this.frame++;
-    };
-    meshes["Turtle"] = Mesh([0, cast(uint)vertices.length]);
-    geometry = (){ return(typeof(this).stringof); };
-  }
+/** Interpret an already-iterated L-system string, emitting DrawInstances into the brushes' meshes.
+    Turtle local frame: heading is +Y. Turns are applied in the turtle's own frame (right-multiply). */
+DrawInstance[][char] interpret(const(char)[] symbols, ref const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+  DrawInstance[][char] instances;
+  State st = State(origin, orient0);
+  State[] stack;
+  const float a = cfg.angle;
 
-  void age(float dt) {
-    if(!lsystem.iterate()){ return; }
-    auto rnd = Random(this.seed);
-    //SDL_Log("state: %s", to!string(lsystem.state).toStringz);
-    stack = [];
-    float[3] direction = [0.0f, 0.1f, 0.0f];
-    float[3] lpos = [0.0f, 0.0f, 0.0f];
-    float[3] cpos = [0.0f, 0.0f, 0.0f];
-    float[4] color = colors[0];
-    uint vTx = 2;
-    vertices.reserve(lsystem.max_length);
-    indices.reserve(lsystem.max_length);
-    foreach (i, symbol; lsystem.state) {
-      switch (symbol) {
-        case Symbols.Origin: cpos = origin; break;
-        case Symbols.Point: 
-          if(cpos != lpos){
-            //SDL_Log("%d %f %f %f -> %f %f %f", i,lpos[0],lpos[1],lpos[2],cpos[0],cpos[1],cpos[2]);
-            if((vTx+1) < vertices.length){
-              vertices[vTx]   = Vertex(lpos, [0.0f, 0.0f], color);
-              vertices[vTx+1] = Vertex(cpos, [0.0f, 0.0f], color);
-              indices[vTx] = vTx;
-              indices[vTx+1] = vTx+1;
-            }else{
-              vertices ~= Vertex(lpos, [0.0f, 0.0f], color);
-              vertices ~= Vertex(cpos, [0.0f, 0.0f], color);
-              indices ~= [cast(uint)indices.length, cast(uint)indices.length+1];
-            }
-            vTx += 2;
-            lpos = cpos;
-          }
-        break;
-        case Symbols.Move:  cpos = cpos.vAdd(direction); break;
-        case Symbols.Color:
-          color[0] = uniform(colors[0][0], colors[1][0], rnd);
-          color[1] = uniform(colors[0][1], colors[1][1], rnd);
-          color[2] = uniform(colors[0][2], colors[1][2], rnd);
-        break;
-        case Symbols.Rotate: 
-          float rx = uniform(-1.0f, 1.0f, rnd);
-          float ry = uniform(-1.0f, 1.0f, rnd);
-          float rz = uniform(-1.0f, 1.0f, rnd);
-          direction = direction.vAdd([rx, ry, rz]);
-          direction = direction.normalize().vMul(0.1f);
-          break;
-        case Symbols.PushLoc: stack ~= cpos; break;
-        case Symbols.PopLoc:  if(stack.length > 1) {
-                                cpos = stack[($-1)]; 
-                                stack = stack[0 .. ($-1)]; 
-                              }
-                              break;
-        case Symbols.Forward: cpos = cpos.vAdd([0.1f, 0.0f, 0.0f]); break;
-        case Symbols.Backward: cpos = cpos.vAdd([-0.1f, 0.0f, 0.0f]); break;
-        case Symbols.Left: cpos = cpos.vAdd([0.0f, 0.0f, 0.1f]);  break;
-        case Symbols.Right: cpos = cpos.vAdd([0.0f, 0.0f, -0.1f]);  break;
-        case Symbols.Up: cpos = cpos.vAdd([0.0f, 0.1f, 0.0f]); break;
-        case Symbols.Down: cpos = cpos.vAdd([0.0f, -0.1f, 0.0f]); break;
-        default: break;
-      }
+  foreach(c; symbols) {
+    switch(c) {
+      case '+': st.orient = qMul(st.orient, angleAxis( a, [0.0f, 0.0f, 1.0f])); break;  // yaw
+      case '-': st.orient = qMul(st.orient, angleAxis(-a, [0.0f, 0.0f, 1.0f])); break;
+      case '&': st.orient = qMul(st.orient, angleAxis( a, [1.0f, 0.0f, 0.0f])); break;  // pitch
+      case '^': st.orient = qMul(st.orient, angleAxis(-a, [1.0f, 0.0f, 0.0f])); break;
+      case '<': st.orient = qMul(st.orient, angleAxis( a, [0.0f, 1.0f, 0.0f])); break;  // roll
+      case '>': st.orient = qMul(st.orient, angleAxis(-a, [0.0f, 1.0f, 0.0f])); break;
+      case '[': stack ~= st; break;
+      case ']': if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; } break;
+      case 'X': break;                               // rewrite driver, draws nothing
+      default:
+        if(auto br = c in cfg.brush) {
+          Matrix rot = rotate(st.orient);
+          Matrix m = translate(st.pos)
+                       .multiply(rot)
+                       .multiply(translate([0.0f, br.length * 0.5f, 0.0f]))
+                       .multiply(scale([br.radius, br.length, br.radius]));
+          instances[c] ~= DrawInstance(br.material, m);
+          if(br.advance){ st.pos = st.pos.vAdd(rot.multiply([0.0f, br.length, 0.0f])); }
+        }
+      break;
     }
-    meshes["Turtle"].vertices[1] = cast(uint)vertices.length;
-    vertices.invalidate(); indices.invalidate();
-    if(box !is null) box.dirty = true;
   }
+  return instances;
 }
