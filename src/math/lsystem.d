@@ -52,47 +52,24 @@ struct LSystem {
   size_t max_length = 20000;
 
   /** If any rule matches, return the production, otherwise return the symbol */
-  Symbol[] replace(Symbol s) {
-    size_t p = uniform(0, 100);
-    size_t prev = 0;
+  Symbol[] replace(Symbol s, ref Random rnd) {
     if(s !in rules) return([s]);
+    size_t p = uniform(0, 100, rnd);
+    size_t prev = 0;
     for (size_t i = 0; i < rules[s].length; i++) {
-      if( p < (prev + rules[s][i].probability) ) return(rules[s][i].production);
+      if( p < (prev + rules[s][i].probability) ) return rules[s][i].production;
       prev += rules[s][i].probability;
     }
     if(s.constant) return([s]);
     return([]);
   }
 
-  bool iterate() {
+  bool iterate(ref Random rnd) {
+    if(state.length > max_length) return(false);
     Symbol[] newstate;
     newstate.reserve(state.length);
-    if(state.length > max_length) return(false);
-    for (size_t i = 0; i < state.length; i++) { newstate ~= replace(state[i]); }
-    if(newstate.length == 0) newstate ~= Symbols.Origin;
+    for (size_t i = 0; i < state.length; i++) { newstate ~= replace(state[i], rnd); }
     state = newstate;
     return(true);
   }
-}
-
-LSystem createLSystem(size_t nIter = 5) {
-  auto test = LSystem([Symbols.Origin]);
-  test.rules[Symbols.Origin] = Rules([Rule("W.O", 5)]);
-  test.rules[Symbols.Origin] ~= Rule("S.O", 5);
-  test.rules[Symbols.Origin] ~= Rule("A.O", 5);
-  test.rules[Symbols.Origin] ~= Rule("D.O", 5);
-  test.rules[Symbols.Origin] ~= Rule("X.O", 5);
-  test.rules[Symbols.Origin] ~= Rule("Z.O", 5);
-  test.rules[Symbols.Origin] ~= Rule("MC.O", 5);
-  test.rules[Symbols.Origin] ~= Rule("R.O", 5);
-  test.rules[Symbols.Origin] ~= Rule("<O", 15);
-  test.rules[Symbols.Origin] ~= Rule(">O", 15);
-
-  foreach (s; [Symbols.Forward, Symbols.Backward, Symbols.Left, Symbols.Right, Symbols.Up, Symbols.Down] ) {
-    test.rules[s] = Rules([]);
-    test.rules[s] ~= Rule("O", 1);  // Super Speed, Ball Like
-    test.rules[s] ~= Rule("RM", 3);
-  }
-  for(size_t i = 0; i < nIter; i++){ test.iterate(); }
-  return(test);
 }
