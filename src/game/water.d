@@ -133,7 +133,7 @@ private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int 
   int bestLvl = have, n = 0;
   foreach(h; H) {
     Chunk nch; int nidx;
-    if(!app.neighbourCell(chunk, lc, h[0], 0, h[1], nch, nidx)) continue;   // resolve ONCE
+    if(!app.neighbourCell(chunk, lc, [h[0], 0, h[1]], nch, nidx)) continue;   // resolve ONCE
     if(nch.tileTypes[nidx] != ResourceType.None) continue;                          // air check (direct)
     int[3] nwc = [wc[0]+h[0], wc[1], wc[2]+h[1]];
     auto p = nwc in next;                                                           // pending?
@@ -148,7 +148,7 @@ private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int 
 private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) nothrow {
   auto lc = app.world.tileCoord(idx);
   Chunk nch; int nidx;
-  if(!app.neighbourCell(chunk, lc, 0, -1, 0, nch, nidx)) return(false);
+  if(!app.neighbourCell(chunk, lc, [0, -1, 0], nch, nidx)) return(false);
   if(nch.tileTypes[nidx] != ResourceType.None) return(false); // not air
   auto p = (tileBelow(wc) in next);
   int bl = (p is null)? nch.waterLevel[nidx] : *p;
@@ -186,7 +186,7 @@ private void rebuildChunkWaterInstances(ref GameApp app, Chunk chunk) {
     float cy = p[1] - app.world.tileHeight * 0.5f + wh * 0.5f;
     foreach(f; 0 .. 6) {
       Chunk nch; int nidx;
-      int nlvl = app.neighbourCell(chunk, lc, FACE_OFFSETS[f][0], FACE_OFFSETS[f][1], FACE_OFFSETS[f][2], nch, nidx)? nch.waterLevel[nidx] : 0;
+      int nlvl = app.neighbourCell(chunk, lc, FACE_OFFSETS[f], nch, nidx)? nch.waterLevel[nidx] : 0;
       if(nlvl >= lvl) continue;
       inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], app.world.tileSize, wh));
     }
