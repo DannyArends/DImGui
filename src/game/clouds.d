@@ -11,7 +11,7 @@ import gameobjects : Clouds;
 import noise : smoothNoise;
 import serialization : readData, writeData;
 import tile : FACE_OFFSETS, getWater, setWater, getTileAt;
-import water : WATER_MAX, WATER_TARGET_ACTIVE;
+import water : WATER_MAX, WATER_TARGET_ACTIVE, activeSim;
 
 enum int CLOUD_LAYERS = 8;              // Layers
 enum int CLOUD_STEP = 6;                // Step
@@ -85,8 +85,7 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
 
 /** Relax cloud density toward 0 and clamp; prune negligible entries. */
 void decayCloudDensity(ref GameApp app) {
-  int active = 0;
-  foreach(coord; app.world.chunks.keys) active += cast(int)app.world.chunks[coord].active.length;
+  int active = app.world.chunks.activeSim();
 
   int[2][] dead;
   foreach(key, ref d; app.world.cloudDensity) {

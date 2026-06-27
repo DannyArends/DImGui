@@ -11,8 +11,8 @@ import serialization : readData, writeData;
 import tile : FACE_OFFSETS, neighbourCell, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
 enum ubyte WATER_MAX = 7;               // Maximum water density
-enum int WATER_TARGET_ACTIVE = 750;     // desired number of live cloud cells (sim size)
-enum float EVAP_DENSITY = 0.005f;       // density added through water evaporation
+enum int WATER_TARGET_ACTIVE = 750;     // Desired number of live water cells in sim
+enum float EVAP_DENSITY = 0.005f;       // Density added through water evaporation
 enum uint EVAP_DEPLETE = 3000;          // Speed of evaporation
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
@@ -38,6 +38,12 @@ private @nogc int rdWater(ref GameApp app, ref WaterNext next, int[3] wc) nothro
   return p is null ? app.getWater(wc) : *p;
 }
 
+@nogc activeSim(const Chunk[int[3]] chunks) {
+  int active = 0;
+  foreach(c; chunks){ active += cast(int)c.active.length; }
+  return(active);
+}
+
 /** Apply delta to a world tile in the sparse next-buffer; records it touched.
     Seeds from committed level on first write so we never need a full dup. */
 private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touched, int[3] wc, int delta) {
@@ -58,58 +64,47 @@ void waterTick(ref GameApp app) {
   Active[] act;
 
   // PHASE 1: GATHER
-  t = SDL_GetTicks();
   foreach(coord; app.world.chunks.keys) {
     auto ch = app.world.chunks[coord];
     if(ch.active.length == 0) continue;
     foreach(idx; ch.active){ act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx))); }
   }
-  debug app.timings["waterGather"] = SDL_GetTicks() - t;
   if(act.length == 0) return;
 
   bool[] moved; moved.length = act.length;
 
   // PHASE 2: SPREAD
-  t = SDL_GetTicks();
   foreach(i, a; act) {
     int have = ownLevel(next, a.chunk, a.idx, a.wc);
     int[3][4] tgt;
     int n = app.spreadTargets(next, a.chunk, a.idx, a.wc, have, tgt);
     if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, a.wc, -1); app.wrWater(next, touched, dst, +1); moved[i] = true; }
   }
-  debug app.timings["waterSpread"] = SDL_GetTicks() - t;
 
   // PHASE 3: FALL
-  t = SDL_GetTicks();
   foreach(i, a; act) {
     if(!app.canFall(next, a.chunk, a.idx, a.wc)) continue;
     int[3] below = a.wc.tileBelow;
     int mv = min(ownLevel(next, a.chunk, a.idx, a.wc), WATER_MAX - app.rdWater(next, below));
     if(mv > 0) { app.wrWater(next, touched, a.wc, -mv); app.wrWater(next, touched, below, +mv); moved[i] = true; }
   }
-  debug app.timings["waterFall"] = SDL_GetTicks() - t;
 
   // PHASE 4: COMMIT changed cells
-  t = SDL_GetTicks();
   foreach(wc, _; touched) {
     if(app.rdWater(next, wc) == app.getWater(wc)) continue;
     app.setWater(wc, cast(ubyte)next[wc]);
   }
-  debug app.timings["waterCommit"] = SDL_GetTicks() - t;
 
   // PHASE 5: DEACTIVATE: unmoved cells MIGHT be settled — confirm before deactivating
-  t = SDL_GetTicks();
   foreach(i, a; act) {
     if(moved[i]) continue; // moved -> definitely active
     if(app.isSettled(next, a.chunk, a.idx, a.wc)){ a.chunk.active.remove(a.idx); }
   }
-  debug app.timings["waterDeactivate"] = SDL_GetTicks() - t;
 }
 
 /** Lower one cell's water without waking the sim */
 void evaporateTick(ref GameApp app) {
-  int active = 0;
-  foreach(coord; app.world.chunks.keys) active += cast(int)app.world.chunks[coord].active.length;
+  int active = app.world.chunks.activeSim();
   float ratio = active / cast(float)WATER_TARGET_ACTIVE;            // 1.0 at target
   int hi = cast(int)clamp(5.0f / (ratio + 0.05f), 2.0f, 50.0f);     // under target -> larger pulse, over -> smaller
 
