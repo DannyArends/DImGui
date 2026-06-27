@@ -59,7 +59,7 @@ void interactCommit(ref GameApp app, int[3] tile) {
 void waterCommit(ref GameApp app, int[3] tile) {
   if(app.world.getTileAt(tile) != ResourceType.None) return;
   ubyte cur = cast(ubyte)app.world.getWater(tile);
-  app.setWater(tile, cast(ubyte)min(WATER_MAX, cur + 3));
+  app.world.setWater(tile, cast(ubyte)min(WATER_MAX, cur + 3));
 }
 
 void openBuildSelection(ref GameApp app) {
