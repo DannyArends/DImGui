@@ -30,16 +30,22 @@ private float cloudHeight(ref GameApp app, int gx, int gz) {
   return p is null ? 0.0f : (*p) * CLOUD_LAYERS;
 }
 
+/** World tile X/Z -> cloud-cell key (coarse CLOUD_STEP grid). */
+@nogc pure int[2] cloudCell(int tx, int tz) nothrow { return [tx / CLOUD_STEP, tz / CLOUD_STEP]; }
+
+/** Cloud-cell key -> a random world tile X/Z inside that cell. */
+int[2] cloudTile(int[2] key) { return [key[0]*CLOUD_STEP + uniform(0, CLOUD_STEP), key[1]*CLOUD_STEP + uniform(0, CLOUD_STEP)]; }
+
 void seedClouds(ref GameApp app, int[3] coord) {
   int cs = app.world.chunkSize;
   int baseX = coord[0] * cs, baseZ = coord[2] * cs;
   for(int lz = 0; lz < cs; lz += CLOUD_STEP)
   for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
-    int gx = (baseX + lx) / CLOUD_STEP, gz = (baseZ + lz) / CLOUD_STEP;
-    if([gx, gz] in app.world.cloudDensity) continue;        // already seeded
-    float n = smoothNoise([gx*CLOUD_FREQ, gz*CLOUD_FREQ], 1337);   // 2D, one sample per column
+    auto gc = cloudCell(baseX + lx, baseZ + lz);
+    if(gc in app.world.cloudDensity) continue;
+    float n = smoothNoise([gc[0]*CLOUD_FREQ, gc[1]*CLOUD_FREQ], 1337);
     float d = (n - CLOUD_THRESHOLD) / 0.2f;
-    app.world.cloudDensity[[gx, gz]] = d < 0 ? 0 : (d > 1 ? 1 : d);
+    app.world.cloudDensity[[gc[0], gc[1]]] = d < 0 ? 0 : (d > 1 ? 1 : d);
   }
 }
 
@@ -49,13 +55,12 @@ void spawnClouds(ref GameApp app) {
   if(coords.length == 0) return;
   int cs = app.world.chunkSize;
   int[3] cc = coords[uniform(0, coords.length)];
-  int gx = (cc[0]*cs + uniform(0, cs)) / CLOUD_STEP;
-  int gz = (cc[2]*cs + uniform(0, cs)) / CLOUD_STEP;
-  app.world.cloudDensity[[gx, gz]] += CLOUD_SPAWN_AMOUNT;
+  auto gc = cloudCell(cc[0] * cs + uniform(0, cs), cc[2] * cs + uniform(0, cs));
+  app.world.cloudDensity[gc] += CLOUD_SPAWN_AMOUNT;
 }
 
 DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] density, const int[3][] coords) {
-  float h(int gx, int gz){ auto p = [gx,gz] in density; return p is null ? 0.0f : (*p)*CLOUD_LAYERS; }
+  float h(int gx, int gz){ auto p = [gx,gz] in density; return((p is null)? 0.0f : (*p) * CLOUD_LAYERS); }
   float baseY = wd.height + 8.0f * wd.tileHeight; 
   float voxH = wd.tileHeight*CLOUD_STEP;
   float vox = CLOUD_STEP*wd.tileSize;
@@ -65,10 +70,9 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
     int baseX = coord[0]*wd.chunkSize;
     int baseZ = coord[2]*wd.chunkSize;
     for(int lz=0; lz<wd.chunkSize; lz+=CLOUD_STEP) { for(int lx=0; lx<wd.chunkSize; lx+=CLOUD_STEP) {
-      int gx = (baseX+lx)/CLOUD_STEP;
-      int gz = (baseZ+lz)/CLOUD_STEP;
-      float hC = h(gx,gz); if(hC<=0) continue;
-      float[6] hN=[h(gx+1,gz),h(gx-1,gz),hC,hC,h(gx,gz+1),h(gx,gz-1)];
+      auto gc = cloudCell(baseX + lx, baseZ + lz);
+      float hC = h(gc[0], gc[1]); if(hC <= 0) continue;
+      float[6] hN = [h(gc[0]+1,gc[1]), h(gc[0]-1,gc[1]), hC, hC, h(gc[0],gc[1]+1), h(gc[0],gc[1]-1)];
       foreach(y; 0..CLOUD_LAYERS) { 
         if(y>=hC) continue;
         float px=(baseX+lx)*wd.tileSize, py=baseY+y*voxH, pz=(baseZ+lz)*wd.tileSize;

@@ -6,7 +6,7 @@
 import game;
 
 import chunk : faceData;
-import clouds : CLOUD_STEP;
+import clouds : CLOUD_STEP, cloudCell;
 import serialization : readData, writeData;
 import tile : FACE_OFFSETS, neighbourCell, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
@@ -116,9 +116,9 @@ void evaporateTick(ref GameApp app) {
       if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - have) * 2) {
         int[3] wc = app.world.worldCoord(chunk.coord, app.world.tileCoord(idx));
         app.setWater(wc, cast(ubyte)(have - 1), false);
-        int gx = wc[0]/CLOUD_STEP, gz = wc[2]/CLOUD_STEP;
+        auto cc = cloudCell(wc[0], wc[2]);
         auto dd = H[uniform(0, 4)];
-        app.world.cloudDensity[[gx + dd[0], gz + dd[1]]] += uniform(1, hi) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
+        app.world.cloudDensity[[cc[0] + dd[0], cc[1] + dd[1]]] += uniform(1, hi) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
       }
     }
   }
@@ -150,8 +150,7 @@ private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, 
   Chunk nch; int nidx;
   if(!app.neighbourCell(chunk, lc, 0, -1, 0, nch, nidx)) return(false);
   if(nch.tileTypes[nidx] != ResourceType.None) return(false); // not air
-  int[3] bwc = [wc[0], wc[1]-1, wc[2]];
-  auto p = bwc in next;
+  auto p = (tileBelow(wc) in next);
   int bl = (p is null)? nch.waterLevel[nidx] : *p;
   return(bl < WATER_MAX);
 }
