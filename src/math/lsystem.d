@@ -13,23 +13,19 @@ struct Symbol {
 }
 
 enum Symbols : Symbol {
-  Origin = Symbol('O'),
-  Point = Symbol('.'),
-  Move = Symbol('M'),
-  Rotate = Symbol('R'),
-  PushLoc = Symbol('<'),
-  PopLoc = Symbol('>'),
-  Numeric = Symbol('N'),
-  Float = Symbol('F'),
-  Faster = Symbol('+'),
-  Slower = Symbol('-'),
-  Color = Symbol('C'),
-  Forward = Symbol('W'),
-  Backward = Symbol('S'),
-  Left = Symbol('A'),
-  Right = Symbol('D'),
-  Up = Symbol('X'),
-  Down = Symbol('Z')
+  Axiom = Symbol('X', false),
+  // Drawing symbols
+  Cone = Symbol('C'),
+  Cylinder = Symbol('Y'),
+  Cube = Symbol('B'),
+  Icosa = Symbol('I'),
+  Sphere = Symbol('S'),
+  Torus = Symbol('T'),
+  // Movement
+  YawPos = Symbol('+'), YawNeg = Symbol('-'),
+  PitchDn = Symbol('&'), PitchUp = Symbol('^'),
+  RollPos = Symbol('<'), RollNeg = Symbol('>'),
+  Push = Symbol('['), Pop = Symbol(']')
 }
 
 /** Production Rule */
@@ -38,9 +34,7 @@ struct Rule {
   size_t probability;
 
   this(string p, size_t prob = 100) {
-    foreach (char c; p) {
-      production ~= Symbol(c);
-    }
+    foreach (char c; p) { production ~= Symbol(c); }
     probability = prob;
   }
 }
@@ -57,13 +51,13 @@ struct LSystem {
   Rules[Symbol] rules;
   size_t max_length = 20000;
 
-  // If any rule matches, return the production, otherwise return the symbol
+  /** If any rule matches, return the production, otherwise return the symbol */
   Symbol[] replace(Symbol s) {
     size_t p = uniform(0, 100);
     size_t prev = 0;
     if(s !in rules) return([s]);
     for (size_t i = 0; i < rules[s].length; i++) {
-      if( p < (prev + rules[s][i].probability) ) return rules[s][i].production;
+      if( p < (prev + rules[s][i].probability) ) return(rules[s][i].production);
       prev += rules[s][i].probability;
     }
     if(s.constant) return([s]);
@@ -79,7 +73,6 @@ struct LSystem {
     state = newstate;
     return(true);
   }
-
 }
 
 LSystem createLSystem(size_t nIter = 5) {
