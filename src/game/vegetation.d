@@ -39,13 +39,7 @@ void loadVegetation(T)(ref GameApp app, ref T[][int[3]] pending, const(char)* pa
   }
 }
 
-/** Remove vegetation for a chunk and rebuild instances */
-void removeVegetation(T, alias rebuildFn)(ref GameApp app, ref T[][int[3]] objects, int[3] coord) if(is(typeof(T.init.rootTile) == int[3])) {
-  if(coord !in objects) return;
-  objects.remove(coord);
-  rebuildFn(app);
-}
-
+/** Get the best vegetaion hit */
 bool getBestVegetation(T, alias matchGeometry)(ref GameApp app, float[3][2] ray, Intersection[] hits, T[][int[3]] objects, out int[3] rootTile)
   if(is(typeof(T.init.rootTile) == int[3])) {
   Intersection best;
