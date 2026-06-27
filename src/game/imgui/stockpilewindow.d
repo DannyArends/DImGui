@@ -17,8 +17,8 @@ private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on =
 private auto typesWhere(scope bool delegate(ResourceType) keep) { return [EnumMembers!ResourceType].filter!(t => t != ResourceType.None && keep(t)); }
 
 /** Leaf label: "Name  (n)##id", count shown only when stocked. */
-private const(char)* leaf(ref GameApp app, ref Stockpile sp, ResourceType t, string label) {
-  uint n = app.countOf(sp, t);
+private const(char)* leaf(const Stockpile sp, const Block[uint] blocks, ResourceType t, string label) {
+  uint n = sp.countOf(blocks, t);
   return n > 0 ? cstr("%s  (%d)##%d", label, n, cast(int)t) : cstr("%s##%d", label, cast(int)t);
 }
 
@@ -48,11 +48,11 @@ private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool b
     igPushID_Str(b.toStringz);
     if(bT == 1) {                                            // single variant -> base name as leaf
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(app.leaf(sp, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); } 
+        if(cTag(sp.leaf(app.world.blocks, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); } 
       }
     } else if(cNode(cstr("%s##b", b), tri(bOn, bT), () => sp.setAll(t => inBase(t), bOn != bT))) {
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(app.leaf(sp, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
+        if(cTag(sp.leaf(app.world.blocks, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
       }
       igTreePop();
     }

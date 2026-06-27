@@ -55,12 +55,15 @@ void loadBlocks(ref GameApp app) {
 @nogc pure bool hasBlocks(ref GameApp app) nothrow { return app.world.blocks.length > 0; }
 @nogc pure bool hasBlocks(ref GameApp app, ResourceType tt) nothrow { return app.world.blocks.byValue.any!(b => b.type == tt); }
 
+/** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
+ResourceType blockType(const Block[uint] blocks, uint id) { auto b = id in blocks; return b ? b.type : ResourceType.None; }
+
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
 int[3] pickupTileFor(ref GameApp app, uint id, ref Block b, bool includeStored) {
   if(b.reserved || b.isFalling || b.tile == noTile || b.tile == builtTile) return noTile;
   if(b.tile == storedTile) {
     if(!includeStored) return noTile;
-    auto pt = app.storedTileOf(id);
+    auto pt = app.world.storedTileOf(id);
     return (pt != noTile && app.world.hasStandableNeighbour(pt.tileAbove)) ? pt : noTile;
   }
   return app.world.hasStandableNeighbour(b.tile) ? b.tile : noTile;

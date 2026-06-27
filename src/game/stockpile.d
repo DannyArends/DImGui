@@ -5,9 +5,9 @@
 
 import game;
 
-import block : syncBlockInstances;
+import block : blockType, syncBlockInstances;
 import io : writeFile, readFile;
-import jobs : jobQueue, liveJobs, blockType, Reach;
+import jobs : jobQueue, liveJobs, Reach;
 import serialization : WORLD_MAGIC;
 import pathfinding : findGoalTile;
 import tile : tileToWorld, tileAbove, tileBelow, isStandable, hasStandableNeighbour;
@@ -88,27 +88,27 @@ void storeBlockAt(ref World world, int[3] tile, uint blockID) {
   }
 }
 
-bool acceptedByHolder(ref GameApp app, uint blockID, ResourceType type) {
-  foreach(ref sp; app.world.stockpiles){ if(sp.contents.canFind(blockID)) { return sp.acceptsType(type); } }
+bool acceptedByHolder(const Stockpile[uint] stockpiles, uint blockID, ResourceType type) {
+  foreach(sp; stockpiles){ if(sp.contents.canFind(blockID)) { return sp.acceptsType(type); } }
   return false;
 }
 
-uint countOf(ref GameApp app, ref Stockpile sp, ResourceType t) {
+uint countOf(const Stockpile sp, const Block[uint] blocks, ResourceType t) {
   uint n = 0;
-  foreach(id; sp.contents){ if(app.blockType(id) == t) { n++; } }
+  foreach(id; sp.contents){ if(blocks.blockType(id) == t) { n++; } }
   return n;
 }
 
-bool withdrawBlock(ref GameApp app, uint blockID) {
-  foreach(ref sp; app.world.stockpiles) {
+bool withdrawBlock(ref World world, uint blockID) {
+  foreach(ref sp; world.stockpiles) {
     auto idx = sp.contents.countUntil(blockID);
-    if(idx >= 0) { sp.contents[idx] = emptySlot; return true; }
+    if(idx >= 0) { sp.contents[idx] = emptySlot; return(true); }
   }
-  return false;
+  return(false);
 }
 
-int[3] storedTileOf(ref GameApp app, uint blockID) {
-  foreach(ref sp; app.world.stockpiles) {
+@nogc int[3] storedTileOf(const World world, uint blockID) {
+  foreach(sp; world.stockpiles) {
     auto idx = sp.contents.countUntil(blockID);
     if(idx >= 0){ return(sp.tiles[idx / slotsPerTile]); }
   }
@@ -116,20 +116,20 @@ int[3] storedTileOf(ref GameApp app, uint blockID) {
 }
 
 /** Sub-cell world offset for the n-th block in a tile */
-float[3] subCellOffset(ref World world, uint slot) {
+float[3] subCellOffset(const World world, uint slot) {
   immutable float bs = world.blockSize, half = world.tileSize * 0.5f;
   immutable uint sx = slot % subPerAxis, sy = (slot / subPerAxis) % subPerAxis, sz = slot / (subPerAxis^^2);
   return [(sx + 0.5f) * bs - half, sy * bs, (sz + 0.5f) * bs - half];
 }
 
 /** Serialize all stockpiles to one file (records + packed name/tiles/accepts/contents). */
-void saveStockpiles(ref GameApp app) {
-  if(app.world.stockpiles.length == 0) return;
+void saveStockpiles(const World world) {
+  if(world.stockpiles.length == 0) return;
   ubyte[] blob;
-  void put(uint[] xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * uint.sizeof]; }
+  void put(const(uint[]) xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * uint.sizeof]; }
 
-  put([cast(uint)WORLD_MAGIC, app.world.nextStockpileID, cast(uint)app.world.stockpiles.length]);
-  foreach(id, ref sp; app.world.stockpiles) {
+  put([cast(uint)WORLD_MAGIC, world.nextStockpileID, cast(uint)world.stockpiles.length]);
+  foreach(id, ref sp; world.stockpiles) {
     uint[] acc;
     foreach(t, on; sp.accepts) if(on) acc ~= cast(uint)t;
     put([sp.id, cast(uint)sp.name.length, cast(uint)sp.tiles.length, cast(uint)acc.length, cast(uint)sp.contents.length]);
@@ -138,12 +138,12 @@ void saveStockpiles(ref GameApp app) {
     put(acc);
     put(sp.contents);
   }
-  writeFile(app.world.stockpilePath(), cast(char[])blob);
+  writeFile(world.stockpilePath(), cast(char[])blob);
 }
 
 /** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids). */
-void loadStockpiles(ref GameApp app) {
-  auto raw = cast(ubyte[])readFile(app.world.stockpilePath());
+void loadStockpiles(ref World world) {
+  auto raw = cast(ubyte[])readFile(world.stockpilePath());
   if(raw.length < 12) return;
   size_t off = 0;
   bool need(size_t n) { return off + n <= raw.length; }
@@ -151,7 +151,7 @@ void loadStockpiles(ref GameApp app) {
 
   auto hdr = take(3);
   if(hdr[0] != WORLD_MAGIC) { SDL_Log("loadStockpiles: bad magic"); return; }
-  app.world.nextStockpileID = hdr[1];
+  world.nextStockpileID = hdr[1];
   uint count = hdr[2];
 
   foreach(_; 0 .. count) {
@@ -167,8 +167,8 @@ void loadStockpiles(ref GameApp app) {
 
     Stockpile sp = { id: r[0], name: name, tiles: tiles, contents: contents };
     foreach(t; acc) sp.accepts[cast(ResourceType)t] = true;
-    app.world.stockpiles[r[0]] = sp;
-    app.world.stampTiles(r[0], sp.tiles);
+    world.stockpiles[r[0]] = sp;
+    world.stampTiles(r[0], sp.tiles);
   }
-  SDL_Log("loadStockpiles: %d piles", cast(int)app.world.stockpiles.length);
+  SDL_Log("loadStockpiles: %d piles", cast(int)world.stockpiles.length);
 }
