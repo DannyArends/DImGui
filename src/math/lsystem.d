@@ -77,16 +77,17 @@ struct LSystem {
 }
 
 /** Build the throwaway trunk grammar: height Y-segments + one canopy leaf. Deterministic from seed. */
-Symbol[] buildGrammar(uint seed, uint height) {
-  auto ls = LSystem([Symbols.Axiom]);                    // X
-  ls.rules[Symbols.Axiom] = Rules([                      // each growth point:
-    Rule("YX", 80),                                      //   80% grow straight
-    Rule("Y[+X][-X]", 12),                               //   12% fork in two
-    Rule("Y[&X][^X]", 8)                                 //    8% fork (pitch)
-  ]);
+Symbol[] buildGrammar(uint seed, uint height, string axiom, const(char)[] preds, const(string)[] prods, const(uint)[] probs) {
+  Symbol[] start;
+  foreach(c; axiom){ start ~= Symbol(c); }
+  auto ls = LSystem(start);
+  foreach(i; 0 .. preds.length) {                        // group productions by predecessor
+    auto key = Symbol(preds[i]);
+    if(key !in ls.rules){ ls.rules[key] = Rules([]); }
+    ls.rules[key].rules ~= Rule(prods[i], cast(size_t)probs[i]);
+  }
   auto rnd = Random(seed | 1);
-  for(uint i = 0; i < height; i++) ls.iterate(rnd);      // height iterations -> branchy tree
-  // every remaining growth point (X) becomes a leaf
-  foreach(ref s; ls.state) if(s == Symbols.Axiom) s = Symbols.Icosa;
+  for(uint k = 0; k < height; k++) ls.iterate(rnd);
+  foreach(ref s; ls.state){ if(s == Symbols.Axiom){ s = Symbols.Icosa; } }   // remaining X -> leaf
   return ls.state;
 }
