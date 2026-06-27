@@ -132,6 +132,6 @@ double handleEvents(ref GameApp app) {
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }   // Execute all onFrame() on Geometries
   if(app.camera.onFrame !is null) app.camera.onFrame(dt);                   // Execute onFrame() on Camera
-  if(app.world.blocksDirty) { app.syncBlockInstances(); app.world.blocksDirty = false; }
+  if(app.world.blocksDirty) { app.world.syncBlockInstances(); app.world.blocksDirty = false; }
   return(dt);
 }
