@@ -12,7 +12,7 @@ import tool : tools, buildHighlight;
 import tile : tileIdx, tileToWorld, tileAbove;
 import jobs : activeTiles;
 
-int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
+int[3] getGhostTile(const GameApp app, float[3][2] ray, Intersection[] hits) {
   int[3] wc;
   if(!app.getBestTile(ray, hits, wc)) { return(noTile); }
 
@@ -37,14 +37,12 @@ int[3] getGhostTile(ref GameApp app, float[3][2] ray, Intersection[] hits) {
   return(noTile);
 }
 
-void addTiles(ref GameApp app, const(int[3])[] tiles, ToolMode mode) {
-  auto h = tools[mode];
-  if(h.matrix is null) return;               // tools with no ghost (e.g. Select/Query)
-  float ts = app.world.tileSize, th = app.world.tileHeight;
+void addTiles(ref World world, const(int[3])[] tiles, ToolMode mode) {
+  if(tools[mode].matrix is null) return;               // tools with no ghost (e.g. Select/Query)
   foreach(tile; tiles) {
-    auto inst = DrawInstance([0, 0], h.color, Matrix.init);
-    inst.matrix = h.matrix(app.world.tileToWorld(tile), ts, th);
-    app.world.inventory.instances ~= inst;
+    auto inst = DrawInstance([0, 0], tools[mode].color, Matrix.init);
+    inst.matrix = tools[mode].matrix(world.tileToWorld(tile), world.tileSize, world.tileHeight);
+    world.inventory.instances ~= inst;
   }
 }
 
@@ -57,14 +55,14 @@ void syncBuildGhosts(ref GameApp app) {
   auto buildTiles = app.world.activeTiles("Building");
   auto mineTiles = app.world.activeTiles("Mining");
 
-  app.addTiles(buildTiles, ToolMode.Build);
+  app.world.addTiles(buildTiles, ToolMode.Build);
   foreach(tile; buildTiles) app.world.data.tilePenalties[tile] = 40.0f;
-  app.addTiles(mineTiles, ToolMode.Mine);
+  app.world.addTiles(mineTiles, ToolMode.Mine);
   foreach(ref sp; app.world.stockpiles){ foreach(t; sp.tiles) {
-    app.addTiles([t], ToolMode.Stockpile);
+    app.world.addTiles([t], ToolMode.Stockpile);
     app.world.data.tilePenalties[t.tileAbove] = 100.0f;
   } }
-  app.addTiles(app.world.inventory.paint.preview, app.world.inventory.activeTool);
+  app.world.addTiles(app.world.inventory.paint.preview, app.world.inventory.activeTool);
 
   app.world.inventory.isVisible = (app.world.inventory.instances.length > 0);
   app.world.inventory.instances.invalidate();

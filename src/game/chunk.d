@@ -129,7 +129,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
 /** Find the best intersecting tile in the world given a ray, returns world coord or [int.min,0,0] */
 bool getBestTile(ref GameApp app, float[3][2] ray, out int[3] wc) { return(app.getBestTile(ray, app.getHits(ray, false), wc)); }
 
-bool getBestTile(ref GameApp app, float[3][2] ray, Intersection[] hits, out int[3] wc) {
+bool getBestTile(const GameApp app, float[3][2] ray, Intersection[] hits, out int[3] wc) {
   Intersection best;
   foreach(ref hit; hits) {
     auto chunk = cast(Chunk)app.objects[hit.idx[0]];
