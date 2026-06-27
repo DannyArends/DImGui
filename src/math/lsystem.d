@@ -27,7 +27,7 @@ enum Symbols : Symbol {
   YawPos = Symbol('+'), YawNeg = Symbol('-'),
   PitchDn = Symbol('&'), PitchUp = Symbol('^'),
   RollPos = Symbol('<'), RollNeg = Symbol('>'),
-  Push = Symbol('['), Pop = Symbol(']')
+  Push = Symbol('('), Pop = Symbol(')')
 }
 
 /** Production Rule */
