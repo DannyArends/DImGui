@@ -25,17 +25,17 @@ struct Block {
   size_t instanceIdx = size_t.max;  /// Instance IDX
   bool reserved = false;            /// Reserved for a job ?
 
-  @property @nogc bool isFalling() nothrow { return fall.isFalling; }
+  @property @nogc bool isFalling() const nothrow { return fall.isFalling; }
 }
 
 /** Save blocks */
-void saveBlocks(ref GameApp app) {
-  if(app.world.blocks.length == 0) return;
-  foreach(id, ref b; app.world.blocks) {
-    if(b.fall.isFalling) { b.tile = b.fall.landingTile(app.world, b.tile); b.fall = Fall.init; }
+void saveBlocks(ref World world) {
+  if(world.blocks.length == 0) return;
+  foreach(id, ref b; world.blocks) {
+    if(b.fall.isFalling) { b.tile = b.fall.landingTile(world, b.tile); b.fall = Fall.init; }
   }
-  Block[] flat = app.world.blocks.values;
-  writeData(app.world.blocksPath(), flat, app.world.blockNextID);
+  Block[] flat = world.blocks.values;
+  writeData(world.blocksPath(), flat, world.blockNextID);
 }
 
 /** Load blocks */
@@ -52,33 +52,32 @@ void loadBlocks(ref GameApp app) {
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
 }
 
-@nogc pure bool hasBlocks(ref GameApp app) nothrow { return app.world.blocks.length > 0; }
-@nogc pure bool hasBlocks(ref GameApp app, ResourceType tt) nothrow { return app.world.blocks.byValue.any!(b => b.type == tt); }
+@nogc pure bool hasBlocks(const Block[uint] blocks, ResourceType tt) nothrow { return blocks.byValue.any!(b => b.type == tt); }
 
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
 ResourceType blockType(const Block[uint] blocks, uint id) { auto b = id in blocks; return b ? b.type : ResourceType.None; }
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
-int[3] pickupTileFor(ref GameApp app, uint id, ref Block b, bool includeStored) {
+int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStored) {
   if(b.reserved || b.isFalling || b.tile == noTile || b.tile == builtTile) return noTile;
   if(b.tile == storedTile) {
     if(!includeStored) return noTile;
-    auto pt = app.world.storedTileOf(id);
-    return (pt != noTile && app.world.hasStandableNeighbour(pt.tileAbove)) ? pt : noTile;
+    auto pt = world.storedTileOf(id);
+    return (pt != noTile && world.hasStandableNeighbour(pt.tileAbove)) ? pt : noTile;
   }
-  return app.world.hasStandableNeighbour(b.tile) ? b.tile : noTile;
+  return world.hasStandableNeighbour(b.tile) ? b.tile : noTile;
 }
 
 /** Clear the reserved flag on a set of blocks (released on job failure/completion). */
 void releaseBlocks(ref GameApp app, uint[] ids) { foreach(id; ids){ if(auto b = id in app.world.blocks){ b.reserved = false; } } }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
-uint findFreeBlock(ref GameApp app, int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
+uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
   uint bestID = noBlock;
   float bestDist = float.max;
-  foreach(id, ref b; app.world.blocks) {
+  foreach(id, b; world.blocks) {
     if(tt != ResourceType.None && b.type != tt) continue;
-    int[3] at = app.pickupTileFor(id, b, includeStored);
+    int[3] at = world.pickupTileFor(id, b, includeStored);
     if(at == noTile) continue;
     float dist = manhattan(at, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = id; }

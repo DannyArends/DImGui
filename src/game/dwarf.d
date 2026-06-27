@@ -233,7 +233,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Hunger
   if(d.needs[Need.Hunger] >= 0.6f) {
     if(d.carrying.any!(id => app.world.blocks.blockType(id) == ResourceType.Berry)) { app.dispatchJob(d, eatJob()); return true; }
-    if(app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock) { app.dispatchJob(d, pickupJob(noTile, ResourceType.Berry)); return true; }
+    if(app.world.findFreeBlock(d.tile, ResourceType.Berry) != noBlock) { app.dispatchJob(d, pickupJob(noTile, ResourceType.Berry)); return true; }
   }
   // Rest
   if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return true; }
