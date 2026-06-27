@@ -178,7 +178,9 @@ private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[str
     auto brt = br.resourceType == "None" ? ResourceType.None : br.resourceType.to!ResourceType;
     cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance);
   }
-  auto str = buildGrammar(f.hash, f.height);
+  char[] preds; string[] prods; uint[] probs;
+  foreach(ref r; ft.rules) { preds ~= r.predecessor; prods ~= r.production; probs ~= r.probability; }
+  auto str = buildGrammar(f.hash, f.height, ft.axiom, preds, prods, probs);
   char[] chars; foreach(s; str) chars ~= s.symbol;
   float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];
   float baseY = ft.brushes[0].length * 0.5f;
