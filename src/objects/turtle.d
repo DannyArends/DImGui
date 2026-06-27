@@ -26,7 +26,7 @@ private struct State { float[3] pos; float[4] orient; }   // orient = quaternion
 
 /** Interpret an already-iterated L-system string, emitting DrawInstances into the brushes' meshes.
     Turtle local frame: heading is +Y. Turns are applied in the turtle's own frame (right-multiply). */
-DrawInstance[][char] interpret(const(char)[] symbols, ref const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
   DrawInstance[][char] instances;
   State st = State(origin, orient0);
   State[] stack;
