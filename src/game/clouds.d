@@ -31,6 +31,7 @@ enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
 /** Cloud-cell key -> a random world tile X/Z inside that cell. */
 int[2] cloudTile(const int[2] key) { return [key[0]*CLOUD_STEP + uniform(0, CLOUD_STEP), key[1]*CLOUD_STEP + uniform(0, CLOUD_STEP)]; }
 
+/** Seed cloud density for every cloud-cell column over a newly-loaded chunk from 2D noise; skips already-seeded cells. */
 void seedClouds(ref World world, const int[3] coord) {
   int cs = world.chunkSize;
   int baseX = coord.x * cs, baseZ = coord.z * cs;
@@ -43,6 +44,7 @@ void seedClouds(ref World world, const int[3] coord) {
   } }
 }
 
+/** Occasionally (CLOUD_SPAWN_CHANCE) add a moisture pulse to one random cloud-cell over a random loaded chunk. */
 void spawnClouds(ref World world) {
   if(uniform(0, 10000) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
   auto coords = world.chunks.keys;
@@ -52,6 +54,7 @@ void spawnClouds(ref World world) {
   world.cloudDensity[cloudCell(cc[0] * cs + uniform(0, cs), cc[2] * cs + uniform(0, cs))] += CLOUD_SPAWN_AMOUNT;
 }
 
+/** Build the cloud face-instance mesh from a density snapshot over the given chunk coords (pure; runs on a worker). */
 DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] density, const int[3][] coords) {
   float h(int gx, int gz){ auto p = [gx,gz] in density; return((p is null)? 0.0f : (*p) * CLOUD_LAYERS); }
   float baseY = wd.height + 8.0f * wd.tileHeight; 

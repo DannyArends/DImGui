@@ -38,6 +38,7 @@ private @nogc int rdWater(ref GameApp app, const WaterNext next, const int[3] wc
   return p is null ? app.getWater(wc) : *p;
 }
 
+/** Total live water-sim cells across all loaded chunks (sum of each chunk's active set). */
 @nogc activeSim(const Chunk[int[3]] chunks) {
   int active = 0;
   foreach(c; chunks){ active += cast(int)c.active.length; }
