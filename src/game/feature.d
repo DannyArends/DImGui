@@ -102,6 +102,7 @@ void initFeatureMeshes(ref GameApp app) {
       if(br.mesh == "Cylinder") { mesh = new Cylinder(0.4f, 1.0f, 12); mesh.initInstanced(captureKey(meshKey)); }
       if(br.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); mesh.initInstanced(captureKey(meshKey)); }
       if(br.mesh == "Cone") { mesh = new Cone(0.5f, 1.0f, 12); mesh.initInstanced(captureKey(meshKey)); }
+      if(br.mesh == "Cube") { mesh = new Cube(); mesh.initInstanced(captureKey(meshKey)); }
       app.world.featureMeshes[meshKey] = mesh;
       app.objects ~= mesh;
     }
