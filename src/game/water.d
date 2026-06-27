@@ -35,7 +35,7 @@ private @nogc int ownLevel(const WaterNext next, const Chunk chunk, int idx, con
 private @nogc int rdWater(ref GameApp app, const WaterNext next, const int[3] wc) nothrow {
   if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return 0;
   auto p = wc in next;
-  return p is null ? app.getWater(wc) : *p;
+  return p is null ? app.world.getWater(wc) : *p;
 }
 
 /** Total live water-sim cells across all loaded chunks (sum of each chunk's active set). */
@@ -92,7 +92,7 @@ void waterTick(ref GameApp app) {
 
   // PHASE 4: COMMIT changed cells
   foreach(wc, _; touched) {
-    if(app.rdWater(next, wc) == app.getWater(wc)) continue;
+    if(app.rdWater(next, wc) == app.world.getWater(wc)) continue;
     app.setWater(wc, cast(ubyte)next[wc]);
   }
 
