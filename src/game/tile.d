@@ -48,9 +48,11 @@ void activate(ref GameApp app, int[3] tile) {
   int idx = app.world.tileIdx(tile);
   auto lc = app.world.tileCoord(idx);
   if(ch.waterLevel[idx] > 0) ch.active ~= idx;
-  foreach(offset; FACE_OFFSETS) {
-    Chunk nch; int nidx;
-    if(app.neighbourCell(ch, lc, offset, nch, nidx) && nch.waterLevel[nidx] > 0){ nch.active ~= nidx; }
+  foreach(d; FACE_OFFSETS) {
+    int[3] nc; int nidx;
+    if(!app.world.neighbourAt(ch.coord, lc, d, nc, nidx)) continue;
+    Chunk nch = (nc == ch.coord) ? ch : app.world.chunks[nc];   // reuse in-chunk -> no hash
+    if(nch.waterLevel[nidx] > 0) nch.active ~= nidx;
   }
 }
 
@@ -111,19 +113,17 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
 
 /** Resolve a neighbour of local (lx,ly,lz) in `chunk` by offset (dx,dy,dz) to (out chunk, out idx).
     In-chunk: pure integer offset, no hash. Boundary: one chunk-pointer hop. False if out of loaded world. */
-@nogc bool neighbourCell(ref GameApp app, Chunk chunk, int[3] lc, int[3] offset, out Chunk nch, out int nidx) nothrow {
-  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
+@nogc bool neighbourAt(const World world, const int[3] coord, int[3] lc, int[3] offset, out int[3] nCoord, out int nidx) nothrow {
+  int S = world.chunkSize, Hh = world.chunkHeight;
   int ny = lc.y + offset.y;
   if(ny < 0 || ny >= Hh) return false;
   int nx = lc.x + offset.x, nz = lc.z + offset.z;
-  if(nx >= 0 && nx < S && nz >= 0 && nz < S) {              // in-chunk
-    nch = chunk; nidx = nz*Hh*S + ny*S + nx; return true;
-  }
-  int cdx = nx < 0 ? -1 : (nx >= S ? 1 : 0);               // boundary hop
+  if(nx >= 0 && nx < S && nz >= 0 && nz < S) { nCoord = coord; nidx = nz*Hh*S + ny*S + nx; return true; }
+  int cdx = nx < 0 ? -1 : (nx >= S ? 1 : 0);
   int cdz = nz < 0 ? -1 : (nz >= S ? 1 : 0);
-  auto p = [chunk.coord[0]+cdx, 0, chunk.coord[2]+cdz] in app.world.chunks;
-  if(p is null) return false;
-  nch = *p; nidx = ((nz+S)%S)*Hh*S + ny*S + ((nx+S)%S);
+  nCoord = [coord[0]+cdx, 0, coord[2]+cdz];
+  if(nCoord !in world.chunks) return false;
+  nidx = ((nz+S)%S)*Hh*S + ny*S + ((nx+S)%S);
   return true;
 }
 

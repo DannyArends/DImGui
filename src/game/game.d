@@ -129,7 +129,7 @@ void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
   if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); }, 2)) app.camera.isDirty = true;
   app.drainMessages!PathResult((r) { app.applyPathResult(r); });
-  app.drainMessages!CloudResult((r) { app.applyCloudInstances(r.instances); });
+  app.drainMessages!CloudResult((r) { app.world.applyCloudInstances(r.instances); });
 }
 
 /** Persist the world to disk on shutdown */
