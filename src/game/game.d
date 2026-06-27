@@ -9,7 +9,7 @@ public import block : Block;
 public import clouds : CloudRequest, CloudResult;
 public import chunk : ChunkData;
 public import dwarf : Dwarf, DwarfData, DwarfState;
-public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Feature;
+public import feature : FeatureT, FeaturePartT, LSystemBrushT, LSystemRuleT, FeatureDropT, Feature;
 public import inventory : Inventory;
 public import jobs : Job, JobState, Reach;
 public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
