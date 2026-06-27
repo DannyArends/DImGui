@@ -161,8 +161,8 @@ void loadWorld(ref GameApp app) {
   } else if(raw.length != 0) { SDL_Log("loadWorld: invalid magic"); }
 
   app.loadBlocks();
-  app.loadWater();
-  app.loadClouds();
+  app.world.loadWater();
+  app.world.loadClouds();
   foreach(ref ft; features) {
     if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
     if(ft.name !in app.world.features) app.world.features[ft.name] = null;
@@ -182,8 +182,8 @@ void saveWorld(ref GameApp app) {
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
   app.saveBlocks();
-  app.saveWater();
-  app.saveClouds();
+  app.world.saveWater();
+  app.world.saveClouds();
   foreach(ref ft; features) {
     app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
   }
