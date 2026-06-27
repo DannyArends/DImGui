@@ -39,24 +39,22 @@ int[2] cloudTile(int[2] key) { return [key[0]*CLOUD_STEP + uniform(0, CLOUD_STEP
 void seedClouds(ref GameApp app, int[3] coord) {
   int cs = app.world.chunkSize;
   int baseX = coord[0] * cs, baseZ = coord[2] * cs;
-  for(int lz = 0; lz < cs; lz += CLOUD_STEP)
+  for(int lz = 0; lz < cs; lz += CLOUD_STEP) {
   for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
-    auto gc = cloudCell(baseX + lx, baseZ + lz);
-    if(gc in app.world.cloudDensity) continue;
-    float n = smoothNoise([gc[0]*CLOUD_FREQ, gc[1]*CLOUD_FREQ], 1337);
-    float d = (n - CLOUD_THRESHOLD) / 0.2f;
-    app.world.cloudDensity[[gc[0], gc[1]]] = d < 0 ? 0 : (d > 1 ? 1 : d);
-  }
+    auto cell = cloudCell(baseX + lx, baseZ + lz);
+    if(cell in app.world.cloudDensity) continue;
+    float d = (smoothNoise([cell[0]*CLOUD_FREQ, cell[1]*CLOUD_FREQ], 1337) - CLOUD_THRESHOLD) / 0.2f;
+    app.world.cloudDensity[[cell[0], cell[1]]] = d < 0 ? 0 : (d > 1 ? 1 : d);
+  } }
 }
 
-void spawnClouds(ref GameApp app) {
+void spawnClouds(ref World world) {
   if(uniform(0, 10000) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
-  auto coords = app.world.chunks.keys;
+  auto coords = world.chunks.keys;
+  auto cs = world.chunkSize;
   if(coords.length == 0) return;
-  int cs = app.world.chunkSize;
   int[3] cc = coords[uniform(0, coords.length)];
-  auto gc = cloudCell(cc[0] * cs + uniform(0, cs), cc[2] * cs + uniform(0, cs));
-  app.world.cloudDensity[gc] += CLOUD_SPAWN_AMOUNT;
+  world.cloudDensity[cloudCell(cc[0] * cs + uniform(0, cs), cc[2] * cs + uniform(0, cs))] += CLOUD_SPAWN_AMOUNT;
 }
 
 DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] density, const int[3][] coords) {
@@ -70,9 +68,9 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
     int baseX = coord[0]*wd.chunkSize;
     int baseZ = coord[2]*wd.chunkSize;
     for(int lz=0; lz<wd.chunkSize; lz+=CLOUD_STEP) { for(int lx=0; lx<wd.chunkSize; lx+=CLOUD_STEP) {
-      auto gc = cloudCell(baseX + lx, baseZ + lz);
-      float hC = h(gc[0], gc[1]); if(hC <= 0) continue;
-      float[6] hN = [h(gc[0]+1,gc[1]), h(gc[0]-1,gc[1]), hC, hC, h(gc[0],gc[1]+1), h(gc[0],gc[1]-1)];
+      auto cell = cloudCell(baseX + lx, baseZ + lz);
+      float hC = h(cell[0], cell[1]); if(hC <= 0) continue;
+      float[6] hN = [h(cell[0]+1,cell[1]), h(cell[0]-1,cell[1]), hC, hC, h(cell[0],cell[1]+1), h(cell[0],cell[1]-1)];
       foreach(y; 0..CLOUD_LAYERS) { 
         if(y>=hC) continue;
         float px=(baseX+lx)*wd.tileSize, py=baseY+y*voxH, pz=(baseZ+lz)*wd.tileSize;
@@ -87,8 +85,9 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
   return inst;
 }
 
-/** Relax cloud density toward 0 and clamp; prune negligible entries. */
-void decayCloudDensity(ref GameApp app) {
+/** Update cloud density by spawning some new ones and clamp; prune negligible entries. */
+void updateCloudDensity(ref GameApp app) {
+  app.world.spawnClouds(); // Add some random moisture
   int active = app.world.chunks.activeSim();
 
   int[2][] dead;
@@ -101,7 +100,6 @@ void decayCloudDensity(ref GameApp app) {
 }
 
 void rainTick(ref GameApp app) {
-  int cs = app.world.chunkSize;
   int cloudY = app.world.chunkHeight - 1;
   int drops = 0;
 
