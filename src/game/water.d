@@ -11,7 +11,7 @@ import serialization : readData, writeData;
 import tile : FACE_OFFSETS, neighbourCell, tileBelow, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 
 enum ubyte WATER_MAX = 7;               // Maximum water density
-enum int WATER_TARGET_ACTIVE = 750;     // Desired number of live water cells in sim
+enum int WATER_TARGET_ACTIVE = 1250;    // Desired number of live water cells in sim
 enum float EVAP_DENSITY = 0.005f;       // Density added through water evaporation
 enum uint EVAP_DEPLETE = 3000;          // Speed of evaporation
 
@@ -116,9 +116,9 @@ void evaporateTick(ref GameApp app) {
       if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - have) * 2) {
         int[3] wc = app.world.worldCoord(chunk.coord, app.world.tileCoord(idx));
         app.setWater(wc, cast(ubyte)(have - 1), false);
-        auto cc = cloudCell(wc[0], wc[2]);
+        auto cell = cloudCell(wc[0], wc[2]);
         auto dd = H[uniform(0, 4)];
-        app.world.cloudDensity[[cc[0] + dd[0], cc[1] + dd[1]]] += uniform(1, hi) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
+        app.world.cloudDensity[[cell[0] + dd[0], cell[1] + dd[1]]] += uniform(1, hi) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
       }
     }
   }
