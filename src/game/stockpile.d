@@ -96,12 +96,6 @@ bool acceptedByHolder(ref GameApp app, uint blockID, ResourceType type) {
   return false;
 }
 
-/** Anti-reshuffle: a block already in an accepting pile is settled */
-bool isSettled(ref GameApp app, uint blockID, ResourceType type) {
-  foreach(ref sp; app.world.stockpiles) { if(sp.contents.canFind(blockID)){ return sp.acceptsType(type); } }  // verdict from the HOLDER
-  return false;                                                     // not in any pile -> not settled
-}
-
 uint countOf(ref GameApp app, ref Stockpile sp, ResourceType t) {
   uint n = 0;
   foreach(id; sp.contents){ if(app.blockType(id) == t) { n++; } }
