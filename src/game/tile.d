@@ -41,17 +41,16 @@ static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,
 
 /** Wake a cell and its 6 neighbours so the sim re-evaluates them next tick. */
 void activate(ref GameApp app, int[3] tile) {
-  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
-  if(tile[1] < 0 || tile[1] >= Hh) return;
+  if(tile[1] < 0 || tile[1] >= app.world.chunkHeight) return;
   auto p = app.world.chunkCoord(tile) in app.world.chunks;
   if(p is null) return;
   auto ch = *p;
   int idx = app.world.tileIdx(tile);
-  int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
+  auto lc = app.world.tileCoord(idx);
   if(ch.waterLevel[idx] > 0) ch.active ~= idx;
   foreach(d; FACE_OFFSETS) {
     Chunk nch; int nidx;
-    if(app.neighbourCell(ch, lx, ly, lz, d[0], d[1], d[2], nch, nidx) && nch.waterLevel[nidx] > 0){ nch.active ~= nidx; }
+    if(app.neighbourCell(ch, lc, d[0], d[1], d[2], nch, nidx) && nch.waterLevel[nidx] > 0){ nch.active ~= nidx; }
   }
 }
 
@@ -112,11 +111,11 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
 
 /** Resolve a neighbour of local (lx,ly,lz) in `chunk` by offset (dx,dy,dz) to (out chunk, out idx).
     In-chunk: pure integer offset, no hash. Boundary: one chunk-pointer hop. False if out of loaded world. */
-@nogc bool neighbourCell(ref GameApp app, Chunk chunk, int lx, int ly, int lz, int dx, int dy, int dz, out Chunk nch, out int nidx) nothrow {
+@nogc bool neighbourCell(ref GameApp app, Chunk chunk, int[3] lc, int dx, int dy, int dz, out Chunk nch, out int nidx) nothrow {
   int S = app.world.chunkSize, Hh = app.world.chunkHeight;
-  int ny = ly + dy;
+  int ny = lc.y + dy;
   if(ny < 0 || ny >= Hh) return false;
-  int nx = lx + dx, nz = lz + dz;
+  int nx = lc.x + dx, nz = lc.z + dz;
   if(nx >= 0 && nx < S && nz >= 0 && nz < S) {              // in-chunk
     nch = chunk; nidx = nz*Hh*S + ny*S + nx; return true;
   }

@@ -108,7 +108,6 @@ void evaporateTick(ref GameApp app) {
   float ratio = active / cast(float)WATER_TARGET_ACTIVE;            // 1.0 at target
   int hi = cast(int)clamp(5.0f / (ratio + 0.05f), 2.0f, 50.0f);     // under target -> larger pulse, over -> smaller
 
-
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
     foreach(idx; chunk.wetCells.dup) {
@@ -130,12 +129,11 @@ void evaporateTick(ref GameApp app) {
     0 if the cell holds < 2 or no neighbour is lower. Reads pending levels from `next`. */
 private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc, int have, out int[3][4] tgt) nothrow {
   if(have < 2) return 0;
-  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
-  int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
+  auto lc = app.world.tileCoord(idx);
   int bestLvl = have, n = 0;
   foreach(h; H) {
     Chunk nch; int nidx;
-    if(!app.neighbourCell(chunk, lx, ly, lz, h[0], 0, h[1], nch, nidx)) continue;   // resolve ONCE
+    if(!app.neighbourCell(chunk, lc, h[0], 0, h[1], nch, nidx)) continue;   // resolve ONCE
     if(nch.tileTypes[nidx] != ResourceType.None) continue;                          // air check (direct)
     int[3] nwc = [wc[0]+h[0], wc[1], wc[2]+h[1]];
     auto p = nwc in next;                                                           // pending?
@@ -148,53 +146,50 @@ private int spreadTargets(ref GameApp app, ref WaterNext next, Chunk chunk, int 
 
 /** True if the cell below is air and not yet full, so water here can fall into it. */
 private bool canFall(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) nothrow {
-  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
-  int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
+  auto lc = app.world.tileCoord(idx);
   Chunk nch; int nidx;
-  if(!app.neighbourCell(chunk, lx, ly, lz, 0, -1, 0, nch, nidx)) return false;
-  if(nch.tileTypes[nidx] != ResourceType.None) return false;       // not air
+  if(!app.neighbourCell(chunk, lc, 0, -1, 0, nch, nidx)) return(false);
+  if(nch.tileTypes[nidx] != ResourceType.None) return(false); // not air
   int[3] bwc = [wc[0], wc[1]-1, wc[2]];
   auto p = bwc in next;
-  int bl = p is null ? nch.waterLevel[nidx] : *p;
-  return bl < WATER_MAX;
+  int bl = (p is null)? nch.waterLevel[nidx] : *p;
+  return(bl < WATER_MAX);
 }
 
 /** True if the cell has water but can neither fall nor spread - i.e. nothing left to simulate this tick. */
 private bool isSettled(ref GameApp app, ref WaterNext next, Chunk chunk, int idx, int[3] wc) nothrow {
   int have = ownLevel(next, chunk, idx, wc);
-  if(have <= 0) return true;
-  if(app.canFall(next, chunk, idx, wc)) return false;
+  if(have <= 0) return(true);
+  if(app.canFall(next, chunk, idx, wc)) return(false);
   int[3][4] tgt;
-  if(app.spreadTargets(next, chunk, idx, wc, have, tgt) > 0) return false;
-  return true;
+  if(app.spreadTargets(next, chunk, idx, wc, have, tgt) > 0) return(false);
+  return(true);
 }
 
 /** A cell can hold water if it is in range and air (not solid ground). */
 private bool canHoldWater(ref GameApp app, int[3] wc) {
   if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return false;
   auto p = app.world.chunkCoord(wc) in app.world.chunks;
-  if(p is null) return false;                              // unloaded -> can't hold (edge of world)
-  return (*p).tileTypes[app.world.tileIdx(wc)] == ResourceType.None;
+  if(p is null){ return(false); }// unloaded -> can't hold (edge of world)
+  return((*p).tileTypes[app.world.tileIdx(wc)] == ResourceType.None);
 }
 
 /** Rebuild the single world water object from all chunks' waterLevel. */
 private void rebuildChunkWaterInstances(ref GameApp app, Chunk chunk) {
-  float ts = app.world.tileSize, th = app.world.tileHeight;
-  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
   DrawInstance[] inst;
   foreach(idx; chunk.wetCells) {
     ubyte lvl = chunk.waterLevel[idx];
     if(lvl == 0) continue;
-    int lx = idx % S, ly = (idx / S) % Hh, lz = idx / (S*Hh);
-    int[3] wc = app.world.data.worldCoord(chunk.coord, [lx, ly, lz]);
+    auto lc = app.world.tileCoord(idx);
+    int[3] wc = app.world.data.worldCoord(chunk.coord, lc);
     float[3] p = app.world.data.tileToWorld(wc);
-    float wh = th * (lvl / cast(float)WATER_MAX);
-    float cy = p[1] - th*0.5f + wh*0.5f;
+    float wh = app.world.tileHeight * (lvl / cast(float)WATER_MAX);
+    float cy = p[1] - app.world.tileHeight * 0.5f + wh * 0.5f;
     foreach(f; 0 .. 6) {
       Chunk nch; int nidx;
-      int nlvl = app.neighbourCell(chunk, lx, ly, lz, FACE_OFFSETS[f][0], FACE_OFFSETS[f][1], FACE_OFFSETS[f][2], nch, nidx)? nch.waterLevel[nidx] : 0;
+      int nlvl = app.neighbourCell(chunk, lc, FACE_OFFSETS[f][0], FACE_OFFSETS[f][1], FACE_OFFSETS[f][2], nch, nidx)? nch.waterLevel[nidx] : 0;
       if(nlvl >= lvl) continue;
-      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], ts, wh));
+      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], app.world.tileSize, wh));
     }
   }
   chunk.waterInstances = inst;
@@ -241,9 +236,8 @@ void loadWater(ref GameApp app) {
   uint h;
   if(!readData(app.world.waterPath(), flat, h)) return;
   app.world.data.waterDiffs = null;
-  foreach(ref d; flat) app.world.data.waterDiffs[d.coord][d.idx] = d.level;
-  // apply to any already-resident chunks (newly-streamed ones get it in buildChunkData)
-  foreach(coord; app.world.chunks.keys) {
+  foreach(ref d; flat){ app.world.data.waterDiffs[d.coord][d.idx] = d.level; }
+  foreach(coord; app.world.chunks.keys) {  // apply to any already-resident chunks (newly-streamed ones get it in buildChunkData)
     if(auto wm = coord in app.world.data.waterDiffs) {
       auto chunk = app.world.chunks[coord];
       foreach(idx, lvl; *wm) {
