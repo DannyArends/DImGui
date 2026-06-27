@@ -79,10 +79,14 @@ struct LSystem {
 /** Build the throwaway trunk grammar: height Y-segments + one canopy leaf. Deterministic from seed. */
 Symbol[] buildGrammar(uint seed, uint height) {
   auto ls = LSystem([Symbols.Axiom]);                    // X
-  ls.rules[Symbols.Axiom] = Rules([ Rule("YX", 100) ]);  // X -> Y X  (grow trunk)
+  ls.rules[Symbols.Axiom] = Rules([                      // each growth point:
+    Rule("YX", 80),                                      //   80% grow straight
+    Rule("Y[+X][-X]", 12),                               //   12% fork in two
+    Rule("Y[&X][^X]", 8)                                 //    8% fork (pitch)
+  ]);
   auto rnd = Random(seed | 1);
-  for(uint i = 0; i < height; i++) ls.iterate(rnd);      // -> Y*height X
-  // terminate: replace trailing X (Axiom) with canopy leaf I
-  if(ls.state.length && ls.state[$-1] == Symbols.Axiom) ls.state[$-1] = Symbols.Icosa;
-  return ls.state;                                        // "YYYY...I"
+  for(uint i = 0; i < height; i++) ls.iterate(rnd);      // height iterations -> branchy tree
+  // every remaining growth point (X) becomes a leaf
+  foreach(ref s; ls.state) if(s == Symbols.Axiom) s = Symbols.Icosa;
+  return ls.state;
 }
