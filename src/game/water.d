@@ -111,11 +111,10 @@ void evaporateTick(ref GameApp app) {
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
     foreach(idx; chunk.wetCells.dup) {
-      ubyte have = chunk.waterLevel[idx];
-      if(have == 0 || have >= (WATER_MAX-2)) continue;
-      if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - have) * 2) {
+      if(chunk.waterLevel[idx] == 0 || chunk.waterLevel[idx] >= (WATER_MAX-2)) continue;
+      if(uniform(0, EVAP_DEPLETE) < (WATER_MAX - chunk.waterLevel[idx]) * 2) {
         int[3] wc = app.world.worldCoord(chunk.coord, app.world.tileCoord(idx));
-        app.setWater(wc, cast(ubyte)(have - 1), false);
+        app.setWater(wc, cast(ubyte)(chunk.waterLevel[idx] - 1), false);
         auto cell = cloudCell(wc[0], wc[2]);
         auto dd = H[uniform(0, 4)];
         app.world.cloudDensity[[cell[0] + dd[0], cell[1] + dd[1]]] += uniform(1, hi) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
@@ -215,8 +214,7 @@ void saveWater(ref World world) {
     auto chunk = world.chunks[coord];
     world.data.waterDiffs.remove(chunk.coord);          // drop this chunk's stale snapshot
     foreach(idx; chunk.wetCells) {
-      ubyte lvl = chunk.waterLevel[idx];
-      if(lvl > 0) world.data.waterDiffs[chunk.coord][cast(uint)idx] = lvl;
+      if(chunk.waterLevel[idx] > 0) world.data.waterDiffs[chunk.coord][cast(uint)idx] = chunk.waterLevel[idx];
     }
   }
   WaterDiff[] flat;
