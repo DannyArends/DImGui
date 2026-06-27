@@ -51,7 +51,7 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
                        .multiply(translate([0.0f, br.length * 0.5f, 0.0f]))
                        .multiply(scale([br.radius, br.length, br.radius]));
           instances[c] ~= DrawInstance(br.material, m);
-          if(br.advance){ st.pos = st.pos.vAdd(rot.multiply([0.0f, br.length, 0.0f])); }
+          if(br.advance){ st.pos = st.pos.vAdd(rot.multiply([0.0f, br.length * 0.95f, 0.0f])); }
         }
       break;
     }
