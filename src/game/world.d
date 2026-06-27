@@ -181,7 +181,7 @@ void saveWorld(ref GameApp app) {
   char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])flat;
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
-  app.saveBlocks();
+  app.world.saveBlocks();
   app.world.saveWater();
   app.world.saveClouds();
   foreach(ref ft; features) {

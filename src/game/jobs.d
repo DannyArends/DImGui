@@ -100,7 +100,7 @@ void progressJob(ref GameApp app, ref Dwarf d, float amount, void delegate() onC
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
-  uint id = j.blockIDs.length ? j.blockIDs[0] : app.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
+  uint id = j.blockIDs.length ? j.blockIDs[0] : app.world.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
   auto b = (id == noBlock ? null : id in app.world.blocks);
 
   if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.world.blocks.blockType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
@@ -410,7 +410,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
   float bestScore = -float.max;
   foreach(i, ref job; jobQueue) {
     if(d.uid in job.failedBy) continue;
-    if(job.name == "Building" && !app.hasBlocks(job.tileType)) continue;
+    if(job.name == "Building" && !app.world.blocks.hasBlocks(job.tileType)) continue;
     float s = app.scoreJob(d, job);
     if(s > bestScore) { bestScore = s; bestIdx = cast(int)i; }
   }
@@ -426,7 +426,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
   // No job found — wander or pick up stuff
   if(++d.idleTicks[0] > d.idleTicks[1]) {
     d.idleTicks[0] = 0;
-    if(app.timed!hasBlocks() && d.hasInventorySpace() && uniform(0, 2) == 0) {
+    if(app.world.blocks.length > 0 && d.hasInventorySpace() && uniform(0, 2) == 0) {
       app.dispatchJob(d, pickupJob(noTile, ResourceType.None));
     } else { app.roam(d); }
   }
