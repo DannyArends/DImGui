@@ -9,7 +9,7 @@ import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
-import stockpile : isSettled, findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
+import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
 import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, tileToWorld, getSuccessors, worldToTile;
 import timing : timed;
 import vector : manhattan, manhattan2D;
@@ -371,7 +371,7 @@ void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {
     if(b.tile == noTile || b.tile == builtTile || b.reserved || b.isFalling) continue;
-    if(app.isSettled(id, b.type)) continue;
+    if(app.acceptedByHolder(id, b.type)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     int[3] dst;
     uint sp = app.findStockpileSlot(b.type, d.tile, dst);
