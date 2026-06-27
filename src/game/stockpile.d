@@ -51,15 +51,15 @@ void removeStockpile(ref World world, uint id) {
 }
 
 /** Nearest accepting pile with a free slot; returns id (or 0) and fills `tile` with a target tile */
-uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[3] tile) {
+uint findStockpileSlot(const World world, ResourceType type, int[3] from, out int[3] tile) {
   uint best = 0; float bestD = float.max;
-  foreach(id, ref sp; app.world.stockpiles) {
+  foreach(id, sp; world.stockpiles) {
     if(!sp.acceptsType(type)) continue;
-    uint pending = app.pendingStores(id);
+    uint pending = world.pendingStores(id);
     if(sp.contents.length + pending >= sp.capacity) continue;
     foreach(t; sp.tiles) {
       auto above = t.tileAbove;
-      if(app.findGoalTile(above, from, Reach.Adjacent) == noTile) continue;
+      if(world.findGoalTile(above, from, Reach.Adjacent) == noTile) continue;
       auto d = sqDist(from, above);
       if(d < bestD) { bestD = d; best = id; tile = above; }
     }
@@ -67,9 +67,9 @@ uint findStockpileSlot(ref GameApp app, ResourceType type, int[3] from, out int[
   return best;
 }
 
-uint pendingStores(ref GameApp app, uint stockpileID) {
-  return cast(uint)app.liveJobs("Store").count!((ref j) {
-    auto id = j.targetTile.tileBelow in app.world.stockpileAt;
+uint pendingStores(const World world, uint stockpileID) {
+  return cast(uint)world.liveJobs("Store").count!((ref j) {
+    auto id = j.targetTile.tileBelow in world.stockpileAt;
     return(id !is null && *id == stockpileID);
   });
 }
