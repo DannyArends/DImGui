@@ -105,9 +105,8 @@ void rainTick(ref GameApp app) {
   int drops = 0;
   app.world.updateCloudDensity(); // relax + clamp cloud density
   foreach(key, d; app.world.cloudDensity) {
-    if(drops >= RAIN_DROPS_PER_TICK) break;        // hit the cap -> stop raining
-    if(d <= 0) continue;
-    if(uniform(0.0f, 1.0f) >= d) continue;          // rain chance scales with density
+    if(drops >= RAIN_DROPS_PER_TICK) break; // hit the cap -> stop raining
+    if(d <= 0 || uniform(CLOUD_DMIN, CLOUD_DMAX) >= d) continue; // skip: Density < 0 or rain chance lucked out
     auto t = cloudTile(key);
     int[3] spawn = [t[0], cloudY, t[1]];
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;
@@ -140,6 +139,7 @@ void saveClouds(ref GameApp app) {
   foreach(key, d; app.world.cloudDensity) if(d != 0) flat ~= CloudDiff(key[0], key[1], d);
   if(flat.length == 0) { SDL_RemovePath(app.world.cloudsPath()); return; }
   writeData(app.world.cloudsPath(), flat, cast(uint)flat.length);
+  SDL_Log("saveClouds: %d cells", cast(int)flat.length);
 }
 
 /** Load cloud density deltas. */
@@ -178,6 +178,5 @@ void requestCloudRebuild(ref GameApp app) {
       tid.send(cast(immutable(WorldData))app.world.data, immutable(CloudRequest)(cells.idup, coords.idup));
       return;
     }
-  }
-  // no free worker this tick: retry next tick (pending stays false)
+  } // no free worker this tick: retry next tick (pending stays false)
 }
