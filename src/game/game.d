@@ -114,26 +114,6 @@ void initGame(ref GameApp app) {
   app.objects[($-1)].position([6.0f, 4.0f, 0.0f]);
   SDL_Log("initGame: done");
 
-// --- TURTLE TEST (temporary) ---
-  SDL_Log("turtle test");
-  auto trunk = new Cone(0.5f, 1.0f, 12);  trunk.initInstanced(() => "TurtleTrunk");
-  auto leaf  = new Icosahedron();  leaf.computeTangents();  leaf.initInstanced(() => "TurtleLeaf");
-
-  TurtleConfig cfg;
-  cfg.angle = 35.0f;
-  cfg.brush['C'] = TurtleBrush(-1, 0.18f, 1.0f, true);    // cone segment, advances
-  cfg.brush['I'] = TurtleBrush(-1, 0.6f,  0.6f, false);   // leaf blob, no advance
-
-  float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];                 // identity
-  auto grouped = interpret("CCC[+CCI][-CCI][&CCI][^CCI]CCI", cfg, [10.0f, 2.0f, 0.0f], q0);  // origin in world coords
-
-  if(auto p = 'C' in grouped) trunk.instances.items = *p;
-  if(auto p = 'I' in grouped) leaf.instances.items  = *p;
-  trunk.instances.invalidate(); leaf.instances.invalidate();
-  app.objects ~= trunk;   // no position() call
-  app.objects ~= leaf;    // no position() call
-  // --- END TURTLE TEST ---
-  
   app.mainDeletionQueue.add((){ app.saveWorld(); });
 }
 
