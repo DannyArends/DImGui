@@ -5,7 +5,7 @@
 
 import game;
 
-import block : syncBlockInstances, findFreeBlock, noBlock, hasBlocks;
+import block : blockType, syncBlockInstances, findFreeBlock, noBlock, hasBlocks;
 import color : randomColor;
 import inventory : deriveInventory;
 import game : GameApp;
@@ -15,7 +15,7 @@ import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
-import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, moveAwayJob, sleepJob, atDestination, blockType;
+import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, moveAwayJob, sleepJob, atDestination;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import sfx : play;
@@ -232,7 +232,7 @@ void logStuck(ref GameApp app, ref Dwarf d) {
 bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Hunger
   if(d.needs[Need.Hunger] >= 0.6f) {
-    if(d.carrying.any!(id => app.blockType(id) == ResourceType.Berry)) { app.dispatchJob(d, eatJob()); return true; }
+    if(d.carrying.any!(id => app.world.blocks.blockType(id) == ResourceType.Berry)) { app.dispatchJob(d, eatJob()); return true; }
     if(app.findFreeBlock(d.tile, ResourceType.Berry) != noBlock) { app.dispatchJob(d, pickupJob(noTile, ResourceType.Berry)); return true; }
   }
   // Rest

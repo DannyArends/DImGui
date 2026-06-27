@@ -5,7 +5,7 @@
 
 import game;
 
-import block : spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, releaseBlocks;
+import block : blockType, spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, releaseBlocks;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import sfx : play;
@@ -98,18 +98,15 @@ void progressJob(ref GameApp app, ref Dwarf d, float amount, void delegate() onC
   if(d.progress >= 1.0f) { onComplete(); d.completeSubJob(); d.progress = 0.0f; }
 }
 
-/** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
-ResourceType blockType(ref GameApp app, uint id) { auto b = id in app.world.blocks; return b ? b.type : ResourceType.None; }
-
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   uint id = j.blockIDs.length ? j.blockIDs[0] : app.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
   auto b = (id == noBlock ? null : id in app.world.blocks);
 
-  if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.blockType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
+  if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.world.blocks.blockType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
 
   if(b is null) { j.state = JobState.Unavailable; return; }
-  int[3] target = (b.tile == storedTile) ? app.storedTileOf(id).tileAbove : b.tile;
+  int[3] target = (b.tile == storedTile) ? app.world.storedTileOf(id).tileAbove : b.tile;
   if(target == noTile) { j.state = JobState.Unavailable; return; }
 
   b.reserved = true;
@@ -153,7 +150,7 @@ Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
   return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID], reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Dwarf d) {
       /* SDL_Log(cstr("STORED %s tgt=[%d,%d,%d]", d.name, d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2])); */
-      auto picked = d.carrying.filter!(id => app.blockType(id) == d.currentJob.tileType);
+      auto picked = d.carrying.filter!(id => app.world.blocks.blockType(id) == d.currentJob.tileType);
       if(picked.empty) { d.currentJob.onFail(app, d); return; }
       auto blockID = picked.front;
       d.use(app, blockID);                                  // remove from inventory (no builtTile)
@@ -230,7 +227,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
 }
 
 uint useCarriedBlock(ref GameApp app, ref Dwarf d, ResourceType type) {
-  auto found = d.carrying.filter!(id => app.blockType(id) == type);
+  auto found = d.carrying.filter!(id => app.world.blocks.blockType(id) == type);
   if(found.empty) return noBlock;
   auto blockID = found.front;
   if(!d.use(app, blockID)) return noBlock;
@@ -270,7 +267,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
 Job eatJob() {
   return Job("Eating", noTile, ResourceType.Berry, [], true, reach: Reach.OnTile,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      auto carried = d.carrying.filter!(id => app.blockType(id) == ResourceType.Berry);
+      auto carried = d.carrying.filter!(id => app.world.blocks.blockType(id) == ResourceType.Berry);
       if(carried.empty) { j.state = JobState.Unavailable; return; }
       j.blockIDs = [carried.front];
       j.targetTile = d.tile;
@@ -323,7 +320,7 @@ void doPickup(ref GameApp app, ref Dwarf d) {
   if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
   if(auto b = blockID in app.world.blocks) {
     if(!d.pickup(blockID, b.type)) { d.currentJob.onFail(app, d); return; }
-    if(b.tile == storedTile) app.withdrawBlock(blockID);
+    if(b.tile == storedTile) app.world.withdrawBlock(blockID);
     b.tile = noTile;
     b.fall = Fall.init;
     d.completeSubJob();
@@ -371,7 +368,7 @@ void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {
     if(b.tile == noTile || b.tile == builtTile || b.reserved || b.isFalling) continue;
-    if(app.acceptedByHolder(id, b.type)) continue;
+    if(app.world.stockpiles.acceptedByHolder(id, b.type)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     int[3] dst;
     uint sp = app.findStockpileSlot(b.type, d.tile, dst);
