@@ -109,9 +109,8 @@ void rainTick(ref GameApp app) {
     if(drops >= RAIN_DROPS_PER_TICK) break;        // hit the cap -> stop raining
     if(d <= 0) continue;
     if(uniform(0.0f, 1.0f) >= d) continue;          // rain chance scales with density
-    int tx = key[0]*CLOUD_STEP + uniform(0, CLOUD_STEP);
-    int tz = key[1]*CLOUD_STEP + uniform(0, CLOUD_STEP);
-    int[3] spawn = [tx, cloudY, tz];
+    auto t = cloudTile(key);
+    int[3] spawn = [t[0], cloudY, t[1]];
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;
     uint id = app.spawnBlock(spawn, ResourceType.Water);
     if(auto b = id in app.world.blocks) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
