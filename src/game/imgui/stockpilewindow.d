@@ -75,6 +75,6 @@ void showStockpileContent(ref GameApp app, uint font = 0) {
     if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0,0))) toDelete ~= id;
     igPopID();
   }
-  foreach(id; toDelete) app.removeStockpile(id);
+  foreach(id; toDelete){ app.world.removeStockpile(id); }
   igPopFont();
 }

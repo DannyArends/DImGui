@@ -20,34 +20,33 @@ struct Stockpile {
   bool[ResourceType] accepts;     // empty = accept all
   uint[] contents;                // stored block ids (mixed)
 
-  bool acceptsType(ResourceType t) const { return accepts.length == 0 || accepts.get(t, false); }
+  @nogc bool acceptsType(ResourceType t) const { auto p = t in accepts; return accepts.length == 0 || (p !is null && *p); }
 }
 
 enum subPerAxis = 4;                          // 1 / 0.25 (blockSize ratio)
 enum slotsPerTile = subPerAxis^^3;            // 64
 enum uint emptySlot = uint.max;
 
-uint capacity(ref Stockpile sp) { return cast(uint)sp.tiles.length * slotsPerTile; }
-bool hasFreeSlot(ref Stockpile sp) { return sp.contents.countUntil(emptySlot) >= 0 || sp.contents.length < sp.capacity; }
-void stampTiles(ref GameApp app, uint id, int[3][] tiles) { foreach(t; tiles){ app.world.stockpileAt[t] = id; } }
-void clearTiles(ref GameApp app, int[3][] tiles) { foreach(t; tiles) { app.world.stockpileAt.remove(t); } }
+@nogc uint capacity(const Stockpile sp) nothrow { return cast(uint)sp.tiles.length * slotsPerTile; }
+@nogc bool hasFreeSlot(const Stockpile sp) nothrow { return sp.contents.countUntil(emptySlot) >= 0 || sp.contents.length < sp.capacity; }
+void stampTiles(ref World world, uint id, int[3][] tiles) { foreach(t; tiles){ world.stockpileAt[t] = id; } }
+void clearTiles(ref World world, int[3][] tiles) { foreach(t; tiles) { world.stockpileAt.remove(t); } }
 
 /** One new pile from the painted preview */
-void createStockpile(ref GameApp app, int[3][] tiles) {
+void createStockpile(ref World world, int[3][] tiles) {
   if(tiles.length == 0) return;
-  uint id = app.world.nextStockpileID++;
-  Stockpile sp = { id: id, name: format("Stockpile %d", id), tiles: tiles.dup };
-  app.world.stockpiles[id] = sp;
-  app.stampTiles(id, sp.tiles);
+  uint id = world.nextStockpileID++;
+  world.stockpiles[id] = Stockpile(id: id, name: format("Stockpile %d", id), tiles: tiles.dup);
+  world.stampTiles(id, world.stockpiles[id].tiles);
 }
 
 /** Delete a pile: spill its blocks back to the floor and clear the zone */
-void removeStockpile(ref GameApp app, uint id) {
-  if(auto sp = id in app.world.stockpiles) {
-    foreach(i, blockID; sp.contents) { if(auto b = blockID in app.world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
-    app.clearTiles(sp.tiles);
-    app.world.stockpiles.remove(id);
-    app.world.blocksDirty = true;
+void removeStockpile(ref World world, uint id) {
+  if(auto sp = id in world.stockpiles) {
+    foreach(i, blockID; sp.contents) { if(auto b = blockID in world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
+    world.clearTiles(sp.tiles);
+    world.stockpiles.remove(id);
+    world.blocksDirty = true;
   }
 }
 
@@ -75,19 +74,17 @@ uint pendingStores(ref GameApp app, uint stockpileID) {
   });
 }
 
-void storeBlockAt(ref GameApp app, int[3] tile, uint blockID) {
-  if(auto id = tile.tileBelow in app.world.stockpileAt) app.storeBlock(*id, blockID);
-}
-
 /** Park a carried block into a pile */
-void storeBlock(ref GameApp app, uint stockpileID, uint blockID) {
-  if(auto sp = stockpileID in app.world.stockpiles) {
-    if(!hasFreeSlot(*sp)) return;
-    size_t slot = sp.contents.countUntil(emptySlot);
-    if(slot == -1) { slot = sp.contents.length; sp.contents ~= emptySlot; }
-    if(slot >= capacity(*sp)) return;
-    sp.contents[slot] = blockID;
-    if(auto b = blockID in app.world.blocks) { b.tile = storedTile; b.fall = Fall.init; }
+void storeBlockAt(ref World world, int[3] tile, uint blockID) {
+  if(auto idp = tile.tileBelow in world.stockpileAt) {
+    if(auto sp = *idp in world.stockpiles) {
+      if(!hasFreeSlot(*sp)) return;
+      ptrdiff_t slot = sp.contents.countUntil(emptySlot);
+      if(slot < 0) { slot = sp.contents.length; sp.contents ~= emptySlot; }
+      if(slot >= capacity(*sp)) return;
+      sp.contents[slot] = blockID;
+      if(auto b = blockID in world.blocks) { b.tile = storedTile; b.fall = Fall.init; }
+    }
   }
 }
 
@@ -171,7 +168,7 @@ void loadStockpiles(ref GameApp app) {
     Stockpile sp = { id: r[0], name: name, tiles: tiles, contents: contents };
     foreach(t; acc) sp.accepts[cast(ResourceType)t] = true;
     app.world.stockpiles[r[0]] = sp;
-    app.stampTiles(r[0], sp.tiles);
+    app.world.stampTiles(r[0], sp.tiles);
   }
   SDL_Log("loadStockpiles: %d piles", cast(int)app.world.stockpiles.length);
 }
