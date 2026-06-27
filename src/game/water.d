@@ -32,7 +32,7 @@ private @nogc int ownLevel(const WaterNext next, const Chunk chunk, int idx, con
 }
 
 /** Read pending level at a world tile: next-buffer if present, else committed getWater. */
-private @nogc int rdWater(ref World world, const WaterNext next, const int[3] wc) nothrow {
+private @nogc int rdWater(const World world, const WaterNext next, const int[3] wc) nothrow {
   if(wc[1] < 0 || wc[1] >= world.chunkHeight) return 0;
   auto p = wc in next;
   return p is null ? world.getWater(wc) : *p;
@@ -47,7 +47,7 @@ private @nogc int rdWater(ref World world, const WaterNext next, const int[3] wc
 
 /** Apply delta to a world tile in the sparse next-buffer; records it touched.
     Seeds from committed level on first write so we never need a full dup. */
-private void wrWater(ref World world, ref WaterNext next, ref WaterTouched touched, int[3] wc, int delta) {
+private void wrWater(const World world, ref WaterNext next, ref WaterTouched touched, int[3] wc, int delta) {
   if(wc[1] < 0 || wc[1] >= world.chunkHeight) return;
   if(world.chunkCoord(wc) !in world.chunks) return;
   int cur = world.rdWater(next, wc);
