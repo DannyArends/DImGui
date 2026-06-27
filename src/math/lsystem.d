@@ -10,6 +10,8 @@ struct Symbol {
   char symbol;
   bool constant = true;
   alias symbol this;
+  bool opEquals(const Symbol s) const { return symbol == s.symbol; }
+  size_t toHash() const @safe nothrow { return symbol; }
 }
 
 enum Symbols : Symbol {
