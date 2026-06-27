@@ -32,10 +32,10 @@ private @nogc int ownLevel(const WaterNext next, const Chunk chunk, int idx, con
 }
 
 /** Read pending level at a world tile: next-buffer if present, else committed getWater. */
-private @nogc int rdWater(ref GameApp app, const WaterNext next, const int[3] wc) nothrow {
-  if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return 0;
+private @nogc int rdWater(ref World world, const WaterNext next, const int[3] wc) nothrow {
+  if(wc[1] < 0 || wc[1] >= world.chunkHeight) return 0;
   auto p = wc in next;
-  return p is null ? app.world.getWater(wc) : *p;
+  return p is null ? world.getWater(wc) : *p;
 }
 
 /** Total live water-sim cells across all loaded chunks (sum of each chunk's active set). */
@@ -47,10 +47,10 @@ private @nogc int rdWater(ref GameApp app, const WaterNext next, const int[3] wc
 
 /** Apply delta to a world tile in the sparse next-buffer; records it touched.
     Seeds from committed level on first write so we never need a full dup. */
-private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touched, int[3] wc, int delta) {
-  if(wc[1] < 0 || wc[1] >= app.world.chunkHeight) return;
-  if(app.world.chunkCoord(wc) !in app.world.chunks) return;
-  int cur = app.rdWater(next, wc);
+private void wrWater(ref World world, ref WaterNext next, ref WaterTouched touched, int[3] wc, int delta) {
+  if(wc[1] < 0 || wc[1] >= world.chunkHeight) return;
+  if(world.chunkCoord(wc) !in world.chunks) return;
+  int cur = world.rdWater(next, wc);
   next[wc] = cast(ubyte)max(0, min(WATER_MAX, cur + delta));
   touched[wc] = true;
 }
@@ -59,9 +59,6 @@ private void wrWater(ref GameApp app, ref WaterNext next, ref WaterTouched touch
 void waterTick(ref GameApp app) {
   WaterNext next;
   WaterTouched touched;
-  int S = app.world.chunkSize, Hh = app.world.chunkHeight;
-  ulong t;
-
   Active[] act;
 
   // PHASE 1: GATHER
@@ -79,20 +76,20 @@ void waterTick(ref GameApp app) {
     int have = ownLevel(next, a.chunk, a.idx, a.wc);
     int[3][4] tgt;
     int n = app.world.spreadTargets(next, a.chunk, a.idx, a.wc, have, tgt);
-    if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.wrWater(next, touched, a.wc, -1); app.wrWater(next, touched, dst, +1); moved[i] = true; }
+    if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.world.wrWater(next, touched, a.wc, -1); app.world.wrWater(next, touched, dst, +1); moved[i] = true; }
   }
 
   // PHASE 3: FALL
   foreach(i, a; act) {
     if(!app.world.canFall(next, a.chunk, a.idx, a.wc)) continue;
     int[3] below = a.wc.tileBelow;
-    int mv = min(ownLevel(next, a.chunk, a.idx, a.wc), WATER_MAX - app.rdWater(next, below));
-    if(mv > 0) { app.wrWater(next, touched, a.wc, -mv); app.wrWater(next, touched, below, +mv); moved[i] = true; }
+    int mv = min(ownLevel(next, a.chunk, a.idx, a.wc), WATER_MAX - app.world.rdWater(next, below));
+    if(mv > 0) { app.world.wrWater(next, touched, a.wc, -mv); app.world.wrWater(next, touched, below, +mv); moved[i] = true; }
   }
 
   // PHASE 4: COMMIT changed cells
   foreach(wc, _; touched) {
-    if(app.rdWater(next, wc) == app.world.getWater(wc)) continue;
+    if(app.world.rdWater(next, wc) == app.world.getWater(wc)) continue;
     app.world.setWater(wc, cast(ubyte)next[wc]);
   }
 
