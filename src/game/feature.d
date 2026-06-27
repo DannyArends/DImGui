@@ -24,6 +24,23 @@ struct FeaturePartT {
   string resourceType = "None";                 /// DrawInstance material
 }
 
+/** One drawing-symbol -> primitive brush for an L-system part (the data half of TurtleBrush). */
+struct LSystemBrushT {
+  char symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
+  string mesh;                                  /// primitive mesh name: "Cylinder", "Icosahedron", ...
+  string resourceType = "None";                 /// DrawInstance material
+  float radius = 0.1f;                          /// local X/Z scale
+  float length = 1.0f;                          /// local Y scale / segment length
+  bool advance = true;                          /// move turtle forward after drawing
+}
+
+/** An L-system part: a turn angle + the symbol->primitive brush table.
+    Axiom/rules are built in D (buildGrammar) for now, seeded by Feature.hash. */
+struct LSystemPartT {
+  float angle = 25.0f;                          /// degrees per turn symbol
+  LSystemBrushT[] brushes;
+}
+
 struct FeatureDropT {
   string material;
   int countMin = 1, countMax = 1;
@@ -43,6 +60,7 @@ struct FeatureT {
   string sound;
   FeaturePartT[] parts;
   FeatureDropT[] drops;
+  LSystemPartT[] lsystem;
 }
 
 struct Feature {
