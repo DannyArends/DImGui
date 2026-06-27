@@ -361,9 +361,6 @@ void failAndRequeue(ref Dwarf d) {
   d.progress = 0.0f;
 }
 
-/** Fail the current job and requeue parent */
-void failAndRequeueParent(ref Dwarf d) { if(d.hasJob) jobQueue ~= d.jobStack[$-1]; d.clearGoal(); }
-
 /** Try storing a block inot a stockpile */
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.blocks) {

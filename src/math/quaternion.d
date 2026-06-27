@@ -37,9 +37,6 @@ struct Quaternion {
 /** Create a T[3], w as a T[4] */
 @nogc pure T[4] xyzw(T)(const T[3] v, T w = 1.0f) nothrow { return([v.x, v.y, v.z, w]); }
 
-/** Create a T[3], alpha as a T[4] */
-@nogc pure T[4] rgba(T)(const T[3] v, T a = 1.0f) nothrow { return([v.red, v.green, v.blue, a]); }
-
 /** Dot product between v1 and v2 */
 @nogc pure T dot(T)(const T[4] v1, const T[4] v2) nothrow { T[4] vDot = v1[] * v2[]; return(sum(vDot)); }
 

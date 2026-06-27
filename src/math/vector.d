@@ -103,15 +103,6 @@ T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
   return(result);
 }
 
-/** Get the largest containing square of two vectors */
-@nogc pure T[3] containingSquare(T)(const T[3] v1, const T[3] v2) nothrow { 
-  T[3] res = [ 0.0f, 0.0f, 0.0f ];
-  res[0] = (v1[0] > v2[0])? v1[0] : v2[0];
-  res[1] = (v1[1] > v2[1])? v1[1] : v2[1];
-  res[2] = (v1[2] > v2[2])? v1[2] : v2[2];
-  return res;
-}
-
 /** Cross product between vectors */
 @nogc pure T[3] cross(T)(const T[3] v1, const T[3] v2) nothrow {
   T[3] res = [ 0.0f, 0.0f, 0.0f ];

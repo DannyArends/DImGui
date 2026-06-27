@@ -12,19 +12,6 @@ import tile : tileToWorld;
 import textures : ImTextureRefFromID, idx;
 import widgets : drawCenteredText, text;
 
-/** Tile icon */
-void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f) {
-  foreach(tt; tiles.sort.uniq) {
-    igSameLine(0, 2);
-    auto name = resourceData(tt).name;
-    auto texIdx = idx(app.textures, name ~ "_base");
-    if(texIdx < 0) continue;
-    auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
-    igImage(texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1));
-    if(igIsItemHovered(0)) { igSetTooltip(cstr("%s x%d", name, tiles.count(tt))); }
-  }
-}
-
 /** Human-readable state label */
 string dwarfStatus(ref Dwarf d) {
   switch(d.state) {

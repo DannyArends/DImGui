@@ -33,7 +33,6 @@ struct InventorySlot {
   uint[16] resourceIDs = noBlock;                   /// block/berry ids in this slot (POD, fixed-size)
 
   @nogc @property bool empty() const { return kind == Kind.Empty; }
-  @nogc @property bool isBlock() const { return kind == Kind.Block; }
   @nogc @property bool isStack() const { return kind == Kind.Stack; }
   @nogc bool accepts(ResourceType t) const {
     if(empty) return true;
