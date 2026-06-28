@@ -19,8 +19,8 @@ public import searchnode : PathNode;
 public import stockpile : Stockpile;
 public import tool : ToolMode, PaintState;
 public import tile : builtTile, noTile, storedTile, TileDiff;
-public import raws : ResourceType, resourceData, heightToResource, features;
-public import resources : ResourceT;
+public import raws : ResourceType, ResourceClass, resourceData, heightToResource, features;
+public import resources : ClassVal, ResourceT;
 public import world : World, WorldData;
 
 import block : settleBlocks;
