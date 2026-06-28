@@ -5,72 +5,33 @@
 
 import phobos;
 
-/** Symbol */
-struct Symbol {
-  char symbol;
-  bool constant = true;
-  alias symbol this;
-  bool opEquals(const Symbol s) const { return symbol == s.symbol; }
-  size_t toHash() const @safe nothrow { return symbol; }
-}
-
-enum Symbols : Symbol {
-  Axiom = Symbol('X', false),
-  End = Symbol('E', false),
-  // Drawing symbols
-  Cone = Symbol('C'),
-  Cylinder = Symbol('Y'),
-  Cube = Symbol('B'),
-  Icosa = Symbol('I'),
-  Sphere = Symbol('S'),
-  Torus = Symbol('T'),
-  // Movement
-  YawPos = Symbol('+'), YawNeg = Symbol('-'),
-  PitchDn = Symbol('&'), PitchUp = Symbol('^'),
-  RollPos = Symbol('<'), RollNeg = Symbol('>'),
-  Push = Symbol('('), Pop = Symbol(')')
-}
-
-/** Production Rule */
+/** A production rule: predecessor symbol, its production string, and a weight. Rules sharing a
+    predecessor should sum to 100; any shortfall is the chance the symbol is left unchanged. */
 struct Rule {
   char predecessor;
-  Symbol[] production;
-  size_t probability;
-
-  this(char pred, string p, size_t prob = 100) pure nothrow  { // raws-literal form, parses p
-    predecessor = pred;
-    foreach (char c; p) { production ~= Symbol(c); }
-    probability = prob;
-  }
-  this(char pred, Symbol[] prod, size_t prob = 100) pure nothrow { // pre-parsed form, for grouping
-    predecessor = pred; production = prod; probability = prob;
-  }
+  string production;
+  uint probability = 100;
 }
 
-/** Lsystem */
+/** A stochastic L-system over plain characters. */
 struct LSystem {
-  Symbol[] state;
-  Rule[][Symbol] rules;
+  char[] state;
+  Rule[][char] rules;
   size_t max_length = 20000;
 
-  /** If any rule matches, return the production, otherwise return the symbol */
-  Symbol[] replace(Symbol s, ref Random rnd) {
-    if(s !in rules) return([s]);
-    size_t p = uniform(0, 100, rnd);
-    size_t prev = 0;
-    for (size_t i = 0; i < rules[s].length; i++) {
-      if( p < (prev + rules[s][i].probability) ) return rules[s][i].production;
-      prev += rules[s][i].probability;
-    }
-    if(s.constant) return([s]);
-    return([]);
+  /** Replace c by a weighted-random production, or keep it (no rule, or probabilities < 100). */
+  const(char)[] replace(char c, ref Random rnd) {
+    if(c !in rules) return [c];
+    uint roll = uniform(0, 100, rnd), prev = 0;
+    foreach(ref r; rules[c]) { if(roll < prev + r.probability) { return(r.production); } prev += r.probability; }
+    return([c]);
   }
 
+  /** Apply one rewrite pass over the whole state; false if the length cap is hit. */
   bool iterate(ref Random rnd) {
     if(state.length > max_length) return(false);
-    Symbol[] newstate;
-    newstate.reserve(state.length);
-    for (size_t i = 0; i < state.length; i++) { newstate ~= replace(state[i], rnd); }
+    char[] newstate;
+    foreach(c; state) newstate ~= replace(c, rnd);
     state = newstate;
     return(true);
   }
@@ -78,15 +39,13 @@ struct LSystem {
 
 /** Build the throwaway trunk grammar: height Y-segments + one canopy leaf. Deterministic from seed. */
 char[] buildGrammar(uint seed, uint height, string axiom, const(Rule)[] specs) {
-  Symbol[] start;
-  foreach(c; axiom){ start ~= Symbol(c); }
-  auto ls = LSystem(start);
-  foreach(ref r; specs) { ls.rules[Symbol(r.predecessor)] ~= Rule(r.predecessor, r.production.dup, r.probability); }
+  auto ls = LSystem(axiom.dup);
+  foreach(ref r; specs) { ls.rules[r.predecessor] ~= r; }     // group productions by predecessor
   auto rnd = Random(seed | 1);
   for(uint k = 0; k < height; k++) ls.iterate(rnd);
-  Symbol[] capped;
-  foreach(s; ls.state) { if(s == Symbols.Axiom){ capped ~= Symbols.Cylinder; capped ~= Symbols.End; } else capped ~= s; }
+  char[] capped;                                              // X -> trunk segment + leaf marker
+  foreach(c; ls.state) { if(c == 'X'){ capped ~= 'Y'; capped ~= 'E'; } else capped ~= c; }
   ls.state = capped;
   ls.iterate(rnd);   // E -> I/B/nothing
-  return ls.state.map!(s => s.symbol).array;
+  return ls.state;
 }
