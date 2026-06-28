@@ -8,20 +8,24 @@ import game;
 import io : dir, fixPath;
 import textures : transferTextureAsync, idx, toRGBA;
 
+struct ClassVal { ubyte cls; float value = 0.0f; }   // cls = cast(ubyte)ResourceClass — avoids the cross-module enum forward-ref
+
 struct ResourceT {
-  string name      = "None";
-  bool traversable = false;
-  bool buildable   = false;
-  ubyte maxStack   = 1;
-  float cost       = 0.0f;
-  string meshName  = "Blocks";
-  float dropScale  = 1.0f;
-  Colors color     = Colors.white;
-  float food       = 0.0f;
+  string name = "None", meshName = "Blocks", tex3D = "", tex2D = "";
+  float scale = 1.0f;
+  Colors color = Colors.white;
+  ClassVal[] classes;
 }
 
-@nogc bool isFood(ResourceType t) nothrow { return resourceData(t).food > 0.0f; }
-@nogc float foodValue(ResourceType t) nothrow { return resourceData(t).food; }
+@nogc bool  hasClass(ResourceType t, ResourceClass c) nothrow {
+  foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return true; } } return false;
+}
+@nogc float classVal(ResourceType t, ResourceClass c) nothrow {
+  foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return cv.value; } } return 0.0f;
+}
+
+@nogc bool isFood(ResourceType t) nothrow { return hasClass(t, ResourceClass.Food); }
+@nogc float foodValue(ResourceType t) nothrow { return classVal(t, ResourceClass.Food); }
 
 void injectResourceMeshes(ref GameApp app) {
   app.meshes.length = 0;
