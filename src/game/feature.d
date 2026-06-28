@@ -74,19 +74,22 @@ struct Feature {
   size_t[2][] instanceRuns;  // [start, count) ranges across this feature's meshes
   uint hash;
 
+  /** True if DrawInstance index `idx` belongs to this feature (falls within one of its instance runs). */
   bool matchIndex(size_t idx) const {
-    foreach(run; instanceRuns)
-      if(idx >= run[0] && idx < run[0] + run[1]) return true;
-    return false;
+    foreach(run; instanceRuns){ if(idx >= run[0] && idx < run[0] + run[1]) { return(true); } } return(false);
   }
+
+  /** Feature height as a float, for bounding-box / picking math. */
   @property float bboxHeight() const { return cast(float)height; }
 }
 
-string delegate() captureKey(string k) { return () => k; }
+/** Wrap a mesh key in a delegate — a lazy key provider for Geometry.initInstanced. */
+private string delegate() captureKey(string k) { return () => k; }
 
 /** Resolve a raw resourceType string to its enum, treating "None" as ResourceType.None. */
 private ResourceType resType(string s) { return s == "None" ? ResourceType.None : s.to!ResourceType; }
 
+/** Create and register one instanced primitive mesh per (feature, part/brush mesh); skips keys already built. */
 void initFeatureMeshes(ref GameApp app) {
   foreach(ref ft; features) {
     foreach(ref part; ft.parts) {
@@ -112,6 +115,8 @@ void initFeatureMeshes(ref GameApp app) {
   }
 }
 
+/** Scan a chunk's surface tiles for valid spawn sites of `ft`; 
+ * returns one Feature per accepted tile (gated by spawn type, noise threshold, and hash). */
 Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const FeatureT ft) {
   Feature[] result;
   ResourceType[] spawnTypes;
@@ -132,6 +137,7 @@ Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const Resource
   return result;
 }
 
+/** Harvest/interaction progress rate of the feature rooted at `tile`; returns 0.25 if none is found. */
 float getFeatureProgressRate(ref GameApp app, int[3] tile) {
   foreach(ref ft; features) {
     if(ft.name !in app.world.features) continue;
@@ -142,9 +148,9 @@ float getFeatureProgressRate(ref GameApp app, int[3] tile) {
   return 0.25f;
 }
 
+/** Primitive mesh name bound to grammar symbol `sym` in `ft`'s brushes, or "" if unbound. */
 private string brushMesh(ref immutable FeatureT ft, char sym) {
-  foreach(ref br; ft.brushes) if(br.symbol == sym) return br.mesh;
-  return "";
+  foreach(ref br; ft.brushes){ if(br.symbol == sym){ return(br.mesh); } } return("");
 }
 
 /** Stamp one static part: emit its instances and record the index range on the feature. */
@@ -200,6 +206,7 @@ private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[str
   }
 }
 
+/** Emit all DrawInstances for each feature (static parts + L-system brushes) and record their instance runs. */
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
     auto wp = app.world.tileToWorld(f.rootTile);
@@ -211,6 +218,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
   return features;
 }
 
+/** Clear and regenerate every feature's instances and tile penalties across all loaded chunks. */
 void rebuildAllFeatures(ref GameApp app) {
   app.world.data.tilePenalties = null;
   foreach(ref mesh; app.world.featureMeshes.values) mesh.instances = [];
@@ -223,6 +231,7 @@ void rebuildAllFeatures(ref GameApp app) {
   foreach(ref mesh; app.world.featureMeshes.values){ mesh.instances.invalidate(); if(mesh.box !is null) mesh.box.dirty = true; }
 }
 
+/** Forget cached features for chunk `coord`, but only if it carries no player modifications. */
 void removeAllFeatures(ref GameApp app, int[3] coord) {
   if(coord !in app.world.featuresModified) {
     foreach(ref ft; features) { 
@@ -242,6 +251,7 @@ bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
   return false;
 }
 
+/** Remove any pending (queued, not-yet-placed) features of type `ft` rooted at `tile`. */
 void dropPending(ref GameApp app, const FeatureT ft, int[3] coord, int[3] tile) {
   if(ft.name !in app.world.pendingFeatures || coord !in app.world.pendingFeatures[ft.name]) return;
   app.world.pendingFeatures[ft.name][coord] = app.world.pendingFeatures[ft.name][coord].filter!(pf => pf.rootTile != tile).array;
@@ -269,6 +279,8 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
   }
   return any;
 }
+
+/** Harvest every feature type rooted at `tile`; on success, unsettle blocks above and rebuild all features. */
 void interactFeaturesAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   bool any = false;
