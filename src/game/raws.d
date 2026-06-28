@@ -10,8 +10,10 @@ import ctfe : parseTokens, splitColon;
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
 mixin(generateResourceEnum(import("data/raws/materials.txt")));
+
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
 immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
+immutable ResourceT[] resourceTable = parseResources(import("data/raws/materials.txt"));
 
 /** One terrain height band: an upper threshold and the resources eligible at that height. */
 struct HeightBand { float threshold; ResourceType[] results; }
@@ -22,7 +24,7 @@ HeightBand[] parseHeightBands(string raw) pure {
   foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
-    if(p[0] == "HEIGHT_RULE" && p.length == 3){ 
+    if(p[0] == "HEIGHT_RULE" && p.length == 3) {
       bands ~= HeightBand(to!float(p[2]), []);
     }else if(p[0] == "RESULT" && p.length == 2 && bands.length){ bands[$-1].results ~= p[1].to!ResourceType; }
   }
@@ -38,46 +40,47 @@ HeightBand[] parseHeightBands(string raw) pure {
   return(heightBands[$-1].results[0]);
 }
 
-/** CTFE: generates ResourceType enum and resourceData function */
+/** CTFE: generate the ResourceType enum — member names only; per-material data lives in resourceTable. */
 string generateResourceEnum(string raw) pure {
-  auto tokens = parseTokens(raw);
-  string enumResult   = "enum ResourceType : ubyte {\n";
-  string switchResult = "@nogc pure ResourceT resourceData(ResourceType rt) nothrow {\n  final switch(rt) {\n";
-  string current = "", texture = "None", mesh = "Blocks", color = "Colors.white";
-  bool traversable = false, buildable = false;
-  ubyte maxStack = 1;
-  float cost = 0.0f, scale = 1.0f;
-
-  void emitCurrent() {
-    if(current == "") return;
-    enumResult  ~= format("  %s,\n", current);
-    switchResult ~= format("    case ResourceType.%s: return ResourceT(\"%s\", %s, %s, %s, %sf, \"%s\", %sf, %s);\n",
-      current, texture, traversable, buildable, maxStack, cost, mesh, scale, color);
+  string result = "enum ResourceType : ubyte {\n";
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length >= 2 && p[0] == "MATERIAL") result ~= "  " ~ p[1] ~ ",\n";
   }
+  return result ~ "}\n";
+}
 
-  foreach(token; tokens) {
+/** CTFE: resolve a Colors member by name, defaults to white. */
+Colors toColor(string name) pure {
+  static foreach(m; __traits(allMembers, Colors)) if(name == m) return __traits(getMember, Colors, m);
+  return Colors.white;
+}
+
+/** CTFE: parse materials into the per-ResourceType data table (parallel to the enum's member order). */
+ResourceT[] parseResources(string raw) pure {
+  ResourceT[] table; ResourceT cur; bool inMat;
+  foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     switch(p[0]) {
-      case "MATERIAL":
-        emitCurrent();
-        current = p[1]; texture = p[1]; mesh = "Blocks"; color = "Colors.white";
-        traversable = false; buildable = false; maxStack = 1; cost = 0.0f; scale = 1.0f;
-        break;
-      case "TEXTURE": texture = p[1]; break;
-      case "TRAVERSABLE": traversable = true; break;
-      case "BUILDABLE": buildable = true; break;
-      case "MESH": mesh = p[1]; break;
-      case "SCALE": scale = to!float(p[1]); break;
-      case "COST": cost = to!float(p[1]); break;
-      case "MAX_STACK": maxStack = cast(ubyte)to!int(p[1]); break;
-      case "COLOR": color = "Colors." ~ p[1]; break;
+      case "MATERIAL":    if(inMat) table ~= cur; cur = ResourceT.init; cur.name = p[1]; inMat = true; break;
+      case "TEXTURE":     cur.name = p[1]; break;
+      case "TRAVERSABLE": cur.traversable = true; break;
+      case "BUILDABLE":   cur.buildable = true; break;
+      case "MESH":        cur.meshName = p[1]; break;
+      case "SCALE":       cur.dropScale = to!float(p[1]); break;
+      case "COST":        cur.cost = to!float(p[1]); break;
+      case "MAX_STACK":   cur.maxStack = cast(ubyte)to!int(p[1]); break;
+      case "COLOR":       cur.color = toColor(p[1]); break;
       default: break;
     }
   }
-  emitCurrent();
-  return enumResult ~ "}\n" ~ switchResult ~ "  }\n}\n";
+  if(inMat){ table ~= cur; }
+  return(table);
 }
+
+/** Per-material data, indexed by ResourceType (enum's ubyte value indexes the table). */
+@nogc pure ResourceT resourceData(ResourceType rt) nothrow { return resourceTable[rt]; }
 
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure {
@@ -131,6 +134,6 @@ FeatureT[] parseFeatures(string raw) pure {
       default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
     }
   }
-  if(inFeature) features ~= ft;
-  return features;
+  if(inFeature){ features ~= ft; }
+  return(features);
 }
