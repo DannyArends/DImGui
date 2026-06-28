@@ -157,8 +157,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   if (data.coord in app.world.chunks) {
     auto oldTiles = app.world.chunks[data.coord].tiles;
     oldTiles.instances = chunk.tiles.instances.dup;
-    oldTiles.instances.invalidate();
-    if(oldTiles.box !is null) oldTiles.box.dirty = true;
+    oldTiles.syncInstances();
     chunk.tiles = oldTiles;
     chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells

@@ -152,8 +152,7 @@ private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] i
   if(mesh is null) return;
   f.instanceRuns ~= [mesh.instances.length, insts.length];
   mesh.instances ~= insts[];
-  mesh.instances.invalidate();
-  if(mesh.box !is null) mesh.box.dirty = true;
+  mesh.syncInstances();
 }
 
 /** Mark a feature's tile-penalty footprint: a column for tall features (trunk part or L-system), else the root. */
@@ -218,7 +217,7 @@ void rebuildAllFeatures(ref GameApp app) {
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.featureMeshes);
     }
   }
-  foreach(ref mesh; app.world.featureMeshes.values){ mesh.instances.invalidate(); if(mesh.box !is null) mesh.box.dirty = true; }
+  foreach(ref mesh; app.world.featureMeshes.values){ mesh.syncInstances(); }
 }
 
 /** Forget cached features for chunk `coord`, but only if it carries no player modifications. */

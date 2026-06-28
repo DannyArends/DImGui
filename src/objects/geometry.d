@@ -70,13 +70,15 @@ class Geometry {
     geometry = name;
   }
 
+  /** Flag the instance buffer for re-upload and mark the bounding box stale. */
+  @nogc void syncInstances() nothrow { instances.invalidate(); if(box !is null) box.dirty = true; }
+
   /** Set position of instance from object.instances by p */
   @nogc void position(float[3] p, uint instance = 0) nothrow {
     import matrix : position;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = position(instances[instance], p);
-    instances.invalidate();
-    if(box !is null) box.dirty = true;
+    syncInstances();
   }
 
   @nogc float[3] position(uint instance = 0) nothrow {
@@ -90,8 +92,7 @@ class Geometry {
     import matrix : rotate;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = rotate(instances[instance], r);
-    instances.invalidate();
-    if(box !is null) box.dirty = true;
+    syncInstances();
   }
 
   /** Scale instance from object.instances by s */
@@ -99,8 +100,7 @@ class Geometry {
     import matrix : scale;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = scale(instances[instance], s);
-    instances.invalidate();
-    if(box !is null) box.dirty = true;
+    syncInstances();
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)

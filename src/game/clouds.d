@@ -154,8 +154,7 @@ void applyCloudInstances(ref World world, DrawInstance[] inst) {
   world.cloudRebuildPending = false;
   if(world.clouds is null) return;
   world.clouds.instances = inst;
-  world.clouds.instances.invalidate();
-  if(world.clouds.box !is null) world.clouds.box.dirty = true;
+  world.clouds.syncInstances();
 }
 
 /** Cloud re-mesh worker message: a flattened density snapshot + the loaded chunk coords. */
