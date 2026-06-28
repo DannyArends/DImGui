@@ -243,7 +243,7 @@ void evictDwarfAt(ref GameApp app, int[3] tile) {
 /** Building Job (generates a pickup job prereq) */
 Job buildingJob(int[3] targetTile, ResourceType tileType) {
   return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), pickupJob(noTile, tileType)],
-    isValid: (ref GameApp app, ref Job j){ return(!app.isTileOccupied(j.targetTile)); },
+    isValid: (ref GameApp app, ref Job j){ return(app.world.getTileAt(j.targetTile) == ResourceType.None); },
     onArrive: (ref GameApp app, ref Dwarf d) {
       if(app.isTileOccupied(d.currentJob.targetTile)) { app.evictDwarfAt(d.currentJob.targetTile); return; }
       auto blockID = app.useCarriedBlock(d, d.currentJob.tileType);
