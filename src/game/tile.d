@@ -175,7 +175,7 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
 }
 
 @nogc pure bool isStandable(T)(T wd, const int[3] tile) nothrow {
-  return(wd.isPassable(tile) && wd.getTileAt(tileBelow(tile)) != ResourceType.None && resourceData(wd.getTileAt(tileBelow(tile))).traversable);
+  return(wd.isPassable(tile) && wd.getTileAt(tileBelow(tile)) != ResourceType.None && wd.getTileAt(tileBelow(tile)).traversable);
 }
 
 @nogc pure bool hasStandableNeighbour(T)(T wd, int[3] tile) nothrow {
@@ -193,9 +193,9 @@ pure PathNode[] getSuccessors(T)(T wd, PathNode parent) {
       int ny = (pt[1] - 1) + dy;
       auto tt = wd.getTileAt([nx, ny, nz]);
       int[3] standTile = [nx, ny+1, nz];
-      if(tt != ResourceType.None && resourceData(tt).traversable && wd.isPassable(standTile)) {
+      if(tt != ResourceType.None && tt.traversable && wd.isPassable(standTile)) {
         float modifier = wd.tilePenalties.get(standTile, 0.0f);
-        successors ~= PathNode(position: [nx*wd.tileSize, (ny+1)*wd.tileHeight+wd.yOffset, nz*wd.tileSize], cost: resourceData(tt).cost + modifier);
+        successors ~= PathNode(position: [nx*wd.tileSize, (ny+1)*wd.tileHeight+wd.yOffset, nz*wd.tileSize], cost: tt.cost + modifier);
         break;
       }
     }

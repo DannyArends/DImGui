@@ -16,7 +16,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
   int col = 0;
 
   foreach(tileType; EnumMembers!ResourceType) {
-    if(!resourceData(tileType).buildable) continue;
+    if(!tileType.buildable) continue;
     auto texIdx = idx(app.textures, resourceData(tileType).name ~ "_base");
     if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
@@ -45,7 +45,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
   igSeparator();
   igText("Items:");
   foreach(tileType; EnumMembers!ResourceType) {
-    if(resourceData(tileType).maxStack <= 1) continue;
+    if(tileType.maxStack <= 1) continue;
     uint total = 0;
     if(app.world.dwarves !is null)
       foreach(ref d; app.world.dwarves){ foreach(ref s; d.inventory){

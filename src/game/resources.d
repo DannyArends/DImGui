@@ -17,15 +17,21 @@ struct ResourceT {
   ClassVal[] classes;
 }
 
-@nogc bool  hasClass(ResourceType t, ResourceClass c) nothrow {
+// primitives on ResourceT
+@nogc bool hasClass(ResourceType t, ResourceClass c) pure nothrow {
   foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return true; } } return false;
 }
-@nogc float classVal(ResourceType t, ResourceClass c) nothrow {
+@nogc float classVal(ResourceType t, ResourceClass c) pure nothrow {
   foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return cv.value; } } return 0.0f;
 }
 
-@nogc bool isFood(ResourceType t) nothrow { return hasClass(t, ResourceClass.Food); }
-@nogc float foodValue(ResourceType t) nothrow { return classVal(t, ResourceClass.Food); }
+// legacy field accessors (UFCS shims over classes — keep old call sites working)
+@nogc bool  traversable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Traversable); }
+@nogc bool  buildable(const ResourceType r)   pure nothrow { return r.hasClass(ResourceClass.Buildable); }
+@nogc float cost(const ResourceType r)        pure nothrow { return r.classVal(ResourceClass.Traversable); }
+@nogc int   maxStack(const ResourceType r)    pure nothrow { return cast(int)r.classVal(ResourceClass.Item); }
+@nogc bool isFood(const ResourceType r)       pure nothrow { return r.hasClass(ResourceClass.Food); }
+@nogc float foodValue(const ResourceType r)   pure nothrow { return r.classVal(ResourceClass.Food); }
 
 void injectResourceMeshes(ref GameApp app) {
   app.meshes.length = 0;

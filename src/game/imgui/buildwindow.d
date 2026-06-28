@@ -55,7 +55,7 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   float cellSize = app.gui.fontsize * 2.0f;
   int col = 0, cols = 6;
   foreach(tileType; EnumMembers!ResourceType) {
-    if(!resourceData(tileType).buildable) continue;
+    if(!tileType.buildable) continue;
     int count = app.world.inventory.get(tileType, app);                       if(count <= 0) continue;
     auto texIdx = idx(app.textures, resourceData(tileType).name ~ "_base");   if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);

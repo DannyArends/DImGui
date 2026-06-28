@@ -37,7 +37,7 @@ struct InventorySlot {
   @nogc @property bool isStack() const { return kind == Kind.Stack; }
   @nogc bool accepts(ResourceType t) const {
     if(empty) return true;
-    return isStack && this.type == t && count < resourceData(t).maxStack;
+    return isStack && this.type == t && count < t.maxStack;
   }
 }
 
@@ -65,7 +65,7 @@ struct DwarfData {
   bool pickup(uint blockID, ResourceType type) {
     foreach(ref s; inventory) {
       if(!s.accepts(type)) continue;
-      if(s.empty) { s.kind = resourceData(type).maxStack > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.type = type; }
+      if(s.empty) { s.kind = type.maxStack > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.type = type; }
       s.resourceIDs[s.count] = blockID;
       s.count++;
       return true;
@@ -178,7 +178,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.isFalling) continue;
     if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
     if(d.moveT >= 1.0f) continue;
-    float cost = max(1.0f, resourceData(app.world.getTileAt(d.tile.tileBelow)).cost);
+    float cost = max(1.0f, app.world.getTileAt(d.tile.tileBelow).cost);
     d.moveT = min(1.0f, d.moveT + dt * stepSpeed / cost);
     float arc = hopHeight * d.moveT * (1.0f - d.moveT); 
     d.visualPos = [

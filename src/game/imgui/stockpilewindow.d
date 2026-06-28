@@ -33,7 +33,7 @@ private void tally(ref Stockpile sp, bool delegate(ResourceType) keep, out int t
 }
 
 private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool buildable) {
-  bool inGroup(ResourceType t) { return resourceData(t).buildable == buildable; }
+  bool inGroup(ResourceType t) { return t.buildable == buildable; }
   int gT, gOn; sp.tally(t => inGroup(t), gT, gOn);
   if(gT == 0) return;
 
