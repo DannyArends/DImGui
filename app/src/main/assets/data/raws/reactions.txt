@@ -1,0 +1,7 @@
+[OBJECT:REACTION]
+
+[REACTION:FlintKnapping]
+  [VERB:Smash][SKILL:Masonry]
+  [WORKSHOP:None]
+  [INPUT:Stone:1]
+  [OUTPUT:Flint:2]
