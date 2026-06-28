@@ -56,8 +56,8 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   int col = 0, cols = 6;
   foreach(tileType; EnumMembers!ResourceType) {
     if(!tileType.buildable) continue;
-    int count = app.world.inventory.get(tileType, app);                       if(count <= 0) continue;
-    auto texIdx = idx(app.textures, resourceData(tileType).name ~ "_base");   if(texIdx < 0) continue;
+    int count = app.world.inventory.get(tileType, app); if(count <= 0) continue;
+    auto texIdx = idx(app.textures, resourceData(tileType).tex2D); if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
 
     igImageButton(cstr("##bt_%d", tileType), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
