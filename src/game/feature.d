@@ -55,7 +55,7 @@ struct FeatureT {
   string sound;
   FeaturePartT[] parts;
   FeatureDropT[] drops;
-  float lsystemAngle = 25.0f;              /// L-system turn angle; brushes empty = no L-system
+  float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;  /// per-axis L-system turn angles
   LSystemBrushT[] brushes;                 /// single-level array, converts to immutable like parts/drops
   string axiom = "X";                      /// L-system start symbol(s)
   Rule[] rules;                            /// L-system production rules
@@ -176,7 +176,7 @@ private void doPart(ref GameApp app, ref Feature f, ref immutable FeatureT ft, r
 /** Build the L-system part: run the turtle and append grouped instances + ranges. */
 private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[string] meshes, float[3] wp) {
   TurtleConfig cfg;
-  cfg.angle = ft.lsystemAngle;
+  cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
   foreach(ref br; ft.brushes) {
     auto brt = resType(br.resourceType);
     cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);

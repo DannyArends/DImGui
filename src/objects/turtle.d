@@ -17,10 +17,12 @@ struct TurtleBrush {
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];   /// per-instance tint (from the material's color)
 }
 
-/** Turtle config: turn angle (degrees) + the per-drawing-symbol brush table. */
+/** Turtle config: per-axis turn angles (degrees) + the per-drawing-symbol brush table. */
 struct TurtleConfig {
-  float angle = 25.0f;
-  TurtleBrush[char] brush;     /// e.g. 'C' -> cone spec, 'I' -> leaf spec
+  float yaw = 25.0f;     /// + / -  spread
+  float pitch = 25.0f;   /// & / ^  arch down / up
+  float roll = 25.0f;    /// < / >  twist around heading
+  TurtleBrush[char] brush;
 }
 
 private struct State { float[3] pos; float[4] orient; }   // orient = quaternion
@@ -35,13 +37,22 @@ private float[3] turnAxis(char c) pure nothrow @nogc @safe {
   }
 }
 
+/** Per-axis turn magnitude (degrees) for a turn symbol; 0 if not a turn. */
+private float turnAngle(char c, const TurtleConfig cfg) pure nothrow @nogc @safe {
+  switch(c) {
+    case '+': case '-': return cfg.yaw;
+    case '&': case '^': return cfg.pitch;
+    case '<': case '>': return cfg.roll;
+    default:  return 0.0f;
+  }
+}
+
 /** Interpret an already-iterated L-system string, emitting DrawInstances into the brushes' meshes.
     Turtle local frame: heading is +Y. Turns are applied in the turtle's own frame (right-multiply). */
 DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
   DrawInstance[][char] instances;
   State st = State(origin, orient0);
   State[] stack;
-  const float a = cfg.angle;
 
   foreach(c; symbols) {
     switch(c) {
@@ -50,7 +61,7 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
       case 'X': break;
       default:
         const ax = turnAxis(c);
-        if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(a, ax)); break; }
+        if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(turnAngle(c, cfg), ax)); break; }
         if(auto br = c in cfg.brush) {
           const Matrix R = rotate(st.orient);
           instances[c] ~= DrawInstance(br.material, br.color, segmentTransform(st.pos, R, br.radius, br.length));
