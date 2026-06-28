@@ -265,9 +265,9 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
 
 /** Eat Job — claim nearest free Berry on the floor, walk to it, consume it */
 Job eatJob() {
-  return Job("Eating", noTile, ResourceType.Berry, [], true, reach: Reach.OnTile,
+  return Job("Eating", noTile, ResourceType.Berry01, [], true, reach: Reach.OnTile,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      auto carried = d.carrying.filter!(id => app.world.blocks.blockType(id) == ResourceType.Berry);
+      auto carried = d.carrying.filter!(id => app.world.blocks.blockType(id) == ResourceType.Berry01);
       if(carried.empty) { j.state = JobState.Unavailable; return; }
       j.blockIDs = [carried.front];
       j.targetTile = d.tile;
