@@ -48,6 +48,9 @@ struct Rules {
   alias rules this;
 }
 
+/** Flat production spec passed across the math/game boundary. */
+struct RuleSpec { char pred; string prod; uint prob = 100; }
+
 /** Lsystem */
 struct LSystem {
   Symbol[] state;
@@ -78,14 +81,14 @@ struct LSystem {
 }
 
 /** Build the throwaway trunk grammar: height Y-segments + one canopy leaf. Deterministic from seed. */
-Symbol[] buildGrammar(uint seed, uint height, string axiom, const(char)[] preds, const(string)[] prods, const(uint)[] probs) {
+char[] buildGrammar(uint seed, uint height, string axiom, const(RuleSpec)[] specs) {
   Symbol[] start;
   foreach(c; axiom){ start ~= Symbol(c); }
   auto ls = LSystem(start);
-  foreach(i; 0 .. preds.length) {                        // group productions by predecessor
-    auto key = Symbol(preds[i]);
+  foreach(ref s; specs) {                                // group productions by predecessor
+    auto key = Symbol(s.pred);
     if(key !in ls.rules){ ls.rules[key] = Rules([]); }
-    ls.rules[key].rules ~= Rule(prods[i], cast(size_t)probs[i]);
+    ls.rules[key].rules ~= Rule(s.prod, cast(size_t)s.prob);
   }
   auto rnd = Random(seed | 1);
   for(uint k = 0; k < height; k++) ls.iterate(rnd);
@@ -93,5 +96,7 @@ Symbol[] buildGrammar(uint seed, uint height, string axiom, const(char)[] preds,
   foreach(s; ls.state) { if(s == Symbols.Axiom){ capped ~= Symbols.Cylinder; capped ~= Symbols.End; } else capped ~= s; }
   ls.state = capped;
   ls.iterate(rnd);   // E -> I/B/nothing
-  return ls.state;
+  char[] outc; outc.reserve(ls.state.length);
+  foreach(s; ls.state){outc ~= s.symbol;}
+  return outc;
 }
