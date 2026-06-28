@@ -20,6 +20,7 @@ struct Stockpile {
   bool[ResourceType] accepts;     // empty = accept all
   uint[] contents;                // stored block ids (mixed)
 
+  /** True if this pile accepts 't'; an empty 'accepts' set means accept everything. */
   @nogc bool acceptsType(ResourceType t) const { auto p = t in accepts; return accepts.length == 0 || (p !is null && *p); }
 }
 
@@ -27,9 +28,16 @@ enum subPerAxis = 4;                          // 1 / 0.25 (blockSize ratio)
 enum slotsPerTile = subPerAxis^^3;            // 64
 enum uint emptySlot = uint.max;
 
+/** Total block slots across all of the pile's tiles */
 @nogc uint capacity(const Stockpile sp) nothrow { return cast(uint)sp.tiles.length * slotsPerTile; }
+
+/** "True if the pile has room for another block */
 @nogc bool hasFreeSlot(const Stockpile sp) nothrow { return sp.contents.countUntil(emptySlot) >= 0 || sp.contents.length < sp.capacity; }
+
+/** Mark each tile as belonging to stockpile `id` in the world's tile to pile index */
 void stampTiles(ref World world, uint id, int[3][] tiles) { foreach(t; tiles){ world.stockpileAt[t] = id; } }
+
+/** Remove the given tiles from the world's tile to pile index */
 void clearTiles(ref World world, int[3][] tiles) { foreach(t; tiles) { world.stockpileAt.remove(t); } }
 
 /** One new pile from the painted preview */
@@ -67,6 +75,7 @@ uint findStockpileSlot(const World world, ResourceType type, int[3] from, out in
   return best;
 }
 
+/** Count of in-flight Store jobs already targeting this pile, reserved capacity not yet filled */
 uint pendingStores(const World world, uint stockpileID) {
   return cast(uint)world.liveJobs("Store").count!((ref j) {
     auto id = j.targetTile.tileBelow in world.stockpileAt;
@@ -88,25 +97,29 @@ void storeBlockAt(ref World world, int[3] tile, uint blockID) {
   }
 }
 
+/** True if 'blockID' already sits in a pile that accepts 'type', as in it doesn't need (re)storing */
 bool acceptedByHolder(const Stockpile[uint] stockpiles, uint blockID, ResourceType type) {
   foreach(sp; stockpiles){ if(sp.contents.canFind(blockID)) { return sp.acceptsType(type); } }
   return false;
 }
 
+/** Number of stored blocks of type 't' in the pile */
 uint countOf(const Stockpile sp, const Block[uint] blocks, ResourceType t) {
   uint n = 0;
   foreach(id; sp.contents){ if(blocks.blockType(id) == t) { n++; } }
   return n;
 }
 
+/** Remove 'blockID' from whichever pile holds it, returns false if it wasn't stored */
 bool withdrawBlock(ref World world, uint blockID) {
   foreach(ref sp; world.stockpiles) {
     auto idx = sp.contents.countUntil(blockID);
-    if(idx >= 0) { sp.contents[idx] = emptySlot; return(true); }
+    if(idx >= 0) { sp.contents = sp.contents.remove(idx); return(true); }
   }
   return(false);
 }
 
+/** World tile of the pile cell holding 'blockID', or noTile if not stored */
 @nogc int[3] storedTileOf(const World world, uint blockID) {
   foreach(sp; world.stockpiles) {
     auto idx = sp.contents.countUntil(blockID);
@@ -122,7 +135,7 @@ float[3] subCellOffset(const World world, uint slot) {
   return [(sx + 0.5f) * bs - half, sy * bs, (sz + 0.5f) * bs - half];
 }
 
-/** Serialize all stockpiles to one file (records + packed name/tiles/accepts/contents). */
+/** Serialize all stockpiles to one file (records + packed name/tiles/accepts/contents) */
 void saveStockpiles(const World world) {
   if(world.stockpiles.length == 0) return;
   ubyte[] blob;
@@ -141,7 +154,7 @@ void saveStockpiles(const World world) {
   writeFile(world.stockpilePath(), cast(char[])blob);
 }
 
-/** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids). */
+/** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids) */
 void loadStockpiles(ref World world) {
   auto raw = cast(ubyte[])readFile(world.stockpilePath());
   if(raw.length < 12) return;
@@ -156,7 +169,7 @@ void loadStockpiles(ref World world) {
 
   foreach(_; 0 .. count) {
     if(!need(5 * uint.sizeof)) { SDL_Log("loadStockpiles: truncated rec"); return; }
-    auto r = take(5);                       // id, nameLen, tileCount, acceptCount, contentCount
+    auto r = take(5); // [id, nameLen, tileCount, acceptCount, contentCount]
     size_t nameN = r[1], tilesN = r[2] * int[3].sizeof;
     if(!need(nameN + tilesN + (r[3] + r[4]) * uint.sizeof)) { SDL_Log("loadStockpiles: truncated body"); return; }
 

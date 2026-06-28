@@ -363,18 +363,13 @@ bool loadDwarfs(ref GameApp app) {
   return true;
 }
 
-void unsettleDwarves(ref GameApp app, int[3] minedTile) {
-  if(app.world.dwarves is null) return;
-  foreach(ref d; app.world.dwarves.dwarves) {
-    if(!inColumn(d.tile, minedTile)) continue;
-    if(!d.fall.isFalling) { d.fall.start(app.world, d.tile); d.clearGoal(); }
-  }
-}
-
 void settleDwarves(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves.dwarves) {
-    if(!d.fall.isFalling) continue;
+    if(!d.fall.isFalling) { // Lost footing by any means (footing block hauled, stepped onto air, terrain edited) — start falling.
+      if(d.moveT >= 1.0f && app.world.getTileAt(d.tile.tileBelow) == ResourceType.None) { d.fall.start(app.world, d.tile); d.clearGoal(); }
+      if(!d.fall.isFalling) continue;
+    }
     int[3] landed;
     if(d.fall.step(app.world, d.tile, dt, 0.0f, landed)) {
       d.tile = landed;
