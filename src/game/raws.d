@@ -107,7 +107,10 @@ FeatureT[] parseFeatures(string raw) pure {
       case "INTERACTION":      ft.interaction = p[1]; break;
       case "SOUND":            ft.sound = p[1]; break;
       // Lsystem
-      case "LSYSTEM_ANGLE":    ft.lsystemAngle = to!float(p[1]); break;
+      case "LSYSTEM_ANGLE":    ft.lsystemYaw = ft.lsystemPitch = ft.lsystemRoll = to!float(p[1]); break;
+      case "LSYSTEM_YAW":      ft.lsystemYaw   = to!float(p[1]); break;
+      case "LSYSTEM_PITCH":    ft.lsystemPitch = to!float(p[1]); break;
+      case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
       case "AXIOM":            ft.axiom = p[1]; break;
       case "BRUSH":            if(p.length >= 7){
                                  ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3], to!float(p[4]), to!float(p[5]), to!bool(p[6]));
