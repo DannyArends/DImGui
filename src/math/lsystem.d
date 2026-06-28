@@ -37,6 +37,25 @@ struct LSystem {
   }
 }
 
+/** Per-drawing-symbol spec: which material/size, and whether it advances the turtle. No Geometry here — the turtle is pure. */
+struct TurtleBrush {
+  int material = -1;
+  float radius = 0.1f;
+  float length = 1.0f;
+  bool advance = true;
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];   /// per-instance tint (from the material's color)
+}
+
+/** Turtle config: per-axis turn angles (degrees) + the per-drawing-symbol brush table. */
+struct TurtleConfig {
+  float yaw = 25.0f;     /// + / -  spread
+  float pitch = 25.0f;   /// & / ^  arch down / up
+  float roll = 25.0f;    /// < / >  twist around heading
+  TurtleBrush[char] brush;
+}
+
+struct TurtleState { float[3] pos; float[4] orient; }   // orient = quaternion
+
 /** Build the throwaway trunk grammar: height Y-segments + one canopy leaf. Deterministic from seed. */
 char[] buildGrammar(uint seed, uint height, string axiom, const(Rule)[] specs) {
   auto ls = LSystem(axiom.dup);
@@ -48,4 +67,24 @@ char[] buildGrammar(uint seed, uint height, string axiom, const(Rule)[] specs) {
   ls.state = capped;
   ls.iterate(rnd);   // E -> I/B/nothing
   return ls.state;
+}
+
+/** Signed rotation axis for a turn symbol (sign folded into the axis), zeros if not a turn. */
+float[3] turnAxis(char c) pure nothrow @nogc @safe {
+  switch(c) {
+    case '+': return [0.0f, 0.0f,  1.0f];  case '-': return [0.0f, 0.0f, -1.0f];  // yaw   (Z)
+    case '&': return [1.0f, 0.0f,  0.0f];  case '^': return [-1.0f, 0.0f, 0.0f];  // pitch (X)
+    case '<': return [0.0f, 1.0f,  0.0f];  case '>': return [0.0f, -1.0f, 0.0f];  // roll  (Y)
+    default:  return [0.0f, 0.0f,  0.0f];
+  }
+}
+
+/** Per-axis turn magnitude (degrees) for a turn symbol; 0 if not a turn. */
+float turnAngle(char c, const TurtleConfig cfg) pure nothrow @nogc @safe {
+  switch(c) {
+    case '+': case '-': return cfg.yaw;
+    case '&': case '^': return cfg.pitch;
+    case '<': case '>': return cfg.roll;
+    default:  return 0.0f;
+  }
 }

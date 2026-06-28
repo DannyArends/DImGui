@@ -42,7 +42,6 @@ import settingswindow : showSettingsContent;
 import stockpilewindow : showStockpileContent;
 import threading : TaskThread, drainMessages;
 import toolbar : showToolbar;
-import turtle : interpret;
 import world : loadWorld, saveWorld, updateWorld;
 import waterwindow : showWaterContent;
 import worldwindow : showWorldContent;
