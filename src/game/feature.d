@@ -14,6 +14,7 @@ import noise : noiseHTT;
 import sfx : play;
 import tile : getTile, tileCoord, tileToWorld;
 import turtle : interpret;
+import vector : vAdd;
 import vegetation : saveVegetation, loadVegetation;
 
 struct FeaturePartT {
@@ -174,8 +175,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
 
     // Static parts
     foreach(ref part; ft.parts) {
-      string meshKey = ft.name ~ ":" ~ part.mesh;
-      auto mp = meshKey in meshes;
+      auto mp = (ft.name ~ ":" ~ part.mesh) in meshes;
       if(mp is null || *mp is null) continue;
       float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
       float sy = part.scaleY < 0 ? app.world.tileHeight : part.scaleY + (f.hash % 5) * part.scaleYVariance;
@@ -185,7 +185,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       if(part.repeat) {
         foreach(uint h; 0 .. f.height) {
           float s = sx - h * part.taper; if(s < 0.05f) s = 0.05f;
-          insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + h * app.world.tileHeight, wp[2]], [s, sy, s]));
+          insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale(app.world.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]));
         }
       } else { insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx])); }
       emitInstances(f, *mp, insts);
@@ -202,10 +202,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
       float baseY = ft.brushes[0].length * 0.5f;
       auto grouped = interpret(chars, cfg, [wp[0], wp[1] - baseY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
-      foreach(sym, insts; grouped) {
-        string meshKey = ft.name ~ ":" ~ brushMesh(ft, sym);
-        if(auto mp = meshKey in meshes){ emitInstances(f, *mp, insts); }
-      }
+      foreach(sym, insts; grouped) { if(auto mp = (ft.name ~ ":" ~ brushMesh(ft, sym)) in meshes){ emitInstances(f, *mp, insts); } }
     }
   }
   return features;
