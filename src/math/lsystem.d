@@ -96,7 +96,5 @@ char[] buildGrammar(uint seed, uint height, string axiom, const(RuleSpec)[] spec
   foreach(s; ls.state) { if(s == Symbols.Axiom){ capped ~= Symbols.Cylinder; capped ~= Symbols.End; } else capped ~= s; }
   ls.state = capped;
   ls.iterate(rnd);   // E -> I/B/nothing
-  char[] outc; outc.reserve(ls.state.length);
-  foreach(s; ls.state){outc ~= s.symbol;}
-  return outc;
+  return ls.state.map!(s => s.symbol).array;
 }
