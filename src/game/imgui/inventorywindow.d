@@ -18,8 +18,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
   foreach(tileType; EnumMembers!ResourceType) {
     if(!tileType.buildable) continue;
     auto texIdx = idx(app.textures, resourceData(tileType).tex2D);
-    if(texIdx < 0) continue;
-    auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
+    auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
     int count = app.world.inventory.get(tileType, app);
 
     bool selected = app.world.inventory.type == tileType;

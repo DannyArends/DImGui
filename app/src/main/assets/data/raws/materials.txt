@@ -1,155 +1,159 @@
 [OBJECT:MATERIAL]
 
 [MATERIAL:None]
-  [MESH:Blocks:white:::1.0]
+  [MESH:Blocks::::1.0]
 
 [MATERIAL:Lava]
-  [MESH:Blocks:white:Lava_01::1.0]
+  [MESH:Blocks::Lava_01_base::1.0]
   [CLASS:Terrain][CLASS:Liquid]
 
 [MATERIAL:Water]
-  [MESH:Blocks:white:Water_01::1.0]
+  [MESH:Blocks::Water_01_base::1.0]
   [CLASS:Terrain][CLASS:Liquid]
 
 [MATERIAL:Beach01]
-  [MESH:Blocks:white:Beach_01:Beach_01:1.0]
+  [MESH:Blocks::Beach_01_base:Beach_01_base_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Sand01]
-  [MESH:Blocks:white:Sand_01:Sand_01:1.0]
+  [MESH:Blocks::Sand_01_base:Sand_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Sand02]
-  [MESH:Blocks:white:Sand_02:Sand_02:1.0]
+  [MESH:Blocks::Sand_02_base:Sand_02_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Sand03]
-  [MESH:Blocks:white:Sand_03:Sand_03:1.0]
+  [MESH:Blocks::Sand_03_base:Sand_03_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Sand05]
-  [MESH:Blocks:white:Sand_05:Sand_05:1.0]
+  [MESH:Blocks::Sand_05_base:Sand_05_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Gravel01]
-  [MESH:Blocks:white:Gravel_01:Gravel_01:1.0]
+  [MESH:Blocks::Gravel_01_base:Gravel_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Gravel02]
-  [MESH:Blocks:white:Gravel_02:Gravel_02:1.0]
+  [MESH:Blocks::Gravel_02_base:Gravel_02_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Gravel03]
-  [MESH:Blocks:white:Gravel_03:Gravel_03:1.0]
+  [MESH:Blocks::Gravel_03_base:Gravel_03_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Gravel04]
-  [MESH:Blocks:white:Gravel_04:Gravel_04:1.0]
+  [MESH:Blocks::Gravel_04_base:Gravel_04_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Moss01]
-  [MESH:Blocks:white:Moss_01:Moss_01:1.0]
+  [MESH:Blocks::Moss_01_base:Moss_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Ground01]
-  [MESH:Blocks:white:Ground_01:Ground_01:1.0]
+  [MESH:Blocks::Ground_01_base:Ground_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Ground02]
-  [MESH:Blocks:white:Ground_08:Ground_08:1.0]
+  [MESH:Blocks::Ground_08:Ground_08:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Grass01]
-  [MESH:Blocks:white:Grass_01:Grass_01:1.0]
+  [MESH:Blocks::Grass_01_base:Grass_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable][CLASS:Grass]
 
 [MATERIAL:Grass02]
-  [MESH:Blocks:white:Grass_02:Grass_02:1.0]
+  [MESH:Blocks::Grass_02_base:Grass_02_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable][CLASS:Grass]
 
 [MATERIAL:Grass03]
-  [MESH:Blocks:white:Grass_03:Grass_03:1.0]
+  [MESH:Blocks::Grass_03_base:Grass_03_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable][CLASS:Grass]
 
 [MATERIAL:Grass04]
-  [MESH:Blocks:white:Grass_04:Grass_04:1.0]
+  [MESH:Blocks::Grass_04_base:Grass_04_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable][CLASS:Grass]
 
 [MATERIAL:Grass05]
-  [MESH:Blocks:white:Grass_05:Grass_05:1.0]
+  [MESH:Blocks::Grass_05_base:Grass_05_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable][CLASS:Grass]
 
 [MATERIAL:Grass06]
-  [MESH:Blocks:white:Grass_06:Grass_06:1.0]
+  [MESH:Blocks::Grass_06_base_base:Grass_06_base_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable][CLASS:Grass]
 
 [MATERIAL:Grass07]
-  [MESH:Blocks:white:Grass_06:Grass_06:1.0]
+  [MESH:Blocks::Grass_06_base_base:Grass_06_base_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:1.0][CLASS:Item:1][CLASS:Buildable][CLASS:Grass]
 
 [MATERIAL:Forest01]
-  [MESH:Blocks:white:Forest_Ground_01:Forest_Ground_01:1.0]
+  [MESH:Blocks::Forest_Ground_01_base:Forest_Ground_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Forest02]
-  [MESH:Blocks:white:Jungle_01:Jungle_01:1.0]
+  [MESH:Blocks::Jungle_01_base:Jungle_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.9][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Stone01]
-  [MESH:Blocks:white:Stone_01:Stone_01:1.0]
+  [MESH:Blocks::Stone_01_base:Stone_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:3.0][CLASS:Item:1][CLASS:Buildable][CLASS:Stone]
 
 [MATERIAL:Stone02]
-  [MESH:Blocks:white:Stone_02:Stone_02:1.0]
+  [MESH:Blocks::Stone_02_base:Stone_02_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable][CLASS:Stone]
 
 [MATERIAL:Stone03]
-  [MESH:Blocks:white:Stone_03:Stone_03:1.0]
+  [MESH:Blocks::Stone_03_base:Stone_03_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable][CLASS:Stone]
 
 [MATERIAL:Stone05]
-  [MESH:Blocks:white:Stone_05:Stone_05:1.0]
+  [MESH:Blocks::Stone_05_base:Stone_05_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable][CLASS:Stone]
 
 [MATERIAL:Ice01]
-  [MESH:Blocks:white:Ice_01:Ice_01:1.0]
+  [MESH:Blocks::Ice_01_base:Ice_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:3.5][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Rock01]
-  [MESH:Blocks:white:Rock_01:Rock_01:1.0]
+  [MESH:Blocks::Rock_01_base:Rock_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:3.5][CLASS:Item:1][CLASS:Buildable][CLASS:Rock]
 
 [MATERIAL:Rock02]
-  [MESH:Blocks:white:Rock_02:Rock_02:1.0]
+  [MESH:Blocks::Rock_02_base:Rock_02_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable][CLASS:Rock]
 
 [MATERIAL:Rock03]
-  [MESH:Blocks:white:Rock_03:Rock_03:1.0]
+  [MESH:Blocks::Rock_03_base:Rock_03_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable][CLASS:Rock]
 
 [MATERIAL:Snow]
-  [MESH:Blocks:white:Ice_03:Ice_03:1.0]
+  [MESH:Blocks::Ice_03_base:Ice_03_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:3.5][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:OakWood]
-  [MESH:Blocks:white:Wood_02:Wood_02:1.0]
+  [MESH:Blocks::Wood_02_base:Wood_02_base:1.0]
   [CLASS:Item:1][CLASS:Buildable][CLASS:Wood]
 
 [MATERIAL:OliveWood]
-  [MESH:Blocks:white:Wood_03:Wood_03:1.0]
+  [MESH:Blocks::Wood_03_base:Wood_03_base:1.0]
   [CLASS:Item:1][CLASS:Buildable][CLASS:Wood]
 
 [MATERIAL:Leaves]
-  [MESH:Blocks:white:Foliage_01:Foliage_01:1.0]
+  [MESH:Blocks::Foliage_01_base:Foliage_01_base:1.0]
   [CLASS:Item:1]
 
 [MATERIAL:OakLeaves]
-  [MESH:Blocks:white:Hedge_01:Hedge_01:1.0]
+  [MESH:Blocks::Hedge_01_base:Hedge_01_base:1.0]
   [CLASS:Item:1]
 
 [MATERIAL:OliveLeaves]
-  [MESH:Blocks:white:Foliage_01:Foliage_01:1.0]
+  [MESH:Blocks::Foliage_01_base:Foliage_01_base:1.0]
   [CLASS:Item:1]
+
+[MATERIAL:Sponge01]
+  [MESH:Blocks::Sponge_01_base:Sponge_01_base:1.0]
+  [CLASS:Item:4][CLASS:Food:0.10]
 
 [MATERIAL:Berry01]
   [MESH:Berries:crimson::Berry:0.5]
@@ -162,7 +166,3 @@
 [MATERIAL:Berry03]
   [MESH:Berries:greenyellow::Berry:0.4]
   [CLASS:Item:16][CLASS:Food:0.50]
-
-[MATERIAL:Sponge01]
-  [MESH:Blocks:white:Sponge_01:Sponge_01:1.0]
-  [CLASS:Item:4][CLASS:Food:0.10]
