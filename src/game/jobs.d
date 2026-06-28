@@ -49,12 +49,18 @@ const(Job)[] liveJobs(const World world, string name) {
 
 const(int[3])[] activeTiles(const World world, string jobName) { return world.liveJobs(jobName).map!(j => j.targetTile).array; }
 
+/** True if a partial path gets no closer to the job target — a dead-end commitment (e.g. an unreachable elevated build tile). */
+private bool deadEndPartial(ref GameApp app, ref Dwarf d, ref PathResult result) {
+  if(!d.hasJob || !result.partial || result.path.length == 0) return false;
+  return manhattan(app.world.worldToTile(result.path[$-1]), d.currentJob.targetTile) >= manhattan(d.tile, d.currentJob.targetTile);
+}
+
 /** Apply pathfinding results */
 void applyPathResult(ref GameApp app, PathResult result) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves) {
     if(d.uid != result.dwarfUID) continue;
-    if(!result.success) {
+    if(!result.success || app.deadEndPartial(d, result)) {
       if(d.hasJob) {
         d.currentJob.failedBy[d.uid] = true;
         if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
@@ -63,7 +69,6 @@ void applyPathResult(ref GameApp app, PathResult result) {
       d.state = DwarfState.Idle;
       return;
     }
-    /* SDL_Log(cstr("APPLYPATH %s pathLen=%d to=[%.1f,%.1f,%.1f]", d.name, cast(int)result.path.length, result.path.length?result.path[$-1][0]:0, result.path.length?result.path[$-1][1]:0, result.path.length?result.path[$-1][2]:0)); */
     d.state = d.hasJob ? DwarfState.Moving : DwarfState.Wandering;
     d.path = result.path;
     d.lastPathPartial = result.partial && (result.path.length > 1);
@@ -397,6 +402,11 @@ float scoreJob(ref GameApp app, ref Dwarf d, ref Job job) {
   return job.basePriority - dist * 0.1f;
 }
 
+bool canObtainBlock(ref GameApp app, ref Job job, ref Dwarf d){
+  return(!d.carrying.any!(cid => app.world.blocks.blockType(cid) == job.tileType) 
+         && app.world.findFreeBlock(d.tile, job.tileType, job.tileType != ResourceType.None) == noBlock);
+}
+
 /** Allow a dwarf to select their next job */
 void claimNextJob(ref GameApp app, ref Dwarf d) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
@@ -407,7 +417,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
   float bestScore = -float.max;
   foreach(i, ref job; jobQueue) {
     if(d.uid in job.failedBy) continue;
-    if(job.name == "Building" && !app.world.blocks.hasBlocks(job.tileType)) continue;
+    if(job.name == "Building" && app.canObtainBlock(job, d)) continue;
     float s = app.scoreJob(d, job);
     if(s > bestScore) { bestScore = s; bestIdx = cast(int)i; }
   }
