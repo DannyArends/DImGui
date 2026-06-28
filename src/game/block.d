@@ -65,7 +65,7 @@ int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStor
     auto pt = world.storedTileOf(id);
     return (pt != noTile && world.hasStandableNeighbour(pt.tileAbove)) ? pt : noTile;
   }
-  return world.hasStandableNeighbour(b.tile) ? b.tile : noTile;
+  return (world.isStandable(b.tile) || world.hasStandableNeighbour(b.tile)) ? b.tile : noTile;
 }
 
 /** Clear the reserved flag on a set of blocks (released on job failure/completion). */

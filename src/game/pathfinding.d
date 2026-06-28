@@ -114,6 +114,7 @@ int[3] findGoalTile(const World world, const int[3] targetTile, const int[3] fro
   }
 
   if(reach == Reach.AdjacentOrAbove) consider(targetTile.tileAbove);   // standing on top is valid
+  if(reach == Reach.AdjacentOrOnTile) consider(targetTile);            // standing on the tile itself is valid
   auto nb = world.tileNeighbours(targetTile);
   foreach(i; [0, 1, 4, 5]) { if(nb[i][1] == targetTile[1]) consider(nb[i]); }   // ±x/±z, same-Y = manhattan2D==1
   return best;
