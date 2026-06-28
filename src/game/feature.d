@@ -155,20 +155,22 @@ private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] i
   if(mesh.box !is null) mesh.box.dirty = true;
 }
 
+/** Mark a feature's tile-penalty footprint: a column for tall features (trunk part or L-system), else the root. */
+private void markFootprint(ref World world, ref Feature f, ref immutable FeatureT ft) {
+  if(ft.tilePenalty <= 0.0f) return;
+  bool tall = ft.brushes.length > 0 || ft.parts.any!(p => p.repeat);
+  foreach(uint h; 0 .. (tall ? f.height : 1)){
+    world.data.tilePenalties[[f.rootTile[0], f.rootTile[1] + cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
+  }
+}
+
 /** Add all DrawInstances for each feature: mark the tile-penalty footprint, build instance
     batches (static parts + L-system brushes), and emit each via emitInstances. */
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
+    app.world.markFootprint(f, ft);
     auto wp = app.world.tileToWorld(f.rootTile);
     f.instanceRuns = [];
-
-    // Footprint: tall features (a repeat trunk part or an L-system) penalise a column; flat ones just the root.
-    if(ft.tilePenalty > 0.0f) {
-      bool tall = ft.brushes.length > 0 || ft.parts.any!(p => p.repeat);
-      foreach(uint h; 0 .. (tall ? f.height : 1)) {
-        app.world.data.tilePenalties[[f.rootTile[0], f.rootTile[1] + cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
-      }
-    }
 
     // Static parts
     foreach(ref part; ft.parts) {
