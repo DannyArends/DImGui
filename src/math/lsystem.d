@@ -42,19 +42,13 @@ struct Rule {
   }
 }
 
-/** A list of production rules */
-struct Rules {
-  Rule[] rules;
-  alias rules this;
-}
-
 /** Flat production spec passed across the math/game boundary. */
 struct RuleSpec { char pred; string prod; uint prob = 100; }
 
 /** Lsystem */
 struct LSystem {
   Symbol[] state;
-  Rules[Symbol] rules;
+  Rule[][Symbol] rules;
   size_t max_length = 20000;
 
   /** If any rule matches, return the production, otherwise return the symbol */
@@ -85,11 +79,7 @@ char[] buildGrammar(uint seed, uint height, string axiom, const(RuleSpec)[] spec
   Symbol[] start;
   foreach(c; axiom){ start ~= Symbol(c); }
   auto ls = LSystem(start);
-  foreach(ref s; specs) {                                // group productions by predecessor
-    auto key = Symbol(s.pred);
-    if(key !in ls.rules){ ls.rules[key] = Rules([]); }
-    ls.rules[key].rules ~= Rule(s.prod, cast(size_t)s.prob);
-  }
+  foreach(ref s; specs) { ls.rules[Symbol(s.pred)] ~= Rule(s.prod, cast(size_t)s.prob); }
   auto rnd = Random(seed | 1);
   for(uint k = 0; k < height; k++) ls.iterate(rnd);
   Symbol[] capped;
