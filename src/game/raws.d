@@ -10,28 +10,32 @@ import ctfe : parseTokens, splitColon;
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
 mixin(generateResourceEnum(import("data/raws/materials.txt")));
-mixin(generateHeightToResource(import("data/raws/terrain.txt")));
+immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
 immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
 
-/** CTFE: generates heightToResource function */
-string generateHeightToResource(string raw) pure {
-  auto tokens = parseTokens(raw);
-  string result = "@nogc pure ResourceType heightToResource(float h, float t) nothrow {\n";
-  string hi = "";
-  string[] results;
-  foreach(token; tokens) {
+/** One terrain height band: an upper threshold and the resources eligible at that height. */
+struct HeightBand { float threshold; ResourceType[] results; }
+
+/** CTFE: parse terrain raws into height bands (resources resolved to enum at compile time). */
+HeightBand[] parseHeightBands(string raw) pure {
+  HeightBand[] bands;
+  foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
-    if(p[0] == "HEIGHT_RULE" && p.length == 3) {
-      if(hi != "" && results.length > 0) {
-        result ~= format("  if(h < %sf) { ResourceType[%s] v = [%s]; return v[cast(uint)(t * %s) %% %s]; }\n",
-          hi, results.length, results.map!(r => "ResourceType." ~ r).join(", "), results.length, results.length);
-      }
-      hi = p[2]; results = [];
-    } else if(p[0] == "RESULT" && p.length == 2) { results ~= p[1]; }
+    if(p[0] == "HEIGHT_RULE" && p.length == 3){ 
+      bands ~= HeightBand(to!float(p[2]), []);
+    }else if(p[0] == "RESULT" && p.length == 2 && bands.length){ bands[$-1].results ~= p[1].to!ResourceType; }
   }
-  if(results.length > 0) result ~= format("  return ResourceType.%s;\n", results[0]);
-  return result ~ "}\n";
+  return bands;
+}
+
+/** Surface resource for a normalised height h; t in [0,1) picks among a band's variants.
+    Bands are tested in order; the last band is the unconditional fallback (its threshold is unused). */
+@nogc pure ResourceType heightToResource(float h, float t) nothrow {
+  foreach(ref b; heightBands[0 .. $-1]){
+    if(h < b.threshold){ return(b.results[cast(uint)(t * b.results.length) % b.results.length]); }
+  }
+  return(heightBands[$-1].results[0]);
 }
 
 /** CTFE: generates ResourceType enum and resourceData function */
