@@ -109,7 +109,7 @@ string generateFeatureData(string raw) pure {
 
   void emitRule(string[] p) {  // RULE:predecessor:production:probability
     if(p.length < 4) return;
-    lrules ~= format("      RuleSpec('%s', \"%s\", %su),\n", p[1], p[2], p[3]);
+    lrules ~= format("      Rule('%s', \"%s\", %su),\n", p[1], p[2], p[3]);
   }
 
   void emitFeature() {

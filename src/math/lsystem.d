@@ -33,17 +33,19 @@ enum Symbols : Symbol {
 
 /** Production Rule */
 struct Rule {
+  char predecessor;
   Symbol[] production;
   size_t probability;
 
-  this(string p, size_t prob = 100) {
+  this(char pred, string p, size_t prob = 100) pure nothrow  { // raws-literal form, parses p
+    predecessor = pred;
     foreach (char c; p) { production ~= Symbol(c); }
     probability = prob;
   }
+  this(char pred, Symbol[] prod, size_t prob = 100) pure nothrow { // pre-parsed form, for grouping
+    predecessor = pred; production = prod; probability = prob;
+  }
 }
-
-/** Flat production spec passed across the math/game boundary. */
-struct RuleSpec { char pred; string prod; uint prob = 100; }
 
 /** Lsystem */
 struct LSystem {
@@ -75,11 +77,11 @@ struct LSystem {
 }
 
 /** Build the throwaway trunk grammar: height Y-segments + one canopy leaf. Deterministic from seed. */
-char[] buildGrammar(uint seed, uint height, string axiom, const(RuleSpec)[] specs) {
+char[] buildGrammar(uint seed, uint height, string axiom, const(Rule)[] specs) {
   Symbol[] start;
   foreach(c; axiom){ start ~= Symbol(c); }
   auto ls = LSystem(start);
-  foreach(ref s; specs) { ls.rules[Symbol(s.pred)] ~= Rule(s.prod, cast(size_t)s.prob); }
+  foreach(ref r; specs) { ls.rules[Symbol(r.predecessor)] ~= Rule(r.predecessor, r.production.dup, r.probability); }
   auto rnd = Random(seed | 1);
   for(uint k = 0; k < height; k++) ls.iterate(rnd);
   Symbol[] capped;
