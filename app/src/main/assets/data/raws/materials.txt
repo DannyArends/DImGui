@@ -12,7 +12,7 @@
   [CLASS:Terrain][CLASS:Liquid]
 
 [MATERIAL:Beach01]
-  [MESH:Blocks::Beach_01_base:Beach_01_base_base:1.0]
+  [MESH:Blocks::Beach_01_base:Beach_01_base:1.0]
   [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable]
 
 [MATERIAL:Sand01]
