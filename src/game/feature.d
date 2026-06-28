@@ -7,13 +7,13 @@ import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
-import lsystem : buildGrammar;
-import matrix : translateScale;
+import quaternion : angleAxis, qMul, rotate;
+import lsystem : buildGrammar, turnAxis, turnAngle;
+import matrix : translateScale, segmentTransform;
 import normals : computeTangents;
 import noise : noiseHTT;
 import sfx : play;
 import tile : getTile, tileCoord, tileToWorld;
-import turtle : interpret;
 import vector : vAdd;
 import vegetation : saveVegetation, loadVegetation;
 
@@ -76,7 +76,6 @@ struct Feature {
   /** Feature height as a float, for bounding-box / picking math. */
   @property float bboxHeight() const { return cast(float)height; }
 }
-
 
 private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
 
@@ -163,6 +162,33 @@ private void markFootprint(ref World world, ref Feature f, ref immutable Feature
     world.data.tilePenalties[[f.rootTile[0], f.rootTile[1] + cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
   }
 }
+
+/** Interpret an already-iterated L-system string, emitting DrawInstances into the brushes' meshes.
+    Turtle local frame: heading is +Y. Turns are applied in the turtle's own frame (right-multiply). */
+DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+  DrawInstance[][char] instances;
+  TurtleState st = TurtleState(origin, orient0);
+  TurtleState[] stack;
+
+  foreach(c; symbols) {
+    switch(c) {
+      case '(': stack ~= st; break;
+      case ')': if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; } break;
+      case 'X': break;
+      default:
+        const ax = turnAxis(c);
+        if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(turnAngle(c, cfg), ax)); break; }
+        if(auto br = c in cfg.brush) {
+          const Matrix R = rotate(st.orient);
+          instances[c] ~= DrawInstance(br.material, br.color, segmentTransform(st.pos, R, br.radius, br.length));
+          if(br.advance){ st.pos = st.pos.vAdd([R[4]*br.length*0.95f, R[5]*br.length*0.95f, R[6]*br.length*0.95f]); }
+        }
+      break;
+    }
+  }
+  return instances;
+}
+
 
 /** Add all DrawInstances for each feature: mark the tile-penalty footprint, build instance
     batches (static parts + L-system brushes), and emit each via emitInstances. */
