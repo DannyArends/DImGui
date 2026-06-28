@@ -161,7 +161,7 @@ void syncBlockInstances(ref World world) {
       emitBlock(world.dropMeshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
     } else {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
-      float sz = resourceData(b.type).dropScale * world.blockSize;
+      float sz = resourceData(b.type).scale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
