@@ -85,7 +85,8 @@ T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
 }
 
 /** angleAxis */
-@nogc pure T[4] angleAxis(T)(T angle, T[3] axis) nothrow {
+@nogc pure T[4] angleAxis(T)(const T angle, const T[3] axisIn) nothrow {
+  T[3] axis = axisIn;
   float sqr = axis[0]*axis[0] + axis[1]*axis[1] + axis[2]*axis[2];
   if (sqr == 0.0f) return(Quaternion.init);
   axis[] *= 1.0f / sqrt(sqr);
