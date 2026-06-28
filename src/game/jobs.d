@@ -402,9 +402,10 @@ float scoreJob(ref GameApp app, ref Dwarf d, ref Job job) {
   return job.basePriority - dist * 0.1f;
 }
 
+/** True if the dwarf can obtain a block of the job's type — already carrying one, or one is free to fetch. */
 bool canObtainBlock(ref GameApp app, ref Job job, ref Dwarf d){
-  return(!d.carrying.any!(cid => app.world.blocks.blockType(cid) == job.tileType) 
-         && app.world.findFreeBlock(d.tile, job.tileType, job.tileType != ResourceType.None) == noBlock);
+  return d.carrying.any!(cid => app.world.blocks.blockType(cid) == job.tileType)
+      || app.world.findFreeBlock(d.tile, job.tileType, job.tileType != ResourceType.None) != noBlock;
 }
 
 /** Allow a dwarf to select their next job */
@@ -417,7 +418,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
   float bestScore = -float.max;
   foreach(i, ref job; jobQueue) {
     if(d.uid in job.failedBy) continue;
-    if(job.name == "Building" && app.canObtainBlock(job, d)) continue;
+    if(job.name == "Building" && !app.canObtainBlock(job, d)) continue;
     float s = app.scoreJob(d, job);
     if(s > bestScore) { bestScore = s; bestIdx = cast(int)i; }
   }
