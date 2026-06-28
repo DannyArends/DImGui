@@ -77,35 +77,51 @@ struct Feature {
   @property float bboxHeight() const { return cast(float)height; }
 }
 
+
+private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
+
 /** Wrap a mesh key in a delegate — a lazy key provider for Geometry.initInstanced. */
 private string delegate() captureKey(string k) { return () => k; }
 
 /** Resolve a raw resourceType string to its enum, treating "None" as ResourceType.None. */
 private ResourceType resType(string s) { return s == "None" ? ResourceType.None : s.to!ResourceType; }
 
+/** Construct a primitive mesh by name, or null if unknown. */
+private Geometry makePrimitive(string mesh) {
+  switch(mesh) {
+    case "Cylinder": return new Cylinder(0.4f, 1.0f, 12);
+    case "Icosahedron": auto m = new Icosahedron(); m.computeTangents(); return m;
+    case "Cone": return new Cone(0.5f, 1.0f, 12);
+    case "Cube": return new Cube();
+    default: return null;
+  }
+}
+
+/** The FeatureT whose placed feature is rooted at `tile`, or null if none. */
+private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
+  int[3] coord = app.world.chunkCoord(tile);
+  foreach(ref ft; features) {
+    if(ft.name !in app.world.features) continue;
+    if(auto fs = coord in app.world.features[ft.name]){ if((*fs).canFind!(f => f.rootTile == tile)) { return &ft; } }
+  }
+  return null;
+}
+
+/** Build + register one instanced primitive mesh under `key`, once. */
+private void registerMesh(ref GameApp app, string key, string mesh) {
+  if(key in app.world.featureMeshes) return;
+  auto m = makePrimitive(mesh);
+  if(m is null) return;
+  m.initInstanced(captureKey(key));
+  app.world.featureMeshes[key] = m;
+  app.objects ~= m;
+}
+
 /** Create and register one instanced primitive mesh per (feature, part/brush mesh); skips keys already built. */
 void initFeatureMeshes(ref GameApp app) {
   foreach(ref ft; features) {
-    foreach(ref part; ft.parts) {
-      string meshKey = ft.name ~ ":" ~ part.mesh;
-      if(meshKey in app.world.featureMeshes) continue;
-      Geometry mesh;
-      if(part.mesh == "Cylinder") { mesh = new Cylinder(0.4f, 1.0f, 12); mesh.initInstanced(captureKey(meshKey)); }
-      if(part.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); mesh.initInstanced(captureKey(meshKey)); }
-      app.world.featureMeshes[meshKey] = mesh;
-      app.objects ~= mesh;
-    }
-    foreach(ref br; ft.brushes) {     // L-system brush meshes
-      string meshKey = ft.name ~ ":" ~ br.mesh;
-      if(meshKey in app.world.featureMeshes) continue;
-      Geometry mesh;
-      if(br.mesh == "Cylinder") { mesh = new Cylinder(0.4f, 1.0f, 12); mesh.initInstanced(captureKey(meshKey)); }
-      if(br.mesh == "Icosahedron") { mesh = new Icosahedron(); mesh.computeTangents(); mesh.initInstanced(captureKey(meshKey)); }
-      if(br.mesh == "Cone") { mesh = new Cone(0.5f, 1.0f, 12); mesh.initInstanced(captureKey(meshKey)); }
-      if(br.mesh == "Cube") { mesh = new Cube(); mesh.initInstanced(captureKey(meshKey)); }
-      app.world.featureMeshes[meshKey] = mesh;
-      app.objects ~= mesh;
-    }
+    foreach(ref part; ft.parts) app.registerMesh(meshKey(ft.name, part.mesh), part.mesh);
+    foreach(ref br; ft.brushes) app.registerMesh(meshKey(ft.name, br.mesh), br.mesh);
   }
 }
 
@@ -133,13 +149,7 @@ Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const Resource
 
 /** Harvest/interaction progress rate of the feature rooted at `tile`; returns 0.25 if none is found. */
 float getFeatureProgressRate(ref GameApp app, int[3] tile) {
-  foreach(ref ft; features) {
-    if(ft.name !in app.world.features) continue;
-    int[3] coord = app.world.chunkCoord(tile);
-    if(coord !in app.world.features[ft.name]) continue;
-    foreach(ref f; app.world.features[ft.name][coord]){ if(f.rootTile == tile) return ft.progressRate; }
-  }
-  return 0.25f;
+  auto ft = app.featureTypeAt(tile); return ft ? ft.progressRate : 0.25f;
 }
 
 /** Primitive mesh name bound to grammar symbol `sym` in `ft`'s brushes, or "" if unbound. */
@@ -175,7 +185,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
 
     // Static parts
     foreach(ref part; ft.parts) {
-      auto mp = (ft.name ~ ":" ~ part.mesh) in meshes;
+      auto mp = meshKey(ft.name, part.mesh) in meshes;
       if(mp is null || *mp is null) continue;
       float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
       float sy = part.scaleY < 0 ? app.world.tileHeight : part.scaleY + (f.hash % 5) * part.scaleYVariance;
@@ -202,7 +212,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
       float baseY = ft.brushes[0].length * 0.5f;
       auto grouped = interpret(chars, cfg, [wp[0], wp[1] - baseY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
-      foreach(sym, insts; grouped) { if(auto mp = (ft.name ~ ":" ~ brushMesh(ft, sym)) in meshes){ emitInstances(f, *mp, insts); } }
+      foreach(sym, insts; grouped) { if(auto mp = meshKey(ft.name, brushMesh(ft, sym)) in meshes){ emitInstances(f, *mp, insts); } }
     }
   }
   return features;
@@ -232,13 +242,7 @@ void removeAllFeatures(ref GameApp app, int[3] coord) {
 
 /** True if a feature with the given interaction is rooted at this tile */
 bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
-  foreach(ref ft; features) {
-    if(ft.interaction != interaction || ft.name !in app.world.features) continue;
-    int[3] coord = app.world.chunkCoord(tile);
-    if(coord !in app.world.features[ft.name]) continue;
-    foreach(ref f; app.world.features[ft.name][coord]) if(f.rootTile == tile) return true;
-  }
-  return false;
+  auto ft = app.featureTypeAt(tile); return ft !is null && ft.interaction == interaction;
 }
 
 /** Remove any pending (queued, not-yet-placed) features of type `ft` rooted at `tile`. */
