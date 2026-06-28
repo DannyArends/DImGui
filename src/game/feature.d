@@ -36,13 +36,6 @@ struct LSystemBrushT {
   bool advance = true;                          /// move turtle forward after drawing
 }
 
-/** One weighted production rule: predecessor symbol -> production string, with probability. */
-struct LSystemRuleT {
-  char predecessor;                             /// e.g. 'X'
-  string production;                            /// e.g. "Y[+X][-X]"
-  uint probability = 100;                       /// weight (rules with same predecessor sum to 100)
-}
-
 struct FeatureDropT {
   string material;
   int countMin = 1, countMax = 1;
@@ -62,10 +55,10 @@ struct FeatureT {
   string sound;
   FeaturePartT[] parts;
   FeatureDropT[] drops;
-  float lsystemAngle = 25.0f;                   /// L-system turn angle; brushes empty = no L-system
-  LSystemBrushT[] brushes;                      /// single-level array, converts to immutable like parts/drops
-  string axiom = "X";                           /// L-system start symbol(s)
-  LSystemRuleT[] rules;                         /// L-system production rules
+  float lsystemAngle = 25.0f;               /// L-system turn angle; brushes empty = no L-system
+  LSystemBrushT[] brushes;                  /// single-level array, converts to immutable like parts/drops
+  string axiom = "X";                       /// L-system start symbol(s)
+  RuleSpec[] rules;                         /// L-system production rules
 }
 
 struct Feature {
@@ -188,9 +181,7 @@ private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[str
     auto brt = resType(br.resourceType);
     cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance);
   }
-  RuleSpec[] specs;
-  foreach(ref r; ft.rules) specs ~= RuleSpec(r.predecessor, r.production, r.probability);
-  auto chars = buildGrammar(f.hash, f.height, ft.axiom, specs);
+  auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
   float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];
   float baseY = ft.brushes[0].length * 0.5f;
   auto grouped = interpret(chars, cfg, [wp[0], wp[1] - baseY, wp[2]], q0);
