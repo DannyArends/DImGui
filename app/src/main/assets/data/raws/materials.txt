@@ -218,7 +218,22 @@
   [ITEM][MAX_STACK:1]
   [MESH:Blocks][SCALE:1.0]
 
-[MATERIAL:Berry]
+[MATERIAL:Berry01]
   [TEXTURE:Berry]
   [ITEM][MAX_STACK:16][COLOR:crimson]
   [MESH:Berries][SCALE:0.5]
+
+[MATERIAL:Berry02]
+  [TEXTURE:Berry]
+  [ITEM][MAX_STACK:16][COLOR:darkviolet]
+  [MESH:Berries][SCALE:0.5]
+
+[MATERIAL:Berry03]
+  [TEXTURE:Berry]
+  [ITEM][MAX_STACK:16][COLOR:greenyellow]
+  [MESH:Berries][SCALE:0.5]
+
+[MATERIAL:Sponge01]
+  [TEXTURE:Sponge_01]
+  [ITEM][BUILDABLE][MAX_STACK:1]
+  [MESH:Blocks][SCALE:1.0]
