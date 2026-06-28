@@ -14,9 +14,9 @@ import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasSta
 import timing : timed;
 import vector : manhattan, manhattan2D;
 
-enum JobState { Pending, Satisfied, Unavailable }           /// Job states
-enum Reach { Adjacent, OnTile, AdjacentOrAbove }            /// How a job can be reached
-enum Need { Hunger, Rest }                                  /// Current needs
+enum JobState { Pending, Satisfied, Unavailable }                     /// Job states
+enum Reach { Adjacent, OnTile, AdjacentOrOnTile, AdjacentOrAbove }    /// How a job can be reached
+enum Need { Hunger, Rest }                                            /// Current needs
 
 struct Job {
   string name;                            /// Job name
@@ -86,13 +86,13 @@ void completeSubJob(ref Dwarf d) {
   d.state = d.hasJob ? DwarfState.Working : DwarfState.Idle;
 }
 
-/** Check if object T is adjacent to targetTile.
- * Requires T to have: tile */
+/** Check if object T is adjacent to targetTile. Requires T to have: tile */
 bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
   final switch(reach) {
     case Reach.Adjacent: return(manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]);
     case Reach.OnTile: return(obj.tile == targetTile);
     case Reach.AdjacentOrAbove: return(obj.tile == targetTile.tileAbove || (manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]));
+    case Reach.AdjacentOrOnTile: return(obj.tile == targetTile || (manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]));
   }
 }
 
@@ -109,14 +109,16 @@ void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   auto b = (id == noBlock ? null : id in app.world.blocks);
 
   if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.world.blocks.blockType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
-
   if(b is null) { j.state = JobState.Unavailable; return; }
-  int[3] target = (b.tile == storedTile) ? app.world.storedTileOf(id).tileAbove : b.tile;
+
+  bool stored = (b.tile == storedTile);
+  int[3] target = stored ? app.world.storedTileOf(id).tileAbove : b.tile;
   if(target == noTile) { j.state = JobState.Unavailable; return; }
 
   b.reserved = true;
   j.blockIDs = [id];
   j.targetTile = target;
+  j.reach = stored ? Reach.Adjacent : Reach.AdjacentOrOnTile;
 }
 
 /** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
@@ -240,9 +242,17 @@ uint useCarriedBlock(ref GameApp app, ref Dwarf d, ResourceType type) {
   return blockID;
 }
 
-void evictDwarfAt(ref GameApp app, int[3] tile) {
-  if(app.world.dwarves is null) return;
-  foreach(ref other; app.world.dwarves.dwarves){ if(other.tile == tile) { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; } }
+/** Ask every dwarf on `tile` to step aside. Returns false if any are there but the tile is boxed in (nowhere to go). */
+bool evictDwarfAt(ref GameApp app, int[3] tile) {
+  if(app.world.dwarves is null) return true;
+  immutable boxedIn = !app.world.hasStandableNeighbour(tile);
+  bool occupied = false;
+  foreach(ref other; app.world.dwarves.dwarves) {
+    if(other.tile != tile) continue;
+    occupied = true;
+    if(!boxedIn && (!other.hasJob || other.currentJob.name != "MoveAway")){ other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
+  }
+  return !(occupied && boxedIn);
 }
 
 /** Building Job (generates a pickup job prereq) */
@@ -250,7 +260,10 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
   return Job("Building", targetTile, tileType, [cleanWorksiteJob(targetTile), pickupJob(noTile, tileType)],
     isValid: (ref GameApp app, ref Job j){ return(app.world.getTileAt(j.targetTile) == ResourceType.None); },
     onArrive: (ref GameApp app, ref Dwarf d) {
-      if(app.isTileOccupied(d.currentJob.targetTile)) { app.evictDwarfAt(d.currentJob.targetTile); return; }
+      if(app.isTileOccupied(d.currentJob.targetTile)) {
+        if(!app.evictDwarfAt(d.currentJob.targetTile)){ d.currentJob.onFail(app, d); }
+        return;
+      }
       auto blockID = app.useCarriedBlock(d, d.currentJob.tileType);
       if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
       app.setTile(d.currentJob.targetTile, d.currentJob.tileType);
