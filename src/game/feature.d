@@ -146,6 +146,15 @@ private string brushMesh(ref immutable FeatureT ft, char sym) {
   foreach(ref br; ft.brushes){ if(br.symbol == sym){ return(br.mesh); } } return("");
 }
 
+/** Append a batch of instances to a feature mesh: record the run on f, flag buffer + cull bounds. */
+private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] insts) {
+  if(mesh is null) return;
+  f.instanceRuns ~= [mesh.instances.length, insts.length];
+  mesh.instances ~= insts[];
+  mesh.instances.invalidate();
+  if(mesh.box !is null) mesh.box.dirty = true;
+}
+
 /** Stamp one static part: emit its instances and record the index range on the feature. */
 private void doPart(ref GameApp app, ref Feature f, ref immutable FeatureT ft, ref immutable FeaturePartT part, ref Geometry[string] meshes, float[3] wp, float th) {
   string meshKey = ft.name ~ ":" ~ part.mesh;
@@ -174,9 +183,14 @@ private void doPart(ref GameApp app, ref Feature f, ref immutable FeatureT ft, r
 }
 
 /** Build the L-system part: run the turtle and append grouped instances + ranges. */
-private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[string] meshes, float[3] wp) {
+private void doLBrush(ref World world, ref Feature f, ref immutable FeatureT ft, ref Geometry[string] meshes, float[3] wp) {
   TurtleConfig cfg;
   cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
+  if(ft.tilePenalty > 0.0f) {
+    foreach(uint h; 0 .. f.height){
+      world.data.tilePenalties[[f.rootTile[0], f.rootTile[1] + cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
+    }
+  }
   foreach(ref br; ft.brushes) {
     auto brt = resType(br.resourceType);
     cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
@@ -187,13 +201,7 @@ private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[str
   auto grouped = interpret(chars, cfg, [wp[0], wp[1] - baseY, wp[2]], q0);
   foreach(sym, insts; grouped) {
     string meshKey = ft.name ~ ":" ~ brushMesh(ft, sym);
-    if(auto mp = meshKey in meshes) {
-      if(*mp !is null) {
-        f.instanceRuns ~= [(*mp).instances.length, insts.length];
-        (*mp).instances ~= insts[];
-        (*mp).instances.invalidate();
-      }
-    }
+    if(auto mp = meshKey in meshes) emitInstances(f, *mp, insts);
   }
 }
 
@@ -204,7 +212,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
     float th = app.world.tileHeight;
     f.instanceRuns = [];
     foreach(ref part; ft.parts){ doPart(app, f, ft, part, meshes, wp, th); }
-    if(ft.brushes.length){ doLBrush(f, ft, meshes, wp); }
+    if(ft.brushes.length){ doLBrush(app.world, f, ft, meshes, wp); }
   }
   return features;
 }
