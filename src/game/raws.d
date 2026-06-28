@@ -11,7 +11,7 @@ import ctfe : parseTokens, splitColon;
  * import() is resolved at compile-time; dub does not track these as dependencies */
 mixin(generateResourceEnum(import("data/raws/materials.txt")));
 mixin(generateHeightToResource(import("data/raws/terrain.txt")));
-mixin(generateFeatureData(import("data/raws/features.txt")));
+immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
 
 /** CTFE: generates heightToResource function */
 string generateHeightToResource(string raw) pure {
@@ -75,93 +75,58 @@ string generateResourceEnum(string raw) pure {
   return enumResult ~ "}\n" ~ switchResult ~ "  }\n}\n";
 }
 
-/** CTFE: generates immutable FeatureT[] features */
-string generateFeatureData(string raw) pure {
-  auto tokens = parseTokens(raw);
-  string result = "immutable FeatureT[] features = [\n";
-  string name = "", interaction = "", sound = "";
-  float noiseThreshold = 0.65f, tilePenalty = 0.0f, progressRate = 0.25f;
-  uint hs1, hs2, hmod, hrem, hmin = 1, hmax = 1;
-  string[] spawnOn;
-  string parts = "", drops = "";
-  string pMesh, pRes = "None"; float pSX=1, pSXV=0, pSY=1, pSYV=0, pTaper=0, pOffY=0; bool pRepeat=false;
-  string brushes = ""; float lsAngle = 25.0f;           // current L-system part being built
-  string axiom = "X"; string lrules = "";               // L-system axiom + rules literal
-  string dMat; int dMin=1, dMax=1; bool dPerHeight=false;
-
-  void emitPart() {
-    if(pMesh == "") return;
-    parts ~= format("    FeaturePartT(\"%s\", %sf, %sf, %sf, %sf, %sf, %sf, %s, \"%s\"),\n",
-      pMesh, pSX, pSXV, pSY, pSYV, pTaper, pOffY, pRepeat, pRes);
-    pMesh=""; pRes="None"; pSX=1; pSXV=0; pSY=1; pSYV=0; pTaper=0; pOffY=0; pRepeat=false;
-  }
-
-  void emitDrop() {
-    if(dMat == "") return;
-    drops ~= format("    FeatureDropT(\"%s\", %s, %s, %s),\n", dMat, dMin, dMax, dPerHeight);
-    dMat=""; dMin=1; dMax=1; dPerHeight=false;
-  }
-
-  void emitBrush(string[] p) {  // BRUSH:symbol:mesh:resource:radius:length:advance
-    if(p.length < 7) return;
-    brushes ~= format("      LSystemBrushT('%s', \"%s\", \"%s\", %sf, %sf, %s),\n", p[1], p[2], p[3], p[4], p[5], p[6]);
-  }
-
-  void emitRule(string[] p) {  // RULE:predecessor:production:probability
-    if(p.length < 4) return;
-    lrules ~= format("      Rule('%s', \"%s\", %su),\n", p[1], p[2], p[3]);
-  }
-
-  void emitFeature() {
-    if(name == "") return;
-    string spawnList = spawnOn.map!(s => format("\"%s\"", s)).join(", ");
-    result ~= format("  FeatureT(\"%s\", [%s], %sf, %su, %su, %su, %su, %su, %su, %sf, %sf, \"%s\", \"%s\",\n  [\n%s  ],\n  [\n%s  ], %sf,\n  [\n%s  ], \"%s\",\n  [\n%s  ]),\n", name, spawnList, noiseThreshold, hs1, hs2, hmod, hrem, hmin, hmax, tilePenalty, progressRate, interaction, sound, parts, drops, lsAngle, brushes, axiom, lrules);
-    name=""; interaction="";sound=""; spawnOn=[]; parts=""; drops=""; brushes=""; lsAngle=25.0f; axiom="X"; lrules="";
-    noiseThreshold=0.65f; tilePenalty=0.0f; progressRate=0.25f;
-    hs1=0; hs2=0; hmod=1; hrem=0; hmin=1; hmax=1;
-  }
-
-  foreach(token; tokens) {
+/** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
+FeatureT[] parseFeatures(string raw) pure {
+  FeatureT[] features;
+  FeatureT ft; FeaturePartT part; FeatureDropT drop;
+  bool inFeature;
+  foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     switch(p[0]) {
-      case "FEATURE": emitFeature(); name = p[1]; break;
-      case "SPAWN_ON": spawnOn ~= p[1]; break;
-      case "NOISE_THRESHOLD":  noiseThreshold  = to!float(p[1]); break;
-      case "HASH_SEED1": hs1 = to!uint(p[1]); break;
-      case "HASH_SEED2": hs2 = to!uint(p[1]); break;
-      case "HASH_MOD": hmod = to!uint(p[1]); break;
-      case "HASH_REM": hrem = to!uint(p[1]); break;
-      case "HEIGHT_MIN": hmin = to!uint(p[1]); break;
-      case "HEIGHT_MAX": hmax = to!uint(p[1]); break;
-      case "TILE_PENALTY": tilePenalty = to!float(p[1]); break;
-      case "PROGRESS_RATE": progressRate = to!float(p[1]); break;
-      case "INTERACTION": interaction = p[1]; break;
-      case "SOUND": sound = p[1]; break;
-      case "PART_END": emitPart(); break;
-      case "DROP_END": emitDrop(); break;
-      case "BRUSH": emitBrush(p); break;
-      case "LSYSTEM_ANGLE": lsAngle = to!float(p[1]); break;
-      case "LSYSTEM_END": break;
-      case "AXIOM": axiom = p[1]; break;
-      case "RULE": emitRule(p); break;
-      case "MESH": pMesh = p[1]; break;
-      case "RESOURCE": pRes = p[1]; break;
-      case "SCALE_X": pSX = to!float(p[1]); break;
-      case "SCALE_X_VARIANCE": pSXV = to!float(p[1]); break;
-      case "SCALE_Y": pSY = (p[1] == "tileHeight" ? -1.0f : to!float(p[1])); break;
-      case "SCALE_Y_VARIANCE": pSYV = to!float(p[1]); break;
-      case "TAPER": pTaper = to!float(p[1]); break;
-      case "OFFSET_Y": pOffY = (p[1] == "height" ? -1.0f : to!float(p[1])); break;
-      case "REPEAT": pRepeat = true; break;
-      case "MATERIAL": dMat = p[1]; break;
-      case "DROP_MIN": dMin = to!int(p[1]); break;
-      case "DROP_MAX": dMax = to!int(p[1]); break;
-      case "DROP_COUNT": dMin = to!int(p[1]); dMax = dMin; break;
-      case "DROP_PER_HEIGHT": dPerHeight = true; break;
-      default: break;
+      case "FEATURE":          if(inFeature){features ~= ft;}
+                               ft = FeatureT.init; ft.name = p[1];
+                               part = FeaturePartT.init; drop = FeatureDropT.init; inFeature = true; break;
+      case "SPAWN_ON":         ft.spawnOn ~= p[1]; break;
+      case "NOISE_THRESHOLD":  ft.noiseThreshold = to!float(p[1]); break;
+      case "HASH_SEED1":       ft.hashSeed1 = to!uint(p[1]); break;
+      case "HASH_SEED2":       ft.hashSeed2 = to!uint(p[1]); break;
+      case "HASH_MOD":         ft.hashMod = to!uint(p[1]); break;
+      case "HASH_REM":         ft.hashRem = to!uint(p[1]); break;
+      case "HEIGHT_MIN":       ft.heightMin = to!uint(p[1]); break;
+      case "HEIGHT_MAX":       ft.heightMax = to!uint(p[1]); break;
+      case "TILE_PENALTY":     ft.tilePenalty = to!float(p[1]); break;
+      case "PROGRESS_RATE":    ft.progressRate = to!float(p[1]); break;
+      case "INTERACTION":      ft.interaction = p[1]; break;
+      case "SOUND":            ft.sound = p[1]; break;
+      // Lsystem
+      case "LSYSTEM_ANGLE":    ft.lsystemAngle = to!float(p[1]); break;
+      case "AXIOM":            ft.axiom = p[1]; break;
+      case "BRUSH":            if(p.length >= 7){
+                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3], to!float(p[4]), to!float(p[5]), to!bool(p[6]));
+                               } break;
+      case "RULE":             if(p.length >= 4){ ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+      // Current part
+      case "MESH":             part.mesh = p[1]; break;
+      case "RESOURCE":         part.resourceType = p[1]; break;
+      case "SCALE_X":          part.scaleX = to!float(p[1]); break;
+      case "SCALE_X_VARIANCE": part.scaleXVariance = to!float(p[1]); break;
+      case "SCALE_Y":          part.scaleY = (p[1] == "tileHeight" ? -1.0f : to!float(p[1])); break;
+      case "SCALE_Y_VARIANCE": part.scaleYVariance = to!float(p[1]); break;
+      case "TAPER":            part.taper = to!float(p[1]); break;
+      case "OFFSET_Y":         part.offsetY = (p[1] == "height" ? -1.0f : to!float(p[1])); break;
+      case "REPEAT":           part.repeat = true; break;
+      case "PART_END":         if(part.mesh != "") ft.parts ~= part; part = FeaturePartT.init; break;
+      // Current drop
+      case "MATERIAL":         drop.material = p[1]; break;
+      case "DROP_MIN":         drop.countMin = to!int(p[1]); break;
+      case "DROP_MAX":         drop.countMax = to!int(p[1]); break;
+      case "DROP_COUNT":       drop.countMin = to!int(p[1]); drop.countMax = drop.countMin; break;
+      case "DROP_PER_HEIGHT":  drop.perHeight = true; break;
+      case "DROP_END":         if(drop.material != "") ft.drops ~= drop; drop = FeatureDropT.init; break;
+      default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
     }
   }
-  emitFeature();
-  return result ~ "];\n";
+  if(inFeature) features ~= ft;
+  return features;
 }
