@@ -179,7 +179,7 @@ private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[str
   cfg.angle = ft.lsystemAngle;
   foreach(ref br; ft.brushes) {
     auto brt = resType(br.resourceType);
-    cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance);
+    cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
   }
   auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
   float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];

@@ -14,6 +14,7 @@ struct TurtleBrush {
   float radius = 0.1f;
   float length = 1.0f;
   bool advance = true;
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];   /// per-instance tint (from the material's color)
 }
 
 /** Turtle config: turn angle (degrees) + the per-drawing-symbol brush table. */
@@ -52,7 +53,7 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
         if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(a, ax)); break; }
         if(auto br = c in cfg.brush) {
           const Matrix R = rotate(st.orient);
-          instances[c] ~= DrawInstance(br.material, segmentTransform(st.pos, R, br.radius, br.length));
+          instances[c] ~= DrawInstance(br.material, br.color, segmentTransform(st.pos, R, br.radius, br.length));
           if(br.advance){ st.pos = st.pos.vAdd([R[4]*br.length*0.95f, R[5]*br.length*0.95f, R[6]*br.length*0.95f]); }
         }
       break;
