@@ -161,7 +161,7 @@ void syncBlockInstances(ref World world) {
     }
   }
   world.syncStockpileInstances();
-  foreach(ref mesh; world.dropMeshes.values) { mesh.instances.invalidate(); if(mesh.box !is null) mesh.box.dirty = true; }
+  foreach(ref mesh; world.dropMeshes.values) { mesh.syncInstances(); }
 }
 
 /** Mark blocks above a mined tile as falling */
