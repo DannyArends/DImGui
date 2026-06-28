@@ -7,7 +7,6 @@ import game;
 
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
-import dwarf : unsettleDwarves;
 import game : GameApp;
 import gameobjects : Chunk;
 import deletion : deAllocate;
@@ -185,9 +184,6 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   }
 
   if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.pendingUnsettle.length);
-  foreach(tile; app.world.pendingUnsettle){
-    app.world.unsettleBlocks(app.world.blocks, tile);
-    app.unsettleDwarves(tile);
-  }
+  foreach(tile; app.world.pendingUnsettle) { app.world.unsettleBlocks(app.world.blocks, tile); }
   app.world.pendingUnsettle = [];
 }
