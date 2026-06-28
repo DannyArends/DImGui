@@ -86,17 +86,6 @@ private string delegate() captureKey(string k) { return () => k; }
 /** Resolve a raw resourceType string to its enum, treating "None" as ResourceType.None. */
 private ResourceType resType(string s) { return s == "None" ? ResourceType.None : s.to!ResourceType; }
 
-/** Construct a primitive mesh by name, or null if unknown. */
-private Geometry makePrimitive(string mesh) {
-  switch(mesh) {
-    case "Cylinder": return new Cylinder(0.4f, 1.0f, 12);
-    case "Icosahedron": auto m = new Icosahedron(); m.computeTangents(); return m;
-    case "Cone": return new Cone(0.5f, 1.0f, 12);
-    case "Cube": return new Cube();
-    default: return null;
-  }
-}
-
 /** The FeatureT whose placed feature is rooted at `tile`, or null if none. */
 private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
@@ -107,21 +96,22 @@ private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
   return null;
 }
 
-/** Build + register one instanced primitive mesh under `key`, once. */
-private void registerMesh(ref GameApp app, string key, string mesh) {
-  if(key in app.world.featureMeshes) return;
-  auto m = makePrimitive(mesh);
-  if(m is null) return;
-  m.initInstanced(captureKey(key));
-  app.world.featureMeshes[key] = m;
-  app.objects ~= m;
-}
-
 /** Create and register one instanced primitive mesh per (feature, part/brush mesh); skips keys already built. */
 void initFeatureMeshes(ref GameApp app) {
-  foreach(ref ft; features) {
-    foreach(ref part; ft.parts) app.registerMesh(meshKey(ft.name, part.mesh), part.mesh);
-    foreach(ref br; ft.brushes) app.registerMesh(meshKey(ft.name, br.mesh), br.mesh);
+  foreach(ref ft; features) foreach(name; chain(ft.parts.map!(p => p.mesh), ft.brushes.map!(b => b.mesh))) {
+    string key = ft.name ~ ":" ~ name;
+    if(key in app.world.featureMeshes) continue;
+    Geometry mesh;
+    switch(name) {
+      case "Cylinder": mesh = new Cylinder(0.4f, 1.0f, 12); break;
+      case "Icosahedron": mesh = new Icosahedron(); mesh.computeTangents(); break;
+      case "Cone": mesh = new Cone(0.5f, 1.0f, 12); break;
+      case "Cube": mesh = new Cube(); break;
+      default: continue;
+    }
+    mesh.initInstanced(captureKey(key));
+    app.world.featureMeshes[key] = mesh;
+    app.objects ~= mesh;
   }
 }
 
