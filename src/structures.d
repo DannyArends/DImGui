@@ -29,7 +29,7 @@ public import instancing : DrawInstance;
 public import intersection : Intersection;
 public import line : Line;
 public import lights : LMode, Light, Lighting, Lights;
-public import lsystem : LSystem, Symbols;
+public import lsystem : LSystem, Symbols, RuleSpec;
 public import material : Material;
 public import matrix : Matrix;
 public import mesh : Mesh;
