@@ -155,64 +155,56 @@ private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] i
   if(mesh.box !is null) mesh.box.dirty = true;
 }
 
-/** Stamp one static part: emit its instances and record the index range on the feature. */
-private void doPart(ref GameApp app, ref Feature f, ref immutable FeatureT ft, ref immutable FeaturePartT part, ref Geometry[string] meshes, float[3] wp, float th) {
-  string meshKey = ft.name ~ ":" ~ part.mesh;
-  if(meshKey !in meshes) return;
-  auto mesh = meshes[meshKey];
-  if(mesh is null) return;
-  size_t partStart = mesh.instances.length;
-  float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
-  float sy = part.scaleY < 0 ? th : part.scaleY + (f.hash % 5) * part.scaleYVariance;
-  float oy = part.offsetY < 0 ? f.height * th : part.offsetY;
-  auto rt = resType(part.resourceType);
-  if(part.repeat) {
-    for(uint h = 0; h < f.height; h++) {
-      app.world.data.tilePenalties[[f.rootTile[0], f.rootTile[1]+cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
-      float s = sx - h * part.taper;
-      if(s < 0.05f) s = 0.05f;
-      mesh.instances ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + h * th, wp[2]], [s, sy, s]));
-    }
-  } else {
-    if(ft.tilePenalty > 0.0f) app.world.data.tilePenalties[f.rootTile] = ft.tilePenalty;
-    mesh.instances ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]));
-  }
-  f.instanceRuns ~= [partStart, mesh.instances.length - partStart];
-  mesh.instances.invalidate();
-  if(mesh.box !is null) mesh.box.dirty = true;
-}
-
-/** Build the L-system part: run the turtle and append grouped instances + ranges. */
-private void doLBrush(ref World world, ref Feature f, ref immutable FeatureT ft, ref Geometry[string] meshes, float[3] wp) {
-  TurtleConfig cfg;
-  cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
-  if(ft.tilePenalty > 0.0f) {
-    foreach(uint h; 0 .. f.height){
-      world.data.tilePenalties[[f.rootTile[0], f.rootTile[1] + cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
-    }
-  }
-  foreach(ref br; ft.brushes) {
-    auto brt = resType(br.resourceType);
-    cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
-  }
-  auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
-  float[4] q0 = [0.0f, 0.0f, 0.0f, 1.0f];
-  float baseY = ft.brushes[0].length * 0.5f;
-  auto grouped = interpret(chars, cfg, [wp[0], wp[1] - baseY, wp[2]], q0);
-  foreach(sym, insts; grouped) {
-    string meshKey = ft.name ~ ":" ~ brushMesh(ft, sym);
-    if(auto mp = meshKey in meshes) emitInstances(f, *mp, insts);
-  }
-}
-
-/** Emit all DrawInstances for each feature (static parts + L-system brushes) and record their instance runs. */
+/** Add all DrawInstances for each feature: mark the tile-penalty footprint, build instance
+    batches (static parts + L-system brushes), and emit each via emitInstances. */
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
     auto wp = app.world.tileToWorld(f.rootTile);
-    float th = app.world.tileHeight;
     f.instanceRuns = [];
-    foreach(ref part; ft.parts){ doPart(app, f, ft, part, meshes, wp, th); }
-    if(ft.brushes.length){ doLBrush(app.world, f, ft, meshes, wp); }
+
+    // Footprint: tall features (a repeat trunk part or an L-system) penalise a column; flat ones just the root.
+    if(ft.tilePenalty > 0.0f) {
+      bool tall = ft.brushes.length > 0 || ft.parts.any!(p => p.repeat);
+      foreach(uint h; 0 .. (tall ? f.height : 1)) {
+        app.world.data.tilePenalties[[f.rootTile[0], f.rootTile[1] + cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
+      }
+    }
+
+    // Static parts
+    foreach(ref part; ft.parts) {
+      string meshKey = ft.name ~ ":" ~ part.mesh;
+      auto mp = meshKey in meshes;
+      if(mp is null || *mp is null) continue;
+      float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
+      float sy = part.scaleY < 0 ? app.world.tileHeight : part.scaleY + (f.hash % 5) * part.scaleYVariance;
+      float oy = part.offsetY < 0 ? f.height * app.world.tileHeight : part.offsetY;
+      auto rt = resType(part.resourceType);
+      DrawInstance[] insts;
+      if(part.repeat) {
+        foreach(uint h; 0 .. f.height) {
+          float s = sx - h * part.taper; if(s < 0.05f) s = 0.05f;
+          insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + h * app.world.tileHeight, wp[2]], [s, sy, s]));
+        }
+      } else { insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx])); }
+      emitInstances(f, *mp, insts);
+    }
+
+    // L-system brushes
+    if(ft.brushes.length) {
+      TurtleConfig cfg;
+      cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
+      foreach(ref br; ft.brushes) {
+        auto brt = resType(br.resourceType);
+        cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
+      }
+      auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
+      float baseY = ft.brushes[0].length * 0.5f;
+      auto grouped = interpret(chars, cfg, [wp[0], wp[1] - baseY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
+      foreach(sym, insts; grouped) {
+        string meshKey = ft.name ~ ":" ~ brushMesh(ft, sym);
+        if(auto mp = meshKey in meshes){ emitInstances(f, *mp, insts); }
+      }
+    }
   }
   return features;
 }
