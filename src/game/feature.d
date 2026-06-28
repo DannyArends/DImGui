@@ -84,6 +84,9 @@ struct Feature {
 
 string delegate() captureKey(string k) { return () => k; }
 
+/** Resolve a raw resourceType string to its enum, treating "None" as ResourceType.None. */
+private ResourceType resType(string s) { return s == "None" ? ResourceType.None : s.to!ResourceType; }
+
 void initFeatureMeshes(ref GameApp app) {
   foreach(ref ft; features) {
     foreach(ref part; ft.parts) {
@@ -154,7 +157,7 @@ private void doPart(ref GameApp app, ref Feature f, ref immutable FeatureT ft, r
   float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
   float sy = part.scaleY < 0 ? th : part.scaleY + (f.hash % 5) * part.scaleYVariance;
   float oy = part.offsetY < 0 ? f.height * th : part.offsetY;
-  auto rt = part.resourceType == "None" ? ResourceType.None : part.resourceType.to!ResourceType;
+  auto rt = resType(part.resourceType);
   if(part.repeat) {
     for(uint h = 0; h < f.height; h++) {
       app.world.data.tilePenalties[[f.rootTile[0], f.rootTile[1]+cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
@@ -176,7 +179,7 @@ private void doLBrush(ref Feature f, ref immutable FeatureT ft, ref Geometry[str
   TurtleConfig cfg;
   cfg.angle = ft.lsystemAngle;
   foreach(ref br; ft.brushes) {
-    auto brt = br.resourceType == "None" ? ResourceType.None : br.resourceType.to!ResourceType;
+    auto brt = resType(br.resourceType);
     cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance);
   }
   RuleSpec[] specs;
