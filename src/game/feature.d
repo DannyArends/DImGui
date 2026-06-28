@@ -55,10 +55,10 @@ struct FeatureT {
   string sound;
   FeaturePartT[] parts;
   FeatureDropT[] drops;
-  float lsystemAngle = 25.0f;               /// L-system turn angle; brushes empty = no L-system
-  LSystemBrushT[] brushes;                  /// single-level array, converts to immutable like parts/drops
-  string axiom = "X";                       /// L-system start symbol(s)
-  RuleSpec[] rules;                         /// L-system production rules
+  float lsystemAngle = 25.0f;              /// L-system turn angle; brushes empty = no L-system
+  LSystemBrushT[] brushes;                 /// single-level array, converts to immutable like parts/drops
+  string axiom = "X";                      /// L-system start symbol(s)
+  Rule[] rules;                            /// L-system production rules
 }
 
 struct Feature {
