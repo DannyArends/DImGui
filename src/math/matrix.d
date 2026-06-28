@@ -68,6 +68,20 @@ struct Matrix {
 @nogc pure Matrix rotate(const Matrix m, const float[3] v) nothrow { return m.multiply(rotate(v)); }
 @nogc pure Matrix translateScale(float[3] p, float[3] s) nothrow { return translate(p).multiply(scale(s)); }
 
+/** Compose translate(pos)·R·translate(0,length/2,0)·scale(radius,length,radius) directly.
+    Places a unit primitive along the turtle's local +Y; avoids 3 intermediate 4x4 multiplies. */
+@nogc pure Matrix segmentTransform(const float[3] pos, const Matrix R, const float radius, const float length) nothrow {
+  const float[3] r0 = [R[0], R[1], R[2]];
+  const float[3] r1 = [R[4], R[5], R[6]];   // local +Y after rotation
+  const float[3] r2 = [R[8], R[9], R[10]];
+  Matrix m;
+  m[0]=r0[0]*radius; m[1]=r0[1]*radius; m[2]=r0[2]*radius;
+  m[4]=r1[0]*length; m[5]=r1[1]*length; m[6]=r1[2]*length;
+  m[8]=r2[0]*radius; m[9]=r2[1]*radius; m[10]=r2[2]*radius;
+  m[12]=pos[0]+r1[0]*length*0.5f; m[13]=pos[1]+r1[1]*length*0.5f; m[14]=pos[2]+r1[2]*length*0.5f;
+  return m;
+}
+
 @nogc pure Matrix rotate(const float[3] v) nothrow {
   float yaw   = radian(v[0]); float pitch = radian(v[1]); float roll  = radian(v[2]);
 
