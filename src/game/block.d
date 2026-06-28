@@ -12,6 +12,7 @@ import normals : computeTangents;
 import physx : inColumn;
 import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
+import resources : isFood;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
@@ -72,17 +73,24 @@ int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStor
 void release(ref Block[uint] blocks, uint[] ids) { foreach(id; ids){ if(auto b = id in blocks){ b.reserved = false; } } }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
-uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
-  uint bestID = noBlock;
-  float bestDist = float.max;
+private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dwarfTile, bool includeStored) {
+  uint bestID = noBlock; float bestDist = float.max;
   foreach(id, b; world.blocks) {
-    if(tt != ResourceType.None && b.type != tt) continue;
+    if(!accept(b)) continue;
     int[3] at = world.pickupTileFor(id, b, includeStored);
     if(at == noTile) continue;
     float dist = manhattan(at, dwarfTile);
     if(dist < bestDist) { bestDist = dist; bestID = id; }
   }
   return bestID;
+}
+
+uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
+  return findFreeBlockWhere!(b => tt == ResourceType.None || b.type == tt)(world, dwarfTile, includeStored);
+}
+
+uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored = true) {
+  return findFreeBlockWhere!(b => b.type.isFood)(world, dwarfTile, includeStored);
 }
 
 Geometry createDropMesh(string meshName) {

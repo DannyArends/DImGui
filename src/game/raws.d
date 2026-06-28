@@ -67,6 +67,7 @@ ResourceT[] parseResources(string raw) pure {
       case "TEXTURE":     cur.name = p[1]; break;
       case "TRAVERSABLE": cur.traversable = true; break;
       case "BUILDABLE":   cur.buildable = true; break;
+      case "FOOD":        cur.food = to!float(p[1]); break;
       case "MESH":        cur.meshName = p[1]; break;
       case "SCALE":       cur.dropScale = to!float(p[1]); break;
       case "COST":        cur.cost = to!float(p[1]); break;

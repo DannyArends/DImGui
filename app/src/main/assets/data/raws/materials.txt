@@ -220,20 +220,20 @@
 
 [MATERIAL:Berry01]
   [TEXTURE:Berry]
-  [ITEM][MAX_STACK:16][COLOR:crimson]
+  [ITEM][MAX_STACK:16][COLOR:crimson][FOOD:1.00]
   [MESH:Berries][SCALE:0.5]
 
 [MATERIAL:Berry02]
   [TEXTURE:Berry]
-  [ITEM][MAX_STACK:16][COLOR:darkviolet]
-  [MESH:Berries][SCALE:0.5]
+  [ITEM][MAX_STACK:16][COLOR:darkviolet][FOOD:0.25]
+  [MESH:Berries][SCALE:0.3]
 
 [MATERIAL:Berry03]
   [TEXTURE:Berry]
-  [ITEM][MAX_STACK:16][COLOR:greenyellow]
-  [MESH:Berries][SCALE:0.5]
+  [ITEM][MAX_STACK:16][COLOR:greenyellow][FOOD:0.5]
+  [MESH:Berries][SCALE:0.4]
 
 [MATERIAL:Sponge01]
   [TEXTURE:Sponge_01]
-  [ITEM][BUILDABLE][MAX_STACK:1]
+  [ITEM][MAX_STACK:4][FOOD:0.10]
   [MESH:Blocks][SCALE:1.0]

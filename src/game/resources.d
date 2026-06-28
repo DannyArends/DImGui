@@ -17,7 +17,11 @@ struct ResourceT {
   string meshName  = "Blocks";
   float dropScale  = 1.0f;
   Colors color     = Colors.white;
+  float food       = 0.0f;
 }
+
+@nogc bool isFood(ResourceType t) nothrow { return resourceData(t).food > 0.0f; }
+@nogc float foodValue(ResourceType t) nothrow { return resourceData(t).food; }
 
 void injectResourceMeshes(ref GameApp app) {
   app.meshes.length = 0;

@@ -8,6 +8,7 @@ import game;
 import block : blockType, spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
+import resources : isFood, foodValue;
 import sfx : play;
 import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
 import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, tileToWorld, getSuccessors, worldToTile;
@@ -283,9 +284,9 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
 
 /** Eat Job — claim nearest free Berry on the floor, walk to it, consume it */
 Job eatJob() {
-  return Job("Eating", noTile, ResourceType.Berry01, [], true, reach: Reach.OnTile,
+  return Job("Eating", noTile, ResourceType.None, [], true, reach: Reach.OnTile,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      auto carried = d.carrying.filter!(id => app.world.blocks.blockType(id) == ResourceType.Berry01);
+      auto carried = d.carrying.filter!(id => app.world.blocks.blockType(id).isFood);
       if(carried.empty) { j.state = JobState.Unavailable; return; }
       j.blockIDs = [carried.front];
       j.targetTile = d.tile;
@@ -293,9 +294,10 @@ Job eatJob() {
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.5f, () {
         auto id = d.currentJob.blockIDs[0];
+        float restore = foodValue(app.world.blocks.blockType(id));   // read type before removal
         d.use(app, id);
         if(id in app.world.blocks) app.world.blocks.remove(id);
-        d.hunger = 0.0f;
+        d.hunger = d.hunger > restore ? d.hunger - restore : 0.0f;
         app.play("DM-CGS-16", 0.4f);
         app.world.blocksDirty = true;
       });
