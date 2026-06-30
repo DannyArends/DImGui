@@ -104,6 +104,7 @@ void checkPendingTextures(ref App app) {
 
 /** Texture index */
 @nogc pure int idx(const Texture[] textures, string name) nothrow {
+  if(name.length == 0) return(-1);
   int besthit = -1;
   for(uint i = 0; i < textures.length; i++) {
     auto base = stripExtension(baseName(textures[i].path));
