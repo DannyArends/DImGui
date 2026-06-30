@@ -10,7 +10,6 @@ import game : GameApp;
 import quaternion : angleAxis, qMul, rotate;
 import lsystem : buildGrammar, turnAxis, turnAngle;
 import matrix : translateScale, segmentTransform;
-import normals : computeTangents;
 import noise : noiseHTT;
 import sfx : play;
 import tile : getTile, tileCoord, tileToWorld;
@@ -100,14 +99,8 @@ void initFeatureMeshes(ref GameApp app) {
   foreach(ref ft; features) foreach(name; chain(ft.parts.map!(p => p.mesh), ft.brushes.map!(b => b.mesh))) {
     string key = ft.name ~ ":" ~ name;
     if(key in app.world.vegetation.meshes) continue;
-    Geometry mesh;
-    switch(name) {
-      case "Cylinder": mesh = new Cylinder(0.4f, 1.0f, 12); break;
-      case "Icosahedron": mesh = new Icosahedron(); mesh.computeTangents(); break;
-      case "Cone": mesh = new Cone(0.5f, 1.0f, 12); break;
-      case "Cube": mesh = new Cube(); break;
-      default: continue;
-    }
+    auto mesh = makePrimitive(name);
+    if(mesh is null) continue;
     mesh.initInstanced(captureKey(key));
     app.world.vegetation.meshes[key] = mesh;
     app.objects ~= mesh;

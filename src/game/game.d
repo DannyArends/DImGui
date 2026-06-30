@@ -33,6 +33,7 @@ import dwarf : spawnDwarf, loadDwarfs, settleDwarves;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
 import imgui : iconTextStr;
+import icosahedron : refineIcosahedron;
 import inventorywindow : showInventoryContent;
 import jobs : applyPathResult;
 import lights : updateSun;
@@ -116,6 +117,19 @@ void initGame(ref GameApp app) {
   SDL_Log("initGame: done");
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
+}
+
+Geometry makePrimitive(string name) {
+  Geometry m;
+  switch(name) {
+    case "Cube", "Blocks": m = new Cube(); break;
+    case "Cylinder": m = new Cylinder(0.4f, 1.0f, 12); break;
+    case "Cone": m = new Cone(0.5f, 1.0f, 12); break;
+    case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
+    case "Berries": m = new Icosahedron(); m.computeTangents(); m.refineIcosahedron(3); break;
+    default: return null;
+  }
+  return m;
 }
 
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
