@@ -12,6 +12,7 @@ import game : GameApp;
 import hits : getHits;
 import screenshot : saveScreenshot;
 import timing : timed;
+import jobs : craftJob, jobQueue;
 import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
 import water : waterTick, flushWaterDirty, evaporateTick;
@@ -63,6 +64,7 @@ void handleKeyEvents(ref GameApp app, SDL_Event e) {
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
     if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
+    if(symbol == SDLK_K) { jobQueue ~= craftJob("FlintKnapping"); }
   }
 }
 
