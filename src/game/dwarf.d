@@ -310,8 +310,8 @@ void ensureDwarves(ref GameApp app) {
   app.world.dwarves.onFrame = (float dt){ dwarfFrame(app, dt); };
   app.world.dwarves.onTick  = (){ dwarfTick(app); };
   app.objects ~= app.world.dwarves;
-  app.world.pathMarkers = new PathMarkers();
-  app.objects ~= app.world.pathMarkers;
+  app.world.paths.markers = new PathMarkers();
+  app.objects ~= app.world.paths.markers;
 
   app.world.weather.clouds = new Clouds();
   app.objects ~= app.world.weather.clouds;

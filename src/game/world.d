@@ -83,6 +83,7 @@ struct WorldData {
 /** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
 struct World {
   WorldData data;                                           /// Immutable world Data
+  alias data this;
   ChunkField chunks;
   Vegetation vegetation;
   Drops blocks;
@@ -91,9 +92,7 @@ struct World {
   Dwarves dwarves;                                          /// Dwarves
   Weather weather;
   WaterTiles water;                                         /// single batched water render object
-  PathMarkers pathMarkers;                                  /// Path markers
-  PathRequest[] pendingPaths;                               /// Pending pathfinding requests
-  alias data this;
+  Paths paths;
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
   void deallocateChunk(const int[3] coord) {

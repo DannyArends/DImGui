@@ -7,18 +7,23 @@ import game;
 
 import matrix : position;
 
+struct Paths {
+  PathMarkers markers;
+  PathRequest[] pending;
+}
+
 /** Rebuild path marker instances from all dwarf paths */
 void syncPathMarkers(ref World world, bool showPaths = false) {
-  if(world.pathMarkers is null || world.dwarves is null) return;
-  world.pathMarkers.instances = [];
+  if(world.paths.markers is null || world.dwarves is null) return;
+  world.paths.markers.instances = [];
   if(showPaths) {
     foreach(ref d; world.dwarves) {
       foreach(l; d.path) {
         DrawInstance inst = DrawInstance([0, 0], d.color, Matrix.init);
         inst = position(inst, [l[0], l[1] - 0.4f, l[2]]);
-        world.pathMarkers.instances ~= inst;
+        world.paths.markers.instances ~= inst;
       }
     }
   }
-  world.pathMarkers.syncInstances();
+  world.paths.markers.syncInstances();
 }
