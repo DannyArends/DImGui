@@ -310,8 +310,23 @@ Job eatJob() {
 Job craftJob(string name) {
   return Job(name, noTile, ResourceType.None, [], true, reach: Reach.Adjacent,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      auto id = app.world.findFreeClass(d.tile, ResourceClass.Stone);
+      auto r = reactionFor(j.name);
+      if(r.inputs.length == 0) { j.state = JobState.Unavailable; return; }
+      ResourceClass need = cast(ResourceClass)r.inputs[0].cls;
+
+      uint id = app.world.findFreeClass(d.tile, need);
+      if(id == noBlock) { j.state = JobState.Unavailable; return; }
+
+      auto b = id in app.world.drops;
+      if(b is null) { j.state = JobState.Unavailable; return; }
+
+      int[3] target = b.tile;
+      if(b.tile == storedTile) target = app.world.storedTileOf(id).tileAbove;
+      if(target == noTile) { j.state = JobState.Unavailable; return; }
+
+      b.reserved = true;
       j.blockIDs = [id];
+      j.targetTile = target;
     },
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 1.0f, () {
