@@ -16,7 +16,7 @@ public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, Wate
 public import pathfinding : PathRequest, PathResult;
 public import physx : Fall;
 public import searchnode : PathNode;
-public import stockpile : Stockpile;
+public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
 public import tile : builtTile, noTile, storedTile, TileDiff;
 public import raws : ResourceType, ResourceClass, resourceData, heightToResource, features;
