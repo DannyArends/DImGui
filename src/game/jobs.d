@@ -8,6 +8,7 @@ import game;
 import block : resourceType, spawnBlock, hasResource, findFreeBlock, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
+import reactions : reactionFor;
 import resources : isFood, foodValue;
 import sfx : play;
 import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
@@ -303,6 +304,34 @@ Job eatJob() {
       });
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
+  );
+}
+
+Job craftJob(string name) {
+  return Job(name, noTile, ResourceType.None, [], true, reach: Reach.Adjacent,
+    onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
+      auto r = reactionFor(j.name);
+      auto id = app.world.findFreeClass(d.tile, r.inputs[0].cls);     // v1: single input
+      auto b  = (id == noBlock ? null : id in app.world.drops);
+      if(b is null) { j.state = JobState.Unavailable; return; }
+      int[3] target = (b.tile == storedTile) ? app.world.storedTileOf(id).tileAbove : b.tile;
+      if(target == noTile) { j.state = JobState.Unavailable; return; }
+      b.reserved = true;
+      j.blockIDs = [id];
+      j.targetTile = target;
+    },
+    onArrive: (ref GameApp app, ref Dwarf d) {
+      app.progressJob(d, 1.0f, () {
+        auto r = reactionFor(d.currentJob.name);
+        foreach(id; d.currentJob.blockIDs) if(id in app.world.drops) app.world.drops.registry.remove(id);
+        foreach(prod; r.outputs) foreach(n; 0 .. prod.count) app.spawnBlock(d.tile, prod.type);
+        app.world.drops.dirty = true;
+      });
+    },
+    onFail: (ref GameApp app, ref Dwarf d) {
+      app.world.drops.release(d.currentJob.blockIDs);
+      d.failAndRequeue();
+    }
   );
 }
 
