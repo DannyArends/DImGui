@@ -115,7 +115,7 @@ void evaporateTick(ref GameApp app) {
         app.world.setWater(wc, cast(ubyte)(chunk.waterLevel[idx] - 1), false);
         auto cell = cloudCell(wc[0], wc[2]);
         auto dd = H[uniform(0, 4)];
-        app.world.cloudDensity[[cell[0] + dd[0], cell[1] + dd[1]]] += uniform(1, hi) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
+        app.world.weather.density[[cell[0] + dd[0], cell[1] + dd[1]]] += uniform(1, hi) * EVAP_DENSITY;   // moisture rises and drifts to a neighbour
       }
     }
   }

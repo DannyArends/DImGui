@@ -89,9 +89,7 @@ struct World {
   StockpileField stockpiles;
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
-  Clouds clouds;                                            /// Clouds
-  float[int[2]] cloudDensity;                               /// mutable cloud density delta over noise base, by [gx,gz] cloud-cell
-  bool cloudRebuildPending = false;                         /// Rebuild clouds ?
+  Weather weather;
   WaterTiles water;                                         /// single batched water render object
   PathMarkers pathMarkers;                                  /// Path markers
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests

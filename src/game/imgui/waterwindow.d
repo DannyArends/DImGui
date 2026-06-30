@@ -40,7 +40,7 @@ void showWaterContent(ref GameApp app, uint font = 0) {
 
   // cloud moisture (normalized 0..1 density summed across cells — separate unit)
   float cloudMoisture = 0;
-  foreach(key, d; app.world.cloudDensity) cloudMoisture += d;
+  foreach(key, d; app.world.weather.density) cloudMoisture += d;
 
   if(igBeginTable("Water_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
     infoRow("Wet cells",     "%d", cells);
