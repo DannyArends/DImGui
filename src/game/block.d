@@ -10,7 +10,7 @@ import matrix : translateScale, scale;
 import physx : inColumn;
 import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood;
+import resources : isFood, hasClass;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
