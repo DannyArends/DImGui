@@ -6,9 +6,7 @@
 import game;
 
 import inventory : deriveInventory;
-import icosahedron : refineIcosahedron;
 import matrix : translateScale, scale;
-import normals : computeTangents;
 import physx : inColumn;
 import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
@@ -102,19 +100,10 @@ uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored 
 }
 
 Geometry createDropMesh(string meshName) {
-  switch(meshName) {
-    case "Blocks":
-      Geometry m = new Cube();
-      m.initInstanced(() => meshName);
-      return m;
-    case "Berries":
-      Geometry m = new Icosahedron();
-      m.computeTangents();
-      m.refineIcosahedron(3);
-      m.initInstanced(() => meshName);
-      return m;
-    default: SDL_Log("ensureBlocks: unknown mesh type '%s'", toStringz(meshName)); return null;
-  }
+  auto m = makePrimitive(meshName);
+  if(m is null) { SDL_Log("createDropMesh: unknown mesh type '%s'", toStringz(meshName)); return null; }
+  m.initInstanced(() => meshName);
+  return(m);
 }
 
 void ensureBlocks(ref GameApp app) {
