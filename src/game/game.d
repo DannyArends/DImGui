@@ -14,6 +14,7 @@ public import inventory : Inventory;
 public import jobs : Job, JobState, Reach;
 public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import pathfinding : PathRequest, PathResult;
+public import pathmarker : Paths;
 public import physx : Fall;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
