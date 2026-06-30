@@ -20,3 +20,8 @@ struct Reaction {
   Ingredient[] inputs;
   Product[] outputs;
 }
+
+immutable(Reaction) reactionFor(string name) {
+  foreach(ref r; reactions) { if(r.name == name) { return r; } }
+  return Reaction.init;
+}
