@@ -72,7 +72,7 @@ void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in 
 @nogc pure uint available(const Drops drops, ResourceType tt) nothrow { return cast(uint)drops.byValue.count!(b => b.type == tt && !b.reserved); }
 
 /** A reaction can run iff every ingredient is available in the required count. */
-bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!(i => drops.available(i.cls) >= i.count); }
+bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!(i => drops.available(cast(ResourceClass)i.cls) >= i.count); }
 
 /** on the Drops unit — class-based, the same shape eating already wants */
 @nogc pure uint available(const Drops drops, ResourceClass c) nothrow { return cast(uint)drops.byValue.count!(b => b.type.hasClass(c) && !b.reserved); }

@@ -5,7 +5,7 @@
 
 import game;
 
-import block : resourceType, spawnBlock, hasResource, findFreeBlock, syncBlockInstances, noBlock, release;
+import block : resourceType, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import reactions : reactionFor;
@@ -311,7 +311,7 @@ Job craftJob(string name) {
   return Job(name, noTile, ResourceType.None, [], true, reach: Reach.Adjacent,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
       auto r = reactionFor(j.name);
-      auto id = app.world.findFreeClass(d.tile, r.inputs[0].cls);     // v1: single input
+      auto id = app.world.findFreeClass(d.tile, cast(ResourceClass)r.inputs[0].cls);     // v1: single input
       auto b  = (id == noBlock ? null : id in app.world.drops);
       if(b is null) { j.state = JobState.Unavailable; return; }
       int[3] target = (b.tile == storedTile) ? app.world.storedTileOf(id).tileAbove : b.tile;
@@ -324,7 +324,12 @@ Job craftJob(string name) {
       app.progressJob(d, 1.0f, () {
         auto r = reactionFor(d.currentJob.name);
         foreach(id; d.currentJob.blockIDs) if(id in app.world.drops) app.world.drops.registry.remove(id);
-        foreach(prod; r.outputs) foreach(n; 0 .. prod.count) app.spawnBlock(d.tile, prod.type);
+        foreach(prod; r.outputs) foreach(n; 0 .. prod.count) {
+          auto pid = app.spawnBlock(d.tile, cast(ResourceType)prod.type);
+          if(d.pickup(pid, cast(ResourceType)prod.type)) {
+            if(auto nb = pid in app.world.drops) { nb.tile = noTile; nb.fall = Fall.init; }
+          }
+        }
         app.world.drops.dirty = true;
       });
     },
