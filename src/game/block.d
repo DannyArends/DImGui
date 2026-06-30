@@ -59,6 +59,7 @@ void loadBlocks(ref GameApp app) {
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.drops.length);
 }
 
+/** Do we have a certain resourceType? */
 @nogc pure bool hasResource(const Drops drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.type == tt); }
 
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
@@ -66,6 +67,20 @@ ResourceType resourceType(const Drops drops, uint id) { auto b = id in drops; re
 
 /** Clear the reserved flag on a set of blocks (released on job failure/completion). */
 void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in drops){ b.reserved = false; } } }
+
+/** Count unreserved, available blocks of a type. */
+@nogc pure uint available(const Drops drops, ResourceType tt) nothrow { return cast(uint)drops.byValue.count!(b => b.type == tt && !b.reserved); s}
+
+/** A reaction can run iff every ingredient is available in the required count. */
+bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!(i => drops.available(i.type) >= i.count); }
+
+/** on the Drops unit — class-based, the same shape eating already wants */
+@nogc pure uint available(const Drops drops, ResourceClass c) nothrow { return cast(uint)drops.byValue.count!(b => b.type.hasClass(c) && !b.reserved); }
+
+/** on */
+uint findFreeClass(const World world, int[3] dwarfTile, ResourceClass c, bool includeStored = true) {
+  return findFreeBlockWhere!(b => b.type.hasClass(c))(world, dwarfTile, includeStored);
+}
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
 int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStored) {
@@ -77,7 +92,6 @@ int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStor
   }
   return (world.isStandable(b.tile) || world.hasStandableNeighbour(b.tile)) ? b.tile : noTile;
 }
-
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dwarfTile, bool includeStored) {

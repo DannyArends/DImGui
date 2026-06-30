@@ -54,13 +54,11 @@ string generateResourceEnum(string raw) pure {
 /** CTFE: collect every distinct [CLASS:x] tag into the ResourceClass enum (None = sentinel). */
 string generateResourceClassEnum(string raw) pure {
   string[] seen;
+  void add(string s){ foreach(x; seen) if(x == s) return; seen ~= s; }
   foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
-    if(p.length >= 2 && p[0] == "CLASS") {
-      bool found = false;
-      foreach(s; seen) if(s == p[1]) { found = true; break; }
-      if(!found) seen ~= p[1];
-    }
+    if(p.length >= 2 && p[0] == "CLASS") { add(p[1]); }
+    if(p.length >= 2 && p[0] == "MATERIAL" && p[1] != "None") { add(p[1]); }
   }
   string result = "enum ResourceClass : ubyte {\n  None,\n";
   foreach(s; seen) result ~= "  " ~ s ~ ",\n";

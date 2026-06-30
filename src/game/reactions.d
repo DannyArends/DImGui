@@ -9,7 +9,7 @@ import game;
 enum WorkshopUse : ubyte { None, Required, Preferred }
 
 /** One input line of a reaction: a resource type and a count. */
-struct Ingredient { ResourceType type; uint count = 1; } // INPUT
+struct Ingredient { ResourceClass cls; uint count = 1; } // INPUT
 
 /** One input line of a reaction: a resource type and a count. */
 struct Product { ResourceType type; float chance = 1.0f; uint count = 1; } // OUTPUT
