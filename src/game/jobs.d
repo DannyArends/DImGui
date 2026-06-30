@@ -5,7 +5,7 @@
 
 import game;
 
-import block : blockType, spawnBlock, hasBlocks, findFreeBlock, syncBlockInstances, noBlock, release;
+import block : resourceType, spawnBlock, hasResource, findFreeBlock, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import resources : isFood, foodValue;
@@ -109,7 +109,7 @@ void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   uint id = j.blockIDs.length ? j.blockIDs[0] : app.world.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
   auto b = (id == noBlock ? null : id in app.world.drops);
 
-  if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.world.drops.blockType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
+  if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.world.drops.resourceType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
   if(b is null) { j.state = JobState.Unavailable; return; }
 
   bool stored = (b.tile == storedTile);
@@ -158,7 +158,7 @@ Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
   return Job("Store", toTile, type, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID], reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Dwarf d) {
       /* SDL_Log(cstr("STORED %s tgt=[%d,%d,%d]", d.name, d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2])); */
-      auto picked = d.carrying.filter!(id => app.world.drops.blockType(id) == d.currentJob.tileType);
+      auto picked = d.carrying.filter!(id => app.world.drops.resourceType(id) == d.currentJob.tileType);
       if(picked.empty) { d.currentJob.onFail(app, d); return; }
       auto blockID = picked.front;
       d.use(app, blockID);                                  // remove from inventory (no builtTile)
@@ -235,7 +235,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
 }
 
 uint useCarriedBlock(ref GameApp app, ref Dwarf d, ResourceType type) {
-  auto found = d.carrying.filter!(id => app.world.drops.blockType(id) == type);
+  auto found = d.carrying.filter!(id => app.world.drops.resourceType(id) == type);
   if(found.empty) return noBlock;
   auto blockID = found.front;
   if(!d.use(app, blockID)) return noBlock;
@@ -286,7 +286,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
 Job eatJob() {
   return Job("Eating", noTile, ResourceType.None, [], true, reach: Reach.OnTile,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      auto carried = d.carrying.filter!(id => app.world.drops.blockType(id).isFood);
+      auto carried = d.carrying.filter!(id => app.world.drops.resourceType(id).isFood);
       if(carried.empty) { j.state = JobState.Unavailable; return; }
       j.blockIDs = [carried.front];
       j.targetTile = d.tile;
@@ -294,7 +294,7 @@ Job eatJob() {
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.5f, () {
         auto id = d.currentJob.blockIDs[0];
-        float restore = foodValue(app.world.drops.blockType(id));   // read type before removal
+        float restore = foodValue(app.world.drops.resourceType(id));   // read type before removal
         d.use(app, id);
         if(id in app.world.drops) app.world.drops.registry.remove(id);
         d.hunger = d.hunger > restore ? d.hunger - restore : 0.0f;
@@ -419,7 +419,7 @@ float scoreJob(ref GameApp app, ref Dwarf d, ref Job job) {
 
 /** True if the dwarf can obtain a block of the job's type — already carrying one, or one is free to fetch. */
 bool canObtainBlock(ref GameApp app, ref Job job, ref Dwarf d){
-  return d.carrying.any!(cid => app.world.drops.blockType(cid) == job.tileType)
+  return d.carrying.any!(cid => app.world.drops.resourceType(cid) == job.tileType)
       || app.world.findFreeBlock(d.tile, job.tileType, job.tileType != ResourceType.None) != noBlock;
 }
 

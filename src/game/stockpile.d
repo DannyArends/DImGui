@@ -5,7 +5,7 @@
 
 import game;
 
-import block : blockType, syncBlockInstances;
+import block : resourceType, syncBlockInstances;
 import io : writeFile, readFile;
 import jobs : jobQueue, liveJobs, Reach;
 import serialization : WORLD_MAGIC;
@@ -111,9 +111,9 @@ bool acceptedByHolder(const Stockpile[uint] stockpiles, uint blockID, ResourceTy
 }
 
 /** Number of stored blocks of type 't' in the pile */
-uint countOf(const Stockpile sp, const Block[uint] drops, ResourceType t) {
+uint countOf(const Stockpile sp, const Drops drops, ResourceType t) {
   uint n = 0;
-  foreach(id; sp.contents){ if(drops.blockType(id) == t) { n++; } }
+  foreach(id; sp.contents){ if(drops.resourceType(id) == t) { n++; } }
   return n;
 }
 

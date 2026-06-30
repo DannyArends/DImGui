@@ -17,8 +17,8 @@ private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on =
 private auto typesWhere(scope bool delegate(ResourceType) keep) { return [EnumMembers!ResourceType].filter!(t => t != ResourceType.None && keep(t)); }
 
 /** Leaf label: "Name  (n)##id", count shown only when stocked. */
-private const(char)* leaf(const Stockpile sp, const Block[uint] blocks, ResourceType t, string label) {
-  uint n = sp.countOf(blocks, t);
+private const(char)* leaf(const Stockpile sp, const Drops drops, ResourceType t, string label) {
+  uint n = sp.countOf(drops, t);
   return n > 0 ? cstr("%s  (%d)##%d", label, n, cast(int)t) : cstr("%s##%d", label, cast(int)t);
 }
 
