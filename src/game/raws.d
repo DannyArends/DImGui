@@ -78,7 +78,11 @@ ResourceT[] parseResources(string raw) pure {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     switch(p[0]) {
-      case "MATERIAL": if(inMat) table ~= cur; cur = ResourceT.init; cur.name = p[1]; inMat = true; break;
+      case "MATERIAL":
+        if(inMat) table ~= cur;
+        cur = ResourceT.init; cur.name = p[1]; inMat = true;
+        if(p[1] != "None") cur.classes ~= ClassVal(cast(ubyte)p[1].to!ResourceClass, 0.0f);
+        break;
       case "MESH":     // MESH:mesh:color:tex3D:tex2D:scale
         if(p.length > 1) cur.meshName = p[1];
         if(p.length > 2) cur.color    = toColor(p[2]);
