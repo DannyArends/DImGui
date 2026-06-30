@@ -15,6 +15,7 @@ mixin(generateResourceClassEnum(import("data/raws/materials.txt")));
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
 immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
 immutable ResourceT[] resourceTable = parseResources(import("data/raws/materials.txt"));
+immutable Reaction[] reactions = parseReactions(import("data/raws/reactions.txt"));
 
 /** One terrain height band: an upper threshold and the resources eligible at that height. */
 struct HeightBand { float threshold; ResourceType[] results; }
@@ -159,3 +160,23 @@ FeatureT[] parseFeatures(string raw) pure {
   if(inFeature){ features ~= ft; }
   return(features);
 }
+
+Reaction[] parseReactions(string raw) pure {
+  Reaction[] table; Reaction r; bool inReaction;
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    switch(p[0]) {
+      case "REACTION": if(inReaction) table ~= r; r = Reaction.init; r.name = p[1]; inReaction = true; break;
+      case "VERB":     r.verb  = p[1]; break;
+      case "SKILL":    r.skill = p[1]; break;
+      case "WORKSHOP": r.workshop = p[1].to!WorkshopUse; break;
+      case "INPUT":    if(p.length >= 3) r.inputs  ~= Ingredient(p[1].to!ResourceClass, p[2].to!uint); break;
+      case "OUTPUT":   if(p.length >= 3) r.outputs ~= Product(p[1].to!ResourceType, 1.0f, p[2].to!uint); break;
+      default: break;
+    }
+  }
+  if(inReaction) table ~= r;
+  return table;
+}
+

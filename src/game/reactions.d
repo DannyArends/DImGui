@@ -13,3 +13,10 @@ struct Ingredient { ResourceClass cls; uint count = 1; } // INPUT
 
 /** One input line of a reaction: a resource type and a count. */
 struct Product { ResourceType type; float chance = 1.0f; uint count = 1; } // OUTPUT
+
+struct Reaction {
+  string name, verb, skill;
+  WorkshopUse workshop;
+  Ingredient[] inputs;
+  Product[] outputs;
+}
