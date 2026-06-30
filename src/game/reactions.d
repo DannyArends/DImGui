@@ -5,8 +5,6 @@
 
 import game;
 
-import raws : reactionTable;
-
 /** Whether a reaction needs a workshop: None (on-the-knee), Required, or Preferred (either; bonus is v0.2). */
 enum WorkshopUse : ubyte { None, Required, Preferred }
 
