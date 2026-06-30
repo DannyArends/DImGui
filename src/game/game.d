@@ -7,7 +7,7 @@ public import engine;
 
 public import block : Block;
 public import clouds : CloudRequest, CloudResult;
-public import chunk : ChunkData;
+public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Feature;
 public import inventory : Inventory;

@@ -35,6 +35,13 @@ struct ChunkData {
   Feature[][string] featureData;                            /// Chunk Features
 }
 
+struct ChunkField {
+  Chunk[int[3]] loaded;
+  alias loaded this;
+  bool[int[3]] pending;
+  int[3][] unsettle, build, mine;
+}
+
 /** Build the full tile-type array for a chunk column-by-column from height/material noise */
 ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   ResourceType[] types;
@@ -147,8 +154,8 @@ bool getBestTile(const GameApp app, float[3][2] ray, Intersection[] hits, out in
 
 /** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene */
 void finalizeChunk(ref GameApp app, ChunkData data) {
-  if (data.coord !in app.world.pendingChunks) return;
-  if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
+  if (data.coord !in app.world.chunks.pending) return;
+  if (data.tileInstances.length == 0) { app.world.chunks.pending.remove(data.coord); return; }
 
   Chunk chunk = new Chunk(data, app.world);
   chunk.tiles.box = new BoundingBox();
@@ -170,9 +177,9 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   app.world.seedClouds(data.coord);
   app.requestCloudRebuild();
   app.world.chunks[data.coord].dirty = false;
-  app.world.pendingChunks.remove(data.coord);
-  app.world.pendingBuildTiles = app.world.pendingBuildTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
-  app.world.pendingMineTiles = app.world.pendingMineTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
+  app.world.chunks.pending.remove(data.coord);
+  app.world.chunks.build = app.world.chunks.build.filter!(t => app.world.chunkCoord(t) != data.coord).array;
+  app.world.chunks.mine = app.world.chunks.mine.filter!(t => app.world.chunkCoord(t) != data.coord).array;
 
   // Add trees to the chunk
   foreach(ref ft; features) {
@@ -183,7 +190,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     }
   }
 
-  if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.pendingUnsettle.length);
-  foreach(tile; app.world.pendingUnsettle) { app.world.unsettleBlocks(app.world.blocks, tile); }
-  app.world.pendingUnsettle = [];
+  if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.chunks.unsettle.length);
+  foreach(tile; app.world.chunks.unsettle) { app.world.unsettleBlocks(app.world.blocks, tile); }
+  app.world.chunks.unsettle = [];
 }

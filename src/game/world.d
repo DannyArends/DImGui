@@ -83,8 +83,8 @@ struct WorldData {
 /** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
 struct World {
   WorldData data;                                           /// Immutable world Data
-  Chunk[int[3]] chunks;                                     /// Current chunks
-  bool[int[3]] pendingChunks;                               /// Chunks generated async
+  ChunkField chunks;
+
   Geometry[string] featureMeshes;                           /// meshes keyed by mesh name
   Feature[][int[3]][string] features;                       /// features[featureName][chunkCoord]
   Feature[][int[3]][string] pendingFeatures;                /// pending features
@@ -103,9 +103,6 @@ struct World {
   bool cloudRebuildPending = false;                         /// Rebuild clouds ?
   WaterTiles water;                                         /// single batched water render object
   PathMarkers pathMarkers;                                  /// Path markers
-  int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
-  int[3][] pendingBuildTiles;                               /// Built tiles awaiting chunk rebuild
-  int[3][] pendingMineTiles;                                /// Mined tiles awaiting chunk rebuild
   PathRequest[] pendingPaths;                               /// Pending pathfinding requests
   alias data this;
 
@@ -118,7 +115,7 @@ struct World {
   void clear() {
     foreach (coord; chunks.keys) { if (chunks[coord] !is null) { deallocateChunk(coord); } }
     chunks.clear();
-    pendingChunks.clear();
+    chunks.pending.clear();
   }
 
   void deleteWorld(ref GameApp app) {
@@ -197,7 +194,7 @@ bool dispatchWorker(ref GameApp app, int[3] coord){
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, coord);
-      app.world.pendingChunks[coord] = true;
+      app.world.chunks.pending[coord] = true;
       if(app.verbose) SDL_Log(cstr("Loading chunk: %s A-sync", coord));
       return(true);
     }
@@ -215,7 +212,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   for (int cz = pc.z - effectiveRD; cz <= pc.z + effectiveRD; cz++) {
     for (int cx = pc.x - effectiveRD; cx <= pc.x + effectiveRD; cx++) {
       int[3] coord = [cx, 0, cz];
-      if (coord !in app.world.chunks && coord !in app.world.pendingChunks) { toLoad ~= coord; }
+      if (coord !in app.world.chunks && coord !in app.world.chunks.pending) { toLoad ~= coord; }
     }
   }
   foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
@@ -237,7 +234,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
-      app.world.chunks.remove(coord);
+      app.world.chunks.loaded.remove(coord);
       app.removeAllFeatures(coord);
       evicted = true;
     }
@@ -246,6 +243,6 @@ void updateWorld(ref GameApp app, float[3] lookat) {
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
-    if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) { app.dispatchWorker(coord); }
+    if (app.world.chunks[coord].dirty && coord !in app.world.chunks.pending) { app.dispatchWorker(coord); }
   }
 }

@@ -138,10 +138,10 @@ Job miningJob(int[3] targetTile) {
       app.progressJob(d, 0.25f, () {
         ResourceType tt = app.world.getTileAt(d.currentJob.targetTile);
         app.setTile(d.currentJob.targetTile);
-        app.world.pendingMineTiles ~= d.currentJob.targetTile;
+        app.world.chunks.mine ~= d.currentJob.targetTile;
         app.interactFeaturesAt(d.currentJob.targetTile.tileAbove);
         if(tt != ResourceType.None) app.spawnBlock(d.currentJob.targetTile, tt);
-        app.world.pendingUnsettle ~= d.currentJob.targetTile;
+        app.world.chunks.unsettle ~= d.currentJob.targetTile;
       });
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.failAndRequeue(); }
@@ -268,7 +268,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       auto blockID = app.useCarriedBlock(d, d.currentJob.tileType);
       if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
       app.setTile(d.currentJob.targetTile, d.currentJob.tileType);
-      app.world.pendingBuildTiles ~= d.currentJob.targetTile;
+      app.world.chunks.build ~= d.currentJob.targetTile;
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) {
