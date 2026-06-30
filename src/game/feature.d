@@ -149,8 +149,7 @@ private string brushMesh(ref immutable FeatureT ft, char sym) {
 /** Append a batch of instances to a feature mesh: record the run on f, flag buffer + cull bounds. */
 private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] insts) {
   if(mesh is null) return;
-  f.instanceRuns ~= [mesh.instances.length, insts.length];
-  mesh.instances ~= insts[];
+  f.instanceRuns ~= mesh.addInstances(insts);
   mesh.syncInstances();
 }
 

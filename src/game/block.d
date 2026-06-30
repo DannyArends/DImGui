@@ -23,7 +23,6 @@ struct Block {
   ResourceType type;                /// Block type
   int[3] tile;                      /// Current tile position
   Fall fall;                        /// PhysX
-  size_t instanceIdx = size_t.max;  /// Instance IDX
   bool reserved = false;            /// Reserved for a job ?
 
   @property @nogc bool isFalling() const nothrow { return fall.isFalling; }
@@ -138,9 +137,8 @@ uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   return id;
 }
 
-void emitBlock(ref Geometry mesh, uint id, ref Block b, float[3] pos, float[3] scale) {
-  b.instanceIdx = mesh.instances.length;
-  mesh.instances ~= DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, scale));
+void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale) {
+  mesh.addInstances([DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, scale))]);
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */
@@ -154,7 +152,7 @@ void syncStockpileInstances(ref World world) {
     if(ti >= sp.tiles.length) break;
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.drops.meshes[resourceData(b.type).meshName], blockID, *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
+    emitBlock(world.drops.meshes[resourceData(b.type).meshName], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
   } }
 }
 
@@ -167,14 +165,14 @@ void syncBlockInstances(ref World world) {
     auto meshName = resourceData(b.type).meshName;
     bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
     if(hidden) {
-      emitBlock(world.drops.meshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
+      emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0]);
     } else {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
       float sz = resourceData(b.type).scale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
-      emitBlock(world.drops.meshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
+      emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
     }
   }
   world.syncStockpileInstances();
