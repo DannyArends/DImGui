@@ -313,8 +313,8 @@ void ensureDwarves(ref GameApp app) {
   app.world.pathMarkers = new PathMarkers();
   app.objects ~= app.world.pathMarkers;
 
-  app.world.clouds = new Clouds();
-  app.objects ~= app.world.clouds;
+  app.world.weather.clouds = new Clouds();
+  app.objects ~= app.world.weather.clouds;
 
   app.world.water = new WaterTiles();
   app.objects ~= app.world.water;
