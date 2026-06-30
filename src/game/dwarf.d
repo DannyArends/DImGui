@@ -97,7 +97,7 @@ struct DwarfData {
     }
     inventory[slot].count--;
     if(inventory[slot].count == 0) inventory[slot] = InventorySlot.init;
-    app.world.blocksDirty = true;
+    app.world.blocks.dirty = true;
     return(true);
   }
 

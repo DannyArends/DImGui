@@ -124,8 +124,8 @@ void settleRain(ref GameApp app) {
     app.world.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.world.getWater(b.tile) + 4));
     done ~= id;
   }
-  foreach(id; done) app.world.blocks.remove(id);
-  app.world.blocksDirty = true;
+  foreach(id; done) app.world.blocks.registry.remove(id);
+  app.world.blocks.dirty = true;
 }
 
 /** Persisted cloud density cell. */

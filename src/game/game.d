@@ -5,7 +5,7 @@
 
 public import engine;
 
-public import block : Block;
+public import block : Block, Drops;
 public import clouds : CloudRequest, CloudResult;
 public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf, DwarfData, DwarfState;
