@@ -16,7 +16,7 @@ public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, Wate
 public import pathfinding : PathRequest, PathResult;
 public import pathmarker : Paths;
 public import physx : Fall;
-public import reactions : Ingredient;
+public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
