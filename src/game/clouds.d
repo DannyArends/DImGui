@@ -115,7 +115,7 @@ void rainTick(ref GameApp app) {
     int[3] spawn = [t[0], cloudY, t[1]];
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;
     uint id = app.spawnBlock(spawn, ResourceType.Water);
-    if(auto b = id in app.world.blocks) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
+    if(auto b = id in app.world.drops) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
     app.world.weather.density[key] -= RAIN_DEPLETE;
     drops++;
   }
@@ -124,14 +124,14 @@ void rainTick(ref GameApp app) {
 /** Convert any landed rain (Water blocks no longer falling) into water level. */
 void settleRain(ref GameApp app) {
   uint[] done;
-  foreach(id, ref b; app.world.blocks) {
+  foreach(id, ref b; app.world.drops) {
     if(b.type != ResourceType.Water) continue;
     if(b.isFalling) continue;                 // still in the air
     app.world.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.world.getWater(b.tile) + 4));
     done ~= id;
   }
-  foreach(id; done) app.world.blocks.registry.remove(id);
-  app.world.blocks.dirty = true;
+  foreach(id; done) app.world.drops.registry.remove(id);
+  app.world.drops.dirty = true;
 }
 
 /** Persisted cloud density cell. */

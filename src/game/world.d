@@ -86,7 +86,7 @@ struct World {
   alias data this;
   ChunkField chunks;
   Vegetation vegetation;
-  Drops blocks;
+  Drops drops;
   StockpileField stockpiles;
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves

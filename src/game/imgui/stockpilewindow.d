@@ -48,11 +48,11 @@ private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool b
     igPushID_Str(b.toStringz);
     if(bT == 1) {                                            // single variant -> base name as leaf
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(sp.leaf(app.world.blocks, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); } 
+        if(cTag(sp.leaf(app.world.drops, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); } 
       }
     } else if(cNode(cstr("%s##b", b), tri(bOn, bT), () => sp.setAll(t => inBase(t), bOn != bT))) {
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(sp.leaf(app.world.blocks, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
+        if(cTag(sp.leaf(app.world.drops, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
       }
       igTreePop();
     }

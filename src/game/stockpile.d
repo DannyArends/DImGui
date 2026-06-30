@@ -58,10 +58,10 @@ void createStockpile(ref World world, int[3][] tiles) {
 /** Delete a pile: spill its blocks back to the floor and clear the zone */
 void removeStockpile(ref World world, uint id) {
   if(auto sp = id in world.stockpiles) {
-    foreach(i, blockID; sp.contents) { if(auto b = blockID in world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
+    foreach(i, blockID; sp.contents) { if(auto b = blockID in world.drops) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
     world.clearTiles(sp.tiles);
     world.stockpiles.byId.remove(id);
-    world.blocks.dirty = true;
+    world.drops.dirty = true;
   }
 }
 
@@ -99,7 +99,7 @@ void storeBlockAt(ref World world, int[3] tile, uint blockID) {
       if(slot < 0) { slot = sp.contents.length; sp.contents ~= emptySlot; }
       if(slot >= capacity(*sp)) return;
       sp.contents[slot] = blockID;
-      if(auto b = blockID in world.blocks) { b.tile = storedTile; b.fall = Fall.init; }
+      if(auto b = blockID in world.drops) { b.tile = storedTile; b.fall = Fall.init; }
     }
   }
 }
@@ -111,9 +111,9 @@ bool acceptedByHolder(const Stockpile[uint] stockpiles, uint blockID, ResourceTy
 }
 
 /** Number of stored blocks of type 't' in the pile */
-uint countOf(const Stockpile sp, const Block[uint] blocks, ResourceType t) {
+uint countOf(const Stockpile sp, const Block[uint] drops, ResourceType t) {
   uint n = 0;
-  foreach(id; sp.contents){ if(blocks.blockType(id) == t) { n++; } }
+  foreach(id; sp.contents){ if(drops.blockType(id) == t) { n++; } }
   return n;
 }
 

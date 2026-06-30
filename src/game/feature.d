@@ -295,7 +295,7 @@ void interactFeaturesAt(ref GameApp app, int[3] tile) {
   bool any = false;
   foreach(const ft; features) any |= app.harvestFeatureType(ft, tile, coord);
   if(any) {
-    app.world.unsettleBlocks(app.world.blocks, tile);
+    app.world.unsettleBlocks(app.world.drops, tile);
     app.rebuildAllFeatures();
   }
 }
