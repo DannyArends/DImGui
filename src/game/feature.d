@@ -89,8 +89,8 @@ private ResourceType resType(string s) { return s == "None" ? ResourceType.None 
 private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   foreach(ref ft; features) {
-    if(ft.name !in app.world.features) continue;
-    if(auto fs = coord in app.world.features[ft.name]){ if((*fs).canFind!(f => f.rootTile == tile)) { return &ft; } }
+    if(ft.name !in app.world.vegetation) continue;
+    if(auto fs = coord in app.world.vegetation[ft.name]){ if((*fs).canFind!(f => f.rootTile == tile)) { return &ft; } }
   }
   return null;
 }
@@ -99,7 +99,7 @@ private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
 void initFeatureMeshes(ref GameApp app) {
   foreach(ref ft; features) foreach(name; chain(ft.parts.map!(p => p.mesh), ft.brushes.map!(b => b.mesh))) {
     string key = ft.name ~ ":" ~ name;
-    if(key in app.world.featureMeshes) continue;
+    if(key in app.world.vegetation.meshes) continue;
     Geometry mesh;
     switch(name) {
       case "Cylinder": mesh = new Cylinder(0.4f, 1.0f, 12); break;
@@ -109,7 +109,7 @@ void initFeatureMeshes(ref GameApp app) {
       default: continue;
     }
     mesh.initInstanced(captureKey(key));
-    app.world.featureMeshes[key] = mesh;
+    app.world.vegetation.meshes[key] = mesh;
     app.objects ~= mesh;
   }
 }
@@ -236,21 +236,21 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
 /** Clear and regenerate every feature's instances and tile penalties across all loaded chunks. */
 void rebuildAllFeatures(ref GameApp app) {
   app.world.data.tilePenalties = null;
-  foreach(ref mesh; app.world.featureMeshes.values) mesh.instances = [];
+  foreach(ref mesh; app.world.vegetation.meshes.values) mesh.instances = [];
   foreach(ref ft; features) {
-    foreach(coord, ref chunkFeatures; app.world.features[ft.name]){
+    foreach(coord, ref chunkFeatures; app.world.vegetation[ft.name]){
       if(coord !in app.world.chunks) continue;
-      chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.featureMeshes);
+      chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.vegetation.meshes);
     }
   }
-  foreach(ref mesh; app.world.featureMeshes.values){ mesh.syncInstances(); }
+  foreach(ref mesh; app.world.vegetation.meshes){ mesh.syncInstances(); }
 }
 
 /** Forget cached features for chunk `coord`, but only if it carries no player modifications. */
 void removeAllFeatures(ref GameApp app, int[3] coord) {
-  if(coord !in app.world.featuresModified) {
+  if(coord !in app.world.vegetation.modified) {
     foreach(ref ft; features) { 
-      if(auto p = coord in app.world.features[ft.name]) { if((*p).length > 0){ app.world.features[ft.name].remove(coord); } }
+      if(auto p = coord in app.world.vegetation[ft.name]) { if((*p).length > 0){ app.world.vegetation[ft.name].remove(coord); } }
     }
   }
 }
@@ -262,16 +262,16 @@ bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
 
 /** Remove any pending (queued, not-yet-placed) features of type `ft` rooted at `tile`. */
 void dropPending(ref GameApp app, const FeatureT ft, int[3] coord, int[3] tile) {
-  if(ft.name !in app.world.pendingFeatures || coord !in app.world.pendingFeatures[ft.name]) return;
-  app.world.pendingFeatures[ft.name][coord] = app.world.pendingFeatures[ft.name][coord].filter!(pf => pf.rootTile != tile).array;
+  if(ft.name !in app.world.vegetation.pending || coord !in app.world.vegetation.pending[ft.name]) return;
+  app.world.vegetation.pending[ft.name][coord] = app.world.vegetation.pending[ft.name][coord].filter!(pf => pf.rootTile != tile).array;
 }
 
 /** Harvest every feature of type `ft` rooted at `tile` (spawns drops, removes the feature). Returns true if any harvested. */
 bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] coord) {
-  if(ft.name !in app.world.features || coord !in app.world.features[ft.name]) return false;
+  if(ft.name !in app.world.vegetation || coord !in app.world.vegetation[ft.name]) return false;
   bool any = false;
-  for(size_t i = 0; i < app.world.features[ft.name][coord].length; ) {
-    auto f = app.world.features[ft.name][coord][i];
+  for(size_t i = 0; i < app.world.vegetation[ft.name][coord].length; ) {
+    auto f = app.world.vegetation[ft.name][coord][i];
     if(f.rootTile != tile) { i++; continue; }
     foreach(ref drop; ft.drops) {
       auto rt = drop.material.to!ResourceType;
@@ -280,9 +280,9 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
         foreach(n; 0..count){ app.spawnBlock(tile, rt); }
       } else { for(uint h = 0; h < f.height; h++){ app.spawnBlock([tile[0], tile[1]+cast(int)h, tile[2]], rt); } }
     }
-    app.world.features[ft.name][coord] = app.world.features[ft.name][coord][0..i] ~ app.world.features[ft.name][coord][i+1..$];
+    app.world.vegetation[ft.name][coord] = app.world.vegetation[ft.name][coord][0..i] ~ app.world.vegetation[ft.name][coord][i+1..$];
     app.dropPending(ft, coord, tile);
-    app.world.featuresModified[coord] = true;
+    app.world.vegetation.modified[coord] = true;
     if(ft.sound.length){ app.play(ft.sound, 0.2f); }
     any = true;
   }

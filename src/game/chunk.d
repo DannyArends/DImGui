@@ -183,10 +183,10 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
 
   // Add trees to the chunk
   foreach(ref ft; features) {
-    if(ft.name !in app.world.features) app.world.features[ft.name] = null;
-    if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
-    if(data.coord !in app.world.features[ft.name] && data.coord !in app.world.pendingFeatures[ft.name] && data.coord !in app.world.featuresModified) {
-      app.world.pendingFeatures[ft.name][data.coord] = data.featureData[ft.name];
+    if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
+    if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
+    if(data.coord !in app.world.vegetation[ft.name] && data.coord !in app.world.vegetation.pending[ft.name] && data.coord !in app.world.vegetation.modified) {
+      app.world.vegetation.pending[ft.name][data.coord] = data.featureData[ft.name];
     }
   }
 
