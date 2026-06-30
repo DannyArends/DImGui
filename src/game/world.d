@@ -86,9 +86,7 @@ struct World {
   ChunkField chunks;
   Vegetation vegetation;
   Drops blocks;
-  Stockpile[uint] stockpiles;                               /// id -> pile
-  uint[int[3]] stockpileAt;                                 /// tile -> stockpile id
-  uint nextStockpileID = 1;                                 /// next stockpile ID
+  StockpileField stockpiles;
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
   Clouds clouds;                                            /// Clouds

@@ -24,6 +24,13 @@ struct Stockpile {
   @nogc bool acceptsType(ResourceType t) const { auto p = t in accepts; return accepts.length == 0 || (p !is null && *p); }
 }
 
+struct StockpileField {
+  Stockpile[uint] byId;
+  alias byId this;
+  uint[int[3]] at;
+  uint nextID = 1;
+}
+
 enum subPerAxis = 4;                          // 1 / 0.25 (blockSize ratio)
 enum slotsPerTile = subPerAxis^^3;            // 64
 enum uint emptySlot = uint.max;
@@ -35,15 +42,15 @@ enum uint emptySlot = uint.max;
 @nogc bool hasFreeSlot(const Stockpile sp) nothrow { return sp.contents.countUntil(emptySlot) >= 0 || sp.contents.length < sp.capacity; }
 
 /** Mark each tile as belonging to stockpile `id` in the world's tile to pile index */
-void stampTiles(ref World world, uint id, int[3][] tiles) { foreach(t; tiles){ world.stockpileAt[t] = id; } }
+void stampTiles(ref World world, uint id, int[3][] tiles) { foreach(t; tiles){ world.stockpiles.at[t] = id; } }
 
 /** Remove the given tiles from the world's tile to pile index */
-void clearTiles(ref World world, int[3][] tiles) { foreach(t; tiles) { world.stockpileAt.remove(t); } }
+void clearTiles(ref World world, int[3][] tiles) { foreach(t; tiles) { world.stockpiles.at.remove(t); } }
 
 /** One new pile from the painted preview */
 void createStockpile(ref World world, int[3][] tiles) {
   if(tiles.length == 0) return;
-  uint id = world.nextStockpileID++;
+  uint id = world.stockpiles.nextID++;
   world.stockpiles[id] = Stockpile(id: id, name: format("Stockpile %d", id), tiles: tiles.dup);
   world.stampTiles(id, world.stockpiles[id].tiles);
 }
@@ -53,7 +60,7 @@ void removeStockpile(ref World world, uint id) {
   if(auto sp = id in world.stockpiles) {
     foreach(i, blockID; sp.contents) { if(auto b = blockID in world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
     world.clearTiles(sp.tiles);
-    world.stockpiles.remove(id);
+    world.stockpiles.byId.remove(id);
     world.blocks.dirty = true;
   }
 }
@@ -78,14 +85,14 @@ uint findStockpileSlot(const World world, ResourceType type, int[3] from, out in
 /** Count of in-flight Store jobs already targeting this pile, reserved capacity not yet filled */
 uint pendingStores(const World world, uint stockpileID) {
   return cast(uint)world.liveJobs("Store").count!((ref j) {
-    auto id = j.targetTile.tileBelow in world.stockpileAt;
+    auto id = j.targetTile.tileBelow in world.stockpiles.at;
     return(id !is null && *id == stockpileID);
   });
 }
 
 /** Park a carried block into a pile */
 void storeBlockAt(ref World world, int[3] tile, uint blockID) {
-  if(auto idp = tile.tileBelow in world.stockpileAt) {
+  if(auto idp = tile.tileBelow in world.stockpiles.at) {
     if(auto sp = *idp in world.stockpiles) {
       if(!hasFreeSlot(*sp)) return;
       ptrdiff_t slot = sp.contents.countUntil(emptySlot);
@@ -141,7 +148,7 @@ void saveStockpiles(const World world) {
   ubyte[] blob;
   void put(const(uint[]) xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * uint.sizeof]; }
 
-  put([cast(uint)WORLD_MAGIC, world.nextStockpileID, cast(uint)world.stockpiles.length]);
+  put([cast(uint)WORLD_MAGIC, world.stockpiles.nextID, cast(uint)world.stockpiles.length]);
   foreach(id, ref sp; world.stockpiles) {
     uint[] acc;
     foreach(t, on; sp.accepts) if(on) acc ~= cast(uint)t;
@@ -164,7 +171,7 @@ void loadStockpiles(ref World world) {
 
   auto hdr = take(3);
   if(hdr[0] != WORLD_MAGIC) { SDL_Log("loadStockpiles: bad magic"); return; }
-  world.nextStockpileID = hdr[1];
+  world.stockpiles.nextID = hdr[1];
   uint count = hdr[2];
 
   foreach(_; 0 .. count) {
