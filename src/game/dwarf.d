@@ -74,7 +74,7 @@ struct DwarfData {
   }
 
   bool use(ref GameApp app, uint blockID) {
-    if(auto b = blockID in app.world.blocks) b.reserved = false;
+    if(auto b = blockID in app.world.drops) b.reserved = false;
     foreach(ref s; inventory) {
       if(s.empty) continue;
       auto k = s.resourceIDs[0 .. s.count].countUntil(blockID);
@@ -91,13 +91,13 @@ struct DwarfData {
   bool drop(ref GameApp app, size_t slot) {
     if(slot >= inventory.length || inventory[slot].empty) { return(false); }
 
-    if(auto b = inventory[slot].resourceIDs[inventory[slot].count - 1] in app.world.blocks) {
+    if(auto b = inventory[slot].resourceIDs[inventory[slot].count - 1] in app.world.drops) {
       b.tile = tile;
       b.reserved = false;
     }
     inventory[slot].count--;
     if(inventory[slot].count == 0) inventory[slot] = InventorySlot.init;
-    app.world.blocks.dirty = true;
+    app.world.drops.dirty = true;
     return(true);
   }
 
@@ -231,9 +231,9 @@ void logStuck(ref GameApp app, ref Dwarf d) {
 bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Hunger
   if(d.needs[Need.Hunger] >= 0.6f) {
-    if(d.carrying.any!(id => app.world.blocks.blockType(id).isFood)) { app.dispatchJob(d, eatJob()); return true; }
+    if(d.carrying.any!(id => app.world.drops.blockType(id).isFood)) { app.dispatchJob(d, eatJob()); return true; }
     auto food = app.world.findFreeFood(d.tile);
-    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.blocks.blockType(food))); return true; }
+    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.blockType(food))); return true; }
   }
   // Rest
   if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return true; }

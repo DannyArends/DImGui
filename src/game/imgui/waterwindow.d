@@ -34,7 +34,7 @@ void showWaterContent(ref GameApp app, uint font = 0) {
 
   // raindrops in flight + the water they carry (settleRain deposits +4 each)
   int raindrops = 0;
-  foreach(id, ref b; app.world.blocks) if(b.type == ResourceType.Water) raindrops++;
+  foreach(id, ref b; app.world.drops) if(b.type == ResourceType.Water) raindrops++;
   int airWater = raindrops * 4;
   int totalWater = total + airWater;
 

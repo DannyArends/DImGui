@@ -191,6 +191,6 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   }
 
   if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.chunks.unsettle.length);
-  foreach(tile; app.world.chunks.unsettle) { app.world.unsettleBlocks(app.world.blocks, tile); }
+  foreach(tile; app.world.chunks.unsettle) { app.world.unsettleBlocks(app.world.drops, tile); }
   app.world.chunks.unsettle = [];
 }

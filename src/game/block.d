@@ -40,32 +40,32 @@ struct Drops {
 
 /** Save blocks */
 void saveBlocks(ref World world) {
-  if(world.blocks.length == 0) return;
-  foreach(id, ref b; world.blocks) {
+  if(world.drops.length == 0) return;
+  foreach(id, ref b; world.drops) {
     if(b.fall.isFalling) { b.tile = b.fall.landingTile(world, b.tile); b.fall = Fall.init; }
   }
-  Block[] flat = world.blocks.values;
-  writeData(world.blocksPath(), flat, world.blocks.nextID);
+  Block[] flat = world.drops.values;
+  writeData(world.blocksPath(), flat, world.drops.nextID);
 }
 
 /** Load blocks */
 void loadBlocks(ref GameApp app) {
   app.ensureBlocks();
   Block[] flat;
-  if(!readData(app.world.blocksPath(), flat, app.world.blocks.nextID)) return;
+  if(!readData(app.world.blocksPath(), flat, app.world.drops.nextID)) return;
   foreach(ref b; flat) {
     b.reserved = false;             // jobs aren't persisted; clear orphaned reservations
-    app.world.blocks[b.id] = b;
-    if(b.id >= app.world.blocks.nextID) app.world.blocks.nextID = b.id + 1;
+    app.world.drops[b.id] = b;
+    if(b.id >= app.world.drops.nextID) app.world.drops.nextID = b.id + 1;
   }
-  app.world.blocks.dirty = true;
-  SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
+  app.world.drops.dirty = true;
+  SDL_Log("loadBlocks: %d blocks", cast(int)app.world.drops.length);
 }
 
-@nogc pure bool hasBlocks(const Block[uint] blocks, ResourceType tt) nothrow { return blocks.byValue.any!(b => b.type == tt); }
+@nogc pure bool hasBlocks(const Block[uint] drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.type == tt); }
 
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
-ResourceType blockType(const Block[uint] blocks, uint id) { auto b = id in blocks; return b ? b.type : ResourceType.None; }
+ResourceType blockType(const Block[uint] drops, uint id) { auto b = id in drops; return b ? b.type : ResourceType.None; }
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
 int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStored) {
@@ -79,12 +79,12 @@ int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStor
 }
 
 /** Clear the reserved flag on a set of blocks (released on job failure/completion). */
-void release(ref Block[uint] blocks, uint[] ids) { foreach(id; ids){ if(auto b = id in blocks){ b.reserved = false; } } }
+void release(ref Block[uint] drops, uint[] ids) { foreach(id; ids){ if(auto b = id in drops){ b.reserved = false; } } }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dwarfTile, bool includeStored) {
   uint bestID = noBlock; float bestDist = float.max;
-  foreach(id, b; world.blocks) {
+  foreach(id, b; world.drops) {
     if(!accept(b)) continue;
     int[3] at = world.pickupTileFor(id, b, includeStored);
     if(at == noTile) continue;
@@ -121,10 +121,10 @@ Geometry createDropMesh(string meshName) {
 void ensureBlocks(ref GameApp app) {
   foreach(rt; EnumMembers!ResourceType) {
     auto meshName = resourceData(rt).meshName;
-    if(meshName in app.world.blocks.meshes) continue;
+    if(meshName in app.world.drops.meshes) continue;
     auto m = createDropMesh(meshName);
     if(m is null) continue;
-    app.world.blocks.meshes[meshName] = m;
+    app.world.drops.meshes[meshName] = m;
     app.objects ~= m;
   }
 }
@@ -132,9 +132,9 @@ void ensureBlocks(ref GameApp app) {
 /** Spawn a new block into the registry */
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
-  uint id = app.world.blocks.nextID++;
-  app.world.blocks[id] = Block(id, tt, tile);
-  app.world.blocks.dirty = true;
+  uint id = app.world.drops.nextID++;
+  app.world.drops[id] = Block(id, tt, tile);
+  app.world.drops.dirty = true;
   return id;
 }
 
@@ -148,42 +148,42 @@ void syncStockpileInstances(ref World world) {
   float bs = world.blockSize;
   foreach(ref sp; world.stockpiles) { foreach(i, blockID; sp.contents) {
     if(blockID == emptySlot) continue;
-    auto b = blockID in world.blocks;
+    auto b = blockID in world.drops;
     if(b is null) continue;
     auto ti = i / slotsPerTile;
     if(ti >= sp.tiles.length) break;
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.blocks.meshes[resourceData(b.type).meshName], blockID, *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
+    emitBlock(world.drops.meshes[resourceData(b.type).meshName], blockID, *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
   } }
 }
 
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref World world) {
-  if(world.blocks.meshes.length == 0) return;
-  foreach(ref mesh; world.blocks.meshes.values) { mesh.instances = []; }
-  foreach(id, ref b; world.blocks) {
+  if(world.drops.meshes.length == 0) return;
+  foreach(ref mesh; world.drops.meshes.values) { mesh.instances = []; }
+  foreach(id, ref b; world.drops) {
     if(b.tile == storedTile) continue;
     auto meshName = resourceData(b.type).meshName;
     bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
     if(hidden) {
-      emitBlock(world.blocks.meshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
+      emitBlock(world.drops.meshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
     } else {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
       float sz = resourceData(b.type).scale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
-      emitBlock(world.blocks.meshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
+      emitBlock(world.drops.meshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
     }
   }
   world.syncStockpileInstances();
-  foreach(ref mesh; world.blocks.meshes.values) { mesh.syncInstances(); }
+  foreach(ref mesh; world.drops.meshes.values) { mesh.syncInstances(); }
 }
 
 /** Mark blocks above a mined tile as falling */
-void unsettleBlocks(ref World world, ref Block[uint] blocks, int[3] minedTile) {
-  foreach(id, ref b; blocks) {
+void unsettleBlocks(ref World world, ref Block[uint] drops, int[3] minedTile) {
+  foreach(id, ref b; drops) {
     if(!inColumn(b.tile, minedTile)) continue;
     b.fall.start(world, b.tile, -world.blockOffset);
   }
@@ -191,11 +191,11 @@ void unsettleBlocks(ref World world, ref Block[uint] blocks, int[3] minedTile) {
 
 /** Update falling blocks */
 void settleBlocks(ref World world, float dt) {
-  if(world.blocks.length == 0) return;
-  foreach(id, ref b; world.blocks) {
+  if(world.drops.length == 0) return;
+  foreach(id, ref b; world.drops) {
     if(!b.fall.isFalling) continue;
     int[3] landed;
     if(b.fall.step(world, b.tile, dt, -world.blockOffset, landed)) b.tile = landed;
-    world.blocks.dirty = true;
+    world.drops.dirty = true;
   }
 }
