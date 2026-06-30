@@ -29,6 +29,15 @@ struct Block {
   @property @nogc bool isFalling() const nothrow { return fall.isFalling; }
 }
 
+struct Drops {
+  Block[uint] registry;
+  alias registry this;
+  bool dirty = false;
+  uint nextID = 1;
+  Geometry[string] meshes;
+}
+
+
 /** Save blocks */
 void saveBlocks(ref World world) {
   if(world.blocks.length == 0) return;
@@ -36,20 +45,20 @@ void saveBlocks(ref World world) {
     if(b.fall.isFalling) { b.tile = b.fall.landingTile(world, b.tile); b.fall = Fall.init; }
   }
   Block[] flat = world.blocks.values;
-  writeData(world.blocksPath(), flat, world.blockNextID);
+  writeData(world.blocksPath(), flat, world.blocks.nextID);
 }
 
 /** Load blocks */
 void loadBlocks(ref GameApp app) {
   app.ensureBlocks();
   Block[] flat;
-  if(!readData(app.world.blocksPath(), flat, app.world.blockNextID)) return;
+  if(!readData(app.world.blocksPath(), flat, app.world.blocks.nextID)) return;
   foreach(ref b; flat) {
     b.reserved = false;             // jobs aren't persisted; clear orphaned reservations
     app.world.blocks[b.id] = b;
-    if(b.id >= app.world.blockNextID) app.world.blockNextID = b.id + 1;
+    if(b.id >= app.world.blocks.nextID) app.world.blocks.nextID = b.id + 1;
   }
-  app.world.blocksDirty = true;
+  app.world.blocks.dirty = true;
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.blocks.length);
 }
 
@@ -112,10 +121,10 @@ Geometry createDropMesh(string meshName) {
 void ensureBlocks(ref GameApp app) {
   foreach(rt; EnumMembers!ResourceType) {
     auto meshName = resourceData(rt).meshName;
-    if(meshName in app.world.dropMeshes) continue;
+    if(meshName in app.world.blocks.meshes) continue;
     auto m = createDropMesh(meshName);
     if(m is null) continue;
-    app.world.dropMeshes[meshName] = m;
+    app.world.blocks.meshes[meshName] = m;
     app.objects ~= m;
   }
 }
@@ -123,9 +132,9 @@ void ensureBlocks(ref GameApp app) {
 /** Spawn a new block into the registry */
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
-  uint id = app.world.blockNextID++;
+  uint id = app.world.blocks.nextID++;
   app.world.blocks[id] = Block(id, tt, tile);
-  app.world.blocksDirty = true;
+  app.world.blocks.dirty = true;
   return id;
 }
 
@@ -145,31 +154,31 @@ void syncStockpileInstances(ref World world) {
     if(ti >= sp.tiles.length) break;
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.dropMeshes[resourceData(b.type).meshName], blockID, *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
+    emitBlock(world.blocks.meshes[resourceData(b.type).meshName], blockID, *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
   } }
 }
 
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref World world) {
-  if(world.dropMeshes.length == 0) return;
-  foreach(ref mesh; world.dropMeshes.values) { mesh.instances = []; }
+  if(world.blocks.meshes.length == 0) return;
+  foreach(ref mesh; world.blocks.meshes.values) { mesh.instances = []; }
   foreach(id, ref b; world.blocks) {
     if(b.tile == storedTile) continue;
     auto meshName = resourceData(b.type).meshName;
     bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
     if(hidden) {
-      emitBlock(world.dropMeshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
+      emitBlock(world.blocks.meshes[meshName], id, b, [0, 0, 0], [0, 0, 0]);
     } else {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
       float sz = resourceData(b.type).scale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
-      emitBlock(world.dropMeshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
+      emitBlock(world.blocks.meshes[meshName], id, b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
     }
   }
   world.syncStockpileInstances();
-  foreach(ref mesh; world.dropMeshes.values) { mesh.syncInstances(); }
+  foreach(ref mesh; world.blocks.meshes.values) { mesh.syncInstances(); }
 }
 
 /** Mark blocks above a mined tile as falling */
@@ -187,6 +196,6 @@ void settleBlocks(ref World world, float dt) {
     if(!b.fall.isFalling) continue;
     int[3] landed;
     if(b.fall.step(world, b.tile, dt, -world.blockOffset, landed)) b.tile = landed;
-    world.blocksDirty = true;
+    world.blocks.dirty = true;
   }
 }

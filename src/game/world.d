@@ -85,13 +85,10 @@ struct World {
   WorldData data;                                           /// Immutable world Data
   ChunkField chunks;
   Vegetation vegetation;
-  Block[uint] blocks;                                       /// Block registry
-  bool blocksDirty = false;                                 /// Dirty blocks ?
+  Drops blocks;
   Stockpile[uint] stockpiles;                               /// id -> pile
   uint[int[3]] stockpileAt;                                 /// tile -> stockpile id
   uint nextStockpileID = 1;                                 /// next stockpile ID
-  uint blockNextID = 1;                                     /// next block ID
-  Geometry[string] dropMeshes;                              /// registered drop meshes
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
   Clouds clouds;                                            /// Clouds

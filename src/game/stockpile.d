@@ -54,7 +54,7 @@ void removeStockpile(ref World world, uint id) {
     foreach(i, blockID; sp.contents) { if(auto b = blockID in world.blocks) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
     world.clearTiles(sp.tiles);
     world.stockpiles.remove(id);
-    world.blocksDirty = true;
+    world.blocks.dirty = true;
   }
 }
 

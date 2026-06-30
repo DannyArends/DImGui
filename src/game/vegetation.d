@@ -10,7 +10,8 @@ import serialization : readData, writeData;
 import tile : tileToWorld;
 
 struct Vegetation {
-  Feature[][int[3]][string] active;   alias active this;   // world.features[name][c] still works
+  Feature[][int[3]][string] active;
+  alias active this;
   Feature[][int[3]][string] pending;
   bool[int[3]] modified;
   Geometry[string] meshes;

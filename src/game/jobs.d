@@ -296,10 +296,10 @@ Job eatJob() {
         auto id = d.currentJob.blockIDs[0];
         float restore = foodValue(app.world.blocks.blockType(id));   // read type before removal
         d.use(app, id);
-        if(id in app.world.blocks) app.world.blocks.remove(id);
+        if(id in app.world.blocks) app.world.blocks.registry.remove(id);
         d.hunger = d.hunger > restore ? d.hunger - restore : 0.0f;
         app.play("DM-CGS-16", 0.4f);
-        app.world.blocksDirty = true;
+        app.world.blocks.dirty = true;
       });
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
