@@ -84,11 +84,7 @@ struct WorldData {
 struct World {
   WorldData data;                                           /// Immutable world Data
   ChunkField chunks;
-
-  Geometry[string] featureMeshes;                           /// meshes keyed by mesh name
-  Feature[][int[3]][string] features;                       /// features[featureName][chunkCoord]
-  Feature[][int[3]][string] pendingFeatures;                /// pending features
-  bool[int[3]] featuresModified;                            /// Does a chunk have modified features ?
+  Vegetation vegetation;
   Block[uint] blocks;                                       /// Block registry
   bool blocksDirty = false;                                 /// Dirty blocks ?
   Stockpile[uint] stockpiles;                               /// id -> pile
@@ -161,10 +157,10 @@ void loadWorld(ref GameApp app) {
   app.world.loadWater();
   app.world.loadClouds();
   foreach(ref ft; features) {
-    if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
-    if(ft.name !in app.world.features) app.world.features[ft.name] = null;
-    app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
-    foreach(coord; app.world.pendingFeatures[ft.name].keys) app.world.featuresModified[coord] = true;
+    if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
+    if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
+    app.loadVegetation!Feature(app.world.vegetation.pending[ft.name], app.world.featurePath(ft.name));
+    foreach(coord; app.world.vegetation.pending[ft.name].keys) app.world.vegetation.modified[coord] = true;
   }
   app.world.loadStockpiles();
   app.deriveInventory();
@@ -182,7 +178,7 @@ void saveWorld(ref GameApp app) {
   app.world.saveWater();
   app.world.saveClouds();
   foreach(ref ft; features) {
-    app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
+    app.saveVegetation!Feature(app.world.vegetation[ft.name], app.world.vegetation.pending[ft.name], app.world.featurePath(ft.name));
   }
   app.world.saveStockpiles();
   app.saveDwarfs();
@@ -219,13 +215,13 @@ void updateWorld(ref GameApp app, float[3] lookat) {
 
   // Load pending trees onto chunks that have been loaded
   foreach(ref ft; features) {
-    if(ft.name !in app.world.pendingFeatures) continue;
-    foreach(coord; app.world.pendingFeatures[ft.name].keys.dup) {
+    if(ft.name !in app.world.vegetation.pending) continue;
+    foreach(coord; app.world.vegetation.pending[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;
-      if(coord !in app.world.features[ft.name]) {
-        app.world.features[ft.name][coord] = app.addFeatureInstances(app.world.pendingFeatures[ft.name][coord], ft, app.world.featureMeshes);
+      if(coord !in app.world.vegetation[ft.name]) {
+        app.world.vegetation[ft.name][coord] = app.addFeatureInstances(app.world.vegetation.pending[ft.name][coord], ft, app.world.vegetation.meshes);
       }
-      app.world.pendingFeatures[ft.name].remove(coord);
+      app.world.vegetation.pending[ft.name].remove(coord);
     }
   }
 
