@@ -103,6 +103,13 @@ class Geometry {
     syncInstances();
   }
 
+  /** Append a batch of instances; returns the [start, count) run they occupy. */
+  size_t[2] addInstances(const(DrawInstance)[] insts) {
+    size_t start = instances.length;
+    if(insts.length) instances ~= insts[];
+    return [start, insts.length];
+  }
+
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
 
   void delegate(SDL_Event e) onMouseEnter;
