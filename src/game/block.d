@@ -59,10 +59,13 @@ void loadBlocks(ref GameApp app) {
   SDL_Log("loadBlocks: %d blocks", cast(int)app.world.drops.length);
 }
 
-@nogc pure bool hasBlocks(const Block[uint] drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.type == tt); }
+@nogc pure bool hasResource(const Drops drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.type == tt); }
 
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
-ResourceType blockType(const Block[uint] drops, uint id) { auto b = id in drops; return b ? b.type : ResourceType.None; }
+ResourceType resourceType(const Drops drops, uint id) { auto b = id in drops; return b ? b.type : ResourceType.None; }
+
+/** Clear the reserved flag on a set of blocks (released on job failure/completion). */
+void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in drops){ b.reserved = false; } } }
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
 int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStored) {
@@ -75,8 +78,6 @@ int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStor
   return (world.isStandable(b.tile) || world.hasStandableNeighbour(b.tile)) ? b.tile : noTile;
 }
 
-/** Clear the reserved flag on a set of blocks (released on job failure/completion). */
-void release(ref Block[uint] drops, uint[] ids) { foreach(id; ids){ if(auto b = id in drops){ b.reserved = false; } } }
 
 /** Find the closest free block of given type, returns block ID or noBlock if none found */
 private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dwarfTile, bool includeStored) {

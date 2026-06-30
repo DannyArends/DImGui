@@ -5,7 +5,7 @@
 
 import game;
 
-import block : blockType, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasBlocks;
+import block : resourceType, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource;
 import color : randomColor;
 import inventory : deriveInventory;
 import game : GameApp;
@@ -231,9 +231,9 @@ void logStuck(ref GameApp app, ref Dwarf d) {
 bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Hunger
   if(d.needs[Need.Hunger] >= 0.6f) {
-    if(d.carrying.any!(id => app.world.drops.blockType(id).isFood)) { app.dispatchJob(d, eatJob()); return true; }
+    if(d.carrying.any!(id => app.world.drops.resourceType(id).isFood)) { app.dispatchJob(d, eatJob()); return true; }
     auto food = app.world.findFreeFood(d.tile);
-    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.blockType(food))); return true; }
+    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food))); return true; }
   }
   // Rest
   if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return true; }
