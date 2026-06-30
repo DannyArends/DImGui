@@ -99,19 +99,13 @@ uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored 
   return findFreeBlockWhere!(b => b.type.isFood)(world, dwarfTile, includeStored);
 }
 
-Geometry createDropMesh(string meshName) {
-  auto m = makePrimitive(meshName);
-  if(m is null) { SDL_Log("createDropMesh: unknown mesh type '%s'", toStringz(meshName)); return null; }
-  m.initInstanced(() => meshName);
-  return(m);
-}
-
 void ensureBlocks(ref GameApp app) {
   foreach(rt; EnumMembers!ResourceType) {
     auto meshName = resourceData(rt).meshName;
     if(meshName in app.world.drops.meshes) continue;
-    auto m = createDropMesh(meshName);
-    if(m is null) continue;
+    auto m = makePrimitive(meshName);
+    if(m is null) { SDL_Log("ensureBlocks: unknown mesh type '%s'", toStringz(meshName)); continue; }
+    m.initInstanced(() => meshName);
     app.world.drops.meshes[meshName] = m;
     app.objects ~= m;
   }
