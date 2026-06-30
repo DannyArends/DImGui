@@ -166,3 +166,8 @@
 [MATERIAL:Berry03]
   [MESH:Berries:greenyellow::Berry:0.4]
   [CLASS:Item:16][CLASS:Food:0.50]
+
+[MATERIAL:Flint]
+  [MESH:Flint:gray::Flint:0.4]
+  [CLASS:Item:4]
+
