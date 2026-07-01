@@ -194,7 +194,8 @@ void dwarfFrame(ref GameApp app, float dt) {
   }
   foreach(i, ref d; app.world.dwarves) {
     if(d.lightIndex != size_t.max){ app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
-    float[3] s = (app.world.chunkCoord(d.tile) in app.world.chunks) ? [1.0f,1.0f,1.0f] : [0.0f,0.0f,0.0f];
+    float sc = (app.world.chunkCoord(d.tile) in app.world.chunks) ? 1.0f : 0.0f;
+    float[3] s = [sc, sc, sc];
     Matrix m = scale(Matrix.init, s);
     app.world.dwarves.instances[i] = position(m, d.visualPos);
   }
