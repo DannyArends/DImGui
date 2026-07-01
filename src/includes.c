@@ -4,6 +4,12 @@
  */
 #undef __SIZEOF_INT128__
 
+/* DMD v2.112.0 - ImportC lacks these GCC/Clang builtins; provide fallbacks for SDL3 */
+#pragma attribute(push, nogc, nothrow)
+static inline int __builtin_clz(unsigned int x){ int n = 0; while(!(x & 0x80000000u)) { x <<= 1; n++; } return n; }
+static inline int __builtin_ctz(unsigned int x){ int n = 0; while(!(x & 1u)) { x >>= 1; n++; } return n; }
+#pragma attribute(pop)
+
 #pragma attribute(push, nogc, nothrow)
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_video.h>
