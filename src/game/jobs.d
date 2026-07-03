@@ -9,7 +9,7 @@ import block : resourceType, spawnBlock, hasResource, findFreeBlock, findFreeCla
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import reactions : reactionFor;
-import resources : isFood, foodValue;
+import resources : isFood, foodValue, hasClass;
 import sfx : play;
 import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
 import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, tileToWorld, getSuccessors, worldToTile;
@@ -235,11 +235,17 @@ Job cleanWorksiteJob(int[3] targetTile) {
 }
 
 uint useCarriedBlock(ref GameApp app, ref Dwarf d, ResourceType type) {
-  auto found = d.carrying.filter!(id => app.world.drops.resourceType(id) == type);
+  auto blockID = useCarriedWhere!(t => t == type)(app, d);
+  if(blockID != noBlock) { if(auto b = blockID in app.world.drops) b.tile = builtTile; }
+  return blockID;
+}
+
+/** Consume a carried block matching `pred`; returns its id (removed from inventory), or noBlock. */
+uint useCarriedWhere(alias pred)(ref GameApp app, ref Dwarf d) {
+  auto found = d.carrying.filter!(id => pred(app.world.drops.resourceType(id)));
   if(found.empty) return noBlock;
   auto blockID = found.front;
   if(!d.use(app, blockID)) return noBlock;
-  if(auto b = blockID in app.world.drops) b.tile = builtTile;
   return blockID;
 }
 
@@ -315,25 +321,34 @@ Job craftJob(string name) {
       int[3] target = noTile;
       foreach(ing; r.inputs) {
         foreach(n; 0 .. ing.count) {
-          uint id = app.world.findFreeClass(d.tile, cast(ResourceClass)ing.cls);
-          auto b  = (id == noBlock ? null : id in app.world.drops);
-          if(b is null) {
-            app.world.drops.release(claimed);
-            j.state = JobState.Unavailable;
-            return;
+          ResourceClass need = cast(ResourceClass)ing.cls;
+
+          // prefer a carried block of this class not already claimed
+          uint id = noBlock;
+          foreach(cid; d.carrying) {
+            if(claimed.canFind(cid)) continue;
+            if(app.world.drops.resourceType(cid).hasClass(need)) { id = cid; break; }
           }
-          b.reserved = true;
+          if(id == noBlock) id = app.world.findFreeClass(d.tile, need);   // else on the ground
+
+          auto b = (id == noBlock ? null : id in app.world.drops);
+          if(b is null) { app.world.drops.release(claimed); j.state = JobState.Unavailable; return; }
+          if(b.tile != noTile) b.reserved = true;                        // ground block: reserve; carried: skip
           claimed ~= id;
-          if(target == noTile) target = app.world.pathTileFor(id, *b);
+          if(target == noTile && b.tile != noTile) target = app.world.pathTileFor(id, *b);
         }
       }
+      if(target == noTile) target = d.tile; 
       j.blockIDs = claimed;
       j.targetTile = target;
     },
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 1.0f, () {
         auto r = reactionFor(d.currentJob.name);
-        foreach(id; d.currentJob.blockIDs) if(id in app.world.drops) app.world.drops.registry.remove(id);
+        foreach(id; d.currentJob.blockIDs) {
+          d.use(app, id); // removes from inventory
+          if(id in app.world.drops) app.world.drops.registry.remove(id);
+        }
         foreach(prod; r.outputs) foreach(n; 0 .. prod.count) {
           auto pid = app.spawnBlock(d.tile, cast(ResourceType)prod.type);
           if(d.pickup(pid, cast(ResourceType)prod.type)) {
