@@ -15,7 +15,7 @@ import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
-import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, moveAwayJob, sleepJob, atDestination;
+import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
 import resources : isFood, toClass;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
@@ -280,7 +280,7 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
     if(!app.atDestination(other, d.currentJob.targetTile, d.currentJob.reach)) continue;
     if(d.blockedSince == 0) {
       d.blockedSince = cast(uint)SDL_GetTicks();
-      if(!other.hasJob || other.currentJob.name != "MoveAway") { other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
+      other.requestStepAside();
     }
     if(SDL_GetTicks() - d.blockedSince > 4000) {
       d.blockedSince = 0;
