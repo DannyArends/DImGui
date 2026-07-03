@@ -26,6 +26,7 @@ struct ResourceT {
 }
 
 ResourceClass toClass(ResourceType t) { return t.to!string.to!ResourceClass; }
+ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
 
 // Convenience field accessors (UFCS shims over classes)
 @nogc bool traversable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Traversable); }

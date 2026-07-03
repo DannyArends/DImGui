@@ -16,7 +16,7 @@ import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
 import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, moveAwayJob, sleepJob, atDestination;
-import resources : isFood;
+import resources : isFood, toClass;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import sfx : play;
@@ -234,7 +234,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   if(d.needs[Need.Hunger] >= 0.6f) {
     if(d.carrying.any!(id => app.world.drops.resourceType(id).isFood)) { app.dispatchJob(d, eatJob()); return true; }
     auto food = app.world.findFreeFood(d.tile);
-    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food))); return true; }
+    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food).toClass)); return true; }
   }
   // Rest
   if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return true; }
