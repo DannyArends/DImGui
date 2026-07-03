@@ -23,7 +23,7 @@ enum Need { Hunger, Rest }                                            /// Curren
 struct Job {
   string name;                                      /// Job name
   int[3] targetTile = noTile;                       /// Target tile
-  ResourceClass tileClass = ResourceClass.None;     /// Resource type this job acts on (block to fetch/place/withdraw); None = any
+  ResourceClass tileClass = ResourceClass.None;     /// Resource class this job acts on (block to fetch/place/withdraw); None = any
   Job[] prereqs;                                    /// Job prerequisites
   bool personal = false;                            /// Personal ?
   uint[] blockIDs;                                  /// Reserved world-block instance ID(s) claimed; released on fail.
@@ -203,6 +203,11 @@ Job moveAwayJob(int[3] from) {
   );
 }
 
+/** Ask `other` to step aside: prepend a MoveAway to their stack unless they're already moving aside. */
+void requestStepAside(ref Dwarf other) {
+  if(!other.hasJob || other.currentJob.name != "MoveAway") other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack;
+}
+
 /** Move to a free neighbouring tile and drops a carried block */
 Job dropBlockJob(int[3] fromTile, uint blockID) {
   return Job("DropBlock", fromTile, ResourceClass.None, [], true, [blockID],
@@ -257,7 +262,7 @@ bool evictDwarfAt(ref GameApp app, int[3] tile) {
   foreach(ref other; app.world.dwarves.dwarves) {
     if(other.tile != tile) continue;
     occupied = true;
-    if(!boxedIn && (!other.hasJob || other.currentJob.name != "MoveAway")){ other.jobStack = [moveAwayJob(other.tile)] ~ other.jobStack; }
+    if(!boxedIn) other.requestStepAside();
   }
   return !(occupied && boxedIn);
 }
