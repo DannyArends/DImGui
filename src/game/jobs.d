@@ -21,16 +21,16 @@ enum Reach { Adjacent, OnTile, AdjacentOrOnTile, AdjacentOrAbove }    /// How a 
 enum Need { Hunger, Rest }                                            /// Current needs
 
 struct Job {
-  string name;                            /// Job name
-  int[3] targetTile = noTile;             /// Target tile
-  ResourceType tileType;                  /// Resource type this job acts on (block to fetch/place/withdraw); None = any
-  Job[] prereqs;                          /// Job prerequisites
-  bool personal = false;                  /// Personal ?
-  uint[] blockIDs;                        /// Reserved world-block instance ID(s) claimed; released on fail.
-  bool[uint] failedBy;                    /// Who has attempted (and failed) the job
-  JobState state = JobState.Pending;      /// State of job
-  Reach reach = Reach.Adjacent;           /// How the targetTile should be interacted with
-  int basePriority = 0;                   /// higher = more important; needs-jobs set this high
+  string name;                                      /// Job name
+  int[3] targetTile = noTile;                       /// Target tile
+  ResourceClass tileClass = ResourceClass.None;     /// Resource type this job acts on (block to fetch/place/withdraw); None = any
+  Job[] prereqs;                                    /// Job prerequisites
+  bool personal = false;                            /// Personal ?
+  uint[] blockIDs;                                  /// Reserved world-block instance ID(s) claimed; released on fail.
+  bool[uint] failedBy;                              /// Who has attempted (and failed) the job
+  JobState state = JobState.Pending;                /// State of job
+  Reach reach = Reach.Adjacent;                     /// How the targetTile should be interacted with
+  int basePriority = 0;                             /// higher = more important; needs-jobs set this high
 
   bool function(ref GameApp app, ref Job j) isValid;
   void function(ref GameApp app, ref Dwarf d, ref Job j) onClaim;
@@ -109,9 +109,11 @@ void progressJob(ref GameApp app, ref Dwarf d, float amount, void delegate() onC
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
-  uint id = j.blockIDs.length ? j.blockIDs[0] : app.world.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
+  if(j.blockIDs.length == 0 && j.tileClass != ResourceClass.None && d.carrying.any!(cid => app.world.drops.resourceType(cid).hasClass(j.tileClass))) {
+    j.state = JobState.Satisfied; return; 
+  }
+  uint id = j.blockIDs.length ? j.blockIDs[0] : app.world.findFreeClass(d.tile, j.tileClass);
   auto b = (id == noBlock ? null : id in app.world.drops);
-  if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.world.drops.resourceType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
   if(b is null) { j.state = JobState.Unavailable; return; }
   bool stored = (b.tile == storedTile);
   int[3] target = app.world.pathTileFor(id, *b);
@@ -313,43 +315,25 @@ Job eatJob() {
 }
 
 Job craftJob(string name) {
-  return Job(name, noTile, ResourceType.None, [], true, reach: Reach.Adjacent,
-    onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      auto r = reactionFor(j.name);
-      if(r.inputs.length == 0) { j.state = JobState.Unavailable; return; }
-      uint[] claimed;
-      int[3] target = noTile;
-      foreach(ing; r.inputs) {
-        foreach(n; 0 .. ing.count) {
-          ResourceClass need = cast(ResourceClass)ing.cls;
-
-          // prefer a carried block of this class not already claimed
-          uint id = noBlock;
-          foreach(cid; d.carrying) {
-            if(claimed.canFind(cid)) continue;
-            if(app.world.drops.resourceType(cid).hasClass(need)) { id = cid; break; }
-          }
-          if(id == noBlock) id = app.world.findFreeClass(d.tile, need);   // else on the ground
-
-          auto b = (id == noBlock ? null : id in app.world.drops);
-          if(b is null) { app.world.drops.release(claimed); j.state = JobState.Unavailable; return; }
-          if(b.tile != noTile) b.reserved = true;                        // ground block: reserve; carried: skip
-          claimed ~= id;
-          if(target == noTile && b.tile != noTile) target = app.world.pathTileFor(id, *b);
-        }
-      }
-      if(target == noTile) target = d.tile; 
-      j.blockIDs = claimed;
-      j.targetTile = target;
-    },
+  auto r = reactionFor(name);
+  Job[] prereqs;
+  foreach(ing; r.inputs){ foreach(n; 0 .. ing.count){
+    prereqs ~= pickupJob(noTile, cast(ResourceClass)ing.cls);
+  } }
+  return Job(name, noTile, ResourceType.None, prereqs, true, reach: Reach.OnTile,
+    onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { j.targetTile = d.tile; },
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 1.0f, () {
-        auto r = reactionFor(d.currentJob.name);
-        foreach(id; d.currentJob.blockIDs) {
-          d.use(app, id); // removes from inventory
+        auto rr = reactionFor(d.currentJob.name);
+        foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
+          ResourceClass need = cast(ResourceClass)ing.cls;
+          auto found = d.carrying.filter!(cid => app.world.drops.resourceType(cid).hasClass(need));
+          if(found.empty) continue;
+          uint id = found.front;
+          d.use(app, id);
           if(id in app.world.drops) app.world.drops.registry.remove(id);
         }
-        foreach(prod; r.outputs) foreach(n; 0 .. prod.count) {
+        foreach(prod; rr.outputs) foreach(n; 0 .. prod.count) {
           auto pid = app.spawnBlock(d.tile, cast(ResourceType)prod.type);
           if(d.pickup(pid, cast(ResourceType)prod.type)) {
             if(auto nb = pid in app.world.drops) { nb.tile = noTile; nb.fall = Fall.init; }
@@ -358,13 +342,9 @@ Job craftJob(string name) {
         app.world.drops.dirty = true;
       });
     },
-    onFail: (ref GameApp app, ref Dwarf d) {
-      app.world.drops.release(d.currentJob.blockIDs);
-      d.failAndRequeue();
-    }
+    onFail: (ref GameApp app, ref Dwarf d) { app.world.drops.release(d.currentJob.blockIDs); d.failAndRequeue(); }
   );
 }
-
 Job sleepJob(int[3] atTile) {
   return Job("Sleeping", atTile, ResourceType.None, [], true, reach: Reach.OnTile,
     basePriority: 100,

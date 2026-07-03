@@ -79,7 +79,7 @@ bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!
 
 /** on */
 uint findFreeClass(const World world, int[3] dwarfTile, ResourceClass c, bool includeStored = true) {
-  return findFreeBlockWhere!(b => b.type.hasClass(c))(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b => c == ResourceClass.None || b.type.hasClass(c))(world, dwarfTile, includeStored);
 }
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
