@@ -118,5 +118,5 @@ void showDwarfContent(ref GameApp app, uint font = 0) {
   } else { app.showDwarfOverview(); }
   igNewLine();
   igSeparator();
-  foreach(ref j; jobQueue) text("  [%s] -> %s (%s)", j.name, j.targetTile, j.tileType);
+  foreach(ref j; jobQueue) text("  [%s] -> %s (%s)", j.name, j.targetTile, j.tileClass);
 }
