@@ -57,6 +57,8 @@ private bool deadEndPartial(ref GameApp app, ref Dwarf d, ref PathResult result)
   return manhattan(app.world.worldToTile(result.path[$-1]), d.currentJob.targetTile) >= manhattan(d.tile, d.currentJob.targetTile);
 }
 
+int[3] pathTileFor(ref World world, uint id, const Block b) { return (b.tile == storedTile) ? world.storedTileOf(id).tileAbove : b.tile; }
+
 /** Apply pathfinding results */
 void applyPathResult(ref GameApp app, PathResult result) {
   if(app.world.dwarves is null) return;
@@ -109,14 +111,11 @@ void progressJob(ref GameApp app, ref Dwarf d, float amount, void delegate() onC
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
   uint id = j.blockIDs.length ? j.blockIDs[0] : app.world.findFreeBlock(d.tile, j.tileType, j.tileType != ResourceType.None);
   auto b = (id == noBlock ? null : id in app.world.drops);
-
   if(j.blockIDs.length == 0 && d.carrying.any!(cid => app.world.drops.resourceType(cid) == j.tileType)) { j.state = JobState.Satisfied; return; }
   if(b is null) { j.state = JobState.Unavailable; return; }
-
   bool stored = (b.tile == storedTile);
-  int[3] target = stored ? app.world.storedTileOf(id).tileAbove : b.tile;
+  int[3] target = app.world.pathTileFor(id, *b);
   if(target == noTile) { j.state = JobState.Unavailable; return; }
-
   b.reserved = true;
   j.blockIDs = [id];
   j.targetTile = target;
@@ -312,20 +311,23 @@ Job craftJob(string name) {
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
       auto r = reactionFor(j.name);
       if(r.inputs.length == 0) { j.state = JobState.Unavailable; return; }
-      ResourceClass need = cast(ResourceClass)r.inputs[0].cls;
-
-      uint id = app.world.findFreeClass(d.tile, need);
-      if(id == noBlock) { j.state = JobState.Unavailable; return; }
-
-      auto b = id in app.world.drops;
-      if(b is null) { j.state = JobState.Unavailable; return; }
-
-      int[3] target = b.tile;
-      if(b.tile == storedTile) target = app.world.storedTileOf(id).tileAbove;
-      if(target == noTile) { j.state = JobState.Unavailable; return; }
-
-      b.reserved = true;
-      j.blockIDs = [id];
+      uint[] claimed;
+      int[3] target = noTile;
+      foreach(ing; r.inputs) {
+        foreach(n; 0 .. ing.count) {
+          uint id = app.world.findFreeClass(d.tile, cast(ResourceClass)ing.cls);
+          auto b  = (id == noBlock ? null : id in app.world.drops);
+          if(b is null) {
+            app.world.drops.release(claimed);
+            j.state = JobState.Unavailable;
+            return;
+          }
+          b.reserved = true;
+          claimed ~= id;
+          if(target == noTile) target = app.world.pathTileFor(id, *b);
+        }
+      }
+      j.blockIDs = claimed;
       j.targetTile = target;
     },
     onArrive: (ref GameApp app, ref Dwarf d) {
