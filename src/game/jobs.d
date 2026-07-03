@@ -254,6 +254,12 @@ uint useCarriedWhere(alias pred)(ref GameApp app, ref Dwarf d) {
   return blockID;
 }
 
+/** Destroy a carried block: remove from the dwarf's inventory and from the world. */
+void consumeCarried(ref GameApp app, ref Dwarf d, uint id) {
+  d.use(app, id);
+  if(id in app.world.drops) app.world.drops.registry.remove(id);
+}
+
 /** Ask every dwarf on `tile` to step aside. Returns false if any are there but the tile is boxed in (nowhere to go). */
 bool evictDwarfAt(ref GameApp app, int[3] tile) {
   if(app.world.dwarves is null) return true;
@@ -306,8 +312,7 @@ Job eatJob() {
       app.progressJob(d, 0.5f, () {
         auto id = d.currentJob.blockIDs[0];
         float restore = foodValue(app.world.drops.resourceType(id));   // read type before removal
-        d.use(app, id);
-        if(id in app.world.drops) app.world.drops.registry.remove(id);
+        app.consumeCarried(d, id);
         d.hunger = d.hunger > restore ? d.hunger - restore : 0.0f;
         app.play("DM-CGS-16", 0.4f);
         app.world.drops.dirty = true;
@@ -320,7 +325,7 @@ Job eatJob() {
 Job craftJob(string name) {
   auto r = reactionFor(name);
   Job[] prereqs;
-  foreach(ing; r.inputs){ foreach(n; 0 .. ing.count){
+  foreach(ing; r.inputs){ foreach(n; 0 .. ing.count) {
     prereqs ~= pickupJob(noTile, cast(ResourceClass)ing.cls);
   } }
   return Job(name, noTile, ResourceClass.None, prereqs, true, reach: Reach.OnTile,
@@ -332,9 +337,7 @@ Job craftJob(string name) {
           ResourceClass need = cast(ResourceClass)ing.cls;
           auto found = d.carrying.filter!(cid => app.world.drops.resourceType(cid).hasClass(need));
           if(found.empty) continue;
-          uint id = found.front;
-          d.use(app, id);
-          if(id in app.world.drops) app.world.drops.registry.remove(id);
+          app.consumeCarried(d, found.front);
         }
         foreach(prod; rr.outputs) foreach(n; 0 .. prod.count) {
           auto pid = app.spawnBlock(d.tile, cast(ResourceType)prod.type);
@@ -376,6 +379,7 @@ bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
   app.pathfindTo(d, goal);
   return true;
 }
+
 /** Execute a block pickup for the active job; marks the block as carried and completes the sub-job */
 void doPickup(ref GameApp app, ref Dwarf d) {
   auto blockID = d.currentJob.blockIDs.length > 0 ? d.currentJob.blockIDs[0] : noBlock;
