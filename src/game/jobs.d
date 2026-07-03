@@ -161,7 +161,7 @@ Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
       auto picked = d.carrying.filter!(id => app.world.drops.resourceType(id).hasClass(d.currentJob.tileClass));
       if(picked.empty) { d.currentJob.onFail(app, d); return; }
       auto blockID = picked.front;
-      d.use(app, blockID);                                  // remove from inventory (no builtTile)
+      d.use(app.world.drops, blockID);  // remove from inventory (no builtTile)
       app.world.storeBlockAt(d.currentJob.targetTile, blockID);   // sets tile = storedTile, adds to pile
       d.completeSubJob();
     },
@@ -215,7 +215,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
     onArrive: (ref GameApp app, ref Dwarf d) {
       auto target = d.currentJob.blockIDs[0];
       foreach(slot, ref s; d.inventory) {
-        if(!s.empty && s.resourceIDs[0 .. s.count].canFind(target)) { d.drop(app, slot); break; }
+        if(!s.empty && s.resourceIDs[0 .. s.count].canFind(target)) { d.drop(app.world.drops, slot); break; }
       }
       d.completeSubJob();
     },
@@ -244,14 +244,14 @@ uint useCarriedBlock(ref GameApp app, ref Dwarf d, ResourceType type) {
   auto found = d.carrying.filter!(id => app.world.drops.resourceType(id) == type);
   if(found.empty) return noBlock;
   auto blockID = found.front;
-  if(!d.use(app, blockID)) return noBlock;
+  if(!d.use(app.world.drops, blockID)) return noBlock;
   if(auto b = blockID in app.world.drops) b.tile = builtTile;
   return blockID;
 }
 
 /** Destroy a carried block: remove from the dwarf's inventory and from the world. */
 void consumeCarried(ref GameApp app, ref Dwarf d, uint id) {
-  d.use(app, id);
+  d.use(app.world.drops, id);
   if(id in app.world.drops) { app.world.drops.registry.remove(id); }
 }
 
@@ -284,7 +284,7 @@ Job buildingJob(int[3] targetTile, ResourceType tileType) {
       d.completeSubJob();
     },
     onFail: (ref GameApp app, ref Dwarf d) {
-      foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app, slot); }
+      foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app.world.drops, slot); }
       auto newJob = buildingJob(d.currentJob.targetTile, d.currentJob.tileClass.toType);
       newJob.failedBy = d.jobStack[$-1].failedBy.dup;
       newJob.failedBy[d.uid] = true;

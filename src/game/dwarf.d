@@ -73,8 +73,8 @@ struct DwarfData {
     return false;
   }
 
-  bool use(ref GameApp app, uint blockID) {
-    if(auto b = blockID in app.world.drops) b.reserved = false;
+  bool use(ref Drops drops, uint blockID) {
+    if(auto b = blockID in drops) { b.reserved = false; }
     foreach(ref s; inventory) {
       if(s.empty) continue;
       auto k = s.resourceIDs[0 .. s.count].countUntil(blockID);
@@ -82,22 +82,22 @@ struct DwarfData {
         s.resourceIDs[k] = s.resourceIDs[s.count - 1];
         s.count--;
         if(s.count == 0) s = InventorySlot.init;
-        return true;
+        return(true);
       }
     }
-    return false;
+    return(false);
   }
 
-  bool drop(ref GameApp app, size_t slot) {
+  bool drop(ref Drops drops, size_t slot) {
     if(slot >= inventory.length || inventory[slot].empty) { return(false); }
 
-    if(auto b = inventory[slot].resourceIDs[inventory[slot].count - 1] in app.world.drops) {
+    if(auto b = inventory[slot].resourceIDs[inventory[slot].count - 1] in drops) {
       b.tile = tile;
       b.reserved = false;
     }
     inventory[slot].count--;
     if(inventory[slot].count == 0) inventory[slot] = InventorySlot.init;
-    app.world.drops.dirty = true;
+    drops.dirty = true;
     return(true);
   }
 
@@ -209,7 +209,7 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
   foreach(ref s; d.inventory) if(!s.empty) filled++;
   if((filled > cast(size_t)(above * d.inventory.length)) && uniform(0, 100) < 2) {   // ~2%/tick over 50%
     size_t slot = uniform(0, d.inventory.length);
-    d.drop(app, slot);   // no-op if that slot is empty
+    d.drop(app.world.drops, slot);   // no-op if that slot is empty
     app.play("DM-CGS-03", 0.2f);
   }
 }
@@ -218,14 +218,9 @@ void logStuck(ref GameApp app, ref Dwarf d) {
   static uint last = 0;
   if(app.totalFramesRendered - last < 60) return;
   last = app.totalFramesRendered;
-  auto g = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
-  SDL_Log(cstr("STUCK %s job=%s d=[%d,%d,%d] tgt=[%d,%d,%d] reach=%d goal=[%d,%d,%d] pathLen=%d",
-    d.name, d.currentJob.name,
-    d.tile[0], d.tile[1], d.tile[2],
-    d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2],
-    cast(int)d.currentJob.reach,
-    g[0], g[1], g[2],
-    cast(int)d.path.length));
+  auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
+  SDL_Log(cstr("STUCK %s job=%s d=%s tgt=%s reach=%d goal=%s pathLen=%d",
+               d.name, d.currentJob.name, d.tile, d.currentJob.targetTile, cast(int)d.currentJob.reach, goal, cast(int)d.path.length));
 }
 
 /** Dispatch the most urgent over-threshold need as a job. Returns true if one was dispatched. */
