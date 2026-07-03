@@ -65,6 +65,7 @@ void handleKeyEvents(ref GameApp app, SDL_Event e) {
     if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
     if(symbol == SDLK_K) { jobQueue ~= craftJob("FlintKnapping"); }
+    if(symbol == SDLK_L) { jobQueue ~= craftJob("AxeMaking"); }
   }
 }
 

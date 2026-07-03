@@ -13,39 +13,39 @@
 
 [MATERIAL:Beach01]
   [MESH:Blocks::Beach_01_base:Beach_01_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable][CLASS:Sand]
 
 [MATERIAL:Sand01]
   [MESH:Blocks::Sand_01_base:Sand_01_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable][CLASS:Sand]
 
 [MATERIAL:Sand02]
   [MESH:Blocks::Sand_02_base:Sand_02_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.0][CLASS:Item:1][CLASS:Buildable][CLASS:Sand]
 
 [MATERIAL:Sand03]
   [MESH:Blocks::Sand_03_base:Sand_03_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable][CLASS:Sand]
 
 [MATERIAL:Sand05]
   [MESH:Blocks::Sand_05_base:Sand_05_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable][CLASS:Sand]
 
 [MATERIAL:Gravel01]
   [MESH:Blocks::Gravel_01_base:Gravel_01_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable][CLASS:Gravel]
 
 [MATERIAL:Gravel02]
   [MESH:Blocks::Gravel_02_base:Gravel_02_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable][CLASS:Gravel]
 
 [MATERIAL:Gravel03]
   [MESH:Blocks::Gravel_03_base:Gravel_03_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable][CLASS:Gravel]
 
 [MATERIAL:Gravel04]
   [MESH:Blocks::Gravel_04_base:Gravel_04_base:1.0]
-  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable]
+  [CLASS:Terrain][CLASS:Traversable:2.5][CLASS:Item:1][CLASS:Buildable][CLASS:Gravel]
 
 [MATERIAL:Moss01]
   [MESH:Blocks::Moss_01_base:Moss_01_base:1.0]
@@ -170,4 +170,8 @@
 [MATERIAL:Flint]
   [MESH:Cube:gray::Flint:0.4]
   [CLASS:Item:4]
+
+[MATERIAL:StoneAxe]
+  [MESH:Cube:saddlebrown::StoneAxe:0.5]
+  [CLASS:Item:1]
 
