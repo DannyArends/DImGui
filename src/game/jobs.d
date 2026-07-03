@@ -239,25 +239,20 @@ Job cleanWorksiteJob(int[3] targetTile) {
   );
 }
 
+/** Consume a carried block of `type` (removed from inventory, marked built); returns its id, or noBlock. */
 uint useCarriedBlock(ref GameApp app, ref Dwarf d, ResourceType type) {
-  auto blockID = useCarriedWhere!(t => t == type)(app, d);
-  if(blockID != noBlock) { if(auto b = blockID in app.world.drops) b.tile = builtTile; }
-  return blockID;
-}
-
-/** Consume a carried block matching `pred`; returns its id (removed from inventory), or noBlock. */
-uint useCarriedWhere(alias pred)(ref GameApp app, ref Dwarf d) {
-  auto found = d.carrying.filter!(id => pred(app.world.drops.resourceType(id)));
+  auto found = d.carrying.filter!(id => app.world.drops.resourceType(id) == type);
   if(found.empty) return noBlock;
   auto blockID = found.front;
   if(!d.use(app, blockID)) return noBlock;
+  if(auto b = blockID in app.world.drops) b.tile = builtTile;
   return blockID;
 }
 
 /** Destroy a carried block: remove from the dwarf's inventory and from the world. */
 void consumeCarried(ref GameApp app, ref Dwarf d, uint id) {
   d.use(app, id);
-  if(id in app.world.drops) app.world.drops.registry.remove(id);
+  if(id in app.world.drops) { app.world.drops.registry.remove(id); }
 }
 
 /** Ask every dwarf on `tile` to step aside. Returns false if any are there but the tile is boxed in (nowhere to go). */
