@@ -25,6 +25,8 @@ struct ResourceT {
   foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return cv.value; } } return 0.0f;
 }
 
+ResourceClass toClass(ResourceType t) { return t.to!string.to!ResourceClass; }
+
 // Convenience field accessors (UFCS shims over classes)
 @nogc bool traversable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Traversable); }
 @nogc bool buildable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Buildable); }
