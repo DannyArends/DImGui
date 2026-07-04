@@ -104,6 +104,7 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       TTF_GetGlyphMetrics(app.glyphAtlas.ttf, cast(uint)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
       auto gs = TTF_RenderGlyph_Blended(app.glyphAtlas.ttf, cast(uint)(c), SDL_Color(255, 255, 255, 255));
       if (!gs) { c++; continue; }
+      if (app.glyphAtlas.rowPitch == 0) app.glyphAtlas.rowPitch = app.glyphAtlas.lineHeight + (gs.w - (glyph.advance - glyph.minx));
       if (atlasloc + gs.w >= app.glyphAtlas.width) { i = atlasloc = 0; atlasrow++; }
       if (atlasrow * app.glyphAtlas.rowPitch + app.glyphAtlas.rowPitch > app.glyphAtlas.height) {
         SDL_DestroySurface(gs);
@@ -112,7 +113,6 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       }
       if (app.glyphAtlas.advance < glyph.advance) app.glyphAtlas.advance = glyph.advance;
       if (app.glyphAtlas.miny > glyph.miny) app.glyphAtlas.miny = glyph.miny;
-      if (app.glyphAtlas.rowPitch == 0) app.glyphAtlas.rowPitch = app.glyphAtlas.lineHeight + (gs.w - (glyph.advance - glyph.minx));
       glyph.atlasloc = atlasloc; glyph.atlasrow = atlasrow;
       glyph.w = gs.w; glyph.h = gs.h;
       SDL_Log(cstr("%c %s", c, glyph));
