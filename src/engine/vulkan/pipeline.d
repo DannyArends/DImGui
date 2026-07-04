@@ -112,18 +112,19 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   };
   if(app.pipelines[topology].layout is null) app.pipelines[topology].createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
 
-  VkPipelineDepthStencilStateCreateInfo depthStencil = {
-    sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-    depthTestEnable: VK_TRUE,
-    depthWriteEnable: VK_TRUE,
-    depthCompareOp: VK_COMPARE_OP_LESS,
-  };
-
   static foreach(i; [Specialization(true,true,false), Specialization(true,false,false),
                      Specialization(false,true,false), Specialization(false,false,false),
                      Specialization(true,true,true), Specialization(true,false,true)]) {{
 
     ShaderStage stages = createStageInfo(app.shaders, topology, i);
+
+    VkPipelineDepthStencilStateCreateInfo depthStencil = {
+      sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+      depthTestEnable: VK_TRUE,
+      depthWriteEnable: i.alpha ? VK_FALSE : VK_TRUE,
+      depthCompareOp: VK_COMPARE_OP_LESS,
+    };
+
     VkGraphicsPipelineCreateInfo pipelineInfo = {
       sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
       stageCount: cast(uint)stages.info.length,
