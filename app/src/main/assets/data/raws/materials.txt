@@ -175,3 +175,6 @@
   [MESH:Cube:saddlebrown::StoneAxe:0.5]
   [CLASS:Item:1]
 
+[MATERIAL:WoodCup]
+  [MESH:Cube:saddlebrown::WoodCup:0.5]
+  [CLASS:Item:1]

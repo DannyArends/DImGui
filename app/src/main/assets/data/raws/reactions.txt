@@ -15,3 +15,10 @@
   [INPUT:Wood:1]
   [OUTPUT:StoneAxe:1]
   [OUTPUT:OakLeaves:1]
+
+[REACTION:CupMaking]
+  [VERB:Assemble][SKILL:Crafting]
+  [WORKSHOP:None]
+  [PROGRESS_RATE:0.50]
+  [INPUT:Wood:1]
+  [OUTPUT:WoodCup:1]
