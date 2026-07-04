@@ -86,8 +86,7 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
 
   VkPipelineRasterizationStateCreateInfo rasterizer = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-    polygonMode: VK_POLYGON_MODE_FILL,
-    lineWidth: 1.0f,
+    polygonMode: VK_POLYGON_MODE_FILL, lineWidth: 1.0f,
     cullMode: VK_CULL_MODE_NONE,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
   };
@@ -102,20 +101,16 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
   VkPipelineColorBlendAttachmentState colorBlendAttachment = {
     colorWriteMask: VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     blendEnable: VK_TRUE,
-    srcColorBlendFactor: VK_BLEND_FACTOR_ONE,
-    dstColorBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+    srcColorBlendFactor: VK_BLEND_FACTOR_ONE, dstColorBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
     colorBlendOp: VK_BLEND_OP_ADD,
-    srcAlphaBlendFactor: VK_BLEND_FACTOR_ONE,
-    dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE,
+    srcAlphaBlendFactor: VK_BLEND_FACTOR_ONE, dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE,
     alphaBlendOp: VK_BLEND_OP_ADD
   };
 
   VkPipelineColorBlendStateCreateInfo colorBlending = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-    logicOpEnable: VK_FALSE,
-    logicOp: VK_LOGIC_OP_COPY,
-    attachmentCount: 1,
-    pAttachments: &colorBlendAttachment,
+    logicOpEnable: VK_FALSE, logicOp: VK_LOGIC_OP_COPY,
+    attachmentCount: 1, pAttachments: &colorBlendAttachment,
     blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
   };
 
