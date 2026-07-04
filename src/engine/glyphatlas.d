@@ -131,7 +131,7 @@ void uploadFont(ref App app) {
   if(app.verbose) SDL_Log("Uploading Font Texture to GPU");
   GPUAllocation staging;
   auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
-  app.toGPU(commandBuffer, app.glyphAtlas.texture, staging);
+  app.toGPU(commandBuffer, app.glyphAtlas.texture, staging, VK_FORMAT_R8G8B8A8_UNORM);
   app.endSingleTimeCommands(commandBuffer, app.transfer);
   app.cleanup(staging);
   app.textures ~= app.glyphAtlas.texture;
