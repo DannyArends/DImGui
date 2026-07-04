@@ -14,6 +14,8 @@ import views : createImageView;
 
 /** Glyph stores SDL2_TTF glyph data */
 struct Glyph {
+  int w;   // rendered surface width  (includes SDF spread)
+  int h;   // rendered surface height (includes SDF spread)
   int minx;
   int maxx;
   int miny;
@@ -89,7 +91,7 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
   app.glyphAtlas.ascent = TTF_GetFontAscent(app.glyphAtlas.ttf);
   app.glyphAtlas.lineHeight = TTF_GetFontHeight(app.glyphAtlas.ttf);
 
-  TTF_SetFontSDF(app.glyphAtlas.ttf, false);
+  TTF_SetFontSDF(app.glyphAtlas.ttf, true);
   app.glyphAtlas.texture = Texture(app.glyphAtlas.path, dim, dim, SDL_CreateSurface(dim, dim, SDL_PIXELFORMAT_RGBA32));
   SDL_SetSurfaceBlendMode(app.glyphAtlas.surface, SDL_BLENDMODE_NONE);
   app.glyphAtlas.width = app.glyphAtlas.height = dim;
@@ -111,8 +113,9 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       }
       if (app.glyphAtlas.advance < glyph.advance) app.glyphAtlas.advance = glyph.advance;
       if (app.glyphAtlas.miny > glyph.miny) app.glyphAtlas.miny = glyph.miny;
-      glyph.atlasloc = atlasloc;
-      glyph.atlasrow = atlasrow;
+      glyph.atlasloc = atlasloc; glyph.atlasrow = atlasrow;
+      glyph.w = gs.w; glyph.h = gs.h;
+      SDL_Log(cstr("%c %s", c, glyph));
       app.glyphAtlas.glyphs[c] = glyph;
       app.glyphAtlas.atlas ~= c;
       SDL_Rect dst = { atlasloc, atlasrow * app.glyphAtlas.lineHeight, gs.w, gs.h };
