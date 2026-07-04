@@ -13,6 +13,7 @@ layout(constant_id = 2) const bool INSTANCED = true;
 layout(constant_id = 3) const uint GRID_X = 16u;
 layout(constant_id = 4) const uint GRID_Y = 9u;
 layout(constant_id = 5) const uint GRID_Z = 24u;
+layout(constant_id = 6) const bool SDF = false;
 
 // Constants
 const uint NIL = 0xFFFFFFFFu;

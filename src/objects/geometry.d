@@ -58,13 +58,14 @@ class Geometry {
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
 
+  @property bool isSDF() nothrow { return(geometry !is null && geometry() == "Text"); }
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null; }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
 
-  @nogc void initInstanced(string delegate() name, DrawInstance[] initial = []) nothrow {
+  @nogc void initInstanced(string delegate() nothrow name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
     instances = initial;
     geometry = name;
@@ -121,7 +122,7 @@ class Geometry {
   void delegate(float dt) onFrame;
   void delegate() onTick;
   @nogc void delegate(bool) nothrow onFrustumUpdate;
-  string delegate() geometry;
+  string delegate() nothrow geometry;
 }
 
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
