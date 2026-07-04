@@ -345,10 +345,7 @@ Job fillCupJob() {
 
 Job drinkJob() {
   return Job("Drinking", noTile, ResourceClass.None, [], true, reach: Reach.OnTile,
-    onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      if(!d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup)) { j.state = JobState.Unavailable; return; }
-      j.targetTile = d.tile; // drink where standing
-    },
+    onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { j.targetTile = d.tile; },
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.5f, () {
         auto full = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);

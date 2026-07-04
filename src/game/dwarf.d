@@ -241,10 +241,10 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
     int[3] standAt;
     bool water = app.world.findNearestWater(d.tile, standAt) != noTile;
 
-    if(hasFull || ((hasEmpty || water) && water)) {   // can reach a full cup, or a cup+water, or make one
+    if(hasFull || water) {
       auto job = drinkJob();
       if(!hasFull) {
-        if(!hasEmpty) job.prereqs ~= craftJob("CupMaking"); // no cup at all -> craft one
+        if(!hasEmpty) { job.prereqs ~= craftJob("CupMaking"); } // no cup at all -> craft one
         job.prereqs ~= fillCupJob(); // fill the (crafted or carried) cup
       }
       app.dispatchJob(d, job);
