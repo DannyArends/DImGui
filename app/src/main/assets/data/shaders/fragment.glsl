@@ -33,14 +33,14 @@ void main() {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
     rgb *= texSample.rgb; alpha = texSample.a;
   }
-  // If we do alpha testing: SDF override & Opacity texture sample
+  // If we do alpha testing: Opacity texture alpha & SDF override
   if (ALPHA_TEST) {
+    if (mat.oid >= 0) { alpha = texture(textureSampler[mat.oid], fragTexCoord).a; }
     if (SDF) {
       float adj = fwidth(alpha) * 0.5;
       alpha = smoothstep(0.5 - adj, 0.5 + adj, alpha);
     }
-    if (mat.oid >= 0) { alpha = texture(textureSampler[mat.oid], fragTexCoord).a; }
-    if (alpha < 0.01f) discard;
+    if (alpha < 0.05f) discard; // Discard <.05
   }
 
   // Lighting mode 0: Return base color
