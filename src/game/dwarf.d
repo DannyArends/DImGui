@@ -230,26 +230,30 @@ void logStuck(ref GameApp app, ref Dwarf d) {
 bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Hunger
   if(d.needs[Need.Hunger] >= 0.6f) {
-    if(d.carrying.any!(id => app.world.drops.resourceType(id).isFood)) { app.dispatchJob(d, eatJob()); return true; }
+    if(d.carrying.any!(id => app.world.drops.resourceType(id).isFood)) { app.dispatchJob(d, eatJob()); return(true); }
     auto food = app.world.findFreeFood(d.tile);
-    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food).toClass)); return true; }
+    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food).toClass)); return(true); }
   }
   // Thirst
   if(d.needs[Need.Thirst] >= 0.6f) {
-    bool hasCup = d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup
-                                        || app.world.drops.resourceType(id) == ResourceType.WaterCup);
+    bool hasFull = d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
+    bool hasEmpty = d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
     int[3] standAt;
     bool water = app.world.findNearestWater(d.tile, standAt) != noTile;
-    if(hasCup || water) {
+
+    if(hasFull || ((hasEmpty || water) && water)) {   // can reach a full cup, or a cup+water, or make one
       auto job = drinkJob();
-      if(!hasCup) job.prereqs = [craftJob("CupMaking")] ~ job.prereqs;
+      if(!hasFull) {
+        if(!hasEmpty) job.prereqs ~= craftJob("CupMaking"); // no cup at all -> craft one
+        job.prereqs ~= fillCupJob(); // fill the (crafted or carried) cup
+      }
       app.dispatchJob(d, job);
-      return true;
+      return(true);
     }
   }
   // Rest
-  if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return true; }
-  return false;
+  if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return(true); }
+  return(false);
 }
 
 /** A single dwarf being ticked */

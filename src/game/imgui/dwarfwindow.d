@@ -78,6 +78,7 @@ void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
   if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followDwarf(d.uid); }
   text("Tile: %s", d.tile);
   text("Hunger: %.0f", d.hunger * 100.0f);
+  text("Thirst: %.0f", d.thirst * 100.0f);
   text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
   igSeparator();
   igText("Inventory:");
