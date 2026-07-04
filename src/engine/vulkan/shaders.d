@@ -28,6 +28,7 @@ struct Shader {
 struct Specialization {
   bool alpha = true;
   bool instanced = false;
+  bool sdf = false;
 }
 
 struct ShaderDef {
@@ -160,7 +161,10 @@ struct ShaderStage {
 /** Build pipeline stage infos from shaders, using pipeline Topology and Specialization structure */
 ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Specialization s) {
   ShaderStage stage;
-  stage.flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, s.instanced ? VK_TRUE : VK_FALSE, LIGHT_GRID[0], LIGHT_GRID[1], LIGHT_GRID[2] ];
+  stage.flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, 
+                  s.instanced ? VK_TRUE : VK_FALSE, 
+                  LIGHT_GRID[0], LIGHT_GRID[1], LIGHT_GRID[2], 
+                  s.sdf ? VK_TRUE : VK_FALSE ];
   stage.mapEntry = [
     VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),  // LINE : fragment
     VkSpecializationMapEntry(1, 1*uint.sizeof, uint.sizeof),  // ALPHA_TEST : fragment
@@ -168,6 +172,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
     VkSpecializationMapEntry(3, 3*uint.sizeof, uint.sizeof),  // GRID_X : compute & fragment
     VkSpecializationMapEntry(4, 4*uint.sizeof, uint.sizeof),  // GRID_Y : compute & fragment
     VkSpecializationMapEntry(5, 5*uint.sizeof, uint.sizeof),  // GRID_Z : compute & fragment
+    VkSpecializationMapEntry(6, 6*uint.sizeof, uint.sizeof),  // SDF : fragment
   ];
   stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
 
