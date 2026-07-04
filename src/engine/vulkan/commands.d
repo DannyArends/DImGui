@@ -39,7 +39,7 @@ struct CommandBuffer(size_t N){
 void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
   pushLabel(cmd, cstr("%d x Bounding Boxes", app.objects.length), Colors.lightgray);
 
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].pipeline(Specialization(false, true)));
+  app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].get(app, Specialization(false, true));
   for(size_t x = 0; x < app.objects.length; x++) {
     if(!app.objects[x].isDrawable || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue; // not Drawable, not in Frustum, not Visible
     if(app.objects[x].hasBoundingBox && app.objects[x].box.isDrawable) app.draw(app.objects[x].box, cmd);
@@ -80,7 +80,10 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
         if((pass == 0) != obj.isOpaque) continue;     // pass 0 draws opaque, pass 1 draws transparent
         auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF);
         pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf), Colors.lightgray);
-        if(first || last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; first = false; }
+        if(first || last != s) {
+          vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
+          last = s; first = false; 
+        }
         app.draw(obj, cmd);
         popLabel(cmd);
       }
