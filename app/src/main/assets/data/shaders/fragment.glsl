@@ -27,24 +27,24 @@ void main() {
 
   vec3 baseColor = fragColor.rgb;
   float alpha = fragColor.a;
+  // Adjust for texture objects
   if (!(TOPOLOGY == 1) && mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
+    baseColor *= texSample.rgb;
     alpha = texSample.a;
-    if (SDF) {
-      float aa = fwidth(alpha) * 0.5;
-      alpha = smoothstep(0.5 - aa, 0.5 + aa, alpha);
-    }else { baseColor *= texSample.rgb; }
-    if(ALPHA_TEST && alpha < 0.01f) discard;
   }
+  // Adjust for opacity objects [alpha & SDF override]
   if (ALPHA_TEST && mat.oid >= 0){
-    float t = texture(textureSampler[mat.oid], fragTexCoord).a;
+    alpha = texture(textureSampler[mat.oid], fragTexCoord).a;
     if (SDF) {
-      float aa = fwidth(t) * 0.5;
-      alpha = smoothstep(0.5 - aa, 0.5 + aa, t);
+      float adj = fwidth(alpha) * 0.5;
+      alpha = smoothstep(0.5 - adj, 0.5 + adj, alpha);
     }
-    if(alpha < 0.01f) discard;
   }
+  // Discard
+  if(ALPHA_TEST && alpha < 0.01f) discard;
 
+  // Lighting mode 1: Return base color
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, alpha); return; }
 
   vec3 normalForLighting = normalize(fragNormal);
