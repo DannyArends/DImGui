@@ -29,16 +29,14 @@ void main() {
 
   if (!(TOPOLOGY == 1) && mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
+    float alpha = texSample.a;
     if (SDF) {
-      float aa = fwidth(texSample.a);
-      float alpha = smoothstep(0.5 - aa, 0.5 + aa, texSample.a);
-      if (alpha < 0.05f) discard;
-      outColor = vec4(baseColor, alpha); return;
-    }
-    if(ALPHA_TEST && texSample.a < 0.2f) discard;
-    baseColor *= texSample.rgb;
+      float aa = fwidth(alpha) * 0.5;
+      alpha = smoothstep(0.5 - aa, 0.5 + aa, alpha);
+    }else { baseColor *= texSample.rgb; }
+    if(ALPHA_TEST && alpha < 0.01f) discard;
   }
-  if (ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.4f) discard;
+  if (ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.01f) discard;
 
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
 
