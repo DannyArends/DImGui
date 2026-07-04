@@ -34,8 +34,8 @@ struct InventorySlot {
   ubyte count = 0;                                  /// number of valid ids in resourceIDs
   uint[16] resourceIDs = noBlock;                   /// block/berry ids in this slot (POD, fixed-size)
 
-  @nogc @property bool empty() const { return kind == Kind.Empty; }
-  @nogc @property bool isStack() const { return kind == Kind.Stack; }
+  @nogc @property bool empty() const nothrow { return kind == Kind.Empty; }
+  @nogc @property bool isStack() const nothrow { return kind == Kind.Stack; }
   @nogc bool accepts(ResourceType t) const {
     if(empty) return true;
     return isStack && this.type == t && count < t.maxStack;
@@ -89,6 +89,13 @@ struct DwarfData {
       }
     }
     return(false);
+  }
+
+  @nogc void retype(uint blockID, ResourceType type) nothrow {
+    foreach(ref s; inventory) {
+      if(s.empty) continue;
+      if(s.resourceIDs[0 .. s.count].canFind(blockID)) { s.type = type; return; }
+    }
   }
 
   bool drop(ref Drops drops, size_t slot) {

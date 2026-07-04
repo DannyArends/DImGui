@@ -340,7 +340,9 @@ Job fillCupJob() {
         auto cup = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
         if(!cup.empty && app.world.getWater(w) > 0) {
           app.world.setWater(w, cast(ubyte)(app.world.getWater(w) - 1));
-          if(auto b = cup.front in app.world.drops) b.type = ResourceType.WaterCup;
+          if(auto b = cup.front in app.world.drops){
+            d.retype(cup.front, (b.type = ResourceType.WaterCup)); 
+          }
         }
         app.world.drops.dirty = true;
       });
@@ -356,7 +358,9 @@ Job drinkJob() {
       app.progressJob(d, 0.5f, () {
         auto full = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
         if(!full.empty) {
-          if(auto b = full.front in app.world.drops) b.type = ResourceType.WoodCup;   // empty, keep cup
+          if(auto b = full.front in app.world.drops){
+            d.retype(full.front, (b.type = ResourceType.WoodCup));
+          }
           d.thirst = 0.0f;
           app.play("DM-CGS-16", 0.4f);
           app.world.drops.dirty = true;
