@@ -25,7 +25,7 @@ void main() {
   Material mat = materialSSBO.materials[uint(mesh.mid)];
   if(fragInstance[1] >= 0) mat = materialSSBO.materials[uint(fragInstance[1])];
 
-  vec3 rgb = fragColor.rgb; float alpha = 1.0f;
+  vec3 rgb = fragColor.rgb; float alpha = fragColor.a;
 
   if (!(TOPOLOGY == 1) && mat.tid >= 0) {   // Multiply texture to basecolor & adjust alpha
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
@@ -43,7 +43,7 @@ void main() {
   if(ALPHA_TEST && alpha < 0.01f) discard;
 
   // Lighting mode 0: Return base color
-  if (ubo.lightingMode == 0u) { outColor = vec4(rgb * 0.2, SDF ? alpha : 1.0); return; }
+  if (ubo.lightingMode == 0u) { outColor = vec4(rgb * 0.2, alpha); return; }
 
   vec3 normalForLighting = normalize(fragNormal);
   /// Surface normalForLighting
@@ -74,6 +74,6 @@ void main() {
   for (uint n = head[cid].head; n != NIL; n = indices[n].next) {
     surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, useShadows);
   }
-  outColor = vec4(surfaceColor, SDF ? alpha : 1.0);
+  outColor = vec4(surfaceColor, alpha);
 }
 
