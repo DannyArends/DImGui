@@ -25,22 +25,23 @@ void main() {
   Material mat = materialSSBO.materials[uint(mesh.mid)];
   if(fragInstance[1] >= 0) mat = materialSSBO.materials[uint(fragInstance[1])];
 
+  // Color RGB & alpha
   vec3 rgb = fragColor.rgb; float alpha = fragColor.a;
 
-  if (!(TOPOLOGY == 1) && mat.tid >= 0) {   // Multiply texture to basecolor & adjust alpha
+  // Multiply texture to basecolor & adjust alpha
+  if (!(TOPOLOGY == 1) && mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
-    rgb *= texSample.rgb;
-    alpha = texSample.a;
+    rgb *= texSample.rgb; alpha = texSample.a;
   }
-  if (ALPHA_TEST && mat.oid >= 0){          // Adjust alpha for opacity texture [alpha & SDF override]
-    alpha = texture(textureSampler[mat.oid], fragTexCoord).a;
+  // If we do alpha testing: SDF override & Opacity texture sample
+  if (ALPHA_TEST) {
     if (SDF) {
       float adj = fwidth(alpha) * 0.5;
       alpha = smoothstep(0.5 - adj, 0.5 + adj, alpha);
     }
+    if (mat.oid >= 0) { alpha = texture(textureSampler[mat.oid], fragTexCoord).a; }
+    if (alpha < 0.01f) discard;
   }
-  // Discard
-  if(ALPHA_TEST && alpha < 0.01f) discard;
 
   // Lighting mode 0: Return base color
   if (ubo.lightingMode == 0u) { outColor = vec4(rgb * 0.2, alpha); return; }
