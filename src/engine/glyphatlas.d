@@ -63,7 +63,7 @@ struct GlyphAtlas {
 
   /** Y postion of the glyph, when on line[0] out of line[1] */
   @property float pY(Glyph glyph, size_t[2] line) {
-    return(cast(float)(line[1] - line[0]) * this.lineHeight + glyph.miny - this.miny);
+    return(cast(float)(line[1] - line[0]) * this.rowPitch + (this.ascent - glyph.maxy));
   }
 
   alias texture this;
