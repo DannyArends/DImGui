@@ -122,7 +122,7 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
   VkPipelineDepthStencilStateCreateInfo depthStencil = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
     depthTestEnable: VK_TRUE,
-    depthWriteEnable: s.alpha ? VK_FALSE : VK_TRUE,
+    depthWriteEnable: s.sdf ? VK_FALSE : VK_TRUE,
     depthCompareOp: VK_COMPARE_OP_LESS,
   };
 
