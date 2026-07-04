@@ -15,7 +15,7 @@ import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
-import jobs : Job, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
+import jobs : Job, fillCupJob, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
 import resources : isFood, toClass;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
