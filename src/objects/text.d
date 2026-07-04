@@ -5,7 +5,7 @@
 
 import engine;
 
-import geometry : texture;
+import geometry : opacity;
 
 class Text : Geometry {
   this(App app, string value = "Hellow World", float scale = 1.0f, bool verbose = false){
@@ -38,7 +38,7 @@ class Text : Geometry {
     }
     instances = [DrawInstance()];
     meshes["Text"] = Mesh([0, cast(uint)this.vertices.length]);
-    this.texture(app.glyphAtlas.path);
+    this.opacity(app.glyphAtlas.path);
     isOpaque = false;
     geometry = (){ return(typeof(this).stringof); };
   }
