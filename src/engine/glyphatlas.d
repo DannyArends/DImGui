@@ -97,6 +97,7 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       TTF_GetGlyphMetrics(app.glyphAtlas.ttf, cast(uint)(c), &glyph.mmX[0], &glyph.mmX[1], &glyph.mmY[0], &glyph.mmY[1], &glyph.advance);
       auto gs = TTF_RenderGlyph_Blended(app.glyphAtlas.ttf, cast(uint)(c), SDL_Color(255, 255, 255, 255));
       if (!gs) { c++; continue; }
+      SDL_SetSurfaceBlendMode(gs, SDL_BLENDMODE_NONE);
       if (atlasloc + gs.w >= app.glyphAtlas.width) { i = atlasloc = 0; penY += rowMaxH; rowMaxH = 0; }
       if (penY + gs.h > app.glyphAtlas.height) {
         SDL_DestroySurface(gs);
