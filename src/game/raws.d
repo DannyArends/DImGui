@@ -168,10 +168,11 @@ Reaction[] parseReactions(string raw) pure {
     if(p.length == 0) continue;
     switch(p[0]) {
       case "REACTION": if(inReaction) table ~= r; r = Reaction.init; r.name = p[1]; inReaction = true; break;
-      case "VERB":     r.verb  = p[1]; break;
-      case "SKILL":    r.skill = p[1]; break;
+      case "VERB": r.verb  = p[1]; break;
+      case "SKILL": r.skill = p[1]; break;
       case "WORKSHOP": r.workshop = p[1].to!WorkshopUse; break;
-      case "INPUT":  if(p.length >= 3) r.inputs  ~= Ingredient(cast(ubyte)p[1].to!ResourceClass, p[2].to!uint); break;
+      case "PROGRESS_RATE": r.progressRate = to!float(p[1]); break;
+      case "INPUT": if(p.length >= 3) r.inputs  ~= Ingredient(cast(ubyte)p[1].to!ResourceClass, p[2].to!uint); break;
       case "OUTPUT": if(p.length >= 3) r.outputs ~= Product(cast(ubyte)p[1].to!ResourceType,  1.0f, p[2].to!uint); break;
       default: break;
     }

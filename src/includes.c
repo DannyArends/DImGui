@@ -4,7 +4,6 @@
  */
 #undef __SIZEOF_INT128__
 
-
 #pragma attribute(push, nogc, nothrow)
 #if defined(_WIN32)
   /* DMD v2.112.0 - ImportC lacks these MSVC intrinsics */
