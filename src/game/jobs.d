@@ -326,8 +326,8 @@ Job craftJob(string name) {
   return Job(name, noTile, ResourceClass.None, prereqs, true, reach: Reach.OnTile,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { j.targetTile = d.tile; },
     onArrive: (ref GameApp app, ref Dwarf d) {
-      app.progressJob(d, 1.0f, () {
-        auto rr = reactionFor(d.currentJob.name);
+      auto rr = reactionFor(d.currentJob.name);
+      app.progressJob(d, rr.progressRate, () {
         foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
           ResourceClass need = cast(ResourceClass)ing.cls;
           auto found = d.carrying.filter!(cid => app.world.drops.resourceType(cid).hasClass(need));
@@ -490,7 +490,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
   if(++d.idleTicks[0] > d.idleTicks[1]) {
     d.idleTicks[0] = 0;
     if(app.world.drops.length > 0 && d.hasInventorySpace() && uniform(0, 2) == 0) {
-      app.dispatchJob(d, pickupJob(noTile, ResourceClass.None));
+      //app.dispatchJob(d, pickupJob(noTile, ResourceClass.None));
     } else { app.roam(d); }
   }
 }

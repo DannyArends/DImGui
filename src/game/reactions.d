@@ -16,6 +16,7 @@ struct Product { ubyte type; float chance = 1.0f; uint count = 1; }
 
 struct Reaction {
   string name, verb, skill;
+  float progressRate = 1.0f;
   WorkshopUse workshop;
   Ingredient[] inputs;
   Product[] outputs;
