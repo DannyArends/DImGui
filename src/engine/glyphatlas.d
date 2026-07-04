@@ -14,18 +14,14 @@ import views : createImageView;
 
 /** Glyph stores SDL2_TTF glyph data */
 struct Glyph {
-  int w;   // rendered surface width  (includes SDF spread)
-  int h;   // rendered surface height (includes SDF spread)
-  int minx;
-  int maxx;
-  int miny;
-  int maxy;
+  int[2] sDim;   /// rendered surface width, height  (includes SDF spread)
+  int[2] aDim;   /// atlas x and y blit position
+  int[2] mmX;    /// min & max X
+  int[2] mmY;    /// min & max Y
   int advance;
-  int atlasloc;
-  int atlasY;   // actual pixel Y where this glyph was blitted
 
-  @property @nogc int gX() nothrow { return(advance - minx); }
-  @property @nogc int gY() nothrow { return(maxy - miny); }
+  @property @nogc int gX() nothrow { return(advance - mmX[0]); }
+  @property @nogc int gY() nothrow { return(mmY[1] - mmY[0]); }
 }
 
 /** The GlyphAtlas structure holds links to the TTF_Font, Glyphs, Texture and the atlas */
@@ -48,23 +44,20 @@ struct GlyphAtlas {
   }
 
   /** Glyph texture X postion */
-  @property float tX(Glyph glyph) { 
-    return(glyph.atlasloc / cast(float)(texture.width));
-  }
-
+  @property float tX(Glyph glyph) { return(glyph.aDim[0] / cast(float)(texture.width)); }
   /** Glyph texture Y postion */
-  @property float tY(Glyph glyph) { return(glyph.atlasY / cast(float)(texture.height)); }
-
+  @property float tY(Glyph glyph) { return(glyph.aDim[1] / cast(float)(texture.height)); }
+  /** Glyph texture X extent (UV width) */
+  @property float tXo(Glyph glyph) { return(glyph.sDim[0] / cast(float)(texture.width)); }
+  /** Glyph texture Y extent (UV height) */
+  @property float tYo(Glyph glyph) { return(glyph.sDim[1] / cast(float)(texture.height)); }
   /** X postion of the glyph, when on column col */
-  @property float pX(Glyph glyph, size_t col) {
-    return(cast(float)(col) * glyph.advance + glyph.minx);
-  }
-
+  @property float pX(Glyph glyph, size_t col) { return(cast(float)(col) * glyph.advance + glyph.mmX[0]); }
   /** Y postion of the glyph, when on line[0] out of line[1] */
-  @property float pY(Glyph glyph, size_t[2] line) {
-    return(cast(float)(line[1] - line[0]) * this.lineHeight + (this.ascent - glyph.maxy));
-  }
-
+  @property float pY(Glyph glyph, size_t[2] line) { return(cast(float)(line[1] - line[0]) * this.lineHeight + (this.ascent - glyph.mmY[1])); }
+  /** Scaled quad width/height for a glyph at the given glyphscale */
+  @property float qW(Glyph glyph, float glyphscale) { return(glyph.sDim[0] / glyphscale); }
+  @property float qH(Glyph glyph, float glyphscale) { return(glyph.sDim[1] / glyphscale); }
   alias texture this;
 }
 
@@ -101,7 +94,7 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
   while (c <= to) {
     if (isValidDchar(c) && TTF_FontHasGlyph(app.glyphAtlas.ttf, cast(uint)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
       Glyph glyph = Glyph();
-      TTF_GetGlyphMetrics(app.glyphAtlas.ttf, cast(uint)(c), &glyph.minx, &glyph.maxx, &glyph.miny, &glyph.maxy, &glyph.advance);
+      TTF_GetGlyphMetrics(app.glyphAtlas.ttf, cast(uint)(c), &glyph.mmX[0], &glyph.mmX[1], &glyph.mmY[0], &glyph.mmY[1], &glyph.advance);
       auto gs = TTF_RenderGlyph_Blended(app.glyphAtlas.ttf, cast(uint)(c), SDL_Color(255, 255, 255, 255));
       if (!gs) { c++; continue; }
       if (atlasloc + gs.w >= app.glyphAtlas.width) { i = atlasloc = 0; penY += rowMaxH; rowMaxH = 0; }
@@ -112,9 +105,9 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       }
       if (gs.h > rowMaxH) rowMaxH = gs.h;
       if (app.glyphAtlas.advance < glyph.advance) app.glyphAtlas.advance = glyph.advance;
-      if (app.glyphAtlas.miny > glyph.miny) app.glyphAtlas.miny = glyph.miny;
-      glyph.atlasloc = atlasloc; glyph.atlasY = penY;
-      glyph.w = gs.w; glyph.h = gs.h;
+      if (app.glyphAtlas.miny > glyph.mmY[0]) app.glyphAtlas.miny = glyph.mmY[0];
+      glyph.aDim = [atlasloc, penY];
+      glyph.sDim = [gs.w, gs.h];
       app.glyphAtlas.glyphs[c] = glyph;
       app.glyphAtlas.atlas ~= c;
       SDL_Rect dst = { atlasloc, penY, gs.w, gs.h };
