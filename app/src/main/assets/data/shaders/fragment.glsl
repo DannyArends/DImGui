@@ -36,7 +36,14 @@ void main() {
     }else { baseColor *= texSample.rgb; }
     if(ALPHA_TEST && alpha < 0.01f) discard;
   }
-  if (ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.01f) discard;
+  if (ALPHA_TEST && mat.oid >= 0){
+    float t = texture(textureSampler[mat.oid], fragTexCoord).a;
+    if (SDF) {
+      float aa = fwidth(t) * 0.5;
+      alpha = smoothstep(0.5 - aa, 0.5 + aa, t);
+    }
+    if(alpha < 0.01f) discard;
+  }
 
   if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, alpha); return; }
 
