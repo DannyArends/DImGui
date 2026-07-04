@@ -15,7 +15,7 @@ import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
-import jobs : Job, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
+import jobs : Job, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
 import resources : isFood, toClass;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
@@ -23,6 +23,7 @@ import sfx : play;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
 import timing : timed;
 import lights : addLight, torchLight, TORCH_HEIGHT;
+import water : findNearestWater;
 
 uint nextDwarfUID = 1;
 
@@ -232,6 +233,19 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
     if(d.carrying.any!(id => app.world.drops.resourceType(id).isFood)) { app.dispatchJob(d, eatJob()); return true; }
     auto food = app.world.findFreeFood(d.tile);
     if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food).toClass)); return true; }
+  }
+  // Thirst
+  if(d.needs[Need.Thirst] >= 0.6f) {
+    bool hasCup = d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup
+                                        || app.world.drops.resourceType(id) == ResourceType.WaterCup);
+    int[3] standAt;
+    bool water = app.world.findNearestWater(d.tile, standAt) != noTile;
+    if(hasCup || water) {
+      auto job = drinkJob();
+      if(!hasCup) job.prereqs = [craftJob("CupMaking")] ~ job.prereqs;
+      app.dispatchJob(d, job);
+      return true;
+    }
   }
   // Rest
   if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return true; }

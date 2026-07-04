@@ -12,9 +12,10 @@ import reactions : reactionFor;
 import resources : isFood, foodValue, hasClass, toClass, toType;
 import sfx : play;
 import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
-import tile : setTile, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, tileToWorld, getSuccessors, worldToTile;
+import tile : setTile, setWater, getWater, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, tileToWorld, getSuccessors, worldToTile;
 import timing : timed;
 import vector : manhattan, manhattan2D;
+import water : findNearestWater;
 
 enum JobState { Pending, Satisfied, Unavailable }                     /// Job states
 enum Reach { Adjacent, OnTile, AdjacentOrOnTile, AdjacentOrAbove }    /// How a job can be reached
@@ -310,6 +311,38 @@ Job eatJob() {
         app.consumeCarried(d, id);
         d.hunger = d.hunger > restore ? d.hunger - restore : 0.0f;
         app.play("DM-CGS-16", 0.4f);
+        app.world.drops.dirty = true;
+      });
+    },
+    onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
+  );
+}
+
+Job drinkJob() {
+  // craft a cup first only if the dwarf has none (added at dispatch, see below)
+  return Job("Drinking", noTile, ResourceClass.None, [], true, reach: Reach.Adjacent,
+    onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
+      int[3] standAt;
+      int[3] cell = app.world.findNearestWater(d.tile, standAt);
+      if(cell == noTile) { j.state = JobState.Unavailable; return; }
+      j.targetTile = cell;                 // path to adjacent to the water cell (Reach.Adjacent)
+    },
+    onArrive: (ref GameApp app, ref Dwarf d) {
+      app.progressJob(d, 0.25f, () {
+        // fill: WoodCup -> WaterCup, lower the water level by one
+        auto cup = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
+        int[3] w = d.currentJob.targetTile;
+        if(!cup.empty && w != noTile) {
+          app.world.setWater(w, cast(ubyte)(app.world.getWater(w) - 1));
+          if(auto b = cup.front in app.world.drops) b.type = ResourceType.WaterCup;   // fill in place
+        }
+        // drink: WaterCup -> WoodCup, restore thirst
+        auto full = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
+        if(!full.empty) {
+          if(auto b = full.front in app.world.drops) b.type = ResourceType.WoodCup;    // empty it, keep the cup
+          d.thirst = 0.0f;
+          app.play("DM-CGS-16", 0.4f);
+        }
         app.world.drops.dirty = true;
       });
     },

@@ -184,6 +184,14 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   return false;
 }
 
+@nogc int[3] standableNeighbour(const World world, const int[3] tile) nothrow {
+  foreach(o; FACE_OFFSETS) {
+    int[3] n = [tile[0]+o[0], tile[1]+o[1], tile[2]+o[2]];
+    if(world.isStandable(n)) return n;
+  }
+  return noTile;
+}
+
 pure PathNode[] getSuccessors(T)(T wd, PathNode parent) {
   PathNode[] successors;
   auto pt = wd.worldToTile(parent.position);
