@@ -69,6 +69,6 @@ void main() {
   for (uint n = head[cid].head; n != NIL; n = indices[n].next) {
     surfaceColor += shadeLight(indices[n].light, baseColor, fragPosWorld, normalForLighting, useShadows);
   }
-  outColor = vec4(surfaceColor, alpha);
+  outColor = vec4(surfaceColor, SDF ? alpha : 1.0);
 }
 
