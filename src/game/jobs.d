@@ -318,32 +318,46 @@ Job eatJob() {
   );
 }
 
-Job drinkJob() {
-  // craft a cup first only if the dwarf has none (added at dispatch, see below)
-  return Job("Drinking", noTile, ResourceClass.None, [], true, reach: Reach.Adjacent,
+Job fillCupJob() {
+  return Job("FillCup", noTile, ResourceClass.None, [], true, reach: Reach.Adjacent,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
+      // need a WoodCup to fill; else this step is impossible
+      if(!d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup)) { j.state = JobState.Unavailable; return; }
       int[3] standAt;
       int[3] cell = app.world.findNearestWater(d.tile, standAt);
       if(cell == noTile) { j.state = JobState.Unavailable; return; }
-      j.targetTile = cell;                 // path to adjacent to the water cell (Reach.Adjacent)
+      j.targetTile = cell;
     },
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () {
-        // fill: WoodCup -> WaterCup, lower the water level by one
-        auto cup = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
         int[3] w = d.currentJob.targetTile;
-        if(!cup.empty && w != noTile) {
+        auto cup = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
+        if(!cup.empty && app.world.getWater(w) > 0) {
           app.world.setWater(w, cast(ubyte)(app.world.getWater(w) - 1));
-          if(auto b = cup.front in app.world.drops) b.type = ResourceType.WaterCup;   // fill in place
-        }
-        // drink: WaterCup -> WoodCup, restore thirst
-        auto full = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
-        if(!full.empty) {
-          if(auto b = full.front in app.world.drops) b.type = ResourceType.WoodCup;    // empty it, keep the cup
-          d.thirst = 0.0f;
-          app.play("DM-CGS-16", 0.4f);
+          if(auto b = cup.front in app.world.drops) b.type = ResourceType.WaterCup;
         }
         app.world.drops.dirty = true;
+      });
+    },
+    onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
+  );
+}
+
+Job drinkJob() {
+  return Job("Drinking", noTile, ResourceClass.None, [], true, reach: Reach.OnTile,
+    onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
+      if(!d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup)) { j.state = JobState.Unavailable; return; }
+      j.targetTile = d.tile; // drink where standing
+    },
+    onArrive: (ref GameApp app, ref Dwarf d) {
+      app.progressJob(d, 0.5f, () {
+        auto full = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
+        if(!full.empty) {
+          if(auto b = full.front in app.world.drops) b.type = ResourceType.WoodCup;   // empty, keep cup
+          d.thirst = 0.0f;
+          app.play("DM-CGS-16", 0.4f);
+          app.world.drops.dirty = true;
+        }
       });
     },
     onFail: (ref GameApp app, ref Dwarf d) { d.completeSubJob(); }
