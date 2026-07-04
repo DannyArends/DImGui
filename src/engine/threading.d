@@ -63,7 +63,7 @@ struct Threading {
 }
 
 /** Spawn the worker pool and queue all asset/texture paths for background loading */
-void initializeAsync(ref App app, bool preLoadAssimp = false, uint numWorkers = 16){
+void initializeAsync(ref App app, bool preLoadAssimp = true, uint numWorkers = 16){
   if(preLoadAssimp) app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
