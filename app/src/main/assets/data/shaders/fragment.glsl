@@ -29,6 +29,12 @@ void main() {
 
   if (!(TOPOLOGY == 1) && mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
+    if (SDF) {
+      float aa = fwidth(texSample.a);
+      float alpha = smoothstep(0.5 - aa, 0.5 + aa, texSample.a);
+      if (alpha < 0.05f) discard;
+      outColor = vec4(baseColor, alpha); return;
+    }
     if(ALPHA_TEST && texSample.a < 0.2f) discard;
     baseColor *= texSample.rgb;
   }

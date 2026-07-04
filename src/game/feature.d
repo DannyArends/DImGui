@@ -79,7 +79,7 @@ struct Feature {
 private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
 
 /** Wrap a mesh key in a delegate — a lazy key provider for Geometry.initInstanced. */
-private string delegate() captureKey(string k) { return () => k; }
+private string delegate() nothrow captureKey(string k) { return () => k; }
 
 /** Resolve a raw resourceType string to its enum, treating "None" as ResourceType.None. */
 private ResourceType resType(string s) { return s == "None" ? ResourceType.None : s.to!ResourceType; }
