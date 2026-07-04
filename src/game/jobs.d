@@ -18,7 +18,7 @@ import vector : manhattan, manhattan2D;
 
 enum JobState { Pending, Satisfied, Unavailable }                     /// Job states
 enum Reach { Adjacent, OnTile, AdjacentOrOnTile, AdjacentOrAbove }    /// How a job can be reached
-enum Need { Hunger, Rest }                                            /// Current needs
+enum Need { Hunger, Thirst, Rest }                                    /// Current needs
 
 struct Job {
   string name;                                      /// Job name

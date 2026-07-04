@@ -41,7 +41,7 @@ struct InventorySlot {
   }
 }
 
-static immutable float[Need.max + 1] decay = [0.00040f, 0.00018f];  /// Need decay per tick [Hunger, Rest]
+static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 
 struct DwarfData {
   uint uid = 0;                                 /// Unique ID
@@ -55,6 +55,8 @@ struct DwarfData {
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
   @nogc @property float hunger() const { return needs[Need.Hunger]; }
   @nogc @property void hunger(float v) { needs[Need.Hunger] = v; }
+  @nogc @property float thirst() const { return needs[Need.Thirst]; }
+  @nogc @property void thirst(float v) { needs[Need.Thirst] = v; }
   @nogc @property float mood() const { return 1.0f - needs[].maxElement; }
   @property uint[] carrying() const {
     uint[] ids;
