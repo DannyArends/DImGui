@@ -119,9 +119,9 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
     depthCompareOp: VK_COMPARE_OP_LESS,
   };
 
-
-  static foreach(i; [Specialization(true,true), Specialization(true,false),
-                     Specialization(false,true), Specialization(false,false)]) {{
+  static foreach(i; [Specialization(true,true,false), Specialization(true,false,false),
+                     Specialization(false,true,false), Specialization(false,false,false),
+                     Specialization(true,true,true), Specialization(true,false,true)]) {{
     ShaderStage stages = createStageInfo(app.shaders, topology, i);
     VkGraphicsPipelineCreateInfo pipelineInfo = {
       sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
