@@ -77,7 +77,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
     foreach(obj; app.objects) {
       if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
       auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF);
-      pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d]", obj.geometry(), topology, s.alpha, s.instanced), Colors.lightgray);
+      pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf), Colors.lightgray);
       if(first || last != s) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].pipeline(s)); last = s; first = false; }
       app.draw(obj, cmd);
       popLabel(cmd);
