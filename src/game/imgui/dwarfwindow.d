@@ -78,7 +78,11 @@ void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
   if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followDwarf(d.uid); }
   text("Tile: %s", d.tile);
   text("Hunger: %.0f", d.hunger * 100.0f);
+  igSameLine(0, 5);
+  if(igButton(cstr("Make hungry##dwf_hunger"), ImVec2(0, 0))) { d.hunger = 0.8f; }
   text("Thirst: %.0f", d.thirst * 100.0f);
+  igSameLine(0, 5);
+  if(igButton(cstr("Make thirsty##dwf_thirst"), ImVec2(0, 0))) { d.thirst = 0.8f; }
   text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
   igSeparator();
   igText("Inventory:");

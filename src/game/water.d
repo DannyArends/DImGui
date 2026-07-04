@@ -44,7 +44,7 @@ private @nogc int rdWater(const World world, const WaterNext next, const int[3] 
 int[3] findNearestWater(const World world, const int[3] from, out int[3] standAt) {
   int[3] bestCell = noTile; standAt = noTile; float bestDist = float.max;
   foreach(coord, ch; world.chunks) {
-    foreach(idx; ch.active) {
+    foreach(idx; ch.wetCells) {
       if(ch.waterLevel[idx] == 0) continue;
       int[3] wc = world.worldCoord(coord, world.tileCoord(idx));
       // stand on the water tile itself if standable, else an adjacent standable tile
