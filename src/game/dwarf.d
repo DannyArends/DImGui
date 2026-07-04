@@ -94,7 +94,7 @@ struct DwarfData {
   @nogc void retype(uint blockID, ResourceType type) nothrow {
     foreach(ref s; inventory) {
       if(s.empty) continue;
-      if(s.resourceIDs[0 .. s.count].canFind(blockID)) { s.type = type; return; }
+      if(s.resourceIDs[0 .. s.count].canFind(blockID)) { s.type = type; return; } // This only works for stacksize == 1
     }
   }
 

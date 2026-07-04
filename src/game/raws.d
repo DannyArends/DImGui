@@ -17,6 +17,22 @@ immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
 immutable ResourceT[] resourceTable = parseResources(import("data/raws/materials.txt"));
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 
+/** TODO: split materials and items into separate concepts (template + material composition).
+ * Currently materials.txt conflates three orthogonal things behind [CLASS:Item] tags:
+ *   - Material: the substance (Stone, Iron, Wood, Water) - mesh/texture/classes, hardness, value, weight.
+ *   - Item template: the shape/type (Axe, Sword, Cup) - accepted material classes, stack, durability, tool fn.
+ * A concrete item = (template x material): "StoneAxe" is Axe made of Stone, IronAxe is Axe of Iron -
+ * NOT a hand-authored material. Reactions output a template and inherit the material from an input
+ * (e.g. AxeMaking: Flint + Wood -> Axe, axe material = the flint's material), so one Axe template +
+ * one reaction yields StoneAxe/IronAxe/etc. without a combinatorial list of hand-written entries.
+ *
+ * We want to represent a concrete item as a composite (template, material) stored on the block itself -
+ * two fields (ItemTemplate template, Material material), NOT a generated per-combo type. Name
+ * ("Stone Axe"), texture/tint, weight, value and quality are all computed from the (template, material)
+ * pair at use time. Adding a new material (e.g. Iron) then makes every template craftable from it for
+ * free, with zero new entries. This means code currently keyed on a single ResourceType (inventory,
+ * textures, reactions, rendering) must move to inspecting the pair. */
+
 /** One terrain height band: an upper threshold and the resources eligible at that height. */
 struct HeightBand { float threshold; ResourceType[] results; }
 
