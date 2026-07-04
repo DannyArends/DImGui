@@ -34,6 +34,7 @@ struct GlyphAtlas {
   TTF_Font* ttf;        /// Pointer to the loaded TTF_Font
   ubyte pointsize;      /// Font pointsize size
   int lineHeight;       /// Full line height (ascent + descent)
+  int rowPitch;         /// Atlas row height = lineHeight + 2*SDF spread (uniform, observed once)
   Glyph[dchar] glyphs;  /// Associative array couples Glyph and dchar
   string atlas;         /// UTF-8 string of chars stored in the atlas
   Texture texture;      /// Holds the Texture structure containing the SDL surface and Vulkan buffers
@@ -53,9 +54,7 @@ struct GlyphAtlas {
   }
 
   /** Glyph texture Y postion */
-  @property float tY(Glyph glyph) {
-    return((this.lineHeight * glyph.atlasrow) / cast(float)(texture.height));
-  }
+  @property float tY(Glyph glyph) { return((this.rowPitch * glyph.atlasrow) / cast(float)(texture.height)); }
 
   /** X postion of the glyph, when on column col */
   @property float pX(Glyph glyph, size_t col) {
@@ -106,19 +105,20 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       auto gs = TTF_RenderGlyph_Blended(app.glyphAtlas.ttf, cast(uint)(c), SDL_Color(255, 255, 255, 255));
       if (!gs) { c++; continue; }
       if (atlasloc + gs.w >= app.glyphAtlas.width) { i = atlasloc = 0; atlasrow++; }
-      if (atlasrow * app.glyphAtlas.lineHeight + app.glyphAtlas.lineHeight > app.glyphAtlas.height) {
+      if (atlasrow * app.glyphAtlas.rowPitch + app.glyphAtlas.rowPitch > app.glyphAtlas.height) {
         SDL_DestroySurface(gs);
         SDL_Log("WARNING: GlyphAtlas overflow at (and after) character %d", c);
         break;
       }
       if (app.glyphAtlas.advance < glyph.advance) app.glyphAtlas.advance = glyph.advance;
       if (app.glyphAtlas.miny > glyph.miny) app.glyphAtlas.miny = glyph.miny;
+      if (app.glyphAtlas.rowPitch == 0) app.glyphAtlas.rowPitch = app.glyphAtlas.lineHeight + (gs.w - (glyph.advance - glyph.minx));
       glyph.atlasloc = atlasloc; glyph.atlasrow = atlasrow;
       glyph.w = gs.w; glyph.h = gs.h;
       SDL_Log(cstr("%c %s", c, glyph));
       app.glyphAtlas.glyphs[c] = glyph;
       app.glyphAtlas.atlas ~= c;
-      SDL_Rect dst = { atlasloc, atlasrow * app.glyphAtlas.lineHeight, gs.w, gs.h };
+      SDL_Rect dst = { atlasloc, atlasrow * app.glyphAtlas.rowPitch, gs.w, gs.h };
       SDL_BlitSurface(gs, null, app.glyphAtlas.surface, &dst);
       atlasloc += gs.w;
       SDL_DestroySurface(gs);
