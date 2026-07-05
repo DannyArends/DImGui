@@ -1,7 +1,13 @@
+/** 
+ * Authors: Danny Arends
+ * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
+ */
+
 import engine;
 
 import geometry : opacity;
 import matrix : translate, translateScale, multiply, rotate;
+import vector : vSub;
 
 /** Shared instanced text: one unit quad mesh, reused by every glyph via per-instance transform + UV remap.
  * All world text shares this one object, so it all draws in a single draw call. */
@@ -20,12 +26,20 @@ class Text : Geometry {
   }
 }
 
-/** All floating 3D world text: the shared geometry plus per-entry bookkeeping (original string + instance
- * range) so an entry can be looked up, moved, or removed later by its index. */
+struct TextInfo {
+  string data;
+  float[3] pos;
+  float[3] rot;
+  float scale;
+  float[4] color;
+  size_t[2] range;
+  alias data this;
+}
+
+/** All floating 3D world text */
 struct WorldText {
-  Text text;                      /// The single shared instanced Text geometry
-  string[] texts;                 /// Original string per placed entry
-  size_t[2][] ranges;             /// [start, count) instance range per placed entry, parallel to texts
+  Text text;                        /// The single shared instanced Text geometry
+  TextInfo[] texts;                 /// One self-contained record per placed entry
 }
 
 /** Ensure the single shared world-text object exists */
@@ -35,15 +49,15 @@ void ensureWorldText(ref App app) {
   app.objects ~= app.worldText.text;
 }
 
-/** Compute the per-glyph DrawInstances for a (possibly multi-line) string, laid out at pos/rot/scale */
-private DrawInstance[] layoutText(ref App app, string value, float[3] pos, float scale, float[4] color, float[3] rot) {
+/** Compute the per-glyph DrawInstances for a TextInfo entry (its own pos/rot/scale/color) */
+private DrawInstance[] layoutText(ref App app, TextInfo info) {
   auto atlas = app.glyphAtlas;
-  float glyphscale = (1.0f/scale) * atlas.pointsize;
-  size_t[2] line = [1, value.split("\n").length];
+  float glyphscale = (1.0f/info.scale) * atlas.pointsize;
+  size_t[2] line = [1, info.split("\n").length];
   uint col = 0;
-  Matrix labelTransform = translate(pos).multiply(rotate(rot));
+  Matrix labelTransform = translate(info.pos).multiply(rotate(info.rot));
   DrawInstance[] insts;
-  foreach(dchar c; value.array) {
+  foreach(dchar c; info.array) {
     if(c == '\n'){ line[0]++; col = 0; continue; }
     if(c == ' ') { col++; continue; }
     auto g = atlas.getGlyph(c);
@@ -53,38 +67,48 @@ private DrawInstance[] layoutText(ref App app, string value, float[3] pos, float
     float h = atlas.qH(g, glyphscale);
     Matrix m = labelTransform.multiply(translateScale([pX, pY, 0.0f], [w, h, 1.0f]));
     float[4] uv = [atlas.tX(g), atlas.tY(g) + atlas.tYo(g), atlas.tXo(g), -atlas.tYo(g)];
-    insts ~= DrawInstance(m, uv, color);
+    insts ~= DrawInstance(m, uv, info.color);
     col++;
   }
   return insts;
 }
 
-/** Place a (possibly multi-line) piece of world text. Returns its index into app.worldText.texts/ranges,
- * so callers can look it up later to move or remove it. All world text shares one draw call. */
+/** Place a (possibly multi-line) piece of world text. */
 size_t addWorldText(ref App app, string value, float[3] pos, float[3] rot, float scale = 1.0f, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
   app.ensureWorldText();
-  auto range = app.worldText.text.addInstances(app.layoutText(value, pos, scale, color, rot));
+  auto info = TextInfo(value, pos, rot, scale, color);
+  info.range = app.worldText.text.addInstances(app.layoutText(info));
   app.worldText.text.syncInstances();
-  app.worldText.texts ~= value;
-  app.worldText.ranges ~= range;
+  app.worldText.texts ~= info;
   return app.worldText.texts.length - 1;
 }
 
-void removeWorldText(ref App app, size_t i) {
+/** Move a piece of world text to a new position, keeping its rotation/scale/local glyph layout intact. */
+void moveWorldText(ref App app, size_t i, float[3] pos) {
   if(i >= app.worldText.texts.length) return;
-  size_t start = app.worldText.ranges[i][0];
-  size_t count = app.worldText.ranges[i][1];
+  float[3] delta = pos.vSub(app.worldText.texts[i].pos);
+  auto range = app.worldText.texts[i].range;
+  foreach(ref inst; app.worldText.text.instances[range[0] .. range[0]+range[1]]) {
+    inst.matrix = translate(delta).multiply(inst.matrix);
+  }
+  app.worldText.texts[i].pos = pos;
+  app.worldText.text.syncInstances();
+}
+
+/** Remove a piece of world text placed via addWorldText */
+size_t removeWorldText(ref App app, size_t i) {
+  if(i >= app.worldText.texts.length) return size_t.max;
+  size_t start = app.worldText.texts[i].range[0];
+  size_t count = app.worldText.texts[i].range[1];
 
   // Cut the freed range out of the shared instance buffer, and shift every other entry's start down to match
   app.worldText.text.instances = app.worldText.text.instances[0 .. start] ~ app.worldText.text.instances[start+count .. $];
-  foreach(ref r; app.worldText.ranges) { if(r[0] > start) r[0] -= count; }
+  foreach(ref t; app.worldText.texts) { if(t.range[0] > start) t.range[0] -= count; }
   app.worldText.text.syncInstances();
 
-  // Swap-remove the bookkeeping entry itself, same trick as removeLight — only the last index (if moved) changes identity
+  // Swap-remove the entry itself, same trick as removeLight — only the last index (if moved) changes identity
   size_t last = app.worldText.texts.length - 1;
-  if(i != last) {
-    app.worldText.texts[i] = app.worldText.texts[last];
-    app.worldText.ranges[i] = app.worldText.ranges[last];
-  }
-  app.worldText.texts.length = app.worldText.ranges.length = last;
+  if(i != last) { app.worldText.texts[i] = app.worldText.texts[last]; }
+  app.worldText.texts.length = last;
+  return (i != last) ? last : size_t.max;
 }
