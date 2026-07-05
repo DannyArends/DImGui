@@ -8,7 +8,7 @@ import engine;
 import buffer : createBuffer, copyBufferToImage, cleanup;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
-import images : nameImageBuffer, generateMipmaps, imageSize, createImage, cleanup, transitionImageLayout;
+import images : nameImageBuffer, generateMipmaps, imageSize, createImage, cleanup, transitionImageLayout, createNamedImage;
 import io : dir;
 import validation : nameVulkanObject;
 import views : createImageView, createLayerViews;
@@ -203,6 +203,31 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUA
   app.createLayerViews(texture, format, VK_IMAGE_ASPECT_COLOR_BIT, texture.mipLevels);
   app.nameImageBuffer(texture, texture.path);
   app.registerTexture(texture);
+}
+
+/** Create a blank, camera-sized texture that a compute shader can write into (no pixel data — pure GPU storage) */
+void createComputeTexture(ref App app, Descriptor descriptor) {
+  VkImageUsageFlags usage;
+  usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+  usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+  usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+  Texture texture = Texture(path : descriptor.name, width: app.camera.width, height: app.camera.height);
+
+  app.createNamedImage(texture, texture.width, texture.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
+                        VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
+
+  auto cmd = app.beginSingleTimeCommands(app.commandPool);
+  app.transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  app.endSingleTimeCommands(cmd, app.queue);
+
+  if(app.verbose) SDL_Log("Create compute texture %p, view: %p", texture.image, texture.view);
+  app.registerTexture(texture);
+
+  app.textures ~= texture;
+  app.mainDeletionQueue.add((){ app.cleanup(texture); });
 }
 
 /** 'Register' a texture in the ImGui DescriptorSet */

@@ -6,9 +6,8 @@
 import engine;
 
 import descriptor : createDSPool, DescriptorTarget;
-import compute : createStorageImage;
 import shadow : MAX_SHADOW_MAPS;
-import textures : MAX_TEXTURES;
+import textures : MAX_TEXTURES, createComputeTexture;
 import uniforms : createUBO;
 
 enum uint[4] LIGHT_GRID = [16, 9, 24, 0];
@@ -153,7 +152,7 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
   foreach(ref shader; shaders) {
     foreach(ref d; shader.descriptors) {
       if(auto p = d.base in app.providers) { p.create(app, d); continue; }
-      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ app.createStorageImage(d);
+      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ app.createComputeTexture(d);
       }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){ SDL_Log("reflect: no provider for SSBO %s", toStringz(d.base));
       }else if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){ SDL_Log("reflect: no provider for UBO %s", toStringz(d.base)); }
     }
