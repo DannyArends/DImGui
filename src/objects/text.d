@@ -28,10 +28,10 @@ class Text : Geometry {
 
 struct TextInfo {
   string data;
-  float[3] pos;
-  float[3] rot;
-  float scale;
-  float[4] color;
+  float[3] pos = [0.0f, 0.0f, 0.0f];
+  float[3] rot = [0.0f, 0.0f, 0.0f];
+  float scale = 1.0f;
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
   size_t[2] range;
   alias data this;
 }
@@ -53,11 +53,11 @@ void ensureWorldText(ref App app) {
 private DrawInstance[] layoutText(ref App app, TextInfo info) {
   auto atlas = app.glyphAtlas;
   float glyphscale = (1.0f/info.scale) * atlas.pointsize;
-  size_t[2] line = [1, info.split("\n").length];
+  size_t[2] line = [1, info.data.split("\n").length];
   uint col = 0;
   Matrix labelTransform = translate(info.pos).multiply(rotate(info.rot));
   DrawInstance[] insts;
-  foreach(dchar c; info.array) {
+  foreach(dchar c; info.data.array) {
     if(c == '\n'){ line[0]++; col = 0; continue; }
     if(c == ' ') { col++; continue; }
     auto g = atlas.getGlyph(c);
