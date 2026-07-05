@@ -205,8 +205,8 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
 
 enum stepSpeed = 5.0f;    // base step rate
 enum hopHeight = 2.5f;    // peak of the hop
-enum nameHeight = 1.3f;   // name tag height above visualPos
-enum nameScale = 0.2f;    // name tag glyph scale
+enum nameHeight = 0.5f;   // name tag height above visualPos
+enum nameScale = 0.4f;    // name tag glyph scale
 
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
