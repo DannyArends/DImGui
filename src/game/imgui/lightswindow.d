@@ -5,12 +5,11 @@
 
 import game;
 
-import imgui : iconText;
+import imgui : iconText, iconTextStr;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
-import widgets : colValue, setting, text, sliderFloat3, infoRow;
+import widgets : colValue, setting, text, sliderFloat3, infoRow, labelCol;
 
-/** Show the GUI window which allows us to manipulate lighting 
- *  TODO: lightswindow rows -> labelCol/infoRow */
+/** Show the GUI window which allows us to manipulate lighting */
 void showLightsContent(ref GameApp app, uint font = 0) {
   auto lightsBefore = app.lights.lights.dup;
 
@@ -35,29 +34,23 @@ void showLightsContent(ref GameApp app, uint font = 0) {
     igSameLine(0, 5);
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB, format("Light %d", i)), 0)) {
       if(igBeginTable(cstr("Light_Tbl_%d", i), 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
-        igTableNextColumn(); igText(iconText("Position", cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT));
-        igTableNextColumn();
-          sliderFloat3(["##pX","##pY","##pZ"], &light.position[0], &light.position[1], &light.position[2], 
-                       &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
-        igTableNextColumn(); igText(iconText("Shadow", cast(string)ICON_FA_MOON));
-        igTableNextColumn();
-        text("%s  %dx%d", light.cull[1] >= 0.0f ? "CASTING" : "evicted",
-                          i < app.shadows.images.length ? app.shadows.images[i].extent.width : 0,
-                          i < app.shadows.images.length ? app.shadows.images[i].extent.height : 0);
-        igTableNextColumn(); igText(iconText("Intensity", cast(string)ICON_FA_BOLT));
-        igTableNextColumn();
-          sliderFloat3(["##I0","##I1","##I2"], &light.intensity[0], &light.intensity[1], &light.intensity[2], 
-                       &app.gui.col[0], &app.gui.col[1], 75, app.gui.uiscale);
+        labelCol(iconText("Position", cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT));
+        sliderFloat3(["##pX","##pY","##pZ"], &light.position[0], &light.position[1], &light.position[2], 
+                     &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
+        infoRow(iconTextStr("Shadow", cast(string)ICON_FA_MOON), "%s  %dx%d",
+                light.cull[1] >= 0.0f ? "CASTING" : "evicted",
+                i < app.shadows.images.length ? app.shadows.images[i].extent.width : 0,
+                i < app.shadows.images.length ? app.shadows.images[i].extent.height : 0);
+        labelCol(iconText("Intensity", cast(string)ICON_FA_BOLT));
+        sliderFloat3(["##I0","##I1","##I2"], &light.intensity[0], &light.intensity[1], &light.intensity[2], 
+                     &app.gui.col[0], &app.gui.col[1], 75, app.gui.uiscale);
 
+        labelCol(iconText("Direction", cast(string)ICON_FA_LOCATION_ARROW));
+        sliderFloat3(["##D0","##D1","##D2"], &light.direction[0], &light.direction[1], &light.direction[2], 
+                     &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
 
-        igTableNextColumn(); igText(iconText("Direction", cast(string)ICON_FA_LOCATION_ARROW));
-        igTableNextColumn();
-          sliderFloat3(["##D0","##D1","##D2"], &light.direction[0], &light.direction[1], &light.direction[2], 
-                       &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
-
-        igTableNextColumn(); igText(iconText("Cone", cast(string)ICON_FA_EXPAND));
-        igTableNextColumn();
-          app.colValue("##A0", &light.properties[2], app.gui.cone[0], app.gui.cone[1]);
+        labelCol(iconText("Cone", cast(string)ICON_FA_EXPAND));
+        app.colValue("##A0", &light.properties[2], app.gui.cone[0], app.gui.cone[1]);
         igEndTable();
       }
       igTreePop();
