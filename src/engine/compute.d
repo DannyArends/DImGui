@@ -5,12 +5,10 @@
 
 import engine;
 
-import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
+import commands : createCommandBuffer;
 import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorData;
-import images : cleanup, transitionImageLayout, createNamedImage;
 import shaders : loadShaders, createStageInfo;
 import sync : insertFillBarrier;
-import textures : registerTexture;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import vector : vCeilDiv;
 
@@ -103,31 +101,6 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.compute.commands[shader.path][i]);
     }
   });
-}
-
-void createStorageImage(ref App app, Descriptor descriptor){
-  VkImageUsageFlags usage;
-  usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-  usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-  usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-  usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-  usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-  Texture texture = Texture(path : descriptor.name, width: app.camera.width, height: app.camera.height);
-
-  app.createNamedImage(texture, texture.width, texture.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
-                        VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
-
-  auto cmd = app.beginSingleTimeCommands(app.commandPool);
-  app.transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  app.endSingleTimeCommands(cmd, app.queue);
-
-  if(app.verbose) SDL_Log("Create compute image %p, view: %p", texture.image, texture.view);
-  app.registerTexture(texture); // Register texture with ImGui
-
-  // Update the Texture Array for rendering
-  app.textures ~= texture;
-  app.mainDeletionQueue.add((){ app.cleanup(texture); });
 }
 
 /** recordComputeCommandBuffer: pure scaffold — begin/bind/dispatch/end. All per-shader behaviour lives in app.compute.passes[shader.path]. */
