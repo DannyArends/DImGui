@@ -55,6 +55,7 @@ struct DwarfData {
   char[64] last;                                /// Last name
   InventorySlot[32] inventory;                  /// Inventory
 
+  @property string firstname() { return cast(string)first[0..first.indexOf('\0')]; }
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
   @nogc @property float hunger() const { return needs[Need.Hunger]; }
   @nogc @property void hunger(float v) { needs[Need.Hunger] = v; }
@@ -207,7 +208,7 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
 enum stepSpeed = 5.0f;    // base step rate
 enum hopHeight = 2.5f;    // peak of the hop
 enum nameHeight = 0.8f;   // name tag height above visualPos
-enum nameScale = 0.4f;    // name tag glyph scale
+enum nameScale = 0.5f;    // name tag glyph scale
 
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
@@ -389,7 +390,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   app.world.dwarves.instances ~= inst;
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
-  d.nameLabel = app.addWorldText(d.name, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);
+  d.nameLabel = app.addWorldText(d.firstname, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);
   app.world.dwarves ~= d;
 }
 
