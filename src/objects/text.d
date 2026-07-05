@@ -69,3 +69,22 @@ size_t addWorldText(ref App app, string value, float[3] pos, float[3] rot, float
   app.worldText.ranges ~= range;
   return app.worldText.texts.length - 1;
 }
+
+void removeWorldText(ref App app, size_t i) {
+  if(i >= app.worldText.texts.length) return;
+  size_t start = app.worldText.ranges[i][0];
+  size_t count = app.worldText.ranges[i][1];
+
+  // Cut the freed range out of the shared instance buffer, and shift every other entry's start down to match
+  app.worldText.text.instances = app.worldText.text.instances[0 .. start] ~ app.worldText.text.instances[start+count .. $];
+  foreach(ref r; app.worldText.ranges) { if(r[0] > start) r[0] -= count; }
+  app.worldText.text.syncInstances();
+
+  // Swap-remove the bookkeeping entry itself, same trick as removeLight — only the last index (if moved) changes identity
+  size_t last = app.worldText.texts.length - 1;
+  if(i != last) {
+    app.worldText.texts[i] = app.worldText.texts[last];
+    app.worldText.ranges[i] = app.worldText.ranges[last];
+  }
+  app.worldText.texts.length = app.worldText.ranges.length = last;
+}
