@@ -35,6 +35,10 @@ struct TextInfo {
   size_t[2] range;
   bool billboard = false;
   alias data this;
+  
+  @property @nogc size_t start() nothrow { return(range[0]); }
+  @property @nogc size_t count() nothrow { return(range[0] + range[1]); }
+  @property @nogc size_t to() nothrow { return(range[0] + range[1]); }
 }
 
 /** All floating 3D world text */
@@ -92,8 +96,8 @@ size_t addWorldText(ref App app, string value, float[3] pos, float[3] rot, float
 void moveWorldText(ref App app, size_t i, float[3] pos) {
   if(i >= app.worldText.texts.length) return;
   float[3] delta = pos.vSub(app.worldText.texts[i].pos);
-  auto range = app.worldText.texts[i].range;
-  foreach(ref inst; app.worldText.text.instances[range[0] .. range[0]+range[1]]) {
+  auto info = app.worldText.texts[i];
+  foreach(ref inst; app.worldText.text.instances[info.start() .. info.to()]) {
     inst.matrix = translate(delta).multiply(inst.matrix);
   }
   app.worldText.texts[i].pos = pos;
@@ -103,12 +107,11 @@ void moveWorldText(ref App app, size_t i, float[3] pos) {
 /** Remove a piece of world text placed via addWorldText */
 size_t removeWorldText(ref App app, size_t i) {
   if(i >= app.worldText.texts.length) return size_t.max;
-  size_t start = app.worldText.texts[i].range[0];
-  size_t count = app.worldText.texts[i].range[1];
+  auto info = app.worldText.texts[i];
 
   // Cut the freed range out of the shared instance buffer, and shift every other entry's start down to match
-  app.worldText.text.instances = app.worldText.text.instances[0 .. start] ~ app.worldText.text.instances[start+count .. $];
-  foreach(ref t; app.worldText.texts) { if(t.range[0] > start) t.range[0] -= count; }
+  app.worldText.text.instances = app.worldText.text.instances[0 .. info.start] ~ app.worldText.text.instances[info.to .. $];
+  foreach(ref t; app.worldText.texts) { if(t.range[0] > info.start) t.range[0] -= info.count; }
   app.worldText.text.syncInstances();
 
   // Swap-remove the entry itself, same trick as removeLight — only the last index (if moved) changes identity
@@ -128,7 +131,7 @@ void updateWorldTextBillboards(ref App app) {
     float deltaYaw = newYaw - info.rot[0];
     if(deltaYaw == 0.0f) continue;
     Matrix pivot = translate(info.pos).multiply(rotate([deltaYaw, 0.0f, 0.0f])).multiply(translate(info.pos.vMul(-1.0f)));
-    foreach(ref inst; app.worldText.text.instances[info.range[0] .. info.range[0]+info.range[1]]) {
+    foreach(ref inst; app.worldText.text.instances[info.start .. info.to]) {
       inst.matrix = pivot.multiply(inst.matrix);
     }
     info.rot[0] = newYaw;
