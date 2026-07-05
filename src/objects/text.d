@@ -59,23 +59,31 @@ private DrawInstance[] layoutText(ref App app, TextInfo info) {
   auto atlas = app.glyphAtlas;
   float glyphscale = (1.0f/info.scale) * atlas.pointsize;
   auto lines = info.data.split("\n");
+
+  // Real per-line pixel width: sum of each character's own advance, not an assumed uniform width
+  float[] lineWidths = new float[lines.length];
+  foreach(li, ln; lines) {
+    float w = 0;
+    foreach(dchar lc; ln.array) { w += (lc == ' ') ? atlas.advance : atlas.getGlyph(lc).advance; }
+    lineWidths[li] = w / glyphscale;
+  }
+
   size_t[2] line = [1, lines.length];
-  uint col = 0;
+  float penX = 0;
   Matrix labelTransform = translate(info.pos).multiply(rotate(info.rot));
   DrawInstance[] insts;
   foreach(dchar c; info.data.array) {
-    if(c == '\n'){ line[0]++; col = 0; continue; }
-    if(c == ' ') { col++; continue; }
+    if(c == '\n'){ line[0]++; penX = 0; continue; }
+    if(c == ' ') { penX += atlas.advance; continue; }
     auto g = atlas.getGlyph(c);
-    float lineWidth = lines[line[0]-1].length * atlas.advance / glyphscale;
-    float pX = atlas.pX(g, col) / glyphscale - lineWidth * 0.5f;
+    float pX = (penX + g.bearing[0]) / glyphscale - lineWidths[line[0]-1] * 0.5f;
     float pY = atlas.pY(g, line) / glyphscale;
     float w = atlas.qW(g, glyphscale);
     float h = atlas.qH(g, glyphscale);
     Matrix m = labelTransform.multiply(translateScale([pX, pY, 0.0f], [w, h, 1.0f]));
     float[4] uv = [atlas.tX(g), atlas.tY(g) + atlas.tYo(g), atlas.tXo(g), -atlas.tYo(g)];
     insts ~= DrawInstance(m, uv, info.color);
-    col++;
+    penX += g.advance;
   }
   return insts;
 }
