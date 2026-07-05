@@ -24,6 +24,7 @@ import text : addWorldText, moveWorldText, removeWorldText;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
 import timing : timed;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
+import vector : vAdd;
 import water : findNearestWater;
 
 uint nextDwarfUID = 1;
@@ -388,7 +389,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   app.world.dwarves.instances ~= inst;
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
-  d.nameLabel = app.addWorldText(d.name, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]], [0.0f, 0.0f, 0.0f], nameScale);
+  d.nameLabel = app.addWorldText(d.name, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);
   app.world.dwarves ~= d;
 }
 

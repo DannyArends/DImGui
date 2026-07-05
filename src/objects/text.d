@@ -6,7 +6,7 @@
 import engine;
 
 import geometry : opacity;
-import matrix : translate, translateScale, multiply, rotate;
+import matrix : degree, translate, translateScale, multiply, rotate;
 import vector : vSub;
 
 /** Shared instanced text: one unit quad mesh, reused by every glyph via per-instance transform + UV remap.
@@ -33,6 +33,7 @@ struct TextInfo {
   float scale = 1.0f;
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];
   size_t[2] range;
+  bool billboard = false;
   alias data this;
 }
 
@@ -76,9 +77,11 @@ private DrawInstance[] layoutText(ref App app, TextInfo info) {
 }
 
 /** Place a (possibly multi-line) piece of world text. */
-size_t addWorldText(ref App app, string value, float[3] pos, float[3] rot, float scale = 1.0f, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
+size_t addWorldText(ref App app, string value, float[3] pos, float[3] rot, float scale = 1.0f, 
+                    float[4] color = [1.0f, 1.0f, 1.0f, 1.0f], bool billboard = false) {
   app.ensureWorldText();
   auto info = TextInfo(value, pos, rot, scale, color);
+  info.billboard = billboard;
   info.range = app.worldText.text.addInstances(app.layoutText(info));
   app.worldText.text.syncInstances();
   app.worldText.texts ~= info;
@@ -113,4 +116,18 @@ size_t removeWorldText(ref App app, size_t i) {
   if(i != last) { app.worldText.texts[i] = app.worldText.texts[last]; }
   app.worldText.texts.length = last;
   return (i != last) ? last : size_t.max;
+}
+
+/** Re-lay-out every billboarded piece of world text so it yaws to face the current camera. */
+void updateWorldTextBillboards(ref App app) {
+  bool any = false;
+  foreach(ref info; app.worldText.texts) {
+    if(!info.billboard) continue;
+    float[3] dir = app.camera.position.vSub(info.pos);
+    info.rot[0] = degree(atan2(dir[0], dir[2]));
+    auto insts = app.layoutText(info);
+    app.worldText.text.instances[info.range[0] .. info.range[0]+info.range[1]] = insts[];
+    any = true;
+  }
+  if(any) app.worldText.text.syncInstances();
 }
