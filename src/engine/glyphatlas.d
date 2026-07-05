@@ -9,7 +9,7 @@ import buffer : cleanup;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import textures : toRGBA, toGPU;
 import images : createImage, cleanup, imageSize;
-import io : fixPath;
+import io : readFile, fixPath;
 import views : createImageView;
 
 /** Glyph stores FreeType glyph data */
@@ -25,6 +25,7 @@ struct GlyphAtlas {
   string path;            /// Path of TTF file
   FT_Library ftLibrary;   /// FreeType library handle
   FT_Face face;           /// FreeType font face
+  char[] fontData;        /// Raw font file bytes
   ubyte pointsize;        /// Font pointsize size
   int lineHeight;         /// Full line height (ascent + descent)
   Glyph[dchar] glyphs;    /// Associative array couples Glyph and dchar
@@ -73,7 +74,12 @@ void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Medium.ttf",
   FT_Property_Set(app.glyphAtlas.ftLibrary, "sdf", "spread", &spread);
   FT_Property_Set(app.glyphAtlas.ftLibrary, "sdf", "overlaps", &overlaps);
 
-  if(FT_New_Face(app.glyphAtlas.ftLibrary, toStringz(filename), 0, &app.glyphAtlas.face)) {
+  app.glyphAtlas.fontData = readFile(toStringz(filename));
+  if(app.glyphAtlas.fontData.length == 0) {
+    SDL_Log("Error reading font file %s\n", toStringz(filename));
+    abort();
+  }
+  if(FT_New_Memory_Face(app.glyphAtlas.ftLibrary, cast(const(ubyte)*)app.glyphAtlas.fontData.ptr, cast(int)app.glyphAtlas.fontData.length, 0, &app.glyphAtlas.face)) {
     SDL_Log("Error loading FreeType face %s\n", toStringz(filename));
     abort();
   }
@@ -101,8 +107,8 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
   if(app.trace) SDL_Log("createGlyphAtlas");
   MonoTime sT = MonoTime.currTime;
   auto face = app.glyphAtlas.face;
-  app.glyphAtlas.ascent = face.size.metrics.ascender >> 6;
-  app.glyphAtlas.lineHeight = face.size.metrics.height >> 6;
+  app.glyphAtlas.ascent = cast(int)(face.size.metrics.ascender >> 6);
+  app.glyphAtlas.lineHeight = cast(int)(face.size.metrics.height >> 6);
 
   app.glyphAtlas.texture = Texture(app.glyphAtlas.path, dim, dim, SDL_CreateSurface(dim, dim, SDL_PIXELFORMAT_RGBA32));
   SDL_SetSurfaceBlendMode(app.glyphAtlas.surface, SDL_BLENDMODE_NONE);
@@ -122,7 +128,7 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       Glyph glyph = Glyph();
       glyph.sDim = [bmp.width, bmp.rows];
       glyph.bearing = [face.glyph.bitmap_left, face.glyph.bitmap_top];
-      glyph.advance = face.glyph.advance.x >> 6;
+      glyph.advance = cast(int)(face.glyph.advance.x >> 6);
 
       if (atlasloc + bmp.width >= app.glyphAtlas.width) { atlasloc = 0; penY += rowMaxH; rowMaxH = 0; }
       if (penY + bmp.rows > app.glyphAtlas.height) {

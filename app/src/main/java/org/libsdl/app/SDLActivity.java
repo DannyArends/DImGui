@@ -297,7 +297,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             "SDL3",
             "SDL3_image",
             "SDL3_mixer",
-            "SDL3_ttf",
+            "freetype",
             "shaderc_shared",
             "spirv-cross-c-shared",
             "cimgui",
