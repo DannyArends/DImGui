@@ -14,24 +14,24 @@ import views : createImageView;
 
 /** Glyph stores FreeType glyph data */
 struct Glyph {
-  int[2] sDim;    /// rendered bitmap width, height (includes SDF spread, from FT_Bitmap)
+  int[2] sDim;    /// rendered bitmap width, height (includes SDF spread)
   int[2] aDim;    /// atlas x and y blit position
-  int[2] bearing; /// bitmap_left, bitmap_top — real per-glyph offset from pen/baseline to bitmap's top-left, from FreeType
+  int[2] bearing; /// bitmap_left, bitmap_top per-glyph offset from pen/baseline to bitmap's top-left
   int advance;
 }
 
 /** The GlyphAtlas structure holds links to the FreeType library/face, Glyphs, Texture and the atlas */
 struct GlyphAtlas {
-  string path;          /// Path of TTF file
-  FT_Library ftLibrary;  /// FreeType library handle
-  FT_Face face;          /// FreeType font face
-  ubyte pointsize;      /// Font pointsize size
-  int lineHeight;       /// Full line height (ascent + descent)
-  Glyph[dchar] glyphs;  /// Associative array couples Glyph and dchar
-  string atlas;         /// UTF-8 string of chars stored in the atlas
-  Texture texture;      /// Holds the Texture structure containing the SDL surface and Vulkan buffers
-  int ascent;           /// Font ascent
-  int advance;          /// Font advance
+  string path;            /// Path of TTF file
+  FT_Library ftLibrary;   /// FreeType library handle
+  FT_Face face;           /// FreeType font face
+  ubyte pointsize;        /// Font pointsize size
+  int lineHeight;         /// Full line height (ascent + descent)
+  Glyph[dchar] glyphs;    /// Associative array couples Glyph and dchar
+  string atlas;           /// UTF-8 string of chars stored in the atlas
+  Texture texture;        /// Holds the Texture structure containing the SDL surface and Vulkan buffers
+  int ascent;             /// Font ascent
+  int advance;            /// Font advance
 
   /** Get a specific glyph from the atlas */
   Glyph getGlyph(dchar letter) nothrow {
@@ -39,13 +39,11 @@ struct GlyphAtlas {
     return(glyphs[0]);
   }
 
-  /** Glyph texture X postion */
+  /** Glyph texture X / Y postion */
   @property float tX(Glyph glyph) { return(glyph.aDim[0] / cast(float)(texture.width)); }
-  /** Glyph texture Y postion */
   @property float tY(Glyph glyph) { return(glyph.aDim[1] / cast(float)(texture.height)); }
-  /** Glyph texture X extent (UV width) */
+  /** Glyph texture X / Y extent (UV width) */
   @property float tXo(Glyph glyph) { return(glyph.sDim[0] / cast(float)(texture.width)); }
-  /** Glyph texture Y extent (UV height) */
   @property float tYo(Glyph glyph) { return(glyph.sDim[1] / cast(float)(texture.height)); }
   /** X postion of the glyph, when on column col — pen position plus this glyph's real left bearing */
   @property float pX(Glyph glyph, size_t col) { return(cast(float)(col) * glyph.advance + glyph.bearing[0]); }
@@ -61,7 +59,7 @@ struct GlyphAtlas {
 }
 
 /** Loads a GlyphAtlas from file */
-void loadGlyphs(ref App app, string filename = "data/fonts/FreeMono.ttf", ubyte pointsize = 80, dchar to = '\U000000FF', uint dim = 2048) {
+void loadGlyphs(ref App app, string filename = "data/fonts/FreeMono.ttf", ubyte pointsize = 48, dchar to = '\U000000FF', uint dim = 1024) {
   filename = fixPath(filename);
   if(app.verbose) SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   app.glyphAtlas = GlyphAtlas(filename);
