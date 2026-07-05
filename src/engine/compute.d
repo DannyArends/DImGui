@@ -38,8 +38,8 @@ void initializeCompute(ref App app) {
   // cull.glsl: ClusterHeads/ClusterCounter/ClusterLights are cross-stage
   app.compute.passes["data/shaders/cull.glsl"] = ComputePass(
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
-      VkBuffer headBuf = a.buffers["ClusterHeads"][app.syncIndex].buffer;
-      VkBuffer cursorBuf = a.buffers["ClusterCounter"][app.syncIndex].buffer;
+      VkBuffer headBuf = a.buffers["ClusterHeads"][a.syncIndex].buffer;
+      VkBuffer cursorBuf = a.buffers["ClusterCounter"][a.syncIndex].buffer;
       vkCmdFillBuffer(cmd, headBuf, 0, VK_WHOLE_SIZE, NIL);
       vkCmdFillBuffer(cmd, cursorBuf, 0, VK_WHOLE_SIZE, 0);
       cmd.insertFillBarrier(headBuf);
