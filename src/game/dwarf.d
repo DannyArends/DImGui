@@ -155,22 +155,21 @@ struct Dwarf {
 /** Release job reservations, drop everything carried, retire the torch light, and remove the dwarf from the roster */
 void deleteDwarf(ref GameApp app, int index) {
   if(app.world.dwarves is null || index < 0 || index >= app.world.dwarves.dwarves.length) return;
-  size_t i = cast(size_t)index;
-  auto d = app.world.dwarves.dwarves[i];
 
-  foreach(ref j; d.jobStack) app.world.drops.release(j.blockIDs);
-  foreach(id; d.carrying) { if(auto b = id in app.world.drops) { b.tile = d.tile; b.reserved = false; } }
+  foreach(ref j; app.world.dwarves.dwarves[index].jobStack) { app.world.drops.release(j.blockIDs); }
+  foreach(id; app.world.dwarves.dwarves[index].carrying) {
+    if(auto b = id in app.world.drops) { b.tile = app.world.dwarves.dwarves[index].tile; b.reserved = false; }
+  }
   app.world.drops.dirty = true;
 
-  app.removeDwarfLight(d);
+  app.removeDwarfLight(app.world.dwarves.dwarves[index]);
 
-  size_t last = app.world.dwarves.dwarves.length - 1;
-  if(i != last) {
-    app.world.dwarves.dwarves[i] = app.world.dwarves.dwarves[last];
-    app.world.dwarves.instances[i] = app.world.dwarves.instances[last];
+  size_t last = (app.world.dwarves.dwarves.length - 1);
+  if(index != last) {
+    app.world.dwarves.dwarves[index] = app.world.dwarves.dwarves[last];
+    app.world.dwarves.instances[index] = app.world.dwarves.instances[last];
   }
-  app.world.dwarves.dwarves.length = last;
-  app.world.dwarves.instances.length = last;
+  app.world.dwarves.dwarves.length = app.world.dwarves.instances.length = last;
   app.world.dwarves.selected = -1;
   app.world.dwarves.syncInstances();
 }
@@ -376,7 +375,6 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   DrawInstance inst = DrawInstance([0, 0], d.color, Matrix.init);
   inst = position(inst, d.visualPos);
   app.world.dwarves.instances ~= inst;
-  // TODO: lightIndex is stable only because dwarves spawn at startup and never die. When a light is removed, all higher lightIndex values shift
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
   app.world.dwarves ~= d;
