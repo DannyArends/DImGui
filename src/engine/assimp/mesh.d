@@ -31,11 +31,9 @@ void updateMeshInfo(ref App app) {
     if (app.objects[o].instancedMesh) continue;
     app.ensureMaterial(app.objects[o]);
     int[2] expected = [cast(int)app.meshes.length, cast(int)(app.meshes.length + app.objects[o].meshes.length)];
-    if (app.objects[o].instances.length > 0 && app.objects[o].instances[0].meshdef[0..2] != expected) {
-      foreach (ref inst; app.objects[o].instances) inst.meshdef[0..2] = expected;
-      app.objects[o].syncInstances();
-      needsUpdate = true;
-    }
+    bool anyStale = false;
+    foreach (ref inst; app.objects[o].instances) { if(inst.meshdef[0..2] != expected) { inst.meshdef[0..2] = expected; anyStale = true; } }
+    if (anyStale) { app.objects[o].syncInstances(); needsUpdate = true; }
     app.meshes ~= app.objects[o].meshes.values;
   }
   if(needsUpdate) { app.buffers["MeshMatrices"].invalidate(); }
