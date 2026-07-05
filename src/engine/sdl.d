@@ -46,11 +46,6 @@ App initializeSDL() {
   if(app.verbose) SDL_Log("SDL[C] v%u.%u.%u", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
   if(app.verbose) SDL_Log("SDL[L] v%u.%u.%u", SDL_VERSIONNUM_MAJOR(linked), SDL_VERSIONNUM_MINOR(linked), SDL_VERSIONNUM_MICRO(linked));
 
-  init[TTF] = TTF_Init(); checkSDLError();
-  linked = TTF_Version();
-  if(app.verbose) SDL_Log("TTF[C] v%u.%u.%u", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_MICRO_VERSION);
-  if(app.verbose) SDL_Log("TTF[L] v%u.%u.%u", SDL_VERSIONNUM_MAJOR(linked), SDL_VERSIONNUM_MINOR(linked), SDL_VERSIONNUM_MICRO(linked));
-
   init[IMG] = IMG_Version();
   linked = IMG_Version();
   if(app.verbose) SDL_Log("TTF[C] v%u.%u.%u", SDL_IMAGE_MAJOR_VERSION, SDL_IMAGE_MINOR_VERSION, SDL_IMAGE_MICRO_VERSION);
