@@ -7,7 +7,7 @@ import engine;
 
 import geometry : opacity;
 import matrix : degree, translate, translateScale, multiply, rotate;
-import vector : vSub;
+import vector : vSub, vMul;
 
 /** Shared instanced text: one unit quad mesh, reused by every glyph via per-instance transform + UV remap.
  * All world text shares this one object, so it all draws in a single draw call. */
@@ -124,9 +124,14 @@ void updateWorldTextBillboards(ref App app) {
   foreach(ref info; app.worldText.texts) {
     if(!info.billboard) continue;
     float[3] dir = app.camera.position.vSub(info.pos);
-    info.rot[0] = degree(atan2(dir[0], dir[2]));
-    auto insts = app.layoutText(info);
-    app.worldText.text.instances[info.range[0] .. info.range[0]+info.range[1]] = insts[];
+    float newYaw = -degree(atan2(dir[0], dir[2]));
+    float deltaYaw = newYaw - info.rot[0];
+    if(deltaYaw == 0.0f) continue;
+    Matrix pivot = translate(info.pos).multiply(rotate([deltaYaw, 0.0f, 0.0f])).multiply(translate(info.pos.vMul(-1.0f)));
+    foreach(ref inst; app.worldText.text.instances[info.range[0] .. info.range[0]+info.range[1]]) {
+      inst.matrix = pivot.multiply(inst.matrix);
+    }
+    info.rot[0] = newYaw;
     any = true;
   }
   if(any) app.worldText.text.syncInstances();
