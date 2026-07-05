@@ -7,8 +7,7 @@ import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
-import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
-import views : createImageView, createLayerViews;
+import images : cleanup, transitionImageLayout, createNamedImage;
 
 alias ImageBuffer DepthBuffer;
 
@@ -35,19 +34,15 @@ VkFormat findDepthFormat(ref App app) {
 
 void createDepthResources(ref App app) {
   if(app.verbose) SDL_Log("Depth resources creation");
-  VkFormat depthFormat = app.findDepthFormat();
-  if(app.verbose) SDL_Log(" - depthFormat: %d", depthFormat);
-  app.createImage(app.depthBuffer, app.camera.width, app.camera.height,
-                  depthFormat, app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+  VkFormat fmt = app.findDepthFormat();
+  if(app.verbose) SDL_Log(" - depthFormat: %d", fmt);
+  app.createNamedImage(app.depthBuffer, app.camera.width, app.camera.height, fmt, VK_IMAGE_ASPECT_DEPTH_BIT, "DepthBuffer",
+                       app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.image);
-  app.createLayerViews(app.depthBuffer, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-  if(app.verbose) SDL_Log(" - image view created: %p", app.depthBuffer.view);
-  app.nameImageBuffer(app.depthBuffer, "DepthBuffer");
 
-  auto commandBuffer = app.beginSingleTimeCommands(app.commandPool);
-  app.transitionImageLayout(commandBuffer, app.depthBuffer.image, 
-                             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat);
-  app.endSingleTimeCommands(commandBuffer, app.queue);
+  auto cmd = app.beginSingleTimeCommands(app.commandPool);
+  app.transitionImageLayout(cmd, app.depthBuffer.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, fmt);
+  app.endSingleTimeCommands(cmd, app.queue);
   if(app.verbose) SDL_Log("Depth resources created");
   app.swapDeletionQueue.add((){ app.cleanup(app.depthBuffer); });
 }
