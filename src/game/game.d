@@ -44,7 +44,7 @@ import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
 import stockpilewindow : showStockpileContent;
-import text : addLabel;
+import text : addWorldText;
 import threading : TaskThread, drainMessages;
 import toolbar : showToolbar;
 import world : loadWorld, saveWorld, updateWorld;
@@ -113,7 +113,7 @@ void initGame(ref GameApp app) {
 
 
   SDL_Log("createScene: Add Text");
-  app.addLabel("CalderaD", [0.0f, 0.0f, 0.0f]);
+  app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
   SDL_Log("initGame: done");
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
