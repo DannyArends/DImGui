@@ -53,7 +53,7 @@ struct App {
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
-  Text labels;                                                                  /// All 3D text
+  WorldText worldText;                                                          /// All 3D text
   ShadowMap shadows;                                                            /// ShadowMap object
   DescriptorProvider[string] providers;                                         /// GPU resource creator
 
