@@ -87,7 +87,6 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
   SDL_SetSurfaceBlendMode(app.glyphAtlas.surface, SDL_BLENDMODE_NONE);
   app.glyphAtlas.width = app.glyphAtlas.height = dim;
 
-  enum glyphPadding = 4;    // gutter between packed glyphs, prevents bilinear bleed across boundaries when magnified
   uint i, atlasloc = 0;
   int penY = 0, rowMaxH = 0;
   app.glyphAtlas.atlas = [];
@@ -96,9 +95,9 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
     if (isValidDchar(c) && TTF_FontHasGlyph(app.glyphAtlas.ttf, cast(uint)(c)) && !(c == '\t' || c == '\r' || c == '\n')) {
       Glyph glyph = Glyph();
       TTF_GetGlyphMetrics(app.glyphAtlas.ttf, cast(uint)(c), &glyph.mmX[0], &glyph.mmX[1], &glyph.mmY[0], &glyph.mmY[1], &glyph.advance);
-      auto gs = TTF_RenderGlyph_Blended(app.glyphAtlas.ttf, cast(uint)(c), SDL_Color(255, 255, 255, 0));
-
-      if (atlasloc + gs.w + glyphPadding >= app.glyphAtlas.width) { i = atlasloc = 0; penY += rowMaxH + glyphPadding; rowMaxH = 0; }
+      auto gs = TTF_RenderGlyph_Blended(app.glyphAtlas.ttf, cast(uint)(c), SDL_Color(0, 0, 0, 0));
+        SDL_SetSurfaceBlendMode(gs, SDL_BLENDMODE_NONE);
+      if (atlasloc + gs.w >= app.glyphAtlas.width) { i = atlasloc = 0; penY += rowMaxH; rowMaxH = 0; }
       if (penY + gs.h > app.glyphAtlas.height) {
         SDL_DestroySurface(gs);
         SDL_Log("WARNING: GlyphAtlas overflow at (and after) character %d", c);
@@ -113,7 +112,7 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       app.glyphAtlas.atlas ~= c;
       SDL_Rect dst = { atlasloc, penY, gs.w, gs.h };
       SDL_BlitSurface(gs, null, app.glyphAtlas.surface, &dst);
-      atlasloc += gs.w + glyphPadding;
+      atlasloc += gs.w;
       SDL_DestroySurface(gs);
       i++;
     }
