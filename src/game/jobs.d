@@ -48,7 +48,11 @@ Job[] flatten(Job j) {
   return r ~ [j];
 }
 
-// TODO: Collapse repeated onFail/onClaim/onArrive into shared handlers (failRequeue/failComplete/failReleaseRequeue/failReleaseComplete)
+/** Shared onFail handlers, named for what they do: release the job's block reservation (if any), then either give up quietly or retry later */
+alias failComplete = completeSubJob;
+void failRequeue(ref GameApp app, ref Dwarf d) { d.failAndRequeue(); }
+void failReleaseComplete(ref GameApp app, ref Dwarf d) { app.world.drops.release(d.currentJob.blockIDs); app.completeSubJob(d); }
+void failReleaseRequeue(ref GameApp app, ref Dwarf d) { app.world.drops.release(d.currentJob.blockIDs); d.failAndRequeue(); }
 
 /** All live jobs matching a name: queued + on every dwarf's stack */
 const(Job)[] liveJobs(const World world, string name) {
@@ -155,12 +159,13 @@ Job miningJob(int[3] targetTile) {
         app.world.chunks.unsettle ~= d.currentJob.targetTile;
       });
     },
-    onFail: (ref GameApp app, ref Dwarf d) { d.failAndRequeue(); }
-  );
+    onFail: &failRequeue);
 }
 
 /** A pickup bound to one specific block id (not "any block of type") */
-Job pinnedPickup(uint blockID, int[3] fromTile, ResourceType type) { auto j = pickupJob(fromTile, type.toClass); j.blockIDs = [blockID]; return j; }
+Job pinnedPickup(uint blockID, int[3] fromTile, ResourceType type) { 
+  auto j = pickupJob(fromTile, type.toClass); j.blockIDs = [blockID]; return j; 
+}
 
 /** Store in stockpile */
 Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
@@ -174,11 +179,7 @@ Job storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
       app.world.storeBlockAt(d.currentJob.targetTile, blockID);   // sets tile = storedTile, adds to pile
       app.completeSubJob(d);
     },
-    onFail: (ref GameApp app, ref Dwarf d) {
-      app.world.drops.release(d.currentJob.blockIDs);
-      app.completeSubJob(d);
-    }
-  );
+    onFail: &failReleaseComplete);
 }
 
 /** Interact with features Job (gathering / woodcutting) */
@@ -187,8 +188,7 @@ Job interactFeatureJob(int[3] targetTile) {
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, app.getFeatureProgressRate(d.currentJob.targetTile), () { app.interactFeaturesAt(d.currentJob.targetTile); });
     },
-    onFail: (ref GameApp app, ref Dwarf d) { d.failAndRequeue(); }
-  );
+    onFail: &failRequeue);
 }
 
 /** Pickup Job */
@@ -196,20 +196,14 @@ Job pickupJob(int[3] targetTile, ResourceClass cls) {
   return Job("Fetching", targetTile, cls, [], true, reach: Reach.Adjacent,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { app.claimBlock(d, j); },
     onArrive: (ref GameApp app, ref Dwarf d) { app.doPickup(d); },
-    onFail: (ref GameApp app, ref Dwarf d) {
-      app.world.drops.release(d.currentJob.blockIDs);
-      d.failAndRequeue();
-    }
-  );
+    onFail: &failReleaseRequeue);
 }
 
 /** Job: move the dwarf to a free neighbouring tile away from their current position */
 Job moveAwayJob(int[3] from) {
   return Job("MoveAway", from, ResourceClass.None, [],
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) { app.claimNeighbour(j); },
-    onArrive: (ref GameApp app, ref Dwarf d) { app.completeSubJob(d); },
-    onFail: (ref GameApp app, ref Dwarf d) { app.completeSubJob(d); }
-  );
+    onArrive: &failComplete,onFail: &failComplete);
 }
 
 /** Ask `other` to step aside: prepend a MoveAway to their stack unless they're already moving aside. */
@@ -228,8 +222,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
       }
       app.completeSubJob(d);
     },
-    onFail: (ref GameApp app, ref Dwarf d) { app.completeSubJob(d); }
-  );
+    onFail: &failComplete);
 }
 
 /** Clean the worksite (generates a pickup job prereq) */
@@ -244,8 +237,7 @@ Job cleanWorksiteJob(int[3] targetTile) {
         d.jobStack = [dropBlockJob(d.tile, d.carrying[0])] ~ d.jobStack;
       } else { app.doPickup(d); }
     },
-    onFail: (ref GameApp app, ref Dwarf d) { app.completeSubJob(d); }
-  );
+    onFail: &failComplete);
 }
 
 /** Consume a carried block of `type` (removed from inventory, marked built); returns its id, or noBlock. */
@@ -322,8 +314,7 @@ Job eatJob() {
         app.world.drops.dirty = true;
       });
     },
-    onFail: (ref GameApp app, ref Dwarf d) { app.completeSubJob(d); }
-  );
+    onFail: &failComplete);
 }
 
 Job fillCupJob() {
@@ -347,8 +338,7 @@ Job fillCupJob() {
         app.world.drops.dirty = true;
       });
     },
-    onFail: (ref GameApp app, ref Dwarf d) { app.completeSubJob(d); }
-  );
+    onFail: &failComplete);
 }
 
 Job drinkJob() {
@@ -367,8 +357,7 @@ Job drinkJob() {
         }
       });
     },
-    onFail: (ref GameApp app, ref Dwarf d) { app.completeSubJob(d); }
-  );
+    onFail: &failComplete);
 }
 
 Job craftJob(string name) {
@@ -397,8 +386,7 @@ Job craftJob(string name) {
         app.world.drops.dirty = true;
       });
     },
-    onFail: (ref GameApp app, ref Dwarf d) { app.world.drops.release(d.currentJob.blockIDs); d.failAndRequeue(); }
-  );
+    onFail: &failReleaseRequeue);
 }
 Job sleepJob(int[3] atTile) {
   return Job("Sleeping", atTile, ResourceClass.None, [], true, reach: Reach.OnTile,
@@ -407,8 +395,7 @@ Job sleepJob(int[3] atTile) {
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.01f, () { d.needs[Need.Rest] = 0.0f; });   // ~100 ticks of standing still
     },
-    onFail: (ref GameApp app, ref Dwarf d) { app.completeSubJob(d); }
-  );
+    onFail: &failComplete);
 }
 
 /** Dispatch a job to a dwarf */
