@@ -81,6 +81,20 @@ void loadGlyphs(ref App app, string filename = "data/fonts/FreeMono.ttf", ubyte 
   FT_Set_Pixel_Sizes(app.glyphAtlas.face, 0, app.glyphAtlas.pointsize);
 
   app.createGlyphAtlas(to, dim);
+  FT_Done_Library(app.glyphAtlas.ftLibrary);
+}
+
+/** Blit an 8-bit grayscale FreeType SDF bitmap into the atlas as white RGB + alpha=value */
+void blitSDFGlyph(ref App app, FT_Bitmap bmp, int x, int y) {
+  if(SDL_MUSTLOCK(app.glyphAtlas.surface)) SDL_LockSurface(app.glyphAtlas.surface);
+  ubyte* dst = cast(ubyte*)app.glyphAtlas.surface.pixels;
+  int dstPitch = app.glyphAtlas.surface.pitch;
+  for(uint row = 0; row < bmp.rows; row++) { for(uint col = 0; col < bmp.width; col++) {
+    ubyte v = bmp.buffer[row * bmp.pitch + col];
+    size_t o = (y + row) * dstPitch + (x + col) * 4;
+    dst[o+0] = 255; dst[o+1] = 255; dst[o+2] = 255; dst[o+3] = v;
+  } }
+  if(SDL_MUSTLOCK(app.glyphAtlas.surface)) SDL_UnlockSurface(app.glyphAtlas.surface);
 }
 
 /** Populates the GlyphAtlas with Glyphs to dchar in our atlas */
@@ -121,20 +135,7 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
       glyph.aDim = [atlasloc, penY];
       app.glyphAtlas.glyphs[c] = glyph;
       app.glyphAtlas.atlas ~= c;
-
-      // Manual blit: FreeType's SDF bitmap is single-channel (alpha only); atlas is RGBA32
-      if(SDL_MUSTLOCK(app.glyphAtlas.surface)) SDL_LockSurface(app.glyphAtlas.surface);
-      ubyte* dst = cast(ubyte*)app.glyphAtlas.surface.pixels;
-      int dstPitch = app.glyphAtlas.surface.pitch;
-      for(uint y = 0; y < bmp.rows; y++) {
-        for(uint x = 0; x < bmp.width; x++) {
-          ubyte v = bmp.buffer[y * bmp.pitch + x];
-          size_t o = (penY + y) * dstPitch + (atlasloc + x) * 4;
-          dst[o+0] = 255; dst[o+1] = 255; dst[o+2] = 255; dst[o+3] = v;
-        }
-      }
-      if(SDL_MUSTLOCK(app.glyphAtlas.surface)) SDL_UnlockSurface(app.glyphAtlas.surface);
-
+      app.blitSDFGlyph(bmp, atlasloc, penY);
       atlasloc += bmp.width;
     }
     c++;

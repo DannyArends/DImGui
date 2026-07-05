@@ -45,23 +45,10 @@ cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
 cmake --build . --config Release -j10
 cd ../../../../
 ```
-Compile SDL_ttf:
+Compile Freetype:
 ```
-rm -rf app\jni\SDL_ttf\build
-cd app/jni/SDL_ttf
-call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
-      -DSDL3_DIR="%CD%/../../SDL/build" -DSDLTTF_SAMPLES=OFF ^
-      ../
-cmake --build . --config Release -j10
-cd ../../../../
-```
-Compile freetype:
-```
-rm -rf app\jni\SDL_ttf\external\freetype\data
-cd app/jni/SDL_ttf/external/freetype
+rm -rf app\jni\freetype\data
+cd app/jni/freetype
 call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
 cd build
