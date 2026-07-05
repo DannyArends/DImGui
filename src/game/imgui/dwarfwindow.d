@@ -5,7 +5,7 @@
 
 import game;
 
-import dwarf : spawnDwarf;
+import dwarf : spawnDwarf, deleteDwarf;
 import jobs : dispatchJob, jobQueue, dropBlockJob;
 import imgui : faIcon, iconText;
 import tile : tileToWorld;
@@ -76,6 +76,7 @@ void followDwarf(ref GameApp app, uint uid) {
 void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
   dwarfGlyph(d); igSameLine(0, 5);
   if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followDwarf(d.uid); }
+  if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0, 0))) { app.deleteDwarf(selected); return; }
   text("Tile: %s", d.tile);
   text("Hunger: %.0f", d.hunger * 100.0f);
   igSameLine(0, 5);

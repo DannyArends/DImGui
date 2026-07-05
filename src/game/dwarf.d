@@ -5,7 +5,7 @@
 
 import game;
 
-import block : resourceType, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource;
+import block : resourceType, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
 import color : randomColor;
 import inventory : deriveInventory;
 import game : GameApp;
@@ -22,7 +22,7 @@ import serialization : readData, writeData;
 import sfx : play;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
 import timing : timed;
-import lights : addLight, torchLight, TORCH_HEIGHT;
+import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
 import water : findNearestWater;
 
 uint nextDwarfUID = 1;
@@ -150,6 +150,29 @@ struct Dwarf {
   @property bool hasJob() const { return(jobStack.length > 0); }
   @property ref Job currentJob() { return(jobStack[0]); }
   @property bool isFalling() const { return fall.isFalling; }
+}
+
+/** Release job reservations, drop everything carried, retire the torch light, and remove the dwarf from the roster */
+void deleteDwarf(ref GameApp app, int index) {
+  if(app.world.dwarves is null || index < 0 || index >= app.world.dwarves.dwarves.length) return;
+  size_t i = cast(size_t)index;
+  auto d = app.world.dwarves.dwarves[i];
+
+  foreach(ref j; d.jobStack) app.world.drops.release(j.blockIDs);
+  foreach(id; d.carrying) { if(auto b = id in app.world.drops) { b.tile = d.tile; b.reserved = false; } }
+  app.world.drops.dirty = true;
+
+  app.removeDwarfLight(d);
+
+  size_t last = app.world.dwarves.dwarves.length - 1;
+  if(i != last) {
+    app.world.dwarves.dwarves[i] = app.world.dwarves.dwarves[last];
+    app.world.dwarves.instances[i] = app.world.dwarves.instances[last];
+  }
+  app.world.dwarves.dwarves.length = last;
+  app.world.dwarves.instances.length = last;
+  app.world.dwarves.selected = -1;
+  app.world.dwarves.syncInstances();
 }
 
 /** Follow the next step in object T's path.
