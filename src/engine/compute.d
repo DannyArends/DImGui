@@ -9,19 +9,14 @@ import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCom
 import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorData;
 import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
 import shaders : loadShaders, createStageInfo;
-import ssbo : updateSSBO, createSSBO;
-import sync : insertWriteBarrier, insertReadBarrier, insertFillBarrier;
-import textures : idx, registerTexture;
-import quaternion : xyzw;
-import uniforms : createUBO;
+import sync : insertFillBarrier;
+import textures : registerTexture;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import views : createImageView, createLayerViews;
 import vector : vCeilDiv;
 
 /** Compute structure with shaders, command buffer and pipelines */
 struct Compute {
-  size_t lastTick;                      /// Last tick
-  ParticleSystem system;                /// Particles
   Shader[] shaders;                     /// Compute shader objects
   VkCommandBuffer[][string] commands;   /// Command buffers
   GraphicsPipeline[string] pipelines;   /// Pipelines
@@ -37,17 +32,13 @@ struct ComputePass {
   void delegate(ref App app, VkCommandBuffer cmd, Shader shader, uint syncIndex) post; /// null = none
 }
 
-ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_glsl_compute_shader),
-                              ShaderDef("data/shaders/particle.glsl", shaderc_glsl_compute_shader),
-                              ShaderDef("data/shaders/cull.glsl", shaderc_glsl_compute_shader)];
+ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/cull.glsl", shaderc_glsl_compute_shader)];
 
 /** Load shader modules for compute */
 void initializeCompute(ref App app) {
-  app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
 
-  // cull.glsl — ClusterHeads/ClusterCounter/ClusterLights are cross-stage (also read by scene.glsl's forward+ shading),
-  // so their providers stay wherever shared render/shadow resources are registered, not here.
+  // cull.glsl: ClusterHeads/ClusterCounter/ClusterLights are cross-stage
   app.compute.passes["data/shaders/cull.glsl"] = ComputePass(
     pre: (ref App a, VkCommandBuffer cmd, Shader shader, uint syncIndex) {
       VkBuffer headBuf = a.buffers["ClusterHeads"][syncIndex].buffer;
@@ -58,65 +49,6 @@ void initializeCompute(ref App app) {
       cmd.insertFillBarrier(cursorBuf);
     },
     workItems: (ref App a, Shader shader) { uint[3] r = [cast(uint)a.lights.length, 1u, 1u]; return r; }
-  );
-
-  // particle.glsl — ParticleUniformBuffer/lastFrame/currentFrame exist only for this shader (no #include shares them),
-  // so their providers are grouped here with the pass that owns them.
-  app.providers["ParticleUniformBuffer"] = DescriptorProvider(  // UBO
-    (ref a, ref d){ a.createUBO(d); },
-    (ref a, ref d, cmd){ a.updateComputeUBO(d, a.syncIndex); });
-
-  app.providers["lastFrame"] = DescriptorProvider(  // SSBO
-    (ref a, ref d){
-      a.createSSBO(d, a.compute.system.particles);
-      auto cmd = app.beginSingleTimeCommands(app.commandPool);
-      for(uint i = 0; i < app.framesInFlight; i++) { app.updateSSBO(cmd, a.compute.system.particles, d, i); }
-      app.endSingleTimeCommands(cmd, app.queue);
-    },
-    null);
-  app.providers["currentFrame"] = DescriptorProvider((ref a, ref d){ a.createSSBO(d, a.compute.system.particles); }, null);
-  
-  app.compute.passes["data/shaders/particle.glsl"] = ComputePass(
-    workItems: (ref App a, Shader shader) {
-      foreach(ref d; shader.descriptors) {
-        if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) { uint[3] r = [a.buffers[d.base].nObjects, 1u, 1u]; return r; }
-      }
-      uint[3] r = [1u, 1u, 1u]; return r;
-    },
-    post: (ref App a, VkCommandBuffer cmd, Shader shader, uint syncIndex) {
-      VkBuffer src = a.buffers["currentFrame"][syncIndex].buffer;
-      VkBuffer dst = a.buffers["lastFrame"][syncIndex].buffer;
-      VkBufferCopy copyRegion = { size: a.buffers["currentFrame"].size };
-      cmd.insertWriteBarrier(dst);
-      vkCmdCopyBuffer(cmd, src, dst, 1, &copyRegion);
-      cmd.insertReadBarrier(src);
-    }
-  );
-
-  // texture.glsl — storage image created generically via createResources' VK_DESCRIPTOR_TYPE_STORAGE_IMAGE fallback, no provider needed
-  app.compute.passes["data/shaders/texture.glsl"] = ComputePass(
-    pre: (ref App a, VkCommandBuffer cmd, Shader shader, uint syncIndex) {
-      foreach(ref d; shader.descriptors) {
-        if(d.type != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) continue;
-        uint idx = a.textures.idx(d.name);
-        a.transitionImageLayout(cmd, a.textures[idx].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-      }
-    },
-    workItems: (ref App a, Shader shader) {
-      foreach(ref d; shader.descriptors) {
-        if(d.type != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) continue;
-        uint idx = a.textures.idx(d.name);
-        uint[3] r = [a.textures[idx].width, a.textures[idx].height, 1u]; return r;
-      }
-      uint[3] r = [1u, 1u, 1u]; return r;
-    },
-    post: (ref App a, VkCommandBuffer cmd, Shader shader, uint syncIndex) {
-      foreach(ref d; shader.descriptors) {
-        if(d.type != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) continue;
-        uint idx = a.textures.idx(d.name);
-        a.transitionImageLayout(cmd, a.textures[idx].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-      }
-    }
   );
 }
 
@@ -172,18 +104,6 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
       vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.compute.commands[shader.path][i]);
     }
   });
-}
-
-void updateComputeUBO(ref App app, Descriptor d, uint syncIndex) {
-  size_t now = SDL_GetTicks();
-  ParticleUniformBuffer buffer = {
-    position:  app.compute.system.position.xyzw,
-    gravity:   app.compute.system.gravity.xyzw,
-    floor:     app.compute.system.floor,
-    deltaTime: cast(float)(now - app.compute.lastTick) / 100.0f
-  };
-  app.compute.lastTick = now;
-  memcpy(app.ubos[d.base][syncIndex].data, &buffer, d.bytes);
 }
 
 void createStorageImage(ref App app, Descriptor descriptor){

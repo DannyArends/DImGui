@@ -35,7 +35,6 @@ public import matrix : Matrix;
 public import mesh : Mesh;
 public import meta : MetaData;
 public import node : Node;
-public import particlesystem : ParticleSystem;
 public import pipeline : GraphicsPipeline;
 public import quaternion : Quaternion;
 public import renderpass : RenderPassInfo, RenderPass;
