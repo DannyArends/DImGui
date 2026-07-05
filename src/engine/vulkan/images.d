@@ -10,6 +10,7 @@ import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
 import framebuffer : createHDRImage;
 import validation : nameVulkanObject;
+import views : createLayerViews;
 
 VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * SDL_GetPixelFormatDetails(surface.format).bits_per_pixel / 8); }
 
@@ -72,6 +73,16 @@ void createImage(ref App app, ref ImageBuffer buffer, uint width, uint height, V
 
   enforceVK(vkAllocateMemory(app.device, &allocInfo, null, &buffer.memory));
   vkBindImageMemory(app.device, buffer.image, buffer.memory, 0);
+}
+
+/** Create an image, its layer views, and name it — the common opening sequence shared by every specialized image creator */
+void createNamedImage(ref App app, ref ImageBuffer buffer, uint width, uint height, VkFormat format, VkImageAspectFlags aspect, string label,
+                       VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+                       VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                       VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint mipLevels = 1, uint arrayLayers = 1) {
+  app.createImage(buffer, width, height, format, samples, tiling, usage, properties, mipLevels, arrayLayers);
+  app.createLayerViews(buffer, format, aspect, mipLevels);
+  app.nameImageBuffer(buffer, label);
 }
 
 void imageBarrier(VkCommandBuffer cmd, VkImage image,

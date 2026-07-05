@@ -7,12 +7,11 @@ import engine;
 
 import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorData;
-import images : createImage, nameImageBuffer, cleanup, transitionImageLayout;
+import images : cleanup, transitionImageLayout, createNamedImage;
 import shaders : loadShaders, createStageInfo;
 import sync : insertFillBarrier;
 import textures : registerTexture;
 import validation : pushLabel, popLabel, nameVulkanObject;
-import views : createImageView, createLayerViews;
 import vector : vCeilDiv;
 
 /** Compute structure with shaders, command buffer and pipelines */
@@ -116,10 +115,8 @@ void createStorageImage(ref App app, Descriptor descriptor){
 
   Texture texture = Texture(path : descriptor.name, width: app.camera.width, height: app.camera.height);
 
-  app.createImage(texture, texture.width, texture.height,
-                  VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
-  app.createLayerViews(texture, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
-  app.nameImageBuffer(texture, "Compute Image");
+  app.createNamedImage(texture, texture.width, texture.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
+                        VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
   app.transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

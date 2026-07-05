@@ -10,12 +10,11 @@ import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
 import framebuffer : createFramebuffer, cleanup;
 import geometry : bufferGeometries, draw;
-import images : createImage, cleanup, nameImageBuffer, copyImageLayer;
+import images : cleanup, copyImageLayer, createNamedImage;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
 import validation : popLabel, pushLabel;
 import vector : xyz;
-import views : createImageView, createLayerViews;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32; // Maximum number of shadown maps, limits budget
 
@@ -74,11 +73,14 @@ void initShadowPool(ref App app) {
 
 /** Create shadow image+view+framebuffer for slot l at the given square size. */
 void makeShadowMap(ref App app, ref ShadowMap map, size_t s, uint size) {
-  app.createImage(map.images[s], size, size, map.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
-                  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT 
-                  | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
-  app.createLayerViews(map.images[s], map.format, VK_IMAGE_ASPECT_DEPTH_BIT);
-  app.nameImageBuffer(map.images[s], format("ShadowImage #%d", s));
+  VkImageUsageFlags usage;
+  usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+  usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+  usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+  app.createNamedImage(map.images[s], size, size, map.format, VK_IMAGE_ASPECT_DEPTH_BIT, format("ShadowImage #%d", s),
+                       VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
   map.cmd.pass(0).framebuffers[s] = app.createFramebuffer(map.cmd.pass(0), [map.images[s].view(0)], size, size, "Static Shadow", s);
   map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.images[s].view(1)], size, size, "Dynamic Shadow", s);
 }
