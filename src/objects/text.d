@@ -21,12 +21,12 @@ class Text : Geometry {
       auto cChar = atlas.getGlyph(c);
 
       // Convert everything to Glyphscale (based on the chosen fontsize)
-      float pX = atlas.pX(cChar, col) /  glyphscale;
-      float pY = atlas.pY(cChar, line) /  glyphscale;
-      float w = cChar.gX / glyphscale;
-      float h = atlas.lineHeight / glyphscale;
-      float tXo = cChar.gX / cast(float)(atlas.width);
-      float tYo = atlas.lineHeight / cast(float)(atlas.height);
+      float pX = atlas.pX(cChar, col) / glyphscale;
+      float pY = atlas.pY(cChar, line) / glyphscale;
+      float w = atlas.qW(cChar, glyphscale);
+      float h = atlas.qH(cChar, glyphscale);
+      float tXo = atlas.tXo(cChar);
+      float tYo = atlas.tYo(cChar);
 
       vertices ~= [ Vertex([   pX,   pY, 0.0f], [atlas.tX(cChar), atlas.tY(cChar)+ tYo], [1.0f, 1.0f, 1.0f, 1.0f]), 
                     Vertex([ w+pX,   pY, 0.0f], [atlas.tX(cChar)+ tXo, atlas.tY(cChar)+ tYo], [1.0f, 1.0f, 1.0f, 1.0f]),

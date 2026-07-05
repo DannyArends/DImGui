@@ -7,11 +7,12 @@ import game;
 
 import block : syncBlockInstances;
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
-import clouds : rainTick, settleRain, rebuildClouds, decayCloudDensity, spawnClouds;
+import clouds : rainTick, settleRain, requestCloudRebuild;
 import game : GameApp;
 import hits : getHits;
 import screenshot : saveScreenshot;
 import timing : timed;
+import jobs : craftJob, jobQueue;
 import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
 import water : waterTick, flushWaterDirty, evaporateTick;
@@ -63,6 +64,8 @@ void handleKeyEvents(ref GameApp app, SDL_Event e) {
     if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
     if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
+    if(symbol == SDLK_K) { jobQueue ~= craftJob("FlintKnapping"); }
+    if(symbol == SDLK_L) { jobQueue ~= craftJob("AxeMaking"); }
   }
 }
 
@@ -114,14 +117,12 @@ double handleEvents(ref GameApp app) {
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
-    app.timed!rainTick();           // spawn new falling drops
-    app.timed!settleRain();         // convert any that have landed this tick
-    app.timed!waterTick();          // sim the resulting water
-    app.timed!evaporateTick();      // sim the resulting water
-    app.timed!decayCloudDensity();  // relax + clamp cloud density
-    app.timed!spawnClouds();        // Add some random moisture
-    app.timed!flushWaterDirty();    // re-mesh chunks whose water moved
-    app.timed!rebuildClouds();      // re-mesh clouds
+    app.timed!rainTick();             // spawn new falling drops
+    app.timed!settleRain();           // convert any that have landed this tick
+    app.timed!waterTick();            // sim the resulting water
+    app.timed!evaporateTick();        // sim the resulting water
+    app.timed!flushWaterDirty();      // re-mesh chunks whose water moved
+    app.timed!requestCloudRebuild();  // Request a cloud update
     foreach(i; iota(app.objects.length)) {
       if(app.trace) SDL_Log("object: %s", toStringz(app.objects[i].geometry()));
       if(app.objects[i].onTick) app.objects[i].onTick();
@@ -134,6 +135,6 @@ double handleEvents(ref GameApp app) {
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }   // Execute all onFrame() on Geometries
   if(app.camera.onFrame !is null) app.camera.onFrame(dt);                   // Execute onFrame() on Camera
-  if(app.world.blocksDirty) { app.syncBlockInstances(); app.world.blocksDirty = false; }
+  if(app.world.drops.dirty) { app.world.syncBlockInstances(); app.world.drops.dirty = false; }
   return(dt);
 }

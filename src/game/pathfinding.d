@@ -50,7 +50,7 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
 /** Pathfind object T to goalTile, returns false if unreachable.
  * Requires T to have: tile, path */
 void pathfindTo(T)(ref GameApp app, ref T obj, int[3] goalTile) {
-  app.world.pendingPaths = app.world.pendingPaths.filter!(r => r.dwarfUID != obj.uid).array;  // Remove any existing pending request for this dwarf
+  app.world.paths.pending = app.world.paths.pending.filter!(r => r.dwarfUID != obj.uid).array;  // Remove any existing pending request for this dwarf
   auto req = PathRequest(obj.uid, obj.tile, goalTile);
   foreach(tid; app.concurrency.workers.keys) {
     if(!app.concurrency.workers[tid]) {
@@ -60,7 +60,7 @@ void pathfindTo(T)(ref GameApp app, ref T obj, int[3] goalTile) {
       return;
     }
   }
-  app.world.pendingPaths ~= req;
+  app.world.paths.pending ~= req;
   obj.state = DwarfState.WaitingForPath;
 }
 
@@ -68,11 +68,11 @@ void pathfindTo(T)(ref GameApp app, ref T obj, int[3] goalTile) {
 void dispatchPendingPaths(ref GameApp app) {
   if(app.concurrency.paths.length > 0) return;
   foreach(tid; app.concurrency.workers.keys) {
-    if(app.world.pendingPaths.length == 0) break;
+    if(app.world.paths.pending.length == 0) break;
     if(!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, app.world.pendingPaths[0]);
-      app.world.pendingPaths = app.world.pendingPaths[1..$];
+      tid.send(cast(immutable(WorldData))app.world.data, app.world.paths.pending[0]);
+      app.world.paths.pending = app.world.paths.pending[1..$];
     }
   }
 }
@@ -93,7 +93,7 @@ void invalidatePaths(ref GameApp app, int[3] tile) {
  * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
 bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
   obj.targetTile = targetTile;
-  auto goal = app.findGoalTile(targetTile, obj.tile, reach);
+  auto goal = app.world.findGoalTile(targetTile, obj.tile, reach);
   if(goal == noTile) return false;
   if(goal == obj.tile) { obj.path = []; obj.state = DwarfState.Working; return true; }
   app.pathfindTo(obj, goal);
@@ -102,19 +102,20 @@ bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Re
 
 /** Find the closest standable neighbour (air tile with solid below) to the object.
  * Requires T to have: tile, targetTile */
-int[3] findGoalTile(ref GameApp app, int[3] targetTile, int[3] from, Reach reach = Reach.Adjacent) {
-  if(reach == Reach.OnTile) return app.world.isStandable(targetTile) ? targetTile : noTile;
+int[3] findGoalTile(const World world, const int[3] targetTile, const int[3] from, Reach reach = Reach.Adjacent) {
+  if(reach == Reach.OnTile) return world.isStandable(targetTile) ? targetTile : noTile;
 
   int[3] best = noTile;
   float bestScore = float.max;
   void consider(int[3] n) {
-    if(!app.world.isStandable(n)) return;
-    float score = manhattan2D(n, from) + app.world.data.tilePenalties.get(n, 0.0f);
+    if(!world.isStandable(n)) return;
+    float score = manhattan2D(n, from) + world.data.tilePenalties.get(n, 0.0f);
     if(score < bestScore) { bestScore = score; best = n; }
   }
 
   if(reach == Reach.AdjacentOrAbove) consider(targetTile.tileAbove);   // standing on top is valid
-  auto nb = app.world.tileNeighbours(targetTile);
+  if(reach == Reach.AdjacentOrOnTile) consider(targetTile);            // standing on the tile itself is valid
+  auto nb = world.tileNeighbours(targetTile);
   foreach(i; [0, 1, 4, 5]) { if(nb[i][1] == targetTile[1]) consider(nb[i]); }   // ±x/±z, same-Y = manhattan2D==1
   return best;
 }

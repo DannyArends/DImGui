@@ -6,13 +6,12 @@
 import game;
 
 import block : unsettleBlocks;
-import clouds : rebuildClouds, seedClouds;
-import dwarf : unsettleDwarves;
+import clouds : requestCloudRebuild, seedClouds;
 import game : GameApp;
 import gameobjects : Chunk;
 import deletion : deAllocate;
 import intersection : intersects;
-import tile : getTile, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried, isSolid;
+import tile : getTile, surfaceLevel, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried, isSolid;
 import hits : getHits;
 import noise : noise2D;
 import textures : idx;
@@ -36,6 +35,13 @@ struct ChunkData {
   Feature[][string] featureData;                            /// Chunk Features
 }
 
+struct ChunkField {
+  Chunk[int[3]] loaded;
+  alias loaded this;
+  bool[int[3]] pending;
+  int[3][] unsettle, build, mine;
+}
+
 /** Build the full tile-type array for a chunk column-by-column from height/material noise */
 ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   ResourceType[] types;
@@ -44,7 +50,7 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
     for (int x = 0; x < wd.chunkSize; x++) {
       auto wc = wd.worldCoord(coord, [x, 0, z]);
       float h0 = noise2D(wc[0], wc[2], wd.seed[0]);
-      int s = cast(int)(h0 * sqrt(h0) * (wd.chunkHeight - 1));
+      int s = surfaceLevel(h0, wd.chunkHeight);
       ResourceType surfaceType = heightToResource(h0, noise2D(wc[0], wc[2], wd.seed[1]));
       int base = z * wd.chunkHeight * wd.chunkSize + x;
       for (int y = 0; y < wd.chunkHeight; y++) {
@@ -129,10 +135,10 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
 /** Find the best intersecting tile in the world given a ray, returns world coord or [int.min,0,0] */
 bool getBestTile(ref GameApp app, float[3][2] ray, out int[3] wc) { return(app.getBestTile(ray, app.getHits(ray, false), wc)); }
 
-bool getBestTile(ref GameApp app, float[3][2] ray, Intersection[] hits, out int[3] wc) {
+bool getBestTile(const GameApp app, float[3][2] ray, Intersection[] hits, out int[3] wc) {
   Intersection best;
   foreach(ref hit; hits) {
-    auto chunk = cast(Chunk)app.objects[hit.idx[0]];
+    auto chunk = cast(const(Chunk))app.objects[hit.idx[0]];
     if(chunk is null) continue;
     for(size_t j = 0; j < chunk.tileBmin.length; j++) {
       auto i = ray.intersects(chunk.tileBmin[j], chunk.tileBmax[j], hit.idx[0], j);
@@ -140,7 +146,7 @@ bool getBestTile(ref GameApp app, float[3][2] ray, Intersection[] hits, out int[
     }
   }
   if(!best.intersects) return false;
-  auto chunk = cast(Chunk)app.objects[best.idx[0]];
+  auto chunk = cast(const(Chunk))app.objects[best.idx[0]];
   auto local = app.world.tileCoord(chunk.pickIndices[best.idx[1]]);
   wc = app.world.worldCoord(chunk.coord, local);
   return true;
@@ -148,8 +154,8 @@ bool getBestTile(ref GameApp app, float[3][2] ray, Intersection[] hits, out int[
 
 /** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene */
 void finalizeChunk(ref GameApp app, ChunkData data) {
-  if (data.coord !in app.world.pendingChunks) return;
-  if (data.tileInstances.length == 0) { app.world.pendingChunks.remove(data.coord); return; }
+  if (data.coord !in app.world.chunks.pending) return;
+  if (data.tileInstances.length == 0) { app.world.chunks.pending.remove(data.coord); return; }
 
   Chunk chunk = new Chunk(data, app.world);
   chunk.tiles.box = new BoundingBox();
@@ -157,8 +163,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   if (data.coord in app.world.chunks) {
     auto oldTiles = app.world.chunks[data.coord].tiles;
     oldTiles.instances = chunk.tiles.instances.dup;
-    oldTiles.instances.invalidate();
-    if(oldTiles.box !is null) oldTiles.box.dirty = true;
+    oldTiles.syncInstances();
     chunk.tiles = oldTiles;
     chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
@@ -169,26 +174,23 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;
-  app.seedClouds(data.coord);
-  app.rebuildClouds();
+  app.world.seedClouds(data.coord);
+  app.requestCloudRebuild();
   app.world.chunks[data.coord].dirty = false;
-  app.world.pendingChunks.remove(data.coord);
-  app.world.pendingBuildTiles = app.world.pendingBuildTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
-  app.world.pendingMineTiles = app.world.pendingMineTiles.filter!(t => app.world.chunkCoord(t) != data.coord).array;
+  app.world.chunks.pending.remove(data.coord);
+  app.world.chunks.build = app.world.chunks.build.filter!(t => app.world.chunkCoord(t) != data.coord).array;
+  app.world.chunks.mine = app.world.chunks.mine.filter!(t => app.world.chunkCoord(t) != data.coord).array;
 
   // Add trees to the chunk
   foreach(ref ft; features) {
-    if(ft.name !in app.world.features) app.world.features[ft.name] = null;
-    if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
-    if(data.coord !in app.world.features[ft.name] && data.coord !in app.world.pendingFeatures[ft.name] && data.coord !in app.world.featuresModified) {
-      app.world.pendingFeatures[ft.name][data.coord] = data.featureData[ft.name];
+    if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
+    if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
+    if(data.coord !in app.world.vegetation[ft.name] && data.coord !in app.world.vegetation.pending[ft.name] && data.coord !in app.world.vegetation.modified) {
+      app.world.vegetation.pending[ft.name][data.coord] = data.featureData[ft.name];
     }
   }
 
-  if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.pendingUnsettle.length);
-  foreach(tile; app.world.pendingUnsettle){
-    app.world.unsettleBlocks(app.world.blocks, tile);
-    app.unsettleDwarves(tile);
-  }
-  app.world.pendingUnsettle = [];
+  if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.chunks.unsettle.length);
+  foreach(tile; app.world.chunks.unsettle) { app.world.unsettleBlocks(app.world.drops, tile); }
+  app.world.chunks.unsettle = [];
 }

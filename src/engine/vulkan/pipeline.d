@@ -12,10 +12,17 @@ import validation : nameVulkanObject;
 /** GraphicsPipeline */
 struct GraphicsPipeline {
   VkPipelineLayout layout;
+  VkPrimitiveTopology topology;
   VkPipeline[Specialization] variants;
 
-  /** Default (alpha-test) pipeline — lets existing `.pipeline` call sites work untouched */
+  /** Default stored variant (compute / externally-set pipelines). No building. */
   @property VkPipeline pipeline(Specialization s = Specialization.init) { return variants[s]; }
+
+  /** Lazy: return the variant, building + caching on first request */
+  VkPipeline get(ref App app, Specialization s = Specialization.init) {
+    if(auto p = s in variants) return *p;
+    return app.buildVariant(topology, layout, s);
+  }
 
   /** Store an externally-created pipeline (e.g. compute, which builds outside create) */
   void set(VkPipeline p, Specialization s = Specialization.init) { variants[s] = p; }
@@ -33,48 +40,54 @@ struct GraphicsPipeline {
   }
 }
 
-/** Create a GraphicsPipeline object for a specified topology */
-void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST ) {
+/** Set up the GraphicsPipeline (layout + topology); variants build lazily on first use */
+void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
   app.pipelines[topology] = GraphicsPipeline();
+  app.pipelines[topology].topology = topology;
+
+  VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    setLayoutCount: 1,
+    pSetLayouts: &app.layouts[Stage.RENDER],
+  };
+  if(app.pipelines[topology].layout is null) app.pipelines[topology].createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
+}
+
+/** Build (and cache) one pipeline variant. All create-state is local: valid for the synchronous
+ *  vkCreateGraphicsPipelines call, then discarded. Rebuilt from scratch on swapchain resize. */
+VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLayout layout, Specialization s) {
   auto bindingDescription = Vertex.getBindingDescription();
   auto attributeDescriptions = Vertex.getRenderDescriptions();
 
-  // Vertex input
   VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
     vertexBindingDescriptionCount: bindingDescription.length,
-    pVertexBindingDescriptions: &bindingDescription[0],     // Vertex Description
+    pVertexBindingDescriptions: &bindingDescription[0],
     vertexAttributeDescriptionCount: attributeDescriptions.length,
-    pVertexAttributeDescriptions: &attributeDescriptions[0] // Vertex Attributes
+    pVertexAttributeDescriptions: &attributeDescriptions[0]
   };
 
-  // Input Assembly
   VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
     topology: topology
   };
 
-  // Viewport
   VkViewport viewport = {
     minDepth: 0.0f, maxDepth: 1.0f,
     width: cast(float) app.camera.width,
     height: cast(float) app.camera.height,
   };
-
   VkRect2D scissor = { offset: {0, 0}, extent: app.camera.currentExtent };
-
   VkPipelineViewportStateCreateInfo viewportState = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
     viewportCount: 1, pViewports: &viewport,
     scissorCount: 1, pScissors: &scissor
   };
 
-  // Rasterizer (Point, Line, Fill)
   VkPipelineRasterizationStateCreateInfo rasterizer = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-    polygonMode: VK_POLYGON_MODE_FILL,                        // Point/Line/Fill
-    lineWidth: 1.0f,
-    cullMode: VK_CULL_MODE_NONE,                              //VK_CULL_MODE_BACK_BIT,
+    polygonMode: VK_POLYGON_MODE_FILL, lineWidth: 1.0f,
+    cullMode: VK_CULL_MODE_NONE,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
   };
 
@@ -88,57 +101,49 @@ void createGraphicsPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMI
   VkPipelineColorBlendAttachmentState colorBlendAttachment = {
     colorWriteMask: VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     blendEnable: VK_TRUE,
-    srcColorBlendFactor: VK_BLEND_FACTOR_ONE,                 // Optional
-    dstColorBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // Optional
-    colorBlendOp: VK_BLEND_OP_ADD,                            // Optional
-    srcAlphaBlendFactor: VK_BLEND_FACTOR_ONE,                 // Optional
-    dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE,                 // Optional
-    alphaBlendOp: VK_BLEND_OP_ADD                             // Optional
+    srcColorBlendFactor: VK_BLEND_FACTOR_ONE, dstColorBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+    colorBlendOp: VK_BLEND_OP_ADD,
+    srcAlphaBlendFactor: VK_BLEND_FACTOR_ONE, dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE,
+    alphaBlendOp: VK_BLEND_OP_ADD
   };
 
   VkPipelineColorBlendStateCreateInfo colorBlending = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-    logicOpEnable: VK_FALSE,
-    logicOp: VK_LOGIC_OP_COPY,                                // Optional
-    attachmentCount: 1,
-    pAttachments: &colorBlendAttachment,
+    logicOpEnable: VK_FALSE, logicOp: VK_LOGIC_OP_COPY,
+    attachmentCount: 1, pAttachments: &colorBlendAttachment,
     blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
   };
-
-  VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
-    sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-    setLayoutCount: 1,
-    pSetLayouts: &app.layouts[Stage.RENDER],
-  };
-  if(app.pipelines[topology].layout is null) app.pipelines[topology].createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
 
   VkPipelineDepthStencilStateCreateInfo depthStencil = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
     depthTestEnable: VK_TRUE,
-    depthWriteEnable: VK_TRUE,
+    depthWriteEnable: s.sdf ? VK_FALSE : VK_TRUE, // Write depth to self-occlude [default], SDF does not (blended/translucent geometry)
     depthCompareOp: VK_COMPARE_OP_LESS,
   };
 
+  ShaderStage stages = createStageInfo(app.shaders, topology, s);
 
-  static foreach(i; [Specialization(true,true), Specialization(true,false),
-                     Specialization(false,true), Specialization(false,false)]) {{
-    ShaderStage stages = createStageInfo(app.shaders, topology, i);
-    VkGraphicsPipelineCreateInfo pipelineInfo = {
-      sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-      stageCount: cast(uint)stages.info.length,
-      pStages: &stages.info[0],
-      pVertexInputState: &vertexInputInfo,
-      pInputAssemblyState: &inputAssembly,
-      pViewportState: &viewportState,
-      pRasterizationState: &rasterizer,
-      pMultisampleState: &multisampling,
-      pDepthStencilState: &depthStencil,
-      pColorBlendState: &colorBlending,
-      layout: app.pipelines[topology].layout,
-      renderPass: app.sceneCmd.pass
-    };
-    app.pipelines[topology].create(app, pipelineInfo, format("Render %s, alpha = %d", topology, i.alpha), app.swapDeletionQueue, i);
-  }}
+  VkGraphicsPipelineCreateInfo pipelineInfo = {
+    sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    stageCount: cast(uint)stages.info.length,
+    pStages: &stages.info[0],
+    pVertexInputState: &vertexInputInfo,
+    pInputAssemblyState: &inputAssembly,
+    pViewportState: &viewportState,
+    pRasterizationState: &rasterizer,
+    pMultisampleState: &multisampling,
+    pDepthStencilState: &depthStencil,
+    pColorBlendState: &colorBlending,
+    layout: layout,
+    renderPass: app.sceneCmd.pass
+  };
+
+  VkPipeline p;
+  enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, app.allocator, &p));
+  app.nameVulkanObject(p, cstr("[PIPELINE] %s A%d I%d S%d", topology, s.alpha, s.instanced, s.sdf), VK_OBJECT_TYPE_PIPELINE);
+  app.swapDeletionQueue.add((){ vkDestroyPipeline(app.device, p, app.allocator); });
+  app.pipelines[topology].variants[s] = p;
+  return p;
 }
 
 /** Create a GraphicsPipeline object for Post-process */

@@ -10,142 +10,190 @@ import ctfe : parseTokens, splitColon;
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
 mixin(generateResourceEnum(import("data/raws/materials.txt")));
-mixin(generateHeightToResource(import("data/raws/terrain.txt")));
-mixin(generateFeatureData(import("data/raws/features.txt")));
+mixin(generateResourceClassEnum(import("data/raws/materials.txt")));
 
-/** CTFE: generates heightToResource function */
-string generateHeightToResource(string raw) pure {
-  auto tokens = parseTokens(raw);
-  string result = "@nogc pure ResourceType heightToResource(float h, float t) nothrow {\n";
-  string hi = "";
-  string[] results;
-  foreach(token; tokens) {
+immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
+immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
+immutable ResourceT[] resourceTable = parseResources(import("data/raws/materials.txt"));
+immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
+
+/** TODO: split materials and items into separate concepts (template + material composition).
+ * Currently materials.txt conflates three orthogonal things behind [CLASS:Item] tags:
+ *   - Material: the substance (Stone, Iron, Wood, Water) - mesh/texture/classes, hardness, value, weight.
+ *   - Item template: the shape/type (Axe, Sword, Cup) - accepted material classes, stack, durability, tool fn.
+ * A concrete item = (template x material): "StoneAxe" is Axe made of Stone, IronAxe is Axe of Iron -
+ * NOT a hand-authored material. Reactions output a template and inherit the material from an input
+ * (e.g. AxeMaking: Flint + Wood -> Axe, axe material = the flint's material), so one Axe template +
+ * one reaction yields StoneAxe/IronAxe/etc. without a combinatorial list of hand-written entries.
+ *
+ * We want to represent a concrete item as a composite (template, material) stored on the block itself -
+ * two fields (ItemTemplate template, Material material), NOT a generated per-combo type. Name
+ * ("Stone Axe"), texture/tint, weight, value and quality are all computed from the (template, material)
+ * pair at use time. Adding a new material (e.g. Iron) then makes every template craftable from it for
+ * free, with zero new entries. This means code currently keyed on a single ResourceType (inventory,
+ * textures, reactions, rendering) must move to inspecting the pair. */
+
+/** One terrain height band: an upper threshold and the resources eligible at that height. */
+struct HeightBand { float threshold; ResourceType[] results; }
+
+/** CTFE: parse terrain raws into height bands (resources resolved to enum at compile time). */
+HeightBand[] parseHeightBands(string raw) pure {
+  HeightBand[] bands;
+  foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     if(p[0] == "HEIGHT_RULE" && p.length == 3) {
-      if(hi != "" && results.length > 0) {
-        result ~= format("  if(h < %sf) { ResourceType[%s] v = [%s]; return v[cast(uint)(t * %s) %% %s]; }\n",
-          hi, results.length, results.map!(r => "ResourceType." ~ r).join(", "), results.length, results.length);
-      }
-      hi = p[2]; results = [];
-    } else if(p[0] == "RESULT" && p.length == 2) { results ~= p[1]; }
+      bands ~= HeightBand(to!float(p[2]), []);
+    }else if(p[0] == "RESULT" && p.length == 2 && bands.length){ bands[$-1].results ~= p[1].to!ResourceType; }
   }
-  if(results.length > 0) result ~= format("  return ResourceType.%s;\n", results[0]);
+  return bands;
+}
+
+/** Surface resource for a normalised height h; t in [0,1) picks among a band's variants.
+    Bands are tested in order; the last band is the unconditional fallback (its threshold is unused). */
+@nogc pure ResourceType heightToResource(float h, float t) nothrow {
+  foreach(ref b; heightBands[0 .. $-1]){
+    if(h < b.threshold){ return(b.results[cast(uint)(t * b.results.length) % b.results.length]); }
+  }
+  return(heightBands[$-1].results[0]);
+}
+
+/** CTFE: generate the ResourceType enum — member names only; per-material data lives in resourceTable. */
+string generateResourceEnum(string raw) pure {
+  string result = "enum ResourceType : ubyte {\n";
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length >= 2 && p[0] == "MATERIAL") result ~= "  " ~ p[1] ~ ",\n";
+  }
   return result ~ "}\n";
 }
 
-/** CTFE: generates ResourceType enum and resourceData function */
-string generateResourceEnum(string raw) pure {
-  auto tokens = parseTokens(raw);
-  string enumResult   = "enum ResourceType : ubyte {\n";
-  string switchResult = "@nogc pure ResourceT resourceData(ResourceType rt) nothrow {\n  final switch(rt) {\n";
-  string current = "", texture = "None", mesh = "Blocks", color = "Colors.white";
-  bool traversable = false, buildable = false;
-  ubyte maxStack = 1;
-  float cost = 0.0f, scale = 1.0f;
-
-  void emitCurrent() {
-    if(current == "") return;
-    enumResult  ~= format("  %s,\n", current);
-    switchResult ~= format("    case ResourceType.%s: return ResourceT(\"%s\", %s, %s, %s, %sf, \"%s\", %sf, %s);\n",
-      current, texture, traversable, buildable, maxStack, cost, mesh, scale, color);
+/** CTFE: collect every distinct [CLASS:x] tag into the ResourceClass enum (None = sentinel). */
+string generateResourceClassEnum(string raw) pure {
+  string[] seen;
+  void add(string s){ foreach(x; seen) if(x == s) return; seen ~= s; }
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length >= 2 && p[0] == "CLASS") { add(p[1]); }
+    if(p.length >= 2 && p[0] == "MATERIAL" && p[1] != "None") { add(p[1]); }
   }
+  string result = "enum ResourceClass : ubyte {\n  None,\n";
+  foreach(s; seen) result ~= "  " ~ s ~ ",\n";
+  return result ~ "}\n";
+}
 
-  foreach(token; tokens) {
+/** CTFE: resolve a Colors member by name, defaults to white. */
+Colors toColor(string name) pure {
+  static foreach(m; __traits(allMembers, Colors)) if(name == m) return __traits(getMember, Colors, m);
+  return Colors.white;
+}
+
+/** CTFE: parse materials into the per-ResourceType data table (parallel to the enum's member order). */
+ResourceT[] parseResources(string raw) pure {
+  ResourceT[] table; ResourceT cur; bool inMat;
+  foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     switch(p[0]) {
       case "MATERIAL":
-        emitCurrent();
-        current = p[1]; texture = p[1]; mesh = "Blocks"; color = "Colors.white";
-        traversable = false; buildable = false; maxStack = 1; cost = 0.0f; scale = 1.0f;
+        if(inMat) table ~= cur;
+        cur = ResourceT.init; cur.name = p[1]; inMat = true;
+        if(p[1] != "None") cur.classes ~= ClassVal(cast(ubyte)p[1].to!ResourceClass, 0.0f);
         break;
-      case "TEXTURE": texture = p[1]; break;
-      case "TRAVERSABLE": traversable = true; break;
-      case "BUILDABLE": buildable = true; break;
-      case "MESH": mesh = p[1]; break;
-      case "SCALE": scale = to!float(p[1]); break;
-      case "COST": cost = to!float(p[1]); break;
-      case "MAX_STACK": maxStack = cast(ubyte)to!int(p[1]); break;
-      case "COLOR": color = "Colors." ~ p[1]; break;
+      case "MESH":     // MESH:mesh:color:tex3D:tex2D:scale
+        if(p.length > 1) cur.meshName = p[1];
+        if(p.length > 2) cur.color    = toColor(p[2]);
+        if(p.length > 3) cur.tex3D    = p[3];
+        if(p.length > 4) cur.tex2D    = p[4];
+        if(p.length > 5) cur.scale    = to!float(p[5]);
+        break;
+      case "CLASS": cur.classes ~= ClassVal(cast(ubyte)p[1].to!ResourceClass, p.length > 2 ? to!float(p[2]) : 0.0f); break;
       default: break;
     }
   }
-  emitCurrent();
-  return enumResult ~ "}\n" ~ switchResult ~ "  }\n}\n";
+  if(inMat) table ~= cur;
+  return table;
 }
 
-/** CTFE: generates immutable FeatureT[] features */
-string generateFeatureData(string raw) pure {
-  auto tokens = parseTokens(raw);
-  string result = "immutable FeatureT[] features = [\n";
-  string name = "", interaction = "", sound = "";
-  float noiseThreshold = 0.65f, tilePenalty = 0.0f, progressRate = 0.25f;
-  uint hs1, hs2, hmod, hrem, hmin = 1, hmax = 1;
-  string[] spawnOn;
-  string parts = "", drops = "";
-  string pMesh, pRes = "None"; float pSX=1, pSXV=0, pSY=1, pSYV=0, pTaper=0, pOffY=0; bool pRepeat=false;
-  string dMat; int dMin=1, dMax=1; bool dPerHeight=false;
+/** Per-material data, indexed by ResourceType (enum's ubyte value indexes the table). */
+@nogc pure const(ResourceT) resourceData(ResourceType rt) nothrow { return resourceTable[rt]; }
 
-  void emitPart() {
-    if(pMesh == "") return;
-    parts ~= format("    FeaturePartT(\"%s\", %sf, %sf, %sf, %sf, %sf, %sf, %s, \"%s\"),\n",
-      pMesh, pSX, pSXV, pSY, pSYV, pTaper, pOffY, pRepeat, pRes);
-    pMesh=""; pRes="None"; pSX=1; pSXV=0; pSY=1; pSYV=0; pTaper=0; pOffY=0; pRepeat=false;
-  }
-
-  void emitDrop() {
-    if(dMat == "") return;
-    drops ~= format("    FeatureDropT(\"%s\", %s, %s, %s),\n", dMat, dMin, dMax, dPerHeight);
-    dMat=""; dMin=1; dMax=1; dPerHeight=false;
-  }
-
-  void emitFeature() {
-    if(name == "") return;
-    string spawnList = spawnOn.map!(s => format("\"%s\"", s)).join(", ");
-    result ~= format("  FeatureT(\"%s\", [%s], %sf, %su, %su, %su, %su, %su, %su, %sf, %sf, \"%s\", \"%s\",\n  [\n%s  ],\n  [\n%s  ]),\n",
-      name, spawnList, noiseThreshold, hs1, hs2, hmod, hrem, hmin, hmax, tilePenalty, progressRate, interaction, sound, parts, drops);
-    name=""; interaction="";sound=""; spawnOn=[]; parts=""; drops="";
-    noiseThreshold=0.65f; tilePenalty=0.0f; progressRate=0.25f;
-    hs1=0; hs2=0; hmod=1; hrem=0; hmin=1; hmax=1;
-  }
-
-  foreach(token; tokens) {
+/** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
+FeatureT[] parseFeatures(string raw) pure {
+  FeatureT[] features;
+  FeatureT ft; FeaturePartT part; FeatureDropT drop;
+  bool inFeature;
+  foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     switch(p[0]) {
-      case "FEATURE": emitFeature(); name = p[1]; break;
-      case "SPAWN_ON": spawnOn ~= p[1]; break;
-      case "NOISE_THRESHOLD":  noiseThreshold  = to!float(p[1]); break;
-      case "HASH_SEED1": hs1 = to!uint(p[1]); break;
-      case "HASH_SEED2": hs2 = to!uint(p[1]); break;
-      case "HASH_MOD": hmod = to!uint(p[1]); break;
-      case "HASH_REM": hrem = to!uint(p[1]); break;
-      case "HEIGHT_MIN": hmin = to!uint(p[1]); break;
-      case "HEIGHT_MAX": hmax = to!uint(p[1]); break;
-      case "TILE_PENALTY": tilePenalty = to!float(p[1]); break;
-      case "PROGRESS_RATE": progressRate = to!float(p[1]); break;
-      case "INTERACTION": interaction = p[1]; break;
-      case "SOUND": sound = p[1]; break;
-      case "PART_END": emitPart(); break;
-      case "DROP_END": emitDrop(); break;
-      case "MESH": pMesh = p[1]; break;
-      case "RESOURCE": pRes = p[1]; break;
-      case "SCALE_X": pSX = to!float(p[1]); break;
-      case "SCALE_X_VARIANCE": pSXV = to!float(p[1]); break;
-      case "SCALE_Y": pSY = (p[1] == "tileHeight" ? -1.0f : to!float(p[1])); break;
-      case "SCALE_Y_VARIANCE": pSYV = to!float(p[1]); break;
-      case "TAPER": pTaper = to!float(p[1]); break;
-      case "OFFSET_Y": pOffY = (p[1] == "height" ? -1.0f : to!float(p[1])); break;
-      case "REPEAT": pRepeat = true; break;
-      case "MATERIAL": dMat = p[1]; break;
-      case "DROP_MIN": dMin = to!int(p[1]); break;
-      case "DROP_MAX": dMax = to!int(p[1]); break;
-      case "DROP_COUNT": dMin = to!int(p[1]); dMax = dMin; break;
-      case "DROP_PER_HEIGHT": dPerHeight = true; break;
+      case "FEATURE":          if(inFeature){features ~= ft;}
+                               ft = FeatureT.init; ft.name = p[1];
+                               part = FeaturePartT.init; drop = FeatureDropT.init; inFeature = true; break;
+      case "SPAWN_ON":         ft.spawnOn ~= p[1]; break;
+      case "NOISE_THRESHOLD":  ft.noiseThreshold = to!float(p[1]); break;
+      case "HASH_SEED1":       ft.hashSeed1 = to!uint(p[1]); break;
+      case "HASH_SEED2":       ft.hashSeed2 = to!uint(p[1]); break;
+      case "HASH_MOD":         ft.hashMod = to!uint(p[1]); break;
+      case "HASH_REM":         ft.hashRem = to!uint(p[1]); break;
+      case "HEIGHT_MIN":       ft.heightMin = to!uint(p[1]); break;
+      case "HEIGHT_MAX":       ft.heightMax = to!uint(p[1]); break;
+      case "TILE_PENALTY":     ft.tilePenalty = to!float(p[1]); break;
+      case "PROGRESS_RATE":    ft.progressRate = to!float(p[1]); break;
+      case "INTERACTION":      ft.interaction = p[1]; break;
+      case "SOUND":            ft.sound = p[1]; break;
+      // Lsystem
+      case "LSYSTEM_ANGLE":    ft.lsystemYaw = ft.lsystemPitch = ft.lsystemRoll = to!float(p[1]); break;
+      case "LSYSTEM_YAW":      ft.lsystemYaw   = to!float(p[1]); break;
+      case "LSYSTEM_PITCH":    ft.lsystemPitch = to!float(p[1]); break;
+      case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
+      case "AXIOM":            ft.axiom = p[1]; break;
+      case "BRUSH":            if(p.length >= 7){
+                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3], to!float(p[4]), to!float(p[5]), to!bool(p[6]));
+                               } break;
+      case "RULE":             if(p.length >= 4){ ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+      // Current part
+      case "MESH":             part.mesh = p[1]; break;
+      case "RESOURCE":         part.resourceType = p[1]; break;
+      case "SCALE_X":          part.scaleX = to!float(p[1]); break;
+      case "SCALE_X_VARIANCE": part.scaleXVariance = to!float(p[1]); break;
+      case "SCALE_Y":          part.scaleY = (p[1] == "tileHeight" ? -1.0f : to!float(p[1])); break;
+      case "SCALE_Y_VARIANCE": part.scaleYVariance = to!float(p[1]); break;
+      case "TAPER":            part.taper = to!float(p[1]); break;
+      case "OFFSET_Y":         part.offsetY = (p[1] == "height" ? -1.0f : to!float(p[1])); break;
+      case "REPEAT":           part.repeat = true; break;
+      case "PART_END":         if(part.mesh != "") ft.parts ~= part; part = FeaturePartT.init; break;
+      // Current drop
+      case "MATERIAL":         drop.material = p[1]; break;
+      case "DROP_MIN":         drop.countMin = to!int(p[1]); break;
+      case "DROP_MAX":         drop.countMax = to!int(p[1]); break;
+      case "DROP_COUNT":       drop.countMin = to!int(p[1]); drop.countMax = drop.countMin; break;
+      case "DROP_PER_HEIGHT":  drop.perHeight = true; break;
+      case "DROP_END":         if(drop.material != "") ft.drops ~= drop; drop = FeatureDropT.init; break;
+      default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
+    }
+  }
+  if(inFeature){ features ~= ft; }
+  return(features);
+}
+
+Reaction[] parseReactions(string raw) pure {
+  Reaction[] table; Reaction r; bool inReaction;
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    switch(p[0]) {
+      case "REACTION": if(inReaction) table ~= r; r = Reaction.init; r.name = p[1]; inReaction = true; break;
+      case "VERB": r.verb  = p[1]; break;
+      case "SKILL": r.skill = p[1]; break;
+      case "WORKSHOP": r.workshop = p[1].to!WorkshopUse; break;
+      case "PROGRESS_RATE": r.progressRate = to!float(p[1]); break;
+      case "INPUT": if(p.length >= 3) r.inputs  ~= Ingredient(cast(ubyte)p[1].to!ResourceClass, p[2].to!uint); break;
+      case "OUTPUT": if(p.length >= 3) r.outputs ~= Product(cast(ubyte)p[1].to!ResourceType,  1.0f, p[2].to!uint); break;
       default: break;
     }
   }
-  emitFeature();
-  return result ~ "];\n";
+  if(inReaction) table ~= r;
+  return table;
 }
+

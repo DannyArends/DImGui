@@ -25,16 +25,26 @@ void main() {
   Material mat = materialSSBO.materials[uint(mesh.mid)];
   if(fragInstance[1] >= 0) mat = materialSSBO.materials[uint(fragInstance[1])];
 
-  vec3 baseColor = fragColor.rgb;
+  // Color RGB & alpha
+  vec3 rgb = fragColor.rgb; float alpha = fragColor.a;
 
+  // Multiply texture to basecolor & adjust alpha
   if (!(TOPOLOGY == 1) && mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
-    if(ALPHA_TEST && texSample.a < 0.2f) discard;
-    baseColor *= texSample.rgb;
+    rgb *= texSample.rgb; alpha = texSample.a;
   }
-  if (ALPHA_TEST && mat.oid >= 0 && texture(textureSampler[mat.oid], fragTexCoord).a < 0.4f) discard;
+  // If we do alpha testing: Opacity texture alpha & SDF override
+  if (ALPHA_TEST) {
+    if (mat.oid >= 0) { alpha = texture(textureSampler[mat.oid], fragTexCoord).a; }
+    if (SDF) {
+      float adj = fwidth(alpha) * 0.5;
+      alpha = smoothstep(0.5 - adj, 0.5 + adj, alpha);
+    }
+    if (alpha < 0.05f) discard; // Discard <.05
+  }
 
-  if (ubo.lightingMode == 0u) { outColor = vec4(baseColor * 0.2, 1.0); return; }
+  // Lighting mode 0: Return base color
+  if (ubo.lightingMode == 0u) { outColor = vec4(rgb * 0.2, alpha); return; }
 
   vec3 normalForLighting = normalize(fragNormal);
   /// Surface normalForLighting
@@ -47,14 +57,14 @@ void main() {
 
   /// Shadow cast by light 0
   // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
-  vec3 surfaceColor = baseColor * 0.01;
+  vec3 surfaceColor = rgb * 0.01;
   bool useShadows = ubo.lightingMode == 2u;
 
   // Directional/global lights (position.w == 0, not clustered)
   for (int i = 0; i < ubo.nlights; ++i) {
     if (lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
     if (lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
-    surfaceColor += shadeLight(uint(i), baseColor, fragPosWorld, normalForLighting, useShadows);
+    surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, useShadows);
   }
 
   // Point lights via this fragment's froxel linked list
@@ -63,8 +73,8 @@ void main() {
   uint cid = froxelIndex((clip.xy / clip.w) * 0.5 + 0.5, -viewPos.z);
 
   for (uint n = head[cid].head; n != NIL; n = indices[n].next) {
-    surfaceColor += shadeLight(indices[n].light, baseColor, fragPosWorld, normalForLighting, useShadows);
+    surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, useShadows);
   }
-  outColor = vec4(surfaceColor, 1.0);
+  outColor = vec4(surfaceColor, alpha);
 }
 

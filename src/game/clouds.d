@@ -11,7 +11,14 @@ import gameobjects : Clouds;
 import noise : smoothNoise;
 import serialization : readData, writeData;
 import tile : FACE_OFFSETS, getWater, setWater, getTileAt;
-import water : WATER_MAX;
+import vector : x, z;
+import water : WATER_MAX, WATER_TARGET_ACTIVE, activeSim;
+
+struct Weather {
+  Clouds clouds;
+  float[int[2]] density;
+  bool rebuildPending = false;
+}
 
 enum int CLOUD_LAYERS = 8;              // Layers
 enum int CLOUD_STEP = 6;                // Step
@@ -24,92 +31,92 @@ enum float RAIN_DEPLETE = 0.05f;        // density removed from a cloud cell per
 enum float CLOUD_DMAX =  1.0f;          // max positive density (thickest cloud)
 enum float CLOUD_DMIN =  0.0f;          // max negative density (fully cleared)
 
-private bool isCloud(ref GameApp app, int gx, int y, int gz) {
-  if(y < 0 || y >= CLOUD_LAYERS) return false;
-  auto p = [gx, gz] in app.world.cloudDensity;
-  if(p is null) return false;
-  return y < (*p) * CLOUD_LAYERS;
-}
+/** World tile X/Z -> cloud-cell key (coarse CLOUD_STEP grid). */
+@nogc pure int[2] cloudCell(int tx, int tz) nothrow { return [tx / CLOUD_STEP, tz / CLOUD_STEP]; }
 
-void seedClouds(ref GameApp app, int[3] coord) {
-  int cs = app.world.chunkSize;
-  int baseX = coord[0] * cs, baseZ = coord[2] * cs;
-  for(int lz = 0; lz < cs; lz += CLOUD_STEP)
+/** Cloud-cell key -> a random world tile X/Z inside that cell. */
+int[2] cloudTile(const int[2] key) { return [key[0]*CLOUD_STEP + uniform(0, CLOUD_STEP), key[1]*CLOUD_STEP + uniform(0, CLOUD_STEP)]; }
+
+/** Seed cloud density for every cloud-cell column over a newly-loaded chunk from 2D noise; skips already-seeded cells. */
+void seedClouds(ref World world, const int[3] coord) {
+  int cs = world.chunkSize;
+  int baseX = coord.x * cs, baseZ = coord.z * cs;
+  for(int lz = 0; lz < cs; lz += CLOUD_STEP) {
   for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
-    int gx = (baseX + lx) / CLOUD_STEP, gz = (baseZ + lz) / CLOUD_STEP;
-    if([gx, gz] in app.world.cloudDensity) continue;        // already seeded
-    float n = smoothNoise([gx*CLOUD_FREQ, gz*CLOUD_FREQ], 1337);   // 2D, one sample per column
-    float d = (n - CLOUD_THRESHOLD) / 0.2f;
-    app.world.cloudDensity[[gx, gz]] = d < 0 ? 0 : (d > 1 ? 1 : d);
-  }
+    auto cell = cloudCell(baseX + lx, baseZ + lz);
+    if(cell in world.weather.density) continue;
+    float d = (smoothNoise([cell[0]*CLOUD_FREQ, cell[1]*CLOUD_FREQ], 1337) - CLOUD_THRESHOLD) / 0.2f;
+    world.weather.density[[cell[0], cell[1]]] = d < 0 ? 0 : (d > 1 ? 1 : d);
+  } }
 }
 
-void spawnClouds(ref GameApp app) {
-  if(uniform(0, 1000) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
-  auto coords = app.world.chunks.keys;
+/** Occasionally (CLOUD_SPAWN_CHANCE) add a moisture pulse to one random cloud-cell over a random loaded chunk. */
+void spawnClouds(ref World world) {
+  if(uniform(0, 10000) >= CLOUD_SPAWN_CHANCE) return;     // most ticks: nothing
+  auto coords = world.chunks.keys;
+  auto cs = world.chunkSize;
   if(coords.length == 0) return;
-  int cs = app.world.chunkSize;
   int[3] cc = coords[uniform(0, coords.length)];
-  int gx = (cc[0]*cs + uniform(0, cs)) / CLOUD_STEP;
-  int gz = (cc[2]*cs + uniform(0, cs)) / CLOUD_STEP;
-  app.world.cloudDensity[[gx, gz]] += CLOUD_SPAWN_AMOUNT;
+  world.weather.density[cloudCell(cc[0] * cs + uniform(0, cs), cc[2] * cs + uniform(0, cs))] += CLOUD_SPAWN_AMOUNT;
 }
 
-void rebuildClouds(ref GameApp app) {
-  if(app.world.clouds is null) return;
-  float ts = app.world.tileSize, th = app.world.tileHeight;
-  int cs = app.world.chunkSize;
-  float baseY = app.world.height + 8.0f * th;
-  float vox = CLOUD_STEP * ts, voxH = th * CLOUD_STEP;
+/** Build the cloud face-instance mesh from a density snapshot over the given chunk coords (pure; runs on a worker). */
+DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] density, const int[3][] coords) {
+  float h(int gx, int gz){ auto p = [gx,gz] in density; return((p is null)? 0.0f : (*p) * CLOUD_LAYERS); }
+  float baseY = wd.height + 8.0f * wd.tileHeight; 
+  float voxH = wd.tileHeight*CLOUD_STEP;
+  float vox = CLOUD_STEP*wd.tileSize;
 
   DrawInstance[] inst;
-  foreach(coord; app.world.chunks.keys) {
-    int baseX = coord[0] * cs, baseZ = coord[2] * cs;
-    for(int lz = 0; lz < cs; lz += CLOUD_STEP) { for(int lx = 0; lx < cs; lx += CLOUD_STEP) {
-      int gx = (baseX + lx) / CLOUD_STEP;
-      int gz = (baseZ + lz) / CLOUD_STEP;
-      foreach(y; 0 .. CLOUD_LAYERS) {
-        if(!app.isCloud(gx, y, gz)) continue;
-        float px = (baseX + lx) * ts, py = baseY + y*voxH, pz = (baseZ + lz) * ts;
-        foreach(f; 0 .. 6) {
-          if(app.isCloud(gx + FACE_OFFSETS[f][0], y + FACE_OFFSETS[f][1], gz + FACE_OFFSETS[f][2])) continue;
-          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px, py, pz, vox, voxH));
+  foreach(coord; coords) {
+    int baseX = coord[0]*wd.chunkSize;
+    int baseZ = coord[2]*wd.chunkSize;
+    for(int lz=0; lz<wd.chunkSize; lz+=CLOUD_STEP) { for(int lx=0; lx<wd.chunkSize; lx+=CLOUD_STEP) {
+      auto cell = cloudCell(baseX + lx, baseZ + lz);
+      float hC = h(cell[0], cell[1]); if(hC <= 0) continue;
+      float[6] hN = [h(cell[0]+1,cell[1]), h(cell[0]-1,cell[1]), hC, hC, h(cell[0],cell[1]+1), h(cell[0],cell[1]-1)];
+      foreach(y; 0..CLOUD_LAYERS) { 
+        if(y>=hC) continue;
+        float px=(baseX+lx)*wd.tileSize, py=baseY+y*voxH, pz=(baseZ+lz)*wd.tileSize;
+        foreach(f; 0..6) {
+          int ny = y + FACE_OFFSETS[f][1];
+          if(ny >= 0 && ny < CLOUD_LAYERS && ny < hN[f]) continue;
+          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px , py, pz, vox, voxH));
         }
       }
     } }
   }
-  app.world.clouds.instances = inst;
-  app.world.clouds.instances.invalidate();
-  if(app.world.clouds.box !is null) app.world.clouds.box.dirty = true;
+  return(inst);
 }
 
-/** Relax cloud density toward 0 and clamp; prune negligible entries. */
-void decayCloudDensity(ref GameApp app) {
+/** Update cloud density by spawning some new ones and clamp; prune negligible entries. */
+void updateCloudDensity(ref World world) {
+  world.spawnClouds(); // Add some random moisture
+  int active = world.chunks.activeSim();
+
   int[2][] dead;
-  foreach(key, ref d; app.world.cloudDensity) {
-    if(d > CLOUD_DMAX){ d = CLOUD_DMAX; }
-    if(d < CLOUD_DMIN){ d = CLOUD_DMIN; }
-    if(d == 0){ dead ~= key; }            // back to baseline -> drop from map
+  foreach(key, ref d; world.weather.density) {
+    d -= clamp(0.005f + 0.01f * ((active - WATER_TARGET_ACTIVE) / cast(float)WATER_TARGET_ACTIVE), 0.0f, 0.03f); // relax toward baseline
+    if(d > CLOUD_DMAX) d = CLOUD_DMAX;
+    if(d <= CLOUD_DMIN) { d = 0; dead ~= key; }   // faded out -> prune
   }
-  foreach(k; dead) app.world.cloudDensity.remove(k);
+  foreach(k; dead) world.weather.density.remove(k);
 }
 
+/** Update density of clouds and then make it rain. */
 void rainTick(ref GameApp app) {
-  int cs = app.world.chunkSize;
   int cloudY = app.world.chunkHeight - 1;
   int drops = 0;
-
-  foreach(key, d; app.world.cloudDensity) {
-    if(drops >= RAIN_DROPS_PER_TICK) break;        // hit the cap -> stop raining
-    if(d <= 0) continue;
-    if(uniform(0.0f, 1.0f) >= d) continue;          // rain chance scales with density
-    int tx = key[0]*CLOUD_STEP + uniform(0, CLOUD_STEP);
-    int tz = key[1]*CLOUD_STEP + uniform(0, CLOUD_STEP);
-    int[3] spawn = [tx, cloudY, tz];
+  app.world.updateCloudDensity(); // relax + clamp cloud density
+  foreach(key, d; app.world.weather.density) {
+    if(drops >= RAIN_DROPS_PER_TICK) break; // hit the cap -> stop raining
+    if(d <= 0 || uniform(CLOUD_DMIN, CLOUD_DMAX) >= d) continue; // skip: Density < 0 or rain chance lucked out
+    auto t = cloudTile(key);
+    int[3] spawn = [t[0], cloudY, t[1]];
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;
     uint id = app.spawnBlock(spawn, ResourceType.Water);
-    if(auto b = id in app.world.blocks) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
-    app.world.cloudDensity[key] -= RAIN_DEPLETE;
+    if(auto b = id in app.world.drops) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
+    app.world.weather.density[key] -= RAIN_DEPLETE;
     drops++;
   }
 }
@@ -117,33 +124,62 @@ void rainTick(ref GameApp app) {
 /** Convert any landed rain (Water blocks no longer falling) into water level. */
 void settleRain(ref GameApp app) {
   uint[] done;
-  foreach(id, ref b; app.world.blocks) {
+  foreach(id, ref b; app.world.drops) {
     if(b.type != ResourceType.Water) continue;
     if(b.isFalling) continue;                 // still in the air
-    app.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.getWater(b.tile) + 4));
+    app.world.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.world.getWater(b.tile) + 4));
     done ~= id;
   }
-  foreach(id; done) app.world.blocks.remove(id);
-  app.world.blocksDirty = true;
+  foreach(id; done) app.world.drops.registry.remove(id);
+  app.world.drops.dirty = true;
 }
 
 /** Persisted cloud density cell. */
 struct CloudDiff { int gx, gz; float density; }
 
 /** Save mutable cloud density deltas. */
-void saveClouds(ref GameApp app) {
+void saveClouds(const World world) {
   CloudDiff[] flat;
-  foreach(key, d; app.world.cloudDensity) if(d != 0) flat ~= CloudDiff(key[0], key[1], d);
-  if(flat.length == 0) { SDL_RemovePath(app.world.cloudsPath()); return; }
-  writeData(app.world.cloudsPath(), flat, cast(uint)flat.length);
+  foreach(key, d; world.weather.density) if(d != 0) flat ~= CloudDiff(key[0], key[1], d);
+  if(flat.length == 0) { SDL_RemovePath(world.cloudsPath()); return; }
+  writeData(world.cloudsPath(), flat, cast(uint)flat.length);
+  SDL_Log("saveClouds: %d cells", cast(int)flat.length);
 }
 
 /** Load cloud density deltas. */
-void loadClouds(ref GameApp app) {
+void loadClouds(ref World world) {
   CloudDiff[] flat;
   uint h;
-  if(!readData(app.world.cloudsPath(), flat, h)) return;
-  app.world.cloudDensity = null;
-  foreach(ref c; flat) app.world.cloudDensity[[c.gx, c.gz]] = c.density;
+  if(!readData(world.cloudsPath(), flat, h)) return;
+  world.weather.density = null;
+  foreach(ref c; flat) { world.weather.density[[c.gx, c.gz]] = c.density; }
   SDL_Log("loadClouds: %d cells", cast(int)flat.length);
+}
+
+void applyCloudInstances(ref World world, DrawInstance[] inst) {
+  world.weather.rebuildPending = false;
+  if(world.weather.clouds is null) return;
+  world.weather.clouds.instances = inst;
+  world.weather.clouds.syncInstances();
+}
+
+/** Cloud re-mesh worker message: a flattened density snapshot + the loaded chunk coords. */
+struct CloudCell { int[2] key; float density; }
+struct CloudRequest { immutable(CloudCell)[] cells; immutable(int[3])[] coords; }
+struct CloudResult { DrawInstance[] instances; }
+
+/** Build the worker payload from current density and dispatch to a free worker (one in flight at a time). */
+void requestCloudRebuild(ref GameApp app) {
+  if(app.world.weather.clouds is null || app.world.weather.rebuildPending) return;
+  CloudCell[] cells;
+  foreach(k, v; app.world.weather.density){ cells ~= CloudCell([k[0], k[1]], v); }
+  auto coords = app.world.chunks.keys;
+  foreach(tid; app.concurrency.workers.keys) {
+    if(!app.concurrency.workers[tid]) {
+      app.concurrency.workers[tid] = true;
+      app.world.weather.rebuildPending = true;
+      tid.send(cast(immutable(WorldData))app.world.data, immutable(CloudRequest)(cells.idup, coords.idup));
+      return;
+    }
+  } // no free worker this tick: retry next tick (pending stays false)
 }

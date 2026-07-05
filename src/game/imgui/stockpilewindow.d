@@ -17,8 +17,8 @@ private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on =
 private auto typesWhere(scope bool delegate(ResourceType) keep) { return [EnumMembers!ResourceType].filter!(t => t != ResourceType.None && keep(t)); }
 
 /** Leaf label: "Name  (n)##id", count shown only when stocked. */
-private const(char)* leaf(ref GameApp app, ref Stockpile sp, ResourceType t, string label) {
-  uint n = app.countOf(sp, t);
+private const(char)* leaf(const Stockpile sp, const Drops drops, ResourceType t, string label) {
+  uint n = sp.countOf(drops, t);
   return n > 0 ? cstr("%s  (%d)##%d", label, n, cast(int)t) : cstr("%s##%d", label, cast(int)t);
 }
 
@@ -33,7 +33,7 @@ private void tally(ref Stockpile sp, bool delegate(ResourceType) keep, out int t
 }
 
 private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool buildable) {
-  bool inGroup(ResourceType t) { return resourceData(t).buildable == buildable; }
+  bool inGroup(ResourceType t) { return t.buildable == buildable; }
   int gT, gOn; sp.tally(t => inGroup(t), gT, gOn);
   if(gT == 0) return;
 
@@ -48,11 +48,11 @@ private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool b
     igPushID_Str(b.toStringz);
     if(bT == 1) {                                            // single variant -> base name as leaf
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(app.leaf(sp, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); } 
+        if(cTag(sp.leaf(app.world.drops, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); } 
       }
     } else if(cNode(cstr("%s##b", b), tri(bOn, bT), () => sp.setAll(t => inBase(t), bOn != bT))) {
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(app.leaf(sp, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
+        if(cTag(sp.leaf(app.world.drops, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
       }
       igTreePop();
     }
@@ -75,6 +75,6 @@ void showStockpileContent(ref GameApp app, uint font = 0) {
     if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0,0))) toDelete ~= id;
     igPopID();
   }
-  foreach(id; toDelete) app.removeStockpile(id);
+  foreach(id; toDelete){ app.world.removeStockpile(id); }
   igPopFont();
 }

@@ -51,7 +51,7 @@ struct WorldData {
   const(char)* waterPath() const { return worldFile("_water"); }
 
   /** Convert a world tile coordinate to its local coordinate within its chunk */
-  @nogc pure int[3] localCoord(int[3] tile) const nothrow {
+  @nogc pure int[3] localCoord(const int[3] tile) const nothrow {
     auto coord = chunkCoord(tile);
     return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
   }
@@ -67,7 +67,7 @@ struct WorldData {
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
   /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
-  @nogc pure int[3] chunkCoord(int[3] tile) const nothrow {
+  @nogc pure int[3] chunkCoord(const int[3] tile) const nothrow {
     return [iDiv(tile[0], chunkSize), 0, iDiv(tile[2], chunkSize)];
   }
   @property @nogc pure float blockSize() const nothrow { return(tileSize * 0.25f); }
@@ -83,33 +83,19 @@ struct WorldData {
 /** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */
 struct World {
   WorldData data;                                           /// Immutable world Data
-  Chunk[int[3]] chunks;                                     /// Current chunks
-  bool[int[3]] pendingChunks;                               /// Chunks generated async
-  Geometry[string] featureMeshes;                           /// meshes keyed by mesh name
-  Feature[][int[3]][string] features;                       /// features[featureName][chunkCoord]
-  Feature[][int[3]][string] pendingFeatures;                /// pending features
-  bool[int[3]] featuresModified;                            /// Does a chunk have modified features ?
-  Block[uint] blocks;                                       /// Block registry
-  bool blocksDirty = false;                                 /// Dirty blocks ?
-  Stockpile[uint] stockpiles;                               /// id -> pile
-  uint[int[3]] stockpileAt;                                 /// tile -> stockpile id
-  uint nextStockpileID = 1;                                 /// next stockpile ID
-  uint blockNextID = 1;                                     /// next block ID
-  Geometry[string] dropMeshes;                              /// registered drop meshes
+  alias data this;
+  ChunkField chunks;
+  Vegetation vegetation;
+  Drops drops;
+  StockpileField stockpiles;
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
-  Clouds clouds;                                            /// Clouds
-  float[int[2]] cloudDensity;                               /// mutable cloud density delta over noise base, by [gx,gz] cloud-cell
+  Weather weather;
   WaterTiles water;                                         /// single batched water render object
-  PathMarkers pathMarkers;                                  /// Path markers
-  int[3][] pendingUnsettle;                                 /// Blocks that need to be checked if they might
-  int[3][] pendingBuildTiles;                               /// Built tiles awaiting chunk rebuild
-  int[3][] pendingMineTiles;                                /// Mined tiles awaiting chunk rebuild
-  PathRequest[] pendingPaths;                               /// Pending pathfinding requests
-  alias data this;
+  Paths paths;
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
-  void deallocateChunk(int[3] coord) {
+  void deallocateChunk(const int[3] coord) {
     chunks[coord].tiles.deAllocate = true;
     chunks[coord].deAllocate = true;
   }
@@ -117,7 +103,7 @@ struct World {
   void clear() {
     foreach (coord; chunks.keys) { if (chunks[coord] !is null) { deallocateChunk(coord); } }
     chunks.clear();
-    pendingChunks.clear();
+    chunks.pending.clear();
   }
 
   void deleteWorld(ref GameApp app) {
@@ -134,15 +120,15 @@ struct World {
   }
 }
 
-TileDiff[] flattenDiffs(ref WorldData wd) {
+TileDiff[] flattenDiffs(const WorldData wd) {
   TileDiff[] flat;
   foreach(coord, idxMap; wd.diffs){ foreach(idx, type; idxMap){ flat ~= TileDiff(coord, idx, type); } }
   return flat;
 }
 
-void rebuildDiffs(ref WorldData wd, TileDiff[] flat) {
+void rebuildDiffs(ref WorldData wd, const TileDiff[] flat) {
   wd.diffs = null;
-  foreach(ref d; flat){ wd.diffs[d.coord][d.idx] = cast(ResourceType)d.type; }
+  foreach(d; flat){ wd.diffs[d.coord][d.idx] = cast(ResourceType)d.type; }
 }
 
 void loadWorld(ref GameApp app) {
@@ -160,17 +146,17 @@ void loadWorld(ref GameApp app) {
   } else if(raw.length != 0) { SDL_Log("loadWorld: invalid magic"); }
 
   app.loadBlocks();
-  app.loadWater();
-  app.loadClouds();
+  app.world.loadWater();
+  app.world.loadClouds();
   foreach(ref ft; features) {
-    if(ft.name !in app.world.pendingFeatures) app.world.pendingFeatures[ft.name] = null;
-    if(ft.name !in app.world.features) app.world.features[ft.name] = null;
-    app.loadVegetation!Feature(app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
-    foreach(coord; app.world.pendingFeatures[ft.name].keys) app.world.featuresModified[coord] = true;
+    if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
+    if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
+    app.loadVegetation!Feature(app.world.vegetation.pending[ft.name], app.world.featurePath(ft.name));
+    foreach(coord; app.world.vegetation.pending[ft.name].keys) app.world.vegetation.modified[coord] = true;
   }
-  app.loadStockpiles();
+  app.world.loadStockpiles();
   app.deriveInventory();
-  app.syncBlockInstances();
+  app.world.syncBlockInstances();
 }
 
 /** Save world diffs to disk */
@@ -180,13 +166,13 @@ void saveWorld(ref GameApp app) {
   char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])flat;
   writeFile(app.world.worldPath(), raw);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
-  app.saveBlocks();
-  app.saveWater();
-  app.saveClouds();
+  app.world.saveBlocks();
+  app.world.saveWater();
+  app.world.saveClouds();
   foreach(ref ft; features) {
-    app.saveVegetation!Feature(app.world.features[ft.name], app.world.pendingFeatures[ft.name], app.world.featurePath(ft.name));
+    app.saveVegetation!Feature(app.world.vegetation[ft.name], app.world.vegetation.pending[ft.name], app.world.featurePath(ft.name));
   }
-  app.saveStockpiles();
+  app.world.saveStockpiles();
   app.saveDwarfs();
 }
 
@@ -196,7 +182,7 @@ bool dispatchWorker(ref GameApp app, int[3] coord){
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
       tid.send(cast(immutable(WorldData))app.world.data, coord);
-      app.world.pendingChunks[coord] = true;
+      app.world.chunks.pending[coord] = true;
       if(app.verbose) SDL_Log(cstr("Loading chunk: %s A-sync", coord));
       return(true);
     }
@@ -214,20 +200,20 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   for (int cz = pc.z - effectiveRD; cz <= pc.z + effectiveRD; cz++) {
     for (int cx = pc.x - effectiveRD; cx <= pc.x + effectiveRD; cx++) {
       int[3] coord = [cx, 0, cz];
-      if (coord !in app.world.chunks && coord !in app.world.pendingChunks) { toLoad ~= coord; }
+      if (coord !in app.world.chunks && coord !in app.world.chunks.pending) { toLoad ~= coord; }
     }
   }
   foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
 
   // Load pending trees onto chunks that have been loaded
   foreach(ref ft; features) {
-    if(ft.name !in app.world.pendingFeatures) continue;
-    foreach(coord; app.world.pendingFeatures[ft.name].keys.dup) {
+    if(ft.name !in app.world.vegetation.pending) continue;
+    foreach(coord; app.world.vegetation.pending[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;
-      if(coord !in app.world.features[ft.name]) {
-        app.world.features[ft.name][coord] = app.addFeatureInstances(app.world.pendingFeatures[ft.name][coord], ft, app.world.featureMeshes);
+      if(coord !in app.world.vegetation[ft.name]) {
+        app.world.vegetation[ft.name][coord] = app.addFeatureInstances(app.world.vegetation.pending[ft.name][coord], ft, app.world.vegetation.meshes);
       }
-      app.world.pendingFeatures[ft.name].remove(coord);
+      app.world.vegetation.pending[ft.name].remove(coord);
     }
   }
 
@@ -236,7 +222,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   foreach (coord; app.world.chunks.keys.dup) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
-      app.world.chunks.remove(coord);
+      app.world.chunks.loaded.remove(coord);
       app.removeAllFeatures(coord);
       evicted = true;
     }
@@ -245,6 +231,6 @@ void updateWorld(ref GameApp app, float[3] lookat) {
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
-    if (app.world.chunks[coord].dirty && coord !in app.world.pendingChunks) { app.dispatchWorker(coord); }
+    if (app.world.chunks[coord].dirty && coord !in app.world.chunks.pending) { app.dispatchWorker(coord); }
   }
 }

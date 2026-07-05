@@ -5,34 +5,41 @@
 
 public import engine;
 
-public import block : Block;
-public import chunk : ChunkData;
+public import block : Block, Drops;
+public import clouds : Weather, CloudRequest, CloudResult;
+public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf, DwarfData, DwarfState;
-public import feature : FeatureT, FeaturePartT, FeatureDropT, Feature;
+public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Feature;
 public import inventory : Inventory;
 public import jobs : Job, JobState, Reach;
 public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import pathfinding : PathRequest, PathResult;
+public import pathmarker : Paths;
 public import physx : Fall;
+public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
-public import stockpile : Stockpile;
+public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
 public import tile : builtTile, noTile, storedTile, TileDiff;
-public import raws : ResourceType, resourceData, heightToResource, features;
-public import resources : ResourceT;
+public import raws : reactionTable, ResourceType, ResourceClass, resourceData, heightToResource, features;
+public import resources : ClassVal, ResourceT, traversable, buildable, cost, maxStack, isFood, foodValue;
+public import vegetation : Vegetation;
 public import world : World, WorldData;
 
 import block : settleBlocks;
 import buildwindow : showBuildContent;
+import clouds : buildCloudInstances, applyCloudInstances;
 import chunk : buildChunkData, finalizeChunk;
 import dwarf : spawnDwarf, loadDwarfs, settleDwarves;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
 import imgui : iconTextStr;
+import icosahedron : refineIcosahedron;
 import inventorywindow : showInventoryContent;
 import jobs : applyPathResult;
 import lights : updateSun;
 import lightswindow : showLightsContent;
+import normals : computeTangents;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
@@ -58,6 +65,12 @@ class GameTaskThread : TaskThread {
       (immutable(WorldData) wd, PathRequest req) {
         auto result = pathfindWorker(wd, req);
         main.send(cast(immutable(PathResult))result, mytid);
+      },
+      (immutable(WorldData) wd, immutable(CloudRequest) req) {
+        float[int[2]] density;
+        foreach(c; req.cells) density[c.key] = c.density;
+        auto inst = buildCloudInstances(wd, density, req.coords);
+        main.send(cast(immutable(CloudResult))CloudResult(inst), mytid);
       }
     );
   }
@@ -103,7 +116,21 @@ void initGame(ref GameApp app) {
   app.objects[($-1)].rotate([90.0f, 0.0f, 0.0f]);
   app.objects[($-1)].position([6.0f, 4.0f, 0.0f]);
   SDL_Log("initGame: done");
+
   app.mainDeletionQueue.add((){ app.saveWorld(); });
+}
+
+Geometry makePrimitive(string name) {
+  Geometry m;
+  switch(name) {
+    case "Cube", "Blocks": m = new Cube(); break;
+    case "Cylinder": m = new Cylinder(0.4f, 1.0f, 12); break;
+    case "Cone": m = new Cone(0.5f, 1.0f, 12); break;
+    case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
+    case "Berries": m = new Icosahedron(); m.computeTangents(); m.refineIcosahedron(3); break;
+    default: return null;
+  }
+  return m;
 }
 
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
@@ -121,6 +148,7 @@ void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
   if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); }, 2)) app.camera.isDirty = true;
   app.drainMessages!PathResult((r) { app.applyPathResult(r); });
+  app.drainMessages!CloudResult((r) { app.world.applyCloudInstances(r.instances); });
 }
 
 /** Persist the world to disk on shutdown */

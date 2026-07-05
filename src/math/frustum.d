@@ -39,7 +39,8 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
     if(objects[x].skipFrustum) continue;
     objects[x].inFrustum = false;
     for (size_t i = 0; i < objects[x].box.instances.length; i++) {
-      if (aabbInFrustum(frustum, objects[x].box.bmin(i), objects[x].box.bmax(i))) { objects[x].inFrustum = true; break; }
+      auto b = objects[x].box.boundsWorld(i);
+      if(aabbInFrustum(frustum, b[0], b[1])) { objects[x].inFrustum = true; break; }
     }
     if(objects[x].onFrustumUpdate) objects[x].onFrustumUpdate(objects[x].inFrustum);
   }

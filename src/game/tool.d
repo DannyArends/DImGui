@@ -58,8 +58,8 @@ void interactCommit(ref GameApp app, int[3] tile) {
 
 void waterCommit(ref GameApp app, int[3] tile) {
   if(app.world.getTileAt(tile) != ResourceType.None) return;
-  ubyte cur = cast(ubyte)app.getWater(tile);
-  app.setWater(tile, cast(ubyte)min(WATER_MAX, cur + 3));
+  ubyte cur = cast(ubyte)app.world.getWater(tile);
+  app.world.setWater(tile, cast(ubyte)min(WATER_MAX, cur + 3));
 }
 
 void openBuildSelection(ref GameApp app) {
@@ -102,8 +102,8 @@ void selectPress(ref GameApp app, float[3][2] ray) {
   Job job;
   if(app.getBestTile(ray, wc)) job = miningJob(wc);
   foreach(ref ft; features) {
-    bool matchFeature(string g) { return ft.parts.any!(p => g == ft.name ~ ":" ~ p.mesh); }
-    if(app.getBestVegetation!(Feature, matchFeature)(ray, hits, app.world.features.get(ft.name, null), wc)) {
+    bool matchFeature(string g) { return ft.parts.any!(p => g == ft.name ~ ":" ~ p.mesh) || ft.brushes.any!(b => g == ft.name ~ ":" ~ b.mesh); }
+    if(app.getBestVegetation!(Feature, matchFeature)(ray, hits, app.world.vegetation.get(ft.name, null), wc)) {
       job = interactFeatureJob(wc); break;
     }
   }
@@ -180,7 +180,7 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
     case ToolKind.Query: break;
     case ToolKind.RayPaint:
       if(app.world.inventory.activeTool == ToolMode.Stockpile){
-        app.createStockpile(app.world.inventory.paint.preview);
+        app.world.createStockpile(app.world.inventory.paint.preview);
         app.world.inventory.paint = PaintState.init;
         app.syncBuildGhosts();
       }else if(app.world.inventory.paint.active){ app.commitPaint(); }
