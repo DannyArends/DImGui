@@ -343,6 +343,7 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 /** dwarfTick, ticks all dwarves in random order */
 void dwarfTick(ref GameApp app) {
   if(app.world.dwarves is null) return;
+  // TODO: index snapshot goes stale if tickDwarf ever triggers deleteDwarf mid-loop (e.g. future starvation/death)
   foreach(i; iota(app.world.dwarves.length).array.randomShuffle()) { app.tickDwarf(app.world.dwarves[i]); }
   app.world.syncPathMarkers(app.showPaths);
   app.timed!syncBuildGhosts();
