@@ -37,7 +37,7 @@ struct TextInfo {
   alias data this;
   
   @property @nogc size_t start() nothrow { return(range[0]); }
-  @property @nogc size_t count() nothrow { return(range[0] + range[1]); }
+  @property @nogc size_t count() nothrow { return(range[1]); }
   @property @nogc size_t to() nothrow { return(range[0] + range[1]); }
 }
 
