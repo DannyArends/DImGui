@@ -59,7 +59,7 @@ struct GlyphAtlas {
 }
 
 /** Loads a GlyphAtlas from file */
-void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Regular.ttf", ubyte pointsize = 48, dchar to = '\U000000FF', uint dim = 1024) {
+void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-M.ttf", ubyte pointsize = 48, dchar to = '\U000000FF', uint dim = 1024) {
   filename = fixPath(filename);
   if(app.verbose) SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   app.glyphAtlas = GlyphAtlas(filename);
