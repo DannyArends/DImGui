@@ -370,6 +370,16 @@ void spawnDwarf(ref GameApp app) {
   app.world.dwarves.syncInstances();
 }
 
+/** remove a light when a dwarf is gone */
+void removeDwarfLight(ref GameApp app, ref Dwarf d) {
+  if(d.lightIndex == size_t.max) return;
+  auto moved = app.removeLight(d.lightIndex);
+  if(moved != size_t.max) {
+    foreach(ref other; app.world.dwarves.dwarves) { if(other.lightIndex == moved) { other.lightIndex = d.lightIndex; break; } }
+  }
+  d.lightIndex = size_t.max;
+}
+
 void saveDwarfs(ref GameApp app) {
   if(app.world.dwarves is null) return;
   DwarfData[] data = app.world.dwarves[].map!(d => d.data).array;
