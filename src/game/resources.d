@@ -8,16 +8,33 @@ import game;
 import io : dir, fixPath;
 import textures : transferTextureAsync, idx, toRGBA;
 
+struct ClassVal { ubyte cls; float value = 0.0f; }   // cls = cast(ubyte)ResourceClass — avoids the cross-module enum forward-ref
+
 struct ResourceT {
-  string name      = "None";
-  bool traversable = false;
-  bool buildable   = false;
-  ubyte maxStack   = 1;
-  float cost       = 0.0f;
-  string meshName  = "Blocks";
-  float dropScale  = 1.0f;
-  Colors color     = Colors.white;
+  string name = "None", meshName = "Blocks", tex3D = "", tex2D = "";
+  float scale = 1.0f;
+  Colors color = Colors.white;
+  ClassVal[] classes;
 }
+
+// Primitives on ResourceT
+@nogc bool hasClass(ResourceType t, ResourceClass c) pure nothrow {
+  foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return true; } } return false;
+}
+@nogc float classVal(ResourceType t, ResourceClass c) pure nothrow {
+  foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return cv.value; } } return 0.0f;
+}
+
+ResourceClass toClass(ResourceType t) { return t.to!string.to!ResourceClass; }
+ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
+
+// Convenience field accessors (UFCS shims over classes)
+@nogc bool traversable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Traversable); }
+@nogc bool buildable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Buildable); }
+@nogc float cost(const ResourceType r) pure nothrow { return r.classVal(ResourceClass.Traversable); }
+@nogc int maxStack(const ResourceType r) pure nothrow { return cast(int)r.classVal(ResourceClass.Item); }
+@nogc bool isFood(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Food); }
+@nogc float foodValue(const ResourceType r) pure nothrow { return r.classVal(ResourceClass.Food); }
 
 void injectResourceMeshes(ref GameApp app) {
   app.meshes.length = 0;
@@ -33,7 +50,9 @@ void updateMaterials(ref GameApp app) {
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
     auto ttype = cast(ResourceType)tt;
     uint idx =  app.world.resources[ttype];
-    app.materials[app.meshes[idx].mid].tid = app.textures.idx(resourceData(ttype).name ~ "_base");
-    if((resourceData(ttype).meshName != "Blocks")) app.materials[app.meshes[idx].mid].nid = app.textures.idx(resourceData(ttype).name ~ "_normal");
+    app.materials[app.meshes[idx].mid].tid = app.textures.idx(resourceData(ttype).tex3D);
+    if((resourceData(ttype).meshName != "Blocks")) {
+      app.materials[app.meshes[idx].mid].nid = app.textures.idx(resourceData(ttype).tex3D.replace("_base", "_normal"));
+    }
   }
 }

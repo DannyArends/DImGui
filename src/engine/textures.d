@@ -104,6 +104,7 @@ void checkPendingTextures(ref App app) {
 
 /** Texture index */
 @nogc pure int idx(const Texture[] textures, string name) nothrow {
+  if(name.length == 0) return(-1);
   int besthit = -1;
   for(uint i = 0; i < textures.length; i++) {
     auto base = stripExtension(baseName(textures[i].path));
@@ -174,8 +175,7 @@ void updateTextures(ref App app) {
   }
 }
 
-void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUAllocation staging) {
-  // Create a buffer to transfer the image to the GPU
+void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUAllocation staging, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
   app.createBuffer(&staging.buffer, &staging.memory, texture.surface.imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   app.nameVulkanObject(staging.buffer, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);
 
@@ -190,17 +190,17 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUA
 
   // Create an image, transition the layout, only generate mipmaps for tile textures (_base suffix)
   app.createImage(texture, texture.surface.w, texture.surface.h,
-                  VK_FORMAT_R8G8B8A8_SRGB, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
+                  format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
                   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.mipLevels);
   app.transitionImageLayout(cmdBuffer, texture.image,
                             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                            VK_FORMAT_R8G8B8A8_SRGB, texture.mipLevels);
+                            format, texture.mipLevels);
   app.copyBufferToImage(cmdBuffer, staging.buffer, texture.image, texture.surface.w, texture.surface.h);
   app.generateMipmaps(cmdBuffer, texture.image, texture.surface.w, texture.surface.h, texture.mipLevels);
 
   // Create an imageview and register the texture with ImGui
-  app.createLayerViews(texture, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, texture.mipLevels);
+  app.createLayerViews(texture, format, VK_IMAGE_ASPECT_COLOR_BIT, texture.mipLevels);
   app.nameImageBuffer(texture, texture.path);
   app.registerTexture(texture);
 }

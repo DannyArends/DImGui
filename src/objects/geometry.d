@@ -58,25 +58,28 @@ class Geometry {
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
 
+  @property bool isSDF() nothrow { return(geometry !is null && geometry() == "Text"); }
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null; }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
 
-  @nogc void initInstanced(string delegate() name, DrawInstance[] initial = []) nothrow {
+  @nogc void initInstanced(string delegate() nothrow name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
     instances = initial;
     geometry = name;
   }
+
+  /** Flag the instance buffer for re-upload and mark the bounding box stale. */
+  @nogc void syncInstances() nothrow { instances.invalidate(); if(box !is null) box.dirty = true; }
 
   /** Set position of instance from object.instances by p */
   @nogc void position(float[3] p, uint instance = 0) nothrow {
     import matrix : position;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = position(instances[instance], p);
-    instances.invalidate();
-    if(box !is null) box.dirty = true;
+    syncInstances();
   }
 
   @nogc float[3] position(uint instance = 0) nothrow {
@@ -90,8 +93,7 @@ class Geometry {
     import matrix : rotate;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = rotate(instances[instance], r);
-    instances.invalidate();
-    if(box !is null) box.dirty = true;
+    syncInstances();
   }
 
   /** Scale instance from object.instances by s */
@@ -99,8 +101,14 @@ class Geometry {
     import matrix : scale;
     assert(instance <  instances.length, "No such instance");
     instances[instance] = scale(instances[instance], s);
-    instances.invalidate();
-    if(box !is null) box.dirty = true;
+    syncInstances();
+  }
+
+  /** Append a batch of instances; returns the [start, count) run they occupy. */
+  size_t[2] addInstances(const(DrawInstance)[] insts) {
+    size_t start = instances.length;
+    if(insts.length) instances ~= insts[];
+    return [start, insts.length];
   }
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
@@ -114,7 +122,7 @@ class Geometry {
   void delegate(float dt) onFrame;
   void delegate() onTick;
   @nogc void delegate(bool) nothrow onFrustumUpdate;
-  string delegate() geometry;
+  string delegate() nothrow geometry;
 }
 
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
@@ -134,7 +142,7 @@ void setTexture(T)(T object, string name, aiTextureType tt) {
     object.materials.length = 1;
     object.materials[0] = AMat(name, [tt: TexureInfo(name)]);
   } else { object.materials[0].textures[tt] = TexureInfo(name); }
-  foreach(ref mesh; object.meshes) { mesh.mid = 0; mesh.mat = 0; }
+  foreach(ref mesh; object.meshes) { mesh.mat = 0; }
 }
 
 void texture(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_DIFFUSE); }

@@ -34,13 +34,13 @@ void showWaterContent(ref GameApp app, uint font = 0) {
 
   // raindrops in flight + the water they carry (settleRain deposits +4 each)
   int raindrops = 0;
-  foreach(id, ref b; app.world.blocks) if(b.type == ResourceType.Water) raindrops++;
+  foreach(id, ref b; app.world.drops) if(b.type == ResourceType.Water) raindrops++;
   int airWater = raindrops * 4;
   int totalWater = total + airWater;
 
   // cloud moisture (normalized 0..1 density summed across cells — separate unit)
   float cloudMoisture = 0;
-  foreach(key, d; app.world.cloudDensity) cloudMoisture += d;
+  foreach(key, d; app.world.weather.density) cloudMoisture += d;
 
   if(igBeginTable("Water_Tbl", 2, ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
     infoRow("Wet cells",     "%d", cells);
@@ -61,8 +61,8 @@ void showWaterContent(ref GameApp app, uint font = 0) {
 
     int[3] t = app.world.inventory.tile;
     infoRow("Cursor tile",   "%d,%d,%d", t[0], t[1], t[2]);
-    infoRow("Water @cursor", "%d", t == noTile ? 0 : app.getWater(t));
-    infoRow("Below @cursor", "%d", t == noTile ? 0 : app.getWater(t.tileBelow));
+    infoRow("Water @cursor", "%d", t == noTile ? 0 : app.world.getWater(t));
+    infoRow("Below @cursor", "%d", t == noTile ? 0 : app.world.getWater(t.tileBelow));
     igEndTable();
   }
 }

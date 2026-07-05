@@ -12,19 +12,6 @@ import tile : tileToWorld;
 import textures : ImTextureRefFromID, idx;
 import widgets : drawCenteredText, text;
 
-/** Tile icon */
-void showTileIcons(ref GameApp app, ResourceType[] tiles, float cellSize = 16.0f) {
-  foreach(tt; tiles.sort.uniq) {
-    igSameLine(0, 2);
-    auto name = resourceData(tt).name;
-    auto texIdx = idx(app.textures, name ~ "_base");
-    if(texIdx < 0) continue;
-    auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
-    igImage(texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1));
-    if(igIsItemHovered(0)) { igSetTooltip(cstr("%s x%d", name, tiles.count(tt))); }
-  }
-}
-
 /** Human-readable state label */
 string dwarfStatus(ref Dwarf d) {
   switch(d.state) {
@@ -68,9 +55,8 @@ void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
     igImageButton(cstr("##dwf_inv_%d", cast(int)i), ImTextureRefFromID(0), ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(0,0,0,0));
     return;
   }
-  auto texName = resourceData(s.type).buildable ? resourceData(s.type).name ~ "_base" : resourceData(s.type).name;
-  auto texIdx  = idx(app.textures, texName);
-  auto texID   = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
+  auto texIdx  = idx(app.textures, resourceData(s.type).tex2D);
+  auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
   igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
   if(igIsItemClicked(0)) app.dispatchJob(d, dropBlockJob(d.tile, s.resourceIDs[s.count - 1]));
   ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
@@ -92,6 +78,11 @@ void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
   if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followDwarf(d.uid); }
   text("Tile: %s", d.tile);
   text("Hunger: %.0f", d.hunger * 100.0f);
+  igSameLine(0, 5);
+  if(igButton(cstr("Make hungry##dwf_hunger"), ImVec2(0, 0))) { d.hunger = 0.8f; }
+  text("Thirst: %.0f", d.thirst * 100.0f);
+  igSameLine(0, 5);
+  if(igButton(cstr("Make thirsty##dwf_thirst"), ImVec2(0, 0))) { d.thirst = 0.8f; }
   text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
   igSeparator();
   igText("Inventory:");
@@ -132,5 +123,5 @@ void showDwarfContent(ref GameApp app, uint font = 0) {
   } else { app.showDwarfOverview(); }
   igNewLine();
   igSeparator();
-  foreach(ref j; jobQueue) text("  [%s] -> %s (%s)", j.name, j.targetTile, j.tileType);
+  foreach(ref j; jobQueue) text("  [%s] -> %s (%s)", j.name, j.targetTile, j.tileClass);
 }

@@ -8,6 +8,7 @@ import game;
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
 import tile : getTileAt;
+import resources : toType;
 
 struct Inventory {
   GhostCube ghost;
@@ -15,13 +16,13 @@ struct Inventory {
   int[ResourceType] queued;
 
   int onFloor(ResourceType tt, ref GameApp app) const {
-    return cast(int)app.world.blocks.byValue.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
+    return cast(int)app.world.drops.byValue.count!(b => b.type == tt && b.tile != noTile && b.tile != builtTile);
   }
   int carried(ResourceType tt, ref GameApp app) const {
-    return cast(int)app.world.blocks.byValue.count!(b => b.type == tt && b.tile == noTile);
+    return cast(int)app.world.drops.byValue.count!(b => b.type == tt && b.tile == noTile);
   }
   int built(ResourceType tt, ref GameApp app) const {
-    return cast(int)app.world.blocks.byValue.count!(b => b.type == tt && b.tile == builtTile);
+    return cast(int)app.world.drops.byValue.count!(b => b.type == tt && b.tile == builtTile);
   }
   int get(ResourceType tt, ref GameApp app) const { return max(0, onFloor(tt, app) + carried(tt, app) - queued.get(tt, 0)); }
   int total(ResourceType tt, ref GameApp app) const { return onFloor(tt, app) + carried(tt, app); }
@@ -34,14 +35,14 @@ struct Inventory {
 void deriveInventory(ref GameApp app) {
   app.world.inventory.queued.clear();
   foreach(ref j; jobQueue.filter!(j => j.name == "Building")) {
-    app.world.inventory.queued[j.tileType] = app.world.inventory.queued.get(j.tileType, 0) + 1;
+    app.world.inventory.queued[j.tileClass.toType] = app.world.inventory.queued.get(j.tileClass.toType, 0) + 1;
   }
   if(app.world.dwarves !is null){
     foreach(ref d; app.world.dwarves.dwarves){ foreach(ref j; d.jobStack){
-        if(j.name == "Building"){ app.world.inventory.queued[j.tileType] = app.world.inventory.queued.get(j.tileType, 0) + 1; }
+        if(j.name == "Building"){ app.world.inventory.queued[j.tileClass.toType] = app.world.inventory.queued.get(j.tileClass.toType, 0) + 1; }
     } }
   }
-  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileType, app) > 0).array;
+  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileClass.toType, app) > 0).array;
   if(app.world.inventory.get(app.world.inventory.type, app) <= 0) { app.world.inventory.type = ResourceType.None; }
 }
 
