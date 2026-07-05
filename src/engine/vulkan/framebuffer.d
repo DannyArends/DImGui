@@ -5,20 +5,16 @@
 
 import engine;
 
-import images : createImage, nameImageBuffer, cleanup, ImageBuffer;
+import images : cleanup, ImageBuffer, createNamedImage;
 import validation : nameVulkanObject;
-import views : createImageView, createLayerViews;
 
 @nogc void cleanup(ref App app, VkFramebuffer fb) nothrow { vkDestroyFramebuffer(app.device, fb, app.allocator); }
 
 /** Function to create an HDR color image and its view (MSAA if enabled) */
-void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits flag, VkMemoryPropertyFlags properties) {
+void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits flag, VkImageUsageFlags usage) {
   if(app.verbose) SDL_Log("Creating Offscreen HDR Image");
-
-  app.createImage(buffer, app.camera.width, app.camera.height, app.offscreen.format, flag, VK_IMAGE_TILING_OPTIMAL, properties);
-  app.createLayerViews(buffer, app.offscreen.format, VK_IMAGE_ASPECT_COLOR_BIT);
-  app.nameImageBuffer(buffer, "Offscreen HDR Image");
-
+  app.createNamedImage(buffer, app.camera.width, app.camera.height, app.offscreen.format, VK_IMAGE_ASPECT_COLOR_BIT,
+                       "Offscreen HDR Image", flag, VK_IMAGE_TILING_OPTIMAL, usage);
   app.swapDeletionQueue.add((){ app.cleanup(buffer); });
 }
 
