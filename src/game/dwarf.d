@@ -20,6 +20,7 @@ import resources : isFood, toClass;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import sfx : play;
+import text : addWorldText, moveWorldText, removeWorldText;
 import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
 import timing : timed;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
@@ -140,6 +141,7 @@ struct Dwarf {
 
   Fall fall = { weight: 5.0f };             /// PhysX
   size_t lightIndex = size_t.max; 
+  size_t nameLabel = size_t.max;
 
   DwarfState state = DwarfState.Idle;
   bool lastPathPartial = false;
@@ -163,6 +165,7 @@ void deleteDwarf(ref GameApp app, int index) {
   app.world.drops.dirty = true;
 
   app.removeDwarfLight(app.world.dwarves.dwarves[index]);
+  app.removeDwarfNameLabel(app.world.dwarves.dwarves[index]);
 
   size_t last = (app.world.dwarves.dwarves.length - 1);
   if(index != last) {
@@ -200,8 +203,10 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
   return(noTile);
 }
 
-enum stepSpeed = 5.0f;   // base step rate
-enum hopHeight = 2.5f;  // peak of the hop
+enum stepSpeed = 5.0f;    // base step rate
+enum hopHeight = 2.5f;    // peak of the hop
+enum nameHeight = 1.3f;   // name tag height above visualPos
+enum nameScale = 0.2f;    // name tag glyph scale
 
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
@@ -225,7 +230,12 @@ void dwarfFrame(ref GameApp app, float dt) {
     }
   }
   foreach(i, ref d; app.world.dwarves) {
-    if(d.lightIndex != size_t.max){ app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
+    if(d.lightIndex != size_t.max) {
+      app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f];
+    }
+    if(d.nameLabel != size_t.max) {
+      app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]);
+    }
     float sc = (app.world.chunkCoord(d.tile) in app.world.chunks) ? 1.0f : 0.0f;
     float[3] s = [sc, sc, sc];
     Matrix m = scale(Matrix.init, s);
@@ -378,6 +388,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   app.world.dwarves.instances ~= inst;
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
+  d.nameLabel = app.addWorldText(d.name, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]], [0.0f, 0.0f, 0.0f], nameScale);
   app.world.dwarves ~= d;
 }
 
@@ -400,6 +411,16 @@ void removeDwarfLight(ref GameApp app, ref Dwarf d) {
     foreach(ref other; app.world.dwarves.dwarves) { if(other.lightIndex == moved) { other.lightIndex = d.lightIndex; break; } }
   }
   d.lightIndex = size_t.max;
+}
+
+/** remove a dwarf's floating name tag when the dwarf is gone */
+void removeDwarfNameLabel(ref GameApp app, ref Dwarf d) {
+  if(d.nameLabel == size_t.max) return;
+  auto moved = app.removeWorldText(d.nameLabel);
+  if(moved != size_t.max) {
+    foreach(ref other; app.world.dwarves.dwarves) { if(other.nameLabel == moved) { other.nameLabel = d.nameLabel; break; } }
+  }
+  d.nameLabel = size_t.max;
 }
 
 void saveDwarfs(ref GameApp app) {
