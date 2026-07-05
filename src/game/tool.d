@@ -36,8 +36,6 @@ struct Tool {
 immutable float os = 1.05f;
 immutable float flat = 0.02f;
 
-// TODO: Fold tool.d buildPress/buildDrag into paintPress/paintDrag
-
 Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
 Matrix interactHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
 Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
@@ -110,20 +108,6 @@ void selectPress(ref GameApp app, float[3][2] ray) {
   if(job.name !is null) app.tryAssign(job);
 }
 
-void buildPress(ref GameApp app) {
-  if(app.world.inventory.tile == noTile) return;
-  app.world.inventory.paint.active = true;
-  app.world.inventory.paint.start = app.world.inventory.tile;
-  app.world.inventory.paint.preview = [app.world.inventory.tile];
-  app.syncBuildGhosts();
-}
-
-void buildDrag(ref GameApp app) {
-  if(!app.world.inventory.paint.active || app.world.inventory.tile == noTile) return;
-  app.computeDragPreview(app.world.inventory.paint.start, app.world.inventory.tile);
-  app.syncBuildGhosts();
-}
-
 struct PaintState {
   bool active = false;
   int[3] start = [int.min, 0, int.min];
@@ -138,7 +122,7 @@ void selectObject(ref GameApp app, Intersection[] hits) {
   }
 }
 
-/** Begin a rectangular paint at the hovered tile (designation & zone tools) */
+/** Begin a paint at the hovered tile (designation, zone & build tools) */
 void paintPress(ref GameApp app, float[3][2] ray) {
   if(app.world.inventory.tile == noTile) return;
   app.world.inventory.paint.active = true;
@@ -149,9 +133,11 @@ void paintPress(ref GameApp app, float[3][2] ray) {
 
 /** Extend the rectangular paint to the hovered tile */
 void paintDrag(ref GameApp app, float[3][2] ray) {
-  if(!app.world.inventory.paint.active) return;
-  if(app.world.inventory.tile == noTile) return;
-  app.updatePaintPreview(app.world.inventory.tile);   // same cell the hover ghost used
+  if(!app.world.inventory.paint.active || app.world.inventory.tile == noTile) return;
+  if(app.world.inventory.activeTool == ToolMode.Build) {
+    app.computeDragPreview(app.world.inventory.paint.start, app.world.inventory.tile);
+    app.syncBuildGhosts();
+  } else { app.updatePaintPreview(app.world.inventory.tile); }   // same cell the hover ghost used
 }
 
 /** Primary press: left click / single tap */
@@ -160,7 +146,7 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: (app.world.inventory.activeTool == ToolMode.Info)?app.infoPress(ray): app.selectPress(ray); break;
     case ToolKind.RayPaint: app.paintPress(ray); break;
-    case ToolKind.BuildPaint: app.buildPress(); break;
+    case ToolKind.BuildPaint: app.paintPress(ray); break;
   }
 }
 
@@ -170,7 +156,7 @@ void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: break;
     case ToolKind.RayPaint: app.paintDrag(ray); break;
-    case ToolKind.BuildPaint: app.buildDrag();    break;
+    case ToolKind.BuildPaint: app.paintDrag(ray); break;
   }
 }
 
