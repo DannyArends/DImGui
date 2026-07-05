@@ -63,7 +63,7 @@ void renderFrame(ref App app, double dt) {
     VkCommandBuffer[8] computeCommandBuffers;
     uint nCompute = 0;
     foreach(ref shader; app.compute.shaders){
-      app.timed!recordComputeCommandBuffer(shader, app.syncIndex);
+      app.timed!recordComputeCommandBuffer(shader);
       computeCommandBuffers[nCompute++] = app.compute.commands[shader.path][app.syncIndex];
     }
 
