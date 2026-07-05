@@ -36,9 +36,9 @@ struct Vertex {
       { binding: VERTEX, location: 5, format: VK_FORMAT_R32G32B32A32_UINT, offset: Vertex.bones.offsetof },
       { binding: VERTEX, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
 
-      { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32_UINT, offset: DrawInstance.meshdef.offsetof },
-      { binding: INSTANCE, location: 8, format: VK_FORMAT_R32_SINT, offset: DrawInstance.material.offsetof },
-      { binding: INSTANCE, location: 9, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.color.offsetof },
+      { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SINT, offset: DrawInstance.meshdef.offsetof },
+      { binding: INSTANCE, location: 8, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.color.offsetof },
+      { binding: INSTANCE, location: 9, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.uvRect.offsetof },
       { binding: INSTANCE, location: 10, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
       { binding: INSTANCE, location: 11, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 4 * float.sizeof },
       { binding: INSTANCE, location: 12, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 8 * float.sizeof },
