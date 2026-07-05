@@ -12,7 +12,7 @@ import devices : createLogicalDevice;
 import events : sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
 import game : cleanupGame, checkGameAsync, GameApp, initGame, updateGame;
-import glyphatlas : loadGlyphAtlas, uploadFont;
+import glyphatlas : loadGlyphs, uploadFont;
 import imgui : initializeImGui;
 import input : handleEvents;
 import instance : createInstance;
@@ -48,7 +48,7 @@ void run(string[] args = null) {
   GameApp app = GameApp(initializeSDL());                       /// Initialize SDL library and create a window
   app.createCompiler();                                         /// Create the SPIR-V compiler
   app.createReflectionContext();                                /// Create a SPIR-V reflection context
-  app.loadGlyphAtlas();                                         /// Load & parse the Glyph Atlas
+  app.loadGlyphs();                                             /// Load & parse the Glyph Atlas
   app.loadAllSoundEffect();                                     /// Load all available sound effects
   app.createInstance();                                         /// Create a Vulkan instance
   app.createDebugCallback();                                    /// Hook the debug callback to the validation layer
