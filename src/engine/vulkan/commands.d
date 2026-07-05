@@ -91,8 +91,9 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   if(app.trace) SDL_Log("Render pass recording to buffer %d", app.syncIndex);
 
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, app.syncIndex);
+  auto set = app.sets[Stage.RENDER][app.syncIndex];
   foreach(pass; 0 .. 2) { // pass 0: opaque, pass 1: transparent
-    foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, app.sets[Stage.RENDER][app.syncIndex], pass); }
+    foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, pass); }
   }
   app.sceneCmd.pass.end(cmd);
   popLabel(cmd);
