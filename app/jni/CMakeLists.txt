@@ -77,8 +77,7 @@ if(ANDROID)
     add_subdirectory(SDL_mixer SDL_mixer_build)
 
     # SDL_ttf
-    set(SDLTTF_SAMPLES OFF)
-    add_subdirectory(SDL_ttf SDL_ttf_build)
+    add_subdirectory(freetype freetype_build)
 endif()
 # Options
 option(CIMGUI_STATIC     "Build as static library"  OFF)
