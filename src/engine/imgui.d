@@ -160,8 +160,8 @@ void initializeImGui(ref App app){
 }
 
 /** Record Vulkan render command buffer by rendering all objects to all render buffers */
-void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.imguiCmd.begin(app, syncIndex, "ImGui");
+void recordImGuiCommandBuffer(ref App app) {
+  auto cmd = app.imguiCmd.begin(app, app.syncIndex, "ImGui");
 
   pushLabel(cmd, "ImGui", Colors.lightgray);
 
@@ -175,7 +175,7 @@ void recordImGuiCommandBuffer(ref App app, uint syncIndex) {
 
   popLabel(cmd);
 
-  app.imguiCmd.end(syncIndex);
+  app.imguiCmd.end(app.syncIndex);
 }
 
 /** Rotate all ImGui vertices to handle Vulkan pre-rotation on Android.

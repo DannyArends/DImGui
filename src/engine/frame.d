@@ -87,9 +87,9 @@ void renderFrame(ref App app, double dt) {
 
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
-  app.timed!recordSceneCommandBuffer(app.shaders, app.syncIndex);
-  app.timed!recordPostCommandBuffer(app.syncIndex);
-  app.timed!recordImGuiCommandBuffer(app.syncIndex);
+  app.timed!recordSceneCommandBuffer(app.shaders);
+  app.timed!recordPostCommandBuffer();
+  app.timed!recordImGuiCommandBuffer();
 
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[4] submitCommandBuffers;
