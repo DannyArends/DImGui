@@ -16,6 +16,7 @@ import quaternion : xyzw;
 import uniforms : createUBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import views : createImageView, createLayerViews;
+import vector : vCeilDiv;
 
 /** Compute structure with shaders, command buffer and pipelines */
 struct Compute {
@@ -24,6 +25,16 @@ struct Compute {
   Shader[] shaders;                     /// Compute shader objects
   VkCommandBuffer[][string] commands;   /// Command buffers
   GraphicsPipeline[string] pipelines;   /// Pipelines
+  ComputePass[string] passes;           /// Per-shader pre/workItems/post hooks, keyed by shader.path
+}
+
+/** Per-shader compute behaviour, keyed by shader.path (like DescriptorProvider is keyed by descriptor name).
+ * pre/post record commands (barriers, buffer fills, image transitions); workItems is CPU-side sizing only —
+ * it records no commands, just returns raw item counts before group-size division. */
+struct ComputePass {
+  void delegate(ref App app, VkCommandBuffer cmd, Shader shader, uint syncIndex) pre; /// null = none
+  uint[3] delegate(ref App app, Shader shader) workItems; /// required
+  void delegate(ref App app, VkCommandBuffer cmd, Shader shader, uint syncIndex) post; /// null = none
 }
 
 ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/texture.glsl", shaderc_glsl_compute_shader),
@@ -35,13 +46,27 @@ void initializeCompute(ref App app) {
   app.compute.system = new ParticleSystem(2048);
   app.loadShaders(app.compute.shaders, ComputeShaders);
 
-  // UBO
-  app.providers["ParticleUniformBuffer"] = DescriptorProvider(
+  // cull.glsl — ClusterHeads/ClusterCounter/ClusterLights are cross-stage (also read by scene.glsl's forward+ shading),
+  // so their providers stay wherever shared render/shadow resources are registered, not here.
+  app.compute.passes["data/shaders/cull.glsl"] = ComputePass(
+    pre: (ref App a, VkCommandBuffer cmd, Shader shader, uint syncIndex) {
+      VkBuffer headBuf = a.buffers["ClusterHeads"][syncIndex].buffer;
+      VkBuffer cursorBuf = a.buffers["ClusterCounter"][syncIndex].buffer;
+      vkCmdFillBuffer(cmd, headBuf, 0, VK_WHOLE_SIZE, NIL);
+      vkCmdFillBuffer(cmd, cursorBuf, 0, VK_WHOLE_SIZE, 0);
+      cmd.insertFillBarrier(headBuf);
+      cmd.insertFillBarrier(cursorBuf);
+    },
+    workItems: (ref App a, Shader shader) { uint[3] r = [cast(uint)a.lights.length, 1u, 1u]; return r; }
+  );
+
+  // particle.glsl — ParticleUniformBuffer/lastFrame/currentFrame exist only for this shader (no #include shares them),
+  // so their providers are grouped here with the pass that owns them.
+  app.providers["ParticleUniformBuffer"] = DescriptorProvider(  // UBO
     (ref a, ref d){ a.createUBO(d); },
     (ref a, ref d, cmd){ a.updateComputeUBO(d, a.syncIndex); });
 
-  // SSBO
-  app.providers["lastFrame"] = DescriptorProvider(
+  app.providers["lastFrame"] = DescriptorProvider(  // SSBO
     (ref a, ref d){
       a.createSSBO(d, a.compute.system.particles);
       auto cmd = app.beginSingleTimeCommands(app.commandPool);
@@ -50,6 +75,49 @@ void initializeCompute(ref App app) {
     },
     null);
   app.providers["currentFrame"] = DescriptorProvider((ref a, ref d){ a.createSSBO(d, a.compute.system.particles); }, null);
+  
+  app.compute.passes["data/shaders/particle.glsl"] = ComputePass(
+    workItems: (ref App a, Shader shader) {
+      foreach(ref d; shader.descriptors) {
+        if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) { uint[3] r = [a.buffers[d.base].nObjects, 1u, 1u]; return r; }
+      }
+      uint[3] r = [1u, 1u, 1u]; return r;
+    },
+    post: (ref App a, VkCommandBuffer cmd, Shader shader, uint syncIndex) {
+      VkBuffer src = a.buffers["currentFrame"][syncIndex].buffer;
+      VkBuffer dst = a.buffers["lastFrame"][syncIndex].buffer;
+      VkBufferCopy copyRegion = { size: a.buffers["currentFrame"].size };
+      cmd.insertWriteBarrier(dst);
+      vkCmdCopyBuffer(cmd, src, dst, 1, &copyRegion);
+      cmd.insertReadBarrier(src);
+    }
+  );
+
+  // texture.glsl — storage image created generically via createResources' VK_DESCRIPTOR_TYPE_STORAGE_IMAGE fallback, no provider needed
+  app.compute.passes["data/shaders/texture.glsl"] = ComputePass(
+    pre: (ref App a, VkCommandBuffer cmd, Shader shader, uint syncIndex) {
+      foreach(ref d; shader.descriptors) {
+        if(d.type != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) continue;
+        uint idx = a.textures.idx(d.name);
+        a.transitionImageLayout(cmd, a.textures[idx].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+      }
+    },
+    workItems: (ref App a, Shader shader) {
+      foreach(ref d; shader.descriptors) {
+        if(d.type != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) continue;
+        uint idx = a.textures.idx(d.name);
+        uint[3] r = [a.textures[idx].width, a.textures[idx].height, 1u]; return r;
+      }
+      uint[3] r = [1u, 1u, 1u]; return r;
+    },
+    post: (ref App a, VkCommandBuffer cmd, Shader shader, uint syncIndex) {
+      foreach(ref d; shader.descriptors) {
+        if(d.type != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) continue;
+        uint idx = a.textures.idx(d.name);
+        a.transitionImageLayout(cmd, a.textures[idx].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      }
+    }
+  );
 }
 
 /** Create the compute pipeline specified by the selectedShader */
@@ -145,9 +213,7 @@ void createStorageImage(ref App app, Descriptor descriptor){
   app.mainDeletionQueue.add((){ app.cleanup(texture); });
 }
 
-/** recordComputeCommandBuffer for syncIndex and the selected ComputeShader 
- * TODO: pipeline-agnostic recorder. Drop the =="cull.glsl"/buffer-name hardcoding + duplicated bind/dispatch;
- * use ComputePass{pre, workItems, post} keyed by shader.path (like DescriptorProvider), recorder = scaffold only. */
+/** recordComputeCommandBuffer: pure scaffold — begin/bind/dispatch/end. All per-shader behaviour lives in app.compute.passes[shader.path]. */
 void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) {
   if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", toStringz(shader.path), syncIndex);
   auto cmd = app.compute.commands[shader.path][syncIndex];
@@ -161,68 +227,20 @@ void recordComputeCommandBuffer(ref App app, Shader shader, uint syncIndex = 0) 
   pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
   app.updateDescriptorData([shader], app.compute.commands[shader.path], syncIndex);
 
-  if (baseName(fromStringz(shader.path)) == "cull.glsl") {
-    VkBuffer headBuf = app.buffers["ClusterHeads"][syncIndex].buffer;
-    VkBuffer cursorBuf = app.buffers["ClusterCounter"][syncIndex].buffer;
+  auto pass = shader.path in app.compute.passes;
+  assert(pass !is null, "No ComputePass registered for " ~ shader.path);
 
-    vkCmdFillBuffer(cmd, headBuf, 0, VK_WHOLE_SIZE, NIL);
-    vkCmdFillBuffer(cmd, cursorBuf, 0, VK_WHOLE_SIZE, 0);
-    cmd.insertFillBarrier(headBuf);
-    cmd.insertFillBarrier(cursorBuf);
+  if(pass.pre !is null) pass.pre(app, cmd, shader, syncIndex);
 
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
-
-    vkCmdDispatch(cmd, cast(uint)ceil(cast(float)app.lights.length / shader.groupCount[0]), 1, 1);
-    popLabel(cmd);
-    enforceVK(vkEndCommandBuffer(cmd));
-    return;
-  }
-
-  float[3] nJobs = [1, 1, 1];
-  uint size;
-  VkBuffer src, dst;
-
-  for(uint d = 0; d < shader.descriptors.length; d++) {
-    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
-      uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(cmd, app.textures[idx].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-      nJobs[0] = app.textures[idx].width;
-      nJobs[1] = app.textures[idx].height;
-    }else if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-      nJobs[0] = app.buffers[shader.descriptors[d].base].nObjects;
-      size = app.buffers[shader.descriptors[d].base].size;
-      if(shader.descriptors[d].base == "currentFrame") { src = app.buffers[shader.descriptors[d].base][syncIndex].buffer; }
-      if(shader.descriptors[d].base == "lastFrame") { dst = app.buffers[shader.descriptors[d].base][syncIndex].buffer; }
-    }
-  }
-
-  // Bind the compute pipeline
-  vkCmdBindPipeline(app.compute.commands[shader.path][syncIndex], VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
-
-  // Bind the descriptor set containing the compute resources for the compute pipeline
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][syncIndex], 0, null);
 
-  // Execute the compute pipeline dispatch
-  vkCmdDispatch(app.compute.commands[shader.path][syncIndex], cast(uint)ceil(nJobs[0] / shader.groupCount[0])
-                                                    , cast(uint)ceil(nJobs[1] / shader.groupCount[1])
-                                                    , cast(uint)ceil(nJobs[2] / shader.groupCount[2]));
+  uint[3] groups = vCeilDiv(pass.workItems(app, shader), shader.groupCount);
+  vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
 
-  if (src && dst) {
-    cmd.insertWriteBarrier(dst);
-    VkBufferCopy copyRegion = {size: size};
-    vkCmdCopyBuffer(cmd, src, dst, 1, &copyRegion);
-    cmd.insertReadBarrier(src);
-  }
+  if(pass.post !is null) pass.post(app, cmd, shader, syncIndex);
 
-  for(uint d = 0; d < shader.descriptors.length; d++) {
-    if(shader.descriptors[d].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {   // Use the command buffer to transition the image
-      uint idx = app.textures.idx(shader.descriptors[d].name);
-      app.transitionImageLayout(cmd, app.textures[idx].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    }
-  }
   popLabel(cmd);
-  vkEndCommandBuffer(cmd);
+  enforceVK(vkEndCommandBuffer(cmd));
   if(app.trace) SDL_Log("Compute Command Buffer: %d Done", syncIndex);
 }
-
