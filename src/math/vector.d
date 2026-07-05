@@ -140,6 +140,15 @@ T[3] interpolate(T)(T[3] start, T[3] end, float factor) {
   T[3] vPow = v[] * v[]; return(vPow);
 }
 
+/** Elementwise ceil(v1/v2), e.g. sizing dispatch groups: items ceil-divided by group size, per axis */
+@nogc pure T[3] vCeilDiv(T)(const T[3] v1, const T[3] v2) nothrow {
+  T[3] res = [ 0, 0, 0 ];
+  res[0] = cast(T)ceil(cast(float)v1[0] / cast(float)v2[0]);
+  res[1] = cast(T)ceil(cast(float)v1[1] / cast(float)v2[1]);
+  res[2] = cast(T)ceil(cast(float)v1[2] / cast(float)v2[2]);
+  return res;
+}
+
 @nogc pure bool approx(size_t N)(const float[N] a, const float[N] b) nothrow {
   import std.math : isClose;
   foreach (i; 0 .. N) if (!isClose(a[i], b[i], 1e-5f, 1e-5f)) return false;
