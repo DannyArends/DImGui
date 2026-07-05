@@ -53,7 +53,8 @@ void ensureWorldText(ref App app) {
 private DrawInstance[] layoutText(ref App app, TextInfo info) {
   auto atlas = app.glyphAtlas;
   float glyphscale = (1.0f/info.scale) * atlas.pointsize;
-  size_t[2] line = [1, info.data.split("\n").length];
+  auto lines = info.data.split("\n");
+  size_t[2] line = [1, lines.length];
   uint col = 0;
   Matrix labelTransform = translate(info.pos).multiply(rotate(info.rot));
   DrawInstance[] insts;
@@ -61,7 +62,8 @@ private DrawInstance[] layoutText(ref App app, TextInfo info) {
     if(c == '\n'){ line[0]++; col = 0; continue; }
     if(c == ' ') { col++; continue; }
     auto g = atlas.getGlyph(c);
-    float pX = atlas.pX(g, col) / glyphscale;
+    float lineWidth = lines[line[0]-1].length * atlas.advance / glyphscale;
+    float pX = atlas.pX(g, col) / glyphscale - lineWidth * 0.5f;
     float pY = atlas.pY(g, line) / glyphscale;
     float w = atlas.qW(g, glyphscale);
     float h = atlas.qH(g, glyphscale);
