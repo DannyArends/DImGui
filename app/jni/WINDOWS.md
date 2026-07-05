@@ -58,6 +58,19 @@ cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
 cmake --build . --config Release -j10
 cd ../../../../
 ```
+Compile freetype:
+```
+rm -rf app\jni\SDL_ttf\external\freetype\data
+cd app/jni/SDL_ttf/external/freetype
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
+      -DFT_DISABLE_HARFBUZZ=ON -DFT_DISABLE_BROTLI=ON -DFT_DISABLE_ZLIB=ON -DFT_DISABLE_BZIP2=ON -DFT_DISABLE_PNG=ON ^
+      ../
+cmake --build . --config Release -j10
+cd ../../../../
+```
 Compile Open Asset Import Library (assimp):
 ```
 rm -rf app\jni\assimp\build
