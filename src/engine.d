@@ -13,7 +13,7 @@ enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", PO
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 
 /** Main application structure, TODO:
-  1) SDF text: Unblocks the labels gameplay need, low risk.
+  1) SDF text: We still need instanced letters to allow for 1000s of labels
   2) Alpha blending fix: Also a prerequisite for nice bloom on transparent emissive
   3) Bloom/HDR: scaffolding is there, big visual jump
   4) GPU-driven indirect draw: biggest effort.
