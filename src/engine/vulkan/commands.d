@@ -47,9 +47,30 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
   popLabel(cmd);
 }
 
+/** Draw every visible object of one topology for one pass (0=opaque, 1=transparent); 
+ * rebinds the pipeline only when the specialization changed */
+void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, int pass) {
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &set, 0, null);
+  if(pass == 0 && topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd);
+
+  Specialization last; bool first = true;
+  foreach(obj; app.objects) {
+    if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
+    if((pass == 0) != obj.isOpaque) continue;     // pass 0 draws opaque, pass 1 draws transparent
+    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF);
+    pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf), Colors.lightgray);
+    if(first || last != s) {
+      vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
+      last = s; first = false; 
+    }
+    app.draw(obj, cmd);
+    popLabel(cmd);
+  }
+}
+
 /** Record scene command buffer: SSBO -> Objects -> Rendering */
-void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
-  auto cmd = app.sceneCmd.begin(app, syncIndex, "Render");
+void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
+  auto cmd = app.sceneCmd.begin(app, app.syncIndex, "Render");
 
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("Objects Buffering");
@@ -58,7 +79,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
 
   pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("SSBO Buffering");
-  app.updateDescriptorData(shaders, app.sceneCmd.commands, syncIndex);
+  app.updateDescriptorData(shaders, app.sceneCmd.commands, app.syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Rendering", Colors.lightgray);
@@ -67,37 +88,21 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders, uint syncIndex) {
   if(app.camera.isDirty) { app.objects.cullFrustum(extractFrustum(app.camera.proj.multiply(app.camera.view))); app.camera.isDirty = false; }
 
   app.sceneCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
-  if(app.trace) SDL_Log("Render pass recording to buffer %d", syncIndex);
+  if(app.trace) SDL_Log("Render pass recording to buffer %d", app.syncIndex);
 
-  if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, syncIndex);
+  if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, app.syncIndex);
   foreach(pass; 0 .. 2) { // pass 0: opaque, pass 1: transparent
-    foreach(topology; supportedTopologies) {
-      vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &app.sets[Stage.RENDER][syncIndex], 0, null);
-      if(pass == 0 && topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd);
-      Specialization last; bool first = true;
-      foreach(obj; app.objects) {
-        if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
-        if((pass == 0) != obj.isOpaque) continue;     // pass 0 draws opaque, pass 1 draws transparent
-        auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF);
-        pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf), Colors.lightgray);
-        if(first || last != s) {
-          vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
-          last = s; first = false; 
-        }
-        app.draw(obj, cmd);
-        popLabel(cmd);
-      }
-    }
+    foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, app.sets[Stage.RENDER][app.syncIndex], pass); }
   }
   app.sceneCmd.pass.end(cmd);
   popLabel(cmd);
 
-  app.sceneCmd.end(syncIndex);
+  app.sceneCmd.end(app.syncIndex);
 }
 
 /** Record post-process command buffer */
-void recordPostCommandBuffer(ref App app, uint syncIndex) {
-  auto cmd = app.postCmd.begin(app, syncIndex, "Post");
+void recordPostCommandBuffer(ref App app) {
+  auto cmd = app.postCmd.begin(app, app.syncIndex, "Post");
 
   pushLabel(cmd, "Post-processing", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Post-processing");
@@ -106,13 +111,13 @@ void recordPostCommandBuffer(ref App app, uint syncIndex) {
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][syncIndex], 0, null);
+                          app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][app.syncIndex], 0, null);
 
   vkCmdDraw(cmd, 3, 1, 0, 0);
   app.postCmd.pass.end(cmd);
   popLabel(cmd);
   if(app.trace) SDL_Log("Finished Post-processing");
-  app.postCmd.end(syncIndex);
+  app.postCmd.end(app.syncIndex);
 }
 
 void createCommandPools(ref App app) {
