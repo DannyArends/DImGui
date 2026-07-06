@@ -35,6 +35,7 @@ DImGui is made possible by, and has dependencies on, the following excellent sof
 - [D Programming Language](https://dlang.org/)
 - [Android Studio](https://developer.android.com/studio)
 - [SDL3](https://www.libsdl.org/)
+- [freetype](https://freetype.org/)
 - [Shaderc](https://github.com/google/shaderc) & [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross)
 - [Dear ImGui](https://github.com/ocornut/imgui) & [cImGui api wrapper](https://github.com/cimgui/cimgui)
 - [Open Asset Import Library](https://github.com/assimp/assimp) 
