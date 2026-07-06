@@ -43,14 +43,14 @@ cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
 cmake --build . --config Release -j10
 cd ../../../../
 ```
-Compile SDL_ttf:
+Compile Freetype:
 ```
-rm -rf app/jni/SDL_ttf/build
-cd app/jni/SDL_ttf
+rm -rf app/jni/freetype/build
+cd app/jni/freetype
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
-      -DSDL3_DIR="$PWD/../../SDL/build" -DSDLTTF_SAMPLES=OFF \
+      -DFT_DISABLE_HARFBUZZ=ON -DFT_DISABLE_BROTLI=ON -DFT_DISABLE_ZLIB=ON -DFT_DISABLE_BZIP2=ON -DFT_DISABLE_PNG=ON \
       ../
 cmake --build . --config Release -j10
 cd ../../../../
