@@ -4,7 +4,7 @@
  */
 
 import engine;
-import camera : move;
+import camera : tryMove;
 import imgui : faIcon;
 
 /** Show on-screen movement joystick buttons centered at bottom of screen, Android only */
