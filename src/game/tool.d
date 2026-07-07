@@ -114,6 +114,12 @@ struct PaintState {
   int[3][] preview;
 }
 
+/** Switch the active tool */
+void setActiveTool(ref GameApp app, ToolMode mode) {
+  app.world.inventory.paint = PaintState.init;
+  app.world.inventory.activeTool = mode;
+}
+
 void selectObject(ref GameApp app, Intersection[] hits) {
   foreach(ref o; app.objects) o.window = false;
   foreach(ref hit; hits) {
@@ -163,10 +169,12 @@ void handlePrimaryRelease(ref GameApp app, float[3][2] ray) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: break;
     case ToolKind.RayPaint:
-      if(app.world.inventory.activeTool == ToolMode.Stockpile){
-        app.world.createStockpile(app.world.inventory.paint.preview);
-        app.world.inventory.paint = PaintState.init;
-        app.syncBuildGhosts();
+      if(app.world.inventory.activeTool == ToolMode.Stockpile) {
+        if(app.world.inventory.paint.active) {
+          app.world.createStockpile(app.world.inventory.paint.preview);
+          app.world.inventory.paint = PaintState.init;
+          app.syncBuildGhosts();
+        }
       }else if(app.world.inventory.paint.active){ app.commitPaint(); }
     break;
     case ToolKind.BuildPaint: if(app.world.inventory.paint.active) app.openBuildSelection(); break;
@@ -178,9 +186,8 @@ void handleSecondaryPress(ref GameApp app, float[3][2] ray) { }
 
 /** Secondary press: right click */
 void handleSecondaryRelease(ref GameApp app, float[3][2] ray) {
-  app.world.inventory.paint = PaintState.init;
   app.world.inventory.type = ResourceType.None;
-  app.world.inventory.activeTool = ToolMode.Select;
+  app.setActiveTool(ToolMode.Select);
   app.syncBuildGhosts();
 }
 
