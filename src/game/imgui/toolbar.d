@@ -8,7 +8,7 @@ import game;
 import color : asIm;
 import imgui : faIcon;
 import sfx : play;
-import tool : tools;
+import tool : tools, setActiveTool;
 
 /** DF-style icon tool bar: bottom edge in landscape, left edge in portrait. Avoids the side panel. */
 void showToolbar(ref GameApp app, uint font = 0) {
@@ -33,7 +33,7 @@ void showToolbar(ref GameApp app, uint font = 0) {
     igPushStyleColor_Vec4(ImGuiCol_ButtonActive, (app.world.inventory.activeTool == t.mode) ? t.color.asIm() : unselected);
     igPushStyleColor_Vec4(ImGuiCol_ButtonHovered, t.color.asIm());
     if(igButton(faIcon(t.icon), ImVec2(btn, btn))) {
-      app.world.inventory.activeTool = t.mode;
+      app.setActiveTool(t.mode);
       app.world.inventory.type = ResourceType.None;
       app.play("DM-CGS-31", 0.1f);
     }
