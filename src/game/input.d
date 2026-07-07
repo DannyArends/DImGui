@@ -91,7 +91,9 @@ void handleTouchEvents(ref GameApp app, const SDL_Event event) {
 
       if(app.camera.lastPinchDist > 0.0f) { app.camera.zoom((app.camera.lastPinchDist - dist) * 60.0f); }
       app.camera.lastPinchDist = dist;
-    } else if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.drag(e.dx * 200.0f, e.dy * 200.0f); }
+    } else if(e.fingerID == app.camera.fingerIDs[0]) {
+      if(app.world.inventory.activeTool == ToolMode.Info) { app.camera.drag(e.dx * 200.0f, e.dy * 200.0f); }
+    }
   }
 }
 
