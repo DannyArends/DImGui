@@ -9,6 +9,8 @@ import io : readFile, writeFile;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
 
+// TODO: replace per-subsystem flatten/unflatten (block/water/clouds/dwarf/vegetation) with a generic @Persist-UDA + .tupleof serializer for WorldData
+
 /** Reads a WORLD_MAGIC-tagged file into T[] data, meta is a uint the caller can use (e.g. block.d/dwarf.d store a live counter like nextID here) */
 bool readData(T)(const(char)* path, out T[] data, out uint meta) {
   auto raw = readFile(path);
