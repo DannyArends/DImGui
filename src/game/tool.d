@@ -141,8 +141,7 @@ void paintDrag(ref GameApp app, float[3][2] ray) {
 }
 
 /** Primary press: left click / single tap */
-void handlePrimaryPress(ref GameApp app, float sx, float sy) {
-  auto ray = app.camera.castRay(sx, sy);
+void handlePrimaryPress(ref GameApp app, float[3][2] ray) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: (app.world.inventory.activeTool == ToolMode.Info)?app.infoPress(ray): app.selectPress(ray); break;
     case ToolKind.RayPaint: app.paintPress(ray); break;
@@ -151,8 +150,7 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
 }
 
 /** Primary drag: left hold + move / single finger move */
-void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
-  auto ray = app.camera.castRay(sx, sy);
+void handlePrimaryDrag(ref GameApp app, float[3][2] ray) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: break;
     case ToolKind.RayPaint: app.paintDrag(ray); break;
@@ -161,7 +159,7 @@ void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
 }
 
 /** Primary release: left up / finger up */
-void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
+void handlePrimaryRelease(ref GameApp app, float[3][2] ray) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: break;
     case ToolKind.RayPaint:
@@ -176,10 +174,10 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
 }
 
 /** Secondary press: right click */
-void handleSecondaryPress(ref GameApp app, float sx, float sy) { }
+void handleSecondaryPress(ref GameApp app, float[3][2] ray) { }
 
 /** Secondary press: right click */
-void handleSecondaryRelease(ref GameApp app, float sx, float sy) {
+void handleSecondaryRelease(ref GameApp app, float[3][2] ray) {
   app.world.inventory.paint = PaintState.init;
   app.world.inventory.type = ResourceType.None;
   app.world.inventory.activeTool = ToolMode.Select;
