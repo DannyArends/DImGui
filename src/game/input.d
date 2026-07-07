@@ -25,29 +25,29 @@ void handleMouseEvents(ref GameApp app, SDL_Event e) {
     if(e.button.button == SDL_BUTTON_LEFT) {
       app.camera.isdrag[0] = true;
       app.camera.lastMousePos = [e.button.x, e.button.y];
-      app.handlePrimaryPress(e.button.x, e.button.y);
+      app.handlePrimaryPress(ray);
     }
     if(e.button.button == SDL_BUTTON_RIGHT) {
       app.camera.isdrag[1] = true;
       app.camera.lastMousePos = [e.button.x, e.button.y];
-      app.handleSecondaryPress(e.button.x, e.button.y);
+      app.handleSecondaryPress(ray);
     }
   }
   if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
     app.camera.isdrag[0] = false;
-    if(e.button.button == SDL_BUTTON_LEFT){ app.handlePrimaryRelease(e.button.x, e.button.y); }
+    if(e.button.button == SDL_BUTTON_LEFT){ app.handlePrimaryRelease(ray); }
     if(e.button.button == SDL_BUTTON_RIGHT) {
       app.camera.isdrag[1] = false;
       auto dx = e.button.x - app.camera.lastMousePos[0];
       auto dy = e.button.y - app.camera.lastMousePos[1];
-      if((dx*dx + dy*dy) < 64) app.handleSecondaryRelease(e.button.x, e.button.y);  // tap, not a drag
+      if((dx*dx + dy*dy) < 64) app.handleSecondaryRelease(ray);  // tap, not a drag
     }
     app.updateHoverHighlight(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_MOTION) {
     if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel);
     app.updateHoverHighlight(ray);
-    if(app.camera.isdrag[0]) app.handlePrimaryDrag(e.motion.x, e.motion.y);
+    if(app.camera.isdrag[0]) app.handlePrimaryDrag(ray);
   }
   if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y);
 }
