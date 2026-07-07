@@ -61,7 +61,7 @@ struct GlyphAtlas {
 
 /** Loads a GlyphAtlas from file */
 void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Medium.ttf",
-                ubyte pointsize = 48, dchar to = '\U000000FF', uint dim = 1024) {
+                ubyte pointsize = 64, dchar to = '\U000000FF', uint dim = 1024) {
   filename = fixPath(filename);
   if(app.verbose) SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   app.glyphAtlas = GlyphAtlas(filename);
@@ -69,7 +69,7 @@ void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Medium.ttf",
 
   FT_Init_FreeType(&app.glyphAtlas.ftLibrary);
 
-  int spread = 8;
+  int spread = 2;
   int overlaps = 1;   // handle self-intersecting contours — likely fixes the seam artifacts we saw
   FT_Property_Set(app.glyphAtlas.ftLibrary, "sdf", "spread", &spread);
   FT_Property_Set(app.glyphAtlas.ftLibrary, "sdf", "overlaps", &overlaps);
