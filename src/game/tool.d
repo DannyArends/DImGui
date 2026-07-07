@@ -148,6 +148,7 @@ void paintDrag(ref GameApp app, float[3][2] ray) {
 
 /** Primary press: left click / single tap */
 void handlePrimaryPress(ref GameApp app, float[3][2] ray) {
+  app.updateHoverHighlight(ray);
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: (app.world.inventory.activeTool == ToolMode.Info)?app.infoPress(ray): app.selectPress(ray); break;
     case ToolKind.RayPaint: app.paintPress(ray); break;
