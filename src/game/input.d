@@ -17,9 +17,6 @@ import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
 import water : waterTick, flushWaterDirty, evaporateTick;
 
-/** Handle mouse events */
-
-
 /** Handle keyboard events */
 void handleKeyEvents(ref GameApp app, SDL_Event e) {
   if(e.type == SDL_EVENT_KEY_DOWN) {
