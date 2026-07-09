@@ -25,7 +25,8 @@ struct Camera {
   bool[2]         isdrag        = [false, false];         /// Mouse dragging
   SDL_FingerID[2] fingerIDs     = [-1, -1];               /// Android FingerIDs
   float[2][2]     fingerPos     = [[0,0],[0,0]];          /// normalized positions of finger 0 and 1
-  float[2]        lastMousePos  = [0, 0];                 /// Last mouse position
+  float[2]        pressPos      = [0, 0];                 /// Where the current press started (tap-vs-drag test, either button)
+  bool[2]         wasDown       = [false, false];         /// [primary, secondary] pointer state LAST frame (edge detection)
   float           lastPinchDist = -1.0f;                  /// -1 = no active pinch
   bool            isDirty       = true;                   /// Camera moved/rotated this frame
   bool            godMode       = true;                   /// Move through walls

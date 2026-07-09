@@ -211,14 +211,15 @@ version(Android) {
   }
 }
 
-/** Render the GUI and return the ImDrawData* */
-ImDrawData* renderGUI(ref App app){
-  // Start ImGui frame
+void startImGuiFrame(ref App app) {
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplSDL3_NewFrame();
   igNewFrame();
-  uint font = 0;
+}
 
+/** Render the GUI and return the ImDrawData* */
+ImDrawData* renderGUI(ref App app) {
+  uint font = 0;
   version(Android) { app.showJoystickwindow(font); }
 
   app.showMenu(font);

@@ -13,8 +13,8 @@ import events : sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
 import game : cleanupGame, checkGameAsync, GameApp, initGame, updateGame;
 import glyphatlas : loadGlyphs, uploadFont;
-import imgui : initializeImGui;
-import input : handleEvents;
+import imgui : initializeImGui, startImGuiFrame;
+import input : pollEvents, handleEvents;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shadow : createShadowMap;
@@ -73,6 +73,8 @@ void run(string[] args = null) {
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & render loop
+    app.timed!pollEvents();                                       /// Ingest SDL events into ImGui (pre-NewFrame)
+    app.timed!startImGuiFrame();                                  /// Start a new frame
     auto dt = app.timed!handleEvents();                           /// Handle SDL / user events
     app.timed!checkForResize();                                   /// Check for resize
     if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue
