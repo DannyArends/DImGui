@@ -188,7 +188,7 @@ void handleSecondaryPress(ref GameApp app, float[3][2] ray) { }
 /** Secondary press: right click */
 void handleSecondaryRelease(ref GameApp app, float[3][2] ray) {
   app.world.inventory.type = ResourceType.None;
-  app.setActiveTool(ToolMode.Select);
+  app.setActiveTool(isAndroid ? ToolMode.Info : ToolMode.Select);
   app.syncBuildGhosts();
 }
 
