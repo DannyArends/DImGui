@@ -5,7 +5,7 @@
 
 import game;
 
-import block : resourceType, itemOf, syncBlockInstances;
+import block : itemOf;
 import io : writeFile, readFile;
 import jobs : jobQueue, liveJobs, Reach;
 import pathfinding : findGoalTile;

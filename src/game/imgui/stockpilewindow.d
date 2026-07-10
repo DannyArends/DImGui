@@ -11,7 +11,9 @@ import stockpile : Stockpile, capacity, removeStockpile, countOf;
 import widgets : text, cTag, cNode;
 
 private Item matKey(ResourceType t) { return Item(ItemTemplate.None, t); }
-private bool ok(ref Stockpile sp, ResourceType t) { return(sp.accepts.length == 0 || sp.accepts.get(matKey(t), false)); }
+private bool has(ref Stockpile sp, Item key) { return sp.accepts.length == 0 || sp.accepts.get(key, false); }
+private bool ok(ref Stockpile sp, ResourceType t) { return sp.has(matKey(t)); }
+private bool ok(ref Stockpile sp, ItemTemplate t) { return sp.has(craftKey(t)); }
 private void seed(ref Stockpile sp) {
   if(sp.accepts.length) return;
   foreach(t; typesWhere(t => true)) sp.accepts[matKey(t)] = true;
@@ -21,8 +23,6 @@ private string base(ResourceType t) { return resourceData(t).name.stripRight("01
 private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on == total ? Colors.green : Colors.yellow; }
 private auto typesWhere(scope bool delegate(ResourceType) keep) { return [EnumMembers!ResourceType].filter!(t => t != ResourceType.None && keep(t)); }
 private Item craftKey(ItemTemplate t) { return Item(t); }
-private bool okCraft(ref Stockpile sp, ItemTemplate t) { return sp.accepts.length == 0 || sp.accepts.get(craftKey(t), false); }
-private void setAllCraft(ref Stockpile sp, bool on) { sp.seed(); foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) sp.accepts[craftKey(cast(ItemTemplate)ti)] = on; }
 
 /** Leaf label: "Name  (n)##id", count shown only when stocked. */
 private const(char)* leaf(const Stockpile sp, const Drops drops, ResourceType t, string label) {
@@ -31,14 +31,9 @@ private const(char)* leaf(const Stockpile sp, const Drops drops, ResourceType t,
 }
 
 /** Walk types matching `keep`, set them all to `on`. */
-private void setAll(ref Stockpile sp, bool delegate(ResourceType) keep, bool on) {
-  sp.seed();
-  foreach(t; typesWhere(keep)){ sp.accepts[matKey(t)] = on; }
-}
-
-private void tally(ref Stockpile sp, bool delegate(ResourceType) keep, out int total, out int on) {
-  foreach(t; typesWhere(keep)) { total++; if(sp.ok(t)) on++; }
-}
+private void setAll(ref Stockpile sp, bool delegate(ResourceType) keep, bool on) { sp.seed(); foreach(t; typesWhere(keep)){ sp.accepts[matKey(t)] = on; } }
+private void setAll(ref Stockpile sp, bool on) { sp.seed(); foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) sp.accepts[craftKey(cast(ItemTemplate)ti)] = on; }
+private void tally(ref Stockpile sp, bool delegate(ResourceType) keep, out int total, out int on) { foreach(t; typesWhere(keep)) { total++; if(sp.ok(t)) on++; } }
 
 private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool buildable) {
   bool inGroup(ResourceType t) { return t.buildable == buildable; }
@@ -71,15 +66,15 @@ private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool b
 
 private void acceptCraftGroup(ref GameApp app, ref Stockpile sp) {
   int gT, gOn;
-  foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) { gT++; if(sp.okCraft(cast(ItemTemplate)ti)) gOn++; }
+  foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) { gT++; if(sp.ok(cast(ItemTemplate)ti)) gOn++; }
   if(gT == 0) return;
 
-  if(!cNode(cstr("Crafts##gc"), tri(gOn, gT), () => sp.setAllCraft(gOn != gT))) return;
+  if(!cNode(cstr("Crafts##gc"), tri(gOn, gT), () => sp.setAll(gOn != gT))) return;
   foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
     uint n = sp.countOf(app.world.drops, craftKey(t));
     auto lbl = n > 0 ? cstr("%s  (%d)##c%d", templateData(t).name, n, ti) : cstr("%s##c%d", templateData(t).name, ti);
-    if(cTag(lbl, sp.okCraft(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[craftKey(t)] = !sp.okCraft(t); }
+    if(cTag(lbl, sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[craftKey(t)] = !sp.ok(t); }
   }
   igTreePop();
 }
