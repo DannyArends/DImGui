@@ -17,6 +17,27 @@ struct ResourceT {
   ClassVal[] classes;
 }
 
+/** An item template = a shape/type (Axe, Cup, Barrel, Bin). A concrete item is (template x material).
+ *  accepts/holds are cast(ubyte)ResourceClass to dodge the same cross-module enum forward-ref as ClassVal. */
+struct ItemTemplateT {
+  string name = "None";
+  string mesh = "Cube";   /// shape geometry (tinted/textured by material at use time)
+  string tex  = "";        /// template skin; empty => fall back to the material's texture
+  ubyte[] accepts;         /// ResourceClass the material may belong to; empty => any
+  ubyte[] holds;           /// ResourceClass the contents may belong to; empty => not a container
+  uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
+  int maxStack = 1;        /// stack size of the crafted item
+}
+
+/** A concrete item = (shape x material), optionally holding `amount` units of `contents`.
+ *  shape == None => a raw material block (berry/flint/log/stone) keyed purely on `material`. */
+struct Item {
+  ItemTemplate shape    = ItemTemplate.None;   /// template (shape/type); None => raw material. ('template' is a D keyword, hence 'shape')
+  ResourceType material = ResourceType.None;   /// the substance the item is made of
+  ResourceType contents = ResourceType.None;   /// what a container currently holds (None => empty)
+  uint amount = 0;                             /// units of `contents` held (0 => empty; a full cup = 1)
+}
+
 // Primitives on ResourceT
 @nogc bool hasClass(ResourceType t, ResourceClass c) pure nothrow {
   foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return true; } } return false;
@@ -35,6 +56,19 @@ ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
 @nogc int maxStack(const ResourceType r) pure nothrow { return cast(int)r.classVal(ResourceClass.Item); }
 @nogc bool isFood(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Food); }
 @nogc float foodValue(const ResourceType r) pure nothrow { return r.classVal(ResourceClass.Food); }
+
+// Item = (shape template x material [+ contents]); accessors compute everything from the pair at use time.
+@nogc pure bool isCraft(const Item it) nothrow { return it.shape != ItemTemplate.None; }
+@nogc pure bool isContainer(const Item it) nothrow { return templateData(it.shape).capacity > 0; }
+@nogc pure bool isFull(const Item it) nothrow { return it.amount >= templateData(it.shape).capacity; }
+@nogc pure int itemStack(const Item it) nothrow { return it.isCraft ? templateData(it.shape).maxStack : it.material.maxStack; }
+
+string itemName(const Item it) {
+  if(!it.isCraft) return resourceData(it.material).name;
+  string n = resourceData(it.material).name ~ " " ~ templateData(it.shape).name;
+  if(it.contents != ResourceType.None) n ~= " of " ~ resourceData(it.contents).name;
+  return n;
+}
 
 void injectResourceMeshes(ref GameApp app) {
   app.meshes.length = 0;

@@ -21,8 +21,8 @@ public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
 public import tile : builtTile, noTile, storedTile, TileDiff;
-public import raws : reactionTable, ResourceType, ResourceClass, resourceData, heightToResource, features;
-public import resources : ClassVal, ResourceT, traversable, buildable, cost, maxStack, isFood, foodValue;
+public import raws : reactionTable, ResourceType, ResourceClass, ItemTemplate, templateData, resourceData, heightToResource, features;
+public import resources : ClassVal, ResourceT, ItemTemplateT, Item, traversable, buildable, cost, maxStack, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 
