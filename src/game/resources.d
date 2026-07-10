@@ -97,11 +97,14 @@ void injectResourceMeshes(ref GameApp app) {
     if(app.materials.length <= tt) app.materials ~= Material();  // only add material once
     app.meshes ~= Mesh([0, 0], cast(int)tt);  // reuse existing material slot
   }
-  foreach (ti; 0 .. cast(int)ItemTemplate.max + 1) {
-    auto t = cast(ItemTemplate)ti;
-    if(t == ItemTemplate.None) continue;
-    app.world.templateTex[t] = cast(uint)app.materials.length; app.materials ~= Material();
-    if(templateData(t).texFilled.length) { app.world.templateTexFilled[t] = cast(uint)app.materials.length; app.materials ~= Material(); }
+  if(!app.world.templatesInjected) {   // material slots are permanent; allocate once (this fn runs every frame)
+    foreach (ti; 0 .. cast(int)ItemTemplate.max + 1) {
+      auto t = cast(ItemTemplate)ti;
+      if(t == ItemTemplate.None) continue;
+      app.world.templateTex[t] = cast(uint)app.materials.length; app.materials ~= Material();
+      if(templateData(t).texFilled.length) { app.world.templateTexFilled[t] = cast(uint)app.materials.length; app.materials ~= Material(); }
+    }
+    app.world.templatesInjected = true;
   }
 }
 
