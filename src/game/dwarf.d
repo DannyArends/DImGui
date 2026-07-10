@@ -355,8 +355,12 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 /** dwarfTick, ticks all dwarves in random order */
 void dwarfTick(ref GameApp app) {
   if(app.world.dwarves is null) return;
-  // TODO: index snapshot goes stale if tickDwarf ever triggers deleteDwarf mid-loop (e.g. future starvation/death)
-  foreach(i; iota(app.world.dwarves.length).array.randomShuffle()) { app.tickDwarf(app.world.dwarves[i]); }
+  // Future TODO: We can optimize the loop, when using a markForRemoval strategy
+  foreach(uid; app.world.dwarves.dwarves.map!(d => d.uid).array.randomShuffle()) {
+    auto i = app.world.dwarves.dwarves.countUntil!(d => d.uid == uid); // Find the dwarf by resolving UID to the slot
+    if(i < 0) continue;
+    app.tickDwarf(app.world.dwarves.dwarves[i]);
+  }
   app.world.syncPathMarkers(app.showPaths);
   app.timed!syncBuildGhosts();
   app.timed!deriveInventory();
