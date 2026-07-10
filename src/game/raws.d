@@ -133,6 +133,7 @@ ItemTemplateT[] parseItemTemplates(string raw) pure {
       case "ACCEPTS":  cur.accepts ~= cast(ubyte)p[1].to!ResourceClass; break;
       case "HOLDS":    cur.holds   ~= cast(ubyte)p[1].to!ResourceClass; break;
       case "CAPACITY": cur.capacity = to!uint(p[1]); break;
+      case "SCALE":    cur.scale = to!float(p[1]); break;
       case "STACK":    cur.maxStack = to!int(p[1]); break;
       default: break;
     }

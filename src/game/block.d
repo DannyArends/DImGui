@@ -10,7 +10,7 @@ import matrix : translateScale, scale;
 import physx : inColumn;
 import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood, hasClass, toItem, isRaw;
+import resources : isFood, hasClass, toItem, isRaw, isCraft;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
@@ -132,6 +132,17 @@ void ensureBlocks(ref GameApp app) {
     app.world.drops.meshes[meshName] = m;
     app.objects ~= m;
   }
+  foreach(ti; 0 .. cast(int)ItemTemplate.max + 1) {
+    auto t = cast(ItemTemplate)ti;
+    if(t == ItemTemplate.None) continue;
+    auto meshName = templateData(t).mesh;
+    if(meshName in app.world.drops.meshes) continue;
+    auto m = makePrimitive(meshName);
+    if(m is null) { SDL_Log("ensureBlocks: unknown template mesh '%s'", toStringz(meshName)); continue; }
+    m.initInstanced(() => meshName);
+    app.world.drops.meshes[meshName] = m;
+    app.objects ~= m;
+  }
 }
 
 /** Spawn a raw-material block into the registry */
@@ -146,8 +157,24 @@ uint spawnBlock(ref GameApp app, int[3] tile, Item it) {
   return id;
 }
 
-void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale) {
-  mesh.addInstances([DrawInstance([cast(uint)b.item.material, cast(uint)b.item.material], resourceData(b.item.material).color, translateScale(pos, scale))]);
+/** Geometry mesh name for an item: template shape when crafted, else the material's mesh. */
+string renderMesh(const Item it) { return it.isCraft ? templateData(it.shape).mesh : resourceData(it.material).meshName; }
+
+/** Render scale for an item: template scale when crafted, else the material's scale. */
+float renderScale(const Item it) { return it.isCraft ? templateData(it.shape).scale : resourceData(it.material).scale; }
+
+/** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
+int matOverride(const World world, const Item it) {
+  if(!it.isCraft) return -1;
+  if(it.amount > 0 && templateData(it.shape).texFilled.length) return cast(int)world.templateTexFilled[it.shape];
+  return cast(int)world.templateTex[it.shape];
+}
+
+void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale, int matOverride = -1) {
+  auto col = resourceData(b.item.material).color;                        // material colour tints the template skin
+  auto m = translateScale(pos, scale);
+  if(matOverride >= 0) mesh.addInstances([DrawInstance(matOverride, col, m)]);
+  else mesh.addInstances([DrawInstance([cast(uint)b.item.material, cast(uint)b.item.material], col, m)]);
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */
@@ -161,7 +188,8 @@ void syncStockpileInstances(ref World world) {
     if(ti >= sp.tiles.length) break;
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.drops.meshes[resourceData(b.item.material).meshName], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
+    emitBlock(world.drops.meshes[b.item.renderMesh], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs], world.matOverride(b.item));
+
   } }
 }
 
@@ -171,17 +199,17 @@ void syncBlockInstances(ref World world) {
   foreach(ref mesh; world.drops.meshes.values) { mesh.instances = []; }
   foreach(id, ref b; world.drops) {
     if(b.tile == storedTile) continue;
-    auto meshName = resourceData(b.item.material).meshName;
+    auto meshName = b.item.renderMesh;
     bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
     if(hidden) {
-      emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0]);
+      emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0], world.matOverride(b.item));
     } else {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
-      float sz = resourceData(b.item.material).scale * world.blockSize;
+      float sz = b.item.renderScale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
-      emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
+      emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz], world.matOverride(b.item));
     }
   }
   world.syncStockpileInstances();
