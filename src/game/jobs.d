@@ -5,7 +5,7 @@
 
 import game;
 
-import block : resourceType, itemOf, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
+import block : resourceType, itemOf, rawHasClass, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import reactions : reactionFor;
@@ -369,7 +369,7 @@ Job craftJob(string name) {
         ResourceType[ubyte] srcMat;                          // consumed input class -> its material, for item inheritance
         foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
           ResourceClass need = cast(ResourceClass)ing.cls;
-          auto found = d.carrying.filter!(cid => app.world.drops.resourceType(cid).hasClass(need));
+          auto found = d.carrying.filter!(cid => app.world.drops.rawHasClass(cid, need));
           if(found.empty) continue;
           srcMat[ing.cls] = app.world.drops.resourceType(found.front);
           app.consumeCarried(d, found.front);

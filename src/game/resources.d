@@ -58,6 +58,7 @@ ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
 @nogc float foodValue(const ResourceType r) pure nothrow { return r.classVal(ResourceClass.Food); }
 
 // Item = (shape template x material [+ contents]); accessors compute everything from the pair at use time.
+@nogc pure bool isRaw(const Item it) nothrow { return it.shape == ItemTemplate.None; }
 @nogc pure bool isCraft(const Item it) nothrow { return it.shape != ItemTemplate.None; }
 @nogc pure bool isContainer(const Item it) nothrow { return templateData(it.shape).capacity > 0; }
 @nogc pure bool isFull(const Item it) nothrow { return it.amount >= templateData(it.shape).capacity; }
