@@ -31,10 +31,6 @@ struct WorldData {
   int chunkSize      =  isAndroid ? 32 : 64;      /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  64;                       /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;                    /// Global world Y-offset
-  uint[ResourceType.max + 1] resources;
-  uint[ItemTemplate.max + 1] templateTex;         /// material SSBO slot per item template (empty skin)
-  uint[ItemTemplate.max + 1] templateTexFilled;   /// material SSBO slot per template (filled skin; read only when texFilled set)
-  bool templatesInjected;                         /// template material slots are permanent; injectResourceMeshes runs every frame
   ResourceType[uint][int[3]] diffs;
   ubyte[uint][int[3]] waterDiffs;
   float[int[3]] tilePenalties;
