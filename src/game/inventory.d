@@ -8,7 +8,7 @@ import game;
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
 import tile : getTileAt;
-import resources : toType;
+import resources : toType, isRaw;
 
 struct Inventory {
   GhostCube ghost;
@@ -16,13 +16,13 @@ struct Inventory {
   int[ResourceType] queued;
 
   int onFloor(ResourceType tt, ref GameApp app) const {
-    return cast(int)app.world.drops.byValue.count!(b => b.item.material == tt && b.tile != noTile && b.tile != builtTile);
+    return cast(int)app.world.drops.byValue.count!(b => b.item.isRaw && b.item.material == tt && b.tile != noTile && b.tile != builtTile);
   }
   int carried(ResourceType tt, ref GameApp app) const {
-    return cast(int)app.world.drops.byValue.count!(b => b.item.material == tt && b.tile == noTile);
+    return cast(int)app.world.drops.byValue.count!(b => b.item.isRaw && b.item.material == tt && b.tile == noTile);
   }
   int built(ResourceType tt, ref GameApp app) const {
-    return cast(int)app.world.drops.byValue.count!(b => b.item.material == tt && b.tile == builtTile);
+    return cast(int)app.world.drops.byValue.count!(b => b.item.isRaw && b.item.material == tt && b.tile == builtTile);
   }
   int get(ResourceType tt, ref GameApp app) const { return max(0, onFloor(tt, app) + carried(tt, app) - queued.get(tt, 0)); }
   int total(ResourceType tt, ref GameApp app) const { return onFloor(tt, app) + carried(tt, app); }
