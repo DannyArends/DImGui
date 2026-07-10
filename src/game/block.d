@@ -65,6 +65,9 @@ void loadBlocks(ref GameApp app) {
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
 ResourceType resourceType(const Drops drops, uint id) { auto b = id in drops; return b ? b.item.material : ResourceType.None; }
 
+/** Returns the full Item of a block by ID, or Item.init if not found */
+Item itemOf(const Drops drops, uint id) { auto b = id in drops; return b ? b.item : Item.init; }
+
 /** Clear the reserved flag on a set of blocks (released on job failure/completion). */
 void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in drops){ b.reserved = false; } } }
 

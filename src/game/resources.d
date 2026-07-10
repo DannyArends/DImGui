@@ -63,6 +63,11 @@ ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
 @nogc pure bool isFull(const Item it) nothrow { return it.amount >= templateData(it.shape).capacity; }
 @nogc pure int itemStack(const Item it) nothrow { return it.isCraft ? templateData(it.shape).maxStack : it.material.maxStack; }
 
+// Cup container predicates (Water fill mechanic; generalises to barrels/bins later)
+@nogc pure bool isCup(const Item it) nothrow { return it.shape == ItemTemplate.Cup; }
+@nogc pure bool isEmptyCup(const Item it) nothrow { return it.isCup && it.contents == ResourceType.None; }
+@nogc pure bool isWaterCup(const Item it) nothrow { return it.isCup && it.contents == ResourceType.Water; }
+
 string itemName(const Item it) {
   if(!it.isCraft) return resourceData(it.material).name;
   string n = resourceData(it.material).name ~ " " ~ templateData(it.shape).name;

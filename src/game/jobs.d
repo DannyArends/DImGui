@@ -5,11 +5,11 @@
 
 import game;
 
-import block : resourceType, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
+import block : resourceType, itemOf, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import reactions : reactionFor;
-import resources : isFood, foodValue, hasClass, toClass, toType, toItem;
+import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup;
 import sfx : play;
 import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
 import tile : setTile, setWater, getWater, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, tileToWorld, getSuccessors, worldToTile;
@@ -327,10 +327,10 @@ Job fillCupJob() {
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () {
         int[3] w = d.currentJob.targetTile;
-        auto cup = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
+        auto cup = d.carrying.filter!(id => app.world.drops.itemOf(id).isEmptyCup);
         if(!cup.empty && app.world.getWater(w) > 0) {
           app.world.setWater(w, cast(ubyte)(app.world.getWater(w) - 1));
-          if(auto b = cup.front in app.world.drops) { b.item.material = ResourceType.WaterCup; d.retype(cup.front, b.item); }
+          if(auto b = cup.front in app.world.drops) { b.item.contents = ResourceType.Water; b.item.amount = 1; d.retype(cup.front, b.item); }
         }
         app.world.drops.dirty = true;
       });
@@ -343,9 +343,9 @@ Job drinkJob() {
     onClaim: &claimSelf,
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.5f, () {
-        auto full = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
+        auto full = d.carrying.filter!(id => app.world.drops.itemOf(id).isWaterCup);
         if(!full.empty) {
-          if(auto b = full.front in app.world.drops) { b.item.material = ResourceType.WoodCup; d.retype(full.front, b.item); }
+          if(auto b = full.front in app.world.drops) { b.item.contents = ResourceType.None; b.item.amount = 0; d.retype(full.front, b.item); }
           d.thirst = 0.0f;
           app.play("DM-CGS-16", 0.4f);
           app.world.drops.dirty = true;
