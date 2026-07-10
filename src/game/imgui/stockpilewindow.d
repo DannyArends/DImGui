@@ -20,6 +20,9 @@ private void seed(ref Stockpile sp) {
 private string base(ResourceType t) { return resourceData(t).name.stripRight("0123456789_"); }
 private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on == total ? Colors.green : Colors.yellow; }
 private auto typesWhere(scope bool delegate(ResourceType) keep) { return [EnumMembers!ResourceType].filter!(t => t != ResourceType.None && keep(t)); }
+private Item craftKey(ItemTemplate t) { return Item(t); }
+private bool okCraft(ref Stockpile sp, ItemTemplate t) { return sp.accepts.length == 0 || sp.accepts.get(craftKey(t), false); }
+private void setAllCraft(ref Stockpile sp, bool on) { sp.seed(); foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) sp.accepts[craftKey(cast(ItemTemplate)ti)] = on; }
 
 /** Leaf label: "Name  (n)##id", count shown only when stocked. */
 private const(char)* leaf(const Stockpile sp, const Drops drops, ResourceType t, string label) {
@@ -66,6 +69,21 @@ private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool b
   igTreePop();
 }
 
+private void acceptCraftGroup(ref GameApp app, ref Stockpile sp) {
+  int gT, gOn;
+  foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) { gT++; if(sp.okCraft(cast(ItemTemplate)ti)) gOn++; }
+  if(gT == 0) return;
+
+  if(!cNode(cstr("Crafts##gc"), tri(gOn, gT), () => sp.setAllCraft(gOn != gT))) return;
+  foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) {
+    auto t = cast(ItemTemplate)ti;
+    uint n = sp.countOf(app.world.drops, craftKey(t));
+    auto lbl = n > 0 ? cstr("%s  (%d)##c%d", templateData(t).name, n, ti) : cstr("%s##c%d", templateData(t).name, ti);
+    if(cTag(lbl, sp.okCraft(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[craftKey(t)] = !sp.okCraft(t); }
+  }
+  igTreePop();
+}
+
 void showStockpileContent(ref GameApp app, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
   if(!app.world.stockpiles.length) text("No stockpiles");
@@ -77,6 +95,7 @@ void showStockpileContent(ref GameApp app, uint font = 0) {
     text("%s   %d / %d", sp.name, cast(int)sp.contents.length, cast(int)sp.capacity);
     app.acceptGroup(sp, "Blocks", true);
     app.acceptGroup(sp, "Items", false);
+    app.acceptCraftGroup(sp);
     if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0,0))) toDelete ~= id;
     igPopID();
   }
