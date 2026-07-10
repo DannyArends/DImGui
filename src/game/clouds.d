@@ -125,7 +125,7 @@ void rainTick(ref GameApp app) {
 void settleRain(ref GameApp app) {
   uint[] done;
   foreach(id, ref b; app.world.drops) {
-    if(b.type != ResourceType.Water) continue;
+    if(b.item.material != ResourceType.Water) continue;
     if(b.isFalling) continue;                 // still in the air
     app.world.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.world.getWater(b.tile) + 4));
     done ~= id;

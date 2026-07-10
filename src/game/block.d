@@ -10,7 +10,7 @@ import matrix : translateScale, scale;
 import physx : inColumn;
 import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood, hasClass;
+import resources : isFood, hasClass, toItem;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
@@ -18,7 +18,7 @@ enum uint noBlock = uint.max;
 
 struct Block {
   uint id = uint.max;               /// Stable block id (persisted, == its key in world.blocks)
-  ResourceType type;                /// Block type
+  Item item;                        /// What this block is: (shape x material [+ contents]); shape==None => raw material
   int[3] tile;                      /// Current tile position
   Fall fall;                        /// PhysX
   bool reserved = false;            /// Reserved for a job ?
@@ -60,26 +60,26 @@ void loadBlocks(ref GameApp app) {
 }
 
 /** Do we have a certain resourceType? */
-@nogc pure bool hasResource(const Drops drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.type == tt); }
+@nogc pure bool hasResource(const Drops drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.item.material == tt); }
 
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
-ResourceType resourceType(const Drops drops, uint id) { auto b = id in drops; return b ? b.type : ResourceType.None; }
+ResourceType resourceType(const Drops drops, uint id) { auto b = id in drops; return b ? b.item.material : ResourceType.None; }
 
 /** Clear the reserved flag on a set of blocks (released on job failure/completion). */
 void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in drops){ b.reserved = false; } } }
 
 /** Count unreserved, available blocks of a type. */
-@nogc pure uint available(const Drops drops, ResourceType tt) nothrow { return cast(uint)drops.byValue.count!(b => b.type == tt && !b.reserved); }
+@nogc pure uint available(const Drops drops, ResourceType tt) nothrow { return cast(uint)drops.byValue.count!(b => b.item.material == tt && !b.reserved); }
 
 /** A reaction can run iff every ingredient is available in the required count. */
 bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!(i => drops.available(cast(ResourceClass)i.cls) >= i.count); }
 
 /** on the Drops unit — class-based, the same shape eating already wants */
-@nogc pure uint available(const Drops drops, ResourceClass c) nothrow { return cast(uint)drops.byValue.count!(b => b.type.hasClass(c) && !b.reserved); }
+@nogc pure uint available(const Drops drops, ResourceClass c) nothrow { return cast(uint)drops.byValue.count!(b => b.item.material.hasClass(c) && !b.reserved); }
 
 /** on */
 uint findFreeClass(const World world, int[3] dwarfTile, ResourceClass c, bool includeStored = true) {
-  return findFreeBlockWhere!(b => c == ResourceClass.None || b.type.hasClass(c))(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b => c == ResourceClass.None || b.item.material.hasClass(c))(world, dwarfTile, includeStored);
 }
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
@@ -107,11 +107,11 @@ private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dw
 }
 
 uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
-  return findFreeBlockWhere!(b => tt == ResourceType.None || b.type == tt)(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b => tt == ResourceType.None || b.item.material == tt)(world, dwarfTile, includeStored);
 }
 
 uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored = true) {
-  return findFreeBlockWhere!(b => b.type.isFood)(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b => b.item.material.isFood)(world, dwarfTile, includeStored);
 }
 
 void ensureBlocks(ref GameApp app) {
@@ -130,13 +130,13 @@ void ensureBlocks(ref GameApp app) {
 uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
   app.ensureBlocks();
   uint id = app.world.drops.nextID++;
-  app.world.drops[id] = Block(id, tt, tile);
+  app.world.drops[id] = Block(id, tt.toItem, tile);
   app.world.drops.dirty = true;
   return id;
 }
 
 void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale) {
-  mesh.addInstances([DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, scale))]);
+  mesh.addInstances([DrawInstance([cast(uint)b.item.material, cast(uint)b.item.material], resourceData(b.item.material).color, translateScale(pos, scale))]);
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */
@@ -150,7 +150,7 @@ void syncStockpileInstances(ref World world) {
     if(ti >= sp.tiles.length) break;
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.drops.meshes[resourceData(b.type).meshName], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
+    emitBlock(world.drops.meshes[resourceData(b.item.material).meshName], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
   } }
 }
 
@@ -160,13 +160,13 @@ void syncBlockInstances(ref World world) {
   foreach(ref mesh; world.drops.meshes.values) { mesh.instances = []; }
   foreach(id, ref b; world.drops) {
     if(b.tile == storedTile) continue;
-    auto meshName = resourceData(b.type).meshName;
+    auto meshName = resourceData(b.item.material).meshName;
     bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
     if(hidden) {
       emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0]);
     } else {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
-      float sz = resourceData(b.type).scale * world.blockSize;
+      float sz = resourceData(b.item.material).scale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
