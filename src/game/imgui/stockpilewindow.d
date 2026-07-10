@@ -10,22 +10,27 @@ import imgui : iconText;
 import stockpile : Stockpile, capacity, removeStockpile, countOf;
 import widgets : text, cTag, cNode;
 
-private bool ok(ref Stockpile sp, ResourceType t) { return sp.accepts.length == 0 || sp.accepts.get(t, false); }
-private void seed(ref Stockpile sp) { if(!sp.accepts.length) foreach(a; typesWhere(t => true)){ sp.accepts[a] = true; } }
+private Item matKey(ResourceType t) { return Item(ItemTemplate.None, t); }
+private bool ok(ref Stockpile sp, ResourceType t) { return(sp.accepts.length == 0 || sp.accepts.get(matKey(t), false)); }
+private void seed(ref Stockpile sp) {
+  if(sp.accepts.length) return;
+  foreach(t; typesWhere(t => true)) sp.accepts[matKey(t)] = true;
+  foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) sp.accepts[Item(cast(ItemTemplate)ti)] = true;
+}
 private string base(ResourceType t) { return resourceData(t).name.stripRight("0123456789_"); }
 private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on == total ? Colors.green : Colors.yellow; }
 private auto typesWhere(scope bool delegate(ResourceType) keep) { return [EnumMembers!ResourceType].filter!(t => t != ResourceType.None && keep(t)); }
 
 /** Leaf label: "Name  (n)##id", count shown only when stocked. */
 private const(char)* leaf(const Stockpile sp, const Drops drops, ResourceType t, string label) {
-  uint n = sp.countOf(drops, t);
+  uint n = sp.countOf(drops, matKey(t));
   return n > 0 ? cstr("%s  (%d)##%d", label, n, cast(int)t) : cstr("%s##%d", label, cast(int)t);
 }
 
 /** Walk types matching `keep`, set them all to `on`. */
 private void setAll(ref Stockpile sp, bool delegate(ResourceType) keep, bool on) {
   sp.seed();
-  foreach(t; typesWhere(keep)){ sp.accepts[t] = on; }
+  foreach(t; typesWhere(keep)){ sp.accepts[matKey(t)] = on; }
 }
 
 private void tally(ref Stockpile sp, bool delegate(ResourceType) keep, out int total, out int on) {
@@ -48,11 +53,11 @@ private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool b
     igPushID_Str(b.toStringz);
     if(bT == 1) {                                            // single variant -> base name as leaf
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(sp.leaf(app.world.drops, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); } 
+        if(cTag(sp.leaf(app.world.drops, t, b), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[matKey(t)] = !sp.ok(t); } 
       }
     } else if(cNode(cstr("%s##b", b), tri(bOn, bT), () => sp.setAll(t => inBase(t), bOn != bT))) {
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(sp.leaf(app.world.drops, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[t] = !sp.ok(t); }
+        if(cTag(sp.leaf(app.world.drops, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[matKey(t)] = !sp.ok(t); }
       }
       igTreePop();
     }
