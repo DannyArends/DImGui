@@ -10,7 +10,7 @@ import matrix : translateScale, scale;
 import physx : inColumn;
 import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood, hasClass, toItem, isRaw, isCraft;
+import resources : isFood, hasClass, toItem, isRaw, isCraft, templateMat;
 import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
 import vector : manhattan;
 
@@ -164,10 +164,9 @@ string renderMesh(const Item it) { return it.isCraft ? templateData(it.shape).me
 float renderScale(const Item it) { return it.isCraft ? templateData(it.shape).scale : resourceData(it.material).scale; }
 
 /** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
-int matOverride(const World world, const Item it) {
+@nogc pure int matOverride(const Item it) nothrow {
   if(!it.isCraft) return -1;
-  if(it.amount > 0 && templateData(it.shape).texFilled.length) return cast(int)world.templateTexFilled[it.shape];
-  return cast(int)world.templateTex[it.shape];
+  return cast(int)templateMat(it.shape, it.amount > 0 && templateData(it.shape).texFilled.length > 0);
 }
 
 void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale, int matOverride = -1) {
@@ -188,7 +187,7 @@ void syncStockpileInstances(ref World world) {
     if(ti >= sp.tiles.length) break;
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.drops.meshes[b.item.renderMesh], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs], world.matOverride(b.item));
+    emitBlock(world.drops.meshes[b.item.renderMesh], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs], matOverride(b.item));
 
   } }
 }
@@ -202,14 +201,14 @@ void syncBlockInstances(ref World world) {
     auto meshName = b.item.renderMesh;
     bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
     if(hidden) {
-      emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0], world.matOverride(b.item));
+      emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0], matOverride(b.item));
     } else {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
       float sz = b.item.renderScale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
-      emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz], world.matOverride(b.item));
+      emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz], matOverride(b.item));
     }
   }
   world.syncStockpileInstances();
