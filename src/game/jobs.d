@@ -467,10 +467,10 @@ void failAndRequeue(ref Dwarf d) {
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.drops) {
     if(b.tile == noTile || b.tile == builtTile || b.reserved || b.isFalling) continue;
-    if(app.world.stockpiles.acceptedByHolder(id, b.item.material)) continue;
+    if(app.world.stockpiles.acceptedByHolder(id, b.item)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     int[3] dst;
-    uint sp = app.world.findStockpileSlot(b.item.material, d.tile, dst);
+    uint sp = app.world.findStockpileSlot(b.item, d.tile, dst);
     if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.item.material, dst)); return true; }
   }
   return false;
