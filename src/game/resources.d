@@ -23,6 +23,7 @@ struct ItemTemplateT {
   string name = "None";
   string mesh = "Cube";   /// shape geometry (tinted/textured by material at use time)
   string tex  = "";        /// template skin; empty => fall back to the material's texture
+  string texFilled = "";   /// skin when the container holds contents (amount > 0); empty => use `tex`
   ubyte[] accepts;         /// ResourceClass the material may belong to; empty => any
   ubyte[] holds;           /// ResourceClass the contents may belong to; empty => not a container
   uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
@@ -69,11 +70,19 @@ ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
 @nogc pure bool isEmptyCup(const Item it) nothrow { return it.isCup && it.contents == ResourceType.None; }
 @nogc pure bool isWaterCup(const Item it) nothrow { return it.isCup && it.contents == ResourceType.Water; }
 
+/** Name to display for an item */
 string itemName(const Item it) {
   if(!it.isCraft) return resourceData(it.material).name;
   string n = resourceData(it.material).name ~ " " ~ templateData(it.shape).name;
   if(it.contents != ResourceType.None) n ~= " of " ~ resourceData(it.contents).name;
   return n;
+}
+
+/** Texture to display for an item: template skin (filled variant when holding contents), else the raw material's 2D texture. */
+string itemTex(const Item it) {
+  if(!it.isCraft) return resourceData(it.material).tex2D;
+  auto t = templateData(it.shape);
+  return (it.amount > 0 && t.texFilled.length) ? t.texFilled : t.tex;
 }
 
 /** Wrap a raw material as an Item (shape == None). The default way to build a material-only Item. */

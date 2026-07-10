@@ -129,7 +129,7 @@ ItemTemplateT[] parseItemTemplates(string raw) pure {
     if(p.length == 0) continue;
     switch(p[0]) {
       case "ITEM":     if(inItem) table ~= cur; cur = ItemTemplateT.init; cur.name = p[1]; inItem = true; break;
-      case "MESH":     if(p.length > 1) cur.mesh = p[1]; if(p.length > 2) cur.tex = p[2]; break;
+      case "MESH":     if(p.length > 1) cur.mesh = p[1]; if(p.length > 2) cur.tex = p[2]; if(p.length > 3) cur.texFilled = p[3]; break;
       case "ACCEPTS":  cur.accepts ~= cast(ubyte)p[1].to!ResourceClass; break;
       case "HOLDS":    cur.holds   ~= cast(ubyte)p[1].to!ResourceClass; break;
       case "CAPACITY": cur.capacity = to!uint(p[1]); break;

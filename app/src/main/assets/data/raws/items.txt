@@ -6,7 +6,7 @@
   [STACK:1]
 
 [ITEM:Cup]
-  [MESH:Cube:WoodCup]
+  [MESH:Cube:WoodCup:WoodCupFilled]
   [ACCEPTS:Wood]
   [HOLDS:Liquid]
   [CAPACITY:1]
