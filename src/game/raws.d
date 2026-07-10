@@ -11,27 +11,16 @@ import ctfe : parseTokens, splitColon;
  * import() is resolved at compile-time; dub does not track these as dependencies */
 mixin(generateResourceEnum(import("data/raws/materials.txt")));
 mixin(generateResourceClassEnum(import("data/raws/materials.txt")));
+mixin(generateItemTemplateEnum(import("data/raws/items.txt")));
 
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
 immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
 immutable ResourceT[] resourceTable = parseResources(import("data/raws/materials.txt"));
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
+immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
 
-/** TODO: split materials and items into separate concepts (template + material composition).
- * Currently materials.txt conflates three orthogonal things behind [CLASS:Item] tags:
- *   - Material: the substance (Stone, Iron, Wood, Water) - mesh/texture/classes, hardness, value, weight.
- *   - Item template: the shape/type (Axe, Sword, Cup) - accepted material classes, stack, durability, tool fn.
- * A concrete item = (template x material): "StoneAxe" is Axe made of Stone, IronAxe is Axe of Iron -
- * NOT a hand-authored material. Reactions output a template and inherit the material from an input
- * (e.g. AxeMaking: Flint + Wood -> Axe, axe material = the flint's material), so one Axe template +
- * one reaction yields StoneAxe/IronAxe/etc. without a combinatorial list of hand-written entries.
- *
- * We want to represent a concrete item as a composite (template, material) stored on the block itself -
- * two fields (ItemTemplate template, Material material), NOT a generated per-combo type. Name
- * ("Stone Axe"), texture/tint, weight, value and quality are all computed from the (template, material)
- * pair at use time. Adding a new material (e.g. Iron) then makes every template craftable from it for
- * free, with zero new entries. This means code currently keyed on a single ResourceType (inventory,
- * textures, reactions, rendering) must move to inspecting the pair. */
+static assert(resourceTable.length == ResourceType.max + 1, "resourceTable out of sync with ResourceType enum");
+static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
 
 /** One terrain height band: an upper threshold and the resources eligible at that height. */
 struct HeightBand { float threshold; ResourceType[] results; }
@@ -117,6 +106,40 @@ ResourceT[] parseResources(string raw) pure {
 
 /** Per-material data, indexed by ResourceType (enum's ubyte value indexes the table). */
 @nogc pure const(ResourceT) resourceData(ResourceType rt) nothrow { return resourceTable[rt]; }
+
+/** Per-template data, indexed by ItemTemplate (enum's ubyte value indexes the table). */
+@nogc pure const(ItemTemplateT) templateData(ItemTemplate t) nothrow { return itemTemplateTable[t]; }
+
+/** CTFE: generate the ItemTemplate enum (None sentinel first, then one member per [ITEM:x]). */
+string generateItemTemplateEnum(string raw) pure {
+  string result = "enum ItemTemplate : ubyte {\n  None,\n";
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length >= 2 && p[0] == "ITEM") result ~= "  " ~ p[1] ~ ",\n";
+  }
+  return result ~ "}\n";
+}
+
+/** CTFE: parse items.txt into the per-template table (index 0 == ItemTemplate.None, then parallel to the enum). */
+ItemTemplateT[] parseItemTemplates(string raw) pure {
+  ItemTemplateT[] table; ItemTemplateT cur; bool inItem;
+  table ~= ItemTemplateT("None");                          // index 0 == ItemTemplate.None
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    switch(p[0]) {
+      case "ITEM":     if(inItem) table ~= cur; cur = ItemTemplateT.init; cur.name = p[1]; inItem = true; break;
+      case "MESH":     if(p.length > 1) cur.mesh = p[1]; if(p.length > 2) cur.tex = p[2]; break;
+      case "ACCEPTS":  cur.accepts ~= cast(ubyte)p[1].to!ResourceClass; break;
+      case "HOLDS":    cur.holds   ~= cast(ubyte)p[1].to!ResourceClass; break;
+      case "CAPACITY": cur.capacity = to!uint(p[1]); break;
+      case "STACK":    cur.maxStack = to!int(p[1]); break;
+      default: break;
+    }
+  }
+  if(inItem) table ~= cur;
+  return table;
+}
 
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure {
