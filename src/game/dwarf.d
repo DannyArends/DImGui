@@ -5,7 +5,7 @@
 
 import game;
 
-import block : resourceType, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
+import block : resourceType, itemOf, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
 import color : randomColor;
 import inventory : deriveInventory;
 import game : GameApp;
@@ -16,7 +16,7 @@ import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
 import jobs : Job, fillCupJob, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
-import resources : isFood, toClass, itemStack;
+import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import sfx : play;
@@ -277,8 +277,8 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   }
   // Thirst
   if(d.needs[Need.Thirst] >= 0.6f) {
-    bool hasFull = d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
-    bool hasEmpty = d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
+    bool hasFull = d.carrying.any!(id => app.world.drops.itemOf(id).isWaterCup);
+    bool hasEmpty = d.carrying.any!(id => app.world.drops.itemOf(id).isEmptyCup);
     int[3] standAt;
     bool water = app.world.findNearestWater(d.tile, standAt) != noTile;
 
