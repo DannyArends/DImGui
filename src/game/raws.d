@@ -212,7 +212,8 @@ Reaction[] parseReactions(string raw) pure {
       case "WORKSHOP": r.workshop = p[1].to!WorkshopUse; break;
       case "PROGRESS_RATE": r.progressRate = to!float(p[1]); break;
       case "INPUT": if(p.length >= 3) r.inputs  ~= Ingredient(cast(ubyte)p[1].to!ResourceClass, p[2].to!uint); break;
-      case "OUTPUT": if(p.length >= 3) r.outputs ~= Product(cast(ubyte)p[1].to!ResourceType,  1.0f, p[2].to!uint); break;
+      case "OUTPUT": if(p.length >= 3) r.outputs ~= Product(0, cast(ubyte)p[1].to!ResourceType, 0, 1.0f, p[2].to!uint); break;
+      case "OUTPUT_ITEM": if(p.length >= 4) r.outputs ~= Product(cast(ubyte)p[1].to!ItemTemplate, 0, cast(ubyte)p[2].to!ResourceClass, 1.0f, p[3].to!uint); break;
       default: break;
     }
   }

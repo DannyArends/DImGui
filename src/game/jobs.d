@@ -366,18 +366,23 @@ Job craftJob(string name) {
     onArrive: (ref GameApp app, ref Dwarf d) {
       auto rr = reactionFor(d.currentJob.name);
       app.progressJob(d, rr.progressRate, () {
+        ResourceType[ubyte] srcMat;                          // consumed input class -> its material, for item inheritance
         foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
           ResourceClass need = cast(ResourceClass)ing.cls;
           auto found = d.carrying.filter!(cid => app.world.drops.resourceType(cid).hasClass(need));
           if(found.empty) continue;
+          srcMat[ing.cls] = app.world.drops.resourceType(found.front);
           app.consumeCarried(d, found.front);
         }
-        foreach(prod; rr.outputs) foreach(n; 0 .. prod.count) {
-          auto pid = app.spawnBlock(d.tile, cast(ResourceType)prod.type);
-          if(d.pickup(pid, (cast(ResourceType)prod.type).toItem)) {
+        foreach(prod; rr.outputs) { foreach(n; 0 .. prod.count) {
+          Item it = (prod.shape == cast(ubyte)ItemTemplate.None)
+                  ? (cast(ResourceType)prod.type).toItem
+                  : Item(cast(ItemTemplate)prod.shape, srcMat.get(prod.materialFrom, ResourceType.None));
+          auto pid = app.spawnBlock(d.tile, it);
+          if(d.pickup(pid, it)) {
             if(auto nb = pid in app.world.drops) { nb.tile = noTile; nb.fall = Fall.init; }
           }
-        }
+        } }
         app.world.drops.dirty = true;
       });
     },

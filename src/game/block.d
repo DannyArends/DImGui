@@ -126,11 +126,14 @@ void ensureBlocks(ref GameApp app) {
   }
 }
 
-/** Spawn a new block into the registry */
-uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
+/** Spawn a raw-material block into the registry */
+uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) { return app.spawnBlock(tile, tt.toItem); }
+
+/** Spawn a new block holding a concrete item into the registry */
+uint spawnBlock(ref GameApp app, int[3] tile, Item it) {
   app.ensureBlocks();
   uint id = app.world.drops.nextID++;
-  app.world.drops[id] = Block(id, tt.toItem, tile);
+  app.world.drops[id] = Block(id, it, tile);
   app.world.drops.dirty = true;
   return id;
 }

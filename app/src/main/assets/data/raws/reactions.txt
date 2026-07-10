@@ -13,7 +13,7 @@
   [PROGRESS_RATE:0.10]
   [INPUT:Flint:1]
   [INPUT:Wood:1]
-  [OUTPUT:StoneAxe:1]
+  [OUTPUT_ITEM:Axe:Flint:1]
   [OUTPUT:OakLeaves:1]
 
 [REACTION:CupMaking]

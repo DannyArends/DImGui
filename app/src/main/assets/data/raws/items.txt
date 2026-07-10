@@ -2,7 +2,7 @@
 
 [ITEM:Axe]
   [MESH:Cube:StoneAxe]
-  [ACCEPTS:Stone][ACCEPTS:Rock]
+  [ACCEPTS:Stone][ACCEPTS:Rock][ACCEPTS:Flint]
   [STACK:1]
 
 [ITEM:Cup]
