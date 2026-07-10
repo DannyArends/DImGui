@@ -9,7 +9,7 @@ import block : resourceType, spawnBlock, hasResource, findFreeBlock, findFreeCla
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import pathfinding : pathfindTo, findGoalTile;
 import reactions : reactionFor;
-import resources : isFood, foodValue, hasClass, toClass, toType;
+import resources : isFood, foodValue, hasClass, toClass, toType, toItem;
 import sfx : play;
 import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
 import tile : setTile, setWater, getWater, tileAbove, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, tileToWorld, getSuccessors, worldToTile;
@@ -330,9 +330,7 @@ Job fillCupJob() {
         auto cup = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
         if(!cup.empty && app.world.getWater(w) > 0) {
           app.world.setWater(w, cast(ubyte)(app.world.getWater(w) - 1));
-          if(auto b = cup.front in app.world.drops){
-            d.retype(cup.front, (b.item.material = ResourceType.WaterCup)); 
-          }
+          if(auto b = cup.front in app.world.drops) { b.item.material = ResourceType.WaterCup; d.retype(cup.front, b.item); }
         }
         app.world.drops.dirty = true;
       });
@@ -347,9 +345,7 @@ Job drinkJob() {
       app.progressJob(d, 0.5f, () {
         auto full = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
         if(!full.empty) {
-          if(auto b = full.front in app.world.drops){
-            d.retype(full.front, (b.item.material = ResourceType.WoodCup));
-          }
+          if(auto b = full.front in app.world.drops) { b.item.material = ResourceType.WoodCup; d.retype(full.front, b.item); }
           d.thirst = 0.0f;
           app.play("DM-CGS-16", 0.4f);
           app.world.drops.dirty = true;
@@ -378,7 +374,7 @@ Job craftJob(string name) {
         }
         foreach(prod; rr.outputs) foreach(n; 0 .. prod.count) {
           auto pid = app.spawnBlock(d.tile, cast(ResourceType)prod.type);
-          if(d.pickup(pid, cast(ResourceType)prod.type)) {
+          if(d.pickup(pid, (cast(ResourceType)prod.type).toItem)) {
             if(auto nb = pid in app.world.drops) { nb.tile = noTile; nb.fall = Fall.init; }
           }
         }
@@ -420,7 +416,7 @@ void doPickup(ref GameApp app, ref Dwarf d) {
   auto blockID = d.currentJob.blockIDs.length > 0 ? d.currentJob.blockIDs[0] : noBlock;
   if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
   if(auto b = blockID in app.world.drops) {
-    if(!d.pickup(blockID, b.item.material)) { d.currentJob.onFail(app, d); return; }
+    if(!d.pickup(blockID, b.item)) { d.currentJob.onFail(app, d); return; }
     if(b.tile == storedTile) app.world.withdrawBlock(blockID);
     b.tile = noTile;
     b.fall = Fall.init;

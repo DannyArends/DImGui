@@ -50,7 +50,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
     uint total = 0;
     if(app.world.dwarves !is null)
       foreach(ref d; app.world.dwarves){ foreach(ref s; d.inventory){
-        if(s.isStack && s.type == tileType) total += s.count;
+        if(s.isStack && s.item.material == tileType) total += s.count;
       } }
     if(total == 0) continue;
     text("%s: %d", resourceData(tileType).name, total);
