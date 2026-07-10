@@ -16,7 +16,7 @@ import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
 import physx : inColumn;
 import jobs : Job, fillCupJob, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
-import resources : isFood, toClass;
+import resources : isFood, toClass, itemStack;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import sfx : play;
@@ -32,15 +32,15 @@ uint nextDwarfUID = 1;
 struct InventorySlot {
   enum Kind : ubyte { Empty, Block, Stack }
   Kind kind = Kind.Empty;                           /// Resource kind
-  ResourceType type = ResourceType.None;            /// Resource type
+  Item item;                                        /// What's in the slot: (shape x material [+ contents])
   ubyte count = 0;                                  /// number of valid ids in resourceIDs
   uint[16] resourceIDs = noBlock;                   /// block/berry ids in this slot (POD, fixed-size)
 
   @nogc @property bool empty() const nothrow { return kind == Kind.Empty; }
   @nogc @property bool isStack() const nothrow { return kind == Kind.Stack; }
-  @nogc bool accepts(ResourceType t) const {
+  @nogc bool accepts(Item item) const {
     if(empty) return true;
-    return isStack && this.type == t && count < t.maxStack;
+    return isStack && this.item == item && count < itemStack(item);
   }
 }
 
@@ -68,10 +68,10 @@ struct DwarfData {
     return ids;
   }
 
-  bool pickup(uint blockID, ResourceType type) {
+  bool pickup(uint blockID, Item item) {
     foreach(ref s; inventory) {
-      if(!s.accepts(type)) continue;
-      if(s.empty) { s.kind = type.maxStack > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.type = type; }
+      if(!s.accepts(item)) continue;
+      if(s.empty) { s.kind = itemStack(item) > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.item = item; }
       s.resourceIDs[s.count] = blockID;
       s.count++;
       return true;
@@ -94,10 +94,10 @@ struct DwarfData {
     return(false);
   }
 
-  @nogc void retype(uint blockID, ResourceType type) nothrow {
+  @nogc void retype(uint blockID, Item item) nothrow {
     foreach(ref s; inventory) {
       if(s.empty) continue;
-      if(s.resourceIDs[0 .. s.count].canFind(blockID)) { s.type = type; return; } // This only works for stacksize == 1
+      if(s.resourceIDs[0 .. s.count].canFind(blockID)) { s.item = item; return; } // This only works for stacksize == 1
     }
   }
 
