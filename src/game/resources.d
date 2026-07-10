@@ -70,6 +70,9 @@ string itemName(const Item it) {
   return n;
 }
 
+/** Wrap a raw material as an Item (shape == None). The default way to build a material-only Item. */
+@nogc pure Item toItem(ResourceType m) nothrow { return Item(ItemTemplate.None, m); }
+
 void injectResourceMeshes(ref GameApp app) {
   app.meshes.length = 0;
   foreach (tt; 0 .. cast(int)ResourceType.max + 1) {

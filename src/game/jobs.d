@@ -228,7 +228,7 @@ Job dropBlockJob(int[3] fromTile, uint blockID) {
 Job cleanWorksiteJob(int[3] targetTile) {
   return Job("CleanWorksite", targetTile, ResourceClass.None, [],
     onClaim: (ref GameApp app, ref Dwarf d, ref Job j) {
-      foreach(id, ref b; app.world.drops) { if(b.tile == j.targetTile) { j.blockIDs = [id]; j.tileClass = b.type.toClass; return; } }
+      foreach(id, ref b; app.world.drops) { if(b.tile == j.targetTile) { j.blockIDs = [id]; j.tileClass = b.item.material.toClass; return; } }
       j.state = JobState.Satisfied;
     },
     onArrive: (ref GameApp app, ref Dwarf d) {
@@ -331,7 +331,7 @@ Job fillCupJob() {
         if(!cup.empty && app.world.getWater(w) > 0) {
           app.world.setWater(w, cast(ubyte)(app.world.getWater(w) - 1));
           if(auto b = cup.front in app.world.drops){
-            d.retype(cup.front, (b.type = ResourceType.WaterCup)); 
+            d.retype(cup.front, (b.item.material = ResourceType.WaterCup)); 
           }
         }
         app.world.drops.dirty = true;
@@ -348,7 +348,7 @@ Job drinkJob() {
         auto full = d.carrying.filter!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
         if(!full.empty) {
           if(auto b = full.front in app.world.drops){
-            d.retype(full.front, (b.type = ResourceType.WoodCup));
+            d.retype(full.front, (b.item.material = ResourceType.WoodCup));
           }
           d.thirst = 0.0f;
           app.play("DM-CGS-16", 0.4f);
@@ -420,7 +420,7 @@ void doPickup(ref GameApp app, ref Dwarf d) {
   auto blockID = d.currentJob.blockIDs.length > 0 ? d.currentJob.blockIDs[0] : noBlock;
   if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
   if(auto b = blockID in app.world.drops) {
-    if(!d.pickup(blockID, b.type)) { d.currentJob.onFail(app, d); return; }
+    if(!d.pickup(blockID, b.item.material)) { d.currentJob.onFail(app, d); return; }
     if(b.tile == storedTile) app.world.withdrawBlock(blockID);
     b.tile = noTile;
     b.fall = Fall.init;
@@ -466,11 +466,11 @@ void failAndRequeue(ref Dwarf d) {
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.drops) {
     if(b.tile == noTile || b.tile == builtTile || b.reserved || b.isFalling) continue;
-    if(app.world.stockpiles.acceptedByHolder(id, b.type)) continue;
+    if(app.world.stockpiles.acceptedByHolder(id, b.item.material)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     int[3] dst;
-    uint sp = app.world.findStockpileSlot(b.type, d.tile, dst);
-    if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.type, dst)); return true; }
+    uint sp = app.world.findStockpileSlot(b.item.material, d.tile, dst);
+    if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.item.material, dst)); return true; }
   }
   return false;
 }
