@@ -24,6 +24,7 @@ struct ItemTemplateT {
   string mesh = "Cube";   /// shape geometry (tinted/textured by material at use time)
   string tex  = "";        /// template skin; empty => fall back to the material's texture
   string texFilled = "";   /// skin when the container holds contents (amount > 0); empty => use `tex`
+  float scale = 1.0f;      /// render scale of the crafted item
   ubyte[] accepts;         /// ResourceClass the material may belong to; empty => any
   ubyte[] holds;           /// ResourceClass the contents may belong to; empty => not a container
   uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
@@ -96,6 +97,12 @@ void injectResourceMeshes(ref GameApp app) {
     if(app.materials.length <= tt) app.materials ~= Material();  // only add material once
     app.meshes ~= Mesh([0, 0], cast(int)tt);  // reuse existing material slot
   }
+  foreach (ti; 0 .. cast(int)ItemTemplate.max + 1) {
+    auto t = cast(ItemTemplate)ti;
+    if(t == ItemTemplate.None) continue;
+    app.world.templateTex[t] = cast(uint)app.materials.length; app.materials ~= Material();
+    if(templateData(t).texFilled.length) { app.world.templateTexFilled[t] = cast(uint)app.materials.length; app.materials ~= Material(); }
+  }
 }
 
 void updateMaterials(ref GameApp app) {
@@ -107,4 +114,11 @@ void updateMaterials(ref GameApp app) {
       app.materials[app.meshes[idx].mid].nid = app.textures.idx(resourceData(ttype).tex3D.replace("_base", "_normal"));
     }
   }
+  foreach (ti; 0 .. cast(int)ItemTemplate.max + 1) {
+    auto t = cast(ItemTemplate)ti;
+    if(t == ItemTemplate.None) continue;
+    app.materials[app.world.templateTex[t]].tid = app.textures.idx(templateData(t).tex);
+    if(templateData(t).texFilled.length) app.materials[app.world.templateTexFilled[t]].tid = app.textures.idx(templateData(t).texFilled);
+  }
 }
+
