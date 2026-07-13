@@ -96,11 +96,10 @@ enum uint TEMPLATE_MAT_BASE = ResourceType.max + 1;
 /** Resource-mesh prefix — one mesh per ResourceType; fully determined at compile time. */
 static immutable Mesh[] resourcePrefix = iota(cast(int)ResourceType.max + 1).map!(tt => Mesh([0, 0], tt)).array;
 
-void injectResourceMeshes(ref GameApp app) {
+void injectResourceMeshes(ref GameApp app, uint nMaterials = TEMPLATE_MAT_BASE + (2 * ItemTemplate.max)) {
   app.meshes.length = resourcePrefix.length;
   app.meshes[0 .. resourcePrefix.length] = resourcePrefix;
-  uint n = TEMPLATE_MAT_BASE + (2 * ItemTemplate.max);
-  if(app.materials.length < n) app.materials.length = n;
+  if(app.materials.length < nMaterials) app.materials.length = nMaterials;
 }
 
 void updateMaterials(ref GameApp app) {
