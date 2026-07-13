@@ -13,7 +13,7 @@ struct Vegetation {
   Feature[][int[3]][string] active;
   alias active this;
   Feature[][int[3]][string] pending;
-  bool[int[3]] modified;
+  LatticeMap!bool modified;
   Geometry[string] meshes;
 }
 

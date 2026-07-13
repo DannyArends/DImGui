@@ -37,10 +37,10 @@ struct ChunkData {
 }
 
 struct ChunkField {
-  Chunk[int[3]] loaded;
-  alias loaded this;
-  bool[int[3]] pending;
+  LatticeMap!Chunk loaded;
+  LatticeMap!bool pending;
   int[3][] unsettle, build, mine;
+  alias loaded this;
 }
 
 /** Build the full tile-type array for a chunk column-by-column from height/material noise */

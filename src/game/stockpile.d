@@ -32,7 +32,7 @@ struct Stockpile {
 struct StockpileField {
   Stockpile[uint] byId;
   alias byId this;
-  uint[int[3]] at;
+  LatticeMap!uint at;
   uint nextID = 1;
 }
 
