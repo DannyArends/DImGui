@@ -5,9 +5,10 @@
 
 import game;
 
+import lattice : tileToWorld, worldToTile, tileAbove;
 import vector : manhattan2D;
 import search : performSearch, atGoal, stepThroughPath;
-import tile : getSuccessors, isStandable, isPassable, tileToWorld, worldToTile, tileAbove;
+import tile : getSuccessors, isStandable, isPassable;
 
 struct PathRequest {
   uint dwarfUID;

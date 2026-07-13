@@ -5,9 +5,9 @@
 
 import game;
 
+import lattice : tileToWorld;
 import intersection : intersects;
 import serialization : readData, writeData;
-import tile : tileToWorld;
 
 struct Vegetation {
   Feature[][int[3]][string] active;

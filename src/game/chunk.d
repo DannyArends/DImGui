@@ -7,11 +7,12 @@ import game;
 
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
+import deletion : deAllocate;
 import game : GameApp;
 import gameobjects : Chunk;
-import deletion : deAllocate;
+import lattice : surfaceLevel, tileCoord, tileIndex, tileToWorld, worldToTile, onChunkBoundary;
 import intersection : intersects;
-import tile : getTile, surfaceLevel, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried, isSolid;
+import tile : getTile, isBuried, isSolid;
 import hits : getHits;
 import noise : noise2D;
 import textures : idx;

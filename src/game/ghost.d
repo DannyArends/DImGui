@@ -7,10 +7,10 @@ import game;
 
 import chunk : getBestTile;
 import game : GameApp;
-import vector : dot;
-import tool : tools, buildHighlight;
-import tile : tileIdx, tileToWorld, tileAbove;
 import jobs : activeTiles;
+import lattice : tileIdx, tileToWorld, tileAbove;
+import tool : tools, buildHighlight;
+import vector : dot;
 
 int[3] getGhostTile(const GameApp app, float[3][2] ray, Intersection[] hits) {
   int[3] wc;

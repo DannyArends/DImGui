@@ -5,6 +5,7 @@
 
 import game;
 
+import lattice : tileIdx, surfaceLevel, worldToTile, tileCoord;
 import noise : noise2D;
 import pathfinding : invalidatePaths;
 import vector : x,y,z;
@@ -21,7 +22,6 @@ struct TileDiff {
   return false;
 }
 
-/** True if a chunk-local tile sits on the x or z edge of the chunk (needs cross-chunk neighbour lookup) */
 @nogc pure bool onChunkBoundary(T)(T wd, int[3] lc) nothrow {
   return lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
 }
@@ -121,8 +121,6 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   return true;
 }
 
-@nogc pure int surfaceLevel(float h0, int chunkHeight) nothrow { return cast(int)(h0 * sqrt(h0) * (chunkHeight - 1)); }
-
 /** Determine the tile type at a world coordinate from noise, no chunk data required */
 @nogc pure ResourceType getTile(T)(T wd, const int[3] wc) nothrow {
   float h0 = noise2D(wc.x, wc.z, wd.seed[0]);
@@ -132,22 +130,6 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   if (wc.y < surface) return ResourceType.Stone01;
   return heightToResource(h0, noise2D(wc.x, wc.z, wd.seed[1]));
 }
-
-@nogc pure int[3] tileCoord(T)(T wd, int i) nothrow { 
-  return [i % wd.chunkSize, (i / wd.chunkSize) % wd.chunkHeight, i / (wd.chunkSize * wd.chunkHeight)];
-}
-
-@nogc pure float[3] tileToWorld(T)(T wd, int[3] tile, float yOff = 0.0f) nothrow {
-  return [tile.x * wd.tileSize, tile.y * wd.tileHeight + wd.yOffset + yOff, tile.z * wd.tileSize];
-}
-
-@nogc pure int[3] worldToTile(T)(T wd, float[3] pos, float yOff = 0.0f) nothrow {
-  return [cast(int)(pos[0] / wd.tileSize), cast(int)((pos[1] - wd.yOffset - yOff) / wd.tileHeight), cast(int)(pos[2] / wd.tileSize)];
-}
-
-@nogc pure int tileIndex(T)(T wd, int[3] local) nothrow { return(local.z * wd.chunkHeight * wd.chunkSize + local.y * wd.chunkSize + local.x); }
-
-@nogc pure int tileIdx(T)(T wd, int[3] tile) nothrow { return wd.tileIndex(wd.localCoord(tile)); }
 
 @nogc pure int surfaceAt(T)(T wd, int x, int y, int z) nothrow {
   int ns = surfaceLevel(noise2D(x, z, wd.seed[0]), wd.chunkHeight);
