@@ -170,8 +170,9 @@ float renderScale(const Item it) { return it.isCraft ? templateData(it.shape).sc
 void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale, int matOverride = -1) {
   auto col = resourceData(b.item.material).color;                        // material colour tints the template skin
   auto m = translateScale(pos, scale);
-  if(matOverride >= 0) mesh.addInstances([DrawInstance(matOverride, col, m)]);
-  else mesh.addInstances([DrawInstance(b.item.material, col, m)]);
+  if(matOverride >= 0){
+    mesh.addInstances([DrawInstance(m, matOverride, col)]);
+  }else{ mesh.addInstances([DrawInstance(m, cast(int)b.item.material, col)]); }
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */

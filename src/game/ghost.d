@@ -40,7 +40,7 @@ int[3] getGhostTile(const GameApp app, float[3][2] ray, Intersection[] hits) {
 void addTiles(ref World world, const(int[3])[] tiles, ToolMode mode) {
   if(tools[mode].matrix is null) return;               // tools with no ghost (e.g. Select/Query)
   foreach(tile; tiles) {
-    auto inst = DrawInstance(tools[mode].color);
+    auto inst = DrawInstance(Matrix.init, -1, tools[mode].color);
     inst.matrix = tools[mode].matrix(world.tileToWorld(tile), world.tileSize, world.tileHeight);
     world.inventory.instances ~= inst;
   }

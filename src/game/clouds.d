@@ -81,7 +81,7 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
         foreach(f; 0..6) {
           int ny = y + FACE_OFFSETS[f][1];
           if(ny >= 0 && ny < CLOUD_LAYERS && ny < hN[f]) continue;
-          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px , py, pz, vox, voxH));
+          inst ~= DrawInstance(faceData(f, px, py, pz, vox, voxH), cast(int)ResourceType.Ice01);
         }
       }
     } }

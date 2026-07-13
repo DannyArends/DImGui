@@ -82,7 +82,7 @@ private DrawInstance[] layoutText(ref App app, TextInfo info) {
     float h = atlas.qH(g, glyphscale);
     Matrix m = labelTransform.multiply(translateScale([pX, pY, 0.0f], [w, h, 1.0f]));
     float[4] uv = [atlas.tX(g), atlas.tY(g) + atlas.tYo(g), atlas.tXo(g), -atlas.tYo(g)];
-    insts ~= DrawInstance(m, uv, info.color);
+    insts ~= DrawInstance(m, -1, info.color, uv);
     penX += g.advance;
   }
   return insts;

@@ -173,7 +173,7 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
         if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(turnAngle(c, cfg), ax)); break; }
         if(auto br = c in cfg.brush) {
           const Matrix R = rotate(st.orient);
-          instances[c] ~= DrawInstance(br.material, br.color, segmentTransform(st.pos, R, br.radius, br.length));
+          instances[c] ~= DrawInstance(segmentTransform(st.pos, R, br.radius, br.length), br.material, br.color);
           if(br.advance){ st.pos = st.pos.vAdd([R[4]*br.length*0.95f, R[5]*br.length*0.95f, R[6]*br.length*0.95f]); }
         }
       break;
@@ -203,9 +203,9 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       if(part.repeat) {
         foreach(uint h; 0 .. f.height) {
           float s = sx - h * part.taper; if(s < 0.05f) s = 0.05f;
-          insts ~= DrawInstance(rt, translateScale(app.world.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]));
+          insts ~= DrawInstance(translateScale(app.world.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]), cast(int)rt);
         }
-      } else { insts ~= DrawInstance(rt, translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx])); }
+      } else { insts ~= DrawInstance(translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]), cast(int)rt); }
       emitInstances(f, *mp, insts);
     }
 
