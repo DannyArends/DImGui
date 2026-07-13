@@ -48,13 +48,6 @@ struct WorldData {
   const(char)* featurePath(string name) const { return worldFile("_" ~ name.toLower); }
   const(char)* waterPath() const { return worldFile("_water"); }
 
-  /** Get tile neighbours */
-  @nogc pure int[3][6] tileNeighbours(const int[3] wc) const nothrow {
-    int[3][6] r;
-    foreach(f; 0 .. 6) r[f] = [wc[0]+FACE_OFFSETS[f][0], wc[1]+FACE_OFFSETS[f][1], wc[2]+FACE_OFFSETS[f][2]];
-    return r;
-  }
-
   /** Convert a world tile coordinate to its chunk coordinate */
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }

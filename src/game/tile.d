@@ -5,7 +5,7 @@
 
 import game;
 
-import lattice : tileIdx, surfaceLevel, worldToTile, tileCoord, chunkCoord;
+import lattice : tileIdx, surfaceLevel, worldToTile, tileCoord, chunkCoord, tileNeighbours;
 import noise : noise2D;
 import pathfinding : invalidatePaths;
 import vector : x,y,z;
@@ -92,7 +92,7 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
   app.world.chunks[coord].dirty = true;
 
   // Mark neighbouring chunks dirty if tile is on a chunk boundary
-  foreach (n; app.world.tileNeighbours(tile)) {
+  foreach (n; tileNeighbours(tile)) {
     int[3] nc = app.world.chunkCoord(n);
     if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
   }
@@ -155,7 +155,7 @@ void setTile(ref GameApp app, int[3] tile, ResourceType newType = ResourceType.N
 }
 
 @nogc pure bool hasStandableNeighbour(T)(T wd, int[3] tile) nothrow {
-  auto n = wd.tileNeighbours(tile);
+  auto n = tileNeighbours(tile);
   foreach(i; [0,1,4,5]) { if(wd.isStandable(n[i])) return true; }
   return false;
 }

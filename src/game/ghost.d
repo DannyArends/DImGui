@@ -8,7 +8,7 @@ import game;
 import chunk : getBestTile;
 import game : GameApp;
 import jobs : activeTiles;
-import lattice : tileIdx, tileToWorld, tileAbove, chunkCoord;
+import lattice : tileIdx, tileToWorld, tileAbove, chunkCoord, tileNeighbours;
 import tool : tools, buildHighlight;
 import vector : dot;
 
@@ -16,7 +16,7 @@ int[3] getGhostTile(const GameApp app, float[3][2] ray, Intersection[] hits) {
   int[3] wc;
   if(!app.getBestTile(ray, hits, wc)) { return(noTile); }
 
-  int[3][6] neighbours = app.world.tileNeighbours(wc);
+  int[3][6] neighbours = tileNeighbours(wc);
   float ts = app.world.tileSize, th = app.world.tileHeight;
   float[3][6] normals = [
     [th/ts, 0.0f, 0.0f],  [-th/ts, 0.0f, 0.0f],     /// X faces: area = ts*th, scaled down

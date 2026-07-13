@@ -10,7 +10,7 @@ import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
 import game : GameApp;
 import gameobjects : Chunk;
-import lattice : surfaceLevel, tileCoord, tileIndex, tileToWorld, worldToTile, onChunkBoundary, chunkCoord, localCoord, worldCoord;
+import lattice : surfaceLevel, tileCoord, tileIndex, tileToWorld, worldToTile, onChunkBoundary, chunkCoord, localCoord, worldCoord, tileNeighbours;
 import intersection : intersects;
 import tile : getTile, isBuried, isSolid;
 import hits : getHits;
@@ -99,7 +99,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
     auto wc = wd.worldCoord(coord, lc);
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
-    auto neighbours = wd.tileNeighbours(wc);
+    auto neighbours = tileNeighbours(wc);
     size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
       bool exposed;
