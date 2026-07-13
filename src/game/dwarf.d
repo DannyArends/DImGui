@@ -450,9 +450,9 @@ bool loadDwarfs(ref GameApp app) {
 void settleDwarves(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves.dwarves) {
-    if(!d.fall.isFalling) { // Lost footing by any means (footing block hauled, stepped onto air, terrain edited) — start falling.
+    if(!d.fall.isFalling) { // Lost footing by any means: start falling.
       if(d.moveT >= 1.0f && app.world.getTileAt(d.tile.tileBelow) == ResourceType.None) {
-        d.fall.start(app.world, landingTile(app.world, d.tile), d.tile); d.clearGoal();
+        d.fall.start(app.world, d.tile, landingTile(app.world, d.tile)); d.clearGoal();
       }
       if(!d.fall.isFalling) continue;
     }
