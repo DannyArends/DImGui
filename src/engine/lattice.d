@@ -14,3 +14,11 @@ struct Lattice {
 
 /** A value indexed by an integer 3D lattice coordinate (tile- or chunk-space key) */
 alias LatticeMap(T) = T[int[3]];
+
+/** Reserved lattice coordinates (never valid cells) */
+enum int[3] noTile     = [int.min, 0, 0];
+enum int[3] builtTile  = [int.max, 0, 0];
+enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
+
+/** The six axis-aligned neighbour offsets (±X, ±Y, ±Z) */
+static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
