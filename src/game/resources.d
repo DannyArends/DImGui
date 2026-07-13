@@ -93,26 +93,26 @@ string itemTex(const Item it) {
 enum uint TEMPLATE_MAT_BASE = ResourceType.max + 1;
 @nogc pure uint templateMat(ItemTemplate t, bool filled = false) nothrow { return TEMPLATE_MAT_BASE + 2 * (cast(uint)t - 1) + (filled ? 1 : 0); }
 
+/** Resource-mesh prefix — one mesh per ResourceType; fully determined at compile time. */
+static immutable Mesh[] resourcePrefix = iota(cast(int)ResourceType.max + 1).map!(tt => Mesh([0, 0], tt)).array;
+
 void injectResourceMeshes(ref GameApp app) {
-  app.meshes.length = 0;
-  foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
-    if(app.materials.length <= tt) app.materials ~= Material();   // material slot tt (added once)
-    app.meshes ~= Mesh([0, 0], cast(int)tt);                      // mesh tt reuses material slot tt
-  }
-  while(app.materials.length < TEMPLATE_MAT_BASE + 2 * cast(uint)ItemTemplate.max){ app.materials ~= Material(); } // 2 slots (empty, filled) per template
+  app.meshes.length = resourcePrefix.length;
+  app.meshes[0 .. resourcePrefix.length] = resourcePrefix;
+  uint n = TEMPLATE_MAT_BASE + (2 * ItemTemplate.max);
+  if(app.materials.length < n) app.materials.length = n;
 }
 
 void updateMaterials(ref GameApp app) {
-  foreach (tt; 0 .. cast(int)ResourceType.max + 1) {
+  foreach (tt; 0 .. TEMPLATE_MAT_BASE) {
     auto ttype = cast(ResourceType)tt;
     app.materials[tt].tid = app.textures.idx(resourceData(ttype).tex3D);
-    if(resourceData(ttype).meshName != "Blocks")
-      app.materials[tt].nid = app.textures.idx(resourceData(ttype).tex3D.replace("_base", "_normal"));
+    if(resourceData(ttype).meshName != "Blocks"){ app.materials[tt].nid = app.textures.idx(resourceData(ttype).tex3D.replace("_base", "_normal")); }
   }
   foreach (ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
     app.materials[templateMat(t)].tid = app.textures.idx(templateData(t).tex);
-    if(templateData(t).texFilled.length) app.materials[templateMat(t, true)].tid = app.textures.idx(templateData(t).texFilled);
+    if(templateData(t).texFilled.length){ app.materials[templateMat(t, true)].tid = app.textures.idx(templateData(t).texFilled); }
   }
 }
 
