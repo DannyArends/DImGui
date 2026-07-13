@@ -36,7 +36,7 @@ struct Vertex {
       { binding: VERTEX, location: 5, format: VK_FORMAT_R32G32B32A32_UINT, offset: Vertex.bones.offsetof },
       { binding: VERTEX, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
 
-      { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SINT, offset: DrawInstance.meshdef.offsetof },
+      { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32_SINT, offset: DrawInstance.meshdef.offsetof },
       { binding: INSTANCE, location: 8, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.color.offsetof },
       { binding: INSTANCE, location: 9, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.uvRect.offsetof },
       { binding: INSTANCE, location: 10, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
