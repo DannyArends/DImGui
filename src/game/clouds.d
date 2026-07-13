@@ -10,7 +10,7 @@ import chunk : faceData;
 import gameobjects : Clouds;
 import noise : smoothNoise;
 import serialization : readData, writeData;
-import tile : getWater, setWater, getTileAt;
+import tile : getWater, setWater, getTileAt, landingTile;
 import vector : x, z;
 import water : WATER_MAX, WATER_TARGET_ACTIVE, activeSim;
 
@@ -115,7 +115,7 @@ void rainTick(ref GameApp app) {
     int[3] spawn = [t[0], cloudY, t[1]];
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;
     uint id = app.spawnBlock(spawn, ResourceType.Water);
-    if(auto b = id in app.world.drops) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
+    if(auto b = id in app.world.drops) { b.fall.weight = 20.0f; b.fall.start(app.world, landingTile(app.world, spawn), spawn, -app.world.blockOffset); }
     app.world.weather.density[key] -= RAIN_DEPLETE;
     drops++;
   }

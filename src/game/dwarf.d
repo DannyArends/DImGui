@@ -21,7 +21,7 @@ import rnjesus : randomizeName;
 import serialization : readData, writeData;
 import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;
-import tile : isTileOccupied, getTileAt, surfaceAt;
+import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;
 import timing : timed;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
 import vector : vAdd;
@@ -451,12 +451,13 @@ void settleDwarves(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves.dwarves) {
     if(!d.fall.isFalling) { // Lost footing by any means (footing block hauled, stepped onto air, terrain edited) — start falling.
-      if(d.moveT >= 1.0f && app.world.getTileAt(d.tile.tileBelow) == ResourceType.None) { d.fall.start(app.world, d.tile); d.clearGoal(); }
+      if(d.moveT >= 1.0f && app.world.getTileAt(d.tile.tileBelow) == ResourceType.None) {
+        d.fall.start(app.world, landingTile(app.world, d.tile), d.tile); d.clearGoal();
+      }
       if(!d.fall.isFalling) continue;
     }
-    int[3] landed;
-    if(d.fall.step(app.world, d.tile, dt, 0.0f, landed)) {
-      d.tile = landed;
+    if(d.fall.step(dt)) {
+      d.tile = d.fall.landedTile;
       d.visualPos = app.world.tileToWorld(d.tile);
       d.moveT = 1.0f;
     } else { d.visualPos[1] = d.fall.y; }
