@@ -7,8 +7,7 @@ import engine;
 
 /** An instance of a Geometry */
 struct DrawInstance {
-  int[3] meshdef = [0, 0, -1];                  /// Mesh range [start, end, material, unused] in meshSSBO; material -1 = use mesh material
-  int pad = 0;                                  /// Pad ?
+  int[4] meshdef = [0, 0, -1, 0];               /// Mesh range [start, end, material, unused] in meshSSBO; material -1 = use mesh material
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// Color
   float[4] uvRect = [0.0f, 0.0f, 1.0f, 1.0f];   /// UV remap [offsetX, offsetY, scaleX, scaleY]; identity = full texture
   Matrix matrix = Matrix.init;                  /// Matrix
