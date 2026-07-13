@@ -5,7 +5,7 @@
 
 import game;
 
-import matrix : position;
+import matrix : translate;
 
 struct Paths {
   PathMarkers markers;
@@ -18,11 +18,7 @@ void syncPathMarkers(ref World world, bool showPaths = false) {
   world.paths.markers.instances = [];
   if(showPaths) {
     foreach(ref d; world.dwarves) {
-      foreach(l; d.path) {
-        DrawInstance inst = DrawInstance(Matrix.init, -1, d.color);
-        inst = position(inst, [l[0], l[1] - 0.4f, l[2]]);
-        world.paths.markers.instances ~= inst;
-      }
+      foreach(l; d.path) { world.paths.markers.instances ~= DrawInstance(translate([l[0], l[1] - 0.4f, l[2]]), -1, d.color); }
     }
   }
   world.paths.markers.syncInstances();
