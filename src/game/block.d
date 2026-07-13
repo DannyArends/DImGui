@@ -38,9 +38,7 @@ struct Drops {
 /** Save blocks */
 void saveBlocks(ref World world) {
   if(world.drops.length == 0) return;
-  foreach(id, ref b; world.drops) {
-    if(b.fall.isFalling) { b.tile = b.fall.landingTile(world, b.tile); b.fall = Fall.init; }
-  }
+  foreach(id, ref b; world.drops) { if(b.fall.isFalling) { b.tile = landingTile(world, b.tile); b.fall = Fall.init; } }
   Block[] flat = world.drops.values;
   writeData(world.blocksPath(), flat, world.drops.nextID);
 }
@@ -218,7 +216,7 @@ void syncBlockInstances(ref World world) {
 void unsettleBlocks(ref World world, ref Block[uint] drops, int[3] minedTile) {
   foreach(id, ref b; drops) {
     if(!inColumn(b.tile, minedTile)) continue;
-    b.fall.start(world, b.tile, -world.blockOffset);
+    b.fall.start(world, landingTile(world, b.tile), b.tile, -world.blockOffset);
   }
 }
 
@@ -227,8 +225,7 @@ void settleBlocks(ref World world, float dt) {
   if(world.drops.length == 0) return;
   foreach(id, ref b; world.drops) {
     if(!b.fall.isFalling) continue;
-    int[3] landed;
-    if(b.fall.step(world, b.tile, dt, -world.blockOffset, landed)) b.tile = landed;
+    if(b.fall.step(dt)) b.tile = b.fall.landedTile;
     world.drops.dirty = true;
   }
 }
