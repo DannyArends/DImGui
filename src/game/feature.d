@@ -203,9 +203,9 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       if(part.repeat) {
         foreach(uint h; 0 .. f.height) {
           float s = sx - h * part.taper; if(s < 0.05f) s = 0.05f;
-          insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale(app.world.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]));
+          insts ~= DrawInstance(rt, translateScale(app.world.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]));
         }
-      } else { insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx])); }
+      } else { insts ~= DrawInstance(rt, translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx])); }
       emitInstances(f, *mp, insts);
     }
 
