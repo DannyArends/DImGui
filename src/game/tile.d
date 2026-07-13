@@ -10,12 +10,6 @@ import noise : noise2D;
 import pathfinding : invalidatePaths;
 import vector : x,y,z;
 
-struct TileDiff {
-  int[3] coord;
-  uint idx;
-  uint type;
-}
-
 /** Is the Tile occupied ?  */
 @nogc pure bool isTileOccupied(const GameApp app, const int[3] tile) nothrow {
   if(app.world.dwarves !is null) { foreach(ref d; app.world.dwarves) { if(d.tile == tile) return true; } }

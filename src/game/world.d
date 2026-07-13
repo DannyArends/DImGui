@@ -11,7 +11,7 @@ import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
-import lattice : chunkCoord, localCoord, worldCoord;
+import lattice : chunkCoord, localCoord, worldCoord, flatten, unflatten, Diff;
 import jobs : jobQueue;
 import pathfinding : invalidatePaths, repathTo;
 import serialization : WORLD_MAGIC;
@@ -103,17 +103,6 @@ struct World {
 static assert(__traits(compiles, (ref World w) { float f = w.tileSize + w.tileHeight + w.yOffset; int i = w.chunkSize + w.chunkHeight; }),
               "World must expose the Lattice dims: tileSize/tileHeight/yOffset (float), chunkSize/chunkHeight (int)");
 
-TileDiff[] flattenDiffs(const WorldData wd) {
-  TileDiff[] flat;
-  foreach(coord, idxMap; wd.diffs){ foreach(idx, type; idxMap){ flat ~= TileDiff(coord, idx, type); } }
-  return flat;
-}
-
-void rebuildDiffs(ref WorldData wd, const TileDiff[] flat) {
-  wd.diffs = null;
-  foreach(d; flat){ wd.diffs[d.coord][d.idx] = cast(ResourceType)d.type; }
-}
-
 void loadWorld(ref GameApp app) {
   ensureWorldDir();
   app.initFeatureMeshes();
@@ -124,8 +113,9 @@ void loadWorld(ref GameApp app) {
   auto raw = readFile(app.world.worldPath());
   if(raw.length >= 8 && (cast(uint[])raw)[0] == WORLD_MAGIC) {
     auto diffData = raw[8 .. $];
-    if(diffData.length % TileDiff.sizeof == 0){ app.world.data.rebuildDiffs(cast(TileDiff[])diffData.dup); }
-    else SDL_Log("loadWorld: corrupt diffs");
+    if(diffData.length % Diff!ResourceType.sizeof == 0){
+      app.world.data.diffs = unflatten(cast(Diff!ResourceType[])diffData.dup);
+    }else{ SDL_Log("loadWorld: corrupt diffs"); }
   } else if(raw.length != 0) { SDL_Log("loadWorld: invalid magic"); }
 
   app.loadBlocks();
@@ -144,7 +134,7 @@ void loadWorld(ref GameApp app) {
 
 /** Save world diffs to disk */
 void saveWorld(ref GameApp app) {
-  auto flat = app.world.data.flattenDiffs();
+  auto flat = flatten(app.world.data.diffs);
   uint[2] header = [WORLD_MAGIC, cast(uint)flat.length];
   char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])flat;
   writeFile(app.world.worldPath(), raw);

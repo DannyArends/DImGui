@@ -23,7 +23,7 @@ alias LatticeMap(T) = T[int[3]];
 struct Diff(T) { int[3] coord; uint idx; T value; }
 
 /** Flatten a chunked sparse map (chunk-coord to tile-index to value) into a blittable Diff!V array */
-Diff!T[] flatten(T)(const LatticeMap!(T[uint]) map) {
+Diff!T[] flatten(T)(const T[uint][int[3]] map) { 
   Diff!T[] flat;
   foreach(coord, idxMap; map) foreach(idx, value; idxMap) flat ~= Diff!T(coord, idx, value);
   return flat;
