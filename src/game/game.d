@@ -11,7 +11,7 @@ public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Feature;
 public import inventory : Inventory;
-public import jobs : Job, JobState, Reach;
+public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import pathfinding : PathRequest, PathResult;
 public import pathmarker : Paths;
@@ -84,6 +84,7 @@ struct GameApp {
   World world;
   bool paused = false;
   float timeScale = 1.0f;
+  size_t resourceMeshes = 0;
 }
 
 /** Set up worker factory and camera, load the world, build game UI windows, and spawn or load dwarves */

@@ -99,7 +99,7 @@ void injectResourceMeshes(ref GameApp app) {
     if(app.materials.length <= tt) app.materials ~= Material();   // material slot tt (added once)
     app.meshes ~= Mesh([0, 0], cast(int)tt);                      // mesh tt reuses material slot tt
   }
-  while(app.materials.length < TEMPLATE_MAT_BASE + 2 * cast(uint)ItemTemplate.max) app.materials ~= Material();  // 2 slots (empty, filled) per template
+  while(app.materials.length < TEMPLATE_MAT_BASE + 2 * cast(uint)ItemTemplate.max){ app.materials ~= Material(); } // 2 slots (empty, filled) per template
 }
 
 void updateMaterials(ref GameApp app) {
