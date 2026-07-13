@@ -103,7 +103,7 @@ int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStor
 private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dwarfTile, bool includeStored) {
   uint bestID = noBlock; float bestDist = float.max;
   foreach(id, b; world.drops) {
-    if(!accept(b)) continue;
+    if(b.reserved || !accept(b)) continue;
     int[3] at = world.pickupTileFor(id, b, includeStored);
     if(at == noTile) continue;
     float dist = manhattan(at, dwarfTile);
