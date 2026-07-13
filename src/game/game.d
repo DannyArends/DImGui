@@ -83,8 +83,6 @@ struct GameApp {
   alias app this;
 
   World world;
-  bool showPaths = false;
-  bool showRays = false;
   bool paused = false;
   float timeScale = 1.0f;
 }
