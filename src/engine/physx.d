@@ -7,7 +7,7 @@ import lattice : tileToWorld;
 
 enum gravity = 2.5f;
 
-/** Fall physics shared by blocks and dwarves: [y, v]; v != 0 while falling. */
+/** Fall physics: [y, v]; v != 0 while falling. */
 struct Fall {
   float[2] state = [0.0f, 0.0f];      /// [worldY, velocity]
   float weight = 1.0f;                /// gravity multiplier (heavier = faster)
