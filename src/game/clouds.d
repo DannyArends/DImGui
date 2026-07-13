@@ -10,7 +10,7 @@ import chunk : faceData;
 import gameobjects : Clouds;
 import noise : smoothNoise;
 import serialization : readData, writeData;
-import tile : FACE_OFFSETS, getWater, setWater, getTileAt;
+import tile : getWater, setWater, getTileAt;
 import vector : x, z;
 import water : WATER_MAX, WATER_TARGET_ACTIVE, activeSim;
 

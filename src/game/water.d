@@ -8,7 +8,7 @@ import game;
 import chunk : faceData;
 import clouds : CLOUD_STEP, cloudCell;
 import serialization : readData, writeData;
-import tile : FACE_OFFSETS, neighbourAt, tileBelow, isStandable, standableNeighbour, tileCoord, tileIdx, tileToWorld, getWater, setWater;
+import tile : neighbourAt, tileBelow, isStandable, standableNeighbour, tileCoord, tileIdx, tileToWorld, getWater, setWater;
 import vector : manhattan, manhattan2D;
 
 enum ubyte WATER_MAX = 7;               // Maximum water density

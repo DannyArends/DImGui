@@ -15,7 +15,7 @@ import jobs : jobQueue;
 import pathfinding : invalidatePaths, repathTo;
 import serialization : WORLD_MAGIC;
 import stockpile : saveStockpiles, loadStockpiles;
-import tile : FACE_OFFSETS, tileBelow, getTile, isStandable, isPassable;
+import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : saveVegetation, loadVegetation;
 import water : saveWater, loadWater;
