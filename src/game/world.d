@@ -30,9 +30,9 @@ struct WorldData {
   int chunkSize      =  isAndroid ? 32 : 64;      /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  64;                       /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;                    /// Global world Y-offset
-  ResourceType[uint][int[3]] diffs;
-  ubyte[uint][int[3]] waterDiffs;
-  float[int[3]] tilePenalties;
+  LatticeMap!(ResourceType[uint]) diffs;
+  LatticeMap!(ubyte[uint]) waterDiffs;
+  LatticeMap!float tilePenalties;
 
   /** Build a world-data file path: data/world/<seed>_<suffix>.bin (empty suffix = the main world file). */
   private const(char)* worldFile(string suffix) const {
@@ -98,6 +98,10 @@ struct World {
     clear();
   }
 }
+
+/** Compile-time guard: World satisfies the Lattice dims contract (in engine/lattice.d) */
+static assert(__traits(compiles, (ref World w) { float f = w.tileSize + w.tileHeight + w.yOffset; int i = w.chunkSize + w.chunkHeight; }),
+              "World must expose the Lattice dims: tileSize/tileHeight/yOffset (float), chunkSize/chunkHeight (int)");
 
 TileDiff[] flattenDiffs(const WorldData wd) {
   TileDiff[] flat;

@@ -24,8 +24,8 @@ struct WaterDiff { int[3] coord; uint idx; ubyte level; }
 /** An active cell queued for this tick's simulation: its chunk, local index, and world-coord. */
 struct Active { Chunk chunk; int idx; int[3] wc; }
 
-alias WaterNext = ubyte[int[3]];        // world-cell -> pending level; absent = read committed
-alias WaterTouched = bool[int[3]];      // world-cells written this tick (dedup set)
+alias WaterNext = LatticeMap!ubyte;        // world-cell -> pending level; absent = read committed
+alias WaterTouched = LatticeMap!bool;      // world-cells written this tick (dedup set)
 
 /** This cell's pending level: next-buffer if touched, else direct array read (no getWater hash). */
 private @nogc int ownLevel(const WaterNext next, const Chunk chunk, int idx, const int[3] wc) nothrow {
@@ -59,7 +59,7 @@ int[3] findNearestWater(const World world, const int[3] from, out int[3] standAt
 }
 
 /** Total live water-sim cells across all loaded chunks (sum of each chunk's active set). */
-@nogc activeSim(const Chunk[int[3]] chunks) {
+@nogc activeSim(const LatticeMap!Chunk chunks) {
   int active = 0;
   foreach(c; chunks){ active += cast(int)c.active.length; }
   return(active);
