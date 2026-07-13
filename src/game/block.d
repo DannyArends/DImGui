@@ -216,7 +216,7 @@ void syncBlockInstances(ref World world) {
 void unsettleBlocks(ref World world, ref Block[uint] drops, int[3] minedTile) {
   foreach(id, ref b; drops) {
     if(!inColumn(b.tile, minedTile)) continue;
-    b.fall.start(world, landingTile(world, b.tile), b.tile, -world.blockOffset);
+    b.fall.start(world, b.tile, landingTile(world, b.tile), -world.blockOffset);
   }
 }
 
