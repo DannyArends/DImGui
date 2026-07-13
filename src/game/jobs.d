@@ -505,12 +505,15 @@ bool canObtainBlock(ref GameApp app, ref Job job, ref Dwarf d){
   return d.carrying.any!(cid => app.world.drops.resourceType(cid).hasClass(job.tileClass)) || app.world.findFreeClass(d.tile, job.tileClass) != noBlock;
 }
 
-/** Allow a dwarf to select their next job */
-void claimNextJob(ref GameApp app, ref Dwarf d) {
+/** Prune the global queue once per tick: drop jobs every dwarf has failed, and jobs no longer valid. */
+void pruneJobQueue(ref GameApp app) {
   size_t dwarfCount = app.world.dwarves !is null ? app.world.dwarves.length : 0;
   jobQueue = jobQueue.filter!(j => j.failedBy.length < dwarfCount).array;
   jobQueue = jobQueue.filter!(j => j.isValid is null || j.isValid(app, j)).array;
+}
 
+/** Allow a dwarf to select their next job */
+void claimNextJob(ref GameApp app, ref Dwarf d) {
   int bestIdx = -1;
   float bestScore = -float.max;
   foreach(i, ref job; jobQueue) {

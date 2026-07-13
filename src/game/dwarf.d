@@ -15,7 +15,7 @@ import ghost : syncBuildGhosts;
 import matrix : position, scale, translateScale;
 import pathmarker : syncPathMarkers;
 import pathfinding : pathfindTo, repathTo, findGoalTile;
-import jobs : Job, fillCupJob, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
+import jobs : pruneJobQueue, fillCupJob, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, claimNextJob, requestStepAside, sleepJob, atDestination;
 import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import rnjesus : randomizeName;
 import serialization : readData, writeData;
@@ -355,6 +355,7 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 /** dwarfTick, ticks all dwarves in random order */
 void dwarfTick(ref GameApp app) {
   if(app.world.dwarves is null) return;
+  app.pruneJobQueue();
   // Future TODO: We can optimize the loop, when using a markForRemoval strategy
   foreach(uid; app.world.dwarves.dwarves.map!(d => d.uid).array.randomShuffle()) {
     auto i = app.world.dwarves.dwarves.countUntil!(d => d.uid == uid); // Find the dwarf by resolving UID to the slot
