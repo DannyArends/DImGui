@@ -7,7 +7,7 @@ import game;
 
 import block : resourceType, itemOf, rawHasClass, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
-import lattice : tileToWorld, tileAbove, worldToTile;
+import lattice : tileToWorld, tileAbove, worldToTile, tileNeighbours;
 import pathfinding : pathfindTo, findGoalTile;
 import reactions : reactionFor;
 import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup;
@@ -140,7 +140,7 @@ void claimBlock(ref GameApp app, ref Dwarf d, ref Job j) {
 
 /** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
 void claimNeighbour(ref GameApp app, ref Dwarf d, ref Job j) {
-  foreach(n; app.world.tileNeighbours(j.targetTile)[0..2] ~ app.world.tileNeighbours(j.targetTile)[4..6]) {
+  foreach(n; tileNeighbours(j.targetTile)[0..2] ~ tileNeighbours(j.targetTile)[4..6]) {
     if(app.world.isStandable(n)) { j.targetTile = n; return; }
   }
   j.state = JobState.Unavailable;
