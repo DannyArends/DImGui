@@ -10,11 +10,11 @@ import clouds : saveClouds, loadClouds;
 import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
-import io : ensureWorldDir, readFile, writeFile, fixPath;
+import io : ensureWorldDir, fixPath;
 import lattice : chunkCoord, localCoord, worldCoord, flatten, unflatten, Diff;
 import jobs : jobQueue;
 import pathfinding : invalidatePaths, repathTo;
-import serialization : WORLD_MAGIC;
+import serialization : readData, writeData;
 import stockpile : saveStockpiles, loadStockpiles;
 import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
@@ -110,13 +110,9 @@ void loadWorld(ref GameApp app) {
   app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
   app.objects ~= app.world.inventory.ghost;
 
-  auto raw = readFile(app.world.worldPath());
-  if(raw.length >= 8 && (cast(uint[])raw)[0] == WORLD_MAGIC) {
-    auto diffData = raw[8 .. $];
-    if(diffData.length % Diff!ResourceType.sizeof == 0){
-      app.world.data.diffs = unflatten(cast(Diff!ResourceType[])diffData.dup);
-    }else{ SDL_Log("loadWorld: corrupt diffs"); }
-  } else if(raw.length != 0) { SDL_Log("loadWorld: invalid magic"); }
+  Diff!ResourceType[] flat;
+  uint h;
+  if(readData(app.world.worldPath(), flat, h)){ app.world.data.diffs = unflatten(flat); }
 
   app.loadBlocks();
   app.world.loadWater();
@@ -135,9 +131,7 @@ void loadWorld(ref GameApp app) {
 /** Save world diffs to disk */
 void saveWorld(ref GameApp app) {
   auto flat = flatten(app.world.data.diffs);
-  uint[2] header = [WORLD_MAGIC, cast(uint)flat.length];
-  char[] raw = (cast(char*)header.ptr)[0 .. header.sizeof] ~ cast(char[])flat;
-  writeFile(app.world.worldPath(), raw);
+  writeData(app.world.worldPath(), flat, cast(uint)flat.length);
   if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
   app.world.saveBlocks();
   app.world.saveWater();
