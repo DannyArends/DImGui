@@ -7,12 +7,13 @@ import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
+import lattice : tileCoord, tileToWorld;
 import quaternion : angleAxis, qMul, rotate;
 import lsystem : buildGrammar, turnAxis, turnAngle;
 import matrix : translateScale, segmentTransform;
 import noise : noiseHTT;
 import sfx : play;
-import tile : getTile, tileCoord, tileToWorld;
+import tile : getTile;
 import vector : vAdd;
 import vegetation : saveVegetation, loadVegetation;
 
