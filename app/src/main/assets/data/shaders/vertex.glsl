@@ -18,7 +18,7 @@ layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
 layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance input attributes
-layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, material]
+layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, material, unused]
 layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
 layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
 layout(location = 10) in mat4 instance;               /// Instance matrix
