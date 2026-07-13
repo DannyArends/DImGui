@@ -12,10 +12,11 @@ enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", PO
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 
-/** Main application structure, TODO:
-  1) Alpha blending fix: Also a prerequisite for nice bloom on transparent emissive
-  2) Bloom/HDR: scaffolding is there, big visual jump
-  3) GPU-driven indirect draw: biggest effort.
+/** Main application structure, TODOs:
+  1) Figure out a way to sort transparant objects (and instances) relative to the camera for correct rendering
+  2) Alpha blending fix: Also a prerequisite for nice bloom on transparent emissive
+  3) Bloom/HDR: scaffolding is there, for a big visual improvement
+  4) GPU-driven indirect draw (probably not possible, due to how our pipeline works)
 */
 struct App {
   SDL_Window* window;

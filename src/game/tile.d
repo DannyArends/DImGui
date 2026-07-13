@@ -144,6 +144,16 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
   return(wd.getTileAt(wc) != ResourceType.None);
 }
 
+@nogc int[3] landingTile(const World world, int[3] tile) nothrow {
+  int landTileY = world.surfaceAt(tile[0], tile[1] - 1, tile[2]);
+  return [tile[0], landTileY + 1, tile[2]];
+}
+
+/** True if 'tile' is in the same column as 'minedTile' at or above it. */
+@nogc bool inColumn(const int[3] tile, const int[3] minedTile) nothrow { 
+  return(tile[0] == minedTile[0] && tile[2] == minedTile[2] && tile[1] >= minedTile[1]);
+}
+
 @nogc pure bool isStandable(T)(const T wd, const int[3] tile) nothrow {
   return(wd.isPassable(tile) && wd.getTileAt(tileBelow(tile)) != ResourceType.None && wd.getTileAt(tileBelow(tile)).traversable);
 }
