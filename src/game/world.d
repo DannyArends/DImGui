@@ -39,7 +39,7 @@ struct WorldData {
     return toStringz(fixPath(format("data/world/%d_%d_%d%s.bin", seed[0], seed[1], seed[2], suffix)));
   }
 
-  /** Returns the filesystem path for the world TileDiffs difference */
+  /** Returns the filesystem path for the world diffs file */
   const(char)* worldPath() const { return worldFile(""); }
   const(char)* blocksPath() const { return worldFile("_drops"); }
   const(char)* cloudsPath() const { return worldFile("_clouds"); }
