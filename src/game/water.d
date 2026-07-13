@@ -7,7 +7,7 @@ import game;
 
 import chunk : faceData;
 import clouds : CLOUD_STEP, cloudCell;
-import lattice : tileBelow, tileCoord, tileIdx, tileToWorld, chunkCoord, worldCoord;
+import lattice : tileBelow, tileCoord, tileIdx, tileToWorld, chunkCoord, worldCoord, flatten, unflatten, Diff;
 import serialization : readData, writeData;
 import tile : neighbourAt, isStandable, standableNeighbour, getWater, setWater;
 import vector : manhattan, manhattan2D;
@@ -19,8 +19,6 @@ enum uint EVAP_DEPLETE = 3000;          // Speed of evaporation
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
-/** Persisted water cell: world-coord + level, serialised in the water save file. */
-struct WaterDiff { int[3] coord; uint idx; ubyte level; }
 /** An active cell queued for this tick's simulation: its chunk, local index, and world-coord. */
 struct Active { Chunk chunk; int idx; int[3] wc; }
 
@@ -234,19 +232,17 @@ void saveWater(ref World world) {
       if(chunk.waterLevel[idx] > 0) world.data.waterDiffs[chunk.coord][cast(uint)idx] = chunk.waterLevel[idx];
     }
   }
-  WaterDiff[] flat;
-  foreach(coord, idxMap; world.data.waterDiffs){ foreach(idx, lvl; idxMap){ flat ~= WaterDiff(coord, idx, lvl); } }
+  auto flat = flatten(world.data.waterDiffs);
   if(flat.length == 0) { SDL_RemovePath(world.waterPath()); return; }
   writeData(world.waterPath(), flat, cast(uint)flat.length);
 }
 
 /** Load waterDiffs from disk; chunks apply them at build, resident chunks applied immediately (mirrors rebuildDiffs). */
 void loadWater(ref World world) {
-  WaterDiff[] flat;
+  Diff!ubyte[] flat;
   uint h;
   if(!readData(world.waterPath(), flat, h)) return;
-  world.data.waterDiffs = null;
-  foreach(ref d; flat){ world.data.waterDiffs[d.coord][d.idx] = d.level; }
+  world.data.waterDiffs = unflatten(flat);
   foreach(coord; world.chunks.keys) {  // apply to any already-resident chunks (newly-streamed ones get it in buildChunkData)
     if(auto wm = coord in world.data.waterDiffs) {
       auto chunk = world.chunks[coord];
