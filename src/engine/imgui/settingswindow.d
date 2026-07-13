@@ -3,14 +3,14 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import game;
+import engine;
 
 import imgui : clearSettings;
 import lights : toggleLightGeometries;
 import widgets : labelCol, setting, infoRow;
 
 /** Show the GUI window with global settings */
-void showSettingsContent(ref GameApp app, uint font = 0) {
+void showSettingsContent(ref App app, uint font = 0) {
   if(igBeginTable("Settings_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
     infoRow("Total Frames", "%s", app.totalFramesRendered);
     infoRow("Deletion Queues", "%d / %d / %d", app.bufferDeletionQueue.length, app.swapDeletionQueue.length, app.mainDeletionQueue.length);

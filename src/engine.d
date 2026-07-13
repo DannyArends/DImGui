@@ -134,6 +134,8 @@ struct App {
   bool nameVulkanObjects = false;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
+  bool showPaths = false;                                                       /// Show pathfinding
+  bool showRays = false;                                                        /// Show rays
   LMode lMode = isAndroid ? LMode.Lights : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool disco = false;                                                           /// Disco mode
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
