@@ -18,13 +18,10 @@ struct DrawInstance {
   static assert(DrawInstance.matrix.offsetof == 48);
 
   /** NEVER AGAIN: this(uint[2] d){ meshdef = [cast(int)d[0], cast(int)d[1]]; } - Caused a release mode crash */
-  /** Mesh range constructions (should be deleted: set by updateMeshInfo) */
-  @nogc this(Matrix m) nothrow { matrix = m; }
-  @nogc this(float[4] c, Matrix m = Matrix.init) nothrow { color = c; matrix = m; }
-  /** Material based construction */
-  @nogc this(int mat, Matrix m) nothrow { meshdef[2] = mat; matrix = m; }
-  @nogc this(int mat, float[4] c, Matrix m) nothrow { meshdef[2] = mat; color = c; matrix = m; }
-  @nogc this(int mat, float[12] f) nothrow { this(mat, Matrix([f[0],f[1],f[2], 0, f[3],f[4],f[5], 0, f[6],f[7],f[8], 0, f[9],f[10],f[11], 1]));  }
-  /** Matrix based UV construction */
-  @nogc this(Matrix m, float[4] uv, float[4] c = [1.0f, 1.0f, 1.0f, 1.0f]) nothrow { matrix = m; uvRect = uv; color = c; }
+  /** Transform (+ optional material / color / UV). Covers primitives, dwarves, features, blocks, glyphs. */
+  @nogc this(Matrix m, int mat = -1, float[4] c = [1.0f, 1.0f, 1.0f, 1.0f], float[4] uv = [0.0f, 0.0f, 1.0f, 1.0f]) nothrow {
+    matrix = m; meshdef[2] = mat; color = c; uvRect = uv;
+  }
+  /** Packed face transform (+ optional material). For voxel faces (chunk/water/clouds). */
+  @nogc this(float[12] f, int mat = -1) nothrow { this(Matrix([f[0],f[1],f[2],0, f[3],f[4],f[5],0, f[6],f[7],f[8],0, f[9],f[10],f[11],1]), mat); }
 }

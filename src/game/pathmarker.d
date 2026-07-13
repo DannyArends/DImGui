@@ -19,7 +19,7 @@ void syncPathMarkers(ref World world, bool showPaths = false) {
   if(showPaths) {
     foreach(ref d; world.dwarves) {
       foreach(l; d.path) {
-        DrawInstance inst = DrawInstance(d.color);
+        DrawInstance inst = DrawInstance(Matrix.init, -1, d.color);
         inst = position(inst, [l[0], l[1] - 0.4f, l[2]]);
         world.paths.markers.instances ~= inst;
       }

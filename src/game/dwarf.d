@@ -390,7 +390,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  DrawInstance inst = DrawInstance(d.color);
+  DrawInstance inst = DrawInstance(Matrix.init, -1, d.color);
   inst = position(inst, d.visualPos);
   app.world.dwarves.instances ~= inst;
   app.addLight(torchLight(d.visualPos, d.color));
