@@ -133,7 +133,9 @@ Geometry makePrimitive(string name) {
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
 void updateGame(ref GameApp app, double dt) {
   app.injectResourceMeshes();
-  if(app.textures.loaded) { app.updateMaterials(); app.textures.loaded = false; }
+  if(app.textures.loaded) { 
+    app.updateMaterials(); app.textures.loaded = false; 
+  }
   app.world.settleBlocks(dt);
   app.settleDwarves(dt);
   app.updateWorld(app.camera.lookat);
