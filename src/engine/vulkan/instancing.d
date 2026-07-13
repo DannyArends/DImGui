@@ -18,9 +18,9 @@ struct DrawInstance {
   static assert(DrawInstance.matrix.offsetof == 48);
 
   /** NEVER AGAIN: this(uint[2] d){ meshdef = [cast(int)d[0], cast(int)d[1]]; } - Caused a release mode crash */
-  /** Mesh range construction */
-  @nogc this(int[2] def, Matrix m = Matrix.init) nothrow { meshdef[0..2] = def[0..2]; matrix = m; }
-  @nogc this(int[2] def, float[4] c, Matrix m = Matrix.init) nothrow { meshdef[0..2] = def[0..2]; color = c; matrix = m; }
+  /** Mesh range constructions (should be deleted: set by updateMeshInfo) */
+  @nogc this(Matrix m) nothrow { matrix = m; }
+  @nogc this(float[4] c, Matrix m = Matrix.init) nothrow { color = c; matrix = m; }
   /** Material based construction */
   @nogc this(int mat, Matrix m) nothrow { meshdef[2] = mat; matrix = m; }
   @nogc this(int mat, float[4] c, Matrix m) nothrow { meshdef[2] = mat; color = c; matrix = m; }

@@ -49,7 +49,7 @@ class Chunk : Cube {
     float cx = data.coord[0] * sx + sx * 0.5f;
     float cz = data.coord[2] * sx + sx * 0.5f;
     float cy = sy * 0.5f + wd.yOffset;
-    instances = [DrawInstance([0,0], translateScale([cx, cy, cz], [sx, sy, sx]))];
+    instances = [DrawInstance(translateScale([cx, cy, cz], [sx, sy, sx]))];
     tiles = new Tiles(cd);
     onFrustumUpdate = (bool v){ tiles.inFrustum = v; };
     geometry = (){ return "Chunk"; };

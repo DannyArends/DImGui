@@ -171,7 +171,7 @@ void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale, int mat
   auto col = resourceData(b.item.material).color;                        // material colour tints the template skin
   auto m = translateScale(pos, scale);
   if(matOverride >= 0) mesh.addInstances([DrawInstance(matOverride, col, m)]);
-  else mesh.addInstances([DrawInstance([cast(uint)b.item.material, cast(uint)b.item.material], col, m)]);
+  else mesh.addInstances([DrawInstance(b.item.material, col, m)]);
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */
