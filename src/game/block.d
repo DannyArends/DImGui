@@ -6,7 +6,7 @@
 import game;
 
 import inventory : deriveInventory;
-import lattice : tileToWorld, worldToTile, tileAbove;
+import lattice : tileToWorld, worldToTile, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
 import physx : inColumn;
 import serialization : readData, writeData;

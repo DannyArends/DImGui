@@ -5,7 +5,7 @@
 
 import game;
 
-import lattice : tileToWorld;
+import lattice : tileToWorld, chunkCoord;
 import intersection : intersects;
 import serialization : readData, writeData;
 

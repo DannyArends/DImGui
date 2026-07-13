@@ -8,7 +8,7 @@ import game;
 import block : resourceType, itemOf, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
 import color : randomColor;
 import inventory : deriveInventory;
-import lattice : tileBelow, worldToTile, tileToWorld;
+import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;

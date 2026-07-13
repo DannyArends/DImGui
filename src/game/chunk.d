@@ -10,7 +10,7 @@ import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
 import game : GameApp;
 import gameobjects : Chunk;
-import lattice : surfaceLevel, tileCoord, tileIndex, tileToWorld, worldToTile, onChunkBoundary;
+import lattice : surfaceLevel, tileCoord, tileIndex, tileToWorld, worldToTile, onChunkBoundary, chunkCoord, localCoord, worldCoord;
 import intersection : intersects;
 import tile : getTile, isBuried, isSolid;
 import hits : getHits;

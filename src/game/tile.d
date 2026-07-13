@@ -5,7 +5,7 @@
 
 import game;
 
-import lattice : tileIdx, surfaceLevel, worldToTile, tileCoord;
+import lattice : tileIdx, surfaceLevel, worldToTile, tileCoord, chunkCoord;
 import noise : noise2D;
 import pathfinding : invalidatePaths;
 import vector : x,y,z;
