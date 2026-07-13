@@ -11,6 +11,7 @@ import dwarf : saveDwarfs;
 import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
 import io : ensureWorldDir, readFile, writeFile, fixPath;
+import lattice : chunkCoord, localCoord, worldCoord;
 import jobs : jobQueue;
 import pathfinding : invalidatePaths, repathTo;
 import serialization : WORLD_MAGIC;
@@ -19,8 +20,6 @@ import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : saveVegetation, loadVegetation;
 import water : saveWater, loadWater;
-
-@nogc pure int iDiv(int a, int b) nothrow { return((a >= 0) ? a/b : -((-a + b - 1)/b)); }
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
@@ -49,12 +48,6 @@ struct WorldData {
   const(char)* featurePath(string name) const { return worldFile("_" ~ name.toLower); }
   const(char)* waterPath() const { return worldFile("_water"); }
 
-  /** Convert a world tile coordinate to its local coordinate within its chunk */
-  @nogc pure int[3] localCoord(const int[3] tile) const nothrow {
-    auto coord = chunkCoord(tile);
-    return [tile.x - coord.x * chunkSize, tile.y, tile.z - coord.z * chunkSize];
-  }
-
   /** Get tile neighbours */
   @nogc pure int[3][6] tileNeighbours(const int[3] wc) const nothrow {
     int[3][6] r;
@@ -65,18 +58,12 @@ struct WorldData {
   /** Convert a world tile coordinate to its chunk coordinate */
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
   @property @nogc pure float chunkWorldSize() const nothrow { return chunkSize * tileSize; }
-  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
-  @nogc pure int[3] chunkCoord(const int[3] tile) const nothrow {
-    return [iDiv(tile[0], chunkSize), 0, iDiv(tile[2], chunkSize)];
-  }
   @property @nogc pure float blockSize() const nothrow { return(tileSize * 0.25f); }
   @property @nogc pure float blockOffset() const nothrow { return(tileHeight - blockSize) * 0.5f; }
   @property @nogc pure float radius() const nothrow { return renderDistance * chunkWorldSize * 1.41422f; }
   @property @nogc pure float height() const nothrow { return chunkHeight * tileHeight; }
   /** Convert a world coordinate to a world-space float position */
   @nogc pure float[3] worldPos(int[3] wc) const nothrow { return [wc.x * tileSize, wc.y * tileHeight, wc.z * tileSize]; }
-  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
-  @nogc pure int[3] worldCoord(int[3] coord, int[3] local) const nothrow { return coord.vMul([chunkSize, chunkHeight, chunkSize]).vAdd(local); }
 }
 
 /** Runtime world state: loaded chunks, pending loads, selection and highlight (main thread only) */

@@ -5,7 +5,7 @@
 
 import engine;
 
-import vector : x, y, z;
+import vector : x, y, z, vMul, vAdd;
 
 /** Regular 3D lattice of (possibly non-cubic) cells */
 struct Lattice {
@@ -48,3 +48,22 @@ static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,
 @nogc pure bool onChunkBoundary(T)(T l, int[3] lc) nothrow { return lc[0] == 0 || lc[0] == l.chunkSize-1 || lc[2] == 0 || lc[2] == l.chunkSize-1; }
 
 @nogc pure int surfaceLevel(float h0, int chunkHeight) nothrow { return cast(int)(h0 * sqrt(h0) * (chunkHeight - 1)); }
+
+/** Floor division (rounds toward -inf) — negative-safe chunk coordinates. */
+@nogc pure int iDiv(int a, int b) nothrow { return((a >= 0) ? a/b : -((-a + b - 1)/b)); }
+
+/** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
+@nogc pure int[3] chunkCoord(T)(T l, const int[3] tile) nothrow {
+  return [iDiv(tile[0], l.chunkSize), 0, iDiv(tile[2], l.chunkSize)];
+}
+
+/** Convert a world tile coordinate to its local coordinate within its chunk */
+@nogc pure int[3] localCoord(T)(T l, const int[3] tile) nothrow {
+  auto coord = l.chunkCoord(tile);
+  return [tile.x - coord.x * l.chunkSize, tile.y, tile.z - coord.z * l.chunkSize];
+}
+
+  /** Convert a chunk coordinate and local tile coordinate to a world tile coordinate */
+@nogc pure int[3] worldCoord(T)(T l, int[3] coord, int[3] local) nothrow {
+  return coord.vMul([l.chunkSize, l.chunkHeight, l.chunkSize]).vAdd(local);
+}

@@ -7,7 +7,7 @@ import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
-import lattice : tileCoord, tileToWorld;
+import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord;
 import quaternion : angleAxis, qMul, rotate;
 import lsystem : buildGrammar, turnAxis, turnAngle;
 import matrix : translateScale, segmentTransform;

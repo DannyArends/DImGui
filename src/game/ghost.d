@@ -8,7 +8,7 @@ import game;
 import chunk : getBestTile;
 import game : GameApp;
 import jobs : activeTiles;
-import lattice : tileIdx, tileToWorld, tileAbove;
+import lattice : tileIdx, tileToWorld, tileAbove, chunkCoord;
 import tool : tools, buildHighlight;
 import vector : dot;
 
