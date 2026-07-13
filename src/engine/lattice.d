@@ -19,6 +19,23 @@ struct Lattice {
 /** A value indexed by an integer 3D lattice coordinate (tile- or chunk-space key) */
 alias LatticeMap(T) = T[int[3]];
 
+/** One sparse cell change: which chunk, which linear tile index, and the value there */
+struct Diff(T) { int[3] coord; uint idx; T value; }
+
+/** Flatten a chunked sparse map (chunk-coord to tile-index to value) into a blittable Diff!V array */
+Diff!T[] flatten(T)(const LatticeMap!(T[uint]) map) {
+  Diff!T[] flat;
+  foreach(coord, idxMap; map) foreach(idx, value; idxMap) flat ~= Diff!T(coord, idx, value);
+  return flat;
+}
+
+/** Rebuild a chunked sparse map from a Diff!V array (replaces any existing contents) */
+LatticeMap!(T[uint]) unflatten(T)(const Diff!T[] flat) {
+  LatticeMap!(T[uint]) map;
+  foreach(d; flat) map[d.coord][d.idx] = d.value;
+  return(map);
+}
+
 /** Reserved lattice coordinates (never valid cells) */
 enum int[3] noTile     = [int.min, 0, 0];
 enum int[3] builtTile  = [int.max, 0, 0];
