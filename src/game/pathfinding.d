@@ -6,9 +6,10 @@
 import game;
 
 import lattice : tileToWorld, worldToTile, tileAbove, tileNeighbours;
-import vector : manhattan2D;
+import matrix : translate;
 import search : performSearch, atGoal, stepThroughPath;
 import tile : getSuccessors, isStandable, isPassable;
+import vector : manhattan2D;
 
 struct PathRequest {
   uint dwarfUID;
@@ -23,6 +24,11 @@ struct PathResult {
   bool partial;
 }
 
+struct PathMarker {
+  PathMarkers markers;
+  PathRequest[] pending;
+}
+
 /** Log a failed path search with closest-approach diagnostics */
 void logPathFail(S)(ref S result, PathRequest req) {
   float minH = float.max;
@@ -31,6 +37,7 @@ void logPathFail(S)(ref S result, PathRequest req) {
           result.state, req.fromTile, req.goalTile, result.steps, result.openlist.length, result.closedset.length, minH, result.map.isStandable(req.goalTile)));
 }
 
+/** Pathfinding on a worker thread */
 PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3] start = wd.tileToWorld(req.fromTile);
   float[3] goal  = wd.tileToWorld(req.goalTile);
@@ -43,6 +50,18 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   while(result.pathptr != size_t.max && !result.atGoal()) path ~= result.stepThroughPath(false);
   path ~= result.pool[result.goal].position;
   return PathResult(req.dwarfUID, path, true, (result.state == SearchState.PARTIAL));
+}
+
+/** Rebuild path marker instances from all dwarf paths */
+void syncPathMarkers(ref World world, bool showPaths = false) {
+  if(world.paths.markers is null || world.dwarves is null) return;
+  world.paths.markers.instances = [];
+  if(showPaths) {
+    foreach(ref d; world.dwarves) {
+      foreach(l; d.path) { world.paths.markers.instances ~= DrawInstance(translate([l[0], l[1] - 0.4f, l[2]]), -1, d.color); }
+    }
+  }
+  world.paths.markers.syncInstances();
 }
 
 /** Pathfind object T to goalTile, returns false if unreachable.
@@ -118,6 +137,7 @@ int[3] findGoalTile(const World world, const int[3] targetTile, const int[3] fro
   return best;
 }
 
+/** Helper to figure out if a dwarf can move to */
 bool canMoveTo(T)(T wd, float[3] pos) {
   foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
     float[3] p = [pos[0] + dx * wd.tileSize * 0.5f, pos[1] + dy * wd.tileHeight * 0.5f, pos[2] + dz * wd.tileSize * 0.5f];
