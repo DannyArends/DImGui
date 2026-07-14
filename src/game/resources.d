@@ -48,6 +48,8 @@ struct Item {
   foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return cv.value; } } return 0.0f;
 }
 
+// INVARIANT: Name-based conversions: a ResourceType maps to the ResourceClass of the SAME name (and back). 
+// We rely on this in inventory tracking, building jobs, and order persistence
 ResourceClass toClass(ResourceType t) { return t.to!string.to!ResourceClass; }
 ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
 
