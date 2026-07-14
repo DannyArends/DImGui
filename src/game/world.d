@@ -15,7 +15,7 @@ import lattice : chunkCoord, localCoord, worldCoord, flatten, unflatten, Diff;
 import jobs : jobQueue;
 import orders : loadOrders, saveOrders;
 import pathfinding : invalidatePaths, repathTo;
-import serialization : loadSections, saveSections, podSection;
+import serialization : loadSections, saveSections;
 import stockpile : saveStockpiles, loadStockpiles;
 import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
@@ -97,17 +97,17 @@ static assert(__traits(compiles, (ref World w) { float f = w.tileSize + w.tileHe
 void registerPersistables(ref GameApp app) {
   if(app.persistables.length > 0) return;
 
-  app.persistables ~= podSection!(Diff!ResourceType)("diffs", () => flatten(app.world.data.diffs), (f) { app.world.data.diffs = unflatten(f); });
-  app.persistables ~= podSection!(Diff!ubyte)("water", () => app.world.saveWater(), (f) { app.world.loadWater(f); });
-  app.persistables ~= podSection!CloudDiff("clouds", () => app.world.saveClouds(), (f) { app.world.loadClouds(f); });
-  app.persistables ~= podSection!DwarfData("dwarfs", () => app.saveDwarfs(), (f) { app.loadDwarfs(f); });
-  app.persistables ~= podSection!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
-  app.persistables ~= podSection!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
-  app.persistables ~= podSection!Order("jobs", () => app.saveOrders(), (o) { app.loadOrders(o); });
+  app.persistables ~= Persist.pod!(Diff!ResourceType)("diffs", () => flatten(app.world.data.diffs), (f) { app.world.data.diffs = unflatten(f); });
+  app.persistables ~= Persist.pod!(Diff!ubyte)("water", () => app.world.saveWater(), (f) { app.world.loadWater(f); });
+  app.persistables ~= Persist.pod!CloudDiff("clouds", () => app.world.saveClouds(), (f) { app.world.loadClouds(f); });
+  app.persistables ~= Persist.pod!DwarfData("dwarfs", () => app.saveDwarfs(), (f) { app.loadDwarfs(f); });
+  app.persistables ~= Persist.pod!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
+  app.persistables ~= Persist.pod!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
+  app.persistables ~= Persist.pod!Order("jobs", () => app.saveOrders(), (o) { app.loadOrders(o); });
 
   foreach(ref ftr; features) {
     auto name = ftr.name;
-    app.persistables ~= Persistable(
+    app.persistables ~= Persist(
       () => [Section("veg:" ~ name, cast(ubyte[])app.saveVegetation!Feature(app.world.vegetation[name], app.world.vegetation.pending[name]))],
       (const ubyte[][string] b) {
         if(auto p = ("veg:" ~ name) in b) {
