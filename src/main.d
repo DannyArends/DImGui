@@ -12,9 +12,9 @@ import devices : createLogicalDevice;
 import events : sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
 import game : cleanupGame, checkGameAsync, GameApp, initGame, updateGame;
-import glyphatlas : loadGlyphAtlas, uploadFont;
-import imgui : initializeImGui;
-import input : handleEvents;
+import glyphatlas : loadGlyphs, uploadFont;
+import imgui : initializeImGui, startImGuiFrame;
+import input : pollEvents, handleEvents;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shadow : createShadowMap;
@@ -48,7 +48,7 @@ void run(string[] args = null) {
   GameApp app = GameApp(initializeSDL());                       /// Initialize SDL library and create a window
   app.createCompiler();                                         /// Create the SPIR-V compiler
   app.createReflectionContext();                                /// Create a SPIR-V reflection context
-  app.loadGlyphAtlas();                                         /// Load & parse the Glyph Atlas
+  app.loadGlyphs();                                             /// Load & parse the Glyph Atlas
   app.loadAllSoundEffect();                                     /// Load all available sound effects
   app.createInstance();                                         /// Create a Vulkan instance
   app.createDebugCallback();                                    /// Hook the debug callback to the validation layer
@@ -73,6 +73,8 @@ void run(string[] args = null) {
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & render loop
+    app.timed!pollEvents();                                       /// Ingest SDL events into ImGui (pre-NewFrame)
+    app.timed!startImGuiFrame();                                  /// Start a new frame
     auto dt = app.timed!handleEvents();                           /// Handle SDL / user events
     app.timed!checkForResize();                                   /// Check for resize
     if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue

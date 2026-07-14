@@ -1,0 +1,15 @@
+[OBJECT:ITEM]
+
+[ITEM:Axe]
+  [MESH:Cube:StoneAxe]
+  [ACCEPTS:Stone][ACCEPTS:Rock][ACCEPTS:Flint]
+  [SCALE:0.5]
+  [STACK:1]
+
+[ITEM:Cup]
+  [MESH:Cube:WoodCup:WoodCupFilled]
+  [ACCEPTS:Wood]
+  [HOLDS:Liquid]
+  [CAPACITY:1]
+  [SCALE:0.5]
+  [STACK:1]

@@ -6,9 +6,10 @@
 import game;
 
 import dwarf : spawnDwarf, deleteDwarf;
-import jobs : dispatchJob, jobQueue, dropBlockJob;
 import imgui : faIcon, iconText;
-import tile : tileToWorld;
+import jobs : dispatchJob, jobQueue, dropBlockJob;
+import lattice : tileToWorld;
+import resources : itemName, itemTex;
 import textures : ImTextureRefFromID, idx;
 import widgets : drawCenteredText, text;
 
@@ -55,13 +56,13 @@ void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
     igImageButton(cstr("##dwf_inv_%d", cast(int)i), ImTextureRefFromID(0), ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(0,0,0,0));
     return;
   }
-  auto texIdx  = idx(app.textures, resourceData(s.type).tex2D);
+  auto texIdx  = idx(app.textures, itemTex(s.item));
   auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
   igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
   if(igIsItemClicked(0)) app.dispatchJob(d, dropBlockJob(d.tile, s.resourceIDs[s.count - 1]));
   ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
   if(s.count > 1) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", s.count));
-  if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d (click to drop)", resourceData(s.type).name, s.count));
+  if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d (click to drop)", itemName(s.item), s.count));
 }
 
 /** Detailed sheet for the selected dwarf */

@@ -7,16 +7,16 @@ import game;
 
 import chunk : getBestTile;
 import game : GameApp;
-import vector : dot;
-import tool : tools, buildHighlight;
-import tile : tileIdx, tileToWorld, tileAbove;
 import jobs : activeTiles;
+import lattice : tileIdx, tileToWorld, tileAbove, chunkCoord, tileNeighbours;
+import tool : tools, buildHighlight;
+import vector : dot;
 
 int[3] getGhostTile(const GameApp app, float[3][2] ray, Intersection[] hits) {
   int[3] wc;
   if(!app.getBestTile(ray, hits, wc)) { return(noTile); }
 
-  int[3][6] neighbours = app.world.tileNeighbours(wc);
+  int[3][6] neighbours = tileNeighbours(wc);
   float ts = app.world.tileSize, th = app.world.tileHeight;
   float[3][6] normals = [
     [th/ts, 0.0f, 0.0f],  [-th/ts, 0.0f, 0.0f],     /// X faces: area = ts*th, scaled down
@@ -40,7 +40,7 @@ int[3] getGhostTile(const GameApp app, float[3][2] ray, Intersection[] hits) {
 void addTiles(ref World world, const(int[3])[] tiles, ToolMode mode) {
   if(tools[mode].matrix is null) return;               // tools with no ghost (e.g. Select/Query)
   foreach(tile; tiles) {
-    auto inst = DrawInstance([0, 0], tools[mode].color, Matrix.init);
+    auto inst = DrawInstance(Matrix.init, -1, tools[mode].color);
     inst.matrix = tools[mode].matrix(world.tileToWorld(tile), world.tileSize, world.tileHeight);
     world.inventory.instances ~= inst;
   }

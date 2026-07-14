@@ -35,6 +35,7 @@ DImGui is made possible by, and has dependencies on, the following excellent sof
 - [D Programming Language](https://dlang.org/)
 - [Android Studio](https://developer.android.com/studio)
 - [SDL3](https://www.libsdl.org/)
+- [freetype](https://freetype.org/)
 - [Shaderc](https://github.com/google/shaderc) & [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross)
 - [Dear ImGui](https://github.com/ocornut/imgui) & [cImGui api wrapper](https://github.com/cimgui/cimgui)
 - [Open Asset Import Library](https://github.com/assimp/assimp) 
@@ -44,13 +45,14 @@ DImGui is made possible by, and has dependencies on, the following excellent sof
 The following folders are interesting, if you're interested in how the repository is structured:
 
 - [src/](./src/) which stores the D source code 
+- [src/math](./src/math/) math functions for vectors, matrices, particles, and the L-system
 - [src/engine](./src/engine/) main folder for the engine objects
 - [src/engine/assimp](./src/engine/assimp/) Open Asset Import Library (assimp) folder
 - [src/engine/imgui](./src/engine/imgui/) Dear ImGui UI folder
-- [src/math](./src/math/) math functions for vectors, matrices, particles, and the L-system
-- [src/objects](./src/objects) All geometric (renderable) objects are in here
+- [src/engine/vulkan](./src/engine/vulkan/) Vulkan plumbing and data formats
+- [src/engine/objects](./src/engine/objects/) All geometric (renderable) objects are in here
+- [app/jni/](./app/jni/) all dependencies as git submodules (SDL3, freetype, shaderc, spirv_cross, assimp, cimgui)
 - [assets/](./app/src/main/assets/data/) Assets used (fonts, objects, shaders, and textures)
-- [app/jni/](./app/jni/) all dependencies as git submodules (SDL3, shaderc, spirv_cross, assimp, cimgui)
 
 Some noteworthy files:
 

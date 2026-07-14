@@ -8,17 +8,54 @@ import engine;
 import io : readFile, writeFile;
 
 enum uint WORLD_MAGIC = 0xCA1DE4A;
+enum uint WORLD_SCHEMA = 1;
+struct Section { string key; ubyte[] data; }
 
-bool readData(T)(const(char)* path, out T[] data, out uint h) {
-  auto raw = readFile(path);
-  if(raw.length < uint[2].sizeof) return false;
-  if((cast(uint[])raw)[0] != WORLD_MAGIC) return false;
-  h = (cast(uint[])raw)[1];
-  data = cast(T[])raw[uint[2].sizeof..$].dup;
-  return true;
+struct Persist {
+  Section[] delegate() save;
+  void delegate(const ubyte[][string] blobs) load;
+
+  /** POD single-section helper: a T[] save + a T[] load, keyed by `key`. */
+  static Persist pod(T)(string key, T[] delegate() save, void delegate(T[]) load) {
+    return Persist(
+      () => [Section(key, cast(ubyte[])save())],
+      (const ubyte[][string] b) { if(auto p = key in b){ load(cast(T[])(*p)); } });
+  }
 }
 
-void writeData(T)(const(char)* path, T[] data, uint h) {
-  uint[2] header = [WORLD_MAGIC, h];
-  writeFile(path, cast(char[])(cast(ubyte[])header ~ cast(ubyte[])data));
+/** Serialize all registered sections into one WORLD_MAGIC container */
+void saveSections(const(char)* path, Section[] sections, bool verbose = false) {
+  ubyte[] blob;
+  void putU(uint x) { blob ~= (cast(ubyte*)&x)[0 .. uint.sizeof]; }
+  putU(WORLD_MAGIC); putU(WORLD_SCHEMA); putU(cast(uint)sections.length);
+  foreach(ref s; sections) {
+    if(verbose) SDL_Log("saveSections: '%s' = %d bytes", toStringz(s.key), cast(int)s.data.length);
+    putU(cast(uint)s.key.length); blob ~= cast(ubyte[])s.key.dup;
+    putU(cast(uint)s.data.length); blob ~= s.data;
+  }
+  writeFile(path, cast(char[])blob);
+}
+
+/** Read the container and dispatch each section to the matching registered `load` by id */
+ubyte[][string] loadSections(const(char)* path, bool verbose = false) {
+  ubyte[][string] blobs;
+  auto raw = cast(ubyte[])readFile(path);
+  if(raw.length < 3 * uint.sizeof) return blobs;
+  size_t off = 0;
+  uint getU() { uint x = *cast(uint*)(raw.ptr + off); off += uint.sizeof; return x; }
+  bool have(size_t n) { return off + n <= raw.length; }
+
+  if(getU() != WORLD_MAGIC || getU() != WORLD_SCHEMA) { SDL_Log("loadSections: magic/schema mismatch — regenerating world"); return blobs; }
+  uint count = getU();
+  foreach(_; 0 .. count) {
+    if(!have(uint.sizeof)) { SDL_Log("loadSections: truncated key header"); break; }
+    uint keyN = getU();
+    if(!have(keyN + uint.sizeof)) { SDL_Log("loadSections: truncated key"); break; }
+    string key = cast(string)(cast(char[])raw[off .. off + keyN]).idup; off += keyN;
+    uint dataN = getU();
+    if(!have(dataN)) { SDL_Log("loadSections: truncated data for '%s'", toStringz(key)); break; }
+    if(verbose) SDL_Log("loadSections: '%s' = %d bytes", toStringz(key), cast(int)dataN);
+    blobs[key] = raw[off .. off + dataN].dup; off += dataN;
+  }
+  return blobs;
 }

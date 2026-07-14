@@ -7,11 +7,12 @@ import game;
 
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
+import deletion : deAllocate;
 import game : GameApp;
 import gameobjects : Chunk;
-import deletion : deAllocate;
+import lattice : surfaceLevel, tileCoord, tileIndex, tileToWorld, worldToTile, onChunkBoundary, chunkCoord, localCoord, worldCoord, tileNeighbours;
 import intersection : intersects;
-import tile : getTile, surfaceLevel, tileIndex, tileCoord, tileToWorld, worldToTile, onChunkBoundary, isBuried, isSolid;
+import tile : getTile, isBuried, isSolid;
 import hits : getHits;
 import noise : noise2D;
 import textures : idx;
@@ -36,10 +37,10 @@ struct ChunkData {
 }
 
 struct ChunkField {
-  Chunk[int[3]] loaded;
-  alias loaded this;
-  bool[int[3]] pending;
+  LatticeMap!Chunk loaded;
+  LatticeMap!bool pending;
   int[3][] unsettle, build, mine;
+  alias loaded this;
 }
 
 /** Build the full tile-type array for a chunk column-by-column from height/material noise */
@@ -98,7 +99,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
     auto wc = wd.worldCoord(coord, lc);
     float[3] p = wd.worldPos(wc);
     float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
-    auto neighbours = wd.tileNeighbours(wc);
+    auto neighbours = tileNeighbours(wc);
     size_t faceStart = data.tileInstances.length;
     foreach (f; 0 .. 6) {
       bool exposed;
@@ -107,7 +108,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
         exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
       } else { exposed = !wd.isSolid(neighbours[f]); }
       if (!exposed) continue;
-      data.tileInstances ~= DrawInstance(cast(uint)data.tileTypes[i], faceData(f, px, py, pz, ts, th));
+      data.tileInstances ~= DrawInstance(faceData(f, px, py, pz, ts, th), cast(int)data.tileTypes[i]);
       data.tileIndices ~= i;
     }
     data.addTileBounds([px - ts/2, py - th/2, pz - ts/2], [px + ts/2, py + th/2, pz + ts/2], i, faceStart);

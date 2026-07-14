@@ -3,7 +3,7 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import game;
+import engine;
 
 import imgui : faIcon;
 import widgets : text;
@@ -33,7 +33,7 @@ void showTimingsContent(ref App app) {
   }
 }
 
-ulong geometryBytes(ref GameApp app) {
+ulong geometryBytes(ref App app) {
   ulong total = 0;
   uint copies = app.framesInFlight;
   foreach(ref o; app.objects)
@@ -42,7 +42,7 @@ ulong geometryBytes(ref GameApp app) {
 }
 
 /** Show the GUI window with FPS statistics */
-void showFPSContent(ref GameApp app, uint font = 0) {
+void showFPSContent(ref App app, uint font = 0) {
   version(Android){
     igPushFont(app.gui.fonts[font], app.gui.fontsize(.8f));
   }else{

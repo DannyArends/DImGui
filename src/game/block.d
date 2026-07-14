@@ -6,19 +6,18 @@
 import game;
 
 import inventory : deriveInventory;
+import lattice : tileToWorld, worldToTile, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
-import physx : inColumn;
-import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood, hasClass;
-import tile : isStandable, surfaceAt, hasStandableNeighbour, tileToWorld, worldToTile, tileAbove;
+import resources : isFood, hasClass, toItem, isRaw, isCraft, templateMat;
+import tile : isStandable, inColumn, landingTile, surfaceAt, hasStandableNeighbour;
 import vector : manhattan;
 
 enum uint noBlock = uint.max;
 
 struct Block {
   uint id = uint.max;               /// Stable block id (persisted, == its key in world.blocks)
-  ResourceType type;                /// Block type
+  Item item;                        /// What this block is: (shape x material [+ contents]); shape==None => raw material
   int[3] tile;                      /// Current tile position
   Fall fall;                        /// PhysX
   bool reserved = false;            /// Reserved for a job ?
@@ -34,22 +33,15 @@ struct Drops {
   Geometry[string] meshes;
 }
 
-
 /** Save blocks */
-void saveBlocks(ref World world) {
-  if(world.drops.length == 0) return;
-  foreach(id, ref b; world.drops) {
-    if(b.fall.isFalling) { b.tile = b.fall.landingTile(world, b.tile); b.fall = Fall.init; }
-  }
-  Block[] flat = world.drops.values;
-  writeData(world.blocksPath(), flat, world.drops.nextID);
+Block[] saveBlocks(ref World world) {
+  foreach(id, ref b; world.drops) { if(b.fall.isFalling) { b.tile = landingTile(world, b.tile); b.fall = Fall.init; } }
+  return world.drops.values;
 }
 
 /** Load blocks */
-void loadBlocks(ref GameApp app) {
+void loadBlocks(ref GameApp app, Block[] flat) {
   app.ensureBlocks();
-  Block[] flat;
-  if(!readData(app.world.blocksPath(), flat, app.world.drops.nextID)) return;
   foreach(ref b; flat) {
     b.reserved = false;             // jobs aren't persisted; clear orphaned reservations
     app.world.drops[b.id] = b;
@@ -60,26 +52,31 @@ void loadBlocks(ref GameApp app) {
 }
 
 /** Do we have a certain resourceType? */
-@nogc pure bool hasResource(const Drops drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.type == tt); }
+@nogc pure bool hasResource(const Drops drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.item.isRaw && b.item.material == tt); }
 
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
-ResourceType resourceType(const Drops drops, uint id) { auto b = id in drops; return b ? b.type : ResourceType.None; }
+ResourceType resourceType(const Drops drops, uint id) { auto b = id in drops; return b ? b.item.material : ResourceType.None; }
+
+/** Returns the full Item of a block by ID, or Item.init if not found */
+Item itemOf(const Drops drops, uint id) { auto b = id in drops; return b ? b.item : Item.init; }
 
 /** Clear the reserved flag on a set of blocks (released on job failure/completion). */
 void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in drops){ b.reserved = false; } } }
 
 /** Count unreserved, available blocks of a type. */
-@nogc pure uint available(const Drops drops, ResourceType tt) nothrow { return cast(uint)drops.byValue.count!(b => b.type == tt && !b.reserved); }
+@nogc pure uint available(const Drops drops, ResourceType tt) nothrow { 
+  return cast(uint)drops.byValue.count!(b => b.item.isRaw && b.item.material == tt && !b.reserved); }
 
 /** A reaction can run iff every ingredient is available in the required count. */
 bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!(i => drops.available(cast(ResourceClass)i.cls) >= i.count); }
 
 /** on the Drops unit — class-based, the same shape eating already wants */
-@nogc pure uint available(const Drops drops, ResourceClass c) nothrow { return cast(uint)drops.byValue.count!(b => b.type.hasClass(c) && !b.reserved); }
+@nogc pure uint available(const Drops drops, ResourceClass c) nothrow { 
+  return cast(uint)drops.byValue.count!(b => b.item.isRaw && b.item.material.hasClass(c) && !b.reserved); }
 
 /** on */
 uint findFreeClass(const World world, int[3] dwarfTile, ResourceClass c, bool includeStored = true) {
-  return findFreeBlockWhere!(b => c == ResourceClass.None || b.type.hasClass(c))(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b => b.item.isRaw && (c == ResourceClass.None || b.item.material.hasClass(c)))(world, dwarfTile, includeStored);
 }
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
@@ -97,7 +94,7 @@ int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStor
 private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dwarfTile, bool includeStored) {
   uint bestID = noBlock; float bestDist = float.max;
   foreach(id, b; world.drops) {
-    if(!accept(b)) continue;
+    if(b.reserved || !accept(b)) continue;
     int[3] at = world.pickupTileFor(id, b, includeStored);
     if(at == noTile) continue;
     float dist = manhattan(at, dwarfTile);
@@ -107,12 +104,15 @@ private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dw
 }
 
 uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
-  return findFreeBlockWhere!(b => tt == ResourceType.None || b.type == tt)(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b => b.item.isRaw && (tt == ResourceType.None || b.item.material == tt))(world, dwarfTile, includeStored);
 }
 
 uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored = true) {
-  return findFreeBlockWhere!(b => b.type.isFood)(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b => b.item.isRaw && b.item.material.isFood)(world, dwarfTile, includeStored);
 }
+
+/** True iff block `id` is a RAW material (not a crafted item) of class `c`; crafted items never satisfy ingredient demand. */
+bool rawHasClass(const Drops drops, uint id, ResourceClass c) { auto b = id in drops; return b !is null && b.item.isRaw && b.item.material.hasClass(c); }
 
 void ensureBlocks(ref GameApp app) {
   foreach(rt; EnumMembers!ResourceType) {
@@ -124,19 +124,49 @@ void ensureBlocks(ref GameApp app) {
     app.world.drops.meshes[meshName] = m;
     app.objects ~= m;
   }
+  foreach(ti; 0 .. cast(int)ItemTemplate.max + 1) {
+    auto t = cast(ItemTemplate)ti;
+    if(t == ItemTemplate.None) continue;
+    auto meshName = templateData(t).mesh;
+    if(meshName in app.world.drops.meshes) continue;
+    auto m = makePrimitive(meshName);
+    if(m is null) { SDL_Log("ensureBlocks: unknown template mesh '%s'", toStringz(meshName)); continue; }
+    m.initInstanced(() => meshName);
+    app.world.drops.meshes[meshName] = m;
+    app.objects ~= m;
+  }
 }
 
-/** Spawn a new block into the registry */
-uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) {
+/** Spawn a raw-material block into the registry */
+uint spawnBlock(ref GameApp app, int[3] tile, ResourceType tt) { return app.spawnBlock(tile, tt.toItem); }
+
+/** Spawn a new block holding a concrete item into the registry */
+uint spawnBlock(ref GameApp app, int[3] tile, Item it) {
   app.ensureBlocks();
   uint id = app.world.drops.nextID++;
-  app.world.drops[id] = Block(id, tt, tile);
+  app.world.drops[id] = Block(id, it, tile);
   app.world.drops.dirty = true;
   return id;
 }
 
-void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale) {
-  mesh.addInstances([DrawInstance([cast(uint)b.type, cast(uint)b.type], resourceData(b.type).color, translateScale(pos, scale))]);
+/** Geometry mesh name for an item: template shape when crafted, else the material's mesh. */
+string renderMesh(const Item it) { return it.isCraft ? templateData(it.shape).mesh : resourceData(it.material).meshName; }
+
+/** Render scale for an item: template scale when crafted, else the material's scale. */
+float renderScale(const Item it) { return it.isCraft ? templateData(it.shape).scale : resourceData(it.material).scale; }
+
+/** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
+@nogc pure int matOverride(const Item it) nothrow {
+  if(!it.isCraft) return -1;
+  return cast(int)templateMat(it.shape, it.amount > 0 && templateData(it.shape).texFilled.length > 0);
+}
+
+void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale, int matOverride = -1) {
+  auto col = resourceData(b.item.material).color;                        // material colour tints the template skin
+  auto m = translateScale(pos, scale);
+  if(matOverride >= 0){
+    mesh.addInstances([DrawInstance(m, matOverride, col)]);
+  }else{ mesh.addInstances([DrawInstance(m, cast(int)b.item.material, col)]); }
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */
@@ -150,7 +180,7 @@ void syncStockpileInstances(ref World world) {
     if(ti >= sp.tiles.length) break;
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.drops.meshes[resourceData(b.type).meshName], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs]);
+    emitBlock(world.drops.meshes[b.item.renderMesh], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs], matOverride(b.item));
   } }
 }
 
@@ -160,17 +190,17 @@ void syncBlockInstances(ref World world) {
   foreach(ref mesh; world.drops.meshes.values) { mesh.instances = []; }
   foreach(id, ref b; world.drops) {
     if(b.tile == storedTile) continue;
-    auto meshName = resourceData(b.type).meshName;
+    auto meshName = b.item.renderMesh;
     bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
     if(hidden) {
-      emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0]);
+      emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0], matOverride(b.item));
     } else {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
-      float sz = resourceData(b.type).scale * world.blockSize;
+      float sz = b.item.renderScale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = b.fall.isFalling ? b.fall.y : base[1];
-      emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz]);
+      emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz], matOverride(b.item));
     }
   }
   world.syncStockpileInstances();
@@ -181,7 +211,7 @@ void syncBlockInstances(ref World world) {
 void unsettleBlocks(ref World world, ref Block[uint] drops, int[3] minedTile) {
   foreach(id, ref b; drops) {
     if(!inColumn(b.tile, minedTile)) continue;
-    b.fall.start(world, b.tile, -world.blockOffset);
+    b.fall.start(world, b.tile, landingTile(world, b.tile), -world.blockOffset);
   }
 }
 
@@ -190,8 +220,7 @@ void settleBlocks(ref World world, float dt) {
   if(world.drops.length == 0) return;
   foreach(id, ref b; world.drops) {
     if(!b.fall.isFalling) continue;
-    int[3] landed;
-    if(b.fall.step(world, b.tile, dt, -world.blockOffset, landed)) b.tile = landed;
+    if(b.fall.step(dt)) b.tile = b.fall.landedTile;
     world.drops.dirty = true;
   }
 }

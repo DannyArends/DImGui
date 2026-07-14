@@ -16,41 +16,7 @@ import jobs : craftJob, jobQueue;
 import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
 import water : waterTick, flushWaterDirty, evaporateTick;
-
-/** Handle mouse events */
-void handleMouseEvents(ref GameApp app, SDL_Event e) {
-  auto ray = app.camera.castRay(app.gui.io.MousePos.x, app.gui.io.MousePos.y);
-
-  if(e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-    if(e.button.button == SDL_BUTTON_LEFT) {
-      app.camera.isdrag[0] = true;
-      app.camera.lastMousePos = [e.button.x, e.button.y];
-      app.handlePrimaryPress(e.button.x, e.button.y);
-    }
-    if(e.button.button == SDL_BUTTON_RIGHT) {
-      app.camera.isdrag[1] = true;
-      app.camera.lastMousePos = [e.button.x, e.button.y];
-      app.handleSecondaryPress(e.button.x, e.button.y);
-    }
-  }
-  if(e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
-    app.camera.isdrag[0] = false;
-    if(e.button.button == SDL_BUTTON_LEFT){ app.handlePrimaryRelease(e.button.x, e.button.y); }
-    if(e.button.button == SDL_BUTTON_RIGHT) {
-      app.camera.isdrag[1] = false;
-      auto dx = e.button.x - app.camera.lastMousePos[0];
-      auto dy = e.button.y - app.camera.lastMousePos[1];
-      if((dx*dx + dy*dy) < 64) app.handleSecondaryRelease(e.button.x, e.button.y);  // tap, not a drag
-    }
-    app.updateHoverHighlight(ray);
-  }
-  if(e.type == SDL_EVENT_MOUSE_MOTION) {
-    if(app.camera.isdrag[1]) app.tryDrag(e.motion.xrel, e.motion.yrel);
-    app.updateHoverHighlight(ray);
-    if(app.camera.isdrag[0]) app.handlePrimaryDrag(e.motion.x, e.motion.y);
-  }
-  if(e.type == SDL_EVENT_MOUSE_WHEEL) app.tryZoom(-e.wheel.y);
-}
+import world : regenerateWorld;
 
 /** Handle keyboard events */
 void handleKeyEvents(ref GameApp app, SDL_Event e) {
@@ -91,28 +57,53 @@ void handleTouchEvents(ref GameApp app, const SDL_Event event) {
 
       if(app.camera.lastPinchDist > 0.0f) { app.camera.zoom((app.camera.lastPinchDist - dist) * 60.0f); }
       app.camera.lastPinchDist = dist;
-    } else if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.drag(e.dx * 200.0f, e.dy * 200.0f); }
+    } else if(e.fingerID == app.camera.fingerIDs[0] && app.world.inventory.activeTool == ToolMode.Info) {
+      app.camera.drag(e.dx * 200.0f, e.dy * 200.0f);
+    }
   }
 }
 
 /** Handles all ImGui IO and SDL events */
-double handleEvents(ref GameApp app) {
-  if(app.trace) SDL_Log("handleEvents");
-  SDL_Event e, lastMotion;
-  bool haveMotion = false;
+void pollEvents(ref GameApp app) {
+  if(app.trace) SDL_Log("pollEvents");
+  SDL_Event e;
   while (SDL_PollEvent(&e)) {
     if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
     if(e.type == SDL_EVENT_QUIT) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
     if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.minimized = false; }
     if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.minimized = true; }
-    if(e.type == SDL_EVENT_MOUSE_MOTION) { haveMotion = true; lastMotion = e; continue; }
     if(!app.gui.io.WantCaptureKeyboard) app.timed!handleKeyEvents(e);
-    if(!app.gui.io.WantCaptureMouse) app.timed!handleMouseEvents(e);
-    if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e);
+
+    if(e.type == SDL_EVENT_MOUSE_MOTION && app.camera.isdrag[1] && !app.gui.io.WantCaptureMouse) app.tryDrag(e.motion.xrel, e.motion.yrel);
+    if(e.type == SDL_EVENT_MOUSE_WHEEL && !app.gui.io.WantCaptureMouse) app.tryZoom(-e.wheel.y);
+
+    version(Android) { if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e); }
   }
-  // When the Mouse moved, we process one motion/frame
-  if(haveMotion && !app.gui.io.WantCaptureMouse) app.timed!handleMouseEvents(lastMotion);
+  if(app.regenerate) { app.regenerate = false; app.regenerateWorld(); }
+}
+
+/** Dispatch game tool input from CURRENT pointer state. Runs AFTER igNewFrame() */
+double handleEvents(ref GameApp app) {
+  if(app.trace) SDL_Log("handleEvents");
+  auto io = app.gui.io;
+  bool[2] down = [io.MouseDown[0] && !io.WantCaptureMouse, io.MouseDown[1] && !io.WantCaptureMouse];
+  float[2] pos = [io.MousePos.x, io.MousePos.y];
+  auto ray = app.camera.castRay(pos[0], pos[1]);
+  app.updateHoverHighlight(ray);
+
+  if(down[0] && !app.camera.wasDown[0]) { app.camera.isdrag[0] = true; app.camera.pressPos = pos; app.handlePrimaryPress(ray); }
+  else if(down[0] && app.camera.wasDown[0]) { app.handlePrimaryDrag(ray); }
+  else if(!down[0] && app.camera.wasDown[0]) { app.camera.isdrag[0] = false; app.handlePrimaryRelease(ray); }
+
+  if(down[1] && !app.camera.wasDown[1]) { app.camera.isdrag[1] = true; app.camera.pressPos = pos; app.handleSecondaryPress(ray); }
+  else if(!down[1] && app.camera.wasDown[1]) {
+    app.camera.isdrag[1] = false;
+    auto dx = pos[0] - app.camera.pressPos[0]; auto dy = pos[1] - app.camera.pressPos[1];
+    if((dx*dx + dy*dy) < 64) app.handleSecondaryRelease(ray);  // tap, not a drag
+  }
+
+  app.camera.wasDown = down;
 
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];

@@ -16,6 +16,7 @@ import shadow :  recordShadowCommandBuffer;
 import sfx : updateTracks;
 import textures : updateTextures;
 import timing : timed;
+import text : updateWorldTextBillboards;
 import window : createOrResizeWindow;
 
 /** waitForFrame */
@@ -54,6 +55,7 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateBoneOffsets(app.syncIndex);       /// Check for animation causing BoneOffsets changes
   app.timed!updateDisco(dt);                        /// Update when disco mode 🕺 🪩 💃
   app.timed!computeActiveLighting();                /// Compute active lighting
+  app.timed!updateWorldTextBillboards();            /// Face billboarded world text toward the camera
   app.timed!repointDirtyDescriptors();              /// Repoint dirty descriptors
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 

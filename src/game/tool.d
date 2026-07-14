@@ -8,6 +8,7 @@ import game;
 import camera : castRay;
 import chunk : getBestTile;
 import ghost : getGhostTile, syncBuildGhosts;
+import lattice : tileToWorld, tileAbove, tileBelow;
 import feature : hasFeature;
 import inventory : placeTile, computeDragPreview;
 import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
@@ -15,7 +16,7 @@ import hits : getHits;
 import gameobjects : PendingBuild;
 import geometry : setColor;
 import stockpile : createStockpile;
-import tile : tileToWorld, getTileAt, tileAbove, getWater, setWater, tileBelow;
+import tile : getTileAt, getWater, setWater;
 import matrix : translateScale;
 import vegetation : getBestVegetation;
 import water : WATER_MAX;
@@ -114,6 +115,12 @@ struct PaintState {
   int[3][] preview;
 }
 
+/** Switch the active tool */
+void setActiveTool(ref GameApp app, ToolMode mode) {
+  app.world.inventory.paint = PaintState.init;
+  app.world.inventory.activeTool = mode;
+}
+
 void selectObject(ref GameApp app, Intersection[] hits) {
   foreach(ref o; app.objects) o.window = false;
   foreach(ref hit; hits) {
@@ -141,8 +148,8 @@ void paintDrag(ref GameApp app, float[3][2] ray) {
 }
 
 /** Primary press: left click / single tap */
-void handlePrimaryPress(ref GameApp app, float sx, float sy) {
-  auto ray = app.camera.castRay(sx, sy);
+void handlePrimaryPress(ref GameApp app, float[3][2] ray) {
+  app.updateHoverHighlight(ray);
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: (app.world.inventory.activeTool == ToolMode.Info)?app.infoPress(ray): app.selectPress(ray); break;
     case ToolKind.RayPaint: app.paintPress(ray); break;
@@ -151,8 +158,7 @@ void handlePrimaryPress(ref GameApp app, float sx, float sy) {
 }
 
 /** Primary drag: left hold + move / single finger move */
-void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
-  auto ray = app.camera.castRay(sx, sy);
+void handlePrimaryDrag(ref GameApp app, float[3][2] ray) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: break;
     case ToolKind.RayPaint: app.paintDrag(ray); break;
@@ -161,14 +167,16 @@ void handlePrimaryDrag(ref GameApp app, float sx, float sy) {
 }
 
 /** Primary release: left up / finger up */
-void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
+void handlePrimaryRelease(ref GameApp app, float[3][2] ray) {
   final switch(tools[app.world.inventory.activeTool].kind) {
     case ToolKind.Query: break;
     case ToolKind.RayPaint:
-      if(app.world.inventory.activeTool == ToolMode.Stockpile){
-        app.world.createStockpile(app.world.inventory.paint.preview);
-        app.world.inventory.paint = PaintState.init;
-        app.syncBuildGhosts();
+      if(app.world.inventory.activeTool == ToolMode.Stockpile) {
+        if(app.world.inventory.paint.active) {
+          app.world.createStockpile(app.world.inventory.paint.preview);
+          app.world.inventory.paint = PaintState.init;
+          app.syncBuildGhosts();
+        }
       }else if(app.world.inventory.paint.active){ app.commitPaint(); }
     break;
     case ToolKind.BuildPaint: if(app.world.inventory.paint.active) app.openBuildSelection(); break;
@@ -176,13 +184,12 @@ void handlePrimaryRelease(ref GameApp app, float sx, float sy) {
 }
 
 /** Secondary press: right click */
-void handleSecondaryPress(ref GameApp app, float sx, float sy) { }
+void handleSecondaryPress(ref GameApp app, float[3][2] ray) { }
 
 /** Secondary press: right click */
-void handleSecondaryRelease(ref GameApp app, float sx, float sy) {
-  app.world.inventory.paint = PaintState.init;
+void handleSecondaryRelease(ref GameApp app, float[3][2] ray) {
   app.world.inventory.type = ResourceType.None;
-  app.world.inventory.activeTool = ToolMode.Select;
+  app.setActiveTool(isAndroid ? ToolMode.Info : ToolMode.Select);
   app.syncBuildGhosts();
 }
 
