@@ -13,6 +13,7 @@ public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Fea
 public import inventory : Inventory;
 public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
+public import orders : Order;
 public import pathfinding : PathRequest, PathResult;
 public import pathmarker : Paths;
 public import physx : Fall;
