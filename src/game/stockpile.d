@@ -150,32 +150,27 @@ float[3] subCellOffset(const World world, uint slot) {
 /** Serialize all stockpiles to one file (records + packed name/tiles/accepts/contents) */
 ubyte[] saveStockpiles(const World world) {
   ubyte[] blob;
-  void put(const(uint[]) xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * uint.sizeof]; }
+  void put(T)(const(T)[] xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * T.sizeof]; }
 
-  put([cast(uint)WORLD_MAGIC, world.stockpiles.nextID, cast(uint)world.stockpiles.length]);
+  put([world.stockpiles.nextID, cast(uint)world.stockpiles.length]);
   foreach(id, ref sp; world.stockpiles) {
     Item[] acc;
     foreach(k, on; sp.accepts) if(on) acc ~= k;
     put([sp.id, cast(uint)sp.name.length, cast(uint)sp.tiles.length, cast(uint)acc.length, cast(uint)sp.contents.length]);
-    blob ~= cast(ubyte[])sp.name.dup;
-    blob ~= cast(ubyte[])sp.tiles;
-    blob ~= cast(ubyte[])acc;        // r[3] = number of accepted canonical Items
-    put(sp.contents);
+    put(sp.name); put(sp.tiles); put(acc); put(sp.contents);
   }
   return blob;
 }
 
 /** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids) */
 void loadStockpiles(ref World world, ubyte[] raw) {
-  if(raw.length < 12) return;
+  if(raw.length < 8) return;
   size_t off = 0;
   bool need(size_t n) { return off + n <= raw.length; }
   uint[] take(size_t n) { auto s = cast(uint[])raw[off .. off + n*uint.sizeof].dup; off += n*uint.sizeof; return s; }
 
-  auto hdr = take(3);
-  if(hdr[0] != WORLD_MAGIC) { SDL_Log("loadStockpiles: bad magic"); return; }
-  world.stockpiles.nextID = hdr[1];
-  uint count = hdr[2];
+  world.stockpiles.nextID = take(1)[0];
+  uint count = take(1)[0];
 
   foreach(_; 0 .. count) {
     if(!need(5 * uint.sizeof)) { SDL_Log("loadStockpiles: truncated rec"); return; }
