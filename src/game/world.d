@@ -230,9 +230,10 @@ void regenerateWorld(ref GameApp app, uint seed = 42) {
   app.world.paths = PathMarker.init;
   app.world.inventory = Inventory.init;
   app.worldText = WorldText.init;
-  app.ensureWorldText();
+
   // 6. objects/persistables are rebuilt by loadWorld; ensure they start empty.
   jobQueue = []; app.objects = []; app.persistables = [];
+  app.ensureWorldText();
 
   // 7. Restore seed and rebuild.
   app.world.data.seed = seed;

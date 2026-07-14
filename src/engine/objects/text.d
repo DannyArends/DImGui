@@ -7,6 +7,7 @@ import engine;
 
 import geometry : opacity;
 import matrix : degree, translate, translateScale, multiply, rotate;
+import textures : mapTextures;
 import vector : vSub, vMul;
 
 /** Shared instanced text: one unit quad mesh, reused by every glyph via per-instance transform + UV remap.
@@ -52,6 +53,7 @@ void ensureWorldText(ref App app) {
   if(app.worldText.text !is null) return;
   app.worldText.text = new Text(app);
   app.objects ~= app.worldText.text;
+  app.mapTextures();
 }
 
 /** Compute the per-glyph DrawInstances for a TextInfo entry (its own pos/rot/scale/color) */
