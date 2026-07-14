@@ -16,6 +16,7 @@ import jobs : craftJob, jobQueue;
 import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
 import water : waterTick, flushWaterDirty, evaporateTick;
+import world : regenerateWorld;
 
 /** Handle keyboard events */
 void handleKeyEvents(ref GameApp app, SDL_Event e) {
@@ -79,6 +80,7 @@ void pollEvents(ref GameApp app) {
 
     version(Android) { if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e); }
   }
+  if(app.regenerate) { app.regenerate = false; app.regenerateWorld(); }
 }
 
 /** Dispatch game tool input from CURRENT pointer state. Runs AFTER igNewFrame() */
