@@ -8,7 +8,6 @@ import game;
 import chunk : faceData;
 import clouds : CLOUD_STEP, cloudCell;
 import lattice : tileBelow, tileCoord, tileIdx, tileToWorld, chunkCoord, worldCoord, flatten, unflatten, Diff;
-import serialization : readData, writeData;
 import tile : neighbourAt, isStandable, standableNeighbour, getWater, setWater;
 import vector : manhattan, manhattan2D;
 

@@ -41,12 +41,6 @@ struct WorldData {
 
   /** Returns the filesystem path for the world diffs file */
   const(char)* worldPath() const { return worldFile(""); }
-  const(char)* blocksPath() const { return worldFile("_drops"); }
-  const(char)* cloudsPath() const { return worldFile("_clouds"); }
-  const(char)* dwarfsPath() const { return worldFile("_dwarfs"); }
-  const(char)* stockpilePath() const { return worldFile("_stockpiles"); }
-  const(char)* featurePath(string name) const { return worldFile("_" ~ name.toLower); }
-  const(char)* waterPath() const { return worldFile("_water"); }
 
   /** Convert a world tile coordinate to its chunk coordinate */
   @property @nogc pure int tileCount() const nothrow { return chunkSize * chunkHeight * chunkSize; }
@@ -109,29 +103,28 @@ void registerPersistables(ref GameApp app) {
   app.persistables ~= Persistable(
     () {
       uint[1] nid = [app.world.drops.nextID];
-      return [Section("blocks", cast(ubyte[])app.world.saveBlocks()),
-              Section("blocks.nextID", cast(ubyte[])nid.dup)];
+      return [Section("blocks", cast(ubyte[])app.world.saveBlocks()), Section("blocks.nextID", cast(ubyte[])nid.dup)];
     },
     (const ubyte[][string] b) {
-      if(auto p = "blocks.nextID" in b) app.world.drops.nextID = (cast(uint[])(*p))[0];
-      if(auto p = "blocks" in b) app.loadBlocks(cast(Block[])(*p));
+      if(auto p = "blocks.nextID" in b){ app.world.drops.nextID = (cast(uint[])(*p))[0]; }
+      if(auto p = "blocks" in b){ app.loadBlocks(cast(Block[])(*p)); }
     });
 
   app.persistables ~= Persistable(
     () => [Section("water", cast(ubyte[])app.world.saveWater())],
-    (const ubyte[][string] b) { if(auto p = "water" in b) app.world.loadWater(cast(Diff!ubyte[])(*p)); });
+    (const ubyte[][string] b) { if(auto p = "water" in b) { app.world.loadWater(cast(Diff!ubyte[])(*p)); } });
 
   app.persistables ~= Persistable(
     () => [Section("clouds", cast(ubyte[])app.world.saveClouds())],
-    (const ubyte[][string] b) { if(auto p = "clouds" in b) app.world.loadClouds(cast(CloudDiff[])(*p)); });
+    (const ubyte[][string] b) { if(auto p = "clouds" in b) { app.world.loadClouds(cast(CloudDiff[])(*p)); } });
 
   app.persistables ~= Persistable(
     () => [Section("dwarfs", cast(ubyte[])app.saveDwarfs())],
-    (const ubyte[][string] b) { if(auto p = "dwarfs" in b) app.loadDwarfs(cast(DwarfData[])(*p)); });
+    (const ubyte[][string] b) { if(auto p = "dwarfs" in b) { app.loadDwarfs(cast(DwarfData[])(*p)); } });
 
   app.persistables ~= Persistable(
     () => [Section("stock", app.world.saveStockpiles())],
-    (const ubyte[][string] b) { if(auto p = "stock" in b) app.world.loadStockpiles((*p).dup); });
+    (const ubyte[][string] b) { if(auto p = "stock" in b) { app.world.loadStockpiles((*p).dup); } });
 
   foreach(ref ftr; features) {
     auto name = ftr.name;
@@ -140,7 +133,7 @@ void registerPersistables(ref GameApp app) {
       (const ubyte[][string] b) {
         if(auto p = ("veg:" ~ name) in b) {
           app.loadVegetation!Feature(app.world.vegetation.pending[name], cast(Feature[])(*p));
-          foreach(coord; app.world.vegetation.pending[name].keys) app.world.vegetation.modified[coord] = true;
+          foreach(coord; app.world.vegetation.pending[name].keys){ app.world.vegetation.modified[coord] = true; }
         }
       });
   }
