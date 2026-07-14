@@ -28,6 +28,7 @@ void showSettingsContent(ref App app, uint font = 0) {
     setting("Volume", app.soundEffectGain, app.gui.sound[0], app.gui.sound[1], 150, app.gui.uiscale);
     setting("God Mode", app.camera.godMode);
     if(setting("Show Lights", app.showLights)) app.toggleLightGeometries();
+    setting("SSAO", app.useSSAO);
     setting("Disco Mode", app.disco);
     setting("Show Bounds", app.showBounds);
     setting("Show Paths", app.showPaths);

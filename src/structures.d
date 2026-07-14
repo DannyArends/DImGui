@@ -10,7 +10,7 @@ public import bone : Bone;
 public import boundingbox : Bounds, BoundingBox;
 public import buffer : GPUAllocation, GeometryBuffer;
 public import camera : Camera;
-public import compute : Compute;
+public import compute : ComputeStage, Compute;
 public import commands : CommandBuffer, SingleTimeCommand;
 public import cone : Cone;
 public import color : Colors;

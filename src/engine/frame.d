@@ -8,7 +8,7 @@ import engine;
 import bone : updateBoneOffsets;
 import descriptor : repointDirtyDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
-import compute : recordComputeCommandBuffer;
+import compute : recordComputeCommandBuffer, ComputeStage;
 import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
 import mesh : updateMeshInfo;
@@ -65,6 +65,7 @@ void renderFrame(ref App app, double dt) {
     VkCommandBuffer[8] computeCommandBuffers;
     uint nCompute = 0;
     foreach(ref shader; app.compute.shaders){
+      if(app.compute.passes[shader.path].stage != ComputeStage.PreRender) continue;
       app.timed!recordComputeCommandBuffer(shader);
       computeCommandBuffers[nCompute++] = app.compute.commands[shader.path][app.syncIndex];
     }

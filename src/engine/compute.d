@@ -22,10 +22,17 @@ struct Compute {
   ComputePass[string] passes;           /// Per-shader pre/workItems/post hooks, keyed by shader.path
 }
 
+/** When a compute pass is dispatched relative to the scene render. */
+enum ComputeStage : ubyte {
+  PreRender,    /// before the scene pass — feeds it (e.g. light culling)
+  PostDepth     /// after the scene pass writes depth — consumes it (e.g. SSAO)
+}
+
 /** Per-shader compute behaviour, keyed by shader.path (like DescriptorProvider is keyed by descriptor name).
  * pre/post record commands (barriers, buffer fills, image transitions); workItems is CPU-side sizing only —
  * it records no commands, just returns raw item counts before group-size division. */
 struct ComputePass {
+  ComputeStage stage = ComputeStage.PreRender;
   uint[3] delegate(ref App app, Shader shader) workItems; /// required
   void delegate(ref App app, VkCommandBuffer cmd, Shader shader) pre; /// null = none
   void delegate(ref App app, VkCommandBuffer cmd, Shader shader) post; /// null = none
@@ -42,6 +49,7 @@ void initializeCompute(ref App app) {
 
   // cull.glsl: ClusterHeads/ClusterCounter/ClusterLights are cross-stage
   app.compute.passes["data/shaders/cull.glsl"] = ComputePass(
+    stage: ComputeStage.PreRender,
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       VkBuffer headBuf = a.buffers["ClusterHeads"][a.syncIndex].buffer;
       VkBuffer cursorBuf = a.buffers["ClusterCounter"][a.syncIndex].buffer;
@@ -54,6 +62,7 @@ void initializeCompute(ref App app) {
   );
 
   app.compute.passes["data/shaders/ssao.glsl"] = ComputePass(
+    stage: ComputeStage.PostDepth,
     workItems: (ref App a, Shader shader) { uint[3] r = [a.camera.width, a.camera.height, 1u]; return r; },
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       // order the depth read after the previous frame's depth writes (same queue, earlier submission)
@@ -124,34 +133,39 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
   });
 }
 
+/** Record one compute pass's dispatch into an existing command buffer (no begin/end). */
+void dispatchCompute(ref App app, VkCommandBuffer[] cmds, Shader shader) {
+  auto cmd = cmds[app.syncIndex];
+  auto pass = shader.path in app.compute.passes;
+  assert(pass !is null, "No ComputePass registered for " ~ shader.path);
+
+  pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
+  app.updateDescriptorData([shader], cmds, app.syncIndex);
+
+  if(pass.pre !is null) pass.pre(app, cmd, shader);
+
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][app.syncIndex], 0, null);
+
+  uint[3] groups = vCeilDiv(pass.workItems(app, shader), shader.groupCount);
+  vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
+
+  if(pass.post !is null) pass.post(app, cmd, shader);
+  popLabel(cmd);
+}
+
 /** recordComputeCommandBuffer: pure scaffold — begin/bind/dispatch/end. All per-shader behaviour lives in app.compute.passes[shader.path]. */
 void recordComputeCommandBuffer(ref App app, Shader shader) {
   if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", toStringz(shader.path), app.syncIndex);
   auto cmd = app.compute.commands[shader.path][app.syncIndex];
-  auto pipeline = app.compute.pipelines[shader.path];
   enforceVK(vkResetCommandBuffer(cmd, 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
   enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
   app.nameVulkanObject(cmd, cstr("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), app.syncIndex), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
-  app.updateDescriptorData([shader], app.compute.commands[shader.path], app.syncIndex);
+  app.dispatchCompute(app.compute.commands[shader.path], shader);
 
-  auto pass = shader.path in app.compute.passes;
-  assert(pass !is null, "No ComputePass registered for " ~ shader.path);
-
-  if(pass.pre !is null) pass.pre(app, cmd, shader);
-
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
-  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][app.syncIndex], 0, null);
-
-  uint[3] groups = vCeilDiv(pass.workItems(app, shader), shader.groupCount);
-  vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
-
-  if(pass.post !is null) pass.post(app, cmd, shader);
-
-  popLabel(cmd);
   enforceVK(vkEndCommandBuffer(cmd));
   if(app.trace) SDL_Log("Compute Command Buffer: %d Done", app.syncIndex);
 }

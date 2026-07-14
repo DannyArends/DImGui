@@ -36,7 +36,7 @@ void main() {
   vec3 T = normalize(rnd - N * dot(rnd, N));
   mat3 TBN = mat3(T, cross(N, T), N);
 
-  int K = int(u.params.w);
+  int K = 32;
   float occ = 0.0;
   for (int i = 0; i < K; ++i) {
     vec3 s = P + (TBN * u.kernel[i].xyz) * u.params.x;          // sample point in view space
@@ -48,5 +48,6 @@ void main() {
     occ += (sd >= s.z + u.params.y ? 1.0 : 0.0) * rangeCheck;
   }
   float ao = pow(1.0 - occ / float(K), u.params.z);
+  ao = mix(1.0, ao, u.params.w);                 // params.w gates SSAO on/off
   imageStore(ssaoOut, px, vec4(ao));
 }
