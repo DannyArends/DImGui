@@ -7,8 +7,10 @@ import engine;
 
 import commands : createCommandBuffer;
 import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorData;
+import images : imageBarrier, transitionImageLayout;
 import shaders : loadShaders, createStageInfo;
 import sync : insertFillBarrier;
+import textures : idx;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import vector : vCeilDiv;
 
@@ -29,7 +31,10 @@ struct ComputePass {
   void delegate(ref App app, VkCommandBuffer cmd, Shader shader) post; /// null = none
 }
 
-ShaderDef[] ComputeShaders = [ShaderDef("data/shaders/cull.glsl", shaderc_glsl_compute_shader)];
+ShaderDef[] ComputeShaders = [
+  ShaderDef("data/shaders/cull.glsl", shaderc_glsl_compute_shader),
+  ShaderDef("data/shaders/ssao.glsl", shaderc_glsl_compute_shader)
+];
 
 /** Load shader modules for compute */
 void initializeCompute(ref App app) {
@@ -46,6 +51,22 @@ void initializeCompute(ref App app) {
       cmd.insertFillBarrier(cursorBuf);
     },
     workItems: (ref App a, Shader shader) { uint[3] r = [cast(uint)a.lights.length, 1u, 1u]; return r; }
+  );
+
+  app.compute.passes["data/shaders/ssao.glsl"] = ComputePass(
+    workItems: (ref App a, Shader shader) { uint[3] r = [a.camera.width, a.camera.height, 1u]; return r; },
+    pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
+      // order the depth read after the previous frame's depth writes (same queue, earlier submission)
+      imageBarrier(cmd, a.depthBuffer.image,
+                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                   VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                   0, 1, 0, 1, VK_IMAGE_ASPECT_DEPTH_BIT);
+      a.transitionImageLayout(cmd, a.textures[a.textures.idx("ssaoOut")].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+    },
+    post: (ref App a, VkCommandBuffer cmd, Shader shader) {
+      a.transitionImageLayout(cmd, a.textures[a.textures.idx("ssaoOut")].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
   );
 }
 
