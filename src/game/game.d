@@ -88,6 +88,7 @@ struct GameApp {
   alias app this;
 
   World world;
+  Persistable[] persistables;
   bool paused = false;
   float timeScale = 1.0f;
 }
