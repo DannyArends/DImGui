@@ -101,16 +101,7 @@ void registerPersistables(ref GameApp app) {
   app.persistables ~= podSection!CloudDiff("clouds", () => app.world.saveClouds(), (f) { app.world.loadClouds(f); });
   app.persistables ~= podSection!DwarfData("dwarfs", () => app.saveDwarfs(), (f) { app.loadDwarfs(f); });
   app.persistables ~= podSection!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
-
-  app.persistables ~= Persistable(
-    () {
-      uint[1] nid = [app.world.drops.nextID];
-      return [Section("blocks", cast(ubyte[])app.world.saveBlocks()), Section("blocks.nextID", cast(ubyte[])nid.dup)];
-    },
-    (const ubyte[][string] b) {
-      if(auto p = "blocks.nextID" in b){ app.world.drops.nextID = (cast(uint[])(*p))[0]; }
-      if(auto p = "blocks" in b){ app.loadBlocks(cast(Block[])(*p)); }
-    });
+  app.persistables ~= podSection!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
 
   foreach(ref ftr; features) {
     auto name = ftr.name;
