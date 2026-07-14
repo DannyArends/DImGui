@@ -6,6 +6,7 @@
 import engine;
 
 import geometry : opacity;
+import material : ensureMaterial;
 import matrix : degree, translate, translateScale, multiply, rotate;
 import textures : mapTextures;
 import vector : vSub, vMul;
@@ -53,7 +54,8 @@ void ensureWorldText(ref App app) {
   if(app.worldText.text !is null) return;
   app.worldText.text = new Text(app);
   app.objects ~= app.worldText.text;
-  app.mapTextures();
+  app.ensureMaterial(app.objects[($-1)]);
+  app.mapTextures(app.objects[($-1)]);
 }
 
 /** Compute the per-glyph DrawInstances for a TextInfo entry (its own pos/rot/scale/color) */
