@@ -40,7 +40,7 @@ public import pipeline : GraphicsPipeline;
 public import quaternion : Quaternion;
 public import renderpass : RenderPassInfo, RenderPass;
 public import reflection : LIGHT_GRID, CLUSTER_COUNT, NIL;
-public import serialization : Persistable, SectionID,  WORLD_MAGIC, WORLD_SCHEMA;
+public import serialization : Persistable, Section,  WORLD_MAGIC, WORLD_SCHEMA;
 public import shaders : Shader, ShaderDef, ShaderStage, Specialization, IncluderContext;
 public import sparseset : SparseSet;
 public import square : Square;
