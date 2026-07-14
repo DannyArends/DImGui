@@ -5,16 +5,18 @@
 
 import engine;
 
-import matrix : inverse;
+import matrix : multiply, inverse;
+import quaternion : xyzw;
 
 enum SSAO_KERNEL = 32;
 __gshared float[4][SSAO_KERNEL] ssaoKernel;
 
 struct SSAOUniformBuffer {
-  Matrix proj;
-  Matrix projInv;
+  Matrix viewProj;                 // ori * proj * view
+  Matrix invViewProj;              // inverse(ori * proj * view)
+  float[4] camPos;                 // camera world position
   float[4][SSAO_KERNEL] kernel;
-  float[4] params;                    /// x=radius y=bias z=power w=kernelSize
+  float[4] params;                 // x=radius y=bias z=power w=enable
 }
 
 /** Hemisphere sample set (view space, +Z), clustered toward the origin. Built once. */
@@ -31,10 +33,12 @@ shared static this() {
 }
 
 void updateSSAO(ref App app, Descriptor d, uint syncIndex) {
+  Matrix vp = app.camera.proj.multiply(app.camera.view);   // desktop: ori == identity, so this IS the depth transform
   SSAOUniformBuffer ubo = {
-    proj: app.camera.proj,
-    projInv: app.camera.proj.inverse,
-    params: [0.5f, 0.025f, 1.5f, app.useSSAO ? 1.0f : 0.0f]   // w: 0 = disabled, 1 = enabled
+    viewProj: vp,
+    invViewProj: vp.inverse,
+    camPos: app.camera.position.xyzw,
+    params: [1.0f, 0.05f, 1.5f, app.useSSAO ? 1.0f : 0.0f]
   };
   ubo.kernel = ssaoKernel;
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
