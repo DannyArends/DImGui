@@ -89,6 +89,7 @@ struct GameApp {
 
   World world;
   Persist[] persistables;
+  bool regenerate = false;
   bool paused = false;
   float timeScale = 1.0f;
 }

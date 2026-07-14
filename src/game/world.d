@@ -7,11 +7,13 @@ import game;
 
 import block : loadBlocks, saveBlocks, syncBlockInstances, ensureBlocks;
 import clouds : saveClouds, loadClouds;
-import dwarf : saveDwarfs, loadDwarfs, spawnDwarf;
+import dwarf : saveDwarfs, loadDwarfs, spawnDwarf, deleteDwarf;
+import events : removeGeometry;
 import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
 import io : ensureWorldDir, fixPath;
 import lattice : chunkCoord, localCoord, worldCoord, flatten, unflatten, Diff;
+import lights : updateSun;
 import jobs : jobQueue;
 import orders : loadOrders, saveOrders;
 import pathfinding : invalidatePaths, repathTo;
@@ -121,7 +123,7 @@ void loadWorld(ref GameApp app) {
   }
 
   app.registerPersistables();
-  auto blobs = loadSections(app.world.worldPath());
+  auto blobs = loadSections(app.world.worldPath(), app.verbose > 0);
   foreach(ref p; app.persistables){ p.load(blobs); }
 
   if(app.world.dwarves is null || app.world.dwarves.dwarves.length == 0) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
@@ -135,7 +137,7 @@ void saveWorld(ref GameApp app) {
   app.registerPersistables();
   Section[] all;
   foreach(ref p; app.persistables) all ~= p.save();
-  saveSections(app.world.worldPath(), all);
+  saveSections(app.world.worldPath(), all, app.verbose > 0);
   if(app.verbose) SDL_Log("saveWorld: %d sections", cast(int)all.length);
 }
 
@@ -196,4 +198,42 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   foreach (coord; app.world.chunks.keys) {
     if (app.world.chunks[coord].dirty && coord !in app.world.chunks.pending) { app.dispatchWorker(coord); }
   }
+}
+
+void regenerateWorld(ref GameApp app, uint seed = 42) {
+  // 1. Release per-dwarf GPU resources (torch lights + name-label text) before dropping them.
+  if(app.world.dwarves !is null){ while(app.world.dwarves.dwarves.length > 0){
+    app.deleteDwarf(cast(int)(app.world.dwarves.dwarves.length - 1));
+  } }
+
+  // 2. Flag every world render object for deallocation, then let the frame collector move them
+  //    into the buffer deletion queue and drop them from app.objects.
+  foreach(ref o; app.objects){ o.deAllocate = true; }
+  app.removeGeometry(); // routes all flagged into bufferDeletionQueue (fenced)
+
+  // 3. Chunks: flag their geometry (deallocateChunk sets deAllocate) and clear the maps.
+  app.world.clear();
+
+  // 4. Remove the save file so loadWorld starts fresh.
+  SDL_RemovePath(app.world.worldPath());
+
+  // 5. Reset all CPU subsystem state to defaults.
+  app.world.data.diffs = null;
+  app.world.data.waterDiffs = null;
+  app.world.dwarves = null;
+  app.world.water = null;
+  app.world.drops = Drops.init;
+  app.world.stockpiles = StockpileField.init;
+  app.world.vegetation = Vegetation.init;
+  app.world.weather = Weather.init;
+  app.world.paths = PathMarker.init;
+  app.world.inventory = Inventory.init;
+
+  // 6. objects/persistables are rebuilt by loadWorld; ensure they start empty.
+  jobQueue = []; app.objects = []; app.persistables = [];
+
+  // 7. Restore seed and rebuild.
+  app.world.data.seed = seed;
+  app.loadWorld();
+  app.updateSun();
 }
