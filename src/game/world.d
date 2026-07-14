@@ -19,7 +19,7 @@ import serialization : loadSections, saveSections;
 import stockpile : saveStockpiles, loadStockpiles;
 import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
-import vegetation : saveVegetation, loadVegetation;
+import vegetation : vegetationSection;
 import water : saveWater, loadWater;
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
@@ -64,9 +64,9 @@ struct World {
   StockpileField stockpiles;
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
-  Weather weather;
+  Weather weather;                                          /// Weather
   WaterTiles water;                                         /// single batched water render object
-  Paths paths;
+  PathMarker paths;                                         /// Path markers
 
   /** Mark all chunks for deallocation and clear the chunk and pending maps */
   void deallocateChunk(const int[3] coord) {
@@ -104,18 +104,7 @@ void registerPersistables(ref GameApp app) {
   app.persistables ~= Persist.pod!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
   app.persistables ~= Persist.pod!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
   app.persistables ~= Persist.pod!Order("jobs", () => app.saveOrders(), (o) { app.loadOrders(o); });
-
-  foreach(ref ftr; features) {
-    auto name = ftr.name;
-    app.persistables ~= Persist(
-      () => [Section("veg:" ~ name, cast(ubyte[])app.saveVegetation!Feature(app.world.vegetation[name], app.world.vegetation.pending[name]))],
-      (const ubyte[][string] b) {
-        if(auto p = ("veg:" ~ name) in b) {
-          app.loadVegetation!Feature(app.world.vegetation.pending[name], cast(Feature[])(*p));
-          foreach(coord; app.world.vegetation.pending[name].keys){ app.world.vegetation.modified[coord] = true; }
-        }
-      });
-  }
+  foreach(ref ftr; features) app.persistables ~= vegetationSection(app, ftr.name);
 }
 
 void loadWorld(ref GameApp app) {
@@ -133,7 +122,7 @@ void loadWorld(ref GameApp app) {
 
   app.registerPersistables();
   auto blobs = loadSections(app.world.worldPath());
-  foreach(ref p; app.persistables) p.load(blobs);
+  foreach(ref p; app.persistables){ p.load(blobs); }
 
   if(app.world.dwarves is null || app.world.dwarves.dwarves.length == 0) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
 

@@ -60,3 +60,14 @@ bool getBestVegetation(T, alias matchGeometry)(ref GameApp app, float[3][2] ray,
   }
   return best.intersects;
 }
+
+Persist vegetationSection(ref GameApp app, string name) {
+  return Persist(
+    () => [Section("veg:" ~ name, cast(ubyte[])app.saveVegetation!Feature(app.world.vegetation[name], app.world.vegetation.pending[name]))],
+    (const ubyte[][string] b) {
+      if(auto p = ("veg:" ~ name) in b) {
+        app.loadVegetation!Feature(app.world.vegetation.pending[name], cast(Feature[])(*p));
+        foreach(coord, items; app.world.vegetation.pending[name]){ if(items.length > 0) app.world.vegetation.modified[coord] = true; }
+      }
+    });
+}
