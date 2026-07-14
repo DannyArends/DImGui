@@ -59,23 +59,23 @@ void renderFrame(ref App app, double dt) {
   app.timed!repointDirtyDescriptors();              /// Repoint dirty descriptors
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
-  // --- Phase 2: Prepare & Submit Compute Work ---
-  if (app.hasCompute) {
-    if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
+  // --- Phase 2: Record All Compute, and submit PreRender Compute Work ---
+  if (app.hasCompute) { if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
     VkCommandBuffer[] computeCommandBuffers;
     foreach(ref shader; app.compute.shaders){
-      if(app.compute.passes[shader.path].stage != ComputeStage.PreRender) continue;
       app.timed!recordComputeCommandBuffer(shader);
+      if(app.compute.passes[shader.path].stage != ComputeStage.PreRender) continue;
       computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
     }
-
-    VkSubmitInfo submitComputeInfo = {
-      sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      signalSemaphoreCount : 1, pSignalSemaphores : &computeComplete,
-      commandBufferCount : cast(uint)computeCommandBuffers.length, pCommandBuffers : &computeCommandBuffers[0],
-    };
-    if(app.trace) SDL_Log("Phase 2.2: Submit Compute work");
-    enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
+    if (computeCommandBuffers.length > 0) { // submit only if we have pre-render compute (e.g. Cull)
+      VkSubmitInfo submitComputeInfo = {
+        sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        signalSemaphoreCount : 1, pSignalSemaphores : &computeComplete,
+        commandBufferCount : cast(uint)computeCommandBuffers.length, pCommandBuffers : &computeCommandBuffers[0],
+      };
+      if(app.trace) SDL_Log("Phase 2.2: Submit Compute work");
+      enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
+    }
   }
 
   // --- Phase 3: Prepare Shadowmap ---
@@ -85,20 +85,18 @@ void renderFrame(ref App app, double dt) {
     app.timed!recordShadowCommandBuffer(app.syncIndex);
   }else{ shadowsThisFrame = false; }
 
-  // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
+  // --- Phase 4: Record Scene renderer, Post-Process and ImGui ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
   app.timed!recordSceneCommandBuffer(app.shaders);
-  if (app.hasCompute){ foreach(ref shader; app.compute.shaders) {
-    if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) app.timed!recordComputeCommandBuffer(shader);
-  } }
   app.timed!recordPostCommandBuffer();
   app.timed!recordImGuiCommandBuffer();
 
+  // --- Phase 5:  Submit CommandBuffers: Scene renderer, Post-Depth Compute, PostProcess and ImGui ---
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers;
   if (shadowsThisFrame){ submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
   submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
-  if (app.hasCompute){ foreach(ref shader; app.compute.shaders) {
+  if (app.hasCompute){ foreach(ref shader; app.compute.shaders) { // Add Post-Depth Compute Command Buffers
     if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) {
       submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
     }
