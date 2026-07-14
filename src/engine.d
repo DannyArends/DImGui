@@ -13,10 +13,14 @@ enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", PO
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 
 /** Main application structure, TODOs:
-  1) Figure out a way to sort transparant objects (and instances) relative to the camera for correct rendering
-  2) Alpha blending fix: Also a prerequisite for nice bloom on transparent emissive
-  3) Bloom/HDR: scaffolding is there, for a big visual improvement
-  4) GPU-driven indirect draw (probably not possible, due to how our pipeline works)
+  - Figure out a way to sort transparant objects (and instances) relative to the camera for correct rendering
+  - Alpha blending fix: Also a prerequisite for nice bloom on transparent emissive
+  - Bloom/HDR: scaffolding is there, for a big visual improvement
+  - GPU-driven indirect draw (probably not possible, due to how our pipeline works)
+  - Screen space ambient occlusion (SSAO)
+  - Cascaded shadow maps for the Sun Shadows
+  - Screen-space reflections on water
+  - Chunk/object LOD
 */
 struct App {
   SDL_Window* window;
