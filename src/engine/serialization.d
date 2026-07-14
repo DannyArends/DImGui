@@ -53,3 +53,9 @@ ubyte[][string] loadSections(const(char)* path) {
   }
   return blobs;
 }
+
+Persistable podSection(T)(string key, T[] delegate() save, void delegate(T[]) load) {
+  return Persistable(
+    () => [Section(key, cast(ubyte[])save())],
+    (const ubyte[][string] b) { if(auto p = key in b) load(cast(T[])(*p)); });
+}
