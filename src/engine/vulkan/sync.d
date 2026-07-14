@@ -16,6 +16,7 @@ struct Sync {
 struct Fence {
   VkFence renderInFlight;
   VkFence computeInFlight;
+  bool computeSubmitted;
 }
 
 struct WaitList(uint N) {
