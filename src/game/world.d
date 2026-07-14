@@ -235,7 +235,6 @@ void regenerateWorld(ref GameApp app) {
 
   // 6. objects/persistables are rebuilt by loadWorld; ensure they start empty.
   jobQueue = []; app.objects = []; app.persistables = [];
-  app.ensureWorldText();
 
   // 7. Restore seed and rebuild.
   app.world.data.seed = seed;
