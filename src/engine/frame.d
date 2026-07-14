@@ -108,7 +108,7 @@ void renderFrame(ref App app, double dt) {
 
   WaitList!2 wait;
   wait.add(imageAcquired, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-  if(app.preRenderSubmitted) { wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
+  if(preRenderSubmitted) { wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
