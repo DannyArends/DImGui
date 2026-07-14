@@ -132,6 +132,7 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
       if(to!string(descr.name) == "textureSampler") descr.target = DescriptorTarget.Textures;
       else if(to!string(descr.name) == "shadowMap") descr.target = DescriptorTarget.Shadow;
       else if(to!string(descr.name) == "hdrSampler") descr.target = DescriptorTarget.HDR;
+      else if(to!string(descr.name) == "depthSampler") descr.target = DescriptorTarget.Depth;
     }
     if(descr.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) descr.target = DescriptorTarget.Compute;
     if (app.trace) {
