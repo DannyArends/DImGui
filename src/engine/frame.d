@@ -60,6 +60,7 @@ void renderFrame(ref App app, double dt) {
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Record All Compute, and submit PreRender Compute Work ---
+  bool preRenderSubmitted = false;
   if (app.hasCompute) { if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
     VkCommandBuffer[] computeCommandBuffers;
     foreach(ref shader; app.compute.shaders){
@@ -67,7 +68,7 @@ void renderFrame(ref App app, double dt) {
       if(app.compute.passes[shader.path].stage != ComputeStage.PreRender) continue;
       computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
     }
-    if (computeCommandBuffers.length > 0) { // submit only if we have pre-render compute (e.g. Cull)
+    if(computeCommandBuffers.length > 0) { // submit only if we have pre-render compute (e.g. Cull)
       VkSubmitInfo submitComputeInfo = {
         sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
         signalSemaphoreCount : 1, pSignalSemaphores : &computeComplete,
@@ -75,6 +76,7 @@ void renderFrame(ref App app, double dt) {
       };
       if(app.trace) SDL_Log("Phase 2.2: Submit Compute work");
       enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
+      preRenderSubmitted = true;
     }
   }
 
@@ -94,9 +96,9 @@ void renderFrame(ref App app, double dt) {
   // --- Phase 5:  Submit CommandBuffers: Scene renderer, Post-Depth Compute, PostProcess and ImGui ---
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers;
-  if (shadowsThisFrame){ submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
+  if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
   submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
-  if (app.hasCompute){ foreach(ref shader; app.compute.shaders) { // Add Post-Depth Compute Command Buffers
+  if(app.hasCompute){ foreach(ref shader; app.compute.shaders) { // Add Post-Depth Compute Command Buffers
     if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) {
       submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
     }
@@ -106,7 +108,7 @@ void renderFrame(ref App app, double dt) {
 
   WaitList!2 wait;
   wait.add(imageAcquired, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-  if (app.hasCompute){ wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
+  if(app.preRenderSubmitted) { wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
