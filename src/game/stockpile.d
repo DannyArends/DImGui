@@ -148,8 +148,7 @@ float[3] subCellOffset(const World world, uint slot) {
 }
 
 /** Serialize all stockpiles to one file (records + packed name/tiles/accepts/contents) */
-void saveStockpiles(const World world) {
-  if(world.stockpiles.length == 0) return;
+ubyte[] saveStockpiles(const World world) {
   ubyte[] blob;
   void put(const(uint[]) xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * uint.sizeof]; }
 
@@ -163,12 +162,11 @@ void saveStockpiles(const World world) {
     blob ~= cast(ubyte[])acc;        // r[3] = number of accepted canonical Items
     put(sp.contents);
   }
-  writeFile(world.stockpilePath(), cast(char[])blob);
+  return blob;
 }
 
 /** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids) */
-void loadStockpiles(ref World world) {
-  auto raw = cast(ubyte[])readFile(world.stockpilePath());
+void loadStockpiles(ref World world, ubyte[] raw) {
   if(raw.length < 12) return;
   size_t off = 0;
   bool need(size_t n) { return off + n <= raw.length; }

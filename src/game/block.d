@@ -36,18 +36,14 @@ struct Drops {
 
 
 /** Save blocks */
-void saveBlocks(ref World world) {
-  if(world.drops.length == 0) return;
+Block[] saveBlocks(ref World world) {
   foreach(id, ref b; world.drops) { if(b.fall.isFalling) { b.tile = landingTile(world, b.tile); b.fall = Fall.init; } }
-  Block[] flat = world.drops.values;
-  writeData(world.blocksPath(), flat, world.drops.nextID);
+  return world.drops.values;
 }
 
 /** Load blocks */
-void loadBlocks(ref GameApp app) {
+void loadBlocks(ref GameApp app, Block[] flat) {
   app.ensureBlocks();
-  Block[] flat;
-  if(!readData(app.world.blocksPath(), flat, app.world.drops.nextID)) return;
   foreach(ref b; flat) {
     b.reserved = false;             // jobs aren't persisted; clear orphaned reservations
     app.world.drops[b.id] = b;

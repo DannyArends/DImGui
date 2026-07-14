@@ -224,7 +224,7 @@ void flushWaterDirty(ref GameApp app) {
 }
 
 /** Snapshot all loaded chunks' water into waterDiffs, then flatten + save (mirrors saveDiffs). */
-void saveWater(ref World world) {
+Diff!ubyte[] saveWater(ref World world) {
   foreach(coord; world.chunks.keys) {
     auto chunk = world.chunks[coord];
     world.data.waterDiffs.remove(chunk.coord);          // drop this chunk's stale snapshot
@@ -232,16 +232,11 @@ void saveWater(ref World world) {
       if(chunk.waterLevel[idx] > 0) world.data.waterDiffs[chunk.coord][cast(uint)idx] = chunk.waterLevel[idx];
     }
   }
-  auto flat = flatten(world.data.waterDiffs);
-  if(flat.length == 0) { SDL_RemovePath(world.waterPath()); return; }
-  writeData(world.waterPath(), flat, cast(uint)flat.length);
+  return flatten(world.data.waterDiffs);
 }
 
 /** Load waterDiffs from disk; chunks apply them at build, resident chunks applied immediately (mirrors rebuildDiffs). */
-void loadWater(ref World world) {
-  Diff!ubyte[] flat;
-  uint h;
-  if(!readData(world.waterPath(), flat, h)) return;
+void loadWater(ref World world, Diff!ubyte[] flat) {
   world.data.waterDiffs = unflatten(flat);
   foreach(coord; world.chunks.keys) {  // apply to any already-resident chunks (newly-streamed ones get it in buildChunkData)
     if(auto wm = coord in world.data.waterDiffs) {
