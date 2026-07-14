@@ -22,10 +22,12 @@ import window : createOrResizeWindow;
 /** waitForFrame */
 @nogc void waitForFrame(ref App app) nothrow {
   if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
-  if(app.hasCompute) {
+  if(app.fences[app.syncIndex].computeSubmitted) {
     enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, ulong.max));
-    enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
+    app.fences[app.syncIndex].computeSubmitted = false;
   }
+  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
+
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
   app.bufferDeletionQueue.flush();
@@ -60,7 +62,6 @@ void renderFrame(ref App app, double dt) {
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
   // --- Phase 2: Record All Compute, and submit PreRender Compute Work ---
-  bool preRenderSubmitted = false;
   if (app.hasCompute) { if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
     VkCommandBuffer[] computeCommandBuffers;
     foreach(ref shader; app.compute.shaders){
@@ -76,7 +77,7 @@ void renderFrame(ref App app, double dt) {
       };
       if(app.trace) SDL_Log("Phase 2.2: Submit Compute work");
       enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
-      preRenderSubmitted = true;
+      app.fences[app.syncIndex].computeSubmitted = true;
     }
   }
 
@@ -108,7 +109,7 @@ void renderFrame(ref App app, double dt) {
 
   WaitList!2 wait;
   wait.add(imageAcquired, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-  if(preRenderSubmitted) { wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
+  if(app.fences[app.syncIndex].computeSubmitted) { wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
