@@ -32,6 +32,7 @@ bool orderOf(const Job j, out Order o) {
 Job jobOf(const Order o) {
   final switch(o.kind) {
     case OrderKind.Mine: return miningJob(o.tile);
+    // Building stores only tileClass; toType recovers the material: Each Buildable type needs its name to be a ResourceClass (see resources.d)
     case OrderKind.Build: return buildingJob(o.tile, o.tileType);
     case OrderKind.InteractFeature: return interactFeatureJob(o.tile);
   }
