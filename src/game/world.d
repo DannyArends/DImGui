@@ -19,6 +19,7 @@ import orders : loadOrders, saveOrders;
 import pathfinding : invalidatePaths, repathTo;
 import serialization : loadSections, saveSections;
 import stockpile : saveStockpiles, loadStockpiles;
+import text : addWorldText, ensureWorldText;
 import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : vegetationSection;
@@ -228,7 +229,8 @@ void regenerateWorld(ref GameApp app, uint seed = 42) {
   app.world.weather = Weather.init;
   app.world.paths = PathMarker.init;
   app.world.inventory = Inventory.init;
-
+  app.worldText = WorldText.init;
+  app.ensureWorldText();
   // 6. objects/persistables are rebuilt by loadWorld; ensure they start empty.
   jobQueue = []; app.objects = []; app.persistables = [];
 
@@ -236,4 +238,5 @@ void regenerateWorld(ref GameApp app, uint seed = 42) {
   app.world.data.seed = seed;
   app.loadWorld();
   app.updateSun();
+  app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
 }
