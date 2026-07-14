@@ -11,9 +11,16 @@ enum uint WORLD_MAGIC = 0xCA1DE4A;
 enum uint WORLD_SCHEMA = 1;
 struct Section { string key; ubyte[] data; }
 
-struct Persistable {
+struct Persist {
   Section[] delegate() save;
   void delegate(const ubyte[][string] blobs) load;
+
+  /** POD single-section helper: a T[] save + a T[] load, keyed by `key`. */
+  static Persist pod(T)(string key, T[] delegate() save, void delegate(T[]) load) {
+    return Persist(
+      () => [Section(key, cast(ubyte[])save())],
+      (const ubyte[][string] b) { if(auto p = key in b) load(cast(T[])(*p)); });
+  }
 }
 
 /** Serialize all registered sections into one WORLD_MAGIC container */
@@ -52,10 +59,4 @@ ubyte[][string] loadSections(const(char)* path) {
     blobs[key] = raw[off .. off + dataN].dup; off += dataN;
   }
   return blobs;
-}
-
-Persistable podSection(T)(string key, T[] delegate() save, void delegate(T[]) load) {
-  return Persistable(
-    () => [Section(key, cast(ubyte[])save())],
-    (const ubyte[][string] b) { if(auto p = key in b) load(cast(T[])(*p)); });
 }
