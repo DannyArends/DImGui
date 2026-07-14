@@ -91,14 +91,22 @@ void renderFrame(ref App app, double dt) {
   // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
   app.timed!recordSceneCommandBuffer(app.shaders);
+  if (app.hasCompute){ foreach(ref shader; app.compute.shaders) {
+    if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) app.timed!recordComputeCommandBuffer(shader);
+  } }
   app.timed!recordPostCommandBuffer();
   app.timed!recordImGuiCommandBuffer();
 
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
-  VkCommandBuffer[4] submitCommandBuffers;
+  VkCommandBuffer[5] submitCommandBuffers;
   uint nSubmit = 0;
   if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.cmd[app.syncIndex]; }
   submitCommandBuffers[nSubmit++] = app.sceneCmd[app.syncIndex];
+  if (app.hasCompute){ foreach(ref shader; app.compute.shaders) {
+    if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) {
+      submitCommandBuffers[nSubmit++] = app.compute.commands[shader.path][app.syncIndex];
+    }
+  } }
   submitCommandBuffers[nSubmit++] = app.postCmd[app.syncIndex];
   submitCommandBuffers[nSubmit++] = app.imguiCmd[app.syncIndex];
 

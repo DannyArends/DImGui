@@ -7,7 +7,6 @@ import engine;
 
 import frustum : cullFrustum, extractFrustum;
 import boundingbox : computeBoundingBox;
-import compute : dispatchCompute;
 import descriptor : updateDescriptorData;
 import geometry : draw, bufferGeometries;
 import ssbo : updateSSBO;
@@ -100,11 +99,11 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   popLabel(cmd);
 
   // Post-depth compute (e.g. SSAO): depth is now written; runs before the post pass composites the result
-  if(app.hasCompute) {
+  /*if(app.hasCompute) {
     foreach(ref shader; app.compute.shaders) {
       if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) app.dispatchCompute(app.sceneCmd.commands, shader);
     }
-  }
+  }*/
 
   app.sceneCmd.end(app.syncIndex);
 }

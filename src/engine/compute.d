@@ -67,7 +67,7 @@ void initializeCompute(ref App app) {
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       // order the depth read after the previous frame's depth writes (same queue, earlier submission)
       imageBarrier(cmd, a.depthBuffer.image,
-                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                    0, 1, 0, 1, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -134,22 +134,15 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
 }
 
 /** Record one compute pass's dispatch into an existing command buffer (no begin/end). */
-void dispatchCompute(ref App app, VkCommandBuffer[] cmds, Shader shader) {
-  auto cmd = cmds[app.syncIndex];
+void dispatchCompute(ref App app, VkCommandBuffer cmd, Shader shader) {
   auto pass = shader.path in app.compute.passes;
-  assert(pass !is null, "No ComputePass registered for " ~ shader.path);
-
   pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
-  app.updateDescriptorData([shader], cmds, app.syncIndex);
-
+  app.updateDescriptorData([shader], app.sceneCmd.commands, app.syncIndex);
   if(pass.pre !is null) pass.pre(app, cmd, shader);
-
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][app.syncIndex], 0, null);
-
   uint[3] groups = vCeilDiv(pass.workItems(app, shader), shader.groupCount);
   vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
-
   if(pass.post !is null) pass.post(app, cmd, shader);
   popLabel(cmd);
 }
@@ -158,14 +151,30 @@ void dispatchCompute(ref App app, VkCommandBuffer[] cmds, Shader shader) {
 void recordComputeCommandBuffer(ref App app, Shader shader) {
   if(app.trace) SDL_Log("Record Compute Command Buffer [%s]: %d", toStringz(shader.path), app.syncIndex);
   auto cmd = app.compute.commands[shader.path][app.syncIndex];
+  auto pipeline = app.compute.pipelines[shader.path];
   enforceVK(vkResetCommandBuffer(cmd, 0));
 
   VkCommandBufferBeginInfo commandBufferInfo = { sType : VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
   enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
   app.nameVulkanObject(cmd, cstr("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), app.syncIndex), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  app.dispatchCompute(app.compute.commands[shader.path], shader);
+  pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
+  app.updateDescriptorData([shader], app.compute.commands[shader.path], app.syncIndex);
 
+  auto pass = shader.path in app.compute.passes;
+  assert(pass !is null, "No ComputePass registered for " ~ shader.path);
+
+  if(pass.pre !is null) pass.pre(app, cmd, shader);
+
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][app.syncIndex], 0, null);
+
+  uint[3] groups = vCeilDiv(pass.workItems(app, shader), shader.groupCount);
+  vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
+
+  if(pass.post !is null) pass.post(app, cmd, shader);
+
+  popLabel(cmd);
   enforceVK(vkEndCommandBuffer(cmd));
   if(app.trace) SDL_Log("Compute Command Buffer: %d Done", app.syncIndex);
 }
