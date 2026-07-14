@@ -37,7 +37,7 @@ void createDepthResources(ref App app) {
   VkFormat fmt = app.findDepthFormat();
   if(app.verbose) SDL_Log(" - depthFormat: %d", fmt);
   app.createNamedImage(app.depthBuffer, app.camera.width, app.camera.height, fmt, VK_IMAGE_ASPECT_DEPTH_BIT, "DepthBuffer",
-                       app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+                       app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.image);
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
@@ -46,4 +46,3 @@ void createDepthResources(ref App app) {
   if(app.verbose) SDL_Log("Depth resources created");
   app.swapDeletionQueue.add((){ app.cleanup(app.depthBuffer); });
 }
-
