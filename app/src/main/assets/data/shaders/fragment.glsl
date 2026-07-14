@@ -37,7 +37,7 @@ void main() {
   if (ALPHA_TEST) {
     if (mat.oid >= 0) { alpha = texture(textureSampler[mat.oid], fragTexCoord).a; }
     if (SDF) {
-      float adj = fwidth(alpha) * 0.5;
+      float adj = fwidth(alpha) * 0.1;
       alpha = smoothstep(0.5 - adj, 0.5 + adj, alpha);
     }
     if (alpha < 0.05f) discard; // Discard <.05

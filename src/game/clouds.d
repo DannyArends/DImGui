@@ -9,8 +9,7 @@ import block : spawnBlock;
 import chunk : faceData;
 import gameobjects : Clouds;
 import noise : smoothNoise;
-import serialization : readData, writeData;
-import tile : FACE_OFFSETS, getWater, setWater, getTileAt;
+import tile : getWater, setWater, getTileAt, landingTile;
 import vector : x, z;
 import water : WATER_MAX, WATER_TARGET_ACTIVE, activeSim;
 
@@ -81,7 +80,7 @@ DrawInstance[] buildCloudInstances(const WorldData wd, const float[int[2]] densi
         foreach(f; 0..6) {
           int ny = y + FACE_OFFSETS[f][1];
           if(ny >= 0 && ny < CLOUD_LAYERS && ny < hN[f]) continue;
-          inst ~= DrawInstance(cast(uint)ResourceType.Ice01, faceData(f, px , py, pz, vox, voxH));
+          inst ~= DrawInstance(faceData(f, px, py, pz, vox, voxH), cast(int)ResourceType.Ice01);
         }
       }
     } }
@@ -115,7 +114,7 @@ void rainTick(ref GameApp app) {
     int[3] spawn = [t[0], cloudY, t[1]];
     if(app.world.getTileAt(spawn) != ResourceType.None) continue;
     uint id = app.spawnBlock(spawn, ResourceType.Water);
-    if(auto b = id in app.world.drops) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, -app.world.blockOffset); }
+    if(auto b = id in app.world.drops) { b.fall.weight = 20.0f; b.fall.start(app.world, spawn, landingTile(app.world, spawn), -app.world.blockOffset); }
     app.world.weather.density[key] -= RAIN_DEPLETE;
     drops++;
   }
@@ -125,7 +124,7 @@ void rainTick(ref GameApp app) {
 void settleRain(ref GameApp app) {
   uint[] done;
   foreach(id, ref b; app.world.drops) {
-    if(b.type != ResourceType.Water) continue;
+    if(b.item.material != ResourceType.Water) continue;
     if(b.isFalling) continue;                 // still in the air
     app.world.setWater(b.tile, cast(ubyte)min(WATER_MAX, app.world.getWater(b.tile) + 4));
     done ~= id;
@@ -138,19 +137,15 @@ void settleRain(ref GameApp app) {
 struct CloudDiff { int gx, gz; float density; }
 
 /** Save mutable cloud density deltas. */
-void saveClouds(const World world) {
+CloudDiff[] saveClouds(const World world) {
   CloudDiff[] flat;
   foreach(key, d; world.weather.density) if(d != 0) flat ~= CloudDiff(key[0], key[1], d);
-  if(flat.length == 0) { SDL_RemovePath(world.cloudsPath()); return; }
-  writeData(world.cloudsPath(), flat, cast(uint)flat.length);
   SDL_Log("saveClouds: %d cells", cast(int)flat.length);
+  return flat;
 }
 
 /** Load cloud density deltas. */
-void loadClouds(ref World world) {
-  CloudDiff[] flat;
-  uint h;
-  if(!readData(world.cloudsPath(), flat, h)) return;
+void loadClouds(ref World world, CloudDiff[] flat) {
   world.weather.density = null;
   foreach(ref c; flat) { world.weather.density[[c.gx, c.gz]] = c.density; }
   SDL_Log("loadClouds: %d cells", cast(int)flat.length);

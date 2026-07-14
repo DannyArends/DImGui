@@ -7,8 +7,8 @@ import game;
 
 import chunk : faceData;
 import clouds : CLOUD_STEP, cloudCell;
-import serialization : readData, writeData;
-import tile : FACE_OFFSETS, neighbourAt, tileBelow, isStandable, standableNeighbour, tileCoord, tileIdx, tileToWorld, getWater, setWater;
+import lattice : tileBelow, tileCoord, tileIdx, tileToWorld, chunkCoord, worldCoord, flatten, unflatten, Diff;
+import tile : neighbourAt, isStandable, standableNeighbour, getWater, setWater;
 import vector : manhattan, manhattan2D;
 
 enum ubyte WATER_MAX = 7;               // Maximum water density
@@ -18,13 +18,11 @@ enum uint EVAP_DEPLETE = 3000;          // Speed of evaporation
 
 static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 
-/** Persisted water cell: world-coord + level, serialised in the water save file. */
-struct WaterDiff { int[3] coord; uint idx; ubyte level; }
 /** An active cell queued for this tick's simulation: its chunk, local index, and world-coord. */
 struct Active { Chunk chunk; int idx; int[3] wc; }
 
-alias WaterNext = ubyte[int[3]];        // world-cell -> pending level; absent = read committed
-alias WaterTouched = bool[int[3]];      // world-cells written this tick (dedup set)
+alias WaterNext = LatticeMap!ubyte;        // world-cell -> pending level; absent = read committed
+alias WaterTouched = LatticeMap!bool;      // world-cells written this tick (dedup set)
 
 /** This cell's pending level: next-buffer if touched, else direct array read (no getWater hash). */
 private @nogc int ownLevel(const WaterNext next, const Chunk chunk, int idx, const int[3] wc) nothrow {
@@ -58,7 +56,7 @@ int[3] findNearestWater(const World world, const int[3] from, out int[3] standAt
 }
 
 /** Total live water-sim cells across all loaded chunks (sum of each chunk's active set). */
-@nogc activeSim(const Chunk[int[3]] chunks) {
+@nogc activeSim(const LatticeMap!Chunk chunks) {
   int active = 0;
   foreach(c; chunks){ active += cast(int)c.active.length; }
   return(active);
@@ -200,7 +198,7 @@ private DrawInstance[] rebuildChunkWaterInstances(const World world, const Chunk
         nlvl = ((nc == chunk.coord) ? chunk : world.chunks[nc]).waterLevel[nidx];
       }
       if(nlvl >= lvl) continue;
-      inst ~= DrawInstance(cast(uint)ResourceType.Water, faceData(f, p[0], cy, p[2], world.tileSize, wh));
+      inst ~= DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
     }
   }
   return(inst);
@@ -225,7 +223,7 @@ void flushWaterDirty(ref GameApp app) {
 }
 
 /** Snapshot all loaded chunks' water into waterDiffs, then flatten + save (mirrors saveDiffs). */
-void saveWater(ref World world) {
+Diff!ubyte[] saveWater(ref World world) {
   foreach(coord; world.chunks.keys) {
     auto chunk = world.chunks[coord];
     world.data.waterDiffs.remove(chunk.coord);          // drop this chunk's stale snapshot
@@ -233,19 +231,12 @@ void saveWater(ref World world) {
       if(chunk.waterLevel[idx] > 0) world.data.waterDiffs[chunk.coord][cast(uint)idx] = chunk.waterLevel[idx];
     }
   }
-  WaterDiff[] flat;
-  foreach(coord, idxMap; world.data.waterDiffs){ foreach(idx, lvl; idxMap){ flat ~= WaterDiff(coord, idx, lvl); } }
-  if(flat.length == 0) { SDL_RemovePath(world.waterPath()); return; }
-  writeData(world.waterPath(), flat, cast(uint)flat.length);
+  return flatten(world.data.waterDiffs);
 }
 
 /** Load waterDiffs from disk; chunks apply them at build, resident chunks applied immediately (mirrors rebuildDiffs). */
-void loadWater(ref World world) {
-  WaterDiff[] flat;
-  uint h;
-  if(!readData(world.waterPath(), flat, h)) return;
-  world.data.waterDiffs = null;
-  foreach(ref d; flat){ world.data.waterDiffs[d.coord][d.idx] = d.level; }
+void loadWater(ref World world, Diff!ubyte[] flat) {
+  world.data.waterDiffs = unflatten(flat);
   foreach(coord; world.chunks.keys) {  // apply to any already-resident chunks (newly-streamed ones get it in buildChunkData)
     if(auto wm = coord in world.data.waterDiffs) {
       auto chunk = world.chunks[coord];

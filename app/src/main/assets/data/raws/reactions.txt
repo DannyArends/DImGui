@@ -13,7 +13,7 @@
   [PROGRESS_RATE:0.10]
   [INPUT:Flint:1]
   [INPUT:Wood:1]
-  [OUTPUT:StoneAxe:1]
+  [OUTPUT_ITEM:Axe:Flint:1]
   [OUTPUT:OakLeaves:1]
 
 [REACTION:CupMaking]
@@ -21,4 +21,4 @@
   [WORKSHOP:None]
   [PROGRESS_RATE:0.50]
   [INPUT:Wood:1]
-  [OUTPUT:WoodCup:1]
+  [OUTPUT_ITEM:Cup:Wood:1]

@@ -25,6 +25,6 @@ void showWorldContent(ref GameApp app, uint font = 0) {
     igEndTable();
   }
 
-  if(igButton("Regenerate", ImVec2(0.0f, 0.0f))) { app.world.deleteWorld(app); }
+  if(igButton("Regenerate", ImVec2(0.0f, 0.0f))) { app.regenerate = true; }
 }
 

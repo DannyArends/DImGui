@@ -5,15 +5,14 @@
 
 import game;
 
+import lattice : tileToWorld, chunkCoord;
 import intersection : intersects;
-import serialization : readData, writeData;
-import tile : tileToWorld;
 
 struct Vegetation {
   Feature[][int[3]][string] active;
   alias active this;
   Feature[][int[3]][string] pending;
-  bool[int[3]] modified;
+  LatticeMap!bool modified;
   Geometry[string] meshes;
 }
 
@@ -21,33 +20,31 @@ struct Vegetation {
 T makeTombstone(T)(int[3] coord) if(is(typeof(T.init.rootTile) == int[3])) {
   T t;
   t.rootTile = [int.min, coord[0], coord[2]];
-  return t;
+  return(t);
 }
 
 /** Save vegetation objects to disk */
-void saveVegetation(T)(ref GameApp app, ref T[][int[3]] objects, ref T[][int[3]] pending, const(char)* path) if(is(typeof(T.init.rootTile) == int[3])) {
+T[] saveVegetation(T)(ref GameApp app, ref T[][int[3]] objects, ref T[][int[3]] pending) if(is(typeof(T.init.rootTile) == int[3])) {
   foreach(coord, items; pending) {
-    if(coord !in objects) objects[coord] = items;
-    else if(objects[coord].length == 0) objects[coord] = items;
+    if(coord !in objects) {
+      objects[coord] = items;
+    }else if(objects[coord].length == 0) { objects[coord] = items; }
   }
   pending.clear();
   T[] all;
   foreach(coord, items; objects) { all ~= items.length == 0 ? [makeTombstone!T(coord)] : items; }
-  if(all.length == 0) return;
-  writeData(path, all, cast(uint)all.length);
+  return(all);
 }
 
 /** Load vegetation objects from disk into pending map */
-void loadVegetation(T)(ref GameApp app, ref T[][int[3]] pending, const(char)* path) if(is(typeof(T.init.rootTile) == int[3])) {
-  T[] items; uint i;
-  if(!readData(path, items, i)) return;
+void loadVegetation(T)(ref GameApp app, ref T[][int[3]] pending, T[] items) if(is(typeof(T.init.rootTile) == int[3])) {
   foreach(ref item; items) {
     if(item.rootTile[0] == int.min) { pending[[item.rootTile[1], 0, item.rootTile[2]]] = []; continue; }
     pending[app.world.chunkCoord(item.rootTile)] ~= item;
   }
 }
 
-/** Get the best vegetaion hit */
+/** Get the best vegetation hit */
 bool getBestVegetation(T, alias matchGeometry)(ref GameApp app, float[3][2] ray, Intersection[] hits, T[][int[3]] objects, out int[3] rootTile)
   if(is(typeof(T.init.rootTile) == int[3])) {
   Intersection best;
@@ -63,4 +60,16 @@ bool getBestVegetation(T, alias matchGeometry)(ref GameApp app, float[3][2] ray,
     }
   }
   return best.intersects;
+}
+
+/** Get a vegetation section to persit to disk */
+Persist vegetationSection(ref GameApp app, string name) {
+  return Persist(
+    () => [Section("veg:" ~ name, cast(ubyte[])app.saveVegetation!Feature(app.world.vegetation[name], app.world.vegetation.pending[name]))],
+    (const ubyte[][string] b) {
+      if(auto p = ("veg:" ~ name) in b) {
+        app.loadVegetation!Feature(app.world.vegetation.pending[name], cast(Feature[])(*p));
+        foreach(coord, items; app.world.vegetation.pending[name]){ if(items.length > 0){ app.world.vegetation.modified[coord] = true; } }
+      }
+    });
 }

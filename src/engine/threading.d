@@ -9,7 +9,7 @@ import assimp : loadOpenAsset, isOpenAsset;
 import bone : mergeBones;
 import animation : animateAsset;
 import io : dir, fixPath;
-import material : registerAMaterials;
+import material : registerMaterials;
 import images : cleanup;
 import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures;
 
@@ -63,7 +63,7 @@ struct Threading {
 }
 
 /** Spawn the worker pool and queue all asset/texture paths for background loading */
-void initializeAsync(ref App app, bool preLoadAssimp = true, uint numWorkers = 16){
+void initializeAsync(ref App app, bool preLoadAssimp = false, uint numWorkers = 16){
   if(preLoadAssimp) app.concurrency.paths ~= dir("data/objects/", "*.{obj,fbx}", false);
   app.concurrency.paths ~= dir("data/textures/", "*.{png,jpg}", false);
   foreach (i; 0 .. numWorkers) {
@@ -116,7 +116,7 @@ void checkAsync(ref App app) {
     app.objects ~= obj;
     auto asset = app.objects[($-1)];
     if(asset.animations.length > 0 && asset.rootnode.name !is null){ asset.onFrame = (float dt) { app.animateAsset(asset, dt); }; }
-    app.registerAMaterials(asset);
+    app.registerMaterials(asset);
     app.mapTextures(asset);
   });
   app.drainMessages!Texture((t) {

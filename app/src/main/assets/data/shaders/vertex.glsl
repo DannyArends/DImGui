@@ -18,9 +18,9 @@ layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
 layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance input attributes
-layout(location = 7) in uvec2 meshdef;                /// Mesh [start, stop]
-layout(location = 8) in int   material;               /// per-Instance material
-layout(location = 9) in vec4  instanceColor;          /// per-Instance Color
+layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, material, unused]
+layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
+layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
 layout(location = 10) in mat4 instance;               /// Instance matrix
 
 // Output to Fragment shader
@@ -52,14 +52,14 @@ void main() {
   fragPosWorld = (model * position);
   fragColor = INSTANCED ? instanceColor : inColor;
   fragNormal = normalize(normalMatrix * inNormal);
-  fragTexCoord = inTexCoord;
+  fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
   uint meshID = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
     for (; meshID < meshdef[1]; meshID++) {
       if (meshSSBO.meshes[meshID].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[meshID].vertices[1]) break;
     }
   }
-  fragInstance = ivec2(meshID, material);
+  fragInstance = ivec2(meshID, meshdef[2]);
   fragTBN = mat3(T, B, N); 
 }
 

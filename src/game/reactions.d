@@ -11,8 +11,9 @@ enum WorkshopUse : ubyte { None, Required, Preferred }
 /** One input line of a reaction: a resource type and a count. */
 struct Ingredient { ubyte cls; uint count = 1; }
 
-/** One input line of a reaction: a resource type and a count. */
-struct Product { ubyte type; float chance = 1.0f; uint count = 1; }
+/** One output line: a raw material (shape == None, `type` names the ResourceType) OR a crafted item
+ *  (shape != None) whose material is inherited from the consumed input of class `materialFrom`. */
+struct Product { ubyte shape = 0; ubyte type = 0; ubyte materialFrom = 0; float chance = 1.0f; uint count = 1; }
 
 struct Reaction {
   string name, verb, skill;

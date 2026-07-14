@@ -12,11 +12,11 @@ enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", PO
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 
-/** Main application structure, TODO:
-  1) SDF text: Unblocks the labels gameplay need, low risk.
+/** Main application structure, TODOs:
+  1) Figure out a way to sort transparant objects (and instances) relative to the camera for correct rendering
   2) Alpha blending fix: Also a prerequisite for nice bloom on transparent emissive
-  3) Bloom/HDR: scaffolding is there, big visual jump
-  4) GPU-driven indirect draw: biggest effort.
+  3) Bloom/HDR: scaffolding is there, for a big visual improvement
+  4) GPU-driven indirect draw (probably not possible, due to how our pipeline works)
 */
 struct App {
   SDL_Window* window;
@@ -53,6 +53,7 @@ struct App {
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
+  WorldText worldText;                                                          /// All 3D text
   ShadowMap shadows;                                                            /// ShadowMap object
   DescriptorProvider[string] providers;                                         /// GPU resource creator
 
@@ -134,6 +135,8 @@ struct App {
   bool nameVulkanObjects = false;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
+  bool showPaths = false;                                                       /// Show pathfinding
+  bool showRays = false;                                                        /// Show rays
   LMode lMode = isAndroid ? LMode.Lights : LMode.LightsAndShadows;              /// Allow shadows to be disabled
   bool disco = false;                                                           /// Disco mode
   bool hasCompute = true;                                                       /// Is compute enabled / available ?

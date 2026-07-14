@@ -6,23 +6,22 @@
 public import engine;
 
 public import block : Block, Drops;
-public import clouds : Weather, CloudRequest, CloudResult;
+public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Feature;
 public import inventory : Inventory;
-public import jobs : Job, JobState, Reach;
+public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
-public import pathfinding : PathRequest, PathResult;
-public import pathmarker : Paths;
+public import orders : Order;
+public import pathfinding : PathRequest, PathResult, PathMarker;
 public import physx : Fall;
 public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
-public import tile : builtTile, noTile, storedTile, TileDiff;
-public import raws : reactionTable, ResourceType, ResourceClass, resourceData, heightToResource, features;
-public import resources : ClassVal, ResourceT, traversable, buildable, cost, maxStack, isFood, foodValue;
+public import raws : reactionTable, ResourceType, ResourceClass, ItemTemplate, templateData, resourceData, heightToResource, features;
+public import resources : ClassVal, ResourceT, ItemTemplateT, Item, traversable, buildable, cost, maxStack, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 
@@ -44,6 +43,7 @@ import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
 import stockpilewindow : showStockpileContent;
+import text : addWorldText;
 import threading : TaskThread, drainMessages;
 import toolbar : showToolbar;
 import world : loadWorld, saveWorld, updateWorld;
@@ -76,14 +76,20 @@ class GameTaskThread : TaskThread {
   }
 }
 
-/** Top-level application state: engine App plus the game World and debug toggles */
+/** Top-level Game state: engine App plus the game World
+  TODO:
+    1) Workshops, and crafting at workshops
+    2) Liquid barrels for wine/drinks from berries
+    3) Barrels and Bins for stockpiles
+    4) Allow stockpiles to be extended / shrunk / redrawn
+    5) Render crafted objects through assimp models */
 struct GameApp {
   App app;
   alias app this;
 
   World world;
-  bool showPaths = false;
-  bool showRays = false;
+  Persist[] persistables;
+  bool regenerate = false;
   bool paused = false;
   float timeScale = 1.0f;
 }
@@ -107,14 +113,9 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
-  SDL_Log("initGame: loadDwarfs");
-  if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
-
 
   SDL_Log("createScene: Add Text");
-  app.objects ~= new Text(app, "CalderaD");
-  app.objects[($-1)].rotate([90.0f, 0.0f, 0.0f]);
-  app.objects[($-1)].position([6.0f, 4.0f, 0.0f]);
+  app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
   SDL_Log("initGame: done");
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
@@ -136,7 +137,9 @@ Geometry makePrimitive(string name) {
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
 void updateGame(ref GameApp app, double dt) {
   app.injectResourceMeshes();
-  if(app.textures.loaded) { app.updateMaterials(); app.textures.loaded = false; }
+  if(app.textures.loaded) { 
+    app.updateMaterials(); app.textures.loaded = false; 
+  }
   app.world.settleBlocks(dt);
   app.settleDwarves(dt);
   app.updateWorld(app.camera.lookat);

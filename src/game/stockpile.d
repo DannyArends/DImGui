@@ -5,29 +5,34 @@
 
 import game;
 
-import block : resourceType, syncBlockInstances;
+import block : itemOf;
 import io : writeFile, readFile;
 import jobs : jobQueue, liveJobs, Reach;
-import serialization : WORLD_MAGIC;
+import lattice : tileToWorld, tileBelow, tileAbove;
 import pathfinding : findGoalTile;
-import tile : tileToWorld, tileAbove, tileBelow, isStandable, hasStandableNeighbour;
+import resources : isCraft;
+import serialization : WORLD_MAGIC;
+import tile : isStandable, hasStandableNeighbour;
 import vector : sqDist;
 
 struct Stockpile {
   uint id;
   string name;
   int[3][] tiles;
-  bool[ResourceType] accepts;     // empty = accept all
-  uint[] contents;                // stored block ids (mixed)
+  bool[Item] accepts;             /// empty = accept all; keyed on acceptKey
+  uint[] contents;                /// stored block ids (mixed)
 
-  /** True if this pile accepts 't'; an empty 'accepts' set means accept everything. */
-  @nogc bool acceptsType(ResourceType t) const { auto p = t in accepts; return accepts.length == 0 || (p !is null && *p); }
+  /** True if this pile accepts `it`; an empty `accepts` set means accept everything. */
+  @nogc bool acceptsItem(Item it) const { auto p = it.acceptKey in accepts; return accepts.length == 0 || (p !is null && *p); }
 }
+
+/** Canonical stockpile key: what matters for storage — a craft by its template, a raw item by its material; fill state (contents/amount) dropped. */
+@nogc pure Item acceptKey(Item it) nothrow { return it.isCraft ? Item(it.shape) : Item(ItemTemplate.None, it.material); }
 
 struct StockpileField {
   Stockpile[uint] byId;
   alias byId this;
-  uint[int[3]] at;
+  LatticeMap!uint at;
   uint nextID = 1;
 }
 
@@ -66,10 +71,10 @@ void removeStockpile(ref World world, uint id) {
 }
 
 /** Nearest accepting pile with a free slot; returns id (or 0) and fills `tile` with a target tile */
-uint findStockpileSlot(const World world, ResourceType type, int[3] from, out int[3] tile) {
+uint findStockpileSlot(const World world, Item it, int[3] from, out int[3] tile) {
   uint best = 0; float bestD = float.max;
   foreach(id, sp; world.stockpiles) {
-    if(!sp.acceptsType(type)) continue;
+    if(!sp.acceptsItem(it)) continue;
     uint pending = world.pendingStores(id);
     if(sp.contents.length + pending >= sp.capacity) continue;
     foreach(t; sp.tiles) {
@@ -105,15 +110,15 @@ void storeBlockAt(ref World world, int[3] tile, uint blockID) {
 }
 
 /** True if 'blockID' already sits in a pile that accepts 'type', as in it doesn't need (re)storing */
-bool acceptedByHolder(const Stockpile[uint] stockpiles, uint blockID, ResourceType type) {
-  foreach(sp; stockpiles){ if(sp.contents.canFind(blockID)) { return sp.acceptsType(type); } }
+bool acceptedByHolder(const Stockpile[uint] stockpiles, uint blockID, Item it) {
+  foreach(sp; stockpiles){ if(sp.contents.canFind(blockID)) { return sp.acceptsItem(it); } }
   return false;
 }
 
 /** Number of stored blocks of type 't' in the pile */
-uint countOf(const Stockpile sp, const Drops drops, ResourceType t) {
+uint countOf(const Stockpile sp, const Drops drops, Item key) {
   uint n = 0;
-  foreach(id; sp.contents){ if(drops.resourceType(id) == t) { n++; } }
+  foreach(id; sp.contents){ if(drops.itemOf(id).acceptKey == key) { n++; } }
   return n;
 }
 
@@ -143,50 +148,43 @@ float[3] subCellOffset(const World world, uint slot) {
 }
 
 /** Serialize all stockpiles to one file (records + packed name/tiles/accepts/contents) */
-void saveStockpiles(const World world) {
-  if(world.stockpiles.length == 0) return;
+ubyte[] saveStockpiles(const World world) {
   ubyte[] blob;
-  void put(const(uint[]) xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * uint.sizeof]; }
+  void put(T)(const(T)[] xs) { blob ~= (cast(ubyte*)xs.ptr)[0 .. xs.length * T.sizeof]; }
 
-  put([cast(uint)WORLD_MAGIC, world.stockpiles.nextID, cast(uint)world.stockpiles.length]);
+  put([world.stockpiles.nextID, cast(uint)world.stockpiles.length]);
   foreach(id, ref sp; world.stockpiles) {
-    uint[] acc;
-    foreach(t, on; sp.accepts) if(on) acc ~= cast(uint)t;
+    Item[] acc;
+    foreach(k, on; sp.accepts) if(on) acc ~= k;
     put([sp.id, cast(uint)sp.name.length, cast(uint)sp.tiles.length, cast(uint)acc.length, cast(uint)sp.contents.length]);
-    blob ~= cast(ubyte[])sp.name.dup;
-    blob ~= cast(ubyte[])sp.tiles;
-    put(acc);
-    put(sp.contents);
+    put(sp.name); put(sp.tiles); put(acc); put(sp.contents);
   }
-  writeFile(world.stockpilePath(), cast(char[])blob);
+  return blob;
 }
 
 /** Restore stockpiles + rebuild stockpileAt. Call after loadBlocks (contents reference block ids) */
-void loadStockpiles(ref World world) {
-  auto raw = cast(ubyte[])readFile(world.stockpilePath());
-  if(raw.length < 12) return;
+void loadStockpiles(ref World world, ubyte[] raw) {
+  if(raw.length < 8) return;
   size_t off = 0;
   bool need(size_t n) { return off + n <= raw.length; }
   uint[] take(size_t n) { auto s = cast(uint[])raw[off .. off + n*uint.sizeof].dup; off += n*uint.sizeof; return s; }
 
-  auto hdr = take(3);
-  if(hdr[0] != WORLD_MAGIC) { SDL_Log("loadStockpiles: bad magic"); return; }
-  world.stockpiles.nextID = hdr[1];
-  uint count = hdr[2];
+  world.stockpiles.nextID = take(1)[0];
+  uint count = take(1)[0];
 
   foreach(_; 0 .. count) {
     if(!need(5 * uint.sizeof)) { SDL_Log("loadStockpiles: truncated rec"); return; }
     auto r = take(5); // [id, nameLen, tileCount, acceptCount, contentCount]
     size_t nameN = r[1], tilesN = r[2] * int[3].sizeof;
-    if(!need(nameN + tilesN + (r[3] + r[4]) * uint.sizeof)) { SDL_Log("loadStockpiles: truncated body"); return; }
+    if(!need(nameN + tilesN + r[3]*Item.sizeof + r[4]*uint.sizeof)) { SDL_Log("loadStockpiles: truncated body"); return; }
 
     string name = cast(string)(cast(char[])raw[off .. off + nameN]).idup; off += nameN;
     auto tiles = (cast(int[3][])raw[off .. off + tilesN]).dup; off += tilesN;
-    auto acc = take(r[3]);
+    auto acc = (cast(Item[])raw[off .. off + r[3]*Item.sizeof]).dup; off += r[3]*Item.sizeof;
     auto contents = take(r[4]);
 
     Stockpile sp = { id: r[0], name: name, tiles: tiles, contents: contents };
-    foreach(t; acc) sp.accepts[cast(ResourceType)t] = true;
+    foreach(k; acc) sp.accepts[k] = true;
     world.stockpiles[r[0]] = sp;
     world.stampTiles(r[0], sp.tiles);
   }

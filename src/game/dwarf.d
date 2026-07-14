@@ -5,24 +5,24 @@
 
 import game;
 
-import block : resourceType, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
+import block : resourceType, itemOf, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
 import color : randomColor;
 import inventory : deriveInventory;
+import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
-import matrix : position, scale, translateScale;
-import pathmarker : syncPathMarkers;
-import pathfinding : pathfindTo, repathTo, findGoalTile;
-import physx : inColumn;
-import jobs : Job, fillCupJob, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, Need, claimNextJob, requestStepAside, sleepJob, atDestination;
-import resources : isFood, toClass;
+import matrix : translate, position, scale, translateScale;
+import pathfinding : pathfindTo, repathTo, findGoalTile, syncPathMarkers;
+import jobs;
+import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import rnjesus : randomizeName;
-import serialization : readData, writeData;
 import sfx : play;
-import tile : tileBelow, isTileOccupied, getTileAt, surfaceAt, worldToTile, tileToWorld;
+import text : addWorldText, moveWorldText, removeWorldText;
+import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;
 import timing : timed;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
+import vector : vAdd;
 import water : findNearestWater;
 
 uint nextDwarfUID = 1;
@@ -30,15 +30,15 @@ uint nextDwarfUID = 1;
 struct InventorySlot {
   enum Kind : ubyte { Empty, Block, Stack }
   Kind kind = Kind.Empty;                           /// Resource kind
-  ResourceType type = ResourceType.None;            /// Resource type
+  Item item;                                        /// What's in the slot: (shape x material [+ contents])
   ubyte count = 0;                                  /// number of valid ids in resourceIDs
   uint[16] resourceIDs = noBlock;                   /// block/berry ids in this slot (POD, fixed-size)
 
   @nogc @property bool empty() const nothrow { return kind == Kind.Empty; }
   @nogc @property bool isStack() const nothrow { return kind == Kind.Stack; }
-  @nogc bool accepts(ResourceType t) const {
+  @nogc bool accepts(Item item) const {
     if(empty) return true;
-    return isStack && this.type == t && count < t.maxStack;
+    return isStack && this.item == item && count < itemStack(item);
   }
 }
 
@@ -53,6 +53,7 @@ struct DwarfData {
   char[64] last;                                /// Last name
   InventorySlot[32] inventory;                  /// Inventory
 
+  @property string firstname() { return cast(string)first[0..first.indexOf('\0')]; }
   @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
   @nogc @property float hunger() const { return needs[Need.Hunger]; }
   @nogc @property void hunger(float v) { needs[Need.Hunger] = v; }
@@ -65,10 +66,10 @@ struct DwarfData {
     return ids;
   }
 
-  bool pickup(uint blockID, ResourceType type) {
+  bool pickup(uint blockID, Item item) {
     foreach(ref s; inventory) {
-      if(!s.accepts(type)) continue;
-      if(s.empty) { s.kind = type.maxStack > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.type = type; }
+      if(!s.accepts(item)) continue;
+      if(s.empty) { s.kind = itemStack(item) > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.item = item; }
       s.resourceIDs[s.count] = blockID;
       s.count++;
       return true;
@@ -91,10 +92,10 @@ struct DwarfData {
     return(false);
   }
 
-  @nogc void retype(uint blockID, ResourceType type) nothrow {
+  @nogc void retype(uint blockID, Item item) nothrow {
     foreach(ref s; inventory) {
       if(s.empty) continue;
-      if(s.resourceIDs[0 .. s.count].canFind(blockID)) { s.type = type; return; } // This only works for stacksize == 1
+      if(s.resourceIDs[0 .. s.count].canFind(blockID)) { s.item = item; return; } // This only works for stacksize == 1
     }
   }
 
@@ -140,6 +141,7 @@ struct Dwarf {
 
   Fall fall = { weight: 5.0f };             /// PhysX
   size_t lightIndex = size_t.max; 
+  size_t nameLabel = size_t.max;
 
   DwarfState state = DwarfState.Idle;
   bool lastPathPartial = false;
@@ -163,6 +165,7 @@ void deleteDwarf(ref GameApp app, int index) {
   app.world.drops.dirty = true;
 
   app.removeDwarfLight(app.world.dwarves.dwarves[index]);
+  app.removeDwarfNameLabel(app.world.dwarves.dwarves[index]);
 
   size_t last = (app.world.dwarves.dwarves.length - 1);
   if(index != last) {
@@ -200,8 +203,10 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
   return(noTile);
 }
 
-enum stepSpeed = 5.0f;   // base step rate
-enum hopHeight = 2.5f;  // peak of the hop
+enum stepSpeed = 5.0f;    // base step rate
+enum hopHeight = 2.5f;    // peak of the hop
+enum nameHeight = 0.8f;   // name tag height above visualPos
+enum nameScale = 0.5f;    // name tag glyph scale
 
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
@@ -225,7 +230,12 @@ void dwarfFrame(ref GameApp app, float dt) {
     }
   }
   foreach(i, ref d; app.world.dwarves) {
-    if(d.lightIndex != size_t.max){ app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
+    if(d.lightIndex != size_t.max) {
+      app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f];
+    }
+    if(d.nameLabel != size_t.max) {
+      app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]);
+    }
     float sc = (app.world.chunkCoord(d.tile) in app.world.chunks) ? 1.0f : 0.0f;
     float[3] s = [sc, sc, sc];
     Matrix m = scale(Matrix.init, s);
@@ -265,8 +275,8 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   }
   // Thirst
   if(d.needs[Need.Thirst] >= 0.6f) {
-    bool hasFull = d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WaterCup);
-    bool hasEmpty = d.carrying.any!(id => app.world.drops.resourceType(id) == ResourceType.WoodCup);
+    bool hasFull = d.carrying.any!(id => app.world.drops.itemOf(id).isWaterCup);
+    bool hasEmpty = d.carrying.any!(id => app.world.drops.itemOf(id).isEmptyCup);
     int[3] standAt;
     bool water = app.world.findNearestWater(d.tile, standAt) != noTile;
 
@@ -343,8 +353,13 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 /** dwarfTick, ticks all dwarves in random order */
 void dwarfTick(ref GameApp app) {
   if(app.world.dwarves is null) return;
-  // TODO: index snapshot goes stale if tickDwarf ever triggers deleteDwarf mid-loop (e.g. future starvation/death)
-  foreach(i; iota(app.world.dwarves.length).array.randomShuffle()) { app.tickDwarf(app.world.dwarves[i]); }
+  app.pruneJobQueue();
+  // Future TODO: We can optimize the loop, when using a markForRemoval strategy
+  foreach(uid; app.world.dwarves.dwarves.map!(d => d.uid).array.randomShuffle()) {
+    auto i = app.world.dwarves.dwarves.countUntil!(d => d.uid == uid); // Find the dwarf by resolving UID to the slot
+    if(i < 0) continue;
+    app.tickDwarf(app.world.dwarves.dwarves[i]);
+  }
   app.world.syncPathMarkers(app.showPaths);
   app.timed!syncBuildGhosts();
   app.timed!deriveInventory();
@@ -373,11 +388,10 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  DrawInstance inst = DrawInstance([0, 0], d.color, Matrix.init);
-  inst = position(inst, d.visualPos);
-  app.world.dwarves.instances ~= inst;
+  app.world.dwarves.instances ~= DrawInstance(translate(d.visualPos), -1, d.color);
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
+  d.nameLabel = app.addWorldText(d.firstname, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);
   app.world.dwarves ~= d;
 }
 
@@ -402,34 +416,41 @@ void removeDwarfLight(ref GameApp app, ref Dwarf d) {
   d.lightIndex = size_t.max;
 }
 
-void saveDwarfs(ref GameApp app) {
-  if(app.world.dwarves is null) return;
-  DwarfData[] data = app.world.dwarves[].map!(d => d.data).array;
-  writeData(app.world.dwarfsPath(), data, cast(uint)data.length);
+/** remove a dwarf's floating name tag when the dwarf is gone */
+void removeDwarfNameLabel(ref GameApp app, ref Dwarf d) {
+  if(d.nameLabel == size_t.max) return;
+  auto moved = app.removeWorldText(d.nameLabel);
+  if(moved != size_t.max) {
+    foreach(ref other; app.world.dwarves.dwarves) { if(other.nameLabel == moved) { other.nameLabel = d.nameLabel; break; } }
+  }
+  d.nameLabel = size_t.max;
 }
 
-bool loadDwarfs(ref GameApp app) {
-  DwarfData[] data;  uint i;
-  if(!readData(app.world.dwarfsPath(), data, i)) return false;
+DwarfData[] saveDwarfs(ref GameApp app) {
+  if(app.world.dwarves is null) return [];
+  return app.world.dwarves[].map!(d => d.data).array;
+}
+
+void loadDwarfs(ref GameApp app, DwarfData[] data) {
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
   app.world.dwarves.syncInstances();
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
   foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;
-  return true;
 }
 
 void settleDwarves(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves.dwarves) {
-    if(!d.fall.isFalling) { // Lost footing by any means (footing block hauled, stepped onto air, terrain edited) — start falling.
-      if(d.moveT >= 1.0f && app.world.getTileAt(d.tile.tileBelow) == ResourceType.None) { d.fall.start(app.world, d.tile); d.clearGoal(); }
+    if(!d.fall.isFalling) { // Lost footing by any means: start falling.
+      if(d.moveT >= 1.0f && app.world.getTileAt(d.tile.tileBelow) == ResourceType.None) {
+        d.fall.start(app.world, d.tile, landingTile(app.world, d.tile)); d.clearGoal();
+      }
       if(!d.fall.isFalling) continue;
     }
-    int[3] landed;
-    if(d.fall.step(app.world, d.tile, dt, 0.0f, landed)) {
-      d.tile = landed;
+    if(d.fall.step(dt)) {
+      d.tile = d.fall.landedTile;
       d.visualPos = app.world.tileToWorld(d.tile);
       d.moveT = 1.0f;
     } else { d.visualPos[1] = d.fall.y; }

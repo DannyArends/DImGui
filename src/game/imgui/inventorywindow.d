@@ -7,6 +7,7 @@ import game;
 
 import imgui : faIcon;
 import textures : ImTextureRefFromID, idx;
+import tool : setActiveTool;
 import widgets : drawCenteredText, text;
 
 /** Show inventory */
@@ -18,7 +19,8 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
   foreach(tileType; EnumMembers!ResourceType) {
     if(!tileType.buildable) continue;
     auto texIdx = idx(app.textures, resourceData(tileType).tex2D);
-    auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
+    if(texIdx < 0) continue;   // no texture registered for this resource yet — skip rather than bind a null descriptor set
+    auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
     int count = app.world.inventory.get(tileType, app);
 
     bool selected = app.world.inventory.type == tileType;
@@ -29,7 +31,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
                   ImVec4(0,0,0,0), tint);
     if(count > 0 && igIsItemClicked(0)) {
       app.world.inventory.type = selected ? ResourceType.None : tileType;
-      app.world.inventory.activeTool = selected ? app.world.inventory.activeTool : ToolMode.Build;
+      if(!selected) app.setActiveTool(ToolMode.Build);
     }
     if(selected) igPopStyleColor(1);
 
@@ -48,7 +50,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
     uint total = 0;
     if(app.world.dwarves !is null)
       foreach(ref d; app.world.dwarves){ foreach(ref s; d.inventory){
-        if(s.isStack && s.type == tileType) total += s.count;
+        if(s.isStack && s.item.material == tileType) total += s.count;
       } }
     if(total == 0) continue;
     text("%s: %d", resourceData(tileType).name, total);

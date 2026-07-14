@@ -5,9 +5,11 @@
 
 import game;
 
-import vector : manhattan2D;
+import lattice : tileToWorld, worldToTile, tileAbove, tileNeighbours;
+import matrix : translate;
 import search : performSearch, atGoal, stepThroughPath;
-import tile : getSuccessors, isStandable, isPassable, tileToWorld, worldToTile, tileAbove;
+import tile : getSuccessors, isStandable, isPassable;
+import vector : manhattan2D;
 
 struct PathRequest {
   uint dwarfUID;
@@ -22,17 +24,20 @@ struct PathResult {
   bool partial;
 }
 
+struct PathMarker {
+  PathMarkers markers;
+  PathRequest[] pending;
+}
+
 /** Log a failed path search with closest-approach diagnostics */
 void logPathFail(S)(ref S result, PathRequest req) {
   float minH = float.max;
   foreach(idx; result.closedset.byValue) if(result.pool[idx].h < minH) minH = result.pool[idx].h;
-  SDL_Log("PATHFAIL state=%d from=[%d,%d,%d] goal=[%d,%d,%d] steps=%d open=%d closed=%d minH=%.2f stand=%d",
-    cast(int)result.state, req.fromTile[0], req.fromTile[1], req.fromTile[2],
-    req.goalTile[0], req.goalTile[1], req.goalTile[2], cast(int)result.steps,
-    cast(int)result.openlist.length, cast(int)result.closedset.length, minH,
-    cast(int)result.map.isStandable(req.goalTile));
+  SDL_Log(cstr("PATHFAIL state=%s from=%s goal=%s steps=%d open=%d closed=%d minH=%.2f stand=%d",
+          result.state, req.fromTile, req.goalTile, result.steps, result.openlist.length, result.closedset.length, minH, result.map.isStandable(req.goalTile)));
 }
 
+/** Pathfinding on a worker thread */
 PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   float[3] start = wd.tileToWorld(req.fromTile);
   float[3] goal  = wd.tileToWorld(req.goalTile);
@@ -45,6 +50,18 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   while(result.pathptr != size_t.max && !result.atGoal()) path ~= result.stepThroughPath(false);
   path ~= result.pool[result.goal].position;
   return PathResult(req.dwarfUID, path, true, (result.state == SearchState.PARTIAL));
+}
+
+/** Rebuild path marker instances from all dwarf paths */
+void syncPathMarkers(ref World world, bool showPaths = false) {
+  if(world.paths.markers is null || world.dwarves is null) return;
+  world.paths.markers.instances = [];
+  if(showPaths) {
+    foreach(ref d; world.dwarves) {
+      foreach(l; d.path) { world.paths.markers.instances ~= DrawInstance(translate([l[0], l[1] - 0.4f, l[2]]), -1, d.color); }
+    }
+  }
+  world.paths.markers.syncInstances();
 }
 
 /** Pathfind object T to goalTile, returns false if unreachable.
@@ -115,11 +132,12 @@ int[3] findGoalTile(const World world, const int[3] targetTile, const int[3] fro
 
   if(reach == Reach.AdjacentOrAbove) consider(targetTile.tileAbove);   // standing on top is valid
   if(reach == Reach.AdjacentOrOnTile) consider(targetTile);            // standing on the tile itself is valid
-  auto nb = world.tileNeighbours(targetTile);
+  auto nb = tileNeighbours(targetTile);
   foreach(i; [0, 1, 4, 5]) { if(nb[i][1] == targetTile[1]) consider(nb[i]); }   // ±x/±z, same-Y = manhattan2D==1
   return best;
 }
 
+/** Helper to figure out if a dwarf can move to */
 bool canMoveTo(T)(T wd, float[3] pos) {
   foreach (dx; -1..2) foreach (dy; -1..2) foreach (dz; -1..2) {
     float[3] p = [pos[0] + dx * wd.tileSize * 0.5f, pos[1] + dy * wd.tileHeight * 0.5f, pos[2] + dz * wd.tileSize * 0.5f];

@@ -7,12 +7,13 @@ import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
+import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord;
 import quaternion : angleAxis, qMul, rotate;
 import lsystem : buildGrammar, turnAxis, turnAngle;
 import matrix : translateScale, segmentTransform;
 import noise : noiseHTT;
 import sfx : play;
-import tile : getTile, tileCoord, tileToWorld;
+import tile : getTile;
 import vector : vAdd;
 import vegetation : saveVegetation, loadVegetation;
 
@@ -172,7 +173,7 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
         if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(turnAngle(c, cfg), ax)); break; }
         if(auto br = c in cfg.brush) {
           const Matrix R = rotate(st.orient);
-          instances[c] ~= DrawInstance(br.material, br.color, segmentTransform(st.pos, R, br.radius, br.length));
+          instances[c] ~= DrawInstance(segmentTransform(st.pos, R, br.radius, br.length), br.material, br.color);
           if(br.advance){ st.pos = st.pos.vAdd([R[4]*br.length*0.95f, R[5]*br.length*0.95f, R[6]*br.length*0.95f]); }
         }
       break;
@@ -202,9 +203,9 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
       if(part.repeat) {
         foreach(uint h; 0 .. f.height) {
           float s = sx - h * part.taper; if(s < 0.05f) s = 0.05f;
-          insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale(app.world.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]));
+          insts ~= DrawInstance(translateScale(app.world.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]), cast(int)rt);
         }
-      } else { insts ~= DrawInstance([cast(uint)rt, cast(uint)rt], translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx])); }
+      } else { insts ~= DrawInstance(translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]), cast(int)rt); }
       emitInstances(f, *mp, insts);
     }
 
