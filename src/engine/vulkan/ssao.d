@@ -30,11 +30,11 @@ shared static this() {
   }
 }
 
-void updateSSAOUBO(ref App app, Descriptor d, uint syncIndex) {
+void updateSSAO(ref App app, Descriptor d, uint syncIndex) {
   SSAOUniformBuffer ubo = {
     proj: app.camera.proj,
     projInv: app.camera.proj.inverse,
-    params: [0.5f, 0.025f, 1.5f, cast(float)SSAO_KERNEL]
+    params: [0.5f, 0.025f, 1.5f, app.useSSAO ? 1.0f : 0.0f]   // w: 0 = disabled, 1 = enabled
   };
   ubo.kernel = ssaoKernel;
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);

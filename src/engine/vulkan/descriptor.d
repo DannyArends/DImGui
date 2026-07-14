@@ -10,10 +10,10 @@ import ssbo : updateSSBO, createSSBO;
 import textures : idx;
 import uniforms : createUBO, updateRenderUBO;
 import shadow : updateShadowMapUBO;
-import ssao : updateSSAOUBO;
+import ssao : updateSSAO;
 import validation : nameVulkanObject;
 
-enum DescriptorTarget { None, Textures, Shadow, HDR, Compute, Depth }
+enum DescriptorTarget { None, Textures, Shadow, HDR, Compute, Depth, SSAO }
 
 struct Descriptor {
   VkDescriptorType type;    /// Type of Descriptor
@@ -202,7 +202,7 @@ void registerRenderProviders(ref App app) {
 
   app.providers["SSAO"] = DescriptorProvider(
     (ref a, ref d){ a.createUBO(d); },
-    (ref a, ref d, cmd){ a.updateSSAOUBO(d, a.syncIndex); });
+    (ref a, ref d, cmd){ a.updateSSAO(d, a.syncIndex); });
 }
 
 void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, uint syncIndex) {
@@ -258,6 +258,7 @@ void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descri
     case DescriptorTarget.HDR: imageInfos.append([app.resolvedHDR], app.sampler); break;
     case DescriptorTarget.Compute: imageInfos.append([app.textures[app.textures.idx(d.name)]], app.sampler, 0, VK_IMAGE_LAYOUT_GENERAL); break;
     case DescriptorTarget.Depth: imageInfos.append([app.depthBuffer], app.sampler, 0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL); break;
+    case DescriptorTarget.SSAO: imageInfos.append([app.textures[app.textures.idx("ssaoOut")]], app.sampler); break;
     case DescriptorTarget.None: break;
   }
 }
