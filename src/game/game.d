@@ -6,7 +6,7 @@
 public import engine;
 
 public import block : Block, Drops;
-public import clouds : Weather, CloudRequest, CloudResult;
+public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Feature;
@@ -112,9 +112,6 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
-  SDL_Log("initGame: loadDwarfs");
-  if(!app.loadDwarfs()) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
-
 
   SDL_Log("createScene: Add Text");
   app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);

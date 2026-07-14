@@ -428,22 +428,18 @@ void removeDwarfNameLabel(ref GameApp app, ref Dwarf d) {
   d.nameLabel = size_t.max;
 }
 
-void saveDwarfs(ref GameApp app) {
-  if(app.world.dwarves is null) return;
-  DwarfData[] data = app.world.dwarves[].map!(d => d.data).array;
-  writeData(app.world.dwarfsPath(), data, cast(uint)data.length);
+DwarfData[] saveDwarfs(ref GameApp app) {
+  if(app.world.dwarves is null) return [];
+  return app.world.dwarves[].map!(d => d.data).array;
 }
 
-bool loadDwarfs(ref GameApp app) {
-  DwarfData[] data;  uint i;
-  if(!readData(app.world.dwarfsPath(), data, i)) return false;
+void loadDwarfs(ref GameApp app, DwarfData[] data) {
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
   app.world.dwarves.syncInstances();
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
   foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;
-  return true;
 }
 
 void settleDwarves(ref GameApp app, float dt) {

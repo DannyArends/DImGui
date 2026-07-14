@@ -5,16 +5,16 @@
 
 import game;
 
-import block : loadBlocks, saveBlocks, syncBlockInstances;
+import block : loadBlocks, saveBlocks, syncBlockInstances, ensureBlocks;
 import clouds : saveClouds, loadClouds;
-import dwarf : saveDwarfs;
+import dwarf : saveDwarfs, loadDwarfs, spawnDwarf;
 import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
 import inventory : deriveInventory;
 import io : ensureWorldDir, fixPath;
 import lattice : chunkCoord, localCoord, worldCoord, flatten, unflatten, Diff;
 import jobs : jobQueue;
 import pathfinding : invalidatePaths, repathTo;
-import serialization : readData, writeData;
+import serialization : loadSections, saveSections;
 import stockpile : saveStockpiles, loadStockpiles;
 import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
@@ -87,11 +87,6 @@ struct World {
 
   void deleteWorld(ref GameApp app) {
     SDL_RemovePath(worldPath());
-    SDL_RemovePath(dwarfsPath());
-    SDL_RemovePath(blocksPath());
-    SDL_RemovePath(cloudsPath());
-    SDL_RemovePath(stockpilePath());
-    SDL_RemovePath(waterPath());
     data.diffs = null;
     app.world.inventory.type = ResourceType.None;
     if(app.verbose) SDL_Log("Deleted world at %s", worldPath());
@@ -103,6 +98,54 @@ struct World {
 static assert(__traits(compiles, (ref World w) { float f = w.tileSize + w.tileHeight + w.yOffset; int i = w.chunkSize + w.chunkHeight; }),
               "World must expose the Lattice dims: tileSize/tileHeight/yOffset (float), chunkSize/chunkHeight (int)");
 
+/** Register every world-save section once. Closures capture `app`; keys are stable strings. */
+void registerPersistables(ref GameApp app) {
+  if(app.persistables.length > 0) return;
+
+  app.persistables ~= Persistable(
+    () => [Section("diffs", cast(ubyte[])flatten(app.world.data.diffs))],
+    (const ubyte[][string] b) { if(auto p = "diffs" in b) app.world.data.diffs = unflatten(cast(Diff!ResourceType[])(*p)); });
+
+  app.persistables ~= Persistable(
+    () {
+      uint[1] nid = [app.world.drops.nextID];
+      return [Section("blocks", cast(ubyte[])app.world.saveBlocks()),
+              Section("blocks.nextID", cast(ubyte[])nid.dup)];
+    },
+    (const ubyte[][string] b) {
+      if(auto p = "blocks.nextID" in b) app.world.drops.nextID = (cast(uint[])(*p))[0];
+      if(auto p = "blocks" in b) app.loadBlocks(cast(Block[])(*p));
+    });
+
+  app.persistables ~= Persistable(
+    () => [Section("water", cast(ubyte[])app.world.saveWater())],
+    (const ubyte[][string] b) { if(auto p = "water" in b) app.world.loadWater(cast(Diff!ubyte[])(*p)); });
+
+  app.persistables ~= Persistable(
+    () => [Section("clouds", cast(ubyte[])app.world.saveClouds())],
+    (const ubyte[][string] b) { if(auto p = "clouds" in b) app.world.loadClouds(cast(CloudDiff[])(*p)); });
+
+  app.persistables ~= Persistable(
+    () => [Section("dwarfs", cast(ubyte[])app.saveDwarfs())],
+    (const ubyte[][string] b) { if(auto p = "dwarfs" in b) app.loadDwarfs(cast(DwarfData[])(*p)); });
+
+  app.persistables ~= Persistable(
+    () => [Section("stock", app.world.saveStockpiles())],
+    (const ubyte[][string] b) { if(auto p = "stock" in b) app.world.loadStockpiles((*p).dup); });
+
+  foreach(ref ftr; features) {
+    auto name = ftr.name;
+    app.persistables ~= Persistable(
+      () => [Section("veg:" ~ name, cast(ubyte[])app.saveVegetation!Feature(app.world.vegetation[name], app.world.vegetation.pending[name]))],
+      (const ubyte[][string] b) {
+        if(auto p = ("veg:" ~ name) in b) {
+          app.loadVegetation!Feature(app.world.vegetation.pending[name], cast(Feature[])(*p));
+          foreach(coord; app.world.vegetation.pending[name].keys) app.world.vegetation.modified[coord] = true;
+        }
+      });
+  }
+}
+
 void loadWorld(ref GameApp app) {
   ensureWorldDir();
   app.initFeatureMeshes();
@@ -110,37 +153,29 @@ void loadWorld(ref GameApp app) {
   app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
   app.objects ~= app.world.inventory.ghost;
 
-  Diff!ResourceType[] flat;
-  uint h;
-  if(readData(app.world.worldPath(), flat, h)){ app.world.data.diffs = unflatten(flat); }
-
-  app.loadBlocks();
-  app.world.loadWater();
-  app.world.loadClouds();
+  app.ensureBlocks();
   foreach(ref ft; features) {
     if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
     if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
-    app.loadVegetation!Feature(app.world.vegetation.pending[ft.name], app.world.featurePath(ft.name));
-    foreach(coord; app.world.vegetation.pending[ft.name].keys) app.world.vegetation.modified[coord] = true;
   }
-  app.world.loadStockpiles();
+
+  app.registerPersistables();
+  auto blobs = loadSections(app.world.worldPath());
+  foreach(ref p; app.persistables) p.load(blobs);
+
+  if(app.world.dwarves is null || app.world.dwarves.dwarves.length == 0) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
+
   app.deriveInventory();
   app.world.syncBlockInstances();
 }
 
 /** Save world diffs to disk */
 void saveWorld(ref GameApp app) {
-  auto flat = flatten(app.world.data.diffs);
-  writeData(app.world.worldPath(), flat, cast(uint)flat.length);
-  if(app.verbose) SDL_Log("saveWorld: %d diffs", flat.length);
-  app.world.saveBlocks();
-  app.world.saveWater();
-  app.world.saveClouds();
-  foreach(ref ft; features) {
-    app.saveVegetation!Feature(app.world.vegetation[ft.name], app.world.vegetation.pending[ft.name], app.world.featurePath(ft.name));
-  }
-  app.world.saveStockpiles();
-  app.saveDwarfs();
+  app.registerPersistables();
+  Section[] all;
+  foreach(ref p; app.persistables) all ~= p.save();
+  saveSections(app.world.worldPath(), all);
+  if(app.verbose) SDL_Log("saveWorld: %d sections", cast(int)all.length);
 }
 
 /** Dispatch a chunk build job to the next available worker thread */

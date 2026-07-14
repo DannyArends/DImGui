@@ -138,19 +138,15 @@ void settleRain(ref GameApp app) {
 struct CloudDiff { int gx, gz; float density; }
 
 /** Save mutable cloud density deltas. */
-void saveClouds(const World world) {
+CloudDiff[] saveClouds(const World world) {
   CloudDiff[] flat;
   foreach(key, d; world.weather.density) if(d != 0) flat ~= CloudDiff(key[0], key[1], d);
-  if(flat.length == 0) { SDL_RemovePath(world.cloudsPath()); return; }
-  writeData(world.cloudsPath(), flat, cast(uint)flat.length);
   SDL_Log("saveClouds: %d cells", cast(int)flat.length);
+  return flat;
 }
 
 /** Load cloud density deltas. */
-void loadClouds(ref World world) {
-  CloudDiff[] flat;
-  uint h;
-  if(!readData(world.cloudsPath(), flat, h)) return;
+void loadClouds(ref World world, CloudDiff[] flat) {
   world.weather.density = null;
   foreach(ref c; flat) { world.weather.density[[c.gx, c.gz]] = c.density; }
   SDL_Log("loadClouds: %d cells", cast(int)flat.length);
