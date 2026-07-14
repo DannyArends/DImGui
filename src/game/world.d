@@ -201,7 +201,9 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   }
 }
 
-void regenerateWorld(ref GameApp app, uint seed = 42) {
+void regenerateWorld(ref GameApp app) {
+  auto seed = app.world.data.seed;
+
   // 1. Release per-dwarf GPU resources (torch lights + name-label text) before dropping them.
   if(app.world.dwarves !is null){ while(app.world.dwarves.dwarves.length > 0){
     app.deleteDwarf(cast(int)(app.world.dwarves.dwarves.length - 1));

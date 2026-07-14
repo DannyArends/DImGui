@@ -14,20 +14,24 @@ struct Material {
   int pad = 0;
 }
 
-void registerAMaterials(ref App app, ref Geometry object) {
+/** Register a global material slot for every mesh with a bindable material (call once at load) */
+void registerMaterials(ref App app, ref Geometry object) {
   foreach(ref mesh; object.meshes) {
-    if(mesh.mid < 0 || mesh.mid >= object.materials.length) continue;
-    mesh.mat = mesh.mid;  // save local index before remap
+    if(object.materials.length == 0) continue;                 // no material to bind
+    if(mesh.mid >= object.materials.length) continue;          // invalid local index
+    if(mesh.mid >= 0) mesh.mat = mesh.mid;                     // assimp: save local index (procedural keeps its mat)
     mesh.mid = cast(int)(app.materials.length);
     app.materials ~= Material();
   }
+  app.buffers["MaterialBuffer"].invalidate();
 }
 
+/** Idempotent top-up: give a global material slot to any mesh still lacking one (safe to repeat) */
 void ensureMaterial(ref App app, ref Geometry object) {
   foreach(ref mesh; object.meshes) {
     if(mesh.mid >= 0) continue;
     mesh.mid = cast(int)(app.materials.length);
     app.materials ~= Material();
-    app.buffers["MaterialBuffer"].invalidate();
   }
+  app.buffers["MaterialBuffer"].invalidate();
 }
