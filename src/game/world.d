@@ -13,6 +13,7 @@ import inventory : deriveInventory;
 import io : ensureWorldDir, fixPath;
 import lattice : chunkCoord, localCoord, worldCoord, flatten, unflatten, Diff;
 import jobs : jobQueue;
+import orders : loadOrders, saveOrders;
 import pathfinding : invalidatePaths, repathTo;
 import serialization : loadSections, saveSections, podSection;
 import stockpile : saveStockpiles, loadStockpiles;
@@ -102,6 +103,7 @@ void registerPersistables(ref GameApp app) {
   app.persistables ~= podSection!DwarfData("dwarfs", () => app.saveDwarfs(), (f) { app.loadDwarfs(f); });
   app.persistables ~= podSection!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
   app.persistables ~= podSection!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
+  app.persistables ~= podSection!Order("jobs", () => app.saveOrders(), (o) { app.loadOrders(o); });
 
   foreach(ref ftr; features) {
     auto name = ftr.name;
