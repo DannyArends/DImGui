@@ -8,7 +8,6 @@ import game;
 import inventory : deriveInventory;
 import lattice : tileToWorld, worldToTile, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
-import serialization : readData, writeData;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
 import resources : isFood, hasClass, toItem, isRaw, isCraft, templateMat;
 import tile : isStandable, inColumn, landingTile, surfaceAt, hasStandableNeighbour;
@@ -33,7 +32,6 @@ struct Drops {
   uint nextID = 1;
   Geometry[string] meshes;
 }
-
 
 /** Save blocks */
 Block[] saveBlocks(ref World world) {

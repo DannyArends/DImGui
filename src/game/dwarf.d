@@ -18,7 +18,6 @@ import pathfinding : pathfindTo, repathTo, findGoalTile;
 import jobs : pruneJobQueue, fillCupJob, drinkJob, craftJob, pickupJob, dispatchJob, eatJob, jobQueue, claimNextJob, requestStepAside, sleepJob, atDestination;
 import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import rnjesus : randomizeName;
-import serialization : readData, writeData;
 import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;
 import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;
