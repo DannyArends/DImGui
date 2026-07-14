@@ -76,7 +76,13 @@ class GameTaskThread : TaskThread {
   }
 }
 
-/** Top-level application state: engine App plus the game World and debug toggles */
+/** Top-level Game state: engine App plus the game World
+  TODO:
+    1) Workshops, and crafting at workshops
+    2) Liquid barrels for wine/drinks from berries
+    3) Barrels and Bins for stockpiles
+    4) Allow stockpiles to be extended / shrunk / redrawn
+    5) Render crafted objects through assimp models */
 struct GameApp {
   App app;
   alias app this;
@@ -84,7 +90,6 @@ struct GameApp {
   World world;
   bool paused = false;
   float timeScale = 1.0f;
-  size_t resourceMeshes = 0;
 }
 
 /** Set up worker factory and camera, load the world, build game UI windows, and spawn or load dwarves */
