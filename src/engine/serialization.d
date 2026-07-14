@@ -19,7 +19,7 @@ struct Persist {
   static Persist pod(T)(string key, T[] delegate() save, void delegate(T[]) load) {
     return Persist(
       () => [Section(key, cast(ubyte[])save())],
-      (const ubyte[][string] b) { if(auto p = key in b) load(cast(T[])(*p)); });
+      (const ubyte[][string] b) { if(auto p = key in b){ load(cast(T[])(*p)); } });
   }
 }
 
