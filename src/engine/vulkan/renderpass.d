@@ -53,7 +53,7 @@ struct RenderPass {
 void createSceneRenderPass(ref App app) {
   VkAttachmentReference colorRef   = { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
   VkAttachmentReference resolveRef = { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-  VkAttachmentReference depthRef   = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+  VkAttachmentReference depthRef   = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
 
   RenderPassInfo info = {
     attachments: [
@@ -66,10 +66,10 @@ void createSceneRenderPass(ref App app) {
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
         finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-      { format: app.findDepthFormat(), samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
-        storeOp: VK_ATTACHMENT_STORE_OP_STORE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
+      { format: app.findDepthFormat(), samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_LOAD,
+        storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+        finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
     ],
     subpasses: [{
       pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
