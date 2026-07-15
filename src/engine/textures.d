@@ -226,8 +226,12 @@ void createComputeTexture(ref App app, Descriptor descriptor) {
   if(app.verbose) SDL_Log("Create compute texture %p, view: %p", texture.image, texture.view);
   app.registerTexture(texture);
 
-  app.textures ~= texture;
-  app.mainDeletionQueue.add((){ app.cleanup(texture); });
+  int existing = app.textures.idx(texture.path);
+  if(existing >= 0) { // overwrite existing in place so idx() stays stable
+    app.textures[existing] = texture;
+  }else{ app.textures ~= texture; }
+
+  app.swapDeletionQueue.add((){ app.cleanup(texture); });
 }
 
 /** 'Register' a texture in the ImGui DescriptorSet */
