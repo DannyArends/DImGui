@@ -8,7 +8,7 @@ import engine;
 import bone : updateBoneOffsets;
 import descriptor : repointDirtyDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
-import compute : recordComputeCommandBuffer, ComputeStage, passEnabled;
+import compute : recordComputeCommandBuffer, ComputeStage, passEnabled, isStage;
 import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
 import mesh : updateMeshInfo;
@@ -67,9 +67,7 @@ void renderFrame(ref App app, double dt) {
     foreach(ref shader; app.compute.shaders){
       if(!app.passEnabled(shader.path)) continue;
       app.timed!recordComputeCommandBuffer(shader);
-      if(app.compute.passes[shader.path].stage == ComputeStage.PreRender) {
-        computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
-      }
+      if(app.isStage(shader.path, ComputeStage.PreRender)) { computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex]; }
     }
     if(computeCommandBuffers.length > 0) { // submit only if we have pre-render compute (e.g. Cull)
       VkSubmitInfo submitComputeInfo = {
@@ -103,9 +101,7 @@ void renderFrame(ref App app, double dt) {
   submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
   if(app.hasCompute){ foreach(ref shader; app.compute.shaders) { // Add Post-Depth Compute Command Buffers
     if(!app.passEnabled(shader.path)) continue;
-    if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) {
-      submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
-    }
+    if(app.isStage(shader.path, ComputeStage.PostDepth)){ submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex]; }
   } }
   submitCommandBuffers ~= app.postCmd[app.syncIndex];
   submitCommandBuffers ~= app.imguiCmd[app.syncIndex];
