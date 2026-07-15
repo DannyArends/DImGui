@@ -148,8 +148,8 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
 
 /** Depth-only pre-pass pipeline: scene vertex shader, no fragment stage, no color attachment, writes depth. */
 void createDepthPrePassPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
-  app.depthPipeline = GraphicsPipeline();
-  app.depthPipeline.topology = topology;
+  app.depthPipeline[topology] = GraphicsPipeline();
+  app.depthPipeline[topology].topology = topology;
 
   auto bindingDescription = Vertex.getBindingDescription();
   auto attributeDescriptions = Vertex.getRenderDescriptions();
@@ -194,7 +194,7 @@ void createDepthPrePassPipeline(ref App app, VkPrimitiveTopology topology = VK_P
     sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     setLayoutCount: 1, pSetLayouts: &app.layouts[Stage.RENDER]
   };
-  app.depthPipeline.createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
+  app.depthPipeline[topology].createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
 
   // Vertex stage only — identical transform to the main pass so depths match (LESS_EQUAL in main pass)
   VkPipelineShaderStageCreateInfo[] stages;
@@ -210,10 +210,10 @@ void createDepthPrePassPipeline(ref App app, VkPrimitiveTopology topology = VK_P
     pMultisampleState: &multisampling,
     pDepthStencilState: &depthStencil,
     pColorBlendState: null,            // no color attachments in the depth-only subpass
-    layout: app.depthPipeline.layout,
+    layout: app.depthPipeline[topology].layout,
     renderPass: app.depthCmd.pass
   };
-  app.depthPipeline.create(app, pipelineInfo, "DepthPrePass", app.swapDeletionQueue);
+  app.depthPipeline[topology].create(app, pipelineInfo, format("DepthPrePass %s", topology), app.swapDeletionQueue);
 }
 
 /** Create a GraphicsPipeline object for Post-process */

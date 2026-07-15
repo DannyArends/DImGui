@@ -128,14 +128,18 @@ void recordDepthPrePass(ref App app) {
   app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
 
   auto set = app.sets[Stage.RENDER][app.syncIndex];
-  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.depthPipeline.layout, 0, 1, &set, 0, null);
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.depthPipeline.pipeline());
 
-  foreach(obj; app.objects) {
-    if(!obj.isOpaque) continue;                                              // opaque only — transparent doesn't own depth
-    if(!obj.isTopology(app.depthPipeline.topology)) continue;                // triangle-list only (matches the depth pipeline)
-    if(!obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
-    app.draw(obj, cmd);
+  foreach(topology; supportedTopologies) {
+    auto pipe = topology in app.depthPipeline;
+    if(pipe is null) continue;
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe.layout, 0, 1, &set, 0, null);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe.pipeline());
+    foreach(obj; app.objects) {
+      if(!obj.isOpaque) continue;                                            // opaque only — transparent doesn't own depth
+      if(!obj.isTopology(topology)) continue;
+      if(!obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
+      app.draw(obj, cmd);
+    }
   }
 
   app.depthCmd.pass.end(cmd);
