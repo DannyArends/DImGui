@@ -121,6 +121,16 @@ void recordPostCommandBuffer(ref App app) {
 void recordDepthPrePass(ref App app) {
   auto cmd = app.depthCmd.begin(app, app.syncIndex, "DepthPrePass");
 
+  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
+  if(app.trace) SDL_Log("Objects Buffering");
+  app.bufferGeometries(cmd);
+  popLabel(cmd);
+
+  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
+  if(app.trace) SDL_Log("SSBO Buffering");
+  app.updateDescriptorData(shaders, app.sceneCmd.commands, app.syncIndex);
+  popLabel(cmd);
+
   pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
   app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
 
