@@ -6,7 +6,7 @@
 import engine;
 
 import compute: createComputeCommandBuffers, createComputePipeline;
-import depthbuffer : createDepthResources;
+import depthbuffer : createDepthResources, createDepthPrePass;
 import descriptor : createDescriptors, updateDescriptorSet;
 import commands : createCommandBuffer;
 import framebuffer : createFramebuffers;
@@ -83,7 +83,8 @@ void createOrResizeWindow(ref App app) {
   app.postCmd.create(app, app.commandPool, app.framesInFlight);
   app.imguiCmd.create(app, app.commandPool, app.framesInFlight);
 
-  SDL_Log("6: Create RenderPasses [SCENE -> POST -> IMGUI]");
+  SDL_Log("6: Create RenderPasses [DEPTH -> SCENE -> POST -> IMGUI]");
+  app.createDepthPrePass();
   app.createSceneRenderPass();
   app.createPostProcessRenderPass();
   app.createImGuiRenderPass();
