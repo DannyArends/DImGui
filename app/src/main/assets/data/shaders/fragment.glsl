@@ -43,8 +43,10 @@ void main() {
     if (alpha < 0.05f) discard; // Discard <.05
   }
 
+  float ao = (!SDF && useSSAO) ? texture(ssaoSampler, gl_FragCoord.xy / vec2(textureSize(ssaoSampler, 0))).r : 1.0;
+
   // Lighting mode 0: Return base color
-  if (ubo.lightingMode == 0u) { outColor = vec4(rgb * 0.2, alpha); return; }
+  if (ubo.lightingMode == 0u) { outColor = vec4(rgb * 0.2 * ao, alpha); return; }
 
   vec3 normalForLighting = normalize(fragNormal);
   /// Surface normalForLighting
@@ -77,11 +79,6 @@ void main() {
   }
 
   // Screen-space ambient occlusion: opaque only (SDF/transparent geometry has no valid depth, must not receive AO)
-  if (!SDF && useSSAO) {
-    float ao = texture(ssaoSampler, gl_FragCoord.xy / vec2(textureSize(ssaoSampler, 0))).r;
-    surfaceColor *= ao;
-  }
-
-  outColor = vec4(surfaceColor, alpha);
+  outColor = vec4(surfaceColor * ao, alpha);
 }
 
