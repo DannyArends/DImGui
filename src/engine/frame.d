@@ -98,8 +98,8 @@ void renderFrame(ref App app, double dt) {
   // --- Phase 5:  Submit CommandBuffers: Scene renderer, Post-Depth Compute, PostProcess and ImGui ---
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers;
-  if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
   submitCommandBuffers ~= app.depthCmd[app.syncIndex];
+  if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
   if(app.hasCompute){ foreach(ref shader; app.compute.shaders) {
     if(!app.passEnabled(shader.path)) continue;
     if(app.isStage(shader.path, ComputeStage.PostDepth)){ submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex]; }
