@@ -72,6 +72,11 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
 void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   auto cmd = app.sceneCmd.begin(app, app.syncIndex, "Render");
 
+  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
+  if(app.trace) SDL_Log("SSBO Buffering");
+  app.updateDescriptorData(shaders, app.sceneCmd.commands, app.syncIndex);
+  popLabel(cmd);
+
   pushLabel(cmd, "Rendering", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Scene renderpass");
 
@@ -87,13 +92,6 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   }
   app.sceneCmd.pass.end(cmd);
   popLabel(cmd);
-
-  // Post-depth compute (e.g. SSAO): depth is now written; runs before the post pass composites the result
-  /*if(app.hasCompute) {
-    foreach(ref shader; app.compute.shaders) {
-      if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) app.dispatchCompute(app.sceneCmd.commands, shader);
-    }
-  }*/
 
   app.sceneCmd.end(app.syncIndex);
 }
@@ -124,11 +122,6 @@ void recordDepthPrePass(ref App app) {
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   if(app.trace) SDL_Log("Objects Buffering");
   app.bufferGeometries(cmd);
-  popLabel(cmd);
-
-  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("SSBO Buffering");
-  app.updateDescriptorData(shaders, app.sceneCmd.commands, app.syncIndex);
   popLabel(cmd);
 
   pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
