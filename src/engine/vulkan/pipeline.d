@@ -146,6 +146,76 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
   return p;
 }
 
+/** Depth-only pre-pass pipeline: scene vertex shader, no fragment stage, no color attachment, writes depth. */
+void createDepthPrePassPipeline(ref App app, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
+  app.depthPipeline = GraphicsPipeline();
+  app.depthPipeline.topology = topology;
+
+  auto bindingDescription = Vertex.getBindingDescription();
+  auto attributeDescriptions = Vertex.getRenderDescriptions();
+
+  VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+    vertexBindingDescriptionCount: bindingDescription.length,
+    pVertexBindingDescriptions: &bindingDescription[0],
+    vertexAttributeDescriptionCount: attributeDescriptions.length,
+    pVertexAttributeDescriptions: &attributeDescriptions[0]
+  };
+
+  VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, topology: topology
+  };
+
+  VkViewport viewport = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)app.camera.width, height: cast(float)app.camera.height };
+  VkRect2D scissor = { offset: {0, 0}, extent: app.camera.currentExtent };
+  VkPipelineViewportStateCreateInfo viewportState = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+    viewportCount: 1, pViewports: &viewport, scissorCount: 1, pScissors: &scissor
+  };
+
+  VkPipelineRasterizationStateCreateInfo rasterizer = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+    polygonMode: VK_POLYGON_MODE_FILL, lineWidth: 1.0f,
+    cullMode: VK_CULL_MODE_NONE, frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
+  };
+
+  VkPipelineMultisampleStateCreateInfo multisampling = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+    sampleShadingEnable: VK_FALSE, rasterizationSamples: app.getMSAASamples(), minSampleShading: 1.0f
+  };
+
+  VkPipelineDepthStencilStateCreateInfo depthStencil = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+    depthTestEnable: VK_TRUE, depthWriteEnable: VK_TRUE, depthCompareOp: VK_COMPARE_OP_LESS,
+  };
+
+  // Reuse the scene RENDER layout (vertex shader needs the same UBO/mesh SSBO for transforms)
+  VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    setLayoutCount: 1, pSetLayouts: &app.layouts[Stage.RENDER]
+  };
+  app.depthPipeline.createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
+
+  // Vertex stage only — identical transform to the main pass so depths match (LESS_EQUAL in main pass)
+  VkPipelineShaderStageCreateInfo[] stages;
+  foreach(shader; app.shaders) if(shader.stage == VK_SHADER_STAGE_VERTEX_BIT) stages ~= shader.info;
+
+  VkGraphicsPipelineCreateInfo pipelineInfo = {
+    sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    stageCount: cast(uint)stages.length, pStages: &stages[0],
+    pVertexInputState: &vertexInputInfo,
+    pInputAssemblyState: &inputAssembly,
+    pViewportState: &viewportState,
+    pRasterizationState: &rasterizer,
+    pMultisampleState: &multisampling,
+    pDepthStencilState: &depthStencil,
+    pColorBlendState: null,            // no color attachments in the depth-only subpass
+    layout: app.depthPipeline.layout,
+    renderPass: app.depthCmd.pass
+  };
+  app.depthPipeline.create(app, pipelineInfo, "DepthPrePass", app.swapDeletionQueue);
+}
+
 /** Create a GraphicsPipeline object for Post-process */
 void createPostProcessGraphicsPipeline(ref App app) {
   app.postProcessPipeline = GraphicsPipeline();
