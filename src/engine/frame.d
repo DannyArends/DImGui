@@ -7,7 +7,7 @@ import engine;
 
 import bone : updateBoneOffsets;
 import descriptor : repointDirtyDescriptors;
-import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
+import commands : recordSceneCommandBuffer, recordPostCommandBuffer, recordDepthPrePass;
 import compute : recordComputeCommandBuffer, ComputeStage, passEnabled, isStage;
 import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
@@ -90,6 +90,7 @@ void renderFrame(ref App app, double dt) {
 
   // --- Phase 4: Record Scene renderer, Post-Process and ImGui ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
+  app.timed!recordDepthPrePass();
   app.timed!recordSceneCommandBuffer(app.shaders);
   app.timed!recordPostCommandBuffer();
   app.timed!recordImGuiCommandBuffer();
@@ -98,11 +99,12 @@ void renderFrame(ref App app, double dt) {
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers;
   if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
-  submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
-  if(app.hasCompute){ foreach(ref shader; app.compute.shaders) { // Add Post-Depth Compute Command Buffers
+  submitCommandBuffers ~= app.depthCmd[app.syncIndex];
+  if(app.hasCompute){ foreach(ref shader; app.compute.shaders) {
     if(!app.passEnabled(shader.path)) continue;
     if(app.isStage(shader.path, ComputeStage.PostDepth)){ submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex]; }
   } }
+  submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
   submitCommandBuffers ~= app.postCmd[app.syncIndex];
   submitCommandBuffers ~= app.imguiCmd[app.syncIndex];
 
