@@ -72,16 +72,6 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
 void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   auto cmd = app.sceneCmd.begin(app, app.syncIndex, "Render");
 
-  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("Objects Buffering");
-  app.bufferGeometries(cmd);
-  popLabel(cmd);
-
-  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("SSBO Buffering");
-  app.updateDescriptorData(shaders, app.sceneCmd.commands, app.syncIndex);
-  popLabel(cmd);
-
   pushLabel(cmd, "Rendering", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Scene renderpass");
 
