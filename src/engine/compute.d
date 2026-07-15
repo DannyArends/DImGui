@@ -69,7 +69,7 @@ void initializeCompute(ref App app) {
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       // order the depth read after the previous frame's depth writes (same queue, earlier submission)
       imageBarrier(cmd, a.depthBuffer.image,
-                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                    0, 1, 0, 1, VK_IMAGE_ASPECT_DEPTH_BIT);
