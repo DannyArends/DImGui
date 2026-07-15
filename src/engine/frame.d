@@ -8,7 +8,7 @@ import engine;
 import bone : updateBoneOffsets;
 import descriptor : repointDirtyDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
-import compute : recordComputeCommandBuffer, ComputeStage;
+import compute : recordComputeCommandBuffer, ComputeStage, passEnabled;
 import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
 import mesh : updateMeshInfo;
@@ -65,9 +65,11 @@ void renderFrame(ref App app, double dt) {
   if (app.hasCompute) { if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
     VkCommandBuffer[] computeCommandBuffers;
     foreach(ref shader; app.compute.shaders){
+      if(!app.passEnabled(shader.path)) continue;
       app.timed!recordComputeCommandBuffer(shader);
-      if(app.compute.passes[shader.path].stage != ComputeStage.PreRender) continue;
-      computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
+      if(app.compute.passes[shader.path].stage == ComputeStage.PreRender) {
+        computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
+      }
     }
     if(computeCommandBuffers.length > 0) { // submit only if we have pre-render compute (e.g. Cull)
       VkSubmitInfo submitComputeInfo = {
@@ -100,6 +102,7 @@ void renderFrame(ref App app, double dt) {
   if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
   submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
   if(app.hasCompute){ foreach(ref shader; app.compute.shaders) { // Add Post-Depth Compute Command Buffers
+    if(!app.passEnabled(shader.path)) continue;
     if(app.compute.passes[shader.path].stage == ComputeStage.PostDepth) {
       submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex];
     }
