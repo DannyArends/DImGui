@@ -286,23 +286,20 @@ void createPostProcessGraphicsPipeline(ref App app) {
   app.postProcessPipeline.createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
 
   // Shaders for post-processing (vertex shader for quad, fragment shader for tonemapping/sampling)
-  foreach(useSSAO; [true, false]) {
-    auto spec = Specialization(ssao: useSSAO);
-    auto stage = createStageInfo(app.postProcess, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, spec);
-    VkGraphicsPipelineCreateInfo pipelineInfo = {
-      sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-      stageCount: cast(uint)stage.info.length,
-      pStages: &stage.info[0],
-      pVertexInputState: &vertexInputInfo,
-      pInputAssemblyState: &inputAssembly,
-      pViewportState: &viewportState,
-      pRasterizationState: &rasterizer,
-      pMultisampleState: &multisampling,
-      pColorBlendState: &colorBlending,
-      layout: app.postProcessPipeline.layout,
-      renderPass: app.postCmd.pass
-    };
-    app.postProcessPipeline.create(app, pipelineInfo, format("Post-process (ssao=%s)", useSSAO), app.swapDeletionQueue, spec);
-  }
+  auto stages = createStageInfo(app.postProcess);
+  VkGraphicsPipelineCreateInfo pipelineInfo = {
+    sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    stageCount: cast(uint)stages.length,
+    pStages: &stages[0],
+    pVertexInputState: &vertexInputInfo,
+    pInputAssemblyState: &inputAssembly,
+    pViewportState: &viewportState,
+    pRasterizationState: &rasterizer,
+    pMultisampleState: &multisampling,
+    pColorBlendState: &colorBlending,
+    layout: app.postProcessPipeline.layout,
+    renderPass: app.postCmd.pass
+  };
+  app.postProcessPipeline.create(app, pipelineInfo, "Post-process", app.swapDeletionQueue);
 }
 
