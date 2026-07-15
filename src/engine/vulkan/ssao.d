@@ -5,6 +5,7 @@
 
 import engine;
 
+import vector : normalize;
 import matrix : multiply, inverse;
 import quaternion : xyzw;
 
@@ -21,13 +22,11 @@ struct SSAOUniformBuffer {
 
 /** Hemisphere sample set (view space, +Z), clustered toward the origin. Built once. */
 shared static this() {
-  auto rng = Random(0xA0);   // deterministic
+  auto rng = Random(0xA0);
   foreach(i; 0 .. SSAO_KERNEL) {
-    float[3] s = [uniform(-1.0f, 1.0f, rng), uniform(-1.0f, 1.0f, rng), uniform(0.0f, 1.0f, rng)];
-    float len = sqrt(s[0]*s[0] + s[1]*s[1] + s[2]*s[2]);
-    if(len > 0.0f) s[] /= len;
+   float[3] s = normalize([uniform(-1.0f, 1.0f, rng), uniform(-1.0f, 1.0f, rng), uniform(0.0f, 1.0f, rng)]);
     float t = cast(float)i / SSAO_KERNEL;
-    float scale = 0.1f + 0.9f * t * t;   // more samples near the origin
+    float scale = 0.1f + 0.9f * t * t;
     ssaoKernel[i] = [s[0]*scale, s[1]*scale, s[2]*scale, 0.0f];
   }
 }
