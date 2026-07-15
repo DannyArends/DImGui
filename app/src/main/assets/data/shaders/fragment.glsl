@@ -75,6 +75,13 @@ void main() {
   for (uint n = head[cid].head; n != NIL; n = indices[n].next) {
     surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, useShadows);
   }
+
+  // Screen-space ambient occlusion: opaque only (SDF/transparent geometry has no valid depth, must not receive AO)
+  if (!SDF && useSSAO) {
+    float ao = texture(ssaoSampler, gl_FragCoord.xy / vec2(textureSize(ssaoSampler, 0))).r;
+    surfaceColor *= ao;
+  }
+
   outColor = vec4(surfaceColor, alpha);
 }
 

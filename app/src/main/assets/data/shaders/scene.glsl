@@ -14,6 +14,7 @@ layout(constant_id = 3) const uint GRID_X = 16u;
 layout(constant_id = 4) const uint GRID_Y = 9u;
 layout(constant_id = 5) const uint GRID_Z = 24u;
 layout(constant_id = 6) const bool SDF = false;
+layout(constant_id = 7) const bool useSSAO = true;
 
 // Constants
 const uint NIL = 0xFFFFFFFFu;

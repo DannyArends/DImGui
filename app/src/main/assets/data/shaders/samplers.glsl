@@ -9,10 +9,12 @@
 /// Samplers/Images
 #define BINDING_TEXTURES          5
 #define BINDING_SHADOWMAP         6
+#define BINDING_SSAO              11
 
 /// Samplers/Images
 layout(binding = BINDING_TEXTURES) uniform sampler2D textureSampler[];
 layout(binding = BINDING_SHADOWMAP) uniform sampler2DShadow shadowMap[];
+layout(binding = BINDING_SSAO) uniform sampler2D ssaoSampler;
 
 // Bump mapped normal
 vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
