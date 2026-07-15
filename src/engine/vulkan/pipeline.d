@@ -117,8 +117,8 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
   VkPipelineDepthStencilStateCreateInfo depthStencil = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
     depthTestEnable: VK_TRUE,
-    depthWriteEnable: s.sdf ? VK_FALSE : VK_TRUE, // Write depth to self-occlude [default], SDF does not (blended/translucent geometry)
-    depthCompareOp: VK_COMPARE_OP_LESS,
+    depthWriteEnable: VK_FALSE,
+    depthCompareOp: VK_COMPARE_OP_LESS_OR_EQUAL,
   };
 
   ShaderStage stages = createStageInfo(app.shaders, topology, s);
