@@ -57,7 +57,7 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
   foreach(obj; app.objects) {
     if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
     if((pass == 0) != obj.isOpaque) continue;     // pass 0 draws opaque, pass 1 draws transparent
-    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF);
+    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO);
     pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf), Colors.lightgray);
     if(first || last != s) {
       vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
