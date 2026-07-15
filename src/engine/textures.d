@@ -54,6 +54,12 @@ struct Textures {
   alias textures this;
 }
 
+/** DeAllocate a Texture: free its ImGui descriptor set first, then the backing image */
+@nogc void cleanup(ref App app, ref Texture texture) nothrow {
+  if(texture.imID) { vkFreeDescriptorSets(app.device, app.pools[Stage.IMGUI], 1, &texture.imID); texture.imID = null; }
+  app.cleanup(texture.buffer);
+}
+
 bool isTexture(string path){
   if(extension(path) == ".jpg") return(true);
   if(extension(path) == ".png") return(true);
@@ -255,4 +261,3 @@ void registerTexture(ref App app, ref Texture texture) {
   }];
   vkUpdateDescriptorSets(app.device, 1, &descriptorWrites[0], 0, null);
 }
-
