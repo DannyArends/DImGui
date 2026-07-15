@@ -8,7 +8,7 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(binding = 0) uniform sampler2DMS depthSampler;
 layout(binding = 1, rgba8) uniform writeonly image2D ssaoOut;
 layout(binding = 2) uniform SSAO {
-  mat4 viewProj;      // ori * proj * view  (same transform the scene depth was rendered with)
+  mat4 viewProj;      // ori * proj * view
   mat4 invViewProj;   // inverse(viewProj): clip -> world
   vec4 camPos;        // camera world position (.xyz)
   vec4 kernel[32];    // tangent-space hemisphere samples (.xyz)
@@ -25,13 +25,13 @@ vec3 worldPos(ivec2 px, ivec2 size) {
 void main() {
   ivec2 px = ivec2(gl_GlobalInvocationID.xy);
   ivec2 size = imageSize(ssaoOut);
-  if (px.x >= size.x || px.y >= size.y) return;
+  if(px.x >= size.x || px.y >= size.y) return;
 
   vec3 P  = worldPos(px, size);
   vec3 Px = worldPos(px + ivec2(1, 0), size);
   vec3 Py = worldPos(px + ivec2(0, 1), size);
   vec3 N  = normalize(cross(Px - P, Py - P));
-  if (dot(N, u.camPos.xyz - P) < 0.0) N = -N;            // orient toward camera
+  if(dot(N, u.camPos.xyz - P) < 0.0) N = -N;            // orient toward camera
 
   float a = fract(sin(dot(vec2(px), vec2(12.9898, 78.233))) * 43758.5453);
   vec3 rnd = vec3(cos(6.2831853 * a), sin(6.2831853 * a), 0.0);
@@ -49,7 +49,7 @@ void main() {
     if (any(lessThan(spx, ivec2(0))) || any(greaterThanEqual(spx, size))) continue;
 
     vec3 surf = worldPos(spx, size);                      // real surface at that screen pixel
-    float sampleDist  = length(u.camPos.xyz - s);
+    float sampleDist = length(u.camPos.xyz - s);
     float surfaceDist = length(u.camPos.xyz - surf);
     // occluded when the real surface sits nearer the camera than the sample (sample is buried behind geometry)
     float rangeCheck = smoothstep(0.0, 1.0, u.params.x / max(length(surf - P), 1e-4));
