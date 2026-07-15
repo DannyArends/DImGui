@@ -5,7 +5,7 @@
 
 import engine;
 
-import vector : normalize;
+import vector : normalize, vMul;
 import matrix : multiply, inverse;
 import quaternion : xyzw;
 
@@ -24,10 +24,9 @@ struct SSAOUniformBuffer {
 shared static this() {
   auto rng = Random(0xA0);
   foreach(i; 0 .. SSAO_KERNEL) {
-   float[3] s = normalize([uniform(-1.0f, 1.0f, rng), uniform(-1.0f, 1.0f, rng), uniform(0.0f, 1.0f, rng)]);
+    float[3] s = normalize([uniform(-1.0f, 1.0f, rng), uniform(-1.0f, 1.0f, rng), uniform(0.0f, 1.0f, rng)]);
     float t = cast(float)i / SSAO_KERNEL;
-    float scale = 0.1f + 0.9f * t * t;
-    ssaoKernel[i] = [s[0]*scale, s[1]*scale, s[2]*scale, 0.0f];
+    ssaoKernel[i] = s.vMul(0.1f + 0.9f * t * t).xyzw; // Multiply by scaling factor
   }
 }
 
