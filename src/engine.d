@@ -17,10 +17,9 @@ version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
   - Alpha blending fix: Also a prerequisite for nice bloom on transparent emissive
   - Bloom/HDR: scaffolding is there, for a big visual improvement
   - GPU-driven indirect draw (probably not possible, due to how our pipeline works)
-  - Screen space ambient occlusion (SSAO)
+  - Screen space ambient occlusion (SSAO) [DONE]
   - - Future: Bilateral blur pass
   - - Future: Kernel size (K) as specialization constant
-  - - Check: imID ImGui descriptor-set leak
   - Cascaded shadow maps for the Sun Shadows
   - Screen-space reflections on water
   - Chunk/object LOD
