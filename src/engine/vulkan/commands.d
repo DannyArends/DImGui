@@ -118,14 +118,36 @@ void recordPostCommandBuffer(ref App app) {
   app.postCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[0..1]);
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline(Specialization(ssao: app.useSSAO)));
-  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][app.syncIndex], 0, null);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][app.syncIndex], 0, null);
 
   vkCmdDraw(cmd, 3, 1, 0, 0);
   app.postCmd.pass.end(cmd);
   popLabel(cmd);
   if(app.trace) SDL_Log("Finished Post-processing");
   app.postCmd.end(app.syncIndex);
+}
+
+/** Record the depth pre-pass: opaque geometry, depth-only, into app.depthCmd (feeds SSAO before the lit scene pass). */
+void recordDepthPrePass(ref App app) {
+  auto cmd = app.depthCmd.begin(app, app.syncIndex, "DepthPrePass");
+
+  pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
+  app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
+
+  auto set = app.sets[Stage.RENDER][app.syncIndex];
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.depthPipeline.layout, 0, 1, &set, 0, null);
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.depthPipeline.pipeline());
+
+  foreach(obj; app.objects) {
+    if(!obj.isOpaque) continue;                                              // opaque only — transparent doesn't own depth
+    if(!obj.isTopology(app.depthPipeline.topology)) continue;                // triangle-list only (matches the depth pipeline)
+    if(!obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
+    app.draw(obj, cmd);
+  }
+
+  app.depthCmd.pass.end(cmd);
+  popLabel(cmd);
+  app.depthCmd.end(app.syncIndex);
 }
 
 void createCommandPools(ref App app) {
