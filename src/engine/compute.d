@@ -83,8 +83,12 @@ void initializeCompute(ref App app) {
 
 /** A pass runs when it has no enabled predicate, or its predicate returns true. */
 bool passEnabled(ref App app, string path) {
-  auto pass = path in app.compute.passes;
-  return(pass is null || pass.enabled is null || pass.enabled(app));
+  auto pass = path in app.compute.passes; return(pass is null || pass.enabled is null || pass.enabled(app));
+}
+
+/** A pass runs when it has no enabled predicate, or its predicate returns true. */
+bool stage(ref App app, string path) {
+  auto pass = path in app.compute.passes; return(pass is null || pass.enabled is null || pass.enabled(app));
 }
 
 /** Create the compute pipeline specified by the selectedShader */
