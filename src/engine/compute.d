@@ -33,6 +33,7 @@ enum ComputeStage : ubyte {
  * it records no commands, just returns raw item counts before group-size division. */
 struct ComputePass {
   ComputeStage stage = ComputeStage.PreRender;
+  bool delegate(ref App app) enabled; /// null = always enabled; else pass runs only when it returns true
   uint[3] delegate(ref App app, Shader shader) workItems; /// required
   void delegate(ref App app, VkCommandBuffer cmd, Shader shader) pre; /// null = none
   void delegate(ref App app, VkCommandBuffer cmd, Shader shader) post; /// null = none
@@ -63,6 +64,7 @@ void initializeCompute(ref App app) {
 
   app.compute.passes["data/shaders/ssao.glsl"] = ComputePass(
     stage: ComputeStage.PostDepth,
+    enabled: (ref App a) => a.useSSAO,
     workItems: (ref App a, Shader shader) { uint[3] r = [a.camera.width, a.camera.height, 1u]; return r; },
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       // order the depth read after the previous frame's depth writes (same queue, earlier submission)
@@ -77,6 +79,12 @@ void initializeCompute(ref App app) {
       a.transitionImageLayout(cmd, a.textures[a.textures.idx("ssaoOut")].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
   );
+}
+
+/** A pass runs when it has no enabled predicate, or its predicate returns true. */
+bool passEnabled(ref App app, string path) {
+  auto pass = path in app.compute.passes;
+  return(pass is null || pass.enabled is null || pass.enabled(app));
 }
 
 /** Create the compute pipeline specified by the selectedShader */
