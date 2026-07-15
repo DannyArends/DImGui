@@ -56,7 +56,7 @@ void createDepthPrePass(ref App app) {
       { format: app.findDepthFormat(), samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_STORE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
+        finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
     ],
     subpasses: [{
       pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
