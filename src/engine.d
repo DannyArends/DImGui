@@ -67,7 +67,7 @@ struct App {
   Shader[] shaders;
   Shader[] postProcess;
   GraphicsPipeline[VkPrimitiveTopology] pipelines;
-  GraphicsPipeline depthPipeline;
+  GraphicsPipeline[VkPrimitiveTopology] depthPipeline;                          /// depth pre-pass pipeline per topology
   GraphicsPipeline postProcessPipeline;
 
   DepthBuffer depthBuffer;

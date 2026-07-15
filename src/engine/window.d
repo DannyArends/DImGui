@@ -94,9 +94,9 @@ void createOrResizeWindow(ref App app) {
   app.createFramebuffers();
 
   SDL_Log("8: Create the Pipelines (Post-processing and Rendering)");
-  app.createDepthPrePassPipeline();
   app.createPostProcessGraphicsPipeline();
   foreach(member; supportedTopologies) {
+    app.createDepthPrePassPipeline(member);
     app.createGraphicsPipeline(member);
   }
   if(app.verbose) SDL_Log(" ---- Window Done ----");
