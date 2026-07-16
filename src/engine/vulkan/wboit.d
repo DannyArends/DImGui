@@ -15,19 +15,19 @@ struct WBOIT {
   ImageBuffer opaqueDummy;                                    /// Dummy loc-1 sink for opaque pipeline (never read)
   Shader[] shaders;                                           /// Resolve shader (fullscreen composite)
   GraphicsPipeline resolvePipeline;                           /// Resolve/composite pipeline (subpass 2)
-  VkFormat accumFormat     = VK_FORMAT_R16G16B16A16_SFLOAT;
+  VkFormat accumulationFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
   VkFormat revealageFormat = VK_FORMAT_R16_SFLOAT;
-  bool enabled = true;                                        /// Feature toggle
+  alias shaders this;
 }
 
-ShaderDef[] WBOITResolveShaders = [
+ShaderDef[] WBOITShaders = [
   ShaderDef("data/shaders/wboit.vertex.glsl", shaderc_glsl_vertex_shader),
   ShaderDef("data/shaders/wboit.fragment.glsl", shaderc_glsl_fragment_shader),
 ];
 
 /** Allocate the single-sample WBOIT accumulation targets (input attachments for the resolve subpass) */
 void createWBOITResources(ref App app) {
-  app.createNamedImage(app.wboit.accumulation, app.camera.width, app.camera.height, app.wboit.accumFormat,
+  app.createNamedImage(app.wboit.accumulation, app.camera.width, app.camera.height, app.wboit.accumulationFormat,
                        VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Accumulation", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
   app.createNamedImage(app.wboit.revealage, app.camera.width, app.camera.height, app.wboit.revealageFormat,

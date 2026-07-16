@@ -44,7 +44,7 @@ struct App {
     { depthStencil : VkClearDepthStencilValue(1.0f, 0) }, // 2: depth (LOAD: value unused)
     {{ float32: [0.0f, 0.0f, 0.0f, 0.0f] }},              // 3: WBOIT accumulation: CLEAR (0,0,0,0)
     {{ float32: [1.0f, 0.0f, 0.0f, 0.0f] }},              // 4: WBOIT revealage: CLEAR 1.0
-    {{ float32: [0.0f, 0.0f, 0.0f, 0.0f] }},              // 3: WBOIT dummy: CLEAR (0,0,0,0)
+    {{ float32: [0.0f, 0.0f, 0.0f, 0.0f] }},              // 5: WBOIT dummy (DONT_CARE: value unused)
   ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
