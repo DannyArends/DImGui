@@ -8,7 +8,6 @@ import engine;
 import buffer : cleanup, nameGeometryBuffer, toGPU, uploadBarrier;
 import boundingbox : computeBoundingBox;
 import textures : idx;
-import matrix : inverse, transpose;
 import mesh : logMesh;
 import normals : computeNormals, computeTangents;
 
@@ -44,7 +43,6 @@ class Geometry {
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(geometry()));
-    foreach(ref inst; instances) inst.normal = inst.matrix.inverse.transpose;
     app.toGPU(vertices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, "VERTEX", geometry());
     app.toGPU(indices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, "INDEX", geometry());
     app.toGPU(instances, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, "INSTANCE", geometry());

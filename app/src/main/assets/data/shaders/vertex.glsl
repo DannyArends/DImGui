@@ -22,7 +22,6 @@ layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, mat
 layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
 layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
 layout(location = 10) in mat4 instance;               /// Instance matrix
-layout(location = 14) in mat4 normalMatrix;           /// Instance normal matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;           /// Fragment world position
@@ -51,7 +50,7 @@ void main() {
   /// Transfer data to fragment shader
   fragPosWorld = worldPos;
   fragColor = INSTANCED ? instanceColor : inColor;
-  fragNormal = normalize(mat3(normalMatrix) * inNormal);
+  fragNormal = N;
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
   uint meshID = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
