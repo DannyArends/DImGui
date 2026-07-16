@@ -66,16 +66,11 @@ void initializeCompute(ref App app) {
   app.compute.passes["data/shaders/ssao.glsl"] = ComputePass(
     stage: ComputeStage.PostDepth,
     enabled: (ref App a) => a.useSSAO,
-    resolution: (ref App a) {
-      uint[2] r = [a.camera.width, a.camera.height];
-      static if(isAndroid) { r = [(a.camera.width + 1) / 2, (a.camera.height + 1) / 2]; }
-      return(r);
-    },
+    resolution: (ref App a) { uint[2] r = [a.camera.width, a.camera.height]; return(r); },
     workItems: (ref App a, Shader shader) {
       auto p = shader.path in a.compute.passes;
       auto d = (p && p.resolution) ? p.resolution(a) : cast(uint[2])[a.camera.width, a.camera.height];
-      uint[3] r = [d[0], d[1], 1u];
-      return(r);
+      uint[3] r = [d[0], d[1], 1u]; return(r);
     },
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       // order the depth read after the previous frame's depth writes (same queue, earlier submission)
