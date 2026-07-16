@@ -49,16 +49,16 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
 
 /** Draw every visible object of one topology for one pass (0=opaque, 1=transparent); 
  * rebinds the pipeline only when the specialization changed */
-void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, int pass) {
+void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, int pass, bool depthPass = false) {
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &set, 0, null);
-  if(pass == 0 && topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd);
+  if(!depthPass && pass == 0 && topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd);
 
   Specialization last; bool first = true;
   foreach(obj; app.objects) {
     if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
     if((pass == 0) != obj.isOpaque) continue;     // pass 0 draws opaque, pass 1 draws transparent
-    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated);
-    pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf), Colors.lightgray);
+    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass);
+    pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d, D=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
     if(first || last != s) {
       vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
       last = s; first = false; 
@@ -128,22 +128,9 @@ void recordDepthPrePass(ref App app) {
   app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
 
   auto set = app.sets[Stage.RENDER][app.syncIndex];
-
   foreach(topology; supportedTopologies) {
     if(topology !in app.pipelines) continue;
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &set, 0, null);
-    Specialization last; bool first = true;
-    foreach(obj; app.objects) {
-      if(!obj.isOpaque) continue;                                            // opaque only — transparent doesn't own depth
-      if(!obj.isTopology(topology)) continue;
-      if(!obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
-      auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, true);  // depthPass=true
-      if(first || last != s) {
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s));
-        last = s; first = false;
-      }
-      app.draw(obj, cmd);
-    }
+    app.drawTopologyPass(cmd, topology, set, 0, true);   // pass 0 = opaque, depthPass = true
   }
 
   app.depthCmd.pass.end(cmd);
