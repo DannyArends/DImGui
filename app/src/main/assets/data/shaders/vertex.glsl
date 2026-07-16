@@ -37,7 +37,7 @@ void main() {
   vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights) : vec4(inPosition, 1.0f);
 
   /// Compute our model matrix
-  mat4 model = ubo.scene * instance;
+  vec4 worldPos = instance * position;
 
   /// Calculate the world-space normal, bitangent, tangent, and normal matrix
   vec3 N = normalize(mat3(instance) * inNormal);
@@ -45,11 +45,11 @@ void main() {
   vec3 B = normalize(cross(N, T)) * inTangent.w;
 
   /// World position & point size
-  gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * position;
+  gl_Position = ubo.viewProj * worldPos;
   gl_PointSize = 2.0f;
 
   /// Transfer data to fragment shader
-  fragPosWorld = (model * position);
+  fragPosWorld = worldPos;
   fragColor = INSTANCED ? instanceColor : inColor;
   fragNormal = normalize(mat3(normalMatrix) * inNormal);
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
