@@ -27,13 +27,10 @@ layout(location = 1) out float outRevealage;
 void writeOutput(vec3 color, float alpha) {
   if (WBOIT) {
     // Weighted-blended OIT (McGuire/Bavoil): weight emphasises near + opaque fragments
-    float z = gl_FragCoord.z;
-    float w = alpha * clamp(0.03 / (1e-5 + pow(z, 4.0)), 0.01, 3000.0);
+    float w = alpha * clamp(0.03 / (1e-5 + pow(gl_FragCoord.z, 4.0)), 0.01, 3000.0);
     outColor = vec4(color * alpha * w, alpha * w);   // accum: premultiplied, weighted
     outRevealage = alpha;                            // revealage: blended as product(1-a) via pipeline blend
-  } else {
-    outColor = vec4(color, alpha);
-  }
+  } else { outColor = vec4(color, alpha); }
 }
 
 void main() {
