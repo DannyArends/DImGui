@@ -18,6 +18,7 @@ import reflection : reflectShaders, createResources;
 import surface : queryPresentFormats;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
+import wboit : createWBOITResources;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -42,6 +43,7 @@ void createOrResizeWindow(ref App app) {
   app.createSwapChain(app.swapChain);
   app.aquireSwapChainImages();
   app.createColorResources();
+  app.createWBOITResources();
   app.createDepthResources();
   app.createSyncObjects();
 
