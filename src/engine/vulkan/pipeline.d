@@ -94,7 +94,7 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
   VkPipelineMultisampleStateCreateInfo multisampling = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
     sampleShadingEnable: VK_FALSE,
-    rasterizationSamples: app.getMSAASamples(),
+    rasterizationSamples: s.wboit ? VK_SAMPLE_COUNT_1_BIT : app.getMSAASamples(),
     minSampleShading: 1.0f
   };
 
@@ -111,6 +111,28 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
     sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
     logicOpEnable: VK_FALSE, logicOp: VK_LOGIC_OP_COPY,
     attachmentCount: 1, pAttachments: &colorBlendAttachment,
+    blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
+  };
+
+  // WBOIT dual-target blend: accum = additive (ONE,ONE); revealage = multiplicative (ZERO, ONE_MINUS_SRC_COLOR)
+  VkPipelineColorBlendAttachmentState[2] wboitAttachments = [
+    { // 0: accumulation
+      colorWriteMask: VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+      blendEnable: VK_TRUE,
+      srcColorBlendFactor: VK_BLEND_FACTOR_ONE, dstColorBlendFactor: VK_BLEND_FACTOR_ONE, colorBlendOp: VK_BLEND_OP_ADD,
+      srcAlphaBlendFactor: VK_BLEND_FACTOR_ONE, dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE, alphaBlendOp: VK_BLEND_OP_ADD
+    },
+    { // 1: revealage
+      colorWriteMask: VK_COLOR_COMPONENT_R_BIT,
+      blendEnable: VK_TRUE,
+      srcColorBlendFactor: VK_BLEND_FACTOR_ZERO, dstColorBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, colorBlendOp: VK_BLEND_OP_ADD,
+      srcAlphaBlendFactor: VK_BLEND_FACTOR_ZERO, dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, alphaBlendOp: VK_BLEND_OP_ADD
+    }
+  ];
+  VkPipelineColorBlendStateCreateInfo wboitBlending = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+    logicOpEnable: VK_FALSE, logicOp: VK_LOGIC_OP_COPY,
+    attachmentCount: 2, pAttachments: wboitAttachments.ptr,
     blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
   };
 
@@ -133,15 +155,16 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
     pRasterizationState: &rasterizer,
     pMultisampleState: &multisampling,
     pDepthStencilState: &depthStencil,
-    pColorBlendState: s.depthPass ? null : &colorBlending,
+    pColorBlendState: s.depthPass ? null : (s.wboit ? &wboitBlending : &colorBlending),
     layout: layout,
-    renderPass: s.depthPass ? app.depthCmd.pass : app.sceneCmd.pass
+    renderPass: s.depthPass ? app.depthCmd.pass : app.sceneCmd.pass,
+    subpass: s.wboit ? 1u : 0u
   };
 
   VkPipeline p;
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, app.allocator, &p));
-  app.nameVulkanObject(p, cstr("[PIPELINE] %s A%d I%d S%d D%d An%d", 
-                               topology, s.alpha, s.instanced, s.sdf, s.depthPass, s.animated), VK_OBJECT_TYPE_PIPELINE);
+  app.nameVulkanObject(p, cstr("[PIPELINE] %s A%d I%d S%d D%d An%d W%d", 
+                               topology, s.alpha, s.instanced, s.sdf, s.depthPass, s.animated, s.wboit), VK_OBJECT_TYPE_PIPELINE);
   app.swapDeletionQueue.add((){ vkDestroyPipeline(app.device, p, app.allocator); });
   app.pipelines[topology].variants[s] = p;
   return p;

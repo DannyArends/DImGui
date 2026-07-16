@@ -33,6 +33,7 @@ struct Specialization {
   bool ssao = true;
   bool animated = false;
   bool depthPass = false;
+  bool wboit = false;
 }
 
 struct ShaderDef {
