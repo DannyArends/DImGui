@@ -11,11 +11,13 @@ struct DrawInstance {
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// Color
   float[4] uvRect = [0.0f, 0.0f, 1.0f, 1.0f];   /// UV remap [offsetX, offsetY, scaleX, scaleY]; identity = full texture
   Matrix matrix = Matrix.init;                  /// Matrix
+  Matrix normal = Matrix.init;                  /// Normal matrix
   alias matrix this;
 
   static assert(DrawInstance.color.offsetof  == 16);
   static assert(DrawInstance.uvRect.offsetof == 32);
   static assert(DrawInstance.matrix.offsetof == 48);
+  static assert(DrawInstance.normal.offsetof == 112);
 
   /** NEVER AGAIN: this(uint[2] d){ meshdef = [cast(int)d[0], cast(int)d[1]]; } - Caused a release mode crash */
   /** Transform (+ optional material / color / UV). Covers primitives, dwarves, features, blocks, glyphs. */
