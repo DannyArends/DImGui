@@ -67,10 +67,8 @@ void initializeCompute(ref App app) {
     stage: ComputeStage.PostDepth,
     enabled: (ref App a) => a.useSSAO,
     resolution: (ref App a) {
-      uint[2] r;
-      static if(isAndroid) {
-        r = [(a.camera.width + 1) / 2, (a.camera.height + 1) / 2];
-      }else{ r = [a.camera.width, a.camera.height]; }
+      uint[2] r = [a.camera.width, a.camera.height];
+      static if(isAndroid) { r = [(a.camera.width + 1) / 2, (a.camera.height + 1) / 2]; }
       return(r);
     },
     workItems: (ref App a, Shader shader) {
