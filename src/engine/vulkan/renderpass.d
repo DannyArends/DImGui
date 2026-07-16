@@ -51,9 +51,15 @@ struct RenderPass {
 /** Create a Scene RenderPass object
  * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment */
 void createSceneRenderPass(ref App app) {
-  // Subpass 0 (opaque): MSAA color -> resolve, depth test/read
-  VkAttachmentReference colorRef   = { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-  VkAttachmentReference resolveRef = { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+  // Subpass 0 (opaque): MSAA color(0)+dummy(5) -> resolve, depth test/read
+  VkAttachmentReference[2] colorRefs = [
+    { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+    { attachment: 5, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL }, // dummy loc-1 sink
+  ];
+  VkAttachmentReference[2] resolveRefs = [
+    { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED }, // dummy not resolved
+  ];
   VkAttachmentReference depthRef   = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
 
   // Subpass 1 (transparent WBOIT accumulation): write accum(3) + revealage(4), test depth
@@ -96,13 +102,19 @@ void createSceneRenderPass(ref App app) {
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
         finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+      // 5: opaque loc-1 dummy sink (never read)
+      { format: app.wboit.revealageFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
+        finalLayout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
     ],
     subpasses: [
-      { // 0: opaque
+      { // 0: opaque (color 0 + dummy 5)
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
-        colorAttachmentCount: 1, pColorAttachments: &colorRef,
+        colorAttachmentCount: 2, pColorAttachments: colorRefs.ptr,
         pDepthStencilAttachment: &depthRef,
-        pResolveAttachments: &resolveRef
+        pResolveAttachments: resolveRefs.ptr
       },
       { // 1: transparent WBOIT accumulation
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,

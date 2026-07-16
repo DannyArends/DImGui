@@ -107,10 +107,11 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
     alphaBlendOp: VK_BLEND_OP_ADD
   };
 
+  VkPipelineColorBlendAttachmentState[2] opaqueBlendAttachments = [colorBlendAttachment, colorBlendAttachment];
   VkPipelineColorBlendStateCreateInfo colorBlending = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
     logicOpEnable: VK_FALSE, logicOp: VK_LOGIC_OP_COPY,
-    attachmentCount: 1, pAttachments: &colorBlendAttachment,
+    attachmentCount: 2, pAttachments: opaqueBlendAttachments.ptr,
     blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
   };
 
