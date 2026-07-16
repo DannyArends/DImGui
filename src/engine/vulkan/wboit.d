@@ -24,7 +24,7 @@ ShaderDef[] WBOITShaders = [
   ShaderDef("data/shaders/wboit.fragment.glsl", shaderc_glsl_fragment_shader),
 ];
 
-/** Allocate the single-sample WBOIT accumulation targets (input attachments for the resolve subpass) */
+/** Allocate the MSAA WBOIT accumulation targets (input attachments for the resolve subpass) */
 void createWBOITResources(ref App app) {
   app.createNamedImage(app.wboit.accumulation, app.camera.width, app.camera.height, app.wboit.accumulationFormat,
                        VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Accumulation", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
@@ -32,7 +32,8 @@ void createWBOITResources(ref App app) {
   app.createNamedImage(app.wboit.revealage, app.camera.width, app.camera.height, app.wboit.revealageFormat,
                        VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Revealage", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
-  app.swapDeletionQueue.add((){ 
+
+  app.swapDeletionQueue.add(() {
     app.cleanup(app.wboit.accumulation);
     app.cleanup(app.wboit.revealage);
   });
@@ -68,8 +69,7 @@ void createWBOITResolvePipeline(ref App app) {
     sType: VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
     rasterizationSamples: VK_SAMPLE_COUNT_1_BIT, minSampleShading: 1.0f
   };
-  // Composite transparent over opaque: src-alpha over
-  VkPipelineColorBlendAttachmentState colorBlendAttachment = {
+  VkPipelineColorBlendAttachmentState colorBlendAttachment = {  // Composite transparent over opaque: src-alpha over
     colorWriteMask: VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     blendEnable: VK_TRUE,
     srcColorBlendFactor: VK_BLEND_FACTOR_SRC_ALPHA, dstColorBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, colorBlendOp: VK_BLEND_OP_ADD,
@@ -92,6 +92,7 @@ void createWBOITResolvePipeline(ref App app) {
   VkSpecializationMapEntry sampleEntry = { constantID: 0, offset: 0, size: int.sizeof };
   VkSpecializationInfo specInfo = { mapEntryCount: 1, pMapEntries: &sampleEntry, dataSize: int.sizeof, pData: &samples };
   foreach(ref st; stages) if(st.stage == VK_SHADER_STAGE_FRAGMENT_BIT){ st.pSpecializationInfo = &specInfo; }
+
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
     stageCount: cast(uint)stages.length, pStages: &stages[0],

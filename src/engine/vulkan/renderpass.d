@@ -103,7 +103,7 @@ void createSceneRenderPass(ref App app) {
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
     ],
     subpasses: [
-      { // 0: opaque (color 0 + dummy)
+      { // 0: opaque (color 0 + VK_ATTACHMENT_UNUSED)
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
         colorAttachmentCount: 2, pColorAttachments: colorRefs.ptr,
         pDepthStencilAttachment: &depthRef,
