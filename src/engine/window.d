@@ -82,20 +82,28 @@ void createOrResizeWindow(ref App app) {
     app.updateDescriptorSet(app.postProcess, app.sets[Stage.POST], i);
   }
 
-  SDL_Log("5:Post-processing and ImGui resources");
+  SDL_Log("5: Weighted Blended Order-Independent Transparency");
+  app.reflectShaders(app.wboit.shaders);
+  app.createResources(app.wboit.shaders, Stage.RESOLVE);
+  app.createDescriptors(app.wboit.shaders, Stage.RESOLVE);
+  foreach(i; 0 .. app.framesInFlight){
+    app.updateDescriptorSet(app.wboit.shaders, app.sets[Stage.RESOLVE], i);
+  }
+
+  SDL_Log("6:Post-processing and ImGui resources");
   app.postCmd.create(app, app.commandPool, app.framesInFlight);
   app.imguiCmd.create(app, app.commandPool, app.framesInFlight);
 
-  SDL_Log("6: Create RenderPasses [DEPTH -> SCENE -> POST -> IMGUI]");
+  SDL_Log("7: Create RenderPasses [DEPTH -> SCENE -> POST -> IMGUI]");
   app.createDepthPrePass();
   app.createSceneRenderPass();
   app.createPostProcessRenderPass();
   app.createImGuiRenderPass();
 
-  SDL_Log("7: Create Framebuffers");
+  SDL_Log("8: Create Framebuffers");
   app.createFramebuffers();
 
-  SDL_Log("8: Create the Pipelines (Post-processing and Rendering)");
+  SDL_Log("9: Create the Pipelines (Post-processing and Rendering)");
   app.createPostProcessGraphicsPipeline();
   foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
   if(app.verbose) SDL_Log(" ---- Window Done ----");

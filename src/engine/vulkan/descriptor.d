@@ -271,10 +271,11 @@ void repointDirtyDescriptors(ref App app) {
   if(!app.buffers.descriptorsDirty[app.syncIndex] && !app.shadows.shadowDescriptorsDirty[app.syncIndex]) return;
   foreach(key, sets; app.sets) {
     switch(key) {
-      case Stage.RENDER:  app.updateDescriptorSet(app.shaders, sets, app.syncIndex); break;
+      case Stage.RENDER: app.updateDescriptorSet(app.shaders, sets, app.syncIndex); break;
       case Stage.SHADOWS: app.updateDescriptorSet(app.shadows.shaders, sets, app.syncIndex); break;
-      case Stage.POST:    app.updateDescriptorSet(app.postProcess, sets, app.syncIndex); break;
-      case Stage.IMGUI:   break;
+      case Stage.POST: app.updateDescriptorSet(app.postProcess, sets, app.syncIndex); break;
+      case Stage.RESOLVE: app.updateDescriptorSet(app.wboit.shaders, sets, app.syncIndex); break;
+      case Stage.IMGUI: break;
       default: foreach(ref s; app.compute.shaders) if(s.path == key){ app.updateDescriptorSet([s], sets, app.syncIndex); break; }
     }
   }

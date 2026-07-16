@@ -19,6 +19,7 @@ enum spvc_resource_type[const(char)*] types = [
   "Storage Buffer" : SPVC_RESOURCE_TYPE_STORAGE_BUFFER,
   "Sampled Image" : SPVC_RESOURCE_TYPE_SAMPLED_IMAGE,
   "Storage Image" : SPVC_RESOURCE_TYPE_STORAGE_IMAGE,
+  "Subpass Input" : SPVC_RESOURCE_TYPE_SUBPASS_INPUT,
   "Stage Input" : SPVC_RESOURCE_TYPE_STAGE_INPUT,
   "Stage Output" : SPVC_RESOURCE_TYPE_STAGE_OUTPUT
 ];
