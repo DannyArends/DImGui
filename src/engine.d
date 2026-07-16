@@ -61,6 +61,7 @@ struct App {
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
   WorldText worldText;                                                          /// All 3D text
   ShadowMap shadows;                                                            /// ShadowMap object
+  WBOIT wboit;                                                                  /// Weighted-blended OIT
   DescriptorProvider[string] providers;                                         /// GPU resource creator
 
   VkSampler sampler;
