@@ -212,7 +212,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUA
 }
 
 /** Create a blank, camera-sized texture that a compute shader can write into (no pixel data — pure GPU storage) */
-void createComputeTexture(ref App app, Descriptor descriptor) {
+void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath = "") {
   VkImageUsageFlags usage;
   usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -220,7 +220,9 @@ void createComputeTexture(ref App app, Descriptor descriptor) {
   usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
   usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-  Texture texture = Texture(path : descriptor.name, width: app.camera.width, height: app.camera.height);
+  uint w = app.camera.width, h = app.camera.height;
+  if(auto p = shaderPath in app.compute.passes) { if(p.resolution) { auto r = p.resolution(app); w = r[0]; h = r[1]; } }
+  Texture texture = Texture(path : descriptor.name, width: w, height: h);
 
   app.createNamedImage(texture, texture.width, texture.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
                         VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
