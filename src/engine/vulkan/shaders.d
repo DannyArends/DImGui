@@ -7,6 +7,7 @@ import engine;
 
 import io : readFile;
 import reflection : convert, reflectShader;
+import ssao : SSAO_KERNEL;
 import validation : nameVulkanObject;
 
 struct Shader {
@@ -49,6 +50,10 @@ struct IncluderContext {
   bool verbose = false;
 }
 
+void addCompileMacro(ref App app, string name, string value) {
+  shaderc_compile_options_add_macro_definition(app.options, toStringz(name), name.length, toStringz(value), value.length);
+}
+
 /** Create the ShaderC compiler */
 void createCompiler(ref App app) {
   app.compiler = shaderc_compiler_initialize();
@@ -62,6 +67,7 @@ void createCompiler(ref App app) {
   }
   shaderc_compile_options_set_generate_debug_info(app.options);
   shaderc_compile_options_set_optimization_level(app.options, shaderc_optimization_level_performance);
+  app.addCompileMacro("SSAO_KERNEL", to!string(SSAO_KERNEL));
   shaderc_compile_options_set_include_callbacks(app.options, &includeResolve, &includeRelease, cast(void*)&app.includeContext);
 
   app.mainDeletionQueue.add((){

@@ -8,11 +8,11 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(binding = 0) uniform sampler2DMS depthSampler;
 layout(binding = 1, rgba8) uniform writeonly image2D ssaoOut;
 layout(binding = 2) uniform SSAO {
-  mat4 viewProj;      // ori * proj * view
-  mat4 invViewProj;   // inverse(viewProj): clip -> world
-  vec4 camPos;        // camera world position (.xyz)
-  vec4 kernel[32];    // tangent-space hemisphere samples (.xyz)
-  vec4 params;        // x=radius(world units) y=bias z=power w=enable
+  mat4 viewProj;                // ori * proj * view
+  mat4 invViewProj;             // inverse(viewProj): clip -> world
+  vec4 camPos;                  // camera world position (.xyz)
+  vec4 kernel[SSAO_KERNEL];     // tangent-space hemisphere samples (.xyz)
+  vec4 params;                  // x=radius(world units) y=bias z=power w=enable
 } u;
 
 vec3 worldPos(ivec2 px, ivec2 size) {
@@ -38,9 +38,8 @@ void main() {
   vec3 T = normalize(rnd - N * dot(rnd, N));
   mat3 TBN = mat3(T, cross(N, T), N);
 
-  int K = 32;
   float occ = 0.0;
-  for (int i = 0; i < K; ++i) {
+  for (int i = 0; i < SSAO_KERNEL; ++i) {
     vec3 s = P + (TBN * u.kernel[i].xyz) * u.params.x;    // world-space sample point
     vec4 clip = u.viewProj * vec4(s, 1.0);
     if (clip.w <= 0.0) continue;
@@ -55,7 +54,7 @@ void main() {
     float rangeCheck = smoothstep(0.0, 1.0, u.params.x / max(length(surf - P), 1e-4));
     occ += (surfaceDist < sampleDist - u.params.y ? 1.0 : 0.0) * rangeCheck;
   }
-  float ao = pow(1.0 - occ / float(K), u.params.z);
+  float ao = pow(1.0 - occ / float(SSAO_KERNEL), u.params.z);
   ao = mix(1.0, ao, u.params.w);
   imageStore(ssaoOut, px, vec4(ao));
 }

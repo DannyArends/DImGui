@@ -144,8 +144,8 @@ struct App {
   bool showLights = false;                                                      /// Show lights
   bool showPaths = false;                                                       /// Show pathfinding
   bool showRays = false;                                                        /// Show rays
-  LMode lMode = isAndroid ? LMode.Lights : LMode.LightsAndShadows;              /// Allow shadows to be disabled
-  bool useSSAO = isAndroid ? false : true;                                      /// SSAO ?
+  LMode lMode = isAndroid ? LMode.LightsAndShadows : LMode.LightsAndShadows;              /// Allow shadows to be disabled
+  bool useSSAO = isAndroid ? true : true;                                      /// SSAO ?
   bool disco = false;                                                           /// Disco mode
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint clusterCapacity = CLUSTER_COUNT;                                         /// Froxel light index capacity, grows on overflow
