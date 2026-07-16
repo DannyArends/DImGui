@@ -31,6 +31,7 @@ struct Specialization {
   bool sdf = false;
   bool ssao = true;
   bool animated = false;
+  bool depthPass = false;
 }
 
 struct ShaderDef {
@@ -169,7 +170,9 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
                   LIGHT_GRID[0], LIGHT_GRID[1], LIGHT_GRID[2], 
                   s.sdf ? VK_TRUE : VK_FALSE,
                   s.ssao ? VK_TRUE : VK_FALSE,
-                  s.animated ? VK_TRUE : VK_FALSE ];
+                  s.animated ? VK_TRUE : VK_FALSE,
+                  s.depthPass ? VK_TRUE : VK_FALSE,
+                  ];
   stage.mapEntry = [
     VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),  // LINE : fragment
     VkSpecializationMapEntry(1, 1*uint.sizeof, uint.sizeof),  // ALPHA_TEST : fragment
@@ -180,6 +183,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
     VkSpecializationMapEntry(6, 6*uint.sizeof, uint.sizeof),  // SDF : fragment
     VkSpecializationMapEntry(7, 7*uint.sizeof, uint.sizeof),  // SSAO : post fragment
     VkSpecializationMapEntry(8, 8*uint.sizeof, uint.sizeof),  // ANIMATED : vertex
+    VkSpecializationMapEntry(9, 9*uint.sizeof, uint.sizeof),  // DEPTHPASS : vertex
   ];
   stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
 
