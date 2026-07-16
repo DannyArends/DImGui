@@ -10,10 +10,10 @@ import images : cleanup, createNamedImage, ImageBuffer;
 import shaders : createStageInfo;
 
 struct WBOIT {
-  ImageBuffer accumulation;                                   /// Accumulation target (RGBA16F, single-sample)
-  ImageBuffer revealage;                                      /// Revealage target (R16F, single-sample)
-  Shader[] shaders;                                           /// Resolve shader (fullscreen composite)
-  GraphicsPipeline resolvePipeline;                           /// Resolve/composite pipeline (subpass 2)
+  ImageBuffer accumulation;                                     /// Accumulation target (RGBA16F, MSAA)
+  ImageBuffer revealage;                                        /// Revealage target (R16F, MSAA)
+  Shader[] shaders;                                             /// Resolve shader (fullscreen composite)
+  GraphicsPipeline resolvePipeline;                             /// Resolve/composite pipeline (subpass 2)
   VkFormat accumulationFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
   VkFormat revealageFormat = VK_FORMAT_R16_SFLOAT;
   alias shaders this;
