@@ -89,7 +89,6 @@ void createOrResizeWindow(ref App app) {
   foreach(i; 0 .. app.framesInFlight){
     app.updateDescriptorSet(app.wboit.shaders, app.sets[Stage.RESOLVE], i);
   }
-  app.createWBOITResolvePipeline();
 
   SDL_Log("6:Post-processing and ImGui resources");
   app.postCmd.create(app, app.commandPool, app.framesInFlight);
@@ -106,6 +105,7 @@ void createOrResizeWindow(ref App app) {
 
   SDL_Log("9: Create the Pipelines (Post-processing and Rendering)");
   app.createPostProcessGraphicsPipeline();
+  app.createWBOITResolvePipeline();
   foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
   if(app.verbose) SDL_Log(" ---- Window Done ----");
 }
