@@ -13,7 +13,7 @@ import shadow : updateShadowMapUBO;
 import ssao : updateSSAO;
 import validation : nameVulkanObject;
 
-enum DescriptorTarget { None, Textures, Shadow, HDR, Compute, Depth, SSAO }
+enum DescriptorTarget { None, Textures, Shadow, HDR, Compute, Depth, SSAO, WBOITAccum, WBOITReveal }
 
 struct Descriptor {
   VkDescriptorType type;    /// Type of Descriptor
@@ -259,6 +259,8 @@ void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descri
     case DescriptorTarget.Compute: imageInfos.append([app.textures[app.textures.idx(d.name)]], app.sampler, 0, VK_IMAGE_LAYOUT_GENERAL); break;
     case DescriptorTarget.Depth: imageInfos.append([app.depthBuffer], app.sampler, 0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL); break;
     case DescriptorTarget.SSAO: imageInfos.append([app.textures[app.textures.idx("ssaoOut")]], app.sampler); break;
+    case DescriptorTarget.WBOITAccum:  imageInfos.append([app.wboit.accumulation], null, 0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); break;
+    case DescriptorTarget.WBOITReveal: imageInfos.append([app.wboit.revealage], null, 0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); break;
     case DescriptorTarget.None: break;
   }
 }
@@ -301,7 +303,9 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[]
     infoIndex ~= bufferInfos.length - 1;
   }
   // Image sampler / Compute Stored Image Write
-  if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+  if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+     d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
+     d.type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
     app.writeImageInfos(imageInfos, d);
     VkWriteDescriptorSet set = makeWrite(dst, d.binding, d.type, null, null);
     set.descriptorCount = cast(uint)(imageInfos.length - start);

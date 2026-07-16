@@ -125,17 +125,21 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     if(!descr.count) {
       descr.count = cast(uint)MAX_TEXTURES;
       if(to!string(descr.name) == "shadowMap"){ descr.count = MAX_SHADOW_MAPS; }
-      if(to!string(descr.name) == "hdrSampler"){ descr.count = 1; }
+      if(to!string(descr.name) == "hdrSampler" || to!string(descr.name) == "accumInput" || to!string(descr.name) == "revealInput"){ descr.count = 1; }
     }
     // Resolve image target once at load time (avoids per-frame string dispatch in updateDescriptorSet)
     if(descr.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
       if(to!string(descr.name) == "textureSampler") descr.target = DescriptorTarget.Textures;
-      else if(to!string(descr.name) == "shadowMap") descr.target = DescriptorTarget.Shadow;
-      else if(to!string(descr.name) == "hdrSampler") descr.target = DescriptorTarget.HDR;
-      else if(to!string(descr.name) == "depthSampler") descr.target = DescriptorTarget.Depth;
-      else if(to!string(descr.name) == "ssaoSampler") descr.target = DescriptorTarget.SSAO;
+      if(to!string(descr.name) == "shadowMap") descr.target = DescriptorTarget.Shadow;
+      if(to!string(descr.name) == "hdrSampler") descr.target = DescriptorTarget.HDR;
+      if(to!string(descr.name) == "depthSampler") descr.target = DescriptorTarget.Depth;
+      if(to!string(descr.name) == "ssaoSampler") descr.target = DescriptorTarget.SSAO;
     }
     if(descr.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) descr.target = DescriptorTarget.Compute;
+    if(descr.type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
+      if(to!string(descr.name) == "accumInput")  descr.target = DescriptorTarget.WBOITAccum;
+      if(to!string(descr.name) == "revealInput") descr.target = DescriptorTarget.WBOITReveal;
+    }
     if (app.trace) {
       SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
               descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);
@@ -179,6 +183,7 @@ VkDescriptorType convert(spvc_resource_type type) {
     case SPVC_RESOURCE_TYPE_STORAGE_BUFFER: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;
     case SPVC_RESOURCE_TYPE_SAMPLED_IMAGE: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; break;
     case SPVC_RESOURCE_TYPE_STORAGE_IMAGE: return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE; break;
+    case SPVC_RESOURCE_TYPE_SUBPASS_INPUT: return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT; break;
     default: SDL_Log("Error: ShaderResource not recognized"); return cast(VkDescriptorType)(0);
   }
 }
