@@ -26,8 +26,9 @@ layout(location = 1) out float outRevealage;
 /// Emit final shaded color: standard alpha-over (location 0) or WBOIT accumulation (accum + revealage)
 void writeOutput(vec3 color, float alpha) {
   if (WBOIT) {
-    // Weighted-blended OIT (McGuire/Bavoil): weight emphasises near + opaque fragments
-    float w = alpha * clamp(0.03 / (1e-5 + pow(gl_FragCoord.z, 4.0)), 0.01, 3000.0);
+    float d = -(ubo.view * fragPosWorld).z;                              // linear distance from camera
+    float zNorm = clamp((log2(d) * ubo.clusterCfg.x + ubo.clusterCfg.y) / float(GRID_Z), 0.0, 1.0);
+    float w = alpha * clamp(0.3 / (1e-5 + pow(zNorm, 4.0)), 1e-2, 3e3);  // near (zNorm→0) weighted high, far low
     outColor = vec4(color * alpha * w, alpha * w);   // accum: premultiplied, weighted
     outRevealage = alpha;                            // revealage: blended as product(1-a) via pipeline blend
   } else { outColor = vec4(color, alpha); }
