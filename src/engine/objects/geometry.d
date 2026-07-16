@@ -8,6 +8,7 @@ import engine;
 import buffer : cleanup, nameGeometryBuffer, toGPU, uploadBarrier;
 import boundingbox : computeBoundingBox;
 import textures : idx;
+import matrix : inverse, transpose;
 import mesh : logMesh;
 import normals : computeNormals, computeTangents;
 
@@ -43,6 +44,7 @@ class Geometry {
   /** Allocate vertex, index, and instance buffers */
   void buffer(ref App app, VkCommandBuffer cmdBuffer) {
     if(app.trace) SDL_Log("Buffering: %s", toStringz(geometry()));
+    foreach(ref inst; instances) inst.normal = inst.matrix.inverse.transpose;
     app.toGPU(vertices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, "VERTEX", geometry());
     app.toGPU(indices, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, "INDEX", geometry());
     app.toGPU(instances, cmdBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, "INSTANCE", geometry());
@@ -59,6 +61,7 @@ class Geometry {
   bool castShadow = true;                           /// Boolean flag
 
   @property bool isSDF() nothrow { return(geometry !is null && geometry() == "Text"); }
+  @property bool isAnimated() nothrow { return(geometry !is null && animations.length > 0); }
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null; }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }

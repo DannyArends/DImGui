@@ -30,6 +30,7 @@ struct Specialization {
   bool instanced = false;
   bool sdf = false;
   bool ssao = true;
+  bool animated = false;
 }
 
 struct ShaderDef {
@@ -59,6 +60,7 @@ void createCompiler(ref App app) {
     abort();
   }
   shaderc_compile_options_set_generate_debug_info(app.options);
+  shaderc_compile_options_set_optimization_level(app.options, shaderc_optimization_level_performance);
   shaderc_compile_options_set_include_callbacks(app.options, &includeResolve, &includeRelease, cast(void*)&app.includeContext);
 
   app.mainDeletionQueue.add((){
@@ -166,7 +168,8 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
                   s.instanced ? VK_TRUE : VK_FALSE, 
                   LIGHT_GRID[0], LIGHT_GRID[1], LIGHT_GRID[2], 
                   s.sdf ? VK_TRUE : VK_FALSE,
-                  s.ssao ? VK_TRUE : VK_FALSE ];
+                  s.ssao ? VK_TRUE : VK_FALSE,
+                  s.animated ? VK_TRUE : VK_FALSE ];
   stage.mapEntry = [
     VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),  // LINE : fragment
     VkSpecializationMapEntry(1, 1*uint.sizeof, uint.sizeof),  // ALPHA_TEST : fragment
@@ -176,6 +179,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
     VkSpecializationMapEntry(5, 5*uint.sizeof, uint.sizeof),  // GRID_Z : compute & fragment
     VkSpecializationMapEntry(6, 6*uint.sizeof, uint.sizeof),  // SDF : fragment
     VkSpecializationMapEntry(7, 7*uint.sizeof, uint.sizeof),  // SSAO : post fragment
+    VkSpecializationMapEntry(8, 8*uint.sizeof, uint.sizeof),  // ANIMATED : vertex
   ];
   stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
 
