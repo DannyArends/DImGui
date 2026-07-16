@@ -50,7 +50,8 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
 
 /** Draw every visible object of one topology for one pass (0=opaque, 1=transparent); 
  * rebinds the pipeline only when the specialization changed */
-void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, int pass, bool depthPass = false) {
+void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, 
+                      int pass, bool depthPass = false, bool wboit = false) {
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &set, 0, null);
   if(!depthPass && pass == 0 && topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd);
 
@@ -58,7 +59,7 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
   foreach(obj; app.objects) {
     if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
     if((pass == 0) != obj.isOpaque) continue;     // pass 0 draws opaque, pass 1 draws transparent
-    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass);
+    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass, wboit);
     pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d, D=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
     if(first || last != s) {
       vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
@@ -89,7 +90,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
 
   // Subpass 1: transparent WBOIT accumulation
   vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
-  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, 1); }
+  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, 1, false, true); }
 
   // Subpass 2: resolve/composite (fullscreen; draw wired in step 5)
   vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
