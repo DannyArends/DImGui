@@ -38,7 +38,7 @@ struct App {
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 2, 0 )
   };
 
-  VkClearValue[6] clearValue = [ 
+  VkClearValue[5] clearValue = [ 
     {{ float32: [0.5f, 0.2f, 0.1f, 1.0f] }},              // 0: MSAA color (CLEAR)
     {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }},              // 1: resolved (DONT_CARE: value unused)
     { depthStencil : VkClearDepthStencilValue(1.0f, 0) }, // 2: depth (LOAD: value unused)

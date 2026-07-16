@@ -51,14 +51,14 @@ struct RenderPass {
 /** Create a Scene RenderPass object
  * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment */
 void createSceneRenderPass(ref App app) {
-  // Subpass 0 (opaque): MSAA color(0) + dummy(5)
+  // Subpass 0 (opaque): MSAA color(0) + VK_ATTACHMENT_UNUSED
   VkAttachmentReference[2] colorRefs = [
     { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
-    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED }, // dummy loc-1 sink
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
   ];
-  VkAttachmentReference[2] resolveRefs = [ // MSAA: Resolve 
+  VkAttachmentReference[2] resolveRefs = [ // MSAA: Resolve + VK_ATTACHMENT_UNUSED
     { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
-    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED }, // dummy not resolved
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
   ]; // Depth Attachement
   VkAttachmentReference depthRef = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
 
