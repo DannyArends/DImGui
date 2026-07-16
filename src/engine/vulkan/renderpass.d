@@ -85,13 +85,13 @@ void createSceneRenderPass(ref App app) {
         initialLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
         finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
       // 3: WBOIT accumulation (single-sample) — cleared, transient (consumed by resolve subpass)
-      { format: app.wboit.accumFormat, samples: VK_SAMPLE_COUNT_1_BIT, loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+      { format: app.wboit.accumFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
         finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
       // 4: WBOIT revealage (single-sample) — cleared to 1.0, transient
-      { format: app.wboit.revealageFormat, samples: VK_SAMPLE_COUNT_1_BIT, loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+      { format: app.wboit.revealageFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,

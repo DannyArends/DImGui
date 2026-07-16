@@ -5,7 +5,8 @@
 
 import engine;
 
-import images : createNamedImage, ImageBuffer;
+import devices : getMSAASamples;
+import images : cleanup, createNamedImage, ImageBuffer;
 import shaders : createStageInfo;
 
 struct WBOIT {
@@ -26,11 +27,15 @@ ShaderDef[] WBOITResolveShaders = [
 /** Allocate the single-sample WBOIT accumulation targets (input attachments for the resolve subpass) */
 void createWBOITResources(ref App app) {
   app.createNamedImage(app.wboit.accumulation, app.camera.width, app.camera.height, app.wboit.accumFormat,
-                       VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Accumulation", VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
+                       VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Accumulation", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
   app.createNamedImage(app.wboit.revealage, app.camera.width, app.camera.height, app.wboit.revealageFormat,
-                       VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Revealage", VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
+                       VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Revealage", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+  app.swapDeletionQueue.add((){ 
+    app.cleanup(app.wboit.accumulation);
+    app.cleanup(app.wboit.revealage);
+  });
 }
 
 /** Record the fullscreen resolve draw (scene subpass 2) */
@@ -82,6 +87,11 @@ void createWBOITResolvePipeline(ref App app) {
   app.wboit.resolvePipeline.createLayout(app, layoutInfo, app.swapDeletionQueue);
 
   auto stages = createStageInfo(app.wboit.shaders);
+
+  int samples = cast(int)app.getMSAASamples();
+  VkSpecializationMapEntry sampleEntry = { constantID: 0, offset: 0, size: int.sizeof };
+  VkSpecializationInfo specInfo = { mapEntryCount: 1, pMapEntries: &sampleEntry, dataSize: int.sizeof, pData: &samples };
+  foreach(ref st; stages) if(st.stage == VK_SHADER_STAGE_FRAGMENT_BIT){ st.pSpecializationInfo = &specInfo; }
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
     stageCount: cast(uint)stages.length, pStages: &stages[0],

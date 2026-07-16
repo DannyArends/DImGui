@@ -94,7 +94,7 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
   VkPipelineMultisampleStateCreateInfo multisampling = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
     sampleShadingEnable: VK_FALSE,
-    rasterizationSamples: s.wboit ? VK_SAMPLE_COUNT_1_BIT : app.getMSAASamples(),
+    rasterizationSamples: app.getMSAASamples(),
     minSampleShading: 1.0f
   };
 
