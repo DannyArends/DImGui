@@ -11,7 +11,7 @@ import descriptor : createDescriptors, updateDescriptorSet;
 import commands : createCommandBuffer;
 import framebuffer : createFramebuffers;
 import images : createColorResources;
-import pipeline : createGraphicsPipeline, createDepthPrePassPipeline, createPostProcessGraphicsPipeline;
+import pipeline : createGraphicsPipeline, createPostProcessGraphicsPipeline;
 import renderpass : createSceneRenderPass, createPostProcessRenderPass, createImGuiRenderPass;
 import shadow : createShadowMapGraphicsPipeline, recordShadowCommandBuffer;
 import reflection : reflectShaders, createResources;
@@ -95,10 +95,7 @@ void createOrResizeWindow(ref App app) {
 
   SDL_Log("8: Create the Pipelines (Post-processing and Rendering)");
   app.createPostProcessGraphicsPipeline();
-  foreach(member; supportedTopologies) {
-    app.createDepthPrePassPipeline(member);
-    app.createGraphicsPipeline(member);
-  }
+  foreach(member; supportedTopologies) { app.createGraphicsPipeline(member); }
   if(app.verbose) SDL_Log(" ---- Window Done ----");
 }
 
