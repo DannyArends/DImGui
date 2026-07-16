@@ -38,10 +38,12 @@ struct App {
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 2, 0 )
   };
 
-  VkClearValue[3] clearValue = [ 
-    {{ float32: [0.5f, 0.2f, 0.1f, 1.0f] }}, 
-    {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }}, 
-    { depthStencil : VkClearDepthStencilValue(1.0f, 0) } 
+  VkClearValue[5] clearValue = [ 
+    {{ float32: [0.5f, 0.2f, 0.1f, 1.0f] }},              // 0: MSAA color (CLEAR)
+    {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }},              // 1: resolved (DONT_CARE — value unused)
+    { depthStencil : VkClearDepthStencilValue(1.0f, 0) }, // 2: depth (LOAD — value unused)
+    {{ float32: [0.0f, 0.0f, 0.0f, 0.0f] }},              // 3: WBOIT accumulation → clear (0,0,0,0)
+    {{ float32: [1.0f, 0.0f, 0.0f, 0.0f] }},              // 4: WBOIT revealage → clear 1.0
   ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
