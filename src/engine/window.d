@@ -18,7 +18,7 @@ import reflection : reflectShaders, createResources;
 import surface : queryPresentFormats;
 import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
-import wboit : createWBOITResources;
+import wboit : createWBOITResources, createWBOITResolvePipeline;
 
 VkPrimitiveTopology[] supportedTopologies = 
 [
@@ -89,6 +89,7 @@ void createOrResizeWindow(ref App app) {
   foreach(i; 0 .. app.framesInFlight){
     app.updateDescriptorSet(app.wboit.shaders, app.sets[Stage.RESOLVE], i);
   }
+  app.createWBOITResolvePipeline();
 
   SDL_Log("6:Post-processing and ImGui resources");
   app.postCmd.create(app, app.commandPool, app.framesInFlight);

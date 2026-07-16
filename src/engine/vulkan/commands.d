@@ -12,6 +12,7 @@ import geometry : draw, bufferGeometries;
 import ssbo : updateSSBO;
 import matrix : multiply;
 import validation : pushLabel, popLabel, nameVulkanObject;
+import wboit : drawWBOITResolve;
 import window: supportedTopologies;
 
 /** A recordable command buffer (one per syncIndex); records one or more RenderPass instances. */
@@ -88,11 +89,11 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
 
   // Subpass 1: transparent WBOIT accumulation
   vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
-  //foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, 1); }
+  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, 1); }
 
   // Subpass 2: resolve/composite (fullscreen; draw wired in step 5)
   vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
-  // TODO(step 5): app.drawWBOITResolve(cmd);
+  app.drawWBOITResolve(cmd);
 
   app.sceneCmd.pass.end(cmd);
   popLabel(cmd);
