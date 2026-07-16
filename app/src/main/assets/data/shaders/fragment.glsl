@@ -9,6 +9,8 @@
 #include "functions.glsl"
 #include "samplers.glsl"
 
+layout(constant_id = 10) const bool WBOIT = false;      /// transparent accumulation variant (dual output)
+
 // Per Fragment input attributes
 layout(location = 0) in vec4 fragPosWorld;              /// Fragment Position (in world space)
 layout(location = 1) in vec4 fragColor;                 /// Fragment Color
@@ -17,8 +19,22 @@ layout(location = 3) in vec2 fragTexCoord;              /// Texture coordinates
 layout(location = 4) flat in ivec2 fragInstance;        /// [Mesh, Material]
 layout(location = 5) in mat3 fragTBN;                   /// Fragment: Tangent, Bitangent, Normal matrix
 
-// Fragment output (to post-processing shader)
+// Fragment output: normal path writes location 0; WBOIT path writes accum(0) + revealage(1)
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out float outRevealage;
+
+/// Emit final shaded color: standard alpha-over (location 0) or WBOIT accumulation (accum + revealage)
+void writeOutput(vec3 color, float alpha) {
+  if (WBOIT) {
+    // Weighted-blended OIT (McGuire/Bavoil): weight emphasises near + opaque fragments
+    float z = gl_FragCoord.z;
+    float w = alpha * clamp(0.03 / (1e-5 + pow(z, 4.0)), 0.01, 3000.0);
+    outColor = vec4(color * alpha * w, alpha * w);   // accum: premultiplied, weighted
+    outRevealage = alpha;                            // revealage: blended as product(1-a) via pipeline blend
+  } else {
+    outColor = vec4(color, alpha);
+  }
+}
 
 void main() {
   Mesh mesh = meshSSBO.meshes[uint(fragInstance[0])];
@@ -46,7 +62,7 @@ void main() {
   float ao = (!SDF && useSSAO) ? texture(ssaoSampler, gl_FragCoord.xy / ubo.clusterCfg.zw).r : 1.0;
 
   // Lighting mode 0: Return base color
-  if (ubo.lightingMode == 0u) { outColor = vec4(rgb * 0.2 * ao, alpha); return; }
+  if (ubo.lightingMode == 0u) { writeOutput(rgb * 0.2 * ao, alpha); return; }
 
   vec3 normalForLighting = normalize(fragNormal);
   /// Surface normalForLighting
@@ -79,6 +95,6 @@ void main() {
   }
 
   // Screen-space ambient occlusion: opaque only (SDF/transparent geometry has no valid depth, must not receive AO)
-  outColor = vec4(surfaceColor * ao, alpha);
+  writeOutput(surfaceColor * ao, alpha);
 }
 
