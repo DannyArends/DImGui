@@ -38,27 +38,29 @@ void main() {
   /// Compute our model matrix
   vec4 worldPos = instance * position;
 
-  /// Calculate the world-space normal, bitangent, tangent, and normal matrix
-  vec3 N = normalize(mat3(instance) * inNormal);
-  vec3 T = normalize(mat3(instance) * inTangent.xyz);
-  vec3 B = normalize(cross(N, T)) * inTangent.w;
-
   /// World position & point size
   gl_Position = ubo.viewProj * worldPos;
   gl_PointSize = 2.0f;
 
-  /// Transfer data to fragment shader
-  fragPosWorld = worldPos;
-  fragColor = INSTANCED ? instanceColor : inColor;
-  fragNormal = N;
-  fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
-  uint meshID = meshdef[0];
-  if(meshdef[0] != meshdef[1]) {
-    for (; meshID < meshdef[1]; meshID++) {
-      if (meshSSBO.meshes[meshID].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[meshID].vertices[1]) break;
+  if(!DEPTH_PASS) {
+    /// Calculate the world-space normal, bitangent, tangent, and normal matrix
+    vec3 N = normalize(mat3(instance) * inNormal);
+    vec3 T = normalize(mat3(instance) * inTangent.xyz);
+    vec3 B = normalize(cross(N, T)) * inTangent.w;
+
+    /// Transfer data to fragment shader
+    fragPosWorld = worldPos;
+    fragColor = INSTANCED ? instanceColor : inColor;
+    fragNormal = N;
+    fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
+    uint meshID = meshdef[0];
+    if(meshdef[0] != meshdef[1]) {
+      for (; meshID < meshdef[1]; meshID++) {
+        if (meshSSBO.meshes[meshID].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[meshID].vertices[1]) break;
+      }
     }
+    fragInstance = ivec2(meshID, meshdef[2]);
+    fragTBN = mat3(T, B, N);
   }
-  fragInstance = ivec2(meshID, meshdef[2]);
-  fragTBN = mat3(T, B, N); 
 }
 

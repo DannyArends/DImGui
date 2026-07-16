@@ -190,6 +190,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
   foreach(shader; shaders) {
     auto spec = shader.info;
     spec.pSpecializationInfo = stage.specInfo;
+    if(s.depthPass && spec.stage != VK_SHADER_STAGE_VERTEX_BIT) continue;
     stage.info ~= spec;
   }
   return(stage);

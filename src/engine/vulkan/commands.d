@@ -130,14 +130,18 @@ void recordDepthPrePass(ref App app) {
   auto set = app.sets[Stage.RENDER][app.syncIndex];
 
   foreach(topology; supportedTopologies) {
-    auto pipe = topology in app.depthPipeline;
-    if(pipe is null) continue;
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe.layout, 0, 1, &set, 0, null);
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe.pipeline());
+    if(topology !in app.pipelines) continue;
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &set, 0, null);
+    Specialization last; bool first = true;
     foreach(obj; app.objects) {
       if(!obj.isOpaque) continue;                                            // opaque only — transparent doesn't own depth
       if(!obj.isTopology(topology)) continue;
       if(!obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
+      auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, true);  // depthPass=true
+      if(first || last != s) {
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s));
+        last = s; first = false;
+      }
       app.draw(obj, cmd);
     }
   }
