@@ -50,7 +50,7 @@ void createShadowMap(ref App app) {
   app.createShadowMapRenderPass(app.shadows.cmd.pass(1), VK_ATTACHMENT_LOAD_OP_LOAD);
   app.initShadowPool();
   app.createShadowSampler();
-  app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/shadow.glsl", shaderc_glsl_vertex_shader)]);
+  app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/vertex.shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
 /** Shadow map resolution for a light: full dimension for the directional sun, quarter for point/spot. */
