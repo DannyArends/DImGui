@@ -43,7 +43,7 @@ void main() {
     if (alpha < 0.05f) discard; // Discard <.05
   }
 
-  float ao = (!SDF && useSSAO) ? texture(ssaoSampler, gl_FragCoord.xy / vec2(textureSize(ssaoSampler, 0))).r : 1.0;
+  float ao = (!SDF && useSSAO) ? texture(ssaoSampler, gl_FragCoord.xy / ubo.clusterCfg.zw).r : 1.0;
 
   // Lighting mode 0: Return base color
   if (ubo.lightingMode == 0u) { outColor = vec4(rgb * 0.2 * ao, alpha); return; }
