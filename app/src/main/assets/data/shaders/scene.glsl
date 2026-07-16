@@ -16,6 +16,7 @@ layout(constant_id = 5) const uint GRID_Z = 24u;
 layout(constant_id = 6) const bool SDF = false;
 layout(constant_id = 7) const bool useSSAO = true;
 layout(constant_id = 8) const bool ANIMATED = false;
+layout(constant_id = 9) const bool DEPTH_PASS = false;
 
 // Constants
 const uint NIL = 0xFFFFFFFFu;
