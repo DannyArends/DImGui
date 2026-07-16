@@ -179,6 +179,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
                   s.ssao ? VK_TRUE : VK_FALSE,
                   s.animated ? VK_TRUE : VK_FALSE,
                   s.depthPass ? VK_TRUE : VK_FALSE,
+                  s.wboit ? VK_TRUE : VK_FALSE,
                   ];
   stage.mapEntry = [
     VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),  // LINE : fragment
@@ -191,6 +192,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
     VkSpecializationMapEntry(7, 7*uint.sizeof, uint.sizeof),  // SSAO : post fragment
     VkSpecializationMapEntry(8, 8*uint.sizeof, uint.sizeof),  // ANIMATED : vertex
     VkSpecializationMapEntry(9, 9*uint.sizeof, uint.sizeof),  // DEPTHPASS : vertex
+    VkSpecializationMapEntry(10, 10*uint.sizeof, uint.sizeof), // WBOIT : fragment
   ];
   stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
 
