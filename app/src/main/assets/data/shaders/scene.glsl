@@ -103,7 +103,7 @@ layout(std430, set=0, binding=BINDING_CLUSTER_COUNTER) buffer ClusterCounter {
 /// UBO
 layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   vec4 position;              /// Scene Camera Position
-  mat4 scene;                 /// Scene Camera adjustment
+  mat4 viewProj;              /// View Projection Orientation matrix
   mat4 view;                  /// View matrix
   mat4 proj;                  /// Projection matrix
   mat4 ori;                   /// Screen orientation

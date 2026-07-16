@@ -7,13 +7,13 @@ import engine;
 
 import buffer : createBuffer, cleanup;
 import quaternion : xyzw;
-import matrix : rotate, lookAt, perspective;
+import matrix : multiply, rotate, lookAt, perspective;
 import lights : computeLightSpace, LMode;
 import validation : nameVulkanObject;
 
 struct UniformBufferObject {
   float[4] position;
-  Matrix scene;
+  Matrix viewProj;
   Matrix view;
   Matrix proj;
   Matrix orientation;
@@ -58,7 +58,7 @@ void updateRenderUBO(ref App app, Descriptor d, uint syncIndex) {
 
   UniformBufferObject ubo = {
     position: app.camera.position.xyzw,
-    scene: Matrix.init, view: app.camera.view, proj: app.camera.proj, orientation: Matrix.init,
+    view: app.camera.view, proj: app.camera.proj, orientation: Matrix.init,
     shadowTexelSize: 1.0f / cast(float)app.shadows.dimension,
     nlights: cast(uint)app.lights.length,
     lMode: cast(LMode)app.lMode,
@@ -74,5 +74,6 @@ void updateRenderUBO(ref App app, Descriptor d, uint syncIndex) {
   } else if (app.camera.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR) {
     ubo.orientation = rotate(Matrix.init, [0.0f, 180.0f, 0.0f]);
   }
+  ubo.viewProj = ubo.orientation.multiply(ubo.proj).multiply(ubo.view);
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
