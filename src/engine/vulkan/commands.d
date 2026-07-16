@@ -85,14 +85,14 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, app.syncIndex);
   auto set = app.sets[Stage.RENDER][app.syncIndex];
 
-  // Subpass 0: opaque
+  // Subpass 0: Opaque draws
   foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, 0); }
 
-  // Subpass 1: transparent WBOIT accumulation
+  // Subpass 1: WBOIT: Accumulation of transparent draws
   vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
   foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, 1, false, true); }
 
-  // Subpass 2: resolve/composite (fullscreen; draw wired in step 5)
+  // Subpass 2: WBOIT: Resolve into composite
   vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
   app.drawWBOITResolve(cmd);
 
