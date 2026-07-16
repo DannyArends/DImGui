@@ -20,8 +20,8 @@ struct WBOIT {
 }
 
 ShaderDef[] WBOITShaders = [
-  ShaderDef("data/shaders/wboit.vertex.glsl", shaderc_glsl_vertex_shader),
-  ShaderDef("data/shaders/wboit.fragment.glsl", shaderc_glsl_fragment_shader),
+  ShaderDef("data/shaders/vertex.wboit.glsl", shaderc_glsl_vertex_shader),
+  ShaderDef("data/shaders/fragment.wboit.glsl", shaderc_glsl_fragment_shader),
 ];
 
 /** Allocate the MSAA WBOIT accumulation targets (input attachments for the resolve subpass) */

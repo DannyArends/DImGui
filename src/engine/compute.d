@@ -41,8 +41,8 @@ struct ComputePass {
 }
 
 ShaderDef[] ComputeShaders = [
-  ShaderDef("data/shaders/cull.glsl", shaderc_glsl_compute_shader),
-  ShaderDef("data/shaders/ssao.glsl", shaderc_glsl_compute_shader)
+  ShaderDef("data/shaders/compute.cull.glsl", shaderc_glsl_compute_shader),
+  ShaderDef("data/shaders/compute.ssao.glsl", shaderc_glsl_compute_shader)
 ];
 
 /** Load shader modules for compute */
@@ -50,7 +50,7 @@ void initializeCompute(ref App app) {
   app.loadShaders(app.compute.shaders, ComputeShaders);
 
   // cull.glsl: ClusterHeads/ClusterCounter/ClusterLights are cross-stage
-  app.compute.passes["data/shaders/cull.glsl"] = ComputePass(
+  app.compute.passes["data/shaders/compute.cull.glsl"] = ComputePass(
     stage: ComputeStage.PreRender,
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       VkBuffer headBuf = a.buffers["ClusterHeads"][a.syncIndex].buffer;
@@ -63,7 +63,7 @@ void initializeCompute(ref App app) {
     workItems: (ref App a, Shader shader) { uint[3] r = [cast(uint)a.lights.length, 1u, 1u]; return r; }
   );
 
-  app.compute.passes["data/shaders/ssao.glsl"] = ComputePass(
+  app.compute.passes["data/shaders/compute.ssao.glsl"] = ComputePass(
     stage: ComputeStage.PostDepth,
     enabled: (ref App a) => a.useSSAO,
     resolution: (ref App a) { uint[2] r = [a.camera.width, a.camera.height]; return(r); },

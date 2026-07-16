@@ -43,8 +43,8 @@ struct ShaderDef {
 
 ShaderDef[] RenderShaders = [ShaderDef("data/shaders/vertex.glsl", shaderc_glsl_vertex_shader), 
                              ShaderDef("data/shaders/fragment.glsl", shaderc_glsl_fragment_shader)];
-ShaderDef[] PostProcessShaders = [ShaderDef("data/shaders/postvertex.glsl", shaderc_glsl_vertex_shader), 
-                                  ShaderDef("data/shaders/postfragment.glsl", shaderc_glsl_fragment_shader)];
+ShaderDef[] PostProcessShaders = [ShaderDef("data/shaders/vertex.post.glsl", shaderc_glsl_vertex_shader), 
+                                  ShaderDef("data/shaders/fragment.post.glsl", shaderc_glsl_fragment_shader)];
 
 struct IncluderContext {
   char[][string] includedFiles;
