@@ -51,16 +51,16 @@ struct RenderPass {
 /** Create a Scene RenderPass object
  * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment */
 void createSceneRenderPass(ref App app) {
-  // Subpass 0 (opaque): MSAA color(0)+dummy(5) -> resolve, depth test/read
+  // Subpass 0 (opaque): MSAA color(0) + dummy(5)
   VkAttachmentReference[2] colorRefs = [
     { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
-    { attachment: 5, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL }, // dummy loc-1 sink
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED }, // dummy loc-1 sink
   ];
-  VkAttachmentReference[2] resolveRefs = [
+  VkAttachmentReference[2] resolveRefs = [ // MSAA: Resolve 
     { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
     { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED }, // dummy not resolved
-  ];
-  VkAttachmentReference depthRef   = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
+  ]; // Depth Attachement
+  VkAttachmentReference depthRef = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
 
   // Subpass 1 (transparent WBOIT accumulation): write accum(3) + revealage(4), test depth
   VkAttachmentReference[2] oitColorRefs = [
@@ -77,40 +77,33 @@ void createSceneRenderPass(ref App app) {
 
   RenderPassInfo info = {
     attachments: [
+      // 0: MSAA: Offscreen buffer
       { format: app.offscreen.format, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+      // 1: MSAA: Resolve
       { format: app.offscreen.format, samples: VK_SAMPLE_COUNT_1_BIT, loadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         storeOp: VK_ATTACHMENT_STORE_OP_STORE,
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+      // 2: Depth attachement
       { format: app.findDepthFormat(), samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_LOAD,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
         finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
-      // 3: WBOIT accumulation (single-sample) — cleared, transient (consumed by resolve subpass)
+      // 3: WBOIT: accumulation
       { format: app.wboit.accumulationFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-      // 4: WBOIT revealage (single-sample) — cleared to 1.0, transient
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+      // 4: WBOIT: revealage
       { format: app.wboit.revealageFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-      // 5: opaque loc-1 dummy sink (never read)
-      { format: app.wboit.revealageFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
     ],
     subpasses: [
-      { // 0: opaque (color 0 + dummy 5)
+      { // 0: opaque (color 0 + dummy)
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
         colorAttachmentCount: 2, pColorAttachments: colorRefs.ptr,
         pDepthStencilAttachment: &depthRef,
@@ -124,8 +117,7 @@ void createSceneRenderPass(ref App app) {
       { // 2: resolve/composite
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
         inputAttachmentCount: 2, pInputAttachments: oitInputRefs.ptr,
-        colorAttachmentCount: 1,
-        pColorAttachments: &resolveColorRef
+        colorAttachmentCount: 1, pColorAttachments: &resolveColorRef
       },
     ],
     dependencies: [

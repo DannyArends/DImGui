@@ -12,7 +12,6 @@ import shaders : createStageInfo;
 struct WBOIT {
   ImageBuffer accumulation;                                   /// Accumulation target (RGBA16F, single-sample)
   ImageBuffer revealage;                                      /// Revealage target (R16F, single-sample)
-  ImageBuffer opaqueDummy;                                    /// Dummy loc-1 sink for opaque pipeline (never read)
   Shader[] shaders;                                           /// Resolve shader (fullscreen composite)
   GraphicsPipeline resolvePipeline;                           /// Resolve/composite pipeline (subpass 2)
   VkFormat accumulationFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -33,13 +32,9 @@ void createWBOITResources(ref App app) {
   app.createNamedImage(app.wboit.revealage, app.camera.width, app.camera.height, app.wboit.revealageFormat,
                        VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Revealage", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
-  app.createNamedImage(app.wboit.opaqueDummy, app.camera.width, app.camera.height, app.wboit.revealageFormat,
-                       VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Opaque Dummy", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
-                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
   app.swapDeletionQueue.add((){ 
     app.cleanup(app.wboit.accumulation);
     app.cleanup(app.wboit.revealage);
-    app.cleanup(app.wboit.opaqueDummy);
   });
 }
 
