@@ -35,6 +35,7 @@ struct ComputePass {
   ComputeStage stage = ComputeStage.PreRender;
   bool delegate(ref App app) enabled; /// null = always enabled; else pass runs only when it returns true
   uint[3] delegate(ref App app, Shader shader) workItems; /// required
+  uint[2] delegate(ref App app, uint w, uint h) resolution; /// null = full camera res; else maps base dims
   void delegate(ref App app, VkCommandBuffer cmd, Shader shader) pre; /// null = none
   void delegate(ref App app, VkCommandBuffer cmd, Shader shader) post; /// null = none
 }
@@ -65,7 +66,7 @@ void initializeCompute(ref App app) {
   app.compute.passes["data/shaders/ssao.glsl"] = ComputePass(
     stage: ComputeStage.PostDepth,
     enabled: (ref App a) => a.useSSAO,
-    workItems: (ref App a, Shader shader) { uint[3] r = [a.camera.width, a.camera.height, 1u]; return r; },
+    workItems: (ref App a, Shader shader) { return([a.camera.width, a.camera.height, 1u]); },
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       // order the depth read after the previous frame's depth writes (same queue, earlier submission)
       imageBarrier(cmd, a.depthBuffer.image,
