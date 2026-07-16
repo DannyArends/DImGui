@@ -91,7 +91,7 @@ void createSceneRenderPass(ref App app) {
         initialLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
         finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
       // 3: WBOIT accumulation (single-sample) — cleared, transient (consumed by resolve subpass)
-      { format: app.wboit.accumFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+      { format: app.wboit.accumulationFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
