@@ -42,7 +42,8 @@ void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, ui
  * with appropriate Color and Depth attachements */
 void createFramebuffers(ref App app) {
   auto depthViews  = iota(app.imageCount).map!(i => [app.depthBuffer.view]).array;
-  auto sceneViews  = iota(app.imageCount).map!(i => [app.offscreenHDR.view, app.resolvedHDR.view, app.depthBuffer.view]).array;
+  auto sceneViews  = iota(app.imageCount).map!(i => [app.offscreenHDR.view, app.resolvedHDR.view, app.depthBuffer.view,
+                                                     app.wboit.accumulation.view, app.wboit.revealage.view]).array;
   auto postViews   = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
   auto imguiViews  = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
 
