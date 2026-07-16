@@ -23,13 +23,17 @@ vec3 worldPos(ivec2 px, ivec2 size) {
 }
 
 void main() {
-  ivec2 px = ivec2(gl_GlobalInvocationID.xy);
-  ivec2 size = imageSize(ssaoOut);
-  if(px.x >= size.x || px.y >= size.y) return;
+  ivec2 outPx = ivec2(gl_GlobalInvocationID.xy);
+  ivec2 outSize = imageSize(ssaoOut);
+  if(outPx.x >= outSize.x || outPx.y >= outSize.y) return;
+
+  ivec2 size = textureSize(depthSampler);
+  ivec2 px = ivec2((vec2(outPx) + 0.5) * vec2(size) / vec2(outSize));
 
   vec3 P  = worldPos(px, size);
   vec3 Px = worldPos(px + ivec2(1, 0), size);
   vec3 Py = worldPos(px + ivec2(0, 1), size);
+
   vec3 N  = normalize(cross(Px - P, Py - P));
   if(dot(N, u.camPos.xyz - P) < 0.0) N = -N;            // orient toward camera
 
@@ -56,5 +60,5 @@ void main() {
   }
   float ao = pow(1.0 - occ / float(SSAO_KERNEL), u.params.z);
   ao = mix(1.0, ao, u.params.w);
-  imageStore(ssaoOut, px, vec4(ao));
+  imageStore(ssaoOut, outPx, vec4(ao));
 }
