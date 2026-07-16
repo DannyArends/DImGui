@@ -38,6 +38,7 @@ import inventorywindow : showInventoryContent;
 import jobs : applyPathResult;
 import lights : updateSun;
 import lightswindow : showLightsContent;
+import matrix;
 import normals : computeTangents;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
@@ -123,6 +124,31 @@ void initGame(ref GameApp app) {
 
   SDL_Log("createScene: Add Text");
   app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
+
+  SDL_Log("createScene: WBOIT test rectangles");
+  {
+    auto red = new Square();
+    red.isOpaque = false;
+    red.castShadow = false;
+    foreach(ref v; red.vertices) v.color = [1.0f, 0.0f, 0.0f, 0.6f];
+    red.instances = [DrawInstance(translate([6.0f, 3.0f, 2.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
+    app.objects ~= red;
+
+    auto blue = new Square();
+    blue.isOpaque = false;
+    blue.castShadow = false;
+    foreach(ref v; blue.vertices) v.color = [0.0f, 0.0f, 1.0f, 0.5f];
+    blue.instances = [DrawInstance(translate([6.5f, 3.0f, 3.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
+    app.objects ~= blue;
+
+    auto green = new Square();
+    green.isOpaque = false;
+    green.castShadow = false;
+    foreach(ref v; green.vertices) v.color = [0.0f, 1.0f, 0.0f, 0.8f];
+    green.instances = [DrawInstance(translate([5.5f, 3.0f, 1.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
+    app.objects ~= green;
+  }
+
   SDL_Log("initGame: done");
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
