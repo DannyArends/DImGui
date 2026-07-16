@@ -8,7 +8,7 @@ public import structures;
 
 import sdl : SDL_WINDOW_MINIMIZED;
 
-enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
+enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS", RESOLVE = "RESOLVE"};
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 

@@ -56,6 +56,7 @@ void run(string[] args = null) {
   app.getBestColorFormat();                                     /// Figure out the best available color format for HDR
   app.loadShaders(app.shaders, RenderShaders);                  /// Load the Rendering shaders
   app.loadShaders(app.postProcess, PostProcessShaders);         /// Load the Post-processing shaders
+  app.loadShaders(app.wboit.shaders, WBOITResolveShaders);      /// Load the WBOIT resolve shaders
   app.registerRenderProviders();
   if(app.hasCompute) app.initializeCompute();                   /// Load the compute shader
   app.createShadowMap();                                        /// Create the shadow resources, renderpass, and shader

@@ -17,6 +17,11 @@ struct WBOIT {
   bool enabled = true;                                        /// Feature toggle
 }
 
+ShaderDef[] WBOITResolveShaders = [
+  ShaderDef("data/shaders/wboit.vertex.glsl", shaderc_glsl_vertex_shader),
+  ShaderDef("data/shaders/wboit.fragment.glsl", shaderc_glsl_fragment_shader),
+];
+
 /** Allocate the single-sample WBOIT accumulation targets (input attachments for the resolve subpass) */
 void createWBOITResources(ref App app) {
   app.createNamedImage(app.wboit.accumulation, app.camera.width, app.camera.height, app.wboit.accumFormat,
