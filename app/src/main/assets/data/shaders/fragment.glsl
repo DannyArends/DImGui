@@ -60,7 +60,7 @@ void main() {
   if(DEPTH_PASS) { if(alpha < 0.99) { discard; } return; }
   if(WBOIT) { if(alpha >= 0.99 && !SDF){ discard; } }else{ if (alpha <  0.99 ||  SDF){ discard; } }
 
-  float ao = (!SDF && useSSAO) ? texture(ssaoSampler, gl_FragCoord.xy / ubo.clusterCfg.zw).r : 1.0;
+  float ao = (!SDF && useSSAO && !WBOIT) ? texture(ssaoSampler, gl_FragCoord.xy / ubo.clusterCfg.zw).r : 1.0;
 
   // Lighting mode 0: Return base color
   if(ubo.lightingMode == 0u) { writeOutput(rgb * 0.2 * ao, alpha); return; }
