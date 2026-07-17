@@ -49,18 +49,22 @@ void createDepthResources(ref App app) {
 
 /** Depth-only pre-pass: writes opaque depth up-front so SSAO can run before the main (lit) scene pass. */
 void createDepthPrePass(ref App app) {
+  VkAttachmentReference[2] unusedColorRefs = [
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },  // outColor     (discarded)
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },  // outRevealage (discarded)
+  ];
   VkAttachmentReference depthRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
   RenderPassInfo info = {
     attachments: [
-      { format: app.findDepthFormat(), samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
-        storeOp: VK_ATTACHMENT_STORE_OP_STORE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
+      { format: app.findDepthFormat(), samples: app.getMSAASamples(),
+        loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR, storeOp: VK_ATTACHMENT_STORE_OP_STORE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
     ],
     subpasses: [{
       pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
-      colorAttachmentCount:    0,
+      colorAttachmentCount:    2,
+      pColorAttachments:       unusedColorRefs.ptr,
       pDepthStencilAttachment: &depthRef,
     }],
     dependencies: [{
