@@ -58,7 +58,7 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
   Specialization last; bool first = true;
   foreach(obj; app.objects) {
     if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
-    if((pass == DrawPass.Opaque) != obj.isOpaque) continue;
+    if(!depthPass && obj.isOpaque && pass == DrawPass.Transparent) continue;  // opaque never in WBOIT
     auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass, wboit);
     pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d, D=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
     if(first || last != s) {

@@ -131,21 +131,21 @@ void initGame(ref GameApp app) {
     red.isOpaque = false;
     red.castShadow = false;
     foreach(ref v; red.vertices) v.color = [1.0f, 0.0f, 0.0f, 0.6f];
-    red.instances = [DrawInstance(translate([6.0f, 3.0f, 2.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
+    red.instances = [DrawInstance(translate([8.0f, 3.0f, 2.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
     app.objects ~= red;
 
     auto blue = new Square();
     blue.isOpaque = false;
     blue.castShadow = false;
-    foreach(ref v; blue.vertices) v.color = [0.0f, 0.0f, 1.0f, 0.5f];
-    blue.instances = [DrawInstance(translate([6.5f, 3.0f, 3.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
+    foreach(ref v; blue.vertices) v.color = [0.0f, 0.0f, 1.0f, 1.0f];
+    blue.instances = [DrawInstance(translate([8.5f, 3.0f, 3.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
     app.objects ~= blue;
 
     auto green = new Square();
     green.isOpaque = false;
     green.castShadow = false;
     foreach(ref v; green.vertices) v.color = [0.0f, 1.0f, 0.0f, 0.8f];
-    green.instances = [DrawInstance(translate([5.5f, 3.0f, 1.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
+    green.instances = [DrawInstance(translate([7.5f, 3.0f, 1.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
     app.objects ~= green;
   }
 
