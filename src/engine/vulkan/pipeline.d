@@ -156,7 +156,7 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
     pRasterizationState: &rasterizer,
     pMultisampleState: &multisampling,
     pDepthStencilState: &depthStencil,
-    pColorBlendState: s.depthPass ? null : (s.wboit ? &wboitBlending : &colorBlending),
+    pColorBlendState: s.depthPass ? &wboitBlending : (s.wboit ? &wboitBlending : &colorBlending),
     layout: layout,
     renderPass: s.depthPass ? app.depthCmd.pass : app.sceneCmd.pass,
     subpass: s.wboit ? 1u : 0u
