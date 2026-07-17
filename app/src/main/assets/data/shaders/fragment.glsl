@@ -56,6 +56,7 @@ void main() {
     }
     if (alpha < 0.05f) discard; // Discard <.05
   }
+  if (DEPTH_PASS) { if (alpha < 0.99) discard; return; }
 
   float ao = (!SDF && useSSAO) ? texture(ssaoSampler, gl_FragCoord.xy / ubo.clusterCfg.zw).r : 1.0;
 
