@@ -42,11 +42,12 @@ void main() {
   // Color RGB & alpha
   vec3 rgb = fragColor.rgb; float alpha = fragColor.a;
 
-  // Multiply texture to basecolor & adjust alpha
-  if(!(TOPOLOGY == 1) && mat.tid >= 0) {
+  // Multiply texture to basecolor & adjust alpha outside of the DEPTH_PASS
+  if(!DEPTH_PASS && !(TOPOLOGY == 1) && mat.tid >= 0) {
     vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
     rgb *= texSample.rgb; alpha = texSample.a;
   }
+
   // If we do alpha testing: Opacity texture alpha & SDF override
   if(ALPHA_TEST) {
     if (mat.oid >= 0) { alpha = texture(textureSampler[mat.oid], fragTexCoord).a; }
@@ -55,47 +56,52 @@ void main() {
       alpha = smoothstep(0.5 - adj, 0.5 + adj, alpha);
     }
     if (alpha < 0.05f) discard; // Discard <.05
+
+    // If we're depth testing we discard transparent fragments
+    if(DEPTH_PASS) { if(alpha < 0.99) { discard; } return; }
+    // If we're WBOIT testing we discard opaque fragments, if not transparant ones
+    if(WBOIT) { if(alpha >= 0.99 && !SDF){ discard; } }else{ if (alpha <  0.99 ||  SDF){ discard; } }
   }
 
-  if(DEPTH_PASS) { if(alpha < 0.99) { discard; } return; }
-  if(WBOIT) { if(alpha >= 0.99 && !SDF){ discard; } }else{ if (alpha <  0.99 ||  SDF){ discard; } }
+  // Lighting only runs when we are not depth testing
+  if(!DEPTH_PASS) {
+    float ao = (!SDF && useSSAO && !WBOIT) ? texture(ssaoSampler, gl_FragCoord.xy / ubo.clusterCfg.zw).r : 1.0;
 
-  float ao = (!SDF && useSSAO && !WBOIT) ? texture(ssaoSampler, gl_FragCoord.xy / ubo.clusterCfg.zw).r : 1.0;
+    // Lighting mode 0: Return base color
+    if(ubo.lightingMode == 0u) { writeOutput(rgb * 0.2 * ao, alpha); return; }
 
-  // Lighting mode 0: Return base color
-  if(ubo.lightingMode == 0u) { writeOutput(rgb * 0.2 * ao, alpha); return; }
+    vec3 normalForLighting = normalize(fragNormal);
+    /// Surface normalForLighting
+    //outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
+    if(mat.nid >= 0) {
+      normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
+    }
+    /// normalForLighting after bump mapping
+    // outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
 
-  vec3 normalForLighting = normalize(fragNormal);
-  /// Surface normalForLighting
-  //outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
-  if(mat.nid >= 0) {
-    normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
+    /// Shadow cast by light 0
+    // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
+    vec3 surfaceColor = rgb * 0.01;
+    bool useShadows = ubo.lightingMode == 2u;
+
+    // Directional/global lights (position.w == 0, not clustered)
+    for(int i = 0; i < ubo.nlights; ++i) {
+      if(lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
+      if(lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
+      surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, useShadows);
+    }
+
+    // Point lights via this fragment's froxel linked list
+    vec4 viewPos = ubo.view * fragPosWorld;
+    vec4 clip = ubo.proj * viewPos;
+    uint cid = froxelIndex((clip.xy / clip.w) * 0.5 + 0.5, -viewPos.z);
+
+    for(uint n = head[cid].head; n != NIL; n = indices[n].next) {
+      surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, useShadows);
+    }
+
+    // Screen-space ambient occlusion: opaque only (SDF/transparent geometry has no valid depth, must not receive AO)
+    writeOutput(surfaceColor * ao, alpha);
   }
-  /// normalForLighting after bump mapping
-  // outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
-
-  /// Shadow cast by light 0
-  // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
-  vec3 surfaceColor = rgb * 0.01;
-  bool useShadows = ubo.lightingMode == 2u;
-
-  // Directional/global lights (position.w == 0, not clustered)
-  for(int i = 0; i < ubo.nlights; ++i) {
-    if(lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
-    if(lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
-    surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, useShadows);
-  }
-
-  // Point lights via this fragment's froxel linked list
-  vec4 viewPos = ubo.view * fragPosWorld;
-  vec4 clip = ubo.proj * viewPos;
-  uint cid = froxelIndex((clip.xy / clip.w) * 0.5 + 0.5, -viewPos.z);
-
-  for(uint n = head[cid].head; n != NIL; n = indices[n].next) {
-    surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, useShadows);
-  }
-
-  // Screen-space ambient occlusion: opaque only (SDF/transparent geometry has no valid depth, must not receive AO)
-  writeOutput(surfaceColor * ao, alpha);
 }
 
