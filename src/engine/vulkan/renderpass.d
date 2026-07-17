@@ -132,12 +132,19 @@ void createSceneRenderPass(ref App app) {
         dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-      }, { // 1 -> 2: resolve reads accum/revealage as input attachments (must be BY_REGION)
+      },       { // 1 -> 2: resolve reads accum/revealage as input attachments (must be BY_REGION)
         srcSubpass: 1, dstSubpass: 2,
         srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         dstStageMask: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         dstAccessMask: VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+        dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
+      }, { // 0 -> 2: subpass 0's MSAA resolve into attachment 1 must be visible to subpass 2's blend
+        srcSubpass: 0, dstSubpass: 2,
+        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
         dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
       },
     ],
