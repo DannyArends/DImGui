@@ -15,6 +15,8 @@ import validation : pushLabel, popLabel, nameVulkanObject;
 import wboit : drawWBOITResolve;
 import window: supportedTopologies;
 
+enum DrawPass : int { Opaque = 0, Transparent = 1 }
+
 /** A recordable command buffer (one per syncIndex); records one or more RenderPass instances. */
 struct CommandBuffer(size_t N){
   RenderPass[N] renderpass;
@@ -42,23 +44,21 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].get(app, Specialization(false, true)));
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isDrawable || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue; // not Drawable, not in Frustum, not Visible
+    if(!app.objects[x].isDrawable || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue;
     if(app.objects[x].hasBoundingBox && app.objects[x].box.isDrawable) app.draw(app.objects[x].box, cmd);
   }
   popLabel(cmd);
 }
 
-/** Draw every visible object of one topology for one pass (0=opaque, 1=transparent); 
- * rebinds the pipeline only when the specialization changed */
+/** Draw every visible object of one topology for one DrawPass; rebinds the pipeline only when the specialization changed */
 void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, 
-                      int pass, bool depthPass = false, bool wboit = false) {
+                      DrawPass pass, bool depthPass = false, bool wboit = false) {
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &set, 0, null);
-  if(!depthPass && pass == 0 && topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd);
 
   Specialization last; bool first = true;
   foreach(obj; app.objects) {
     if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
-    if((pass == 0) != obj.isOpaque) continue;     // pass 0 draws opaque, pass 1 draws transparent
+    if((pass == DrawPass.Opaque) != obj.isOpaque) continue;
     auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass, wboit);
     pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d, D=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
     if(first || last != s) {
@@ -86,11 +86,12 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   auto set = app.sets[Stage.RENDER][app.syncIndex];
 
   // Subpass 0: Opaque draws
-  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, 0); }
+  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, DrawPass.Opaque); }
+  if(app.showBounds) app.drawBoundingBoxes(cmd);
 
   // Subpass 1: WBOIT: Accumulation of transparent draws
   vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
-  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, 1, false, true); }
+  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, DrawPass.Transparent, false, true); }
 
   // Subpass 2: WBOIT: Resolve into composite
   vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
@@ -141,7 +142,7 @@ void recordDepthPrePass(ref App app) {
   auto set = app.sets[Stage.RENDER][app.syncIndex];
   foreach(topology; supportedTopologies) {
     if(topology !in app.pipelines) continue;
-    app.drawTopologyPass(cmd, topology, set, 0, true);   // pass 0 = opaque, depthPass = true
+    app.drawTopologyPass(cmd, topology, set, DrawPass.Opaque, true);
   }
 
   app.depthCmd.pass.end(cmd);
