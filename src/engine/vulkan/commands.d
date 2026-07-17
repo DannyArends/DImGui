@@ -41,7 +41,7 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].get(app, Specialization(false, true)));
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isDrawable || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue; // not Drawable, not in Frustum, not Visible
+//    if(!app.objects[x].isDrawable || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue; // not Drawable, not in Frustum, not Visible
     if(app.objects[x].hasBoundingBox && app.objects[x].box.isDrawable) app.draw(app.objects[x].box, cmd);
   }
   popLabel(cmd);
@@ -51,7 +51,6 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
  * rebinds the pipeline only when the specialization changed */
 void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, int pass, bool depthPass = false) {
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &set, 0, null);
-  if(!depthPass && pass == 0 && topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd);
 
   Specialization last; bool first = true;
   foreach(obj; app.objects) {
@@ -85,6 +84,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   foreach(pass; 0 .. 2) { // pass 0: opaque, pass 1: transparent
     foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, pass); }
   }
+  if(app.showBounds) app.drawBoundingBoxes(cmd);   // debug overlay: draw last, over everything
   app.sceneCmd.pass.end(cmd);
   popLabel(cmd);
 
