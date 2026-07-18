@@ -99,9 +99,9 @@ void createWBOITResolvePipeline(ref App app) {
 
   auto stages = createStageInfo(app.wboit.shaders);
 
-  int samples = cast(int)app.getMSAASamples();
-  VkSpecializationMapEntry sampleEntry = { constantID: 0, offset: 0, size: int.sizeof };
-  VkSpecializationInfo specInfo = { mapEntryCount: 1, pMapEntries: &sampleEntry, dataSize: int.sizeof, pData: &samples };
+  uint samples = cast(uint)app.getMSAASamples();
+  VkSpecializationMapEntry sampleEntry = { constantID: 11, offset: 0, size: uint.sizeof };
+  VkSpecializationInfo specInfo = { mapEntryCount: 1, pMapEntries: &sampleEntry, dataSize: uint.sizeof, pData: &samples };
   foreach(ref st; stages) if(st.stage == VK_SHADER_STAGE_FRAGMENT_BIT){ st.pSpecializationInfo = &specInfo; }
 
   VkGraphicsPipelineCreateInfo pipelineInfo = {
