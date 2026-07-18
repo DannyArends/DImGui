@@ -18,6 +18,7 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   if(extension.has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
   if(extension.has("VK_KHR_maintenance3")){ app.deviceExtensions ~= "VK_KHR_maintenance3"; }
   if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
+  if(extension.has("VK_EXT_subpass_merge_feedback")){ app.deviceExtensions ~= "VK_EXT_subpass_merge_feedback"; }
 
   app.printQueues();
   app.queueFamily = selectQueueFamily(app.physicalDevice());

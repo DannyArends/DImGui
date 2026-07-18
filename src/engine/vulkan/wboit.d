@@ -26,17 +26,28 @@ ShaderDef[] WBOITShaders = [
 
 /** Allocate the MSAA WBOIT accumulation targets (input attachments for the resolve subpass) */
 void createWBOITResources(ref App app) {
-  app.createNamedImage(app.wboit.accumulation, app.camera.width, app.camera.height, app.wboit.accumulationFormat,
-                       VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Accumulation", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
-                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
-  app.createNamedImage(app.wboit.revealage, app.camera.width, app.camera.height, app.wboit.revealageFormat,
-                       VK_IMAGE_ASPECT_COLOR_BIT, "WBOIT Revealage", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL,
-                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+  uint wboitUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+  uint wboitMemory = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+  version (Android) {
+    wboitUsage |=  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+    wboitMemory |= VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+  }
+  app.createNamedImage(app.wboit.accumulation, app.camera.width, app.camera.height, app.wboit.accumulationFormat,VK_IMAGE_ASPECT_COLOR_BIT,
+                       "WBOIT Accumulation", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, wboitUsage, wboitMemory);
+  app.createNamedImage(app.wboit.revealage, app.camera.width, app.camera.height, app.wboit.revealageFormat, VK_IMAGE_ASPECT_COLOR_BIT,
+                       "WBOIT Revealage", app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, wboitUsage, wboitMemory);
 
   app.swapDeletionQueue.add(() {
     app.cleanup(app.wboit.accumulation);
     app.cleanup(app.wboit.revealage);
   });
+}
+
+void reportWBOITCommitment(ref App app) {
+  VkDeviceSize accumCommit = 0, revealCommit = 0;
+  vkGetDeviceMemoryCommitment(app.device, app.wboit.accumulation.memory, &accumCommit);
+  vkGetDeviceMemoryCommitment(app.device, app.wboit.revealage.memory, &revealCommit);
+  SDL_Log("[lazy] accum committed: %llu bytes, revealage committed: %llu bytes", cast(ulong)accumCommit, cast(ulong)revealCommit);
 }
 
 /** Record the fullscreen resolve draw (scene subpass 2) */
