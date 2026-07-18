@@ -50,6 +50,7 @@ import toolbar : showToolbar;
 import world : loadWorld, saveWorld, updateWorld;
 import waterwindow : showWaterContent;
 import worldwindow : showWorldContent;
+import wboit: testWBOIT;
 
 /** Worker thread variant that also handles chunk building and pathfinding requests */
 class GameTaskThread : TaskThread {
@@ -123,32 +124,9 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
 
   SDL_Log("createScene: Add Text");
-  app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
-
+  app.addWorldText("CalderaD", [12.0f, 10.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
   SDL_Log("createScene: WBOIT test rectangles");
-  {
-    auto red = new Square();
-    red.isOpaque = false;
-    red.castShadow = false;
-    foreach(ref v; red.vertices) v.color = [1.0f, 0.0f, 0.0f, 0.6f];
-    red.instances = [DrawInstance(translate([8.0f, 3.0f, 2.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
-    app.objects ~= red;
-
-    auto blue = new Square();
-    blue.isOpaque = false;
-    blue.castShadow = false;
-    foreach(ref v; blue.vertices) v.color = [0.0f, 0.0f, 1.0f, 1.0f];
-    blue.instances = [DrawInstance(translate([8.5f, 3.0f, 3.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
-    app.objects ~= blue;
-
-    auto green = new Square();
-    green.isOpaque = false;
-    green.castShadow = false;
-    foreach(ref v; green.vertices) v.color = [0.0f, 1.0f, 0.0f, 0.8f];
-    green.instances = [DrawInstance(translate([7.5f, 3.0f, 1.0f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
-    app.objects ~= green;
-  }
-
+  app.testWBOIT();
   SDL_Log("initGame: done");
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
