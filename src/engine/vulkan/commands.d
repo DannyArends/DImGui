@@ -131,8 +131,7 @@ void recordDepthPrePass(ref App app) {
   app.bufferGeometries(cmd);
   popLabel(cmd);
 
-  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("SSBO Buffering");
+  pushLabel(cmd, "Depth Pre-Pass Descriptors", Colors.lightgray);
   app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
   popLabel(cmd);
 
