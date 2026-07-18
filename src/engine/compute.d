@@ -154,11 +154,13 @@ void createComputeCommandBuffers(ref App app, Shader shader) {
 /** Record one compute pass's dispatch into an existing command buffer (no begin/end). */
 void dispatchCompute(ref App app, VkCommandBuffer cmd, Shader shader) {
   auto pass = shader.path in app.compute.passes;
+  auto pipeline = app.compute.pipelines[shader.path];
+
   pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
   app.updateDescriptorData([shader], app.sceneCmd.commands, app.syncIndex);
   if(pass.pre !is null) pass.pre(app, cmd, shader);
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].pipeline);
-  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, app.compute.pipelines[shader.path].layout, 0, 1, &app.sets[shader.path][app.syncIndex], 0, null);
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout, 0, 1, &app.sets[shader.path][app.syncIndex], 0, null);
   uint[3] groups = vCeilDiv(pass.workItems(app, shader), shader.groupCount);
   vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
   if(pass.post !is null) pass.post(app, cmd, shader);
