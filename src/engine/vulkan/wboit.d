@@ -78,18 +78,17 @@ void createWBOITResolvePipeline(ref App app) {
   };
   VkPipelineMultisampleStateCreateInfo multisampling = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-    rasterizationSamples: app.getMSAASamples(), minSampleShading: 1.0f
+    rasterizationSamples: VK_SAMPLE_COUNT_1_BIT, minSampleShading: 1.0f
   };
-  VkPipelineColorBlendAttachmentState colorBlendAttachment = {  // Composite transparent over opaque: src-alpha over
+  VkPipelineColorBlendAttachmentState colorBlendAttachment = {
     colorWriteMask: VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     blendEnable: VK_TRUE,
     srcColorBlendFactor: VK_BLEND_FACTOR_SRC_ALPHA, dstColorBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, colorBlendOp: VK_BLEND_OP_ADD,
     srcAlphaBlendFactor: VK_BLEND_FACTOR_ONE, dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, alphaBlendOp: VK_BLEND_OP_ADD
   };
-  VkPipelineColorBlendAttachmentState[2] resolveAttachments = [colorBlendAttachment, colorBlendAttachment];
   VkPipelineColorBlendStateCreateInfo colorBlending = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-    attachmentCount: 2, pAttachments: &resolveAttachments[0]
+    attachmentCount: 1, pAttachments: &colorBlendAttachment
   };
 
   VkPipelineLayoutCreateInfo layoutInfo = {
