@@ -29,6 +29,7 @@ import timing : timed;
 import validation : createDebugCallback;
 import vulkan : cleanup;
 import window: createOrResizeWindow, checkForResize;
+import wboit : reportWBOITCommitment;
 
 /** Main entry point to the program */
 version (Android) {
@@ -90,6 +91,7 @@ void run(string[] args = null) {
     app.timed!presentFrame();                                     /// Show frame
     app.time[LASTFRAME] = app.time[FRAMESTOP];                    /// Remember last time we stopped ?
     app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
+    if(isAndroid && app.totalFramesRendered == 100) app.reportWBOITCommitment();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
   app.cleanup();
