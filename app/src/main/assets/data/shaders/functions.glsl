@@ -6,6 +6,7 @@
 #ifndef FUNCTIONS_GLSL
 #define FUNCTIONS_GLSL
 
+#include "specs.glsl"
 #include "scene.glsl"
 
 // Function to calculate vector position after animation

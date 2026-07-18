@@ -6,22 +6,6 @@
 #ifndef SCENE_GLSL
 #define SCENE_GLSL
 
-// Compile time constants
-layout(constant_id = 0) const int TOPOLOGY = 3;
-layout(constant_id = 1) const bool ALPHA_TEST = true;
-layout(constant_id = 2) const bool INSTANCED = true;
-layout(constant_id = 3) const uint GRID_X = 16u;
-layout(constant_id = 4) const uint GRID_Y = 9u;
-layout(constant_id = 5) const uint GRID_Z = 24u;
-layout(constant_id = 6) const bool SDF = false;
-layout(constant_id = 7) const bool useSSAO = true;
-layout(constant_id = 8) const bool ANIMATED = false;
-layout(constant_id = 9) const bool DEPTH_PASS = false;
-
-// Constants
-const uint NIL = 0xFFFFFFFFu;
-const float EPS = 1e-6;
-
 /// Uniform Buffer Objects
 #define BINDING_SCENE_UBO          0
 #define BINDING_LIGHT_UBO          1

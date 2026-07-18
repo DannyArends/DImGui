@@ -5,7 +5,7 @@
 
 #version 460
 
-layout(constant_id = 0) const int SAMPLES = 2;   // MSAA sample count, fed by resolve pipeline
+#include "specs.glsl"
 
 #ifdef MSAA
   layout(input_attachment_index = 0, binding = 12) uniform subpassInputMS accumInput;
@@ -15,19 +15,18 @@ layout(constant_id = 0) const int SAMPLES = 2;   // MSAA sample count, fed by re
   layout(input_attachment_index = 1, binding = 13) uniform subpassInput revealInput;
 #endif
 
-
 layout(location = 0) out vec4 outColor;
 
 void main() {
   vec4 accum = vec4(0.0);
   float reveal = 0.0;
   #ifdef MSAA
-    for (int s = 0; s < SAMPLES; ++s) {
+    for (int s = 0; s < MSAA_SAMPLES; ++s) {
       accum  += subpassLoad(accumInput, s);
       reveal += subpassLoad(revealInput, s).r;
     }
-    accum  /= float(SAMPLES);
-    reveal /= float(SAMPLES);
+    accum  /= float(MSAA_SAMPLES);
+    reveal /= float(MSAA_SAMPLES);
   #else
     accum  = subpassLoad(accumInput);
     reveal = subpassLoad(revealInput).r;
