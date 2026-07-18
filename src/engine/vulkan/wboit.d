@@ -7,7 +7,9 @@ import engine;
 
 import devices : getMSAASamples;
 import images : cleanup, createNamedImage, ImageBuffer;
+import matrix : translate, multiply, scale, rotate;
 import shaders : createStageInfo;
+import geometry : opacity;
 
 struct WBOIT {
   ImageBuffer accumulation;                                     /// Accumulation target (RGBA16F, MSAA)
@@ -115,4 +117,28 @@ void createWBOITResolvePipeline(ref App app) {
     subpass: 2u
   };
   app.wboit.resolvePipeline.create(app, pipelineInfo, "WBOIT Resolve", app.swapDeletionQueue);
+}
+
+void testWBOIT(ref App app) {
+  auto red = new Square();
+  red.isOpaque = false;
+  red.castShadow = false;
+  foreach(ref v; red.vertices) v.color = [1.0f, 0.0f, 0.0f, 0.4f];
+  red.instances = [DrawInstance(translate([8.0f, 3.0f, 2.5f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
+  app.objects ~= red;
+
+  auto fence = new Square();
+  fence.isOpaque = false;
+  fence.castShadow = false;
+  foreach(ref v; fence.vertices) v.color = [0.4f, 0.4f, 0.4f, 1.0f];
+  fence.instances = [DrawInstance(translate([8.25f, 3.0f, 3.0f]).multiply(rotate([90.0f,90.0f,0.0f])).multiply(scale([4.0f,4.0f,4.0f])))];
+  fence.opacity("Metal_Grill_01_opacity");
+  app.objects ~= fence;
+
+  auto green = new Square();
+  green.isOpaque = false;
+  green.castShadow = false;
+  foreach(ref v; green.vertices) v.color = [0.0f, 1.0f, 0.0f, 0.6f];
+  green.instances = [DrawInstance(translate([8.5f, 3.0f, 3.5f]).multiply(rotate([0.0f,90.0f,0.0f])).multiply(scale([3.0f,3.0f,3.0f])))];
+  app.objects ~= green;
 }

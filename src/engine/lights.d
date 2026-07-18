@@ -55,7 +55,7 @@ struct Lighting {
   SSBOList!Light lights;
   float[] scoreBuf;             /// Shadow ranking scores
   bool staticDirty = false;     /// scene static geometry changed
-  float sunTime = 7.0f;
+  float sunTime = 13.0f;
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
   alias lights this;
