@@ -51,25 +51,20 @@ struct RenderPass {
 /** Create a Scene RenderPass object
  * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment */
 void createSceneRenderPass(ref App app) {
+  bool msaa = (app.getMSAASamples() != VK_SAMPLE_COUNT_1_BIT);
   // Subpass 0 (opaque): MSAA color(0) + VK_ATTACHMENT_UNUSED
   VkAttachmentReference[2] colorRefs = [
     { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
     { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
   ];
-  VkAttachmentReference[2] resolveRefs = [ // MSAA: Resolve + VK_ATTACHMENT_UNUSED
+  // MSAA: Resolve + VK_ATTACHMENT_UNUSED
+  VkAttachmentReference[2] resolveRefs = [
     { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
     { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
   ]; 
   // Depth Attachement
   VkAttachmentReference depthRef = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
 
-  // At 1x (no MSAA) there is no resolve: SP0 writes directly to the single-sample target (attachment 1).
-  bool msaa = (app.getMSAASamples() != VK_SAMPLE_COUNT_1_BIT);
-  VkAttachmentReference[2] colorRefsMSAA1 = [
-    { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
-    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
-  ];
-  
   // Subpass 1 (transparent WBOIT accumulation): write accum(3) + revealage(4), test depth
   VkAttachmentReference[2] oitColorRefs = [
     { attachment: 3, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
@@ -113,7 +108,7 @@ void createSceneRenderPass(ref App app) {
     subpasses: [
       { // 0: opaque (color 0 + VK_ATTACHMENT_UNUSED)
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
-        colorAttachmentCount: 2, pColorAttachments: msaa?colorRefs.ptr: colorRefsMSAA1.ptr,
+        colorAttachmentCount: 2, pColorAttachments: msaa?colorRefs.ptr: resolveRefs.ptr,
         pDepthStencilAttachment: &depthRef,
         pResolveAttachments: msaa?resolveRefs.ptr:null
       },
@@ -140,12 +135,6 @@ void createSceneRenderPass(ref App app) {
         srcSubpass: 1, dstSubpass: 2,
         srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         dstStageMask: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, dstAccessMask: VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-        dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
-      }, { // 0 -> 2: subpass 0's MSAA resolve into attachment 1 must be visible to subpass 2's blend
-        srcSubpass: 0, dstSubpass: 2,
-        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
         dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
       },
     ],
