@@ -21,17 +21,18 @@ void showSidepanel(ref App app, uint font = 0) {
   float dispW = app.gui.io.DisplaySize.x, dispH = app.gui.io.DisplaySize.y;
   bool landscape = dispW > dispH;
 
+  float menuH = igGetFrameHeight();
   if(landscape) { // Right edge, drag the LEFT edge (variable width)
-    float colH = dispH - app.gui.menuH;
-    igSetNextWindowPos(ImVec2(dispW - app.gui.panelW, app.gui.menuH), ImGuiCond_Always, ImVec2(0,0));
+    float colH = dispH - menuH;
+    igSetNextWindowPos(ImVec2(dispW - app.gui.panelW, menuH), ImGuiCond_Always, ImVec2(0,0));
     igSetNextWindowSize(ImVec2(app.gui.panelW, colH), ImGuiCond_FirstUseEver);
     igSetNextWindowSizeConstraints(ImVec2(150, colH), ImVec2(dispW * 0.8f, colH), null, null);
   } else { // Bottom edge, drag the TOP edge (variable height)
     igSetNextWindowPos(ImVec2(0, dispH - app.gui.panelH), ImGuiCond_Always, ImVec2(0,0));
     igSetNextWindowSize(ImVec2(dispW, app.gui.panelH), ImGuiCond_FirstUseEver);
-    igSetNextWindowSizeConstraints(ImVec2(dispW, 5), ImVec2(dispW, dispH - app.gui.menuH), null, null);
+    igSetNextWindowSizeConstraints(ImVec2(dispW, 5), ImVec2(dispW, dispH - menuH), null, null);
   }
-
+  version(Android){ igPushStyleVar_Float(ImGuiStyleVar_WindowBorderSize, 32.0f); }
   igBegin("##sidepanel", null, flags);
 
   ImVec2 sz; igGetWindowSize(&sz);
@@ -47,5 +48,6 @@ void showSidepanel(ref App app, uint font = 0) {
     if(igCollapsingHeader_TreeNodeFlags(toStringz(window.label), 0)) window.show(font);
   }
   igEnd();
+  version(Android){ igPopStyleVar(1); }
   igPopFont();
 }

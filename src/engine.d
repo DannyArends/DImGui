@@ -140,13 +140,13 @@ struct App {
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
   bool enableValidation = true;                                                 /// Should validation be enabled ?
-  bool nameVulkanObjects = false;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
+  bool nameVulkanObjects = true;                                                /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
   bool showPaths = false;                                                       /// Show pathfinding
   bool showRays = false;                                                        /// Show rays
-  LMode lMode = isAndroid ? LMode.LightsAndShadows : LMode.LightsAndShadows;              /// Allow shadows to be disabled
-  bool useSSAO = isAndroid ? true : true;                                      /// SSAO ?
+  LMode lMode = LMode.LightsAndShadows;                                         /// Allow shadows to be disabled
+  bool useSSAO = true;                                                          /// Screen space ambient occlusion ?
   bool disco = false;                                                           /// Disco mode
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint clusterCapacity = CLUSTER_COUNT;                                         /// Froxel light index capacity, grows on overflow
