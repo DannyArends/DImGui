@@ -86,7 +86,7 @@ void createSceneRenderPass(ref App app) {
   RenderPassInfo info = {
     attachments: [
       // 0: MSAA: Offscreen buffer
-      { format: app.offscreen.format, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+      { format: app.offscreen.format, samples: app.getMSAASamples(), loadOp: msaa ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
       // 1: MSAA: Resolve
