@@ -9,8 +9,6 @@
 #include "functions.glsl"
 #include "samplers.glsl"
 
-layout(constant_id = 10) const bool WBOIT = false;      /// transparent accumulation variant (dual output)
-
 // Per Fragment input attributes
 layout(location = 0) in vec4 fragPosWorld;              /// Fragment Position (in world space)
 layout(location = 1) in vec4 fragColor;                 /// Fragment Color
