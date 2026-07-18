@@ -131,6 +131,7 @@ void createSceneRenderPass(ref App app) {
         srcSubpass: 0, dstSubpass: 1,
         srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
       }, { // 1 -> 2: resolve reads accum/revealage as input attachments (must be BY_REGION)
         srcSubpass: 1, dstSubpass: 2,
         srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
