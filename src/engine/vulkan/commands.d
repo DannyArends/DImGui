@@ -125,26 +125,25 @@ void recordPostCommandBuffer(ref App app) {
 /** Record the depth pre-pass: opaque geometry, depth-only, into app.depthCmd (feeds SSAO before the lit scene pass). */
 void recordDepthPrePass(ref App app) {
   auto cmd = app.depthCmd.begin(app, app.syncIndex, "DepthPrePass");
-
-  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("Objects Buffering");
-  app.bufferGeometries(cmd);
-  popLabel(cmd);
-
-  pushLabel(cmd, "Depth Pre-Pass Descriptors", Colors.lightgray);
-  app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
-  popLabel(cmd);
-
   pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
-  app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
+    pushLabel(cmd, "Objects Buffering", Colors.lightgray);
+    if(app.trace) SDL_Log("Objects Buffering");
+    app.bufferGeometries(cmd);
+    popLabel(cmd);
 
-  auto set = app.sets[Stage.RENDER][app.syncIndex];
-  foreach(topology; supportedTopologies) {
-    if(topology !in app.pipelines) continue;
-    app.drawTopologyPass(cmd, topology, set, DrawPass.Opaque, true);
-  }
+    pushLabel(cmd, "Descriptors & SSBO", Colors.lightgray);
+    app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
+    popLabel(cmd);
 
-  app.depthCmd.pass.end(cmd);
+    app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
+
+    auto set = app.sets[Stage.RENDER][app.syncIndex];
+    foreach(topology; supportedTopologies) {
+      if(topology !in app.pipelines) continue;
+      app.drawTopologyPass(cmd, topology, set, DrawPass.Opaque, true);
+    }
+
+    app.depthCmd.pass.end(cmd);
   popLabel(cmd);
   app.depthCmd.end(app.syncIndex);
 }
