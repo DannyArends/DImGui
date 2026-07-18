@@ -60,14 +60,15 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
     if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
     if(!depthPass && obj.isOpaque && pass == DrawPass.Transparent) continue;  // opaque never in WBOIT
     auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass, wboit);
-    pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d, D=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
     if(first || last != s) {
+      if(!first) popLabel(cmd);
+      pushLabel(cmd, cstr("PIPELINE: topo: %d, A=%d, I=%d, S=%d, D=%d", topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
       vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
       last = s; first = false; 
     }
     app.draw(obj, cmd);
-    popLabel(cmd);
   }
+  if(!first) popLabel(cmd);
 }
 
 /** Record scene command buffer: SSBO -> Objects -> Rendering */
