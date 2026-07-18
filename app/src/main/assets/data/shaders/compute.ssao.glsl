@@ -7,7 +7,12 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
-layout(binding = 0) uniform sampler2DMS depthSampler;
+#ifdef MSAA
+  layout(binding = 0) uniform sampler2DMS depthSampler;
+#else
+  layout(binding = 0) uniform sampler2D depthSampler;
+#endif
+
 layout(binding = 1, rgba8) uniform writeonly image2D ssaoOut;
 layout(binding = 2) uniform SSAO {
   mat4 viewProj;                // ori * proj * view
@@ -28,8 +33,11 @@ void main() {
   ivec2 outPx = ivec2(gl_GlobalInvocationID.xy);
   ivec2 outSize = imageSize(ssaoOut);
   if(outPx.x >= outSize.x || outPx.y >= outSize.y) return;
-
-  ivec2 size = textureSize(depthSampler);
+  #ifdef MSAA
+    ivec2 size = textureSize(depthSampler);
+  #else
+    ivec2 size = textureSize(depthSampler, 0);
+  #endif
   ivec2 px = ivec2((vec2(outPx) + 0.5) * vec2(size) / vec2(outSize));
 
   vec3 P  = worldPos(px, size);

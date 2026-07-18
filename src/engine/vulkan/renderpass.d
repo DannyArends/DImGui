@@ -59,9 +59,17 @@ void createSceneRenderPass(ref App app) {
   VkAttachmentReference[2] resolveRefs = [ // MSAA: Resolve + VK_ATTACHMENT_UNUSED
     { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
     { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
-  ]; // Depth Attachement
+  ]; 
+  // Depth Attachement
   VkAttachmentReference depthRef = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
 
+  // At 1x (no MSAA) there is no resolve: SP0 writes directly to the single-sample target (attachment 1).
+  bool msaa = (app.getMSAASamples() != VK_SAMPLE_COUNT_1_BIT);
+  VkAttachmentReference[2] colorRefsMSAA1 = [
+    { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
+  ];
+  
   // Subpass 1 (transparent WBOIT accumulation): write accum(3) + revealage(4), test depth
   VkAttachmentReference[2] oitColorRefs = [
     { attachment: 3, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
@@ -105,9 +113,9 @@ void createSceneRenderPass(ref App app) {
     subpasses: [
       { // 0: opaque (color 0 + VK_ATTACHMENT_UNUSED)
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
-        colorAttachmentCount: 2, pColorAttachments: colorRefs.ptr,
+        colorAttachmentCount: 2, pColorAttachments: msaa?colorRefs.ptr: colorRefsMSAA1.ptr,
         pDepthStencilAttachment: &depthRef,
-        pResolveAttachments: resolveRefs.ptr
+        pResolveAttachments: msaa?resolveRefs.ptr:null
       },
       { // 1: transparent WBOIT accumulation
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,

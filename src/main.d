@@ -18,7 +18,7 @@ import input : pollEvents, handleEvents;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shadow : createShadowMap;
-import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
+import shaders : createCompiler, addShaderMacros, loadShaders, RenderShaders, PostProcessShaders;
 import reflection : createReflectionContext;
 import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
@@ -55,6 +55,7 @@ void run(string[] args = null) {
   app.createDebugCallback();                                    /// Hook the debug callback to the validation layer
   app.createLogicalDevice();                                    /// Create a logical device for rendering
   app.getBestColorFormat();                                     /// Figure out the best available color format for HDR
+  app.addShaderMacros();
   app.loadShaders(app.shaders, RenderShaders);                  /// Load the Rendering shaders
   app.loadShaders(app.postProcess, PostProcessShaders);         /// Load the Post-processing shaders
   app.loadShaders(app.wboit, WBOITShaders);                     /// Load the WBOIT resolve shaders

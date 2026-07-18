@@ -18,14 +18,13 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   if(extension.has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
   if(extension.has("VK_KHR_maintenance3")){ app.deviceExtensions ~= "VK_KHR_maintenance3"; }
   if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
-  if(extension.has("VK_EXT_subpass_merge_feedback")){ app.deviceExtensions ~= "VK_EXT_subpass_merge_feedback"; }
 
   app.printQueues();
   app.queueFamily = selectQueueFamily(app.physicalDevice());
 }
 
 VkSampleCountFlagBits getMSAASamples(ref App app) {
-  version (Android) { return VK_SAMPLE_COUNT_4_BIT; }
+  version (Android) { return VK_SAMPLE_COUNT_1_BIT; }
   VkSampleCountFlags counts = app.properties.limits.framebufferColorSampleCounts & app.properties.limits.framebufferDepthSampleCounts;
   if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
   if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
