@@ -24,7 +24,10 @@ import vector : x,y,z;
 @nogc int getWater(const World world, const int[3] tile) nothrow {
   if(tile[1] < 0 || tile[1] >= world.chunkHeight) return 0;
   auto p = world.chunkCoord(tile) in world.chunks;
-  return p is null ? 0 : (*p).waterLevel[world.tileIdx(tile)];
+  if(p is null) return 0;
+  int idx = world.tileIdx(tile);
+  if(idx < 0 || idx >= (*p).waterLevel.length) return 0;   // reject out-of-range tile index
+  return (*p).waterLevel[idx];
 }
 
 /** Wake a cell and its 6 neighbours so the sim re-evaluates them next tick. */
@@ -51,6 +54,7 @@ void setWater(ref World world, const int[3] tile, ubyte level, bool wake = true)
   if(coord !in world.chunks) return;
   int idx = world.tileIdx(tile);
   auto chunk = world.chunks[coord];
+  if(idx < 0 || idx >= chunk.waterLevel.length) return;   // guard: reject out-of-range tile index
   if(level == 0) chunk.active.remove(idx);
   ubyte old = chunk.waterLevel[idx];
   if(old == level) return;
