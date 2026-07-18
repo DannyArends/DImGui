@@ -266,6 +266,10 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
   if(app.trace) SDL_Log("Beginning shadow map render pass");
 
+  pushLabel(cmd, "Shadow Descriptors", Colors.lightgray);
+  app.updateDescriptorData(app.shadows.shaders, app.shadows.cmd.commands, syncIndex);
+  popLabel(cmd);
+
   pushLabel(cmd, "Shadow Loop", Colors.lightgray);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
