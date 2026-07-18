@@ -103,41 +103,41 @@ void createSceneRenderPass(ref App app) {
         initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
     ],
     subpasses: [
-      { // 0: opaque -> MSAA color(0), depth(2). NO resolve (moved to SP2 so the chain stays on-chip / merges).
+      { // 0: opaque (color 0 + VK_ATTACHMENT_UNUSED)
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
         colorAttachmentCount: 2, pColorAttachments: colorRefs.ptr,
-        pDepthStencilAttachment: &depthRef
+        pDepthStencilAttachment: &depthRef,
+        pResolveAttachments: resolveRefs.ptr
       },
-      { // 1: transparent WBOIT accumulation -> accum(3)+revealage(4), depth-test vs (2)
+      { // 1: transparent WBOIT accumulation
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
         colorAttachmentCount: 2, pColorAttachments: oitColorRefs.ptr,
         pDepthStencilAttachment: &depthRef
       },
-      { // 2: composite WBOIT over MSAA opaque(0), then RESOLVE to 1x (1) at pass end
+      { // 2: resolve/composite
         pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
         inputAttachmentCount: 2, pInputAttachments: oitInputRefs.ptr,
-        colorAttachmentCount: 2, pColorAttachments: colorRefs.ptr,   // write MSAA color(0) + UNUSED, blend over opaque
-        pResolveAttachments: resolveRefs.ptr                          // resolve (0)->(1) here, at the end
+        colorAttachmentCount: 1, pColorAttachments: &resolveColorRef
       },
     ],
     dependencies: [
-      { srcSubpass: VK_SUBPASS_EXTERNAL, dstSubpass: 0,
-        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-      }, { // 0 -> 1
+      { // external -> 0: color output ordering (as before)
+        srcSubpass: VK_SUBPASS_EXTERNAL, dstSubpass: 0, srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+      }, { // 0 -> 1: transparent accumulation runs after opaque color/depth
         srcSubpass: 0, dstSubpass: 1,
-        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-        srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
-        dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
-      }, { // 1 -> 2: composite reads accum/revealage as input attachments
+        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+      }, { // 1 -> 2: resolve reads accum/revealage as input attachments (must be BY_REGION)
         srcSubpass: 1, dstSubpass: 2,
-        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        dstStageMask: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        dstAccessMask: VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, dstAccessMask: VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+        dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
+      }, { // 0 -> 2: subpass 0's MSAA resolve into attachment 1 must be visible to subpass 2's blend
+        srcSubpass: 0, dstSubpass: 2,
+        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
         dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
       },
     ],
