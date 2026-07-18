@@ -5,6 +5,7 @@
 
 import engine;
 
+import devices : getMSAASamples;
 import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
@@ -190,6 +191,9 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
   float t = clamp(sin(elRad), 0.0f, 1.0f);
 
   app.clearValue[0].color = VkClearColorValue(dawnDayBlend(skyNight, skyDawn, skyDay, t, dawnThreshold));
+  if((app.getMSAASamples() == VK_SAMPLE_COUNT_1_BIT)) {
+    app.clearValue[1].color = app.clearValue[0].color;   // MSAA 1x: SP0 renders into attachment 1, which clears to the sky color
+  }
   app.lights[0].intensity = dawnDayBlend(sunNight, sunDawn, sunNoon, t, dawnThreshold);
   app.lights[0].properties[0] = t * ambientScale;
 }

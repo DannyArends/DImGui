@@ -58,7 +58,7 @@ void addCompileMacro(ref App app, string name, string value) {
 
 void addShaderMacros(ref App app) {
   app.addCompileMacro("SSAO_KERNEL", to!string(SSAO_KERNEL));
-  app.addCompileMacro("MSAA", to!string((app.getMSAASamples() != VK_SAMPLE_COUNT_1_BIT)));
+  if(app.getMSAASamples() != VK_SAMPLE_COUNT_1_BIT) { app.addCompileMacro("MSAA", "1"); }
 }
 
 /** Create the ShaderC compiler */
