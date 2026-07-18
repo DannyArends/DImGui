@@ -79,10 +79,6 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
 
   if(app.camera.isDirty) { app.objects.cullFrustum(extractFrustum(app.camera.proj.multiply(app.camera.view))); app.camera.isDirty = false; }
 
-  pushLabel(cmd, "Descriptors & SSBO", Colors.lightgray);
-  app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
-  popLabel(cmd);
-
   app.sceneCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   if(app.trace) SDL_Log("Render pass recording to buffer %d", app.syncIndex);
 
