@@ -263,14 +263,12 @@ void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
 /** Record the draw calls in the shadow command buffer */
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   auto cmd = app.shadows.cmd.begin(app, syncIndex, "Shadow");
+  pushLabel(cmd, "Shadows", Colors.lightgray);
 
-  if(app.trace) SDL_Log("Beginning shadow map render pass");
-
-  pushLabel(cmd, "Shadow Descriptors", Colors.lightgray);
+  pushLabel(cmd, "Shadows Descriptors & SSBO", Colors.lightgray);
   app.updateDescriptorData(app.shadows.shaders, app.shadows.cmd.commands, syncIndex);
   popLabel(cmd);
 
-  pushLabel(cmd, "Shadow Loop", Colors.lightgray);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.layout, 0, 1, &app.sets[Stage.SHADOWS][syncIndex], 0, null);
 
   app.shadows.staticShadowInstances = app.shadows.dynamicShadowInstances = app.shadows.staticRebuilds = app.shadows.activeShadowMaps = 0;
