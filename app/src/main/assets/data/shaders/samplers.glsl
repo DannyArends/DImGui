@@ -6,6 +6,8 @@
 #ifndef SAMPLERS_GLSL
 #define SAMPLERS_GLSL
 
+#define SHADOW_SKIP 0.02
+
 /// Samplers/Images
 #define BINDING_TEXTURES          5
 #define BINDING_SHADOWMAP         6
@@ -54,10 +56,11 @@ float calculateShadow(vec4 position, uint i) {
 // Per-light shading: ambient + shadowed direct contribution
 vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, bool useShadows) {
   vec3 ambient;
-  vec3 direct = illuminate(lightSSBO.lights[idx], baseColor, fragPosWorld.xyz, normal, ubo.position.xyz, ambient);
-  if (useShadows && direct != vec3(0.0))
+  vec3 direct = illuminate(lightSSBO.lights[idx], baseColor, fragPosWorld.xyz, normal, ambient);
+  if (useShadows && max(direct.r, max(direct.g, direct.b)) > SHADOW_SKIP) {
     direct *= calculateShadow(lightSSBO.lights[idx].lightProjView * fragPosWorld, idx);
-  return ambient + direct;
+  }
+  return(ambient + direct);
 }
 
 #endif // SAMPLERS_GLSL
