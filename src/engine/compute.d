@@ -57,8 +57,8 @@ void initializeCompute(ref App app) {
       VkBuffer cursorBuf = a.buffers["ClusterCounter"][a.syncIndex].buffer;
       vkCmdFillBuffer(cmd, headBuf, 0, VK_WHOLE_SIZE, NIL);
       vkCmdFillBuffer(cmd, cursorBuf, 0, VK_WHOLE_SIZE, 0);
-      cmd.insertFillBarrier(headBuf, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-      cmd.insertFillBarrier(cursorBuf, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+      cmd.insertFillBarrier(headBuf, VK_WHOLE_SIZE);
+      cmd.insertFillBarrier(cursorBuf, VK_WHOLE_SIZE);
     },
     workItems: (ref App a, Shader shader) { uint[3] r = [cast(uint)a.lights.length, 1u, 1u]; return r; }
   );
@@ -142,11 +142,11 @@ void createComputePipeline(ref App app, Shader shader) {
 }
 
 void createComputeCommandBuffers(ref App app, Shader shader) {
-  app.compute.commands[shader.path] = app.createCommandBuffer(app.commandPool, app.framesInFlight);
-  if(app.verbose) SDL_Log("createComputeCommandBuffers: %d ComputeCommand, commandpool[%p]", app.framesInFlight, app.commandPool);
+  app.compute.commands[shader.path] = app.createCommandBuffer(app.computePool, app.framesInFlight);
+  if(app.verbose) SDL_Log("createComputeCommandBuffers: %d ComputeCommand, commandpool[%p]", app.framesInFlight, app.computePool);
   app.swapDeletionQueue.add((){
     for (uint i = 0; i < app.framesInFlight; i++) {
-      vkFreeCommandBuffers(app.device, app.commandPool, 1, &app.compute.commands[shader.path][i]);
+      vkFreeCommandBuffers(app.device, app.computePool, 1, &app.compute.commands[shader.path][i]);
     }
   });
 }
