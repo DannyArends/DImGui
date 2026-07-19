@@ -23,22 +23,27 @@ struct Queues {
 }
 
 /** Find a family with `cap` that lacks GRAPHICS (dedicated), distinct from `avoid`. uint.max if none. */
-uint findDedicatedFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits cap, uint avoid) {
+uint findQueueFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits cap, uint avoid = uint.max, bool dedicatedOnly = false) {
   uint32_t n; vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &n, null);
   VkQueueFamilyProperties[] props; props.length = n;
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &n, &props[0]);
+
+  uint generic = uint.max, dedicated = uint.max, dedicatedSize = 0;   // matching + no graphics bit (best)
   foreach(i, ref p; props) {
     if(cast(uint)i == avoid) continue;
-    if((p.queueFlags & cap) && !(p.queueFlags & VK_QUEUE_GRAPHICS_BIT) && p.queueCount > 0) return cast(uint)i;
+    if(!(p.queueFlags & cap) || p.queueCount == 0) continue;
+    if(!(p.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {           // dedicated (non-graphics)
+      if(p.queueCount > dedicatedSize) { dedicated = cast(uint)i; dedicatedSize = p.queueCount; }
+    } else if(generic == uint.max) {generic = cast(uint)i; }// first generic (has graphics)
   }
-  return uint.max;
+  return((dedicated != uint.max) ? dedicated : (dedicatedOnly ? uint.max : generic));
 }
 
 /** Resolve families: graphics is the base; compute/transfer prefer a dedicated family, else fall back to graphics. */
 VkDeviceQueueCreateInfo[] findDedicatedQueues(ref App app, ref uint gfxQueueCount){
-  uint gfxFamily = selectQueueFamily(app.physicalDevice(), VK_QUEUE_GRAPHICS_BIT);
-  uint computeFamily = findDedicatedFamily(app.physicalDevice(), VK_QUEUE_COMPUTE_BIT, gfxFamily);
-  uint transferFamily = findDedicatedFamily(app.physicalDevice(), VK_QUEUE_TRANSFER_BIT, gfxFamily);
+uint gfxFamily      = findQueueFamily(app.physicalDevice(), VK_QUEUE_GRAPHICS_BIT);
+  uint computeFamily  = findQueueFamily(app.physicalDevice(), VK_QUEUE_COMPUTE_BIT,  gfxFamily, true);
+  uint transferFamily = findQueueFamily(app.physicalDevice(), VK_QUEUE_TRANSFER_BIT, gfxFamily, true);
 
   app.queues.graphics.family = gfxFamily;
   app.queues.compute.family  = (computeFamily  != uint.max) ? computeFamily  : gfxFamily;
@@ -69,39 +74,4 @@ VkDeviceQueueCreateInfo[] findDedicatedQueues(ref App app, ref uint gfxQueueCoun
   if(app.queues.transfer.family != gfxFamily) addFamily(app.queues.transfer.family, 1);
   if(app.queues.compute.family  != gfxFamily) addFamily(app.queues.compute.family, 1);
   return createQueue;
-}
-
-uint selectQueueFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits requested = VK_QUEUE_GRAPHICS_BIT) {
-  uint32_t nQueue;
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, null);
-  VkQueueFamilyProperties[] queueProperties;
-  queueProperties.length = nQueue;
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, &queueProperties[0]);
-
-  uint bestDedicatedIndex = uint.max;
-  uint maxDedicatedSize = 0;
-  uint firstGenericIndex = uint.max;
-
-  // Find the best dedicated queue and the first available generic queue in a single pass
-  foreach(i, ref queueProperty; queueProperties) {
-    if (queueProperty.queueFlags & requested) {
-      if (!(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)) { // DEDICATED (non GFX) queue
-        if (queueProperty.queueCount > maxDedicatedSize) {
-          bestDedicatedIndex = cast(uint)i;
-          maxDedicatedSize = queueProperty.queueCount;
-        }
-      } else { // GENERIC queue
-        if (firstGenericIndex == uint.max) { firstGenericIndex = cast(uint)i; }
-      }
-    }
-  }
-  if (bestDedicatedIndex != uint.max){
-    SDL_Log("Dedicated queue family: %d with size %d", bestDedicatedIndex, maxDedicatedSize);
-    return bestDedicatedIndex;
-  }
-  if (firstGenericIndex != uint.max){
-    SDL_Log("Generic queue family: %d", firstGenericIndex);
-    return firstGenericIndex;
-  }
-  assert(0, format("No suitable Queue Found for: %s", requested));
 }
