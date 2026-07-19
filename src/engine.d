@@ -96,7 +96,10 @@ struct App {
   @property @nogc VkQueue gfxQueue() nothrow { return queues.graphics.queue; }
   @property @nogc VkQueue transferQueue() nothrow { return queues.transfer.queue; }
   @property @nogc VkQueue computeQueue() nothrow { return queues.compute.queue; }
-
+  @property @nogc VkCommandPool commandPool() nothrow { return queues.graphics.pool; }   // graphics pool (back-compat)
+  @property @nogc VkCommandPool transferPool() nothrow { return queues.transfer.pool; }  // transfer pool (back-compat)
+  @property @nogc VkCommandPool computePool() nothrow { return queues.compute.pool; }    // compute pool
+  
   VkDescriptorPool[string] pools;                                               /// Descriptor pools (IMGUI, COMPUTE, RENDER)
   VkDescriptorSetLayout[string] layouts;                                        /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
   VkDescriptorSet[][string] sets;                                               /// Descriptor sets for (IMGUI, RENDER, N x computeShader.PATH)
@@ -107,8 +110,6 @@ struct App {
   VkSurfaceFormatKHR offscreen;                                                 /// Format used for MSAA / offscreen rendering
   VkSurfaceFormatKHR present;                                                   /// Swapchain format
   VkSwapchainKHR swapChain = null;                                              /// Our SwapChain
-  VkCommandPool commandPool = null;                                             /// Our Rendering Command Pool
-  VkCommandPool transferPool = null;                                            /// Our Texture Transfer Pool
 
   // Per frame resources (reset when rebuilding the swapchain)
   Sync[] sync = null;
@@ -142,7 +143,7 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool enableValidation = false;                                                 /// Should validation be enabled ?
+  bool enableValidation = true;                                                 /// Should validation be enabled ?
   bool nameVulkanObjects = false;                                                /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights

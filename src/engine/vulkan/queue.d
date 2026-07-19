@@ -11,6 +11,7 @@ __gshared float[16] queuePriority = 1.0f;
 struct Queue {
   VkQueue queue = null;
   uint family = uint.max;
+  VkCommandPool pool = null;
   @property @nogc bool valid() nothrow const { return queue !is null; }
 }
 
@@ -67,6 +68,16 @@ VkDeviceQueueCreateInfo[] findDedicatedQueues(ref App app, ref uint gfxQueueCoun
   addFamily(gfxFamily, gfxQueueCount);
   if(app.queues.transfer.family != gfxFamily) addFamily(app.queues.transfer.family, 1);
   if(app.queues.compute.family  != gfxFamily) addFamily(app.queues.compute.family, 1);
+    SDL_Log("[queues] families available: %d", n);
+  SDL_Log("[queues] resolved: gfx=%d compute=%d transfer=%d", gfxFamily, app.queues.compute.family, app.queues.transfer.family);
+  SDL_Log("[queues] gfxQueueCount(clamped)=%d, gfx family has %d queues", gfxQueueCount, props[gfxFamily].queueCount);
+  SDL_Log("[queues] createQueue.length=%d", cast(int)createQueue.length);
+  foreach(i, ref ci; createQueue) {
+    SDL_Log("[queues]   [%d] sType=%d family=%d count=%d pPrio=%p pNext=%p flags=%d",
+            cast(int)i, cast(int)ci.sType, ci.queueFamilyIndex, ci.queueCount,
+            ci.pQueuePriorities, ci.pNext, ci.flags);
+  }
+  
   return createQueue;
 }
 

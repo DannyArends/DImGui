@@ -150,13 +150,17 @@ void recordDepthPrePass(ref App app) {
 }
 
 void createCommandPools(ref App app) {
-  app.commandPool = app.createCommandPool(app.queueFamily);
-  app.transferPool = app.createCommandPool(app.queueFamily);
+  app.queues.graphics.pool = app.createCommandPool(app.queues.graphics.family);
+  app.queues.transfer.pool = app.createCommandPool(app.queues.transfer.family);
+  app.queues.compute.pool  = app.createCommandPool(app.queues.compute.family);
 
-  app.nameVulkanObject(app.commandPool, toStringz("[COMMANDPOOL] Render"), VK_OBJECT_TYPE_COMMAND_POOL);
-  app.nameVulkanObject(app.transferPool, toStringz("[COMMANDPOOL] Transfer"), VK_OBJECT_TYPE_COMMAND_POOL);
+  app.nameVulkanObject(app.queues.graphics.pool, toStringz("[COMMANDPOOL] Graphics"), VK_OBJECT_TYPE_COMMAND_POOL);
+  app.nameVulkanObject(app.queues.transfer.pool, toStringz("[COMMANDPOOL] Transfer"), VK_OBJECT_TYPE_COMMAND_POOL);
+  app.nameVulkanObject(app.queues.compute.pool,  toStringz("[COMMANDPOOL] Compute"),  VK_OBJECT_TYPE_COMMAND_POOL);
 
-  if(app.verbose) SDL_Log("createCommandPools[family:%d] Queue: %p, Transfer: %p", app.queueFamily, app.commandPool, app.transferPool);
+  if(app.verbose) SDL_Log("createCommandPools gfx[%d]=%p transfer[%d]=%p compute[%d]=%p",
+    app.queues.graphics.family, app.queues.graphics.pool, app.queues.transfer.family, app.queues.transfer.pool,
+    app.queues.compute.family, app.queues.compute.pool);
 }
 
 VkCommandPool createCommandPool(ref App app, uint queueFamilyIndex) {

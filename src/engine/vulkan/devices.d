@@ -67,7 +67,12 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     pEnabledFeatures : &deviceFeatures,
     pNext : &features
   };
-  enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
+  SDL_Log("[device] queueCreateInfoCount=%d pQueueCreateInfos=%p", createDevice.queueCreateInfoCount, createDevice.pQueueCreateInfos);
+  SDL_Log("[device] extCount=%d pNext=%p pEnabledFeatures=%p", createDevice.enabledExtensionCount, createDevice.pNext, cast(void*)createDevice.pEnabledFeatures);
+  foreach(i; 0 .. app.deviceExtensions.length) SDL_Log("[device]   ext[%d]=%s", cast(int)i, app.deviceExtensions[i]);
+  auto dres = vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device);
+  SDL_Log("[device] vkCreateDevice returned %d", cast(int)dres);
+  enforceVK(dres);
 
   app.mainDeletionQueue.add((){ if(app.verbose) SDL_Log("Destroy Device: %p", app.device);
     vkDestroyDevice(app.device, app.allocator); 
