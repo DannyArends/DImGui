@@ -66,7 +66,7 @@ void initializeCompute(ref App app) {
   app.compute.passes["data/shaders/compute.ssao.glsl"] = ComputePass(
     stage: ComputeStage.PostDepth,
     enabled: (ref App a) => a.useSSAO,
-    resolution: (ref App a) { uint[2] r = [a.camera.width, a.camera.height]; return(r); },
+    resolution: (ref App a) { uint s = isAndroid ? 2 : 1; uint[2] r = [(a.camera.width + s - 1) / s, (a.camera.height + s - 1) / s]; return(r); },
     workItems: (ref App a, Shader shader) {
       auto p = shader.path in a.compute.passes;
       auto d = (p && p.resolution) ? p.resolution(a) : cast(uint[2])[a.camera.width, a.camera.height];
