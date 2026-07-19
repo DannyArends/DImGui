@@ -6,7 +6,7 @@
 import engine;
 
 import extensions : queryDeviceExtensionProperties, has;
-import queue : findDedicatedQueues, selectQueueFamily;
+import queue : findDedicatedQueues;
 import validation : nameVulkanObject;
 import vulkan : querySupportedFeatures;
 
