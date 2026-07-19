@@ -33,6 +33,7 @@ struct ShadowMap {
 
   bool[] shadowDescriptorsDirty;
   bool[] staticDirty;
+  Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
 
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
@@ -60,7 +61,7 @@ void createShadowMap(ref App app) {
 
 void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
-  app.shadows.images.length = app.shadows.staticDirty.length = MAX_SHADOW_MAPS;
+  app.shadows.images.length = app.shadows.staticDirty.length = app.shadows.slotStaticMatrix.length = MAX_SHADOW_MAPS;
   app.shadows.cmd.pass(0).framebuffers.length = app.shadows.cmd.pass(1).framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(app.shadows, s, 32);
 
@@ -281,6 +282,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     pushLabel(cmd, cstr("Shadow RenderPass: %d", l), Colors.lightgray);
     if(app.shadows.staticDirty[s]) { // Static -> layer 0
       app.recordCasters(cmd, app.shadows.cmd.pass(0), s, l, lFrustum, app.shadows.images[s].extent, true);
+      app.shadows.slotStaticMatrix[s] = app.lights[l].lightSpaceMatrix;   // this slot's static layer now belongs to light l
       app.shadows.staticDirty[s] = false;
       app.shadows.staticRebuilds++;
     }

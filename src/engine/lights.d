@@ -236,16 +236,16 @@ void computeActiveLighting(ref App app) {
   foreach(ref light; app.lights) {
     light.computeRadius();
     uint res = app.shadowResolution(light);
-    Matrix prev = light.lightSpaceMatrix;
     app.camera.computeLightSpace(light, app.shadows.bounds, res);
     int s = cast(int)light.cull[1];
     if(s >= 0) {
-      if(light.lightSpaceMatrix != prev) app.shadows.staticDirty[s] = true;
+      if(light.lightSpaceMatrix != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
       uint before = app.shadows.images[s].extent.width;
       app.resizeShadowMap(s, res);
       if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // resize recreated layer 0
     }
   }
+  app.buffers["LightMatrices"].invalidate();
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
     uint used = *cast(uint*)app.buffers["ClusterCounter"][app.syncIndex].data;
