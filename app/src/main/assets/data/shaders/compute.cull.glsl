@@ -53,14 +53,20 @@ void main() {
   uvec3 lo = uvec3(clamp(xlo, 0, int(GRID_X)-1), clamp(ylo, 0, int(GRID_Y)-1), clamp(zlo, 0, int(GRID_Z)-1));
   uvec3 hi = uvec3(clamp(xhi, 0, int(GRID_X)-1), clamp(yhi, 0, int(GRID_Y)-1), clamp(zhi, 0, int(GRID_Z)-1));
 
+  // Count froxels this light covers, then reserve the whole block with ONE atomic (kills cursor[0] contention).
+  uint count = (hi.z - lo.z + 1u) * (hi.y - lo.y + 1u) * (hi.x - lo.x + 1u);
+  uint base = atomicAdd(cursor[0].cursor, count);
+  if (base >= ubo.indexBufferLength) return;
+  if (base + count > ubo.indexBufferLength) count = ubo.indexBufferLength - base;  // clamp tail on overflow
+
+  uint slot = base;
   for (uint z = lo.z; z <= hi.z; ++z) { for (uint y = lo.y; y <= hi.y; ++y) {
-    uint rowBase = clusterId(0u, y, z);   // canonical layout; per-row hoist preserved
+    uint rowBase = clusterId(0u, y, z);
     for (uint x = lo.x; x <= hi.x; ++x) {
-      uint n = atomicAdd(cursor[0].cursor, 1u);
-      if (n >= ubo.indexBufferLength) return;
-      indices[n].light = li;
-      indices[n].next = atomicExchange(head[rowBase + x].head, n);
+      if (slot >= base + count) break;              // respect the clamped reservation
+      indices[slot].light = li;
+      indices[slot].next = atomicExchange(head[rowBase + x].head, slot);   // per-cluster link (distributed)
+      ++slot;
     }
   } }
 }
-
