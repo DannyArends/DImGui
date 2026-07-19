@@ -5,6 +5,8 @@
 
 import engine;
 
+__gshared float[16] queuePriority = 1.0f;
+
 /** A device queue paired with the family it came from */
 struct Queue {
   VkQueue queue = null;
@@ -52,7 +54,6 @@ VkDeviceQueueCreateInfo[] findDedicatedQueues(ref App app, ref uint gfxQueueCoun
   if(app.queues.compute.family  == gfxFamily) gfxWant++;             // compute fallback
   gfxQueueCount = min(gfxWant, props[gfxFamily].queueCount);          // CLAMP — never request more than exist
 
-  float[8] queuePriority = 1.0f;
   uint[] families; VkDeviceQueueCreateInfo[] createQueue;
   void addFamily(uint fam, uint count) {
     foreach(f; families) if(f == fam) return;
