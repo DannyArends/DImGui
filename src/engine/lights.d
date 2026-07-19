@@ -88,7 +88,7 @@ size_t removeLight(ref App app, size_t index) {
 }
 
 /** Compute the size of the light radius */
-void computeRadius(ref Light l, float cutoff = 0.01f) {
+void computeRadius(ref Light l, float cutoff = 0.05f) {
   if (l.directional) { l.cull[0] = float.infinity; return; }
   float maxI = max(l.intensity[0], l.intensity[1], l.intensity[2]);
   l.cull[0]  = sqrt(fmax(0.0f, maxI / cutoff - l.properties[1]));
@@ -97,6 +97,7 @@ void computeRadius(ref Light l, float cutoff = 0.01f) {
 /** Compute lightspace for the provided light */
 @nogc void computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
+  light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
 
   if(!light.directional) {
     Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), cam.up);
