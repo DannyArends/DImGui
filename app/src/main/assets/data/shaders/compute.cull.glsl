@@ -57,7 +57,7 @@ void main() {
     uint rowBase = clusterId(0u, y, z);   // canonical layout; per-row hoist preserved
     for (uint x = lo.x; x <= hi.x; ++x) {
       uint n = atomicAdd(cursor[0].cursor, 1u);
-      if (n >= ubo.indexBufferLength) continue;
+      if (n >= ubo.indexBufferLength) return;
       indices[n].light = li;
       indices[n].next = atomicExchange(head[rowBase + x].head, n);
     }
