@@ -58,10 +58,11 @@ VkDeviceQueueCreateInfo[] findDedicatedQueues(ref App app, ref uint gfxQueueCoun
   void addFamily(uint fam, uint count) {
     foreach(f; families) if(f == fam) return;
     families ~= fam;
-    createQueue ~= VkDeviceQueueCreateInfo(
+    VkDeviceQueueCreateInfo info = {
       sType : VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
       queueFamilyIndex : fam, queueCount : count, pQueuePriorities : &queuePriority[0]
-    );
+    };
+    createQueue ~= info;
   }
   addFamily(gfxFamily, gfxQueueCount);
   if(app.queues.transfer.family != gfxFamily) addFamily(app.queues.transfer.family, 1);
