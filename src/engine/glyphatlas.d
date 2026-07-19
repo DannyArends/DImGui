@@ -160,7 +160,7 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
 void uploadFont(ref App app) {
   if(app.verbose) SDL_Log("Uploading Font Texture to GPU");
   GPUAllocation staging;
-  auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
+  auto commandBuffer = app.beginSingleTimeCommands(app.commandPool);
   app.toGPU(commandBuffer, app.glyphAtlas.texture, staging, VK_FORMAT_R8G8B8A8_UNORM);
   app.endSingleTimeCommands(commandBuffer, app.gfxQueue);
   app.cleanup(staging);
