@@ -6,6 +6,7 @@
 import engine;
 
 import extensions : queryDeviceExtensionProperties, has;
+import queue : findDedicatedQueues, selectQueueFamily;
 import validation : nameVulkanObject;
 import vulkan : querySupportedFeatures;
 
@@ -20,7 +21,6 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
 
   app.printQueues();
-  app.queueFamily = selectQueueFamily(app.physicalDevice());
 }
 
 VkSampleCountFlagBits getMSAASamples(ref App app) {
@@ -39,13 +39,7 @@ VkSampleCountFlagBits getMSAASamples(ref App app) {
 void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   app.pickPhysicalDevice(device);
 
-  float[] queuePriority = [1.0f];
-  VkDeviceQueueCreateInfo[] createQueue = [{
-    sType : VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-    queueFamilyIndex : app.queueFamily,
-    queueCount : queueCount, // transfer and render queue
-    pQueuePriorities : &queuePriority[0]
-  }];
+  VkDeviceQueueCreateInfo[] createQueue = app.findDedicatedQueues();
 
   app.querySupportedFeatures(app.physicalDevice);
 
@@ -80,20 +74,27 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
 
   if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device);
 
-  // Get the Queue from the queueFamily
-  vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
-  if(app.verbose) SDL_Log("Queueues 0");
-  vkGetDeviceQueue(app.device, app.queueFamily, 1, &app.transfer);
-  if(app.verbose) SDL_Log("Queueues 1");
+  // Graphics: family slot 0. Transfer: if same family, slot 1; else slot 0 of its dedicated family.
+  vkGetDeviceQueue(app.device, app.queues.graphics.family, 0, &app.queues.graphics.queue);
+  if(app.queues.transfer.family == app.queues.graphics.family)
+    vkGetDeviceQueue(app.device, app.queues.transfer.family, 1, &app.queues.transfer.queue);
+  else
+    vkGetDeviceQueue(app.device, app.queues.transfer.family, 0, &app.queues.transfer.queue);
+  // Compute: dedicated family slot 0, else reuse the graphics queue.
+  if(app.queues.compute.family != app.queues.graphics.family)
+    vkGetDeviceQueue(app.device, app.queues.compute.family, 0, &app.queues.compute.queue);
+  else
+    app.queues.compute.queue = app.queues.graphics.queue;
+
 
 /*  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
   app.nameVulkanObject(app.physicalDevice, cstr("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr)), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
   app.nameVulkanObject(app.instance, toStringz("[INSTANCE]"), VK_OBJECT_TYPE_INSTANCE);
 */
-  app.nameVulkanObject(app.queue, toStringz("[QUEUE] Render"), VK_OBJECT_TYPE_QUEUE);
-  app.nameVulkanObject(app.transfer, toStringz("[QUEUE] Transfer"), VK_OBJECT_TYPE_QUEUE);
-
-  if(app.verbose) SDL_Log("vkGetDeviceQueue[family:%d] queue: %p, transfer: %p", app.queueFamily, app.queue, app.transfer);
+  app.nameVulkanObject(app.queues.graphics.queue, toStringz("[QUEUE] Graphics"), VK_OBJECT_TYPE_QUEUE);
+  app.nameVulkanObject(app.queues.transfer.queue, toStringz("[QUEUE] Transfer"), VK_OBJECT_TYPE_QUEUE);
+  app.nameVulkanObject(app.queues.compute.queue,  toStringz("[QUEUE] Compute"),  VK_OBJECT_TYPE_QUEUE);
+  if(app.verbose) SDL_Log("Queue: gfx=%d compute=%d transfer=%d", app.queues.graphics.family, app.queues.compute.family, app.queues.transfer.family);
 }
 
 void list(VkPhysicalDevice physicalDevice, size_t i) {
@@ -135,39 +136,3 @@ void printQueues(ref App app){
     SDL_Log(cstr("Queue[%d] size: %d: %s", i, queueProperty.queueCount, capabilities));
   }
 }
-
-uint selectQueueFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits requested = VK_QUEUE_GRAPHICS_BIT) {
-  uint32_t nQueue;
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, null);
-  VkQueueFamilyProperties[] queueProperties;
-  queueProperties.length = nQueue;
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, &queueProperties[0]);
-
-  uint bestDedicatedIndex = uint.max;
-  uint maxDedicatedSize = 0;
-  uint firstGenericIndex = uint.max;
-
-  // Find the best dedicated queue and the first available generic queue in a single pass
-  foreach(i, ref queueProperty; queueProperties) {
-    if (queueProperty.queueFlags & requested) {
-      if (!(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)) { // DEDICATED (non GFX) queue
-        if (queueProperty.queueCount > maxDedicatedSize) {
-          bestDedicatedIndex = cast(uint)i;
-          maxDedicatedSize = queueProperty.queueCount;
-        }
-      } else { // GENERIC queue
-        if (firstGenericIndex == uint.max) { firstGenericIndex = cast(uint)i; }
-      }
-    }
-  }
-  if (bestDedicatedIndex != uint.max){
-    SDL_Log("Dedicated queue family: %d with size %d", bestDedicatedIndex, maxDedicatedSize);
-    return bestDedicatedIndex;
-  }
-  if (firstGenericIndex != uint.max){
-    SDL_Log("Generic queue family: %d", firstGenericIndex);
-    return firstGenericIndex;
-  }
-  assert(0, format("No suitable Queue Found for: %s", requested));
-}
-

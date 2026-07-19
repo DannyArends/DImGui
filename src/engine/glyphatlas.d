@@ -162,7 +162,7 @@ void uploadFont(ref App app) {
   GPUAllocation staging;
   auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
   app.toGPU(commandBuffer, app.glyphAtlas.texture, staging, VK_FORMAT_R8G8B8A8_UNORM);
-  app.endSingleTimeCommands(commandBuffer, app.transfer);
+  app.endSingleTimeCommands(commandBuffer, app.transferQueue);
   app.cleanup(staging);
   app.textures ~= app.glyphAtlas.texture;
   app.mainDeletionQueue.add((){ app.cleanup(app.glyphAtlas.texture); });

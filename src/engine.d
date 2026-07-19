@@ -90,8 +90,12 @@ struct App {
   VkPhysicalDevice[] physicalDevices;
 
   VkDevice device = null;                                                       /// Vulkan device
-  VkQueue queue = null;                                                         /// Render Queue
-  VkQueue transfer = null;                                                      /// Transfer Queue
+  Queues queues;                                                                /// Graphics / Compute / Transfer queues
+
+  // Back-compat aliases so existing call sites keep working
+  @property @nogc VkQueue gfxQueue() nothrow { return queues.graphics.queue; }
+  @property @nogc VkQueue transferQueue() nothrow { return queues.transfer.queue; }
+  @property @nogc VkQueue computeQueue() nothrow { return queues.compute.queue; }
 
   VkDescriptorPool[string] pools;                                               /// Descriptor pools (IMGUI, COMPUTE, RENDER)
   VkDescriptorSetLayout[string] layouts;                                        /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
@@ -124,7 +128,7 @@ struct App {
 
   // Sync and Frame Tracking
   uint selectedDevice = 0;                                                      /// Device selected for rendering
-  uint queueFamily = uint.max;                                                  /// Current GFX queueFamily used
+  @property @nogc uint queueFamily() nothrow const { return queues.graphics.family; }  /// Graphics family (back-compat)
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
   float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
