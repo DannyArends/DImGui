@@ -122,8 +122,8 @@ void checkPendingTextures(ref App app) {
 
 void transferTextureAsync(ref App app, ref Texture texture) {
   bool needsGraphics = texture.mipLevels > 1;
-  auto pool  = needsGraphics ? app.commandPool : app.transferPool;
-  auto queue = needsGraphics ? app.queue : app.transfer;
+  auto pool = needsGraphics ? app.commandPool : app.transferPool;
+  auto queue = needsGraphics ? app.gfxQueue : app.transferQueue;
 
   SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(pool, true);
   GPUAllocation staging;
@@ -229,7 +229,7 @@ void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath 
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
   app.transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  app.endSingleTimeCommands(cmd, app.queue);
+  app.endSingleTimeCommands(cmd, app.gfxQueue);
 
   if(app.verbose) SDL_Log("Create compute texture %p, view: %p", texture.image, texture.view);
   app.registerTexture(texture);

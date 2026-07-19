@@ -135,7 +135,7 @@ void initializeImGui(ref App app){
     PhysicalDevice : app.physicalDevice,
     Device : app.device,
     QueueFamily : app.queueFamily,
-    Queue : app.queue,
+    Queue : app.gfxQueue,
     DescriptorPool : app.pools[Stage.IMGUI],
     Allocator : app.allocator,
     MinImageCount : app.imageCount,
