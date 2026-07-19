@@ -142,12 +142,11 @@ void createComputePipeline(ref App app, Shader shader) {
 }
 
 void createComputeCommandBuffers(ref App app, Shader shader) {
-  app.compute.commands[shader.path] = app.createCommandBuffer(app.computePool, app.framesInFlight);
-  if(app.verbose) SDL_Log("createComputeCommandBuffers: %d ComputeCommand, commandpool[%p]", app.framesInFlight, app.computePool);
+  VkCommandPool pool = app.isStage(shader.path, ComputeStage.PreRender) ? app.computePool : app.commandPool;
+  app.compute.commands[shader.path] = app.createCommandBuffer(pool, app.framesInFlight);
+  if(app.verbose) SDL_Log("createComputeCommandBuffers: %d ComputeCommand, commandpool[%p]", app.framesInFlight, pool);
   app.swapDeletionQueue.add((){
-    for (uint i = 0; i < app.framesInFlight; i++) {
-      vkFreeCommandBuffers(app.device, app.computePool, 1, &app.compute.commands[shader.path][i]);
-    }
+    for (uint i = 0; i < app.framesInFlight; i++) { vkFreeCommandBuffers(app.device, pool, 1, &app.compute.commands[shader.path][i]); }
   });
 }
 
