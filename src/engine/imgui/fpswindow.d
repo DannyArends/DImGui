@@ -26,7 +26,7 @@ void showTimingsContent(ref App app) {
   ulong total = 0;
   foreach(ms; app.timings) total += ms;
   foreach(name, ms; app.timings) {
-    if(ms < 10) continue;
+    if(ms < MS_THRESHOLD) continue;
     igProgressBar(total ? cast(float)ms / total : 0.0f, ImVec2(60, igGetTextLineHeightWithSpacing()), "");
     igSameLine(0, 6);
     text("%s %dms", name, ms);

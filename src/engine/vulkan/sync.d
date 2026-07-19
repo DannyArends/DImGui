@@ -70,37 +70,38 @@ void createSyncObjects(ref App app) {
   });
 }
 
-void insertWriteBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
+void insertWriteBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE,
+                        VkPipelineStageFlagBits srcStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                        VkPipelineStageFlagBits dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT) {
   VkBufferMemoryBarrier writeBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
     srcAccessMask : VK_ACCESS_SHADER_WRITE_BIT, // Previous stage (e.g., compute shader writing to pOut)
     dstAccessMask : VK_ACCESS_SHADER_READ_BIT, // Access for the copy operation
-    buffer : buffer,
-    size : size // Size of the affected region
+    buffer : buffer, size : size // Buffer & Size of the affected region
   };
-
-  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, null, 1, &writeBarrier, 0, null);
+  vkCmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, 0, 0, null, 1, &writeBarrier, 0, null);
 }
 
-void insertReadBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
+void insertReadBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE,
+                       VkPipelineStageFlagBits srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       VkPipelineStageFlagBits dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT) {
   VkBufferMemoryBarrier readBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
     srcAccessMask : VK_ACCESS_TRANSFER_READ_BIT, // Previous stage (e.g., compute shader writing to pOut)
     dstAccessMask : VK_ACCESS_SHADER_WRITE_BIT, // Access for the copy operation
-    buffer : buffer,
-    size : size // Size of the affected region
+    buffer : buffer, size : size // Buffer & Size of the affected region
   };
-
-  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, null, 1, &readBarrier, 0, null);
+  vkCmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, 0, 0, null, 1, &readBarrier, 0, null);
 }
 
-void insertFillBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE) {
+void insertFillBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize size = VK_WHOLE_SIZE,
+                       VkPipelineStageFlagBits srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       VkPipelineStageFlagBits dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT) {
   VkBufferMemoryBarrier barrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-    srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,                          // vkCmdFillBuffer write
-    dstAccessMask : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // cull reads+writes
-    buffer : buffer,
-    size : size
+    srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,                             // vkCmdFillBuffer write
+    dstAccessMask : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,   // cull reads+writes
+    buffer : buffer, size : size // Buffer & Size of the affected region
   };
-  vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, null, 1, &barrier, 0, null);
+  vkCmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, 0, 0, null, 1, &barrier, 0, null);
 }

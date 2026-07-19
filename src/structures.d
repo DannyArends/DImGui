@@ -52,6 +52,7 @@ public import shadow : ShadowMap;
 public import sfx : Audio, WavFMT;
 public import text : WorldText;
 public import textures : Texture, Textures;
+public import timing : MS_THRESHOLD;
 public import torus : Torus;
 public import threading : Threading;
 public import uniforms : ParticleUniformBuffer, UBO;

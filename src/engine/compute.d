@@ -57,8 +57,8 @@ void initializeCompute(ref App app) {
       VkBuffer cursorBuf = a.buffers["ClusterCounter"][a.syncIndex].buffer;
       vkCmdFillBuffer(cmd, headBuf, 0, VK_WHOLE_SIZE, NIL);
       vkCmdFillBuffer(cmd, cursorBuf, 0, VK_WHOLE_SIZE, 0);
-      cmd.insertFillBarrier(headBuf);
-      cmd.insertFillBarrier(cursorBuf);
+      cmd.insertFillBarrier(headBuf, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+      cmd.insertFillBarrier(cursorBuf, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
     },
     workItems: (ref App a, Shader shader) { uint[3] r = [cast(uint)a.lights.length, 1u, 1u]; return r; }
   );
