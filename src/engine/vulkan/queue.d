@@ -32,7 +32,7 @@ uint findDedicatedFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits cap, u
 }
 
 /** Resolve families: graphics is the base; compute/transfer prefer a dedicated family, else fall back to graphics. */
-VkDeviceQueueCreateInfo[] findDedicatedQueues(ref App app){
+VkDeviceQueueCreateInfo[] findDedicatedQueues(ref App app, ref uint gfxQueueCount){
   uint gfxFamily = selectQueueFamily(app.physicalDevice(), VK_QUEUE_GRAPHICS_BIT);
   uint computeFamily = findDedicatedFamily(app.physicalDevice(), VK_QUEUE_COMPUTE_BIT, gfxFamily);
   uint transferFamily = findDedicatedFamily(app.physicalDevice(), VK_QUEUE_TRANSFER_BIT, gfxFamily);
@@ -41,22 +41,31 @@ VkDeviceQueueCreateInfo[] findDedicatedQueues(ref App app){
   app.queues.compute.family  = (computeFamily  != uint.max) ? computeFamily  : gfxFamily;
   app.queues.transfer.family = (transferFamily != uint.max) ? transferFamily : gfxFamily;
 
-  // One VkDeviceQueueCreateInfo per DISTINCT family. Graphics family needs 3 queues (render + a transfer/compute fallback slot).
-  float[3] queuePriority = [1.0f, 1.0f, 1.0f];
-  uint[] families; 
-  VkDeviceQueueCreateInfo[] createQueue;
+  // How many queues does each family actually support?
+  uint32_t n; vkGetPhysicalDeviceQueueFamilyProperties(app.physicalDevice(), &n, null);
+  VkQueueFamilyProperties[] props; props.length = n;
+  vkGetPhysicalDeviceQueueFamilyProperties(app.physicalDevice(), &n, &props[0]);
+
+  // Graphics family needs a queue for graphics + any role that falls back to it. Clamp to available.
+  uint gfxWant = 1;                                                   // graphics
+  if(app.queues.transfer.family == gfxFamily) gfxWant++;             // transfer fallback
+  if(app.queues.compute.family  == gfxFamily) gfxWant++;             // compute fallback
+  gfxQueueCount = min(gfxWant, props[gfxFamily].queueCount);          // CLAMP — never request more than exist
+
+  float[8] queuePriority = 1.0f;
+  uint[] families; VkDeviceQueueCreateInfo[] createQueue;
   void addFamily(uint fam, uint count) {
-    foreach(f; families) if(f == fam) return;   // already added
+    foreach(f; families) if(f == fam) return;
     families ~= fam;
     createQueue ~= VkDeviceQueueCreateInfo(
       sType : VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
       queueFamilyIndex : fam, queueCount : count, pQueuePriorities : &queuePriority[0]
     );
   }
-  addFamily(gfxFamily, 3); // slot 0 = graphics, slot 1 = transfer fallback, slot 2 = compute fallback
+  addFamily(gfxFamily, gfxQueueCount);
   if(app.queues.transfer.family != gfxFamily) addFamily(app.queues.transfer.family, 1);
-  if(app.queues.compute.family != gfxFamily) addFamily(app.queues.compute.family, 1);
-  return(createQueue);
+  if(app.queues.compute.family  != gfxFamily) addFamily(app.queues.compute.family, 1);
+  return createQueue;
 }
 
 uint selectQueueFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits requested = VK_QUEUE_GRAPHICS_BIT) {
