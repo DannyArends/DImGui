@@ -6,7 +6,7 @@
 import engine;
 
 import extensions : queryDeviceExtensionProperties, has;
-import queue : findDedicatedQueues;
+import queue : findDedicatedQueues, setupQueues;
 import validation : nameVulkanObject;
 import vulkan : querySupportedFeatures;
 
@@ -38,10 +38,6 @@ VkSampleCountFlagBits getMSAASamples(ref App app) {
 /** Create Logical Device (with 1 queue) */
 void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   app.pickPhysicalDevice(device);
-
-  uint gfxQueueCount;
-  VkDeviceQueueCreateInfo[] createQueue = app.findDedicatedQueues(gfxQueueCount);
-
   app.querySupportedFeatures(app.physicalDevice);
 
   VkPhysicalDeviceVulkan12Features features = { 
@@ -58,12 +54,11 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
                                               fragmentStoresAndAtomics: VK_TRUE,
                                               independentBlend: VK_TRUE };
 
+  QueueSetup qs = app.findDedicatedQueues();
   VkDeviceCreateInfo createDevice = {
     sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-    queueCreateInfoCount : cast(uint)createQueue.length,
-    pQueueCreateInfos : &createQueue[0],
-    enabledExtensionCount : cast(uint)app.deviceExtensions.length,
-    ppEnabledExtensionNames : &app.deviceExtensions[0],
+    queueCreateInfoCount : cast(uint)qs.createInfos.length, pQueueCreateInfos : &qs.createInfos[0],
+    enabledExtensionCount : cast(uint)app.deviceExtensions.length, ppEnabledExtensionNames : &app.deviceExtensions[0],
     pEnabledFeatures : &deviceFeatures,
     pNext : &features
   };
@@ -75,35 +70,13 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
 
   if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device);
 
-  // Graphics always slot 0.
-  vkGetDeviceQueue(app.device, app.queues.graphics.family, 0, &app.queues.graphics.queue);
+  app.setupQueues(qs);
 
-  uint nextGfxSlot = 1;   // next free slot on the graphics family
-
-  // Transfer
-  if(app.queues.transfer.family != app.queues.graphics.family){
-    vkGetDeviceQueue(app.device, app.queues.transfer.family, 0, &app.queues.transfer.queue);
-  }else if(nextGfxSlot < gfxQueueCount){
-    vkGetDeviceQueue(app.device, app.queues.transfer.family, nextGfxSlot++, &app.queues.transfer.queue);
-  }else{
-    app.queues.transfer.queue = app.queues.graphics.queue;   // ran out of slots: share graphics
-  }
-  // Compute
-  if(app.queues.compute.family != app.queues.graphics.family){
-    vkGetDeviceQueue(app.device, app.queues.compute.family, 0, &app.queues.compute.queue);
-  }else if(nextGfxSlot < gfxQueueCount){
-    vkGetDeviceQueue(app.device, app.queues.compute.family, nextGfxSlot++, &app.queues.compute.queue);
-  }else{
-    app.queues.compute.queue = app.queues.graphics.queue;    // ran out: share graphics
-  }
-
-/*  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
+  /*
+  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
   app.nameVulkanObject(app.physicalDevice, cstr("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr)), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
   app.nameVulkanObject(app.instance, toStringz("[INSTANCE]"), VK_OBJECT_TYPE_INSTANCE);
-*/
-  app.nameVulkanObject(app.queues.graphics.queue, toStringz("[QUEUE] Graphics"), VK_OBJECT_TYPE_QUEUE);
-  app.nameVulkanObject(app.queues.transfer.queue, toStringz("[QUEUE] Transfer"), VK_OBJECT_TYPE_QUEUE);
-  app.nameVulkanObject(app.queues.compute.queue,  toStringz("[QUEUE] Compute"),  VK_OBJECT_TYPE_QUEUE);
+  */
   if(app.verbose) SDL_Log("Queue: gfx=%d compute=%d transfer=%d", app.queues.graphics.family, app.queues.compute.family, app.queues.transfer.family);
 }
 
