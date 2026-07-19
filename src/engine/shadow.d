@@ -282,7 +282,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     pushLabel(cmd, cstr("Shadow RenderPass: %d", l), Colors.lightgray);
     if(app.shadows.staticDirty[s]) { // Static -> layer 0
       app.recordCasters(cmd, app.shadows.cmd.pass(0), s, l, lFrustum, app.shadows.images[s].extent, true);
-      app.shadows.slotStaticMatrix[s] = app.lights[l].lightSpaceMatrix;   // this slot's static layer now belongs to light l
+      app.shadows.slotStaticMatrix[s] = app.lights[l].lightSpaceMatrix;
       app.shadows.staticDirty[s] = false;
       app.shadows.staticRebuilds++;
     }

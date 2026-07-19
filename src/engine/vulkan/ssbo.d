@@ -20,6 +20,7 @@ struct SSBO {
   uint nObjects;
   uint stride;
   bool deviceLocal;
+  bool concurrent;
 
   @property @nogc uint size() nothrow const { return nObjects * stride; }
   @property @nogc bool buffered() nothrow const { foreach(d; dirty){ if(d){ return(false); } } return(true); }
@@ -57,27 +58,28 @@ VkMemoryPropertyFlags ssboMemoryProps(bool deviceLocal) {
 immutable VkBufferUsageFlags ssboUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
 /** Create (and map, if host-visible) one SSBO copy at `size`, and mark it dirty for upload. */
-void createAllocation(ref App app, ref GPUAllocation a, uint size, bool deviceLocal) {
-  app.createBuffer(&a.buffer, &a.memory, size, ssboUsage, ssboMemoryProps(deviceLocal));
+void createAllocation(ref App app, ref GPUAllocation a, uint size, bool deviceLocal, bool concurrent = false) {
+  app.createBuffer(&a.buffer, &a.memory, size, ssboUsage, ssboMemoryProps(deviceLocal), concurrent);
   if(!deviceLocal){ enforceVK(vkMapMemory(app.device, a.memory, 0, size, 0, &a.data)); (cast(ubyte*)a.data)[0 .. size] = 0; }
 }
 
 /** Create GPU SSBO buffer for nObjects. copies = per-frame buffer count (0 = app.framesInFlight).
  *  copies < framesInFlight is only safe for deviceLocal buffers ordered by a barrier within a frame;
  *  a host-visible buffer driven by updateSSBO needs framesInFlight copies or the CPU races the GPU. */
-void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, bool deviceLocal = false) {
+void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, bool deviceLocal = false, bool concurrent = false) {
   if(app.verbose) {
-    SDL_Log("createSSBO %s, stride = %d, objects: %d, deviceLocal: %d", toStringz(d.base), d.bytes, nObjects, deviceLocal);
+    SDL_Log("createSSBO %s, stride: %d, objects: %d, deviceLocal: %d, concurrent: %d", toStringz(d.base), d.bytes, nObjects, deviceLocal, concurrent);
   }
   if(d.base in app.buffers) return;
   app.buffers[d.base] = SSBO();
   app.buffers[d.base].nObjects = nObjects;
   app.buffers[d.base].stride = cast(uint)d.bytes;
   app.buffers[d.base].deviceLocal = deviceLocal;
+  app.buffers[d.base].concurrent = concurrent;
   app.buffers[d.base].length = app.buffers[d.base].dirty.length = app.framesInFlight;
 
   foreach(i, ref allocation; app.buffers[d.base]) {
-    app.createAllocation(allocation, app.buffers[d.base].size, deviceLocal);
+    app.createAllocation(allocation, app.buffers[d.base].size, deviceLocal, concurrent);
     app.buffers[d.base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[d.base], d.base);
@@ -93,11 +95,13 @@ void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, bool devi
  *  remap host-visible data, flag descriptors for a targeted re-point. No swapchain/pipeline touch. */
 void growSSBO(ref App app, string base, uint nObjects) {
   bool deviceLocal = app.buffers[base].deviceLocal;
+  bool concurrent = app.buffers[base].concurrent;
+
   app.buffers[base].nObjects = nObjects;
 
   foreach(i, ref allocation; app.buffers[base]) {
     app.deAllocate(allocation);
-    app.createAllocation(allocation, app.buffers[base].size, deviceLocal);
+    app.createAllocation(allocation, app.buffers[base].size, deviceLocal, concurrent);
     app.buffers[base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[base], base);

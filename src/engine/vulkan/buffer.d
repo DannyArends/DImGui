@@ -93,12 +93,17 @@ uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPr
 
 void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDeviceSize size, 
                   VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-                  VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+                  VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                  bool concurrent = false) {
+  uint[2] queues = [app.queues.graphics.family, app.queues.compute.family];
+  bool crossQueue = concurrent && (queues[0] != queues[1]);
+
   VkBufferCreateInfo bufferInfo = {
     sType: VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-    size: size,
-    usage: usage,
-    sharingMode: VK_SHARING_MODE_EXCLUSIVE
+    size: size, usage: usage,
+    sharingMode: crossQueue ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
+    queueFamilyIndexCount: crossQueue ? 2 : 0,
+    pQueueFamilyIndices: crossQueue ? &queues[0] : null
   };
 
   enforceVK(vkCreateBuffer(app.device, &bufferInfo, null, buffer));
