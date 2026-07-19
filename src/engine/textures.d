@@ -121,9 +121,8 @@ void checkPendingTextures(ref App app) {
 }
 
 void transferTextureAsync(ref App app, ref Texture texture) {
-  bool needsGraphics = texture.mipLevels > 1;
-  auto pool = needsGraphics ? app.commandPool : app.transferPool;
-  auto queue = needsGraphics ? app.gfxQueue : app.transferQueue;
+  auto pool = app.commandPool;
+  auto queue = app.gfxQueue;
 
   SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(pool, true);
   GPUAllocation staging;
