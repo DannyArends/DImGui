@@ -75,9 +75,9 @@ void insertWriteBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDevice
                         VkPipelineStageFlagBits dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT) {
   VkBufferMemoryBarrier writeBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-    srcAccessMask : VK_ACCESS_SHADER_WRITE_BIT, // Previous stage (e.g., compute shader writing to pOut)
-    dstAccessMask : VK_ACCESS_SHADER_READ_BIT, // Access for the copy operation
-    buffer : buffer, size : size // Buffer & Size of the affected region
+    srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED, srcAccessMask : VK_ACCESS_SHADER_WRITE_BIT,
+    dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED, dstAccessMask : VK_ACCESS_SHADER_READ_BIT,
+    buffer : buffer, size : size
   };
   vkCmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, 0, 0, null, 1, &writeBarrier, 0, null);
 }
@@ -87,9 +87,9 @@ void insertReadBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceS
                        VkPipelineStageFlagBits dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT) {
   VkBufferMemoryBarrier readBarrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-    srcAccessMask : VK_ACCESS_TRANSFER_READ_BIT, // Previous stage (e.g., compute shader writing to pOut)
-    dstAccessMask : VK_ACCESS_SHADER_WRITE_BIT, // Access for the copy operation
-    buffer : buffer, size : size // Buffer & Size of the affected region
+    srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED, srcAccessMask : VK_ACCESS_TRANSFER_READ_BIT,
+    dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED, dstAccessMask : VK_ACCESS_SHADER_WRITE_BIT,
+    buffer : buffer, size : size
   };
   vkCmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, 0, 0, null, 1, &readBarrier, 0, null);
 }
@@ -99,9 +99,9 @@ void insertFillBarrier(ref VkCommandBuffer cmdBuffer, VkBuffer buffer, VkDeviceS
                        VkPipelineStageFlagBits dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT) {
   VkBufferMemoryBarrier barrier = {
     sType : VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-    srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,                             // vkCmdFillBuffer write
-    dstAccessMask : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,   // cull reads+writes
-    buffer : buffer, size : size // Buffer & Size of the affected region
+    srcQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED, srcAccessMask : VK_ACCESS_TRANSFER_WRITE_BIT,
+    dstQueueFamilyIndex : VK_QUEUE_FAMILY_IGNORED, dstAccessMask : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+    buffer : buffer, size : size
   };
   vkCmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, 0, 0, null, 1, &barrier, 0, null);
 }

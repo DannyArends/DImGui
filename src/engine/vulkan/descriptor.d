@@ -188,10 +188,10 @@ void registerRenderProviders(ref App app) {
     (ref a, ref d, cmd){ a.updateSSBO!Material(cmd, a.materials, d, a.syncIndex); });
 
   app.providers["ClusterLights"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, true); }, null);
+    (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, true, true); }, null);
   app.providers["ClusterHeads"] = DescriptorProvider(
     (ref a, ref d){
-      a.createSSBO(d, CLUSTER_COUNT, true);
+      a.createSSBO(d, CLUSTER_COUNT, true, true);
       auto cmd = a.beginSingleTimeCommands(a.commandPool);
       foreach(i; 0 .. a.buffers[d.base].length){ vkCmdFillBuffer(cmd, a.buffers[d.base][i].buffer, 0, VK_WHOLE_SIZE, NIL); }
       a.endSingleTimeCommands(cmd, a.gfxQueue);
