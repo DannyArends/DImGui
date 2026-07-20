@@ -10,6 +10,21 @@ import noise : noise2D;
 import pathfinding : invalidatePaths;
 import vector : x,y,z;
 
+
+/** Visit loaded chunk coords in Chebyshev rings outward from origin */
+void ringsOutward(ref World world, int[3] originChunk, int maxRing,
+                  scope bool delegate(int r) stop,
+                  scope void delegate(int r, int[3] coord, Chunk ch) visit) {
+  for (int r = 0; r <= maxRing; r++) {
+    if (stop(r)) break;
+    foreach (dz; -r .. r + 1) foreach (dx; -r .. r + 1) {
+      if (max(abs(dx), abs(dz)) != r) continue;
+      int[3] coord = [originChunk[0] + dx, originChunk[1], originChunk[2] + dz];
+      if (auto cp = coord in world.chunks) visit(r, coord, *cp);
+    }
+  }
+}
+
 /** Is the Tile occupied ?  */
 @nogc pure bool isTileOccupied(const GameApp app, const int[3] tile) nothrow {
   if(app.world.dwarves !is null) { foreach(ref d; app.world.dwarves) { if(d.tile == tile) return true; } }
