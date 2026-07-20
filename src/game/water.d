@@ -207,8 +207,7 @@ private DrawInstance[] rebuildChunkWaterInstances(const World world, const Chunk
 /** If any chunk's water changed, rebuild the single water object. */
 void flushWaterDirty(ref GameApp app) {
   bool any = false;
-  foreach(coord; app.world.chunks.keys) {
-    auto chunk = app.world.chunks[coord];
+  foreach(ref chunk; app.world.chunks) {
     if(!chunk.waterDirty) continue;
     if(!chunk.tiles.inFrustum) continue;  // skip off-screen: defer re-mesh until visible
     chunk.waterInstances = app.world.rebuildChunkWaterInstances(chunk);
@@ -217,7 +216,7 @@ void flushWaterDirty(ref GameApp app) {
   }
   if(!any || app.world.water is null) return;
   DrawInstance[] all;
-  foreach(coord; app.world.chunks.keys) all ~= app.world.chunks[coord].waterInstances;
+  foreach(ref chunk; app.world.chunks){ all ~= chunk.waterInstances; }
   app.world.water.instances = all;
   app.world.water.syncInstances();
 }
