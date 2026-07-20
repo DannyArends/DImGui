@@ -29,6 +29,7 @@ struct Bounds {
 class BoundingBox : Geometry {
   float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
   float[3] wmax = [-float.max, -float.max, -float.max];   /// Union world-AABB max over all instances
+  float[3][2][] world;                                    /// Per-instance cached world-AABBs
   bool dirty = true;
 
   this(){
@@ -105,7 +106,12 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.instances.invalidate();
 
   Bounds wb;
-  foreach(i; 0 .. object.box.instances.length) { auto b = object.box.boundsWorld(i); wb.update(b[0]); wb.update(b[1]); }
+  if(object.box.world.length < object.box.instances.length){ object.box.world.length = object.box.instances.length; }
+  foreach(i; 0 .. object.box.instances.length) {
+    object.box.world[i] = object.box.boundsWorld(i);
+    wb.update(object.box.world[i][0]); 
+    wb.update(object.box.world[i][1]);
+  }
   object.box.wmin = wb.min; object.box.wmax = wb.max;
   object.box.dirty = false;
 }
