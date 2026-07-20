@@ -19,7 +19,7 @@ void showWaterContent(ref GameApp app, uint font = 0) {
     wetChunks++;
     if(chunk.tiles.inFrustum) visibleWetChunks++;
     if(chunk.waterDirty) dirtyChunks++;
-    instances += cast(int)chunk.waterInstances.length;
+    instances += cast(int)chunk.waterInstancesCount;
     cells += cast(int)chunk.wetCells.length;
     foreach(idx; chunk.wetCells) {
       ubyte l = chunk.waterLevel[idx];

@@ -171,6 +171,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
     chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
     chunk.waterInstances = app.world.chunks[data.coord].waterInstances;
+    chunk.waterInstancesCount = app.world.chunks[data.coord].waterInstancesCount;
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; }
   app.objects ~= chunk;

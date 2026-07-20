@@ -197,14 +197,14 @@ void flushWaterDirty(ref GameApp app) {
   foreach(ref chunk; app.world.chunks) {
     if(!chunk.waterDirty || !chunk.tiles.inFrustum) continue;
     app.world.rebuildChunkWaterInstances(chunk);
-    chunk.waterInstances = chunk.waterInstances[0 .. chunk.waterInstancesCount];
     chunk.waterDirty = false; any = true;
-    nChunks++; nFaces += cast(int)chunk.waterInstances.length; nWet += cast(int)chunk.wetCells.length;
+    nChunks++; nFaces += cast(int)chunk.waterInstancesCount; nWet += cast(int)chunk.wetCells.length;
   }
   if(any) SDL_Log("flush: chunks=%d wet=%d faces=%d", nChunks, nWet, nFaces);
   if(!any || app.world.water is null) return;
   app.world.water.instances.length = 0;
-  foreach(ref chunk; app.world.chunks){ app.world.water.instances ~= chunk.waterInstances; }
+  app.world.water.instances.assumeSafeAppend();
+  foreach(ref chunk; app.world.chunks){ app.world.water.instances ~= chunk.waterInstances[0 .. chunk.waterInstancesCount]; }
   app.world.water.syncInstances();
 }
 
