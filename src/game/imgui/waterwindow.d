@@ -46,7 +46,7 @@ void showWaterContent(ref GameApp app, uint font = 0) {
     infoRow("Wet cells",     "%d", cells);
     infoRow("Active (sim)",  "%d", active);
     infoRow("Dormant",       "%d", dormant);
-    infoRow("Active %",      "%.1f", activePct);
+    infoRow("Active (perc)", "%.1f", activePct);
     infoRow("Wet chunks",    "%d", wetChunks);
     infoRow("Visible wet",   "%d", visibleWetChunks);
     infoRow("Dirty chunks",  "%d", dirtyChunks);

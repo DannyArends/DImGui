@@ -271,14 +271,14 @@ void logStuck(ref GameApp app, ref Dwarf d) {
 bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Hunger
   if(d.needs[Need.Hunger] >= 0.6f && d.needBackoff[Need.Hunger] == 0) {
-    d.needBackoff[Need.Hunger] = max(1, NEED_RETRY / (1 + int(d.needs[Need.Hunger]*4)));
+    d.needBackoff[Need.Hunger] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Hunger]*4)));
     if(d.carrying.any!(id => app.world.drops.resourceType(id).isFood)) { app.dispatchJob(d, eatJob()); return(true); }
     auto food = app.world.findFreeFood(d.tile);
     if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food).toClass)); return(true); }
   }
   // Thirst
   if(d.needs[Need.Thirst] >= 0.6f && d.needBackoff[Need.Thirst] == 0) {
-    d.needBackoff[Need.Thirst] = max(1, NEED_RETRY / (1 + int(d.needs[Need.Thirst]*4)));
+    d.needBackoff[Need.Thirst] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Thirst]*4)));
     bool hasFull = d.carrying.any!(id => app.world.drops.itemOf(id).isWaterCup);
     bool hasEmpty = d.carrying.any!(id => app.world.drops.itemOf(id).isEmptyCup);
     int[3] standAt;
@@ -296,7 +296,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   }
   // Rest
   if(d.needs[Need.Rest] >= 0.7f && d.needBackoff[Need.Rest] == 0) {
-    d.needBackoff[Need.Rest] = max(1, NEED_RETRY / (1 + int(d.needs[Need.Rest]*4)));
+    d.needBackoff[Need.Rest] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Rest]*4u)));
     app.dispatchJob(d, sleepJob(d.tile)); return(true); 
   }
   return(false);
