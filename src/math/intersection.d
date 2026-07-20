@@ -68,7 +68,7 @@ pure Intersection[] intersects(T)(const float[3][2] ray, const T box, size_t ind
   Intersection[] intersections;
   if(!ray.intersects(box.wmin, box.wmax, index, 0).intersects) { return(intersections); }
   for(size_t instance = 0; instance < box.instances.length; instance++) {
-    auto b = box.boundsWorld(instance);
+    auto b = (instance < box.world.length) ? box.world[instance] : box.boundsWorld(instance);
     auto intersection = ray.intersects(b[0], b[1], index, instance);
     if(intersection.intersects){ intersections ~= intersection; }
   }
