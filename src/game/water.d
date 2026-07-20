@@ -170,8 +170,8 @@ private bool isSettled(ref World world, Chunk chunk, int idx) nothrow {
 }
 
 /** Rebuild the single world water object from all chunks' waterLevel. */
-private DrawInstance[] rebuildChunkWaterInstances(const World world, const Chunk chunk) {
-  DrawInstance[] inst;
+private void rebuildChunkWaterInstances(const World world, Chunk chunk) {
+  int n = 0;
   foreach(idx; chunk.wetCells) {
     ubyte lvl = chunk.waterLevel[idx];
     if(lvl == 0) continue;
@@ -183,21 +183,25 @@ private DrawInstance[] rebuildChunkWaterInstances(const World world, const Chunk
       int[3] nc; int nidx; int nlvl = 0;
       if(world.neighbourAt(chunk.coord, lc, FACE_OFFSETS[f], nc, nidx)) { nlvl = ((nc == chunk.coord) ? chunk : world.chunks[nc]).waterLevel[nidx]; }
       if(nlvl >= lvl) continue;
-      inst ~= DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
+      if(n >= chunk.waterInstances.length) chunk.waterInstances.length = (n == 0 ? 256 : n * 2);
+      chunk.waterInstances[n++] = DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
     }
   }
-  return(inst);
+  chunk.waterInstancesCount = n;
 }
 
 /** If any chunk's water changed, rebuild the single water object. */
 void flushWaterDirty(ref GameApp app) {
   bool any = false;
+  int nChunks = 0, nFaces = 0, nWet = 0;
   foreach(ref chunk; app.world.chunks) {
     if(!chunk.waterDirty || !chunk.tiles.inFrustum) continue;
-    chunk.waterInstances = app.world.rebuildChunkWaterInstances(chunk);
-    chunk.waterDirty = false;  // cleared only when actually re-meshed
-    any = true;
+    app.world.rebuildChunkWaterInstances(chunk);
+    chunk.waterInstances = chunk.waterInstances[0 .. chunk.waterInstancesCount];
+    chunk.waterDirty = false; any = true;
+    nChunks++; nFaces += cast(int)chunk.waterInstances.length; nWet += cast(int)chunk.wetCells.length;
   }
+  if(any) SDL_Log("flush: chunks=%d wet=%d faces=%d", nChunks, nWet, nFaces);
   if(!any || app.world.water is null) return;
   app.world.water.instances.length = 0;
   foreach(ref chunk; app.world.chunks){ app.world.water.instances ~= chunk.waterInstances; }
