@@ -34,6 +34,7 @@ struct ChunkData {
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
   DrawInstance[] waterInstances;                            /// GPU instances for all visible water faces
+  int waterInstancesCount;
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
   Feature[][string] featureData;                            /// Chunk Features
 }
