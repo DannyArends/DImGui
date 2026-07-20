@@ -176,15 +176,12 @@ private DrawInstance[] rebuildChunkWaterInstances(const World world, const Chunk
     ubyte lvl = chunk.waterLevel[idx];
     if(lvl == 0) continue;
     auto lc = world.tileCoord(idx);
-    int[3] wc = world.data.worldCoord(chunk.coord, lc);
-    float[3] p = world.data.tileToWorld(wc);
+    float[3] p = world.data.tileToWorld(world.data.worldCoord(chunk.coord, lc));
     float wh = world.tileHeight * (lvl / cast(float)WATER_MAX);
     float cy = p[1] - world.tileHeight * 0.5f + wh * 0.5f;
     foreach(f; 0 .. 6) {
       int[3] nc; int nidx; int nlvl = 0;
-      if(world.neighbourAt(chunk.coord, lc, FACE_OFFSETS[f], nc, nidx)) {
-        nlvl = ((nc == chunk.coord) ? chunk : world.chunks[nc]).waterLevel[nidx];
-      }
+      if(world.neighbourAt(chunk.coord, lc, FACE_OFFSETS[f], nc, nidx)) { nlvl = ((nc == chunk.coord) ? chunk : world.chunks[nc]).waterLevel[nidx]; }
       if(nlvl >= lvl) continue;
       inst ~= DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
     }
@@ -196,16 +193,14 @@ private DrawInstance[] rebuildChunkWaterInstances(const World world, const Chunk
 void flushWaterDirty(ref GameApp app) {
   bool any = false;
   foreach(ref chunk; app.world.chunks) {
-    if(!chunk.waterDirty) continue;
-    if(!chunk.tiles.inFrustum) continue;  // skip off-screen: defer re-mesh until visible
+    if(!chunk.waterDirty || !chunk.tiles.inFrustum) continue;
     chunk.waterInstances = app.world.rebuildChunkWaterInstances(chunk);
     chunk.waterDirty = false;  // cleared only when actually re-meshed
     any = true;
   }
   if(!any || app.world.water is null) return;
-  DrawInstance[] all;
-  foreach(ref chunk; app.world.chunks){ all ~= chunk.waterInstances; }
-  app.world.water.instances = all;
+  app.world.water.instances.length = 0;
+  foreach(ref chunk; app.world.chunks){ app.world.water.instances ~= chunk.waterInstances; }
   app.world.water.syncInstances();
 }
 
