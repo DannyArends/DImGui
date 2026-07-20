@@ -87,11 +87,7 @@ void addTileBounds(ref ChunkData data, float[3] lo, float[3] hi, int i, size_t f
 /** Generate tile face instances, AABB, and pick data with neighbour culling */
 void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
   float ts = wd.tileSize, th = wd.tileHeight;
-  data.tileInstances.reserve(wd.tileCount);
-  data.tileIndices.reserve(wd.tileCount);
-  data.tileBmin.reserve(wd.chunkSize * wd.chunkSize);
-  data.tileBmax.reserve(wd.chunkSize * wd.chunkSize);
-  data.pickIndices.reserve(wd.chunkSize * wd.chunkSize);
+
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == ResourceType.None) continue;
     auto lc = wd.tileCoord(i);

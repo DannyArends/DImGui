@@ -79,7 +79,7 @@ void waterTick(ref GameApp app) {
   Active[] act;
 
   // PHASE 1: GATHER
-  foreach(coord; app.world.chunks.keys) {
+  foreach(coord; app.world.chunks.byKey) {
     auto ch = app.world.chunks[coord];
     if(ch.active.length == 0) continue;
     foreach(idx; ch.active){ act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx))); }

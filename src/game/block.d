@@ -36,7 +36,7 @@ struct Drops {
 /** Save blocks */
 Block[] saveBlocks(ref World world) {
   foreach(id, ref b; world.drops) { if(b.fall.isFalling) { b.tile = landingTile(world, b.tile); b.fall = Fall.init; } }
-  return world.drops.values;
+  return(world.drops.values);
 }
 
 /** Load blocks */
@@ -187,7 +187,7 @@ void syncStockpileInstances(ref World world) {
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref World world) {
   if(world.drops.meshes.length == 0) return;
-  foreach(ref mesh; world.drops.meshes.values) { mesh.instances = []; }
+  foreach(key; world.drops.meshes.byKey) { world.drops.meshes[key].instances.length = 0; }
   foreach(id, ref b; world.drops) {
     if(b.tile == storedTile) continue;
     auto meshName = b.item.renderMesh;
@@ -204,7 +204,7 @@ void syncBlockInstances(ref World world) {
     }
   }
   world.syncStockpileInstances();
-  foreach(ref mesh; world.drops.meshes.values) { mesh.syncInstances(); }
+  foreach(key; world.drops.meshes.byKey) { world.drops.meshes[key].syncInstances(); }
 }
 
 /** Mark blocks above a mined tile as falling */
