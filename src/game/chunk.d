@@ -26,6 +26,8 @@ struct ChunkData {
   ubyte[] waterLevel;                                       /// 0 = none, 1..6 = depth; parallel to tileTypes
   SparseSet wetCells;                                       /// indices where waterLevel > 0
   SparseSet active;                                         /// parallel to waterLevel; true = needs simulating. Always implies waterLevel[i] > 0.
+  SparseSet touched;                                        /// local indices written this sim tick (dense, hash-free; cleared each tick)
+  ubyte[] waterNext;                                        /// per-tick pending level (parallel to waterLevel); valid only at `touched` indices
   bool waterDirty = false;                                  /// Water dirty ?
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
@@ -117,6 +119,8 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   data.waterLevel.length = data.tileTypes.length;   // all zero = no water
   data.wetCells.init(data.tileTypes.length);
   data.active.init(data.tileTypes.length);
+  data.waterNext.length = data.tileTypes.length;
+  data.touched.init(data.tileTypes.length);
   if(auto wm = coord in wd.waterDiffs){
     foreach(idx, lvl; *wm) {
       data.waterLevel[cast(int)idx] = lvl;

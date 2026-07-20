@@ -21,20 +21,11 @@ static immutable int[2][4] H = [[1,0],[-1,0],[0,1],[0,-1]];
 /** An active cell queued for this tick's simulation: its chunk, local index, and world-coord. */
 struct Active { Chunk chunk; int idx; int[3] wc; }
 
-alias WaterNext = LatticeMap!ubyte;        // world-cell -> pending level; absent = read committed
-alias WaterTouched = LatticeMap!bool;      // world-cells written this tick (dedup set)
+private struct Cell { Chunk chunk; int idx; }
 
-/** This cell's pending level: next-buffer if touched, else direct array read (no getWater hash). */
-private @nogc int ownLevel(const WaterNext next, const Chunk chunk, int idx, const int[3] wc) nothrow {
-  auto p = wc in next;
-  return p is null ? chunk.waterLevel[idx] : *p;
-}
-
-/** Read pending level at a world tile: next-buffer if present, else committed getWater. */
-private @nogc int rdWater(const World world, const WaterNext next, const int[3] wc) nothrow {
-  if(wc[1] < 0 || wc[1] >= world.chunkHeight) return 0;
-  auto p = wc in next;
-  return p is null ? world.getWater(wc) : *p;
+/** Pending level of a resolved cell: next-buffer if written this tick, else committed dense level. */
+private @nogc int pending(const Chunk chunk, int idx) nothrow {
+  return chunk.touched.contains(idx) ? chunk.waterNext[idx] : chunk.waterLevel[idx];
 }
 
 /** Nearest reachable water: scans wet cells across loaded chunks, returns the standable
@@ -62,27 +53,21 @@ int[3] findNearestWater(const World world, const int[3] from, out int[3] standAt
   return(active);
 }
 
-/** Apply delta to a world tile in the sparse next-buffer; records it touched.
-    Seeds from committed level on first write so we never need a full dup. */
-private void wrWater(const World world, ref WaterNext next, ref WaterTouched touched, int[3] wc, int delta) {
-  if(wc[1] < 0 || wc[1] >= world.chunkHeight) return;
-  if(world.chunkCoord(wc) !in world.chunks) return;
-  int cur = world.rdWater(next, wc);
-  next[wc] = cast(ubyte)max(0, min(WATER_MAX, cur + delta));
-  touched[wc] = true;
+/** Apply a delta to a resolved cell's per-chunk next-buffer; marks it touched. No hashing. */
+private void wrWater(Chunk chunk, int idx, int delta) {
+  int cur = chunk.touched.contains(idx) ? chunk.waterNext[idx] : chunk.waterLevel[idx];
+  chunk.waterNext[idx] = cast(ubyte)max(0, min(WATER_MAX, cur + delta));
+  chunk.touched.add(idx);
 }
 
 /** One water simulation step. Spread then fall, crosses chunk boundaries. Iterates only wet cells. */
 void waterTick(ref GameApp app) {
-  WaterNext next;
-  WaterTouched touched;
   Active[] act;
 
   // PHASE 1: GATHER
-  foreach(coord; app.world.chunks.byKey) {
-    auto ch = app.world.chunks[coord];
+  foreach(coord, ch; app.world.chunks) {
     if(ch.active.length == 0) continue;
-    foreach(idx; ch.active){ act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx))); }
+    foreach(idx; ch.active) act ~= Active(ch, idx, app.world.worldCoord(coord, app.world.tileCoord(idx)));
   }
   if(act.length == 0) return;
 
@@ -90,30 +75,34 @@ void waterTick(ref GameApp app) {
 
   // PHASE 2: SPREAD
   foreach(i, a; act) {
-    int have = ownLevel(next, a.chunk, a.idx, a.wc);
-    int[3][4] tgt;
-    int n = app.world.spreadTargets(next, a.chunk, a.idx, a.wc, have, tgt);
-    if(n > 0) { int[3] dst = tgt[uniform(0, n)]; app.world.wrWater(next, touched, a.wc, -1); app.world.wrWater(next, touched, dst, +1); moved[i] = true; }
+    int have = pending(a.chunk, a.idx);
+    Cell[4] tgt;
+    int n = app.world.spreadTargets(a.chunk, a.idx, have, tgt);
+    if(n > 0) { Cell dst = tgt[uniform(0, n)]; wrWater(a.chunk, a.idx, -1); wrWater(dst.chunk, dst.idx, +1); moved[i] = true; }
   }
 
   // PHASE 3: FALL
   foreach(i, a; act) {
-    if(!app.world.canFall(next, a.chunk, a.idx, a.wc)) continue;
-    int[3] below = a.wc.tileBelow;
-    int mv = min(ownLevel(next, a.chunk, a.idx, a.wc), WATER_MAX - app.world.rdWater(next, below));
-    if(mv > 0) { app.world.wrWater(next, touched, a.wc, -mv); app.world.wrWater(next, touched, below, +mv); moved[i] = true; }
+    Cell below;
+    if(!app.world.canFall(a.chunk, a.idx, below)) continue;
+    int mv = min(pending(a.chunk, a.idx), WATER_MAX - pending(below.chunk, below.idx));
+    if(mv > 0) { wrWater(a.chunk, a.idx, -mv); wrWater(below.chunk, below.idx, +mv); moved[i] = true; }
   }
 
-  // PHASE 4: COMMIT changed cells
-  foreach(wc, _; touched) {
-    if(app.world.rdWater(next, wc) == app.world.getWater(wc)) continue;
-    app.world.setWater(wc, cast(ubyte)next[wc]);
+  // PHASE 4: COMMIT changed cells per touched chunk, then reset scratch
+  foreach(coord, ch; app.world.chunks) {
+    if(ch.touched.length == 0) continue;
+    foreach(idx; ch.touched.keys) {
+      if(ch.waterNext[idx] == ch.waterLevel[idx]) continue;
+      app.world.setWater(app.world.worldCoord(coord, app.world.tileCoord(idx)), ch.waterNext[idx]);
+    }
+    ch.touched.clear();
   }
 
-  // PHASE 5: DEACTIVATE: unmoved cells MIGHT be settled — confirm before deactivating
+  // PHASE 5: DEACTIVATE unmoved-and-settled
   foreach(i, a; act) {
-    if(moved[i]) continue; // moved -> definitely active
-    if(app.world.isSettled(next, a.chunk, a.idx, a.wc)){ a.chunk.active.remove(a.idx); }
+    if(moved[i]) continue;
+    if(app.world.isSettled(a.chunk, a.idx)) a.chunk.active.remove(a.idx);
   }
 }
 
@@ -141,44 +130,43 @@ void evaporateTick(ref GameApp app) {
 /** Collect the lowest-level air neighbours water could spread into (4-connected, horizontal).
     Returns the count and fills `tgt` with up to 4 equally-low targets strictly below `have`;
     0 if the cell holds < 2 or no neighbour is lower. Reads pending levels from `next`. */
-private int spreadTargets(const World world, const WaterNext next, const Chunk chunk, int idx, int[3] wc, int have, out int[3][4] tgt) nothrow {
+private int spreadTargets(ref World world, Chunk chunk, int idx, int have, out Cell[4] tgt) nothrow {
   if(have < 2) return 0;
   auto lc = world.tileCoord(idx);
   int bestLvl = have, n = 0;
   foreach(h; H) {
     int[3] nc; int nidx;
     if(!world.neighbourAt(chunk.coord, lc, [h[0], 0, h[1]], nc, nidx)) continue;
-    auto nch = (nc == chunk.coord) ? chunk : world.chunks[nc];
+    Chunk nch = (nc == chunk.coord) ? chunk : world.chunks[nc];
     if(nch.tileTypes[nidx] != ResourceType.None) continue;
-    int[3] nwc = [wc[0]+h[0], wc[1], wc[2]+h[1]];
-    auto p = nwc in next;                                                           // pending?
-    int nl = p is null ? nch.waterLevel[nidx] : *p;                                 // level (direct or pending)
-    if(nl < bestLvl) { bestLvl = nl; tgt[0] = nwc; n = 1; 
-    }else if(nl == bestLvl && bestLvl < have){ tgt[n++] = nwc; }
+    int nl = pending(nch, nidx);
+    if(nl < bestLvl) { bestLvl = nl; tgt[0] = Cell(nch, nidx); n = 1; }
+    else if(nl == bestLvl && bestLvl < have){ tgt[n++] = Cell(nch, nidx); }
   }
   return n;
 }
 
 /** True if the cell below is air and not yet full, so water here can fall into it. */
-private bool canFall(const World world, const WaterNext next, const Chunk chunk, int idx, int[3] wc) nothrow {
+private bool canFall(ref World world, Chunk chunk, int idx, out Cell below) nothrow {
   auto lc = world.tileCoord(idx);
   int[3] nc; int nidx;
   if(!world.neighbourAt(chunk.coord, lc, [0,-1,0], nc, nidx)) return false;
-  auto nch = (nc == chunk.coord) ? chunk : world.chunks[nc];
+  Chunk nch = (nc == chunk.coord) ? chunk : world.chunks[nc];
   if(nch.tileTypes[nidx] != ResourceType.None) return false;
-  auto p = tileBelow(wc) in next;
-  int bl = (p is null) ? nch.waterLevel[nidx] : *p;
-  return bl < WATER_MAX;
+  if(pending(nch, nidx) >= WATER_MAX) return false;
+  below = Cell(nch, nidx);
+  return true;
 }
 
 /** True if the cell has water but can neither fall nor spread - i.e. nothing left to simulate this tick. */
-private bool isSettled(const World world, const WaterNext next, const Chunk chunk, int idx, int[3] wc) nothrow {
-  int have = ownLevel(next, chunk, idx, wc);
-  if(have <= 0) return(true);
-  if(world.canFall(next, chunk, idx, wc)) return(false);
-  int[3][4] tgt;
-  if(world.spreadTargets(next, chunk, idx, wc, have, tgt) > 0) return(false);
-  return(true);
+private bool isSettled(ref World world, Chunk chunk, int idx) nothrow {
+  int have = pending(chunk, idx);
+  if(have <= 0) return true;
+  Cell below;
+  if(world.canFall(chunk, idx, below)) return false;
+  Cell[4] tgt;
+  if(world.spreadTargets(chunk, idx, have, tgt) > 0) return false;
+  return true;
 }
 
 /** Rebuild the single world water object from all chunks' waterLevel. */
