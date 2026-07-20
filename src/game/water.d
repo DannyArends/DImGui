@@ -39,23 +39,37 @@ private @nogc int rdWater(const World world, const WaterNext next, const int[3] 
 
 /** Nearest reachable water: scans wet cells across loaded chunks, returns the standable
     tile to path to (in `standAt`) and the water cell to draw from (return value), or noTile. */
-int[3] findNearestWater(ref World world, const int[3] from, out int[3] standAt) {
-  int[3] best = noTile, sa = noTile; float bestDist = float.max;
+int[3] findNearestWater(const World world, const int[3] from, out int[3] standAt) {
+  int[3] bestCell = noTile; standAt = noTile; float bestDist = float.max;
+  int[3] originChunk = world.chunkCoord(from);
   int cs = world.chunkSize;
-  world.ringsOutward(world.chunkCoord(from), world.renderDistance + 1,
-    (r) => best != noTile && (r - 1) * cs >= bestDist,     // stop: no closer ring possible
-    (r, coord, ch) {
-      foreach (idx; ch.wetCells) {
-        if (ch.waterLevel[idx] == 0) continue;
-        int[3] wc = world.worldCoord(coord, world.tileCoord(idx));
-        int[3] at = world.isStandable(wc) ? wc : world.standableNeighbour(wc);
-        if (at == noTile) continue;
-        float d = manhattan(at, from);
-        if (d < bestDist) { bestDist = d; best = wc; sa = at; }
+
+  for (int r = 0; ; r++) {
+    float ringFloor = (r == 0) ? 0.0f : cast(float)((r - 1) * cs);
+    if (bestCell != noTile && ringFloor >= bestDist) break;
+
+    bool anyChunk = false;
+    foreach (dz; -r .. r + 1) {
+      foreach (dx; -r .. r + 1) {
+        if (max(abs(dx), abs(dz)) != r) continue;
+        int[3] coord = [originChunk[0] + dx, originChunk[1], originChunk[2] + dz];
+        auto cp = coord in world.chunks;
+        if (cp is null) continue;
+        anyChunk = true;
+        foreach (idx; cp.wetCells) {
+          if (cp.waterLevel[idx] == 0) continue;
+          int[3] wc = world.worldCoord(coord, world.tileCoord(idx));
+          int[3] at = world.isStandable(wc) ? wc : world.standableNeighbour(wc);
+          if (at == noTile) continue;
+          float dist = manhattan(at, from);
+          if (dist < bestDist) { bestDist = dist; bestCell = wc; standAt = at; }
+        }
       }
-    });
-  standAt = sa;
-  return best;
+    }
+    // Guard against searching forever past the loaded world when the map is dry.
+    if (!anyChunk && r > world.renderDistance + 1) break;
+  }
+  return bestCell;
 }
 
 /** Total live water-sim cells across all loaded chunks (sum of each chunk's active set). */
