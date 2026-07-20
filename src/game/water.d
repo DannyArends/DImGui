@@ -41,33 +41,16 @@ private @nogc int rdWater(const World world, const WaterNext next, const int[3] 
     tile to path to (in `standAt`) and the water cell to draw from (return value), or noTile. */
 int[3] findNearestWater(const World world, const int[3] from, out int[3] standAt) {
   int[3] bestCell = noTile; standAt = noTile; float bestDist = float.max;
-  int[3] originChunk = world.chunkCoord(from);
-  int cs = world.chunkSize;
-
-  for (int r = 0; ; r++) {
-    float ringFloor = (r == 0) ? 0.0f : cast(float)((r - 1) * cs);
-    if (bestCell != noTile && ringFloor >= bestDist) break;
-
-    bool anyChunk = false;
-    foreach (dz; -r .. r + 1) {
-      foreach (dx; -r .. r + 1) {
-        if (max(abs(dx), abs(dz)) != r) continue;
-        int[3] coord = [originChunk[0] + dx, originChunk[1], originChunk[2] + dz];
-        auto cp = coord in world.chunks;
-        if (cp is null) continue;
-        anyChunk = true;
-        foreach (idx; cp.wetCells) {
-          if (cp.waterLevel[idx] == 0) continue;
-          int[3] wc = world.worldCoord(coord, world.tileCoord(idx));
-          int[3] at = world.isStandable(wc) ? wc : world.standableNeighbour(wc);
-          if (at == noTile) continue;
-          float dist = manhattan(at, from);
-          if (dist < bestDist) { bestDist = dist; bestCell = wc; standAt = at; }
-        }
-      }
+  foreach(coord, ch; world.chunks) {
+    foreach(idx; ch.wetCells) {
+      if(ch.waterLevel[idx] == 0) continue;
+      int[3] wc = world.worldCoord(coord, world.tileCoord(idx));
+      // stand on the water tile itself if standable, else an adjacent standable tile
+      int[3] at = world.isStandable(wc) ? wc : world.standableNeighbour(wc);
+      if(at == noTile) continue;
+      float dist = manhattan(at, from);
+      if(dist < bestDist) { bestDist = dist; bestCell = wc; standAt = at; }
     }
-    // Guard against searching forever past the loaded world when the map is dry.
-    if (!anyChunk && r > world.renderDistance + 1) break;
   }
   return bestCell;
 }
