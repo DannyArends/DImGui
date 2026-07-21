@@ -26,6 +26,7 @@ struct GeometryBuffer(T = ubyte) {
 
   private T[] store = [];
   private size_t w = 0;
+  private bool[] dirty;
 
   @property inout(T)[] items() inout nothrow @nogc { return store[0 .. w]; }
   alias items this;
@@ -36,13 +37,9 @@ struct GeometryBuffer(T = ubyte) {
     store.ptr[w++] = v;
   }
   void opOpAssign(string op : "~")(const(T)[] vs) nothrow { foreach(ref v; vs) this ~= v; }
-
+  void opAssign(T[] rhs) { store = rhs; w = rhs.length; }
   void resize(size_t n) nothrow { if(n > store.length) { store.length = n; store.assumeSafeAppend(); } w = n; }
   @nogc ref inout(T) opIndex(size_t i) inout nothrow { return store.ptr[i]; }
-
-  void opAssign(T[] rhs) { store = rhs; w = rhs.length; }        // keep: assigning a whole slice
-
-  private bool[] dirty;
   @property @nogc bool buffered() nothrow const { foreach(d; dirty) if(d) return false; return true; }
   @nogc void invalidate() nothrow { dirty[] = true; }
   @nogc void invalidate(uint idx) nothrow { dirty[idx] = true; }
