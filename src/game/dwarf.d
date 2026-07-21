@@ -169,13 +169,7 @@ void deleteDwarf(ref GameApp app, int index) {
   app.removeDwarfLight(app.world.dwarves.dwarves[index]);
   app.removeDwarfNameLabel(app.world.dwarves.dwarves[index]);
 
-  size_t last = (app.world.dwarves.dwarves.length - 1);
-  if(index != last) {
-    app.world.dwarves.dwarves[index] = app.world.dwarves.dwarves[last];
-    app.world.dwarves.instances[index] = app.world.dwarves.instances[last];
-  }
-  app.world.dwarves.dwarves.length = last;
-  app.world.dwarves.instances.resize(last);
+  app.world.dwarves.remove(index);
   app.world.dwarves.selected = -1;
   app.world.dwarves.syncInstances();
 }
