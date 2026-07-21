@@ -172,6 +172,7 @@ private bool isSettled(ref World world, Chunk chunk, int idx) nothrow {
 /** Append one chunk's water faces into the shared buffer starting at `w`; returns new count. */
 private size_t rebuildChunkWaterInstances(const World world, Chunk chunk, ref WaterTiles water, size_t w) {
   immutable int S = world.chunkSize, Hh = world.chunkHeight, SH = S * Hh;
+  int[3] nc; int nidx;
   foreach(idx; chunk.wetCells) {
     ubyte lvl = chunk.waterLevel[idx];
     if(lvl == 0) continue;
@@ -182,14 +183,11 @@ private size_t rebuildChunkWaterInstances(const World world, Chunk chunk, ref Wa
     foreach(f; 0 .. 6) {
       immutable int[3] o = FACE_OFFSETS[f];
       int nx = lc.x + o[0], ny = lc.y + o[1], nz = lc.z + o[2];
-      int nlvl;
-      if(ny < 0 || ny >= Hh) {
-        nlvl = 0;
-      } else if(nx >= 0 && nx < S && nz >= 0 && nz < S) {
-        nlvl = chunk.waterLevel[nz*SH + ny*S + nx];
-      } else {
-        int[3] nc; int nidx;
-        nlvl = world.neighbourAt(chunk.coord, lc, o, nc, nidx) ? world.chunks[nc].waterLevel[nidx] : 0;
+      int nlvl = 0;
+      if(ny >= 0 && ny < Hh) {
+        if(nx >= 0 && nx < S && nz >= 0 && nz < S) {
+          nlvl = chunk.waterLevel[nz*SH + ny*S + nx];
+        } else if(world.neighbourAt(chunk.coord, lc, o, nc, nidx)) { nlvl = world.chunks[nc].waterLevel[nidx]; }
       }
       if(nlvl >= lvl) continue;
       water.instances[w++] = DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
@@ -207,19 +205,15 @@ void flushWaterDirty(ref GameApp app) {
   foreach(ref chunk; world.chunks) if(chunk.waterDirty && chunk.tiles.inFrustum) { any = true; break; }
   if(!any) return;
 
-  // Upper bound: 6 faces per wet cell. One sizing, no per-face growth or append calls.
-  size_t cap = 0;
-  foreach(ref chunk; world.chunks) if(chunk.tiles.inFrustum) cap += chunk.wetCells.length * 6;
-  if(world.water.instances.length < cap) world.water.instances.length = cap;
-
   size_t w = 0;
   foreach(ref chunk; world.chunks) {
     if(!chunk.tiles.inFrustum) continue;
+    size_t need = w + chunk.wetCells.length * 6;
+    if(world.water.instances.length < need) world.water.instances.length = need;
     w = world.rebuildChunkWaterInstances(chunk, world.water, w);
     chunk.waterDirty = false;
   }
-
-  world.water.instances.length = w;   // trim to actual face count (no realloc; keeps capacity)
+  world.water.instances.length = w;   // trim to actual count; keeps capacity, no realloc
   world.water.syncInstances();
 }
 
