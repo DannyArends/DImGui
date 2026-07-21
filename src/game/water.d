@@ -169,9 +169,8 @@ private bool isSettled(ref World world, Chunk chunk, int idx) nothrow {
   return true;
 }
 
-/** Rebuild the single world water object from all chunks' waterLevel. */
-private void rebuildChunkWaterInstances(const World world, Chunk chunk) {
-  int n = 0;
+/** Append one chunk's water faces into the shared buffer starting at `w`; returns new count. */
+private size_t rebuildChunkWaterInstances(const World world, Chunk chunk, ref WaterTiles water, size_t w) {
   foreach(idx; chunk.wetCells) {
     ubyte lvl = chunk.waterLevel[idx];
     if(lvl == 0) continue;
@@ -181,31 +180,38 @@ private void rebuildChunkWaterInstances(const World world, Chunk chunk) {
     float cy = p[1] - world.tileHeight * 0.5f + wh * 0.5f;
     foreach(f; 0 .. 6) {
       int[3] nc; int nidx; int nlvl = 0;
-      if(world.neighbourAt(chunk.coord, lc, FACE_OFFSETS[f], nc, nidx)) { nlvl = ((nc == chunk.coord) ? chunk : world.chunks[nc]).waterLevel[nidx]; }
+      if(world.neighbourAt(chunk.coord, lc, FACE_OFFSETS[f], nc, nidx))
+        nlvl = ((nc == chunk.coord) ? chunk : world.chunks[nc]).waterLevel[nidx];
       if(nlvl >= lvl) continue;
-      if(n >= chunk.waterInstances.length) chunk.waterInstances.length = (n == 0 ? 256 : n * 2);
-      chunk.waterInstances[n++] = DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
+      water.instances[w++] = DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
     }
   }
-  chunk.waterInstancesCount = n;
+  return w;
 }
 
-/** If any chunk's water changed, rebuild the single water object. */
+/** Rebuild the single water object from every visible chunk's waterLevel. */
 void flushWaterDirty(ref GameApp app) {
+  auto world = app.world;
+  if(world.water is null) return;
+
   bool any = false;
-  int nChunks = 0, nFaces = 0, nWet = 0;
-  foreach(ref chunk; app.world.chunks) {
-    if(!chunk.waterDirty || !chunk.tiles.inFrustum) continue;
-    app.world.rebuildChunkWaterInstances(chunk);
-    chunk.waterDirty = false; any = true;
-    nChunks++; nFaces += cast(int)chunk.waterInstancesCount; nWet += cast(int)chunk.wetCells.length;
+  foreach(ref chunk; world.chunks) if(chunk.waterDirty && chunk.tiles.inFrustum) { any = true; break; }
+  if(!any) return;
+
+  // Upper bound: 6 faces per wet cell. One sizing, no per-face growth or append calls.
+  size_t cap = 0;
+  foreach(ref chunk; world.chunks) if(chunk.tiles.inFrustum) cap += chunk.wetCells.length * 6;
+  if(world.water.instances.length < cap) world.water.instances.length = cap;
+
+  size_t w = 0;
+  foreach(ref chunk; world.chunks) {
+    if(!chunk.tiles.inFrustum) continue;
+    w = world.rebuildChunkWaterInstances(chunk, world.water, w);
+    chunk.waterDirty = false;
   }
-  if(any) SDL_Log("flush: chunks=%d wet=%d faces=%d", nChunks, nWet, nFaces);
-  if(!any || app.world.water is null) return;
-  app.world.water.instances.length = 0;
-  app.world.water.instances.assumeSafeAppend();
-  foreach(ref chunk; app.world.chunks){ app.world.water.instances ~= chunk.waterInstances[0 .. chunk.waterInstancesCount]; }
-  app.world.water.syncInstances();
+
+  world.water.instances.length = w;   // trim to actual face count (no realloc; keeps capacity)
+  world.water.syncInstances();
 }
 
 /** Snapshot all loaded chunks' water into waterDiffs, then flatten + save (mirrors saveDiffs). */

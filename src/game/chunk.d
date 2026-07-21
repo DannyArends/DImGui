@@ -33,8 +33,6 @@ struct ChunkData {
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
-  DrawInstance[] waterInstances;                            /// GPU instances for all visible water faces
-  int waterInstancesCount;
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
   Feature[][string] featureData;                            /// Chunk Features
 }
@@ -170,8 +168,6 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
     chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
-    chunk.waterInstances = app.world.chunks[data.coord].waterInstances;
-    chunk.waterInstancesCount = app.world.chunks[data.coord].waterInstancesCount;
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; }
   app.objects ~= chunk;
