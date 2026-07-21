@@ -18,25 +18,36 @@ struct GPUAllocation {
 }
 
 struct GeometryBuffer(T = ubyte) {
-  VkBuffer[] vb = null;          /// Vulkan Buffer pointer
-  VkDeviceMemory[] vbM = null;   /// Vulkan Buffer memory pointer
+  VkBuffer[] vb = null;
+  VkDeviceMemory[] vbM = null;
+  GPUAllocation[] staging;
+  VkDeviceSize[] size;
+  VkDeviceSize capacity = 0;
 
-  GPUAllocation[] staging;       /// per-frame staging (buffer + memory + mapped data)
+  private T[] store = [];
+  private size_t w = 0;
 
-  VkDeviceSize[] size;           /// Current actual data size in bytes
-  VkDeviceSize capacity = 0;     /// Actual allocated size in bytes
-
-  T[] items = [];
+  @property inout(T)[] items() inout nothrow @nogc { return store[0 .. w]; }
   alias items this;
-  void opAssign(T[] rhs) { items = rhs; }
 
-  private bool[] dirty;          /// per-frame upload-needed flags (length = framesInFlight)
+  @nogc void reset() nothrow { w = 0; }
+  void opOpAssign(string op : "~")(T v) nothrow {
+    if(w >= store.length) { store.length = (w == 0 ? 64 : w * 2); store.assumeSafeAppend(); }
+    store.ptr[w++] = v;
+  }
+  void opOpAssign(string op : "~")(const(T)[] vs) nothrow { foreach(ref v; vs) this ~= v; }
 
-  @property @nogc bool buffered() nothrow const { foreach(d; dirty){ if(d){ return(false); } } return(true); }
+  void resize(size_t n) nothrow { if(n > store.length) { store.length = n; store.assumeSafeAppend(); } w = n; }
+  @nogc ref inout(T) opIndex(size_t i) inout nothrow { return store.ptr[i]; }
+
+  void opAssign(T[] rhs) { store = rhs; w = rhs.length; }        // keep: assigning a whole slice
+
+  private bool[] dirty;
+  @property @nogc bool buffered() nothrow const { foreach(d; dirty) if(d) return false; return true; }
   @nogc void invalidate() nothrow { dirty[] = true; }
   @nogc void invalidate(uint idx) nothrow { dirty[idx] = true; }
-  @property @nogc bool needsBuffer() nothrow const { return(items.length > 0 && (vb.length == 0 || !buffered)); }
-  @property @nogc bool drawable() nothrow const { return(vb.length > 0 && items.length > 0); }
+  @property @nogc bool needsBuffer() nothrow const { return(w > 0 && (vb.length == 0 || !buffered)); }
+  @property @nogc bool drawable() nothrow const { return(vb.length > 0 && w > 0); }
   @nogc uint count(uint idx) nothrow const { return(idx < size.length ? cast(uint)(size[idx] / T.sizeof) : 0); }
 }
 

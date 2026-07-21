@@ -187,7 +187,7 @@ void syncStockpileInstances(ref World world) {
 /** Sync instances from blocks registry */
 void syncBlockInstances(ref World world) {
   if(world.drops.meshes.length == 0) return;
-  foreach(key; world.drops.meshes.byKey) { world.drops.meshes[key].instances.length = 0; }
+  foreach(key; world.drops.meshes.byKey) { world.drops.meshes[key].instances.reset(); }
   foreach(id, ref b; world.drops) {
     if(b.tile == storedTile) continue;
     auto meshName = b.item.renderMesh;

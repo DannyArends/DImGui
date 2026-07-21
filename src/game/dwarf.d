@@ -174,7 +174,8 @@ void deleteDwarf(ref GameApp app, int index) {
     app.world.dwarves.dwarves[index] = app.world.dwarves.dwarves[last];
     app.world.dwarves.instances[index] = app.world.dwarves.instances[last];
   }
-  app.world.dwarves.dwarves.length = app.world.dwarves.instances.length = last;
+  app.world.dwarves.dwarves.length = last;
+  app.world.dwarves.instances.resize(last);
   app.world.dwarves.selected = -1;
   app.world.dwarves.syncInstances();
 }
