@@ -31,14 +31,26 @@ struct GeometryBuffer(T = ubyte) {
   @property inout(T)[] items() inout nothrow @nogc { return store[0 .. w]; }
   alias items this;
 
-  @nogc void reset() nothrow { w = 0; }
-  void opOpAssign(string op : "~")(T v) nothrow {
-    if(w >= store.length) { store.length = (w == 0 ? 64 : w * 2); store.assumeSafeAppend(); }
-    store.ptr[w++] = v;
+  private void reserve(size_t n, size_t initial = 128, size_t factor = 2) nothrow {
+    if(n <= store.length) return;
+    size_t cap = store.length == 0 ? initial : store.length;
+    while(cap < n){ cap *= factor; }
+    store.length = cap;
+    store.assumeSafeAppend();
   }
-  void opOpAssign(string op : "~")(const(T)[] vs) nothrow { foreach(ref v; vs) this ~= v; }
+
+  @nogc void reset() nothrow { w = 0; }
+  void opOpAssign(string op : "~")(T v) nothrow { reserve(w + 1); store.ptr[w++] = v; }
+  void opOpAssign(string op : "~")(const(T)[] vs) nothrow {
+    if(vs.length == 0) return;
+    reserve(w + vs.length);
+    store.ptr[w .. w + vs.length] = vs[];
+    w += vs.length;
+  }
   void opAssign(T[] rhs) { store = rhs; w = rhs.length; }
-  void resize(size_t n) nothrow { if(n > store.length) { store.length = n; store.assumeSafeAppend(); } w = n; }
+  void resize(size_t n) nothrow { reserve(n); w = n; }
+  /** Ensure the backing store can hold at least `n` elements, growing geometrically. Capacity only grows. */
+
   @nogc ref inout(T) opIndex(size_t i) inout nothrow { return store.ptr[i]; }
   @property @nogc bool buffered() nothrow const { foreach(d; dirty) if(d) return false; return true; }
   @nogc void invalidate() nothrow { dirty[] = true; }
