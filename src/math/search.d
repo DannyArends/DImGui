@@ -89,24 +89,22 @@ SearchState step(alias getSuccessors, S)(ref S search) {
 
   foreach (ref s; successors) {
     float newG = search.pool[nIdx].g + s.cost;
-    size_t i;
-    if ((i = search.openlist.has(search.pool, s)) != size_t.max && search.pool[search.openlist[i]].g <= newG) continue;
+    size_t i = search.openlist.has(search.pool, s);
+    if (i != size_t.max && search.pool[search.openlist[i]].g <= newG) continue;
     if (auto c = s.position in search.closedset) { if(search.pool[*c].g <= newG) continue; search.closedset.remove(s.position); }
     s.parent = nIdx;
     s.g = newG;
     s.h = euclidean(s.position, search.pool[search.goal].position);
-    if(s.isEqual(search.pool[search.goal])) { // accept on generation
+    if(s.isEqual(search.pool[search.goal])) {
       search.pool[search.goal].parent = nIdx;
       search.state = SearchState.SUCCEEDED;
       search.storeRoute(search.goal);
       return search.state;
     }
-    if((i = search.openlist.has(search.pool, s)) != size_t.max) {
-      search.pool[search.openlist[i]] = s;
-    } else {
+    if(i == size_t.max) {
       search.pool ~= s;
       search.openlist ~= search.pool.length - 1;
-    }
+    } else { search.pool[search.openlist[i]] = s; }
   }
 
   search.closedset[search.pool[nIdx].position] = nIdx;
