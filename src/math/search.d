@@ -66,7 +66,11 @@ SearchState step(alias getSuccessors, S)(ref S search) {
   if(search.state != SearchState.SEARCHING) return search.state;
   if(search.openlist.empty() || search.cancel) { search.state = SearchState.FAILED; return search.state; }
 
-  size_t nIdx = search.openlist[0];
+  size_t best = 0;
+  foreach(k; 1 .. search.openlist.length) {
+    if(search.pool[search.openlist[k]].f < search.pool[search.openlist[best]].f) { best = k; }
+  }
+  size_t nIdx = search.openlist[best];
   search.steps++;
 
   if(search.pool[nIdx].isEqual(search.pool[search.goal])) {
@@ -79,7 +83,7 @@ SearchState step(alias getSuccessors, S)(ref S search) {
   auto successors = getSuccessors(search.map, search.pool[nIdx]);
   if (successors.empty()) {
     search.closedset[search.pool[nIdx].position] = nIdx;
-    search.openlist = search.openlist.remove(0);
+    search.openlist = search.openlist.remove(best);
     return search.state;
   }
 
@@ -106,8 +110,7 @@ SearchState step(alias getSuccessors, S)(ref S search) {
   }
 
   search.closedset[search.pool[nIdx].position] = nIdx;
-  search.openlist = search.openlist.remove(0);
-  search.openlist.sort!((a, b) => search.pool[a].f < search.pool[b].f);
+  search.openlist = search.openlist.remove(best);
   return search.state;
 }
 

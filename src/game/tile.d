@@ -16,7 +16,7 @@ import vector : x,y,z;
   return false;
 }
 
-@nogc pure bool onChunkBoundary(T)(const T wd, const int[3] lc) nothrow {
+@nogc pure bool onChunkBoundary(T)(const ref T wd, const int[3] lc) nothrow {
   return lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
 }
 
