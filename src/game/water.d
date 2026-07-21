@@ -9,7 +9,7 @@ import chunk : faceData;
 import clouds : CLOUD_STEP, cloudCell;
 import lattice : tileBelow, tileCoord, tileIdx, tileToWorld, chunkCoord, worldCoord, flatten, unflatten, Diff;
 import tile : neighbourAt, isStandable, standableNeighbour, getWater, setWater;
-import vector : manhattan, manhattan2D;
+import vector : manhattan, manhattan2D, x, y, z;
 
 enum ubyte WATER_MAX = 7;               // Maximum water density
 enum int WATER_TARGET_ACTIVE = 1250;    // Desired number of live water cells in sim
@@ -171,6 +171,7 @@ private bool isSettled(ref World world, Chunk chunk, int idx) nothrow {
 
 /** Append one chunk's water faces into the shared buffer starting at `w`; returns new count. */
 private size_t rebuildChunkWaterInstances(const World world, Chunk chunk, ref WaterTiles water, size_t w) {
+  immutable int S = world.chunkSize, Hh = world.chunkHeight, SH = S * Hh;
   foreach(idx; chunk.wetCells) {
     ubyte lvl = chunk.waterLevel[idx];
     if(lvl == 0) continue;
@@ -179,9 +180,17 @@ private size_t rebuildChunkWaterInstances(const World world, Chunk chunk, ref Wa
     float wh = world.tileHeight * (lvl / cast(float)WATER_MAX);
     float cy = p[1] - world.tileHeight * 0.5f + wh * 0.5f;
     foreach(f; 0 .. 6) {
-      int[3] nc; int nidx; int nlvl = 0;
-      if(world.neighbourAt(chunk.coord, lc, FACE_OFFSETS[f], nc, nidx))
-        nlvl = ((nc == chunk.coord) ? chunk : world.chunks[nc]).waterLevel[nidx];
+      immutable int[3] o = FACE_OFFSETS[f];
+      int nx = lc.x + o[0], ny = lc.y + o[1], nz = lc.z + o[2];
+      int nlvl;
+      if(ny < 0 || ny >= Hh) {
+        nlvl = 0;
+      } else if(nx >= 0 && nx < S && nz >= 0 && nz < S) {
+        nlvl = chunk.waterLevel[nz*SH + ny*S + nx];
+      } else {
+        int[3] nc; int nidx;
+        nlvl = world.neighbourAt(chunk.coord, lc, o, nc, nidx) ? world.chunks[nc].waterLevel[nidx] : 0;
+      }
       if(nlvl >= lvl) continue;
       water.instances[w++] = DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
     }
