@@ -49,8 +49,6 @@ struct GeometryBuffer(T = ubyte) {
   }
   void opAssign(T[] rhs) { store = rhs; w = rhs.length; }
   void resize(size_t n) nothrow { reserve(n); w = n; }
-  /** Ensure the backing store can hold at least `n` elements, growing geometrically. Capacity only grows. */
-
   @nogc ref inout(T) opIndex(size_t i) inout nothrow { return store.ptr[i]; }
   @property @nogc bool buffered() nothrow const { foreach(d; dirty) if(d) return false; return true; }
   @nogc void invalidate() nothrow { dirty[] = true; }
