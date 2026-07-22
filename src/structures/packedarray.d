@@ -49,7 +49,7 @@ struct PackedArray(T) {
   /** Reference to the element at index i (no bounds check) */
   @nogc ref inout(T) opIndex(size_t i) inout nothrow { return store.ptr[i]; }
 
-  /** Number of live elements*/
+  /** Number of live elements */
   @nogc @property size_t length() const nothrow { return w; }
 
   /** Backing capacity (allocated slots, may exceed length) */
