@@ -5,6 +5,7 @@
 
 import phobos;
 
+import packedarray : PackedArray;
 import searchnode : PathNode, isEqual, has;
 import vector : euclidean;
 
@@ -17,7 +18,7 @@ struct Search(M, N) {
   size_t goal  = size_t.max;                                /// index into pool: Goal node
   size_t pathptr = size_t.max;                              /// index into pool: pointer to the current node in the path
   N[] pool;                                                 /// stable node storage
-  size_t[] openlist;                                        /// Astar open list: indices into pool
+  PackedArray!size_t openlist;                              /// Astar open list: indices into pool
   size_t[float[3]] closedset;                               /// Astar closed list: indices into pool
   SearchState state = SearchState.NOT_INITIALISED;          /// Astar SearchState
   size_t steps = 0;                                         /// search steps taken
@@ -83,7 +84,7 @@ SearchState step(alias getSuccessors, S)(ref S search) {
   auto successors = getSuccessors(search.map, search.pool[nIdx]);
   if (successors.empty()) {
     search.closedset[search.pool[nIdx].position] = nIdx;
-    search.openlist = search.openlist.remove(best);
+    search.openlist.removeAt(best);
     return search.state;
   }
 
@@ -108,7 +109,7 @@ SearchState step(alias getSuccessors, S)(ref S search) {
   }
 
   search.closedset[search.pool[nIdx].position] = nIdx;
-  search.openlist = search.openlist.remove(best);
+  search.openlist.removeAt(best);
   return search.state;
 }
 
