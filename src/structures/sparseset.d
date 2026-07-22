@@ -3,7 +3,9 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import phobos;
+
+import packedarray : PackedArray;
 
 /** Sparse set of non-negative int keys in [0, capacity). O(1) add / remove / contains, dense contiguous iteration, no hashing.
     `dense` holds present keys; `slot[key]` is the key's index in `dense` (-1 = absent). Private and mutated together, so they cannot desync. */
