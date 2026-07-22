@@ -141,7 +141,7 @@ struct Dwarf {
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 
-  Fall fall = { weight: 5.0f };             /// PhysX
+  Fall fall = { weight: 5.0f };             /// Fall state
   size_t lightIndex = size_t.max; 
   size_t nameLabel = size_t.max;
 

@@ -19,7 +19,7 @@ struct Block {
   uint id = uint.max;               /// Stable block id (persisted, == its key in world.blocks)
   Item item;                        /// What this block is: (shape x material [+ contents]); shape==None => raw material
   int[3] tile;                      /// Current tile position
-  Fall fall;                        /// PhysX
+  Fall fall;                        /// Fall state
   bool reserved = false;            /// Reserved for a job ?
 
   @property @nogc bool isFalling() const nothrow { return fall.isFalling; }
