@@ -27,9 +27,10 @@ public import std.range : iota, chain, front;
 public import std.regex : regex, matchAll;
 public import std.string : toStringz, fromStringz, capitalize, lastIndexOf, toLower, toUpper, indexOf, startsWith, strip, chomp, splitLines;
 public import std.sumtype : SumType, match;
-public import std.traits : EnumMembers, isFloatingPoint, isIntegral;
+public import std.traits : EnumMembers, isFloatingPoint, isIntegral, hasIndirections;
 public import std.typecons : Tuple, tuple;
 public import std.utf : isValidDchar;
 
 /** D-formatted C string. One home for the per-frame toStringz allocation. */
 const(char)* cstr(A...)(string fmt, A a) { return toStringz(format(fmt, a)); }
+
