@@ -15,7 +15,7 @@ public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
-public import physx : Fall;
+public import fall : Fall;
 public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
