@@ -27,6 +27,7 @@ struct GeometryBuffer(T = ubyte) {
   PackedArray!T data;
   alias data this;
   private bool[] dirty;
+  bool keepStaging = true;
 
   @property @nogc bool buffered() nothrow const { foreach(d; dirty) if(d) return false; return true; }
   @nogc void invalidate() nothrow { dirty[] = true; }
@@ -166,14 +167,31 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   return(true);
 }
 
+/** Release a fully-uploaded buffer's host-visible staging; deferred so in-flight copies finish first. */
+void releaseStaging(T)(ref App app, ref GeometryBuffer!T buffer) {
+  foreach(i; 0 .. buffer.staging.length) {
+    if(buffer.staging[i].buffer) { app.deAllocate(buffer.staging[i]); }
+  }
+  buffer.staging = null;
+}
+
+/** (Re)create staging if it was released but the buffer needs uploading again. No-op when present. */
+void ensureStaging(T)(ref App app, ref GeometryBuffer!T buffer) {
+  if(buffer.staging.length == app.framesInFlight && buffer.staging[0].buffer) return;
+  buffer.staging = new GPUAllocation[app.framesInFlight];
+  foreach(i; 0 .. app.framesInFlight) { app.createAllocation(buffer.staging[i], cast(uint)buffer.capacity, false); }
+}
+
 /** Upload CPU data to GPU via staging buffer (caller must issue a transfer→read barrier after batching) */
 void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffer) {
   if(!buffer.dirty[app.syncIndex]) return;
+  app.ensureStaging(buffer);                                    // <-- re-create if a static buffer went dirty
   buffer.size[app.syncIndex] = cast(uint)(T.sizeof * buffer.items.length);
   memcpy(buffer.staging[app.syncIndex].data, cast(void*)buffer.items, buffer.size[app.syncIndex]);
   VkBufferCopy copyRegion = { size : buffer.size[app.syncIndex] };
   vkCmdCopyBuffer(cmdBuffer, buffer.staging[app.syncIndex].buffer, buffer.vb[app.syncIndex], 1, &copyRegion);
   buffer.dirty[app.syncIndex] = false;
+  if(!buffer.keepStaging && buffer.buffered) app.releaseStaging(buffer);   // <-- all frames uploaded → free staging
 }
 
 /** Single transfer→vertex/index-read barrier covering all uploads in this command buffer */

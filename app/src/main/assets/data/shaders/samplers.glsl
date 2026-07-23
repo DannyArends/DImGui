@@ -31,26 +31,18 @@ vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoor
 float calculateShadow(vec4 position, uint i) {
   int s = int(lightSSBO.lights[i].cull[1]);
   if (s < 0) return 1.0;
-  vec3 projCoords = position.xyz / position.w;
-  projCoords.xy = projCoords.xy * 0.5 + 0.5;
+  vec3 pC = position.xyz / position.w;
+  pC.xy = pC.xy * 0.5 + 0.5;
 
-  if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z < 0.0 || projCoords.z > 1.0){
-    return 1.0; // Not in shadow
-  }
+  if (pC.x < 0.0 || pC.x > 1.0 || pC.y < 0.0 || pC.y > 1.0 || pC.z < 0.0 || pC.z > 1.0) { return 1.0; }
 
   float shadowFactor = 0.0;
-  vec2 texelSize = vec2(ubo.shadowTexelSize);
-  int sampleCount = 1;
-  float range = 1.0;
-
-  // PCF sampling loop
-  for (int x = -sampleCount; x <= sampleCount; ++x) {
-    for (int y = -sampleCount; y <= sampleCount; ++y) {
-      vec2 offset = vec2(x, y) * texelSize * range;
-      shadowFactor += texture(shadowMap[s], vec3(projCoords.xy + offset, projCoords.z));
-    }
-  }
-  return shadowFactor / float((2 * sampleCount + 1) * (2 * sampleCount + 1));
+  vec2 t = vec2(ubo.shadowTexelSize);
+  shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2(-0.5, -0.5) * t, pC.z));
+  shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2( 0.5, -0.5) * t, pC.z));
+  shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2(-0.5,  0.5) * t, pC.z));
+  shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2( 0.5,  0.5) * t, pC.z));
+  return shadowFactor * 0.25;
 }
 
 // Per-light shading: ambient + shadowed direct contribution
