@@ -108,12 +108,9 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   float depth = size[0] + 2.0f * size[1];
   float[3] centre = [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
 
-  float[3] s = cross(lightDir, cam.up).normalize();
-  float[3] u = cross(s, lightDir);
   float texelsPerUnit = cast(float)shadowDimension / (2.0f * size[1]);
-  float ds = floor(dot(centre, s) * texelsPerUnit) / texelsPerUnit - dot(centre, s);
-  float du = floor(dot(centre, u) * texelsPerUnit) / texelsPerUnit - dot(centre, u);
-  centre = centre.vAdd(s.vMul(ds)).vAdd(u.vMul(du));
+  centre[0] = floor(centre[0] * texelsPerUnit) / texelsPerUnit;
+  centre[2] = floor(centre[2] * texelsPerUnit) / texelsPerUnit;
 
   float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f));
   Matrix lightView = lookAt(eye, centre, cam.up);
