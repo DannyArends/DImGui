@@ -18,6 +18,7 @@ struct SSAOUniformBuffer {
   float[4] camPos;                 /// camera world position
   float[4][SSAO_KERNEL] kernel;    /// SSAO kernel
   float[4] params;                 /// x=radius y=bias z=power w=enable
+  float[4] proj;                   /// [A, B] perspective linearisation
 }
 
 /** Hemisphere sample set (view space, +Z), clustered toward the origin. Built once. */
@@ -32,11 +33,13 @@ shared static this() {
 
 void updateSSAO(ref App app, Descriptor d, uint syncIndex) {
   Matrix vp = app.camera.proj.multiply(app.camera.view);   // desktop: ori == identity, so this IS the depth transform
+  float near = app.camera.nearfar[0], far = app.camera.nearfar[1];
   SSAOUniformBuffer ubo = {
     viewProj: vp,
     invViewProj: vp.inverse,
     camPos: app.camera.position.xyzw,
-    params: [1.0f, 0.05f, 1.5f, app.useSSAO ? 1.0f : 0.0f]
+    params: [1.0f, 0.05f, 1.5f, app.useSSAO ? 1.0f : 0.0f],
+    proj: [-far / (far - near), -far * near / (far - near), near, far]
   };
   ubo.kernel = ssaoKernel;
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
