@@ -27,7 +27,7 @@ struct GeometryBuffer(T = ubyte) {
   PackedArray!T data;
   alias data this;
   private bool[] dirty;
-  bool keepStaging = true;
+  bool keepStaging = false;
 
   @property @nogc bool buffered() nothrow const { foreach(d; dirty) if(d) return false; return true; }
   @nogc void invalidate() nothrow { dirty[] = true; }
