@@ -35,6 +35,7 @@ struct Specialization {
   bool animated = false;
   bool depthPass = false;
   bool wboit = false;
+  bool normalMapping = false;
 }
 
 struct ShaderDef {
@@ -185,6 +186,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
                   s.animated ? VK_TRUE : VK_FALSE,
                   s.depthPass ? VK_TRUE : VK_FALSE,
                   s.wboit ? VK_TRUE : VK_FALSE,
+                  s.normalMapping ? VK_TRUE : VK_FALSE,
                   ];
   stage.mapEntry = [
     VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),    // LINE : fragment
@@ -198,6 +200,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
     VkSpecializationMapEntry(8, 8*uint.sizeof, uint.sizeof),    // ANIMATED : vertex
     VkSpecializationMapEntry(9, 9*uint.sizeof, uint.sizeof),    // DEPTHPASS : vertex
     VkSpecializationMapEntry(10, 10*uint.sizeof, uint.sizeof),  // WBOIT : fragment
+    VkSpecializationMapEntry(11, 11*uint.sizeof, uint.sizeof),  // NORMAL_MAPPED : fragment
   ];
   stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
 
