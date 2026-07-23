@@ -144,7 +144,7 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
     depthCompareOp: s.depthPass ? VK_COMPARE_OP_LESS : VK_COMPARE_OP_LESS_OR_EQUAL,
   };
 
-  ShaderStage stages = createStageInfo(app.shaders, topology, s, cast(uint)app.getMSAASamples());
+  ShaderStage stages = app.createStageInfo(app.shaders, topology, s);
 
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,

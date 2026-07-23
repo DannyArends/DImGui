@@ -176,7 +176,7 @@ struct ShaderStage {
 }
 
 /** Build pipeline stage infos from shaders, using pipeline Topology and Specialization structure */
-ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Specialization s, uint msaaSamples) {
+ShaderStage createStageInfo(ref App app, Shader[] shaders, VkPrimitiveTopology topology, Specialization s) {
   ShaderStage stage;
   stage.flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, 
                   s.instanced ? VK_TRUE : VK_FALSE, 
@@ -187,7 +187,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
                   s.depthPass ? VK_TRUE : VK_FALSE,
                   s.wboit ? VK_TRUE : VK_FALSE,
                   s.normalMapping ? VK_TRUE : VK_FALSE,
-                  msaaSamples
+                  cast(uint)app.getMSAASamples()
                   ];
   stage.mapEntry = [
     VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),    // LINE : fragment
