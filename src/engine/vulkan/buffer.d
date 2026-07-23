@@ -169,9 +169,7 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
 
 /** Release a fully-uploaded buffer's host-visible staging; deferred so in-flight copies finish first. */
 void releaseStaging(T)(ref App app, ref GeometryBuffer!T buffer) {
-  foreach(i; 0 .. buffer.staging.length) {
-    if(buffer.staging[i].buffer) { app.deAllocate(buffer.staging[i]); }
-  }
+  foreach(i; 0 .. buffer.staging.length) { if(buffer.staging[i].buffer) { app.deAllocate(buffer.staging[i]); } }
   buffer.staging = null;
 }
 
