@@ -12,7 +12,7 @@ import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
 import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS;
 import textures : mapTextures;
-import vector : dot, normalize, vAdd, vSub, negate, vMul, xyz;
+import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
 import matrix : degree, translate;
 
@@ -108,9 +108,12 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   float depth = size[0] + 2.0f * size[1];
   float[3] centre = [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
 
+  float[3] s = cross(lightDir, cam.up).normalize();
+  float[3] u = cross(s, lightDir);
   float texelsPerUnit = cast(float)shadowDimension / (2.0f * size[1]);
-  centre[0] = floor(centre[0] * texelsPerUnit) / texelsPerUnit;
-  centre[2] = floor(centre[2] * texelsPerUnit) / texelsPerUnit;
+  float ds = floor(dot(centre, s) * texelsPerUnit) / texelsPerUnit - dot(centre, s);
+  float du = floor(dot(centre, u) * texelsPerUnit) / texelsPerUnit - dot(centre, u);
+  centre = centre.vAdd(s.vMul(ds)).vAdd(u.vMul(du));
 
   float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f));
   Matrix lightView = lookAt(eye, centre, cam.up);
@@ -178,6 +181,7 @@ void toggleLightGeometries(ref App app) {
   if(t < dawnThreshold) { return lerpColor(night, dawn, t / dawnThreshold); }
   return lerpColor(dawn, day, (t - dawnThreshold) / (1.0f - dawnThreshold));
 }
+
 /** Update time of day / sun */
 void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold = 0.55f, float ambientScale = 0.1f, float sunDistance = 200.0f,
                float[4] skyNight = Colors.skyNight, float[4] skyDawn = Colors.skyDawn, float[4] skyDay = Colors.skyDay,
