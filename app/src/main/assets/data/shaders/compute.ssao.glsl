@@ -20,6 +20,7 @@ layout(binding = 2) uniform SSAO {
   vec4 camPos;                  // camera world position (.xyz)
   vec4 kernel[SSAO_KERNEL];     // tangent-space hemisphere samples (.xyz)
   vec4 params;                  // x=radius(world units) y=bias z=power w=enable
+  vec4 proj;                    // x=A y=B : viewZ = B / (z_ndc + A)
 } u;
 
 vec3 worldPos(ivec2 px, ivec2 size) {
@@ -40,16 +41,16 @@ void main() {
   #endif
   ivec2 px = ivec2((vec2(outPx) + 0.5) * vec2(size) / vec2(outSize));
 
-  vec3 P  = worldPos(px, size);
-  vec3 Pr = worldPos(px + ivec2(1, 0), size);
-  vec3 Pl = worldPos(px - ivec2(1, 0), size);
-  vec3 Pu = worldPos(px + ivec2(0, 1), size);
-  vec3 Pd = worldPos(px - ivec2(0, 1), size);
+  float dP = texelFetch(depthSampler, px, 0).r;
+  vec2 ndcP = (vec2(px) + 0.5) / vec2(size) * 2.0 - 1.0;
+  vec4 wP = u.invViewProj * vec4(ndcP, dP, 1.0);
+  vec3 P  = wP.xyz / wP.w;
+  float pZ = u.proj.y / (dP + u.proj.x);                 // view depth of P (B/(z+A))
 
-  vec3 dX = (length(Pr - P) < length(Pl - P)) ? (Pr - P) : (P - Pl);
-  vec3 dY = (length(Pu - P) < length(Pd - P)) ? (Pu - P) : (P - Pd);
-  vec3 N  = normalize(cross(dX, dY));
-  if(dot(N, u.camPos.xyz - P) < 0.0) N = -N;            // orient toward camera
+  vec3 Px = worldPos(px + ivec2(1, 0), size);
+  vec3 Py = worldPos(px + ivec2(0, 1), size);
+  vec3 N  = normalize(cross(Px - P, Py - P));
+  if(dot(N, u.camPos.xyz - P) < 0.0) N = -N;
 
   float a = fract(sin(dot(vec2(px), vec2(12.9898, 78.233))) * 43758.5453);
   vec3 rnd = vec3(cos(6.2831853 * a), sin(6.2831853 * a), 0.0);
@@ -57,25 +58,22 @@ void main() {
   mat3 TBN = mat3(T, cross(N, T), N);
 
   float camDist = length(u.camPos.xyz - P);
-  float radius  = min(u.params.x, 0.05 * camDist);
-
+  float radius = min(u.params.x, 0.05 * pZ);             // footprint clamp, reuses pZ (no extra sqrt)
   float occ = 0.0;
   for (int i = 0; i < SSAO_KERNEL; ++i) {
-    vec3 s = P + (TBN * u.kernel[i].xyz) * radius;    // world-space sample point
+    vec3 s = P + (TBN * u.kernel[i].xyz) * radius;
     vec4 clip = u.viewProj * vec4(s, 1.0);
     if (clip.w <= 0.0) continue;
     vec2 suv = (clip.xy / clip.w) * 0.5 + 0.5;
     ivec2 spx = ivec2(suv * vec2(size));
     if (any(lessThan(spx, ivec2(0))) || any(greaterThanEqual(spx, size))) continue;
 
-    vec3 surf = worldPos(spx, size);                      // real surface at that screen pixel
-    float sampleDist = length(u.camPos.xyz - s);
-    float surfaceDist = length(u.camPos.xyz - surf);
-    // occluded when the real surface sits nearer the camera than the sample (sample is buried behind geometry)
-    float rangeCheck = smoothstep(0.0, 1.0, radius / max(length(surf - P), 1e-4));
-    occ += (surfaceDist < sampleDist - u.params.y ? 1.0 : 0.0) * rangeCheck;
+    float sd      = texelFetch(depthSampler, spx, 0).r;  // one fetch, no matrix, no sqrt
+    float surfZ   = u.proj.y / (sd + u.proj.x);          // surface view depth
+    float sampleZ = clip.w;                              // sample view depth, already computed
+    float rangeCheck = smoothstep(0.0, 1.0, radius / max(abs(surfZ - pZ), 1e-4));
+    occ += (surfZ < sampleZ - u.params.y ? 1.0 : 0.0) * rangeCheck;
   }
-  float ao = pow(1.0 - occ / float(SSAO_KERNEL), u.params.z);
-  ao = mix(1.0, ao, u.params.w);
+  float ao = mix(1.0, pow(1.0 - occ / float(SSAO_KERNEL), u.params.z), u.params.w);
   imageStore(ssaoOut, outPx, vec4(ao));
 }
