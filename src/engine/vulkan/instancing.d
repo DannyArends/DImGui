@@ -7,7 +7,7 @@ import engine;
 
 /** An instance of a Geometry */
 struct DrawInstance {
-  int[4] meshdef = [0, 0, -1, 0];               /// Mesh range [start, end, material, unused] in meshSSBO; material -1 = use mesh material
+  int[4] meshdef = [0, 0, -1, 0];               /// Mesh range [start, end, material, hasBakedNormal] in meshSSBO; material -1 = use mesh material
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// Color
   float[4] uvRect = [0.0f, 0.0f, 1.0f, 1.0f];   /// UV remap [offsetX, offsetY, scaleX, scaleY]; identity = full texture
   float[4] worldNormal = [0.0f, 1.0f, 0.0f, 0.0f];   /// baked world-space normal (xyz); w unused
@@ -30,6 +30,7 @@ struct DrawInstance {
   /** Packed face transform (+ optional material). For voxel faces (chunk/water/clouds). */
   @nogc this(float[12] fd, int mat, int f) nothrow {
     this(Matrix([fd[0],fd[1],fd[2],0, fd[3],fd[4],fd[5],0, fd[6],fd[7],fd[8],0, fd[9],fd[10],fd[11],1]), mat);
+    meshdef[3] = 1;
     worldNormal = [FACE_OFFSETS[f][0], FACE_OFFSETS[f][1], FACE_OFFSETS[f][2], 0];
     worldTangent = [FACE_TANGENT[f][0], FACE_TANGENT[f][1], FACE_TANGENT[f][2], 1];
   }

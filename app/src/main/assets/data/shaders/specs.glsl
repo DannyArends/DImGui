@@ -17,8 +17,9 @@ layout(constant_id = 6) const bool SDF = false;
 layout(constant_id = 7) const bool useSSAO = false;
 layout(constant_id = 8) const bool ANIMATED = false;
 layout(constant_id = 9) const bool DEPTH_PASS = false;
-layout(constant_id = 10) const bool WBOIT = false;      /// transparent accumulation variant (dual output)
-layout(constant_id = 11) const uint MSAA_SAMPLES = 4u;   // MSAA sample count, fed by resolve pipeline
+layout(constant_id = 10) const bool WBOIT = false;
+layout(constant_id = 11) const bool NORMAL_MAPPED = false;
+layout(constant_id = 12) const uint MSAA_SAMPLES = 4u;
 
 // Constants
 const uint NIL = 0xFFFFFFFFu;

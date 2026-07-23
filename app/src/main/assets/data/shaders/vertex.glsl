@@ -21,7 +21,9 @@ layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, material, unused]
 layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
 layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
-layout(location = 10) in mat4 instance;               /// Instance matrix
+layout(location = 10) in vec4 instanceNormal;         /// baked world normal (instanced faces)
+layout(location = 11) in vec4 instanceTangent;        /// baked world tangent + handedness
+layout(location = 12) in mat4 instance;               /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;           /// Fragment world position
@@ -52,13 +54,17 @@ void main() {
   }
   fragInstance = ivec2(meshID, meshdef[2]);
 
-  if(!DEPTH_PASS) {
-    /// Full lighting varyings only needed in the scene pass
-    vec3 N = normalize(mat3(instance) * inNormal);
-    vec3 T = normalize(mat3(instance) * inTangent.xyz);
-    vec3 B = normalize(cross(N, T)) * inTangent.w;
+  if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
     fragPosWorld = worldPos;
+    bool hasBakedNormal = (meshdef[3] != 0);
+    vec3 N = hasBakedNormal ? normalize(instanceNormal.xyz) : normalize(mat3(instance) * inNormal);
     fragNormal = N;
-    fragTBN = mat3(T, B, N);
+    if(NORMAL_MAPPED) {
+      vec3 T = hasBakedNormal ? normalize(instanceTangent.xyz) : normalize(mat3(instance) * inTangent.xyz);
+      float hand = hasBakedNormal ? instanceTangent.w : inTangent.w;
+      vec3 B = normalize(cross(N, T)) * hand;
+      fragTBN = mat3(T, B, N);
+    }
   }
 }
+
