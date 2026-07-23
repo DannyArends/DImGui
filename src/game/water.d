@@ -190,7 +190,7 @@ private void rebuildChunkWaterInstances(const World world, Chunk chunk, ref Wate
         } else if(world.neighbourAt(chunk.coord, lc, o, nc, nidx)) { nlvl = world.chunks[nc].waterLevel[nidx]; }
       }
       if(nlvl >= lvl) continue;
-      water.instances ~= DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water);
+      water.instances ~= DrawInstance(faceData(f, p[0], cy, p[2], world.tileSize, wh), cast(int)ResourceType.Water, f);
     }
   }
 }

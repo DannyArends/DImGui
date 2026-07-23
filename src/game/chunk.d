@@ -105,7 +105,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
         exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
       } else { exposed = !wd.isSolid(neighbours[f]); }
       if (!exposed) continue;
-      data.tileInstances ~= DrawInstance(faceData(f, px, py, pz, ts, th), cast(int)data.tileTypes[i]);
+      data.tileInstances ~= DrawInstance(faceData(f, px,py,pz, ts,th), cast(int)data.tileTypes[i], f);
       data.tileIndices ~= i;
     }
     data.addTileBounds([px - ts/2, py - th/2, pz - ts/2], [px + ts/2, py + th/2, pz + ts/2], i, faceStart);

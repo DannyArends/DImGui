@@ -59,7 +59,7 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
   foreach(obj; app.objects) {
     if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
     if(!depthPass && obj.isOpaque && pass == DrawPass.Transparent) continue;  // opaque never in WBOIT
-    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass, wboit);
+    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass, wboit, app.normalMapping && obj.hasNormalMaps);
     if(first || last != s) {
       if(!first) popLabel(cmd);
       pushLabel(cmd, cstr("PIPELINE: topo: %d, A=%d, I=%d, S=%d, D=%d", topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
