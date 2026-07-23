@@ -71,7 +71,7 @@ void main() {
     vec3 normalForLighting = normalize(fragNormal);
     /// Surface normalForLighting
     //outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
-    if(mat.nid >= 0) {
+    if(NORMAL_MAPPED && mat.nid >= 0) {
       normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
     }
     /// normalForLighting after bump mapping
