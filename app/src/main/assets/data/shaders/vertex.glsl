@@ -57,12 +57,11 @@ void main() {
   if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
     fragPosWorld = worldPos;
     bool hasBakedNormal = (meshdef[3] != 0);
-    vec3 N = hasBakedNormal ? normalize(instanceNormal.xyz) : normalize(mat3(instance) * inNormal);
+    vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * inNormal);
     fragNormal = N;
     if(NORMAL_MAPPED) {
-      vec3 T = hasBakedNormal ? normalize(instanceTangent.xyz) : normalize(mat3(instance) * inTangent.xyz);
-      float hand = hasBakedNormal ? instanceTangent.w : inTangent.w;
-      vec3 B = normalize(cross(N, T)) * hand;
+      vec3 T = hasBakedNormal ? instanceTangent.xyz : normalize(mat3(instance) * inTangent.xyz);
+      vec3 B = normalize(cross(N, T)) * (hasBakedNormal ? instanceTangent.w : inTangent.w);
       fragTBN = mat3(T, B, N);
     }
   }
