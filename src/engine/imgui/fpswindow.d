@@ -6,6 +6,7 @@
 import engine;
 
 import imgui : faIcon;
+import vram : queryVRAM;
 import widgets : text;
 
 size_t vertexCount(Geometry o, bool showBounds) {
@@ -33,14 +34,6 @@ void showTimingsContent(ref App app) {
   }
 }
 
-ulong geometryBytes(ref App app) {
-  ulong total = 0;
-  uint copies = app.framesInFlight;
-  foreach(ref o; app.objects)
-    total += (o.vertices.capacity + o.indices.capacity + o.instances.capacity) * copies;
-  return total;
-}
-
 /** Show the GUI window with FPS statistics */
 void showFPSContent(ref App app, uint font = 0) {
   version(Android){
@@ -56,13 +49,14 @@ void showFPSContent(ref App app, uint font = 0) {
     igSetNextWindowPos(ImVec2(0.0f, size.y + 5.0f), 0, ImVec2(0.0f, 0.0f));
   }
   auto flags = ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
+  auto vRam = queryVRAM(app);
   igBegin("FPS", null, flags);
     igText("%s %s (v%d.%d.%d)", faIcon(), app.properties.deviceName.ptr,
                                 VK_API_VERSION_MAJOR(app.properties.apiVersion),
                                 VK_API_VERSION_MINOR(app.properties.apiVersion),
                                 VK_API_VERSION_PATCH(app.properties.apiVersion));
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
-    text("Geometry VRAM: %s", humanCount(geometryBytes(app)));
+    text("Geometry VRAM: %s | %s", humanCount(vRam.deviceUsed), humanCount(vRam.deviceBudget));
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
     igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
     if("ClusterCounter" in app.buffers) {

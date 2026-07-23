@@ -17,6 +17,7 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   auto extension = app.queryDeviceExtensionProperties();
 
   if(extension.has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
+  if(extension.has("VK_EXT_memory_budget")){ app.deviceExtensions ~= "VK_EXT_memory_budget"; }
   if(extension.has("VK_KHR_maintenance3")){ app.deviceExtensions ~= "VK_KHR_maintenance3"; }
   if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
 
