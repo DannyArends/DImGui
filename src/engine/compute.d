@@ -116,7 +116,7 @@ void createComputePipeline(ref App app, Shader shader) {
   };
   enforceVK(vkCreatePipelineLayout(app.device, &computeLayout, null, &app.compute.pipelines[shader.path].layout));
 
-  ShaderStage stage = createStageInfo([shader], VK_PRIMITIVE_TOPOLOGY_POINT_LIST, Specialization.init);
+  ShaderStage stage = app.createStageInfo([shader], VK_PRIMITIVE_TOPOLOGY_POINT_LIST, Specialization.init);
 
   VkComputePipelineCreateInfo computeInfo = {
     sType : VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
