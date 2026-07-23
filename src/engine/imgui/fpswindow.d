@@ -18,6 +18,7 @@ size_t indexCount(Geometry o, bool showBounds) {
 }
 
 string humanCount(size_t n) {
+  if (n >= 1_000_000_000) return format("%.1fG", n / 1_000_000_000.0);
   if (n >= 1_000_000) return format("%.1fM", n / 1_000_000.0);
   if (n >= 1_000) return format("%.1fK", n / 1_000.0);
   return format("%d", n);
@@ -56,7 +57,7 @@ void showFPSContent(ref App app, uint font = 0) {
                                 VK_API_VERSION_MINOR(app.properties.apiVersion),
                                 VK_API_VERSION_PATCH(app.properties.apiVersion));
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
-    text("Geometry VRAM: %s | %s", humanCount(vRam.deviceUsed), humanCount(vRam.deviceBudget));
+    text("Geometry VRAM: %s | %s & %s | %s", humanCount(vRam.deviceUsed), humanCount(vRam.deviceBudget), humanCount(vRam.totalUsed), humanCount(vRam.totalBudget));
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
     igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
     if("ClusterCounter" in app.buffers) {
