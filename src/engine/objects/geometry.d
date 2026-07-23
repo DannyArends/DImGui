@@ -66,7 +66,7 @@ class Geometry {
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
-  @property bool hasNormalMaps() const nothrow { foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return true; } return false; }
+  @property bool hasNormalMaps() const nothrow { foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return true; } } return false; }
 
   @nogc void initInstanced(string delegate() nothrow name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
