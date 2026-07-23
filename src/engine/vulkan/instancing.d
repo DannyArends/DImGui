@@ -32,6 +32,6 @@ struct DrawInstance {
     this(Matrix([fd[0],fd[1],fd[2],0, fd[3],fd[4],fd[5],0, fd[6],fd[7],fd[8],0, fd[9],fd[10],fd[11],1]), mat);
     meshdef[3] = 1;
     worldNormal = [FACE_OFFSETS[f][0], FACE_OFFSETS[f][1], FACE_OFFSETS[f][2], 0];
-    worldTangent = [FACE_TANGENT[f][0], FACE_TANGENT[f][1], FACE_TANGENT[f][2], 1];
+    worldTangent = [FACE_TANGENT[f][0], FACE_TANGENT[f][1], FACE_TANGENT[f][2], -1];
   }
 }

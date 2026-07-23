@@ -13,7 +13,7 @@ enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
 
 /** The six axis-aligned neighbour offsets (±X, ±Y, ±Z) */
 static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-static immutable float[3][6] FACE_TANGENT = [[0,0,1],[0,0,-1],[1,0,0],[1,0,0],[1,0,0],[-1,0,0]];     // in-plane U axis per faces
+static immutable float[3][6] FACE_TANGENT = [[0,0,1],[0,0,-1],[1,0,0],[1,0,0],[-1,0,0],[1,0,0]];
 
 /** Regular 3D lattice of (possibly non-cubic) cells */
 struct Lattice {
