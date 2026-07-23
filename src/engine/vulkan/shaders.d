@@ -176,7 +176,7 @@ struct ShaderStage {
 }
 
 /** Build pipeline stage infos from shaders, using pipeline Topology and Specialization structure */
-ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Specialization s) {
+ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Specialization s, uint msaaSamples) {
   ShaderStage stage;
   stage.flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, 
                   s.instanced ? VK_TRUE : VK_FALSE, 
@@ -187,6 +187,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
                   s.depthPass ? VK_TRUE : VK_FALSE,
                   s.wboit ? VK_TRUE : VK_FALSE,
                   s.normalMapping ? VK_TRUE : VK_FALSE,
+                  msaaSamples
                   ];
   stage.mapEntry = [
     VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),    // LINE : fragment
@@ -201,6 +202,7 @@ ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Spec
     VkSpecializationMapEntry(9, 9*uint.sizeof, uint.sizeof),    // DEPTHPASS : vertex
     VkSpecializationMapEntry(10, 10*uint.sizeof, uint.sizeof),  // WBOIT : fragment
     VkSpecializationMapEntry(11, 11*uint.sizeof, uint.sizeof),  // NORMAL_MAPPED : fragment
+    VkSpecializationMapEntry(12, 12*uint.sizeof, uint.sizeof),  // MSAA_SAMPLES
   ];
   stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
 
