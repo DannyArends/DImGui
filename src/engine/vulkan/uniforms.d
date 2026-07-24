@@ -48,7 +48,7 @@ void createUBO(ref App app, Descriptor descriptor) {
 
   app.swapDeletionQueue.add((){
     if(app.verbose) SDL_Log("Deleting UBO at %s", toStringz(descriptor.base));
-    foreach(a; app.ubos[descriptor.base]){ app.cleanup(a); }
+    foreach(ref a; app.ubos[descriptor.base]){ app.cleanup(a); }
     app.ubos.remove(descriptor.base);
   });
 }
