@@ -5,8 +5,7 @@
 
 import engine;
 
-/** Show the GUI window for Shaders
- */
+/** Show the GUI window for Shaders */
 void showShaderContent(ref App app, uint font = 0) {
   if(igBeginTable("Shaders_Tbl", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
     auto shaders = (app.shadows.shaders ~ app.shaders ~ app.postProcess);

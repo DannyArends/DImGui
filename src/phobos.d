@@ -31,6 +31,5 @@ public import std.traits : EnumMembers, isFloatingPoint, isIntegral, hasIndirect
 public import std.typecons : Tuple, tuple;
 public import std.utf : isValidDchar;
 
-/** D-formatted C string. One home for the per-frame toStringz allocation. */
-const(char)* cstr(A...)(string fmt, A a) { return toStringz(format(fmt, a)); }
+public import utils;
 

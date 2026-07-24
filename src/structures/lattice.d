@@ -6,6 +6,7 @@
 import phobos;
 
 import vector : x, y, z, vMul, vAdd;
+
 /** Reserved lattice coordinates (never valid cells) */
 enum int[3] noTile     = [int.min, 0, 0];
 enum int[3] builtTile  = [int.max, 0, 0];
@@ -78,9 +79,6 @@ LatticeMap!(T[uint]) unflatten(T)(const Diff!T[] flat) {
 
 /** Terrain surface height in tiles for normalised noise height 'h0' within a chunk of 'chunkHeight' */
 @nogc pure int surfaceLevel(float h0, int chunkHeight) nothrow { return cast(int)(h0 * sqrt(h0) * (chunkHeight - 1)); }
-
-/** Floor division (rounds toward -inf) — negative-safe chunk coordinates. */
-@nogc pure int iDiv(int a, int b) nothrow { return((a >= 0) ? a/b : -((-a + b - 1)/b)); }
 
 /** World tile coordinate to the coordinate of the chunk containing it (Y forced to 0; chunks are full-height columns) */
 @nogc pure int[3] chunkCoord(T)(const T l, const int[3] tile) nothrow {
