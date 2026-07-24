@@ -128,6 +128,13 @@ class Geometry {
   string delegate() nothrow geometry;
 }
 
+void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
+  app.cleanup(object.vertices);
+  app.cleanup(object.indices);
+  app.cleanup(object.instances);
+  if(object.box){ app.cleanup(object.box); }
+}
+
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
   bool uploaded = false;
   for(size_t x = 0; x < app.objects.length; x++) {

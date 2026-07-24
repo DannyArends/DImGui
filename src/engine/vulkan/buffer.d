@@ -71,13 +71,6 @@ void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, st
   buffer = GeometryBuffer!T();
 }
 
-void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
-  app.cleanup(object.vertices);
-  app.cleanup(object.indices);
-  app.cleanup(object.instances);
-  if(object.box){ app.cleanup(object.box); }
-}
-
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memoryProperties;
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
