@@ -65,7 +65,7 @@ void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
 }
 
 /** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
-@nogc void cleanup(ref App app, ref GPUAllocation allocation) nothrow {
+@nogc void cleanup(ref App app, GPUAllocation allocation) nothrow {
   if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
   vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
   vkFreeMemory(app.device, allocation.memory, app.allocator);
@@ -150,7 +150,10 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   if(requiredSize <= buffer.capacity) return(false);
 
   VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
-  if(buffer.vb.length > 0){ app.deAllocate(buffer); }
+  if(buffer.vb.length > 0){
+    app.releaseStaging(buffer);
+    app.deAllocate(buffer);
+  }
 
   buffer.vb = new VkBuffer[app.framesInFlight];
   buffer.vbM = new VkDeviceMemory[app.framesInFlight];
