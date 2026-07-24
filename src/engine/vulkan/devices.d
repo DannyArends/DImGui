@@ -9,7 +9,7 @@ import extensions : queryDeviceExtensionProperties, has;
 import queue : findDedicatedQueues, setupQueues;
 import validation : nameVulkanObject;
 import vulkan : querySupportedFeatures;
-import vram : deviceMemoryReportCallback;
+import vram : memoryReportCallback, hasMemoryBudget, hasMemoryCallback;
 
 // Creates a physicalDevice & associated Queue
 void pickPhysicalDevice(ref App app, uint device = 0){
@@ -50,9 +50,8 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
 
   VkDeviceDeviceMemoryReportCreateInfoEXT memReportCreateInfo = {
     sType: VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT,
-    flags: 0, pfnUserCallback: &deviceMemoryReportCallback, pUserData: &app,
+    flags: 0, pfnUserCallback: &memoryReportCallback, pUserData: &app,
   };
-  memReportFeatures.pNext = &memReportCreateInfo;
 
   VkPhysicalDeviceVulkan12Features features = { 
     sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
@@ -61,8 +60,12 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     shaderSampledImageArrayNonUniformIndexing : VK_TRUE,
     shaderStorageBufferArrayNonUniformIndexing : VK_TRUE,
     descriptorBindingPartiallyBound : VK_TRUE,
-    pNext: &memReportFeatures
   };
+
+  if(!app.hasMemoryBudget() && app.hasMemoryCallback()) {
+    memReportFeatures.pNext = &memReportCreateInfo;
+    features.pNext = &memReportFeatures;
+  }
 
   VkPhysicalDeviceFeatures deviceFeatures = { robustBufferAccess: VK_TRUE,
                                               samplerAnisotropy: VK_TRUE,

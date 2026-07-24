@@ -44,15 +44,14 @@ void printVRAM(ref App app) {
   }else if(app.hasMemoryCallback()) { text("Geometry VRAM: %s", humanCount(vRam.deviceUsed)); }
 }
 
-extern(C) nothrow @nogc void deviceMemoryReportCallback(const(VkDeviceMemoryReportCallbackDataEXT)* data, void* userData) {
+extern(C) nothrow @nogc void memoryReportCallback(const(VkDeviceMemoryReportCallbackDataEXT)* data, void* userData) {
   App* app = cast(App*) userData;
-  final switch (data.type) with (VkDeviceMemoryReportEventTypeEXT) {
+  switch (data.type) with (VkDeviceMemoryReportEventTypeEXT) {
     case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT: app.vramLedger.deviceUsed += data.size; break;
     case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT: app.vramLedger.deviceUsed -= data.size; break;
     case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT: app.vramLedger.hostUsed += data.size; break;
     case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT: app.vramLedger.hostUsed -= data.size; break;
-    case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT: SDL_Log("ALLOC_FAIL"); break;
-    case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_MAX_ENUM_EXT: SDL_Log("MAX_ENUM"); break;
+    default: break;
   }
 }
 
