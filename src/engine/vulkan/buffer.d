@@ -17,11 +17,18 @@ struct GPUAllocation {
 }
 
 /** Create (and map, if host-visible) a GPUAllocation at `size`; host-visible copies are zero-filled. */
-void createAllocation(ref App app, ref GPUAllocation a, uint size, bool deviceLocal, bool concurrent = false) {
-  enum VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+void createAllocation(ref App app, ref GPUAllocation allocation, uint size, bool deviceLocal, bool concurrent = false) {
+  VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  app.createBuffer(&a.buffer, &a.memory, size, usage, props, concurrent);
-  if(!deviceLocal){ enforceVK(vkMapMemory(app.device, a.memory, 0, size, 0, &a.data)); (cast(ubyte*)a.data)[0 .. size] = 0; }
+  app.createBuffer(&allocation.buffer, &allocation.memory, size, usage, props, concurrent);
+  if(!deviceLocal) { enforceVK(vkMapMemory(app.device, allocation.memory, 0, size, 0, &allocation.data)); (cast(ubyte*)allocation.data)[0 .. size] = 0; }
+}
+
+/** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
+@nogc void cleanup(ref App app, ref GPUAllocation allocation) nothrow {
+  if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
+  vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
+  vkFreeMemory(app.device, allocation.memory, app.allocator);
 }
 
 struct GeometryBuffer(T = ubyte) {
@@ -69,13 +76,6 @@ void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
   app.cleanup(object.indices);
   app.cleanup(object.instances);
   if(object.box){ app.cleanup(object.box); }
-}
-
-/** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
-@nogc void cleanup(ref App app, ref GPUAllocation allocation) nothrow {
-  if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
-  vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
-  vkFreeMemory(app.device, allocation.memory, app.allocator);
 }
 
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
