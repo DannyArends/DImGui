@@ -5,7 +5,7 @@
 
 import engine;
 
-import geometry : cleanup;
+import buffer : cleanup;
 import imgui : saveSettings;
 import threading : stopWorkers;
 
