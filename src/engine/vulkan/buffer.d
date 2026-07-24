@@ -11,9 +11,9 @@ import validation : nameVulkanObject;
 
 /** A bound GPU buffer: handle + its memory + mapped pointer (data == null, means device-local / unmapped). */
 struct GPUAllocation {
-  VkBuffer buffer;
-  VkDeviceMemory memory;
-  void* data;
+  VkBuffer buffer;                /// Buffer handle
+  VkDeviceMemory memory;          /// Backing device memory
+  void* data;                     /// Mapped pointer (non-null only for host-visible allocations)
 }
 
 /** Create (and map, if host-visible) a GPUAllocation at `size`; host-visible copies are zero-filled. */
@@ -32,16 +32,16 @@ void createAllocation(ref App app, ref GPUAllocation allocation, uint size, bool
 }
 
 struct GeometryBuffer(T = ubyte) {
-  VkBuffer[] vb = null;
-  VkDeviceMemory[] vbM = null;
-  GPUAllocation[] staging;
-  VkDeviceSize[] size;
-  VkDeviceSize capacity = 0;
+  VkBuffer[] vb = null;           /// Per-frame device buffers
+  VkDeviceMemory[] vbM = null;    /// Backing memory for each vb
+  GPUAllocation[] staging;        /// Host-visible upload staging (released once buffered)
+  VkDeviceSize[] size;            /// Bytes uploaded per copy
+  VkDeviceSize capacity = 0;      /// Allocated bytes per copy (grow-only)
 
-  PackedArray!T data;
-  alias data this;
-  private bool[] dirty;
-  bool keepStaging = false;
+  PackedArray!T data;             /// CPU-side element store
+  alias data this;                /// A GeometryBuffer acts as its element store
+  private bool[] dirty;           /// Per-copy upload-needed flag
+  bool keepStaging = false;       /// Retain staging after upload (for frequently-updated buffers)
 
   @property @nogc bool buffered() nothrow const { foreach(d; dirty) if(d) return false; return true; }
   @nogc void invalidate() nothrow { dirty[] = true; }
@@ -196,7 +196,7 @@ void uploadBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer c
   VkBufferCopy copyRegion = { size : buffer.size[app.syncIndex] };
   vkCmdCopyBuffer(cmdBuffer, buffer.staging[app.syncIndex].buffer, buffer.vb[app.syncIndex], 1, &copyRegion);
   buffer.dirty[app.syncIndex] = false;
-  if(!buffer.keepStaging && buffer.buffered) app.releaseStaging(buffer);   // <-- all frames uploaded → free staging
+  if(!buffer.keepStaging && buffer.buffered) app.releaseStaging(buffer);
 }
 
 /** Single transfer→vertex/index-read barrier covering all uploads in this command buffer */
