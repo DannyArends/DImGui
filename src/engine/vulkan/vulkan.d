@@ -65,10 +65,7 @@ void cleanup(ref App app) {
     igDestroyContext(null);
   }
   SDL_Log("Direct cleanup all Geometry objects");
-  {
-
-    foreach(ref object; app.objects) { app.cleanup(object); }
-  }
+  foreach(ref object; app.objects) { app.cleanup(object); }
 
   SDL_Log("Flush the main deletion queue, and delete permanent Vulkan resources");
   app.mainDeletionQueue.flush();
