@@ -65,7 +65,7 @@ void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
 }
 
 /** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
-@nogc void cleanup(ref App app, GPUAllocation allocation) nothrow {
+@nogc void cleanup(ref App app, ref GPUAllocation allocation) nothrow {
   if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
   vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
   vkFreeMemory(app.device, allocation.memory, app.allocator);
