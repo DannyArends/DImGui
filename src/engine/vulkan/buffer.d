@@ -150,10 +150,7 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   if(requiredSize <= buffer.capacity) return(false);
 
   VkDeviceSize newCapacity = requiredSize > 0 ? (requiredSize * 2) : 256;
-  if(buffer.vb.length > 0){
-    app.releaseStaging(buffer);
-    app.deAllocate(buffer);
-  }
+  if(buffer.vb.length > 0) { app.deAllocate(buffer); }
 
   buffer.vb = new VkBuffer[app.framesInFlight];
   buffer.vbM = new VkDeviceMemory[app.framesInFlight];
