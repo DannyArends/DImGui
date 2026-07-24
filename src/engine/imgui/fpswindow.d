@@ -6,7 +6,6 @@
 import engine;
 
 import imgui : faIcon;
-import utils : humanCount;
 import vram : printVRAM;
 import widgets : text;
 

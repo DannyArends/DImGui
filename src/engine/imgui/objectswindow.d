@@ -6,8 +6,8 @@
 import engine;
 
 import imgui : faIcon;
-import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, labelCol, objectActions, materialRow, colValue;
 import textures : mapTextures, ImTextureRefFromID;
+import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, labelCol, objectActions, materialRow, colValue;
 
 /** Window to manipulate 3D objects: list view, or per-object detail when an object's window flag is set. */
 void showObjectsContent(ref App app, uint font = 0) {
