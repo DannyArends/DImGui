@@ -12,30 +12,36 @@ struct VramUsage {
   long deviceUsed, deviceBudget;   // device-local heaps — true VRAM on a discrete GPU
   long hostUsed, hostBudget;     // non-device-local heaps — system RAM; staging/mapped buffers live here on desktop
   long totalUsed, totalBudget;    // every heap summed
-  uint  heapCount;
+  uint heapCount;
 }
 
-VramUsage queryVRAM(ref App app) {
+bool hasMemoryCallback(ref App app) { return(app.deviceExtensions.canFind!(e => fromStringz(e) == "VK_EXT_device_memory_report")); }
+bool hasMemoryBudget(ref App app) { return(app.deviceExtensions.canFind!(e => fromStringz(e) == "VK_EXT_memory_budget")); }
+
+void queryVRAM(ref App app) {
+  if(!app.hasMemoryBudget()) return;
   VkPhysicalDeviceMemoryBudgetPropertiesEXT budget = { sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT };
   VkPhysicalDeviceMemoryProperties2 props2 = { sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2, pNext: &budget };
   vkGetPhysicalDeviceMemoryProperties2(app.physicalDevice, &props2);
-
-  VramUsage u;
   auto mp = props2.memoryProperties;
-  u.heapCount = mp.memoryHeapCount;
+
+  app.vramLedger = VramUsage.init;
+  app.vramLedger.heapCount = mp.memoryHeapCount;
   foreach(i; 0 .. mp.memoryHeapCount) {
     immutable used = budget.heapUsage[i];
     immutable cap  = budget.heapBudget[i];
-    u.totalUsed += used; u.totalBudget += cap;
+    app.vramLedger.totalUsed += used; app.vramLedger.totalBudget += cap;
     if(mp.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
-      u.deviceUsed += used; u.deviceBudget += cap;
-    } else { u.hostUsed += used; u.hostBudget += cap; }
+      app.vramLedger.deviceUsed += used; app.vramLedger.deviceBudget += cap;
+    } else { app.vramLedger.hostUsed += used; app.vramLedger.hostBudget += cap; }
   }
-  return u;
 }
 
-void printVRAM(VramUsage vRam) {
-  text("Geometry VRAM: %s | %s & %s | %s", humanCount(vRam.deviceUsed), humanCount(vRam.deviceBudget), humanCount(vRam.totalUsed), humanCount(vRam.totalBudget));
+void printVRAM(ref App app) {
+  VramUsage vRam = app.vramLedger;
+  if(app.hasMemoryBudget()) {
+    text("Geometry VRAM: %s | %s & %s | %s", humanCount(vRam.deviceUsed), humanCount(vRam.deviceBudget), humanCount(vRam.totalUsed), humanCount(vRam.totalBudget));
+  }else if(app.hasMemoryCallback()) { text("Geometry VRAM: %s", humanCount(vRam.deviceUsed)); }
 }
 
 extern(C) nothrow @nogc void deviceMemoryReportCallback(const(VkDeviceMemoryReportCallbackDataEXT)* data, void* userData) {
@@ -49,3 +55,4 @@ extern(C) nothrow @nogc void deviceMemoryReportCallback(const(VkDeviceMemoryRepo
     case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_MAX_ENUM_EXT: SDL_Log("MAX_ENUM"); break;
   }
 }
+
