@@ -7,7 +7,6 @@ import engine;
 
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
-import ssbo : createAllocation;
 import validation : nameVulkanObject;
 
 /** A bound GPU buffer: handle + its memory + mapped pointer (data == null, means device-local / unmapped). */
@@ -15,6 +14,14 @@ struct GPUAllocation {
   VkBuffer buffer;
   VkDeviceMemory memory;
   void* data;
+}
+
+/** Create (and map, if host-visible) a GPUAllocation at `size`; host-visible copies are zero-filled. */
+void createAllocation(ref App app, ref GPUAllocation a, uint size, bool deviceLocal, bool concurrent = false) {
+  enum VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  app.createBuffer(&a.buffer, &a.memory, size, usage, props, concurrent);
+  if(!deviceLocal){ enforceVK(vkMapMemory(app.device, a.memory, 0, size, 0, &a.data)); (cast(ubyte*)a.data)[0 .. size] = 0; }
 }
 
 struct GeometryBuffer(T = ubyte) {

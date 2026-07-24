@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, cleanup;
+import buffer : createAllocation, cleanup;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
 import sync : insertWriteBarrier;
@@ -48,19 +48,6 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
     app.nameVulkanObject(ssbo[i].buffer, cstr("[SSBO-BUF] %s #%d", name, i), VK_OBJECT_TYPE_BUFFER);
     app.nameVulkanObject(ssbo[i].memory, cstr("[SSBO-MEM] %s #%d", name, i), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
-}
-
-/** Memory properties for an SSBO copy: device-local, or host-visible+coherent for mapped copies. */
-VkMemoryPropertyFlags ssboMemoryProps(bool deviceLocal) {
-  return deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-}
-
-immutable VkBufferUsageFlags ssboUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-/** Create (and map, if host-visible) one SSBO copy at `size`, and mark it dirty for upload. */
-void createAllocation(ref App app, ref GPUAllocation a, uint size, bool deviceLocal, bool concurrent = false) {
-  app.createBuffer(&a.buffer, &a.memory, size, ssboUsage, ssboMemoryProps(deviceLocal), concurrent);
-  if(!deviceLocal){ enforceVK(vkMapMemory(app.device, a.memory, 0, size, 0, &a.data)); (cast(ubyte*)a.data)[0 .. size] = 0; }
 }
 
 /** Create GPU SSBO buffer for nObjects. copies = per-frame buffer count (0 = app.framesInFlight).
