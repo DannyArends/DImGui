@@ -9,6 +9,7 @@ import extensions : queryDeviceExtensionProperties, has;
 import queue : findDedicatedQueues, setupQueues;
 import validation : nameVulkanObject;
 import vulkan : querySupportedFeatures;
+import vram : deviceMemoryReportCallback;
 
 // Creates a physicalDevice & associated Queue
 void pickPhysicalDevice(ref App app, uint device = 0){
@@ -18,6 +19,7 @@ void pickPhysicalDevice(ref App app, uint device = 0){
 
   if(extension.has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
   if(extension.has("VK_EXT_memory_budget")){ app.deviceExtensions ~= "VK_EXT_memory_budget"; }
+  if(extension.has("VK_EXT_device_memory_report")){ app.deviceExtensions ~= "VK_EXT_device_memory_report"; }
   if(extension.has("VK_KHR_maintenance3")){ app.deviceExtensions ~= "VK_KHR_maintenance3"; }
   if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
 
@@ -41,19 +43,32 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   app.pickPhysicalDevice(device);
   app.querySupportedFeatures(app.physicalDevice);
 
+  VkPhysicalDeviceDeviceMemoryReportFeaturesEXT memReportFeatures = {
+    sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT,
+    deviceMemoryReport: VK_TRUE,
+  };
+
+  VkDeviceDeviceMemoryReportCreateInfoEXT memReportCreateInfo = {
+      sType: VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT,
+      flags: 0, pfnUserCallback: &deviceMemoryReportCallback, pUserData: &app,
+  };
+  memReportFeatures.pNext = &memReportCreateInfo;
+
+
   VkPhysicalDeviceVulkan12Features features = { 
     sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
     descriptorIndexing : VK_TRUE,
     runtimeDescriptorArray : VK_TRUE,
     shaderSampledImageArrayNonUniformIndexing : VK_TRUE,
     shaderStorageBufferArrayNonUniformIndexing : VK_TRUE,
-    descriptorBindingPartiallyBound : VK_TRUE
+    descriptorBindingPartiallyBound : VK_TRUE,
+    pNext: &memReportFeatures
   };
 
   VkPhysicalDeviceFeatures deviceFeatures = { robustBufferAccess: VK_TRUE,
                                               samplerAnisotropy: VK_TRUE,
                                               fragmentStoresAndAtomics: VK_TRUE,
-                                              independentBlend: VK_TRUE };
+                                              independentBlend: VK_TRUE};
 
   QueueSetup qs = app.findDedicatedQueues();
   VkDeviceCreateInfo createDevice = {
