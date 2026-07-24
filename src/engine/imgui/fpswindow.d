@@ -6,7 +6,8 @@
 import engine;
 
 import imgui : faIcon;
-import vram : queryVRAM;
+import utils : humanCount;
+import vram : printVRAM;
 import widgets : text;
 
 size_t vertexCount(Geometry o, bool showBounds) {
@@ -15,13 +16,6 @@ size_t vertexCount(Geometry o, bool showBounds) {
 
 size_t indexCount(Geometry o, bool showBounds) {
   return o.indices.length * o.instances.length + (showBounds && o.box ? o.box.indices.length * o.box.instances.length : 0);
-}
-
-string humanCount(size_t n) {
-  if (n >= 1_000_000_000) return format("%.1fG", n / 1_000_000_000.0);
-  if (n >= 1_000_000) return format("%.1fM", n / 1_000_000.0);
-  if (n >= 1_000) return format("%.1fK", n / 1_000.0);
-  return format("%d", n);
 }
 
 void showTimingsContent(ref App app) {
@@ -50,16 +44,15 @@ void showFPSContent(ref App app, uint font = 0) {
     igSetNextWindowPos(ImVec2(0.0f, size.y + 5.0f), 0, ImVec2(0.0f, 0.0f));
   }
   auto flags = ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
-  auto vRam = queryVRAM(app);
   igBegin("FPS", null, flags);
     igText("%s %s (v%d.%d.%d)", faIcon(), app.properties.deviceName.ptr,
                                 VK_API_VERSION_MAJOR(app.properties.apiVersion),
                                 VK_API_VERSION_MINOR(app.properties.apiVersion),
                                 VK_API_VERSION_PATCH(app.properties.apiVersion));
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
-    text("Geometry VRAM: %s | %s & %s | %s", humanCount(vRam.deviceUsed), humanCount(vRam.deviceBudget), humanCount(vRam.totalUsed), humanCount(vRam.totalBudget));
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
     igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
+    app.vramLedger.printVRAM();
     if("ClusterCounter" in app.buffers) {
       static float avgClusters = 0;
       uint sample = *cast(uint*)app.buffers["ClusterCounter"][0].data;

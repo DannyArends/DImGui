@@ -59,6 +59,7 @@ public import torus : Torus;
 public import threading : Threading;
 public import uniforms : ParticleUniformBuffer, UBO;
 public import vertex : Vertex, VERTEX, INSTANCE, INDEX;
+public import vram : VramUsage;
 public import vulkan : SupportedFeatures;
 public import wboit : WBOIT, WBOITShaders;
 public import widgets : DropDownItem, SelectionKey, GameWindow;

@@ -88,6 +88,7 @@ struct App {
   VkInstance instance = null;
   SupportedFeatures supported;
   VkPhysicalDevice[] physicalDevices;
+  VramUsage vramLedger;                                                         /// Running VRAM total accumulated
 
   VkDevice device = null;                                                       /// Vulkan device
   Queues queues;                                                                /// Graphics / Compute / Transfer queues
