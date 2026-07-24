@@ -52,7 +52,7 @@ void showFPSContent(ref App app, uint font = 0) {
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
     igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
-    app.vramLedger.printVRAM();
+    app.printVRAM();
     if("ClusterCounter" in app.buffers) {
       static float avgClusters = 0;
       uint sample = *cast(uint*)app.buffers["ClusterCounter"][0].data;

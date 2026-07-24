@@ -120,7 +120,7 @@ double handleEvents(ref GameApp app) {
       if(app.objects[i].onTick) app.objects[i].onTick();
     }
     app.updateSun();
-    app.vramLedger = app.queryVRAM();
+    app.queryVRAM();
   }
 
   // Call all onFrame() handlers

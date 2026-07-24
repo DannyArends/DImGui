@@ -49,11 +49,10 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   };
 
   VkDeviceDeviceMemoryReportCreateInfoEXT memReportCreateInfo = {
-      sType: VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT,
-      flags: 0, pfnUserCallback: &deviceMemoryReportCallback, pUserData: &app,
+    sType: VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT,
+    flags: 0, pfnUserCallback: &deviceMemoryReportCallback, pUserData: &app,
   };
   memReportFeatures.pNext = &memReportCreateInfo;
-
 
   VkPhysicalDeviceVulkan12Features features = { 
     sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
