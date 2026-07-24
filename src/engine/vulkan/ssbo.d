@@ -13,14 +13,14 @@ import validation : nameVulkanObject;
 
 /** GPU SSBO: per-copy allocations, per-copy dirty flags, and layout. */
 struct SSBO {
-  GPUAllocation[] allocations;
-  alias allocations this;
+  GPUAllocation[] allocations;    /// Per-frame buffer copies (one per framesInFlight)
+  alias allocations this;         /// An SSBO acts as its allocation array
 
-  private bool[] dirty;
-  uint nObjects;
-  uint stride;
-  bool deviceLocal;
-  bool concurrent;
+  private bool[] dirty;           /// Per-copy upload-needed flag
+  uint nObjects;                  /// Element capacity
+  uint stride;                    /// Bytes per element
+  bool deviceLocal;               /// Device-local (staged upload) vs host-visible (mapped)
+  bool concurrent;                /// Shared across graphics + compute queue families
 
   @property @nogc uint size() nothrow const { return nObjects * stride; }
   @property @nogc bool buffered() nothrow const { foreach(d; dirty){ if(d){ return(false); } } return(true); }
