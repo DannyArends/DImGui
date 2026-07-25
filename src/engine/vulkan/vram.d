@@ -37,7 +37,7 @@ void printVRAM(ref App app) {
   }else if(app.hasMemoryCallback()) { text("Geometry VRAM: %s", humanCount(vRam.deviceUsed)); }
 }
 
-extern(C) nothrow @nogc void memoryReportCallback(const(VkDeviceMemoryReportCallbackDataEXT)* data, void* userData) {
+extern(System) nothrow @nogc void memoryReportCallback(const(VkDeviceMemoryReportCallbackDataEXT)* data, void* userData) {
   App* app = cast(App*) userData;
   bool alloc = (data.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT);
   bool free = (data.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT);
