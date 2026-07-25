@@ -10,7 +10,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS, NUM_CASCADES, CASCADE_RADIUS, CASCADE_SPLIT, computeCascades;
+import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS, NUM_CASCADES, CASCADE_RADIUS, CASCADE_SPLIT;
 import textures : mapTextures;
 import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -53,13 +53,11 @@ enum Lights : Light {
 
 struct Lighting {
   SSBOList!Light lights;
-  float[] scoreBuf;             /// Shadow ranking scores
-  bool staticDirty = false;     /// scene static geometry changed
+  float[] scoreBuf;
+  bool staticDirty = false;
   float sunTime = 13.0f;
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
-  uint cascadeBase = 0;         /// CSM: SSBO index of the first extra cascade light (cascades 1..N-1)
-  bool cascadesReady = false;   /// CSM: extra cascade lights have been appended once
   alias lights this;
 }
 
@@ -216,42 +214,6 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
   return max(light.intensity[0], light.intensity[1], light.intensity[2]) / (dot(d, d) + 1.0f);
 }
 
-/** CSM: sun (light 0) is cascade 0; append NUM_CASCADES-1 zero-intensity directional clones for the far slices.
- *  Zero intensity => casts a shadow map (gets a slot + frustum in computeActiveLighting) but adds no light.
- *  Per-cascade half-extent goes in properties[2]; per-cascade view-depth split goes in cull[2]. Appended once. */
-void ensureCascades(ref App app) {
-  if(app.lights.length == 0) return;
-  Light sun = app.lights[0];
-  // Cascade 0 is the sun itself: tighten it to the nearest slice + record its split.
-  app.lights[0].properties[2] = CASCADE_RADIUS[0];
-  app.lights[0].cull[2]       = CASCADE_SPLIT[0];
-
-  if(!app.lights.cascadesReady) {
-    app.lights.cascadeBase = cast(uint)app.lights.length;   // extra cascades start here
-    for(uint c = 1; c < NUM_CASCADES; c++) {
-      Light cc = sun;
-      cc.intensity    = [0.0f, 0.0f, 0.0f, 0.0f];   // shadow-only: contributes no light
-      cc.properties[2] = CASCADE_RADIUS[c];          // ortho half-extent for this cascade
-      cc.properties[3] = 1.0f;                       // enabled -> receives a shadow slot + frustum
-      cc.cull[2]       = CASCADE_SPLIT[c];            // view-depth upper bound
-      app.lights ~= cc;                              // NOTE: SSBOList append — may need growSSBO/updateSSBO
-    }
-    app.lights.cascadesReady = true;
-    if(app.lights.scoreBuf.length < app.lights.length) app.lights.scoreBuf.length = app.lights.length;
-  } else {
-    // Refresh the extra cascades' direction/position from the (moving) sun each frame.
-    for(uint c = 1; c < NUM_CASCADES; c++) {
-      auto idx = app.lights.cascadeBase + (c - 1);
-      app.lights[idx].position   = sun.position;
-      app.lights[idx].direction  = sun.direction;
-      app.lights[idx].intensity  = [0.0f, 0.0f, 0.0f, 0.0f];
-      app.lights[idx].properties[2] = CASCADE_RADIUS[c];
-      app.lights[idx].properties[3] = 1.0f;
-      app.lights[idx].cull[2]       = CASCADE_SPLIT[c];
-    }
-  }
-}
-
 /** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
 void computeActiveLighting(ref App app) {
   app.ensureCascades();   // CSM: make sure the extra cascade lights exist / are refreshed
@@ -263,11 +225,12 @@ void computeActiveLighting(ref App app) {
   float slot = 0.0f;
   foreach(i, ref light; app.lights) {
     light.computeCone();
-    if(light.directional && light.enabled && slot < MAX_SHADOW_MAPS) {
-      light.cull[1] = slot++;                 // sun/directionals always cast, first slots
+    if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
+      light.cull[1 .. 2] = [slot, cast(float)NUM_CASCADES];
+      slot += NUM_CASCADES;
       score[i] = -1.0f;
     } else {
-      light.cull[1] = -1.0f;                  // -1 = not casting
+      light.cull[1..2] = [-1.0f, 1.0f];
       score[i] = light.shadowScore(app.camera.position);
     }
   }
@@ -282,14 +245,20 @@ void computeActiveLighting(ref App app) {
 
   foreach(ref light; app.lights) {
     light.computeRadius();
+    int first = cast(int)light.cull[1];
+    if(first < 0) continue;
+    uint count = cast(uint)light.cull[2];
     uint res = app.shadowResolution(light);
-    app.camera.computeLightSpace(light, app.shadows.bounds, res);
-    int s = cast(int)light.cull[1];
-    if(s >= 0) {
-      if(light.lightSpaceMatrix != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
+    foreach(c; 0 .. count) {
+      int s = first + cast(int)c;
+      float rad = (count > 1) ? CASCADE_RADIUS[c] : 0.0f;   // 0 => computeLightSpace uses full/point behaviour
+      app.camera.computeLightSpace(light, app.shadows.bounds, res, rad);
+      app.shadows.slotVP[s] = light.lightSpaceMatrix;
+      if(app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
+      app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
       uint before = app.shadows.images[s].extent.width;
       app.resizeShadowMap(s, res);
-      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // resize recreated layer 0
+      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;
     }
   }
   app.buffers["LightMatrices"].invalidate();
