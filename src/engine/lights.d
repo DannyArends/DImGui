@@ -226,7 +226,7 @@ void computeActiveLighting(ref App app) {
       slot += NUM_CASCADES;
       score[i] = -1.0f;
     } else {
-      light.cull[1..3] = [-1.0f, 1.0f];
+      light.cull[1] = -1.0f;
       score[i] = light.shadowScore(app.camera.position);
     }
   }
