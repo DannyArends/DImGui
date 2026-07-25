@@ -87,14 +87,7 @@ void main() {
     for(int i = 0; i < ubo.nlights; ++i) {
       if(lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
       if(lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
-      if(i == 0) {   // CSM: the sun uses cascaded shadows (cascade lights are zero-intensity, contribute nothing here)
-        vec3 amb;
-        vec3 direct = illuminate(lightSSBO.lights[0], rgb, fragPosWorld.xyz, normalForLighting, amb);
-        if(useShadows) direct *= calculateShadowCSM(fragPosWorld, -fragViewPos.z);
-        surfaceColor += amb + direct;
-      } else {
-        surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, useShadows);
-      }
+      surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, -fragViewPos.z, useShadows);
     }
 
     // Point lights via this fragment's froxel linked list
@@ -102,7 +95,7 @@ void main() {
     uint cid = froxelIndex((clip.xy / clip.w) * 0.5 + 0.5, -fragViewPos.z);
 
     for(uint n = head[cid].head; n != NIL; n = indices[n].next) {
-      surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, useShadows);
+      surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, -fragViewPos.z, useShadows);
     }
 
     // Screen-space ambient occlusion: opaque only (SDF/transparent geometry has no valid depth, must not receive AO)
