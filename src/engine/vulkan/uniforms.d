@@ -8,7 +8,8 @@ import engine;
 import buffer : createBuffer, cleanup;
 import quaternion : xyzw;
 import matrix : multiply, rotate, lookAt, perspective;
-import lights : computeLightSpace, LMode, NUM_CASCADES;
+import lights : computeLightSpace, LMode;
+import shadow: NUM_CASCADES;
 import validation : nameVulkanObject;
 
 struct UniformBufferObject {
@@ -22,7 +23,7 @@ struct UniformBufferObject {
   LMode lMode = LMode.LightsAndShadows;
   uint indexBufferLength;
   float[4] clusterCfg;
-  float[4] cascade;        /// CSM: [cascadeBase, cascadeCount, 0, 0]
+  float[4] cascade;
 }
 
 struct ParticleUniformBuffer {

@@ -10,6 +10,7 @@ import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
 import framebuffer : createFramebuffer, cleanup;
 import geometry : bufferGeometries, draw;
+import lights : computeLightSpace;
 import images : cleanup, copyImageLayer, createNamedImage;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
@@ -17,6 +18,9 @@ import validation : popLabel, pushLabel;
 import vector : xyz;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32; // Maximum number of shadown maps, limits budget
+enum uint NUM_CASCADES = 3;
+enum float[3] CASCADE_RADIUS = [24.0f, 64.0f, 160.0f];   /// per-cascade ortho half-extent (TUNE by eye)
+enum float[3] CASCADE_SPLIT  = [30.0f, 90.0f, 1e9f];     /// view-depth upper bound per cascade (TUNE by eye)
 
 struct ShadowMap {
   ImageBuffer[] images;
@@ -34,7 +38,10 @@ struct ShadowMap {
   bool[] shadowDescriptorsDirty;
   bool[] staticDirty;
   Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
-
+  Matrix[NUM_CASCADES] cascadeVP;           /// sun cascade view-proj matrices (owned here, not fake lights)
+  float[NUM_CASCADES] cascadeSplit;         /// per-cascade view-depth upper bound
+  uint cascadeSlot = 0;                     /// base shadow slot for cascade 0
+  
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
   uint staticShadowInstances = 0;           /// Static shadow instances count
@@ -84,6 +91,18 @@ void makeShadowMap(ref App app, ref ShadowMap map, size_t s, uint size) {
                        VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
   map.cmd.pass(0).framebuffers[s] = app.createFramebuffer(map.cmd.pass(0), [map.images[s].view(0)], size, size, "Static Shadow", s);
   map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.images[s].view(1)], size, size, "Dynamic Shadow", s);
+}
+
+/** Build the sun's N cascade matrices/splits from light 0, without fake lights. */
+void computeCascades(ref App app) {
+  if(app.lights.length == 0) return;
+  Light sun = app.lights[0];                          // copy; we only read .lightSpaceMatrix back out
+  foreach(c; 0 .. NUM_CASCADES) {
+    uint res = app.shadowResolution(sun);
+    app.camera.computeLightSpace(sun, app.shadows.bounds, res, CASCADE_RADIUS[c]);
+    app.shadows.cascadeVP[c]    = sun.lightSpaceMatrix;
+    app.shadows.cascadeSplit[c] = CASCADE_SPLIT[c];
+  }
 }
 
 /** Resize shadow map s to `size`; defers old resources, re-points the descriptor next safe frame. */
