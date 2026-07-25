@@ -31,13 +31,9 @@ vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoor
 float calculateShadow(vec4 fragPosWorld, uint i, float viewDepth) {
   int first = int(lightSSBO.lights[i].cull[1]);   // firstSlot
   if (first < 0) return 1.0;
-  uint count = uint(lightSSBO.lights[i].cull[2]); // cascadeCount (1 for point/spot)
+  uint count = (lightSSBO.lights[i].position.w == 0.0) ? uint(lightSSBO.lights[i].cull[2]) : 1u;
   uint c = 0u;
-  if (count > 1u) {
-    for (c = 0u; c < count - 1u; ++c) {
-      if (viewDepth <= lightUbo.cascadeSplit[c]) break;
-    }
-  }
+  if (count > 1u) { for (; c < count - 1u; ++c) { if (viewDepth <= lightUbo.cascadeSplit[c]) break; } }
   int s = first + int(c);
   vec4 position = lightUbo.slotVP[s] * fragPosWorld;
   vec3 pC = position.xyz / position.w;
