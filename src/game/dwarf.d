@@ -357,12 +357,13 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 void dwarfTick(ref GameApp app) {
   if(app.world.dwarves is null) return;
   app.pruneJobQueue();
-  // Future TODO: We can optimize the loop, when using a markForRemoval strategy
-  foreach(uid; app.world.dwarves.dwarves.map!(d => d.uid).array.randomShuffle()) {
-    auto i = app.world.dwarves.dwarves.countUntil!(d => d.uid == uid); // Find the dwarf by resolving UID to the slot
-    if(i < 0) continue;
-    app.tickDwarf(app.world.dwarves.dwarves[i]);
+  // rebuild tickOrder when roster size changes
+  if(app.world.dwarves.tickOrder.length != app.world.dwarves.length) {
+    app.world.dwarves.tickOrder.length = app.world.dwarves.length;
+    iota(app.world.dwarves.tickOrder.length).copy(app.world.dwarves.tickOrder[]);
   }
+  app.world.dwarves.tickOrder.randomShuffle();
+  foreach(i; app.world.dwarves.tickOrder) { app.tickDwarf(app.world.dwarves[i]); }
   app.world.syncPathMarkers(app.showPaths);
   app.timed!syncBuildGhosts();
   app.timed!deriveInventory();
