@@ -38,10 +38,8 @@ struct ShadowMap {
   bool[] shadowDescriptorsDirty;
   bool[] staticDirty;
   Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
-  Matrix[NUM_CASCADES] cascadeVP;           /// sun cascade view-proj matrices (owned here, not fake lights)
-  float[NUM_CASCADES] cascadeSplit;         /// per-cascade view-depth upper bound
-  uint cascadeSlot = 0;                     /// base shadow slot for cascade 0
-  
+  Matrix[MAX_SHADOW_MAPS] slotVP;
+
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
   uint staticShadowInstances = 0;           /// Static shadow instances count
@@ -51,7 +49,9 @@ struct ShadowMap {
 struct LightUbo {
   Matrix scene;
   uint nlights;
-};
+  uint[3] _pad;                       /// std140: pad the uint before the mat4[] array to 16 bytes
+  Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
+}
 
 void createShadowMap(ref App app) {
   app.createShadowMapRenderPass(app.shadows.cmd.pass(0), VK_ATTACHMENT_LOAD_OP_CLEAR);
@@ -91,18 +91,6 @@ void makeShadowMap(ref App app, ref ShadowMap map, size_t s, uint size) {
                        VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
   map.cmd.pass(0).framebuffers[s] = app.createFramebuffer(map.cmd.pass(0), [map.images[s].view(0)], size, size, "Static Shadow", s);
   map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.images[s].view(1)], size, size, "Dynamic Shadow", s);
-}
-
-/** Build the sun's N cascade matrices/splits from light 0, without fake lights. */
-void computeCascades(ref App app) {
-  if(app.lights.length == 0) return;
-  Light sun = app.lights[0];                          // copy; we only read .lightSpaceMatrix back out
-  foreach(c; 0 .. NUM_CASCADES) {
-    uint res = app.shadowResolution(sun);
-    app.camera.computeLightSpace(sun, app.shadows.bounds, res, CASCADE_RADIUS[c]);
-    app.shadows.cascadeVP[c]    = sun.lightSpaceMatrix;
-    app.shadows.cascadeSplit[c] = CASCADE_SPLIT[c];
-  }
 }
 
 /** Resize shadow map s to `size`; defers old resources, re-points the descriptor next safe frame. */
@@ -154,7 +142,7 @@ void createShadowMapRenderPass(ref App app, ref RenderPass pass, VkAttachmentLoa
 }
 
 /** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
-void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, uint l, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
+void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
   VkRect2D sc = { extent: { width: ext.width, height: ext.height } };
 
@@ -171,7 +159,8 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
   vkCmdSetViewport(cmd, 0, 1, &vp);
   vkCmdSetScissor(cmd, 0, 1, &sc);
-  vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &l);
+  uint slot = cast(uint)s;
+  vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
 
   foreach(obj; app.objects) {
     if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
@@ -276,7 +265,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
 
 /** Update the shadow mapping UBO */
 void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
-  LightUbo ubo = { scene : Matrix.init, nlights : cast(uint)app.lights.length };
+  LightUbo ubo = { scene: Matrix.init, nlights: cast(uint)app.lights.length };
+  ubo.slotVP[] = app.shadows.slotVP[];
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
 
@@ -293,23 +283,23 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
 
   app.shadows.staticShadowInstances = app.shadows.dynamicShadowInstances = app.shadows.staticRebuilds = app.shadows.activeShadowMaps = 0;
   for(uint l = 0; l < app.lights.length; l++) {
-    int s = cast(int)app.lights[l].cull[1];
-    if(!app.lights[l].enabled || s < 0) continue;
-    app.shadows.activeShadowMaps++;
-
-    auto lFrustum = extractFrustum(app.lights[l].lightSpaceMatrix);
-    pushLabel(cmd, cstr("Shadow RenderPass: %d", l), Colors.lightgray);
-    if(app.shadows.staticDirty[s]) { // Static -> layer 0
-      app.recordCasters(cmd, app.shadows.cmd.pass(0), s, l, lFrustum, app.shadows.images[s].extent, true);
-      app.shadows.slotStaticMatrix[s] = app.lights[l].lightSpaceMatrix;
-      app.shadows.staticDirty[s] = false;
-      app.shadows.staticRebuilds++;
+    int first = cast(int)app.lights[l].cull[1];
+    if(!app.lights[l].enabled || first < 0) continue;
+    uint count = cast(uint)app.lights[l].cull[2];
+    for(uint c = 0; c < count; c++) {
+      uint s = cast(uint)first + c;
+      app.shadows.activeShadowMaps++;
+      auto lFrustum = extractFrustum(app.shadows.slotVP[s]);
+      pushLabel(cmd, cstr("Shadow RenderPass: slot %d", s), Colors.lightgray);
+      if(app.shadows.staticDirty[s]) {
+        app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.images[s].extent, true);
+        app.shadows.staticDirty[s] = false;
+        app.shadows.staticRebuilds++;
+      }
+      app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
+      app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.images[s].extent, false);
+      popLabel(cmd);
     }
-    // Copy
-    app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
-    // Dynamic -> layer 1
-    app.recordCasters(cmd, app.shadows.cmd.pass(1), s, l, lFrustum, app.shadows.images[s].extent, false);
-    popLabel(cmd);
   }
   popLabel(cmd);
   app.shadows.cmd.end(syncIndex);

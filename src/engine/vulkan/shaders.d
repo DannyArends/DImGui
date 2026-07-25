@@ -9,6 +9,7 @@ import devices : getMSAASamples;
 import io : readFile;
 import reflection : convert, reflectShader;
 import ssao : SSAO_KERNEL;
+import shadow : MAX_SHADOW_MAPS;
 import validation : nameVulkanObject;
 
 struct Shader {
@@ -59,6 +60,7 @@ void addCompileMacro(ref App app, string name, string value) {
 
 void addShaderMacros(ref App app) {
   app.addCompileMacro("SSAO_KERNEL", to!string(SSAO_KERNEL));
+  app.addCompileMacro("MAX_SHADOW_MAPS", to!string(MAX_SHADOW_MAPS));
   if(app.getMSAASamples() != VK_SAMPLE_COUNT_1_BIT) { app.addCompileMacro("MSAA", "1"); }
 }
 
