@@ -10,7 +10,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS, NUM_CASCADES, CASCADE_RADIUS, CASCADE_SPLIT;
+import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS, NUM_CASCADES, CASCADE_RADIUS;
 import textures : mapTextures;
 import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -21,7 +21,6 @@ enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
 enum TORCH_HEIGHT = 5.0f;
 
 struct Light {
-  Matrix lightSpaceMatrix;
   float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Position of the light; w==0: directional, w!=0: point/spot
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
   float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
@@ -43,12 +42,12 @@ struct Light {
 }
 
 enum Lights : Light {
-  Sun  = Light(Matrix.init, [50.0f, 80.0f, 50.0f, 0.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 1.0f]),
-  Fill = Light(Matrix.init, [-30.0f, 40.0f, -30.0f, 0.0f], [0.1f, 0.15f, 0.3f, 1.0f], [1.0f, -1.0f, 1.0f, 0.0f], [0.04f, 0.0f, 90.0f, 0.0f]),
-  Red = Light(Matrix.init, [10.0f, 20.0f, 10.0f, 1.0f], [400.0f, 20.0f, 0.0f, 1.0f], [2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
-  Green = Light(Matrix.init, [10.0f, 20.0f, 0.0f, 1.0f], [0.0f, 400.0f, 20.0f, 1.0f], [-3.0f, -9.0f, 3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
-  Blue = Light(Matrix.init, [0.0f, 10.0f, 10.0f, 1.0f], [20.0f, 0.0f, 400.0f, 1.0f], [0.5f, -2.0f, 1.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
-  Bright = Light(Matrix.init, [0.0f, 100.0f, 0.0f, 1.0f], [1000.0f,1000.0f, 1000.0f, 1.0f], [0.2f, -1.0f, 0.2f, 0.0f], [0.0f, 0.1f, 90.0f, 0.0f])
+  Sun  = Light([50.0f, 80.0f, 50.0f, 0.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 1.0f]),
+  Fill = Light([-30.0f, 40.0f, -30.0f, 0.0f], [0.1f, 0.15f, 0.3f, 1.0f], [1.0f, -1.0f, 1.0f, 0.0f], [0.04f, 0.0f, 90.0f, 0.0f]),
+  Red = Light([10.0f, 20.0f, 10.0f, 1.0f], [200.0f, 20.0f, 0.0f, 1.0f], [2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
+  Green = Light([10.0f, 20.0f, 0.0f, 1.0f], [0.0f, 200.0f, 20.0f, 1.0f], [-3.0f, -9.0f, 3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
+  Blue = Light([0.0f, 10.0f, 10.0f, 1.0f], [20.0f, 0.0f, 200.0f, 1.0f], [0.5f, -2.0f, 1.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
+  Bright = Light([0.0f, 100.0f, 0.0f, 1.0f], [1000.0f,1000.0f, 1000.0f, 1.0f], [0.2f, -1.0f, 0.2f, 0.0f], [0.0f, 0.1f, 90.0f, 0.0f])
 };
 
 struct Lighting {
@@ -95,14 +94,13 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension, float radiusOverride = 0.0f) nothrow {
+@nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension, float radiusOverride = 0.0f) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
 
   if(!light.directional) {
     Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), cam.up);
-    light.lightSpaceMatrix = perspective(2 * light.properties[2], 1.0f, 0.1f, size[1]).multiply(v);
-    return;
+    return perspective(2 * light.properties[2], 1.0f, 0.1f, size[1]).multiply(v);
   }
 
   // CSM: cascades stash their half-extent in properties[2] (unused for directional). 0 => full bounds.
@@ -118,7 +116,7 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
 
   float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f));
   Matrix lightView = lookAt(eye, centre, cam.up);
-  light.lightSpaceMatrix = orthogonal(-radius, radius, -radius, radius, 0.0f, depth).multiply(lightView);
+  return orthogonal(-radius, radius, -radius, radius, 0.0f, depth).multiply(lightView);
 }
 
 /** Update light geometries for rendering */
@@ -250,8 +248,7 @@ void computeActiveLighting(ref App app) {
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
       float rad = (count > 1) ? CASCADE_RADIUS[c] : 0.0f;   // 0 => computeLightSpace uses full/point behaviour
-      app.camera.computeLightSpace(light, app.shadows.bounds, res, rad);
-      app.shadows.slotVP[s] = light.lightSpaceMatrix;
+      app.shadows.slotVP[s] = app.camera.computeLightSpace(light, app.shadows.bounds, res, rad);
       if(app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
       app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
       uint before = app.shadows.images[s].extent.width;

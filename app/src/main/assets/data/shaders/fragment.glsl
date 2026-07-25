@@ -78,8 +78,6 @@ void main() {
     /// normalForLighting after bump mapping
     // outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
 
-    /// Shadow cast by light 0
-    // outColor = vec4(calculateShadow(lightSSBO.lights[0].lightProjView * fragPosWorld, 0, 0.05), 1.0); return;
     vec3 surfaceColor = rgb * 0.01;
     bool useShadows = ubo.lightingMode == 2u;
 
