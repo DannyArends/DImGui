@@ -290,9 +290,6 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
     // Dynamic -> layer 1
     app.recordCasters(cmd, app.shadows.cmd.pass(1), s, l, lFrustum, app.shadows.images[s].extent, false);
-    if(app.lights[l].directional) foreach(probe; 0 .. 2) {
-      app.recordCasters(cmd, app.shadows.cmd.pass(1), s, l, lFrustum, app.shadows.images[s].extent, false);
-    }
     popLabel(cmd);
   }
   popLabel(cmd);
