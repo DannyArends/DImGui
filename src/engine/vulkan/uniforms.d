@@ -8,7 +8,7 @@ import engine;
 import buffer : createBuffer, cleanup;
 import quaternion : xyzw;
 import matrix : multiply, rotate, lookAt, perspective;
-import lights : computeLightSpace, LMode;
+import lights : computeLightSpace, LMode, NUM_CASCADES;
 import validation : nameVulkanObject;
 
 struct UniformBufferObject {
@@ -22,6 +22,7 @@ struct UniformBufferObject {
   LMode lMode = LMode.LightsAndShadows;
   uint indexBufferLength;
   float[4] clusterCfg;
+  float[4] cascade;        /// CSM: [cascadeBase, cascadeCount, 0, 0]
 }
 
 struct ParticleUniformBuffer {
@@ -63,7 +64,8 @@ void updateRenderUBO(ref App app, Descriptor d, uint syncIndex) {
     nlights: cast(uint)app.lights.length,
     lMode: cast(LMode)app.lMode,
     indexBufferLength: ("ClusterLights" in app.buffers) ? app.buffers["ClusterLights"].nObjects : 0,
-    clusterCfg: [LIGHT_GRID[2] / logFN, -(LIGHT_GRID[2] * log2(app.camera.nearfar[0])) / logFN, cast(float)app.camera.width, cast(float)app.camera.height]
+    clusterCfg: [LIGHT_GRID[2] / logFN, -(LIGHT_GRID[2] * log2(app.camera.nearfar[0])) / logFN, cast(float)app.camera.width, cast(float)app.camera.height],
+    cascade: [cast(float)app.lights.cascadeBase, cast(float)NUM_CASCADES, 0.0f, 0.0f]
   };
 
   // Adjust for screen orientation so that the world is always up

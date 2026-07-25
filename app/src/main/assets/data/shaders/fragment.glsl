@@ -15,7 +15,8 @@ layout(location = 1) in vec4 fragColor;                 /// Fragment Color
 layout(location = 2) in vec3 fragNormal;                /// Fragment Normal
 layout(location = 3) in vec2 fragTexCoord;              /// Texture coordinates
 layout(location = 4) flat in ivec2 fragInstance;        /// [Mesh, Material]
-layout(location = 5) in mat3 fragTBN;                   /// Fragment: Tangent, Bitangent, Normal matrix
+layout(location = 5) in vec3 fragViewPos;               /// View-space position (froxel lookup)
+layout(location = 6) in mat3 fragTBN;                   /// Fragment: Tangent, Bitangent, Normal matrix
 
 // Fragment output: normal path writes location 0; WBOIT path writes accum(0) + revealage(1)
 layout(location = 0) out vec4 outColor;
@@ -86,13 +87,21 @@ void main() {
     for(int i = 0; i < ubo.nlights; ++i) {
       if(lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
       if(lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
-      surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, useShadows);
+      if(i == 0) {   // CSM: the sun uses cascaded shadows (cascade lights are zero-intensity, contribute nothing here)
+        vec3 amb;
+        vec3 direct = illuminate(lightSSBO.lights[0], rgb, fragPosWorld.xyz, normalForLighting, amb);
+        int dbg = 0;
+        if(useShadows) direct *= calculateShadowCSM(fragPosWorld, -fragViewPos.z, dbg);
+        vec3 tint = (dbg == 0) ? vec3(1.15, 1.0, 0.9) : (dbg == 1) ? vec3(0.9, 1.0, 0.9) : vec3(0.85, 0.9, 1.15); // DEBUG tint: remove line + '* tint' once verified
+        surfaceColor += (amb + direct) * tint;
+      } else {
+        surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, useShadows);
+      }
     }
 
     // Point lights via this fragment's froxel linked list
-    vec4 viewPos = ubo.view * fragPosWorld;
-    vec4 clip = ubo.proj * viewPos;
-    uint cid = froxelIndex((clip.xy / clip.w) * 0.5 + 0.5, -viewPos.z);
+    vec4 clip = ubo.proj * vec4(fragViewPos, 1.0);
+    uint cid = froxelIndex((clip.xy / clip.w) * 0.5 + 0.5, -fragViewPos.z);
 
     for(uint n = head[cid].head; n != NIL; n = indices[n].next) {
       surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, useShadows);

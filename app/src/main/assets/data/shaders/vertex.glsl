@@ -31,7 +31,8 @@ layout(location = 1) out vec4 fragColor;              /// Fragment color
 layout(location = 2) out vec3 fragNormal;             /// Fragment normal
 layout(location = 3) out vec2 fragTexCoord;           /// Texture coordinate
 layout(location = 4) flat out ivec2 fragInstance;     /// [meshID, material override]
-layout(location = 5) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
+layout(location = 5) out vec3 fragViewPos;            /// View-space position (froxel lookup)
+layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
 
 void main() {
   /// Compute bone effects on vertex
@@ -56,6 +57,7 @@ void main() {
 
   if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
     fragPosWorld = worldPos;
+    fragViewPos = (ubo.view * worldPos).xyz;
     bool hasBakedNormal = (meshdef[3] != 0);
     vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * inNormal);
     fragNormal = N;
