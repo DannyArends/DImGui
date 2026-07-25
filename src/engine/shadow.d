@@ -19,8 +19,8 @@ import vector : xyz;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32; // Maximum number of shadown maps, limits budget
 enum uint NUM_CASCADES = 3;
-enum float[3] CASCADE_RADIUS = [24.0f, 64.0f, 160.0f];   /// per-cascade ortho half-extent (TUNE by eye)
-enum float[3] CASCADE_SPLIT  = [30.0f, 90.0f, 1e9f];     /// view-depth upper bound per cascade (TUNE by eye)
+enum float[3] CASCADE_RADIUS = [40.0f, 110.0f, 300.0f];   /// per-cascade ortho half-extent
+enum float[3] CASCADE_SPLIT  = [40.0f, 110.0f, 1e9f];     /// selection radius from lookat; near[c] == radius[c]
 
 struct ShadowMap {
   ImageBuffer[] images;
