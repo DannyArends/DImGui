@@ -45,19 +45,17 @@ float calculateShadow(vec4 position, uint i) {
   return shadowFactor * 0.25;
 }
 
-// CSM: pick the cascade whose split covers viewDepth and sample it. cascade 0 == light 0 (sun).
-// dbgCascade returns which cascade was used (for the debug tint); remove once verified.
-float calculateShadowCSM(vec4 fragPosWorld, float viewDepth, out int dbgCascade) {
+// CSM: pick the cascade whose split covers viewDepth and sample it. cascade 0 == light 0 (sun)
+float calculateShadowCSM(vec4 fragPosWorld, float viewDepth) {
   uint base  = uint(ubo.cascade.x);
   uint count = uint(ubo.cascade.y);
   for (uint c = 0u; c < count; ++c) {
     uint li = (c == 0u) ? 0u : base + (c - 1u);
     if (viewDepth <= lightSSBO.lights[li].cull.z || c == count - 1u) {
-      dbgCascade = int(c);
       return calculateShadow(lightSSBO.lights[li].lightProjView * fragPosWorld, li);
     }
   }
-  dbgCascade = -1; return 1.0;
+  return 1.0;
 }
 
 // Per-light shading: ambient + shadowed direct contribution

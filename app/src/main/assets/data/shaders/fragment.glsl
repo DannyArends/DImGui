@@ -90,10 +90,8 @@ void main() {
       if(i == 0) {   // CSM: the sun uses cascaded shadows (cascade lights are zero-intensity, contribute nothing here)
         vec3 amb;
         vec3 direct = illuminate(lightSSBO.lights[0], rgb, fragPosWorld.xyz, normalForLighting, amb);
-        int dbg = 0;
-        if(useShadows) direct *= calculateShadowCSM(fragPosWorld, -fragViewPos.z, dbg);
-        vec3 tint = (dbg == 0) ? vec3(1.15, 1.0, 0.9) : (dbg == 1) ? vec3(0.9, 1.0, 0.9) : vec3(0.85, 0.9, 1.15); // DEBUG tint: remove line + '* tint' once verified
-        surfaceColor += (amb + direct) * tint;
+        if(useShadows) direct *= calculateShadowCSM(fragPosWorld, -fragViewPos.z);
+        surfaceColor += amb + direct;
       } else {
         surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, useShadows);
       }
