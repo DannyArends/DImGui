@@ -97,7 +97,6 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   uint lightingMode;          /// Show shadows ?
   uint indexBufferLength;     /// Total entries in ClusterLights.indices[]
   vec4 clusterCfg;            /// [sliceScale, sliceBias, screenW, screenH]
-  vec4 cascade;               /// CSM: [cascadeBase, cascadeCount, 0, 0]
 } ubo;
 
 layout(std140, set = 0, binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
