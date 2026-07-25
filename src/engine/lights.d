@@ -19,13 +19,9 @@ import matrix : degree, translate;
 enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
 
 enum TORCH_HEIGHT = 5.0f;
-
-// --- CSM (cascaded shadow maps) spike --------------------------------------
-// sun == cascade 0; NUM_CASCADES-1 extra zero-intensity directional entries carry the far slices.
 enum uint NUM_CASCADES = 3;
 enum float[3] CASCADE_RADIUS = [24.0f, 64.0f, 160.0f];   /// per-cascade ortho half-extent (TUNE by eye)
 enum float[3] CASCADE_SPLIT  = [30.0f, 90.0f, 1e9f];     /// view-depth upper bound per cascade (TUNE by eye)
-// ---------------------------------------------------------------------------
 
 struct Light {
   Matrix lightSpaceMatrix;
