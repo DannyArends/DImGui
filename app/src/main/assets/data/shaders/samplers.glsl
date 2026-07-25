@@ -52,6 +52,7 @@ float calculateShadow(vec4 fragPosWorld, uint i, float viewDepth) {
 vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, float viewDepth, bool useShadows) {
   vec3 ambient;
   vec3 direct = illuminate(lightSSBO.lights[idx], baseColor, fragPosWorld.xyz, normal, ambient);
+
   if (useShadows) { direct *= calculateShadow(fragPosWorld, idx, viewDepth); }
   return(ambient + direct);
 }
