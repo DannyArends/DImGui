@@ -165,7 +165,6 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   foreach(obj; app.objects) {
     if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
     if(obj.box !is null) {
-      if(obj.box.distanceSq(app.lights[l].position.xyz) > app.lights[l].cull[0] * app.lights[l].cull[0]) continue;
       if(!lFrustum.aabbInFrustum(obj.box.wmin, obj.box.wmax)) continue;
     }
     if(obj.isStatic != staticPhase) continue;

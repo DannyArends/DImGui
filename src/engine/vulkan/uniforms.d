@@ -66,7 +66,7 @@ void updateRenderUBO(ref App app, Descriptor d, uint syncIndex) {
     lMode: cast(LMode)app.lMode,
     indexBufferLength: ("ClusterLights" in app.buffers) ? app.buffers["ClusterLights"].nObjects : 0,
     clusterCfg: [LIGHT_GRID[2] / logFN, -(LIGHT_GRID[2] * log2(app.camera.nearfar[0])) / logFN, cast(float)app.camera.width, cast(float)app.camera.height],
-    cascade: [cast(float)app.lights.cascadeBase, cast(float)NUM_CASCADES, 0.0f, 0.0f]
+    cascade: [app.lights.length ? app.lights[0].cull[1] : 0.0f, cast(float)NUM_CASCADES, 0.0f, 0.0f]
   };
 
   // Adjust for screen orientation so that the world is always up

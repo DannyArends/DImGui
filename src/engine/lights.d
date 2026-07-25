@@ -216,8 +216,6 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 
 /** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
 void computeActiveLighting(ref App app) {
-  app.ensureCascades();   // CSM: make sure the extra cascade lights exist / are refreshed
-  app.computeCascades();
   if(app.lights.scoreBuf.length < app.lights.length) app.lights.scoreBuf.length = app.lights.length;
   assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
   if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
@@ -226,11 +224,11 @@ void computeActiveLighting(ref App app) {
   foreach(i, ref light; app.lights) {
     light.computeCone();
     if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
-      light.cull[1 .. 2] = [slot, cast(float)NUM_CASCADES];
+      light.cull[1 .. 3] = [slot, cast(float)NUM_CASCADES];
       slot += NUM_CASCADES;
       score[i] = -1.0f;
     } else {
-      light.cull[1..2] = [-1.0f, 1.0f];
+      light.cull[1..3] = [-1.0f, 1.0f];
       score[i] = light.shadowScore(app.camera.position);
     }
   }
