@@ -10,7 +10,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS;
+import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS, NUM_CASCADES, CASCADE_RADIUS, CASCADE_SPLIT, computeCascades;
 import textures : mapTextures;
 import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -19,9 +19,6 @@ import matrix : degree, translate;
 enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
 
 enum TORCH_HEIGHT = 5.0f;
-enum uint NUM_CASCADES = 3;
-enum float[3] CASCADE_RADIUS = [24.0f, 64.0f, 160.0f];   /// per-cascade ortho half-extent (TUNE by eye)
-enum float[3] CASCADE_SPLIT  = [30.0f, 90.0f, 1e9f];     /// view-depth upper bound per cascade (TUNE by eye)
 
 struct Light {
   Matrix lightSpaceMatrix;
@@ -100,7 +97,7 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
 }
 
 /** Compute lightspace for the provided light */
-@nogc void computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension) nothrow {
+@nogc void computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension, float radiusOverride = 0.0f) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
 
@@ -111,7 +108,7 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   }
 
   // CSM: cascades stash their half-extent in properties[2] (unused for directional). 0 => full bounds.
-  float radius = (light.properties[2] > 0.0f) ? light.properties[2] : size[1];
+  float radius = (radiusOverride > 0.0f) ? radiusOverride : (light.properties[2] > 0.0f) ? light.properties[2] : size[1];
   float depth = size[0] + 2.0f * radius;
   float[3] centre = [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
 
@@ -258,6 +255,7 @@ void ensureCascades(ref App app) {
 /** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
 void computeActiveLighting(ref App app) {
   app.ensureCascades();   // CSM: make sure the extra cascade lights exist / are refreshed
+  app.computeCascades();
   if(app.lights.scoreBuf.length < app.lights.length) app.lights.scoreBuf.length = app.lights.length;
   assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
   if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
