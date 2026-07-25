@@ -62,8 +62,12 @@ float calculateShadowCSM(vec4 fragPosWorld, float viewDepth) {
 vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, float viewDepth, bool useShadows) {
   vec3 ambient;
   vec3 direct = illuminate(lightSSBO.lights[idx], baseColor, fragPosWorld.xyz, normal, ambient);
-  if (useShadows && max(direct.r, max(direct.g, direct.b)) > SHADOW_SKIP) {
-    direct *= (idx == 0u) ? calculateShadowCSM(fragPosWorld, viewDepth) : calculateShadow(lightSSBO.lights[idx].lightProjView * fragPosWorld, idx);
+  if (useShadows) {
+    if (idx == 0u) {
+      direct *= calculateShadowCSM(fragPosWorld, viewDepth);
+    } else if (max(direct.r, max(direct.g, direct.b)) > SHADOW_SKIP) {
+      direct *= calculateShadow(lightSSBO.lights[idx].lightProjView * fragPosWorld, idx);
+    }
   }
   return(ambient + direct);
 }
