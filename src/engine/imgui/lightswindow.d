@@ -24,7 +24,7 @@ void showLightsContent(ref App app, uint font = 0) {
   }
 
   foreach(i, ref Light light; app.lights) {
-    if(i == 0) continue;
+    if(app.lights.cascadesReady && i >= app.lights.cascadeBase) break;
     igPushID_Int(to!int(i));
     bool enabled = app.lights[i].enabled();
     if(igCheckbox("##enabled", &enabled)) {
