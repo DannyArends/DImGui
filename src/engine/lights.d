@@ -244,15 +244,16 @@ void computeActiveLighting(ref App app) {
     int first = cast(int)light.cull[1];
     if(first < 0) continue;
     uint count = cast(uint)light.cull[2];
-    uint res = app.shadowResolution(light);
+    uint resolution = app.shadowResolution(light);
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
-      float rad = (count > 1) ? CASCADE_RADIUS[c] : 0.0f;   // 0 => computeLightSpace uses full/point behaviour
-      app.shadows.slotVP[s] = app.camera.computeLightSpace(light, app.shadows.bounds, res, rad);
+      // For the last cascade, use the camera-derived radius (distance from near to far);
+      float radius = (count > 1) ? ((c == count - 1) ?  app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
+      app.shadows.slotVP[s] = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
       if(app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
       app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
       uint before = app.shadows.images[s].extent.width;
-      app.resizeShadowMap(s, res);
+      app.resizeShadowMap(s, resolution);
       if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;
     }
   }

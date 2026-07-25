@@ -80,12 +80,12 @@ void main() {
 
     vec3 surfaceColor = rgb * 0.01;
     bool useShadows = ubo.lightingMode == 2u;
-
+    float shadowDist = length(fragPosWorld.xz - ubo.shadowCentre.xz);
     // Directional/global lights (position.w == 0, not clustered)
     for(int i = 0; i < ubo.nlights; ++i) {
       if(lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
       if(lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
-      surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, length(fragPosWorld.xyz - ubo.shadowCentre.xyz), useShadows);
+      surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, shadowDist, useShadows);
     }
 
     // Point lights via this fragment's froxel linked list
@@ -93,7 +93,7 @@ void main() {
     uint cid = froxelIndex((clip.xy / clip.w) * 0.5 + 0.5, -fragViewPos.z);
 
     for(uint n = head[cid].head; n != NIL; n = indices[n].next) {
-      surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, length(fragPosWorld.xyz - ubo.shadowCentre.xyz), useShadows);
+      surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, shadowDist, useShadows);
     }
 
     // Screen-space ambient occlusion: opaque only (SDF/transparent geometry has no valid depth, must not receive AO)
