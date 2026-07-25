@@ -12,6 +12,7 @@ class Dwarves : Cylinder {
   Dwarf[] dwarves;
   alias dwarves this;
   int selected = -1;
+  size_t[] tickOrder;
 
   this() {
     super(0.5f, 1.0f, 6);
