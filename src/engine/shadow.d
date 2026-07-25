@@ -51,6 +51,7 @@ struct LightUbo {
   uint nlights;
   uint[3] _pad;                       /// std140: pad the uint before the mat4[] array to 16 bytes
   Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
+  float[4] cascadeSplit;              /// per-cascade view-depth splits (x,y,z used)
 }
 
 void createShadowMap(ref App app) {
@@ -266,6 +267,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
 void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
   LightUbo ubo = { scene: Matrix.init, nlights: cast(uint)app.lights.length };
   ubo.slotVP[] = app.shadows.slotVP[];
+  ubo.cascadeSplit = [CASCADE_SPLIT[0], CASCADE_SPLIT[1], CASCADE_SPLIT[2], 0.0f];
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
 
