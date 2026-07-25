@@ -27,15 +27,22 @@ vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoor
   return(finalNormal);
 }
 
-// Function to calculate the shadow factor
-float calculateShadow(vec4 position, uint i) {
-  int s = int(lightSSBO.lights[i].cull[1]);
-  if (s < 0) return 1.0;
+// Sample light i's shadow. count>1 => cascaded: pick cascade slice by view depth.
+float calculateShadow(vec4 fragPosWorld, uint i, float viewDepth) {
+  int first = int(lightSSBO.lights[i].cull[1]);   // firstSlot
+  if (first < 0) return 1.0;
+  uint count = uint(lightSSBO.lights[i].cull[2]); // cascadeCount (1 for point/spot)
+  uint c = 0u;
+  if (count > 1u) {
+    for (c = 0u; c < count - 1u; ++c) {
+      if (viewDepth <= lightUbo.cascadeSplit[c]) break;
+    }
+  }
+  int s = first + int(c);
+  vec4 position = lightUbo.slotVP[s] * fragPosWorld;
   vec3 pC = position.xyz / position.w;
   pC.xy = pC.xy * 0.5 + 0.5;
-
-  if (pC.x < 0.0 || pC.x > 1.0 || pC.y < 0.0 || pC.y > 1.0 || pC.z < 0.0 || pC.z > 1.0) { return 1.0; }
-
+  if (pC.x < 0.0 || pC.x > 1.0 || pC.y < 0.0 || pC.y > 1.0 || pC.z < 0.0 || pC.z > 1.0) return 1.0;
   float shadowFactor = 0.0;
   vec2 t = vec2(ubo.shadowTexelSize);
   shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2(-0.5, -0.5) * t, pC.z));
@@ -45,30 +52,11 @@ float calculateShadow(vec4 position, uint i) {
   return shadowFactor * 0.25;
 }
 
-// CSM: pick the cascade whose split covers viewDepth and sample it. cascade 0 == light 0 (sun)
-float calculateShadowCSM(vec4 fragPosWorld, float viewDepth) {
-  uint base  = uint(ubo.cascade.x);
-  uint count = uint(ubo.cascade.y);
-  for (uint c = 0u; c < count; ++c) {
-    uint li = (c == 0u) ? 0u : base + (c - 1u);
-    if (viewDepth <= lightSSBO.lights[li].cull.z || c == count - 1u) {
-      return calculateShadow(lightSSBO.lights[li].lightProjView * fragPosWorld, li);
-    }
-  }
-  return 1.0;
-}
-
 // Per-light shading: ambient + shadowed direct contribution
 vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, float viewDepth, bool useShadows) {
   vec3 ambient;
   vec3 direct = illuminate(lightSSBO.lights[idx], baseColor, fragPosWorld.xyz, normal, ambient);
-  if (useShadows) {
-    if (idx == 0u) {
-      direct *= calculateShadowCSM(fragPosWorld, viewDepth);
-    } else if (max(direct.r, max(direct.g, direct.b)) > SHADOW_SKIP) {
-      direct *= calculateShadow(lightSSBO.lights[idx].lightProjView * fragPosWorld, idx);
-    }
-  }
+  if (useShadows) { direct *= calculateShadow(fragPosWorld, idx, viewDepth); }
   return(ambient + direct);
 }
 
