@@ -49,7 +49,7 @@ float calculateShadow(vec4 position, uint i) {
 vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, bool useShadows) {
   vec3 ambient;
   vec3 direct = illuminate(lightSSBO.lights[idx], baseColor, fragPosWorld.xyz, normal, ambient);
-  if (useShadows && max(direct.r, max(direct.g, direct.b)) > SHADOW_SKIP) {
+  if (useShadows) {
     direct *= calculateShadow(lightSSBO.lights[idx].lightProjView * fragPosWorld, idx);
   }
   return(ambient + direct);
