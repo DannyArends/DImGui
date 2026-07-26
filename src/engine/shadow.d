@@ -290,7 +290,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   for(uint l = 0; l < app.lights.length; l++) {
     int first = cast(int)app.lights[l].cull[1];
     if(!app.lights[l].enabled || first < 0) continue;
-    uint count = cast(uint)app.lights[l].cull[2];
+    uint count = app.lights[l].directional ? NUM_CASCADES : 1u;
     for(uint c = 0; c < count; c++) {
       uint s = cast(uint)first + c;
       app.shadows.activeShadowMaps++;
