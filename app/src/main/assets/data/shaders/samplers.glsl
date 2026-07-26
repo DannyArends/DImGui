@@ -83,7 +83,7 @@ vec3 cascadeTint(Light light, float shadowDistance) {
   if (first < 0) return vec3(0.3);                       // no shadow slot -> grey
   uint nSplits = nCascadeSplits(light);
   uint c = 0u;
-  if (nSplits > 1u) { for (; c < nSplits; ++c) { if (shadowDistance <= lightUbo.cascadeSplit[c]) break; } }
+  if (nSplits != 0u) { for (; c < nSplits; ++c) { if (shadowDistance <= lightUbo.cascadeSplit[c]) break; } }
   if (c == 0u) return vec3(1.0, 0.3, 0.3);               // near  = red
   if (c == 1u) return vec3(1.0, 1.0, 0.3);               // mid   = yellow
   if (c == 2u) return vec3(0.3, 1.0, 0.3);               // far   = green
