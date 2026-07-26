@@ -7,8 +7,8 @@ import game;
 
 import widgets : cSlider, setting, infoRow;
 
-static const(float)[] speeds = [0, 1, 2, 4, 8, 16, 32, 64];
-static immutable(char*)[] speedLabels = ["Pause".ptr, "1x".ptr, "2x".ptr, "4x".ptr, "8x".ptr, "16x".ptr, "32x".ptr, "64x".ptr];
+static const(float)[] speeds = [0, 1, 2, 4, 8, 16, 32, 64, 128];
+static immutable(char*)[] speedLabels = ["Pause".ptr, "1x".ptr, "2x".ptr, "4x".ptr, "8x".ptr, "16x".ptr, "32x".ptr, "64x".ptr, "128x".ptr];
 
 /** Show the GUI window for the World */
 void showWorldContent(ref GameApp app, uint font = 0) {
