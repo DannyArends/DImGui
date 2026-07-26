@@ -38,26 +38,30 @@ float sampleSlot(vec4 fragPosWorld, int s) {
   return texture(shadowMap[nonuniformEXT(s)], pC);
 }
 
-float calculateShadow(vec4 fragPosWorld, uint i, float viewDepth) {
-  int first = int(lightSSBO.lights[i].cull[1]);
+uint nCascades(Light light){
+  return ((light.position.w == 0.0) ? uint(light.cull[2]) : 1u) - 1u;
+}
+
+float calculateShadow(vec4 fragPosWorld, Light light, float shadowDistance) {
+  int first = int(light.cull[1]);
   if (first < 0) return 1.0;
-  uint count = (lightSSBO.lights[i].position.w == 0.0) ? uint(lightSSBO.lights[i].cull[2]) : 1u;
+  uint count = nCascades(light);
 
   // single-slot (point/spot): no cascade blend
-  if (count <= 1u) return sampleSlot(fragPosWorld, first);
+  if (count == 0u) return sampleSlot(fragPosWorld, first);
 
   // pick cascade c by distance
   uint c = 0u;
-  for (; c < count - 1u; ++c) { if (viewDepth <= lightUbo.cascadeSplit[c]) break; }
+  for (; c < count; ++c) { if (shadowDistance <= lightUbo.cascadeSplit[c]) break; }
   float shadow = sampleSlot(fragPosWorld, first + int(c));
 
   // blend into the NEXT cascade over a band before this cascade's split, to hide the boundary
-  if (c < count - 1u) {
+  if (c < count) {
     float split = lightUbo.cascadeSplit[c];
     float band  = split * 0.15;                       // blend over the last 15% before the split
-    if (viewDepth > split - band) {
+    if (shadowDistance > split - band) {
       float next = sampleSlot(fragPosWorld, first + int(c) + 1);
-      float t = (viewDepth - (split - band)) / band;  // 0 at band start, 1 at split
+      float t = (shadowDistance - (split - band)) / band;  // 0 at band start, 1 at split
       shadow = mix(shadow, next, clamp(t, 0.0, 1.0));
     }
   }
@@ -65,19 +69,19 @@ float calculateShadow(vec4 fragPosWorld, uint i, float viewDepth) {
 }
 
 // Per-light shading: ambient + shadowed direct contribution
-vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, float viewDepth, bool useShadows) {
+vec3 shadeLight(uint i, vec3 baseColor, vec4 fragPosWorld, vec3 normal, float shadowDistance, bool useShadows) {
   vec3 ambient;
-  vec3 direct = illuminate(lightSSBO.lights[idx], baseColor, fragPosWorld.xyz, normal, ambient);
+  vec3 direct = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normal, ambient);
 
-  if (useShadows) { direct *= calculateShadow(fragPosWorld, idx, viewDepth); }
+  if (useShadows) { direct *= calculateShadow(fragPosWorld, lightSSBO.lights[i], shadowDistance); }
   return(ambient + direct);
 }
 
-// DEBUG: returns the cascade index a fragment selects (mirrors calculateShadow's selection)
-vec3 cascadeTint(uint i, float viewDepth) {
-  int first = int(lightSSBO.lights[i].cull[1]);
+// Returns the cascade index a fragment selects
+vec3 cascadeTint(Light light, float viewDepth) {
+  int first = int(light.cull[1]);
   if (first < 0) return vec3(0.3);                       // no shadow slot -> grey
-  uint count = ((lightSSBO.lights[i].position.w == 0.0) ? uint(lightSSBO.lights[i].cull[2]) : 1u) - 1u;
+  uint count = nCascades(light);
   uint c = 0u;
   if (count > 1u) { for (; c < count; ++c) { if (viewDepth <= lightUbo.cascadeSplit[c]) break; } }
   if (c == 0u) return vec3(1.0, 0.3, 0.3);               // near  = red

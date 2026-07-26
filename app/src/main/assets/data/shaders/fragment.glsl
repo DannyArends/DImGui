@@ -25,11 +25,11 @@ layout(location = 1) out float outRevealage;
 /// Emit final shaded color: standard alpha-over (location 0) or WBOIT accumulation (accum + revealage)
 void writeOutput(vec3 color, float alpha) {
   if (WBOIT) {
-    float d = -(ubo.view * fragPosWorld).z;                              // linear distance from camera
+    float d = -(ubo.view * fragPosWorld).z; // Linear distance from camera
     float zNorm = clamp((log2(d) * ubo.clusterCfg.x + ubo.clusterCfg.y) / float(GRID_Z), 0.0, 1.0);
-    float w = alpha * clamp(0.3 / (1e-5 + pow(zNorm, 4.0)), 1e-2, 3e3);  // near (zNorm→0) weighted high, far low
-    outColor = vec4(color * alpha * w, alpha * w);   // accum: premultiplied, weighted
-    outRevealage = alpha;                            // revealage: blended as product(1-a) via pipeline blend
+    float w = alpha * clamp(0.3 / (1e-5 + pow(zNorm, 4.0)), 1e-2, 3e3); // near (zNorm→0) weighted high, far low
+    outColor = vec4(color * alpha * w, alpha * w); // accum: premultiplied, weighted
+    outRevealage = alpha; // revealage: blended as product(1-a) via pipeline blend
   } else { outColor = vec4(color, alpha); }
 }
 
@@ -79,13 +79,13 @@ void main() {
 
     vec3 surfaceColor = rgb * 0.01;
     bool useShadows = ubo.lightingMode == 2u;
-    float shadowDist = length(fragPosWorld.xz - ubo.shadowCentre.xz);
+    float shadowDistance = length(fragPosWorld.xz - ubo.shadowCentre.xz);
 
     // Directional/global lights (position.w == 0, not clustered)
     for(int i = 0; i < ubo.nlights; ++i) {
       if(lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
       if(lightSSBO.lights[i].position.w != 0.0) continue; // point lights via clusters below
-      surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, shadowDist, useShadows);
+      surfaceColor += shadeLight(uint(i), rgb, fragPosWorld, normalForLighting, shadowDistance, useShadows);
     }
 
     // Point lights via this fragment's froxel linked list
@@ -99,11 +99,11 @@ void main() {
     }
 
     for(uint n = head[cid].head; n != NIL; n = indices[n].next) {
-      surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, shadowDist, useShadows);
+      surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, shadowDistance, useShadows);
     }
 
     if (ubo.lightingMode == 5u) { writeOutput(vec3(fract(fragTexCoord), 0.0), 1.0); return; }
-    if (ubo.lightingMode == 6u) { writeOutput(surfaceColor * ao * cascadeTint(0u, shadowDist), alpha); return; }
+    if (ubo.lightingMode == 6u) { writeOutput(surfaceColor * ao * cascadeTint(lightSSBO.lights[0u], shadowDistance), alpha); return; }
 
     // lightingMode: 3 Lights + Shadows (* SSAO)
     writeOutput(surfaceColor * ao, alpha);
