@@ -96,7 +96,8 @@ void main() {
       surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, shadowDist, useShadows);
     }
 
-    if (ubo.lightingMode == 4u) { writeOutput(surfaceColor * ao * cascadeTint(0u, shadowDist), alpha); return; }
+    if (ubo.lightingMode == 4u) { writeOutput(vec3(fract(fragTexCoord), 0.0), 1.0); return; }
+    if (ubo.lightingMode == 5u) { writeOutput(surfaceColor * ao * cascadeTint(0u, shadowDist), alpha); return; }
 
     // lightingMode: 3 Lights + Shadows (* SSAO)
     writeOutput(surfaceColor * ao, alpha);
