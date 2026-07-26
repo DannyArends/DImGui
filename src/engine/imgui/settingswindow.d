@@ -18,7 +18,7 @@ void showSettingsContent(ref App app, uint font = 0) {
     setting("Verbose", app.verbose, 0u, 2u, 100, app.gui.uiscale);
 
     labelCol("Lighting Mode");
-    const(char)*[] modes = ["Global Illumination", "Lights", "Lights + Shadows", "Debug: Normal", "Debug: UV", "Debug: Cascades"];
+    const(char)*[] modes = ["Global Illumination", "Lights", "Lights + Shadows", "Debug: Normal", "Debug: nLights", "Debug: UV", "Debug: Cascades"];
     int lm = cast(int)app.lMode;
     igPushItemWidth(200 * app.gui.uiscale);
     if(igCombo_Str_arr("##lm", &lm, &modes[0], cast(int)modes.length, -1)) app.lMode = cast(LMode)lm;

@@ -35,13 +35,7 @@ float sampleSlot(vec4 fragPosWorld, int s) {
   vec3 pC = position.xyz / position.w;
   pC.xy = pC.xy * 0.5 + 0.5;
   if (pC.x < 0.0 || pC.x > 1.0 || pC.y < 0.0 || pC.y > 1.0 || pC.z < 0.0 || pC.z > 1.0) return 1.0;
-  vec2 t = vec2(ubo.shadowTexelSize);
-  float sf = 0.0;
-  sf += texture(shadowMap[nonuniformEXT(s)], vec3(pC.xy + vec2(-0.5, -0.5) * t, pC.z));
-  sf += texture(shadowMap[nonuniformEXT(s)], vec3(pC.xy + vec2( 0.5, -0.5) * t, pC.z));
-  sf += texture(shadowMap[nonuniformEXT(s)], vec3(pC.xy + vec2(-0.5,  0.5) * t, pC.z));
-  sf += texture(shadowMap[nonuniformEXT(s)], vec3(pC.xy + vec2( 0.5,  0.5) * t, pC.z));
-  return sf * 0.25;
+  return texture(shadowMap[nonuniformEXT(s)], pC);
 }
 
 float calculateShadow(vec4 fragPosWorld, uint i, float viewDepth) {

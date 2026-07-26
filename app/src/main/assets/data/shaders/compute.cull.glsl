@@ -31,8 +31,9 @@ void main() {
 
   vec2 nx, ny;
   if (depth <= r) {
-    nx = vec2(-1.0, 1.0); 
+    nx = vec2(-1.0, 1.0);
     ny = vec2(-1.0, 1.0);
+    zlo = max(zlo, 0);
   } else {
     nx = projectAxis(cV.x, cV.z, r, ubo.proj[0][0], depth);
     ny = projectAxis(cV.y, cV.z, r, ubo.proj[1][1], depth);

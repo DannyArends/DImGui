@@ -92,12 +92,18 @@ void main() {
     vec4 clip = ubo.proj * vec4(fragViewPos, 1.0);
     uint cid = froxelIndex((clip.xy / clip.w) * 0.5 + 0.5, -fragViewPos.z);
 
+    if (ubo.lightingMode == 4u) {
+      uint lc = 0u;
+      for(uint n = head[cid].head; n != NIL; n = indices[n].next) { lc++; }
+      if(!DEPTH_PASS) { writeOutput(vec3(float(lc)/8.0, 0.0, 0.0), 1.0); return; }
+    }
+
     for(uint n = head[cid].head; n != NIL; n = indices[n].next) {
       surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, shadowDist, useShadows);
     }
 
-    if (ubo.lightingMode == 4u) { writeOutput(vec3(fract(fragTexCoord), 0.0), 1.0); return; }
-    if (ubo.lightingMode == 5u) { writeOutput(surfaceColor * ao * cascadeTint(0u, shadowDist), alpha); return; }
+    if (ubo.lightingMode == 5u) { writeOutput(vec3(fract(fragTexCoord), 0.0), 1.0); return; }
+    if (ubo.lightingMode == 6u) { writeOutput(surfaceColor * ao * cascadeTint(0u, shadowDist), alpha); return; }
 
     // lightingMode: 3 Lights + Shadows (* SSAO)
     writeOutput(surfaceColor * ao, alpha);
