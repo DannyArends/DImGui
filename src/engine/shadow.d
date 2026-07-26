@@ -17,10 +17,10 @@ import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
 import validation : popLabel, pushLabel;
 import vector : xyz;
 
-enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32; // Maximum number of shadown maps, limits budget
-enum uint NUM_CASCADES = 3;
-enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];   /// near cascades 2x split, last radius is camera-derived
-enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];   /// Splits
+enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
+enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
+enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x split, last radius is camera-derived
+enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
 
 struct ShadowMap {
   ImageBuffer[] images;
@@ -271,7 +271,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
 void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
   LightUbo ubo = { scene: Matrix.init, nlights: cast(uint)app.lights.length };
   ubo.slotVP[] = app.shadows.slotVP[];
-  ubo.cascadeSplit = [CASCADE_SPLIT[0], CASCADE_SPLIT[1], CASCADE_SPLIT[2], 0.0f];
+  ubo.cascadeSplit = [CASCADE_SPLIT[0], CASCADE_SPLIT[1], CASCADE_SPLIT[2], cast(float)NUM_CASCADES];
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
 
