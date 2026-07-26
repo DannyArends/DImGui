@@ -35,8 +35,8 @@ float sampleSlot(vec4 fragPosWorld, int s) {
   return texture(shadowMap[nonuniformEXT(s)], pC);
 }
 
-// Number of cascade splits
-uint nCascadeSplits(Light light) { return ((light.position.w == 0.0) ? uint(light.cull[2]) : 1u) - 1u; }
+// Number of interior cascade splits for this light (= cascade count − 1); 0 = point/spot (no cascades)
+uint nCascadeSplits(Light light) { return (light.position.w == 0.0) ? uint(lightUbo.cascadeSplit.w) - 1u : 0u; }
 
 // Sample shadow from cascade shadow map (and blend border)
 float calculateShadow(vec4 fragPosWorld, Light light, float shadowDistance) {

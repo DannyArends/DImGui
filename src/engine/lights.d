@@ -19,6 +19,9 @@ import matrix : degree, translate;
 enum LMode : uint { Global = 0, Lights, LightsAndShadows, Normals, nLights, UV, Cascades }
 
 enum TORCH_HEIGHT = 5.0f;
+enum uint[4] LIGHT_GRID = [16, 9, 16, 0];
+enum uint CLUSTER_COUNT = LIGHT_GRID[0] * LIGHT_GRID[1] * LIGHT_GRID[2];  // 3456
+enum uint NIL = 0xFFFFFFFF;
 
 struct Light {
   float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Position of the light; w==0: directional, w!=0: point/spot
@@ -86,14 +89,14 @@ size_t removeLight(ref App app, size_t index) {
   return((index != last) ? last : size_t.max);
 }
 
-/** Compute the size of the light radius */
+/** Point/spot cull radius: distance where intensity attenuates to cutoff */
 void computeRadius(ref Light l, float cutoff = 0.05f) {
   if (l.directional) { l.cull[0] = float.infinity; return; }
   float maxI = max(l.intensity[0], l.intensity[1], l.intensity[2]);
   l.cull[0]  = sqrt(fmax(0.0f, maxI / cutoff - l.properties[1]));
 }
 
-/** Compute lightspace for the provided light */
+/** Compute lightspace for the provided light. Builds a cascade's light-space matrix: ortho box centred on lookat */
 @nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension, float radiusOverride = 0.0f) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
@@ -222,7 +225,7 @@ void computeActiveLighting(ref App app) {
   foreach(i, ref light; app.lights) {
     light.computeCone();
     if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
-      light.cull[1 .. 3] = [slot, cast(float)NUM_CASCADES];
+      light.cull[1 .. 2] = [slot];
       slot += NUM_CASCADES;
       score[i] = -1.0f;
     } else {
@@ -243,7 +246,7 @@ void computeActiveLighting(ref App app) {
     light.computeRadius();
     int first = cast(int)light.cull[1];
     if(first < 0) continue;
-    uint count = cast(uint)light.cull[2];
+    uint count = light.directional ? NUM_CASCADES : 1u;
     uint resolution = app.shadowResolution(light);
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
