@@ -17,8 +17,26 @@ void main() {
   if (L.properties.w == 0.0) return;   // disabled
   if (L.position.w == 0.0) return;     // directional, handled as global light, not clustered
 
-  vec3 cV = (ubo.view * vec4(L.position.xyz, 1.0)).xyz;   // center in view space
-  float r  = L.cull.x; // radius
+  vec3 cV = (ubo.view * vec4(L.position.xyz, 1.0)).xyz;   // center (cone apex) in view space
+  float r  = L.cull.x;                                    // range
+
+  // Spot lights (cull.z = cosOuter < ~1) only illuminate a cone. Replace the full sphere with the
+  // cone's bounding sphere: tighter, offset toward the cone axis. Point lights keep center+radius.
+  if (L.cull.z < 0.9999) {
+    vec3 axisV = normalize(mat3(ubo.view) * L.direction.xyz);  // cone axis in view space
+    float sinT = sqrt(max(0.0, 1.0 - L.cull.z * L.cull.z));    // sin(half-angle)
+    float baseRadius = r * sinT;                               // radius of cone base disc
+    // bounding sphere of a cone (apex cV, length r along axisV, base radius baseRadius):
+    if (L.cull.z >= 0.70710678) {                             // half-angle <= 45deg: sphere touches apex+base rim
+      float sphR = r * 0.5 / L.cull.z;                        // circumscribed sphere radius
+      cV = cV + axisV * (sphR * L.cull.z);                    // center along axis
+      r  = sphR;
+    } else {                                                  // wide cone: base rim dominates
+      cV = cV + axisV * (r * L.cull.z);                       // center at base plane
+      r  = baseRadius;
+    }
+  }
+
   float depth = -cV.z; // view-space distance (looks down -Z)
   float dmax = depth + r;
 
