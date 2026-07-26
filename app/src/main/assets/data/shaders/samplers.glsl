@@ -6,6 +6,8 @@
 #ifndef SAMPLERS_GLSL
 #define SAMPLERS_GLSL
 
+#extension GL_EXT_nonuniform_qualifier : enable
+
 #define SHADOW_SKIP 0.02
 
 /// Samplers/Images
@@ -20,7 +22,7 @@ layout(binding = BINDING_SSAO) uniform sampler2D ssaoSampler;
 
 // Bump mapped normal
 vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
-  vec3 normalFromMap = texture(textureSampler[fragNid], fragTexCoord).rgb;
+  vec3 normalFromMap = texture(textureSampler[nonuniformEXT(fragNid)], fragTexCoord).rgb;
   normalFromMap = normalize(normalFromMap * 2.0 - 1.0);
 
   vec3 finalNormal = normalize(fragTBN * normalFromMap);

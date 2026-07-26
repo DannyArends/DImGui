@@ -43,13 +43,13 @@ void main() {
 
   // Multiply texture to basecolor & adjust alpha outside of the DEPTH_PASS
   if(!DEPTH_PASS && !(TOPOLOGY == 1) && mat.tid >= 0) {
-    vec4 texSample = texture(textureSampler[mat.tid], fragTexCoord).rgba;
+    vec4 texSample = texture(textureSampler[nonuniformEXT(mat.tid)], fragTexCoord).rgba;
     rgb *= texSample.rgb; alpha = texSample.a;
   }
 
   // If we do alpha testing: Opacity texture alpha & SDF override
   if(ALPHA_TEST) {
-    if (mat.oid >= 0) { alpha = texture(textureSampler[mat.oid], fragTexCoord).a; }
+    if (mat.oid >= 0) { alpha = texture(textureSampler[nonuniformEXT(mat.oid)], fragTexCoord).a; }
     if (SDF) {
       float adj = fwidth(alpha) * 0.1;
       alpha = smoothstep(0.5 - adj, 0.5 + adj, alpha);
