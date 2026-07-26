@@ -31,7 +31,7 @@ struct ShadowMap {
   GraphicsPipeline pipeline;
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  uint dimension = isAndroid ? 1024 : 4096; /// Shadowmap dimension
+  uint dimension = isAndroid ? 1024 : 512; /// Shadowmap dimension
   uint budget = isAndroid ? 4 : 24;         /// Max lights casting shadows per frame (stage 1: first-K)
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
@@ -162,6 +162,11 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   uint slot = cast(uint)s;
   vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
 
+  float slotRadius = (s < NUM_CASCADES) ? CASCADE_RADIUS[s] : CASCADE_RADIUS[0];
+  if(slotRadius <= 0.0f) slotRadius = app.camera.visibleRadius;   // far cascade
+  float scale = CASCADE_RADIUS[0] / slotRadius;                    // 1.0 for cascade 0, smaller for wider cascades
+  vkCmdSetDepthBias(cmd, 3.0f * scale, 0.0f, 4.5f * scale);
+
   foreach(obj; app.objects) {
     if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
     if(obj.box !is null) {
@@ -213,11 +218,11 @@ void createShadowMapGraphicsPipeline(ref App app) {
     viewportCount: 1, scissorCount: 1
   };
 
-  VkDynamicState[2] dynamicStates = [VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR];
+  VkDynamicState[3] dynamicStates = [VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS];
 
   VkPipelineDynamicStateCreateInfo dynamicState = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-    dynamicStateCount: 2, pDynamicStates: dynamicStates.ptr
+    dynamicStateCount: 3, pDynamicStates: dynamicStates.ptr
   };
 
   VkPipelineRasterizationStateCreateInfo rasterizer = {
@@ -228,8 +233,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
     cullMode: VK_CULL_MODE_NONE,
     frontFace: VK_FRONT_FACE_COUNTER_CLOCKWISE,
     depthBiasEnable: VK_TRUE,
-    depthBiasConstantFactor: 3.0f,
-    depthBiasSlopeFactor: 4.5f,
+    depthBiasConstantFactor: 0.0f,
+    depthBiasSlopeFactor: 0.0f,
   };
 
   VkPipelineMultisampleStateCreateInfo multisampling = {

@@ -27,25 +27,45 @@ vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoor
   return(finalNormal);
 }
 
-// Sample light i's shadow. count>1 => cascaded: pick cascade slice by view depth.
-float calculateShadow(vec4 fragPosWorld, uint i, float viewDepth) {
-  int first = int(lightSSBO.lights[i].cull[1]);   // firstSlot
-  if (first < 0) return 1.0;
-  uint count = (lightSSBO.lights[i].position.w == 0.0) ? uint(lightSSBO.lights[i].cull[2]) : 1u;
-  uint c = 0u;
-  if (count > 1u) { for (; c < count - 1u; ++c) { if (viewDepth <= lightUbo.cascadeSplit[c]) break; } }
-  int s = first + int(c);
+// Sample one cascade slot; returns 1.0 (lit) if the fragment falls outside this slot's map.
+float sampleSlot(vec4 fragPosWorld, int s) {
   vec4 position = lightUbo.slotVP[s] * fragPosWorld;
   vec3 pC = position.xyz / position.w;
   pC.xy = pC.xy * 0.5 + 0.5;
   if (pC.x < 0.0 || pC.x > 1.0 || pC.y < 0.0 || pC.y > 1.0 || pC.z < 0.0 || pC.z > 1.0) return 1.0;
-  float shadowFactor = 0.0;
   vec2 t = vec2(ubo.shadowTexelSize);
-  shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2(-0.5, -0.5) * t, pC.z));
-  shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2( 0.5, -0.5) * t, pC.z));
-  shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2(-0.5,  0.5) * t, pC.z));
-  shadowFactor += texture(shadowMap[s], vec3(pC.xy + vec2( 0.5,  0.5) * t, pC.z));
-  return shadowFactor * 0.25;
+  float sf = 0.0;
+  sf += texture(shadowMap[s], vec3(pC.xy + vec2(-0.5, -0.5) * t, pC.z));
+  sf += texture(shadowMap[s], vec3(pC.xy + vec2( 0.5, -0.5) * t, pC.z));
+  sf += texture(shadowMap[s], vec3(pC.xy + vec2(-0.5,  0.5) * t, pC.z));
+  sf += texture(shadowMap[s], vec3(pC.xy + vec2( 0.5,  0.5) * t, pC.z));
+  return sf * 0.25;
+}
+
+float calculateShadow(vec4 fragPosWorld, uint i, float viewDepth) {
+  int first = int(lightSSBO.lights[i].cull[1]);
+  if (first < 0) return 1.0;
+  uint count = (lightSSBO.lights[i].position.w == 0.0) ? uint(lightSSBO.lights[i].cull[2]) : 1u;
+
+  // single-slot (point/spot): no cascade blend
+  if (count <= 1u) return sampleSlot(fragPosWorld, first);
+
+  // pick cascade c by distance
+  uint c = 0u;
+  for (; c < count - 1u; ++c) { if (viewDepth <= lightUbo.cascadeSplit[c]) break; }
+  float shadow = sampleSlot(fragPosWorld, first + int(c));
+
+  // blend into the NEXT cascade over a band before this cascade's split, to hide the boundary
+  if (c < count - 1u) {
+    float split = lightUbo.cascadeSplit[c];
+    float band  = split * 0.15;                       // blend over the last 15% before the split
+    if (viewDepth > split - band) {
+      float next = sampleSlot(fragPosWorld, first + int(c) + 1);
+      float t = (viewDepth - (split - band)) / band;  // 0 at band start, 1 at split
+      shadow = mix(shadow, next, clamp(t, 0.0, 1.0));
+    }
+  }
+  return shadow;
 }
 
 // Per-light shading: ambient + shadowed direct contribution
