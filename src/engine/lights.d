@@ -16,7 +16,7 @@ import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
 import matrix : degree, translate;
 
-enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
+enum LMode : uint { Global = 0, Lights, LightsAndShadows, Normals, Cascades }
 
 enum TORCH_HEIGHT = 5.0f;
 

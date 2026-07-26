@@ -57,4 +57,17 @@ vec3 shadeLight(uint idx, vec3 baseColor, vec4 fragPosWorld, vec3 normal, float 
   return(ambient + direct);
 }
 
+// DEBUG: returns the cascade index a fragment selects (mirrors calculateShadow's selection)
+vec3 cascadeTint(uint i, float viewDepth) {
+  int first = int(lightSSBO.lights[i].cull[1]);
+  if (first < 0) return vec3(0.3);                       // no shadow slot -> grey
+  uint count = (lightSSBO.lights[i].position.w == 0.0) ? uint(lightSSBO.lights[i].cull[2]) : 1u;
+  uint c = 0u;
+  if (count > 1u) { for (; c < count - 1u; ++c) { if (viewDepth <= lightUbo.cascadeSplit[c]) break; } }
+  if (c == 0u) return vec3(1.0, 0.3, 0.3);               // near  = red
+  if (c == 1u) return vec3(0.3, 1.0, 0.3);               // mid   = green
+  if (c == 2u) return vec3(0.3, 0.3, 1.0);               // far   = blue
+  return vec3(1.0, 1.0, 0.3);                            // extra = yellow
+}
+
 #endif // SAMPLERS_GLSL
