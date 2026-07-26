@@ -38,25 +38,25 @@ float sampleSlot(vec4 fragPosWorld, int s) {
   return texture(shadowMap[nonuniformEXT(s)], pC);
 }
 
-uint nCascades(Light light){
+uint nCascadeSplits(Light light){
   return ((light.position.w == 0.0) ? uint(light.cull[2]) : 1u) - 1u;
 }
 
 float calculateShadow(vec4 fragPosWorld, Light light, float shadowDistance) {
   int first = int(light.cull[1]);
   if (first < 0) return 1.0;
-  uint count = nCascades(light);
+  uint nSplits = nCascadeSplits(light);
 
   // single-slot (point/spot): no cascade blend
-  if (count == 0u) return sampleSlot(fragPosWorld, first);
+  if (nSplits == 0u) return sampleSlot(fragPosWorld, first);
 
   // pick cascade c by distance
   uint c = 0u;
-  for (; c < count; ++c) { if (shadowDistance <= lightUbo.cascadeSplit[c]) break; }
+  for (; c < nSplits; ++c) { if (shadowDistance <= lightUbo.cascadeSplit[c]) break; }
   float shadow = sampleSlot(fragPosWorld, first + int(c));
 
   // blend into the NEXT cascade over a band before this cascade's split, to hide the boundary
-  if (c < count) {
+  if (c < nSplits) {
     float split = lightUbo.cascadeSplit[c];
     float band  = split * 0.15;                       // blend over the last 15% before the split
     if (shadowDistance > split - band) {
@@ -78,12 +78,12 @@ vec3 shadeLight(uint i, vec3 baseColor, vec4 fragPosWorld, vec3 normal, float sh
 }
 
 // Returns the cascade index a fragment selects
-vec3 cascadeTint(Light light, float viewDepth) {
+vec3 cascadeTint(Light light, float shadowDistance) {
   int first = int(light.cull[1]);
   if (first < 0) return vec3(0.3);                       // no shadow slot -> grey
-  uint count = nCascades(light);
+  uint nSplits = nCascadeSplits(light);
   uint c = 0u;
-  if (count > 1u) { for (; c < count; ++c) { if (viewDepth <= lightUbo.cascadeSplit[c]) break; } }
+  if (nSplits > 1u) { for (; c < nSplits; ++c) { if (shadowDistance <= lightUbo.cascadeSplit[c]) break; } }
   if (c == 0u) return vec3(1.0, 0.3, 0.3);               // near  = red
   if (c == 1u) return vec3(1.0, 1.0, 0.3);               // mid   = yellow
   if (c == 2u) return vec3(0.3, 1.0, 0.3);               // far   = green

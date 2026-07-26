@@ -48,7 +48,7 @@ struct ShadowMap {
 
 struct LightUbo {
   Matrix scene;
-  float[4] cascadeSplit;              /// per-cascade view-depth splits (x,y,z used)
+  float[4] cascadeSplit;              /// per-cascade shadowDistance splits (x,y,z used)
   Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
   uint nlights;
 }
