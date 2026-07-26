@@ -70,13 +70,12 @@ void main() {
     if(ubo.lightingMode == 0u) { writeOutput(rgb * 0.2 * ao, alpha); return; }
 
     vec3 normalForLighting = normalize(fragNormal);
-    /// Surface normalForLighting
-    //outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
+
     if(NORMAL_MAPPED && mat.nid >= 0) {
       normalForLighting = getBumpedNormal(ubo.position.xyz, fragPosWorld.xyz, mat.nid, fragTexCoord, fragTBN);
     }
-    /// normalForLighting after bump mapping
-    // outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return;
+    /// Debug: Normals For Lighting (after bump mapping)
+    if (ubo.lightingMode == 3u) { outColor = vec4(normalForLighting * 0.5 + 0.5, 1.0); return; }
 
     vec3 surfaceColor = rgb * 0.01;
     bool useShadows = ubo.lightingMode == 2u;
@@ -97,7 +96,9 @@ void main() {
       surfaceColor += shadeLight(indices[n].light, rgb, fragPosWorld, normalForLighting, shadowDist, useShadows);
     }
 
-    // Screen-space ambient occlusion: opaque only (SDF/transparent geometry has no valid depth, must not receive AO)
+    if (ubo.lightingMode == 4u) { writeOutput(surfaceColor * ao * cascadeTint(0u, shadowDist), alpha); return; }
+
+    // lightingMode: 3 Lights + Shadows (* SSAO)
     writeOutput(surfaceColor * ao, alpha);
   }
 }
