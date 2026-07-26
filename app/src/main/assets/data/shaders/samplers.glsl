@@ -23,10 +23,7 @@ layout(binding = BINDING_SSAO) uniform sampler2D ssaoSampler;
 // Bump mapped normal
 vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoord, mat3 fragTBN){
   vec3 normalFromMap = texture(textureSampler[nonuniformEXT(fragNid)], fragTexCoord).rgb;
-  normalFromMap = normalize(normalFromMap * 2.0 - 1.0);
-
-  vec3 finalNormal = normalize(fragTBN * normalFromMap);
-  return(finalNormal);
+  return(normalize(fragTBN * normalize(normalFromMap * 2.0 - 1.0)));
 }
 
 // Sample one cascade slot; returns 1.0 (lit) if the fragment falls outside this slot's map.
@@ -38,10 +35,10 @@ float sampleSlot(vec4 fragPosWorld, int s) {
   return texture(shadowMap[nonuniformEXT(s)], pC);
 }
 
-uint nCascadeSplits(Light light){
-  return ((light.position.w == 0.0) ? uint(light.cull[2]) : 1u) - 1u;
-}
+// Number of cascade splits
+uint nCascadeSplits(Light light) { return ((light.position.w == 0.0) ? uint(light.cull[2]) : 1u) - 1u; }
 
+// Sample shadow from cascade shadow map (and blend border)
 float calculateShadow(vec4 fragPosWorld, Light light, float shadowDistance) {
   int first = int(light.cull[1]);
   if (first < 0) return 1.0;
