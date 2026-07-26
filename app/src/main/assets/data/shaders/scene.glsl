@@ -101,9 +101,9 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
 
 layout(std140, set = 0, binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
   mat4 scene;
-  uint nlights;
+  vec4 cascadeSplit;              /// per-cascade view-depth splits (x,y,z used)
   mat4 slotVP[MAX_SHADOW_MAPS];   /// per-slot view-proj, shared by shadow + scene passes
-  float[4] cascadeSplit;              /// per-cascade view-depth splits (x,y,z used)
+  uint nlights;
 } lightUbo;
 
 #endif // SCENE_GLSL

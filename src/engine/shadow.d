@@ -48,10 +48,9 @@ struct ShadowMap {
 
 struct LightUbo {
   Matrix scene;
-  uint nlights;
-  uint[3] _pad;                       /// std140: pad the uint before the mat4[] array to 16 bytes
-  Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
   float[4] cascadeSplit;              /// per-cascade view-depth splits (x,y,z used)
+  Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
+  uint nlights;
 }
 
 void createShadowMap(ref App app) {

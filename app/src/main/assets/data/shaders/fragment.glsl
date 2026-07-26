@@ -81,6 +81,7 @@ void main() {
     vec3 surfaceColor = rgb * 0.01;
     bool useShadows = ubo.lightingMode == 2u;
     float shadowDist = length(fragPosWorld.xz - ubo.shadowCentre.xz);
+
     // Directional/global lights (position.w == 0, not clustered)
     for(int i = 0; i < ubo.nlights; ++i) {
       if(lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
