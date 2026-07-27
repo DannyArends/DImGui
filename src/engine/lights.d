@@ -260,6 +260,7 @@ void computeActiveLighting(ref App app) {
       if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;
     }
   }
+  foreach(ref light; app.lights) { light.direction = light.direction.xyz.normalize().xyzw(light.direction[3]); }
   app.buffers["LightMatrices"].invalidate();
 
   if(app.hasCompute && "ClusterCounter" in app.buffers) {

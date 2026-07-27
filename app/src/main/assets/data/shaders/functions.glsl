@@ -33,7 +33,7 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, out vec
     if (l > light.cull.x) return vec3(0.0);               // outside cull radius
     s = toLight / l;                                      // reuse length, skip second normalize
     attenuation = 1.0 / (light.properties[1] + l * l);
-    float cosAngle  = dot(-s, normalize(light.direction.xyz));
+    float cosAngle  = dot(-s, light.direction.xyz);
     attenuation    *= smoothstep(light.cull.z, light.cull.w, cosAngle);  // precomputed cosines (see note)
   }
   float sDotN = max(dot(s, normal), 0.0);

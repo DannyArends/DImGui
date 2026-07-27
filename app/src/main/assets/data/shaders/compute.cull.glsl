@@ -21,7 +21,7 @@ BoundSphere lightBoundSphere(Light L) {
   if (L.cull.z >= 0.9999) return BoundSphere(centre, range);   // point light: cull.z ~ 1, no cone
 
   float cosOuter = L.cull.z;
-  vec3 axis = normalize(mat3(ubo.view) * L.direction.xyz); // cone axis, view space
+  vec3 axis = mat3(ubo.view) * L.direction.xyz; // cone axis, view space
 
   if (cosOuter >= 0.70710678) {                                // narrow cone (<=45deg): apex+base rim circumscribe
     float sphere = range * 0.5 / cosOuter;
