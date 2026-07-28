@@ -12,7 +12,10 @@ import geometry : draw, bufferGeometries;
 import ssbo : updateSSBO;
 import matrix : multiply;
 import validation : pushLabel, popLabel, nameVulkanObject;
+import wboit : drawWBOITResolve;
 import window: supportedTopologies;
+
+enum DrawPass : int { Opaque = 0, Transparent = 1 }
 
 /** A recordable command buffer (one per syncIndex); records one or more RenderPass instances. */
 struct CommandBuffer(size_t N){
@@ -41,46 +44,37 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].get(app, Specialization(false, true)));
   for(size_t x = 0; x < app.objects.length; x++) {
-    if(!app.objects[x].isDrawable || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue; // not Drawable, not in Frustum, not Visible
+    if(!app.objects[x].isDrawable || !app.objects[x].inFrustum || !app.objects[x].isVisible) continue;
     if(app.objects[x].hasBoundingBox && app.objects[x].box.isDrawable) app.draw(app.objects[x].box, cmd);
   }
   popLabel(cmd);
 }
 
-/** Draw every visible object of one topology for one pass (0=opaque, 1=transparent); 
- * rebinds the pipeline only when the specialization changed */
-void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, int pass) {
+/** Draw every visible object of one topology for one DrawPass; rebinds the pipeline only when the specialization changed */
+void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, 
+                      DrawPass pass, bool depthPass = false, bool wboit = false) {
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].layout, 0, 1, &set, 0, null);
-  if(pass == 0 && topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST && app.showBounds) app.drawBoundingBoxes(cmd);
 
   Specialization last; bool first = true;
   foreach(obj; app.objects) {
     if(!obj.isTopology(topology) || !obj.isDrawable || !obj.inFrustum || !obj.isVisible) continue;
-    if((pass == 0) != obj.isOpaque) continue;     // pass 0 draws opaque, pass 1 draws transparent
-    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF);
-    pushLabel(cmd, cstr("%s [topo: %d, A=%d, I=%d, S=%d]", obj.geometry(), topology, s.alpha, s.instanced, s.sdf), Colors.lightgray);
+    if(!depthPass && obj.isOpaque && pass == DrawPass.Transparent) continue;  // opaque never in WBOIT
+    if(depthPass && obj.isSDF) continue;
+    auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass, wboit, app.normalMapping && obj.hasNormalMaps);
     if(first || last != s) {
+      if(!first) popLabel(cmd);
+      pushLabel(cmd, cstr("PIPELINE: topo: %d, A=%d, I=%d, S=%d, D=%d", topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
       vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
       last = s; first = false; 
     }
     app.draw(obj, cmd);
-    popLabel(cmd);
   }
+  if(!first) popLabel(cmd);
 }
 
 /** Record scene command buffer: SSBO -> Objects -> Rendering */
 void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   auto cmd = app.sceneCmd.begin(app, app.syncIndex, "Render");
-
-  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("Objects Buffering");
-  app.bufferGeometries(cmd);
-  popLabel(cmd);
-
-  pushLabel(cmd, "SSBO Buffering", Colors.lightgray);
-  if(app.trace) SDL_Log("SSBO Buffering");
-  app.updateDescriptorData(shaders, app.sceneCmd.commands, app.syncIndex);
-  popLabel(cmd);
 
   pushLabel(cmd, "Rendering", Colors.lightgray);
   if(app.trace) SDL_Log("Starting Scene renderpass");
@@ -92,9 +86,19 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
 
   if(app.trace) SDL_Log("Going to draw %d objects to renderBuffer %d", app.objects.length, app.syncIndex);
   auto set = app.sets[Stage.RENDER][app.syncIndex];
-  foreach(pass; 0 .. 2) { // pass 0: opaque, pass 1: transparent
-    foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, pass); }
-  }
+
+  // Subpass 0: Opaque draws
+  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, DrawPass.Opaque); }
+  if(app.showBounds) app.drawBoundingBoxes(cmd);
+
+  // Subpass 1: WBOIT: Accumulation of transparent draws
+  vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
+  foreach(topology; supportedTopologies) { app.drawTopologyPass(cmd, topology, set, DrawPass.Transparent, false, true); }
+
+  // Subpass 2: WBOIT: Resolve into composite
+  vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
+  app.drawWBOITResolve(cmd);
+
   app.sceneCmd.pass.end(cmd);
   popLabel(cmd);
 
@@ -110,9 +114,8 @@ void recordPostCommandBuffer(ref App app) {
 
   app.postCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[0..1]);
 
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline);
-  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                          app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][app.syncIndex], 0, null);
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.pipeline());
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.postProcessPipeline.layout, 0, 1, &app.sets[Stage.POST][app.syncIndex], 0, null);
 
   vkCmdDraw(cmd, 3, 1, 0, 0);
   app.postCmd.pass.end(cmd);
@@ -121,14 +124,44 @@ void recordPostCommandBuffer(ref App app) {
   app.postCmd.end(app.syncIndex);
 }
 
+/** Record the depth pre-pass: opaque geometry, depth-only, into app.depthCmd (feeds SSAO before the lit scene pass). */
+void recordDepthPrePass(ref App app) {
+  auto cmd = app.depthCmd.begin(app, app.syncIndex, "DepthPrePass");
+  pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
+    pushLabel(cmd, "Objects Buffering", Colors.lightgray);
+    if(app.trace) SDL_Log("Objects Buffering");
+    app.bufferGeometries(cmd);
+    popLabel(cmd);
+
+    pushLabel(cmd, "Descriptors & SSBO", Colors.lightgray);
+    app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
+    popLabel(cmd);
+
+    app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
+
+    auto set = app.sets[Stage.RENDER][app.syncIndex];
+    foreach(topology; supportedTopologies) {
+      if(topology !in app.pipelines) continue;
+      app.drawTopologyPass(cmd, topology, set, DrawPass.Opaque, true);
+    }
+
+    app.depthCmd.pass.end(cmd);
+  popLabel(cmd);
+  app.depthCmd.end(app.syncIndex);
+}
+
 void createCommandPools(ref App app) {
-  app.commandPool = app.createCommandPool(app.queueFamily);
-  app.transferPool = app.createCommandPool(app.queueFamily);
+  app.queues.graphics.pool = app.createCommandPool(app.queues.graphics.family);
+  app.queues.transfer.pool = app.createCommandPool(app.queues.transfer.family);
+  app.queues.compute.pool  = app.createCommandPool(app.queues.compute.family);
 
-  app.nameVulkanObject(app.commandPool, toStringz("[COMMANDPOOL] Render"), VK_OBJECT_TYPE_COMMAND_POOL);
-  app.nameVulkanObject(app.transferPool, toStringz("[COMMANDPOOL] Transfer"), VK_OBJECT_TYPE_COMMAND_POOL);
+  app.nameVulkanObject(app.queues.graphics.pool, toStringz("[COMMANDPOOL] Graphics"), VK_OBJECT_TYPE_COMMAND_POOL);
+  app.nameVulkanObject(app.queues.transfer.pool, toStringz("[COMMANDPOOL] Transfer"), VK_OBJECT_TYPE_COMMAND_POOL);
+  app.nameVulkanObject(app.queues.compute.pool,  toStringz("[COMMANDPOOL] Compute"),  VK_OBJECT_TYPE_COMMAND_POOL);
 
-  if(app.verbose) SDL_Log("createCommandPools[family:%d] Queue: %p, Transfer: %p", app.queueFamily, app.commandPool, app.transferPool);
+  if(app.verbose) SDL_Log("createCommandPools gfx[%d]=%p transfer[%d]=%p compute[%d]=%p",
+    app.queues.graphics.family, app.queues.graphics.pool, app.queues.transfer.family, app.queues.transfer.pool,
+    app.queues.compute.family, app.queues.compute.pool);
 }
 
 VkCommandPool createCommandPool(ref App app, uint queueFamilyIndex) {

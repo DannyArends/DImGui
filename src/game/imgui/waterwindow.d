@@ -11,7 +11,7 @@ import tile : getWater, tileBelow, tileAbove, getTileAt;
 /** Read-only water stats + cursor inspection. */
 void showWaterContent(ref GameApp app, uint font = 0) {
   int total = 0, cells = 0, active = 0, wetChunks = 0, visibleWetChunks = 0, dirtyChunks = 0;
-  int instances = 0;
+  int instances = app.world.water is null ? 0 : cast(int)app.world.water.instances.length;
   ubyte maxLvl = 0;
   foreach(coord; app.world.chunks.keys) {
     auto chunk = app.world.chunks[coord];
@@ -19,7 +19,6 @@ void showWaterContent(ref GameApp app, uint font = 0) {
     wetChunks++;
     if(chunk.tiles.inFrustum) visibleWetChunks++;
     if(chunk.waterDirty) dirtyChunks++;
-    instances += cast(int)chunk.waterInstances.length;
     cells += cast(int)chunk.wetCells.length;
     foreach(idx; chunk.wetCells) {
       ubyte l = chunk.waterLevel[idx];
@@ -46,7 +45,7 @@ void showWaterContent(ref GameApp app, uint font = 0) {
     infoRow("Wet cells",     "%d", cells);
     infoRow("Active (sim)",  "%d", active);
     infoRow("Dormant",       "%d", dormant);
-    infoRow("Active %",      "%.1f", activePct);
+    infoRow("Active (perc)", "%.1f", activePct);
     infoRow("Wet chunks",    "%d", wetChunks);
     infoRow("Visible wet",   "%d", visibleWetChunks);
     infoRow("Dirty chunks",  "%d", dirtyChunks);

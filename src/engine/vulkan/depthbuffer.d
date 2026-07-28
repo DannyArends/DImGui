@@ -37,13 +37,42 @@ void createDepthResources(ref App app) {
   VkFormat fmt = app.findDepthFormat();
   if(app.verbose) SDL_Log(" - depthFormat: %d", fmt);
   app.createNamedImage(app.depthBuffer, app.camera.width, app.camera.height, fmt, VK_IMAGE_ASPECT_DEPTH_BIT, "DepthBuffer",
-                       app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+                       app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.image);
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
-  app.transitionImageLayout(cmd, app.depthBuffer.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, fmt);
-  app.endSingleTimeCommands(cmd, app.queue);
+  app.transitionImageLayout(cmd, app.depthBuffer.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, fmt);
+  app.endSingleTimeCommands(cmd, app.gfxQueue);
   if(app.verbose) SDL_Log("Depth resources created");
   app.swapDeletionQueue.add((){ app.cleanup(app.depthBuffer); });
 }
 
+/** Depth-only pre-pass: writes opaque depth up-front so SSAO can run before the main (lit) scene pass. */
+void createDepthPrePass(ref App app) {
+  VkAttachmentReference[2] unusedColorRefs = [
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },  // outColor     (discarded)
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },  // outRevealage (discarded)
+  ];
+  VkAttachmentReference depthRef = { attachment: 0, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+
+  RenderPassInfo info = {
+    attachments: [
+      { format: app.findDepthFormat(), samples: app.getMSAASamples(),
+        loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR, storeOp: VK_ATTACHMENT_STORE_OP_STORE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
+    ],
+    subpasses: [{
+      pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
+      colorAttachmentCount:    2,
+      pColorAttachments:       unusedColorRefs.ptr,
+      pDepthStencilAttachment: &depthRef,
+    }],
+    dependencies: [{
+      srcSubpass:    VK_SUBPASS_EXTERNAL,
+      srcStageMask:  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+      dstStageMask:  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+      dstAccessMask: VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+    }],
+  };
+  app.depthCmd.pass.create(app, info, "DepthPrePass", app.swapDeletionQueue);
+}

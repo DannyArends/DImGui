@@ -16,8 +16,6 @@ enum float NOISE_SCALE = 0.02f;
   return (1.0f - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0f) * 0.5f + 0.5f;
 }
 
-@nogc pure float lerp(float a, float b, float t) nothrow { return a + t * (b - a); }
-
 /** Smooth noise at N dimensional float coords (trilinear interpolated) */
 @nogc pure float smoothNoise(int N = 3)(float[N] p, int seed = 0) nothrow {
   int[N] ip;

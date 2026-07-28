@@ -18,7 +18,7 @@ import input : pollEvents, handleEvents;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shadow : createShadowMap;
-import shaders : createCompiler, loadShaders, RenderShaders, PostProcessShaders;
+import shaders : createCompiler, addShaderMacros, loadShaders, RenderShaders, PostProcessShaders;
 import reflection : createReflectionContext;
 import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
@@ -29,6 +29,7 @@ import timing : timed;
 import validation : createDebugCallback;
 import vulkan : cleanup;
 import window: createOrResizeWindow, checkForResize;
+import wboit : reportWBOITCommitment;
 
 /** Main entry point to the program */
 version (Android) {
@@ -54,8 +55,10 @@ void run(string[] args = null) {
   app.createDebugCallback();                                    /// Hook the debug callback to the validation layer
   app.createLogicalDevice();                                    /// Create a logical device for rendering
   app.getBestColorFormat();                                     /// Figure out the best available color format for HDR
+  app.addShaderMacros();
   app.loadShaders(app.shaders, RenderShaders);                  /// Load the Rendering shaders
   app.loadShaders(app.postProcess, PostProcessShaders);         /// Load the Post-processing shaders
+  app.loadShaders(app.wboit, WBOITShaders);                     /// Load the WBOIT resolve shaders
   app.registerRenderProviders();
   if(app.hasCompute) app.initializeCompute();                   /// Load the compute shader
   app.createShadowMap();                                        /// Create the shadow resources, renderpass, and shader
@@ -89,6 +92,7 @@ void run(string[] args = null) {
     app.timed!presentFrame();                                     /// Show frame
     app.time[LASTFRAME] = app.time[FRAMESTOP];                    /// Remember last time we stopped ?
     app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
+    if(isAndroid && app.totalFramesRendered == 100) app.reportWBOITCommitment();
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
   app.cleanup();

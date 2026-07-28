@@ -3,9 +3,18 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import engine;
+import phobos;
 
 import vector : x, y, z, vMul, vAdd;
+
+/** Reserved lattice coordinates (never valid cells) */
+enum int[3] noTile     = [int.min, 0, 0];
+enum int[3] builtTile  = [int.max, 0, 0];
+enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
+
+/** The six axis-aligned neighbour offsets (±X, ±Y, ±Z) */
+static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+static immutable float[3][6] FACE_TANGENT = [[0,0,1],[0,0,-1],[1,0,0],[1,0,0],[-1,0,0],[1,0,0]];
 
 /** Regular 3D lattice of (possibly non-cubic) cells */
 struct Lattice {
@@ -36,14 +45,6 @@ LatticeMap!(T[uint]) unflatten(T)(const Diff!T[] flat) {
   return(map);
 }
 
-/** Reserved lattice coordinates (never valid cells) */
-enum int[3] noTile     = [int.min, 0, 0];
-enum int[3] builtTile  = [int.max, 0, 0];
-enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
-
-/** The six axis-aligned neighbour offsets (±X, ±Y, ±Z) */
-static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-
 /** Chunk-local linear index to local (x, y, z) coordinate within the chunk */
 @nogc pure int[3] tileCoord(T)(const T l, int i) nothrow { 
   return [i % l.chunkSize, (i / l.chunkSize) % l.chunkHeight, i / (l.chunkSize * l.chunkHeight)];
@@ -56,7 +57,7 @@ static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,
 
 /** World-space float position to the world tile coordinate containing it */
 @nogc pure int[3] worldToTile(T)(const T l, float[3] pos, float yOff = 0.0f) nothrow {
-  return [cast(int)(pos[0] / l.tileSize), cast(int)((pos[1] - l.yOffset - yOff) / l.tileHeight), cast(int)(pos[2] / l.tileSize)];
+  return [cast(int)(pos.x / l.tileSize), cast(int)((pos.y - l.yOffset - yOff) / l.tileHeight), cast(int)(pos.z / l.tileSize)];
 }
 
 /** Chunk-local coordinate to linear per-chunk tile index */
@@ -68,23 +69,20 @@ static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,
 @nogc pure int tileIdx(T)(const T l, const int[3] tile) nothrow { return l.tileIndex(l.localCoord(tile)); }
 
 /** The tile directly below (−Y) */
-@nogc pure int[3] tileBelow(const int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
+@nogc pure int[3] tileBelow(const int[3] tile) nothrow { return [tile.x, tile.y - 1, tile.z]; }
 
 /** The tile directly above (+Y) */
-@nogc pure int[3] tileAbove(const int[3] tile) nothrow { return [tile[0], tile[1] + 1, tile[2]]; }
+@nogc pure int[3] tileAbove(const int[3] tile) nothrow { return [tile.x, tile.y + 1, tile.z]; }
 
 /** True if a chunk-local tile sits on the x or z edge of the chunk (needs cross-chunk neighbour lookup) */
-@nogc pure bool onChunkBoundary(T)(const T l, const int[3] lc) nothrow { return lc[0] == 0 || lc[0] == l.chunkSize-1 || lc[2] == 0 || lc[2] == l.chunkSize-1; }
+@nogc pure bool onChunkBoundary(T)(const T l, const int[3] lc) nothrow { return lc.x == 0 || lc.x == l.chunkSize-1 || lc.z == 0 || lc.z == l.chunkSize-1; }
 
 /** Terrain surface height in tiles for normalised noise height 'h0' within a chunk of 'chunkHeight' */
 @nogc pure int surfaceLevel(float h0, int chunkHeight) nothrow { return cast(int)(h0 * sqrt(h0) * (chunkHeight - 1)); }
 
-/** Floor division (rounds toward -inf) — negative-safe chunk coordinates. */
-@nogc pure int iDiv(int a, int b) nothrow { return((a >= 0) ? a/b : -((-a + b - 1)/b)); }
-
 /** World tile coordinate to the coordinate of the chunk containing it (Y forced to 0; chunks are full-height columns) */
 @nogc pure int[3] chunkCoord(T)(const T l, const int[3] tile) nothrow {
-  return [iDiv(tile[0], l.chunkSize), 0, iDiv(tile[2], l.chunkSize)];
+  return [iDiv(tile.x, l.chunkSize), 0, iDiv(tile.z, l.chunkSize)];
 }
 
 /** Convert a world tile coordinate to its local coordinate within its chunk */

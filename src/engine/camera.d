@@ -6,9 +6,9 @@
 import engine;
 
 import frustum : aabbInFrustum, extractFrustum;
-import matrix : inverse, lookAt, multiply, perspective, rotate, transpose;
+import matrix : inverse, lookAt, radian, multiply, perspective, rotate, transpose;
 import quaternion : angleAxis, normalize, qMul, rotate;
-import vector : normalize, vAdd, vSub, vMul, xyz;
+import vector : normalize, vAdd, vSub, vMul, xyz, magnitude;
 
 /** Camera */
 struct Camera {
@@ -16,7 +16,7 @@ struct Camera {
   alias capabilities this;
 
   float[3]        lookat        = [0.0f, 5.0f, 0.0f];     /// Position in the middle of the screen
-  float[2]        nearfar       = [0.1f, 500.0f];        /// View distances, near [0], far [1]
+  float[2]        nearfar       = [1.0f, 500.0f];         /// View distances, near [0], far [1]
   float[3]        up            = [0.0f, 1.0f, 0.0f];     /// Defined up vector
   float           fov           = 45.0f;                  /// Field of view
   float           speed         =  0.5f;                  /// Movement speed
@@ -40,7 +40,7 @@ struct Camera {
   @property @nogc float[3] down() const nothrow { return [0.0f, -speed, 0.0f]; }
   @property @nogc uint width() const nothrow { return(currentExtent.width); };
   @property @nogc uint height() const nothrow { return(currentExtent.height); };
-  @property float aspectRatio() const nothrow { return(this.width / cast(float) this.height); }
+  @property @nogc float aspectRatio() const nothrow { return(width / cast(float) height); }
   @nogc Matrix orientation() const nothrow {
     float[4] qYaw = angleAxis!float(rotation[0] + 90.0f, [0.0f, 1.0f, 0.0f]);
     float[4] qPitch = angleAxis!float(-rotation[1], [1.0f, 0.0f, 0.0f]);
@@ -49,6 +49,11 @@ struct Camera {
   @property @nogc Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
   @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
   @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
+  @property @nogc float visibleRadius() const nothrow {
+    float fov2 = tan(radian(fov) * 0.5f), far = nearfar[1];
+    float[2] s = [far - distance, far * fov2 * sqrt(1.0f + aspectRatio * aspectRatio)];
+    return s.magnitude();
+  }
   bool delegate(float[3] pos) canMoveTo;
 }
 

@@ -21,7 +21,9 @@ layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, material, unused]
 layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
 layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
-layout(location = 10) in mat4 instance;               /// Instance matrix
+layout(location = 10) in vec4 instanceNormal;         /// baked world normal (instanced faces)
+layout(location = 11) in vec4 instanceTangent;        /// baked world tangent + handedness
+layout(location = 12) in mat4 instance;               /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;           /// Fragment world position
@@ -29,29 +31,21 @@ layout(location = 1) out vec4 fragColor;              /// Fragment color
 layout(location = 2) out vec3 fragNormal;             /// Fragment normal
 layout(location = 3) out vec2 fragTexCoord;           /// Texture coordinate
 layout(location = 4) flat out ivec2 fragInstance;     /// [meshID, material override]
-layout(location = 5) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
+layout(location = 5) out vec3 fragViewPos;            /// View-space position (froxel lookup)
+layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
 
 void main() {
   /// Compute bone effects on vertex
-  vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
-  mat3 normalMatrix = transpose(inverse(mat3(instance)));
+  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights) : vec4(inPosition, 1.0f);
 
   /// Compute our model matrix
-  mat4 model = ubo.scene * instance;
-
-  /// Calculate the world-space normal, bitangent, tangent, and normal matrix
-  vec3 N = normalize(mat3(instance) * inNormal);
-  vec3 T = normalize(mat3(instance) * inTangent.xyz);
-  vec3 B = normalize(cross(N, T)) * inTangent.w;
+  vec4 worldPos = instance * position;
 
   /// World position & point size
-  gl_Position = (ubo.ori * (ubo.proj * ubo.view * model)) * position;
+  gl_Position = ubo.viewProj * worldPos;
   gl_PointSize = 2.0f;
 
-  /// Transfer data to fragment shader
-  fragPosWorld = (model * position);
   fragColor = INSTANCED ? instanceColor : inColor;
-  fragNormal = normalize(normalMatrix * inNormal);
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
   uint meshID = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
@@ -60,6 +54,18 @@ void main() {
     }
   }
   fragInstance = ivec2(meshID, meshdef[2]);
-  fragTBN = mat3(T, B, N); 
+
+  if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
+    fragPosWorld = worldPos;
+    fragViewPos = (ubo.view * worldPos).xyz;
+    bool hasBakedNormal = (meshdef[3] != 0);
+    vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * inNormal);
+    fragNormal = N;
+    if(NORMAL_MAPPED) {
+      vec3 T = hasBakedNormal ? instanceTangent.xyz : normalize(mat3(instance) * inTangent.xyz);
+      vec3 B = normalize(cross(N, T)) * (hasBakedNormal ? instanceTangent.w : inTangent.w);
+      fragTBN = mat3(T, B, N);
+    }
+  }
 }
 

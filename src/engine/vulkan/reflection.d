@@ -10,15 +10,12 @@ import shadow : MAX_SHADOW_MAPS;
 import textures : MAX_TEXTURES, createComputeTexture;
 import uniforms : createUBO;
 
-enum uint[4] LIGHT_GRID = [16, 9, 24, 0];
-enum uint CLUSTER_COUNT = LIGHT_GRID[0] * LIGHT_GRID[1] * LIGHT_GRID[2];  // 3456
-enum uint NIL = 0xFFFFFFFF;
-
 enum spvc_resource_type[const(char)*] types = [
   "Uniform Buffer" : SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,
   "Storage Buffer" : SPVC_RESOURCE_TYPE_STORAGE_BUFFER,
   "Sampled Image" : SPVC_RESOURCE_TYPE_SAMPLED_IMAGE,
   "Storage Image" : SPVC_RESOURCE_TYPE_STORAGE_IMAGE,
+  "Subpass Input" : SPVC_RESOURCE_TYPE_SUBPASS_INPUT,
   "Stage Input" : SPVC_RESOURCE_TYPE_STAGE_INPUT,
   "Stage Output" : SPVC_RESOURCE_TYPE_STAGE_OUTPUT
 ];
@@ -125,15 +122,21 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     if(!descr.count) {
       descr.count = cast(uint)MAX_TEXTURES;
       if(to!string(descr.name) == "shadowMap"){ descr.count = MAX_SHADOW_MAPS; }
-      if(to!string(descr.name) == "hdrSampler"){ descr.count = 1; }
+      if(to!string(descr.name) == "hdrSampler" || to!string(descr.name) == "accumInput" || to!string(descr.name) == "revealInput"){ descr.count = 1; }
     }
     // Resolve image target once at load time (avoids per-frame string dispatch in updateDescriptorSet)
     if(descr.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
       if(to!string(descr.name) == "textureSampler") descr.target = DescriptorTarget.Textures;
-      else if(to!string(descr.name) == "shadowMap") descr.target = DescriptorTarget.Shadow;
-      else if(to!string(descr.name) == "hdrSampler") descr.target = DescriptorTarget.HDR;
+      if(to!string(descr.name) == "shadowMap") descr.target = DescriptorTarget.Shadow;
+      if(to!string(descr.name) == "hdrSampler") descr.target = DescriptorTarget.HDR;
+      if(to!string(descr.name) == "depthSampler") descr.target = DescriptorTarget.Depth;
+      if(to!string(descr.name) == "ssaoSampler") descr.target = DescriptorTarget.SSAO;
     }
     if(descr.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) descr.target = DescriptorTarget.Compute;
+    if(descr.type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
+      if(to!string(descr.name) == "accumInput")  descr.target = DescriptorTarget.WBOITAccum;
+      if(to!string(descr.name) == "revealInput") descr.target = DescriptorTarget.WBOITReveal;
+    }
     if (app.trace) {
       SDL_Log(" - %d x %s: %s of %s layout(set=%u, binding = %u), size: %d", 
               descr.count, type, check(descr.name), check(descr.base), descr.set, descr.binding, descr.bytes);
@@ -152,7 +155,7 @@ void createResources(ref App app, ref Shader[] shaders, string poolID) {
   foreach(ref shader; shaders) {
     foreach(ref d; shader.descriptors) {
       if(auto p = d.base in app.providers) { p.create(app, d); continue; }
-      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ app.createComputeTexture(d);
+      if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE){ app.createComputeTexture(d, shader.path);
       }else if(d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER){ SDL_Log("reflect: no provider for SSBO %s", toStringz(d.base));
       }else if(d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){ SDL_Log("reflect: no provider for UBO %s", toStringz(d.base)); }
     }
@@ -177,6 +180,7 @@ VkDescriptorType convert(spvc_resource_type type) {
     case SPVC_RESOURCE_TYPE_STORAGE_BUFFER: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;
     case SPVC_RESOURCE_TYPE_SAMPLED_IMAGE: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; break;
     case SPVC_RESOURCE_TYPE_STORAGE_IMAGE: return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE; break;
+    case SPVC_RESOURCE_TYPE_SUBPASS_INPUT: return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT; break;
     default: SDL_Log("Error: ShaderResource not recognized"); return cast(VkDescriptorType)(0);
   }
 }

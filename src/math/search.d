@@ -5,6 +5,7 @@
 
 import phobos;
 
+import packedarray : PackedArray;
 import searchnode : PathNode, isEqual, has;
 import vector : euclidean;
 
@@ -17,7 +18,7 @@ struct Search(M, N) {
   size_t goal  = size_t.max;                                /// index into pool: Goal node
   size_t pathptr = size_t.max;                              /// index into pool: pointer to the current node in the path
   N[] pool;                                                 /// stable node storage
-  size_t[] openlist;                                        /// Astar open list: indices into pool
+  PackedArray!size_t openlist;                              /// Astar open list: indices into pool
   size_t[float[3]] closedset;                               /// Astar closed list: indices into pool
   SearchState state = SearchState.NOT_INITIALISED;          /// Astar SearchState
   size_t steps = 0;                                         /// search steps taken
@@ -66,7 +67,11 @@ SearchState step(alias getSuccessors, S)(ref S search) {
   if(search.state != SearchState.SEARCHING) return search.state;
   if(search.openlist.empty() || search.cancel) { search.state = SearchState.FAILED; return search.state; }
 
-  size_t nIdx = search.openlist[0];
+  size_t best = 0;
+  foreach(k; 1 .. search.openlist.length) {
+    if(search.pool[search.openlist[k]].f < search.pool[search.openlist[best]].f) { best = k; }
+  }
+  size_t nIdx = search.openlist[best];
   search.steps++;
 
   if(search.pool[nIdx].isEqual(search.pool[search.goal])) {
@@ -79,35 +84,32 @@ SearchState step(alias getSuccessors, S)(ref S search) {
   auto successors = getSuccessors(search.map, search.pool[nIdx]);
   if (successors.empty()) {
     search.closedset[search.pool[nIdx].position] = nIdx;
-    search.openlist = search.openlist.remove(0);
+    search.openlist.removeAt(best);
     return search.state;
   }
 
   foreach (ref s; successors) {
     float newG = search.pool[nIdx].g + s.cost;
-    size_t i;
-    if ((i = search.openlist.has(search.pool, s)) != size_t.max && search.pool[search.openlist[i]].g <= newG) continue;
+    size_t i = search.openlist.has(search.pool, s);
+    if (i != size_t.max && search.pool[search.openlist[i]].g <= newG) continue;
     if (auto c = s.position in search.closedset) { if(search.pool[*c].g <= newG) continue; search.closedset.remove(s.position); }
     s.parent = nIdx;
     s.g = newG;
     s.h = euclidean(s.position, search.pool[search.goal].position);
-    if(s.isEqual(search.pool[search.goal])) { // accept on generation
+    if(s.isEqual(search.pool[search.goal])) {
       search.pool[search.goal].parent = nIdx;
       search.state = SearchState.SUCCEEDED;
       search.storeRoute(search.goal);
       return search.state;
     }
-    if((i = search.openlist.has(search.pool, s)) != size_t.max) {
-      search.pool[search.openlist[i]] = s;
-    } else {
+    if(i == size_t.max) {
       search.pool ~= s;
       search.openlist ~= search.pool.length - 1;
-    }
+    } else { search.pool[search.openlist[i]] = s; }
   }
 
   search.closedset[search.pool[nIdx].position] = nIdx;
-  search.openlist = search.openlist.remove(0);
-  search.openlist.sort!((a, b) => search.pool[a].f < search.pool[b].f);
+  search.openlist.removeAt(best);
   return search.state;
 }
 

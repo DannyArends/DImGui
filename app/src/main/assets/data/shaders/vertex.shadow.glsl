@@ -7,11 +7,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "functions.glsl"
-
-layout(binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
-  mat4 scene;           /// Scene matrix (currently, just and Identity matrix)
-  uint nlights;         /// Number of actual lights
-} lightUbo;
+#include "scene.glsl"
 
 layout(push_constant) uniform PushConstants {
     uint clight;
@@ -29,5 +25,5 @@ void main() {
   vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
   mat4 model = lightUbo.scene * instance;
   vec4 worldPos = model * position;
-  gl_Position = lightSSBO.lights[pc.clight].lightProjView * worldPos;
+  gl_Position = lightUbo.slotVP[pc.clight] * worldPos;
 }

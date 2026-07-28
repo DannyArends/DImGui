@@ -6,6 +6,7 @@
 #ifndef FUNCTIONS_GLSL
 #define FUNCTIONS_GLSL
 
+#include "specs.glsl"
 #include "scene.glsl"
 
 // Function to calculate vector position after animation
@@ -19,7 +20,7 @@ vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
 }
 
 // ambient returned via out; direct (diffuse) is the return value
-vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 cameraPos, out vec3 ambientOut) {
+vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, out vec3 ambientOut) {
   ambientOut = vec3(0.0);
   if (light.properties.w == 0.0) return vec3(0.0);
   float attenuation = 1.0;
@@ -32,19 +33,12 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, vec3 ca
     if (l > light.cull.x) return vec3(0.0);               // outside cull radius
     s = toLight / l;                                      // reuse length, skip second normalize
     attenuation = 1.0 / (light.properties[1] + l * l);
-    float cosAngle  = dot(-s, normalize(light.direction.xyz));
+    float cosAngle  = dot(-s, light.direction.xyz);
     attenuation    *= smoothstep(light.cull.z, light.cull.w, cosAngle);  // precomputed cosines (see note)
   }
   float sDotN = max(dot(s, normal), 0.0);
   ambientOut  = light.intensity.rgb * baseColor * light.properties[0];
   return light.intensity.rgb * baseColor * sDotN * attenuation;  // direct only
-}
-
-vec3 applyFog(vec3 color, vec3 fragPos, vec3 cameraPos, float fogStart, float fogEnd, vec3 fogColor) {
-  vec2 horizDist = fragPos.xz - cameraPos.xz;  // XZ only, ignore height
-  float dist = length(horizDist);
-  float fogFactor = clamp((fogEnd - dist) / (fogEnd - fogStart), 0.0, 1.0);
-  return mix(fogColor, color, fogFactor);
 }
 
 // Linear froxel index from 3D grid coords — MUST match between cull (write) and fragment (read)

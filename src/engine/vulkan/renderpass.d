@@ -51,39 +51,94 @@ struct RenderPass {
 /** Create a Scene RenderPass object
  * This VkRenderPass setups an image with a: Color, Depth and MSAA ColorResolve attachment */
 void createSceneRenderPass(ref App app) {
-  VkAttachmentReference colorRef   = { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-  VkAttachmentReference resolveRef = { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-  VkAttachmentReference depthRef   = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+  bool msaa = (app.getMSAASamples() != VK_SAMPLE_COUNT_1_BIT);
+  // Subpass 0 (opaque): MSAA color(0) + VK_ATTACHMENT_UNUSED
+  VkAttachmentReference[2] colorRefs = [
+    { attachment: 0, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
+  ];
+  // MSAA: Resolve + VK_ATTACHMENT_UNUSED
+  VkAttachmentReference[2] resolveRefs = [
+    { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+    { attachment: VK_ATTACHMENT_UNUSED, layout: VK_IMAGE_LAYOUT_UNDEFINED },
+  ]; 
+  // Depth Attachement
+  VkAttachmentReference depthRef = { attachment: 2, layout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL };
+
+  // Subpass 1 (transparent WBOIT accumulation): write accum(3) + revealage(4), test depth
+  VkAttachmentReference[2] oitColorRefs = [
+    { attachment: 3, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+    { attachment: 4, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+  ];
+
+  // Subpass 2 (resolve): read accum(3) + revealage(4) as input, composite into resolved(1)
+  VkAttachmentReference[2] oitInputRefs = [
+    { attachment: 3, layout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+    { attachment: 4, layout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+  ];
+  VkAttachmentReference resolveColorRef = { attachment: 1, layout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
   RenderPassInfo info = {
     attachments: [
+      // 0: MSAA: Offscreen buffer
       { format: app.offscreen.format, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
-      { format: app.offscreen.format, samples: VK_SAMPLE_COUNT_1_BIT, loadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+      // 1: MSAA: Resolve
+      { format: app.offscreen.format, samples: VK_SAMPLE_COUNT_1_BIT, loadOp: msaa ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: VK_ATTACHMENT_STORE_OP_STORE,
         stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-      { format: app.findDepthFormat(), samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
-        storeOp: VK_ATTACHMENT_STORE_OP_STORE,
-        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-        finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+      // 2: Depth attachement
+      { format: app.findDepthFormat(), samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_LOAD,
+        storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+        finalLayout: VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
+      // 3: WBOIT: accumulation
+      { format: app.wboit.accumulationFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+        storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+      // 4: WBOIT: revealage
+      { format: app.wboit.revealageFormat, samples: app.getMSAASamples(), loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
+        storeOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, finalLayout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
     ],
-    subpasses: [{
-      pipelineBindPoint:       VK_PIPELINE_BIND_POINT_GRAPHICS,
-      colorAttachmentCount:    1,
-      pColorAttachments:       &colorRef,
-      pDepthStencilAttachment: &depthRef,
-      pResolveAttachments:     &resolveRef
-    }],
-    dependencies: [{
-      srcSubpass:   VK_SUBPASS_EXTERNAL,
-      srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-      dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-      dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-    }],
+    subpasses: [
+      { // 0: opaque (color 0 + VK_ATTACHMENT_UNUSED)
+        pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
+        colorAttachmentCount: 2, pColorAttachments: msaa?colorRefs.ptr: resolveRefs.ptr,
+        pDepthStencilAttachment: &depthRef,
+        pResolveAttachments: msaa?resolveRefs.ptr:null
+      },
+      { // 1: transparent WBOIT accumulation
+        pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
+        colorAttachmentCount: 2, pColorAttachments: oitColorRefs.ptr,
+        pDepthStencilAttachment: &depthRef
+      },
+      { // 2: resolve/composite
+        pipelineBindPoint: VK_PIPELINE_BIND_POINT_GRAPHICS,
+        inputAttachmentCount: 2, pInputAttachments: oitInputRefs.ptr,
+        colorAttachmentCount: 1, pColorAttachments: &resolveColorRef
+      },
+    ],
+    dependencies: [
+      { // external -> 0: color output ordering (as before)
+        srcSubpass: VK_SUBPASS_EXTERNAL, dstSubpass: 0, srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+      }, { // 0 -> 1: transparent accumulation runs after opaque color/depth
+        srcSubpass: 0, dstSubpass: 1,
+        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, dstAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
+      }, { // 1 -> 2: resolve reads accum/revealage as input attachments (must be BY_REGION)
+        srcSubpass: 1, dstSubpass: 2,
+        srcStageMask: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, srcAccessMask: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        dstStageMask: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, dstAccessMask: VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+        dependencyFlags: VK_DEPENDENCY_BY_REGION_BIT
+      },
+    ],
   };
   app.sceneCmd.pass.create(app, info, "Scene", app.swapDeletionQueue);
 }

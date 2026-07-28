@@ -5,8 +5,11 @@
 
 import engine;
 
+import devices : getMSAASamples;
 import io : readFile;
 import reflection : convert, reflectShader;
+import ssao : SSAO_KERNEL;
+import shadow : MAX_SHADOW_MAPS;
 import validation : nameVulkanObject;
 
 struct Shader {
@@ -29,6 +32,11 @@ struct Specialization {
   bool alpha = true;
   bool instanced = false;
   bool sdf = false;
+  bool ssao = true;
+  bool animated = false;
+  bool depthPass = false;
+  bool wboit = false;
+  bool normalMapping = false;
 }
 
 struct ShaderDef {
@@ -38,12 +46,22 @@ struct ShaderDef {
 
 ShaderDef[] RenderShaders = [ShaderDef("data/shaders/vertex.glsl", shaderc_glsl_vertex_shader), 
                              ShaderDef("data/shaders/fragment.glsl", shaderc_glsl_fragment_shader)];
-ShaderDef[] PostProcessShaders = [ShaderDef("data/shaders/postvertex.glsl", shaderc_glsl_vertex_shader), 
-                                  ShaderDef("data/shaders/postfragment.glsl", shaderc_glsl_fragment_shader)];
+ShaderDef[] PostProcessShaders = [ShaderDef("data/shaders/vertex.post.glsl", shaderc_glsl_vertex_shader), 
+                                  ShaderDef("data/shaders/fragment.post.glsl", shaderc_glsl_fragment_shader)];
 
 struct IncluderContext {
   char[][string] includedFiles;
   bool verbose = false;
+}
+
+void addCompileMacro(ref App app, string name, string value) {
+  shaderc_compile_options_add_macro_definition(app.options, toStringz(name), name.length, toStringz(value), value.length);
+}
+
+void addShaderMacros(ref App app) {
+  app.addCompileMacro("SSAO_KERNEL", to!string(SSAO_KERNEL));
+  app.addCompileMacro("MAX_SHADOW_MAPS", to!string(MAX_SHADOW_MAPS));
+  if(app.getMSAASamples() != VK_SAMPLE_COUNT_1_BIT) { app.addCompileMacro("MSAA", "1"); }
 }
 
 /** Create the ShaderC compiler */
@@ -58,6 +76,7 @@ void createCompiler(ref App app) {
     abort();
   }
   shaderc_compile_options_set_generate_debug_info(app.options);
+  shaderc_compile_options_set_optimization_level(app.options, shaderc_optimization_level_performance);
   shaderc_compile_options_set_include_callbacks(app.options, &includeResolve, &includeRelease, cast(void*)&app.includeContext);
 
   app.mainDeletionQueue.add((){
@@ -159,20 +178,33 @@ struct ShaderStage {
 }
 
 /** Build pipeline stage infos from shaders, using pipeline Topology and Specialization structure */
-ShaderStage createStageInfo(Shader[] shaders, VkPrimitiveTopology topology, Specialization s) {
+ShaderStage createStageInfo(ref App app, Shader[] shaders, VkPrimitiveTopology topology, Specialization s) {
   ShaderStage stage;
   stage.flags = [ topology, s.alpha ? VK_TRUE : VK_FALSE, 
                   s.instanced ? VK_TRUE : VK_FALSE, 
                   LIGHT_GRID[0], LIGHT_GRID[1], LIGHT_GRID[2], 
-                  s.sdf ? VK_TRUE : VK_FALSE ];
+                  s.sdf ? VK_TRUE : VK_FALSE,
+                  s.ssao ? VK_TRUE : VK_FALSE,
+                  s.animated ? VK_TRUE : VK_FALSE,
+                  s.depthPass ? VK_TRUE : VK_FALSE,
+                  s.wboit ? VK_TRUE : VK_FALSE,
+                  s.normalMapping ? VK_TRUE : VK_FALSE,
+                  cast(uint)app.getMSAASamples()
+                  ];
   stage.mapEntry = [
-    VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),  // LINE : fragment
-    VkSpecializationMapEntry(1, 1*uint.sizeof, uint.sizeof),  // ALPHA_TEST : fragment
-    VkSpecializationMapEntry(2, 2*uint.sizeof, uint.sizeof),  // INSTANCED  : vertex
-    VkSpecializationMapEntry(3, 3*uint.sizeof, uint.sizeof),  // GRID_X : compute & fragment
-    VkSpecializationMapEntry(4, 4*uint.sizeof, uint.sizeof),  // GRID_Y : compute & fragment
-    VkSpecializationMapEntry(5, 5*uint.sizeof, uint.sizeof),  // GRID_Z : compute & fragment
-    VkSpecializationMapEntry(6, 6*uint.sizeof, uint.sizeof),  // SDF : fragment
+    VkSpecializationMapEntry(0, 0*uint.sizeof, uint.sizeof),    // LINE : fragment
+    VkSpecializationMapEntry(1, 1*uint.sizeof, uint.sizeof),    // ALPHA_TEST : fragment
+    VkSpecializationMapEntry(2, 2*uint.sizeof, uint.sizeof),    // INSTANCED  : vertex
+    VkSpecializationMapEntry(3, 3*uint.sizeof, uint.sizeof),    // GRID_X : compute & fragment
+    VkSpecializationMapEntry(4, 4*uint.sizeof, uint.sizeof),    // GRID_Y : compute & fragment
+    VkSpecializationMapEntry(5, 5*uint.sizeof, uint.sizeof),    // GRID_Z : compute & fragment
+    VkSpecializationMapEntry(6, 6*uint.sizeof, uint.sizeof),    // SDF : fragment
+    VkSpecializationMapEntry(7, 7*uint.sizeof, uint.sizeof),    // SSAO : post fragment
+    VkSpecializationMapEntry(8, 8*uint.sizeof, uint.sizeof),    // ANIMATED : vertex
+    VkSpecializationMapEntry(9, 9*uint.sizeof, uint.sizeof),    // DEPTHPASS : vertex
+    VkSpecializationMapEntry(10, 10*uint.sizeof, uint.sizeof),  // WBOIT : fragment
+    VkSpecializationMapEntry(11, 11*uint.sizeof, uint.sizeof),  // NORMAL_MAPPED : fragment
+    VkSpecializationMapEntry(12, 12*uint.sizeof, uint.sizeof),  // MSAA_SAMPLES
   ];
   stage.specInfo = new VkSpecializationInfo(cast(uint)stage.mapEntry.length, stage.mapEntry.ptr, stage.flags.length * uint.sizeof, stage.flags.ptr);
 

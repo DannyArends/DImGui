@@ -8,15 +8,18 @@ public import structures;
 
 import sdl : SDL_WINDOW_MINIMIZED;
 
-enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS"};
+enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS", RESOLVE = "RESOLVE"};
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 
 /** Main application structure, TODOs:
-  1) Figure out a way to sort transparant objects (and instances) relative to the camera for correct rendering
-  2) Alpha blending fix: Also a prerequisite for nice bloom on transparent emissive
-  3) Bloom/HDR: scaffolding is there, for a big visual improvement
-  4) GPU-driven indirect draw (probably not possible, due to how our pipeline works)
+  - Bloom/HDR: scaffolding is there, for a big visual improvement
+  - GPU-driven indirect draw (probably not possible, due to how our pipeline works)
+  - Screen space ambient occlusion (SSAO) [DONE]
+  - - Future: Bilateral blur pass
+  - Cascaded shadow maps for the Sun Shadows
+  - Screen-space reflections on water
+  - Chunk/object LOD
 */
 struct App {
   SDL_Window* window;
@@ -32,10 +35,12 @@ struct App {
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 2, 0 )
   };
 
-  VkClearValue[3] clearValue = [ 
-    {{ float32: [0.5f, 0.2f, 0.1f, 1.0f] }}, 
-    {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }}, 
-    { depthStencil : VkClearDepthStencilValue(1.0f, 0) } 
+  VkClearValue[5] clearValue = [ 
+    {{ float32: [0.5f, 0.2f, 0.1f, 1.0f] }},              // 0: MSAA color (CLEAR)
+    {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }},              // 1: resolved (DONT_CARE: value unused)
+    { depthStencil : VkClearDepthStencilValue(1.0f, 0) }, // 2: depth (LOAD: value unused)
+    {{ float32: [0.0f, 0.0f, 0.0f, 0.0f] }},              // 3: WBOIT accumulation: CLEAR (0,0,0,0)
+    {{ float32: [1.0f, 0.0f, 0.0f, 0.0f] }},              // 4: WBOIT revealage: CLEAR 1.0
   ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
@@ -55,6 +60,7 @@ struct App {
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
   WorldText worldText;                                                          /// All 3D text
   ShadowMap shadows;                                                            /// ShadowMap object
+  WBOIT wboit;                                                                  /// Weighted-blended OIT
   DescriptorProvider[string] providers;                                         /// GPU resource creator
 
   VkSampler sampler;
@@ -82,11 +88,19 @@ struct App {
   VkInstance instance = null;
   SupportedFeatures supported;
   VkPhysicalDevice[] physicalDevices;
+  VramUsage vramLedger;                                                         /// Running VRAM total accumulated
 
   VkDevice device = null;                                                       /// Vulkan device
-  VkQueue queue = null;                                                         /// Render Queue
-  VkQueue transfer = null;                                                      /// Transfer Queue
+  Queues queues;                                                                /// Graphics / Compute / Transfer queues
 
+  // Back-compat aliases so existing call sites keep working
+  @property @nogc VkQueue gfxQueue() nothrow { return queues.graphics.queue; }
+  @property @nogc VkQueue transferQueue() nothrow { return queues.transfer.queue; }
+  @property @nogc VkQueue computeQueue() nothrow { return queues.compute.queue; }
+  @property @nogc VkCommandPool commandPool() nothrow { return queues.graphics.pool; }   // graphics pool (back-compat)
+  @property @nogc VkCommandPool transferPool() nothrow { return queues.transfer.pool; }  // transfer pool (back-compat)
+  @property @nogc VkCommandPool computePool() nothrow { return queues.compute.pool; }    // compute pool
+  
   VkDescriptorPool[string] pools;                                               /// Descriptor pools (IMGUI, COMPUTE, RENDER)
   VkDescriptorSetLayout[string] layouts;                                        /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
   VkDescriptorSet[][string] sets;                                               /// Descriptor sets for (IMGUI, RENDER, N x computeShader.PATH)
@@ -97,8 +111,6 @@ struct App {
   VkSurfaceFormatKHR offscreen;                                                 /// Format used for MSAA / offscreen rendering
   VkSurfaceFormatKHR present;                                                   /// Swapchain format
   VkSwapchainKHR swapChain = null;                                              /// Our SwapChain
-  VkCommandPool commandPool = null;                                             /// Our Rendering Command Pool
-  VkCommandPool transferPool = null;                                            /// Our Texture Transfer Pool
 
   // Per frame resources (reset when rebuilding the swapchain)
   Sync[] sync = null;
@@ -106,6 +118,7 @@ struct App {
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
+  CommandBuffer!1 depthCmd;                                                       /// Depth-only pre-pass
   CommandBuffer!1 sceneCmd;                                                       /// Scene commandbuffer
   CommandBuffer!1 postCmd;                                                        /// Post-process commandbuffer
   CommandBuffer!1 imguiCmd;                                                       /// ImGui commandbuffer
@@ -117,7 +130,7 @@ struct App {
 
   // Sync and Frame Tracking
   uint selectedDevice = 0;                                                      /// Device selected for rendering
-  uint queueFamily = uint.max;                                                  /// Current GFX queueFamily used
+  @property @nogc uint queueFamily() nothrow const { return queues.graphics.family; }  /// Graphics family (back-compat)
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
   float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
@@ -131,13 +144,15 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool enableValidation = true;                                                 /// Should validation be enabled ?
-  bool nameVulkanObjects = false;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
+  bool enableValidation = true;                                                /// Should validation be enabled ?
+  bool nameVulkanObjects = true;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
   bool showPaths = false;                                                       /// Show pathfinding
   bool showRays = false;                                                        /// Show rays
-  LMode lMode = isAndroid ? LMode.Lights : LMode.LightsAndShadows;              /// Allow shadows to be disabled
+  LMode lMode = LMode.LightsAndShadows;                                         /// Allow shadows to be disabled
+  bool useSSAO = true;                                                          /// Screen space ambient occlusion ?
+  bool normalMapping = false;                                                   /// Do normal mapping ?
   bool disco = false;                                                           /// Disco mode
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint clusterCapacity = CLUSTER_COUNT;                                         /// Froxel light index capacity, grows on overflow

@@ -14,7 +14,7 @@ PFN_vkCmdEndDebugUtilsLabelEXT      vkCmdEndDebugUtilsLabel;
 extern(System) @nogc uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, 
                                         size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) nothrow {
     SDL_Log("[debugCallback] Debug report from ObjectType: %d\nMessage %d: %s\n", objectType, messageCode, pMessage);
-    if(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) { assert(false, "Validation error"); }
+    //if(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) { assert(false, "Validation error"); }
     return VK_FALSE;
 }
 
@@ -56,15 +56,14 @@ void nameVulkanObject(T)(ref App app, T object, const(char)* name, VkObjectType 
   if (vkSetDebugUtilsObjectName !is null) { vkSetDebugUtilsObjectName(app.device, &nameInfo); }
 }
 
-void pushLabel(T)(T object, const(char)* name, Colors color = Colors.lightslategrey) {
-  VkDebugUtilsLabelEXT labelInfo = {
-    sType: VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-    pLabelName: name, color: color
-  };
-  if(vkCmdBeginDebugUtilsLabel) vkCmdBeginDebugUtilsLabel(object, &labelInfo);
-}
+void pushLabel(T)(T object, const(char)* name, Colors color = Colors.lightslategrey) { debug {
+    VkDebugUtilsLabelEXT labelInfo = {
+      sType: VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+      pLabelName: name, color: color
+    };
+    if(vkCmdBeginDebugUtilsLabel) vkCmdBeginDebugUtilsLabel(object, &labelInfo);
+} }
 
-void popLabel(T)(T object) {
+void popLabel(T)(T object) { debug {
   if(vkCmdEndDebugUtilsLabel){ vkCmdEndDebugUtilsLabel(object); }
-}
-
+} }

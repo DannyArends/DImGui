@@ -229,7 +229,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
 /** Clear and regenerate every feature's instances and tile penalties across all loaded chunks. */
 void rebuildAllFeatures(ref GameApp app) {
   app.world.data.tilePenalties = null;
-  foreach(ref mesh; app.world.vegetation.meshes.values) mesh.instances = [];
+  foreach(ref mesh; app.world.vegetation.meshes.values) mesh.instances.reset();
   foreach(ref ft; features) {
     foreach(coord, ref chunkFeatures; app.world.vegetation[ft.name]){
       if(coord !in app.world.chunks) continue;
