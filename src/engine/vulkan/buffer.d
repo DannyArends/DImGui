@@ -49,6 +49,7 @@ struct GeometryBuffer(T = ubyte) {
   @property @nogc bool needsBuffer() nothrow const { return(data.length > 0 && (vb.length == 0 || !buffered)); }
   @property @nogc bool drawable() nothrow const { return(vb.length > 0 && data.length > 0); }
   @nogc uint count(uint idx) nothrow const { return(idx < size.length ? cast(uint)(size[idx] / T.sizeof) : 0); }
+  @nogc uint slot(uint sync) nothrow const { return(vb.length ? sync % cast(uint)vb.length : 0); }
 }
 
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
@@ -180,6 +181,24 @@ void releaseStaging(T)(ref App app, ref GeometryBuffer!T buffer) {
   buffer.staging = null;
 }
 
+/** Collapse device copies to one once all have converged; the extras are freed after in-flight frames drain. */
+void shrinkCopies(T)(ref App app, ref GeometryBuffer!T buffer) {
+  if(buffer.vb.length <= 1) return;
+  VkBuffer[] oldVb = buffer.vb[1 .. $].dup;
+  VkDeviceMemory[] oldVbM = buffer.vbM[1 .. $].dup;
+  buffer.vb = buffer.vb[0 .. 1];
+  buffer.vbM = buffer.vbM[0 .. 1];
+  auto deadline = app.totalFramesRendered + app.framesInFlight;
+  app.bufferDeletionQueue.add((bool force) @nogc nothrow {
+    if(!force && app.totalFramesRendered < deadline) return(false);
+    foreach(i; 0 .. oldVb.length) {
+      if(oldVb[i])  vkDestroyBuffer(app.device, oldVb[i], app.allocator);
+      if(oldVbM[i]) vkFreeMemory(app.device, oldVbM[i], app.allocator);
+    }
+    return(true);
+  });
+}
+
 /** (Re)create staging if it was released but the buffer needs uploading again. No-op when present. */
 void ensureStaging(T)(ref App app, ref GeometryBuffer!T buffer) {
   if(buffer.staging.length == app.framesInFlight && buffer.staging[0].buffer) return;
@@ -214,6 +233,8 @@ void toGPU(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffe
               VkMemoryPropertyFlagBits properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
   if(!buffer.needsBuffer) return;
   if(app.trace) SDL_Log("toGPU: Transferring %d x %d = %d bytes", T.sizeof, buffer.items.length, T.sizeof * buffer.items.length);
+  if(buffer.vb.length > 0 && buffer.vb.length < app.framesInFlight) buffer.capacity = 0;  // a settled (1-copy) buffer went dirty: regrow to framesInFlight
   if(app.allocateBuffer(buffer, usage, properties)) app.nameGeometryBuffer(buffer, type, name);
   app.uploadBuffer(buffer, cmdBuffer);
+  if(buffer.buffered && buffer.vb.length > 1) app.shrinkCopies(buffer);   // every copy now holds identical data: keep one, retire the rest
 }
