@@ -41,10 +41,13 @@ void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, ui
 /** Create framebuffers for Rendering, Post-processing, and ImGui, for each SwapChain ImageView 
  * with appropriate Color and Depth attachements */
 void createFramebuffers(ref App app) {
-  auto sceneViews  = iota(app.imageCount).map!(i => [app.offscreenHDR.view, app.resolvedHDR.view, app.depthBuffer.view]).array;
+  auto depthViews  = iota(app.imageCount).map!(i => [app.depthBuffer.view]).array;
+  auto sceneViews  = iota(app.imageCount).map!(i => [app.offscreenHDR.view, app.resolvedHDR.view, app.depthBuffer.view,
+                                                     app.wboit.accumulation.view, app.wboit.revealage.view]).array;
   auto postViews   = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
   auto imguiViews  = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
 
+  app.create(app.depthCmd.pass, depthViews, app.camera.width, app.camera.height, "DepthPrePass", app.swapDeletionQueue);
   app.create(app.sceneCmd.pass, sceneViews, app.camera.width, app.camera.height, "Render", app.swapDeletionQueue);
   app.create(app.postCmd.pass, postViews, app.camera.width, app.camera.height, "Post-process", app.swapDeletionQueue);
   app.create(app.imguiCmd.pass, imguiViews, app.camera.width, app.camera.height, "ImGui", app.swapDeletionQueue);

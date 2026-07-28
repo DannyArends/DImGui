@@ -16,15 +16,18 @@ import vector : x,y,z;
   return false;
 }
 
-@nogc pure bool onChunkBoundary(T)(const T wd, const int[3] lc) nothrow {
+@nogc pure bool onChunkBoundary(T)(const ref T wd, const int[3] lc) nothrow {
   return lc[0] == 0 || lc[0] == wd.chunkSize-1 || lc[2] == 0 || lc[2] == wd.chunkSize-1;
 }
 
 /** Water level (0..WATER_MAX) at a world tile; 0 if chunk not loaded or out of range */
-@nogc int getWater(const World world, const int[3] tile) nothrow {
+@nogc int getWater(const ref World world, const int[3] tile) nothrow {
   if(tile[1] < 0 || tile[1] >= world.chunkHeight) return 0;
   auto p = world.chunkCoord(tile) in world.chunks;
-  return p is null ? 0 : (*p).waterLevel[world.tileIdx(tile)];
+  if(p is null) return 0;
+  int idx = world.tileIdx(tile);
+  if(idx < 0 || idx >= (*p).waterLevel.length) return 0;   // reject out-of-range tile index
+  return (*p).waterLevel[idx];
 }
 
 /** Wake a cell and its 6 neighbours so the sim re-evaluates them next tick. */
@@ -51,6 +54,7 @@ void setWater(ref World world, const int[3] tile, ubyte level, bool wake = true)
   if(coord !in world.chunks) return;
   int idx = world.tileIdx(tile);
   auto chunk = world.chunks[coord];
+  if(idx < 0 || idx >= chunk.waterLevel.length) return;   // guard: reject out-of-range tile index
   if(level == 0) chunk.active.remove(idx);
   ubyte old = chunk.waterLevel[idx];
   if(old == level) return;
@@ -63,7 +67,7 @@ void setWater(ref World world, const int[3] tile, ubyte level, bool wake = true)
 }
 
 /** True if all 6 neighbours of interior tile i are solid (caller guarantees i is not on a boundary) */
-@nogc pure bool isBuried(T)(const T wd, const ResourceType[] types, int i, int[3] lc) nothrow {
+@nogc pure bool isBuried(T)(const ref T wd, const ResourceType[] types, int i, int[3] lc) nothrow {
   if (lc[1] == 0 || lc[1] >= wd.chunkHeight-1) return false;
   int dy = wd.chunkSize, dz = wd.chunkHeight * wd.chunkSize;
   return types[i-1]  != ResourceType.None && types[i+1]  != ResourceType.None &&
@@ -92,8 +96,8 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
   }
   app.world.paths.pending = [];
   app.invalidatePaths(tile);
-  app.shadows.staticDirty[] = true;
-  if(newType == ResourceType.None) app.world.activate(tile);   // mined out: wake neighbouring water to flow in
+  app.shadows.staticPending[] = true;
+  if(newType == ResourceType.None) { app.world.activate(tile); }   // mined out: wake neighbouring water to flow in
 }
 
 @nogc pure int[3] tileBelow(const int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
@@ -101,7 +105,7 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
 
 /** Resolve a neighbour of local (lx,ly,lz) in `chunk` by offset (dx,dy,dz) to (out chunk, out idx).
     In-chunk: pure integer offset, no hash. Boundary: one chunk-pointer hop. False if out of loaded world. */
-@nogc bool neighbourAt(const World world, const int[3] coord, const int[3] lc, const int[3] offset, out int[3] nCoord, out int nidx) nothrow {
+@nogc bool neighbourAt(const ref World world, const int[3] coord, const int[3] lc, const int[3] offset, out int[3] nCoord, out int nidx) nothrow {
   int S = world.chunkSize, Hh = world.chunkHeight;
   int ny = lc.y + offset.y;
   if(ny < 0 || ny >= Hh) return false;
@@ -116,7 +120,7 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
 }
 
 /** Determine the tile type at a world coordinate from noise, no chunk data required */
-@nogc pure ResourceType getTile(T)(const T wd, const int[3] wc) nothrow {
+@nogc pure ResourceType getTile(T)(const ref T wd, const int[3] wc) nothrow {
   float h0 = noise2D(wc.x, wc.z, wd.seed[0]);
   int surface = surfaceLevel(h0, wd.chunkHeight);
   if (wc.y > surface) return ResourceType.None;
@@ -125,26 +129,26 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
   return heightToResource(h0, noise2D(wc.x, wc.z, wd.seed[1]));
 }
 
-@nogc pure int surfaceAt(T)(const T wd, int x, int y, int z) nothrow {
+@nogc pure int surfaceAt(T)(const ref T wd, int x, int y, int z) nothrow {
   int ns = surfaceLevel(noise2D(x, z, wd.seed[0]), wd.chunkHeight);
   if((wd.chunkCoord([x, y, z]) in wd.diffs) is null) return y < ns ? y : ns;
   while(y > 0 && wd.getTileAt([x, y, z]) == ResourceType.None){ y--; }
   return y;
 }
 
-@nogc pure bool isPassable(T)(const T wd, int[3] wc) nothrow {
+@nogc pure bool isPassable(T)(const ref T wd, int[3] wc) nothrow {
   if(wc[1] <= 0 || wc[1] >= wd.chunkHeight){ return(false); }
   return wd.getTileAt(wc) == ResourceType.None;
 }
 
 /** True if the world tile is solid (computed from noise); below-world counts as solid, above-world as air */
-@nogc pure bool isSolid(T)(const T wd, const int[3] wc) nothrow {
+@nogc pure bool isSolid(T)(const ref T wd, const int[3] wc) nothrow {
   if (wc[1] < 0) return true; // below world = solid (cull face)
   if (wc[1] >= wd.chunkHeight) return false; // above world = air (expose face)
   return(wd.getTileAt(wc) != ResourceType.None);
 }
 
-@nogc int[3] landingTile(const World world, int[3] tile) nothrow {
+@nogc int[3] landingTile(const ref World world, int[3] tile) nothrow {
   int landTileY = world.surfaceAt(tile[0], tile[1] - 1, tile[2]);
   return [tile[0], landTileY + 1, tile[2]];
 }
@@ -154,17 +158,17 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
   return(tile[0] == minedTile[0] && tile[2] == minedTile[2] && tile[1] >= minedTile[1]);
 }
 
-@nogc pure bool isStandable(T)(const T wd, const int[3] tile) nothrow {
+@nogc pure bool isStandable(T)(const ref T wd, const int[3] tile) nothrow {
   return(wd.isPassable(tile) && wd.getTileAt(tileBelow(tile)) != ResourceType.None && wd.getTileAt(tileBelow(tile)).traversable);
 }
 
-@nogc pure bool hasStandableNeighbour(T)(const T wd, int[3] tile) nothrow {
+@nogc pure bool hasStandableNeighbour(T)(const ref T wd, int[3] tile) nothrow {
   auto n = tileNeighbours(tile);
   foreach(i; [0,1,4,5]) { if(wd.isStandable(n[i])) return true; }
   return false;
 }
 
-@nogc int[3] standableNeighbour(const World world, const int[3] tile) nothrow {
+@nogc int[3] standableNeighbour(const ref World world, const int[3] tile) nothrow {
   foreach(o; FACE_OFFSETS) {
     int[3] n = [tile[0]+o[0], tile[1]+o[1], tile[2]+o[2]];
     if(world.isStandable(n)) return n;
@@ -172,7 +176,7 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
   return noTile;
 }
 
-pure PathNode[] getSuccessors(T)(const T wd, PathNode parent) {
+pure PathNode[] getSuccessors(T)(const ref T wd, PathNode parent) {
   PathNode[] successors;
   auto pt = wd.worldToTile(parent.position);
   foreach(dir; [[1,0],[-1,0],[0,1],[0,-1]]) {
@@ -193,7 +197,7 @@ pure PathNode[] getSuccessors(T)(const T wd, PathNode parent) {
 
 /** Tile type at a world coordinate. For loaded chunks reads the resolved grid (diffs baked in,
  *  kept in sync by setTile); otherwise falls back to the diff overlay, then to raw noise. */
-@nogc pure ResourceType getTileAt(T)(const T wd, const int[3] tile) nothrow {
+@nogc pure ResourceType getTileAt(T)(const ref T wd, const int[3] tile) nothrow {
   int[3] coord = wd.chunkCoord(tile);
   int idx = wd.tileIdx(tile);
   static if(is(typeof(wd.chunks))) {  // Fast path: World keeps a per-voxel grid per loaded chunk

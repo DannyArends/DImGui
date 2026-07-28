@@ -10,6 +10,7 @@ import boundingbox : computeBoundingBox;
 import textures : idx;
 import mesh : logMesh;
 import normals : computeNormals, computeTangents;
+import validation : pushLabel, popLabel;
 
 shared uint guid = 1;
 
@@ -59,11 +60,13 @@ class Geometry {
   bool castShadow = true;                           /// Boolean flag
 
   @property bool isSDF() nothrow { return(geometry !is null && geometry() == "Text"); }
+  @property bool isAnimated() nothrow { return(geometry !is null && animations.length > 0); }
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null; }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
+  @property bool hasNormalMaps() const nothrow { foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return true; } } return false; }
 
   @nogc void initInstanced(string delegate() nothrow name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
@@ -172,11 +175,13 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   if(!object.isDrawable()) return;
 
   VkDeviceSize offset = 0;
+  pushLabel(cmd, cstr("DRAW: %s", object.geometry()), Colors.lightgray);
 
-  vkCmdBindVertexBuffers(cmd, VERTEX, 1, cast(VkBuffer*)&object.vertices.vb[app.syncIndex], &offset);
-  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[app.syncIndex], &offset);
-  vkCmdBindIndexBuffer(cmd, cast(VkBuffer)object.indices.vb[app.syncIndex], 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, cast(VkBuffer*)&object.vertices.vb[object.vertices.slot(app.syncIndex)], &offset);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[object.instances.slot(app.syncIndex)], &offset);
+  vkCmdBindIndexBuffer(cmd, cast(VkBuffer)object.indices.vb[object.indices.slot(app.syncIndex)], 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, object.indices.count(app.syncIndex), object.instances.count(app.syncIndex), 0, 0, 0);
+  popLabel(cmd);
   if(app.trace) SDL_Log("[%s]: DONE", toStringz(object.geometry()));
 }

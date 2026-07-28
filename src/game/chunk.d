@@ -26,12 +26,13 @@ struct ChunkData {
   ubyte[] waterLevel;                                       /// 0 = none, 1..6 = depth; parallel to tileTypes
   SparseSet wetCells;                                       /// indices where waterLevel > 0
   SparseSet active;                                         /// parallel to waterLevel; true = needs simulating. Always implies waterLevel[i] > 0.
+  SparseSet touched;                                        /// local indices written this sim tick (dense, hash-free; cleared each tick)
+  ubyte[] waterNext;                                        /// per-tick pending level (parallel to waterLevel); valid only at `touched` indices
   bool waterDirty = false;                                  /// Water dirty ?
   float[3][] tileBmin;                                      /// Per-tile AABB minimum (narrow-phase picking)
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
-  DrawInstance[] waterInstances;                            /// GPU instances for all visible water faces
   int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
   Feature[][string] featureData;                            /// Chunk Features
 }
@@ -87,11 +88,7 @@ void addTileBounds(ref ChunkData data, float[3] lo, float[3] hi, int i, size_t f
 /** Generate tile face instances, AABB, and pick data with neighbour culling */
 void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
   float ts = wd.tileSize, th = wd.tileHeight;
-  data.tileInstances.reserve(wd.tileCount);
-  data.tileIndices.reserve(wd.tileCount);
-  data.tileBmin.reserve(wd.chunkSize * wd.chunkSize);
-  data.tileBmax.reserve(wd.chunkSize * wd.chunkSize);
-  data.pickIndices.reserve(wd.chunkSize * wd.chunkSize);
+
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == ResourceType.None) continue;
     auto lc = wd.tileCoord(i);
@@ -108,7 +105,7 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
         exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
       } else { exposed = !wd.isSolid(neighbours[f]); }
       if (!exposed) continue;
-      data.tileInstances ~= DrawInstance(faceData(f, px, py, pz, ts, th), cast(int)data.tileTypes[i]);
+      data.tileInstances ~= DrawInstance(faceData(f, px,py,pz, ts,th), cast(int)data.tileTypes[i], f);
       data.tileIndices ~= i;
     }
     data.addTileBounds([px - ts/2, py - th/2, pz - ts/2], [px + ts/2, py + th/2, pz + ts/2], i, faceStart);
@@ -121,6 +118,8 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   data.waterLevel.length = data.tileTypes.length;   // all zero = no water
   data.wetCells.init(data.tileTypes.length);
   data.active.init(data.tileTypes.length);
+  data.waterNext.length = data.tileTypes.length;
+  data.touched.init(data.tileTypes.length);
   if(auto wm = coord in wd.waterDiffs){
     foreach(idx, lvl; *wm) {
       data.waterLevel[cast(int)idx] = lvl;
@@ -169,7 +168,6 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
     chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
-    chunk.waterInstances = app.world.chunks[data.coord].waterInstances;
     app.world.chunks[data.coord].deAllocate = true;
   } else { app.objects ~= chunk.tiles; }
   app.objects ~= chunk;

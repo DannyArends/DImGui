@@ -49,7 +49,7 @@ void addTiles(ref World world, const(int[3])[] tiles, ToolMode mode) {
 /** Update Orchestrator */
 void syncBuildGhosts(ref GameApp app) {
   if(app.world.inventory is null) return;
-  app.world.inventory.instances = [];
+  app.world.inventory.instances.reset();
   app.world.data.tilePenalties = null;
 
   auto buildTiles = app.world.activeTiles("Building");

@@ -49,7 +49,7 @@ Android Studio via `app/jni/CMakeLists.txt`. Open the project in Android Studio 
 ### Compile D code into libmain.so
  
 ```
-dub build --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force
+dub build --build=release --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force
 ```
  
 ### Install on device

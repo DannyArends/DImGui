@@ -15,8 +15,7 @@ import views : createImageView, createLayerViews;
 
 enum MAX_TEXTURES = 512;
 
-@nogc ImTextureRef ImTextureRefFromID(ulong tex_id) nothrow { ImTextureRef tex_ref = { null, cast(ImTextureID)tex_id }; return(tex_ref); }
-
+/** A GPU texture: source surface, backing image, and its ImGui descriptor handle */
 struct Texture {
   string path;
   uint width = 0;
@@ -41,12 +40,14 @@ struct Texture {
   }
 }
 
+/** A texture uploaded to the GPU but awaiting its transfer fence before it's ready */
 struct PendingTexture {
   Texture texture;
   SingleTimeCommand cmdBuffer;
   GPUAllocation staging;
 }
 
+/** Registry of loaded textures plus the pending-upload queue */
 struct Textures {
   Texture[] textures;                         /// Textures
   PendingTexture[] pending;                   /// Textures submitted to GPU but not yet confirmed ready
@@ -54,6 +55,16 @@ struct Textures {
   alias textures this;
 }
 
+/** Wrap a raw texture id in an ImGui ImTextureRef */
+@nogc ImTextureRef ImTextureRefFromID(ulong tex_id) nothrow { ImTextureRef tex_ref = { null, cast(ImTextureID)tex_id }; return(tex_ref); }
+
+/** DeAllocate a Texture: free its ImGui descriptor set first, then the backing image */
+@nogc void cleanup(ref App app, ref Texture texture) nothrow {
+  if(texture.imID) { vkFreeDescriptorSets(app.device, app.pools[Stage.IMGUI], 1, &texture.imID); texture.imID = null; }
+  app.cleanup(texture.buffer);
+}
+
+/** Check file extension to determine if something is a texture */
 bool isTexture(string path){
   if(extension(path) == ".jpg") return(true);
   if(extension(path) == ".png") return(true);
@@ -68,6 +79,24 @@ void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
     surface = adapted;
     if(verbose > 1) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel));
   }
+}
+
+/** VRAM cap for a texture's longest side; data maps (AO/normal/rough) tolerate half the albedo resolution. */
+int textureCap(string path) {
+  int cap = isAndroid ? 1024 : 2048;
+  foreach(suffix; ["_Ao", "_ao", "_Nor", "_nor", "_normal", "_Rough", "_rough", "_Metal", "_metal"]) { if(path.indexOf(suffix) >= 0) return(cap / 2); }
+  return(cap);
+}
+
+/** Downscale an oversized surface in place to fit maxDim on its longest side (preserves aspect). */
+void clampSurface(ref SDL_Surface* surface, int maxDim) {
+  int m = (surface.w > surface.h) ? surface.w : surface.h;
+  if(m <= maxDim) return;
+  float s = cast(float)maxDim / m;
+  int nw = cast(int)(surface.w * s + 0.5f); if(nw < 1) nw = 1;
+  int nh = cast(int)(surface.h * s + 0.5f); if(nh < 1) nh = 1;
+  SDL_Surface* scaled = SDL_ScaleSurface(surface, nw, nh, SDL_SCALEMODE_LINEAR);
+  if(scaled) { SDL_DestroySurface(surface); surface = scaled; }
 }
 
 /** Create a 1x1 white SDL_Surface */
@@ -114,10 +143,10 @@ void checkPendingTextures(ref App app) {
   return(besthit);
 }
 
+/** Upload a texture on a single-time command buffer and queue it as pending until its transfer fence signals */
 void transferTextureAsync(ref App app, ref Texture texture) {
-  bool needsGraphics = texture.mipLevels > 1;
-  auto pool  = needsGraphics ? app.commandPool : app.transferPool;
-  auto queue = needsGraphics ? app.queue : app.transfer;
+  auto pool = app.commandPool;
+  auto queue = app.gfxQueue;
 
   SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(pool, true);
   GPUAllocation staging;
@@ -133,13 +162,16 @@ void transferTextureAsync(ref App app, ref Texture texture) {
   app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }
 
+/** Resolve a material's texture of the given type to a registered texture index (-1 if none) */
 int getTexture(ref App app, AMat material, aiTextureType type = aiTextureType_DIFFUSE){
   if (type in material.textures) { return(idx(app.textures, material.textures[type])); }
   return(-1);
 }
 
+/** Resolve texture indices for every object's materials */
 void mapTextures(ref App app) { for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); } }
 
+/** Resolve texture indices for one object's mesh materials */
 void mapTextures(ref App app, ref Geometry object) {
   foreach (ref mesh; object.meshes) {
     if(mesh.mid < 0 || mesh.mat < 0) continue;
@@ -153,6 +185,7 @@ void mapTextures(ref App app, ref Geometry object) {
   }
 }
 
+/** Once a texture's upload lands on the current frame, remap materials and refresh the render descriptor set */
 void updateTextures(ref App app) {
   bool needsUpdate = false;
   size_t nPending = app.textures.pending.length;
@@ -175,6 +208,7 @@ void updateTextures(ref App app) {
   }
 }
 
+/** Upload a texture's pixels to a device-local image: staging buffer into copy into generate mipmaps */
 void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUAllocation staging, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
   app.createBuffer(&staging.buffer, &staging.memory, texture.surface.imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   app.nameVulkanObject(staging.buffer, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);
@@ -206,7 +240,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUA
 }
 
 /** Create a blank, camera-sized texture that a compute shader can write into (no pixel data — pure GPU storage) */
-void createComputeTexture(ref App app, Descriptor descriptor) {
+void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath = "") {
   VkImageUsageFlags usage;
   usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -214,20 +248,26 @@ void createComputeTexture(ref App app, Descriptor descriptor) {
   usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
   usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-  Texture texture = Texture(path : descriptor.name, width: app.camera.width, height: app.camera.height);
+  uint w = app.camera.width, h = app.camera.height;
+  if(auto p = shaderPath in app.compute.passes) { if(p.resolution) { auto r = p.resolution(app); w = r[0]; h = r[1]; } }
+  Texture texture = Texture(path : descriptor.name, width: w, height: h);
 
   app.createNamedImage(texture, texture.width, texture.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
                         VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
   app.transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  app.endSingleTimeCommands(cmd, app.queue);
+  app.endSingleTimeCommands(cmd, app.gfxQueue);
 
   if(app.verbose) SDL_Log("Create compute texture %p, view: %p", texture.image, texture.view);
   app.registerTexture(texture);
 
-  app.textures ~= texture;
-  app.mainDeletionQueue.add((){ app.cleanup(texture); });
+  int existing = app.textures.idx(texture.path);
+  if(existing >= 0) { // overwrite existing in place so idx() stays stable
+    app.textures[existing] = texture;
+  }else{ app.textures ~= texture; }
+
+  app.swapDeletionQueue.add((){ app.cleanup(texture); });
 }
 
 /** 'Register' a texture in the ImGui DescriptorSet */
@@ -251,4 +291,3 @@ void registerTexture(ref App app, ref Texture texture) {
   }];
   vkUpdateDescriptorSets(app.device, 1, &descriptorWrites[0], 0, null);
 }
-

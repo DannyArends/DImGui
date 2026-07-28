@@ -135,7 +135,7 @@ void initializeImGui(ref App app){
     PhysicalDevice : app.physicalDevice,
     Device : app.device,
     QueueFamily : app.queueFamily,
-    Queue : app.queue,
+    Queue : app.gfxQueue,
     DescriptorPool : app.pools[Stage.IMGUI],
     Allocator : app.allocator,
     MinImageCount : app.imageCount,
@@ -163,7 +163,7 @@ void initializeImGui(ref App app){
 void recordImGuiCommandBuffer(ref App app) {
   auto cmd = app.imguiCmd.begin(app, app.syncIndex, "ImGui");
 
-  pushLabel(cmd, "ImGui", Colors.lightgray);
+  pushLabel(cmd, "ImGui", Colors.darkgray);
 
   // Render UI - must be called before begin() so rotation is applied before GPU submission
   ImDrawData* drawData = app.renderGUI();
@@ -181,31 +181,37 @@ void recordImGuiCommandBuffer(ref App app) {
 /** Rotate all ImGui vertices to handle Vulkan pre-rotation on Android.
  *  ImGui lays out in DisplaySize space. We remap into extentW x extentH framebuffer. */
 version(Android) {
-  ImVec2 remapPoint(float x, float y, float dW, float dH, float W, float H, VkSurfaceTransformFlagBitsKHR t) {
-    if (t & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR)  return ImVec2((1.0f - y/dH)*W, (x/dW)*H);
-    if (t & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) return ImVec2((y/dH)*W, (1.0f - x/dW)*H);
-    if (t & VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR) return ImVec2((1.0f - x/dW)*W, (1.0f - y/dH)*H);
-    return ImVec2(x, y);
-  }
-
   void rotateImGui(ImDrawData* drawData, VkSurfaceTransformFlagBitsKHR transform, uint extentW, uint extentH) {
     if (transform == VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) return;
-    float W = cast(float)extentW, H = cast(float)extentH;
-    float dW = drawData.DisplaySize.x, dH = drawData.DisplaySize.y;
+    immutable float W = cast(float)extentW, H = cast(float)extentH;
+    immutable float dW = drawData.DisplaySize.x, dH = drawData.DisplaySize.y;
+
+    // Affine remap x' = ax + by + e, y' = cx + dy + f
+    float a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    if (transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR)  { b = -W/dH; e = W; c =  H/dW; }
+    else if (transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) { b =  W/dH;        c = -H/dW; f = H; }
+    else if (transform & VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR) { a = -W/dW; e = W;  d = -H/dH; f = H; }
+    else return;
+
     for (int n = 0; n < drawData.CmdListsCount; n++) {
       ImDrawVert* verts = drawData.CmdLists.Data[n].VtxBuffer.Data;
-      for (int i = 0; i < drawData.CmdLists.Data[n].VtxBuffer.Size; i++) {
-        auto p = remapPoint(verts[i].pos.x, verts[i].pos.y, dW, dH, W, H, transform);
-        verts[i].pos.x = p.x; verts[i].pos.y = p.y;
+      immutable int vn = drawData.CmdLists.Data[n].VtxBuffer.Size;
+      for (int i = 0; i < vn; i++) {
+        immutable float x = verts[i].pos.x, y = verts[i].pos.y;
+        verts[i].pos.x = a*x + b*y + e;
+        verts[i].pos.y = c*x + d*y + f;
       }
       ImDrawCmd* cmds = drawData.CmdLists.Data[n].CmdBuffer.Data;
-      for (int i = 0; i < drawData.CmdLists.Data[n].CmdBuffer.Size; i++) {
-        auto mn = remapPoint(cmds[i].ClipRect.x, cmds[i].ClipRect.y, dW, dH, W, H, transform);
-        auto mx = remapPoint(cmds[i].ClipRect.z, cmds[i].ClipRect.w, dW, dH, W, H, transform);
-        cmds[i].ClipRect.x = mn.x < mx.x ? mn.x : mx.x;
-        cmds[i].ClipRect.y = mn.y < mx.y ? mn.y : mx.y;
-        cmds[i].ClipRect.z = mn.x > mx.x ? mn.x : mx.x;
-        cmds[i].ClipRect.w = mn.y > mx.y ? mn.y : mx.y;
+      immutable int cn = drawData.CmdLists.Data[n].CmdBuffer.Size;
+      for (int i = 0; i < cn; i++) {
+        immutable float x0 = a*cmds[i].ClipRect.x + b*cmds[i].ClipRect.y + e;
+        immutable float y0 = c*cmds[i].ClipRect.x + d*cmds[i].ClipRect.y + f;
+        immutable float x1 = a*cmds[i].ClipRect.z + b*cmds[i].ClipRect.w + e;
+        immutable float y1 = c*cmds[i].ClipRect.z + d*cmds[i].ClipRect.w + f;
+        cmds[i].ClipRect.x = x0 < x1 ? x0 : x1;
+        cmds[i].ClipRect.y = y0 < y1 ? y0 : y1;
+        cmds[i].ClipRect.z = x0 > x1 ? x0 : x1;
+        cmds[i].ClipRect.w = y0 > y1 ? y0 : y1;
       }
     }
   }

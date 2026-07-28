@@ -15,6 +15,7 @@ import timing : timed;
 import jobs : craftJob, jobQueue;
 import lights : updateSun;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
+import vram : queryVRAM;
 import water : waterTick, flushWaterDirty, evaporateTick;
 import world : regenerateWorld;
 
@@ -119,6 +120,7 @@ double handleEvents(ref GameApp app) {
       if(app.objects[i].onTick) app.objects[i].onTick();
     }
     app.updateSun();
+    app.queryVRAM();
   }
 
   // Call all onFrame() handlers

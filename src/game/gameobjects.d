@@ -12,10 +12,21 @@ class Dwarves : Cylinder {
   Dwarf[] dwarves;
   alias dwarves this;
   int selected = -1;
+  size_t[] tickOrder;
 
   this() {
     super(0.5f, 1.0f, 6);
     initInstanced(() => "Dwarves");
+  }
+
+  void remove(size_t index) {
+    size_t last = dwarves.length - 1;
+    if(index != last) {
+      dwarves[index]  = dwarves[last];          // move last dwarf's data into the gap
+      instances[index] = instances[last];       // and its instance row, same index — stays aligned
+    }
+    dwarves.length = last;                       // pop data array
+    instances.resize(last);                      // pop instance buffer
   }
 }
 

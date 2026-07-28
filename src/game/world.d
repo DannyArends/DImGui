@@ -28,10 +28,10 @@ import water : saveWater, loadWater;
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
   int[3] seed        = [42, 67, 69];              /// [height seed, tile seed]
-  int renderDistance =  4;                        /// Render distance used to load / evict chunks
+  int renderDistance =  isAndroid ? 6 : 4;        /// Render distance used to load / evict chunks
   float tileSize     =  1.0f;                     /// Size (X & Z) of a tile
   float tileHeight   =  1.0f;                     /// Y-spacing between tiles
-  int chunkSize      =  isAndroid ? 32 : 64;      /// Number of tiles (X & Z) in a chunk
+  int chunkSize      =  isAndroid ? 32 : 128;      /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  64;                       /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;                    /// Global world Y-offset
   LatticeMap!(ResourceType[uint]) diffs;
@@ -110,6 +110,7 @@ void registerPersistables(ref GameApp app) {
   foreach(ref ftr; features) app.persistables ~= vegetationSection(app, ftr.name);
 }
 
+/** Create GPU side render objects and CPU side load instances into the world from HDD */
 void loadWorld(ref GameApp app) {
   ensureWorldDir();
   app.initFeatureMeshes();
@@ -204,23 +205,21 @@ void updateWorld(ref GameApp app, float[3] lookat) {
 void regenerateWorld(ref GameApp app) {
   auto seed = app.world.data.seed;
 
-  // 1. Release per-dwarf GPU resources (torch lights + name-label text) before dropping them.
+  // 1. Release per-dwarf GPU resources (torch lights + name-label text) before dropping them
   if(app.world.dwarves !is null){ while(app.world.dwarves.dwarves.length > 0){
     app.deleteDwarf(cast(int)(app.world.dwarves.dwarves.length - 1));
   } }
 
-  // 2. Flag every world render object for deallocation, then let the frame collector move them
-  //    into the buffer deletion queue and drop them from app.objects.
-  foreach(ref o; app.objects){ o.deAllocate = true; }
-  app.removeGeometry(); // routes all flagged into bufferDeletionQueue (fenced)
+  // 2. Flag every world render object for deallocation
+  foreach(ref o; app.objects){ o.deAllocate = true; } app.removeGeometry();
 
-  // 3. Chunks: flag their geometry (deallocateChunk sets deAllocate) and clear the maps.
+  // 3. Chunks: flag their geometry (deallocateChunk sets deAllocate) and clear the maps
   app.world.clear();
 
-  // 4. Remove the save file so loadWorld starts fresh.
+  // 4. Remove the save file so loadWorld starts fresh
   SDL_RemovePath(app.world.worldPath());
 
-  // 5. Reset all CPU subsystem state to defaults.
+  // 5. Reset all CPU subsystem state to defaults
   app.world.data.diffs = null;
   app.world.data.waterDiffs = null;
   app.world.dwarves = null;
@@ -233,10 +232,10 @@ void regenerateWorld(ref GameApp app) {
   app.world.inventory = Inventory.init;
   app.worldText = WorldText.init;
 
-  // 6. objects/persistables are rebuilt by loadWorld; ensure they start empty.
+  // 6. objects/persistables are rebuilt by loadWorld; ensure they start empty
   jobQueue = []; app.objects = []; app.persistables = [];
 
-  // 7. Restore seed and rebuild.
+  // 7. Restore seed and rebuild
   app.world.data.seed = seed;
   app.loadWorld();
   app.updateSun();

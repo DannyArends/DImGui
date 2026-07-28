@@ -107,21 +107,44 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
     alphaBlendOp: VK_BLEND_OP_ADD
   };
 
+  VkPipelineColorBlendAttachmentState[2] opaqueBlendAttachments = [colorBlendAttachment, colorBlendAttachment];
   VkPipelineColorBlendStateCreateInfo colorBlending = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
     logicOpEnable: VK_FALSE, logicOp: VK_LOGIC_OP_COPY,
-    attachmentCount: 1, pAttachments: &colorBlendAttachment,
+    attachmentCount: 2, pAttachments: opaqueBlendAttachments.ptr,
+    blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
+  };
+
+  // WBOIT dual-target blend: accum = additive (ONE,ONE); revealage = multiplicative (ZERO, ONE_MINUS_SRC_COLOR)
+  VkPipelineColorBlendAttachmentState[2] wboitAttachments = [
+    { // 0: accumulation
+      colorWriteMask: VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+      blendEnable: VK_TRUE,
+      srcColorBlendFactor: VK_BLEND_FACTOR_ONE, dstColorBlendFactor: VK_BLEND_FACTOR_ONE, colorBlendOp: VK_BLEND_OP_ADD,
+      srcAlphaBlendFactor: VK_BLEND_FACTOR_ONE, dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE, alphaBlendOp: VK_BLEND_OP_ADD
+    },
+    { // 1: revealage
+      colorWriteMask: VK_COLOR_COMPONENT_R_BIT,
+      blendEnable: VK_TRUE,
+      srcColorBlendFactor: VK_BLEND_FACTOR_ZERO, dstColorBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, colorBlendOp: VK_BLEND_OP_ADD,
+      srcAlphaBlendFactor: VK_BLEND_FACTOR_ZERO, dstAlphaBlendFactor: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, alphaBlendOp: VK_BLEND_OP_ADD
+    }
+  ];
+  VkPipelineColorBlendStateCreateInfo wboitBlending = {
+    sType: VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+    logicOpEnable: VK_FALSE, logicOp: VK_LOGIC_OP_COPY,
+    attachmentCount: 2, pAttachments: wboitAttachments.ptr,
     blendConstants: [0.0f, 0.0f, 0.0f, 0.0f]
   };
 
   VkPipelineDepthStencilStateCreateInfo depthStencil = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
     depthTestEnable: VK_TRUE,
-    depthWriteEnable: s.sdf ? VK_FALSE : VK_TRUE, // Write depth to self-occlude [default], SDF does not (blended/translucent geometry)
-    depthCompareOp: VK_COMPARE_OP_LESS,
+    depthWriteEnable: s.depthPass ? VK_TRUE : VK_FALSE,
+    depthCompareOp: s.depthPass ? VK_COMPARE_OP_LESS : VK_COMPARE_OP_LESS_OR_EQUAL,
   };
 
-  ShaderStage stages = createStageInfo(app.shaders, topology, s);
+  ShaderStage stages = app.createStageInfo(app.shaders, topology, s);
 
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -133,14 +156,16 @@ VkPipeline buildVariant(ref App app, VkPrimitiveTopology topology, VkPipelineLay
     pRasterizationState: &rasterizer,
     pMultisampleState: &multisampling,
     pDepthStencilState: &depthStencil,
-    pColorBlendState: &colorBlending,
+    pColorBlendState: s.depthPass ? &wboitBlending : (s.wboit ? &wboitBlending : &colorBlending),
     layout: layout,
-    renderPass: app.sceneCmd.pass
+    renderPass: s.depthPass ? app.depthCmd.pass : app.sceneCmd.pass,
+    subpass: s.wboit ? 1u : 0u
   };
 
   VkPipeline p;
   enforceVK(vkCreateGraphicsPipelines(app.device, null, 1, &pipelineInfo, app.allocator, &p));
-  app.nameVulkanObject(p, cstr("[PIPELINE] %s A%d I%d S%d", topology, s.alpha, s.instanced, s.sdf), VK_OBJECT_TYPE_PIPELINE);
+  app.nameVulkanObject(p, cstr("[PIPELINE] %s A%d I%d S%d D%d An%d W%d", 
+                               topology, s.alpha, s.instanced, s.sdf, s.depthPass, s.animated, s.wboit), VK_OBJECT_TYPE_PIPELINE);
   app.swapDeletionQueue.add((){ vkDestroyPipeline(app.device, p, app.allocator); });
   app.pipelines[topology].variants[s] = p;
   return p;

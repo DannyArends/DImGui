@@ -18,16 +18,17 @@ void showSettingsContent(ref App app, uint font = 0) {
     setting("Verbose", app.verbose, 0u, 2u, 100, app.gui.uiscale);
 
     labelCol("Lighting Mode");
-    const(char)*[3] modes = ["Global Illumination", "Lights", "Lights + Shadows"];
+    const(char)*[] modes = ["Global Illumination", "Lights", "Lights + Shadows", "Debug: Normal", "Debug: nLights", "Debug: UV", "Debug: Cascades"];
     int lm = cast(int)app.lMode;
     igPushItemWidth(200 * app.gui.uiscale);
-    if(igCombo_Str_arr("##lm", &lm, &modes[0], 3, -1)) app.lMode = cast(LMode)lm;
+    if(igCombo_Str_arr("##lm", &lm, &modes[0], cast(int)modes.length, -1)) app.lMode = cast(LMode)lm;
     igPopItemWidth();
 
     labelCol("Clear Settings"); if(igButton("RESET GUI", ImVec2(0.0f, 0.0f))) clearSettings();
     setting("Volume", app.soundEffectGain, app.gui.sound[0], app.gui.sound[1], 150, app.gui.uiscale);
     setting("God Mode", app.camera.godMode);
     if(setting("Show Lights", app.showLights)) app.toggleLightGeometries();
+    setting("SSAO", app.useSSAO);
     setting("Disco Mode", app.disco);
     setting("Show Bounds", app.showBounds);
     setting("Show Paths", app.showPaths);

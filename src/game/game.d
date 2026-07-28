@@ -15,7 +15,7 @@ public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
-public import physx : Fall;
+public import fall : Fall;
 public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
@@ -38,6 +38,7 @@ import inventorywindow : showInventoryContent;
 import jobs : applyPathResult;
 import lights : updateSun;
 import lightswindow : showLightsContent;
+import matrix;
 import normals : computeTangents;
 import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
@@ -49,6 +50,7 @@ import toolbar : showToolbar;
 import world : loadWorld, saveWorld, updateWorld;
 import waterwindow : showWaterContent;
 import worldwindow : showWorldContent;
+import wboit: testWBOIT;
 
 /** Worker thread variant that also handles chunk building and pathfinding requests */
 class GameTaskThread : TaskThread {
@@ -78,11 +80,18 @@ class GameTaskThread : TaskThread {
 
 /** Top-level Game state: engine App plus the game World
   TODO:
-    1) Workshops, and crafting at workshops
-    2) Liquid barrels for wine/drinks from berries
-    3) Barrels and Bins for stockpiles
-    4) Allow stockpiles to be extended / shrunk / redrawn
-    5) Render crafted objects through assimp models */
+    - Workshops, and crafting at workshops
+    - Liquid barrels for wine/drinks from berries
+    - Barrels and Bins for stockpiles
+    - Allow stockpiles to be extended / shrunk / redrawn
+    - Render crafted objects through assimp models 
+    - Per-dwarf labor roles / job filtering (+ Stockpile priorities / hauling logistics)
+    - Dwarf skills & experience
+    - Item quality tiers
+    - Farming / planting
+    - Furniture placement (beds, tables) as world objects
+    - Wildlife & combat
+    */
 struct GameApp {
   App app;
   alias app this;
@@ -115,7 +124,9 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
 
   SDL_Log("createScene: Add Text");
-  app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
+  app.addWorldText("CalderaD", [12.0f, 10.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
+  SDL_Log("createScene: WBOIT test rectangles");
+  app.testWBOIT();
   SDL_Log("initGame: done");
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });

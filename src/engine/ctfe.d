@@ -3,10 +3,16 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import std.algorithm : map;
-import std.array : join, array;
-import std.conv : to;
-import std.format : format;
+import phobos;
+
+/** True iff T holds no GC-scannable pointers — safe to store in NO_SCAN memory. */
+enum bool isPod(T) = !hasIndirections!T;
+
+/** Compile-time POD gate */
+template Pod(T) {
+  static assert(isPod!T, "Type `" ~ T.stringof ~ "` contains GC-traced indirections ");
+  alias Pod = T;
+}
 
 /** CTFE: split string into tokens between [ and ] */
 string[] parseTokens(string s) pure {
@@ -30,3 +36,4 @@ string[] splitColon(string s) pure {
   for(size_t i = 0; i <= s.length; i++) { if(i == s.length || s[i] == ':') { parts ~= s[start..i]; start = i + 1; } }
   return parts;
 }
+

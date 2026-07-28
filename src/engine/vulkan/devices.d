@@ -6,8 +6,10 @@
 import engine;
 
 import extensions : queryDeviceExtensionProperties, has;
+import queue : findDedicatedQueues, setupQueues;
 import validation : nameVulkanObject;
 import vulkan : querySupportedFeatures;
+import vram : memoryReportCallback, hasMemoryBudget, hasMemoryCallback;
 
 // Creates a physicalDevice & associated Queue
 void pickPhysicalDevice(ref App app, uint device = 0){
@@ -16,15 +18,16 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   auto extension = app.queryDeviceExtensionProperties();
 
   if(extension.has("VK_KHR_swapchain")){ app.deviceExtensions ~= "VK_KHR_swapchain"; }
+  if(extension.has("VK_EXT_memory_budget")){ app.deviceExtensions ~= "VK_EXT_memory_budget"; }
+  if(extension.has("VK_EXT_device_memory_report")){ app.deviceExtensions ~= "VK_EXT_device_memory_report"; }
   if(extension.has("VK_KHR_maintenance3")){ app.deviceExtensions ~= "VK_KHR_maintenance3"; }
   if(extension.has("VK_EXT_descriptor_indexing")){ app.deviceExtensions ~= "VK_EXT_descriptor_indexing"; }
 
   app.printQueues();
-  app.queueFamily = selectQueueFamily(app.physicalDevice());
 }
 
 VkSampleCountFlagBits getMSAASamples(ref App app) {
-  version (Android) { return VK_SAMPLE_COUNT_4_BIT; }
+  version (Android) { return VK_SAMPLE_COUNT_1_BIT; }
   VkSampleCountFlags counts = app.properties.limits.framebufferColorSampleCounts & app.properties.limits.framebufferDepthSampleCounts;
   if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
   if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
@@ -38,16 +41,17 @@ VkSampleCountFlagBits getMSAASamples(ref App app) {
 /** Create Logical Device (with 1 queue) */
 void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   app.pickPhysicalDevice(device);
-
-  float[] queuePriority = [1.0f];
-  VkDeviceQueueCreateInfo[] createQueue = [{
-    sType : VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-    queueFamilyIndex : app.queueFamily,
-    queueCount : queueCount, // transfer and render queue
-    pQueuePriorities : &queuePriority[0]
-  }];
-
   app.querySupportedFeatures(app.physicalDevice);
+
+  VkPhysicalDeviceDeviceMemoryReportFeaturesEXT memReportFeatures = {
+    sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT,
+    deviceMemoryReport: VK_TRUE,
+  };
+
+  VkDeviceDeviceMemoryReportCreateInfoEXT memReportCreateInfo = {
+    sType: VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT,
+    flags: 0, pfnUserCallback: &memoryReportCallback, pUserData: &app,
+  };
 
   VkPhysicalDeviceVulkan12Features features = { 
     sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
@@ -55,17 +59,24 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     runtimeDescriptorArray : VK_TRUE,
     shaderSampledImageArrayNonUniformIndexing : VK_TRUE,
     shaderStorageBufferArrayNonUniformIndexing : VK_TRUE,
-    descriptorBindingPartiallyBound : VK_TRUE
+    descriptorBindingPartiallyBound : VK_TRUE,
   };
 
-  VkPhysicalDeviceFeatures deviceFeatures = { robustBufferAccess: VK_TRUE, samplerAnisotropy: VK_TRUE, fragmentStoresAndAtomics: VK_TRUE };
+  if(!app.hasMemoryBudget() && app.hasMemoryCallback()) {
+    memReportFeatures.pNext = &memReportCreateInfo;
+    features.pNext = &memReportFeatures;
+  }
 
+  VkPhysicalDeviceFeatures deviceFeatures = { robustBufferAccess: VK_TRUE,
+                                              samplerAnisotropy: VK_TRUE,
+                                              fragmentStoresAndAtomics: VK_TRUE,
+                                              independentBlend: VK_TRUE};
+
+  QueueSetup qs = app.findDedicatedQueues();
   VkDeviceCreateInfo createDevice = {
     sType : VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-    queueCreateInfoCount : cast(uint)createQueue.length,
-    pQueueCreateInfos : &createQueue[0],
-    enabledExtensionCount : cast(uint)app.deviceExtensions.length,
-    ppEnabledExtensionNames : &app.deviceExtensions[0],
+    queueCreateInfoCount : cast(uint)qs.createInfos.length, pQueueCreateInfos : &qs.createInfos[0],
+    enabledExtensionCount : cast(uint)app.deviceExtensions.length, ppEnabledExtensionNames : &app.deviceExtensions[0],
     pEnabledFeatures : &deviceFeatures,
     pNext : &features
   };
@@ -77,20 +88,14 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
 
   if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device);
 
-  // Get the Queue from the queueFamily
-  vkGetDeviceQueue(app.device, app.queueFamily, 0, &app.queue);
-  if(app.verbose) SDL_Log("Queueues 0");
-  vkGetDeviceQueue(app.device, app.queueFamily, 1, &app.transfer);
-  if(app.verbose) SDL_Log("Queueues 1");
+  app.setupQueues(qs);
 
-/*  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
+  /*
+  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
   app.nameVulkanObject(app.physicalDevice, cstr("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr)), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
   app.nameVulkanObject(app.instance, toStringz("[INSTANCE]"), VK_OBJECT_TYPE_INSTANCE);
-*/
-  app.nameVulkanObject(app.queue, toStringz("[QUEUE] Render"), VK_OBJECT_TYPE_QUEUE);
-  app.nameVulkanObject(app.transfer, toStringz("[QUEUE] Transfer"), VK_OBJECT_TYPE_QUEUE);
-
-  if(app.verbose) SDL_Log("vkGetDeviceQueue[family:%d] queue: %p, transfer: %p", app.queueFamily, app.queue, app.transfer);
+  */
+  if(app.verbose) SDL_Log("Queue: gfx=%d compute=%d transfer=%d", app.queues.graphics.family, app.queues.compute.family, app.queues.transfer.family);
 }
 
 void list(VkPhysicalDevice physicalDevice, size_t i) {
@@ -132,39 +137,3 @@ void printQueues(ref App app){
     SDL_Log(cstr("Queue[%d] size: %d: %s", i, queueProperty.queueCount, capabilities));
   }
 }
-
-uint selectQueueFamily(VkPhysicalDevice physicalDevice, VkQueueFlagBits requested = VK_QUEUE_GRAPHICS_BIT) {
-  uint32_t nQueue;
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, null);
-  VkQueueFamilyProperties[] queueProperties;
-  queueProperties.length = nQueue;
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &nQueue, &queueProperties[0]);
-
-  uint bestDedicatedIndex = uint.max;
-  uint maxDedicatedSize = 0;
-  uint firstGenericIndex = uint.max;
-
-  // Find the best dedicated queue and the first available generic queue in a single pass
-  foreach(i, ref queueProperty; queueProperties) {
-    if (queueProperty.queueFlags & requested) {
-      if (!(queueProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)) { // DEDICATED (non GFX) queue
-        if (queueProperty.queueCount > maxDedicatedSize) {
-          bestDedicatedIndex = cast(uint)i;
-          maxDedicatedSize = queueProperty.queueCount;
-        }
-      } else { // GENERIC queue
-        if (firstGenericIndex == uint.max) { firstGenericIndex = cast(uint)i; }
-      }
-    }
-  }
-  if (bestDedicatedIndex != uint.max){
-    SDL_Log("Dedicated queue family: %d with size %d", bestDedicatedIndex, maxDedicatedSize);
-    return bestDedicatedIndex;
-  }
-  if (firstGenericIndex != uint.max){
-    SDL_Log("Generic queue family: %d", firstGenericIndex);
-    return firstGenericIndex;
-  }
-  assert(0, format("No suitable Queue Found for: %s", requested));
-}
-

@@ -26,6 +26,7 @@ import vector : vAdd;
 import water : findNearestWater;
 
 uint nextDwarfUID = 1;
+enum int NEED_RETRY = 30;
 
 struct InventorySlot {
   enum Kind : ubyte { Empty, Block, Stack }
@@ -133,13 +134,14 @@ struct Dwarf {
   float progress = 0.0f;                    /// Job progress
   uint[2] idleTicks = [0, 180];             /// Idle ticks and Patience / Wanderlust
   Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
+  int[Need.max + 1] needBackoff;            /// ticks before this need may be re-attempted (anti-livelock)
 
   float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 
-  Fall fall = { weight: 5.0f };             /// PhysX
+  Fall fall = { weight: 5.0f };             /// Fall state
   size_t lightIndex = size_t.max; 
   size_t nameLabel = size_t.max;
 
@@ -167,12 +169,7 @@ void deleteDwarf(ref GameApp app, int index) {
   app.removeDwarfLight(app.world.dwarves.dwarves[index]);
   app.removeDwarfNameLabel(app.world.dwarves.dwarves[index]);
 
-  size_t last = (app.world.dwarves.dwarves.length - 1);
-  if(index != last) {
-    app.world.dwarves.dwarves[index] = app.world.dwarves.dwarves[last];
-    app.world.dwarves.instances[index] = app.world.dwarves.instances[last];
-  }
-  app.world.dwarves.dwarves.length = app.world.dwarves.instances.length = last;
+  app.world.dwarves.remove(index);
   app.world.dwarves.selected = -1;
   app.world.dwarves.syncInstances();
 }
@@ -268,13 +265,15 @@ void logStuck(ref GameApp app, ref Dwarf d) {
 /** Dispatch the most urgent over-threshold need as a job. Returns true if one was dispatched. */
 bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Hunger
-  if(d.needs[Need.Hunger] >= 0.6f) {
+  if(d.needs[Need.Hunger] >= 0.6f && d.needBackoff[Need.Hunger] == 0) {
+    d.needBackoff[Need.Hunger] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Hunger]*4)));
     if(d.carrying.any!(id => app.world.drops.resourceType(id).isFood)) { app.dispatchJob(d, eatJob()); return(true); }
     auto food = app.world.findFreeFood(d.tile);
     if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food).toClass)); return(true); }
   }
   // Thirst
-  if(d.needs[Need.Thirst] >= 0.6f) {
+  if(d.needs[Need.Thirst] >= 0.6f && d.needBackoff[Need.Thirst] == 0) {
+    d.needBackoff[Need.Thirst] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Thirst]*4)));
     bool hasFull = d.carrying.any!(id => app.world.drops.itemOf(id).isWaterCup);
     bool hasEmpty = d.carrying.any!(id => app.world.drops.itemOf(id).isEmptyCup);
     int[3] standAt;
@@ -291,13 +290,17 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
     }
   }
   // Rest
-  if(d.needs[Need.Rest] >= 0.7f) { app.dispatchJob(d, sleepJob(d.tile)); return(true); }
+  if(d.needs[Need.Rest] >= 0.7f && d.needBackoff[Need.Rest] == 0) {
+    d.needBackoff[Need.Rest] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Rest]*4u)));
+    app.dispatchJob(d, sleepJob(d.tile)); return(true); 
+  }
   return(false);
 }
 
 /** A single dwarf being ticked */
 void tickDwarf(ref GameApp app, ref Dwarf d) {
   foreach(n; 0 .. d.needs.length){ d.needs[n] = min(1.0f, d.needs[n] + decay[n]); }
+  foreach(n; 0 .. d.needBackoff.length) { if(d.needBackoff[n] > 0) { d.needBackoff[n]--; } }
   if(d.isFalling) return;
 
   // Drop a job the moment it becomes invalid, in any state
@@ -354,12 +357,13 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
 void dwarfTick(ref GameApp app) {
   if(app.world.dwarves is null) return;
   app.pruneJobQueue();
-  // Future TODO: We can optimize the loop, when using a markForRemoval strategy
-  foreach(uid; app.world.dwarves.dwarves.map!(d => d.uid).array.randomShuffle()) {
-    auto i = app.world.dwarves.dwarves.countUntil!(d => d.uid == uid); // Find the dwarf by resolving UID to the slot
-    if(i < 0) continue;
-    app.tickDwarf(app.world.dwarves.dwarves[i]);
+  // rebuild tickOrder when roster size changes
+  if(app.world.dwarves.tickOrder.length != app.world.dwarves.length) {
+    app.world.dwarves.tickOrder.length = app.world.dwarves.length;
+    iota(app.world.dwarves.tickOrder.length).copy(app.world.dwarves.tickOrder[]);
   }
+  app.world.dwarves.tickOrder.randomShuffle();
+  foreach(i; app.world.dwarves.tickOrder) { app.tickDwarf(app.world.dwarves[i]); }
   app.world.syncPathMarkers(app.showPaths);
   app.timed!syncBuildGhosts();
   app.timed!deriveInventory();

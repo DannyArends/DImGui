@@ -38,7 +38,7 @@ void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
 }
 
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance */
-void cleanup(App app) {
+void cleanup(ref App app) {
   SDL_Log("Wait on device idle & swapchain deletion queue");
   enforceVK(vkDeviceWaitIdle(app.device));
   SDL_Log("Delete bufferDeletionQueue associated resources");
@@ -65,7 +65,7 @@ void cleanup(App app) {
     igDestroyContext(null);
   }
   SDL_Log("Direct cleanup all Geometry objects");
-  foreach(object; app.objects) { app.cleanup(object); }
+  foreach(ref object; app.objects) { app.cleanup(object); }
 
   SDL_Log("Flush the main deletion queue, and delete permanent Vulkan resources");
   app.mainDeletionQueue.flush();

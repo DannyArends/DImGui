@@ -93,8 +93,10 @@ void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Medium.ttf",
 void blitSDFGlyph(ref App app, FT_Bitmap bmp, int x, int y) {
   if(SDL_MUSTLOCK(app.glyphAtlas.surface)) SDL_LockSurface(app.glyphAtlas.surface);
   ubyte* dst = cast(ubyte*)app.glyphAtlas.surface.pixels;
-  int dstPitch = app.glyphAtlas.surface.pitch;
+  int dstPitch = app.glyphAtlas.surface.pitch, atlasW = app.glyphAtlas.width, atlasH = app.glyphAtlas.height;
+
   for(uint row = 0; row < bmp.rows; row++) { for(uint col = 0; col < bmp.width; col++) {
+    if(y + cast(int)row < 0 || y + cast(int)row >= atlasH || x + cast(int)col < 0 || x + cast(int)col >= atlasW) continue;
     ubyte v = bmp.buffer[row * bmp.pitch + col];
     size_t o = (y + row) * dstPitch + (x + col) * 4;
     dst[o+0] = 255; dst[o+1] = 255; dst[o+2] = 255; dst[o+3] = v;
@@ -158,9 +160,9 @@ void createGlyphAtlas(ref App app, dchar to = '\U00000FFF', uint dim = 1024) {
 void uploadFont(ref App app) {
   if(app.verbose) SDL_Log("Uploading Font Texture to GPU");
   GPUAllocation staging;
-  auto commandBuffer = app.beginSingleTimeCommands(app.transferPool);
+  auto commandBuffer = app.beginSingleTimeCommands(app.commandPool);
   app.toGPU(commandBuffer, app.glyphAtlas.texture, staging, VK_FORMAT_R8G8B8A8_UNORM);
-  app.endSingleTimeCommands(commandBuffer, app.transfer);
+  app.endSingleTimeCommands(commandBuffer, app.gfxQueue);
   app.cleanup(staging);
   app.textures ~= app.glyphAtlas.texture;
   app.mainDeletionQueue.add((){ app.cleanup(app.glyphAtlas.texture); });

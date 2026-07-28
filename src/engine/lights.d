@@ -5,25 +5,28 @@
 
 import engine;
 
+import devices : getMSAASamples;
 import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS;
+import shadow : assignShadowSlots, updateShadowSlotMatrices, selectStaticRebuilds;
 import textures : mapTextures;
-import vector : dot, normalize, vAdd, vSub, negate, vMul, xyz;
+import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
 import matrix : degree, translate;
 
-enum LMode : uint { Global = 0, Lights = 1, LightsAndShadows = 2 }
+enum LMode : uint { Global = 0, Lights, LightsAndShadows, Normals, nLights, UV, Cascades }
 
 enum TORCH_HEIGHT = 5.0f;
+enum uint[4] LIGHT_GRID = [16, 9, 16, 0];
+enum uint CLUSTER_COUNT = LIGHT_GRID[0] * LIGHT_GRID[1] * LIGHT_GRID[2];  // 3456
+enum uint NIL = 0xFFFFFFFF;
 
 struct Light {
-  Matrix lightSpaceMatrix;
   float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Position of the light; w==0: directional, w!=0: point/spot
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
-  float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
+  float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction (must be normalized)
   float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, cone half-angle, enabled]
   float[4] cull       = [0.0f,-1.0f, 0.0f, 0.0f];    /// [radius, shadow map index (-1 = none), cosOuter, cosInner]
 
@@ -42,19 +45,19 @@ struct Light {
 }
 
 enum Lights : Light {
-  Sun  = Light(Matrix.init, [50.0f, 80.0f, 50.0f, 0.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 1.0f]),
-  Fill = Light(Matrix.init, [-30.0f, 40.0f, -30.0f, 0.0f], [0.1f, 0.15f, 0.3f, 1.0f], [1.0f, -1.0f, 1.0f, 0.0f], [0.04f, 0.0f, 90.0f, 0.0f]),
-  Red = Light(Matrix.init, [10.0f, 20.0f, 10.0f, 1.0f], [400.0f, 20.0f, 0.0f, 1.0f], [2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
-  Green = Light(Matrix.init, [10.0f, 20.0f, 0.0f, 1.0f], [0.0f, 400.0f, 20.0f, 1.0f], [-3.0f, -9.0f, 3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
-  Blue = Light(Matrix.init, [0.0f, 10.0f, 10.0f, 1.0f], [20.0f, 0.0f, 400.0f, 1.0f], [0.5f, -2.0f, 1.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
-  Bright = Light(Matrix.init, [0.0f, 100.0f, 0.0f, 1.0f], [1000.0f,1000.0f, 1000.0f, 1.0f], [0.2f, -1.0f, 0.2f, 0.0f], [0.0f, 0.1f, 90.0f, 0.0f])
+  Sun  = Light([50.0f, 80.0f, 50.0f, 0.0f], [0.7f, 0.6f, 0.45f, 1.0f], [-1.0f, -2.0f, -1.0f, 0.0f], [0.08f, 0.0001f, 89.0f, 1.0f]),
+  Fill = Light([-30.0f, 40.0f, -30.0f, 0.0f], [0.1f, 0.15f, 0.3f, 1.0f], [1.0f, -1.0f, 1.0f, 0.0f], [0.04f, 0.0f, 90.0f, 0.0f]),
+  Red = Light([10.0f, 20.0f, 10.0f, 1.0f], [200.0f, 20.0f, 0.0f, 1.0f], [2.0f, -10.0f, -0.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
+  Green = Light([10.0f, 20.0f, 0.0f, 1.0f], [0.0f, 200.0f, 20.0f, 1.0f], [-3.0f, -9.0f, 3.0f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
+  Blue = Light([0.0f, 10.0f, 10.0f, 1.0f], [20.0f, 0.0f, 200.0f, 1.0f], [0.5f, -2.0f, 1.5f, 0.0f], [0.0f, 0.001f, 45.0f, 0.0f]),
+  Bright = Light([0.0f, 100.0f, 0.0f, 1.0f], [1000.0f,1000.0f, 1000.0f, 1.0f], [0.2f, -1.0f, 0.2f, 0.0f], [0.0f, 0.1f, 90.0f, 0.0f])
 };
 
 struct Lighting {
   SSBOList!Light lights;
-  float[] scoreBuf;             /// Shadow ranking scores
-  bool staticDirty = false;     /// scene static geometry changed
-  float sunTime = 7.0f;
+  float[] scoreBuf;
+  bool staticDirty = false;
+  float sunTime = 13.0f;
   float discoTime = 0.0f;
   float sunBearing = 135.0f;
   alias lights this;
@@ -86,33 +89,37 @@ size_t removeLight(ref App app, size_t index) {
   return((index != last) ? last : size_t.max);
 }
 
-/** Compute the size of the light radius */
-void computeRadius(ref Light l, float cutoff = 0.01f) {
+/** Point/spot cull radius: distance where intensity attenuates to cutoff */
+void computeRadius(ref Light l, float cutoff = 0.05f) {
   if (l.directional) { l.cull[0] = float.infinity; return; }
   float maxI = max(l.intensity[0], l.intensity[1], l.intensity[2]);
   l.cull[0]  = sqrt(fmax(0.0f, maxI / cutoff - l.properties[1]));
 }
 
-/** Compute lightspace for the provided light */
-@nogc void computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension) nothrow {
+/** Compute lightspace for the provided light. Builds a cascade's light-space matrix: ortho box centred on lookat */
+@nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension, float radiusOverride = 0.0f) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
+  light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
 
   if(!light.directional) {
     Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), cam.up);
-    light.lightSpaceMatrix = perspective(2 * light.properties[2], 1.0f, 0.1f, size[1]).multiply(v);
-    return;
+    return perspective(2 * light.properties[2], 1.0f, 0.1f, size[1]).multiply(v);
   }
 
-  float depth = size[0] + 2.0f * size[1];
+  // CSM: cascades stash their half-extent in properties[2] (unused for directional). 0 => full bounds.
+  float radius = (radiusOverride > 0.0f) ? radiusOverride : (light.properties[2] > 0.0f) ? light.properties[2] : size[1];
+  float depth = size[0] + 2.0f * radius;
   float[3] centre = [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
 
-  float texelsPerUnit = cast(float)shadowDimension / (2.0f * size[1]);
-  centre[0] = floor(centre[0] * texelsPerUnit) / texelsPerUnit;
-  centre[2] = floor(centre[2] * texelsPerUnit) / texelsPerUnit;
+  float[3] s = lightDir.cross(cam.up).normalize();   // shadow-map U axis
+  float[3] v = s.cross(lightDir).normalize();        // shadow-map V axis
+  float texelSize = 2.0f * radius / cast(float)shadowDimension;
+  float du = centre.dot(s), dv = centre.dot(v);
+  centre = centre.vAdd(s.vMul(floor(du / texelSize) * texelSize - du)).vAdd(v.vMul(floor(dv / texelSize) * texelSize - dv));
 
   float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f));
   Matrix lightView = lookAt(eye, centre, cam.up);
-  light.lightSpaceMatrix = orthogonal(-size[1], size[1], -size[1], size[1], 0.0f, depth).multiply(lightView);
+  return orthogonal(-radius, radius, -radius, radius, 0.0f, depth).multiply(lightView);
 }
 
 /** Update light geometries for rendering */
@@ -176,6 +183,7 @@ void toggleLightGeometries(ref App app) {
   if(t < dawnThreshold) { return lerpColor(night, dawn, t / dawnThreshold); }
   return lerpColor(dawn, day, (t - dawnThreshold) / (1.0f - dawnThreshold));
 }
+
 /** Update time of day / sun */
 void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold = 0.55f, float ambientScale = 0.1f, float sunDistance = 200.0f,
                float[4] skyNight = Colors.skyNight, float[4] skyDawn = Colors.skyDawn, float[4] skyDay = Colors.skyDay,
@@ -190,6 +198,9 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
   float t = clamp(sin(elRad), 0.0f, 1.0f);
 
   app.clearValue[0].color = VkClearColorValue(dawnDayBlend(skyNight, skyDawn, skyDay, t, dawnThreshold));
+  if((app.getMSAASamples() == VK_SAMPLE_COUNT_1_BIT)) {
+    app.clearValue[1].color = app.clearValue[0].color;   // MSAA 1x: SP0 renders into attachment 1, which clears to the sky color
+  }
   app.lights[0].intensity = dawnDayBlend(sunNight, sunDawn, sunNoon, t, dawnThreshold);
   app.lights[0].properties[0] = t * ambientScale;
 }
@@ -197,59 +208,23 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Disco beam */
 @nogc pure float beam(float t, float speed, float freq, float phase) nothrow { return abs(sin(t * speed * freq + phase)) * 500.0f; }
 
-/** Shadow importance: brighter & nearer scores higher; <=0 means ineligible. */
-@nogc float shadowScore(ref Light light, float[3] eye) nothrow {
-  if(light.directional || !light.enabled) return -1.0f;
-  float[3] d = vSub(light.position.xyz, eye);
-  return max(light.intensity[0], light.intensity[1], light.intensity[2]) / (dot(d, d) + 1.0f);
-}
-
-/** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
-void computeActiveLighting(ref App app) {
-  assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
-  if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
-  auto score = app.lights.scoreBuf[0 .. app.lights.length];
-  float slot = 0.0f;
-  foreach(i, ref light; app.lights) {
-    light.computeCone();
-    if(light.directional && light.enabled && slot < MAX_SHADOW_MAPS) {
-      light.cull[1] = slot++;                 // sun/directionals always cast, first slots
-      score[i] = -1.0f;
-    } else {
-      light.cull[1] = -1.0f;                  // -1 = not casting
-      score[i] = light.shadowScore(app.camera.position);
-    }
-  }
-
-  for(uint picked = 0; picked < app.shadows.budget && slot < MAX_SHADOW_MAPS; picked++) {
-    size_t best = size_t.max;
-    foreach(i; 0 .. app.lights.length) { if(score[i] > 0.0f && (best == size_t.max || score[i] > score[best])) best = i; }
-    if(best == size_t.max) break;
-    app.lights[best].cull[1] = slot++;
-    score[best] = -1.0f;
-  }
-
-  foreach(ref light; app.lights) {
-    light.computeRadius();
-    uint res = app.shadowResolution(light);
-    Matrix prev = light.lightSpaceMatrix;
-    app.camera.computeLightSpace(light, app.shadows.bounds, res);
-    int s = cast(int)light.cull[1];
-    if(s >= 0) {
-      if(light.lightSpaceMatrix != prev) app.shadows.staticDirty[s] = true;
-      uint before = app.shadows.images[s].extent.width;
-      app.resizeShadowMap(s, res);
-      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // resize recreated layer 0
-    }
-  }
-
+/** Grow the cluster-light SSBO if last frame overflowed it. */
+void growClusterBufferIfNeeded(ref App app) {
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
     uint used = *cast(uint*)app.buffers["ClusterCounter"][app.syncIndex].data;
-    if(used > app.clusterCapacity) {
-      app.clusterCapacity = used * 2;
-      app.growSSBO("ClusterLights", app.clusterCapacity);
-    }
+    if(used > app.clusterCapacity) { app.clusterCapacity = used * 2; app.growSSBO("ClusterLights", app.clusterCapacity); }
   }
+}
+
+/** Assign shadow slots, update matrices, amortise rebuilds, and finalise the light SSBO for this frame. */
+void computeActiveLighting(ref App app) {
+  if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
+  app.assignShadowSlots();
+  app.updateShadowSlotMatrices();
+  app.selectStaticRebuilds();
+  foreach(ref light; app.lights) light.direction = light.direction.xyz.normalize().xyzw(light.direction[3]);
+  app.buffers["LightMatrices"].invalidate();
+  app.growClusterBufferIfNeeded();
 }
 
 /** Disco mode 🕺 🪩 💃 */

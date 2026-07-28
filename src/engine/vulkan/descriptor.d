@@ -10,9 +10,10 @@ import ssbo : updateSSBO, createSSBO;
 import textures : idx;
 import uniforms : createUBO, updateRenderUBO;
 import shadow : updateShadowMapUBO;
+import ssao : updateSSAO;
 import validation : nameVulkanObject;
 
-enum DescriptorTarget { None, Textures, Shadow, HDR, Compute }
+enum DescriptorTarget { None, Textures, Shadow, HDR, Compute, Depth, SSAO, WBOITAccum, WBOITReveal }
 
 struct Descriptor {
   VkDescriptorType type;    /// Type of Descriptor
@@ -187,17 +188,21 @@ void registerRenderProviders(ref App app) {
     (ref a, ref d, cmd){ a.updateSSBO!Material(cmd, a.materials, d, a.syncIndex); });
 
   app.providers["ClusterLights"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, true); }, null);
+    (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, true, true); }, null);
   app.providers["ClusterHeads"] = DescriptorProvider(
     (ref a, ref d){
-      a.createSSBO(d, CLUSTER_COUNT, true);
+      a.createSSBO(d, CLUSTER_COUNT, true, true);
       auto cmd = a.beginSingleTimeCommands(a.commandPool);
       foreach(i; 0 .. a.buffers[d.base].length){ vkCmdFillBuffer(cmd, a.buffers[d.base][i].buffer, 0, VK_WHOLE_SIZE, NIL); }
-      a.endSingleTimeCommands(cmd, a.queue);
+      a.endSingleTimeCommands(cmd, a.gfxQueue);
     },
     null);
   app.providers["ClusterCounter"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, 1, false); }, null);
+
+  app.providers["SSAO"] = DescriptorProvider(
+    (ref a, ref d){ a.createUBO(d); },
+    (ref a, ref d, cmd){ a.updateSSAO(d, a.syncIndex); });
 }
 
 void updateDescriptorData(ref App app, Shader[] shaders, VkCommandBuffer[] cmdBuffer, uint syncIndex) {
@@ -252,6 +257,10 @@ void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descri
     case DescriptorTarget.Shadow: imageInfos.append(app.shadows.images, app.shadows.sampler, 1); break;
     case DescriptorTarget.HDR: imageInfos.append([app.resolvedHDR], app.sampler); break;
     case DescriptorTarget.Compute: imageInfos.append([app.textures[app.textures.idx(d.name)]], app.sampler, 0, VK_IMAGE_LAYOUT_GENERAL); break;
+    case DescriptorTarget.Depth: imageInfos.append([app.depthBuffer], app.sampler, 0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL); break;
+    case DescriptorTarget.SSAO: imageInfos.append([app.textures[app.textures.idx("ssaoOut")]], app.sampler); break;
+    case DescriptorTarget.WBOITAccum:  imageInfos.append([app.wboit.accumulation], null, 0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); break;
+    case DescriptorTarget.WBOITReveal: imageInfos.append([app.wboit.revealage], null, 0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); break;
     case DescriptorTarget.None: break;
   }
 }
@@ -262,10 +271,11 @@ void repointDirtyDescriptors(ref App app) {
   if(!app.buffers.descriptorsDirty[app.syncIndex] && !app.shadows.shadowDescriptorsDirty[app.syncIndex]) return;
   foreach(key, sets; app.sets) {
     switch(key) {
-      case Stage.RENDER:  app.updateDescriptorSet(app.shaders, sets, app.syncIndex); break;
+      case Stage.RENDER: app.updateDescriptorSet(app.shaders, sets, app.syncIndex); break;
       case Stage.SHADOWS: app.updateDescriptorSet(app.shadows.shaders, sets, app.syncIndex); break;
-      case Stage.POST:    app.updateDescriptorSet(app.postProcess, sets, app.syncIndex); break;
-      case Stage.IMGUI:   break;
+      case Stage.POST: app.updateDescriptorSet(app.postProcess, sets, app.syncIndex); break;
+      case Stage.RESOLVE: app.updateDescriptorSet(app.wboit.shaders, sets, app.syncIndex); break;
+      case Stage.IMGUI: break;
       default: foreach(ref s; app.compute.shaders) if(s.path == key){ app.updateDescriptorSet([s], sets, app.syncIndex); break; }
     }
   }
@@ -294,7 +304,9 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[]
     infoIndex ~= bufferInfos.length - 1;
   }
   // Image sampler / Compute Stored Image Write
-  if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+  if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+     d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
+     d.type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
     app.writeImageInfos(imageInfos, d);
     VkWriteDescriptorSet set = makeWrite(dst, d.binding, d.type, null, null);
     set.descriptorCount = cast(uint)(imageInfos.length - start);

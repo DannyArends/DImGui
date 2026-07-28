@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : createBuffer, cleanup;
+import buffer : createAllocation, cleanup;
 import commands : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
 import sync : insertWriteBarrier;
@@ -13,13 +13,14 @@ import validation : nameVulkanObject;
 
 /** GPU SSBO: per-copy allocations, per-copy dirty flags, and layout. */
 struct SSBO {
-  GPUAllocation[] allocations;
-  alias allocations this;
+  GPUAllocation[] allocations;    /// Per-frame buffer copies (one per framesInFlight)
+  alias allocations this;         /// An SSBO acts as its allocation array
 
-  private bool[] dirty;
-  uint nObjects;
-  uint stride;
-  bool deviceLocal;
+  private bool[] dirty;           /// Per-copy upload-needed flag
+  uint nObjects;                  /// Element capacity
+  uint stride;                    /// Bytes per element
+  bool deviceLocal;               /// Device-local (staged upload) vs host-visible (mapped)
+  bool concurrent;                /// Shared across graphics + compute queue families
 
   @property @nogc uint size() nothrow const { return nObjects * stride; }
   @property @nogc bool buffered() nothrow const { foreach(d; dirty){ if(d){ return(false); } } return(true); }
@@ -49,35 +50,23 @@ void nameSSBO(ref App app, SSBO ssbo, string name){
   }
 }
 
-/** Memory properties for an SSBO copy: device-local, or host-visible+coherent for mapped copies. */
-VkMemoryPropertyFlags ssboMemoryProps(bool deviceLocal) {
-  return deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-}
-
-immutable VkBufferUsageFlags ssboUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-/** Create (and map, if host-visible) one SSBO copy at `size`, and mark it dirty for upload. */
-void createAllocation(ref App app, ref GPUAllocation a, uint size, bool deviceLocal) {
-  app.createBuffer(&a.buffer, &a.memory, size, ssboUsage, ssboMemoryProps(deviceLocal));
-  if(!deviceLocal){ enforceVK(vkMapMemory(app.device, a.memory, 0, size, 0, &a.data)); (cast(ubyte*)a.data)[0 .. size] = 0; }
-}
-
 /** Create GPU SSBO buffer for nObjects. copies = per-frame buffer count (0 = app.framesInFlight).
  *  copies < framesInFlight is only safe for deviceLocal buffers ordered by a barrier within a frame;
  *  a host-visible buffer driven by updateSSBO needs framesInFlight copies or the CPU races the GPU. */
-void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, bool deviceLocal = false) {
+void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, bool deviceLocal = false, bool concurrent = false) {
   if(app.verbose) {
-    SDL_Log("createSSBO %s, stride = %d, objects: %d, deviceLocal: %d", toStringz(d.base), d.bytes, nObjects, deviceLocal);
+    SDL_Log("createSSBO %s, stride: %d, objects: %d, deviceLocal: %d, concurrent: %d", toStringz(d.base), d.bytes, nObjects, deviceLocal, concurrent);
   }
   if(d.base in app.buffers) return;
   app.buffers[d.base] = SSBO();
   app.buffers[d.base].nObjects = nObjects;
   app.buffers[d.base].stride = cast(uint)d.bytes;
   app.buffers[d.base].deviceLocal = deviceLocal;
+  app.buffers[d.base].concurrent = concurrent;
   app.buffers[d.base].length = app.buffers[d.base].dirty.length = app.framesInFlight;
 
   foreach(i, ref allocation; app.buffers[d.base]) {
-    app.createAllocation(allocation, app.buffers[d.base].size, deviceLocal);
+    app.createAllocation(allocation, app.buffers[d.base].size, deviceLocal, concurrent);
     app.buffers[d.base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[d.base], d.base);
@@ -93,11 +82,13 @@ void createSSBO(ref App app, const Descriptor d, uint nObjects = 1024, bool devi
  *  remap host-visible data, flag descriptors for a targeted re-point. No swapchain/pipeline touch. */
 void growSSBO(ref App app, string base, uint nObjects) {
   bool deviceLocal = app.buffers[base].deviceLocal;
+  bool concurrent = app.buffers[base].concurrent;
+
   app.buffers[base].nObjects = nObjects;
 
   foreach(i, ref allocation; app.buffers[base]) {
     app.deAllocate(allocation);
-    app.createAllocation(allocation, app.buffers[base].size, deviceLocal);
+    app.createAllocation(allocation, app.buffers[base].size, deviceLocal, concurrent);
     app.buffers[base].dirty[i] = true;
   }
   app.nameSSBO(app.buffers[base], base);

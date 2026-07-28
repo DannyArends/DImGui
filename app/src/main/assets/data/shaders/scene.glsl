@@ -6,19 +6,6 @@
 #ifndef SCENE_GLSL
 #define SCENE_GLSL
 
-// Compile time constants
-layout(constant_id = 0) const int TOPOLOGY = 3;
-layout(constant_id = 1) const bool ALPHA_TEST = true;
-layout(constant_id = 2) const bool INSTANCED = true;
-layout(constant_id = 3) const uint GRID_X = 16u;
-layout(constant_id = 4) const uint GRID_Y = 9u;
-layout(constant_id = 5) const uint GRID_Z = 24u;
-layout(constant_id = 6) const bool SDF = false;
-
-// Constants
-const uint NIL = 0xFFFFFFFFu;
-const float EPS = 1e-6;
-
 /// Uniform Buffer Objects
 #define BINDING_SCENE_UBO          0
 #define BINDING_LIGHT_UBO          1
@@ -40,7 +27,6 @@ const float EPS = 1e-6;
 #define BINDING_CLUSTER_COUNTER   10
 
 struct Light {
-  mat4 lightProjView; /// Combined light's projection * light's view matrix
   vec4 position;      /// Position of the light; w==0: directional, w!=0: point/spot
   vec4 intensity;     /// Light intensity (color)
   vec4 direction;     /// Light direction
@@ -101,7 +87,7 @@ layout(std430, set=0, binding=BINDING_CLUSTER_COUNTER) buffer ClusterCounter {
 /// UBO
 layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   vec4 position;              /// Scene Camera Position
-  mat4 scene;                 /// Scene Camera adjustment
+  mat4 viewProj;              /// View Projection Orientation matrix
   mat4 view;                  /// View matrix
   mat4 proj;                  /// Projection matrix
   mat4 ori;                   /// Screen orientation
@@ -110,6 +96,14 @@ layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {
   uint lightingMode;          /// Show shadows ?
   uint indexBufferLength;     /// Total entries in ClusterLights.indices[]
   vec4 clusterCfg;            /// [sliceScale, sliceBias, screenW, screenH]
+  vec4 shadowCentre;          /// cam.lookat (cascade footprint centre)
 } ubo;
+
+layout(std140, set = 0, binding = BINDING_LIGHT_UBO) uniform LightSpaceMatrices {
+  mat4 scene;
+  vec4 cascadeSplit;              /// per-cascade view-depth splits (x,y,z used)
+  mat4 slotVP[MAX_SHADOW_MAPS];   /// per-slot view-proj, shared by shadow + scene passes
+  uint nlights;
+} lightUbo;
 
 #endif // SCENE_GLSL

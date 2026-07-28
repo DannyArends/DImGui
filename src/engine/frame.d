@@ -7,8 +7,8 @@ import engine;
 
 import bone : updateBoneOffsets;
 import descriptor : repointDirtyDescriptors;
-import commands : recordSceneCommandBuffer, recordPostCommandBuffer;
-import compute : recordComputeCommandBuffer;
+import commands : recordSceneCommandBuffer, recordPostCommandBuffer, recordDepthPrePass;
+import compute : recordComputeCommandBuffer, ComputeStage, passEnabled, isStage;
 import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
 import mesh : updateMeshInfo;
@@ -22,10 +22,12 @@ import window : createOrResizeWindow;
 /** waitForFrame */
 @nogc void waitForFrame(ref App app) nothrow {
   if(app.trace) SDL_Log("Phase 0: Wait for CPU-GPU Sync for current frame in flight");
-  if(app.hasCompute) {
+  if(app.fences[app.syncIndex].computeSubmitted) {
     enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight, true, ulong.max));
-    enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
+    app.fences[app.syncIndex].computeSubmitted = false;
   }
+  enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].computeInFlight));
+
   enforceVK(vkWaitForFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight, true, ulong.max));
   enforceVK(vkResetFences(app.device, 1, &app.fences[app.syncIndex].renderInFlight));
   app.bufferDeletionQueue.flush();
@@ -59,25 +61,24 @@ void renderFrame(ref App app, double dt) {
   app.timed!repointDirtyDescriptors();              /// Repoint dirty descriptors
   // SDL_Log("Frame[%d]: S:%d, F:%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
 
-  // --- Phase 2: Prepare & Submit Compute Work ---
-  if (app.hasCompute) {
-    if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
-    VkCommandBuffer[8] computeCommandBuffers;
-    uint nCompute = 0;
+  // --- Phase 2: Record All Compute, and submit PreRender Compute Work ---
+  if (app.hasCompute) { if(app.trace) SDL_Log("Phase 2.1: Prepare Compute Work");
+    VkCommandBuffer[] computeCommandBuffers;
     foreach(ref shader; app.compute.shaders){
+      if(!app.passEnabled(shader.path)) continue;
       app.timed!recordComputeCommandBuffer(shader);
-      computeCommandBuffers[nCompute++] = app.compute.commands[shader.path][app.syncIndex];
+      if(app.isStage(shader.path, ComputeStage.PreRender)) { computeCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex]; }
     }
-
-    VkSubmitInfo submitComputeInfo = {
-      sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      commandBufferCount : nCompute,
-      pCommandBuffers : &computeCommandBuffers[0],
-      signalSemaphoreCount : 1,
-      pSignalSemaphores : &computeComplete
-    };
-    if(app.trace) SDL_Log("Phase 2.2: Submit Compute work");
-    enforceVK(vkQueueSubmit(app.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
+    if(computeCommandBuffers.length > 0) { // submit only if we have pre-render compute (e.g. Cull)
+      VkSubmitInfo submitComputeInfo = {
+        sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        signalSemaphoreCount : 1, pSignalSemaphores : &computeComplete,
+        commandBufferCount : cast(uint)computeCommandBuffers.length, pCommandBuffers : &computeCommandBuffers[0],
+      };
+      if(app.trace) SDL_Log("Phase 2.2: Submit Compute work");
+      enforceVK(vkQueueSubmit(app.computeQueue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
+      app.fences[app.syncIndex].computeSubmitted = true;
+    }
   }
 
   // --- Phase 3: Prepare Shadowmap ---
@@ -87,38 +88,39 @@ void renderFrame(ref App app, double dt) {
     app.timed!recordShadowCommandBuffer(app.syncIndex);
   }else{ shadowsThisFrame = false; }
 
-  // --- Phase 4: Prepare & Submit Graphics & ImGui Work ---
+  // --- Phase 4: Record Scene renderer, Post-Process and ImGui ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
+  app.timed!recordDepthPrePass();
   app.timed!recordSceneCommandBuffer(app.shaders);
   app.timed!recordPostCommandBuffer();
   app.timed!recordImGuiCommandBuffer();
 
+  // --- Phase 5:  Submit CommandBuffers: Scene renderer, Post-Depth Compute, PostProcess and ImGui ---
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
-  VkCommandBuffer[4] submitCommandBuffers;
-  uint nSubmit = 0;
-  if (shadowsThisFrame){ submitCommandBuffers[nSubmit++] = app.shadows.cmd[app.syncIndex]; }
-  submitCommandBuffers[nSubmit++] = app.sceneCmd[app.syncIndex];
-  submitCommandBuffers[nSubmit++] = app.postCmd[app.syncIndex];
-  submitCommandBuffers[nSubmit++] = app.imguiCmd[app.syncIndex];
+  VkCommandBuffer[] submitCommandBuffers;
+  submitCommandBuffers ~= app.depthCmd[app.syncIndex];
+  if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
+  if(app.hasCompute){ foreach(ref shader; app.compute.shaders) {
+    if(!app.passEnabled(shader.path)) continue;
+    if(app.isStage(shader.path, ComputeStage.PostDepth)){ submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex]; }
+  } }
+  submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
+  submitCommandBuffers ~= app.postCmd[app.syncIndex];
+  submitCommandBuffers ~= app.imguiCmd[app.syncIndex];
 
   WaitList!2 wait;
   wait.add(imageAcquired, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-  if (app.hasCompute){ wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
+  if(app.fences[app.syncIndex].computeSubmitted) { wait.add(computeComplete, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT); }
 
   VkSubmitInfo submitInfo = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    waitSemaphoreCount : wait.count,
-    pWaitSemaphores : &wait.sems[0],
-    pWaitDstStageMask : &wait.stages[0],
-
-    commandBufferCount : nSubmit,
-    pCommandBuffers : &submitCommandBuffers[0],
-    signalSemaphoreCount : 1,
-    pSignalSemaphores : &renderComplete
+    waitSemaphoreCount : wait.count, pWaitSemaphores : &wait.sems[0], pWaitDstStageMask : &wait.stages[0],
+    commandBufferCount : cast(uint)submitCommandBuffers.length, pCommandBuffers : &submitCommandBuffers[0],
+    signalSemaphoreCount : 1, pSignalSemaphores : &renderComplete
   };
 
   //SDL_Log("vkQueueSubmit: frame=%d sync=%d frameIndex=%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
-  enforceVK(vkQueueSubmit(app.queue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
+  enforceVK(vkQueueSubmit(app.gfxQueue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
   if(app.trace) SDL_Log("Done renderFrame: %d", app.syncIndex);
   app.totalFramesRendered++;
 }
@@ -135,7 +137,7 @@ void renderFrame(ref App app, double dt) {
     pSwapchains : &app.swapChain,
     pImageIndices : &app.frameIndex,
   };
-  auto err = vkQueuePresentKHR(app.queue, &info);
+  auto err = vkQueuePresentKHR(app.gfxQueue, &info);
   if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR || err == VK_ERROR_SURFACE_LOST_KHR) app.rebuild = true;
   if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_ERROR_SURFACE_LOST_KHR) return;
   if(err != VK_SUBOPTIMAL_KHR) enforceVK(err);
