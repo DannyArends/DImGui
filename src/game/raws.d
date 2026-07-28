@@ -18,6 +18,7 @@ immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
 immutable ResourceT[] resourceTable = parseResources(import("data/raws/materials.txt"));
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
+immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
 
 static assert(resourceTable.length == ResourceType.max + 1, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
@@ -140,6 +141,35 @@ ItemTemplateT[] parseItemTemplates(string raw) pure {
   }
   if(inItem) table ~= cur;
   return table;
+}
+
+/** CTFE: parse animal raws into species definitions. */
+AnimalT[] parseAnimals(string raw) pure {
+  AnimalT[] animals;
+  AnimalT a; bool inAnimal;
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    switch(p[0]) {
+      case "ANIMAL":           if(inAnimal){ animals ~= a; } a = AnimalT.init; a.name = p[1]; inAnimal = true; break;
+      case "MESH":             a.mesh = p[1]; break;
+      case "SPAWN_ON":         a.spawnOn ~= p[1]; break;
+      case "NOISE_THRESHOLD":  a.noiseThreshold = to!float(p[1]); break;
+      case "HASH_SEED1":       a.hashSeed1 = to!uint(p[1]); break;
+      case "HASH_SEED2":       a.hashSeed2 = to!uint(p[1]); break;
+      case "HASH_MOD":         a.hashMod = to!uint(p[1]); break;
+      case "HASH_REM":         a.hashRem = to!uint(p[1]); break;
+      case "MOVE_SPEED":       a.moveSpeed = to!float(p[1]); break;
+      case "HUNGER_DECAY":     a.hungerDecay = to!float(p[1]); break;
+      case "THIRST_DECAY":     a.thirstDecay = to!float(p[1]); break;
+      case "DIET":             a.diet = p[1]; break;
+      case "SCALE":            a.scale = to!float(p[1]); break;
+      case "SCALE_VARIANCE":   a.scaleVariance = to!float(p[1]); break;
+      default: break;
+    }
+  }
+  if(inAnimal){ animals ~= a; }
+  return animals;
 }
 
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */

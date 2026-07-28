@@ -5,6 +5,7 @@
 
 public import engine;
 
+public import animal : AnimalT;
 public import block : Block, Drops;
 public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;
@@ -20,7 +21,7 @@ public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
-public import raws : reactionTable, ResourceType, ResourceClass, ItemTemplate, templateData, resourceData, heightToResource, features;
+public import raws : reactionTable, ResourceType, ResourceClass, ItemTemplate, templateData, resourceData, heightToResource, features, animalTable;
 public import resources : ClassVal, ResourceT, ItemTemplateT, Item, traversable, buildable, cost, maxStack, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;
