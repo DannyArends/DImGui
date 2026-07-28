@@ -30,6 +30,28 @@ class Dwarves : Cylinder {
   }
 }
 
+/** Data-driven foraging animals, rendered as instanced tori */
+class Animals : Torus {
+  Animal[] animals;
+  alias animals this;
+  size_t[] tickOrder;
+
+  this() {
+    super([0.15f, 0.35f], [12, 20]);          // small torus, low poly
+    initInstanced(() => "Animals");
+  }
+
+  void remove(size_t index) {
+    size_t last = animals.length - 1;
+    if(index != last) {
+      animals[index]  = animals[last];
+      instances[index] = instances[last];
+    }
+    animals.length = last;
+    instances.resize(last);
+  }
+}
+
 /** Renderable cube geometry for individual blocks within a chunk, not selectable */
 class Tiles : Square {
   this(ChunkData cd) {
