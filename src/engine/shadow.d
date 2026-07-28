@@ -40,6 +40,7 @@ struct ShadowMap {
   Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
   Matrix[MAX_SHADOW_MAPS] slotVP;
 
+  uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
   uint staticShadowInstances = 0;           /// Static shadow instances count
@@ -270,7 +271,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
 /** Update the shadow mapping UBO */
 void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
   LightUbo ubo = { scene: Matrix.init, nlights: cast(uint)app.lights.length };
-  ubo.slotVP[] = app.shadows.slotVP[];
+  ubo.slotVP[] = app.shadows.slotStaticMatrix[];
   ubo.cascadeSplit = [CASCADE_SPLIT[0], CASCADE_SPLIT[1], CASCADE_SPLIT[2], cast(float)NUM_CASCADES];
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
@@ -294,7 +295,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     for(uint c = 0; c < count; c++) {
       uint s = cast(uint)first + c;
       app.shadows.activeShadowMaps++;
-      auto lFrustum = extractFrustum(app.shadows.slotVP[s]);
+      auto lFrustum = extractFrustum(app.shadows.slotStaticMatrix[s]);
       pushLabel(cmd, cstr("Shadow RenderPass: slot %d", s), Colors.lightgray);
       if(app.shadows.staticDirty[s]) {
         app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.images[s].extent, true);
