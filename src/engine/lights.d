@@ -10,7 +10,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : resizeShadowMap, shadowResolution, MAX_SHADOW_MAPS, NUM_CASCADES, CASCADE_RADIUS;
+import shadow : resizeShadowMap, shadowResolution, assignShadowSlots, updateShadowSlotMatrices, selectStaticRebuilds;
 import textures : mapTextures;
 import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -208,78 +208,23 @@ void updateSun(ref App app, float azimuth, float elevation, float dawnThreshold 
 /** Disco beam */
 @nogc pure float beam(float t, float speed, float freq, float phase) nothrow { return abs(sin(t * speed * freq + phase)) * 500.0f; }
 
-/** Shadow importance: brighter & nearer scores higher; <=0 means ineligible. */
-@nogc float shadowScore(ref Light light, float[3] eye) nothrow {
-  if(light.directional || !light.enabled) return -1.0f;
-  float[3] d = vSub(light.position.xyz, eye);
-  return max(light.intensity[0], light.intensity[1], light.intensity[2]) / (dot(d, d) + 1.0f);
-}
-
-/** Select shadow casters this frame: sun always casts (unbudgeted); point lights compete by importance. */
-void computeActiveLighting(ref App app) {
-  if(app.lights.scoreBuf.length < app.lights.length) app.lights.scoreBuf.length = app.lights.length;
-  assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
-  if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
-  auto score = app.lights.scoreBuf[0 .. app.lights.length];
-  float slot = 0.0f;
-  foreach(i, ref light; app.lights) {
-    light.computeCone();
-    if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
-      light.cull[1 .. 2] = [slot];
-      slot += NUM_CASCADES;
-      score[i] = -1.0f;
-    } else {
-      light.cull[1] = -1.0f;
-      score[i] = light.shadowScore(app.camera.position);
-    }
-  }
-
-  for(uint picked = 0; picked < app.shadows.budget && slot < MAX_SHADOW_MAPS; picked++) {
-    size_t best = size_t.max;
-    foreach(i; 0 .. app.lights.length) { if(score[i] > 0.0f && (best == size_t.max || score[i] > score[best])) best = i; }
-    if(best == size_t.max) break;
-    app.lights[best].cull[1] = slot++;
-    score[best] = -1.0f;
-  }
-
-  foreach(ref light; app.lights) {
-    light.computeRadius();
-    int first = cast(int)light.cull[1];
-    if(first < 0) continue;
-    uint count = light.directional ? NUM_CASCADES : 1u;
-    uint resolution = app.shadowResolution(light);
-    foreach(c; 0 .. count) {
-      int s = first + cast(int)c;
-      // For the last cascade, use the camera-derived radius (distance from near to far);
-      float radius = (count > 1) ? ((c == count - 1) ?  app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
-      app.shadows.slotVP[s] = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
-      uint before = app.shadows.images[s].extent.width;
-      app.resizeShadowMap(s, resolution);
-      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // reallocated: rebuild now
-    }
-  }
-  // Amortise CSM: rebuild any forced (resize/config) slots + at most ONE drifted slot per frame (round-robin).
-  foreach(step; 0 .. MAX_SHADOW_MAPS) {
-    uint s = cast(uint)((app.shadows.staticCursor + step) % MAX_SHADOW_MAPS);
-    if(!app.shadows.staticDirty[s] && app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) {
-      app.shadows.staticDirty[s] = true;
-      app.shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS;
-      break;
-    }
-  }
-  // Commit the matrix of every slot rebuilding this frame so build + sample + cull agree.
-  foreach(s; 0 .. MAX_SHADOW_MAPS) { if(app.shadows.staticDirty[s]) { app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s]; } }
-
-  foreach(ref light; app.lights) { light.direction = light.direction.xyz.normalize().xyzw(light.direction[3]); }
-  app.buffers["LightMatrices"].invalidate();
-
+/** Grow the cluster-light SSBO if last frame overflowed it. */
+void growClusterBufferIfNeeded(ref App app) {
   if(app.hasCompute && "ClusterCounter" in app.buffers) {
     uint used = *cast(uint*)app.buffers["ClusterCounter"][app.syncIndex].data;
-    if(used > app.clusterCapacity) {
-      app.clusterCapacity = used * 2;
-      app.growSSBO("ClusterLights", app.clusterCapacity);
-    }
+    if(used > app.clusterCapacity) { app.clusterCapacity = used * 2; app.growSSBO("ClusterLights", app.clusterCapacity); }
   }
+}
+
+/** Assign shadow slots, update matrices, amortise rebuilds, and finalise the light SSBO for this frame. */
+void computeActiveLighting(ref App app) {
+  if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
+  app.assignShadowSlots();
+  app.updateShadowSlotMatrices();
+  app.selectStaticRebuilds();
+  foreach(ref light; app.lights) light.direction = light.direction.xyz.normalize().xyzw(light.direction[3]);
+  app.buffers["LightMatrices"].invalidate();
+  app.growClusterBufferIfNeeded();
 }
 
 /** Disco mode 🕺 🪩 💃 */

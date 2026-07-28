@@ -10,12 +10,12 @@ import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
 import framebuffer : createFramebuffer, cleanup;
 import geometry : bufferGeometries, draw;
-import lights : computeLightSpace;
+import lights : computeLightSpace, computeRadius;
 import images : cleanup, copyImageLayer, createNamedImage;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
 import validation : popLabel, pushLabel;
-import vector : xyz;
+import vector : xyz, vSub, dot;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
@@ -62,6 +62,13 @@ void createShadowMap(ref App app) {
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/vertex.shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
+/** Shadow importance: brighter & nearer scores higher; <=0 means ineligible. */
+@nogc float shadowScore(ref Light light, float[3] eye) nothrow {
+  if(light.directional || !light.enabled) return -1.0f;
+  float[3] d = vSub(light.position.xyz, eye);
+  return max(light.intensity[0], light.intensity[1], light.intensity[2]) / (dot(d, d) + 1.0f);
+}
+
 /** Shadow map resolution for a light: full dimension for the directional sun, quarter for point/spot. */
 @nogc uint shadowResolution(ref App app, ref Light light) nothrow {
   return light.directional ? app.shadows.dimension : app.shadows.dimension / 2;
@@ -102,6 +109,59 @@ void resizeShadowMap(ref App app, size_t s, uint size) {
   app.deAllocate(app.shadows.images[s]);
   app.makeShadowMap(app.shadows, s, size);
   app.shadows.shadowDescriptorsDirty[] = true;
+}
+
+
+/** Assign shadow-map slots: directional cascades first, then the top-K point/spot lights by score. */
+void assignShadowSlots(ref App app) {
+  if(app.lights.scoreBuf.length < app.lights.length) app.lights.scoreBuf.length = app.lights.length;
+  assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
+  auto score = app.lights.scoreBuf[0 .. app.lights.length];
+  float slot = 0.0f;
+  foreach(i, ref light; app.lights) {
+    light.computeCone();
+    if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
+      light.cull[1 .. 2] = [slot]; slot += NUM_CASCADES; score[i] = -1.0f;
+    } else {
+      light.cull[1] = -1.0f; score[i] = light.shadowScore(app.camera.position);
+    }
+  }
+  for(uint picked = 0; picked < app.shadows.budget && slot < MAX_SHADOW_MAPS; picked++) {
+    size_t best = size_t.max;
+    foreach(i; 0 .. app.lights.length) { if(score[i] > 0.0f && (best == size_t.max || score[i] > score[best])) best = i; }
+    if(best == size_t.max) break;
+    app.lights[best].cull[1] = slot++; score[best] = -1.0f;
+  }
+}
+
+/** Compute each active slot's light-space matrix and resize its map; a resize forces a static rebuild. */
+void updateShadowSlotMatrices(ref App app) {
+  foreach(ref light; app.lights) {
+    light.computeRadius();
+    int first = cast(int)light.cull[1];
+    if(first < 0) continue;
+    uint count = light.directional ? NUM_CASCADES : 1u;
+    uint resolution = app.shadowResolution(light);
+    foreach(c; 0 .. count) {
+      int s = first + cast(int)c;
+      float radius = (count > 1) ? ((c == count - 1) ? app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
+      app.shadows.slotVP[s] = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
+      uint before = app.shadows.images[s].extent.width;
+      app.resizeShadowMap(s, resolution);
+      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // reallocated: rebuild now
+    }
+  }
+}
+
+/** Pick at most one drifted cascade per frame (round-robin), then commit the matrix of every slot rebuilding this frame. */
+@nogc nothrow void selectStaticRebuilds(ref App app) {
+  foreach(step; 0 .. MAX_SHADOW_MAPS) {
+    uint s = cast(uint)((app.shadows.staticCursor + step) % MAX_SHADOW_MAPS);
+    if(!app.shadows.staticDirty[s] && app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) {
+      app.shadows.staticDirty[s] = true; app.shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS; break;
+    }
+  }
+  foreach(s; 0 .. MAX_SHADOW_MAPS) if(app.shadows.staticDirty[s]) app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
 }
 
 /** Shadow map render pass creation */
