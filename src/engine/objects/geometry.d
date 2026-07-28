@@ -177,9 +177,9 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   VkDeviceSize offset = 0;
   pushLabel(cmd, cstr("DRAW: %s", object.geometry()), Colors.lightgray);
 
-  vkCmdBindVertexBuffers(cmd, VERTEX, 1, cast(VkBuffer*)&object.vertices.vb[app.syncIndex], &offset);
-  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[app.syncIndex], &offset);
-  vkCmdBindIndexBuffer(cmd, cast(VkBuffer)object.indices.vb[app.syncIndex], 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(cmd, VERTEX, 1, cast(VkBuffer*)&object.vertices.vb[object.vertices.slot(app.syncIndex)], &offset);
+  vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[object.instances.slot(app.syncIndex)], &offset);
+  vkCmdBindIndexBuffer(cmd, cast(VkBuffer)object.indices.vb[object.indices.slot(app.syncIndex)], 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, object.indices.count(app.syncIndex), object.instances.count(app.syncIndex), 0, 0, 0);
   popLabel(cmd);
