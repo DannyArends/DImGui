@@ -11,7 +11,7 @@ import animation : animateAsset;
 import io : dir, fixPath;
 import material : registerMaterials;
 import images : cleanup;
-import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures;
+import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures, clampSurface, textureCap;
 
 /** Worker thread that loads textures and assimp assets off the main thread, returning results via messages */
 class TaskThread : Thread {
@@ -42,6 +42,7 @@ class TaskThread : Thread {
           if (path.isTexture()) {
             auto surface = IMG_Load(fixPath(toStringz(path)));
             if (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel < 4) { surface.toRGBA(verbose); }
+            surface.clampSurface(textureCap(path));   // downscale oversized art before it reaches the GPU
             auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);
             main.send(texture, mytid);
           } else if(path.isOpenAsset()) {

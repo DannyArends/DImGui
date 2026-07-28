@@ -60,6 +60,7 @@ struct Textures {
   app.cleanup(texture.buffer);
 }
 
+/** Check file extension to determine if something is a texture */
 bool isTexture(string path){
   if(extension(path) == ".jpg") return(true);
   if(extension(path) == ".png") return(true);
@@ -74,6 +75,24 @@ void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
     surface = adapted;
     if(verbose > 1) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel));
   }
+}
+
+/** VRAM cap for a texture's longest side; data maps (AO/normal/rough) tolerate half the albedo resolution. */
+int textureCap(string path) {
+  int cap = isAndroid ? 1024 : 2048;
+  foreach(suffix; ["_Ao", "_ao", "_Nor", "_nor", "_normal", "_Rough", "_rough", "_Metal", "_metal"]) { if(path.indexOf(suffix) >= 0) return(cap / 2); }
+  return(cap);
+}
+
+/** Downscale an oversized surface in place to fit maxDim on its longest side (preserves aspect). */
+void clampSurface(ref SDL_Surface* surface, int maxDim) {
+  int m = (surface.w > surface.h) ? surface.w : surface.h;
+  if(m <= maxDim) return;
+  float s = cast(float)maxDim / m;
+  int nw = cast(int)(surface.w * s + 0.5f); if(nw < 1) nw = 1;
+  int nh = cast(int)(surface.h * s + 0.5f); if(nh < 1) nh = 1;
+  SDL_Surface* scaled = SDL_ScaleSurface(surface, nw, nh, SDL_SCALEMODE_LINEAR);
+  if(scaled) { SDL_DestroySurface(surface); surface = scaled; }
 }
 
 /** Create a 1x1 white SDL_Surface */
