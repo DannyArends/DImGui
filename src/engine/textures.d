@@ -15,8 +15,7 @@ import views : createImageView, createLayerViews;
 
 enum MAX_TEXTURES = 512;
 
-@nogc ImTextureRef ImTextureRefFromID(ulong tex_id) nothrow { ImTextureRef tex_ref = { null, cast(ImTextureID)tex_id }; return(tex_ref); }
-
+/** A GPU texture: source surface, backing image, and its ImGui descriptor handle */
 struct Texture {
   string path;
   uint width = 0;
@@ -41,18 +40,23 @@ struct Texture {
   }
 }
 
+/** A texture uploaded to the GPU but awaiting its transfer fence before it's ready */
 struct PendingTexture {
   Texture texture;
   SingleTimeCommand cmdBuffer;
   GPUAllocation staging;
 }
 
+/** Registry of loaded textures plus the pending-upload queue */
 struct Textures {
   Texture[] textures;                         /// Textures
   PendingTexture[] pending;                   /// Textures submitted to GPU but not yet confirmed ready
   bool loaded = false;                        /// Are we loading a texture a-sync ?
   alias textures this;
 }
+
+/** Wrap a raw texture id in an ImGui ImTextureRef */
+@nogc ImTextureRef ImTextureRefFromID(ulong tex_id) nothrow { ImTextureRef tex_ref = { null, cast(ImTextureID)tex_id }; return(tex_ref); }
 
 /** DeAllocate a Texture: free its ImGui descriptor set first, then the backing image */
 @nogc void cleanup(ref App app, ref Texture texture) nothrow {
@@ -139,6 +143,7 @@ void checkPendingTextures(ref App app) {
   return(besthit);
 }
 
+/** Upload a texture on a single-time command buffer and queue it as pending until its transfer fence signals */
 void transferTextureAsync(ref App app, ref Texture texture) {
   auto pool = app.commandPool;
   auto queue = app.gfxQueue;
@@ -157,13 +162,16 @@ void transferTextureAsync(ref App app, ref Texture texture) {
   app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }
 
+/** Resolve a material's texture of the given type to a registered texture index (-1 if none) */
 int getTexture(ref App app, AMat material, aiTextureType type = aiTextureType_DIFFUSE){
   if (type in material.textures) { return(idx(app.textures, material.textures[type])); }
   return(-1);
 }
 
+/** Resolve texture indices for every object's materials */
 void mapTextures(ref App app) { for(uint i = 0; i < app.objects.length; i++) { app.mapTextures(app.objects[i]); } }
 
+/** Resolve texture indices for one object's mesh materials */
 void mapTextures(ref App app, ref Geometry object) {
   foreach (ref mesh; object.meshes) {
     if(mesh.mid < 0 || mesh.mat < 0) continue;
@@ -177,6 +185,7 @@ void mapTextures(ref App app, ref Geometry object) {
   }
 }
 
+/** Once a texture's upload lands on the current frame, remap materials and refresh the render descriptor set */
 void updateTextures(ref App app) {
   bool needsUpdate = false;
   size_t nPending = app.textures.pending.length;
@@ -199,6 +208,7 @@ void updateTextures(ref App app) {
   }
 }
 
+/** Upload a texture's pixels to a device-local image: staging buffer into copy into generate mipmaps */
 void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUAllocation staging, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
   app.createBuffer(&staging.buffer, &staging.memory, texture.surface.imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   app.nameVulkanObject(staging.buffer, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);

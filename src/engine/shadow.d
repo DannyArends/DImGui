@@ -23,23 +23,23 @@ enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x s
 enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
 
 struct ShadowMap {
-  ImageBuffer[] images;
+  ImageBuffer[] images;                     /// Per-slot shadow map images (layer 0 static, layer 1 static+dynamic composite)
 
-  VkSampler sampler;
-  Shader[] shaders;
-  CommandBuffer!2 cmd;
-  GraphicsPipeline pipeline;
+  VkSampler sampler;                        /// Comparison sampler for depth lookups
+  Shader[] shaders;                         /// Shadow depth-only shader(s)
+  CommandBuffer!2 cmd;                      /// Two-pass command buffer: static (0), dynamic (1)
+  GraphicsPipeline pipeline;                /// Shadow depth-only pipeline
 
   VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
   uint dimension = isAndroid ? 1024 : 4096; /// Shadowmap dimension
   uint budget = isAndroid ? 4 : 24;         /// Max lights casting shadows per frame (stage 1: first-K)
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
-  bool[] shadowDescriptorsDirty;
-  bool[] staticDirty;
+  bool[] shadowDescriptorsDirty;            /// Per-frame flag: shadow sampler descriptors need rewriting
+  bool[] staticDirty;                       /// Per-slot flag: rebuild layer 0 this frame
   bool[] staticPending;                     /// content changed (e.g. terrain edit): needs rebuild, drained one/frame
   Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
-  Matrix[MAX_SHADOW_MAPS] slotVP;
+  Matrix[MAX_SHADOW_MAPS] slotVP;           /// Per-slot desired light-space matrix this frame (pre-commit)
 
   uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
@@ -49,10 +49,10 @@ struct ShadowMap {
 }
 
 struct LightUbo {
-  Matrix scene;
+  Matrix scene;                       /// Scene root transform
   float[4] cascadeSplit;              /// per-cascade shadowDistance splits (x,y,z used)
   Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
-  uint nlights;
+  uint nlights;                       /// Active light count
 }
 
 void createShadowMap(ref App app) {
