@@ -96,8 +96,8 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
   }
   app.world.paths.pending = [];
   app.invalidatePaths(tile);
-  app.shadows.staticDirty[] = true;
-  if(newType == ResourceType.None) app.world.activate(tile);   // mined out: wake neighbouring water to flow in
+  app.shadows.staticPending[] = true;
+  if(newType == ResourceType.None) { app.world.activate(tile); }   // mined out: wake neighbouring water to flow in
 }
 
 @nogc pure int[3] tileBelow(const int[3] tile) nothrow { return [tile[0], tile[1] - 1, tile[2]]; }
