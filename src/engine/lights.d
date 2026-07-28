@@ -26,7 +26,7 @@ enum uint NIL = 0xFFFFFFFF;
 struct Light {
   float[4] position   = [0.0f, 0.0f, 0.0f, 0.0f];    /// Position of the light; w==0: directional, w!=0: point/spot
   float[4] intensity  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light intensity
-  float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction
+  float[4] direction  = [0.0f, 0.0f, 0.0f, 0.0f];    /// Light direction (must be normalized)
   float[4] properties = [0.0f, 0.0f, 0.0f, 1.0f];    /// Light properties [ambient, attenuation, cone half-angle, enabled]
   float[4] cull       = [0.0f,-1.0f, 0.0f, 0.0f];    /// [radius, shadow map index (-1 = none), cosOuter, cosInner]
 
@@ -253,13 +253,23 @@ void computeActiveLighting(ref App app) {
       // For the last cascade, use the camera-derived radius (distance from near to far);
       float radius = (count > 1) ? ((c == count - 1) ?  app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
       app.shadows.slotVP[s] = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
-      if(app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
-      app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
       uint before = app.shadows.images[s].extent.width;
       app.resizeShadowMap(s, resolution);
-      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;
+      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // reallocated: rebuild now
     }
   }
+  // Amortise CSM: rebuild any forced (resize/config) slots + at most ONE drifted slot per frame (round-robin).
+  foreach(step; 0 .. MAX_SHADOW_MAPS) {
+    uint s = cast(uint)((app.shadows.staticCursor + step) % MAX_SHADOW_MAPS);
+    if(!app.shadows.staticDirty[s] && app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) {
+      app.shadows.staticDirty[s] = true;
+      app.shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS;
+      break;
+    }
+  }
+  // Commit the matrix of every slot rebuilding this frame so build + sample + cull agree.
+  foreach(s; 0 .. MAX_SHADOW_MAPS) { if(app.shadows.staticDirty[s]) { app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s]; } }
+
   foreach(ref light; app.lights) { light.direction = light.direction.xyz.normalize().xyzw(light.direction[3]); }
   app.buffers["LightMatrices"].invalidate();
 
