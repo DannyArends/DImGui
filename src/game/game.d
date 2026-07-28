@@ -5,7 +5,7 @@
 
 public import engine;
 
-public import animal : AnimalT;
+public import animal : AnimalT, Animal;
 public import block : Block, Drops;
 public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;
@@ -13,7 +13,7 @@ public import dwarf : Dwarf, DwarfData, DwarfState;
 public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Feature;
 public import inventory : Inventory;
 public import jobs : Job, Need, JobState, Reach;
-public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
+public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
 public import fall : Fall;
@@ -26,6 +26,7 @@ public import resources : ClassVal, ResourceT, ItemTemplateT, Item, traversable,
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 
+import animal : spawnAnimal;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
 import clouds : buildCloudInstances, applyCloudInstances;
@@ -129,6 +130,16 @@ void initGame(ref GameApp app) {
   SDL_Log("createScene: WBOIT test rectangles");
   app.testWBOIT();
   SDL_Log("initGame: done");
+
+SDL_Log("animalTable.length = %d", cast(int)animalTable.length);
+foreach(_; 0 .. 8) app.spawnAnimal(0);
+if(app.world.animals is null) {
+  SDL_Log("no animals: spawnAnimal no-op'd (empty table or no free surface tile)");
+} else {
+  SDL_Log("spawned %d animals", cast(int)app.world.animals.animals.length);
+  foreach(ref a; app.world.animals.animals)
+    SDL_Log("  animal %d at %d,%d,%d", a.uid, a.tile[0], a.tile[1], a.tile[2]);
+}
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
 }
