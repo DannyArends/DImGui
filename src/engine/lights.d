@@ -10,7 +10,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : resizeShadowMap, shadowResolution, assignShadowSlots, updateShadowSlotMatrices, selectStaticRebuilds;
+import shadow : assignShadowSlots, updateShadowSlotMatrices, selectStaticRebuilds;
 import textures : mapTextures;
 import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
