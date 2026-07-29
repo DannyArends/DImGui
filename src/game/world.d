@@ -5,6 +5,7 @@
 
 import game;
 
+import animal : removeChunkAnimals;
 import block : loadBlocks, saveBlocks, syncBlockInstances, ensureBlocks;
 import clouds : saveClouds, loadClouds;
 import dwarf : saveDwarfs, loadDwarfs, spawnDwarf, deleteDwarf;
@@ -192,6 +193,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.loaded.remove(coord);
       app.removeAllFeatures(coord);
+      app.removeChunkAnimals(coord);
       evicted = true;
     }
   }

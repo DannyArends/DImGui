@@ -131,16 +131,6 @@ void initGame(ref GameApp app) {
   app.testWBOIT();
   SDL_Log("initGame: done");
 
-SDL_Log("animalTable.length = %d", cast(int)animalTable.length);
-foreach(_; 0 .. 8) app.spawnAnimal(0);
-if(app.world.animals is null) {
-  SDL_Log("no animals: spawnAnimal no-op'd (empty table or no free surface tile)");
-} else {
-  SDL_Log("spawned %d animals", cast(int)app.world.animals.animals.length);
-  foreach(ref a; app.world.animals.animals)
-    SDL_Log("  animal %d at %d,%d,%d", a.uid, a.tile[0], a.tile[1], a.tile[2]);
-}
-
   app.mainDeletionQueue.add((){ app.saveWorld(); });
 }
 
