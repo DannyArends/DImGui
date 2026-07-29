@@ -9,11 +9,14 @@ import dwarf : findFreeSurfaceTile;
 import color : randomColor;
 import gameobjects : Animals;
 import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord;
-import matrix : translateScale;
+import matrix : translateScale, scale, position;
 import noise : noiseHTT;
+import pathfinding : followPath, stepMove, pathfindTo, repathTo, findGoalTile, syncPathMarkers;
+import tile : getSuccessors;
 
 uint nextAnimalUID = 1;
-
+enum animalStep = 4.0f;    // base step rate (moveT/sec, divided by tile cost)
+enum animalHop  = 0.9f;    // hop arc heightToResource
 enum AnimalState : ubyte { Idle, Wander, SeekFood, SeekWater, Eat, Drink }
 
 /** Data-driven animal species, parsed from data/raws/animals.txt into animalTable. */
@@ -54,12 +57,34 @@ struct Animal {
   float[3] moveFrom  = [0.0f, 0.0f, 0.0f];
   float[3] moveTo    = [0.0f, 0.0f, 0.0f];
   float moveT = 1.0f;                           /// 1.0 = arrived
+  float[3][] path;                              /// Remaining world-space steps
 }
 
 /** Per-frame stub (movement interpolation lands in step 4). */
-void animalFrame(ref GameApp app, float dt) { }
+void animalFrame(ref GameApp app, float dt) {
+  if(app.world.animals is null) return;
+  foreach(i, ref a; app.world.animals.animals) {
+    app.stepMove(a, dt, animalStep, animalHop);
+    float scl = animalTable[a.type].scale;
+    float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;   // hide if chunk unloaded
+    Matrix m = scale(Matrix.init, [sc, sc, sc]);
+    app.world.animals.instances[i] = position(m, a.visualPos);
+  }
+  app.world.animals.syncInstances();
+}
+
 /** Per-tick stub (needs decay + foraging land in steps 4–5). */
-void animalTick(ref GameApp app) { }
+void animalTick(ref GameApp app) {
+  if(app.world.animals is null) return;
+  foreach(ref a; app.world.animals.animals) {
+    if(a.moveT < 1.0f || a.path.length > 0) continue;
+    auto succ = getSuccessors(app.world.data, PathNode(position: a.visualPos));
+    if(succ.length == 0) continue;
+    a.path = [succ[uniform(0, $)].position];
+    a.state = AnimalState.Wander;
+    app.followPath(a);
+  }
+}
 
 /** Create the Animals container and register it for rendering + ticking. */
 void ensureAnimals(ref GameApp app) {

@@ -5,10 +5,10 @@
 
 import game;
 
-import lattice : tileToWorld, worldToTile, tileAbove, tileNeighbours;
+import lattice : tileToWorld, worldToTile, tileAbove, tileNeighbours, tileBelow;
 import matrix : translate;
 import search : performSearch, atGoal, stepThroughPath;
-import tile : getSuccessors, isStandable, isPassable;
+import tile : getSuccessors, isStandable, isPassable, getTileAt;
 import vector : manhattan2D;
 
 struct PathRequest {
@@ -104,6 +104,34 @@ void invalidatePaths(ref GameApp app, int[3] tile) {
     d.moveT = 1.0f;
     if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile, d.jobStack[0].reach);
   }
+}
+
+/** Follow the next step in object T's path. Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT */
+void followPath(T)(ref GameApp app, ref T obj) {
+  if(obj.path.length == 0) return;
+  auto next = obj.path[0];
+  obj.path = obj.path[1..$];
+  obj.moveFrom = obj.visualPos;
+  obj.moveTo = [next[0], next[1], next[2]];
+  obj.moveT = 0.0f;
+  obj.tile = app.world.worldToTile(next);
+  app.camera.isDirty = true;
+}
+
+/** Advance one entity's interpolated step; returns true while still moving. Requires tile/visualPos/moveFrom/moveTo/moveT/path. */
+bool stepMove(T)(ref GameApp app, ref T obj, float dt, float speed, float hop) {
+  if(obj.moveT >= 1.0f) return false;
+  float cost = max(1.0f, app.world.getTileAt(obj.tile.tileBelow).cost);
+  obj.moveT = min(1.0f, obj.moveT + dt * speed / cost);
+  float arc = hop * obj.moveT * (1.0f - obj.moveT);
+  obj.visualPos = [
+    obj.moveFrom[0] + obj.moveT * (obj.moveTo[0] - obj.moveFrom[0]),
+    obj.moveFrom[1] + obj.moveT * (obj.moveTo[1] - obj.moveFrom[1]) + arc,
+    obj.moveFrom[2] + obj.moveT * (obj.moveTo[2] - obj.moveFrom[2])
+  ];
+  if(obj.moveT < 1.0f) return false;
+  if(obj.path.length > 0) { app.followPath(obj); return false; }
+  return true;
 }
 
 /** Attempt to re-path object T to goalTile, returns false if unreachable.
