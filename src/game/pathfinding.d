@@ -9,7 +9,7 @@ import lattice : tileToWorld, worldToTile, tileAbove, tileNeighbours, tileBelow;
 import matrix : translate;
 import search : performSearch, atGoal, stepThroughPath;
 import tile : getSuccessors, isStandable, isPassable, getTileAt;
-import vector : manhattan, manhattan2D;
+import vector : manhattan2D;
 
 struct PathRequest {
   uint uid;
@@ -24,16 +24,13 @@ struct PathResult {
   bool partial;
 }
 
+/** Outcome of a repath attempt. */
+enum RepathResult { Unreachable, AtTarget, Pathing }
+
 struct PathMarker {
   PathMarkers markers;
   PathRequest[] pending;
   void delegate(PathResult)[uint] onResult;
-}
-
-/** True if a partial path gets no closer to the job target — a dead-end commitment (e.g. an unreachable elevated build tile). */
-private bool deadEndPartial(ref GameApp app, ref Dwarf d, ref PathResult result) {
-  if(!d.hasJob || !result.partial || result.path.length == 0) return false;
-  return manhattan(app.world.worldToTile(result.path[$-1]), d.currentJob.targetTile) >= manhattan(d.tile, d.currentJob.targetTile);
 }
 
 /** Log a failed path search with closest-approach diagnostics */
@@ -42,6 +39,18 @@ void logPathFail(S)(ref S result, PathRequest req) {
   foreach(idx; result.closedset.byValue) if(result.pool[idx].h < minH) minH = result.pool[idx].h;
   SDL_Log(cstr("PATHFAIL state=%s from=%s goal=%s steps=%d open=%d closed=%d minH=%.2f stand=%d",
           result.state, req.fromTile, req.goalTile, result.steps, result.openlist.length, result.closedset.length, minH, result.map.isStandable(req.goalTile)));
+}
+
+/** Send a request to a free worker; returns false if none are idle. */
+private bool trySendPath(ref GameApp app, PathRequest req) {
+  foreach(tid; app.concurrency.workers.keys) {
+    if(!app.concurrency.workers[tid]) {
+      app.concurrency.workers[tid] = true;
+      tid.send(cast(immutable(WorldData))app.world.data, req);
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Pathfinding on a worker thread */
@@ -59,31 +68,13 @@ PathResult pathfindWorker(immutable(WorldData) wd, PathRequest req) {
   return PathResult(req.uid, path, true, (result.state == SearchState.PARTIAL));
 }
 
-/** Rebuild path marker instances from all dwarf paths */
-void syncPathMarkers(ref World world, bool showPaths = false) {
-  if(world.paths.markers is null || world.dwarves is null) return;
-  world.paths.markers.instances.reset();
-  if(showPaths) {
-    foreach(ref d; world.dwarves) {
-      foreach(l; d.path) { world.paths.markers.instances ~= DrawInstance(translate([l[0], l[1] - 0.4f, l[2]]), -1, d.color); }
-    }
-  }
-  world.paths.markers.syncInstances();
-}
-
-/** Pathfind object T to goalTile, returns false if unreachable. Requires T to have: tile, path */
+/** Pathfind object T to goalTile; onDone(result) is invoked on the main thread when the search completes.
+ * Requires T to have: uid, tile. Caller owns entity state. */
 void pathfindTo(T)(ref GameApp app, ref T obj, int[3] goalTile, void delegate(PathResult) onDone) {
   app.world.paths.pending = app.world.paths.pending.filter!(r => r.uid != obj.uid).array;
   app.world.paths.onResult[obj.uid] = onDone;
   auto req = PathRequest(obj.uid, obj.tile, goalTile);
-  foreach(tid; app.concurrency.workers.keys) {
-    if(!app.concurrency.workers[tid]) {
-      app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, req);
-      return;
-    }
-  }
-  app.world.paths.pending ~= req;
+  if(!app.trySendPath(req)) app.world.paths.pending ~= req;
 }
 
 /** Route a completed path back to whoever requested it. */
@@ -94,28 +85,11 @@ void dispatchPathResult(ref GameApp app, PathResult r) {
   }
 }
 
-/** Dispatch pending path finding jobs */
+/** Dispatch queued path requests to any idle workers. */
 void dispatchPendingPaths(ref GameApp app) {
   if(app.concurrency.paths.length > 0) return;
-  foreach(tid; app.concurrency.workers.keys) {
-    if(app.world.paths.pending.length == 0) break;
-    if(!app.concurrency.workers[tid]) {
-      app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, app.world.paths.pending[0]);
-      app.world.paths.pending = app.world.paths.pending[1..$];
-    }
-  }
-}
-
-/** Invalidate any dwarf paths that pass through the given tile */
-void invalidatePaths(ref GameApp app, int[3] tile) {
-  if(app.world.dwarves is null) return;
-  foreach(ref d; app.world.dwarves.dwarves) {
-    if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
-    d.path = [];
-    d.moveTo = d.moveFrom = d.visualPos;
-    d.moveT = 1.0f;
-    if(d.jobStack.length > 0 && d.targetTile != noTile) app.repathTo(d, d.targetTile, d.jobStack[0].reach);
+  while(app.world.paths.pending.length > 0 && app.trySendPath(app.world.paths.pending[0])) {
+    app.world.paths.pending = app.world.paths.pending[1..$];
   }
 }
 
@@ -147,42 +121,17 @@ bool stepMove(T)(ref GameApp app, ref T obj, float dt, float speed, float hop) {
   return true;
 }
 
-/** Apply pathfinding results */
-void applyPathResult(ref GameApp app, PathResult result) {
-  if(app.world.dwarves is null) return;
-  foreach(ref d; app.world.dwarves) {
-    if(d.uid != result.uid) continue;
-    if(!result.success || app.deadEndPartial(d, result)) {
-      if(d.hasJob) {
-        d.currentJob.failedBy[d.uid] = true;
-        if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
-        d.currentJob.onFail(app, d);
-      }
-      d.state = DwarfState.Idle;
-      return;
-    }
-    d.state = d.hasJob ? DwarfState.Moving : DwarfState.Wandering;
-    d.path = result.path;
-    d.lastPathPartial = result.partial && (result.path.length > 1);
-    d.moveTo = d.moveFrom = d.visualPos;
-    d.moveT = 1.0f;
-    return;
-  }
-}
-
-/** Attempt to re-path object T to goalTile, returns false if unreachable.
- * Requires T to have: tile, targetTile, path, visualPos, moveFrom, moveTo, moveT */
-bool repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
+/** Re-path object T toward targetTile via onDone. Requires T to have: tile, targetTile, path. */
+RepathResult repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach, void delegate(PathResult) onDone) {
   obj.targetTile = targetTile;
   auto goal = app.world.findGoalTile(targetTile, obj.tile, reach);
-  if(goal == noTile) return false;
-  if(goal == obj.tile) { obj.path = []; obj.state = DwarfState.Working; return true; }
-  app.pathfindTo(obj, goal, (PathResult r){ app.applyPathResult(r); });
-  return true;
+  if(goal == noTile) return RepathResult.Unreachable;
+  if(goal == obj.tile) { obj.path = []; return RepathResult.AtTarget; }
+  app.pathfindTo(obj, goal, onDone);
+  return RepathResult.Pathing;
 }
 
-/** Find the closest standable neighbour (air tile with solid below) to the object.
- * Requires T to have: tile, targetTile */
+/** Closest standable tile satisfying `reach` around targetTile, or noTile. */
 int[3] findGoalTile(const World world, const int[3] targetTile, const int[3] from, Reach reach = Reach.Adjacent) {
   if(reach == Reach.OnTile) return world.isStandable(targetTile) ? targetTile : noTile;
 
