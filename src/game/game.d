@@ -26,7 +26,6 @@ public import resources : ClassVal, ResourceT, ItemTemplateT, Item, traversable,
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 
-import animal : spawnAnimal;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
 import clouds : buildCloudInstances, applyCloudInstances;
