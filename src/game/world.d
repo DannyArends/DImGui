@@ -26,6 +26,8 @@ import vector : sqDist, vAdd, vMul, x, y, z;
 import vegetation : vegetationSection;
 import water : saveWater, loadWater;
 
+uint nextEntityUID = 1;    /// Global unique id for path-routable entities (dwarves, animals)
+
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
   int[3] seed        = [42, 67, 69];              /// [height seed, tile seed]

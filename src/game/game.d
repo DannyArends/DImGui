@@ -37,12 +37,11 @@ import fpswindow : showFPSContent;
 import imgui : iconTextStr;
 import icosahedron : refineIcosahedron;
 import inventorywindow : showInventoryContent;
-import jobs : applyPathResult;
 import lights : updateSun;
 import lightswindow : showLightsContent;
 import matrix;
 import normals : computeTangents;
-import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
+import pathfinding : canMoveTo, dispatchPathResult, pathfindWorker, dispatchPendingPaths;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
 import stockpilewindow : showStockpileContent;
@@ -163,7 +162,7 @@ void updateGame(ref GameApp app, double dt) {
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
   if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); }, 2)) app.camera.isDirty = true;
-  app.drainMessages!PathResult((r) { app.applyPathResult(r); });
+  app.drainMessages!PathResult((r) { app.dispatchPathResult(r); });
   app.drainMessages!CloudResult((r) { app.world.applyCloudInstances(r.instances); });
 }
 

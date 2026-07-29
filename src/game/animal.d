@@ -8,16 +8,16 @@ import game;
 import dwarf : findFreeSurfaceTile;
 import color : randomColor;
 import gameobjects : Animals;
-import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord;
+import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord, worldToTile;
 import matrix : translateScale, scale, position;
 import noise : noiseHTT;
-import pathfinding : followPath, stepMove, pathfindTo, repathTo, findGoalTile, syncPathMarkers;
+import pathfinding : followPath, pathfindTo, stepMove, pathfindTo, repathTo, findGoalTile, syncPathMarkers;
 import tile : getSuccessors;
+import world : nextEntityUID;
 
-uint nextAnimalUID = 1;
 enum animalStep = 4.0f;    // base step rate (moveT/sec, divided by tile cost)
 enum animalHop  = 0.9f;    // hop arc heightToResource
-enum AnimalState : ubyte { Idle, Wander, SeekFood, SeekWater, Eat, Drink }
+enum AnimalState : ubyte { Idle, Wander, WaitingForPath, SeekFood, SeekWater, Eat, Drink }
 
 /** Data-driven animal species, parsed from data/raws/animals.txt into animalTable. */
 struct AnimalT {
@@ -77,12 +77,20 @@ void animalFrame(ref GameApp app, float dt) {
 void animalTick(ref GameApp app) {
   if(app.world.animals is null) return;
   foreach(ref a; app.world.animals.animals) {
-    if(a.moveT < 1.0f || a.path.length > 0) continue;
+    if(a.state == AnimalState.WaitingForPath) continue;        // request in flight
+    if(a.moveT < 1.0f || a.path.length > 0) continue;          // still stepping
     auto succ = getSuccessors(app.world.data, PathNode(position: a.visualPos));
     if(succ.length == 0) continue;
-    a.path = [succ[uniform(0, $)].position];
-    a.state = AnimalState.Wander;
-    app.followPath(a);
+    auto goal = app.world.worldToTile(succ[uniform(0, $)].position);   // a nearby reachable tile
+    a.state = AnimalState.WaitingForPath;
+    app.pathfindTo(a, goal, (PathResult r){
+      if(app.world.animals is null) return;
+      foreach(ref x; app.world.animals.animals) if(x.uid == r.uid) {
+        x.path = r.success ? r.path : null;
+        x.state = AnimalState.Wander;
+        break;
+      }
+    });
   }
 }
 
@@ -112,7 +120,7 @@ void spawnAnimal(ref GameApp app, uint type = 0) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureAnimals();
-  Animal a; a.data = AnimalData(nextAnimalUID++, type, tile, 0.0f, randomColor());
+  Animal a; a.data = AnimalData(nextEntityUID++, type, tile, 0.0f, randomColor());
   app.addAnimal(a);
   app.world.animals.syncInstances();
 }
@@ -147,7 +155,7 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
   foreach(size_t t, ref at; animalTable) {
     foreach(tile; animalSpawnTiles(app.world.data, data.coord, data.tileTypes, at)) {
       app.ensureAnimals();
-      Animal a; a.data = AnimalData(nextAnimalUID++, cast(uint)t, tile, 0.0f, randomColor());
+      Animal a; a.data = AnimalData(nextEntityUID++, cast(uint)t, tile, 0.0f, randomColor());
       app.addAnimal(a);
       any = true;
     }
