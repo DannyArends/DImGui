@@ -77,11 +77,12 @@ void animalFrame(ref GameApp app, float dt) {
 void animalTick(ref GameApp app) {
   if(app.world.animals is null) return;
   foreach(ref a; app.world.animals.animals) {
+    if(a.moveT >= 1.0f && a.path.length > 0) { app.followPath(a); continue; }   // bootstrap next step
     if(a.state == AnimalState.WaitingForPath) continue;        // request in flight
     if(a.moveT < 1.0f || a.path.length > 0) continue;          // still stepping
     auto succ = getSuccessors(app.world.data, PathNode(position: a.visualPos));
     if(succ.length == 0) continue;
-    auto goal = app.world.worldToTile(succ[uniform(0, $)].position);   // a nearby reachable tile
+    auto goal = app.world.worldToTile(succ[uniform(0, $)].position);
     a.state = AnimalState.WaitingForPath;
     app.pathfindTo(a, goal, (PathResult r){
       if(app.world.animals is null) return;
