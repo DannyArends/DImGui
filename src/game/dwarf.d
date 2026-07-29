@@ -346,10 +346,11 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
     return;
   }
   d.blockedSince = 0;
-  if(!app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) {
-    d.state = DwarfState.Idle;
-    d.currentJob.onFail(app, d);
-  } else { d.state = DwarfState.WaitingForPath; } // No longer blocked — repath
+  final switch(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ app.applyPathResult(r); })) {
+    case RepathResult.Unreachable: d.state = DwarfState.Idle; d.currentJob.onFail(app, d); break;
+    case RepathResult.AtTarget: d.state = DwarfState.Working; break;
+    case RepathResult.Pathing: d.state = DwarfState.WaitingForPath; break;
+  }
 }
 
 /** dwarfTick, ticks all dwarves in random order */
