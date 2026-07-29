@@ -16,7 +16,7 @@ import tile : getSuccessors;
 import world : nextEntityUID;
 
 enum animalStep = 4.0f;    // base step rate (moveT/sec, divided by tile cost)
-enum animalHop  = 0.9f;    // hop arc heightToResource
+enum animalHop  = 0.9f;    // hop arc height
 enum AnimalState : ubyte { Idle, Wander, WaitingForPath, SeekFood, SeekWater, Eat, Drink }
 
 /** Data-driven animal species, parsed from data/raws/animals.txt into animalTable. */
@@ -60,7 +60,7 @@ struct Animal {
   float[3][] path;                              /// Remaining world-space steps
 }
 
-/** Per-frame stub (movement interpolation lands in step 4). */
+/** Per-frame: advance each animal's step and refresh its instance transform. */
 void animalFrame(ref GameApp app, float dt) {
   if(app.world.animals is null) return;
   foreach(i, ref a; app.world.animals.animals) {
@@ -73,7 +73,7 @@ void animalFrame(ref GameApp app, float dt) {
   app.world.animals.syncInstances();
 }
 
-/** Per-tick stub (needs decay + foraging land in steps 4–5). */
+/** Per-tick: bootstrap the next step, or (when idle) pathfind a new wander target. */
 void animalTick(ref GameApp app) {
   if(app.world.animals is null) return;
   foreach(ref a; app.world.animals.animals) {
@@ -115,34 +115,19 @@ void addAnimal(ref GameApp app, ref Animal a) {
   app.world.animals ~= a;
 }
 
-/** Spawn one animal of `type` on a free surface tile. */
-void spawnAnimal(ref GameApp app, uint type = 0) {
-  if(type >= animalTable.length) return;
-  auto tile = app.findFreeSurfaceTile();
-  if(tile[0] == int.min) return;
-  app.ensureAnimals();
-  Animal a; a.data = AnimalData(nextEntityUID++, type, tile, 0.0f, randomColor());
-  app.addAnimal(a);
-  app.world.animals.syncInstances();
-}
-
 /** World tiles where `at` should spawn in this chunk: surface tile, matching spawn type, past the noise + hash gates. */
 int[3][] animalSpawnTiles(ref const(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const AnimalT at) {
   int[3][] result;
   ResourceType[] spawnTypes;
   foreach(s; at.spawnOn) spawnTypes ~= s.to!ResourceType;
-  int surf, typed, noised;
   for(int i = 0; i < wd.tileCount; i++) {
     if(tileTypes[i] == ResourceType.None) continue;
     if(i + wd.chunkSize < wd.tileCount && tileTypes[i + wd.chunkSize] != ResourceType.None) continue;
-    surf++;
     if(!spawnTypes.canFind(tileTypes[i])) continue;
-    typed++;
     auto lc = wd.tileCoord(i);
     auto wc = wd.worldCoord(coord, lc);
     auto n = noiseHTT(wc[0], wc[2], wd.seed);
     if(n[2] < at.noiseThreshold) continue;
-    noised++;
     uint hash = (wc[0] * at.hashSeed1) ^ (wc[2] * at.hashSeed2);
     if(at.hashMod != 0 && hash % at.hashMod != at.hashRem) continue;
     result ~= [wc[0], wc[1] + 1, wc[2]];
