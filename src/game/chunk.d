@@ -5,6 +5,7 @@
 
 import game;
 
+import animal : seedChunkAnimals;
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
@@ -169,7 +170,10 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
     chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
     app.world.chunks[data.coord].deAllocate = true;
-  } else { app.objects ~= chunk.tiles; }
+  } else {
+    app.objects ~= chunk.tiles;
+    app.seedChunkAnimals(data);          // first generation of this chunk: spawn its noise animals
+  }
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;

@@ -8,8 +8,9 @@ import game;
 import dwarf : findFreeSurfaceTile;
 import color : randomColor;
 import gameobjects : Animals;
-import lattice : tileToWorld;
+import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord;
 import matrix : translateScale;
+import noise : noiseHTT;
 
 uint nextAnimalUID = 1;
 
@@ -89,5 +90,58 @@ void spawnAnimal(ref GameApp app, uint type = 0) {
   Animal a; a.data = AnimalData(nextAnimalUID++, type, tile, 0.0f, randomColor());
   app.addAnimal(a);
   app.world.animals.syncInstances();
+}
+
+/** World tiles where `at` should spawn in this chunk: surface tile, matching spawn type, past the noise + hash gates. */
+int[3][] animalSpawnTiles(ref const(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const AnimalT at) {
+  int[3][] result;
+  ResourceType[] spawnTypes;
+  foreach(s; at.spawnOn) spawnTypes ~= s.to!ResourceType;
+  int surf, typed, noised;
+  for(int i = 0; i < wd.tileCount; i++) {
+    if(tileTypes[i] == ResourceType.None) continue;
+    if(i + wd.chunkSize < wd.tileCount && tileTypes[i + wd.chunkSize] != ResourceType.None) continue;
+    surf++;
+    if(!spawnTypes.canFind(tileTypes[i])) continue;
+    typed++;
+    auto lc = wd.tileCoord(i);
+    auto wc = wd.worldCoord(coord, lc);
+    auto n = noiseHTT(wc[0], wc[2], wd.seed);
+    if(n[2] < at.noiseThreshold) continue;
+    noised++;
+    uint hash = (wc[0] * at.hashSeed1) ^ (wc[2] * at.hashSeed2);
+    if(at.hashMod != 0 && hash % at.hashMod != at.hashRem) continue;
+    result ~= [wc[0], wc[1] + 1, wc[2]];
+  }
+  SDL_Log("animalSpawnTiles %s: surf=%d typed=%d noised=%d -> %d", cast(char*)at.name.ptr, surf, typed, noised, cast(int)result.length);
+  return result;
+}
+
+/** Spawn a chunk's noise-placed animals on first generation. */
+void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
+  bool any = false;
+  foreach(size_t t, ref at; animalTable) {
+    foreach(tile; animalSpawnTiles(app.world.data, data.coord, data.tileTypes, at)) {
+      app.ensureAnimals();
+      Animal a; a.data = AnimalData(nextAnimalUID++, cast(uint)t, tile, 0.0f, randomColor());
+      app.addAnimal(a);
+      any = true;
+    }
+  }
+  if(any) app.world.animals.syncInstances();
+}
+
+/** Despawn animals currently inside an evicted chunk (mirrors removeAllFeatures). */
+void removeChunkAnimals(ref GameApp app, int[3] coord) {
+  if(app.world.animals is null) return;
+  bool any = false;
+  size_t i = 0;
+  while(i < app.world.animals.animals.length) {
+    if(app.world.chunkCoord(app.world.animals.animals[i].tile) == coord) {
+      app.world.animals.remove(i);      // swap-remove: last moves into i, so don't advance
+      any = true;
+    } else i++;
+  }
+  if(any) app.world.animals.syncInstances();
 }
 
