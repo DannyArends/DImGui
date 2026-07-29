@@ -37,8 +37,10 @@ class Animals : Torus {
   size_t[] tickOrder;
 
   this() {
-    super([0.15f, 0.35f], [12, 20]);          // small torus, low poly
+    super([0.15f, 0.35f], [12, 20]);
     initInstanced(() => "Animals");
+    skipFrustum = true;          // instances spread across chunks — can't cull the set by one AABB
+    skipBoundingBox = true;      // (match Tiles; instanced set has no single meaningful box)
   }
 
   void remove(size_t index) {
