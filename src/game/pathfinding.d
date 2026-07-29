@@ -71,8 +71,7 @@ void syncPathMarkers(ref World world, bool showPaths = false) {
   world.paths.markers.syncInstances();
 }
 
-/** Pathfind object T to goalTile, returns false if unreachable.
- * Requires T to have: tile, path */
+/** Pathfind object T to goalTile, returns false if unreachable. Requires T to have: tile, path */
 void pathfindTo(T)(ref GameApp app, ref T obj, int[3] goalTile, void delegate(PathResult) onDone) {
   app.world.paths.pending = app.world.paths.pending.filter!(r => r.uid != obj.uid).array;
   app.world.paths.onResult[obj.uid] = onDone;
