@@ -218,8 +218,8 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
         cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
       }
       auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
-      float baseY = ft.brushes[0].length * 0.5f;
-      auto grouped = interpret(chars, cfg, [wp[0], wp[1] - baseY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
+      float groundY = wp[1] - 0.5f * app.world.tileHeight;   // top face of the surface tile (rootTile is one tile-centre above it)
+      auto grouped = interpret(chars, cfg, [wp[0], groundY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
       foreach(sym, insts; grouped) { if(auto mp = meshKey(ft.name, brushMesh(ft, sym)) in meshes){ emitInstances(f, *mp, insts); } }
     }
   }
