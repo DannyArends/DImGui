@@ -13,7 +13,7 @@ import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
 import matrix : translate, position, scale, translateScale;
-import pathfinding : pathfindTo, repathTo, findGoalTile, syncPathMarkers;
+import pathfinding : followPath, stepMove, pathfindTo, repathTo, findGoalTile, syncPathMarkers;
 import jobs;
 import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import rnjesus : randomizeName;
@@ -174,19 +174,6 @@ void deleteDwarf(ref GameApp app, int index) {
   app.world.dwarves.syncInstances();
 }
 
-/** Follow the next step in object T's path.
- * Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT */
-void followPath(T)(ref GameApp app, ref T obj) {
-  if(obj.path.length == 0) return;
-  auto next = obj.path[0];
-  obj.path = obj.path[1..$];
-  obj.moveFrom = obj.visualPos;
-  obj.moveTo = [next[0], next[1], next[2]];
-  obj.moveT = 0.0f;
-  obj.tile = app.world.worldToTile(next);
-  app.camera.isDirty = true;
-}
-
 /** Find a free surface tile (as in non-occupado) and on top of the world */
 int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
   foreach(radius; 0..app.world.chunkSize) {
@@ -211,20 +198,7 @@ void dwarfFrame(ref GameApp app, float dt) {
   foreach(i, ref d; app.world.dwarves) {
     if(d.isFalling) continue;
     if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
-    if(d.moveT >= 1.0f) continue;
-    float cost = max(1.0f, app.world.getTileAt(d.tile.tileBelow).cost);
-    d.moveT = min(1.0f, d.moveT + dt * stepSpeed / cost);
-    float arc = hopHeight * d.moveT * (1.0f - d.moveT); 
-    d.visualPos = [
-      d.moveFrom[0] + d.moveT * (d.moveTo[0] - d.moveFrom[0]),
-      d.moveFrom[1] + d.moveT * (d.moveTo[1] - d.moveFrom[1]) + arc,
-      d.moveFrom[2] + d.moveT * (d.moveTo[2] - d.moveFrom[2])
-    ];
-    if(d.moveT >= 1.0f) {
-      if(d.path.length > 0) {
-        app.followPath(d);
-      } else { d.state = d.hasJob ? DwarfState.Working : DwarfState.Idle; }
-    }
+    if(app.stepMove(d, dt, stepSpeed, hopHeight)) d.state = d.hasJob ? DwarfState.Working : DwarfState.Idle;
   }
   foreach(i, ref d; app.world.dwarves) {
     if(d.lightIndex != size_t.max) {
