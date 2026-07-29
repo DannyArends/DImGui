@@ -18,6 +18,8 @@ import validation : popLabel, pushLabel;
 import vector : xyz, vSub, dot;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
+enum float SHADOW_DEPTH_BIAS = 2.0f;     /// Constant depth bias
+enum float SHADOW_SLOPE_BIAS = 10.0f;    /// Slope-scaled bias (dominant term for grazing faces)
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
 enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x split, last radius is camera-derived
 enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
@@ -227,7 +229,7 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   float slotRadius = (s < NUM_CASCADES) ? CASCADE_RADIUS[s] : CASCADE_RADIUS[0];
   if(slotRadius <= 0.0f) slotRadius = app.camera.visibleRadius;   // far cascade
   float scale = CASCADE_RADIUS[0] / slotRadius;                    // 1.0 for cascade 0, smaller for wider cascades
-  vkCmdSetDepthBias(cmd, 3.0f * scale, 0.0f, 4.5f * scale);
+  vkCmdSetDepthBias(cmd, SHADOW_DEPTH_BIAS * scale, 0.0f, SHADOW_SLOPE_BIAS * scale);
 
   foreach(obj; app.objects) {
     if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
