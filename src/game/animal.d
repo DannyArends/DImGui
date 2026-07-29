@@ -11,7 +11,7 @@ import gameobjects : Animals;
 import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord, worldToTile;
 import matrix : translateScale, scale, position;
 import noise : noiseHTT;
-import pathfinding : followPath, pathfindTo, stepMove, pathfindTo, repathTo, findGoalTile, syncPathMarkers;
+import pathfinding : followPath, pathfindTo, stepMove, repathTo, RepathResult, findGoalTile;
 import tile : getSuccessors;
 import world : nextEntityUID;
 

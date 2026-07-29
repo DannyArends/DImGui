@@ -13,7 +13,7 @@ import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
 import matrix : translate, position, scale, translateScale;
-import pathfinding : followPath, stepMove, pathfindTo, repathTo, findGoalTile, syncPathMarkers;
+import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
 import jobs;
 import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import rnjesus : randomizeName;
@@ -216,6 +216,31 @@ void dwarfFrame(ref GameApp app, float dt) {
   app.buffers["LightMatrices"].invalidate();
 }
 
+/** Rebuild path-marker instances from all dwarf paths. */
+void syncPathMarkers(ref World world, bool showPaths = false) {
+  if(world.paths.markers is null || world.dwarves is null) return;
+  world.paths.markers.instances.reset();
+  if(showPaths) {
+    foreach(ref d; world.dwarves)
+      foreach(l; d.path) world.paths.markers.instances ~= DrawInstance(translate([l[0], l[1] - 0.4f, l[2]]), -1, d.color);
+  }
+  world.paths.markers.syncInstances();
+}
+
+/** Invalidate any dwarf paths passing through the given tile and re-path them. */
+void invalidatePaths(ref GameApp app, int[3] tile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
+    d.path = [];
+    d.moveTo = d.moveFrom = d.visualPos;
+    d.moveT = 1.0f;
+    if(d.jobStack.length > 0 && d.targetTile != noTile) {
+      app.repathTo(d, d.targetTile, d.jobStack[0].reach, (PathResult r){ app.applyPathResult(r); });
+    }
+  }
+}
+
 /** Overburdened: fumble a random item when more than half-full */
 void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
   size_t filled = 0;
@@ -296,7 +321,7 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
         d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d);
       } else {
         if(!d.lastPathPartial && ++d.repathAttempts > 3) { app.logStuck(d); d.currentJob.onFail(app, d); break; }
-        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) {
+        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ app.applyPathResult(r); }) == RepathResult.Unreachable) {
           d.state = DwarfState.WaitingForPath;
         } else { d.currentJob.onFail(app, d); }
       }

@@ -8,7 +8,7 @@ import game;
 import block : resourceType, itemOf, rawHasClass, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import lattice : tileToWorld, tileAbove, worldToTile, tileNeighbours;
-import pathfinding : pathfindTo, applyPathResult, findGoalTile, pathfindTo;
+import pathfinding : pathfindTo, findGoalTile, repathTo, RepathResult;
 import reactions : reactionFor;
 import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup;
 import sfx : play;
@@ -47,6 +47,35 @@ Job[] flatten(Job j) {
   foreach(p; j.prereqs) r ~= flatten(p);
   j.prereqs = [];
   return r ~ [j];
+}
+
+/** True if a partial path gets no closer to the job target — a dead-end commitment. */
+private bool deadEndPartial(ref GameApp app, ref Dwarf d, ref PathResult result) {
+  if(!d.hasJob || !result.partial || result.path.length == 0) return false;
+  return manhattan(app.world.worldToTile(result.path[$-1]), d.currentJob.targetTile) >= manhattan(d.tile, d.currentJob.targetTile);
+}
+
+/** Apply a completed path to the requesting dwarf (job-failure handling on failure). */
+void applyPathResult(ref GameApp app, PathResult result) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves) {
+    if(d.uid != result.uid) continue;
+    if(!result.success || app.deadEndPartial(d, result)) {
+      if(d.hasJob) {
+        d.currentJob.failedBy[d.uid] = true;
+        if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
+        d.currentJob.onFail(app, d);
+      }
+      d.state = DwarfState.Idle;
+      return;
+    }
+    d.state = d.hasJob ? DwarfState.Moving : DwarfState.Wandering;
+    d.path = result.path;
+    d.lastPathPartial = result.partial && (result.path.length > 1);
+    d.moveTo = d.moveFrom = d.visualPos;
+    d.moveT = 1.0f;
+    return;
+  }
 }
 
 /** Shared onFail handlers, named for what they do: release the job's block reservation (if any), then either give up quietly or retry later */

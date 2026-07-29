@@ -7,7 +7,7 @@ import game;
 
 import lattice : tileIdx, surfaceLevel, worldToTile, tileCoord, chunkCoord, tileNeighbours;
 import noise : noise2D;
-import pathfinding : invalidatePaths;
+import dwarf : invalidatePaths;
 import vector : x,y,z;
 
 /** Is the Tile occupied ?  */
