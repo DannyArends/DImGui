@@ -24,8 +24,8 @@ import timing : timed;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
 import vector : vAdd;
 import water : findNearestWater;
+import world : nextEntityUID;
 
-uint nextDwarfUID = 1;
 enum int NEED_RETRY = 30;
 
 struct InventorySlot {
@@ -378,7 +378,7 @@ void spawnDwarf(ref GameApp app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
-  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, randomColor(), tile));
+  Dwarf d = Dwarf(DwarfData(nextEntityUID++, randomColor(), tile));
   randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.syncInstances();
@@ -415,7 +415,7 @@ void loadDwarfs(ref GameApp app, DwarfData[] data) {
   app.world.dwarves.syncInstances();
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
-  foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;
+  foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextEntityUID) nextEntityUID = d.uid + 1;
 }
 
 void settleDwarves(ref GameApp app, float dt) {

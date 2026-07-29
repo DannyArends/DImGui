@@ -8,7 +8,7 @@ import game;
 import block : resourceType, itemOf, rawHasClass, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import lattice : tileToWorld, tileAbove, worldToTile, tileNeighbours;
-import pathfinding : pathfindTo, findGoalTile;
+import pathfinding : pathfindTo, applyPathResult, findGoalTile, pathfindTo;
 import reactions : reactionFor;
 import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup;
 import sfx : play;
@@ -64,36 +64,7 @@ const(Job)[] liveJobs(const World world, string name) {
 
 const(int[3])[] activeTiles(const World world, string jobName) { return world.liveJobs(jobName).map!(j => j.targetTile).array; }
 
-/** True if a partial path gets no closer to the job target — a dead-end commitment (e.g. an unreachable elevated build tile). */
-private bool deadEndPartial(ref GameApp app, ref Dwarf d, ref PathResult result) {
-  if(!d.hasJob || !result.partial || result.path.length == 0) return false;
-  return manhattan(app.world.worldToTile(result.path[$-1]), d.currentJob.targetTile) >= manhattan(d.tile, d.currentJob.targetTile);
-}
-
 int[3] pathTileFor(ref World world, uint id, const Block b) { return (b.tile == storedTile) ? world.storedTileOf(id).tileAbove : b.tile; }
-
-/** Apply pathfinding results */
-void applyPathResult(ref GameApp app, PathResult result) {
-  if(app.world.dwarves is null) return;
-  foreach(ref d; app.world.dwarves) {
-    if(d.uid != result.dwarfUID) continue;
-    if(!result.success || app.deadEndPartial(d, result)) {
-      if(d.hasJob) {
-        d.currentJob.failedBy[d.uid] = true;
-        if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
-        d.currentJob.onFail(app, d);
-      }
-      d.state = DwarfState.Idle;
-      return;
-    }
-    d.state = d.hasJob ? DwarfState.Moving : DwarfState.Wandering;
-    d.path = result.path;
-    d.lastPathPartial = result.partial && (result.path.length > 1);
-    d.moveTo = d.moveFrom = d.visualPos;
-    d.moveT = 1.0f;
-    return;
-  }
-}
 
 /** Advance the job stack — removes the active sub-job and clears the dwarf's current goal */
 void completeSubJob(ref GameApp app, ref Dwarf d) {
@@ -413,7 +384,7 @@ bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
   auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
   if(goal == noTile) { app.rejectJob(d, job); return false; }
   if(goal == d.tile) { d.state = DwarfState.Working; return true; }
-  app.pathfindTo(d, goal);
+  app.pathfindTo(d, goal, (PathResult r){ app.applyPathResult(r); });
   return true;
 }
 
