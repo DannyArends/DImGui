@@ -29,10 +29,10 @@ import water : saveWater, loadWater;
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
   int[3] seed        = [42, 67, 69];              /// [height seed, tile seed]
-  int renderDistance =  isAndroid ? 6 : 4;        /// Render distance used to load / evict chunks
+  int renderDistance =  isAndroid ? 6 : 5;        /// Render distance used to load / evict chunks
   float tileSize     =  1.0f;                     /// Size (X & Z) of a tile
   float tileHeight   =  1.0f;                     /// Y-spacing between tiles
-  int chunkSize      =  isAndroid ? 32 : 128;      /// Number of tiles (X & Z) in a chunk
+  int chunkSize      =  isAndroid ? 32 : 64;      /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  64;                       /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;                    /// Global world Y-offset
   LatticeMap!(ResourceType[uint]) diffs;
