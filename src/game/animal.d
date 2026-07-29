@@ -113,7 +113,6 @@ int[3][] animalSpawnTiles(ref const(WorldData) wd, int[3] coord, const ResourceT
     if(at.hashMod != 0 && hash % at.hashMod != at.hashRem) continue;
     result ~= [wc[0], wc[1] + 1, wc[2]];
   }
-  SDL_Log("animalSpawnTiles %s: surf=%d typed=%d noised=%d -> %d", cast(char*)at.name.ptr, surf, typed, noised, cast(int)result.length);
   return result;
 }
 
