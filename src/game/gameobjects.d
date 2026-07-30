@@ -34,6 +34,7 @@ class Dwarves : Cylinder {
 class Animals : Torus {
   Animal[] animals;
   alias animals this;
+  int selected = -1;                 /// UI: index of inspected animal
   size_t[] tickOrder;
 
   this() {
