@@ -81,7 +81,7 @@ void applyPathResult(ref GameApp app, PathResult result) {
 /** Shared onFail handlers, named for what they do: release the job's block reservation (if any), then either give up quietly or retry later */
 alias failComplete = completeSubJob;
 void failRequeue(ref GameApp app, ref Dwarf d) { d.failAndRequeue(); }
-void failReleaseComplete(ref GameApp app, ref Dwarf d) { app.world.drops.release(d.currentJob.blockIDs); app.completeSubJob(d); }
+void failReleaseComplete(ref GameApp app, ref Dwarf d) { app.world.drops.release(d.currentJob.blockIDs); d.onSubJobComplete(app); }
 void failReleaseRequeue(ref GameApp app, ref Dwarf d) { app.world.drops.release(d.currentJob.blockIDs); d.failAndRequeue(); }
 
 /** All live jobs matching a name: queued + on every dwarf's stack */
@@ -118,7 +118,7 @@ bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach
 void progressJob(T)(ref GameApp app, ref T d, float amount, void delegate() onComplete) {
   float speed = d.currentJob.personal ? 1.0f : (0.5f + 0.5f * d.mood);
   d.progress += amount * speed;
-  if(d.progress >= 1.0f) { onComplete(); app.completeSubJob(d); d.progress = 0.0f; }
+  if(d.progress >= 1.0f) { onComplete(); d.onSubJobComplete(app); d.progress = 0.0f; }
 }
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
@@ -180,7 +180,7 @@ Job!Dwarf storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTi
       auto blockID = picked.front;
       d.use(app.world.drops, blockID);  // remove from inventory (no builtTile)
       app.world.storeBlockAt(d.currentJob.targetTile, blockID);   // sets tile = storedTile, adds to pile
-      app.completeSubJob(d);
+      d.onSubJobComplete(app);
     },
     onFail: &failReleaseComplete);
 }
@@ -220,7 +220,7 @@ Job!Dwarf dropBlockJob(int[3] fromTile, uint blockID) {
       foreach(slot, ref s; d.inventory) {
         if(!s.empty && s.resourceIDs[0 .. s.count].canFind(target)) { d.drop(app.world.drops, slot); break; }
       }
-      app.completeSubJob(d);
+      d.onSubJobComplete(app);
     },
     onFail: &failComplete);
 }
@@ -282,7 +282,7 @@ Job!Dwarf buildingJob(int[3] targetTile, ResourceType tileType) {
       if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
       app.setTile(d.currentJob.targetTile, d.currentJob.tileClass.toType);
       app.world.chunks.build ~= d.currentJob.targetTile;
-      app.completeSubJob(d);
+      d.onSubJobComplete(app);
     },
     onFail: (ref GameApp app, ref Dwarf d) {
       foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app.world.drops, slot); }
@@ -403,15 +403,15 @@ Job!Dwarf sleepJob(int[3] atTile) {
 bool dispatchJob(T)(ref GameApp app, ref T d, Job!T job) {
   d.jobStack = flatten(job);
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
-  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) { app.rejectJob(d, job); return false; }
-  if(d.jobStack.any!(j => j.isValid !is null && !j.isValid(app, j))) { app.rejectJob(d, job); return false; }
+  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) { d.onReject(app, job); return false; }
+  if(d.jobStack.any!(j => j.isValid !is null && !j.isValid(app, j))) { d.onReject(app, job); return false; }
 
   d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
   if(!d.hasJob) { d.clearGoal(); return false; }
   d.targetTile = d.currentJob.targetTile;
 
   auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
-  if(goal == noTile) { app.rejectJob(d, job); return false; }
+  if(goal == noTile) { d.onReject(app, job); return false; }
   if(goal == d.tile) { d.state = EntityState.Working; return true; }
   app.pathfindTo(d, goal, (PathResult r){ app.applyPathResult(r); });
   return true;
@@ -426,7 +426,7 @@ void doPickup(ref GameApp app, ref Dwarf d) {
     if(b.tile == storedTile) app.world.withdrawBlock(blockID);
     b.tile = noTile;
     b.fall = Fall.init;
-    app.completeSubJob(d);
+    d.onSubJobComplete(app);
     return;
   }
   if(d.hasJob) jobQueue ~= d.jobStack[$-1]; // block not found, add job back
@@ -448,7 +448,7 @@ bool tryAssign(T)(ref GameApp app, ref Job!T job) {
 }
 
 /** Reject the job and requeue */
-bool rejectJob(T)(ref GameApp app, ref Dwarf d, ref Job!T job) {
+bool rejectJob(ref GameApp app, ref Dwarf d, ref Job!Dwarf job) {
   foreach(ref j; d.jobStack){ app.world.drops.release(j.blockIDs); }
   job.failedBy[d.uid] = true;
   if(!job.personal) jobQueue ~= job;

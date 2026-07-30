@@ -5,16 +5,18 @@
 
 import game;
 
-import block : findFreeFood;
+import block : findFreeFood, resourceType, noBlock;
 import color : randomColor;
 import dwarf : findFreeSurfaceTile;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
-import jobs : roam;
+import jobs : roam, Job, JobState, dispatchJob, progressJob, consumeCarried;
 import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord, worldToTile;
 import matrix : translateScale, scale, position;
 import noise : noiseHTT;
 import pathfinding : followPath, pathfindTo, stepMove, repathTo, RepathResult, findGoalTile;
+import resources : foodValue;
+import sfx : play;
 import tile : getSuccessors, tileAbove;
 import water : findNearestWater;
 import world : nextEntityUID;
@@ -46,7 +48,25 @@ struct Animal {
 
   Job!Animal[] jobStack;                        /// Personal jobs (graze / drink)
   @property bool hasJob() const { return jobStack.length > 0; }
+  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = EntityState.Idle; }
   @property ref Job!Animal currentJob() { return jobStack[0]; }
+
+  bool tickNeeds(ref GameApp app) { return app.tryAnimalNeeds(this); }
+  void whenIdle(ref GameApp app) {
+    if(++idleTicks[0] > idleTicks[1]) { idleTicks[0] = 0; idleTicks[1] = uniform(60, 240); app.roam(this); if(path.length) state = EntityState.Wandering; }
+  }
+  void onWork(ref GameApp app) {}                                       // animals carry nothing
+  void onReject(ref GameApp app, ref Job!Animal job) { clearGoal(); }
+  void onBlocked(ref GameApp app) { state = EntityState.Idle; }
+  void onSubJobComplete(ref GameApp app) { if(jobStack.length) jobStack = jobStack[1..$]; if(!hasJob) state = EntityState.Idle; }
+  void onStuck(ref GameApp app) {}
+  void onPathResult(ref GameApp app, PathResult r) {
+    foreach(ref x; app.world.animals.animals) if(x.uid == r.uid) {
+      x.path = r.success ? r.path : null;
+      x.state = r.success ? (x.hasJob ? EntityState.Moving : EntityState.Wandering) : EntityState.Idle;
+      break;
+    }
+  }
 }
 
 /** Per-frame: advance each animal's step and refresh its instance transform. */
@@ -60,6 +80,49 @@ void animalFrame(ref GameApp app, float dt) {
     app.world.animals.instances[i] = position(m, a.visualPos);
   }
   app.world.animals.syncInstances();
+}
+
+/** Graze: walk to a free food block or berry bush; eat / harvest on arrival. */
+Job!Animal grazeJob(int[3] target) {
+  return Job!Animal("Grazing", target, ResourceClass.None, [], true, reach: Reach.Adjacent,
+    onArrive: (ref GameApp app, ref Animal a) {
+      app.progressJob(a, 0.5f, () {
+        uint food = findFreeFood(app.world, a.tile);
+        if(food != noBlock) {
+          float restore = foodValue(app.world.drops.resourceType(food));
+          app.consumeCarried(a, food);                       // removes the ground berry
+          a.hunger = a.hunger > restore ? a.hunger - restore : 0.0f;
+          app.play("DM-CGS-16", 0.4f);
+          app.world.drops.dirty = true;
+        } else {
+          app.interactFeaturesAt(a.tile.tileAbove);          // harvest bush → berries next pass
+        }
+      });
+    },
+    onFail: (ref GameApp app, ref Animal a) { a.jobStack = []; a.state = EntityState.Idle; });
+}
+
+/** Drink: walk to water's edge; reset thirst on arrival (no cup). */
+Job!Animal animalDrinkJob(int[3] standAt) {
+  return Job!Animal("Drinking", standAt, ResourceClass.None, [], true, reach: Reach.Adjacent,
+    onArrive: (ref GameApp app, ref Animal a) {
+      app.progressJob(a, 0.5f, () { a.thirst = 0.0f; app.play("DM-CGS-08", 0.4f); });
+    },
+    onFail: (ref GameApp app, ref Animal a) { a.jobStack = []; a.state = EntityState.Idle; });
+}
+
+/** Dispatch a graze or drink job if hungry/thirsty. */
+bool tryAnimalNeeds(ref GameApp app, ref Animal a) {
+  if(a.needs[Need.Thirst] >= 0.6f && a.needs[Need.Thirst] >= a.needs[Need.Hunger]) {
+    int[3] standAt;
+    if(app.world.findNearestWater(a.tile, standAt) != noTile) { app.dispatchJob(a, animalDrinkJob(standAt)); return true; }
+  }
+  if(a.needs[Need.Hunger] >= 0.6f) {
+    uint food = findFreeFood(app.world, a.tile);
+    int[3] target = (food != noBlock) ? app.world.drops[food].tile : app.findNearestFoodFeature(a.tile);
+    if(target != noTile) { app.dispatchJob(a, grazeJob(target)); return true; }
+  }
+  return false;
 }
 
 /** Per-tick: bootstrap the next step, or (when idle) pathfind a new wander target. */
