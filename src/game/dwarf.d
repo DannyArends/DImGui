@@ -101,44 +101,18 @@ struct DwarfData {
   @property bool hasInventorySpace() { return inventory[].any!(s => s.empty); }
 }
 
-enum DwarfState {
-  Idle,           /// no job, no goal, standing still
-  Wandering,      /// no job, has targetTile, following path
-  WaitingForPath, /// has job, sent path request, waiting for async result
-  Moving,         /// has job, following path (moveT < 1.0f)
-  Working,        /// arrived at destination, executing job action
-  Blocked,        /// at destination but another dwarf is in the way
-}
-
 struct Dwarf {
-  DwarfData data;                           /// Data saved between sessions
-  alias data this;
+  Entity!32 entity;                         /// Shared pawn (32 inventory slots)
+  alias entity this;
 
-  int[3] targetTile = noTile;               /// Where we are going
-  float[3][] path;                          /// Path we're on
   float progress = 0.0f;                    /// Job progress
-  uint[2] idleTicks = [0, 180];             /// Idle ticks and Patience / Wanderlust
-  Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
-  int[Need.max + 1] needBackoff;            /// ticks before this need may be re-attempted (anti-livelock)
-
-  float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
-  float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
-  float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
-  float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
-
-  Fall fall = { weight: 5.0f };             /// Fall state
-  size_t lightIndex = size_t.max; 
+  Job[] jobStack;                           /// Job stack, [0] active, rest pending
+  size_t lightIndex = size_t.max;
   size_t nameLabel = size_t.max;
 
-  DwarfState state = DwarfState.Idle;
-  bool lastPathPartial = false;
-  uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
-  uint repathAttempts = 0;                  /// Consecutive repaths on current sub-job without arriving
-
-  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = DwarfState.Idle; }
+  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = EntityState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }
   @property ref Job currentJob() { return(jobStack[0]); }
-  @property bool isFalling() const { return fall.isFalling; }
 }
 
 /** Release job reservations, drop everything carried, retire the torch light, and remove the dwarf from the roster */
@@ -182,8 +156,8 @@ void dwarfFrame(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
   foreach(i, ref d; app.world.dwarves) {
     if(d.isFalling) continue;
-    if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
-    if(app.stepMove(d, dt, stepSpeed, hopHeight)) d.state = d.hasJob ? DwarfState.Working : DwarfState.Idle;
+    if(d.state != EntityState.Moving && d.state != EntityState.Wandering) continue;
+    if(app.stepMove(d, dt, stepSpeed, hopHeight)) d.state = d.hasJob ? EntityState.Working : EntityState.Idle;
   }
   foreach(i, ref d; app.world.dwarves) {
     if(d.lightIndex != size_t.max) {
@@ -291,27 +265,27 @@ void tickDwarf(ref GameApp app, ref Dwarf d) {
   if(d.hasJob && d.currentJob.isValid !is null && !d.currentJob.isValid(app, d.currentJob)) { d.currentJob.onFail(app, d); }
 
   final switch(d.state) {
-    case DwarfState.Idle:
+    case EntityState.Idle:
       if(app.tryNeeds(d)) break;     // replaces the hardcoded hunger block
       app.claimNextJob(d); break;
-    case DwarfState.WaitingForPath: break;
-    case DwarfState.Moving:
-    case DwarfState.Wandering:
+    case EntityState.WaitingForPath: break;
+    case EntityState.Moving:
+    case EntityState.Wandering:
       app.overBurdened(d);
       if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
       break;
-    case DwarfState.Working:
-      if(!d.hasJob) { d.state = DwarfState.Idle; break; }
+    case EntityState.Working:
+      if(!d.hasJob) { d.state = EntityState.Idle; break; }
       if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) {
         d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d);
       } else {
         if(!d.lastPathPartial && ++d.repathAttempts > 3) { app.logStuck(d); d.currentJob.onFail(app, d); break; }
         if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ app.applyPathResult(r); }) == RepathResult.Unreachable) {
-          d.state = DwarfState.WaitingForPath;
+          d.state = EntityState.WaitingForPath;
         } else { d.currentJob.onFail(app, d); }
       }
       break;
-    case DwarfState.Blocked: app.handleBlocking(d); break;
+    case EntityState.Blocked: app.handleBlocking(d); break;
   }
 }
 
@@ -325,16 +299,16 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
     }
     if(SDL_GetTicks() - d.blockedSince > 4000) {
       d.blockedSince = 0;
-      d.state = DwarfState.Idle;
+      d.state = EntityState.Idle;
       d.currentJob.onFail(app, d);
     }
     return;
   }
   d.blockedSince = 0;
   final switch(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ app.applyPathResult(r); })) {
-    case RepathResult.Unreachable: d.state = DwarfState.Idle; d.currentJob.onFail(app, d); break;
-    case RepathResult.AtTarget: d.state = DwarfState.Working; break;
-    case RepathResult.Pathing: d.state = DwarfState.WaitingForPath; break;
+    case RepathResult.Unreachable: d.state = EntityState.Idle; d.currentJob.onFail(app, d); break;
+    case RepathResult.AtTarget: d.state = EntityState.Working; break;
+    case RepathResult.Pathing: d.state = EntityState.WaitingForPath; break;
   }
 }
 
@@ -372,7 +346,7 @@ void ensureDwarves(ref GameApp app) {
 
 void addDwarf(ref GameApp app, ref Dwarf d) {
   d.idleTicks[1] = uniform(3, 18);
-  d.state = DwarfState.Idle;
+  d.state = EntityState.Idle;
   auto wp = app.world.tileToWorld(d.tile);
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
@@ -417,12 +391,12 @@ void removeDwarfNameLabel(ref GameApp app, ref Dwarf d) {
 
 EntityData!32[] saveDwarfs(ref GameApp app) {
   if(app.world.dwarves is null) return [];
-  return app.world.dwarves[].map!(d => d.data).array;
+  return app.world.dwarves[].map!(d => d.entity.data).array;
 }
 
 void loadDwarfs(ref GameApp app, EntityData!32[] data) {
   app.ensureDwarves();
-  foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
+  foreach(ref dd; data) { Dwarf d; d.entity.data = dd; app.addDwarf(d); }
   app.world.dwarves.syncInstances();
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();

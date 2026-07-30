@@ -6,6 +6,7 @@
 import game;
 
 import inventory : InventorySlot;
+import resources : itemStack;
 
 /** Serializable pawn state (POD): saved to disk via Persist.pod. N = inventory slot count. */
 struct EntityData(uint N) {
@@ -87,8 +88,6 @@ enum EntityState {
   Working,        /// arrived at destination, executing action
   Blocked,        /// at destination but blocked by another pawn
 }
-
-alias DwarfState = EntityState;
 
 /** Runtime pawn: serializable data + live movement state. N = inventory slot count. */
 struct Entity(uint N) {

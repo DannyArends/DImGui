@@ -9,7 +9,7 @@ import block : noBlock;
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
 import tile : getTileAt;
-import resources : toType, isRaw;
+import resources : toType, isRaw, itemStack;
 
 struct InventorySlot {
   enum Kind : ubyte { Empty, Block, Stack }

@@ -66,10 +66,10 @@ void applyPathResult(ref GameApp app, PathResult result) {
         if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
         d.currentJob.onFail(app, d);
       }
-      d.state = DwarfState.Idle;
+      d.state = EntityState.Idle;
       return;
     }
-    d.state = d.hasJob ? DwarfState.Moving : DwarfState.Wandering;
+    d.state = d.hasJob ? EntityState.Moving : EntityState.Wandering;
     d.path = result.path;
     d.lastPathPartial = result.partial && (result.path.length > 1);
     d.moveTo = d.moveFrom = d.visualPos;
@@ -101,7 +101,7 @@ void completeSubJob(ref GameApp app, ref Dwarf d) {
   d.targetTile = noTile;
   d.repathAttempts = 0;
   if(d.hasJob && d.currentJob.onClaim !is null) d.currentJob.onClaim(app, d, d.currentJob);
-  d.state = d.hasJob ? DwarfState.Working : DwarfState.Idle;
+  d.state = d.hasJob ? EntityState.Working : EntityState.Idle;
 }
 
 /** Check if object T is adjacent to targetTile. Requires T to have: tile */
@@ -412,7 +412,7 @@ bool dispatchJob(ref GameApp app, ref Dwarf d, Job job) {
 
   auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
   if(goal == noTile) { app.rejectJob(d, job); return false; }
-  if(goal == d.tile) { d.state = DwarfState.Working; return true; }
+  if(goal == d.tile) { d.state = EntityState.Working; return true; }
   app.pathfindTo(d, goal, (PathResult r){ app.applyPathResult(r); });
   return true;
 }
@@ -439,7 +439,7 @@ bool tryAssign(ref GameApp app, ref Job job) {
   int bestIdx = -1;
   float bestDist = float.max;
   foreach(i, ref d; app.world.dwarves.dwarves) {
-    if((d.state != DwarfState.Idle && d.state != DwarfState.Wandering) || d.uid in job.failedBy) continue;
+    if((d.state != EntityState.Idle && d.state != EntityState.Wandering) || d.uid in job.failedBy) continue;
     float dist = manhattan(job.targetTile, d.tile);
     if(dist < bestDist) { bestDist = dist; bestIdx = cast(int)i; }
   }
@@ -535,7 +535,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
     d.idleTicks[0] = 0;
     if(app.world.drops.length > 0 && d.hasInventorySpace() && uniform(0, 2) == 0) {
       //app.dispatchJob(d, pickupJob(noTile, ResourceClass.None));
-    } else { app.roam(d); d.state = DwarfState.Wandering; }
+    } else { app.roam(d); d.state = EntityState.Wandering; }
   }
 }
 
