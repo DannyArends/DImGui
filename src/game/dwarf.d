@@ -184,7 +184,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
 }
 
 /** A single dwarf being ticked */
-void tickPawn(T)(ref GameApp app, ref T d) {
+void tickEntity(T)(ref GameApp app, ref T d) {
   foreach(n; 0 .. d.needs.length){ d.needs[n] = min(1.0f, d.needs[n] + decay[n]); }
   foreach(n; 0 .. d.needBackoff.length) { if(d.needBackoff[n] > 0) { d.needBackoff[n]--; } }
   if(d.isFalling) return;
@@ -250,7 +250,7 @@ void dwarfTick(ref GameApp app) {
     iota(app.world.dwarves.tickOrder.length).copy(app.world.dwarves.tickOrder[]);
   }
   app.world.dwarves.tickOrder.randomShuffle();
-  foreach(i; app.world.dwarves.tickOrder) { app.tickPawn(app.world.dwarves[i]); }
+  foreach(i; app.world.dwarves.tickOrder) { app.tickEntity(app.world.dwarves[i]); }
   app.world.syncPathMarkers(app.showPaths);
   app.timed!syncBuildGhosts();
   app.timed!deriveInventory();
