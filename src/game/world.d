@@ -107,7 +107,7 @@ void registerPersistables(ref GameApp app) {
   app.persistables ~= Persist.pod!(Diff!ResourceType)("diffs", () => flatten(app.world.data.diffs), (f) { app.world.data.diffs = unflatten(f); });
   app.persistables ~= Persist.pod!(Diff!ubyte)("water", () => app.world.saveWater(), (f) { app.world.loadWater(f); });
   app.persistables ~= Persist.pod!CloudDiff("clouds", () => app.world.saveClouds(), (f) { app.world.loadClouds(f); });
-  app.persistables ~= Persist.pod!DwarfData("dwarfs", () => app.saveDwarfs(), (f) { app.loadDwarfs(f); });
+  app.persistables ~= Persist.pod!(EntityData!32)("dwarfs", () => app.saveDwarfs(), (f) { app.loadDwarfs(f); });
   app.persistables ~= Persist.pod!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
   app.persistables ~= Persist.pod!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
   app.persistables ~= Persist.pod!Order("jobs", () => app.saveOrders(), (o) { app.loadOrders(o); });
