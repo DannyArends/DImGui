@@ -19,7 +19,7 @@ struct Order {
 }
 
 /** Map a queued Job back to a persistable Order; returns false for non-player/transient jobs */
-bool orderOf(const Job j, out Order o) {
+bool orderOf(const Job!Dwarf j, out Order o) {
   switch(j.name) {
     case "Mining": o = Order(OrderKind.Mine, j.targetTile); return true;
     case "InteractFeature": o = Order(OrderKind.InteractFeature, j.targetTile); return true;
@@ -29,7 +29,7 @@ bool orderOf(const Job j, out Order o) {
 }
 
 /** Rebuild a live Job (with its behaviour) from a persisted Order */
-Job jobOf(const Order o) {
+Job!Dwarf jobOf(const Order o) {
   final switch(o.kind) {
     case OrderKind.Mine: return miningJob(o.tile);
     // Building stores only tileClass; toType recovers the material: Each Buildable type needs its name to be a ResourceClass (see resources.d)
