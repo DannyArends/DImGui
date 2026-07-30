@@ -45,14 +45,12 @@ Matrix waterHighlight(float[3] wp, float ts, float th) { return translateScale([
 
 void mineCommit(ref GameApp app, int[3] tile) {
   if(app.world.getTileAt(tile) == ResourceType.None) return;
-  auto job = miningJob(tile);
-  if(!app.tryAssign(job)) jobQueue ~= job;
+  app.tryAssign(miningJob(tile));
 }
 
 void interactCommit(ref GameApp app, int[3] tile) {
   if(!app.hasFeature(tile, "Fell") && !app.hasFeature(tile, "Gather")) return;
-  auto job = interactFeatureJob(tile);
-  if(!app.tryAssign(job)) jobQueue ~= job;
+  app.tryAssign(interactFeatureJob(tile));
 }
 
 void waterCommit(ref GameApp app, int[3] tile) {
