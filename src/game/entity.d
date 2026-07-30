@@ -143,9 +143,11 @@ void tickEntity(T)(ref GameApp app, ref T d) {
         d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d);
       } else {
         if(!d.lastPathPartial && ++d.repathAttempts > 3) { d.onStuck(app); d.currentJob.onFail(app, d); break; }
-        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ d.onPathResult(app, r); }) == RepathResult.Unreachable) {
-          d.state = EntityState.WaitingForPath;
-        } else { d.currentJob.onFail(app, d); }
+        final switch(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ d.onPathResult(app, r); })) {
+          case RepathResult.Unreachable: d.state = EntityState.WaitingForPath; d.currentJob.onFail(app, d); break;
+          case RepathResult.AtTarget:    d.state = EntityState.Working; break;
+          case RepathResult.Pathing:     d.state = EntityState.WaitingForPath; break;
+        }
       }
       break;
     case EntityState.Blocked: d.onBlocked(app); break;
