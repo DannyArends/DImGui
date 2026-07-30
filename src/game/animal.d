@@ -74,9 +74,12 @@ struct Animal {
 void animalFrame(ref GameApp app, float dt) {
   if(app.world.animals is null) return;
   foreach(i, ref a; app.world.animals.animals) {
-    app.stepMove(a, dt, animalStep, animalHop);
+    if(a.isFalling) continue;
+    if(a.state == EntityState.Moving || a.state == EntityState.Wandering) {
+      if(app.stepMove(a, dt, animalStep, animalHop)) a.state = a.hasJob ? EntityState.Working : EntityState.Idle;
+    }
     float scl = animalTable[a.type].scale;
-    float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;   // hide if chunk unloaded
+    float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;
     Matrix m = scale(Matrix.init, [sc, sc, sc]);
     app.world.animals.instances[i] = position(m, a.visualPos);
   }
