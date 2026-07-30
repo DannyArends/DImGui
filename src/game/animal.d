@@ -38,35 +38,11 @@ struct AnimalT {
   float scale = 0.5f, scaleVariance = 0.1f;     /// Instance scale + per-spawn variance
 }
 
-/** Serializable core of an animal (saved between sessions). */
-struct AnimalData {
-  uint uid = 0;                                 /// Unique ID
-  uint type = 0;                                /// Index into animalTable
-  int[3] tile = [0, 0, 0];                      /// Current tile
-  float[Need.max + 1] needs = 0.0f;             /// Reuse the Need array (acts on Hunger, Thirst)
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// Instance tint
-
-  @nogc @property float hunger() const { return needs[Need.Hunger]; }
-  @nogc @property void hunger(float v) { needs[Need.Hunger] = v; }
-  @nogc @property float thirst() const { return needs[Need.Thirst]; }
-  @nogc @property void thirst(float v) { needs[Need.Thirst] = v; }
-}
-
-/** Runtime animal: serializable data plus movement/behaviour state. */
+/** Runtime animal: shared pawn (4 inventory slots) + species type. */
 struct Animal {
-  AnimalData data;
-  alias data this;
-
-  int[3] targetTile = noTile;                   /// Where we are heading (seek target)
-  float[3][] path;                              /// Remaining world-space steps
-  uint[2] idleTicks = [0, 180];                 /// [count, patience] before roaming (as Dwarf)
-
-  float[3] visualPos = [0.0f, 0.0f, 0.0f];      /// Interpolated position
-  float[3] moveFrom  = [0.0f, 0.0f, 0.0f];
-  float[3] moveTo    = [0.0f, 0.0f, 0.0f];
-  float moveT = 1.0f;                           /// 1.0 = arrived
-
-  EntityState state = EntityState.Idle;           /// Shared pawn state machine
+  Entity!4 entity;                              /// Shared pawn state
+  alias entity this;
+  uint type = 0;                                /// Index into animalTable
 }
 
 /** Per-frame: advance each animal's step and refresh its instance transform. */
@@ -151,7 +127,7 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
   foreach(size_t t, ref at; animalTable) {
     foreach(tile; animalSpawnTiles(app.world.data, data.coord, data.tileTypes, at)) {
       app.ensureAnimals();
-      Animal a; a.data = AnimalData(nextEntityUID++, cast(uint)t, tile, 0.0f, randomColor());
+      Animal a; a.entity.data = EntityData!4(nextEntityUID++, randomColor(), tile); a.type = cast(uint)t;
       app.addAnimal(a);
       any = true;
     }
