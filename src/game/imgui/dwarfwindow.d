@@ -16,11 +16,11 @@ import widgets : drawCenteredText, text;
 /** Human-readable state label */
 string dwarfStatus(ref Dwarf d) {
   switch(d.state) {
-    case DwarfState.Wandering: return "Wandering";
-    case DwarfState.WaitingForPath: return d.jobStack.length > 0 ? format("Pathing -> %s", d.jobStack[0].name) : "Pathing";
-    case DwarfState.Moving: return d.jobStack.length > 0 ? format("Walking -> %s", d.jobStack[0].name) : "Walking";
-    case DwarfState.Working: return d.jobStack.length > 0 ? format("%s%s", d.jobStack[0].name, d.jobStack[0].state) : "Working";
-    case DwarfState.Blocked: return "Blocked";
+    case EntityState.Wandering: return "Wandering";
+    case EntityState.WaitingForPath: return d.jobStack.length > 0 ? format("Pathing -> %s", d.jobStack[0].name) : "Pathing";
+    case EntityState.Moving: return d.jobStack.length > 0 ? format("Walking -> %s", d.jobStack[0].name) : "Walking";
+    case EntityState.Working: return d.jobStack.length > 0 ? format("%s%s", d.jobStack[0].name, d.jobStack[0].state) : "Working";
+    case EntityState.Blocked: return "Blocked";
     default: return "Idle";
   }
 }
@@ -103,9 +103,9 @@ void showDwarfOverview(ref GameApp app) {
   int idle, walking, working;
   if(app.world.dwarves !is null) { foreach(i, ref d; app.world.dwarves.dwarves) {
     switch(d.state) {
-      case DwarfState.Idle: idle++; break;
-      case DwarfState.Moving: walking++; break;
-      case DwarfState.Working: working++; break;
+      case EntityState.Idle: idle++; break;
+      case EntityState.Moving: walking++; break;
+      case EntityState.Working: working++; break;
       default: break;
     }
     app.showDwarfRow(i, d);

@@ -66,7 +66,7 @@ struct Animal {
   float[3] moveTo    = [0.0f, 0.0f, 0.0f];
   float moveT = 1.0f;                           /// 1.0 = arrived
 
-  DwarfState state = DwarfState.Idle;           /// Shared pawn state machine
+  EntityState state = EntityState.Idle;           /// Shared pawn state machine
 }
 
 /** Per-frame: advance each animal's step and refresh its instance transform. */
@@ -89,7 +89,7 @@ void animalTick(ref GameApp app) {
     a.needs[Need.Hunger] = min(1.0f, a.needs[Need.Hunger] + animalTable[a.type].hungerDecay);
     a.needs[Need.Thirst] = min(1.0f, a.needs[Need.Thirst] + animalTable[a.type].thirstDecay);
 
-    if(a.state == DwarfState.WaitingForPath) continue;
+    if(a.state == EntityState.WaitingForPath) continue;
     if(a.moveT >= 1.0f && a.path.length > 0) { app.followPath(a); continue; }   // bootstrap next step
     if(a.moveT < 1.0f || a.path.length > 0) continue;                            // mid-step
 
@@ -98,9 +98,9 @@ void animalTick(ref GameApp app) {
       a.idleTicks[0] = 0;
       a.idleTicks[1] = uniform(60, 240);
       app.roam(a);
-      if(a.path.length > 0) a.state = DwarfState.Wandering;
+      if(a.path.length > 0) a.state = EntityState.Wandering;
     } else {
-      a.state = DwarfState.Idle;
+      a.state = EntityState.Idle;
     }
   }
 }
