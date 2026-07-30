@@ -54,7 +54,7 @@ struct Animal {
 
   bool tickNeeds(ref GameApp app) { return app.tryAnimalNeeds(this); }
   void whenIdle(ref GameApp app) {
-    if(++idleTicks[0] > idleTicks[1]) { idleTicks[0] = 0; idleTicks[1] = uniform(60, 240); app.roam(this); if(path.length) state = EntityState.Wandering; }
+    if(++idleTicks[0] > idleTicks[1]) { idleTicks[0] = 0; idleTicks[1] = uniform(4, 24); app.roam(this); if(path.length) state = EntityState.Wandering; }
   }
   void onWork(ref GameApp app) {}                                       // animals carry nothing
   void onReject(ref GameApp app, ref Job!Animal job) { clearGoal(); }
@@ -182,6 +182,10 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
     foreach(tile; animalSpawnTiles(app.world.data, data.coord, data.tileTypes, at)) {
       app.ensureAnimals();
       Animal a; a.entity.data = EntityData!4(nextEntityUID++, randomColor(), tile); a.type = cast(uint)t;
+      a.idleTicks[1] = uniform(4, 24);
+      auto wp = app.world.tileToWorld(tile);
+      a.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
+      a.moveFrom = a.moveTo = a.visualPos;
       app.addAnimal(a);
       any = true;
     }
