@@ -18,7 +18,7 @@ import noise : noiseHTT;
 import pathfinding : followPath, pathfindTo, stepMove, repathTo, RepathResult, findGoalTile;
 import resources : foodValue;
 import sfx : play;
-import tile : getSuccessors, tileAbove;
+import tile : getSuccessors, tileAbove, getWater, setWater;
 import water : findNearestWater;
 import world : nextEntityUID;
 
@@ -98,19 +98,23 @@ Job!Animal grazeJob(int[3] target) {
           a.hunger = a.hunger > restore ? a.hunger - restore : 0.0f;
           app.play("DM-CGS-16", 0.4f);
           app.world.drops.dirty = true;
-        } else {
-          app.interactFeaturesAt(a.tile.tileAbove);          // harvest bush → berries next pass
-        }
+        } else { app.interactFeaturesAt(a.currentJob.targetTile); }
       });
     },
     onFail: (ref GameApp app, ref Animal a) { a.jobStack = []; a.state = EntityState.Idle; });
 }
 
 /** Drink: walk to water's edge; reset thirst on arrival (no cup). */
-Job!Animal animalDrinkJob(int[3] standAt) {
-  return Job!Animal("Drinking", standAt, ResourceClass.None, [], true, reach: Reach.Adjacent,
+Job!Animal animalDrinkJob(int[3] waterCell) {
+  return Job!Animal("Drinking", waterCell, ResourceClass.None, [], true, reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Animal a) {
-      app.progressJob(a, 0.5f, () { a.thirst = 0.0f; app.play("DM-CGS-08", 0.4f); });
+      app.progressJob(a, 0.5f, () {
+        int[3] w = a.currentJob.targetTile;
+        if(app.world.getWater(w) > 0) app.world.setWater(w, cast(ubyte)(app.world.getWater(w) - 1));
+        a.thirst = 0.0f;
+        app.play("DM-CGS-08", 0.4f);
+        app.world.drops.dirty = true;
+      });
     },
     onFail: (ref GameApp app, ref Animal a) { a.jobStack = []; a.state = EntityState.Idle; });
 }
@@ -119,7 +123,8 @@ Job!Animal animalDrinkJob(int[3] standAt) {
 bool tryAnimalNeeds(ref GameApp app, ref Animal a) {
   if(a.needs[Need.Thirst] >= 0.6f && a.needs[Need.Thirst] >= a.needs[Need.Hunger]) {
     int[3] standAt;
-    if(app.world.findNearestWater(a.tile, standAt) != noTile) { app.dispatchJob(a, animalDrinkJob(standAt)); return true; }
+    int[3] cell = app.world.findNearestWater(a.tile, standAt);
+    if(cell != noTile) { app.dispatchJob(a, animalDrinkJob(cell)); return true; }
   }
   if(a.needs[Need.Hunger] >= 0.6f) {
     uint food = findFreeFood(app.world, a.tile);

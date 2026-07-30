@@ -33,9 +33,9 @@ void showAnimalRow(ref GameApp app, size_t i, ref Animal a) {
   igSameLine(0, 5);
   string species = animalTable[a.type].name;
   bool isSel = app.world.animals.selected == cast(int)i;
-  if(igSelectable_Bool(cstr("%s##anm%d", species.toStringz, i), isSel, 0, ImVec2(0, 0))) { app.world.animals.selected = cast(int)i; }
+  if(igSelectable_Bool(cstr("%s##anm%d", species, i), isSel, 0, ImVec2(0, 0))) { app.world.animals.selected = cast(int)i; }
   igSameLine(0, 5);
-  text("%s - %s  H:%.0f T:%.0f", a.tile, animalStatus(a).toStringz, a.hunger * 100.0f, a.thirst * 100.0f);
+  text("%s - %s  H:%.0f T:%.0f", a.tile, animalStatus(a), a.hunger * 100.0f, a.thirst * 100.0f);
 }
 
 /** Camera follow for the selected animal. */
@@ -50,7 +50,7 @@ void followAnimal(ref GameApp app, uint uid) {
 void showAnimalSheet(ref GameApp app, ref Animal a, int selected) {
   animalGlyph(a); igSameLine(0, 5);
   string species = animalTable[a.type].name;
-  if(igSelectable_Bool(cstr("%s##anmfollow", cstr("%s", species.toStringz)), false, 0, ImVec2(0, 0))) { app.followAnimal(a.uid); }
+  if(igSelectable_Bool(cstr("%s##anmfollow", species), false, 0, ImVec2(0, 0))) { app.followAnimal(a.uid); }
   text("Tile: %s", a.tile);
   text("Hunger: %.0f", a.hunger * 100.0f);
   igSameLine(0, 5);
