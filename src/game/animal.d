@@ -43,6 +43,10 @@ struct Animal {
   Entity!4 entity;                              /// Shared pawn state
   alias entity this;
   uint type = 0;                                /// Index into animalTable
+
+  Job!Animal[] jobStack;                        /// Personal jobs (graze / drink)
+  @property bool hasJob() const { return jobStack.length > 0; }
+  @property ref Job!Animal currentJob() { return jobStack[0]; }
 }
 
 /** Per-frame: advance each animal's step and refresh its instance transform. */
