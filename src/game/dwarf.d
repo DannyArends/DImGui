@@ -404,7 +404,7 @@ void spawnDwarf(ref GameApp app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
-  Dwarf d = Dwarf(DwarfData(nextEntityUID++, randomColor(), tile));
+  Dwarf d; d.entity.data = EntityData!32(nextEntityUID++, randomColor(), tile);
   randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.syncInstances();
@@ -430,12 +430,12 @@ void removeDwarfNameLabel(ref GameApp app, ref Dwarf d) {
   d.nameLabel = size_t.max;
 }
 
-DwarfData[] saveDwarfs(ref GameApp app) {
+EntityData!32[] saveDwarfs(ref GameApp app) {
   if(app.world.dwarves is null) return [];
   return app.world.dwarves[].map!(d => d.data).array;
 }
 
-void loadDwarfs(ref GameApp app, DwarfData[] data) {
+void loadDwarfs(ref GameApp app, EntityData!32[] data) {
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
   app.world.dwarves.syncInstances();
