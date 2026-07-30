@@ -478,8 +478,8 @@ bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
 }
 
 /** Ambient roaming: walk up to n random valid steps from the current tile, no goal */
-void roam(ref GameApp app, ref Dwarf d, int n = 5) {
-  float[3] at = app.world.tileToWorld(d.tile);
+void roam(T)(ref GameApp app, ref T obj, int n = 5) {
+  float[3] at = app.world.tileToWorld(obj.tile);
   float[3][] path;
   foreach(_; 0..n) {
     auto opts = getSuccessors(app.world.data, PathNode(position: at)).filter!(s => !app.isTileOccupied(app.world.worldToTile(s.position))).array;
@@ -488,10 +488,9 @@ void roam(ref GameApp app, ref Dwarf d, int n = 5) {
     path ~= at;
   }
   if(path.length == 0) return;
-  d.path = path;
-  d.state = DwarfState.Wandering;
-  d.moveFrom = d.moveTo = d.visualPos;
-  d.moveT = 1.0f;
+  obj.path = path;
+  obj.moveFrom = obj.moveTo = obj.visualPos;
+  obj.moveT = 1.0f;
 }
 
 /** Higher is better. Distance is a soft penalty; basePriority and need-urgency dominate. */
@@ -536,7 +535,7 @@ void claimNextJob(ref GameApp app, ref Dwarf d) {
     d.idleTicks[0] = 0;
     if(app.world.drops.length > 0 && d.hasInventorySpace() && uniform(0, 2) == 0) {
       //app.dispatchJob(d, pickupJob(noTile, ResourceClass.None));
-    } else { app.roam(d); }
+    } else { app.roam(d); d.state = DwarfState.Wandering; }
   }
 }
 
