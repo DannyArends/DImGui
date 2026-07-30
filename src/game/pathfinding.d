@@ -75,6 +75,7 @@ void pathfindTo(T)(ref GameApp app, ref T obj, int[3] goalTile, void delegate(Pa
   app.world.paths.onResult[obj.uid] = onDone;
   auto req = PathRequest(obj.uid, obj.tile, goalTile);
   if(!app.trySendPath(req)) app.world.paths.pending ~= req;
+  obj.state = EntityState.WaitingForPath;
 }
 
 /** Route a completed path back to whoever requested it. */

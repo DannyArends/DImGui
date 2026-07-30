@@ -5,7 +5,7 @@
 
 import engine;
 
-enum MS_THRESHOLD = 1500;
+enum MS_THRESHOLD = 3000;
 
 auto timed(alias fn, T, Args...)(ref T app, Args args) {
   debug {

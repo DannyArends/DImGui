@@ -162,8 +162,6 @@
   [RGB:0.827:0.827:0.827]
 [COLOR:lightgreen]
   [RGB:0.565:0.933:0.565]
-[COLOR:lightgrey]
-  [RGB:0.827:0.827:0.827]
 [COLOR:lightpink]
   [RGB:1.000:0.714:0.757]
 [COLOR:lightsalmon]
