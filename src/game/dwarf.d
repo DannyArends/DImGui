@@ -34,14 +34,13 @@ struct Dwarf {
   Entity!32 entity;                         /// Shared pawn (32 inventory slots)
   alias entity this;
 
-  float progress = 0.0f;                    /// Job progress
-  Job[] jobStack;                           /// Job stack, [0] active, rest pending
+  Job!Dwarf[] jobStack;                     /// Job stack, [0] active, rest pending
   size_t lightIndex = size_t.max;
   size_t nameLabel = size_t.max;
 
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = EntityState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }
-  @property ref Job currentJob() { return(jobStack[0]); }
+  @property ref Job!Dwarf currentJob() { return(jobStack[0]); }
 }
 
 /** Release job reservations, drop everything carried, retire the torch light, and remove the dwarf from the roster */
