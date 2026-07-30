@@ -403,7 +403,7 @@ bool dispatchJob(T)(ref GameApp app, ref T d, Job!T job) {
   auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
   if(goal == noTile) { d.onReject(app, job); return false; }
   if(goal == d.tile) { d.state = EntityState.Working; return true; }
-  app.pathfindTo(d, goal, (PathResult r){ app.applyPathResult(r); });
+  app.pathfindTo(d, goal, (PathResult r){ d.onPathResult(app, r); });
   return true;
 }
 
