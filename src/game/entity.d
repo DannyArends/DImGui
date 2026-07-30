@@ -136,7 +136,6 @@ void tickEntity(T)(ref GameApp app, ref T d) {
     case EntityState.Wandering:
       d.onWork(app);
       if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
-      else if(d.moveT >= 1.0f) d.state = d.hasJob ? EntityState.Working : EntityState.Idle;
       break;
     case EntityState.Working:
       if(!d.hasJob) { d.state = EntityState.Idle; break; }
