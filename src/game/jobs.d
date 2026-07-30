@@ -122,7 +122,7 @@ void progressJob(T)(ref GameApp app, ref T d, float amount, void delegate() onCo
 }
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
-void claimBlock(T)(ref GameApp app, ref T d, ref Job!T j) {
+void claimBlock(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
   if(j.blockIDs.length == 0 && j.tileClass != ResourceClass.None && d.carrying.any!(cid => app.world.drops.resourceType(cid).hasClass(j.tileClass))) {
     j.state = JobState.Satisfied; return; 
   }
@@ -139,14 +139,14 @@ void claimBlock(T)(ref GameApp app, ref T d, ref Job!T j) {
 }
 
 /** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
-void claimNeighbour(T)(ref GameApp app, ref T d, ref Job!T j) {
+void claimNeighbour(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) { 
   foreach(n; tileNeighbours(j.targetTile)[0..2] ~ tileNeighbours(j.targetTile)[4..6]) {
     if(app.world.isStandable(n)) { j.targetTile = n; return; }
   }
   j.state = JobState.Unavailable;
 }
 
-void claimSelf(T)(ref GameApp app, ref T d, ref Job!T j) { j.targetTile = d.tile; }
+void claimSelf(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) { j.targetTile = d.tile; }
 
 /** Mining Job */
 Job!Dwarf miningJob(int[3] targetTile) {
@@ -400,7 +400,7 @@ Job!Dwarf sleepJob(int[3] atTile) {
 }
 
 /** Dispatch a job to a dwarf */
-void dispatchJob(T)(ref GameApp app, ref T d, Job!T j) {
+bool dispatchJob(T)(ref GameApp app, ref T d, Job!T job) {
   d.jobStack = flatten(job);
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
   if(d.jobStack.any!(j => j.state == JobState.Unavailable)) { app.rejectJob(d, job); return false; }
