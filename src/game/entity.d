@@ -109,6 +109,7 @@ struct Entity(uint N) {
   bool lastPathPartial = false;
   uint blockedSince = 0;
   uint repathAttempts = 0;
+  float progress = 0.0f;                    /// Current sub-job progress [0,1]
 
   @property bool isFalling() const { return fall.isFalling; }
 }
