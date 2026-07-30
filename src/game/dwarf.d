@@ -28,21 +28,6 @@ import world : nextEntityUID;
 
 enum int NEED_RETRY = 30;
 
-struct InventorySlot {
-  enum Kind : ubyte { Empty, Block, Stack }
-  Kind kind = Kind.Empty;                           /// Resource kind
-  Item item;                                        /// What's in the slot: (shape x material [+ contents])
-  ubyte count = 0;                                  /// number of valid ids in resourceIDs
-  uint[16] resourceIDs = noBlock;                   /// block/berry ids in this slot (POD, fixed-size)
-
-  @nogc @property bool empty() const nothrow { return kind == Kind.Empty; }
-  @nogc @property bool isStack() const nothrow { return kind == Kind.Stack; }
-  @nogc bool accepts(Item item) const {
-    if(empty) return true;
-    return isStack && this.item == item && count < itemStack(item);
-  }
-}
-
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 
 struct DwarfData {
