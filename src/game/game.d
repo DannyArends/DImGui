@@ -27,6 +27,7 @@ public import resources : ClassVal, ResourceT, ItemTemplateT, Item, traversable,
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 
+import animalwindow : showAnimalContent;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
 import clouds : buildCloudInstances, applyCloudInstances;
@@ -119,6 +120,7 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WAREHOUSE, "Stockpiles"), (uint font){ app.showStockpileContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
+  app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_PAW, "Animals"), (uint font){ app.showAnimalContent(font); });
   app.gameWindows ~= GameWindow("FPS", (uint font){ app.showFPSContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
