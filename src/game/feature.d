@@ -14,7 +14,7 @@ import matrix : translateScale, segmentTransform;
 import noise : noiseHTT;
 import sfx : play;
 import tile : getTile;
-import vector : vAdd;
+import vector : vAdd, manhattan;
 import vegetation : saveVegetation, loadVegetation;
 
 struct FeaturePartT {
@@ -182,6 +182,27 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
   return instances;
 }
 
+/** True if this feature type drops a Food-class raw (a forageable bush). */
+bool featureDropsFood(const FeatureT ft) {
+  foreach(ref d; ft.drops) if(d.material.to!ResourceType.isFood) return true;
+  return false;
+}
+
+/** Nearest rooted tile of a food-dropping feature within maxTiles; noTile if none. */
+int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 48) {
+  int[3] best = noTile; float bestD = float.max;
+  foreach(const ft; features) {
+    if(!featureDropsFood(ft) || ft.name !in app.world.vegetation) continue;
+    foreach(coord, feats; app.world.vegetation[ft.name]) {
+      foreach(ref f; feats) {
+        if(f.rootTile[0] == int.min) continue;                 // tombstone
+        float d = manhattan(f.rootTile, from);
+        if(d < bestD && d <= maxTiles) { bestD = d; best = f.rootTile; }
+      }
+    }
+  }
+  return best;
+}
 
 /** Add all DrawInstances for each feature: mark the tile-penalty footprint, build instance
     batches (static parts + L-system brushes), and emit each via emitInstances. */
