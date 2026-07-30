@@ -96,7 +96,7 @@ const(int[3])[] activeTiles(const World world, string jobName) { return world.li
 int[3] pathTileFor(ref World world, uint id, const Block b) { return (b.tile == storedTile) ? world.storedTileOf(id).tileAbove : b.tile; }
 
 /** Advance the job stack — removes the active sub-job and clears the dwarf's current goal */
-void completeSubJob(T)(ref GameApp app, ref T d) {
+void completeSubJob(ref GameApp app, ref Dwarf d) {
   d.jobStack = d.jobStack[1..$];
   d.targetTile = noTile;
   d.repathAttempts = 0;

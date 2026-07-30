@@ -98,7 +98,7 @@ void infoPress(ref GameApp app, float[3][2] ray) {
 void selectPress(ref GameApp app, float[3][2] ray) {
   int[3] wc;
   auto hits = app.getHits(ray, app.showRays);
-  Job job;
+  Job!Dwarf job;
   if(app.getBestTile(ray, wc)) job = miningJob(wc);
   foreach(ref ft; features) {
     bool matchFeature(string g) { return ft.parts.any!(p => g == ft.name ~ ":" ~ p.mesh) || ft.brushes.any!(b => g == ft.name ~ ":" ~ b.mesh); }
