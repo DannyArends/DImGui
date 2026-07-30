@@ -41,6 +41,13 @@ struct Dwarf {
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = EntityState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }
   @property ref Job!Dwarf currentJob() { return(jobStack[0]); }
+
+  bool tickNeeds(ref GameApp app) { return app.tryNeeds(this); }
+  void whenIdle(ref GameApp app) { app.claimNextJob(this); }
+  void onWork(ref GameApp app) { app.overBurdened(this); }
+  void onBlocked(ref GameApp app) { app.handleBlocking(this); }
+  void onStuck(ref GameApp app) { app.logStuck(this); }
+  void onPathResult(ref GameApp app, PathResult r) { app.applyPathResult(r); }
 }
 
 /** Release job reservations, drop everything carried, retire the torch light, and remove the dwarf from the roster */
