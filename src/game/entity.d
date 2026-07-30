@@ -7,6 +7,9 @@ import game;
 
 import inventory : InventorySlot;
 import resources : itemStack;
+import pathfinding : atDestination, followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
+
+static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 
 /** Serializable pawn state (POD): saved to disk via Persist.pod. N = inventory slot count. */
 struct EntityData(uint N) {
@@ -113,3 +116,40 @@ struct Entity(uint N) {
 
   @property bool isFalling() const { return fall.isFalling; }
 }
+
+/** A single dwarf being ticked */
+void tickEntity(T)(ref GameApp app, ref T d) {
+  foreach(n; 0 .. d.needs.length){ d.needs[n] = min(1.0f, d.needs[n] + decay[n]); }
+  foreach(n; 0 .. d.needBackoff.length) { if(d.needBackoff[n] > 0) { d.needBackoff[n]--; } }
+  if(d.isFalling) return;
+
+  // Drop a job the moment it becomes invalid, in any state
+  if(d.hasJob && d.currentJob.isValid !is null && !d.currentJob.isValid(app, d.currentJob)) { d.currentJob.onFail(app, d); }
+
+  final switch(d.state) {
+    case EntityState.Idle:
+      if(d.tickNeeds(app)) break;
+      d.whenIdle(app);
+      break;
+    case EntityState.WaitingForPath: break;
+    case EntityState.Moving:
+    case EntityState.Wandering:
+      d.onWork(app);
+      if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
+      else if(d.moveT >= 1.0f) d.state = d.hasJob ? EntityState.Working : EntityState.Idle;
+      break;
+    case EntityState.Working:
+      if(!d.hasJob) { d.state = EntityState.Idle; break; }
+      if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) {
+        d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d);
+      } else {
+        if(!d.lastPathPartial && ++d.repathAttempts > 3) { d.onStuck(app); d.currentJob.onFail(app, d); break; }
+        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ d.onPathResult(app, r); }) == RepathResult.Unreachable) {
+          d.state = EntityState.WaitingForPath;
+        } else { d.currentJob.onFail(app, d); }
+      }
+      break;
+    case EntityState.Blocked: d.onBlocked(app); break;
+  }
+}
+

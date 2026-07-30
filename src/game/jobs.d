@@ -104,16 +104,6 @@ void completeSubJob(ref GameApp app, ref Dwarf d) {
   d.state = d.hasJob ? EntityState.Working : EntityState.Idle;
 }
 
-/** Check if object T is adjacent to targetTile. Requires T to have: tile */
-bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
-  final switch(reach) {
-    case Reach.Adjacent: return(manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]);
-    case Reach.OnTile: return(obj.tile == targetTile);
-    case Reach.AdjacentOrAbove: return(obj.tile == targetTile.tileAbove || (manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]));
-    case Reach.AdjacentOrOnTile: return(obj.tile == targetTile || (manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]));
-  }
-}
-
 /** Advance progress on a task by amount; calls onComplete and completes the sub-job when progress reaches 1.0 */
 void progressJob(T)(ref GameApp app, ref T d, float amount, void delegate() onComplete) {
   float speed = d.currentJob.personal ? 1.0f : (0.5f + 0.5f * d.mood);

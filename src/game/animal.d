@@ -8,6 +8,7 @@ import game;
 import block : findFreeFood, resourceType, noBlock;
 import color : randomColor;
 import dwarf : findFreeSurfaceTile;
+import entity : tickEntity;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
 import jobs : roam, Job, JobState, dispatchJob, progressJob, consumeCarried;
@@ -128,24 +129,7 @@ bool tryAnimalNeeds(ref GameApp app, ref Animal a) {
 /** Per-tick: bootstrap the next step, or (when idle) pathfind a new wander target. */
 void animalTick(ref GameApp app) {
   if(app.world.animals is null) return;
-  foreach(ref a; app.world.animals.animals) {
-    a.needs[Need.Hunger] = min(1.0f, a.needs[Need.Hunger] + animalTable[a.type].hungerDecay);
-    a.needs[Need.Thirst] = min(1.0f, a.needs[Need.Thirst] + animalTable[a.type].thirstDecay);
-
-    if(a.state == EntityState.WaitingForPath) continue;
-    if(a.moveT >= 1.0f && a.path.length > 0) { app.followPath(a); continue; }   // bootstrap next step
-    if(a.moveT < 1.0f || a.path.length > 0) continue;                            // mid-step
-
-    // idle → roam (shared with dwarves)
-    if(++a.idleTicks[0] > a.idleTicks[1]) {
-      a.idleTicks[0] = 0;
-      a.idleTicks[1] = uniform(60, 240);
-      app.roam(a);
-      if(a.path.length > 0) a.state = EntityState.Wandering;
-    } else {
-      a.state = EntityState.Idle;
-    }
-  }
+  foreach(ref a; app.world.animals.animals) app.tickEntity(a);
 }
 
 /** Create the Animals container and register it for rendering + ticking. */
