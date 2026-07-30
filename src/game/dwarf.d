@@ -45,6 +45,8 @@ struct Dwarf {
   bool tickNeeds(ref GameApp app) { return app.tryNeeds(this); }
   void whenIdle(ref GameApp app) { app.claimNextJob(this); }
   void onWork(ref GameApp app) { app.overBurdened(this); }
+  void onReject(ref GameApp app, ref Job!Dwarf job) { app.rejectJob(this, job); }
+  void onSubJobComplete(ref GameApp app) { app.completeSubJob(this); }
   void onBlocked(ref GameApp app) { app.handleBlocking(this); }
   void onStuck(ref GameApp app) { app.logStuck(this); }
   void onPathResult(ref GameApp app, PathResult r) { app.applyPathResult(r); }
