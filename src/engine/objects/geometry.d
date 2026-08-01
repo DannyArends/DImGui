@@ -28,6 +28,7 @@ class Geometry {
 
   Animation[] animations;                       /// Animations
   AnimationState[] states;                      /// per-instance animation state
+  size_t uiInstance = 0;                        /// Which instance is shown in the UI
   uint boneBase = 0;                            /// First global bone index for this object's bones (base for local inBones)
   uint boneCount = 0;                           /// Number of bones
   Mesh[string] meshes;                          /// Meshes
