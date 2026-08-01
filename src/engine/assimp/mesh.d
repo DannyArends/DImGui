@@ -45,13 +45,6 @@ void updateMeshInfo(ref App app) {
       if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
       while(app.boneOffsets.length < need) app.boneOffsets.length *= 2;
     }
-    if(app.objects[o].states.length != app.objects[o].instances.length) {
-      size_t old = app.objects[o].states.length;
-      app.objects[o].states.length = app.objects[o].instances.length;
-      foreach(k; old .. app.objects[o].states.length){
-        app.objects[o].states[k].animTime = uniform(0.0, 1000.0);
-      }
-    }
     if (anyStale) { app.objects[o].syncInstances(); needsUpdate = true; }
     app.meshes ~= app.objects[o].meshes.values;
   }
