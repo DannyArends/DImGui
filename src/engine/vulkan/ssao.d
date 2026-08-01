@@ -9,7 +9,7 @@ import vector : normalize, vMul;
 import matrix : multiply, inverse;
 import quaternion : xyzw;
 
-enum SSAO_KERNEL = isAndroid ? 16 : 32;
+enum SSAO_KERNEL = isAndroid ? (isLowPower ? 4 : 16) : 32;
 __gshared float[4][SSAO_KERNEL] ssaoKernel;
 
 struct SSAOUniformBuffer {
