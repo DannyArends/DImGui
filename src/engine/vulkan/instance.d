@@ -11,6 +11,11 @@ import validation : createDebugUtils;
 /** Load instance extensions and create the Vulkan instance */
 void createInstance(ref App app){
   app.loadInstanceExtensions();
+  // Quest 1's loader is Vulkan 1.1 and rejects a higher requested apiVersion.
+  uint loaderVersion = VK_MAKE_API_VERSION( 0, 1, 1, 0 );
+  vkEnumerateInstanceVersion(&loaderVersion);
+  if(loaderVersion < app.applicationInfo.apiVersion) app.applicationInfo.apiVersion = loaderVersion;
+
   auto layers = app.queryInstanceLayerProperties();
   auto extensions = app.queryInstanceExtensionProperties();
 
@@ -28,6 +33,7 @@ void createInstance(ref App app){
     pApplicationInfo: &app.applicationInfo,
   };
 
+  SDL_Log("vkCreateInstance[extensions:%d]", app.instanceExtensions.length);
   enforceVK(vkCreateInstance(&createInstance, app.allocator, &app.instance));
   app.mainDeletionQueue.add((){
     if(app.instance != null) { if(app.verbose) SDL_Log("Destroy instance: %p", app.instance);

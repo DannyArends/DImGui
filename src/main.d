@@ -34,6 +34,27 @@ import wboit : reportWBOITCommitment;
 /** Main entry point to the program */
 version (Android) {
   import core.runtime : rt_init;
+  import ldc.llvmasm;
+
+  /// __tls_get_addr shim: this Quest's Bionic doesn't export it, but the DTV
+  /// exists (TLSDESC works). Single-DSO only — valid because druntime/phobos
+  /// are statically linked into libmain.so.
+ /* extern(C) void* __tls_get_addr(size_t* ti) @nogc nothrow {
+    void** tp = __asm!(void**)("mrs $0, TPIDR_EL0", "=r");
+    size_t* dtv = cast(size_t*)tp[0];
+    __asm("mov x19,$0; mov x20,$1; mov x21,$2; mov x22,$3; mov x23,$4; mov x24,$5; brk #0",
+          "r,r,r,r,r,r", ti[0], dtv[0], dtv[1], dtv[2], dtv[3], ti[1]);
+    return null;
+  } */
+
+  extern(C) void* __tls_get_addr(size_t* ti) @nogc nothrow {
+    void** tp = __asm!(void**)("mrs $0, TPIDR_EL0", "=r");
+    size_t* dtv = cast(size_t*)tp[0];
+    // monterey Bionic: dtv = { generation; modules[] }; single DSO => modules[0]
+    void* base = cast(void*)dtv[1];       // modules[0]
+    size_t off = ti[1];                   // offset within the block
+    return cast(void*)(cast(size_t)base + off);
+  }
 
   extern(C) int SDL_main(int argc, char** argv) { // Hijack the SDL main
     int dRuntime = rt_init();

@@ -99,6 +99,9 @@ const(char)* faIcon(string s = cast(string)ICON_FA_MAGNIFYING_GLASS) { return(cs
 const(char)* iconText(string icon, string text) { return(cstr("%s %s", fromStringz(faIcon(icon)), text)); }
 string iconTextStr(string icon, string text) { return format("%s %s", fromStringz(faIcon(icon)), text); }
 
+/// C-callable wrapper so ImGui's checkVk reports through enforceVK.
+extern(C) void imguiCheckVk(VkResult r) @nogc nothrow { enforceVK(r); }
+
 /** Code to initialize the ImGui backend */
 void initializeImGui(ref App app){
   igCreateContext(null);
@@ -142,7 +145,7 @@ void initializeImGui(ref App app){
     ImageCount : cast(uint)app.framesInFlight,
     RenderPass : app.imguiCmd.pass,
     MSAASamples : VK_SAMPLE_COUNT_1_BIT,
-    CheckVkResultFn : &enforceVK
+    CheckVkResultFn : &imguiCheckVk
   };
 
   ImGui_ImplVulkan_Init(&imguiInit);

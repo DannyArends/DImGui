@@ -45,7 +45,7 @@ struct App {
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
-  SSBOList!Matrix boneOffsets;                                                  /// Animated BoneOffsets for GPU SSBO
+  SSBOList!Matrix boneOffsets;                                                  /// Animated BoneOffsets for GPU SSBO [Grow only]
   SSBOList!Mesh meshes;                                                         /// Meshes for GPU SSBO
   Textures textures;                                                            /// Textures
   SSBOList!Material materials;                                                  /// GPU materials
@@ -144,8 +144,8 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool enableValidation = true;                                                /// Should validation be enabled ?
-  bool nameVulkanObjects = true;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
+  bool enableValidation = false;                                                /// Should validation be enabled ?
+  bool nameVulkanObjects = false;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
   bool showPaths = false;                                                       /// Show pathfinding
@@ -173,9 +173,9 @@ struct App {
 }
 
 /** Check result of Vulkan call and print if an error occured */
-extern(C) @nogc void enforceVK(VkResult err) nothrow {
+extern(C) @nogc void enforceVK(VkResult err, string file = __FILE__, int line = __LINE__) nothrow {
   if (err == VK_SUCCESS) return;
-  SDL_Log("[enforceVK] Error: VkResult = %d", err);
+  SDL_Log("[enforceVK] VkResult=%d at %s:%d", err, file.ptr, line);
   if (err < 0) abort();
 }
 
