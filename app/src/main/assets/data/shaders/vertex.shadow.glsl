@@ -19,10 +19,11 @@ layout(location = 1) in uvec4 inBones;
 layout(location = 2) in vec4 inWeights;
 
 // Per Instance attributes
-layout(location = 3) in mat4 instance;
+layout(location = 3) in ivec4 meshdef;               /// [meshStart, meshEnd, material, boneBase]
+layout(location = 4) in mat4 instance;               /// Instance matrix
 
 void main() {
-  vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights);
+  vec4 position = animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(meshdef[3]));
   mat4 model = lightUbo.scene * instance;
   vec4 worldPos = model * position;
   gl_Position = lightUbo.slotVP[pc.clight] * worldPos;

@@ -260,9 +260,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log(" - shadow map pipeline layout created: %p", app.shadows.pipeline.layout);
 
   auto stages = createStageInfo(app.shadows.shaders);
-
-  VkVertexInputBindingDescription[2] bindingDescription = Vertex.getBindingDescription();
-  VkVertexInputAttributeDescription[7]  attributeDescriptions= Vertex.getShadowDescriptions();
+  auto bindingDescription = Vertex.getBindingDescription();
+  auto attributeDescriptions= Vertex.getShadowDescriptions();
 
   VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,

@@ -7,7 +7,7 @@ import engine;
 
 /** An instance of a Geometry */
 struct DrawInstance {
-  int[4] meshdef = [0, 0, -1, 0];                   /// Mesh range [start, end, material, free] in meshSSBO; material -1 = use mesh material
+  int[4] meshdef = [0, 0, -1, 0];                   /// [meshStart, meshEnd, material(-1 = mesh), boneBase]
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];        /// Color
   float[4] uvRect = [0.0f, 0.0f, 1.0f, 1.0f];       /// UV remap [offsetX, offsetY, scaleX, scaleY]; identity = full texture
   float[4] worldNormal = [0.0f, 1.0f, 0.0f, 0.0f];  /// baked world-space normal (xyz) + hasBakedNormal (w)
