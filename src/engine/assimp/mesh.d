@@ -34,7 +34,7 @@ void updateMeshInfo(ref App app) {
     bool anyStale = false;
     foreach (i, ref inst; app.objects[o].instances) {
       int boneBase = cast(int)(app.objects[o].boneBase + cast(uint)i * app.objects[o].boneCount);
-      if(inst.meshdef[0..2] != expected) {
+      if(inst.meshdef[0..2] != expected || inst.meshdef[3] != boneBase) {
         inst.meshdef[0..2] = expected;
         inst.meshdef[3] = boneBase;
         anyStale = true;
