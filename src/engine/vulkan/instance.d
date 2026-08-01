@@ -19,10 +19,12 @@ void createInstance(ref App app){
   auto layers = app.queryInstanceLayerProperties();
   auto extensions = app.queryInstanceExtensionProperties();
 
-  if(app.enableValidation && layers.has("VK_LAYER_KHRONOS_validation")){ app.layers ~= "VK_LAYER_KHRONOS_validation"; }
-  if(extensions.has("VK_EXT_debug_report")){ app.instanceExtensions ~= "VK_EXT_debug_report"; }
-  if(extensions.has("VK_EXT_debug_utils")){ app.instanceExtensions ~= "VK_EXT_debug_utils"; }
-  if(extensions.has("VK_KHR_get_physical_device_properties2")){ app.instanceExtensions ~= "VK_KHR_get_physical_device_properties2"; }
+  if(app.enableValidation) {
+    if(layers.has("VK_LAYER_KHRONOS_validation")){ app.layers ~= "VK_LAYER_KHRONOS_validation"; }
+    if(extensions.has("VK_EXT_debug_report")){ app.instanceExtensions ~= "VK_EXT_debug_report"; }
+    if(extensions.has("VK_EXT_debug_utils")){ app.instanceExtensions ~= "VK_EXT_debug_utils"; }
+    if(extensions.has("VK_KHR_get_physical_device_properties2")){ app.instanceExtensions ~= "VK_KHR_get_physical_device_properties2"; }
+  }
 
   VkInstanceCreateInfo createInstance = { 
     sType : VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -34,6 +36,13 @@ void createInstance(ref App app){
   };
 
   SDL_Log("vkCreateInstance[extensions:%d]", app.instanceExtensions.length);
+  const(char)*[] filtered;
+  foreach(e; app.instanceExtensions) {
+    if(extensions.has(e)) { filtered ~= e; }
+    else { SDL_Log("Dropping unsupported instance extension: %s", e); }
+  }
+  app.instanceExtensions = filtered;
+  SDL_Log("Filtered [extensions:%d]", app.instanceExtensions.length);
   enforceVK(vkCreateInstance(&createInstance, app.allocator, &app.instance));
   app.mainDeletionQueue.add((){
     if(app.instance != null) { if(app.verbose) SDL_Log("Destroy instance: %p", app.instance);
