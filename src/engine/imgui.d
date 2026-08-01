@@ -150,7 +150,7 @@ void initializeImGui(ref App app){
 
   ImGui_ImplVulkan_Init(&imguiInit);
 
-  version(Android){
+  version(Android) {
     // Scale UI to the actual panel: 2.5x was tuned for a ~1000px Quest 2/3 panel;
     // the Quest 1 gives ~400px, so derive uiscale from real width (clamped).
     float s = cast(float)app.camera.width / 400.0f;   // 400px -> 1.0, 1000px -> 2.5

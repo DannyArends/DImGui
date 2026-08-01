@@ -36,12 +36,6 @@ void createInstance(ref App app){
   };
 
   SDL_Log("vkCreateInstance[extensions:%d]", app.instanceExtensions.length);
-  const(char)*[] filtered;
-  foreach(e; app.instanceExtensions) { if(extensions.has(e)) { filtered ~= e; 
-    } else { SDL_Log("Dropping unsupported instance extension: %s", e); }
-  }
-  app.instanceExtensions = filtered;
-  SDL_Log("Filtered [extensions:%d]", app.instanceExtensions.length);
   enforceVK(vkCreateInstance(&createInstance, app.allocator, &app.instance));
   app.mainDeletionQueue.add((){
     if(app.instance != null) { if(app.verbose) SDL_Log("Destroy instance: %p", app.instance);
