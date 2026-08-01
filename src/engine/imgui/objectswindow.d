@@ -44,7 +44,9 @@ void showObjectwindow(ref App app, ref Geometry obj) {
     igText(faIcon(cast(string)ICON_FA_FILM)); igSameLine(0,5);
     igPushItemWidth(100 * app.gui.uiscale);
     int[2] limits = [0, cast(int)(obj.animations.length-1)];
-    igSliderScalar("##a", ImGuiDataType_U32, &obj.animation, &limits[0], &limits[1], "%d", 0);
+    for(size_t i = 0; i < obj.states.length; i++){
+      igSliderScalar(cstr("##a%d", i), ImGuiDataType_U32, &obj.states[i].animation, &limits[0], &limits[1], "%d", 0);
+    }
     igPopItemWidth();
   }
 

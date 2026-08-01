@@ -27,9 +27,9 @@ class Geometry {
   Bounds bounds;                                /// OpenAsset bounding box
 
   Animation[] animations;                       /// Animations
+  AnimationState[] states;                      /// per-instance animation state
   uint boneBase = 0;                            /// First global bone index for this object's bones (base for local inBones)
-  uint animation = 0;                           /// Current Animation
-  double animTime = 0.0;                        /// ms of animation played, dt-advanced
+  uint boneCount = 0;                           /// Number of bones
   Mesh[string] meshes;                          /// Meshes
   AMat[] materials;                             /// Materials
 
