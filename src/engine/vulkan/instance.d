@@ -11,10 +11,10 @@ import validation : createDebugUtils;
 /** Load instance extensions and create the Vulkan instance */
 void createInstance(ref App app){
   app.loadInstanceExtensions();
-  // Quest 1's loader is Vulkan 1.1 and rejects a higher requested apiVersion.
-  uint loaderVersion = VK_MAKE_API_VERSION( 0, 1, 1, 0 );
-  vkEnumerateInstanceVersion(&loaderVersion);
-  if(loaderVersion < app.applicationInfo.apiVersion) app.applicationInfo.apiVersion = loaderVersion;
+
+  uint lVer = VK_MAKE_API_VERSION( 0, 1, 1, 0 );   // Accept 1.1
+  vkEnumerateInstanceVersion(&lVer);               // Find loader Version
+  if(lVer < app.applicationInfo.apiVersion){ app.applicationInfo.apiVersion = lVer; } // request 1.2 or lVer
 
   auto layers = app.queryInstanceLayerProperties();
   auto extensions = app.queryInstanceExtensionProperties();
@@ -37,9 +37,8 @@ void createInstance(ref App app){
 
   SDL_Log("vkCreateInstance[extensions:%d]", app.instanceExtensions.length);
   const(char)*[] filtered;
-  foreach(e; app.instanceExtensions) {
-    if(extensions.has(e)) { filtered ~= e; }
-    else { SDL_Log("Dropping unsupported instance extension: %s", e); }
+  foreach(e; app.instanceExtensions) { if(extensions.has(e)) { filtered ~= e; 
+    } else { SDL_Log("Dropping unsupported instance extension: %s", e); }
   }
   app.instanceExtensions = filtered;
   SDL_Log("Filtered [extensions:%d]", app.instanceExtensions.length);

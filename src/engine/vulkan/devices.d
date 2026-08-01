@@ -53,27 +53,24 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     flags: 0, pfnUserCallback: &memoryReportCallback, pUserData: &app,
   };
 
-  VkPhysicalDeviceProperties props;
-  vkGetPhysicalDeviceProperties(app.physicalDevice, &props);
-  bool isVulkan12 = VK_API_VERSION_MINOR(props.apiVersion) >= 2;
-
-
-  VkPhysicalDeviceVulkan12Features features = {
-    sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-    descriptorIndexing : app.supported.vk12.descriptorIndexing,
-    runtimeDescriptorArray : app.supported.vk12.runtimeDescriptorArray,
-    shaderSampledImageArrayNonUniformIndexing : app.supported.vk12.shaderSampledImageArrayNonUniformIndexing,
-    shaderStorageBufferArrayNonUniformIndexing : app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing,
-    descriptorBindingPartiallyBound : app.supported.vk12.descriptorBindingPartiallyBound,
-  };
-  VkPhysicalDeviceDescriptorIndexingFeaturesEXT diFeatures = {
-    sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT,
-    runtimeDescriptorArray : app.supported.vk12.runtimeDescriptorArray,
-    shaderSampledImageArrayNonUniformIndexing : app.supported.vk12.shaderSampledImageArrayNonUniformIndexing,
-    shaderStorageBufferArrayNonUniformIndexing : app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing,
-    descriptorBindingPartiallyBound : app.supported.vk12.descriptorBindingPartiallyBound,
-  };
-  void* featureChain = isVulkan12 ? cast(void*)&features : cast(void*)&diFeatures;
+  version(Oculus) {
+    VkPhysicalDeviceDescriptorIndexingFeaturesEXT featureChain = {
+      sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT,
+      runtimeDescriptorArray : app.supported.vk12.runtimeDescriptorArray,
+      shaderSampledImageArrayNonUniformIndexing : app.supported.vk12.shaderSampledImageArrayNonUniformIndexing,
+      shaderStorageBufferArrayNonUniformIndexing : app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing,
+      descriptorBindingPartiallyBound : app.supported.vk12.descriptorBindingPartiallyBound,
+    };
+  } else {
+    VkPhysicalDeviceVulkan12Features featureChain = {
+      sType : VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+      descriptorIndexing : app.supported.vk12.descriptorIndexing,
+      runtimeDescriptorArray : app.supported.vk12.runtimeDescriptorArray,
+      shaderSampledImageArrayNonUniformIndexing : app.supported.vk12.shaderSampledImageArrayNonUniformIndexing,
+      shaderStorageBufferArrayNonUniformIndexing : app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing,
+      descriptorBindingPartiallyBound : app.supported.vk12.descriptorBindingPartiallyBound,
+    };
+  }
 
   // The extension can be present while the feature isn't grantable (Adreno 540).
   VkPhysicalDeviceDeviceMemoryReportFeaturesEXT memReportSupport = {
@@ -84,8 +81,7 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
 
   if(!app.hasMemoryBudget() && app.hasMemoryCallback() && memReportSupport.deviceMemoryReport) {
     memReportFeatures.pNext = &memReportCreateInfo;
-    if(isVulkan12) features.pNext = &memReportFeatures;
-    else diFeatures.pNext = &memReportFeatures;
+    featureChain.pNext = &memReportFeatures;
   }
 
   VkPhysicalDeviceFeatures deviceFeatures = { robustBufferAccess: app.supported.base.robustBufferAccess,
@@ -99,7 +95,7 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
     queueCreateInfoCount : cast(uint)qs.createInfos.length, pQueueCreateInfos : &qs.createInfos[0],
     enabledExtensionCount : cast(uint)app.deviceExtensions.length, ppEnabledExtensionNames : &app.deviceExtensions[0],
     pEnabledFeatures : &deviceFeatures,
-    pNext : featureChain
+    pNext : &featureChain
   };
   SDL_Log("vkCreateDevice[extensions:%d]", app.deviceExtensions.length);
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
