@@ -59,8 +59,7 @@ void animateAsset(ref App app, ref Geometry obj, float dt) {
   foreach(i, ref st; obj.states) {
     st.animTime += dt;
     double cT = calculateCurrentTick(st.animTime, obj.animations[st.animation].ticksPerSecond, obj.animations[st.animation].duration);
-    uint regionBase = obj.boneBase + cast(uint)i * obj.boneCount;
-    app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT, st.animation, regionBase);
+    app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT, st.animation, cast(uint)obj.instances[i].meshdef[3]);
   }
 }
 
