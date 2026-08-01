@@ -32,7 +32,13 @@ void updateMeshInfo(ref App app) {
     app.ensureMaterial(app.objects[o]);
     int[2] expected = [cast(int)app.meshes.length, cast(int)(app.meshes.length + app.objects[o].meshes.length)];
     bool anyStale = false;
-    foreach (ref inst; app.objects[o].instances) { if(inst.meshdef[0..2] != expected) { inst.meshdef[0..2] = expected; anyStale = true; } }
+    foreach (ref inst; app.objects[o].instances) {
+      if(inst.meshdef[0..2] != expected) {
+        inst.meshdef[0..2] = expected;
+        inst.meshdef[3] = cast(int)app.objects[o].boneBase;
+        anyStale = true;
+      }
+    }
     if (anyStale) { app.objects[o].syncInstances(); needsUpdate = true; }
     app.meshes ~= app.objects[o].meshes.values;
   }
