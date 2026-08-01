@@ -51,6 +51,11 @@ struct Animation {
 /** Advance one animated asset's animation by dt and recompute its bone transforms. */
 void animateAsset(ref App app, ref Geometry obj, float dt) {
   if(dt == 0.0f) return;
+  if(obj.states.length != obj.instances.length) {
+    size_t old = obj.states.length;
+    obj.states.length = obj.instances.length ? obj.instances.length : 1;
+    foreach(k; old .. obj.states.length) obj.states[k].animTime = uniform(0.0, 1000.0);
+  }
   foreach(i, ref st; obj.states) {
     st.animTime += dt;
     double cT = calculateCurrentTick(st.animTime, obj.animations[st.animation].ticksPerSecond, obj.animations[st.animation].duration);
