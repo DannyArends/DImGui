@@ -51,6 +51,7 @@ void updateBoneOffsets(App app, uint syncIndex) {
 }
 
 void mergeBones(ref App app, ref OpenAsset obj) {
+  obj.boneBase = cast(uint)app.bones.length;
   uint[uint] indexMap;
   foreach(boneName, ref bone; obj.bones) {
     if(!(boneName in app.bones)) {
@@ -61,7 +62,9 @@ void mergeBones(ref App app, ref OpenAsset obj) {
     } else { indexMap[bone.index] = app.bones[boneName].index; }
   }
   foreach(ref v; obj.vertices) {
-    for(uint i = 0; i < v.bones.length; i++) { if(v.bones[i] in indexMap) v.bones[i] = indexMap[v.bones[i]]; }
+    for(uint i = 0; i < v.bones.length; i++) {
+      if(v.bones[i] in indexMap){ v.bones[i] = indexMap[v.bones[i]] - obj.boneBase; }
+    }
   }
   // Grow CPU-side boneOffsets; the GPU BoneMatrices buffer grows lazily in updateSSBO when it overflows.
   if(app.bones.length > app.boneOffsets.length) {

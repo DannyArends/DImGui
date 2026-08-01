@@ -27,6 +27,7 @@ class Geometry {
   Bounds bounds;                                /// OpenAsset bounding box
 
   Animation[] animations;                       /// Animations
+  uint boneBase = 0;                            /// First global bone index for this object's bones (base for local inBones)
   uint animation = 0;                           /// Current Animation
   double animTime = 0.0;                        /// ms of animation played, dt-advanced
   Mesh[string] meshes;                          /// Meshes
