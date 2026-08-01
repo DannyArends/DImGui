@@ -39,14 +39,6 @@ version (Android) {
   /// __tls_get_addr shim: this Quest's Bionic doesn't export it, but the DTV
   /// exists (TLSDESC works). Single-DSO only — valid because druntime/phobos
   /// are statically linked into libmain.so.
- /* extern(C) void* __tls_get_addr(size_t* ti) @nogc nothrow {
-    void** tp = __asm!(void**)("mrs $0, TPIDR_EL0", "=r");
-    size_t* dtv = cast(size_t*)tp[0];
-    __asm("mov x19,$0; mov x20,$1; mov x21,$2; mov x22,$3; mov x23,$4; mov x24,$5; brk #0",
-          "r,r,r,r,r,r", ti[0], dtv[0], dtv[1], dtv[2], dtv[3], ti[1]);
-    return null;
-  } */
-
   extern(C) void* __tls_get_addr(size_t* ti) @nogc nothrow {
     void** tp = __asm!(void**)("mrs $0, TPIDR_EL0", "=r");
     size_t* dtv = cast(size_t*)tp[0];

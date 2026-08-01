@@ -89,7 +89,6 @@
 		"targetPath": "app/src/main/jniLibs/arm64-v8a",
 		"targetName": "main",
 		"dflags": ["-J$PACKAGE_DIR/app/src/main/assets",
-							 "--enable-tlsdesc",
 							 "-P-D__builtin_va_list=void*",
 							 "-P-D__alignof__(x)=__alignof(x)",
 							 "-P-I$PACKAGE_DIR/src/icons/",
