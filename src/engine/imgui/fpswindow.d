@@ -50,7 +50,7 @@ void showFPSContent(ref App app, uint font = 0) {
                                 VK_API_VERSION_PATCH(app.properties.apiVersion));
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
-    igText("%d/%d bones, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.meshes.length, app.meshes.capacity);
+    igText("%d bones, %d/%d pose slots, %d/%d meshes", app.bones.length, app.boneOffsets.length, app.boneOffsets.capacity, app.meshes.length, app.meshes.capacity);
     app.printVRAM();
     if("ClusterCounter" in app.buffers) {
       static float avgClusters = 0;
