@@ -58,7 +58,7 @@ void main() {
   if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
     fragPosWorld = worldPos;
     fragViewPos = (ubo.view * worldPos).xyz;
-    bool hasBakedNormal = (meshdef[3] != 0);
+    bool hasBakedNormal = (instanceNormal.w != 0.0);
     vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * inNormal);
     fragNormal = N;
     if(NORMAL_MAPPED) {
