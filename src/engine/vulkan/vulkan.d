@@ -19,7 +19,13 @@ struct SupportedFeatures {
 void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
   app.supported.vk12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
   app.supported.vk16.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+
+  // Vulkan 1.1 drivers (Quest 1 / Adreno 540) don't populate the vk12 aggregate;
+  // query descriptor indexing through the EXT struct, which they do fill in.
+  VkPhysicalDeviceDescriptorIndexingFeaturesEXT di = {
+    sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT };
   app.supported.vk12.pNext = &app.supported.vk16;
+  app.supported.vk16.pNext = &di;
 
   VkPhysicalDeviceFeatures2 f2 = {
     sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
@@ -28,13 +34,20 @@ void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
   vkGetPhysicalDeviceFeatures2(physicalDevice, &f2);
   app.supported.base = f2.features;
 
-  /// Minimal features
-  if(!app.supported.base.robustBufferAccess) assert(0, "Vulkan 1.0 feature not supported: robustBufferAccess");
-  if(!app.supported.vk12.descriptorIndexing) assert(0, "Vulkan 1.2 feature not supported: descriptorIndexing");
-  if(!app.supported.vk12.runtimeDescriptorArray) assert(0, "Vulkan 1.2 feature not supported: runtimeDescriptorArray");
-  if(!app.supported.vk12.shaderSampledImageArrayNonUniformIndexing) assert(0, "Vulkan 1.2 feature not supported: shaderSampledImageArrayNonUniformIndexing");
-  if(!app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing) assert(0, "Vulkan 1.2 feature not supported: shaderStorageBufferArrayNonUniformIndexing");
-  if(!app.supported.vk12.descriptorBindingPartiallyBound) assert(0, "Vulkan 1.2 feature not supported: descriptorBindingPartiallyBound");
+  // Fold EXT results into vk12 so downstream code sees consistent flags on 1.1.
+  if(!app.supported.vk12.runtimeDescriptorArray) app.supported.vk12.runtimeDescriptorArray = di.runtimeDescriptorArray;
+  if(!app.supported.vk12.shaderSampledImageArrayNonUniformIndexing) app.supported.vk12.shaderSampledImageArrayNonUniformIndexing = di.shaderSampledImageArrayNonUniformIndexing;
+  if(!app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing) app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing = di.shaderStorageBufferArrayNonUniformIndexing;
+  if(!app.supported.vk12.descriptorBindingPartiallyBound) app.supported.vk12.descriptorBindingPartiallyBound = di.descriptorBindingPartiallyBound;
+  if(!app.supported.vk12.descriptorIndexing) app.supported.vk12.descriptorIndexing = di.runtimeDescriptorArray; // EXT has no aggregate flag; proxy it
+
+  // Report (don't trap) so an unsupported device names what it lacks.
+  void req(VkBool32 ok, string f) { if(!ok) SDL_Log("Missing required Vulkan feature: %s", f.ptr); }
+  req(app.supported.base.robustBufferAccess, "robustBufferAccess");
+  req(app.supported.vk12.runtimeDescriptorArray, "runtimeDescriptorArray");
+  req(app.supported.vk12.shaderSampledImageArrayNonUniformIndexing, "shaderSampledImageArrayNonUniformIndexing");
+  req(app.supported.vk12.shaderStorageBufferArrayNonUniformIndexing, "shaderStorageBufferArrayNonUniformIndexing");
+  req(app.supported.vk12.descriptorBindingPartiallyBound, "descriptorBindingPartiallyBound");
 }
 
 /** Shutdown ImGui and deAllocate all vulkan related objects in existance */

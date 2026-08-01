@@ -21,6 +21,7 @@ extern(System) @nogc uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugRepo
 void createDebugCallback(ref App app){
   // Hook instance function
   vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkCreateDebugReportCallbackEXT");
+  if(vkDebugCallback is null) { SDL_Log("VK_EXT_debug_report unavailable; skipping debug callback"); return; }
 
   // Create Debug callback
   VkDebugReportCallbackCreateInfoEXT createDebug = {
