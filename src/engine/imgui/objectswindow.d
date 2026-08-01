@@ -58,41 +58,44 @@ void showObjectwindow(ref App app, ref Geometry obj) {
       obj.uiInstance = obj.instances.length - 1;
     }
   }
-  igSameLine(0,5);
-  if(obj.instances.length > 1 && igButton(faIcon(cast(string)ICON_FA_TRASH), ImVec2(0,0))) {
-    obj.instances.removeAt(obj.uiInstance);
-    obj.syncInstances();
-    if(obj.uiInstance >= obj.instances.length) obj.uiInstance = obj.instances.length - 1;
-  }
-
-  size_t ix = obj.uiInstance;
+  if(obj.instances.length > 1) {
+    igSameLine(0,5);
+    if(igButton(cstr("%s##delInst", cast(string)ICON_FA_TRASH), ImVec2(0,0))) {
+      obj.instances.removeAt(obj.uiInstance);
+      obj.syncInstances();
+      if(obj.uiInstance >= obj.instances.length) obj.uiInstance = obj.instances.length - 1;
+  } }
 
   // ---- animation (this instance's cursor) ----
-  if(obj.animations.length > 0 && ix < obj.states.length) {
+  if(obj.animations.length > 0 && obj.uiInstance < obj.states.length) {
     igText(faIcon(cast(string)ICON_FA_FILM)); igSameLine(0,5);
     igPushItemWidth(100 * app.gui.uiscale);
     int[2] limits = [0, cast(int)(obj.animations.length-1)];
-    igSliderScalar("##anim", ImGuiDataType_U32, &obj.states[ix].animation, &limits[0], &limits[1], "%d", 0);
+    igSliderScalar("##anim", ImGuiDataType_U32, &obj.states[obj.uiInstance].animation, &limits[0], &limits[1], "%d", 0);
     igPopItemWidth();
   }
 
   // ---- transform (this instance) ----
   if(igBeginTable(cstr("%s_Tbl", obj.geometry()), 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
-    auto p = obj.position(cast(uint)ix);
+    auto p = obj.position(cast(uint)obj.uiInstance);
     igTableNextColumn();
     if(igButton(faIcon(cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT), ImVec2(0,0))) {}
     igTableNextColumn(); app.colValue("##x", &p[0], app.gui.pos[0], app.gui.pos[1]);
     igTableNextColumn(); app.colValue("##y", &p[1], app.gui.pos[0], app.gui.pos[1]);
     igTableNextColumn(); app.colValue("##z", &p[2], app.gui.pos[0], app.gui.pos[1]);
-    obj.position(p, cast(uint)ix);
+    obj.position(p, cast(uint)obj.uiInstance);
 
     igTableNextColumn();
-      if(igButton(faIcon(cast(string)ICON_FA_COMPRESS), ImVec2(0,0))) { obj.scale([app.gui.scaleF, app.gui.scaleF, app.gui.scaleF], cast(uint)ix); app.gui.scaleF = 1.0f; }
+      if(igButton(faIcon(cast(string)ICON_FA_COMPRESS), ImVec2(0,0))) {
+        obj.scale([app.gui.scaleF, app.gui.scaleF, app.gui.scaleF], cast(uint)obj.uiInstance); app.gui.scaleF = 1.0f;
+      }
     igTableNextColumn(); app.colValue("##zS", &app.gui.scaleF, app.gui.scale[0], app.gui.scale[1], "%.3f");
     igTableNextColumn(); igTableNextColumn();
 
     igTableNextColumn();
-      if(igButton(faIcon(cast(string)ICON_FA_ARROWS_ROTATE), ImVec2(0,0))) { obj.rotate(app.gui.rotF, cast(uint)ix); app.gui.rotF = [0.0f,0.0f,0.0f]; }
+      if(igButton(faIcon(cast(string)ICON_FA_ARROWS_ROTATE), ImVec2(0,0))) {
+        obj.rotate(app.gui.rotF, cast(uint)obj.uiInstance); app.gui.rotF = [0.0f,0.0f,0.0f];
+      }
     igTableNextColumn(); app.colValue("##xR", &app.gui.rotF[0], app.gui.rot[0], app.gui.rot[1], "%.0f");
     igTableNextColumn(); app.colValue("##yR", &app.gui.rotF[1], app.gui.rot[0], app.gui.rot[1], "%.0f");
     igTableNextColumn(); app.colValue("##zR", &app.gui.rotF[2], app.gui.rot[0], app.gui.rot[1], "%.0f");
