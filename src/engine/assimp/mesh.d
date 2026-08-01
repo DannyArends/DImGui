@@ -32,12 +32,18 @@ void updateMeshInfo(ref App app) {
     app.ensureMaterial(app.objects[o]);
     int[2] expected = [cast(int)app.meshes.length, cast(int)(app.meshes.length + app.objects[o].meshes.length)];
     bool anyStale = false;
-    foreach (ref inst; app.objects[o].instances) {
+    foreach (i, ref inst; app.objects[o].instances) {
+      int boneBase = cast(int)(app.objects[o].boneBase + cast(uint)i * app.objects[o].boneCount);
       if(inst.meshdef[0..2] != expected) {
         inst.meshdef[0..2] = expected;
-        inst.meshdef[3] = cast(int)app.objects[o].boneBase;
+        inst.meshdef[3] = boneBase;
         anyStale = true;
       }
+    }
+    uint need = app.objects[o].boneBase + cast(uint)app.objects[o].instances.length * app.objects[o].boneCount;
+    if(need > app.boneOffsets.length) {
+      if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
+      while(app.boneOffsets.length < need) app.boneOffsets.length *= 2;
     }
     if (anyStale) { app.objects[o].syncInstances(); needsUpdate = true; }
     app.meshes ~= app.objects[o].meshes.values;

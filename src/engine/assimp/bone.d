@@ -61,6 +61,7 @@ void mergeBones(ref App app, ref OpenAsset obj) {
       app.bones[boneName] = bone;
     } else { indexMap[bone.index] = app.bones[boneName].index; }
   }
+  obj.boneCount = cast(uint)app.bones.length - obj.boneBase;   // B = bones this asset added
   foreach(ref v; obj.vertices) {
     for(uint i = 0; i < v.bones.length; i++) {
       if(v.bones[i] in indexMap){ v.bones[i] = indexMap[v.bones[i]] - obj.boneBase; }
