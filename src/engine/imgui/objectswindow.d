@@ -5,7 +5,8 @@
 
 import engine;
 
-import imgui : faIcon;
+import imgui : faIcon, iconText;
+import matrix : translate;
 import textures : mapTextures, ImTextureRefFromID;
 import widgets : dropDownItems, applySelection, texturesToDropdown, getKeys, text, labelCol, objectActions, materialRow, colValue;
 
@@ -48,6 +49,13 @@ void showObjectwindow(ref App app, ref Geometry obj) {
       igSliderScalar(cstr("##a%d", i), ImGuiDataType_U32, &obj.states[i].animation, &limits[0], &limits[1], "%d", 0);
     }
     igPopItemWidth();
+  }
+  if(igButton(iconText(cast(string)ICON_FA_PLUS, "Instance"), ImVec2(0,0))) {
+    auto p = obj.position;
+    auto inst = obj.instances[obj.instances.length-1];         // copy the last instance
+    inst.matrix = translate(inst.matrix, [1.5f, 0.0f, 0.0f]);  // offset so it's visible
+    obj.addInstances([inst]);
+    obj.syncInstances();
   }
 
   if(igBeginTable(cstr("%s_Tbl", obj.geometry()), 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
