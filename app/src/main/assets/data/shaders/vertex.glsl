@@ -18,7 +18,7 @@ layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
 layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance input attributes
-layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, material, unused]
+layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, material, boneBase]
 layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
 layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
 layout(location = 10) in vec4 instanceNormal;         /// baked world normal (instanced faces)
@@ -36,7 +36,7 @@ layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, No
 
 void main() {
   /// Compute bone effects on vertex
-  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights) : vec4(inPosition, 1.0f);
+  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(meshdef[3])) : vec4(inPosition, 1.0f);
 
   /// Compute our model matrix
   vec4 worldPos = instance * position;
