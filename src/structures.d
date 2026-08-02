@@ -7,7 +7,7 @@ public import amat : AMat, TexureInfo;
 public import animation : Animation, AnimationState;
 public import assimp : OpenAsset;
 public import bone : Bone;
-public import bounds : Bounds, DrawRange;
+public import bounds : Bounds;
 public import boundingbox : BoundingBox;
 public import buffer : GPUAllocation, GeometryBuffer;
 public import camera : Camera;

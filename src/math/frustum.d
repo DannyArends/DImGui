@@ -38,9 +38,6 @@ bool aabbInFrustum(const Plane[6] planes, const float[3][2] b) @nogc pure nothro
   for (size_t x = 0; x < objects.length; x++) {
     if(objects[x].box is null) continue;
     objects[x].box.visible = aabbInFrustum(frustum, objects[x].box);
-    foreach(ref r; objects[x].ranges) {
-      r.visible = aabbInFrustum(frustum, r.bounds(objects[x].box.world));
-    }
   }
 }
 
