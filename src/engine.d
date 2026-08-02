@@ -118,6 +118,7 @@ struct App {
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
+  CommandBuffer!1 uploadCmd;
   CommandBuffer!1 depthCmd;                                                       /// Depth-only pre-pass
   CommandBuffer!1 sceneCmd;                                                       /// Scene commandbuffer
   CommandBuffer!1 postCmd;                                                        /// Post-process commandbuffer

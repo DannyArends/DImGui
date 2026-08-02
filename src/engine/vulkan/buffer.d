@@ -42,7 +42,6 @@ struct GeometryBuffer(T = ubyte) {
   alias data this;                /// A GeometryBuffer acts as its element store
   private bool[] dirty;           /// Per-copy upload-needed flag
   bool keepStaging = false;       /// Retain staging after upload (for frequently-updated buffers)
-  bool noShrink = false;          /// Never collapse to one copy; keep framesInFlight copies so handles stay stable across re-uploads
 
   @property @nogc bool buffered() nothrow const { foreach(d; dirty) if(d) return false; return true; }
   @nogc void invalidate() nothrow { dirty[] = true; }
@@ -237,5 +236,5 @@ void toGPU(T)(ref App app, ref GeometryBuffer!T buffer, VkCommandBuffer cmdBuffe
   if(buffer.vb.length > 0 && buffer.vb.length < app.framesInFlight) buffer.capacity = 0;  // a settled (1-copy) buffer went dirty: regrow to framesInFlight
   if(app.allocateBuffer(buffer, usage, properties)) app.nameGeometryBuffer(buffer, type, name);
   app.uploadBuffer(buffer, cmdBuffer);
-  if(!buffer.noShrink && buffer.buffered && buffer.vb.length > 1) app.shrinkCopies(buffer);   // Copy holds identical data, keep one.
+  if(buffer.buffered && buffer.vb.length > 1) app.shrinkCopies(buffer);   // every copy now holds identical data: keep one, retire the rest
 }

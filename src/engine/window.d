@@ -71,6 +71,7 @@ void createOrResizeWindow(ref App app) {
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, Stage.RENDER);
   app.createDescriptors(app.shaders, Stage.RENDER);
+  app.uploadCmd.create(app, app.commandPool, app.framesInFlight);
   app.depthCmd.create(app, app.commandPool, app.framesInFlight);
   app.sceneCmd.create(app, app.commandPool, app.framesInFlight);
 
