@@ -18,7 +18,7 @@ import validation : popLabel, pushLabel;
 import vector : xyz, vSub, dot;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
-enum float SHADOW_HYSTERESIS = 1.5f;
+enum float SHADOW_HYSTERESIS = 1.25f;
 enum float SHADOW_DEPTH_BIAS = 2.0f;     /// Constant depth bias
 enum float SHADOW_SLOPE_BIAS = 10.0f;    /// Slope-scaled bias (dominant term for grazing faces)
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
@@ -158,7 +158,7 @@ void updateShadowSlotMatrices(ref App app) {
   }
 }
 
-/** Pick at most one drifted cascade per frame (round-robin), then commit the matrix of every slot rebuilding this frame. */
+/** Rebuild every slot whose matrix drifted this frame, committing each rebuilt slot's matrix. */
 @nogc nothrow void selectStaticRebuilds(ref App app) {
   foreach(s; 0 .. MAX_SHADOW_MAPS) {
     if(app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
