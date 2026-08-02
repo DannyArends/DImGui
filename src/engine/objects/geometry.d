@@ -143,9 +143,9 @@ void setTexture(T)(T object, string name, aiTextureType tt) {
   foreach(ref mesh; object.meshes) { mesh.mat = 0; }
 }
 
-void texture(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_DIFFUSE); }
-void bumpmap(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_NORMALS); }
-void opacity(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_OPACITY); }
+void texture(T)(T object, string name) { object.setTexture(name, aiTextureType_DIFFUSE); }
+void bumpmap(T)(T object, string name) { object.setTexture(name, aiTextureType_NORMALS); }
+void opacity(T)(T object, string name) { object.setTexture(name, aiTextureType_OPACITY); }
 
 /** Euclidean distance between Geometry and Camera */
 @nogc float distance(T)(const T object, const Camera camera) nothrow { 
