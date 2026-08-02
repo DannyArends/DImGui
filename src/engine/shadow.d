@@ -42,10 +42,12 @@ struct ShadowMap {
   bool[] staticDirty;                       /// Per-slot flag: rebuild layer 0 this frame
   bool[] staticPending;                     /// content changed (e.g. terrain edit): needs rebuild, drained one/frame
   bool[] hadDynamic;                        /// Per-slot: dynamic casters were in frustum last frame (recompose once when they leave)
-  uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
+
+  int[] slotOwner;                          /// Per-slot light index that owns it (-1 = none); reassignment forces an immediate static rebuild
   Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
   Matrix[MAX_SHADOW_MAPS] slotVP;           /// Per-slot desired light-space matrix this frame (pre-commit)
 
+  uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
   uint staticShadowInstances = 0;           /// Static shadow instances count
@@ -79,9 +81,14 @@ void createShadowMap(ref App app) {
   return light.directional ? app.shadows.dimension : app.shadows.dimension / 2;
 }
 
+/** Bind slot s to light index owner; a change of owner forces an immediate static rebuild (bypasses round-robin). */
+@nogc nothrow void assignSlot(ref ShadowMap shadows, uint s, int owner) {
+  if(shadows.slotOwner[s] != owner) { shadows.slotOwner[s] = owner; shadows.staticDirty[s] = true; }
+}
+
 void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
-  app.shadows.images.length = app.shadows.hadDynamic.length = MAX_SHADOW_MAPS;
+  app.shadows.images.length = app.shadows.slotOwner.length = app.shadows.hadDynamic.length = MAX_SHADOW_MAPS;
   app.shadows.staticDirty.length = app.shadows.staticPending.length = app.shadows.slotStaticMatrix.length = MAX_SHADOW_MAPS;
   app.shadows.cmd.pass(0).framebuffers.length = app.shadows.cmd.pass(1).framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(app.shadows, s, 32);
@@ -127,7 +134,8 @@ void assignShadowSlots(ref App app) {
   foreach(i, ref light; app.lights) {
     light.computeCone();
     if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
-      light.cull[1 .. 2] = [slot]; slot += NUM_CASCADES; score[i] = -1.0f;
+      light.cull[1] = slot; slot += NUM_CASCADES; score[i] = -1.0f;
+      foreach(c; 0 .. NUM_CASCADES) app.shadows.assignSlot(cast(uint)(slot + c), cast(int)i);
     } else {
       bool hadSlot = light.cull[1] >= 0.0f;
       float sc = light.shadowScore(app.camera.position);
@@ -139,6 +147,7 @@ void assignShadowSlots(ref App app) {
     size_t best = size_t.max;
     foreach(i; 0 .. app.lights.length) { if(score[i] > 0.0f && (best == size_t.max || score[i] > score[best])) best = i; }
     if(best == size_t.max) break;
+    app.shadows.assignSlot(cast(uint)slot, cast(int)best);
     app.lights[best].cull[1] = slot++; score[best] = -1.0f;
   }
 }
