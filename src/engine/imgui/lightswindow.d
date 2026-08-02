@@ -28,6 +28,7 @@ void showLightsContent(ref App app, uint font = 0) {
     bool enabled = app.lights[i].enabled();
     if(igCheckbox("##enabled", &enabled)) {
       app.lights[i].enabled(enabled);
+      app.lights.staticDirty = true;
       app.buffers["LightMatrices"].invalidate();
     }
     igSameLine(0, 5);
