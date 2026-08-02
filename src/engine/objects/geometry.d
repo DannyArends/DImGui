@@ -72,6 +72,7 @@ class Geometry {
   @nogc void initInstanced(string delegate() nothrow name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
     instances = initial;
+    instances.noShrink = true;
     geometry = name;
   }
 
