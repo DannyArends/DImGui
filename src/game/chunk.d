@@ -169,7 +169,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
     chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
     app.world.chunks[data.coord].deAllocate = true;
-    app.shadows.staticDirty[] = true; 
+    app.shadows.staticPending[] = true;
   } else {
     chunk.tiles.box = new BoundingBox();
     app.objects ~= chunk.tiles;
