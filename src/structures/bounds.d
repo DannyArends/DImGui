@@ -32,12 +32,12 @@ struct DrawRange {
   bool visible = true;   /// Cached frustum result
 
   /** Union this range's per-instance world-AABBs into one AABB. */
-  @nogc float[3][2] bounds(const Bounds[] world) const nothrow {
+  @nogc Bounds bounds(const Bounds[] world) const nothrow {
     Bounds b;
     foreach(i; first .. first + count) {
       if(i >= world.length) break;
       b.update(world[i]);
     }
-    return [b.min, b.max];
+    return(b);
   }
 }
