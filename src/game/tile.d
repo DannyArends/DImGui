@@ -96,7 +96,6 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
   }
   app.world.paths.pending = [];
   app.invalidatePaths(tile);
-  app.shadows.staticDirty[] = true; 
   if(newType == ResourceType.None) { app.world.activate(tile); }   // mined out: wake neighbouring water to flow in
 }
 
