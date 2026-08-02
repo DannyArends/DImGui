@@ -52,23 +52,11 @@ class BoundingBox : Geometry {
     return Bounds([[c[0]-e[0], c[1]-e[1], c[2]-e[2]], [c[0]+e[0], c[1]+e[1], c[2]+e[2]]]);
   }
 
-  /** Squared distance from point p to this world-AABB (0 if inside). */
-  @nogc pure float distanceSq(const float[3] p) nothrow const {
-    float[3] d = [0, 0, 0];
-    foreach(i; 0 .. 3) d[i] = (p[i] < bounds[0][i]) ? bounds[0][i] - p[i] : (p[i] > bounds[1][i]) ? p[i] - bounds[1][i] : 0.0f;
-    return(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
-  }
-
   @nogc pure void setDimensions(float[3] min, float[3] max) nothrow {
     vertices[0].position = [min[0], min[1], min[2]]; vertices[1].position = [max[0], min[1], min[2]];
     vertices[2].position = [max[0], max[1], min[2]]; vertices[3].position = [min[0], max[1], min[2]];
     vertices[4].position = [min[0], min[1], max[2]]; vertices[5].position = [max[0], min[1], max[2]];
     vertices[6].position = [max[0], max[1], max[2]]; vertices[7].position = [min[0], max[1], max[2]];
-  }
-
-  @property @nogc pure float[3] center() nothrow const {
-    float[3] mid = (vertices[0].position[] + vertices[6].position[]) / 2.0f;
-    return(mid);
   }
 }
 
