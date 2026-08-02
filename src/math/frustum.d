@@ -43,6 +43,7 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
       if(i < objects[x].box.inFrustum.length) objects[x].box.inFrustum[i] = v;
       any = any || v;
     }
+    objects[x].box.visible = any;
   }
 }
 
