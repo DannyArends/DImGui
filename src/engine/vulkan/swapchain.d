@@ -56,14 +56,6 @@ void aquireSwapChainImages(ref App app) {
   vkGetSwapchainImagesKHR(app.device, app.swapChain, &imageCount, &app.swapChainImages[0]);
   if(app.verbose) SDL_Log("SwapChain images: %d, Frames in flight: %d", app.imageCount, app.framesInFlight);
 
-  VkComponentMapping components = {
-    r: VK_COMPONENT_SWIZZLE_IDENTITY, g: VK_COMPONENT_SWIZZLE_IDENTITY, b: VK_COMPONENT_SWIZZLE_IDENTITY, a: VK_COMPONENT_SWIZZLE_IDENTITY,
-  };
-  
-  VkImageSubresourceRange subresourceRange = {
-    aspectMask: VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel: 0, levelCount: 1, baseArrayLayer: 0, layerCount: 1
-  };
-
   // Allocate space for an imageview per image & create the imageviews
   app.swapChainImageViews.length = app.imageCount;
   for (uint i = 0; i < app.imageCount; i++) {
