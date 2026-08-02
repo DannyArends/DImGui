@@ -118,12 +118,6 @@ class Geometry {
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
 
-  void delegate(SDL_Event e) onMouseEnter;
-  void delegate(SDL_Event e) onMouseExit;
-  void delegate(SDL_Event e) onMouseDown;
-  void delegate(SDL_Event e) onMouseUp;
-  void delegate(SDL_Event e) onMouseOver;
-  void delegate(SDL_Event e) onMouseMove;
   void delegate(float dt) onFrame;
   void delegate() onTick;
   string delegate() nothrow geometry;
