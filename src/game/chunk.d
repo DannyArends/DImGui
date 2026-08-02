@@ -159,7 +159,6 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   if (data.tileInstances.length == 0) { app.world.chunks.pending.remove(data.coord); return; }
 
   Chunk chunk = new Chunk(data, app.world);
-  chunk.tiles.box = new BoundingBox();
 
   if (data.coord in app.world.chunks) {
     auto oldTiles = app.world.chunks[data.coord].tiles;
@@ -170,7 +169,9 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
     chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
     app.world.chunks[data.coord].deAllocate = true;
+    app.shadows.staticDirty[] = true; 
   } else {
+    chunk.tiles.box = new BoundingBox();
     app.objects ~= chunk.tiles;
     app.seedChunkAnimals(data);          // first generation of this chunk: spawn its noise animals
   }
@@ -196,5 +197,4 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
   if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.chunks.unsettle.length);
   foreach(tile; app.world.chunks.unsettle) { app.world.unsettleBlocks(app.world.drops, tile); }
   app.world.chunks.unsettle = [];
-  app.shadows.staticDirty[] = true; 
 }
