@@ -30,6 +30,7 @@ class BoundingBox : Geometry {
   float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
   float[3] wmax = [-float.max, -float.max, -float.max];   /// Union world-AABB max over all instances
   float[3][2][] world;                                    /// Per-instance cached world-AABBs
+  bool[] inFrustum;                                       /// Per-instance frustum result
   bool dirty = true;
 
   this(){
@@ -89,6 +90,11 @@ class BoundingBox : Geometry {
   @property @nogc pure float[3] center() nothrow const {
     float[3] mid = (vertices[0].position[] + vertices[6].position[]) / 2.0f;
     return(mid);
+  }
+
+  @property @nogc bool visible() nothrow const {
+    foreach(f; inFrustum) { if(f) { return(true); } }
+    return(inFrustum.length == 0);      // no box data, treat as visible
   }
 }
 
