@@ -37,15 +37,10 @@ class BoundingBox : Geometry {
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
   };
 
-  @property @nogc pure float[3] scale() nothrow const {
-    float[3] scale = vertices[0].position[] - vertices[6].position[];
-    return(scale);
-  }
-
   /** Compute world-space AABB from object-space bounds and instance matrix.
    * Uses OBB projection: transforms center, then sums absolute column extents. */
   @nogc pure Bounds boundsWorld(size_t instance = 0) nothrow const {
-    if(instances.length == 0 || instance >= instances.length) return Bounds([[0,0,0],[0,0,0]]);
+    if(instances.length == 0 || instance >= instances.length) { return(Bounds.init); }
     auto m = instances[instance].matrix;
     float[3] lo = vertices[0].position;
     float[3] hi = vertices[6].position;
