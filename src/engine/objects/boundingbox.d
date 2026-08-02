@@ -30,7 +30,6 @@ class BoundingBox : Geometry {
   float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
   float[3] wmax = [-float.max, -float.max, -float.max];   /// Union world-AABB max over all instances
   float[3][2][] world;                                    /// Per-instance cached world-AABBs
-  bool[] inFrustum;                                       /// Per-instance frustum result
   bool visible = true;                                    /// Cached rollup, any instance in frustum ?
   bool dirty = true;
 
