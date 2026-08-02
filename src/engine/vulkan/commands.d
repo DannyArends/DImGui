@@ -50,6 +50,15 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
   popLabel(cmd);
 }
 
+/** Upload all dirty geometry once, before any render pass records, so every pass reads stable, current buffers. */
+void recordUploadPass(ref App app) {
+  auto cmd = app.uploadCmd.begin(app, app.syncIndex, "Upload");
+  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
+  app.bufferGeometries(cmd);
+  popLabel(cmd);
+  app.uploadCmd.end(app.syncIndex);
+}
+
 /** Draw every visible object of one topology for one DrawPass; rebinds the pipeline only when the specialization changed */
 void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topology, VkDescriptorSet set, 
                       DrawPass pass, bool depthPass = false, bool wboit = false) {
@@ -128,11 +137,6 @@ void recordPostCommandBuffer(ref App app) {
 void recordDepthPrePass(ref App app) {
   auto cmd = app.depthCmd.begin(app, app.syncIndex, "DepthPrePass");
   pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
-    pushLabel(cmd, "Objects Buffering", Colors.lightgray);
-    if(app.trace) SDL_Log("Objects Buffering");
-    app.bufferGeometries(cmd);
-    popLabel(cmd);
-
     pushLabel(cmd, "Descriptors & SSBO", Colors.lightgray);
     app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
     popLabel(cmd);

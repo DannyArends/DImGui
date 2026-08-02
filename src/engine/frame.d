@@ -7,7 +7,7 @@ import engine;
 
 import bone : updateBoneOffsets;
 import descriptor : repointDirtyDescriptors;
-import commands : recordSceneCommandBuffer, recordPostCommandBuffer, recordDepthPrePass;
+import commands : recordSceneCommandBuffer, recordPostCommandBuffer, recordDepthPrePass, recordUploadPass;
 import compute : recordComputeCommandBuffer, ComputeStage, passEnabled, isStage;
 import imgui : recordImGuiCommandBuffer;
 import lights : updateDisco, updateLightGeometries, LMode, computeActiveLighting;
@@ -81,6 +81,9 @@ void renderFrame(ref App app, double dt) {
     }
   }
 
+  // --- Phase 2.5: Upload all dirty geometry once, before any pass records/binds it ---
+  app.timed!recordUploadPass();
+
   // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
   if(shadowsThisFrame) {
@@ -98,6 +101,7 @@ void renderFrame(ref App app, double dt) {
   // --- Phase 5:  Submit CommandBuffers: Scene renderer, Post-Depth Compute, PostProcess and ImGui ---
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers;
+  submitCommandBuffers ~= app.uploadCmd[app.syncIndex];
   submitCommandBuffers ~= app.depthCmd[app.syncIndex];
   if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
   if(app.hasCompute){ foreach(ref shader; app.compute.shaders) {
