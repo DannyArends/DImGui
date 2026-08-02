@@ -35,7 +35,6 @@ class Geometry {
   AMat[] materials;                             /// Materials
 
   BoundingBox box = null;                       /// Bounding Box
-  bool skipBoundingBox = false;                 /// Do we compute boundingboxes ?
   bool window = false;                          /// ImGui window displayed?
 
   @nogc this() nothrow {
@@ -67,7 +66,9 @@ class Geometry {
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
-  @property bool hasNormalMaps() const nothrow { foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return true; } } return false; }
+  @property bool hasNormalMaps() const nothrow { 
+    foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return(true); } } return(false);
+  }
 
   @nogc void initInstanced(string delegate() nothrow name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
@@ -125,7 +126,6 @@ class Geometry {
   void delegate(SDL_Event e) onMouseMove;
   void delegate(float dt) onFrame;
   void delegate() onTick;
-  @nogc void delegate(bool) nothrow onFrustumUpdate;
   string delegate() nothrow geometry;
 }
 
