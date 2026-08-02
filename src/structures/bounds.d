@@ -24,20 +24,3 @@ struct Bounds {
   @property @nogc pure float[3] max() nothrow const { return bounds[1]; }
   @property @nogc pure float[3] size() nothrow const { float[3] s = bounds[1][] - bounds[0][]; return s; }
 }
-
-/** A cullable span [first, first+count) of an object's instance buffer. */
-struct DrawRange {
-  uint first = 0;        /// First instance index
-  uint count = 0;        /// Instance count
-  bool visible = true;   /// Cached frustum result
-
-  /** Union this range's per-instance world-AABBs into one AABB. */
-  @nogc Bounds bounds(const Bounds[] world) const nothrow {
-    Bounds b;
-    foreach(i; first .. first + count) {
-      if(i >= world.length) break;
-      b.update(world[i]);
-    }
-    return(b);
-  }
-}
