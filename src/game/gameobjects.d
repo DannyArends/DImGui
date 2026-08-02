@@ -40,8 +40,6 @@ class Animals : Torus {
   this() {
     super([0.15f, 0.35f], [12, 20]);
     initInstanced(() => "Animals");
-    skipFrustum = true;          // instances spread across chunks — can't cull the set by one AABB
-    skipBoundingBox = true;      // (match Tiles; instanced set has no single meaningful box)
   }
 
   void remove(size_t index) {
@@ -61,7 +59,6 @@ class Tiles : Square {
     super();
     initInstanced(() => "Tiles", cd.tileInstances);
     isSelectable = false;
-    skipFrustum = true;
     hideInObjectsWindow = true;
   }
 }
@@ -76,7 +73,6 @@ class Chunk : Cube {
   this(ChunkData cd, WorldData wd) {
     super();
     data = cd;
-    skipBoundingBox = true;
     castShadow = false;
     hideInObjectsWindow = true;
     indices = [];
@@ -87,7 +83,6 @@ class Chunk : Cube {
     float cy = sy * 0.5f + wd.yOffset;
     instances = [DrawInstance(translateScale([cx, cy, cz], [sx, sy, sx]))];
     tiles = new Tiles(cd);
-    onFrustumUpdate = (bool v){ tiles.inFrustum = v; };
     geometry = (){ return "Chunk"; };
   }
 }
@@ -110,7 +105,6 @@ class WaterTiles : Square {
     isSelectable = false;
     castShadow = false;
     hideInObjectsWindow = true;
-    skipFrustum = true;
   }
 }
 
