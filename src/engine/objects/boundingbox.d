@@ -73,13 +73,11 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.instances = object.instances.dup;
   object.box.instances.invalidate();
 
-  Bounds wb;
   if(object.box.world.length < object.box.instances.length) { object.box.world.length = object.box.instances.length; }
   foreach(i; 0 .. object.box.instances.length) {
     object.box.world[i] = object.box.boundsWorld(i);
-    wb.update(object.box.world[i]);
+    object.box.bounds.update(object.box.world[i]);
   }
-  object.box.bounds = wb;
   object.box.dirty = false;
 }
 
