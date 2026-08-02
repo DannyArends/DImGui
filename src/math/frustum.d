@@ -36,7 +36,7 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
 @nogc void cullFrustum(T)(ref T[] objects, const Plane[6] frustum) nothrow {
   for (size_t x = 0; x < objects.length; x++) {
     if(objects[x].box is null) continue;
-    objects[x].box.visible = aabbInFrustum(frustum, objects[x].box.wmin, objects[x].box.wmax);
+    objects[x].box.visible = aabbInFrustum(frustum, objects[x].box.min, objects[x].box.max);
   }
 }
 

@@ -10,11 +10,12 @@ import vector : x,y,z;
 
 /** BoundingBox */
 class BoundingBox : Geometry {
-  float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
-  float[3] wmax = [-float.max, -float.max, -float.max];   /// Union world-AABB max over all instances
-  float[3][2][] world;                                    /// Per-instance cached world-AABBs
+  Bounds bounds;                                          /// Union world-AABB over all instances
+  Bounds[] world;                                         /// Per-instance cached world-AABBs
   bool visible = true;                                    /// BoundingBox visible in frustum ?
   bool dirty = true;
+
+  alias bounds this;
 
   this(){
    vertices = [
@@ -43,8 +44,8 @@ class BoundingBox : Geometry {
 
   /** Compute world-space AABB from object-space bounds and instance matrix.
    * Uses OBB projection: transforms center, then sums absolute column extents. */
-  @nogc pure float[3][2] boundsWorld(size_t instance = 0) nothrow const {
-    if(instances.length == 0 || instance >= instances.length) return [[0,0,0],[0,0,0]];
+  @nogc pure Bounds boundsWorld(size_t instance = 0) nothrow const {
+    if(instances.length == 0 || instance >= instances.length) return Bounds([[0,0,0],[0,0,0]]);
     auto m = instances[instance].matrix;
     float[3] lo = vertices[0].position;
     float[3] hi = vertices[6].position;
@@ -53,13 +54,13 @@ class BoundingBox : Geometry {
     float[3] e = [abs(m[0])*h[0] + abs(m[4])*h[1] + abs(m[8])*h[2],
                   abs(m[1])*h[0] + abs(m[5])*h[1] + abs(m[9])*h[2],
                   abs(m[2])*h[0] + abs(m[6])*h[1] + abs(m[10])*h[2]];
-    return [[c[0]-e[0], c[1]-e[1], c[2]-e[2]], [c[0]+e[0], c[1]+e[1], c[2]+e[2]]];
+    return Bounds([[c[0]-e[0], c[1]-e[1], c[2]-e[2]], [c[0]+e[0], c[1]+e[1], c[2]+e[2]]]);
   }
 
   /** Squared distance from point p to this world-AABB (0 if inside). */
   @nogc pure float distanceSq(const float[3] p) nothrow const {
     float[3] d = [0, 0, 0];
-    foreach(i; 0 .. 3) d[i] = (p[i] < wmin[i]) ? wmin[i] - p[i] : (p[i] > wmax[i]) ? p[i] - wmax[i] : 0.0f;
+    foreach(i; 0 .. 3) d[i] = (p[i] < bounds[0][i]) ? bounds[0][i] - p[i] : (p[i] > bounds[1][i]) ? p[i] - bounds[1][i] : 0.0f;
     return(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
   }
 
@@ -93,10 +94,9 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   if(object.box.world.length < object.box.instances.length) { object.box.world.length = object.box.instances.length; }
   foreach(i; 0 .. object.box.instances.length) {
     object.box.world[i] = object.box.boundsWorld(i);
-    wb.update(object.box.world[i][0]); 
-    wb.update(object.box.world[i][1]);
+    wb.update(object.box.world[i]);
   }
-  object.box.wmin = wb.min; object.box.wmax = wb.max;
+  object.box.bounds = wb;
   object.box.dirty = false;
 }
 

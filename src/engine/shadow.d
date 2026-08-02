@@ -234,7 +234,7 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   foreach(obj; app.objects) {
     if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
     if(obj.box !is null) {
-      if(!lFrustum.aabbInFrustum(obj.box.wmin, obj.box.wmax)) continue;
+      if(!lFrustum.aabbInFrustum(obj.box.min, obj.box.max)) continue;
     }
     if(obj.isStatic != staticPhase) continue;
     ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
