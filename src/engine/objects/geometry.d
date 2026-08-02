@@ -53,15 +53,14 @@ class Geometry {
 
   bool isVisible = true;                            /// Boolean flag
   bool isOpaque = true;                             /// Boolean flag, alpha-cutout textures: (HSR) pipeline variant
-  bool inFrustum = true;                            /// Boolean flag
-  bool skipFrustum = false;                         /// Boolean flag
   bool hideInObjectsWindow = false;                 /// Boolean flag
   bool isSelectable = true;                         /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
 
-  @property bool isSDF() nothrow { return(geometry !is null && geometry() == "Text"); }
+  @property @nogc bool inFrustum() nothrow const { return(box is null || box.visible); }
+  @property bool isSDF() nothrow const { return(geometry !is null && geometry() == "Text"); }
   @property bool isAnimated() nothrow { return(geometry !is null && animations.length > 0); }
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null; }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }

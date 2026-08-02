@@ -36,8 +36,6 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
 @nogc void cullFrustum(T)(ref T[] objects, const Plane[6] frustum) nothrow {
   for (size_t x = 0; x < objects.length; x++) {
     if(objects[x].box is null) continue;
-    if(objects[x].skipFrustum) continue;
-    objects[x].inFrustum = false;
     for (size_t i = 0; i < objects[x].box.instances.length; i++) {
       auto b = (i < objects[x].box.world.length) ? objects[x].box.world[i] : objects[x].box.boundsWorld(i);
       if(aabbInFrustum(frustum, b[0], b[1])) { objects[x].inFrustum = true; break; }
