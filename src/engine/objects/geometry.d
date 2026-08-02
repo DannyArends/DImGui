@@ -24,11 +24,10 @@ class Geometry {
   Node rootnode;                                /// OpenAsset Root
   string mName;                                 /// OpenAsset name
   MetaData mData;                               /// OpenAsset metaData
-  Bounds bounds;                                /// OpenAsset bounding box
 
+  DrawRange[] ranges;                           /// Instance sub-ranges
   Animation[] animations;                       /// Animations
   AnimationState[] states;                      /// per-instance animation state
-  size_t uiInstance = 0;                        /// Which instance is shown in the UI
   uint boneBase = 0;                            /// First global bone index for this object's bones (base for local inBones)
   uint boneCount = 0;                           /// Number of bones
   Mesh[string] meshes;                          /// Meshes
@@ -36,6 +35,7 @@ class Geometry {
 
   BoundingBox box = null;                       /// Bounding Box
   bool window = false;                          /// ImGui window displayed?
+  size_t uiInstance = 0;                        /// Which instance is shown in the UI
 
   @nogc this() nothrow {
     uid = guid;
@@ -176,7 +176,11 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[object.instances.slot(app.syncIndex)], &offset);
   vkCmdBindIndexBuffer(cmd, cast(VkBuffer)object.indices.vb[object.indices.slot(app.syncIndex)], 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(cmd, object.indices.count(app.syncIndex), object.instances.count(app.syncIndex), 0, 0, 0);
+  if(object.ranges.length > 0) {
+    foreach(r; object.ranges) {
+      if(r.visible) { vkCmdDrawIndexed(cmd, object.indices.count(app.syncIndex), r.count, 0, 0, r.first); }
+    }
+  } else { vkCmdDrawIndexed(cmd, object.indices.count(app.syncIndex), object.instances.count(app.syncIndex), 0, 0, 0); }
   popLabel(cmd);
   if(app.trace) SDL_Log("[%s]: DONE", toStringz(object.geometry()));
 }
