@@ -189,7 +189,7 @@ bool featureDropsFood(const FeatureT ft) {
 }
 
 /** Nearest rooted tile of a food-dropping feature within maxTiles; noTile if none. */
-int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 48) {
+int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) {
   int[3] best = noTile; float bestD = float.max;
   foreach(const ft; features) {
     if(!featureDropsFood(ft) || ft.name !in app.world.vegetation) continue;
