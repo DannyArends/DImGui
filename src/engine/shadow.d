@@ -18,6 +18,7 @@ import validation : popLabel, pushLabel;
 import vector : xyz, vSub, dot;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
+enum float SHADOW_HYSTERESIS = 1.5f;
 enum float SHADOW_DEPTH_BIAS = 2.0f;     /// Constant depth bias
 enum float SHADOW_SLOPE_BIAS = 10.0f;    /// Slope-scaled bias (dominant term for grazing faces)
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
@@ -42,7 +43,6 @@ struct ShadowMap {
   Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
   Matrix[MAX_SHADOW_MAPS] slotVP;           /// Per-slot desired light-space matrix this frame (pre-commit)
 
-  uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
   uint staticShadowInstances = 0;           /// Static shadow instances count
@@ -125,7 +125,10 @@ void assignShadowSlots(ref App app) {
     if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
       light.cull[1 .. 2] = [slot]; slot += NUM_CASCADES; score[i] = -1.0f;
     } else {
-      light.cull[1] = -1.0f; score[i] = light.shadowScore(app.camera.position);
+      bool hadSlot = light.cull[1] >= 0.0f;
+      float sc = light.shadowScore(app.camera.position);
+      if(hadSlot) sc *= SHADOW_HYSTERESIS;
+      light.cull[1] = -1.0f; score[i] = sc;
     }
   }
   for(uint picked = 0; picked < app.shadows.budget && slot < MAX_SHADOW_MAPS; picked++) {
@@ -157,14 +160,10 @@ void updateShadowSlotMatrices(ref App app) {
 
 /** Pick at most one drifted cascade per frame (round-robin), then commit the matrix of every slot rebuilding this frame. */
 @nogc nothrow void selectStaticRebuilds(ref App app) {
-  foreach(step; 0 .. MAX_SHADOW_MAPS) {
-    uint s = cast(uint)((app.shadows.staticCursor + step) % MAX_SHADOW_MAPS);
-    if(!app.shadows.staticDirty[s] && (app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s])) {
-      app.shadows.staticDirty[s] = true;
-      app.shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS; break;
-    }
+  foreach(s; 0 .. MAX_SHADOW_MAPS) {
+    if(app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
+    if(app.shadows.staticDirty[s]) app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
   }
-  foreach(s; 0 .. MAX_SHADOW_MAPS) if(app.shadows.staticDirty[s]) app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
 }
 
 /** Shadow map render pass creation */

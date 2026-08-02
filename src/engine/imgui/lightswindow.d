@@ -28,8 +28,8 @@ void showLightsContent(ref App app, uint font = 0) {
     bool enabled = app.lights[i].enabled();
     if(igCheckbox("##enabled", &enabled)) {
       app.lights[i].enabled(enabled);
-      app.lights.staticDirty = true;
       app.buffers["LightMatrices"].invalidate();
+      app.lights.staticDirty = true;
     }
     igSameLine(0, 5);
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB, format("Light %d", i)), 0)) {
