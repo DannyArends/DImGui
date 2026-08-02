@@ -169,7 +169,7 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   if(!object.isDrawable()) return;
 
   VkDeviceSize offset = 0;
-  pushLabel(cmd, cstr("DRAW: %s", object.geometry()), Colors.lightgray);
+  pushLabel(cmd, cstr("Draw(T=%s)", object.geometry()), Colors.lightgray);
 
   vkCmdBindVertexBuffers(cmd, VERTEX, 1, cast(VkBuffer*)&object.vertices.vb[object.vertices.slot(app.syncIndex)], &offset);
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[object.instances.slot(app.syncIndex)], &offset);

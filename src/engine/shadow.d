@@ -41,6 +41,7 @@ struct ShadowMap {
   bool[] shadowDescriptorsDirty;            /// Per-frame flag: shadow sampler descriptors need rewriting
   bool[] staticDirty;                       /// Per-slot flag: rebuild layer 0 this frame
   bool[] staticPending;                     /// content changed (e.g. terrain edit): needs rebuild, drained one/frame
+  bool[] hadDynamic;                        /// Per-slot: dynamic casters were in frustum last frame (recompose once when they leave)
   uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
   Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
   Matrix[MAX_SHADOW_MAPS] slotVP;           /// Per-slot desired light-space matrix this frame (pre-commit)
@@ -80,7 +81,7 @@ void createShadowMap(ref App app) {
 
 void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
-  app.shadows.images.length = MAX_SHADOW_MAPS;
+  app.shadows.images.length = app.shadows.hadDynamic.length = MAX_SHADOW_MAPS;
   app.shadows.staticDirty.length = app.shadows.staticPending.length = app.shadows.slotStaticMatrix.length = MAX_SHADOW_MAPS;
   app.shadows.cmd.pass(0).framebuffers.length = app.shadows.cmd.pass(1).framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(app.shadows, s, 32);
@@ -212,44 +213,6 @@ void createShadowMapRenderPass(ref App app, ref RenderPass pass, VkAttachmentLoa
   pass.create(app, info, (load? "Dynamic Shadows" : "Static Shadows"), app.mainDeletionQueue);
 }
 
-/** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
-void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
-  VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
-  VkRect2D sc = { extent: { width: ext.width, height: ext.height } };
-
-  VkRenderPassBeginInfo rp = {
-    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass: pass, framebuffer: pass.framebuffers[s],
-    renderArea: sc,
-    clearValueCount: staticPhase ? 1 : 0,
-    pClearValues: staticPhase ? &clearDepth : null,
-  };
-  vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
-
-  VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
-  vkCmdSetViewport(cmd, 0, 1, &vp);
-  vkCmdSetScissor(cmd, 0, 1, &sc);
-  uint slot = cast(uint)s;
-  vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
-
-  float slotRadius = (s < NUM_CASCADES) ? CASCADE_RADIUS[s] : CASCADE_RADIUS[0];
-  if(slotRadius <= 0.0f) slotRadius = app.camera.visibleRadius;   // far cascade
-  float scale = CASCADE_RADIUS[0] / slotRadius;                    // 1.0 for cascade 0, smaller for wider cascades
-  vkCmdSetDepthBias(cmd, SHADOW_DEPTH_BIAS * scale, 0.0f, SHADOW_SLOPE_BIAS * scale);
-
-  foreach(obj; app.objects) {
-    if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-    if(obj.box !is null) {
-      if(!lFrustum.aabbInFrustum(obj.box)) continue;
-    }
-    if(obj.isStatic != staticPhase) continue;
-    ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
-    app.draw(obj, cmd);
-  }
-  vkCmdEndRenderPass(cmd);
-}
-
 /** Create the shadow mapping pipeline */
 void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline creation");
@@ -345,6 +308,52 @@ void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
 
+/** True if any in-frustum dynamic (moving) caster exists for this slot; static-only slots skip the per-frame recompose. */
+@nogc bool hasDynamicCasters(ref App app, Plane[6] lFrustum) nothrow {
+  foreach(obj; app.objects) {
+    if(!obj.isVisible || !obj.castShadow || obj.isStatic || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
+    if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;
+    return true;
+  }
+  return false;
+}
+
+/** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
+void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
+  VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
+  VkRect2D sc = { extent: { width: ext.width, height: ext.height } };
+
+  VkRenderPassBeginInfo rp = {
+    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+    renderPass: pass, framebuffer: pass.framebuffers[s],
+    renderArea: sc,
+    clearValueCount: staticPhase ? 1 : 0,
+    pClearValues: staticPhase ? &clearDepth : null,
+  };
+  vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
+
+  VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
+  vkCmdSetViewport(cmd, 0, 1, &vp);
+  vkCmdSetScissor(cmd, 0, 1, &sc);
+  uint slot = cast(uint)s;
+  vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
+
+  float slotRadius = (s < NUM_CASCADES) ? CASCADE_RADIUS[s] : CASCADE_RADIUS[0];
+  if(slotRadius <= 0.0f) slotRadius = app.camera.visibleRadius;   // far cascade
+  float scale = CASCADE_RADIUS[0] / slotRadius;                   // 1.0 for cascade 0, smaller for wider cascades
+  vkCmdSetDepthBias(cmd, SHADOW_DEPTH_BIAS * scale, 0.0f, SHADOW_SLOPE_BIAS * scale);
+
+  foreach(obj; app.objects) {
+    if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
+    if(obj.isStatic != staticPhase) continue;
+    if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;
+    ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
+    app.draw(obj, cmd);
+  }
+  vkCmdEndRenderPass(cmd);
+}
+
 /** Record the draw calls in the shadow command buffer */
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   auto cmd = app.shadows.cmd.begin(app, syncIndex, "Shadow");
@@ -365,15 +374,22 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       uint s = cast(uint)first + c;
       app.shadows.activeShadowMaps++;
       auto lFrustum = extractFrustum(app.shadows.slotStaticMatrix[s]);
-      pushLabel(cmd, cstr("Shadow RenderPass: slot %d", s), Colors.lightgray);
-      if(app.shadows.staticDirty[s]) {
+      bool rebuilt = app.shadows.staticDirty[s];
+      if(rebuilt) {
+        pushLabel(cmd, cstr("Static %d:%d in %d, reBuild: %d", first, c, s, rebuilt), Colors.lightgray);
         app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.images[s].extent, true);
         app.shadows.staticDirty[s] = false;
         app.shadows.staticRebuilds++;
       }
-      app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
-      app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.images[s].extent, false);
-      popLabel(cmd);
+      bool dyn = app.hasDynamicCasters(lFrustum);
+      if(rebuilt || dyn || app.shadows.hadDynamic[s]) {
+        pushLabel(cmd, cstr("Copy & Dynamic %d:%d in %d, had: %d", first, c, s, app.shadows.hadDynamic[s]), Colors.lightgray);
+        app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
+        app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.images[s].extent, false);
+        popLabel(cmd);
+      }
+      app.shadows.hadDynamic[s] = dyn;
+      if(rebuilt) { popLabel(cmd); }
     }
   }
   popLabel(cmd);
