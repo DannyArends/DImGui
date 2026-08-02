@@ -8,23 +8,6 @@ import engine;
 import matrix : toMatrix, multiply, scale;
 import vector : x,y,z;
 
-struct Bounds {
-  float[3] min = [ float.max, float.max, float.max];
-  float[3] max = [-float.max,-float.max,-float.max];
-
-  @nogc pure void update(const float[3] v) nothrow {
-    if (v.x < min[0]) min[0] = v.x;
-    if (v.y < min[1]) min[1] = v.y;
-    if (v.z < min[2]) min[2] = v.z;
-
-    if (v.x > max[0]) max[0] = v.x;
-    if (v.y > max[1]) max[1] = v.y;
-    if (v.z > max[2]) max[2] = v.z;
-  }
-  
-  @property @nogc pure float[3] size() nothrow const { float[3] s = max[] - min[]; return(s); }
-}
-
 /** BoundingBox */
 class BoundingBox : Geometry {
   float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
