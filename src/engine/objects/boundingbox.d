@@ -30,7 +30,7 @@ class BoundingBox : Geometry {
   float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
   float[3] wmax = [-float.max, -float.max, -float.max];   /// Union world-AABB max over all instances
   float[3][2][] world;                                    /// Per-instance cached world-AABBs
-  bool visible = true;                                    /// Cached rollup, any instance in frustum ?
+  bool visible = true;                                    /// BoundingBox visible in frustum ?
   bool dirty = true;
 
   this(){
@@ -107,9 +107,7 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.instances.invalidate();
 
   Bounds wb;
-  if(object.box.world.length < object.box.instances.length) {
-    object.box.world.length = object.box.inFrustum.length = object.box.instances.length;
-  }
+  if(object.box.world.length < object.box.instances.length) { object.box.world.length = object.box.instances.length; }
   foreach(i; 0 .. object.box.instances.length) {
     object.box.world[i] = object.box.boundsWorld(i);
     wb.update(object.box.world[i][0]); 
