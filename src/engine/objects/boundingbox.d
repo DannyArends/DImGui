@@ -73,6 +73,7 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.instances = object.instances.dup;
   object.box.instances.invalidate();
 
+  object.box.bounds = Bounds.init; // Reset bounds
   if(object.box.world.length < object.box.instances.length) { object.box.world.length = object.box.instances.length; }
   foreach(i; 0 .. object.box.instances.length) {
     object.box.world[i] = object.box.boundsWorld(i);
