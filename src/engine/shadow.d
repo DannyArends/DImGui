@@ -40,6 +40,8 @@ struct ShadowMap {
 
   bool[] shadowDescriptorsDirty;            /// Per-frame flag: shadow sampler descriptors need rewriting
   bool[] staticDirty;                       /// Per-slot flag: rebuild layer 0 this frame
+  bool[] staticPending;                     /// content changed (e.g. terrain edit): needs rebuild, drained one/frame
+  uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
   Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
   Matrix[MAX_SHADOW_MAPS] slotVP;           /// Per-slot desired light-space matrix this frame (pre-commit)
 
@@ -78,7 +80,8 @@ void createShadowMap(ref App app) {
 
 void initShadowPool(ref App app) {
   if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
-  app.shadows.images.length = app.shadows.staticDirty.length = app.shadows.slotStaticMatrix.length = MAX_SHADOW_MAPS;
+  app.shadows.images.length = MAX_SHADOW_MAPS;
+  app.shadows.staticDirty.length = app.shadows.staticPending.length = app.shadows.slotStaticMatrix.length = MAX_SHADOW_MAPS;
   app.shadows.cmd.pass(0).framebuffers.length = app.shadows.cmd.pass(1).framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(app.shadows, s, 32);
 
@@ -158,12 +161,17 @@ void updateShadowSlotMatrices(ref App app) {
   }
 }
 
-/** Rebuild every slot whose matrix drifted this frame, committing each rebuilt slot's matrix. */
+/** Pick at most one drifted cascade per frame (round-robin), then commit the matrix of every slot rebuilding this frame. */
 @nogc nothrow void selectStaticRebuilds(ref App app) {
-  foreach(s; 0 .. MAX_SHADOW_MAPS) {
-    if(app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s]) app.shadows.staticDirty[s] = true;
-    if(app.shadows.staticDirty[s]) app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
+  foreach(step; 0 .. MAX_SHADOW_MAPS) {
+    uint s = cast(uint)((app.shadows.staticCursor + step) % MAX_SHADOW_MAPS);
+    if(!app.shadows.staticDirty[s] && (app.shadows.staticPending[s] || app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s])) {
+      app.shadows.staticDirty[s] = true;
+      app.shadows.staticPending[s] = false;
+      app.shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS; break;
+    }
   }
+  foreach(s; 0 .. MAX_SHADOW_MAPS) if(app.shadows.staticDirty[s]) app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
 }
 
 /** Shadow map render pass creation */
