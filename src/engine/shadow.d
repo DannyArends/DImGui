@@ -134,8 +134,9 @@ void assignShadowSlots(ref App app) {
   foreach(i, ref light; app.lights) {
     light.computeCone();
     if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
-      light.cull[1] = slot; slot += NUM_CASCADES; score[i] = -1.0f;
+      light.cull[1] = slot;
       foreach(c; 0 .. NUM_CASCADES) app.shadows.assignSlot(cast(uint)(slot + c), cast(int)i);
+      slot += NUM_CASCADES; score[i] = -1.0f;
     } else {
       bool hadSlot = light.cull[1] >= 0.0f;
       float sc = light.shadowScore(app.camera.position);
