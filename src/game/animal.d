@@ -19,6 +19,7 @@ import pathfinding : followPath, pathfindTo, stepMove, repathTo, RepathResult, f
 import resources : foodValue;
 import sfx : play;
 import tile : getSuccessors, tileAbove, getWater, setWater;
+import vector : manhattan;
 import water : findNearestWater;
 import world : nextEntityUID;
 
@@ -91,14 +92,16 @@ Job!Animal grazeJob(int[3] target) {
   return Job!Animal("Grazing", target, ResourceClass.None, [], true, reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Animal a) {
       app.progressJob(a, 0.5f, () {
-        uint food = findFreeFood(app.world, a.tile);
-        if(food != noBlock) {
+        uint food = findFreeFood(app.world, a.tile, false);        // loose food, not stockpiles
+        if(food != noBlock && manhattan(app.world.drops[food].tile, a.tile) <= 1) {
           float restore = foodValue(app.world.drops.resourceType(food));
-          app.consumeCarried(a, food);                       // removes the ground berry
+          app.consumeCarried(a, food);
           a.hunger = a.hunger > restore ? a.hunger - restore : 0.0f;
           app.play("DM-CGS-16", 0.4f);
           app.world.drops.dirty = true;
-        } else { app.interactFeaturesAt(a.currentJob.targetTile); }
+        } else {
+          app.interactFeaturesAt(a.currentJob.targetTile);         // harvest the bush we walked to
+        }
       });
     },
     onFail: (ref GameApp app, ref Animal a) { a.jobStack = []; a.state = EntityState.Idle; });
@@ -121,14 +124,22 @@ Job!Animal animalDrinkJob(int[3] waterCell) {
 
 /** Dispatch a graze or drink job if hungry/thirsty. */
 bool tryAnimalNeeds(ref GameApp app, ref Animal a) {
-  if(a.needs[Need.Thirst] >= 0.6f && a.needs[Need.Thirst] >= a.needs[Need.Hunger]) {
+  if(a.needs[Need.Thirst] >= NEED_SEEK) {
     int[3] standAt;
     int[3] cell = app.world.findNearestWater(a.tile, standAt);
     if(cell != noTile) { app.dispatchJob(a, animalDrinkJob(cell)); return true; }
   }
-  if(a.needs[Need.Hunger] >= 0.6f) {
-    uint food = findFreeFood(app.world, a.tile);
-    int[3] target = (food != noBlock) ? app.world.drops[food].tile : app.findNearestFoodFeature(a.tile);
+  if(a.needs[Need.Hunger] >= NEED_SEEK) {
+    uint food = findFreeFood(app.world, a.tile, false);
+    int[3] foodTile = (food != noBlock) ? app.world.drops[food].tile : noTile;
+    int[3] bushTile = app.findNearestFoodFeature(a.tile);
+
+    int[3] target = noTile;
+    if(foodTile != noTile && bushTile != noTile){
+      target = (manhattan(foodTile, a.tile) <= manhattan(bushTile, a.tile)) ? foodTile : bushTile;
+    }else if(foodTile != noTile){ target = foodTile;
+    }else if(bushTile != noTile){ target = bushTile; }
+
     if(target != noTile) { app.dispatchJob(a, grazeJob(target)); return true; }
   }
   return false;

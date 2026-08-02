@@ -42,7 +42,7 @@ void renderFrame(ref App app, double dt) {
   VkSemaphore imageAcquired = app.sync[app.syncIndex].imageAcquired;
 
   if(app.trace) SDL_Log("Phase 1: Aquire the image");
-  auto err = vkAcquireNextImageKHR(app.device, app.swapChain, uint.max, imageAcquired, null, &app.frameIndex);
+  auto err = vkAcquireNextImageKHR(app.device, app.swapChain, ulong.max, imageAcquired, null, &app.frameIndex);
   if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR || err == VK_ERROR_SURFACE_LOST_KHR) app.rebuild = true;
   if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_ERROR_SURFACE_LOST_KHR) return;
   if(err != VK_SUBOPTIMAL_KHR) enforceVK(err);
