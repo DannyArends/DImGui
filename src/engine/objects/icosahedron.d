@@ -95,7 +95,7 @@ void refineIcosahedron(ref Geometry object, uint recursionLevel = 1, float[4] co
     }
     object.indices = indices;
   }
-  for (uint i = 0; i < (object.indices.length-2); i+=3) {
+  for (uint i = 0; i + 2 < object.indices.length; i+=3) {
     a = [object.vertices[object.indices[i+0]].texCoord[0], object.vertices[object.indices[i+0]].texCoord[1], 0.0f];
     b = [object.vertices[object.indices[i+1]].texCoord[0], object.vertices[object.indices[i+1]].texCoord[1], 0.0f];
     c = [object.vertices[object.indices[i+2]].texCoord[0], object.vertices[object.indices[i+2]].texCoord[1], 0.0f];
