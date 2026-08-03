@@ -5,7 +5,8 @@
 
 import engine;
 
-import buffer : cleanup, nameGeometryBuffer, toGPU, uploadBarrier;
+import buffer : uploadBarrier;
+import geometrybuffer : nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
 import textures : idx;
 import mesh : logMesh;
@@ -120,6 +121,14 @@ class Geometry {
   void delegate(float dt) onFrame;
   void delegate() onTick;
   string delegate() nothrow geometry;
+}
+
+void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
+  import geometrybuffer : cleanGeometryBuffer = cleanup;
+  app.cleanGeometryBuffer(object.vertices);
+  app.cleanGeometryBuffer(object.indices);
+  app.cleanGeometryBuffer(object.instances);
+  if(object.box){ app.cleanup!BoundingBox(object.box); }
 }
 
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){

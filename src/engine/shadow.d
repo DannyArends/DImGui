@@ -99,8 +99,8 @@ void initShadowPool(ref App app) {
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) { app.makeShadowMap(app.shadows, s, 32); }
 
   app.mainDeletionQueue.add((){
-    foreach(fb; app.shadows.cmd.pass(0).framebuffers) { app.cleanup(fb); }
-    foreach(fb; app.shadows.cmd.pass(1).framebuffers) { app.cleanup(fb); }
+    foreach(ref fb; app.shadows.cmd.pass(0).framebuffers) { app.cleanup(fb); }
+    foreach(ref fb; app.shadows.cmd.pass(1).framebuffers) { app.cleanup(fb); }
     foreach(ref img; app.shadows.images) { app.cleanup(img); }
   });
 }
