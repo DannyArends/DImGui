@@ -21,6 +21,7 @@ struct ImageBuffer {
   VkExtent3D extent;                /// Extent
   uint arrayLayers = 1;             /// Layers
   @property ref VkImageView view(uint id = 0) { return(views[id]); }
+  alias image this;
 }
 
 void nameImageBuffer(ref App app, ImageBuffer buffer, string path){

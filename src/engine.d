@@ -59,7 +59,7 @@ struct App {
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
   WorldText worldText;                                                          /// All 3D text
-  ShadowMap shadows;                                                            /// ShadowMap object
+  Shadows shadows;                                                              /// Cascading shadow maps
   WBOIT wboit;                                                                  /// Weighted-blended OIT
   DescriptorProvider[string] providers;                                         /// GPU resource creator
 

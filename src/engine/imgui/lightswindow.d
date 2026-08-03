@@ -39,8 +39,8 @@ void showLightsContent(ref App app, uint font = 0) {
                      &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
         infoRow(iconTextStr("Shadow", cast(string)ICON_FA_MOON), "%s  %dx%d",
                 light.cull[1] >= 0.0f ? "CASTING" : "evicted",
-                i < app.shadows.images.length ? app.shadows.images[i].extent.width : 0,
-                i < app.shadows.images.length ? app.shadows.images[i].extent.height : 0);
+                i < app.shadows.slots.length ? app.shadows.slots[i].extent.width : 0,
+                i < app.shadows.slots.length ? app.shadows.slots[i].extent.height : 0);
         labelCol(iconText("Intensity", cast(string)ICON_FA_BOLT));
         sliderFloat3(["##I0","##I1","##I2"], &light.intensity[0], &light.intensity[1], &light.intensity[2], 
                      &app.gui.col[0], &app.gui.col[1], 75, app.gui.uiscale);

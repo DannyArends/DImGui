@@ -245,7 +245,7 @@ VkWriteDescriptorSet makeWrite(VkDescriptorSet dst, uint binding, VkDescriptorTy
   return set;
 }
 
-void append(T)(ref VkDescriptorImageInfo[] infos, T[] images, VkSampler sampler, uint layer = 0, 
+void append(T)(ref VkDescriptorImageInfo[] infos, T images, VkSampler sampler, uint layer = 0, 
                VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
   foreach(ref img; images){ infos ~= VkDescriptorImageInfo(sampler, img.view(layer), layout); }
 }
