@@ -5,7 +5,8 @@
 
 import engine;
 
-import buffer : cleanup, nameGeometryBuffer, toGPU, uploadBarrier;
+import buffer : uploadBarrier;
+import geometrybuffer : nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
 import textures : idx;
 import mesh : logMesh;
@@ -24,17 +25,17 @@ class Geometry {
   Node rootnode;                                /// OpenAsset Root
   string mName;                                 /// OpenAsset name
   MetaData mData;                               /// OpenAsset metaData
-  Bounds bounds;                                /// OpenAsset bounding box
 
   Animation[] animations;                       /// Animations
-  uint animation = 0;                           /// Current Animation
-  double animTime = 0.0;                        /// ms of animation played, dt-advanced
+  AnimationState[] states;                      /// per-instance animation state
+  uint boneBase = 0;                            /// First global bone index for this object's bones (base for local inBones)
+  uint boneCount = 0;                           /// Number of bones
   Mesh[string] meshes;                          /// Meshes
   AMat[] materials;                             /// Materials
 
   BoundingBox box = null;                       /// Bounding Box
-  bool skipBoundingBox = false;                 /// Do we compute boundingboxes ?
   bool window = false;                          /// ImGui window displayed?
+  size_t uiInstance = 0;                        /// Which instance is shown in the UI
 
   @nogc this() nothrow {
     uid = guid;
@@ -51,22 +52,23 @@ class Geometry {
 
   bool isVisible = true;                            /// Boolean flag
   bool isOpaque = true;                             /// Boolean flag, alpha-cutout textures: (HSR) pipeline variant
-  bool inFrustum = true;                            /// Boolean flag
-  bool skipFrustum = false;                         /// Boolean flag
   bool hideInObjectsWindow = false;                 /// Boolean flag
   bool isSelectable = true;                         /// Boolean flag
   bool deAllocate = false;                          /// Boolean flag
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
 
-  @property bool isSDF() nothrow { return(geometry !is null && geometry() == "Text"); }
+  @property @nogc bool inFrustum() nothrow const { return(box is null || box.visible); }
+  @property bool isSDF() nothrow const { return(geometry !is null && geometry() == "Text"); }
   @property bool isAnimated() nothrow { return(geometry !is null && animations.length > 0); }
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null; }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
-  @property bool hasNormalMaps() const nothrow { foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return true; } } return false; }
+  @property bool hasNormalMaps() const nothrow { 
+    foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return(true); } } return(false);
+  }
 
   @nogc void initInstanced(string delegate() nothrow name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
@@ -116,16 +118,17 @@ class Geometry {
 
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  /// Vulkan render topology (selects Pipeline)
 
-  void delegate(SDL_Event e) onMouseEnter;
-  void delegate(SDL_Event e) onMouseExit;
-  void delegate(SDL_Event e) onMouseDown;
-  void delegate(SDL_Event e) onMouseUp;
-  void delegate(SDL_Event e) onMouseOver;
-  void delegate(SDL_Event e) onMouseMove;
   void delegate(float dt) onFrame;
   void delegate() onTick;
-  @nogc void delegate(bool) nothrow onFrustumUpdate;
   string delegate() nothrow geometry;
+}
+
+void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
+  import geometrybuffer : cleanGeometryBuffer = cleanup;
+  app.cleanGeometryBuffer(object.vertices);
+  app.cleanGeometryBuffer(object.indices);
+  app.cleanGeometryBuffer(object.instances);
+  if(object.box){ app.cleanup!BoundingBox(object.box); }
 }
 
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
@@ -148,9 +151,9 @@ void setTexture(T)(T object, string name, aiTextureType tt) {
   foreach(ref mesh; object.meshes) { mesh.mat = 0; }
 }
 
-void texture(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_DIFFUSE); }
-void bumpmap(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_NORMALS); }
-void opacity(T)(T object, string name, string mname = "") { object.setTexture(name, aiTextureType_OPACITY); }
+void texture(T)(T object, string name) { object.setTexture(name, aiTextureType_DIFFUSE); }
+void bumpmap(T)(T object, string name) { object.setTexture(name, aiTextureType_NORMALS); }
+void opacity(T)(T object, string name) { object.setTexture(name, aiTextureType_OPACITY); }
 
 /** Euclidean distance between Geometry and Camera */
 @nogc float distance(T)(const T object, const Camera camera) nothrow { 
@@ -175,7 +178,7 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   if(!object.isDrawable()) return;
 
   VkDeviceSize offset = 0;
-  pushLabel(cmd, cstr("DRAW: %s", object.geometry()), Colors.lightgray);
+  pushLabel(cmd, cstr("Draw(T=%s)", object.geometry()), Colors.lightgray);
 
   vkCmdBindVertexBuffers(cmd, VERTEX, 1, cast(VkBuffer*)&object.vertices.vb[object.vertices.slot(app.syncIndex)], &offset);
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[object.instances.slot(app.syncIndex)], &offset);

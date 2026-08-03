@@ -5,7 +5,7 @@
 
 import engine;
 
-import images : cleanup, ImageBuffer, createNamedImage;
+import images : createNamedImage;
 import validation : nameVulkanObject;
 
 @nogc void cleanup(ref App app, VkFramebuffer fb) nothrow { vkDestroyFramebuffer(app.device, fb, app.allocator); }
@@ -15,7 +15,9 @@ void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits f
   if(app.verbose) SDL_Log("Creating Offscreen HDR Image");
   app.createNamedImage(buffer, app.camera.width, app.camera.height, app.offscreen.format, VK_IMAGE_ASPECT_COLOR_BIT,
                        "Offscreen HDR Image", flag, VK_IMAGE_TILING_OPTIMAL, usage);
-  app.swapDeletionQueue.add((){ app.cleanup(buffer); });
+  app.swapDeletionQueue.add(() {
+    import images : cleanup; app.cleanup(buffer); 
+  });
 }
 
 VkFramebuffer createFramebuffer(ref App app, ref RenderPass pass, VkImageView[] views, uint width, uint height, string label, size_t idx = 0) {

@@ -13,6 +13,11 @@ import vector : interpolate, x, y, z;
 import quaternion : slerp, rotate;
 import matrix : Matrix, inverse, scale, translate, transpose, multiply;
 
+struct AnimationState {
+  uint animation = 0;       /// Current Animation
+  double animTime = 0.0;    /// ms of animation played, dt-advanced
+}
+
 struct NodeAnimation {
   PositionKey[] positionKeys;
   RotationKey[] rotationKeys;
@@ -46,14 +51,22 @@ struct Animation {
 /** Advance one animated asset's animation by dt and recompute its bone transforms. */
 void animateAsset(ref App app, ref Geometry obj, float dt) {
   if(dt == 0.0f) return;
-  obj.animTime += dt;
-  double cT = calculateCurrentTick(obj.animTime, obj.animations[obj.animation].ticksPerSecond, obj.animations[obj.animation].duration);
-  app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT);
+  if(obj.states.length != obj.instances.length) {
+    size_t old = obj.states.length;
+    obj.states.length = obj.instances.length ? obj.instances.length : 1;
+    foreach(k; old .. obj.states.length) obj.states[k].animTime = uniform(0.0, 1000.0);
+  }
+  foreach(i, ref st; obj.states) {
+    st.animTime += dt;
+    double cT = calculateCurrentTick(st.animTime, obj.animations[st.animation].ticksPerSecond, obj.animations[st.animation].duration);
+    app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT, st.animation, cast(uint)obj.instances[i].meshdef[3]);
+  }
 }
 
 /** calculateGlobalTransform - Recursively apply all transformations at animationTime */
-void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform, double animationTime) {
-  Animation animation = obj.animations[obj.animation];
+void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform, 
+                              double animationTime, uint animIndex, uint regionBase) {
+  Animation animation = obj.animations[animIndex];
   Matrix localTransform = node.transform;
 
   if (node.name in animation.nodeAnimations) {
@@ -69,10 +82,11 @@ void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, co
   Matrix gTransform = pTransform.multiply(localTransform);
 
   if (node.name in app.bones) {
-    app.boneOffsets[app.bones[node.name].index] = gTransform.multiply(app.bones[node.name].offset);
+    uint local = app.bones[node.name].index - obj.boneBase;
+    app.boneOffsets[regionBase + local] = gTransform.multiply(app.bones[node.name].offset);
   }
   foreach(cNode; node.children){
-    app.calculateGlobalTransform(obj, cNode, gTransform, animationTime);
+    app.calculateGlobalTransform(obj, cNode, gTransform, animationTime, animIndex, regionBase);
   }
 }
 

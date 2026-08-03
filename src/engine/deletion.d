@@ -6,6 +6,9 @@
 import engine;
 
 import buffer : cleanup;
+import geometry : cleanup;
+import geometrybuffer : cleanup;
+import images : cleanup;
 import framebuffer : cleanup;
 
 alias delegateT = @nogc bool delegate(bool) nothrow;

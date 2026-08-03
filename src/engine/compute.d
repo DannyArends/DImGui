@@ -5,8 +5,9 @@
 
 import engine;
 
-import commands : createCommandBuffer;
-import descriptor : createDescriptorSetLayout, createDescriptorSet, updateDescriptorData;
+import commandpool : createCommandBuffer;
+import descriptor : createDescriptorSetLayout, createDescriptorSet;
+import descriptorupdate : updateDescriptorData;
 import images : imageBarrier, transitionImageLayout;
 import shaders : loadShaders, createStageInfo;
 import sync : insertFillBarrier;

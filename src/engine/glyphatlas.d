@@ -6,10 +6,11 @@
 import engine;
 
 import buffer : cleanup;
-import commands : beginSingleTimeCommands, endSingleTimeCommands;
-import textures : toRGBA, toGPU;
+import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import images : createImage, cleanup, imageSize;
 import io : readFile, fixPath;
+import surface : toRGBA;
+import textures : toGPU;
 import views : createImageView;
 
 /** Glyph stores FreeType glyph data */

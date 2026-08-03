@@ -5,12 +5,13 @@
 
 import engine;
 
-import frustum : cullFrustum, extractFrustum;
 import boundingbox : computeBoundingBox;
-import descriptor : updateDescriptorData;
+import commandpool : createCommandBuffer;
+import descriptorupdate : updateDescriptorData;
+import frustum : cullFrustum, extractFrustum;
 import geometry : draw, bufferGeometries;
-import ssbo : updateSSBO;
 import matrix : multiply;
+import ssbo : updateSSBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import wboit : drawWBOITResolve;
 import window: supportedTopologies;
@@ -23,7 +24,7 @@ struct CommandBuffer(size_t N){
   VkCommandBuffer[] commands;       /// per-syncIndex buffers
   alias commands this;
 
-  void create(ref App app, VkCommandPool pool, uint nBuffers) { app.createCommandBuffer(commands, pool, nBuffers); }
+  void create(ref App app, VkCommandPool pool, uint nBuffers) { commands = app.createCommandBuffer(pool, nBuffers); }
 
   @property ref RenderPass pass(uint id = 0) { return(renderpass[id]); }
 
@@ -48,6 +49,36 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
     if(app.objects[x].hasBoundingBox && app.objects[x].box.isDrawable) app.draw(app.objects[x].box, cmd);
   }
   popLabel(cmd);
+}
+
+/** Upload all dirty geometry once, before any render pass records, so every pass reads stable, current buffers. */
+void recordUploadPass(ref App app) {
+  auto cmd = app.uploadCmd.begin(app, app.syncIndex, "Upload");
+  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
+  app.bufferGeometries(cmd);
+  popLabel(cmd);
+  app.uploadCmd.end(app.syncIndex);
+}
+
+/** Record the depth pre-pass: opaque geometry, depth-only, into app.depthCmd (feeds SSAO before the lit scene pass). */
+void recordDepthPrePass(ref App app) {
+  auto cmd = app.depthCmd.begin(app, app.syncIndex, "DepthPrePass");
+  pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
+  pushLabel(cmd, "Descriptors & SSBO", Colors.lightgray);
+  app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
+  popLabel(cmd);
+
+  app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
+
+  auto set = app.sets[Stage.RENDER][app.syncIndex];
+  foreach(topology; supportedTopologies) {
+    if(topology !in app.pipelines) continue;
+    app.drawTopologyPass(cmd, topology, set, DrawPass.Opaque, true);
+  }
+
+  app.depthCmd.pass.end(cmd);
+  popLabel(cmd);
+  app.depthCmd.end(app.syncIndex);
 }
 
 /** Draw every visible object of one topology for one DrawPass; rebinds the pipeline only when the specialization changed */
@@ -122,125 +153,4 @@ void recordPostCommandBuffer(ref App app) {
   popLabel(cmd);
   if(app.trace) SDL_Log("Finished Post-processing");
   app.postCmd.end(app.syncIndex);
-}
-
-/** Record the depth pre-pass: opaque geometry, depth-only, into app.depthCmd (feeds SSAO before the lit scene pass). */
-void recordDepthPrePass(ref App app) {
-  auto cmd = app.depthCmd.begin(app, app.syncIndex, "DepthPrePass");
-  pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
-    pushLabel(cmd, "Objects Buffering", Colors.lightgray);
-    if(app.trace) SDL_Log("Objects Buffering");
-    app.bufferGeometries(cmd);
-    popLabel(cmd);
-
-    pushLabel(cmd, "Descriptors & SSBO", Colors.lightgray);
-    app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
-    popLabel(cmd);
-
-    app.depthCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[2..3]);  // depth clear only
-
-    auto set = app.sets[Stage.RENDER][app.syncIndex];
-    foreach(topology; supportedTopologies) {
-      if(topology !in app.pipelines) continue;
-      app.drawTopologyPass(cmd, topology, set, DrawPass.Opaque, true);
-    }
-
-    app.depthCmd.pass.end(cmd);
-  popLabel(cmd);
-  app.depthCmd.end(app.syncIndex);
-}
-
-void createCommandPools(ref App app) {
-  app.queues.graphics.pool = app.createCommandPool(app.queues.graphics.family);
-  app.queues.transfer.pool = app.createCommandPool(app.queues.transfer.family);
-  app.queues.compute.pool  = app.createCommandPool(app.queues.compute.family);
-
-  app.nameVulkanObject(app.queues.graphics.pool, toStringz("[COMMANDPOOL] Graphics"), VK_OBJECT_TYPE_COMMAND_POOL);
-  app.nameVulkanObject(app.queues.transfer.pool, toStringz("[COMMANDPOOL] Transfer"), VK_OBJECT_TYPE_COMMAND_POOL);
-  app.nameVulkanObject(app.queues.compute.pool,  toStringz("[COMMANDPOOL] Compute"),  VK_OBJECT_TYPE_COMMAND_POOL);
-
-  if(app.verbose) SDL_Log("createCommandPools gfx[%d]=%p transfer[%d]=%p compute[%d]=%p",
-    app.queues.graphics.family, app.queues.graphics.pool, app.queues.transfer.family, app.queues.transfer.pool,
-    app.queues.compute.family, app.queues.compute.pool);
-}
-
-VkCommandPool createCommandPool(ref App app, uint queueFamilyIndex) {
-  VkCommandPool commandPool;
-
-  VkCommandPoolCreateInfo poolInfo = {
-    sType: VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-    queueFamilyIndex: queueFamilyIndex,
-    flags: VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
-  };
-  enforceVK(vkCreateCommandPool(app.device, &poolInfo, null, &commandPool));
-  app.mainDeletionQueue.add((){ vkDestroyCommandPool(app.device, commandPool, app.allocator); });
-
-  if(app.trace) SDL_Log("Commandpool %p at queue %d created", commandPool, poolInfo.queueFamilyIndex);
-  return(commandPool);
-}
-
-VkCommandBuffer[] createCommandBuffer(App app, VkCommandPool pool, uint nBuffers = 1) {
-  VkCommandBuffer[] commandBuffer;
-  commandBuffer.length = nBuffers;
-
-  VkCommandBufferAllocateInfo allocInfo = {
-    sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-    commandPool: pool,
-    level: VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-    commandBufferCount: nBuffers
-  };
-  enforceVK(vkAllocateCommandBuffers(app.device, &allocInfo, &(commandBuffer[0])));
-  if(app.trace) SDL_Log("%d CommandBuffer(s) created from pool %p", nBuffers, pool);
-  app.swapDeletionQueue.add((){ vkFreeCommandBuffers(app.device, pool, cast(uint)commandBuffer.length, &commandBuffer[0]); });
-  return(commandBuffer);
-}
-
-void createCommandBuffer(ref App app, ref VkCommandBuffer[] dst, VkCommandPool pool, uint nBuffers = 1) { 
-  dst = app.createCommandBuffer(pool, nBuffers);
-}
-
-/** Structure returned as result of an (async) SingleTimeCommand submission */
-struct SingleTimeCommand {
-  bool async = false;       /// Is the transfer happening async ?
-  VkFence fence;            /// If aSync the fence we need to wait for before data is on the GPU
-  VkCommandPool pool;       /// The command pool the buffer was allocated from
-  VkCommandBuffer commands; /// The command buffer used for this specific transfer
-  alias commands this;
-}
-
-/** beginSingleTimeCommands() begins a commandbuffer using the VkCommandPool pool
- * async: If true: add commands, submit to the correct queue. 
-          If false: add commands, the use endSingleTimeCommands to submit and WaitIdle for the Queue */
-SingleTimeCommand beginSingleTimeCommands(ref App app, VkCommandPool pool, bool async = false) {
-  VkCommandBuffer commandBuffer = app.createCommandBuffer(pool, 1)[0];
-
-  VkCommandBufferBeginInfo beginInfo = {
-    sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    flags: VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-  };
-  vkBeginCommandBuffer(commandBuffer, &beginInfo);
-  VkFence completionFence;
-  if(async) {
-    VkFenceCreateInfo fenceInfo = {
-        sType: VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        flags: 0
-    };
-    enforceVK(vkCreateFence(app.device, &fenceInfo, app.allocator, &completionFence));
-  }
-  return SingleTimeCommand(async, completionFence, pool, commandBuffer);
-}
-
-void endSingleTimeCommands(ref App app, SingleTimeCommand cmd, VkQueue queue) {
-  if(cmd.async) assert(0, "Never endSingleTimeCommands() on Async events");
-  vkEndCommandBuffer(cmd.commands);
-
-  VkSubmitInfo submitInfo = {
-    sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    commandBufferCount: 1,
-    pCommandBuffers: &cmd.commands
-  };
-
-  enforceVK(vkQueueSubmit(queue, 1, &submitInfo, null));
-  enforceVK(vkQueueWaitIdle(queue));
-  vkFreeCommandBuffers(app.device, cmd.pool, 1, &cmd.commands);
 }

@@ -59,7 +59,7 @@ struct App {
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
   WorldText worldText;                                                          /// All 3D text
-  ShadowMap shadows;                                                            /// ShadowMap object
+  Shadows shadows;                                                              /// Cascading shadow maps
   WBOIT wboit;                                                                  /// Weighted-blended OIT
   DescriptorProvider[string] providers;                                         /// GPU resource creator
 
@@ -118,6 +118,7 @@ struct App {
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
+  CommandBuffer!1 uploadCmd;
   CommandBuffer!1 depthCmd;                                                       /// Depth-only pre-pass
   CommandBuffer!1 sceneCmd;                                                       /// Scene commandbuffer
   CommandBuffer!1 postCmd;                                                        /// Post-process commandbuffer

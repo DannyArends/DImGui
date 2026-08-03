@@ -21,3 +21,10 @@ string humanCount(size_t n) {
 
 /** Floor division (rounds toward -inf) — negative-safe chunk coordinates. */
 @nogc pure int iDiv(int a, int b) nothrow { return((a >= 0) ? a/b : -((-a + b - 1)/b)); }
+
+/** Round v up to a power of two within [lo, hi]; lo/hi are assumed pow2 (512..4096). */
+@nogc uint clampPow2(uint v, uint lo, uint hi) nothrow pure {
+  if(v <= lo){ return lo; }
+  if(v >= hi){ return hi; }
+  return 1u << (bsr(v - 1) + 1);
+}

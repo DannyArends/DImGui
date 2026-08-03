@@ -5,10 +5,11 @@
 
 import engine;
 
-import buffer : createBuffer, copyBufferToImage, cleanup;
-import commands : beginSingleTimeCommands, endSingleTimeCommands;
-import descriptor : createDescriptorSet, updateDescriptorSet;
-import images : nameImageBuffer, generateMipmaps, imageSize, createImage, cleanup, transitionImageLayout, createNamedImage;
+import buffer : createBuffer, copyBufferToImage;
+import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
+import descriptor : createDescriptorSet;
+import descriptorupdate : updateDescriptorSet;
+import images : nameImageBuffer, generateMipmaps, imageSize, createImage, transitionImageLayout, createNamedImage;
 import io : dir;
 import validation : nameVulkanObject;
 import views : createImageView, createLayerViews;
@@ -60,62 +61,14 @@ struct Textures {
 
 /** DeAllocate a Texture: free its ImGui descriptor set first, then the backing image */
 @nogc void cleanup(ref App app, ref Texture texture) nothrow {
+  import images : cleanup;
   if(texture.imID) { vkFreeDescriptorSets(app.device, app.pools[Stage.IMGUI], 1, &texture.imID); texture.imID = null; }
   app.cleanup(texture.buffer);
 }
 
-/** Check file extension to determine if something is a texture */
-bool isTexture(string path){
-  if(extension(path) == ".jpg") return(true);
-  if(extension(path) == ".png") return(true);
-  return(false);
-}
-
-/** Convert an SDL-Surface to RGBA32 format */
-void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
-  SDL_Surface* adapted = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
-  if (adapted) {
-    SDL_DestroySurface(surface); // Free the SDL_Surface
-    surface = adapted;
-    if(verbose > 1) SDL_Log("surface adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel));
-  }
-}
-
-/** VRAM cap for a texture's longest side; data maps (AO/normal/rough) tolerate half the albedo resolution. */
-int textureCap(string path) {
-  int cap = isAndroid ? 1024 : 2048;
-  foreach(suffix; ["_Ao", "_ao", "_Nor", "_nor", "_normal", "_Rough", "_rough", "_Metal", "_metal"]) { if(path.indexOf(suffix) >= 0) return(cap / 2); }
-  return(cap);
-}
-
-/** Downscale an oversized surface in place to fit maxDim on its longest side (preserves aspect). */
-void clampSurface(ref SDL_Surface* surface, int maxDim) {
-  int m = (surface.w > surface.h) ? surface.w : surface.h;
-  if(m <= maxDim) return;
-  float s = cast(float)maxDim / m;
-  int nw = cast(int)(surface.w * s + 0.5f); if(nw < 1) nw = 1;
-  int nh = cast(int)(surface.h * s + 0.5f); if(nh < 1) nh = 1;
-  SDL_Surface* scaled = SDL_ScaleSurface(surface, nw, nh, SDL_SCALEMODE_LINEAR);
-  if(scaled) { SDL_DestroySurface(surface); surface = scaled; }
-}
-
-/** Create a 1x1 white SDL_Surface */
-SDL_Surface* createDummySDLSurface() {
-  SDL_Surface* surface = SDL_CreateSurface(1, 1, SDL_PIXELFORMAT_RGBA32);
-  if(!surface){
-    SDL_Log("Failed to create dummy SDL_Surface: %s", SDL_GetError());
-    return null;
-  }
-
-  if(SDL_MUSTLOCK(surface)) SDL_LockSurface(surface);
-  auto whitePixel = SDL_MapRGBA(SDL_GetPixelFormatDetails(surface.format), null, 255, 255, 255, 255);
-  memcpy(surface.pixels, &whitePixel, SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel);
-  if(SDL_MUSTLOCK(surface)) SDL_UnlockSurface(surface);
-  return surface;
-}
-
 /** Check pending textures */
 void checkPendingTextures(ref App app) {
+  import buffer : cleanup;
   size_t i = 0;
   while(i < app.textures.pending.length) {
     auto p = app.textures.pending[i];

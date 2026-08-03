@@ -7,6 +7,7 @@ import engine;
 
 import imgui : iconText, iconTextStr;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
+import shadow : NUM_CASCADES, CASCADE_RADIUS;
 import widgets : colValue, setting, text, sliderFloat3, infoRow, labelCol;
 
 /** Show the GUI window which allows us to manipulate lighting */
@@ -29,6 +30,7 @@ void showLightsContent(ref App app, uint font = 0) {
     if(igCheckbox("##enabled", &enabled)) {
       app.lights[i].enabled(enabled);
       app.buffers["LightMatrices"].invalidate();
+      app.lights.staticDirty = true;
     }
     igSameLine(0, 5);
     if(igTreeNodeEx_Str(iconText(cast(string)ICON_FA_LIGHTBULB, format("Light %d", i)), 0)) {
@@ -36,10 +38,19 @@ void showLightsContent(ref App app, uint font = 0) {
         labelCol(iconText("Position", cast(string)ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT));
         sliderFloat3(["##pX","##pY","##pZ"], &light.position[0], &light.position[1], &light.position[2], 
                      &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
-        infoRow(iconTextStr("Shadow", cast(string)ICON_FA_MOON), "%s  %dx%d",
-                light.cull[1] >= 0.0f ? "CASTING" : "evicted",
-                i < app.shadows.images.length ? app.shadows.images[i].extent.width : 0,
-                i < app.shadows.images.length ? app.shadows.images[i].extent.height : 0);
+        int first = cast(int)light.cull[1];
+        if(first < 0) {
+          infoRow(iconTextStr("Shadow", cast(string)ICON_FA_MOON), "%s", "evicted");
+        } else if(light.directional) {
+          foreach(c; 0 .. NUM_CASCADES) {
+            float r = (c + 1 == NUM_CASCADES) ? app.camera.visibleRadius : CASCADE_RADIUS[c];
+            infoRow(iconTextStr(format("Cascade %d", c), cast(string)ICON_FA_MOON), "%dx%d  r=%.0f",
+                    app.shadows.slots[first + c].extent.width, app.shadows.slots[first + c].extent.height, r);
+          }
+        } else {
+          infoRow(iconTextStr("Shadow", cast(string)ICON_FA_MOON), "CASTING  %dx%d",
+                  app.shadows.slots[first].extent.width, app.shadows.slots[first].extent.height);
+        }
         labelCol(iconText("Intensity", cast(string)ICON_FA_BOLT));
         sliderFloat3(["##I0","##I1","##I2"], &light.intensity[0], &light.intensity[1], &light.intensity[2], 
                      &app.gui.col[0], &app.gui.col[1], 75, app.gui.uiscale);

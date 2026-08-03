@@ -7,14 +7,15 @@ import game;
 
 import block : resourceType, itemOf, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
 import color : randomColor;
+import entity : tickEntity;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
 import matrix : translate, position, scale, translateScale;
-import pathfinding : pathfindTo, repathTo, findGoalTile, syncPathMarkers;
-import jobs;
+import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
+import jobs : pickupJob, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
 import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import rnjesus : randomizeName;
 import sfx : play;
@@ -22,138 +23,33 @@ import text : addWorldText, moveWorldText, removeWorldText;
 import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;
 import timing : timed;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
+import scheduler : applyPathResult, atDestination, claimNextJob, dispatchJob, pruneJobQueue, rejectJob, completeSubJob;
 import vector : vAdd;
 import water : findNearestWater;
+import world : nextEntityUID;
 
-uint nextDwarfUID = 1;
 enum int NEED_RETRY = 30;
 
-struct InventorySlot {
-  enum Kind : ubyte { Empty, Block, Stack }
-  Kind kind = Kind.Empty;                           /// Resource kind
-  Item item;                                        /// What's in the slot: (shape x material [+ contents])
-  ubyte count = 0;                                  /// number of valid ids in resourceIDs
-  uint[16] resourceIDs = noBlock;                   /// block/berry ids in this slot (POD, fixed-size)
-
-  @nogc @property bool empty() const nothrow { return kind == Kind.Empty; }
-  @nogc @property bool isStack() const nothrow { return kind == Kind.Stack; }
-  @nogc bool accepts(Item item) const {
-    if(empty) return true;
-    return isStack && this.item == item && count < itemStack(item);
-  }
-}
-
-static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
-
-struct DwarfData {
-  uint uid = 0;                                 /// Unique ID
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// Dwarf color
-  int[3] tile = [0, 0, 0];                      /// Current tile
-  float[Need.max + 1] needs = 0.0f;             /// Needs array: 0 = satisfied, 1 = critical
-  char[64] first;                               /// First name
-  char[64] last;                                /// Last name
-  InventorySlot[32] inventory;                  /// Inventory
-
-  @property string firstname() { return cast(string)first[0..first.indexOf('\0')]; }
-  @property string name() { return cast(string)first[0..first.indexOf('\0')] ~ " " ~ cast(string)last[0..last.indexOf('\0')]; }
-  @nogc @property float hunger() const { return needs[Need.Hunger]; }
-  @nogc @property void hunger(float v) { needs[Need.Hunger] = v; }
-  @nogc @property float thirst() const { return needs[Need.Thirst]; }
-  @nogc @property void thirst(float v) { needs[Need.Thirst] = v; }
-  @nogc @property float mood() const { return 1.0f - needs[].maxElement; }
-  @property uint[] carrying() const {
-    uint[] ids;
-    foreach(ref s; inventory) if(!s.empty) ids ~= s.resourceIDs[0 .. s.count];
-    return ids;
-  }
-
-  bool pickup(uint blockID, Item item) {
-    foreach(ref s; inventory) {
-      if(!s.accepts(item)) continue;
-      if(s.empty) { s.kind = itemStack(item) > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.item = item; }
-      s.resourceIDs[s.count] = blockID;
-      s.count++;
-      return true;
-    }
-    return false;
-  }
-
-  bool use(ref Drops drops, uint blockID) {
-    if(auto b = blockID in drops) { b.reserved = false; }
-    foreach(ref s; inventory) {
-      if(s.empty) continue;
-      auto k = s.resourceIDs[0 .. s.count].countUntil(blockID);
-      if(k >= 0) {
-        s.resourceIDs[k] = s.resourceIDs[s.count - 1];
-        s.count--;
-        if(s.count == 0) s = InventorySlot.init;
-        return(true);
-      }
-    }
-    return(false);
-  }
-
-  @nogc void retype(uint blockID, Item item) nothrow {
-    foreach(ref s; inventory) {
-      if(s.empty) continue;
-      if(s.resourceIDs[0 .. s.count].canFind(blockID)) { s.item = item; return; } // This only works for stacksize == 1
-    }
-  }
-
-  bool drop(ref Drops drops, size_t slot) {
-    if(slot >= inventory.length || inventory[slot].empty) { return(false); }
-
-    if(auto b = inventory[slot].resourceIDs[inventory[slot].count - 1] in drops) {
-      b.tile = tile;
-      b.reserved = false;
-    }
-    inventory[slot].count--;
-    if(inventory[slot].count == 0) inventory[slot] = InventorySlot.init;
-    drops.dirty = true;
-    return(true);
-  }
-
-  @property bool hasInventorySpace() { return inventory[].any!(s => s.empty); }
-}
-
-enum DwarfState {
-  Idle,           /// no job, no goal, standing still
-  Wandering,      /// no job, has targetTile, following path
-  WaitingForPath, /// has job, sent path request, waiting for async result
-  Moving,         /// has job, following path (moveT < 1.0f)
-  Working,        /// arrived at destination, executing job action
-  Blocked,        /// at destination but another dwarf is in the way
-}
-
 struct Dwarf {
-  DwarfData data;                           /// Data saved between sessions
-  alias data this;
+  Entity!32 entity;                         /// Shared pawn (32 inventory slots)
+  alias entity this;
 
-  int[3] targetTile = noTile;               /// Where we are going
-  float[3][] path;                          /// Path we're on
-  float progress = 0.0f;                    /// Job progress
-  uint[2] idleTicks = [0, 180];             /// Idle ticks and Patience / Wanderlust
-  Job[] jobStack;                           /// Current job stack, jobStack[0] is active, rest are pending
-  int[Need.max + 1] needBackoff;            /// ticks before this need may be re-attempted (anti-livelock)
-
-  float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Current interpolated position
-  float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
-  float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
-  float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
-
-  Fall fall = { weight: 5.0f };             /// Fall state
-  size_t lightIndex = size_t.max; 
+  Job!Dwarf[] jobStack;                     /// Job stack, [0] active, rest pending
+  size_t lightIndex = size_t.max;
   size_t nameLabel = size_t.max;
 
-  DwarfState state = DwarfState.Idle;
-  bool lastPathPartial = false;
-  uint blockedSince = 0;                    /// Timestamp when waiting for another dwarf to move
-  uint repathAttempts = 0;                  /// Consecutive repaths on current sub-job without arriving
-
-  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = DwarfState.Idle; }
+  @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = EntityState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }
-  @property ref Job currentJob() { return(jobStack[0]); }
-  @property bool isFalling() const { return fall.isFalling; }
+  @property ref Job!Dwarf currentJob() { return(jobStack[0]); }
+
+  bool tickNeeds(ref GameApp app) { return app.tryNeeds(this); }
+  void whenIdle(ref GameApp app) { app.claimNextJob(this); }
+  void onWork(ref GameApp app) { app.overBurdened(this); }
+  void onReject(ref GameApp app, ref Job!Dwarf job) { app.rejectJob(this, job); }
+  void onSubJobComplete(ref GameApp app) { app.completeSubJob(this); }
+  void onBlocked(ref GameApp app) { app.handleBlocking(this); }
+  void onStuck(ref GameApp app) { app.logStuck(this); }
+  void onPathResult(ref GameApp app, PathResult r) { app.applyPathResult(r); }
 }
 
 /** Release job reservations, drop everything carried, retire the torch light, and remove the dwarf from the roster */
@@ -172,19 +68,6 @@ void deleteDwarf(ref GameApp app, int index) {
   app.world.dwarves.remove(index);
   app.world.dwarves.selected = -1;
   app.world.dwarves.syncInstances();
-}
-
-/** Follow the next step in object T's path.
- * Requires T to have: tile, path, visualPos, moveFrom, moveTo, moveT */
-void followPath(T)(ref GameApp app, ref T obj) {
-  if(obj.path.length == 0) return;
-  auto next = obj.path[0];
-  obj.path = obj.path[1..$];
-  obj.moveFrom = obj.visualPos;
-  obj.moveTo = [next[0], next[1], next[2]];
-  obj.moveT = 0.0f;
-  obj.tile = app.world.worldToTile(next);
-  app.camera.isDirty = true;
 }
 
 /** Find a free surface tile (as in non-occupado) and on top of the world */
@@ -210,21 +93,8 @@ void dwarfFrame(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
   foreach(i, ref d; app.world.dwarves) {
     if(d.isFalling) continue;
-    if(d.state != DwarfState.Moving && d.state != DwarfState.Wandering) continue;
-    if(d.moveT >= 1.0f) continue;
-    float cost = max(1.0f, app.world.getTileAt(d.tile.tileBelow).cost);
-    d.moveT = min(1.0f, d.moveT + dt * stepSpeed / cost);
-    float arc = hopHeight * d.moveT * (1.0f - d.moveT); 
-    d.visualPos = [
-      d.moveFrom[0] + d.moveT * (d.moveTo[0] - d.moveFrom[0]),
-      d.moveFrom[1] + d.moveT * (d.moveTo[1] - d.moveFrom[1]) + arc,
-      d.moveFrom[2] + d.moveT * (d.moveTo[2] - d.moveFrom[2])
-    ];
-    if(d.moveT >= 1.0f) {
-      if(d.path.length > 0) {
-        app.followPath(d);
-      } else { d.state = d.hasJob ? DwarfState.Working : DwarfState.Idle; }
-    }
+    if(d.state != EntityState.Moving && d.state != EntityState.Wandering) continue;
+    if(app.stepMove(d, dt, stepSpeed, hopHeight)) d.state = d.hasJob ? EntityState.Working : EntityState.Idle;
   }
   foreach(i, ref d; app.world.dwarves) {
     if(d.lightIndex != size_t.max) {
@@ -240,6 +110,31 @@ void dwarfFrame(ref GameApp app, float dt) {
   }
   app.world.dwarves.syncInstances();
   app.buffers["LightMatrices"].invalidate();
+}
+
+/** Rebuild path-marker instances from all dwarf paths. */
+void syncPathMarkers(ref World world, bool showPaths = false) {
+  if(world.paths.markers is null || world.dwarves is null) return;
+  world.paths.markers.instances.reset();
+  if(showPaths) {
+    foreach(ref d; world.dwarves)
+      foreach(l; d.path) world.paths.markers.instances ~= DrawInstance(translate([l[0], l[1] - 0.4f, l[2]]), -1, d.color);
+  }
+  world.paths.markers.syncInstances();
+}
+
+/** Invalidate any dwarf paths passing through the given tile and re-path them. */
+void invalidatePaths(ref GameApp app, int[3] tile) {
+  if(app.world.dwarves is null) return;
+  foreach(ref d; app.world.dwarves.dwarves) {
+    if(!d.path.any!(p => app.world.worldToTile(p) == tile)) continue;
+    d.path = [];
+    d.moveTo = d.moveFrom = d.visualPos;
+    d.moveT = 1.0f;
+    if(d.jobStack.length > 0 && d.targetTile != noTile) {
+      app.repathTo(d, d.targetTile, d.jobStack[0].reach, (PathResult r){ app.applyPathResult(r); });
+    }
+  }
 }
 
 /** Overburdened: fumble a random item when more than half-full */
@@ -280,7 +175,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
     bool water = app.world.findNearestWater(d.tile, standAt) != noTile;
 
     if(hasFull || water) {
-      auto job = drinkJob();
+      auto job = drinkJob!Dwarf();
       if(!hasFull) {
         if(!hasEmpty) { job.prereqs ~= craftJob("CupMaking"); } // no cup at all -> craft one
         job.prereqs ~= fillCupJob(); // fill the (crafted or carried) cup
@@ -292,43 +187,9 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Rest
   if(d.needs[Need.Rest] >= 0.7f && d.needBackoff[Need.Rest] == 0) {
     d.needBackoff[Need.Rest] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Rest]*4u)));
-    app.dispatchJob(d, sleepJob(d.tile)); return(true); 
+    app.dispatchJob(d, sleepJob!Dwarf(d.tile)); return(true); 
   }
   return(false);
-}
-
-/** A single dwarf being ticked */
-void tickDwarf(ref GameApp app, ref Dwarf d) {
-  foreach(n; 0 .. d.needs.length){ d.needs[n] = min(1.0f, d.needs[n] + decay[n]); }
-  foreach(n; 0 .. d.needBackoff.length) { if(d.needBackoff[n] > 0) { d.needBackoff[n]--; } }
-  if(d.isFalling) return;
-
-  // Drop a job the moment it becomes invalid, in any state
-  if(d.hasJob && d.currentJob.isValid !is null && !d.currentJob.isValid(app, d.currentJob)) { d.currentJob.onFail(app, d); }
-
-  final switch(d.state) {
-    case DwarfState.Idle:
-      if(app.tryNeeds(d)) break;     // replaces the hardcoded hunger block
-      app.claimNextJob(d); break;
-    case DwarfState.WaitingForPath: break;
-    case DwarfState.Moving:
-    case DwarfState.Wandering:
-      app.overBurdened(d);
-      if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
-      break;
-    case DwarfState.Working:
-      if(!d.hasJob) { d.state = DwarfState.Idle; break; }
-      if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) {
-        d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d);
-      } else {
-        if(!d.lastPathPartial && ++d.repathAttempts > 3) { app.logStuck(d); d.currentJob.onFail(app, d); break; }
-        if(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) {
-          d.state = DwarfState.WaitingForPath;
-        } else { d.currentJob.onFail(app, d); }
-      }
-      break;
-    case DwarfState.Blocked: app.handleBlocking(d); break;
-  }
 }
 
 void handleBlocking(ref GameApp app, ref Dwarf d) {
@@ -341,16 +202,17 @@ void handleBlocking(ref GameApp app, ref Dwarf d) {
     }
     if(SDL_GetTicks() - d.blockedSince > 4000) {
       d.blockedSince = 0;
-      d.state = DwarfState.Idle;
+      d.state = EntityState.Idle;
       d.currentJob.onFail(app, d);
     }
     return;
   }
   d.blockedSince = 0;
-  if(!app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach)) {
-    d.state = DwarfState.Idle;
-    d.currentJob.onFail(app, d);
-  } else { d.state = DwarfState.WaitingForPath; } // No longer blocked — repath
+  final switch(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ app.applyPathResult(r); })) {
+    case RepathResult.Unreachable: d.state = EntityState.Idle; d.currentJob.onFail(app, d); break;
+    case RepathResult.AtTarget: d.state = EntityState.Working; break;
+    case RepathResult.Pathing: d.state = EntityState.WaitingForPath; break;
+  }
 }
 
 /** dwarfTick, ticks all dwarves in random order */
@@ -363,7 +225,7 @@ void dwarfTick(ref GameApp app) {
     iota(app.world.dwarves.tickOrder.length).copy(app.world.dwarves.tickOrder[]);
   }
   app.world.dwarves.tickOrder.randomShuffle();
-  foreach(i; app.world.dwarves.tickOrder) { app.tickDwarf(app.world.dwarves[i]); }
+  foreach(i; app.world.dwarves.tickOrder) { app.tickEntity(app.world.dwarves[i]); }
   app.world.syncPathMarkers(app.showPaths);
   app.timed!syncBuildGhosts();
   app.timed!deriveInventory();
@@ -387,7 +249,7 @@ void ensureDwarves(ref GameApp app) {
 
 void addDwarf(ref GameApp app, ref Dwarf d) {
   d.idleTicks[1] = uniform(3, 18);
-  d.state = DwarfState.Idle;
+  d.state = EntityState.Idle;
   auto wp = app.world.tileToWorld(d.tile);
   d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
@@ -404,7 +266,7 @@ void spawnDwarf(ref GameApp app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
-  Dwarf d = Dwarf(DwarfData(nextDwarfUID++, randomColor(), tile));
+  Dwarf d; d.entity.data = EntityData!32(nextEntityUID++, randomColor(), tile);
   randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.syncInstances();
@@ -430,18 +292,18 @@ void removeDwarfNameLabel(ref GameApp app, ref Dwarf d) {
   d.nameLabel = size_t.max;
 }
 
-DwarfData[] saveDwarfs(ref GameApp app) {
+EntityData!32[] saveDwarfs(ref GameApp app) {
   if(app.world.dwarves is null) return [];
-  return app.world.dwarves[].map!(d => d.data).array;
+  return app.world.dwarves[].map!(d => d.entity.data).array;
 }
 
-void loadDwarfs(ref GameApp app, DwarfData[] data) {
+void loadDwarfs(ref GameApp app, EntityData!32[] data) {
   app.ensureDwarves();
-  foreach(ref dd; data) { Dwarf d; d.data = dd; app.addDwarf(d); }
+  foreach(ref dd; data) { Dwarf d; d.entity.data = dd; app.addDwarf(d); }
   app.world.dwarves.syncInstances();
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
-  foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextDwarfUID) nextDwarfUID = d.uid + 1;
+  foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextEntityUID) nextEntityUID = d.uid + 1;
 }
 
 void settleDwarves(ref GameApp app, float dt) {
