@@ -15,7 +15,7 @@ import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
 import matrix : translate, position, scale, translateScale;
 import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
-import jobs;
+import jobs : pickupJob, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
 import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import rnjesus : randomizeName;
 import sfx : play;
@@ -175,7 +175,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
     bool water = app.world.findNearestWater(d.tile, standAt) != noTile;
 
     if(hasFull || water) {
-      auto job = drinkJob();
+      auto job = drinkJob!Dwarf();
       if(!hasFull) {
         if(!hasEmpty) { job.prereqs ~= craftJob("CupMaking"); } // no cup at all -> craft one
         job.prereqs ~= fillCupJob(); // fill the (crafted or carried) cup
@@ -187,7 +187,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Rest
   if(d.needs[Need.Rest] >= 0.7f && d.needBackoff[Need.Rest] == 0) {
     d.needBackoff[Need.Rest] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Rest]*4u)));
-    app.dispatchJob(d, sleepJob(d.tile)); return(true); 
+    app.dispatchJob(d, sleepJob!Dwarf(d.tile)); return(true); 
   }
   return(false);
 }

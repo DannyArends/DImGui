@@ -5,18 +5,15 @@
 
 import game;
 
-import block : resourceType, itemOf, rawHasClass, spawnBlock, hasResource, findFreeBlock, findFreeClass, syncBlockInstances, noBlock, release;
+import block : resourceType, itemOf, rawHasClass, spawnBlock, findFreeClass, noBlock;
 import feature : interactFeaturesAt, getFeatureProgressRate;
-import lattice : tileToWorld, tileAbove, worldToTile, tileNeighbours;
-import pathfinding : pathfindTo, findGoalTile, repathTo, RepathResult;
+import lattice : tileAbove, tileNeighbours;
 import reactions : reactionFor;
 import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup;
 import scheduler : doPickup, failComplete, failReleaseRequeue, failRequeue, failReleaseComplete, pathTileFor, progressJob;
 import sfx : play;
-import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
-import tile : setTile, setWater, getWater, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, getSuccessors;
-import timing : timed;
-import vector : manhattan, manhattan2D;
+import stockpile : storeBlockAt;
+import tile : setTile, setWater, getWater, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour;
 import water : findNearestWater;
 
 enum JobState { Pending, Satisfied, Unavailable }                     /// Job states
@@ -277,10 +274,10 @@ Job!Dwarf fillCupJob() {
     onFail: &failComplete);
 }
 
-Job!Dwarf drinkJob() {
-  return Job!Dwarf("Drinking", noTile, ResourceClass.None, [], true, reach: Reach.OnTile,
+Job!T drinkJob(T)() {
+  return Job!T("Drinking", noTile, ResourceClass.None, [], true, reach: Reach.OnTile,
     onClaim: &claimSelf,
-    onArrive: (ref GameApp app, ref Dwarf d) {
+    onArrive: (ref GameApp app, ref T d) {
       app.progressJob(d, 0.5f, () {
         auto full = d.carrying.filter!(id => app.world.drops.itemOf(id).isWaterCup);
         if(!full.empty) {
@@ -327,11 +324,11 @@ Job!Dwarf craftJob(string name) {
     },
     onFail: &failReleaseRequeue);
 }
-Job!Dwarf sleepJob(int[3] atTile) {
-  return Job!Dwarf("Sleeping", atTile, ResourceClass.None, [], true, reach: Reach.OnTile,
+Job!T sleepJob(T)(int[3] atTile) {
+  return Job!T("Sleeping", atTile, ResourceClass.None, [], true, reach: Reach.OnTile,
     basePriority: 100,
     onClaim: &claimSelf,
-    onArrive: (ref GameApp app, ref Dwarf d) {
+    onArrive: (ref GameApp app, ref T d) {
       app.progressJob(d, 0.01f, () { d.needs[Need.Rest] = 0.0f; });   // ~100 ticks of standing still
     },
     onFail: &failComplete);
