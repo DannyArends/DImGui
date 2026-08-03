@@ -130,17 +130,16 @@ void assignShadowSlots(ref App app) {
   if(app.lights.scoreBuf.length < app.lights.length) app.lights.scoreBuf.length = app.lights.length;
   assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
   auto score = app.lights.scoreBuf[0 .. app.lights.length];
-  float slot = 0.0f;
+  uint slot = 0;
   foreach(i, ref light; app.lights) {
     light.computeCone();
     if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
       light.cull[1] = slot;
-      foreach(c; 0 .. NUM_CASCADES) app.shadows.assignSlot(cast(uint)(slot + c), cast(int)i);
+      foreach(c; 0 .. NUM_CASCADES) { app.shadows.assignSlot(cast(uint)(slot + c), cast(int)i); }
       slot += NUM_CASCADES; score[i] = -1.0f;
     } else {
-      bool hadSlot = light.cull[1] >= 0.0f;
       float sc = light.shadowScore(app.camera.position);
-      if(hadSlot) sc *= SHADOW_HYSTERESIS;
+      if(light.cull[1] >= 0.0f) { sc *= SHADOW_HYSTERESIS; }
       light.cull[1] = -1.0f; score[i] = sc;
     }
   }
@@ -149,7 +148,7 @@ void assignShadowSlots(ref App app) {
     foreach(i; 0 .. app.lights.length) { if(score[i] > 0.0f && (best == size_t.max || score[i] > score[best])) best = i; }
     if(best == size_t.max) break;
     app.shadows.assignSlot(cast(uint)slot, cast(int)best);
-    app.lights[best].cull[1] = slot++; score[best] = -1.0f;
+    app.lights[best].cull[1] = slot; slot++; score[best] = -1.0f;
   }
 }
 
