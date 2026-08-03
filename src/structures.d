@@ -31,7 +31,7 @@ public import images : ImageBuffer;
 public import imgui : GUI, saveSettings;
 public import instancing : DrawInstance;
 public import intersection : Intersection;
-public import lattice : Lattice, LatticeMap, noTile, builtTile, storedTile, FACE_OFFSETS, FACE_TANGENT;
+public import lattice : Diff, Lattice, LatticeMap, noTile, builtTile, storedTile, FACE_OFFSETS, FACE_TANGENT;
 public import line : Line;
 public import lights : LMode, Light, Lighting, Lights,  LIGHT_GRID, CLUSTER_COUNT, NIL;
 public import lsystem : LSystem, Rule, TurtleBrush, TurtleConfig, TurtleState;

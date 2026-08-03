@@ -6,25 +6,17 @@
 import game;
 
 import animal : removeChunkAnimals;
-import block : loadBlocks, saveBlocks, syncBlockInstances, ensureBlocks;
-import clouds : saveClouds, loadClouds;
-import dwarf : saveDwarfs, loadDwarfs, spawnDwarf, deleteDwarf, invalidatePaths;
+import dwarf : deleteDwarf, invalidatePaths;
 import events : removeGeometry;
-import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
-import inventory : deriveInventory;
-import io : ensureWorldDir, fixPath;
-import lattice : chunkCoord, localCoord, worldCoord, flatten, unflatten, Diff;
+import feature : removeAllFeatures, rebuildAllFeatures, addFeatureInstances;
+import io : fixPath;
+import lattice : chunkCoord, localCoord, worldCoord;
 import lights : updateSun;
 import jobs : jobQueue;
-import orders : loadOrders, saveOrders;
-import pathfinding : repathTo, RepathResult;
-import serialization : loadSections, saveSections;
-import stockpile : saveStockpiles, loadStockpiles;
+import persistence : loadWorld;
 import text : addWorldText, ensureWorldText;
 import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
-import vegetation : vegetationSection;
-import water : saveWater, loadWater;
 
 uint nextEntityUID = 1;    /// Global unique id for path-routable entities (dwarves, animals)
 
@@ -99,53 +91,6 @@ struct World {
 /** Compile-time guard: World satisfies the Lattice dims contract (in engine/lattice.d) */
 static assert(__traits(compiles, (ref World w) { float f = w.tileSize + w.tileHeight + w.yOffset; int i = w.chunkSize + w.chunkHeight; }),
               "World must expose the Lattice dims: tileSize/tileHeight/yOffset (float), chunkSize/chunkHeight (int)");
-
-/** Register every world-save section once. Closures capture `app`; keys are stable strings. */
-void registerPersistables(ref GameApp app) {
-  if(app.persistables.length > 0) return;
-
-  app.persistables ~= Persist.pod!(Diff!ResourceType)("diffs", () => flatten(app.world.data.diffs), (f) { app.world.data.diffs = unflatten(f); });
-  app.persistables ~= Persist.pod!(Diff!ubyte)("water", () => app.world.saveWater(), (f) { app.world.loadWater(f); });
-  app.persistables ~= Persist.pod!CloudDiff("clouds", () => app.world.saveClouds(), (f) { app.world.loadClouds(f); });
-  app.persistables ~= Persist.pod!(EntityData!32)("dwarfs", () => app.saveDwarfs(), (f) { app.loadDwarfs(f); });
-  app.persistables ~= Persist.pod!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
-  app.persistables ~= Persist.pod!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
-  app.persistables ~= Persist.pod!Order("jobs", () => app.saveOrders(), (o) { app.loadOrders(o); });
-  foreach(ref ftr; features) app.persistables ~= vegetationSection(app, ftr.name);
-}
-
-/** Create GPU side render objects and CPU side load instances into the world from HDD */
-void loadWorld(ref GameApp app) {
-  ensureWorldDir();
-  app.initFeatureMeshes();
-
-  app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
-  app.objects ~= app.world.inventory.ghost;
-
-  app.ensureBlocks();
-  foreach(ref ft; features) {
-    if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
-    if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
-  }
-
-  app.registerPersistables();
-  auto blobs = loadSections(app.world.worldPath(), app.verbose > 0);
-  foreach(ref p; app.persistables){ p.load(blobs); }
-
-  if(app.world.dwarves is null || app.world.dwarves.dwarves.length == 0) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
-
-  app.deriveInventory();
-  app.world.syncBlockInstances();
-}
-
-/** Save world diffs to disk */
-void saveWorld(ref GameApp app) {
-  app.registerPersistables();
-  Section[] all;
-  foreach(ref p; app.persistables) all ~= p.save();
-  saveSections(app.world.worldPath(), all, app.verbose > 0);
-  if(app.verbose) SDL_Log("saveWorld: %d sections", cast(int)all.length);
-}
 
 /** Dispatch a chunk build job to the next available worker thread */
 bool dispatchWorker(ref GameApp app, int[3] coord){
