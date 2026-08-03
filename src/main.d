@@ -7,7 +7,8 @@ import engine;
 
 import commandpool : createCommandPools;
 import compute : initializeCompute;
-import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout, registerRenderProviders;
+import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
+import descriptorupdate : registerRenderProviders;
 import devices : createLogicalDevice;
 import events : sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;

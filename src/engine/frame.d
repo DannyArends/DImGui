@@ -6,7 +6,7 @@
 import engine;
 
 import bone : updateBoneOffsets;
-import descriptor : repointDirtyDescriptors;
+import descriptorupdate : repointDirtyDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer, recordDepthPrePass, recordUploadPass;
 import compute : recordComputeCommandBuffer, ComputeStage, passEnabled, isStage;
 import imgui : recordImGuiCommandBuffer;

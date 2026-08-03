@@ -18,7 +18,7 @@ public import cone : Cone;
 public import color : Colors;
 public import cube : Cube;
 public import cylinder : Cylinder;
-public import descriptor : Descriptor, DescriptorProvider, DescriptorLayoutBuilder;
+public import descriptor : Descriptor, DescriptorProvider, DescriptorLayoutBuilder, DescriptorTarget;
 public import depthbuffer : DepthBuffer;
 public import deletion : CheckedDeletionQueue, DeletionQueue;
 public import frustum : Plane;

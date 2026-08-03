@@ -5,7 +5,7 @@
 
 import engine;
 
-import descriptor : updateDescriptorData;
+import descriptorupdate : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
 import framebuffer : cleanup;
 import geometry : bufferGeometries, draw;
