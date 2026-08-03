@@ -11,6 +11,7 @@ import lattice : tileToWorld, tileAbove, worldToTile, tileNeighbours;
 import pathfinding : pathfindTo, findGoalTile, repathTo, RepathResult;
 import reactions : reactionFor;
 import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup;
+import scheduler : doPickup, failComplete, failReleaseRequeue, failRequeue, failReleaseComplete, pathTileFor, progressJob;
 import sfx : play;
 import stockpile : findStockpileSlot, storeBlockAt, storedTileOf, withdrawBlock, acceptedByHolder;
 import tile : setTile, setWater, getWater, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour, getSuccessors;
