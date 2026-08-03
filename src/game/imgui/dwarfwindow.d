@@ -7,9 +7,10 @@ import game;
 
 import dwarf : spawnDwarf, deleteDwarf;
 import imgui : faIcon, iconText;
-import jobs : dispatchJob, jobQueue, dropBlockJob;
+import jobs : jobQueue, dropBlockJob;
 import lattice : tileToWorld;
 import resources : itemName, itemTex;
+import scheduler : dispatchJob;
 import textures : ImTextureRefFromID, idx;
 import widgets : drawCenteredText, text;
 

@@ -132,16 +132,6 @@ RepathResult repathTo(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach re
   return RepathResult.Pathing;
 }
 
-/** Check if object T is adjacent to targetTile. Requires T to have: tile */
-bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach = Reach.Adjacent) {
-  final switch(reach) {
-    case Reach.Adjacent: return(manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]);
-    case Reach.OnTile: return(obj.tile == targetTile);
-    case Reach.AdjacentOrAbove: return(obj.tile == targetTile.tileAbove || (manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]));
-    case Reach.AdjacentOrOnTile: return(obj.tile == targetTile || (manhattan2D(obj.tile, targetTile) == 1 && obj.tile[1] == targetTile[1]));
-  }
-}
-
 /** Closest standable tile satisfying `reach` around targetTile, or noTile. */
 int[3] findGoalTile(const World world, const int[3] targetTile, const int[3] from, Reach reach = Reach.Adjacent) {
   if(reach == Reach.OnTile) return world.isStandable(targetTile) ? targetTile : noTile;
