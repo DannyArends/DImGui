@@ -9,13 +9,11 @@ import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord;
 import lsystem : buildGrammar;
-import matrix : translateScale, segmentTransform;
+import matrix : translateScale;
 import noise : noiseHTT;
 import sfx : play;
-import tile : getTile;
 import turtlegfx : interpret;
 import vector : vAdd, manhattan;
-import vegetation : saveVegetation, loadVegetation;
 
 struct FeaturePartT {
   string mesh;
