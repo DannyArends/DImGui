@@ -8,7 +8,10 @@ import engine;
 import deletion : deAllocate;
 import framebuffer : createFramebuffer;
 import images : createNamedImage;
+import shadow : CASCADE_RADIUS;
 import vector : xyz, vSub, dot;
+
+enum uint MIN_SHADOW_DIM = 512;
 
 /** Per-slot shadow state (one per shadow map slot). */
 struct ShadowMap {
@@ -39,7 +42,7 @@ void initShadowMap(ref App app, ref Shadows map, size_t s, uint size) {
   map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.slots[s].view(1)], size, size, "Dynamic Shadow", s);
 }
 
-/** Resize shadow map s to `size`; defers old resources, re-points the descriptor next safe frame. */
+/** Resize shadow map in slot s to 'size'; defers old resources, re-points the descriptor next safe frame */
 void resizeShadowMap(ref App app, size_t s, uint size) {
   if(app.shadows.slots[s].extent.width == size) return;
   app.deAllocate(app.shadows.cmd.pass(0).framebuffers[s]);
@@ -56,9 +59,11 @@ void resizeShadowMap(ref App app, size_t s, uint size) {
   return max(light.intensity[0], light.intensity[1], light.intensity[2]) / (dot(d, d) + 1.0f);
 }
 
-/** Shadow map resolution for a light: full dimension for the directional sun, quarter for point/spot */
-@nogc uint shadowResolution(ref App app, ref Light light) nothrow {
-  return light.directional ? app.shadows.dimension : app.shadows.dimension / 2;
+/** Directional: size by coverage (near = full res), but cap far cascades to save memory. Point/spot: half. */
+@nogc uint shadowResolution(ref Shadows shadows, ref Light light, float radius) nothrow {
+  if(!light.directional) return clampPow2(shadows.dimension / 2, MIN_SHADOW_DIM, shadows.dimension);
+  uint want = cast(uint)(radius / CASCADE_RADIUS[0] * shadows.dimension + 0.5f); // = 2*radius/texel0
+  return clampPow2(want, MIN_SHADOW_DIM, shadows.dimension);   // no per-cascade cap
 }
 
 /** Bind slot s to light index owner; a change of owner forces an immediate static rebuild (bypasses round-robin) */

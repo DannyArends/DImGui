@@ -108,10 +108,10 @@ void updateShadowSlotMatrices(ref App app) {
     int first = cast(int)light.cull[1];
     if(first < 0) continue;
     uint count = light.directional ? NUM_CASCADES : 1u;
-    uint resolution = app.shadowResolution(light);
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
       float radius = (count > 1) ? ((c == count - 1) ? app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
+      uint resolution = app.shadows.shadowResolution(light, radius);
       app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
       uint before = app.shadows.slots[s].extent.width;
       app.resizeShadowMap(s, resolution);
@@ -121,17 +121,17 @@ void updateShadowSlotMatrices(ref App app) {
 }
 
 /** Pick at most one drifted cascade per frame (round-robin), then commit the matrix of every slot rebuilding this frame. */
-@nogc nothrow void selectStaticRebuilds(ref App app) {
+@nogc nothrow void pickStaticRebuilds(ref Shadows shadows) {
   foreach(step; 0 .. MAX_SHADOW_MAPS) {
-    uint s = cast(uint)((app.shadows.staticCursor + step) % MAX_SHADOW_MAPS);
-    if(!app.shadows.slots[s].dirty && (app.shadows.slots[s].pending || app.shadows.slots[s].outOfDate)) {
-      app.shadows.slots[s].dirty = true;
-      app.shadows.slots[s].pending = false;
-      app.shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS; break;
+    uint s = cast(uint)((shadows.staticCursor + step) % MAX_SHADOW_MAPS);
+    if(!shadows.slots[s].dirty && (shadows.slots[s].pending || shadows.slots[s].outOfDate)) {
+      shadows.slots[s].dirty = true;
+      shadows.slots[s].pending = false;
+      shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS; break;
     }
   }
   foreach(s; 0 .. MAX_SHADOW_MAPS) {
-    if(app.shadows.slots[s].dirty) { app.shadows.slots[s].committed = app.shadows.slots[s].desired; }
+    if(shadows.slots[s].dirty) { shadows.slots[s].committed = shadows.slots[s].desired; }
   }
 }
 
