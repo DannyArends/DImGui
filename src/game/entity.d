@@ -6,8 +6,9 @@
 import game;
 
 import inventory : InventorySlot;
+import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
 import resources : itemStack;
-import pathfinding : atDestination, followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
+import scheduler : atDestination;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 
