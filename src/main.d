@@ -18,12 +18,11 @@ import input : pollEvents, handleEvents;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shadow : createShadowMap;
-import shaders : createCompiler, addShaderMacros, loadShaders, RenderShaders, PostProcessShaders;
+import shaders : createCompiler, addShaderMacros, loadShaders;
 import reflection : createReflectionContext;
 import sampler : createSampler;
 import surface : createSurface, getBestColorFormat;
 import sfx : loadAllSoundEffect;
-import textures : Texture;
 import threading : initializeAsync, checkAsync;
 import timing : timed;
 import validation : createDebugCallback;
@@ -92,7 +91,7 @@ void run(string[] args = null) {
     app.timed!presentFrame();                                     /// Show frame
     app.time[LASTFRAME] = app.time[FRAMESTOP];                    /// Remember last time we stopped ?
     app.time[FRAMESTOP] = SDL_GetTicks();                         /// Stop the clock
-    if(isAndroid && app.totalFramesRendered == 100) app.reportWBOITCommitment();
+    if(isAndroid && app.totalFramesRendered == 100) { app.reportWBOITCommitment(); }
   }
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
   app.cleanup();

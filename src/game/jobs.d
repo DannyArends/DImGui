@@ -9,7 +9,7 @@ import block : resourceType, itemOf, rawHasClass, spawnBlock, findFreeClass, noB
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import lattice : tileAbove, tileNeighbours;
 import reactions : reactionFor;
-import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup;
+import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup, carriedOfClass;
 import scheduler : doPickup, failComplete, failReleaseRequeue, failRequeue, failReleaseComplete, pathTileFor, progressJob;
 import sfx : play;
 import stockpile : storeBlockAt;
@@ -58,7 +58,7 @@ const(int[3])[] activeTiles(const World world, string jobName) { return world.li
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
-  if(j.blockIDs.length == 0 && j.tileClass != ResourceClass.None && d.carrying.any!(cid => app.world.drops.resourceType(cid).hasClass(j.tileClass))) {
+  if(j.blockIDs.length == 0 && j.tileClass != ResourceClass.None && !app.carriedOfClass(d, j.tileClass).empty) {
     j.state = JobState.Satisfied; return; 
   }
   uint id = j.blockIDs.length ? j.blockIDs[0] : app.world.findFreeClass(d.tile, j.tileClass);
@@ -110,7 +110,7 @@ Job!Dwarf storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTi
   return Job!Dwarf("Store", toTile, type.toClass, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID], reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Dwarf d) {
       /* SDL_Log(cstr("STORED %s tgt=[%d,%d,%d]", d.name, d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2])); */
-      auto picked = d.carrying.filter!(id => app.world.drops.resourceType(id).hasClass(d.currentJob.tileClass));
+      auto picked = app.carriedOfClass(d, d.currentJob.tileClass);
       if(picked.empty) { d.currentJob.onFail(app, d); return; }
       auto blockID = picked.front;
       d.use(app.world.drops, blockID);  // remove from inventory (no builtTile)

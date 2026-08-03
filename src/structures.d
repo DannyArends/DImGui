@@ -43,7 +43,7 @@ public import pipeline : GraphicsPipeline;
 public import quaternion : Quaternion;
 public import renderpass : RenderPassInfo, RenderPass;
 public import serialization : Persist, Section;
-public import shaders : Shader, ShaderDef, ShaderStage, Specialization, IncluderContext;
+public import shaders : Shader, ShaderDef, ShaderStage, Specialization, IncluderContext, RenderShaders, PostProcessShaders;
 public import sparseset : SparseSet;
 public import square : Square;
 public import search : SearchState;
