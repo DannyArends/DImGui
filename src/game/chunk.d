@@ -165,7 +165,7 @@ void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f
   }
 }
 
-/** Generate tile geometry: per-tile pick AABBs, greedy-merged horizontal faces, unmerged sides. */
+/** Generate tile geometry: per-tile pick AABBs, greedy-merged faces. */
 void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
   wd.buildTileBounds(coord, data);              // pick AABBs (per-tile, unchanged granularity)
   foreach (f; 0 .. 6) wd.mergeFaces(coord, data, f);   // greedy-merge every face direction
