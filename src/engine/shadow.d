@@ -26,7 +26,10 @@ enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x s
 enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
 
 /** Per-slot shadow state (one per shadow map slot). */
-struct ShadowSlot {
+struct ShadowMap {
+  ImageBuffer image;                        /// Per-slot shadow map images (layer 0 static, layer 1 static+dynamic composite)
+  alias image this;
+
   bool dirty;                               /// Rebuild layer 0 this frame
   bool pending;                             /// Content changed (e.g. terrain edit): rebuild, drained one/frame via round-robin
   bool hadDynamic;                          /// Dynamic casters were in frustum last frame (recompose once when they leave)
@@ -37,9 +40,7 @@ struct ShadowSlot {
   @property @nogc nothrow bool outOfDate() const { return(desired != committed); }
 }
 
-struct ShadowMap {
-  ImageBuffer[] images;                     /// Per-slot shadow map images (layer 0 static, layer 1 static+dynamic composite)
-
+struct Shadows {
   VkSampler sampler;                        /// Comparison sampler for depth lookups
   Shader[] shaders;                         /// Shadow depth-only shader(s)
   CommandBuffer!2 cmd;                      /// Two-pass command buffer: static (0), dynamic (1)
@@ -51,13 +52,15 @@ struct ShadowMap {
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
   bool[] shadowDescriptorsDirty;            /// Per-frame flag: shadow sampler descriptors need rewriting
-  ShadowSlot[MAX_SHADOW_MAPS] slots;        /// Shadow Slots
+  ShadowMap[MAX_SHADOW_MAPS] slots;         /// Shadow Slots
 
   uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
   uint staticShadowInstances = 0;           /// Static shadow instances count
   uint dynamicShadowInstances = 0;          /// Dynamic shadow instances count
+
+  @property @nogc auto images() nothrow { return slots[].map!(m => m.image); }
 }
 
 struct LightUbo {
@@ -88,44 +91,43 @@ void createShadowMap(ref App app) {
 }
 
 /** Bind slot s to light index owner; a change of owner forces an immediate static rebuild (bypasses round-robin) */
-@nogc nothrow void assignSlot(ref ShadowMap shadows, uint s, int owner) {
+@nogc nothrow void assignSlot(ref Shadows shadows, uint s, int owner) {
   if(shadows.slots[s].owner != owner) { shadows.slots[s].owner = owner; shadows.slots[s].dirty = true; }
 }
 
 /** Initialize the ShadowMap strcuture on App */
 void initShadowPool(ref App app) {
-  app.shadows.images.length = MAX_SHADOW_MAPS;
   app.shadows.cmd.pass(0).framebuffers.length = app.shadows.cmd.pass(1).framebuffers.length = MAX_SHADOW_MAPS;
-  for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) { app.makeShadowMap(app.shadows, s, 32); }
+  for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) { app.initShadowMap(app.shadows, s, 32); }
 
   app.mainDeletionQueue.add((){
     foreach(ref fb; app.shadows.cmd.pass(0).framebuffers) { app.cleanup(fb); }
     foreach(ref fb; app.shadows.cmd.pass(1).framebuffers) { app.cleanup(fb); }
-    foreach(ref img; app.shadows.images) { app.cleanup(img); }
+    foreach(ref slot; app.shadows.slots) { app.cleanup(slot); }
   });
 }
 
 /** Create shadow image+view+framebuffer for slot l at the given square size */
-void makeShadowMap(ref App app, ref ShadowMap map, size_t s, uint size) {
+void initShadowMap(ref App app, ref Shadows map, size_t s, uint size) {
   VkImageUsageFlags usage;
   usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
   usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
   usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-  app.createNamedImage(map.images[s], size, size, map.format, VK_IMAGE_ASPECT_DEPTH_BIT, format("ShadowImage #%d", s),
+  app.createNamedImage(map.slots[s], size, size, map.format, VK_IMAGE_ASPECT_DEPTH_BIT, format("ShadowImage #%d", s),
                        VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
-  map.cmd.pass(0).framebuffers[s] = app.createFramebuffer(map.cmd.pass(0), [map.images[s].view(0)], size, size, "Static Shadow", s);
-  map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.images[s].view(1)], size, size, "Dynamic Shadow", s);
+  map.cmd.pass(0).framebuffers[s] = app.createFramebuffer(map.cmd.pass(0), [map.slots[s].view(0)], size, size, "Static Shadow", s);
+  map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.slots[s].view(1)], size, size, "Dynamic Shadow", s);
 }
 
 /** Resize shadow map s to `size`; defers old resources, re-points the descriptor next safe frame. */
 void resizeShadowMap(ref App app, size_t s, uint size) {
-  if(app.shadows.images[s].extent.width == size) return;
+  if(app.shadows.slots[s].extent.width == size) return;
   app.deAllocate(app.shadows.cmd.pass(0).framebuffers[s]);
   app.deAllocate(app.shadows.cmd.pass(1).framebuffers[s]);
-  app.deAllocate(app.shadows.images[s]);
-  app.makeShadowMap(app.shadows, s, size);
+  app.deAllocate(app.shadows.slots[s]);
+  app.initShadowMap(app.shadows, s, size);
   app.shadows.shadowDescriptorsDirty[] = true;
 }
 
@@ -168,9 +170,9 @@ void updateShadowSlotMatrices(ref App app) {
       int s = first + cast(int)c;
       float radius = (count > 1) ? ((c == count - 1) ? app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
       app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
-      uint before = app.shadows.images[s].extent.width;
+      uint before = app.shadows.slots[s].extent.width;
       app.resizeShadowMap(s, resolution);
-      if(app.shadows.images[s].extent.width != before) app.shadows.slots[s].dirty = true;  // reallocated: rebuild now
+      if(app.shadows.slots[s].extent.width != before) app.shadows.slots[s].dirty = true;  // reallocated: rebuild now
     }
   }
 }
@@ -393,15 +395,15 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       bool rebuilt = app.shadows.slots[s].dirty;
       if(rebuilt) {
         pushLabel(cmd, cstr("Static %d:%d in %d, reBuild: %d", first, c, s, rebuilt), Colors.lightgray);
-        app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.images[s].extent, true);
+        app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.slots[s].extent, true);
         app.shadows.slots[s].dirty = false;
         app.shadows.staticRebuilds++;
       }
       bool dyn = app.hasDynamicCasters(lFrustum);
       if(rebuilt || dyn || app.shadows.slots[s].hadDynamic) {
         pushLabel(cmd, cstr("Copy & Dynamic %d:%d in %d, had: %d", first, c, s, app.shadows.slots[s].hadDynamic), Colors.lightgray);
-        app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
-        app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.images[s].extent, false);
+        app.copyImageLayer(cmd, app.shadows.slots[s], 0, 1, app.shadows.slots[s].extent, app.shadows.format);
+        app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.slots[s].extent, false);
         popLabel(cmd);
       }
       app.shadows.slots[s].hadDynamic = dyn;

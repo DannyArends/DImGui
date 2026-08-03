@@ -52,7 +52,7 @@ public import search : SearchState;
 public import sdl : STARTUP, FRAMESTART, FRAMESTOP, LASTTICK, LASTFRAME;
 public import sync : WaitList, Sync, Fence;
 public import ssbo : SSBO, SSBOStore, SSBOList;
-public import shadow : ShadowMap;
+public import shadow : Shadows;
 public import sfx : Audio, WavFMT;
 public import text : WorldText;
 public import textures : Texture, Textures;
