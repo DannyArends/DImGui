@@ -7,7 +7,8 @@ import game;
 
 import block : resourceType;
 import io : dir, fixPath;
-import textures : transferTextureAsync, idx, toRGBA;
+import surface : toRGBA;
+import textures : transferTextureAsync, idx;
 
 struct ClassVal { ubyte cls; float value = 0.0f; }   // cls = cast(ubyte)ResourceClass — avoids the cross-module enum forward-ref
 

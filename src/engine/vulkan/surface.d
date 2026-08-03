@@ -25,6 +25,71 @@ void printSurfaceFormat(const VkSurfaceFormatKHR fmt) {
   }
 }
 
+/** Create a vulkan surface */
+void createSurface(ref App app) {
+  SDL_Vulkan_CreateSurface(app.window, app.instance, null, &app.surface);
+
+  app.mainDeletionQueue.add((){
+    if(app.swapChain != null){ if(app.verbose) SDL_Log("Destroy Swapchain: %p", app.swapChain);
+      vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator); // We need to destoy the SwapChain
+    }
+    if(app.surface != null){ if(app.verbose) SDL_Log("Destroy Surface: %p", app.surface);
+      vkDestroySurfaceKHR(app.instance, app.surface, app.allocator); // Before destroying the Surface
+    }
+  });
+  if(app.verbose) SDL_Log("SDL_Vulkan_CreateSurface: %p", app.surface);
+}
+
+
+/** Check file extension to determine if something is a texture */
+bool isTexture(string path){
+  auto ext = extension(path); if(ext == ".jpg" || ext == ".png"){ return(true); }
+  return(false);
+}
+
+/** Convert an SDL-Surface to RGBA32 format */
+void toRGBA(ref SDL_Surface* surface, uint verbose = 0) {
+  SDL_Surface* adapted = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
+  if (adapted) {
+    SDL_DestroySurface(surface); // Free the SDL_Surface
+    surface = adapted;
+    if(verbose > 1) SDL_Log("Adapted: %p [%dx%d:%d]", surface, surface.w, surface.h, (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel));
+  }
+}
+
+/** VRAM cap for a texture's longest side; data maps (AO/normal/rough) tolerate half the albedo resolution. */
+int textureCap(string path) {
+  int cap = isAndroid ? 1024 : 2048;
+  foreach(suffix; ["_Ao", "_ao", "_Nor", "_nor", "_normal", "_Rough", "_rough", "_Metal", "_metal"]) { if(path.indexOf(suffix) >= 0) return(cap / 2); }
+  return(cap);
+}
+
+/** Downscale an oversized surface in place to fit maxDim on its longest side (preserves aspect). */
+void clampSurface(ref SDL_Surface* surface, int maxDim) {
+  int m = (surface.w > surface.h) ? surface.w : surface.h;
+  if(m <= maxDim) return;
+  float s = cast(float)maxDim / m;
+  int nw = cast(int)(surface.w * s + 0.5f); if(nw < 1) nw = 1;
+  int nh = cast(int)(surface.h * s + 0.5f); if(nh < 1) nh = 1;
+  SDL_Surface* scaled = SDL_ScaleSurface(surface, nw, nh, SDL_SCALEMODE_LINEAR);
+  if(scaled) { SDL_DestroySurface(surface); surface = scaled; }
+}
+
+/** Create a 1x1 white SDL_Surface */
+SDL_Surface* createDummySDLSurface() {
+  SDL_Surface* surface = SDL_CreateSurface(1, 1, SDL_PIXELFORMAT_RGBA32);
+  if(!surface){
+    SDL_Log("Failed to create dummy SDL_Surface: %s", SDL_GetError());
+    return null;
+  }
+
+  if(SDL_MUSTLOCK(surface)) SDL_LockSurface(surface);
+  auto whitePixel = SDL_MapRGBA(SDL_GetPixelFormatDetails(surface.format), null, 255, 255, 255, 255);
+  memcpy(surface.pixels, &whitePixel, SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel);
+  if(SDL_MUSTLOCK(surface)) SDL_UnlockSurface(surface);
+  return surface;
+}
+
 int isSupported(ref App app, VkFormat requested){
   int s = -1;
   foreach(i, fmt; app.surfaceformats) { if(fmt.format == requested) s = cast(int)(i); }
@@ -68,18 +133,3 @@ VkSurfaceFormatKHR getBestColorFormat(ref App app){
   } }
   assert(0, "No suitable format found");
 }
-
-void createSurface(ref App app) {
-  SDL_Vulkan_CreateSurface(app.window, app.instance, null, &app.surface);
-
-  app.mainDeletionQueue.add((){
-    if(app.swapChain != null){ if(app.verbose) SDL_Log("Destroy Swapchain: %p", app.swapChain);
-      vkDestroySwapchainKHR(app.device, app.swapChain, app.allocator); // We need to destoy the SwapChain
-    }
-    if(app.surface != null){ if(app.verbose) SDL_Log("Destroy Surface: %p", app.surface);
-      vkDestroySurfaceKHR(app.instance, app.surface, app.allocator); // Before destroying the Surface
-    }
-  });
-  if(app.verbose) SDL_Log("SDL_Vulkan_CreateSurface: %p", app.surface);
-}
-

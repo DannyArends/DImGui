@@ -11,7 +11,8 @@ import animation : animateAsset;
 import io : dir, fixPath;
 import material : registerMaterials;
 import images : cleanup;
-import textures: isTexture, mapTextures, transferTextureAsync, toRGBA, checkPendingTextures, clampSurface, textureCap;
+import surface : clampSurface, textureCap, isTexture, toRGBA;
+import textures: mapTextures, transferTextureAsync, checkPendingTextures;
 
 /** Worker thread that loads textures and assimp assets off the main thread, returning results via messages */
 class TaskThread : Thread {
