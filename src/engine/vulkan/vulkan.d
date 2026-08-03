@@ -5,7 +5,6 @@
 
 import engine;
 
-import buffer : cleanup;
 import imgui : saveSettings;
 import threading : stopWorkers;
 
@@ -48,6 +47,7 @@ void cleanup(ref App app) {
 
   SDL_Log("Free any pending texture buffers (GPU is idle, all fences signaled)");
   foreach(ref p; app.textures.pending) {
+    import geometrybuffer : cleanup;
     app.cleanup(p.staging);
     SDL_DestroySurface(p.texture.surface);
     vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);
@@ -65,7 +65,10 @@ void cleanup(ref App app) {
     igDestroyContext(null);
   }
   SDL_Log("Direct cleanup all Geometry objects");
-  foreach(ref object; app.objects) { app.cleanup(object); }
+  foreach(ref object; app.objects) {
+    import geometry : cleanup;
+    app.cleanup(object);
+  }
 
   SDL_Log("Flush the main deletion queue, and delete permanent Vulkan resources");
   app.mainDeletionQueue.flush();

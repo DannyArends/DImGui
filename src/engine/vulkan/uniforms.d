@@ -35,7 +35,7 @@ struct ParticleUniformBuffer {
 alias UBO = GPUAllocation[];
 
 void createUBO(ref App app, Descriptor descriptor) {
-  SDL_Log("Create UBO at %s, size = %d, D struct size = %d", toStringz(descriptor.base), descriptor.bytes, UniformBufferObject.sizeof);
+  SDL_Log("Create UBO at %s, size = %d", toStringz(descriptor.base), descriptor.bytes);
   if(descriptor.base in app.ubos) return;
   app.ubos[descriptor.base] = new GPUAllocation[](app.framesInFlight);
 
