@@ -17,7 +17,7 @@ import imgui : initializeImGui, startImGuiFrame;
 import input : pollEvents, handleEvents;
 import instance : createInstance;
 import sdl : initializeSDL;
-import shadow : createShadowMap;
+import shadow : createShadows;
 import shaders : createCompiler, addShaderMacros, loadShaders;
 import reflection : createReflectionContext;
 import sampler : createSampler;
@@ -60,7 +60,7 @@ void run(string[] args = null) {
   app.loadShaders(app.wboit, WBOITShaders);                     /// Load the WBOIT resolve shaders
   app.registerRenderProviders();
   if(app.hasCompute) app.initializeCompute();                   /// Load the compute shader
-  app.createShadowMap();                                        /// Create the shadow resources, renderpass, and shader
+  app.createShadows();                                        /// Create the shadow resources, renderpass, and shader
   app.createCommandPools();                                     /// Create the rendering CommandPool
   app.createSampler();                                          /// Create a texture sampler
   app.createImGuiDescriptorPool();                              /// ImGui DescriptorPool

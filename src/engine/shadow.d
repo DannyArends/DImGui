@@ -5,17 +5,16 @@
 
 import engine;
 
-import deletion : deAllocate;
 import descriptor : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
-import framebuffer : createFramebuffer, cleanup;
+import framebuffer : cleanup;
 import geometry : bufferGeometries, draw;
 import lights : computeLightSpace, computeRadius;
-import images : cleanup, copyImageLayer, createNamedImage;
+import images : cleanup, copyImageLayer;
 import sampler : createShadowSampler;
-import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
+import shaders : createStageInfo, loadShaders;
+import shadowmap : assignSlot, initShadowMap, resizeShadowMap, shadowResolution, shadowScore;
 import validation : popLabel, pushLabel;
-import vector : xyz, vSub, dot;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
 enum float SHADOW_HYSTERESIS = 1.25f;
@@ -24,21 +23,6 @@ enum float SHADOW_SLOPE_BIAS = 10.0f;    /// Slope-scaled bias (dominant term fo
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
 enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x split, last radius is camera-derived
 enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
-
-/** Per-slot shadow state (one per shadow map slot). */
-struct ShadowMap {
-  ImageBuffer image;                        /// Per-slot shadow map images (layer 0 static, layer 1 static+dynamic composite)
-  alias image this;
-
-  bool dirty;                               /// Rebuild layer 0 this frame
-  bool pending;                             /// Content changed (e.g. terrain edit): rebuild, drained one/frame via round-robin
-  bool hadDynamic;                          /// Dynamic casters were in frustum last frame (recompose once when they leave)
-  int owner = -1;                           /// Light index that owns this slot (-1 = none); reassignment forces an immediate rebuild
-  Matrix desired;                           /// Desired light-space matrix this frame (pre-commit)
-  Matrix committed;                         /// Light-space matrix layer 0 was actually rendered with (committed)
-
-  @property @nogc nothrow bool outOfDate() const { return(desired != committed); }
-}
 
 struct Shadows {
   VkSampler sampler;                        /// Comparison sampler for depth lookups
@@ -63,14 +47,7 @@ struct Shadows {
   @property @nogc auto images() nothrow { return slots[].map!(m => m.image); }
 }
 
-struct LightUbo {
-  Matrix scene;                       /// Scene root transform
-  float[4] cascadeSplit;              /// per-cascade shadowDistance splits (x,y,z used)
-  Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
-  uint nlights;                       /// Active light count
-}
-
-void createShadowMap(ref App app) {
+void createShadows(ref App app) {
   app.createShadowMapRenderPass(app.shadows.cmd.pass(0), VK_ATTACHMENT_LOAD_OP_CLEAR);
   app.createShadowMapRenderPass(app.shadows.cmd.pass(1), VK_ATTACHMENT_LOAD_OP_LOAD);
   app.initShadowPool();
@@ -78,21 +55,11 @@ void createShadowMap(ref App app) {
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/vertex.shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
-/** Shadow importance: brighter & nearer scores higher; <=0 means ineligible. */
-@nogc float shadowScore(ref Light light, float[3] eye) nothrow {
-  if(light.directional || !light.enabled) return -1.0f;
-  float[3] d = vSub(light.position.xyz, eye);
-  return max(light.intensity[0], light.intensity[1], light.intensity[2]) / (dot(d, d) + 1.0f);
-}
-
-/** Shadow map resolution for a light: full dimension for the directional sun, quarter for point/spot */
-@nogc uint shadowResolution(ref App app, ref Light light) nothrow {
-  return light.directional ? app.shadows.dimension : app.shadows.dimension / 2;
-}
-
-/** Bind slot s to light index owner; a change of owner forces an immediate static rebuild (bypasses round-robin) */
-@nogc nothrow void assignSlot(ref Shadows shadows, uint s, int owner) {
-  if(shadows.slots[s].owner != owner) { shadows.slots[s].owner = owner; shadows.slots[s].dirty = true; }
+struct LightUbo {
+  Matrix scene;                       /// Scene root transform
+  float[4] cascadeSplit;              /// per-cascade shadowDistance splits (x,y,z, nCascades)
+  Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
+  uint nlights;                       /// Active light count
 }
 
 /** Initialize the ShadowMap strcuture on App */
@@ -105,30 +72,6 @@ void initShadowPool(ref App app) {
     foreach(ref fb; app.shadows.cmd.pass(1).framebuffers) { app.cleanup(fb); }
     foreach(ref slot; app.shadows.slots) { app.cleanup(slot); }
   });
-}
-
-/** Create shadow image+view+framebuffer for slot l at the given square size */
-void initShadowMap(ref App app, ref Shadows map, size_t s, uint size) {
-  VkImageUsageFlags usage;
-  usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-  usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-  usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-  usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-  app.createNamedImage(map.slots[s], size, size, map.format, VK_IMAGE_ASPECT_DEPTH_BIT, format("ShadowImage #%d", s),
-                       VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
-  map.cmd.pass(0).framebuffers[s] = app.createFramebuffer(map.cmd.pass(0), [map.slots[s].view(0)], size, size, "Static Shadow", s);
-  map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.slots[s].view(1)], size, size, "Dynamic Shadow", s);
-}
-
-/** Resize shadow map s to `size`; defers old resources, re-points the descriptor next safe frame. */
-void resizeShadowMap(ref App app, size_t s, uint size) {
-  if(app.shadows.slots[s].extent.width == size) return;
-  app.deAllocate(app.shadows.cmd.pass(0).framebuffers[s]);
-  app.deAllocate(app.shadows.cmd.pass(1).framebuffers[s]);
-  app.deAllocate(app.shadows.slots[s]);
-  app.initShadowMap(app.shadows, s, size);
-  app.shadows.shadowDescriptorsDirty[] = true;
 }
 
 /** Assign shadow-map slots: directional cascades first, then the top-K point/spot lights by score. */
