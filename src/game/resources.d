@@ -5,6 +5,7 @@
 
 import game;
 
+import block : resourceType;
 import io : dir, fixPath;
 import textures : transferTextureAsync, idx, toRGBA;
 
@@ -40,12 +41,17 @@ struct Item {
   uint amount = 0;                             /// units of `contents` held (0 => empty; a full cup = 1)
 }
 
-// Primitives on ResourceT
+/** Primitives on ResourceT */
 @nogc bool hasClass(ResourceType t, ResourceClass c) pure nothrow {
   foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return true; } } return false;
 }
 @nogc float classVal(ResourceType t, ResourceClass c) pure nothrow {
   foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return cv.value; } } return 0.0f;
+}
+
+/** Carried block ids whose resource matches class cls */
+auto carriedOfClass(ref GameApp app, ref Dwarf d, ResourceClass cls) {
+  return d.carrying.filter!(id => app.world.drops.resourceType(id).hasClass(cls));
 }
 
 // INVARIANT: Name-based conversions: a ResourceType maps to the ResourceClass of the SAME name (and back). 
