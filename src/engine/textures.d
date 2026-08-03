@@ -7,7 +7,8 @@ import engine;
 
 import buffer : createBuffer, copyBufferToImage;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
-import descriptor : createDescriptorSet, updateDescriptorSet;
+import descriptor : createDescriptorSet;
+import descriptorupdate : updateDescriptorSet;
 import images : nameImageBuffer, generateMipmaps, imageSize, createImage, transitionImageLayout, createNamedImage;
 import io : dir;
 import validation : nameVulkanObject;

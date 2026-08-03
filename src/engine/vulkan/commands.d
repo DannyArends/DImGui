@@ -7,7 +7,7 @@ import engine;
 
 import boundingbox : computeBoundingBox;
 import commandpool : createCommandBuffer;
-import descriptor : updateDescriptorData;
+import descriptorupdate : updateDescriptorData;
 import frustum : cullFrustum, extractFrustum;
 import geometry : draw, bufferGeometries;
 import matrix : multiply;
