@@ -8,12 +8,12 @@ import game;
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord;
-import quaternion : angleAxis, qMul, rotate;
-import lsystem : buildGrammar, turnAxis, turnAngle;
+import lsystem : buildGrammar;
 import matrix : translateScale, segmentTransform;
 import noise : noiseHTT;
 import sfx : play;
 import tile : getTile;
+import turtlegfx : interpret;
 import vector : vAdd, manhattan;
 import vegetation : saveVegetation, loadVegetation;
 
@@ -95,6 +95,18 @@ private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
   return null;
 }
 
+/** Primitive mesh name bound to grammar symbol `sym` in `ft`'s brushes, or "" if unbound. */
+private string brushMesh(ref immutable FeatureT ft, char sym) {
+  foreach(ref br; ft.brushes){ if(br.symbol == sym){ return(br.mesh); } } return("");
+}
+
+/** Append a batch of instances to a feature mesh: record the run on f, flag buffer + cull bounds. */
+private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] insts) {
+  if(mesh is null) return;
+  f.instanceRuns ~= mesh.addInstances(insts);
+  mesh.syncInstances();
+}
+
 /** Create and register one instanced primitive mesh per (feature, part/brush mesh); skips keys already built. */
 void initFeatureMeshes(ref GameApp app) {
   foreach(ref ft; features) foreach(name; chain(ft.parts.map!(p => p.mesh), ft.brushes.map!(b => b.mesh))) {
@@ -135,18 +147,6 @@ float getFeatureProgressRate(ref GameApp app, int[3] tile) {
   auto ft = app.featureTypeAt(tile); return ft ? ft.progressRate : 0.25f;
 }
 
-/** Primitive mesh name bound to grammar symbol `sym` in `ft`'s brushes, or "" if unbound. */
-private string brushMesh(ref immutable FeatureT ft, char sym) {
-  foreach(ref br; ft.brushes){ if(br.symbol == sym){ return(br.mesh); } } return("");
-}
-
-/** Append a batch of instances to a feature mesh: record the run on f, flag buffer + cull bounds. */
-private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] insts) {
-  if(mesh is null) return;
-  f.instanceRuns ~= mesh.addInstances(insts);
-  mesh.syncInstances();
-}
-
 /** Mark a feature's tile-penalty footprint: a column for tall features (trunk part or L-system), else the root. */
 private void markFootprint(ref World world, ref Feature f, ref immutable FeatureT ft) {
   if(ft.tilePenalty <= 0.0f) return;
@@ -154,32 +154,6 @@ private void markFootprint(ref World world, ref Feature f, ref immutable Feature
   foreach(uint h; 0 .. (tall ? f.height : 1)){
     world.data.tilePenalties[[f.rootTile[0], f.rootTile[1] + cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
   }
-}
-
-/** Interpret an already-iterated L-system string, emitting DrawInstances into the brushes' meshes.
-    Turtle local frame: heading is +Y. Turns are applied in the turtle's own frame (right-multiply). */
-DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
-  DrawInstance[][char] instances;
-  TurtleState st = TurtleState(origin, orient0);
-  TurtleState[] stack;
-
-  foreach(c; symbols) {
-    switch(c) {
-      case '(': stack ~= st; break;
-      case ')': if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; } break;
-      case 'X': break;
-      default:
-        const ax = turnAxis(c);
-        if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(turnAngle(c, cfg), ax)); break; }
-        if(auto br = c in cfg.brush) {
-          const Matrix R = rotate(st.orient);
-          instances[c] ~= DrawInstance(segmentTransform(st.pos, R, br.radius, br.length), br.material, br.color);
-          if(br.advance){ st.pos = st.pos.vAdd([R[4]*br.length*0.95f, R[5]*br.length*0.95f, R[6]*br.length*0.95f]); }
-        }
-      break;
-    }
-  }
-  return instances;
 }
 
 /** True if this feature type drops a Food-class raw (a forageable bush). */
