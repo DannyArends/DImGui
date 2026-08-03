@@ -76,39 +76,102 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   }
 }
 
-/** Record a tile's AABB into chunk bounds and per-tile pick data (if it produced faces) */
-void addTileBounds(ref ChunkData data, float[3] lo, float[3] hi, int i, size_t faceStart) {
-  if (data.tileInstances.length > faceStart) {
-    data.tileBmin ~= lo;
-    data.tileBmax ~= hi;
-    data.pickIndices ~= i;
+/** True if face `f` of the tile at world-coord `wc` is exposed (neighbour empty / above chunk). */
+@nogc bool faceExposed(immutable(WorldData) wd, ref ChunkData data, int[3] coord, int[3] wc, int f) nothrow {
+  auto n = tileNeighbours(wc)[f];
+  if (wd.chunkCoord(n) == coord) {
+    auto ln = wd.localCoord(n);
+    return ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
   }
+  return !wd.isSolid(n);
 }
 
-/** Generate tile face instances, AABB, and pick data with neighbour culling */
-void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
+/** One instance covering a w×d tile run of face `f` at plane-tile (x0,y,z0); UV tiles w×d. */
+@nogc DrawInstance mergedFace(immutable(WorldData) wd, int[3] coord, int f, int x0, int y, int z0, int w, int d, ResourceType mat) nothrow {
   float ts = wd.tileSize, th = wd.tileHeight;
+  float[3] a = wd.worldPos(wd.worldCoord(coord, [x0,       y, z0]));
+  float[3] b = wd.worldPos(wd.worldCoord(coord, [x0 + w-1, y, z0 + d-1]));
+  float px = (a[0] + b[0]) * 0.5f;
+  float py =  a[1] + wd.yOffset;
+  float pz = (a[2] + b[2]) * 0.5f;
+  float[12] fd = faceData(f, px, py, pz, ts, th);
+  fd[0] *= w; fd[1] *= w; fd[2] *= w;
+  fd[6] *= d; fd[7] *= d; fd[8] *= d;
+  auto inst = DrawInstance(fd, cast(int)mat, f);
+  inst.uvRect = [0.0f, 0.0f, cast(float)w, cast(float)d];
+  return inst;
+}
 
+/** Per-tile pick AABBs for every surface tile — render-independent, keeps picking at tile granularity. */
+void buildTileBounds(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
+  float ts = wd.tileSize, th = wd.tileHeight;
   for (int i = 0; i < wd.tileCount; i++) {
     if (data.tileTypes[i] == ResourceType.None) continue;
     auto lc = wd.tileCoord(i);
     if (!wd.onChunkBoundary(lc) && wd.isBuried(data.tileTypes, i, lc)) continue;
     auto wc = wd.worldCoord(coord, lc);
-    float[3] p = wd.worldPos(wc);
-    float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
-    auto neighbours = tileNeighbours(wc);
-    size_t faceStart = data.tileInstances.length;
-    foreach (f; 0 .. 6) {
-      bool exposed;
-      if (wd.chunkCoord(neighbours[f]) == coord) {
-        auto ln = wd.localCoord(neighbours[f]);
-        exposed = ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
-      } else { exposed = !wd.isSolid(neighbours[f]); }
-      if (!exposed) continue;
-      data.tileInstances ~= DrawInstance(faceData(f, px,py,pz, ts,th), cast(int)data.tileTypes[i], f);
-    }
-    data.addTileBounds([px - ts/2, py - th/2, pz - ts/2], [px + ts/2, py + th/2, pz + ts/2], i, faceStart);
+    bool exposed = false;
+    foreach (f; 0 .. 6) if (wd.faceExposed(data, coord, wc, f)) { exposed = true; break; }
+    if (!exposed) continue;
+    float[3] p = wd.worldPos(wc); float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
+    data.tileBmin ~= [px - ts/2, py - th/2, pz - ts/2];
+    data.tileBmax ~= [px + ts/2, py + th/2, pz + ts/2];
+    data.pickIndices ~= i;
   }
+}
+
+/** Greedy-merge exposed horizontal faces (f = 2 top, 3 bottom) into spanned quads, per y-plane. */
+void mergeHorizontalFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f) {
+  immutable cs = wd.chunkSize;
+  auto cell = new ResourceType[cs * cs];   // material with an exposed face at (x,z), else None
+  auto used = new bool[cs * cs];
+  for (int y = 0; y < wd.chunkHeight; y++) {
+    cell[] = ResourceType.None; used[] = false;
+    bool any = false;
+    for (int z = 0; z < cs; z++) for (int x = 0; x < cs; x++) {
+      auto t = data.tileTypes[wd.tileIndex([x, y, z])];
+      if (t == ResourceType.None) continue;
+      if (wd.faceExposed(data, coord, wd.worldCoord(coord, [x, y, z]), f)) { cell[z*cs + x] = t; any = true; }
+    }
+    if (!any) continue;
+    for (int z = 0; z < cs; z++) for (int x = 0; x < cs; x++) {
+      int k = z*cs + x;
+      if (used[k] || cell[k] == ResourceType.None) continue;
+      auto mat = cell[k];
+      int w = 1; while (x + w < cs && !used[k + w] && cell[k + w] == mat) w++;
+      int d = 1;
+      grow: while (z + d < cs) {
+        for (int xx = 0; xx < w; xx++) { int kk = (z + d)*cs + x + xx; if (used[kk] || cell[kk] != mat) break grow; }
+        d++;
+      }
+      for (int dz = 0; dz < d; dz++) for (int dx = 0; dx < w; dx++) used[(z + dz)*cs + x + dx] = true;
+      data.tileInstances ~= wd.mergedFace(coord, f, x, y, z, w, d, mat);
+    }
+  }
+}
+
+/** Emit side faces (f = 0,1,4,5) one instance per face (unmerged for now). */
+void emitVerticalFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
+  float ts = wd.tileSize, th = wd.tileHeight;
+  for (int i = 0; i < wd.tileCount; i++) {
+    if (data.tileTypes[i] == ResourceType.None) continue;
+    auto lc = wd.tileCoord(i);
+    if (!wd.onChunkBoundary(lc) && wd.isBuried(data.tileTypes, i, lc)) continue;
+    auto wc = wd.worldCoord(coord, lc);
+    float[3] p = wd.worldPos(wc); float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
+    foreach (f; [0, 1, 4, 5]) {
+      if (!wd.faceExposed(data, coord, wc, f)) continue;
+      data.tileInstances ~= DrawInstance(faceData(f, px, py, pz, ts, th), cast(int)data.tileTypes[i], f);
+    }
+  }
+}
+
+/** Generate tile geometry: per-tile pick AABBs, greedy-merged horizontal faces, unmerged sides. */
+void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
+  wd.buildTileBounds(coord, data);            // pick AABBs (per-tile, unchanged granularity)
+  wd.mergeHorizontalFaces(coord, data, 2);    // tops
+  wd.mergeHorizontalFaces(coord, data, 3);    // bottoms
+  wd.emitVerticalFaces(coord, data);          // sides (merge later if needed)
 }
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
