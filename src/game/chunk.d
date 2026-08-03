@@ -11,14 +11,15 @@ import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
 import game : GameApp;
 import gameobjects : Chunk;
-import lattice : surfaceLevel, tileCoord, tileIndex, tileToWorld, worldToTile, onChunkBoundary, chunkCoord, localCoord, worldCoord, tileNeighbours;
+import lattice : surfaceLevel, tileCoord, tileIndex, onChunkBoundary, chunkCoord, localCoord, worldCoord, tileNeighbours;
 import intersection : intersects;
-import tile : getTile, isBuried, isSolid;
+import tile : isBuried, isSolid;
 import hits : getHits;
 import noise : noise2D;
 import textures : idx;
 import feature : buildFeatureData;
-import vector : cross, dot;
+
+enum float SEAM_BLEED = 0.001f;   // fraction of a tile; closes T-junction hairlines
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
@@ -104,8 +105,9 @@ static immutable int[3][6] FACE_AXES = [
   float py = (a[1] + b[1]) * 0.5f + wd.yOffset;              // midpoint: correct for Y-spanning walls
   float pz = (a[2] + b[2]) * 0.5f;
   float[12] fd = faceData(f, px, py, pz, ts, th);
-  fd[0] *= u; fd[1] *= u; fd[2] *= u;                        // U column (X or Z per face)
-  fd[6] *= v; fd[7] *= v; fd[8] *= v;                        // V column (Z or Y per face)
+  float su = u + SEAM_BLEED, sv = v + SEAM_BLEED;
+  fd[0] *= su; fd[1] *= su; fd[2] *= su;
+  fd[6] *= sv; fd[7] *= sv; fd[8] *= sv;
   auto inst = DrawInstance(fd, cast(int)mat, f);
   inst.uvRect = [0.0f, 0.0f, cast(float)u, cast(float)v];
   return inst;
