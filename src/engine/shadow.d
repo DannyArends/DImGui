@@ -326,11 +326,12 @@ void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
 /** True if any in-frustum dynamic (moving) caster exists for this slot; static-only slots skip the per-frame recompose. */
 @nogc bool hasDynamicCasters(ref App app, Plane[6] lFrustum) nothrow {
   foreach(obj; app.objects) {
-    if(!obj.isVisible || !obj.castShadow || obj.isStatic || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-    if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;
-    return true;
+    if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;   // Only triangle produce shadows
+    if(!obj.isVisible || !obj.castShadow || obj.isStatic) continue;     // Visible, Casting, and Static
+    if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;  // Inside the Frustum
+    return(true);
   }
-  return false;
+  return(false);
 }
 
 /** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
@@ -360,9 +361,9 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   vkCmdSetDepthBias(cmd, SHADOW_DEPTH_BIAS * scale, 0.0f, SHADOW_SLOPE_BIAS * scale);
 
   foreach(obj; app.objects) {
-    if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-    if(obj.isStatic != staticPhase) continue;
-    if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;
+    if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;                 // Only triangle produce shadows
+    if(!obj.isVisible || !obj.castShadow || obj.isStatic != staticPhase) continue;    // Visible, Casting, and right phase
+    if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;                // Inside the Frustum
     ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
     app.draw(obj, cmd);
   }

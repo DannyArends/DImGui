@@ -220,7 +220,7 @@ void growClusterBufferIfNeeded(ref App app) {
 /** Assign shadow slots, update matrices, flag static rebuilds, and finalise the light SSBO for this frame. */
 void computeActiveLighting(ref App app) {
   if(app.lights.staticDirty) {
-    foreach(ref slot; app.shadows.slots) { slot.dirty = true; };
+    foreach(ref slot; app.shadows.slots) { slot.dirty = true; }
     app.lights.staticDirty = false;
   }
   app.assignShadowSlots();
