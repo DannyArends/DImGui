@@ -189,7 +189,6 @@ void createShadowMapGraphicsPipeline(ref App app) {
   app.shadows.pipeline.createLayout(app, pipelineLayoutInfo, app.swapDeletionQueue);
   if(app.verbose) SDL_Log(" - shadow map pipeline layout created: %p", app.shadows.pipeline.layout);
 
-  auto stages = createStageInfo(app.shadows.shaders);
   auto bindingDescription = Vertex.getBindingDescription();
   auto attributeDescriptions= Vertex.getShadowDescriptions();
 
@@ -244,8 +243,6 @@ void createShadowMapGraphicsPipeline(ref App app) {
 
   VkGraphicsPipelineCreateInfo pipelineInfo = {
     sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-    stageCount: cast(uint)stages.length,
-    pStages: &stages[0],
     pVertexInputState: &vertexInputInfo,
     pInputAssemblyState: &inputAssembly,
     pViewportState: &viewportState,
@@ -257,7 +254,13 @@ void createShadowMapGraphicsPipeline(ref App app) {
     renderPass: app.shadows.cmd.pass(0),
     subpass: 0
   };
-  app.shadows.pipeline.create(app, pipelineInfo, "Shadows", app.swapDeletionQueue);
+  foreach(animated; [false, true]) {
+    auto spec = Specialization(animated: animated);
+    auto stages = app.createStageInfo(app.shadows.shaders, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, spec);
+    pipelineInfo.stageCount = cast(uint)stages.info.length;
+    pipelineInfo.pStages = &stages.info[0];
+    app.shadows.pipeline.create(app, pipelineInfo, animated ? "Shadow: Animated" : "Shadow: Static", app.swapDeletionQueue, spec);
+  }
 }
 
 /** Update the shadow mapping UBO */
@@ -292,7 +295,6 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
     pClearValues: staticPhase ? &clearDepth : null,
   };
   vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
 
   VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
   vkCmdSetViewport(cmd, 0, 1, &vp);
@@ -305,10 +307,13 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   float scale = CASCADE_RADIUS[0] / slotRadius;                   // 1.0 for cascade 0, smaller for wider cascades
   vkCmdSetDepthBias(cmd, SHADOW_DEPTH_BIAS * scale, 0.0f, SHADOW_SLOPE_BIAS * scale);
 
+  VkPipeline bound = null;
   foreach(obj; app.objects) {
     if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;                 // Only triangle produce shadows
     if(!obj.isVisible || !obj.castShadow || obj.isStatic != staticPhase) continue;    // Visible, Casting, and right phase
     if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;                // Inside the Frustum
+    VkPipeline req = app.shadows.pipeline.pipeline(Specialization(animated: obj.isAnimated));
+    if(req != bound) { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, req); bound = req; }
     ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
     app.draw(obj, cmd);
   }
