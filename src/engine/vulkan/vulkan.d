@@ -47,7 +47,7 @@ void cleanup(ref App app) {
 
   SDL_Log("Free any pending texture buffers (GPU is idle, all fences signaled)");
   foreach(ref p; app.textures.pending) {
-    import geometrybuffer : cleanup;
+    import buffer : cleanup;
     app.cleanup(p.staging);
     SDL_DestroySurface(p.texture.surface);
     vkDestroyFence(app.device, p.cmdBuffer.fence, app.allocator);

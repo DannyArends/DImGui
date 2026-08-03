@@ -5,10 +5,10 @@
 
 import engine;
 
-import buffer : createBuffer, copyBufferToImage, cleanup;
+import buffer : createBuffer, copyBufferToImage;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet, updateDescriptorSet;
-import images : nameImageBuffer, generateMipmaps, imageSize, createImage, cleanup, transitionImageLayout, createNamedImage;
+import images : nameImageBuffer, generateMipmaps, imageSize, createImage, transitionImageLayout, createNamedImage;
 import io : dir;
 import validation : nameVulkanObject;
 import views : createImageView, createLayerViews;
@@ -60,12 +60,14 @@ struct Textures {
 
 /** DeAllocate a Texture: free its ImGui descriptor set first, then the backing image */
 @nogc void cleanup(ref App app, ref Texture texture) nothrow {
+  import images : cleanup;
   if(texture.imID) { vkFreeDescriptorSets(app.device, app.pools[Stage.IMGUI], 1, &texture.imID); texture.imID = null; }
   app.cleanup(texture.buffer);
 }
 
 /** Check pending textures */
 void checkPendingTextures(ref App app) {
+  import buffer : cleanup;
   size_t i = 0;
   while(i < app.textures.pending.length) {
     auto p = app.textures.pending[i];

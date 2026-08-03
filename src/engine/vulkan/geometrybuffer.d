@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : cleanup, createAllocation, createBuffer;
+import buffer : createAllocation, createBuffer;
 import deletion : deAllocate;
 import validation : nameVulkanObject;
 
@@ -31,6 +31,7 @@ struct GeometryBuffer(T = ubyte) {
 }
 
 @nogc void cleanup(T)(ref App app, ref GeometryBuffer!T buffer) nothrow {
+  import buffer : cleanup;
   foreach(i; 0 .. buffer.staging.length){ app.cleanup(buffer.staging[i]); }
   foreach(i; 0 .. buffer.vb.length) {
     if(buffer.vb[i]) vkDestroyBuffer(app.device, buffer.vb[i], app.allocator);
