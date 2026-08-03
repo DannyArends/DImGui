@@ -5,11 +5,13 @@
 
 import game;
 
-import block : resourceType, findFreeClass, noBlock;
+import block : resourceType, findFreeClass, noBlock, release;
 import pathfinding : findGoalTile, pathfindTo;
-import jobs : flatten, jobQueue;
+import jobs : flatten, jobQueue, storeJob;
 import lattice : tileToWorld, worldToTile;
-import tile : getSuccessors, tileAbove, isTileOccupied;
+import resources : hasClass;
+import stockpile : acceptedByHolder, findStockpileSlot, storedTileOf, withdrawBlock;
+import tile : getSuccessors, tileAbove, isTileOccupied, hasStandableNeighbour;
 import vector : manhattan, manhattan2D;
 
 /** Advance the job stack — removes the active sub-job and clears the dwarf's current goal */
