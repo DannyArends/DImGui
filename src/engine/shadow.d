@@ -108,10 +108,10 @@ void updateShadowSlotMatrices(ref App app) {
     int first = cast(int)light.cull[1];
     if(first < 0) continue;
     uint count = light.directional ? NUM_CASCADES : 1u;
+    uint resolution = app.shadows.shadowResolution(light);
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
       float radius = (count > 1) ? ((c == count - 1) ? app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
-      uint resolution = app.shadows.shadowResolution(light, radius);
       app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
       uint before = app.shadows.slots[s].extent.width;
       app.resizeShadowMap(s, resolution);
