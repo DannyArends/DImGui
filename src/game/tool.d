@@ -5,23 +5,25 @@
 
 import game;
 
+import block : release;
 import camera : castRay;
 import chunk : getBestTile;
 import ghost : getGhostTile, syncBuildGhosts;
 import lattice : tileToWorld, tileAbove, tileBelow;
 import feature : hasFeature;
 import inventory : placeTile, computeDragPreview;
-import jobs : tryAssign, jobQueue, miningJob, interactFeatureJob;
+import jobs : jobQueue, miningJob, interactFeatureJob;
 import hits : getHits;
 import gameobjects : PendingBuild;
 import geometry : setColor;
 import stockpile : createStockpile;
 import tile : getTileAt, getWater, setWater;
 import matrix : translateScale;
+import scheduler : tryAssign;
 import vegetation : getBestVegetation;
 import water : WATER_MAX;
 
-enum ToolMode : ubyte { Info, Select, Mine, Interact, Build, Stockpile, Water }
+enum ToolMode : ubyte { Info, Select, Mine, Interact, Build, Stockpile, Cancel, Water }
 enum ToolKind : ubyte { Query, RayPaint, BuildPaint }
 
 struct Tool {
@@ -61,6 +63,22 @@ void waterCommit(ref GameApp app, int[3] tile) {
   app.world.setWater(tile, cast(ubyte)min(WATER_MAX, cur + 3));
 }
 
+/** Cancel: remove any queued or in-progress designation whose target is this tile. */
+void cancelCommit(ref GameApp app, int[3] tile) {
+  // drop matching jobs from the queue (release their block reservations first)
+  foreach(ref j; jobQueue) if(j.targetTile == tile) app.world.drops.release(j.blockIDs);
+  jobQueue = jobQueue.filter!(j => j.targetTile != tile).array;
+
+  // abort any dwarf currently working that tile
+  if(app.world.dwarves !is null) foreach(ref d; app.world.dwarves.dwarves) {
+    if(d.hasJob && d.currentJob.targetTile == tile) {
+      foreach(ref j; d.jobStack) app.world.drops.release(j.blockIDs);
+      d.clearGoal();
+    }
+  }
+  app.syncBuildGhosts();
+}
+
 void openBuildSelection(ref GameApp app) {
   if(app.world.inventory.paint.preview.length == 0) return;
   app.world.inventory.buildSelection = [];
@@ -77,6 +95,7 @@ immutable Tool[] tools = [
   Tool(ToolMode.Interact, cast(string)ICON_FA_TREE, Colors.forestgreen, &interactHighlight, ToolKind.RayPaint, &interactCommit, false),
   Tool(ToolMode.Build, cast(string)ICON_FA_TROWEL, Colors.dodgerblue, &buildHighlight, ToolKind.BuildPaint, null, false),
   Tool(ToolMode.Stockpile, cast(string)ICON_FA_WAREHOUSE, Colors.gold, &stockpileHighlight,ToolKind.RayPaint, null, true),
+  Tool(ToolMode.Cancel, cast(string)ICON_FA_BAN, Colors.khaki, &mineHighlight, ToolKind.RayPaint, &cancelCommit, true),
   Tool(ToolMode.Water, cast(string)ICON_FA_WATER, Colors.dodgerblue, &waterHighlight, ToolKind.RayPaint, &waterCommit, false),
 ];
 
@@ -98,7 +117,7 @@ void infoPress(ref GameApp app, float[3][2] ray) {
 void selectPress(ref GameApp app, float[3][2] ray) {
   int[3] wc;
   auto hits = app.getHits(ray, app.showRays);
-  Job job;
+  Job!Dwarf job;
   if(app.getBestTile(ray, wc)) job = miningJob(wc);
   foreach(ref ft; features) {
     bool matchFeature(string g) { return ft.parts.any!(p => g == ft.name ~ ":" ~ p.mesh) || ft.brushes.any!(b => g == ft.name ~ ":" ~ b.mesh); }

@@ -53,7 +53,8 @@ OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible 
   object.mName = stripExtension(baseName(to!string(path)));
   object.mData = loadMetaData(scene, verbose);
 
-  object.bounds.calculateBounds(scene, scene.mRootNode, Matrix());
+  object.box = new BoundingBox();
+  object.box.bounds.calculateBounds(scene, scene.mRootNode, Matrix());
 
   object.materials = loadMaterials(scene, path);
   object.animations = loadAnimations(scene, object, verbose);
@@ -64,7 +65,7 @@ OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible 
     isVisible = true;
   }
 
-  object.instances[0] = object.bounds.computeScaleAdjustment(); // Adjust the scale to 4.0f
+  object.instances[0] = object.box.bounds.computeScaleAdjustment(); // Adjust the scale to 4.0f
 
   if (verbose) {
     SDL_Log("Model '%s' loaded successfully.", toStringz(object.mName));

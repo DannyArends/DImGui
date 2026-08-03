@@ -51,7 +51,6 @@ string[] listAudioDevices() {
 
 /** Initialize audio and open an audio channel */
 void openAudio(ref App app, int rate = 44100, int size = 1024, bool verbose = false) {
-  Audio sfx;
   auto devices = listAudioDevices();
   SDL_AudioSpec spec;
   spec.freq = rate;

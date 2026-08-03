@@ -10,7 +10,7 @@ import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : assignShadowSlots, updateShadowSlotMatrices, selectStaticRebuilds;
+import shadow : assignShadowSlots, updateShadowSlotMatrices, pickStaticRebuilds;
 import textures : mapTextures;
 import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : xyzw, w;
@@ -86,6 +86,7 @@ size_t removeLight(ref App app, size_t index) {
   if(index != last){ app.lights[index] = app.lights[last]; }
   app.lights.scoreBuf.length = app.lights.length = last;
   app.buffers["LightMatrices"].invalidate();
+  foreach(ref slot; app.shadows.slots) { if(slot.owner == cast(int)index || slot.owner == cast(int)last){ slot.owner = -1; } }
   return((index != last) ? last : size_t.max);
 }
 
@@ -216,12 +217,15 @@ void growClusterBufferIfNeeded(ref App app) {
   }
 }
 
-/** Assign shadow slots, update matrices, amortise rebuilds, and finalise the light SSBO for this frame. */
+/** Assign shadow slots, update matrices, flag static rebuilds, and finalise the light SSBO for this frame. */
 void computeActiveLighting(ref App app) {
-  if(app.lights.staticDirty) { app.shadows.staticDirty[] = true; app.lights.staticDirty = false; }
+  if(app.lights.staticDirty) {
+    foreach(ref slot; app.shadows.slots) { slot.dirty = true; }
+    app.lights.staticDirty = false;
+  }
   app.assignShadowSlots();
   app.updateShadowSlotMatrices();
-  app.selectStaticRebuilds();
+  app.shadows.pickStaticRebuilds();
   foreach(ref light; app.lights) light.direction = light.direction.xyz.normalize().xyzw(light.direction[3]);
   app.buffers["LightMatrices"].invalidate();
   app.growClusterBufferIfNeeded();

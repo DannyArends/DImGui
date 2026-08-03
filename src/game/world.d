@@ -5,33 +5,28 @@
 
 import game;
 
-import block : loadBlocks, saveBlocks, syncBlockInstances, ensureBlocks;
-import clouds : saveClouds, loadClouds;
-import dwarf : saveDwarfs, loadDwarfs, spawnDwarf, deleteDwarf;
+import animal : removeChunkAnimals;
+import dwarf : deleteDwarf, invalidatePaths;
 import events : removeGeometry;
-import feature : Feature, removeAllFeatures, rebuildAllFeatures, addFeatureInstances, initFeatureMeshes;
-import inventory : deriveInventory;
-import io : ensureWorldDir, fixPath;
-import lattice : chunkCoord, localCoord, worldCoord, flatten, unflatten, Diff;
+import feature : removeAllFeatures, rebuildAllFeatures, addFeatureInstances;
+import io : fixPath;
+import lattice : chunkCoord, localCoord, worldCoord;
 import lights : updateSun;
 import jobs : jobQueue;
-import orders : loadOrders, saveOrders;
-import pathfinding : invalidatePaths, repathTo;
-import serialization : loadSections, saveSections;
-import stockpile : saveStockpiles, loadStockpiles;
+import persistence : loadWorld;
 import text : addWorldText, ensureWorldText;
 import tile : tileBelow, getTile, isStandable, isPassable;
 import vector : sqDist, vAdd, vMul, x, y, z;
-import vegetation : vegetationSection;
-import water : saveWater, loadWater;
+
+uint nextEntityUID = 1;    /// Global unique id for path-routable entities (dwarves, animals)
 
 /** World configuration and coordinate system settings, safe to send to worker threads as immutable */
 struct WorldData {
   int[3] seed        = [42, 67, 69];              /// [height seed, tile seed]
-  int renderDistance =  isAndroid ? 6 : 4;        /// Render distance used to load / evict chunks
+  int renderDistance =  isAndroid ? 6 : 5;        /// Render distance used to load / evict chunks
   float tileSize     =  1.0f;                     /// Size (X & Z) of a tile
   float tileHeight   =  1.0f;                     /// Y-spacing between tiles
-  int chunkSize      =  isAndroid ? 32 : 128;      /// Number of tiles (X & Z) in a chunk
+  int chunkSize      =  isAndroid ? 32 : 64;      /// Number of tiles (X & Z) in a chunk
   int chunkHeight    =  64;                       /// Number of tiles (Y) in a chunk
   float yOffset      = -20.0f;                    /// Global world Y-offset
   LatticeMap!(ResourceType[uint]) diffs;
@@ -67,6 +62,7 @@ struct World {
   StockpileField stockpiles;
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
+  Animals animals;                                          /// Foraging animals
   Weather weather;                                          /// Weather
   WaterTiles water;                                         /// single batched water render object
   PathMarker paths;                                         /// Path markers
@@ -95,53 +91,6 @@ struct World {
 /** Compile-time guard: World satisfies the Lattice dims contract (in engine/lattice.d) */
 static assert(__traits(compiles, (ref World w) { float f = w.tileSize + w.tileHeight + w.yOffset; int i = w.chunkSize + w.chunkHeight; }),
               "World must expose the Lattice dims: tileSize/tileHeight/yOffset (float), chunkSize/chunkHeight (int)");
-
-/** Register every world-save section once. Closures capture `app`; keys are stable strings. */
-void registerPersistables(ref GameApp app) {
-  if(app.persistables.length > 0) return;
-
-  app.persistables ~= Persist.pod!(Diff!ResourceType)("diffs", () => flatten(app.world.data.diffs), (f) { app.world.data.diffs = unflatten(f); });
-  app.persistables ~= Persist.pod!(Diff!ubyte)("water", () => app.world.saveWater(), (f) { app.world.loadWater(f); });
-  app.persistables ~= Persist.pod!CloudDiff("clouds", () => app.world.saveClouds(), (f) { app.world.loadClouds(f); });
-  app.persistables ~= Persist.pod!DwarfData("dwarfs", () => app.saveDwarfs(), (f) { app.loadDwarfs(f); });
-  app.persistables ~= Persist.pod!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
-  app.persistables ~= Persist.pod!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
-  app.persistables ~= Persist.pod!Order("jobs", () => app.saveOrders(), (o) { app.loadOrders(o); });
-  foreach(ref ftr; features) app.persistables ~= vegetationSection(app, ftr.name);
-}
-
-/** Create GPU side render objects and CPU side load instances into the world from HDD */
-void loadWorld(ref GameApp app) {
-  ensureWorldDir();
-  app.initFeatureMeshes();
-
-  app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
-  app.objects ~= app.world.inventory.ghost;
-
-  app.ensureBlocks();
-  foreach(ref ft; features) {
-    if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
-    if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
-  }
-
-  app.registerPersistables();
-  auto blobs = loadSections(app.world.worldPath(), app.verbose > 0);
-  foreach(ref p; app.persistables){ p.load(blobs); }
-
-  if(app.world.dwarves is null || app.world.dwarves.dwarves.length == 0) { for(int x = 0; x <= 7; x++) app.spawnDwarf(); }
-
-  app.deriveInventory();
-  app.world.syncBlockInstances();
-}
-
-/** Save world diffs to disk */
-void saveWorld(ref GameApp app) {
-  app.registerPersistables();
-  Section[] all;
-  foreach(ref p; app.persistables) all ~= p.save();
-  saveSections(app.world.worldPath(), all, app.verbose > 0);
-  if(app.verbose) SDL_Log("saveWorld: %d sections", cast(int)all.length);
-}
 
 /** Dispatch a chunk build job to the next available worker thread */
 bool dispatchWorker(ref GameApp app, int[3] coord){
@@ -191,6 +140,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.loaded.remove(coord);
       app.removeAllFeatures(coord);
+      app.removeChunkAnimals(coord);
       evicted = true;
     }
   }

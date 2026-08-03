@@ -5,26 +5,26 @@
 
 import engine;
 
-import deletion : deAllocate;
-import descriptor : updateDescriptorData;
+import descriptorupdate : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
-import framebuffer : createFramebuffer, cleanup;
+import framebuffer : cleanup;
 import geometry : bufferGeometries, draw;
 import lights : computeLightSpace, computeRadius;
-import images : cleanup, copyImageLayer, createNamedImage;
+import images : cleanup, copyImageLayer;
 import sampler : createShadowSampler;
-import shaders : createStageInfo, loadShaders, Shader, ShaderDef;
+import shaders : createStageInfo, loadShaders;
+import shadowmap : assignSlot, initShadowMap, resizeShadowMap, shadowResolution, shadowScore;
 import validation : popLabel, pushLabel;
-import vector : xyz, vSub, dot;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
+enum float SHADOW_HYSTERESIS = 1.25f;
+enum float SHADOW_DEPTH_BIAS = 2.0f;     /// Constant depth bias
+enum float SHADOW_SLOPE_BIAS = 10.0f;    /// Slope-scaled bias (dominant term for grazing faces)
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
 enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x split, last radius is camera-derived
 enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
 
-struct ShadowMap {
-  ImageBuffer[] images;                     /// Per-slot shadow map images (layer 0 static, layer 1 static+dynamic composite)
-
+struct Shadows {
   VkSampler sampler;                        /// Comparison sampler for depth lookups
   Shader[] shaders;                         /// Shadow depth-only shader(s)
   CommandBuffer!2 cmd;                      /// Two-pass command buffer: static (0), dynamic (1)
@@ -36,26 +36,18 @@ struct ShadowMap {
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
 
   bool[] shadowDescriptorsDirty;            /// Per-frame flag: shadow sampler descriptors need rewriting
-  bool[] staticDirty;                       /// Per-slot flag: rebuild layer 0 this frame
-  bool[] staticPending;                     /// content changed (e.g. terrain edit): needs rebuild, drained one/frame
-  Matrix[] slotStaticMatrix;                /// lightSpaceMatrix the slot's static layer (layer 0) was rendered with
-  Matrix[MAX_SHADOW_MAPS] slotVP;           /// Per-slot desired light-space matrix this frame (pre-commit)
+  ShadowMap[MAX_SHADOW_MAPS] slots;         /// Shadow Slots
 
   uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
   uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
   uint activeShadowMaps = 0;                /// slots rendered this frame
   uint staticShadowInstances = 0;           /// Static shadow instances count
   uint dynamicShadowInstances = 0;          /// Dynamic shadow instances count
+
+  @property @nogc auto images() nothrow { return slots[].map!(m => m.image); }
 }
 
-struct LightUbo {
-  Matrix scene;                       /// Scene root transform
-  float[4] cascadeSplit;              /// per-cascade shadowDistance splits (x,y,z used)
-  Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
-  uint nlights;                       /// Active light count
-}
-
-void createShadowMap(ref App app) {
+void createShadows(ref App app) {
   app.createShadowMapRenderPass(app.shadows.cmd.pass(0), VK_ATTACHMENT_LOAD_OP_CLEAR);
   app.createShadowMapRenderPass(app.shadows.cmd.pass(1), VK_ATTACHMENT_LOAD_OP_LOAD);
   app.initShadowPool();
@@ -63,75 +55,49 @@ void createShadowMap(ref App app) {
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/vertex.shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
-/** Shadow importance: brighter & nearer scores higher; <=0 means ineligible. */
-@nogc float shadowScore(ref Light light, float[3] eye) nothrow {
-  if(light.directional || !light.enabled) return -1.0f;
-  float[3] d = vSub(light.position.xyz, eye);
-  return max(light.intensity[0], light.intensity[1], light.intensity[2]) / (dot(d, d) + 1.0f);
+struct LightUbo {
+  Matrix scene;                       /// Scene root transform
+  float[4] cascadeSplit;              /// per-cascade shadowDistance splits (x,y,z, nCascades)
+  Matrix[MAX_SHADOW_MAPS] slotVP;     /// per-slot view-proj
+  uint nlights;                       /// Active light count
 }
 
-/** Shadow map resolution for a light: full dimension for the directional sun, quarter for point/spot. */
-@nogc uint shadowResolution(ref App app, ref Light light) nothrow {
-  return light.directional ? app.shadows.dimension : app.shadows.dimension / 2;
-}
-
+/** Initialize the ShadowMap strcuture on App */
 void initShadowPool(ref App app) {
-  if(app.shadows.images.length == MAX_SHADOW_MAPS) return;
-  app.shadows.images.length = app.shadows.staticDirty.length = app.shadows.staticPending.length = app.shadows.slotStaticMatrix.length = MAX_SHADOW_MAPS;
   app.shadows.cmd.pass(0).framebuffers.length = app.shadows.cmd.pass(1).framebuffers.length = MAX_SHADOW_MAPS;
-  for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) app.makeShadowMap(app.shadows, s, 32);
+  for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) { app.initShadowMap(app.shadows, s, 32); }
 
   app.mainDeletionQueue.add((){
-    foreach(fb; app.shadows.cmd.pass(0).framebuffers) { app.cleanup(fb); }
-    foreach(fb; app.shadows.cmd.pass(1).framebuffers) { app.cleanup(fb); }
-    foreach(ref img; app.shadows.images) { app.cleanup(img); }
+    foreach(ref fb; app.shadows.cmd.pass(0).framebuffers) { app.cleanup(fb); }
+    foreach(ref fb; app.shadows.cmd.pass(1).framebuffers) { app.cleanup(fb); }
+    foreach(ref slot; app.shadows.slots) { app.cleanup(slot); }
   });
 }
-
-/** Create shadow image+view+framebuffer for slot l at the given square size. */
-void makeShadowMap(ref App app, ref ShadowMap map, size_t s, uint size) {
-  VkImageUsageFlags usage;
-  usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-  usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-  usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-  usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-  app.createNamedImage(map.images[s], size, size, map.format, VK_IMAGE_ASPECT_DEPTH_BIT, format("ShadowImage #%d", s),
-                       VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 2);
-  map.cmd.pass(0).framebuffers[s] = app.createFramebuffer(map.cmd.pass(0), [map.images[s].view(0)], size, size, "Static Shadow", s);
-  map.cmd.pass(1).framebuffers[s] = app.createFramebuffer(map.cmd.pass(1), [map.images[s].view(1)], size, size, "Dynamic Shadow", s);
-}
-
-/** Resize shadow map s to `size`; defers old resources, re-points the descriptor next safe frame. */
-void resizeShadowMap(ref App app, size_t s, uint size) {
-  if(app.shadows.images[s].extent.width == size) return;
-  app.deAllocate(app.shadows.cmd.pass(0).framebuffers[s]);
-  app.deAllocate(app.shadows.cmd.pass(1).framebuffers[s]);
-  app.deAllocate(app.shadows.images[s]);
-  app.makeShadowMap(app.shadows, s, size);
-  app.shadows.shadowDescriptorsDirty[] = true;
-}
-
 
 /** Assign shadow-map slots: directional cascades first, then the top-K point/spot lights by score. */
 void assignShadowSlots(ref App app) {
   if(app.lights.scoreBuf.length < app.lights.length) app.lights.scoreBuf.length = app.lights.length;
   assert(app.lights.scoreBuf.length >= app.lights.length, "scoreBuf not sized for light count");
   auto score = app.lights.scoreBuf[0 .. app.lights.length];
-  float slot = 0.0f;
+  uint slot = 0;
   foreach(i, ref light; app.lights) {
     light.computeCone();
     if(light.directional && light.enabled && slot + NUM_CASCADES <= MAX_SHADOW_MAPS) {
-      light.cull[1 .. 2] = [slot]; slot += NUM_CASCADES; score[i] = -1.0f;
+      light.cull[1] = slot;
+      foreach(c; 0 .. NUM_CASCADES) { app.shadows.assignSlot(cast(uint)(slot + c), cast(int)i); }
+      slot += NUM_CASCADES; score[i] = -1.0f;
     } else {
-      light.cull[1] = -1.0f; score[i] = light.shadowScore(app.camera.position);
+      float sc = light.shadowScore(app.camera.position);
+      if(light.cull[1] >= 0.0f) { sc *= SHADOW_HYSTERESIS; }
+      light.cull[1] = -1.0f; score[i] = sc;
     }
   }
   for(uint picked = 0; picked < app.shadows.budget && slot < MAX_SHADOW_MAPS; picked++) {
     size_t best = size_t.max;
     foreach(i; 0 .. app.lights.length) { if(score[i] > 0.0f && (best == size_t.max || score[i] > score[best])) best = i; }
     if(best == size_t.max) break;
-    app.lights[best].cull[1] = slot++; score[best] = -1.0f;
+    app.shadows.assignSlot(cast(uint)slot, cast(int)best);
+    app.lights[best].cull[1] = slot; slot++; score[best] = -1.0f;
   }
 }
 
@@ -142,29 +108,31 @@ void updateShadowSlotMatrices(ref App app) {
     int first = cast(int)light.cull[1];
     if(first < 0) continue;
     uint count = light.directional ? NUM_CASCADES : 1u;
-    uint resolution = app.shadowResolution(light);
+    uint resolution = app.shadows.shadowResolution(light);
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
       float radius = (count > 1) ? ((c == count - 1) ? app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
-      app.shadows.slotVP[s] = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
-      uint before = app.shadows.images[s].extent.width;
+      app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
+      uint before = app.shadows.slots[s].extent.width;
       app.resizeShadowMap(s, resolution);
-      if(app.shadows.images[s].extent.width != before) app.shadows.staticDirty[s] = true;  // reallocated: rebuild now
+      if(app.shadows.slots[s].extent.width != before) app.shadows.slots[s].dirty = true;  // reallocated: rebuild now
     }
   }
 }
 
 /** Pick at most one drifted cascade per frame (round-robin), then commit the matrix of every slot rebuilding this frame. */
-@nogc nothrow void selectStaticRebuilds(ref App app) {
+@nogc nothrow void pickStaticRebuilds(ref Shadows shadows) {
   foreach(step; 0 .. MAX_SHADOW_MAPS) {
-    uint s = cast(uint)((app.shadows.staticCursor + step) % MAX_SHADOW_MAPS);
-    if(!app.shadows.staticDirty[s] && (app.shadows.staticPending[s] || app.shadows.slotVP[s] != app.shadows.slotStaticMatrix[s])) {
-      app.shadows.staticDirty[s] = true;
-      app.shadows.staticPending[s] = false;
-      app.shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS; break;
+    uint s = cast(uint)((shadows.staticCursor + step) % MAX_SHADOW_MAPS);
+    if(!shadows.slots[s].dirty && (shadows.slots[s].pending || shadows.slots[s].outOfDate)) {
+      shadows.slots[s].dirty = true;
+      shadows.slots[s].pending = false;
+      shadows.staticCursor = (s + 1) % MAX_SHADOW_MAPS; break;
     }
   }
-  foreach(s; 0 .. MAX_SHADOW_MAPS) if(app.shadows.staticDirty[s]) app.shadows.slotStaticMatrix[s] = app.shadows.slotVP[s];
+  foreach(s; 0 .. MAX_SHADOW_MAPS) {
+    if(shadows.slots[s].dirty) { shadows.slots[s].committed = shadows.slots[s].desired; }
+  }
 }
 
 /** Shadow map render pass creation */
@@ -205,44 +173,6 @@ void createShadowMapRenderPass(ref App app, ref RenderPass pass, VkAttachmentLoa
   pass.create(app, info, (load? "Dynamic Shadows" : "Static Shadows"), app.mainDeletionQueue);
 }
 
-/** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
-void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
-  VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
-  VkRect2D sc = { extent: { width: ext.width, height: ext.height } };
-
-  VkRenderPassBeginInfo rp = {
-    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    renderPass: pass, framebuffer: pass.framebuffers[s],
-    renderArea: sc,
-    clearValueCount: staticPhase ? 1 : 0,
-    pClearValues: staticPhase ? &clearDepth : null,
-  };
-  vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
-
-  VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
-  vkCmdSetViewport(cmd, 0, 1, &vp);
-  vkCmdSetScissor(cmd, 0, 1, &sc);
-  uint slot = cast(uint)s;
-  vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
-
-  float slotRadius = (s < NUM_CASCADES) ? CASCADE_RADIUS[s] : CASCADE_RADIUS[0];
-  if(slotRadius <= 0.0f) slotRadius = app.camera.visibleRadius;   // far cascade
-  float scale = CASCADE_RADIUS[0] / slotRadius;                    // 1.0 for cascade 0, smaller for wider cascades
-  vkCmdSetDepthBias(cmd, 3.0f * scale, 0.0f, 4.5f * scale);
-
-  foreach(obj; app.objects) {
-    if(!obj.isVisible || !obj.castShadow || obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;
-    if(obj.box !is null) {
-      if(!lFrustum.aabbInFrustum(obj.box.wmin, obj.box.wmax)) continue;
-    }
-    if(obj.isStatic != staticPhase) continue;
-    ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
-    app.draw(obj, cmd);
-  }
-  vkCmdEndRenderPass(cmd);
-}
-
 /** Create the shadow mapping pipeline */
 void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log("Shadow map graphics pipeline creation");
@@ -260,9 +190,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
   if(app.verbose) SDL_Log(" - shadow map pipeline layout created: %p", app.shadows.pipeline.layout);
 
   auto stages = createStageInfo(app.shadows.shaders);
-
-  VkVertexInputBindingDescription[2] bindingDescription = Vertex.getBindingDescription();
-  VkVertexInputAttributeDescription[7]  attributeDescriptions= Vertex.getShadowDescriptions();
+  auto bindingDescription = Vertex.getBindingDescription();
+  auto attributeDescriptions= Vertex.getShadowDescriptions();
 
   VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
     sType: VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -334,9 +263,56 @@ void createShadowMapGraphicsPipeline(ref App app) {
 /** Update the shadow mapping UBO */
 void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
   LightUbo ubo = { scene: Matrix.init, nlights: cast(uint)app.lights.length };
-  ubo.slotVP[] = app.shadows.slotStaticMatrix[];
+  foreach(s; 0 .. MAX_SHADOW_MAPS) { ubo.slotVP[s] = app.shadows.slots[s].committed; }
   ubo.cascadeSplit = [CASCADE_SPLIT[0], CASCADE_SPLIT[1], CASCADE_SPLIT[2], cast(float)NUM_CASCADES];
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
+}
+
+/** True if any in-frustum dynamic (moving) caster exists for this slot; static-only slots skip the per-frame recompose. */
+@nogc bool hasDynamicCasters(ref App app, Plane[6] lFrustum) nothrow {
+  foreach(obj; app.objects) {
+    if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;   // Only triangle produce shadows
+    if(!obj.isVisible || !obj.castShadow || obj.isStatic) continue;     // Visible, Casting, and Static
+    if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;  // Inside the Frustum
+    return(true);
+  }
+  return(false);
+}
+
+/** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
+void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
+  VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
+  VkRect2D sc = { extent: { width: ext.width, height: ext.height } };
+
+  VkRenderPassBeginInfo rp = {
+    sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+    renderPass: pass, framebuffer: pass.framebuffers[s],
+    renderArea: sc,
+    clearValueCount: staticPhase ? 1 : 0,
+    pClearValues: staticPhase ? &clearDepth : null,
+  };
+  vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.shadows.pipeline.pipeline);
+
+  VkViewport vp = { minDepth: 0.0f, maxDepth: 1.0f, width: cast(float)ext.width, height: cast(float)ext.height };
+  vkCmdSetViewport(cmd, 0, 1, &vp);
+  vkCmdSetScissor(cmd, 0, 1, &sc);
+  uint slot = cast(uint)s;
+  vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
+
+  float slotRadius = (s < NUM_CASCADES) ? CASCADE_RADIUS[s] : CASCADE_RADIUS[0];
+  if(slotRadius <= 0.0f) slotRadius = app.camera.visibleRadius;   // far cascade
+  float scale = CASCADE_RADIUS[0] / slotRadius;                   // 1.0 for cascade 0, smaller for wider cascades
+  vkCmdSetDepthBias(cmd, SHADOW_DEPTH_BIAS * scale, 0.0f, SHADOW_SLOPE_BIAS * scale);
+
+  foreach(obj; app.objects) {
+    if(obj.topology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) continue;                 // Only triangle produce shadows
+    if(!obj.isVisible || !obj.castShadow || obj.isStatic != staticPhase) continue;    // Visible, Casting, and right phase
+    if(obj.box !is null && !lFrustum.aabbInFrustum(obj.box)) continue;                // Inside the Frustum
+    ((obj.isStatic)?app.shadows.staticShadowInstances : app.shadows.dynamicShadowInstances) += obj.instances.length;
+    app.draw(obj, cmd);
+  }
+  vkCmdEndRenderPass(cmd);
 }
 
 /** Record the draw calls in the shadow command buffer */
@@ -358,16 +334,23 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
     for(uint c = 0; c < count; c++) {
       uint s = cast(uint)first + c;
       app.shadows.activeShadowMaps++;
-      auto lFrustum = extractFrustum(app.shadows.slotStaticMatrix[s]);
-      pushLabel(cmd, cstr("Shadow RenderPass: slot %d", s), Colors.lightgray);
-      if(app.shadows.staticDirty[s]) {
-        app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.images[s].extent, true);
-        app.shadows.staticDirty[s] = false;
+      auto lFrustum = extractFrustum(app.shadows.slots[s].committed);
+      bool rebuilt = app.shadows.slots[s].dirty;
+      if(rebuilt) {
+        pushLabel(cmd, cstr("Static %d:%d in %d, reBuild: %d", first, c, s, rebuilt), Colors.lightgray);
+        app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.slots[s].extent, true);
+        app.shadows.slots[s].dirty = false;
         app.shadows.staticRebuilds++;
       }
-      app.copyImageLayer(cmd, app.shadows.images[s].image, 0, 1, app.shadows.images[s].extent, app.shadows.format);
-      app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.images[s].extent, false);
-      popLabel(cmd);
+      bool dyn = app.hasDynamicCasters(lFrustum);
+      if(rebuilt || dyn || app.shadows.slots[s].hadDynamic) {
+        pushLabel(cmd, cstr("Copy & Dynamic %d:%d in %d, had: %d", first, c, s, app.shadows.slots[s].hadDynamic), Colors.lightgray);
+        app.copyImageLayer(cmd, app.shadows.slots[s], 0, 1, app.shadows.slots[s].extent, app.shadows.format);
+        app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.slots[s].extent, false);
+        popLabel(cmd);
+      }
+      app.shadows.slots[s].hadDynamic = dyn;
+      if(rebuilt) { popLabel(cmd); }
     }
   }
   popLabel(cmd);

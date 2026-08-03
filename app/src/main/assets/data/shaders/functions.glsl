@@ -10,11 +10,11 @@
 #include "scene.glsl"
 
 // Function to calculate vector position after animation
-vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights) {
+vec4 animate(vec4 inPos, uvec4 inBones, vec4 inWeights, uint boneBase) {
   if (inWeights == vec4(0.0)) return inPos;
   vec4 bonepos = vec4(0.0);
   for (int i = 0; i < 4; i++) {
-    if (inWeights[i] > 0.0) bonepos += (boneSSBO.transforms[inBones[i]].offset * inPos) * inWeights[i];
+    if (inWeights[i] > 0.0) bonepos += (boneSSBO.transforms[boneBase + inBones[i]].offset * inPos) * inWeights[i];
   }
   return bonepos;
 }

@@ -25,9 +25,10 @@ Plane[6] extractFrustum(const Matrix vp) @nogc pure nothrow {
   return p;
 }
 
-bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) @nogc pure nothrow {
+/** True if the AABB is at least partially inside the frustum. */
+bool aabbInFrustum(const Plane[6] planes, const float[3][2] b) @nogc pure nothrow {
   foreach (ref p; planes) {
-    float[3] pv = [p.x >= 0 ? mx[0] : mn[0], p.y >= 0 ? mx[1] : mn[1], p.z >= 0 ? mx[2] : mn[2]];
+    float[3] pv = [p.x >= 0 ? b[1][0] : b[0][0], p.y >= 0 ? b[1][1] : b[0][1], p.z >= 0 ? b[1][2] : b[0][2]];
     if (p.x*pv.x + p.y*pv.y + p.z*pv.z + p.w < 0) return false;
   }
   return true;
@@ -36,13 +37,7 @@ bool aabbInFrustum(const Plane[6] planes, const float[3] mn, const float[3] mx) 
 @nogc void cullFrustum(T)(ref T[] objects, const Plane[6] frustum) nothrow {
   for (size_t x = 0; x < objects.length; x++) {
     if(objects[x].box is null) continue;
-    if(objects[x].skipFrustum) continue;
-    objects[x].inFrustum = false;
-    for (size_t i = 0; i < objects[x].box.instances.length; i++) {
-      auto b = (i < objects[x].box.world.length) ? objects[x].box.world[i] : objects[x].box.boundsWorld(i);
-      if(aabbInFrustum(frustum, b[0], b[1])) { objects[x].inFrustum = true; break; }
-    }
-    if(objects[x].onFrustumUpdate) objects[x].onFrustumUpdate(objects[x].inFrustum);
+    objects[x].box.visible = aabbInFrustum(frustum, objects[x].box);
   }
 }
 
@@ -59,17 +54,17 @@ unittest {
   assert(approx(cast(float[4])planes[0], [0.1f, 0.0f, 0.0f, 1.0f]));
 
   // box sitting at the centre of the frustum is inside
-  assert( aabbInFrustum(planes, [-1.0f, -1.0f, -51.0f], [1.0f, 1.0f, -49.0f]));
+  assert( aabbInFrustum(planes, [[-1.0f, -1.0f, -51.0f], [1.0f, 1.0f, -49.0f]]));
 
   // box far off to +X fails the right plane
-  assert(!aabbInFrustum(planes, [50.0f, -1.0f, -51.0f], [52.0f, 1.0f, -49.0f]));
+  assert(!aabbInFrustum(planes, [[50.0f, -1.0f, -51.0f], [52.0f, 1.0f, -49.0f]]));
 
   // box behind the near plane (z > 0) is culled
-  assert(!aabbInFrustum(planes, [-1.0f, -1.0f, 10.0f], [1.0f, 1.0f, 20.0f]));
+  assert(!aabbInFrustum(planes, [[-1.0f, -1.0f, 10.0f], [1.0f, 1.0f, 20.0f]]));
 
   // box beyond the far plane (z < -100) is culled
-  assert(!aabbInFrustum(planes, [-1.0f, -1.0f, -150.0f], [1.0f, 1.0f, -120.0f]));
+  assert(!aabbInFrustum(planes, [[-1.0f, -1.0f, -150.0f], [1.0f, 1.0f, -120.0f]]));
 
   // a box spanning the whole world is (at least partially) inside
-  assert( aabbInFrustum(planes, [-999.0f, -999.0f, -999.0f], [999.0f, 999.0f, 999.0f]));
+  assert( aabbInFrustum(planes, [[-999.0f, -999.0f, -999.0f], [999.0f, 999.0f, 999.0f]]));
 }

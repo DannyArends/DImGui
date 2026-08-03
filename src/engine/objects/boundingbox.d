@@ -8,29 +8,14 @@ import engine;
 import matrix : toMatrix, multiply, scale;
 import vector : x,y,z;
 
-struct Bounds {
-  float[3] min = [ float.max, float.max, float.max];
-  float[3] max = [-float.max,-float.max,-float.max];
-
-  @nogc pure void update(const float[3] v) nothrow {
-    if (v.x < min[0]) min[0] = v.x;
-    if (v.y < min[1]) min[1] = v.y;
-    if (v.z < min[2]) min[2] = v.z;
-
-    if (v.x > max[0]) max[0] = v.x;
-    if (v.y > max[1]) max[1] = v.y;
-    if (v.z > max[2]) max[2] = v.z;
-  }
-  
-  @property @nogc pure float[3] size() nothrow const { float[3] s = max[] - min[]; return(s); }
-}
-
 /** BoundingBox */
 class BoundingBox : Geometry {
-  float[3] wmin = [ float.max,  float.max,  float.max];   /// Union world-AABB min over all instances
-  float[3] wmax = [-float.max, -float.max, -float.max];   /// Union world-AABB max over all instances
-  float[3][2][] world;                                    /// Per-instance cached world-AABBs
+  Bounds bounds;                                          /// Union world-AABB over all instances
+  Bounds[] world;                                         /// Per-instance cached world-AABBs
+  bool visible = true;                                    /// BoundingBox visible in frustum ?
   bool dirty = true;
+
+  alias bounds this;
 
   this(){
    vertices = [
@@ -52,31 +37,19 @@ class BoundingBox : Geometry {
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
   };
 
-  @property @nogc pure float[3] scale() nothrow const {
-    float[3] scale = vertices[0].position[] - vertices[6].position[];
-    return(scale);
-  }
-
   /** Compute world-space AABB from object-space bounds and instance matrix.
    * Uses OBB projection: transforms center, then sums absolute column extents. */
-  @nogc pure float[3][2] boundsWorld(size_t instance = 0) nothrow const {
-    if(instances.length == 0 || instance >= instances.length) return [[0,0,0],[0,0,0]];
+  @nogc pure Bounds boundsWorld(size_t instance = 0) nothrow const {
+    if(instances.length == 0 || instance >= instances.length) { return(Bounds.init); }
     auto m = instances[instance].matrix;
-    float[3] lo = vertices[0].position;
-    float[3] hi = vertices[6].position;
-    float[3] c = m.multiply([(lo[0]+hi[0])*0.5f, (lo[1]+hi[1])*0.5f, (lo[2]+hi[2])*0.5f]);
-    float[3] h = [(hi[0]-lo[0])*0.5f, (hi[1]-lo[1])*0.5f, (hi[2]-lo[2])*0.5f];
+    Bounds l;
+    foreach(ref v; vertices) l.update(v.position);
+    float[3] c = m.multiply([(l.min[0]+l.max[0])*0.5f, (l.min[1]+l.max[1])*0.5f, (l.min[2]+l.max[2])*0.5f]);
+    float[3] h = [l.size[0]*0.5f, l.size[1]*0.5f, l.size[2]*0.5f];
     float[3] e = [abs(m[0])*h[0] + abs(m[4])*h[1] + abs(m[8])*h[2],
                   abs(m[1])*h[0] + abs(m[5])*h[1] + abs(m[9])*h[2],
                   abs(m[2])*h[0] + abs(m[6])*h[1] + abs(m[10])*h[2]];
-    return [[c[0]-e[0], c[1]-e[1], c[2]-e[2]], [c[0]+e[0], c[1]+e[1], c[2]+e[2]]];
-  }
-
-  /** Squared distance from point p to this world-AABB (0 if inside). */
-  @nogc pure float distanceSq(const float[3] p) nothrow const {
-    float[3] d = [0, 0, 0];
-    foreach(i; 0 .. 3) d[i] = (p[i] < wmin[i]) ? wmin[i] - p[i] : (p[i] > wmax[i]) ? p[i] - wmax[i] : 0.0f;
-    return(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
+    return Bounds([[c[0]-e[0], c[1]-e[1], c[2]-e[2]], [c[0]+e[0], c[1]+e[1], c[2]+e[2]]]);
   }
 
   @nogc pure void setDimensions(float[3] min, float[3] max) nothrow {
@@ -84,11 +57,6 @@ class BoundingBox : Geometry {
     vertices[2].position = [max[0], max[1], min[2]]; vertices[3].position = [min[0], max[1], min[2]];
     vertices[4].position = [min[0], min[1], max[2]]; vertices[5].position = [max[0], min[1], max[2]];
     vertices[6].position = [max[0], max[1], max[2]]; vertices[7].position = [min[0], max[1], max[2]];
-  }
-
-  @property @nogc pure float[3] center() nothrow const {
-    float[3] mid = (vertices[0].position[] + vertices[6].position[]) / 2.0f;
-    return(mid);
   }
 }
 
@@ -105,14 +73,12 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.instances = object.instances.dup;
   object.box.instances.invalidate();
 
-  Bounds wb;
-  if(object.box.world.length < object.box.instances.length){ object.box.world.length = object.box.instances.length; }
+  object.box.bounds = Bounds.init; // Reset bounds
+  if(object.box.world.length < object.box.instances.length) { object.box.world.length = object.box.instances.length; }
   foreach(i; 0 .. object.box.instances.length) {
     object.box.world[i] = object.box.boundsWorld(i);
-    wb.update(object.box.world[i][0]); 
-    wb.update(object.box.world[i][1]);
+    object.box.bounds.update(object.box.world[i]);
   }
-  object.box.wmin = wb.min; object.box.wmax = wb.max;
   object.box.dirty = false;
 }
 

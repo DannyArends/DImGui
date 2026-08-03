@@ -7,7 +7,7 @@ import game;
 
 import lattice : tileIdx, surfaceLevel, worldToTile, tileCoord, chunkCoord, tileNeighbours;
 import noise : noise2D;
-import pathfinding : invalidatePaths;
+import dwarf : invalidatePaths;
 import vector : x,y,z;
 
 /** Is the Tile occupied ?  */
@@ -96,7 +96,6 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
   }
   app.world.paths.pending = [];
   app.invalidatePaths(tile);
-  app.shadows.staticPending[] = true;
   if(newType == ResourceType.None) { app.world.activate(tile); }   // mined out: wake neighbouring water to flow in
 }
 

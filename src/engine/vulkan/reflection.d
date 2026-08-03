@@ -20,16 +20,6 @@ enum spvc_resource_type[const(char)*] types = [
   "Stage Output" : SPVC_RESOURCE_TYPE_STAGE_OUTPUT
 ];
 
-/** Reflected stage input/output attribute */
-struct StageInput {
-  const(char)* name;
-  size_t location;
-
-  spvc_basetype basetype;
-  uint rows;
-  uint columns;
-}
-
 /** Reflect a single shader to extract descriptors */
 void reflectShader(ref App app, ref Shader shader) {
   if(app.trace) SDL_Log("Reflect: %s", toStringz(shader.path));
@@ -63,7 +53,7 @@ void reflectShader(ref App app, ref Shader shader) {
     app.enforceSPIRV(spvc_resources_get_resource_list_for_type(resources, types[type], &list, &count));
     for(size_t i = 0; i < count; ++i) {
       if(types[type] == SPVC_RESOURCE_TYPE_STAGE_INPUT || types[type] == SPVC_RESOURCE_TYPE_STAGE_OUTPUT){
-        auto s = app.reflectStage(compiler, type, list, i);
+        app.reflectStage(compiler, type, list, i);
       } else {
         shader.descriptors ~= app.reflectDescriptor(compiler, type, list, i);
       }
@@ -72,7 +62,7 @@ void reflectShader(ref App app, ref Shader shader) {
 }
 
 /**  Reflect a stage input/output attribute */
-StageInput reflectStage(ref App app, spvc_compiler compiler, const(char)* type, spvc_reflected_resource* list, size_t i) {
+void reflectStage(ref App app, spvc_compiler compiler, const(char)* type, spvc_reflected_resource* list, size_t i) {
   const(char)* name = spvc_compiler_get_name(compiler, list[i].id);
   size_t location = spvc_compiler_get_decoration(compiler, list[i].id, SpvDecorationLocation);
   spvc_type type_handle = spvc_compiler_get_type_handle(compiler, list[i].type_id);
@@ -80,9 +70,7 @@ StageInput reflectStage(ref App app, spvc_compiler compiler, const(char)* type, 
 
   uint rows = spvc_type_get_vector_size(type_handle);
   uint columns = spvc_type_get_columns(type_handle);
-  StageInput s = {name, location, basetype, rows, columns};
-  if(app.trace) SDL_Log("%s - loc: %d: %s %s:[%dx%d]", type, s.location, s.name, convert(s.basetype),  s.rows, s.columns);
-  return(s);
+  if(app.trace) SDL_Log("%s - loc: %d: %s %s:[%dx%d]", type, location, name, convert(basetype),  rows, columns);
 }
 
 /** Reflect a single descriptor (UBO, SSBO, sampler) */

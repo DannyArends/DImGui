@@ -5,14 +5,16 @@
 
 public import engine;
 
+public import animal : AnimalT, Animal;
 public import block : Block, Drops;
 public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;
-public import dwarf : Dwarf, DwarfData, DwarfState;
+public import dwarf : Dwarf;
+public import entity : Entity, EntityData, EntityState;
 public import feature : FeatureT, FeaturePartT, LSystemBrushT, FeatureDropT, Feature;
-public import inventory : Inventory;
+public import inventory : Inventory, InventorySlot;
 public import jobs : Job, Need, JobState, Reach;
-public import gameobjects : Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
+public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
 public import fall : Fall;
@@ -20,11 +22,12 @@ public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
-public import raws : reactionTable, ResourceType, ResourceClass, ItemTemplate, templateData, resourceData, heightToResource, features;
+public import raws : reactionTable, ResourceType, ResourceClass, ItemTemplate, templateData, resourceData, heightToResource, features, animalTable;
 public import resources : ClassVal, ResourceT, ItemTemplateT, Item, traversable, buildable, cost, maxStack, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 
+import animalwindow : showAnimalContent;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
 import clouds : buildCloudInstances, applyCloudInstances;
@@ -35,19 +38,19 @@ import fpswindow : showFPSContent;
 import imgui : iconTextStr;
 import icosahedron : refineIcosahedron;
 import inventorywindow : showInventoryContent;
-import jobs : applyPathResult;
 import lights : updateSun;
 import lightswindow : showLightsContent;
 import matrix;
 import normals : computeTangents;
-import pathfinding : canMoveTo, pathfindWorker, dispatchPendingPaths;
+import pathfinding : canMoveTo, dispatchPathResult, pathfindWorker, dispatchPendingPaths;
+import persistence : loadWorld, saveWorld;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
 import stockpilewindow : showStockpileContent;
 import text : addWorldText;
 import threading : TaskThread, drainMessages;
 import toolbar : showToolbar;
-import world : loadWorld, saveWorld, updateWorld;
+import world : updateWorld;
 import waterwindow : showWaterContent;
 import worldwindow : showWorldContent;
 import wboit: testWBOIT;
@@ -118,6 +121,7 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WAREHOUSE, "Stockpiles"), (uint font){ app.showStockpileContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GLOBE, "World"), (uint font){ app.showWorldContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_USER, "Dwarfs"), (uint font){ app.showDwarfContent(font); });
+  app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_PAW, "Animals"), (uint font){ app.showAnimalContent(font); });
   app.gameWindows ~= GameWindow("FPS", (uint font){ app.showFPSContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
@@ -161,7 +165,7 @@ void updateGame(ref GameApp app, double dt) {
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
   if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); }, 2)) app.camera.isDirty = true;
-  app.drainMessages!PathResult((r) { app.applyPathResult(r); });
+  app.drainMessages!PathResult((r) { app.dispatchPathResult(r); });
   app.drainMessages!CloudResult((r) { app.world.applyCloudInstances(r.instances); });
 }
 
