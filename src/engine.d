@@ -145,8 +145,8 @@ struct App {
 
   // Global boolean flags
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool enableValidation = true;                                                /// Should validation be enabled ?
-  bool nameVulkanObjects = true;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
+  bool enableValidation = false;                                                /// Should validation be enabled ?
+  bool nameVulkanObjects = false;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
   bool showPaths = false;                                                       /// Show pathfinding

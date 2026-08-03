@@ -34,7 +34,6 @@ struct ChunkData {
   float[3][] tileBmax;                                      /// Per-tile AABB maximum (narrow-phase picking)
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
-  int[] tileIndices;                                        /// Maps each instance back to its tile index in tileTypes
   Feature[][string] featureData;                            /// Chunk Features
 }
 
@@ -107,7 +106,6 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
       } else { exposed = !wd.isSolid(neighbours[f]); }
       if (!exposed) continue;
       data.tileInstances ~= DrawInstance(faceData(f, px,py,pz, ts,th), cast(int)data.tileTypes[i], f);
-      data.tileIndices ~= i;
     }
     data.addTileBounds([px - ts/2, py - th/2, pz - ts/2], [px + ts/2, py + th/2, pz + ts/2], i, faceStart);
   }
