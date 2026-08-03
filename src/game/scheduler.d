@@ -70,8 +70,7 @@ void claimNextJob(T)(ref GameApp app, ref T d) {
 
   if(app.tryStoreInStockpile(d)) return;
 
-  // No job found — wander or pick up stuff
-  if(++d.idleTicks[0] > d.idleTicks[1]) {
+  if(++d.idleTicks[0] > d.idleTicks[1]) { // No job found: wander or pick up stuff
     d.idleTicks[0] = 0;
     if(app.world.drops.length > 0 && d.hasInventorySpace() && uniform(0, 2) == 0) {
       //app.dispatchJob(d, pickupJob(noTile, ResourceClass.None));
