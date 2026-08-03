@@ -5,7 +5,7 @@
 
 import engine;
 
-import commands : beginSingleTimeCommands, endSingleTimeCommands;
+import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
 import validation : nameVulkanObject;
 

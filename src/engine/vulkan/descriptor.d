@@ -5,7 +5,7 @@
 
 import engine;
 
-import commands : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
+import commandpool : createCommandBuffer, beginSingleTimeCommands, endSingleTimeCommands;
 import ssbo : updateSSBO, createSSBO;
 import textures : idx;
 import uniforms : createUBO, updateRenderUBO;
