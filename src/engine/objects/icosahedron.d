@@ -57,13 +57,11 @@ class Icosahedron : Geometry {
     float[2] texCoord = [0.0f, (-p[1] + 1.0f) / 2.0f];
     if (normalisedZ == 0.0f) {
       texCoord[0] = ((normalisedX * PI) / 2.0f);
-    } else {
-      texCoord[0] = atan(normalisedX / normalisedZ);
-    }
-    if (normalisedZ < 0.0f)  texCoord[0] += PI;
-    if (texCoord[0] < 0.0f)  texCoord[0] += 2.0f * PI;      // Shift U coordinate between 0-2pi
+    } else { texCoord[0] = atan(normalisedX / normalisedZ); }
+    if (normalisedZ < 0.0f) texCoord[0] += PI;
+    if (texCoord[0] < 0.0f) texCoord[0] += 2.0f * PI;      // Shift U coordinate between 0-2pi
 
-    texCoord[0] /= (2.0f * PI);                             // Normalize U coordinate range 0-2pi -> 0, 1
+    texCoord[0] /= (2.0f * PI);                            // Normalize U coordinate range 0-2pi -> 0, 1
     return(texCoord);
 }
 
