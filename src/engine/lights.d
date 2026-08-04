@@ -6,14 +6,14 @@
 import engine;
 
 import devices : getMSAASamples;
-import geometry : setColor, aimAlong;
+import geometry : setColor;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
 import shadow : assignShadowSlots, updateShadowSlotMatrices, pickStaticRebuilds;
 import textures : mapTextures;
 import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
-import quaternion : xyzw, w;
+import quaternion : aimMatrix, xyzw, w;
 import matrix : degree, translate;
 
 enum LMode : uint { Global = 0, Lights, LightsAndShadows, Normals, nLights, UV, Cascades }
@@ -127,17 +127,17 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
 void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
   app.lights.sunTime = fmod(app.lights.sunTime + (minsPerSec * dt / 60.0f), 24.0f);
   if(!app.showLights) return;
-  int l = 1;
   foreach(o; app.objects) {
     if(o.geometry() == "SunGeometry") {
       o.position(app.lights[0].position.xyz);
       o.setColor([1.0f, 0.95f, 0.6f, 1.0f]);
-    } else if(o.geometry() == "LightCone" && l < app.lights.length) {
-      auto light = app.lights[l++];
-      o.instances[0].matrix = Matrix.init;
-      o.position(light.position.xyz);
-      o.aimAlong(light.position.xyz, light.direction.xyz.negate);
-      o.setColor(light.intensity.xyz.normalize.xyzw);
+    } else if(o.geometry() == "LightCones") {
+      o.instances.reset();
+      foreach(i, ref light; app.lights) {
+        if(i == 0) continue;
+        o.instances ~= DrawInstance(aimMatrix(light.position.xyz, light.direction.xyz.negate), -1, light.intensity.xyz.normalize.xyzw);
+      }
+      o.syncInstances();
     }
   }
 }
@@ -157,22 +157,19 @@ void updateSun(ref App app) { app.updateSun(sunAzimuth(app.lights.sunTime, app.l
 /** Toggle the rendering of Lights */
 void toggleLightGeometries(ref App app) {
   foreach(o; app.objects) {
-    if(o.geometry() == "LightCone" || o.geometry() == "SunGeometry") o.deAllocate = true;
+    if(o.geometry() == "LightCones" || o.geometry() == "SunGeometry") o.deAllocate = true;
   }
   if(!app.showLights) return;
-  foreach(i, ref light; app.lights) {
-    if(i == 0) { // Sun — large icosahedron far away
-      app.objects ~= new Sphere();
-      app.objects[$-1].geometry = (){ return "SunGeometry"; };
-    } else {
-      app.objects ~= new Cone();
-      app.objects[$-1].geometry = (){ return "LightCone"; };
-      app.objects[$-1].aimAlong(light.position.xyz, light.direction.xyz.negate);
-    }
-    app.objects[$-1].castShadow = false;
-    app.objects[$-1].position(light.position.xyz);
-    app.objects[$-1].setColor(light.intensity.xyz.normalize.xyzw);
-  }
+
+  auto sun = new Sphere();
+  sun.geometry = (){ return "SunGeometry"; };
+  sun.castShadow = false;
+  app.objects ~= sun;
+
+  auto cones = new Cone();
+  cones.initInstanced((){ return "LightCones"; });   // instancedMesh = true, instances = []
+  cones.castShadow = false;
+  app.objects ~= cones;
 }
 
 /** Color lerp */

@@ -57,7 +57,7 @@ void showLightsContent(ref App app, uint font = 0) {
 
         labelCol(iconText("Direction", cast(string)ICON_FA_LOCATION_ARROW));
         sliderFloat3(["##D0","##D1","##D2"], &light.direction[0], &light.direction[1], &light.direction[2], 
-                     &app.gui.pos[0], &app.gui.pos[1], 75, app.gui.uiscale);
+                     &app.gui.one[0], &app.gui.one[1], 75, app.gui.uiscale);
 
         labelCol(iconText("Cone", cast(string)ICON_FA_EXPAND));
         app.colValue("##A0", &light.properties[2], app.gui.cone[0], app.gui.cone[1]);
