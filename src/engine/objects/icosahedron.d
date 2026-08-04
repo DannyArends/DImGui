@@ -12,8 +12,7 @@ import vector : midpoint, cross, vSub, normalize;
 const float x = 0.426943;
 const float y = 0.904279;
 
-/** Icosahedron
- */
+/** Icosahedron */
 class Icosahedron : Geometry {
    this(float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     vertices = [ 
