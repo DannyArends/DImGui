@@ -61,7 +61,7 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
       }
     }
   }
-  if(auto cm = coord in wd.diffs) foreach(idx, type; *cm) types[idx] = type;
+  if(auto cm = coord in wd.diffs) { foreach(idx, type; *cm) { types[idx] = type; } }
   return types;
 }
 
@@ -77,11 +77,11 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   }
 }
 
-/** True if face `f` of the tile at world-coord `wc` is exposed (neighbour empty / above chunk). */
+/** True if face 'f' of the tile at world-coord 'wc' is exposed (neighbour empty / above chunk). */
 @nogc bool faceExposed(immutable(WorldData) wd, ref ChunkData data, int[3] coord, int[3] lc, int f) nothrow {
   immutable int cs = wd.chunkSize, ch = wd.chunkHeight;
   int[3] ln = [lc[0] + FACE_OFFSETS[f][0], lc[1] + FACE_OFFSETS[f][1], lc[2] + FACE_OFFSETS[f][2]];
-  if (ln[0] >= 0 && ln[0] < cs && ln[2] >= 0 && ln[2] < cs) {      // neighbour in this chunk — no division
+  if (ln[0] >= 0 && ln[0] < cs && ln[2] >= 0 && ln[2] < cs) {      // neighbour in this chunk - no division
     return ln[1] < 0 ? false : ln[1] >= ch ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
   }
   return !wd.isSolid(wd.worldCoord(coord, ln));                    // chunk border only: cross into neighbour
@@ -94,7 +94,7 @@ static immutable int[3][6] FACE_AXES = [
   [2, 0, 1], [2, 0, 1],   // f4/f5 (±Z): plane U=X, V=Y
 ];
 
-/** One instance covering a w×d tile run of face `f` at plane-tile (x0,y,z0); UV tiles w×d. */
+/** One instance covering a w×d tile run of face 'f' at plane-tile (x0,y,z0); UV tiles w x d. */
 @nogc DrawInstance mergedFace(immutable(WorldData) wd, int[3] coord, int f, int[3] o, int u, int v, ResourceType mat) nothrow {
   float ts = wd.tileSize, th = wd.tileHeight;
   int ua = FACE_AXES[f][1], va = FACE_AXES[f][2];
@@ -150,12 +150,14 @@ void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f
       int k = vv*uMax + uu;
       if (used[k] || cell[k] == ResourceType.None) continue;
       auto mat = cell[k];
-      int w = 1; while (uu + w < uMax && !used[k + w] && cell[k + w] == mat) w++;
-      int h = 1;
-      grow: while (vv + h < vMax) {
-        for (int xx = 0; xx < w; xx++) { int kk = (vv + h)*uMax + uu + xx; if (used[kk] || cell[kk] != mat) break grow; }
-        h++;
+      int w = 1; while (uu + w < uMax && !used[k + w] && cell[k + w] == mat) w++;   // extend width along u
+
+      /** True if the whole w-wide strip at row r is unused and all material `mat`. */
+      bool strip(int r) {
+        foreach (x; 0 .. w) { immutable kk = r*uMax + uu + x; if (used[kk] || cell[kk] != mat) return false; }
+        return true;
       }
+      int h = 1; while (vv + h < vMax && strip(vv + h)) h++;
       for (int dv = 0; dv < h; dv++) for (int du = 0; du < w; du++) used[(vv + dv)*uMax + uu + du] = true;
       int[3] o; o[da] = dpt; o[ua] = uu; o[va] = vv;
       data.tileInstances ~= wd.mergedFace(coord, f, o, w, h, mat);
