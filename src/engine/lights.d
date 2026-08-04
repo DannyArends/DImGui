@@ -137,7 +137,7 @@ void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
       o.instances[0].matrix = Matrix.init;
       o.position(light.position.xyz);
       o.aimAlong(light.position.xyz, light.direction.xyz);
-      o.setColor(light.intensity);
+      o.setColor(light.intensity.xyz.normalize.xyzw);
     }
   }
 }
