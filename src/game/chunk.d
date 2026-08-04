@@ -78,13 +78,13 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
 }
 
 /** True if face `f` of the tile at world-coord `wc` is exposed (neighbour empty / above chunk). */
-@nogc bool faceExposed(immutable(WorldData) wd, ref ChunkData data, int[3] coord, int[3] wc, int f) nothrow {
-  int[3] n = [wc[0] + FACE_OFFSETS[f][0], wc[1] + FACE_OFFSETS[f][1], wc[2] + FACE_OFFSETS[f][2]];
-  if (wd.chunkCoord(n) == coord) {
-    auto ln = wd.localCoord(n);
-    return ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
+@nogc bool faceExposed(immutable(WorldData) wd, ref ChunkData data, int[3] coord, int[3] lc, int f) nothrow {
+  immutable int cs = wd.chunkSize, ch = wd.chunkHeight;
+  int[3] ln = [lc[0] + FACE_OFFSETS[f][0], lc[1] + FACE_OFFSETS[f][1], lc[2] + FACE_OFFSETS[f][2]];
+  if (ln[0] >= 0 && ln[0] < cs && ln[2] >= 0 && ln[2] < cs) {      // neighbour in this chunk — no division
+    return ln[1] < 0 ? false : ln[1] >= ch ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
   }
-  return !wd.isSolid(n);
+  return !wd.isSolid(wd.worldCoord(coord, ln));                    // chunk border only: cross into neighbour
 }
 
 /** Per-face [normalAxis, uAxis, vAxis] as tile-space indices (0=X, 1=Y, 2=Z). */
@@ -120,11 +120,10 @@ void buildTileBounds(immutable(WorldData) wd, int[3] coord, ref ChunkData data) 
     if (data.tileTypes[i] == ResourceType.None) continue;
     auto lc = wd.tileCoord(i);
     if (!wd.onChunkBoundary(lc) && wd.isBuried(data.tileTypes, i, lc)) continue;
-    auto wc = wd.worldCoord(coord, lc);
     bool exposed = false;
-    foreach (f; 0 .. 6) if (wd.faceExposed(data, coord, wc, f)) { exposed = true; break; }
+    foreach (f; 0 .. 6) if (wd.faceExposed(data, coord, lc, f)) { exposed = true; break; }
     if (!exposed) continue;
-    float[3] p = wd.worldPos(wc); float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
+    float[3] p = wd.worldPos(wd.worldCoord(coord, lc)); float px = p[0], py = p[1] + wd.yOffset, pz = p[2];
     data.tileBmin ~= [px - ts/2, py - th/2, pz - ts/2];
     data.tileBmax ~= [px + ts/2, py + th/2, pz + ts/2];
     data.pickIndices ~= i;
@@ -144,7 +143,7 @@ void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f
       int[3] lc; lc[da] = dpt; lc[ua] = uu; lc[va] = vv;
       auto t = data.tileTypes[wd.tileIndex(lc)];
       if (t == ResourceType.None) continue;
-      if (wd.faceExposed(data, coord, wd.worldCoord(coord, lc), f)) { cell[vv*uMax + uu] = t; any = true; }
+      if (wd.faceExposed(data, coord, lc, f)) { cell[vv*uMax + uu] = t; any = true; }
     }
     if (!any) continue;
     for (int vv = 0; vv < vMax; vv++) for (int uu = 0; uu < uMax; uu++) {
@@ -166,11 +165,14 @@ void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f
 
 /** Generate tile geometry: per-tile pick AABBs, greedy-merged faces. */
 void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
-  wd.buildTileBounds(coord, data);
+  immutable int surf = wd.chunkSize * wd.chunkSize;               // surface-area estimate for reservation
+  data.tileInstances.reserve(surf * 2);
+  data.tileBmin.reserve(surf); data.tileBmax.reserve(surf); data.pickIndices.reserve(surf);
+  wd.buildTileBounds(coord, data);              // pick AABBs (per-tile, unchanged granularity)
   immutable int plane = wd.chunkSize * (wd.chunkSize > wd.chunkHeight ? wd.chunkSize : wd.chunkHeight);
-  auto cell = new ResourceType[plane];
+  auto cell = new ResourceType[plane];          // scratch reused across all six sweeps
   auto used = new bool[plane];
-  foreach (f; 0 .. 6) { wd.mergeFaces(coord, data, f, cell, used); }
+  foreach (f; 0 .. 6) wd.mergeFaces(coord, data, f, cell, used);   // greedy-merge every face direction
 }
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
