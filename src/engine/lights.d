@@ -7,7 +7,6 @@ import engine;
 
 import devices : getMSAASamples;
 import geometry : setColor;
-import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
 import shadow : assignShadowSlots, updateShadowSlotMatrices, pickStaticRebuilds;
