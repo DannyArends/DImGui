@@ -79,7 +79,7 @@ ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
 
 /** True if face `f` of the tile at world-coord `wc` is exposed (neighbour empty / above chunk). */
 @nogc bool faceExposed(immutable(WorldData) wd, ref ChunkData data, int[3] coord, int[3] wc, int f) nothrow {
-  auto n = tileNeighbours(wc)[f];
+  int[3] n = [wc[0] + FACE_OFFSETS[f][0], wc[1] + FACE_OFFSETS[f][1], wc[2] + FACE_OFFSETS[f][2]];
   if (wd.chunkCoord(n) == coord) {
     auto ln = wd.localCoord(n);
     return ln[1] < 0 ? false : ln[1] >= wd.chunkHeight ? true : data.tileTypes[wd.tileIndex(ln)] == ResourceType.None;
@@ -132,14 +132,13 @@ void buildTileBounds(immutable(WorldData) wd, int[3] coord, ref ChunkData data) 
 }
 
 /** Greedy-merge exposed faces of direction `f` into spanned quads, sweeping the face's plane. */
-void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f) {
+void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, ResourceType[] cell, bool[] used) {
   immutable int[3] ext = [wd.chunkSize, wd.chunkHeight, wd.chunkSize];   // per-axis tile extent
   immutable int da = FACE_AXES[f][0], ua = FACE_AXES[f][1], va = FACE_AXES[f][2];
   immutable int dMax = ext[da], uMax = ext[ua], vMax = ext[va];
-  auto cell = new ResourceType[uMax * vMax];   // exposed-face material per (u,v) in this plane, else None
-  auto used = new bool[uMax * vMax];
   for (int dpt = 0; dpt < dMax; dpt++) {
-    cell[] = ResourceType.None; used[] = false;
+    cell[0 .. uMax * vMax] = ResourceType.None; 
+    used[0 .. uMax * vMax] = false;
     bool any = false;
     for (int vv = 0; vv < vMax; vv++) for (int uu = 0; uu < uMax; uu++) {
       int[3] lc; lc[da] = dpt; lc[ua] = uu; lc[va] = vv;
@@ -167,8 +166,11 @@ void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f
 
 /** Generate tile geometry: per-tile pick AABBs, greedy-merged faces. */
 void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
-  wd.buildTileBounds(coord, data);              // pick AABBs (per-tile, unchanged granularity)
-  foreach (f; 0 .. 6) wd.mergeFaces(coord, data, f);   // greedy-merge every face direction
+  wd.buildTileBounds(coord, data);
+  immutable int plane = wd.chunkSize * (wd.chunkSize > wd.chunkHeight ? wd.chunkSize : wd.chunkHeight);
+  auto cell = new ResourceType[plane];
+  auto used = new bool[plane];
+  foreach (f; 0 .. 6) { wd.mergeFaces(coord, data, f, cell, used); }
 }
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
