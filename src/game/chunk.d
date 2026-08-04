@@ -44,6 +44,21 @@ struct ChunkField {
   alias loaded this;
 }
 
+/** Per-face plane geometry: axis mapping, plane extents, and tileTypes-index strides. */
+struct FacePlane {
+  int da, ua, va;        /// normal / U / V axis indices
+  int dMax, uMax, vMax;  /// tile extent along depth / U / V
+  int sd, su, sv;        /// linear index step per depth / column / row
+}
+
+/** Derive the plane descriptor for face direction `f`. */
+@nogc FacePlane facePlane(immutable(WorldData) wd, int f) nothrow {
+  immutable int[3] ext = [wd.chunkSize, wd.chunkHeight, wd.chunkSize];
+  immutable int[3] st = wd.indexStride();
+  immutable int da = FACE_AXES[f][0], ua = FACE_AXES[f][1], va = FACE_AXES[f][2];
+  return FacePlane(da, ua, va, ext[da], ext[ua], ext[va], st[da], st[ua], st[va]);
+}
+
 /** Build the full tile-type array for a chunk column-by-column from height/material noise */
 ResourceType[] buildTileTypes(immutable(WorldData) wd, int[3] coord) {
   ResourceType[] types;
@@ -132,44 +147,49 @@ void buildTileBounds(immutable(WorldData) wd, int[3] coord, ref ChunkData data) 
 /** Linear tileTypes-index stride per axis (X, Y, Z), matching tileIndex's layout. */
 @nogc int[3] indexStride(immutable(WorldData) wd) nothrow { return [1, wd.chunkSize, wd.chunkHeight * wd.chunkSize]; }
 
-/** Greedy-merge exposed faces of direction `f` into spanned quads, sweeping the face's plane. */
-void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, ResourceType[] cell, bool[] used) {
-  immutable int[3] ext = [wd.chunkSize, wd.chunkHeight, wd.chunkSize];   // per-axis tile extent
-  immutable int da = FACE_AXES[f][0], ua = FACE_AXES[f][1], va = FACE_AXES[f][2];
-  immutable int dMax = ext[da], uMax = ext[ua], vMax = ext[va];
-  immutable int[3] stride = wd.indexStride();
-  immutable int sd = stride[da], su = stride[ua], sv = stride[va];   // linear-index steps per depth / row / column
-  for (int dpt = 0; dpt < dMax; dpt++) {
-    cell[0 .. uMax * vMax] = ResourceType.None;
-    used[0 .. uMax * vMax] = false;
-    bool any = false;
-    for (int vv = 0; vv < vMax; vv++) {
-      immutable int row = vv * uMax;                                 // plane-grid row base
-      int idx = dpt * sd + vv * sv;                                  // tileTypes index, stepped by su per column
-      for (int uu = 0; uu < uMax; uu++, idx += su) {
-        auto t = data.tileTypes[idx];
-        if (t == ResourceType.None) continue;
-        int[3] lc; lc[da] = dpt; lc[ua] = uu; lc[va] = vv;
-        if (wd.faceExposed(data, coord, lc, f)) { cell[row + uu] = t; any = true; }
-      }
+/** Fill the plane grid at depth `dpt` with exposed-face materials; true if any face was exposed. */
+bool fillPlane(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, FacePlane p, int dpt, ResourceType[] cell, bool[] used) {
+  cell[0 .. p.uMax * p.vMax] = ResourceType.None;
+  used[0 .. p.uMax * p.vMax] = false;
+  bool any = false;
+  for (int vv = 0; vv < p.vMax; vv++) {
+    immutable int row = vv * p.uMax;                               // plane-grid row base
+    int idx = dpt * p.sd + vv * p.sv;                              // tileTypes index, stepped by su per column
+    for (int uu = 0; uu < p.uMax; uu++, idx += p.su) {
+      auto t = data.tileTypes[idx];
+      if (t == ResourceType.None) continue;
+      int[3] lc; lc[p.da] = dpt; lc[p.ua] = uu; lc[p.va] = vv;
+      if (wd.faceExposed(data, coord, lc, f)) { cell[row + uu] = t; any = true; }
     }
-    if (!any) continue;
-    for (int vv = 0; vv < vMax; vv++) for (int uu = 0; uu < uMax; uu++) {
-      int k = vv*uMax + uu;
-      if (used[k] || cell[k] == ResourceType.None) continue;
-      auto mat = cell[k];
-      int w = 1; while (uu + w < uMax && !used[k + w] && cell[k + w] == mat) w++;   // extend width along u
+  }
+  return any;
+}
 
-      /** True if the whole w-wide strip at row r is unused and all material `mat`. */
-      bool strip(int r) {
-        foreach (x; 0 .. w) { immutable kk = r*uMax + uu + x; if (used[kk] || cell[kk] != mat) return false; }
-        return true;
-      }
-      int h = 1; while (vv + h < vMax && strip(vv + h)) h++;
-      for (int dv = 0; dv < h; dv++) for (int du = 0; du < w; du++) used[(vv + dv)*uMax + uu + du] = true;
-      int[3] o; o[da] = dpt; o[ua] = uu; o[va] = vv;
-      data.tileInstances ~= wd.mergedFace(coord, f, o, w, h, mat);
+/** Greedy-merge the filled plane grid into instances: one quad per maximal same-material rectangle. */
+void mergePlane(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, FacePlane p, int dpt, ResourceType[] cell, bool[] used) {
+  for (int vv = 0; vv < p.vMax; vv++) for (int uu = 0; uu < p.uMax; uu++) {
+    int k = vv*p.uMax + uu;
+    if (used[k] || cell[k] == ResourceType.None) continue;
+    auto mat = cell[k];
+    int w = 1; while (uu + w < p.uMax && !used[k + w] && cell[k + w] == mat) w++;   // extend width along u
+
+    /** True if the whole w-wide strip at row r is unused and all material 'mat'. */
+    bool strip(int r) {
+      foreach (x; 0 .. w) { immutable kk = r*p.uMax + uu + x; if (used[kk] || cell[kk] != mat) return false; }
+      return true;
     }
+    int h = 1; while (vv + h < p.vMax && strip(vv + h)) h++;                         // extend height along v
+    for (int dv = 0; dv < h; dv++) for (int du = 0; du < w; du++) used[(vv + dv)*p.uMax + uu + du] = true;
+    int[3] o; o[p.da] = dpt; o[p.ua] = uu; o[p.va] = vv;
+    data.tileInstances ~= wd.mergedFace(coord, f, o, w, h, mat);
+  }
+}
+
+/** Greedy-merge exposed faces of direction 'f', one depth-plane at a time. */
+void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, ResourceType[] cell, bool[] used) {
+  immutable p = wd.facePlane(f);
+  for (int dpt = 0; dpt < p.dMax; dpt++) {
+    if (wd.fillPlane(coord, data, f, p, dpt, cell, used)){ wd.mergePlane(coord, data, f, p, dpt, cell, used); }
   }
 }
 
