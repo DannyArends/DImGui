@@ -75,7 +75,9 @@ LatticeMap!(T[uint]) unflatten(T)(const Diff!T[] flat) {
 @nogc pure int[3] tileAbove(const int[3] tile) nothrow { return [tile.x, tile.y + 1, tile.z]; }
 
 /** True if a chunk-local tile sits on the x or z edge of the chunk (needs cross-chunk neighbour lookup) */
-@nogc pure bool onChunkBoundary(T)(const T l, const int[3] lc) nothrow { return lc.x == 0 || lc.x == l.chunkSize-1 || lc.z == 0 || lc.z == l.chunkSize-1; }
+@nogc pure bool onChunkBoundary(T)(const T l, const int[3] lc) nothrow { 
+  return lc.x == 0 || lc.x == l.chunkSize-1 || lc.z == 0 || lc.z == l.chunkSize-1;
+}
 
 /** Terrain surface height in tiles for normalised noise height 'h0' within a chunk of 'chunkHeight' */
 @nogc pure int surfaceLevel(float h0, int chunkHeight) nothrow { return cast(int)(h0 * sqrt(h0) * (chunkHeight - 1)); }
