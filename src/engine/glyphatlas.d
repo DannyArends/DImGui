@@ -7,11 +7,9 @@ import engine;
 
 import buffer : cleanup;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
-import images : createImage, cleanup, imageSize;
+import images : cleanup;
 import io : readFile, fixPath;
-import surface : toRGBA;
 import textures : toGPU;
-import views : createImageView;
 
 /** Glyph stores FreeType glyph data */
 struct Glyph {
