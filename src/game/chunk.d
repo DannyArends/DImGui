@@ -108,7 +108,7 @@ static immutable int[3][6] FACE_AXES = [
   [2, 0, 1], [2, 0, 1],   // f4/f5 (±Z): plane U=X, V=Y
 ];
 
-/** One instance covering a w×d tile run of face 'f' at plane-tile (x0,y,z0); UV tiles w x d. */
+/** One instance covering a u x v run of face 'f'; centre is the two-corner midpoint so Y-spanning walls place correctly. */
 @nogc DrawInstance mergedFace(immutable(WorldData) wd, int[3] coord, int f, int[3] o, int u, int v, ResourceType mat) nothrow {
   int[3] c = o; c[FACE_AXES[f][1]] += (u - 1); c[FACE_AXES[f][2]] += (v - 1);          // far corner along the face's U/V axes
   float[3] a = wd.worldPos(wd.worldCoord(coord, o));
