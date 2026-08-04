@@ -129,20 +129,29 @@ void buildTileBounds(immutable(WorldData) wd, int[3] coord, ref ChunkData data) 
   }
 }
 
+/** Linear tileTypes-index stride per axis (X, Y, Z), matching tileIndex's layout. */
+@nogc int[3] indexStride(immutable(WorldData) wd) nothrow { return [1, wd.chunkSize, wd.chunkHeight * wd.chunkSize]; }
+
 /** Greedy-merge exposed faces of direction `f` into spanned quads, sweeping the face's plane. */
 void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, ResourceType[] cell, bool[] used) {
   immutable int[3] ext = [wd.chunkSize, wd.chunkHeight, wd.chunkSize];   // per-axis tile extent
   immutable int da = FACE_AXES[f][0], ua = FACE_AXES[f][1], va = FACE_AXES[f][2];
   immutable int dMax = ext[da], uMax = ext[ua], vMax = ext[va];
+  immutable int[3] stride = wd.indexStride();
+  immutable int sd = stride[da], su = stride[ua], sv = stride[va];   // linear-index steps per depth / row / column
   for (int dpt = 0; dpt < dMax; dpt++) {
-    cell[0 .. uMax * vMax] = ResourceType.None; 
+    cell[0 .. uMax * vMax] = ResourceType.None;
     used[0 .. uMax * vMax] = false;
     bool any = false;
-    for (int vv = 0; vv < vMax; vv++) for (int uu = 0; uu < uMax; uu++) {
-      int[3] lc; lc[da] = dpt; lc[ua] = uu; lc[va] = vv;
-      auto t = data.tileTypes[wd.tileIndex(lc)];
-      if (t == ResourceType.None) continue;
-      if (wd.faceExposed(data, coord, lc, f)) { cell[vv*uMax + uu] = t; any = true; }
+    for (int vv = 0; vv < vMax; vv++) {
+      immutable int row = vv * uMax;                                 // plane-grid row base
+      int idx = dpt * sd + vv * sv;                                  // tileTypes index, stepped by su per column
+      for (int uu = 0; uu < uMax; uu++, idx += su) {
+        auto t = data.tileTypes[idx];
+        if (t == ResourceType.None) continue;
+        int[3] lc; lc[da] = dpt; lc[ua] = uu; lc[va] = vv;
+        if (wd.faceExposed(data, coord, lc, f)) { cell[row + uu] = t; any = true; }
+      }
     }
     if (!any) continue;
     for (int vv = 0; vv < vMax; vv++) for (int uu = 0; uu < uMax; uu++) {
