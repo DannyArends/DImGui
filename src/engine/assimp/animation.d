@@ -70,12 +70,9 @@ void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, co
   Matrix localTransform = node.transform;
 
   if (node.name in animation.nodeAnimations) {
-    auto p = getNodePosition(animation.nodeAnimations[node.name], animationTime);
-    auto r = getNodeRotation(animation.nodeAnimations[node.name], animationTime);
-    auto s = getNodeScale(animation.nodeAnimations[node.name], animationTime);
-    Matrix positionM = translate(p);
-    Matrix rotationM = rotate(r);
-    Matrix scaleM = scale(s);
+    Matrix positionM = translate(sampleKeyframes!interpolate(animation.nodeAnimations[node.name].positionKeys, animationTime));
+    Matrix rotationM = rotate(sampleKeyframes!slerp(animation.nodeAnimations[node.name].rotationKeys, animationTime));
+    Matrix scaleM = scale(sampleKeyframes!interpolate(animation.nodeAnimations[node.name].scalingKeys, animationTime));
     localTransform = scaleM.multiply(positionM.multiply(rotationM));
   }
 
@@ -152,32 +149,12 @@ Animation[] loadAnimations(aiScene* scene, const OpenAsset asset, bool verbose =
   return(keys.length - 1);
 }
 
-@nogc pure float[3] getNodePosition(const NodeAnimation anim, double animationTime) nothrow {
-  if (anim.positionKeys.length == 1) return(anim.positionKeys[0].value);
-
-  size_t i0 = findKeyframeIndex(anim.positionKeys, animationTime);
-  size_t i1 = i0 + 1; if (i1 >= anim.positionKeys.length) i1 = i0;
-  double t0 = anim.positionKeys[i0].time, t1 = anim.positionKeys[i1].time;
+/** Interpolate a keyframe channel at animationTime; interp = interpolate for vec3, slerp for quats. */
+@nogc pure auto sampleKeyframes(alias interp, K)(const K[] keys, double animationTime) nothrow {
+  if (keys.length == 1) return keys[0].value;
+  size_t i0 = findKeyframeIndex(keys, animationTime);
+  size_t i1 = i0 + 1; if (i1 >= keys.length) i1 = i0;
+  double t0 = keys[i0].time, t1 = keys[i1].time;
   float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
-  return(interpolate(anim.positionKeys[i0].value, anim.positionKeys[i1].value, factor));
-}
-
-@nogc pure float[4] getNodeRotation(NodeAnimation anim, double animationTime) nothrow {
-  if (anim.rotationKeys.length == 1) return(anim.rotationKeys[0].value);
-
-  size_t i0 = findKeyframeIndex(anim.rotationKeys, animationTime);
-  size_t i1 = i0 + 1; if (i1 >= anim.rotationKeys.length) i1 = i0;
-  double t0 = anim.rotationKeys[i0].time, t1 = anim.rotationKeys[i1].time;
-  float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
-  return(slerp(anim.rotationKeys[i0].value, anim.rotationKeys[i1].value, factor));
-}
-
-@nogc pure float[3] getNodeScale(NodeAnimation anim, double animationTime) nothrow {
-  if (anim.scalingKeys.length == 1) return(anim.scalingKeys[0].value);
-
-  size_t i0 = findKeyframeIndex(anim.scalingKeys, animationTime);
-  size_t i1 = i0 + 1; if (i1 >= anim.scalingKeys.length) i1 = i0;
-  double t0 = anim.scalingKeys[i0].time, t1 = anim.scalingKeys[i1].time;
-  float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
-  return(interpolate(anim.scalingKeys[i0].value, anim.scalingKeys[i1].value, factor));
+  return interp(keys[i0].value, keys[i1].value, factor);
 }
