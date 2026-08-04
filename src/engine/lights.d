@@ -136,7 +136,7 @@ void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
       auto light = app.lights[l++];
       o.instances[0].matrix = Matrix.init;
       o.position(light.position.xyz);
-      o.aimAlong(light.position.xyz, light.direction.xyz);
+      o.aimAlong(light.position.xyz, light.direction.xyz.negate);
       o.setColor(light.intensity.xyz.normalize.xyzw);
     }
   }
@@ -167,11 +167,11 @@ void toggleLightGeometries(ref App app) {
     } else {
       app.objects ~= new Cone();
       app.objects[$-1].geometry = (){ return "LightCone"; };
-      app.objects[$-1].aimAlong(light.position.xyz, light.direction.xyz);
+      app.objects[$-1].aimAlong(light.position.xyz, light.direction.xyz.negate);
     }
     app.objects[$-1].castShadow = false;
     app.objects[$-1].position(light.position.xyz);
-    app.objects[$-1].setColor(light.intensity);
+    app.objects[$-1].setColor(light.intensity.xyz.normalize.xyzw);
   }
 }
 
