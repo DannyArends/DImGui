@@ -5,8 +5,9 @@
 
 import engine;
 
-import vector : x, y, z, normalize, mean;
-import cone : computeThetas, computeBasePositions;
+import cone : computeThetas;
+import cylinder : computeWall;
+import vector : x, y, z, normalize;
 
 /** Capsule: a cylinder of 'height' capped by two hemispheres of 'radius' (total height = height + 2*radius). */
 class Capsule : Geometry {
@@ -15,7 +16,7 @@ class Capsule : Geometry {
     if (numRings < 1) numRings = 1;
     float halfHeight = height / 2.0f;
 
-    capsuleWall(this, radius, halfHeight, numSegments, color);
+    computeWall(this, radius, halfHeight, numSegments, color);
     capsuleCap(this, radius, halfHeight, numSegments, numRings, color, true);    // top hemisphere
     capsuleCap(this, radius, halfHeight, numSegments, numRings, color, false);   // bottom hemisphere
 
@@ -23,23 +24,6 @@ class Capsule : Geometry {
     meshes["Capsule"] = Mesh([0, cast(uint)vertices.length]);
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     geometry = (){ return(typeof(this).stringof); };
-  }
-}
-
-/** Cylindrical wall spanning the two hemisphere equators at y = ±halfHeight. */
-void capsuleWall(T)(T o, float radius, float halfHeight, uint numSegments, float[4] color) {
-  for (uint i = 0; i < numSegments; ++i) {
-    float[2] thetas = computeThetas(i, numSegments);
-    float[3][2] p = computeBasePositions(radius, thetas);
-    float avg = mean(thetas);
-    float[3] n = [cos(avg), 0.0f, sin(avg)];
-    float[4] tan = [-sin(avg), 0.0f, cos(avg), 1.0f];
-    uint v = cast(uint)o.vertices.length;
-    o.vertices ~= Vertex([p[0].x, -halfHeight, p[0].z], [0.0f, 0.0f], color, n, tan);
-    o.vertices ~= Vertex([p[1].x, -halfHeight, p[1].z], [1.0f, 0.0f], color, n, tan);
-    o.vertices ~= Vertex([p[1].x,  halfHeight, p[1].z], [1.0f, 1.0f], color, n, tan);
-    o.vertices ~= Vertex([p[0].x,  halfHeight, p[0].z], [0.0f, 1.0f], color, n, tan);
-    o.indices ~= [v+2, v+1, v, v, v+3, v+2];
   }
 }
 
