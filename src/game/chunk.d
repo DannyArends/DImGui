@@ -54,7 +54,7 @@ struct FacePlane {
 /** Derive the plane descriptor for face direction `f`. */
 @nogc FacePlane facePlane(immutable(WorldData) wd, int f) nothrow {
   immutable int[3] ext = [wd.chunkSize, wd.chunkHeight, wd.chunkSize];
-  immutable int[3] st = wd.indexStride();
+  immutable int[3] st = [1, wd.chunkSize, wd.chunkHeight * wd.chunkSize];
   immutable int da = FACE_AXES[f][0], ua = FACE_AXES[f][1], va = FACE_AXES[f][2];
   return FacePlane(da, ua, va, ext[da], ext[ua], ext[va], st[da], st[ua], st[va]);
 }
@@ -144,9 +144,6 @@ void buildTileBounds(immutable(WorldData) wd, int[3] coord, ref ChunkData data) 
   }
 }
 
-/** Linear tileTypes-index stride per axis (X, Y, Z), matching tileIndex's layout. */
-@nogc int[3] indexStride(immutable(WorldData) wd) nothrow { return [1, wd.chunkSize, wd.chunkHeight * wd.chunkSize]; }
-
 /** Fill the plane grid at depth `dpt` with exposed-face materials; true if any face was exposed. */
 bool fillPlane(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, FacePlane p, int dpt, ResourceType[] cell, bool[] used) {
   cell[0 .. p.uMax * p.vMax] = ResourceType.None;
@@ -185,14 +182,6 @@ void mergePlane(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f
   }
 }
 
-/** Greedy-merge exposed faces of direction 'f', one depth-plane at a time. */
-void mergeFaces(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, ResourceType[] cell, bool[] used) {
-  immutable p = wd.facePlane(f);
-  for (int dpt = 0; dpt < p.dMax; dpt++) {
-    if (wd.fillPlane(coord, data, f, p, dpt, cell, used)){ wd.mergePlane(coord, data, f, p, dpt, cell, used); }
-  }
-}
-
 /** Generate tile geometry: per-tile pick AABBs, greedy-merged faces. */
 void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data) {
   immutable int surf = wd.chunkSize * wd.chunkSize;               // surface-area estimate for reservation
@@ -202,7 +191,12 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
   immutable int plane = wd.chunkSize * (wd.chunkSize > wd.chunkHeight ? wd.chunkSize : wd.chunkHeight);
   auto cell = new ResourceType[plane];          // scratch reused across all six sweeps
   auto used = new bool[plane];
-  foreach (f; 0 .. 6) wd.mergeFaces(coord, data, f, cell, used);   // greedy-merge every face direction
+  foreach (f; 0 .. 6) {
+    immutable p = wd.facePlane(f);
+    for (int dpt = 0; dpt < p.dMax; dpt++) {
+      if (wd.fillPlane(coord, data, f, p, dpt, cell, used)){ wd.mergePlane(coord, data, f, p, dpt, cell, used); }
+    }
+  }
 }
 
 /** Build chunk geometry data in a worker thread: generates tile instances with neighbour culling */
