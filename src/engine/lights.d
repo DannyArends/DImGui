@@ -10,7 +10,6 @@ import geometry : setColor;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
 import shadow : assignShadowSlots, updateShadowSlotMatrices, pickStaticRebuilds;
-import textures : mapTextures;
 import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
 import quaternion : aimMatrix, xyzw, w;
 import matrix : degree, translate;

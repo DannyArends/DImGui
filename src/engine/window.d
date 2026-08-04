@@ -5,7 +5,6 @@
 
 import engine;
 
-import commandpool : createCommandBuffer;
 import compute: createComputeCommandBuffers, createComputePipeline;
 import depthbuffer : createDepthResources, createDepthPrePass;
 import descriptor : createDescriptors, updateDescriptorSet;
@@ -20,8 +19,7 @@ import swapchain : createSwapChain, aquireSwapChainImages;
 import sync : createSyncObjects;
 import wboit : createWBOITResources, createWBOITResolvePipeline;
 
-VkPrimitiveTopology[] supportedTopologies = 
-[
+VkPrimitiveTopology[] supportedTopologies = [
   VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
   VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
   VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
@@ -30,9 +28,7 @@ VkPrimitiveTopology[] supportedTopologies =
   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN
 ];
 
-/** 
- * Called on Window creation and Resize, should rebuild all perFrame objects
- */
+/** Called on window creation and resize, should rebuild all per-frame objects */
 void createOrResizeWindow(ref App app) {
   if(app.verbose) SDL_Log("Window Created or ReSized, recreate SwapChain");
   enforceVK(vkDeviceWaitIdle(app.device));

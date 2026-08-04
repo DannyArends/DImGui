@@ -15,7 +15,7 @@ import mainmenu : showMenu;
 import sidepanel : showSidepanel;
 import shaderswindow : showShaderContent;
 import texturewindow : showTexturesContent;
-import validation : nameVulkanObject, pushLabel, popLabel;
+import validation : pushLabel, popLabel;
 
 /** Main GUI structure */
 struct GUI {
