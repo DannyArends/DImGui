@@ -5,8 +5,6 @@
 
 import engine;
 
-import textures : idx;
-
 struct Material {
   int tid = -1;
   int nid = -1;

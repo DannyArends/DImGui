@@ -8,7 +8,7 @@ import engine;
 import descriptorupdate : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
 import framebuffer : cleanup;
-import geometry : bufferGeometries, draw;
+import geometry : draw;
 import lights : computeLightSpace, computeRadius;
 import images : cleanup, copyImageLayer;
 import sampler : createShadowSampler;
