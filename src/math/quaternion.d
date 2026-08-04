@@ -5,8 +5,8 @@
 
 import phobos;
 
-import vector : x,y,z, magnitude, normalize, vMul, sum;
-import matrix : Matrix, radian;
+import vector : dot, x,y,z, magnitude, normalize, vMul, sum, cross;
+import matrix : degree, Matrix, multiply, radian, translate;
 
 /** Quaternion, stored as float[4] */
 struct Quaternion { 
@@ -39,6 +39,13 @@ struct Quaternion {
 
 /** Dot product between v1 and v2 */
 @nogc pure T dot(T)(const T[4] v1, const T[4] v2) nothrow { T[4] vDot = v1[] * v2[]; return(sum(vDot)); }
+
+/** Model matrix aiming local +Y along `dir`, translated to `pos`. */
+@nogc Matrix aimMatrix(T)(T[3] pos, T[3] dir) nothrow {
+  T[3] to = dir.normalize();
+  T[4] q = angleAxis(degree(acos(dot([0.0f, 1.0f, 0.0f], to))), cross([0.0f, 1.0f, 0.0f], to));
+  return translate(pos).multiply(rotate(q));
+}
 
 T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
   T[4] result;

@@ -50,6 +50,7 @@ struct GUI {
   float scaleF = 1.0f;
   float[3] rotF = [0.0f, 0.0f, 0.0f];
   float[2] rot = [-360.0, 360.0f];
+  float[2] one = [-1.0, 1.0];
   float[2] pos = [-10.0, 10];
   float[2] col = [0.0, 20.0f];
   float[2] cone = [0.0, 90.0f];
