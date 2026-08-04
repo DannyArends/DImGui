@@ -110,15 +110,10 @@ static immutable int[3][6] FACE_AXES = [
 
 /** One instance covering a w×d tile run of face 'f' at plane-tile (x0,y,z0); UV tiles w x d. */
 @nogc DrawInstance mergedFace(immutable(WorldData) wd, int[3] coord, int f, int[3] o, int u, int v, ResourceType mat) nothrow {
-  float ts = wd.tileSize, th = wd.tileHeight;
-  int ua = FACE_AXES[f][1], va = FACE_AXES[f][2];
-  int[3] c = o; c[ua] += (u - 1); c[va] += (v - 1);          // far corner along the face's U/V axes
+  int[3] c = o; c[FACE_AXES[f][1]] += (u - 1); c[FACE_AXES[f][2]] += (v - 1);          // far corner along the face's U/V axes
   float[3] a = wd.worldPos(wd.worldCoord(coord, o));
   float[3] b = wd.worldPos(wd.worldCoord(coord, c));
-  float px = (a[0] + b[0]) * 0.5f;
-  float py = (a[1] + b[1]) * 0.5f + wd.yOffset;              // midpoint: correct for Y-spanning walls
-  float pz = (a[2] + b[2]) * 0.5f;
-  float[12] fd = faceData(f, px, py, pz, ts, th);
+  float[12] fd = faceData(f, (a[0] + b[0]) * 0.5f, (a[1] + b[1]) * 0.5f + wd.yOffset, (a[2] + b[2]) * 0.5f, wd.tileSize, wd.tileHeight);
   float su = u + SEAM_BLEED, sv = v + SEAM_BLEED;
   fd[0] *= su; fd[1] *= su; fd[2] *= su;
   fd[6] *= sv; fd[7] *= sv; fd[8] *= sv;
