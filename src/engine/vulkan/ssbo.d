@@ -8,7 +8,7 @@ import engine;
 import buffer : createAllocation, cleanup;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
-import sync : insertWriteBarrier;
+import sync : bufferBarrier;
 import validation : nameVulkanObject;
 
 /** GPU SSBO: per-copy allocations, per-copy dirty flags, and layout. */
@@ -118,7 +118,10 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmd, ref SSBOList!T container, D
     memcpy(staging.data, &container[0], size);
     VkBufferCopy region = { size : size };
     vkCmdCopyBuffer(cmd, staging.buffer, app.buffers[descriptor.base][syncIndex].buffer, 1, &region);
-    cmd.insertWriteBarrier(app.buffers[descriptor.base][syncIndex].buffer);
+    // Compute-Write -> Vertex-Read barrier
+    cmd.bufferBarrier(app.buffers[descriptor.base][syncIndex].buffer,
+                      VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
     app.deAllocate(staging);
   } else { memcpy(app.buffers[descriptor.base][syncIndex].data, &container[0], size); }
   app.buffers[descriptor.base].dirty[syncIndex] = false;

@@ -10,7 +10,7 @@ import descriptor : createDescriptorSetLayout, createDescriptorSet;
 import descriptorupdate : updateDescriptorData;
 import images : imageBarrier, transitionImageLayout;
 import shaders : loadShaders, createStageInfo;
-import sync : insertFillBarrier;
+import sync : bufferBarrier;
 import textures : idx;
 import validation : pushLabel, popLabel, nameVulkanObject;
 import vector : vCeilDiv;
@@ -58,12 +58,16 @@ void initializeCompute(ref App app) {
       VkBuffer cursorBuf = a.buffers["ClusterCounter"][a.syncIndex].buffer;
       vkCmdFillBuffer(cmd, headBuf, 0, VK_WHOLE_SIZE, NIL);
       vkCmdFillBuffer(cmd, cursorBuf, 0, VK_WHOLE_SIZE, 0);
-      cmd.insertFillBarrier(headBuf, VK_WHOLE_SIZE);
-      cmd.insertFillBarrier(cursorBuf, VK_WHOLE_SIZE);
+      // Transfer-Write -> Compute Read/Write barrier
+      cmd.bufferBarrier(headBuf, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+      cmd.bufferBarrier(cursorBuf, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     },
     workItems: (ref App a, Shader shader) { uint[3] r = [cast(uint)a.lights.length, 1u, 1u]; return r; }
   );
 
+  // ssao.glsl: produced compute image is used in fragment
   app.compute.passes["data/shaders/compute.ssao.glsl"] = ComputePass(
     stage: ComputeStage.PostDepth,
     enabled: (ref App a) => a.useSSAO,
