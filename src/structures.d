@@ -48,6 +48,7 @@ public import renderpass : RenderPassInfo, RenderPass;
 public import serialization : Persist, Section;
 public import shaders : Shader, ShaderDef, ShaderStage, Specialization, IncluderContext, RenderShaders, PostProcessShaders;
 public import sparseset : SparseSet;
+public import sphere : Sphere;
 public import square : Square;
 public import search : SearchState;
 public import sdl : STARTUP, FRAMESTART, FRAMESTOP, LASTTICK, LASTFRAME;

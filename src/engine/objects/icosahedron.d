@@ -68,7 +68,7 @@ class Icosahedron : Geometry {
     return(texCoord);
 }
 
-void refineIcosahedron(ref Geometry object, uint recursionLevel = 1, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
+void refineIcosahedron(T)(T object, uint recursionLevel = 1, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
   float[3] p0, p1, p2, a,b,c;
   uint ia, ib, ic;
   for (uint i = 0; i < recursionLevel; i++) {

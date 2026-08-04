@@ -6,7 +6,7 @@
 import engine;
 
 import devices : getMSAASamples;
-import geometry : setColor;
+import geometry : setColor, aimAlong;
 import icosahedron : refineIcosahedron;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
@@ -136,7 +136,7 @@ void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
       auto light = app.lights[l++];
       o.instances[0].matrix = Matrix.init;
       o.position(light.position.xyz);
-      o.rotate([light.yaw(), 1.0f, light.pitch()]);
+      o.aimAlong(light.position.xyz, light.direction.xyz);
       o.setColor(light.intensity);
     }
   }
@@ -162,13 +162,12 @@ void toggleLightGeometries(ref App app) {
   if(!app.showLights) return;
   foreach(i, ref light; app.lights) {
     if(i == 0) { // Sun — large icosahedron far away
-      app.objects ~= new Icosahedron();
-      app.objects[$-1].refineIcosahedron(3);
+      app.objects ~= new Sphere();
       app.objects[$-1].geometry = (){ return "SunGeometry"; };
     } else {
       app.objects ~= new Cone();
       app.objects[$-1].geometry = (){ return "LightCone"; };
-      app.objects[$-1].rotate([light.yaw(), 1.0f, light.pitch()]);
+      app.objects[$-1].aimAlong(light.position.xyz, light.direction.xyz);
     }
     app.objects[$-1].castShadow = false;
     app.objects[$-1].position(light.position.xyz);

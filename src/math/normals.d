@@ -20,7 +20,7 @@ pure uint[3][] faces(T)(const T geometry) nothrow {
 }
 
 /** Compute Normal vectors of a Geometry */
-void computeNormals(T)(ref T geometry, bool invert = false, bool verbose = false) {
+void computeNormals(T)(T geometry, bool invert = false, bool verbose = false) {
   auto faces = geometry.faces;
   float[3][] normals = new float[3][faces.length];
   auto cnt = 0;
@@ -48,7 +48,7 @@ void computeNormals(T)(ref T geometry, bool invert = false, bool verbose = false
 }
 
 /** Compute Tangent vectors of a Geometry */
-void computeTangents(T)(ref T geometry, bool verbose = false) {
+void computeTangents(T)(T geometry, bool verbose = false) {
   auto faces = geometry.faces;
 
   if (faces.length == 0 || geometry.vertices.length == 0) {
