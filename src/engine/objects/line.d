@@ -5,8 +5,7 @@
 
 import engine;
 
-import matrix : multiply;
-import vector : vAdd, vSub, vMul, x, y, z;
+import vector : vAdd, vMul;
 
 /** Line */
 class Line : Geometry {

@@ -26,6 +26,6 @@ bool isEqual(N)(const N x, const N y) { return(euclidean(x.position, y.position)
 
 /** Uses the isEqual function to determine the index of a node is in the open / closed list when not found returns size_t.max */
 size_t has(N)(size_t[] indices, N[] pool, N x) {
-  foreach (size_t i, size_t idx; indices) { if(pool[idx].isEqual(x)) return i; }
+  foreach (size_t i, size_t idx; indices) { if(pool[idx].isEqual(x)) return(i); }
   return size_t.max;
 }

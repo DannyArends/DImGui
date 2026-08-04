@@ -9,7 +9,7 @@ import vector : dot, x,y,z, magnitude, normalize, vMul, sum, cross;
 import matrix : degree, Matrix, multiply, radian, translate;
 
 /** Quaternion, stored as float[4] */
-struct Quaternion { 
+struct Quaternion {
   float[4] data = [ 0.0f, 0.0f, 0.0f, 1.0f ];
   alias data this;
 }

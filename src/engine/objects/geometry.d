@@ -81,31 +81,31 @@ class Geometry {
   @nogc void syncInstances() nothrow { instances.invalidate(); if(box !is null) box.dirty = true; }
 
   /** Set position of instance from object.instances by p */
-  @nogc void position(float[3] p, uint instance = 0) nothrow {
+  @nogc void position(float[3] p, uint instance = 0) nothrow { assert(instance <  instances.length, "No such instance");
     import matrix : position;
-    assert(instance <  instances.length, "No such instance");
+
     instances[instance] = position(instances[instance], p);
     syncInstances();
   }
 
-  @nogc float[3] position(uint instance = 0) nothrow {
+  @nogc float[3] position(uint instance = 0) nothrow { assert(instance <  instances.length, "No such instance");
     import matrix : position;
-    assert(instance <  instances.length, "No such instance");
+
     return(position(instances[instance]));
   }
 
   /** Rotate instance from object.instances by r */
-  @nogc void rotate(float[3] r, uint instance = 0) nothrow {
+  @nogc void rotate(float[3] r, uint instance = 0) nothrow { assert(instance <  instances.length, "No such instance");
     import matrix : rotate;
-    assert(instance <  instances.length, "No such instance");
+
     instances[instance] = rotate(instances[instance], r);
     syncInstances();
   }
 
   /** Scale instance from object.instances by s */
-  @nogc void scale(float[3] s, uint instance = 0) nothrow {
+  @nogc void scale(float[3] s, uint instance = 0) nothrow { assert(instance <  instances.length, "No such instance");
     import matrix : scale;
-    assert(instance <  instances.length, "No such instance");
+
     instances[instance] = scale(instances[instance], s);
     syncInstances();
   }
@@ -126,6 +126,7 @@ class Geometry {
 
 void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
   import geometrybuffer : cleanGeometryBuffer = cleanup;
+
   app.cleanGeometryBuffer(object.vertices);
   app.cleanGeometryBuffer(object.indices);
   app.cleanGeometryBuffer(object.instances);
