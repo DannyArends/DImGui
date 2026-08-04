@@ -9,7 +9,7 @@ import lattice : tileToWorld, worldToTile, tileAbove, tileNeighbours, tileBelow;
 import matrix : translate;
 import search : performSearch, atGoal, stepThroughPath;
 import tile : getSuccessors, isStandable, isPassable, getTileAt;
-import vector : manhattan2D;
+import vector : manhattan2D, interpolate;
 
 struct PathRequest {
   uint uid;
@@ -100,7 +100,7 @@ void followPath(T)(ref GameApp app, ref T obj) {
   auto next = obj.path[0];
   obj.path = obj.path[1..$];
   obj.moveFrom = obj.visualPos;
-  obj.moveTo = [next[0], next[1], next[2]];
+  obj.moveTo = next;
   obj.moveT = 0.0f;
   obj.tile = app.world.worldToTile(next);
   app.camera.isDirty = true;
@@ -112,11 +112,8 @@ bool stepMove(T)(ref GameApp app, ref T obj, float dt, float speed, float hop) {
   float cost = max(1.0f, app.world.getTileAt(obj.tile.tileBelow).cost);
   obj.moveT = min(1.0f, obj.moveT + dt * speed / cost);
   float arc = hop * obj.moveT * (1.0f - obj.moveT);
-  obj.visualPos = [
-    obj.moveFrom[0] + obj.moveT * (obj.moveTo[0] - obj.moveFrom[0]),
-    obj.moveFrom[1] + obj.moveT * (obj.moveTo[1] - obj.moveFrom[1]) + arc,
-    obj.moveFrom[2] + obj.moveT * (obj.moveTo[2] - obj.moveFrom[2])
-  ];
+  obj.visualPos = interpolate(obj.moveFrom, obj.moveTo, obj.moveT);
+  obj.visualPos[1] += arc;
   if(obj.moveT < 1.0f) return false;
   if(obj.path.length > 0) { app.followPath(obj); return false; }
   return true;

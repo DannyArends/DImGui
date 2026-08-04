@@ -39,11 +39,11 @@ struct Tool {
 immutable float os = 1.05f;
 immutable float flat = 0.02f;
 
-Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
-Matrix interactHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
-Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts, th, ts]); }
+Matrix mineHighlight(float[3] wp, float ts, float th) { return translateScale(wp, [ts*os, th*os, ts*os]); }
+Matrix interactHighlight(float[3] wp, float ts, float th) { return translateScale(wp, [ts, th, ts]); }
+Matrix buildHighlight(float[3] wp, float ts, float th) { return translateScale(wp, [ts, th, ts]); }
 Matrix stockpileHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1] + 0.5f * th, wp[2]], [ts*os, th*flat, ts*os]); }
-Matrix waterHighlight(float[3] wp, float ts, float th) { return translateScale([wp[0], wp[1], wp[2]], [ts*os, th*os, ts*os]); }
+Matrix waterHighlight(float[3] wp, float ts, float th) { return translateScale(wp, [ts*os, th*os, ts*os]); }
 
 void mineCommit(ref GameApp app, int[3] tile) {
   if(app.world.getTileAt(tile) == ResourceType.None) return;

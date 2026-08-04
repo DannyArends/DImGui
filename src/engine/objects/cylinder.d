@@ -5,7 +5,7 @@
 
 import engine;
 
-import vector : x,y,z, magnitude, cross;
+import vector : x, y, z, magnitude, cross, mean;
 import cone : computeThetas, computeBasePositions, computeCap;
 
 /** Cylinder
@@ -22,7 +22,7 @@ class Cylinder : Geometry {
       float[2] thetas = computeThetas(i, numSegments);
       float[3][2] bottomPositions = computeBasePositions(radius, thetas);
 
-      float avgTheta = (thetas[0] + thetas[1]) / 2.0f;
+      float avgTheta = mean(thetas);
       float[3] sideFaceNormal = [cos(avgTheta), 0.0f, sin(avgTheta)];
 
       uint vIdx = cast(uint)vertices.length;

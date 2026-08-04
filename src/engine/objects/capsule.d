@@ -5,7 +5,7 @@
 
 import engine;
 
-import vector : x, y, z, normalize;
+import vector : x, y, z, normalize, mean;
 import cone : computeThetas, computeBasePositions;
 
 /** Capsule: a cylinder of 'height' capped by two hemispheres of 'radius' (total height = height + 2*radius). */
@@ -31,7 +31,7 @@ void capsuleWall(T)(T o, float radius, float halfHeight, uint numSegments, float
   for (uint i = 0; i < numSegments; ++i) {
     float[2] thetas = computeThetas(i, numSegments);
     float[3][2] p = computeBasePositions(radius, thetas);
-    float avg = (thetas[0] + thetas[1]) / 2.0f;
+    float avg = mean(thetas);
     float[3] n = [cos(avg), 0.0f, sin(avg)];
     float[4] tan = [-sin(avg), 0.0f, cos(avg), 1.0f];
     uint v = cast(uint)o.vertices.length;
