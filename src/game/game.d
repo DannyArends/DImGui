@@ -143,7 +143,7 @@ Geometry makePrimitive(string name) {
     case "Cylinder": m = new Cylinder(0.4f, 1.0f, 12); break;
     case "Cone": m = new Cone(0.5f, 1.0f, 12); break;
     case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
-    case "Berries": m = new Icosahedron(); m.computeTangents(); m.refineIcosahedron(3); break;
+    case "Berries": m = new Sphere(); break;
     default: return null;
   }
   return m;

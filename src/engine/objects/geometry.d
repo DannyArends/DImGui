@@ -9,9 +9,12 @@ import buffer : uploadBarrier;
 import geometrybuffer : nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
 import textures : idx;
+import matrix : multiply, translate;
 import mesh : logMesh;
 import normals : computeNormals, computeTangents;
+import quaternion : angleAxis, rotate;
 import validation : pushLabel, popLabel;
+import vector: cross, dot, normalize;
 
 shared uint guid = 1;
 
@@ -131,6 +134,14 @@ void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
   if(object.box){ app.cleanup!BoundingBox(object.box); }
 }
 
+/** Orient object so its local +Y points along `dir`, positioned at `pos`. */
+@nogc void aimAlong(T)(T o, float[3] pos, float[3] dir, uint instance = 0) nothrow {
+  float[3] to = dir.normalize();
+  float[4] q = angleAxis(acos(dot([0.0f, 1.0f, 0.0f], to)), cross([0.0f, 1.0f, 0.0f], to));
+  o.instances[instance].matrix = translate(pos).multiply(rotate(q));
+  o.syncInstances();
+}
+
 void bufferGeometries(ref App app, ref VkCommandBuffer cmd){
   bool uploaded = false;
   for(size_t x = 0; x < app.objects.length; x++) {
@@ -161,7 +172,7 @@ void opacity(T)(T object, string name) { object.setTexture(name, aiTextureType_O
 }
 
 /** Add a vertex to a geometry of the object */
-uint addVertex(ref Geometry geometry, const Vertex v) nothrow {
+uint addVertex(T)(T geometry, const Vertex v) nothrow {
   geometry.vertices ~= v;
   geometry.vertices.invalidate();
   if(geometry.box !is null) geometry.box.dirty = true;
