@@ -6,7 +6,6 @@
 import engine;
 
 import boundingbox : computeBoundingBox;
-import camera : castRay, tryDrag, tryZoom;
 import geometry : setColor;
 import intersection : intersects;
 import line : createLine;
