@@ -118,7 +118,7 @@ void selectPress(ref GameApp app, float[3][2] ray) {
   int[3] wc;
   auto hits = app.getHits(ray, app.showRays);
   Job!Dwarf job;
-  if(app.getBestTile(ray, wc)) job = miningJob(wc);
+  if(app.getBestTile(ray, hits, wc)) job = miningJob(wc);
   foreach(ref ft; features) {
     bool matchFeature(string g) { return ft.parts.any!(p => g == ft.name ~ ":" ~ p.mesh) || ft.brushes.any!(b => g == ft.name ~ ":" ~ b.mesh); }
     if(app.getBestVegetation!(Feature, matchFeature)(ray, hits, app.world.vegetation.get(ft.name, null), wc)) {
@@ -217,7 +217,7 @@ void updateHoverHighlight(ref GameApp app, float[3][2] ray) {
   if(t.kind == ToolKind.Query) return;
   int[3] wc; bool ok;
   if(t.solidAnchor){
-    ok = app.getBestTile(ray, wc);
+    ok = app.getBestTile(ray, app.getHits(ray, app.showRays), wc);
   } else { wc = app.getGhostTile(ray, app.getHits(ray, false)); ok = (wc != noTile); }
   app.world.inventory.tile = ok ? wc : noTile;
   if(!app.world.inventory.paint.active) app.world.inventory.paint.preview = ok ? [wc] : [];
