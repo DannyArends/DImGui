@@ -14,6 +14,7 @@ public import camera : Camera;
 public import compute : ComputeStage, Compute;
 public import commandpool : SingleTimeCommand;
 public import commands : CommandBuffer;
+public import capsule : Capsule;
 public import cone : Cone;
 public import color : Colors;
 public import cube : Cube;

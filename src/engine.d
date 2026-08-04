@@ -17,7 +17,6 @@ version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
   - GPU-driven indirect draw (probably not possible, due to how our pipeline works)
   - Screen space ambient occlusion (SSAO) [DONE]
   - - Future: Bilateral blur pass
-  - Cascaded shadow maps for the Sun Shadows
   - Screen-space reflections on water
   - Chunk/object LOD
 */

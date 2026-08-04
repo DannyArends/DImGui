@@ -153,7 +153,7 @@ void setTexture(T)(T object, string name, aiTextureType tt) {
 
 void texture(T)(T object, string name) { object.setTexture(name, aiTextureType_DIFFUSE); }
 void bumpmap(T)(T object, string name) { object.setTexture(name, aiTextureType_NORMALS); }
-void opacity(T)(T object, string name) { object.setTexture(name, aiTextureType_OPACITY); }
+void opacity(T)(T object, string name) { object.setTexture(name, aiTextureType_OPACITY); object.isOpaque = (name.length == 0); }
 
 /** Euclidean distance between Geometry and Camera */
 @nogc float distance(T)(const T object, const Camera camera) nothrow { 
