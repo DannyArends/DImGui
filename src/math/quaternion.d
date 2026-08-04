@@ -59,12 +59,8 @@ T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
   const float DOT_THRESHOLD = 0.9995f;
   if (dot > DOT_THRESHOLD) {
     // If the quaternions are very close, just linear interpolate (L.I.)
-    result[] = start[] + factor * (e[] -start[]);
-    float len = sqrt(result[0]*result[0] + result[1]*result[1] + result[2]*result[2] + result[3]*result[3]);
-    if (len > 0.0f) { // Normalize
-      result[] = result[] / len;
-    }
-    return result;
+    result[] = start[] + factor * (e[] - start[]);
+    return result.normalize();
   }
 
   float theta_0 = acos(dot);

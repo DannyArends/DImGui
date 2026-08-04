@@ -111,11 +111,7 @@ struct Matrix {
 
 /** Scale from a matrix M */
 float[3] scale(const Matrix m) {
-  float[3] s = [
-    magnitude([m[0], m[1], m[2]]),
-    magnitude([m[4], m[5], m[6]]),
-    magnitude([m[8], m[9], m[10]])
-  ];
+  float[3] s = [magnitude(m[0..3]), magnitude(m[4..7]), magnitude(m[8..11])];
   return(s);
 }
 
