@@ -9,7 +9,7 @@ import buffer : uploadBarrier;
 import geometrybuffer : nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
 import textures : idx;
-import matrix : multiply, translate;
+import matrix : degree, multiply, translate;
 import mesh : logMesh;
 import normals : computeNormals, computeTangents;
 import quaternion : angleAxis, rotate;
@@ -137,7 +137,7 @@ void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {
 /** Orient object so its local +Y points along `dir`, positioned at `pos`. */
 @nogc void aimAlong(T)(T o, float[3] pos, float[3] dir, uint instance = 0) nothrow {
   float[3] to = dir.normalize();
-  float[4] q = angleAxis(acos(dot([0.0f, 1.0f, 0.0f], to)), cross([0.0f, 1.0f, 0.0f], to));
+  float[4] q = angleAxis(degree(acos(dot([0.0f, 1.0f, 0.0f], to))), cross([0.0f, 1.0f, 0.0f], to));
   o.instances[instance].matrix = translate(pos).multiply(rotate(q));
   o.syncInstances();
 }
