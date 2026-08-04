@@ -11,54 +11,41 @@ void loadInstanceExtensions(ref App app) {
   uint nExtensions;
   auto exts = SDL_Vulkan_GetInstanceExtensions(&nExtensions);
   app.instanceExtensions = exts[0..nExtensions].dup;
-  if(app.verbose) SDL_Log("Found %d instance extensions", app.instanceExtensions.length);
-  //if(app.verbose) for(uint i = 0; i < app.instanceExtensions.length; i++){ SDL_Log("- %s", app.instanceExtensions[i]); }
+  if(app.verbose) {
+    SDL_Log("Found %d instance extensions", app.instanceExtensions.length);
+    for(uint i = 0; i < app.instanceExtensions.length; i++){ SDL_Log("- %s", app.instanceExtensions[i]); }
+  }
+}
+
+/** Vulkan enumerate-twice idiom: count, allocate, fill. fn performs the actual Vulkan call. */
+T[] enumerate(T)(ref App app, string what, scope VkResult delegate(uint*, T*) fn) {
+  if(app.verbose) SDL_Log("query %s", toStringz(what));
+  uint n;
+  T[] items;
+  fn(&n, null);                    // count (result ignored, as before)
+  if(n == 0) return items;
+  items.length = n;
+  enforceVK(fn(&n, &items[0]));     // fill
+  if(app.verbose) SDL_Log("Found %d %s", items.length, toStringz(what));
+  return items;
 }
 
 /** query Instance Extensions Properties */
 VkExtensionProperties[] queryInstanceExtensionProperties(ref App app, const(char)* layer = null) {
-  if(app.verbose) SDL_Log("queryInstanceExtensionProperties");
-  uint nProperties;
-  VkExtensionProperties[] properties;
-
-  vkEnumerateInstanceExtensionProperties(layer, &nProperties, null);
-  if(nProperties == 0) return properties;
-  properties.length = nProperties;
-  enforceVK(vkEnumerateInstanceExtensionProperties(layer, &nProperties, &properties[0]));
-  if(app.verbose) SDL_Log("Found %d instance extensions", properties.length);
-  //if(app.verbose) foreach(i, property; properties) { SDL_Log("-Extension[%d] %s", i, property.extensionName.ptr); }
-  return(properties);
+  return app.enumerate!VkExtensionProperties("instance extensions",
+    (uint* n, VkExtensionProperties* p) => vkEnumerateInstanceExtensionProperties(layer, n, p));
 }
 
 /** query Instance Layer Properties */
 VkLayerProperties[] queryInstanceLayerProperties(ref App app) {
-  if(app.verbose) SDL_Log("queryInstanceLayerProperties");
-  uint nLayers;
-  VkLayerProperties[] layers;
-
-  vkEnumerateInstanceLayerProperties(&nLayers, null);
-  if(nLayers > 0) {
-    layers.length = nLayers;
-    enforceVK(vkEnumerateInstanceLayerProperties(&nLayers, &layers[0]));
-    if(app.verbose) SDL_Log("Found %d layers", layers.length);
-  }
-  //if(app.verbose) foreach(i, layer; layers) { SDL_Log("-Layer[%d] %s", i, layer.layerName.ptr); }
-  return(layers);
+  return app.enumerate!VkLayerProperties("instance layers",
+    (uint* n, VkLayerProperties* p) => vkEnumerateInstanceLayerProperties(n, p));
 }
 
 /** query Device Extensions Properties */
 VkExtensionProperties[] queryDeviceExtensionProperties(ref App app) {
-  if(app.verbose) SDL_Log("queryDeviceExtensionProperties");
-  uint nProperties;
-  VkExtensionProperties[] properties;
-
-  vkEnumerateDeviceExtensionProperties(app.physicalDevice, null, &nProperties, null);
-  if(nProperties == 0) return properties;
-  properties.length = nProperties;
-  enforceVK(vkEnumerateDeviceExtensionProperties(app.physicalDevice, null, &nProperties, &properties[0]));
-  if(app.verbose) SDL_Log("Found %d device extensions", properties.length);
-  //if(app.verbose) foreach(i, property; properties) { SDL_Log("-Extension[%d] %s", i, property.extensionName.ptr); }
-  return(properties);
+  return app.enumerate!VkExtensionProperties("device extensions",
+    (uint* n, VkExtensionProperties* p) => vkEnumerateDeviceExtensionProperties(app.physicalDevice, null, n, p));
 }
 
 bool has(VkLayerProperties[] layers, const(char)* layerName) {
