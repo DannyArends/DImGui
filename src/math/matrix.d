@@ -5,8 +5,7 @@
 
 import phobos;
 
-import vector : dot, sum, x, y, z, magnitude, xyz, vMul, vSub, cross, normalize;
-import quaternion : xyzw, vMul;
+import vector : dot, magnitude, vSub, cross, normalize;
 
 /** Matrix is a [4x4] 'structure' stored as float[16] (defaults to identity matrix). */
 struct Matrix {
