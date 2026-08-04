@@ -6,7 +6,7 @@
 import engine;
 
 import vector : x, y, z, magnitude, cross, mean;
-import cone : computeThetas, computeBasePositions, computeCap;
+import cone : computeBasePositions, computeCap, computeThetas;
 
 /** Cylinder
  * Defines a cylinder geometry with a specified radius, height, and number of segments.
@@ -18,28 +18,29 @@ class Cylinder : Geometry {
     // Calculate half height for centering
     float halfHeight = height / 2.0f;
 
-    for (uint i = 0; i < numSegments; ++i) {
-      float[2] thetas = computeThetas(i, numSegments);
-      float[3][2] bottomPositions = computeBasePositions(radius, thetas);
-
-      float avgTheta = mean(thetas);
-      float[3] sideFaceNormal = [cos(avgTheta), 0.0f, sin(avgTheta)];
-
-      uint vIdx = cast(uint)vertices.length;
-      float[4] tangent = [-sin(avgTheta), 0.0f, cos(avgTheta), 1.0f];
-      vertices ~= Vertex([bottomPositions[0].x, bottomPositions[0].y - halfHeight, bottomPositions[0].z], [0.0f, 0.0f], color, sideFaceNormal, tangent);
-      vertices ~= Vertex([bottomPositions[1].x, bottomPositions[1].y - halfHeight, bottomPositions[1].z], [1.0f, 0.0f], color, sideFaceNormal, tangent);
-      vertices ~= Vertex([bottomPositions[1].x, height - halfHeight, bottomPositions[1].z], [1.0f, 1.0f], color, sideFaceNormal, tangent);
-      vertices ~= Vertex([bottomPositions[0].x, height - halfHeight, bottomPositions[0].z], [0.0f, 1.0f], color, sideFaceNormal, tangent);
-
-      indices ~= [vIdx+2, vIdx + 1, vIdx, vIdx, vIdx + 3, vIdx + 2];
-    }
-    // Adjust cap positions by subtracting halfHeight
-    this.computeCap([0.0f, halfHeight, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, color); // Top cap
-    this.computeCap([0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color); // Bottom cap
+    computeWall(this, radius, halfHeight, numSegments, color);
+    computeCap(this, [0.0f, halfHeight, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, color); // Top cap
+    computeCap(this, [0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color); // Bottom cap
 
     instances = [DrawInstance()];
     meshes["Cylinder"] = Mesh([0, cast(uint)vertices.length]);
     geometry = (){ return(typeof(this).stringof); };
+  }
+}
+
+/** Cylindrical side wall: numSegments quads spanning y = ±halfHeight. Shared by Cylinder and Capsule. */
+pure void computeWall(T)(T o, float radius, float halfHeight, uint numSegments, float[4] color) nothrow {
+  for (uint i = 0; i < numSegments; ++i) {
+    float[2] thetas = computeThetas(i, numSegments);
+    float[3][2] p = computeBasePositions(radius, thetas);
+    float avg = mean(thetas);
+    float[3] n = [cos(avg), 0.0f, sin(avg)];
+    float[4] tan = [-sin(avg), 0.0f, cos(avg), 1.0f];
+    uint v = cast(uint)o.vertices.length;
+    o.vertices ~= Vertex([p[0].x, -halfHeight, p[0].z], [0.0f, 0.0f], color, n, tan);
+    o.vertices ~= Vertex([p[1].x, -halfHeight, p[1].z], [1.0f, 0.0f], color, n, tan);
+    o.vertices ~= Vertex([p[1].x,  halfHeight, p[1].z], [1.0f, 1.0f], color, n, tan);
+    o.vertices ~= Vertex([p[0].x,  halfHeight, p[0].z], [0.0f, 1.0f], color, n, tan);
+    o.indices ~= [v+2, v+1, v, v, v+3, v+2];
   }
 }

@@ -51,16 +51,12 @@ T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
   T[4] result;
   T[4] e = end;
   float dot = dot(start, e);
-  if (dot < 0.0f) {    // Ensure the shortest path
-    e[] = -e[];
-    dot = -dot;
-  }
+  if (dot < 0.0f) { e[] = -e[]; dot = -dot; }
 
   const float DOT_THRESHOLD = 0.9995f;
-  if (dot > DOT_THRESHOLD) {
-    // If the quaternions are very close, just linear interpolate (L.I.)
+  if (dot > DOT_THRESHOLD) { // If the quaternions are very close, just linear interpolate
     result[] = start[] + factor * (e[] - start[]);
-    return result.normalize();
+    return(result.normalize());
   }
 
   float theta_0 = acos(dot);
@@ -72,7 +68,7 @@ T[4] slerp(T)(const T[4] start, const T[4] end, float factor) {
   float s1 = sin_theta / sin_theta_0;
 
   result[] = start.vMul(s0)[] + e.vMul(s1)[];
-  return result;
+  return(result);
 }
 
 @nogc pure Matrix rotate(const float[4] q) nothrow {
