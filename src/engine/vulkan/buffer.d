@@ -88,25 +88,27 @@ void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDev
   if(app.trace) SDL_Log("Buffer %p [size=%d] created, allocated, and bound", (*buffer), size);
 }
 
-void copyBufferToImage(ref App app, VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint width, uint height) {
+/** Whole-image color copy region (mip 0, layer 0), shared by the buffer<->image copies. */
+@nogc pure VkBufferImageCopy bufferImageCopy(uint width, uint height) nothrow {
   VkBufferImageCopy region = {
     bufferOffset: 0, bufferRowLength: 0, bufferImageHeight: 0,
     imageSubresource: { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
     imageOffset: { 0, 0, 0 },
     imageExtent: { width, height, 1 }
   };
+  return region;
+}
 
+/** Copy staging buffer -> image (whole image, TRANSFER_DST layout). */
+void copyBufferToImage(ref App app, VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint width, uint height) {
+  VkBufferImageCopy region = bufferImageCopy(width, height);
   if(app.trace) SDL_Log("copyBufferToImage buffer[%p] to image[%p] %dx%d", buffer, image, width, height);
   vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
+/** Copy image -> staging buffer (whole image, TRANSFER_SRC layout). */
 void copyImageToBuffer(ref App app, VkCommandBuffer commandBuffer, VkImage image, VkBuffer buffer, uint width, uint height) {
-  VkBufferImageCopy region = {
-    bufferOffset: 0, bufferRowLength: 0, bufferImageHeight: 0,
-    imageSubresource: { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
-    imageOffset: { 0, 0, 0 },
-    imageExtent: { width, height, 1 }
-  };
+  VkBufferImageCopy region = bufferImageCopy(width, height);
   if(app.trace) SDL_Log("copyImageToBuffer image[%p] to buffer[%p] %dx%d", image, buffer, width, height);
   vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
 }
