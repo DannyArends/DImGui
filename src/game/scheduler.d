@@ -170,12 +170,13 @@ void failAndRequeue(ref Dwarf d) {
   d.progress = 0.0f;
 }
 
-/** Try storing a block inot a stockpile */
+/** Try storing a block into a stockpile */
 bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.drops) {
     if(b.tile == noTile || b.tile == builtTile || b.reserved || b.isFalling) continue;
     if(app.world.stockpiles.acceptedByHolder(id, b.item)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
+    if(b.tile != storedTile && app.world.findGoalTile(b.tile, d.tile, Reach.AdjacentOrOnTile) == noTile) continue;
     int[3] dst;
     uint sp = app.world.findStockpileSlot(b.item, d.tile, dst);
     if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.item.material, dst)); return true; }
