@@ -153,8 +153,7 @@ void logStuck(ref GameApp app, ref Dwarf d) {
   if(app.totalFramesRendered - last < 60) return;
   last = app.totalFramesRendered;
   auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
-  SDL_Log(cstr("STUCK %s job=%s d=%s tgt=%s reach=%d goal=%s pathLen=%d",
-               d.name, d.currentJob.name, d.tile, d.currentJob.targetTile, cast(int)d.currentJob.reach, goal, cast(int)d.path.length));
+  SDL_Log(cstr("STUCK %s goal=%s pathLen=%d", d, goal, cast(int)d.path.length));
 }
 
 /** Dispatch the most urgent over-threshold need as a job. Returns true if one was dispatched. */
