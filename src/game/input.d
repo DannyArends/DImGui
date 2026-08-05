@@ -108,7 +108,7 @@ double handleEvents(ref GameApp app) {
 
   if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
-    if(app.trace) SDL_Log("Tick: Frame: %d", app.totalFramesRendered);
+    if(app.trace) SDL_Log("Tick[%d]: Frame: %d", app.paused, app.totalFramesRendered);
     app.timed!rainTick();             // spawn new falling drops
     app.timed!settleRain();           // convert any that have landed this tick
     app.timed!waterTick();            // sim the resulting water
