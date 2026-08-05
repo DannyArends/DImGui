@@ -178,7 +178,10 @@ bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
     if(app.world.stockpiles.acceptedByHolder(id, b.item)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     if(b.tile != storedTile && app.world.findGoalTile(b.tile, d.tile, Reach.AdjacentOrOnTile) == noTile) continue;
-    if(app.totalFramesRendered < app.world.drops.haulFailedUntil.get(id, 0)) continue;
+    if(auto until = id in app.world.drops.haulFailedUntil) {
+      if(app.totalFramesRendered < *until) continue;
+      app.world.drops.haulFailedUntil.remove(id);
+    }
     int[3] dst;
     uint sp = app.world.findStockpileSlot(b.item, d.tile, dst);
     if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.item.material, dst)); return true; }

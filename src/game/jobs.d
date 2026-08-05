@@ -188,7 +188,7 @@ uint useCarriedBlock(ref GameApp app, ref Dwarf d, ResourceType type) {
 /** Destroy a carried block: remove from the dwarf's inventory and from the world. */
 void consumeCarried(T)(ref GameApp app, ref T d, uint id) {
   d.use(app.world.drops, id);
-  if(id in app.world.drops) { app.world.drops.registry.remove(id); }
+  if(id in app.world.drops) { app.world.drops.registry.remove(id); app.world.drops.haulFailedUntil.remove(id); }
 }
 
 /** Ask every dwarf on `tile` to step aside. Returns false if any are there but the tile is boxed in (nowhere to go). */
