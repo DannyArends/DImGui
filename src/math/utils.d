@@ -29,19 +29,19 @@ string humanCount(size_t n) {
   return 1u << (bsr(v - 1) + 1);
 }
 
-/** Swap the last element into `index`; returns the vacated last index, or size_t.max if index was last. */
-size_t swapPop(T)(ref T[] arr, size_t index) {
-  size_t last = arr.length - 1;
-  if(index != last) arr[index] = arr[last];
-  arr.length = last;
-  return (index != last) ? last : size_t.max;
+/** Reduce a GC slice's length. */
+void shrink(T)(ref T[] a, size_t n) { a.length = n; }
+
+/** Swap the last element into `index`, drop the last; returns the vacated index, or size_t.max if index was last/out of range. */
+size_t removeAt(C)(ref C c, size_t index) {
+  if(index >= c.length) return(size_t.max);
+  size_t last = c.length - 1;
+  if(index != last) c[index] = c[last];
+  c.shrink(last);
+  return((index != last) ? last : size_t.max);
 }
 
-/** Swap-remove for instanced managers: pops the entry and keeps its instance row aligned. */
+/** Swap-remove for instanced managers: pops the entry and its instance row in lockstep. */
 mixin template SwapRemove(alias arr) {
-  void remove(size_t index) {
-    size_t moved = swapPop(arr, index);
-    if(moved != size_t.max) instances[index] = instances[moved];
-    instances.resize(arr.length);
-  }
+  void remove(size_t index) { arr.removeAt(index); instances.removeAt(index); }
 }

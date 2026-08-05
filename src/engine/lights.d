@@ -80,7 +80,7 @@ void addLight(ref App app, Light light) {
 
 /** Swap-remove to keep Light packed/GPU-friendly */
 size_t removeLight(ref App app, size_t index) {
-  size_t moved = swapPop(app.lights.items, index);
+  size_t moved = app.lights.items.removeAt(index);
   app.lights.scoreBuf.length = app.lights.length;
   app.buffers["LightMatrices"].invalidate();
   size_t last = (moved != size_t.max) ? moved : index;

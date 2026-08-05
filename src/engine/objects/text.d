@@ -126,7 +126,7 @@ size_t removeWorldText(ref App app, size_t i) {
   foreach(ref t; app.worldText.texts) { if(t.range[0] > info.start) t.range[0] -= info.count; }
   app.worldText.text.syncInstances();
 
-  return swapPop(app.worldText.texts, i);
+  return app.worldText.texts.removeAt(i);
 }
 
 /** Re-lay-out every billboarded piece of world text so it yaws to face the current camera. */

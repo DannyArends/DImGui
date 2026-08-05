@@ -43,8 +43,8 @@ struct PackedArray(T) {
   /** Set the live count to n, growing capacity if needed */
   void resize(size_t n) nothrow { reserve(n); w = n; }
 
-  /** Swap-and-pop: move the last live element into slot i and drop the last; O(1), does not preserve order */
-  @nogc void removeAt(size_t i) nothrow { if(w == 0 || i >= w) return; if(i != w - 1) store.ptr[i] = store.ptr[w - 1]; w--; }
+  /** Reduce the live count without touching capacity (grow-only backing preserved). */
+  @nogc void shrink(size_t n) nothrow { w = n; }
 
   /** Reference to the element at index i (no bounds check) */
   @nogc ref inout(T) opIndex(size_t i) inout nothrow { return store.ptr[i]; }
