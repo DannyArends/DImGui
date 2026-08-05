@@ -45,7 +45,7 @@ DImGui is made possible by, and has dependencies on, the following excellent sof
 The following folders are interesting, if you're interested in how the repository is structured:
 
 - [src/](./src/) which stores the D source code 
-- [src/math](./src/math/) math functions for vectors, matrices, particles, and the L-system
+- [src/base](./src/base/) Foundation layer: vectors, matrices, quaternions, bounds, containers, search, noise, and the L-system
 - [src/engine](./src/engine/) main folder for the engine objects
 - [src/engine/assimp](./src/engine/assimp/) Open Asset Import Library (assimp) folder
 - [src/engine/imgui](./src/engine/imgui/) Dear ImGui UI folder
@@ -58,7 +58,7 @@ Some noteworthy files:
 
 - [dub.json](./dub.json) contains the D language dependencies, and build instructions
 - [src/main.d](./src/main.d) contains the main entry function, and SDL event loop
-- [src/scene.d](./src/scene.d) contains the code that sets up the example scene
+- [src/game/game.d](./src/game/game.d) sets up and drives the colony-sim game
 - [src/includes.c](./src/includes.c) contains the importC instructions
 
 ### Contributing 🙌
