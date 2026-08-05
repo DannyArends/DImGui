@@ -9,9 +9,9 @@ import ctfe : parseTokens, splitColon;
 
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
-mixin(generateResourceEnum(import("data/raws/materials.txt")));
+mixin(enumFromTag(import("data/raws/materials.txt"), "MATERIAL", "ResourceType"));
 mixin(generateResourceClassEnum(import("data/raws/materials.txt")));
-mixin(generateItemTemplateEnum(import("data/raws/items.txt")));
+mixin(enumFromTag(import("data/raws/items.txt"), "ITEM", "ItemTemplate", "None"));
 
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
 immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
@@ -48,12 +48,13 @@ HeightBand[] parseHeightBands(string raw) pure {
   return(heightBands[$-1].results[0]);
 }
 
-/** CTFE: generate the ResourceType enum — member names only; per-material data lives in resourceTable. */
-string generateResourceEnum(string raw) pure {
-  string result = "enum ResourceType : ubyte {\n";
+/** CTFE: emit 'enum <name> : ubyte { [sentinel,] one member per [tag:member] }'. */
+string enumFromTag(string raw, string tag, string name, string sentinel = "") pure {
+  string result = "enum " ~ name ~ " : ubyte {\n";
+  if(sentinel.length) result ~= "  " ~ sentinel ~ ",\n";
   foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
-    if(p.length >= 2 && p[0] == "MATERIAL") result ~= "  " ~ p[1] ~ ",\n";
+    if(p.length >= 2 && p[0] == tag) result ~= "  " ~ p[1] ~ ",\n";
   }
   return result ~ "}\n";
 }
@@ -110,16 +111,6 @@ ResourceT[] parseResources(string raw) pure {
 
 /** Per-template data, indexed by ItemTemplate (enum's ubyte value indexes the table). */
 @nogc pure const(ItemTemplateT) templateData(ItemTemplate t) nothrow { return itemTemplateTable[t]; }
-
-/** CTFE: generate the ItemTemplate enum (None sentinel first, then one member per [ITEM:x]). */
-string generateItemTemplateEnum(string raw) pure {
-  string result = "enum ItemTemplate : ubyte {\n  None,\n";
-  foreach(token; parseTokens(raw)) {
-    auto p = splitColon(token);
-    if(p.length >= 2 && p[0] == "ITEM") result ~= "  " ~ p[1] ~ ",\n";
-  }
-  return result ~ "}\n";
-}
 
 /** CTFE: parse items.txt into the per-template table (index 0 == ItemTemplate.None, then parallel to the enum). */
 ItemTemplateT[] parseItemTemplates(string raw) pure {
