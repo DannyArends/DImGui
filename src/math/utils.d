@@ -28,3 +28,13 @@ string humanCount(size_t n) {
   if(v >= hi){ return hi; }
   return 1u << (bsr(v - 1) + 1);
 }
+
+/** Swap-remove: move the last element into the gap, keeping instance rows aligned. */
+mixin template SwapRemove(alias arr) {
+  void remove(size_t index) {
+    size_t last = arr.length - 1;
+    if(index != last) { arr[index] = arr[last]; instances[index] = instances[last]; }
+    arr.length = last;
+    instances.resize(last);
+  }
+}

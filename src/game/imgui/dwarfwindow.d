@@ -6,7 +6,8 @@
 import game;
 
 import dwarf : spawnDwarf, deleteDwarf;
-import imgui : faIcon, iconText;
+import entitywindow : entityGlyph, followEntity, needToggle;
+import imgui : iconText;
 import jobs : jobQueue, dropBlockJob;
 import lattice : tileToWorld;
 import resources : itemName, itemTex;
@@ -26,16 +27,9 @@ string dwarfStatus(ref Dwarf d) {
   }
 }
 
-/** Coloured user glyph */
-void dwarfGlyph(ref Dwarf d) {
-  igPushStyleColor_Vec4(ImGuiCol_Text, ImVec4(d.color[0], d.color[1], d.color[2], d.color[3]));
-  text("%s", fromStringz(faIcon(cast(string)ICON_FA_USER)));
-  igPopStyleColor(1);
-}
-
 /** One clickable overview row: [glyph] name | tile - status | icons — all one line */
 void showDwarfRow(ref GameApp app, size_t i, ref Dwarf d) {
-  dwarfGlyph(d);
+  entityGlyph(d, cast(string)ICON_FA_USER);
   igSameLine(0, 5);
 
   ImVec2 sz; igCalcTextSize(&sz, cstr("%s", d.name), null, false, -1.0f);
@@ -67,25 +61,13 @@ void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
 }
 
 /** Detailed sheet for the selected dwarf */
-void followDwarf(ref GameApp app, uint uid) {
-  app.camera.onFrame = (dt) {
-    foreach(ref dw; app.world.dwarves.dwarves){ if(dw.uid == uid) { app.camera.lookat = dw.visualPos; app.camera.isDirty = true; return; } }
-    app.camera.onFrame = null;
-  };
-}
-
-/** Detailed sheet for the selected dwarf */
 void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
-  dwarfGlyph(d); igSameLine(0, 5);
-  if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followDwarf(d.uid); }
+  entityGlyph(d, cast(string)ICON_FA_USER); igSameLine(0, 5);
+  if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followEntity(d.uid, app.world.dwarves); }
   if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0, 0))) { app.deleteDwarf(selected); return; }
   text("Tile: %s", d.tile);
-  text("Hunger: %.0f", d.hunger * 100.0f);
-  igSameLine(0, 5);
-  if(igButton(cstr("Make hungry##dwf_hunger"), ImVec2(0, 0))) { d.hunger = 0.8f; }
-  text("Thirst: %.0f", d.thirst * 100.0f);
-  igSameLine(0, 5);
-  if(igButton(cstr("Make thirsty##dwf_thirst"), ImVec2(0, 0))) { d.thirst = 0.8f; }
+  needToggle("Hunger", "hungry", d.needs[Need.Hunger], "dwf_hunger");
+  needToggle("Thirst", "thirsty", d.needs[Need.Thirst], "dwf_thirst");
   text("Job: %s", d.hasJob ? d.currentJob.name : "Idle");
   igSeparator();
   igText("Inventory:");

@@ -22,11 +22,10 @@ T[] enumerate(T)(ref App app, string what, scope VkResult delegate(uint*, T*) fn
   if(app.verbose) SDL_Log("query %s", toStringz(what));
   uint n;
   T[] items;
-  fn(&n, null);                    // count (result ignored, as before)
-  if(n == 0) return items;
+  fn(&n, null); if(n == 0) { return(items); }
   items.length = n;
-  enforceVK(fn(&n, &items[0]));     // fill
-  if(app.verbose) SDL_Log("Found %d %s", items.length, toStringz(what));
+  enforceVK(fn(&n, &items[0]));
+  if(app.verbose) { SDL_Log("Found %d %s", items.length, toStringz(what)); }
   return items;
 }
 
@@ -49,12 +48,12 @@ VkExtensionProperties[] queryDeviceExtensionProperties(ref App app) {
 }
 
 bool has(VkLayerProperties[] layers, const(char)* layerName) {
-  for(uint i = 0 ; i < layers.length; i++) { if(strcmp(layers[i].layerName.ptr, layerName) == 0) return true; }
-  return false;
+  for(uint i = 0 ; i < layers.length; i++) { if(strcmp(layers[i].layerName.ptr, layerName) == 0) return(true); }
+  return(false);
 }
 
 bool has(VkExtensionProperties[] properties, const(char)* extensionName) {
-  for(uint i = 0 ; i < properties.length; i++) { if(strcmp(properties[i].extensionName.ptr, extensionName) == 0) return true; }
-  return false;
+  for(uint i = 0 ; i < properties.length; i++) { if(strcmp(properties[i].extensionName.ptr, extensionName) == 0) return(true); }
+  return(false);
 }
 
