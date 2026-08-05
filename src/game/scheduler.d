@@ -16,6 +16,9 @@ import vector : manhattan, manhattan2D;
 
 /** Advance the job stack — removes the active sub-job and clears the dwarf's current goal */
 void completeSubJob(ref GameApp app, ref Dwarf d) {
+  SDL_Log("DONE %s uid=%d -> %s", d.hasJob ? toStringz(d.currentJob.name) : toStringz("(idle)"), d.uid,
+          d.jobStack.length > 1 ? toStringz(d.jobStack[1].name) : toStringz("(idle)"));
+
   d.jobStack = d.jobStack[1..$];
   d.targetTile = noTile;
   d.repathAttempts = 0;
@@ -35,19 +38,20 @@ bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach
 
 /** Dispatch a job */
 bool dispatchJob(T)(ref GameApp app, ref T d, Job!T job) {
+  SDL_Log("CLAIM %s uid=%d tile=[%d,%d,%d]", toStringz(job.name), d.uid, d.tile[0], d.tile[1], d.tile[2]);
   d.jobStack = flatten(job);
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
   if(d.jobStack.any!(j => j.state == JobState.Unavailable)) {
-    if(app.trace) SDL_Log("DROP %s: sub-job Unavailable", toStringz(job.name));
+    SDL_Log("DROP %s: sub-job Unavailable", toStringz(job.name));
     d.onReject(app, job); return false;
   }
   if(d.jobStack.any!(j => j.isValid !is null && !j.isValid(app, j))) {
-    if(app.trace) SDL_Log("DROP %s: isValid failed", toStringz(job.name));
+    SDL_Log("DROP %s: isValid failed", toStringz(job.name));
     d.onReject(app, job); return false;
   }
 
   d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
-  if(!d.hasJob) { d.clearGoal(); return false; }
+  if(!d.hasJob) { SDL_Log("DROP %s: all sub-jobs satisfied", toStringz(job.name)); d.clearGoal(); return false; }
   d.targetTile = d.currentJob.targetTile;
 
   auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
