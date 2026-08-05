@@ -29,12 +29,19 @@ string humanCount(size_t n) {
   return 1u << (bsr(v - 1) + 1);
 }
 
-/** Swap-remove: move the last element into the gap, keeping instance rows aligned. */
+/** Swap the last element into `index`; returns the vacated last index, or size_t.max if index was last. */
+size_t swapPop(T)(ref T[] arr, size_t index) {
+  size_t last = arr.length - 1;
+  if(index != last) arr[index] = arr[last];
+  arr.length = last;
+  return (index != last) ? last : size_t.max;
+}
+
+/** Swap-remove for instanced managers: pops the entry and keeps its instance row aligned. */
 mixin template SwapRemove(alias arr) {
   void remove(size_t index) {
-    size_t last = arr.length - 1;
-    if(index != last) { arr[index] = arr[last]; instances[index] = instances[last]; }
-    arr.length = last;
-    instances.resize(last);
+    size_t moved = swapPop(arr, index);
+    if(moved != size_t.max) instances[index] = instances[moved];
+    instances.resize(arr.length);
   }
 }

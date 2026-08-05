@@ -80,12 +80,12 @@ void addLight(ref App app, Light light) {
 
 /** Swap-remove to keep Light packed/GPU-friendly */
 size_t removeLight(ref App app, size_t index) {
-  size_t last = app.lights.length - 1;
-  if(index != last){ app.lights[index] = app.lights[last]; }
-  app.lights.scoreBuf.length = app.lights.length = last;
+  size_t moved = swapPop(app.lights.items, index);
+  app.lights.scoreBuf.length = app.lights.length;
   app.buffers["LightMatrices"].invalidate();
+  size_t last = (moved != size_t.max) ? moved : index;
   foreach(ref slot; app.shadows.slots) { if(slot.owner == cast(int)index || slot.owner == cast(int)last){ slot.owner = -1; } }
-  return((index != last) ? last : size_t.max);
+  return(moved);
 }
 
 /** Point/spot cull radius: distance where intensity attenuates to cutoff */
