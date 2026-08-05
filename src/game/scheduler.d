@@ -14,11 +14,10 @@ import stockpile : acceptedByHolder, findStockpileSlot, storedTileOf, withdrawBl
 import tile : getSuccessors, tileAbove, isTileOccupied, hasStandableNeighbour;
 import vector : manhattan, manhattan2D;
 
+enum uint HAUL_COOLDOWN = 600;   /// Cooldown for unreachable blocks
+
 /** Advance the job stack — removes the active sub-job and clears the dwarf's current goal */
 void completeSubJob(ref GameApp app, ref Dwarf d) {
-  SDL_Log("DONE %s uid=%d -> %s", d.hasJob ? toStringz(d.currentJob.name) : toStringz("(idle)"), d.uid,
-          d.jobStack.length > 1 ? toStringz(d.jobStack[1].name) : toStringz("(idle)"));
-
   d.jobStack = d.jobStack[1..$];
   d.targetTile = noTile;
   d.repathAttempts = 0;
@@ -38,28 +37,17 @@ bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach
 
 /** Dispatch a job */
 bool dispatchJob(T)(ref GameApp app, ref T d, Job!T job) {
-  SDL_Log("CLAIM %s uid=%d tile=[%d,%d,%d]", toStringz(job.name), d.uid, d.tile[0], d.tile[1], d.tile[2]);
   d.jobStack = flatten(job);
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
-  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) {
-    SDL_Log("DROP %s: sub-job Unavailable", toStringz(job.name));
-    d.onReject(app, job); return false;
-  }
-  if(d.jobStack.any!(j => j.isValid !is null && !j.isValid(app, j))) {
-    SDL_Log("DROP %s: isValid failed", toStringz(job.name));
-    d.onReject(app, job); return false;
-  }
+  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) { d.onReject(app, job); return false; }
+  if(d.jobStack.any!(j => j.isValid !is null && !j.isValid(app, j))) { d.onReject(app, job); return false; }
 
   d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
-  if(!d.hasJob) { SDL_Log("DROP %s: all sub-jobs satisfied", toStringz(job.name)); d.clearGoal(); return false; }
+  if(!d.hasJob) { d.clearGoal(); return false; }
   d.targetTile = d.currentJob.targetTile;
 
   auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
-  if(goal == noTile) {
-    SDL_Log("DROP %s: goal unreachable tgt=[%d,%d,%d] reach=%d", toStringz(d.currentJob.name),
-            d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2], cast(int)d.currentJob.reach);
-    d.onReject(app, job); return false;
-  }
+  if(goal == noTile) { d.onReject(app, job); return false; }
   if(goal == d.tile) { d.state = EntityState.Working; return true; }
   app.pathfindTo(d, goal, (PathResult r){ d.onPathResult(app, r); });
   return true;
@@ -91,7 +79,6 @@ void claimNextJob(T)(ref GameApp app, ref T d) {
     } else { app.roam(d); d.state = EntityState.Wandering; }
   }
 }
-
 
 /** Reject the job and requeue */
 bool rejectJob(ref GameApp app, ref Dwarf d, ref Job!Dwarf job) {
@@ -134,18 +121,14 @@ int[3] pathTileFor(ref World world, uint id, const Block b) { return (b.tile == 
 /** Execute a block pickup for the active job; marks the block as carried and completes the sub-job */
 void doPickup(ref GameApp app, ref Dwarf d) {
   auto blockID = d.currentJob.blockIDs.length > 0 ? d.currentJob.blockIDs[0] : noBlock;
-  if(blockID == noBlock) { if(app.trace) SDL_Log("PICKUP %s: no blockID", toStringz(d.currentJob.name)); d.currentJob.onFail(app, d); return; }
+  if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
   if(auto b = blockID in app.world.drops) {
-    if(!d.pickup(blockID, b.item)) { 
-      SDL_Log("PICKUP %s: pickup() failed (full?)", toStringz(d.currentJob.name)); d.currentJob.onFail(app, d); return;
-    }
     if(b.tile == storedTile) app.world.withdrawBlock(blockID);
     b.tile = noTile;
     b.fall = Fall.init;
     d.onSubJobComplete(app);
     return;
   }
-  SDL_Log("PICKUP %s: block %d gone", toStringz(d.currentJob.name), blockID);
   if(d.hasJob) jobQueue ~= d.jobStack[$-1]; // block not found, add job back
   d.clearGoal();
 }
@@ -163,9 +146,9 @@ void applyPathResult(ref GameApp app, PathResult result) {
     if(d.uid != result.uid) continue;
     if(!result.success || app.deadEndPartial(d, result)) {
       if(d.hasJob) {
-        if(app.trace) SDL_Log("PATHFAIL %s tgt=[%d,%d,%d] reach=%d success=%d",
-          toStringz(d.currentJob.name), d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2],
-          cast(int)d.currentJob.reach, result.success);
+        foreach(bid; d.currentJob.blockIDs) { if(auto b = bid in app.world.drops) {
+          b.haulFailedUntil = app.totalFramesRendered + HAUL_COOLDOWN;
+        } }
         d.currentJob.failedBy[d.uid] = true;
         if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
         d.currentJob.onFail(app, d);
@@ -197,6 +180,7 @@ bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
     if(app.world.stockpiles.acceptedByHolder(id, b.item)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     if(b.tile != storedTile && app.world.findGoalTile(b.tile, d.tile, Reach.AdjacentOrOnTile) == noTile) continue;
+    if(app.totalFramesRendered < b.haulFailedUntil) continue;
     int[3] dst;
     uint sp = app.world.findStockpileSlot(b.item, d.tile, dst);
     if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.item.material, dst)); return true; }
