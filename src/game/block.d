@@ -21,7 +21,6 @@ struct Block {
   int[3] tile;                      /// Current tile position
   Fall fall;                        /// Fall state
   bool reserved = false;            /// Reserved for a job ?
-  uint haulFailedUntil = 0;         /// frame until which hauling is on cooldown (path dead-ended: unreachable)
 
   @property @nogc bool isFalling() const nothrow { return fall.isFalling; }
 }
@@ -32,6 +31,7 @@ struct Drops {
   bool dirty = false;
   uint nextID = 1;
   Geometry[string] meshes;
+  uint[uint] haulFailedUntil;
 }
 
 /** Save blocks */

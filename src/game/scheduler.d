@@ -146,9 +146,7 @@ void applyPathResult(ref GameApp app, PathResult result) {
     if(d.uid != result.uid) continue;
     if(!result.success || app.deadEndPartial(d, result)) {
       if(d.hasJob) {
-        foreach(bid; d.currentJob.blockIDs) { if(auto b = bid in app.world.drops) {
-          b.haulFailedUntil = app.totalFramesRendered + HAUL_COOLDOWN;
-        } }
+        foreach(bid; d.currentJob.blockIDs) { app.world.drops.haulFailedUntil[bid] = app.totalFramesRendered + HAUL_COOLDOWN; }
         d.currentJob.failedBy[d.uid] = true;
         if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
         d.currentJob.onFail(app, d);
@@ -180,7 +178,7 @@ bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
     if(app.world.stockpiles.acceptedByHolder(id, b.item)) continue;
     if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     if(b.tile != storedTile && app.world.findGoalTile(b.tile, d.tile, Reach.AdjacentOrOnTile) == noTile) continue;
-    if(app.totalFramesRendered < b.haulFailedUntil) continue;
+    if(app.totalFramesRendered < app.world.drops.haulFailedUntil.get(id, 0)) continue;
     int[3] dst;
     uint sp = app.world.findStockpileSlot(b.item, d.tile, dst);
     if(sp != 0) { app.dispatchJob(d, storeJob(id, b.tile, b.item.material, dst)); return true; }
