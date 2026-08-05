@@ -5,7 +5,8 @@
 
 import game;
 
-import imgui : faIcon, iconText;
+import entitywindow : entityGlyph, followEntity, needToggle;
+import imgui : iconText;
 import widgets : text;
 
 /** Human-readable state label for an animal. */
@@ -20,16 +21,9 @@ string animalStatus(ref Animal a) {
   }
 }
 
-/** Coloured paw glyph. */
-void animalGlyph(ref Animal a) {
-  igPushStyleColor_Vec4(ImGuiCol_Text, ImVec4(a.color[0], a.color[1], a.color[2], a.color[3]));
-  text("%s", fromStringz(faIcon(cast(string)ICON_FA_PAW)));
-  igPopStyleColor(1);
-}
-
 /** One overview row: [glyph] species | tile - status + need bars. */
 void showAnimalRow(ref GameApp app, size_t i, ref Animal a) {
-  animalGlyph(a);
+  entityGlyph(a, cast(string)ICON_FA_PAW);
   igSameLine(0, 5);
   string species = animalTable[a.type].name;
   bool isSel = app.world.animals.selected == cast(int)i;
@@ -38,26 +32,14 @@ void showAnimalRow(ref GameApp app, size_t i, ref Animal a) {
   text("%s - %s  H:%.0f T:%.0f", a.tile, animalStatus(a), a.hunger * 100.0f, a.thirst * 100.0f);
 }
 
-/** Camera follow for the selected animal. */
-void followAnimal(ref GameApp app, uint uid) {
-  app.camera.onFrame = (dt) {
-    foreach(ref x; app.world.animals.animals){ if(x.uid == uid) { app.camera.lookat = x.visualPos; app.camera.isDirty = true; return; } }
-    app.camera.onFrame = null;
-  };
-}
-
 /** Detailed sheet for the selected animal. */
 void showAnimalSheet(ref GameApp app, ref Animal a, int selected) {
-  animalGlyph(a); igSameLine(0, 5);
+  entityGlyph(a, cast(string)ICON_FA_PAW); igSameLine(0, 5);
   string species = animalTable[a.type].name;
-  if(igSelectable_Bool(cstr("%s##anmfollow", species), false, 0, ImVec2(0, 0))) { app.followAnimal(a.uid); }
+  if(igSelectable_Bool(cstr("%s##anmfollow", species), false, 0, ImVec2(0, 0))) { app.followEntity(a.uid, app.world.animals); }
   text("Tile: %s", a.tile);
-  text("Hunger: %.0f", a.hunger * 100.0f);
-  igSameLine(0, 5);
-  if(igButton(cstr("Make hungry##anm_hunger"), ImVec2(0, 0))) { a.hunger = 0.8f; }
-  text("Thirst: %.0f", a.thirst * 100.0f);
-  igSameLine(0, 5);
-  if(igButton(cstr("Make thirsty##anm_thirst"), ImVec2(0, 0))) { a.thirst = 0.8f; }
+  needToggle("Hunger", "hungry", a.needs[Need.Hunger], "anm_hunger");
+  needToggle("Thirst", "thirsty", a.needs[Need.Thirst], "anm_thirst");
   text("Job: %s", a.hasJob ? a.currentJob.name : "None");
 }
 

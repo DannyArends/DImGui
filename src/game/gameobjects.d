@@ -19,15 +19,7 @@ class Dwarves : Cylinder {
     initInstanced(() => "Dwarves");
   }
 
-  void remove(size_t index) {
-    size_t last = dwarves.length - 1;
-    if(index != last) {
-      dwarves[index]  = dwarves[last];          // move last dwarf's data into the gap
-      instances[index] = instances[last];       // and its instance row, same index — stays aligned
-    }
-    dwarves.length = last;                       // pop data array
-    instances.resize(last);                      // pop instance buffer
-  }
+  mixin SwapRemove!dwarves;
 }
 
 /** Data-driven foraging animals, rendered as instanced tori */
@@ -42,15 +34,7 @@ class Animals : Torus {
     initInstanced(() => "Animals");
   }
 
-  void remove(size_t index) {
-    size_t last = animals.length - 1;
-    if(index != last) {
-      animals[index]  = animals[last];
-      instances[index] = instances[last];
-    }
-    animals.length = last;
-    instances.resize(last);
-  }
+  mixin SwapRemove!animals;
 }
 
 /** Renderable cube geometry for individual blocks within a chunk, not selectable */
