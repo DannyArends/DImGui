@@ -32,12 +32,9 @@ struct SparseSet {
 
   /** O(1) remove via swap-with-last; no-op if the key is absent */
   void remove(int key) {
-    int p = slot[key];
-    if(p == -1) return;
-    int moved = dense[dense.length - 1];
-    dense.removeAt(p);
-    slot[moved] = p;
+    int p = slot[key]; if(p == -1) return;
     slot[key] = -1;
+    if(dense.removeAt(p) != size_t.max) { slot[dense[p]] = p; }
   }
 
   /** Remove all keys but keep capacity */

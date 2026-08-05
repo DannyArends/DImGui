@@ -32,7 +32,7 @@ string humanCount(size_t n) {
 /** Reduce a GC slice's length. */
 void shrink(T)(ref T[] a, size_t n) { a.length = n; }
 
-/** Swap the last element into `index`, drop the last; returns the vacated index, or size_t.max if index was last/out of range. */
+/** Swap the last element into 'index', drop the last; returns the vacated index, or size_t.max if index was last/out of range. */
 size_t removeAt(C)(ref C c, size_t index) {
   if(index >= c.length) return(size_t.max);
   size_t last = c.length - 1;
