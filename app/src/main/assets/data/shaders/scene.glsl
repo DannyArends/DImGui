@@ -51,6 +51,8 @@ struct Material {
   int pad;
 };
 
+#define noMaterial Material(-1, -1, -1, 0)
+
 struct LightIndex { uint light; uint next; };
 struct Cursor { uint cursor; };
 struct ClusterHead { uint head; };
