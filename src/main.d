@@ -77,6 +77,7 @@ void run(string[] args = null) {
   uint frames = 150000;
   while (!app.finished && app.totalFramesRendered < frames) {   /// Event polling & render loop
     app.timed!pollEvents();                                       /// Ingest SDL events into ImGui (pre-NewFrame)
+    if(app.finished) break;                                       /// Close requested, exit the loop now
     app.timed!startImGuiFrame();                                  /// Start a new frame
     auto dt = app.timed!handleEvents();                           /// Handle SDL / user events
     app.timed!checkForResize();                                   /// Check for resize
