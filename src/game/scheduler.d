@@ -37,15 +37,25 @@ bool atDestination(T)(ref GameApp app, ref T obj, int[3] targetTile, Reach reach
 bool dispatchJob(T)(ref GameApp app, ref T d, Job!T job) {
   d.jobStack = flatten(job);
   foreach(ref j; d.jobStack) { if(j.onClaim !is null) j.onClaim(app, d, j); }
-  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) { d.onReject(app, job); return false; }
-  if(d.jobStack.any!(j => j.isValid !is null && !j.isValid(app, j))) { d.onReject(app, job); return false; }
+  if(d.jobStack.any!(j => j.state == JobState.Unavailable)) {
+    if(app.trace) SDL_Log("DROP %s: sub-job Unavailable", toStringz(job.name));
+    d.onReject(app, job); return false;
+  }
+  if(d.jobStack.any!(j => j.isValid !is null && !j.isValid(app, j))) {
+    if(app.trace) SDL_Log("DROP %s: isValid failed", toStringz(job.name));
+    d.onReject(app, job); return false;
+  }
 
   d.jobStack = d.jobStack.filter!(j => j.state != JobState.Satisfied).array;
   if(!d.hasJob) { d.clearGoal(); return false; }
   d.targetTile = d.currentJob.targetTile;
 
   auto goal = app.world.findGoalTile(d.currentJob.targetTile, d.tile, d.currentJob.reach);
-  if(goal == noTile) { d.onReject(app, job); return false; }
+  if(goal == noTile) {
+    SDL_Log("DROP %s: goal unreachable tgt=[%d,%d,%d] reach=%d", toStringz(d.currentJob.name),
+            d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2], cast(int)d.currentJob.reach);
+    d.onReject(app, job); return false;
+  }
   if(goal == d.tile) { d.state = EntityState.Working; return true; }
   app.pathfindTo(d, goal, (PathResult r){ d.onPathResult(app, r); });
   return true;
@@ -120,15 +130,18 @@ int[3] pathTileFor(ref World world, uint id, const Block b) { return (b.tile == 
 /** Execute a block pickup for the active job; marks the block as carried and completes the sub-job */
 void doPickup(ref GameApp app, ref Dwarf d) {
   auto blockID = d.currentJob.blockIDs.length > 0 ? d.currentJob.blockIDs[0] : noBlock;
-  if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
+  if(blockID == noBlock) { if(app.trace) SDL_Log("PICKUP %s: no blockID", toStringz(d.currentJob.name)); d.currentJob.onFail(app, d); return; }
   if(auto b = blockID in app.world.drops) {
-    if(!d.pickup(blockID, b.item)) { d.currentJob.onFail(app, d); return; }
+    if(!d.pickup(blockID, b.item)) { 
+      SDL_Log("PICKUP %s: pickup() failed (full?)", toStringz(d.currentJob.name)); d.currentJob.onFail(app, d); return;
+    }
     if(b.tile == storedTile) app.world.withdrawBlock(blockID);
     b.tile = noTile;
     b.fall = Fall.init;
     d.onSubJobComplete(app);
     return;
   }
+  SDL_Log("PICKUP %s: block %d gone", toStringz(d.currentJob.name), blockID);
   if(d.hasJob) jobQueue ~= d.jobStack[$-1]; // block not found, add job back
   d.clearGoal();
 }
@@ -146,6 +159,9 @@ void applyPathResult(ref GameApp app, PathResult result) {
     if(d.uid != result.uid) continue;
     if(!result.success || app.deadEndPartial(d, result)) {
       if(d.hasJob) {
+        if(app.trace) SDL_Log("PATHFAIL %s tgt=[%d,%d,%d] reach=%d success=%d",
+          toStringz(d.currentJob.name), d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2],
+          cast(int)d.currentJob.reach, result.success);
         d.currentJob.failedBy[d.uid] = true;
         if(d.jobStack.length > 1) d.jobStack[$-1].failedBy[d.uid] = true;
         d.currentJob.onFail(app, d);
