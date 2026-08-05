@@ -106,7 +106,7 @@ double handleEvents(ref GameApp app) {
 
   app.camera.wasDown = down;
 
-  if(!app.paused && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
+  if(!app.paused && app.timeScale > 0 && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick[%d]: Frame: %d", app.paused, app.totalFramesRendered);
     app.timed!rainTick();             // spawn new falling drops
