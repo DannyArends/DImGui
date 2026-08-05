@@ -126,11 +126,7 @@ size_t removeWorldText(ref App app, size_t i) {
   foreach(ref t; app.worldText.texts) { if(t.range[0] > info.start) t.range[0] -= info.count; }
   app.worldText.text.syncInstances();
 
-  // Swap-remove the entry itself, same trick as removeLight — only the last index (if moved) changes identity
-  size_t last = app.worldText.texts.length - 1;
-  if(i != last) { app.worldText.texts[i] = app.worldText.texts[last]; }
-  app.worldText.texts.length = last;
-  return (i != last) ? last : size_t.max;
+  return swapPop(app.worldText.texts, i);
 }
 
 /** Re-lay-out every billboarded piece of world text so it yaws to face the current camera. */
