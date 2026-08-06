@@ -135,6 +135,9 @@ void initGame(ref GameApp app) {
   app.mainDeletionQueue.add((){ app.saveWorld(); });
 }
 
+/** Filesystem path for a named model asset. */
+string modelPath(string name) { return(format("data/objects/Kenney.nl/%s.fbx", name)); }
+
 Geometry makePrimitive(string name) {
   Geometry m;
   switch(name) {
@@ -143,7 +146,7 @@ Geometry makePrimitive(string name) {
     case "Cone": m = new Cone(0.5f, 1.0f, 12); break;
     case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
     case "Berries": m = new Sphere(); break;
-    default: return loadOpenAsset(toStringz(format("data/objects/Kenney.nl/%s.fbx", name)));
+    default: return loadOpenAsset(toStringz(modelPath(name)));
   }
   return m;
 }

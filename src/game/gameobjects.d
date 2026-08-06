@@ -30,8 +30,8 @@ class Animals : OpenAsset {
   size_t[] tickOrder;
   float baseScale = 1.0f;               // fits the model's longest axis to 1 unit
 
-  this(uint type, const(char)* path) {
-    super(path);
+  this(uint type) {
+    super(toStringz(modelPath(animalTable[type].mesh)));
     auto sz = box.bounds.size();
     float maxDim = fmax(sz[0], fmax(sz[1], sz[2]));
     baseScale = (maxDim > 0) ? 1.0f / maxDim : 1.0f;

@@ -158,9 +158,9 @@ void animalTick(ref GameApp app, Animals herd) {
 }
 
 /** Create the Animals container and register it for rendering + ticking. */
-Animals ensureAnimals(ref GameApp app, uint type, const(char)* path) {
+Animals ensureAnimals(ref GameApp app, uint type) {
   if(auto h = type in app.world.animals) return *h;
-  auto herd = new Animals(type, path);
+  auto herd = new Animals(type);
   OpenAsset oa = herd; app.mergeBones(oa);          // merge skeleton into app.bones, set boneBase/boneCount
   Geometry  g  = herd; app.registerMaterials(g); app.mapTextures(g);
   herd.onFrame = (float dt){ animalFrame(app, herd, dt); };
