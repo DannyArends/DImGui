@@ -149,7 +149,7 @@ AnimalT[] parseAnimals(string raw) pure {
     switch(p[0]) {
       case "ANIMAL":           if(inAnimal){ animals ~= a; } a = AnimalT.init; a.name = p[1]; inAnimal = true; break;
       case "MESH":             a.mesh = p[1]; break;
-      case "SPAWN_ON":         a.spawnOn ~= p[1]; break;
+      case "SPAWN_ON":         a.spawnOn ~= p[1].to!ResourceType; break;
       case "NOISE_THRESHOLD":  a.noiseThreshold = to!float(p[1]); break;
       case "HASH_SEED1":       a.hashSeed1 = to!uint(p[1]); break;
       case "HASH_SEED2":       a.hashSeed2 = to!uint(p[1]); break;

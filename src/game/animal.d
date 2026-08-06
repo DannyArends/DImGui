@@ -38,7 +38,7 @@ enum float NEED_SEEK = 0.55f;    // start foraging when a need crosses this
 struct AnimalT {
   string name;                                  /// Species name
   string mesh = "Torus";                        /// Instance mesh (primitive for now)
-  string[] spawnOn;                             /// Tile resource types this animal spawns on
+  ResourceType[] spawnOn;                       /// Tile resource types this animal spawns on
   float noiseThreshold = 0.92f;                 /// Hash-noise spawn gate (higher = rarer)
   uint hashSeed1, hashSeed2;                    /// Per-species spawn hash seeds
   uint hashMod, hashRem;                        /// Optional hash bucketing (0 = unused)
@@ -189,19 +189,18 @@ void addAnimal(ref GameApp app, ref Animal a) {
 /** World tiles where `at` should spawn in this chunk: surface tile, matching spawn type, past the noise + hash gates. */
 int[3][] animalSpawnTiles(ref const(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const AnimalT at) {
   int[3][] result;
-  ResourceType[] spawnTypes;
-  foreach(s; at.spawnOn) spawnTypes ~= s.to!ResourceType;
   for(int i = 0; i < wd.tileCount; i++) {
     if(tileTypes[i] == ResourceType.None) continue;
     if(i + wd.chunkSize < wd.tileCount && tileTypes[i + wd.chunkSize] != ResourceType.None) continue;
-    if(!spawnTypes.canFind(tileTypes[i])) continue;
+    if(!at.spawnOn.canFind(tileTypes[i])) continue;
     auto lc = wd.tileCoord(i);
     auto wc = wd.worldCoord(coord, lc);
     auto n = noiseHTT(wc[0], wc[2], wd.seed);
     if(n[2] < at.noiseThreshold) continue;
     uint hash = (wc[0] * at.hashSeed1) ^ (wc[2] * at.hashSeed2);
     if(at.hashMod != 0 && hash % at.hashMod != at.hashRem) continue;
-    result ~= [wc[0], wc[1] + 1, wc[2]];
+    int[3] t = [wc[0], wc[1] + 1, wc[2]];
+    result ~= t;
   }
   return result;
 }
