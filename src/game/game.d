@@ -38,6 +38,7 @@ import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
 import imgui : iconTextStr;
 import inventorywindow : showInventoryContent;
+import io : dir;
 import lights : updateSun;
 import lightswindow : showLightsContent;
 import normals : computeTangents;
@@ -135,8 +136,12 @@ void initGame(ref GameApp app) {
   app.mainDeletionQueue.add((){ app.saveWorld(); });
 }
 
-/** Filesystem path for a named model asset. */
-string modelPath(string name) { return(format("data/objects/Kenney.nl/%s.fbx", name)); }
+/** Recursively find <name>.fbx under data/objects/ (falls back to a flat path if not found). */
+string modelPath(string name) {
+  string want = format("%s.fbx", name);
+  foreach(f; dir("data/objects/", "*.fbx", false)){ if(baseName(f) == want) return(f); }
+  return(format("data/objects/%s.fbx", name)); // fallback so the error log names something
+}
 
 Geometry makePrimitive(string name) {
   Geometry m;
@@ -144,9 +149,9 @@ Geometry makePrimitive(string name) {
     case "Cube", "Blocks": m = new Cube(); break;
     case "Cylinder": m = new Cylinder(0.4f, 1.0f, 12); break;
     case "Cone": m = new Cone(0.5f, 1.0f, 12); break;
-    case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
     case "Berries": m = new Sphere(); break;
-    default: return loadOpenAsset(toStringz(modelPath(name)));
+    case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
+    default: return loadOpenAsset(toStringz(modelPath(name)), false, true);
   }
   return m;
 }
