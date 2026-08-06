@@ -62,7 +62,7 @@ struct World {
   StockpileField stockpiles;
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
-  Animals animals;                                          /// Foraging animals
+  Animals[uint] animals;                                    /// One instanced herd per species (keyed by animalTable index)
   Weather weather;                                          /// Weather
   WaterTiles water;                                         /// single batched water render object
   PathMarker paths;                                         /// Path markers
