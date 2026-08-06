@@ -64,28 +64,26 @@ struct Animal {
   void onSubJobComplete(ref GameApp app) { if(jobStack.length) jobStack = jobStack[1..$]; if(!hasJob) state = EntityState.Idle; }
   void onStuck(ref GameApp app) {}
   void onPathResult(ref GameApp app, PathResult r) {
-    foreach(ref x; app.world.animals.animals) if(x.uid == r.uid) {
+    foreach(_, herd; app.world.animals) foreach(ref x; herd.animals) if(x.uid == r.uid) {
       x.path = r.success ? r.path : null;
       x.state = r.success ? (x.hasJob ? EntityState.Moving : EntityState.Wandering) : EntityState.Idle;
-      break;
+      return;
     }
   }
 }
 
 /** Per-frame: advance each animal's step and refresh its instance transform. */
-void animalFrame(ref GameApp app, float dt) {
-  if(app.world.animals is null) return;
-  foreach(i, ref a; app.world.animals.animals) {
+void animalFrame(ref GameApp app, Animals herd, float dt) {
+  foreach(i, ref a; herd.animals) {
     if(a.isFalling) continue;
-    if(a.state == EntityState.Moving || a.state == EntityState.Wandering) {
+    if(a.state == EntityState.Moving || a.state == EntityState.Wandering)
       if(app.stepMove(a, dt, animalStep, animalHop)) a.state = a.hasJob ? EntityState.Working : EntityState.Idle;
-    }
     float scl = animalTable[a.type].scale;
     float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;
-    Matrix m = scale(Matrix.init, [sc, sc, sc]);
-    app.world.animals.instances[i] = position(m, a.visualPos);
+    herd.instances[i] = position(scale(Matrix.init, [sc, sc, sc]), a.visualPos);
   }
-  app.world.animals.syncInstances();
+  app.animateAsset(herd, dt);          // per-instance bone poses
+  herd.syncInstances();
 }
 
 /** Graze: walk to a free food block or berry bush; eat / harvest on arrival. */
@@ -147,29 +145,33 @@ bool tryAnimalNeeds(ref GameApp app, ref Animal a) {
 }
 
 /** Per-tick: bootstrap the next step, or (when idle) pathfind a new wander target. */
-void animalTick(ref GameApp app) {
-  if(app.world.animals is null) return;
-  foreach(ref a; app.world.animals.animals) app.tickEntity(a);
+void animalTick(ref GameApp app, Animals herd) {
+  foreach(ref a; herd.animals) app.tickEntity(a);
 }
 
 /** Create the Animals container and register it for rendering + ticking. */
-void ensureAnimals(ref GameApp app) {
-  if(app.world.animals !is null) return;
-  app.world.animals = new Animals();
-  app.world.animals.onFrame = (float dt){ animalFrame(app, dt); };
-  app.world.animals.onTick  = (){ animalTick(app); };
-  app.objects ~= app.world.animals;
+Animals ensureAnimals(ref GameApp app, uint type) {
+  if(auto h = type in app.world.animals) return *h;
+  auto herd = new Animals(type);
+  app.mergeBones(herd);              // merge skeleton into app.bones, set boneBase/boneCount
+  app.registerMaterials(herd);
+  app.mapTextures(herd);
+  herd.onFrame = (float dt){ animalFrame(app, herd, dt); };
+  herd.onTick  = (){ animalTick(app, herd); };
+  app.world.animals[type] = herd;
+  app.objects ~= herd;
+  return herd;
 }
 
 /** Place an animal in the world and append its instance row. */
 void addAnimal(ref GameApp app, ref Animal a) {
+  auto herd = app.ensureAnimals(a.type);
   auto wp = app.world.tileToWorld(a.tile);
   a.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
-  a.moveFrom = a.moveTo = a.visualPos;
-  a.moveT = 1.0f;
+  a.moveFrom = a.moveTo = a.visualPos; a.moveT = 1.0f;
   float s = animalTable[a.type].scale;
-  app.world.animals.instances ~= DrawInstance(translateScale(a.visualPos, [s, s, s]), -1, a.color);
-  app.world.animals ~= a;
+  herd.instances ~= DrawInstance(translateScale(a.visualPos, [s, s, s]), -1, a.color);
+  herd ~= a;
 }
 
 /** World tiles where `at` should spawn in this chunk: surface tile, matching spawn type, past the noise + hash gates. */

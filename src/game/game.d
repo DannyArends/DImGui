@@ -28,7 +28,6 @@ public import vegetation : Vegetation;
 public import world : World, WorldData;
 
 import animalwindow : showAnimalContent;
-import assimp : loadOpenAsset;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
 import clouds : buildCloudInstances, applyCloudInstances;
@@ -143,7 +142,7 @@ Geometry makePrimitive(string name) {
     case "Cone": m = new Cone(0.5f, 1.0f, 12); break;
     case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
     case "Berries": m = new Sphere(); break;
-    default: return loadOpenAsset(toStringz(format("data/objects/Kenney.nl/%s.fbx", name)));
+    default: return null;
   }
   return m;
 }

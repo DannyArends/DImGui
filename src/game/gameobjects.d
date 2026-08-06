@@ -23,17 +23,21 @@ class Dwarves : Cylinder {
 }
 
 /** Data-driven foraging animals, rendered as instanced tori */
-class Animals : Torus {
+class Animals : OpenAsset {
   Animal[] animals;
   alias animals this;
-  int selected = -1;                 /// UI: index of inspected animal
+  int selected = -1;
   size_t[] tickOrder;
 
-  this() {
-    super([0.15f, 0.35f], [12, 20]);
-    initInstanced(() => "Animals");
+  this(uint type) {
+    super();
+    auto src = cast(OpenAsset)makePrimitive(animalTable[type].mesh);
+    vertices = src.vertices; indices = src.indices; meshes = src.meshes;
+    animations = src.animations; rootnode = src.rootnode; bones = src.bones;
+    materials = src.materials; box = src.box;
+    string key = animalTable[type].mesh;
+    initInstanced(() => key);           // distinct GPU buffer key per species
   }
-
   mixin SwapRemove!animals;
 }
 
