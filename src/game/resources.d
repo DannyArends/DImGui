@@ -15,6 +15,7 @@ struct ClassVal { ubyte cls; float value = 0.0f; }   // cls = cast(ubyte)Resourc
 struct ResourceT {
   string name = "None", meshName = "Blocks", tex3D = "", tex2D = "";
   float scale = 1.0f;
+  float offsetY = 0.0f;                     /// vertical render offset (world units) for model-backed drops
   Colors color = Colors.white;
   ClassVal[] classes;
 }
@@ -23,10 +24,12 @@ struct ResourceT {
  *  accepts/holds are cast(ubyte)ResourceClass to dodge the same cross-module enum forward-ref as ClassVal. */
 struct ItemTemplateT {
   string name = "None";
-  string mesh = "Cube";   /// shape geometry (tinted/textured by material at use time)
+  string mesh = "Cube";    /// shape geometry (tinted/textured by material at use time)
+  string tex3D = "";       /// world texture (model atlas); empty => use `tex`
   string tex  = "";        /// template skin; empty => fall back to the material's texture
   string texFilled = "";   /// skin when the container holds contents (amount > 0); empty => use `tex`
   float scale = 1.0f;      /// render scale of the crafted item
+  float offsetY = 0.0f;    /// vertical render offset (model units) for model-backed items
   ubyte[] accepts;         /// ResourceClass the material may belong to; empty => any
   ubyte[] holds;           /// ResourceClass the contents may belong to; empty => not a container
   uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
@@ -119,7 +122,7 @@ void updateMaterials(ref GameApp app) {
   }
   foreach (ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
-    app.materials[templateMat(t)].tid = app.textures.idx(templateData(t).tex);
+    app.materials[templateMat(t)].tid = app.textures.idx(templateData(t).tex3D.length ? templateData(t).tex3D : templateData(t).tex);
     if(templateData(t).texFilled.length){ app.materials[templateMat(t, true)].tid = app.textures.idx(templateData(t).texFilled); }
   }
 }

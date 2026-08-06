@@ -156,16 +156,20 @@
   [CLASS:Item:4][CLASS:Food:0.10]
 
 [MATERIAL:Berry01]
-  [MESH:apple:white::Berry:0.04]
-  [CLASS:Item:16][CLASS:Food:1.00]
+  [MESH:watermelon:white:colormap-food-kit:Berry:0.02:-0.1]
+  [CLASS:Item:8][CLASS:Food:1.00]
 
 [MATERIAL:Berry02]
-  [MESH:apple:white::Berry:0.05]
+  [MESH:grapes:darkviolet:colormap-food-kit:Berry:0.05:-0.25]
   [CLASS:Item:16][CLASS:Food:0.25]
 
 [MATERIAL:Berry03]
-  [MESH:apple:white::Berry:0.04]
-  [CLASS:Item:16][CLASS:Food:0.50]
+  [MESH:coconut:greenyellow:colormap-food-kit:Berry:0.04:-0.2]
+  [CLASS:Item:12][CLASS:Food:0.50]
+
+[MATERIAL:Berry04]
+  [MESH:apple:white:colormap-food-kit:Berry:0.04:-0.5]
+  [CLASS:Item:16][CLASS:Food:1.00]
 
 [MATERIAL:Flint]
   [MESH:Cube:gray::Flint:0.4]
