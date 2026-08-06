@@ -24,7 +24,7 @@ Node loadNode(ref OpenAsset asset, aiScene* scene, aiNode* node, const Matrix pT
   for (uint i = 0; i < node.mNumMeshes; i++){
     aiMesh* mesh = scene.mMeshes[node.mMeshes[i]];
     if(name(mesh.mName) == "Cube") continue;
-    n.meshes ~= loadMesh(mesh, asset, gTransform);
+    n.meshes ~= loadMesh(mesh, asset, gTransform, n.name);
   }
 
   n.children.length = node.mNumChildren;
