@@ -47,12 +47,18 @@ int getChannel(T)(T object, uint materialIndex, aiTextureType type = aiTextureTy
 
 AMat[] loadMaterials(aiScene* scene, const(char)* path){
   AMat[] materials;
+  string dir = to!string(fromStringz(path));
+  string folder = baseName(dirName(dir)); // model's immediate dir, e.g. "cube-pets"
+  bool kenney = dir.canFind("Kenney.nl"); // only qualify Kenney.nl models
   for(uint i = 0; i < scene.mNumMaterials; i++) {
     aiMaterial* material = scene.mMaterials[i];
-    AMat mat = { path : to!string(fromStringz(path)) };
+    AMat mat = { path : dir };
     foreach(type; EnumMembers!aiTextureType) {
       auto info = material.getTextureInfo(type);
-      if(info.path != ""){ mat.textures[type] = info; }
+      if(info.path != ""){
+        if(kenney) info.path = format("%s-%s", info.path, folder);   // colormap -> colormap-cube-pets
+        mat.textures[type] = info;
+      }
     }
     foreach(type; EnumMembers!aiColorType) {
       mat.colors[type] = material.getMaterialColor(type);
