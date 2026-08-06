@@ -138,9 +138,10 @@ void initGame(ref GameApp app) {
 
 /** Recursively find <name>.fbx under data/objects/ (falls back to a flat path if not found). */
 string modelPath(string name) {
-  string want = format("%s.fbx", name);
-  foreach(f; dir("data/objects/", "*.fbx", false)){ if(baseName(f) == want) return(f); }
-  return(format("data/objects/%s.fbx", name)); // fallback so the error log names something
+  static string[string] cache; // basename(no ext) -> full path, scanned once
+  if(cache is null){ foreach(f; dir("data/objects/", "*.fbx", false)) cache[stripExtension(baseName(f))] = f; }
+  if(auto p = name in cache) return(*p);
+  return(format("data/objects/%s.fbx", name));
 }
 
 Geometry makePrimitive(string name) {
