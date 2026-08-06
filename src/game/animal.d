@@ -47,7 +47,8 @@ struct AnimalT {
   float thirstDecay = 0.00060f;                 /// Thirst need increase per tick
   string diet = "Berry";                        /// Resource (class or type) this animal eats
   float scale = 0.5f, scaleVariance = 0.1f;     /// Instance scale + per-spawn variance
-  float offsetY = 0.0f;                          /// Vertical render offset (world units) to sit model on the tile
+  float offsetY = 0.0f;                         /// Vertical render offset (world units) to sit model on the tile
+  float facing = 0.0f;                          /// Yaw offset (degrees) correcting the model's forward axis
 }
 
 /** Runtime animal: shared pawn (4 inventory slots) + species type. */
@@ -93,7 +94,7 @@ void animalFrame(ref GameApp app, Animals herd, float dt) {
     if(d[0] * d[0] + d[2] * d[2] > 1e-6f) a.heading = atan2(d[0], d[2]) * (180.0f / PI);
     float scl = animalTable[a.type].scale;
     float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;
-    Matrix m = rotate(scale(Matrix.init, [sc, sc, sc]), [a.heading, 0.0f, 0.0f]);
+    Matrix m = rotate(scale(Matrix.init, [sc, sc, sc]), [a.heading + animalTable[a.type].facing, 0.0f, 0.0f]);
     herd.instances[i] = position(m, a.visualPos);
   }
   Geometry g = herd;

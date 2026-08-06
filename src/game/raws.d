@@ -157,6 +157,7 @@ AnimalT[] parseAnimals(string raw) pure {
       case "SCALE":            a.scale = to!float(p[1]); break;
       case "SCALE_VARIANCE":   a.scaleVariance = to!float(p[1]); break;
       case "OFFSET_Y":         a.offsetY = to!float(p[1]); break;
+      case "FACING":           a.facing = to!float(p[1]); break;
       default: break;
     }
   }
