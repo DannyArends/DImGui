@@ -5,6 +5,13 @@
 
 import game;
 
+import animation : animateAsset;
+import bone : mergeBones;
+import material : registerMaterials;
+import textures : mapTextures;
+import geometry : Geometry;
+import assimp : OpenAsset;
+
 import block : findFreeFood, resourceType, noBlock;
 import color : randomColor;
 import dwarf : findFreeSurfaceTile;
@@ -80,9 +87,11 @@ void animalFrame(ref GameApp app, Animals herd, float dt) {
       if(app.stepMove(a, dt, animalStep, animalHop)) a.state = a.hasJob ? EntityState.Working : EntityState.Idle;
     float scl = animalTable[a.type].scale;
     float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;
-    herd.instances[i] = position(scale(Matrix.init, [sc, sc, sc]), a.visualPos);
+    Matrix m = scale(Matrix.init, [sc, sc, sc]);
+    herd.instances[i] = position(m, a.visualPos);
   }
-  app.animateAsset(herd, dt);          // per-instance bone poses
+  Geometry g = herd;
+  app.animateAsset(g, dt);             // per-instance bone poses
   herd.syncInstances();
 }
 
@@ -153,9 +162,8 @@ void animalTick(ref GameApp app, Animals herd) {
 Animals ensureAnimals(ref GameApp app, uint type) {
   if(auto h = type in app.world.animals) return *h;
   auto herd = new Animals(type);
-  app.mergeBones(herd);              // merge skeleton into app.bones, set boneBase/boneCount
-  app.registerMaterials(herd);
-  app.mapTextures(herd);
+  OpenAsset oa = herd; app.mergeBones(oa);          // merge skeleton into app.bones, set boneBase/boneCount
+  Geometry  g  = herd; app.registerMaterials(g); app.mapTextures(g);
   herd.onFrame = (float dt){ animalFrame(app, herd, dt); };
   herd.onTick  = (){ animalTick(app, herd); };
   app.world.animals[type] = herd;
