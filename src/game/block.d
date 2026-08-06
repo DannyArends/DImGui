@@ -181,7 +181,8 @@ void syncStockpileInstances(ref World world) {
     if(ti >= sp.tiles.length) break;
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    emitBlock(world.drops.meshes[b.item.renderMesh], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [bs, bs, bs], matOverride(b.item));
+    float sz = b.item.renderScale * bs;
+    emitBlock(world.drops.meshes[b.item.renderMesh], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [sz, sz, sz], matOverride(b.item));
   } }
 }
 
