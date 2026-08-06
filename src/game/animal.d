@@ -64,7 +64,7 @@ struct Animal {
   void onSubJobComplete(ref GameApp app) { if(jobStack.length) jobStack = jobStack[1..$]; if(!hasJob) state = EntityState.Idle; }
   void onStuck(ref GameApp app) {}
   void onPathResult(ref GameApp app, PathResult r) {
-    foreach(_, herd; app.world.animals) foreach(ref x; herd.animals) if(x.uid == r.uid) {
+    foreach(herd; app.world.animals) foreach(ref x; herd.animals) if(x.uid == r.uid) {
       x.path = r.success ? r.path : null;
       x.state = r.success ? (x.hasJob ? EntityState.Moving : EntityState.Wandering) : EntityState.Idle;
       return;
@@ -199,7 +199,6 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
   bool any = false;
   foreach(size_t t, ref at; animalTable) {
     foreach(tile; animalSpawnTiles(app.world.data, data.coord, data.tileTypes, at)) {
-      app.ensureAnimals();
       Animal a; a.entity.data = EntityData!4(nextEntityUID++, randomColor(), tile); a.type = cast(uint)t;
       a.idleTicks[1] = uniform(4, 24);
       auto wp = app.world.tileToWorld(tile);
@@ -209,20 +208,19 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
       any = true;
     }
   }
-  if(any) app.world.animals.syncInstances();
+  if(any) foreach(herd; app.world.animals) herd.syncInstances();
 }
 
 /** Despawn animals currently inside an evicted chunk (mirrors removeAllFeatures). */
 void removeChunkAnimals(ref GameApp app, int[3] coord) {
-  if(app.world.animals is null) return;
-  bool any = false;
-  size_t i = 0;
-  while(i < app.world.animals.animals.length) {
-    if(app.world.chunkCoord(app.world.animals.animals[i].tile) == coord) {
-      app.world.animals.remove(i);      // swap-remove: last moves into i, so don't advance
-      any = true;
-    } else i++;
+  foreach(_, herd; app.world.animals) {
+    bool any = false;
+    size_t i = 0;
+    while(i < herd.animals.length) {
+      if(app.world.chunkCoord(herd.animals[i].tile) == coord) { herd.remove(i); any = true; }  // swap-remove
+      else i++;
+    }
+    if(any) herd.syncInstances();
   }
-  if(any) app.world.animals.syncInstances();
 }
 
