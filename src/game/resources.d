@@ -122,8 +122,9 @@ void updateMaterials(ref GameApp app) {
   }
   foreach (ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
-    app.materials[templateMat(t)].tid = app.textures.idx(templateData(t).tex3D.length ? templateData(t).tex3D : templateData(t).tex);
-    if(templateData(t).texFilled.length){ app.materials[templateMat(t, true)].tid = app.textures.idx(templateData(t).texFilled); }
+    int tid = app.textures.idx(templateData(t).tex3D);   // 3D objects always use tex3D; tex/texFilled are 2D-display only
+    app.materials[templateMat(t)].tid = tid;
+    app.materials[templateMat(t, true)].tid = tid;
   }
 }
 
