@@ -68,7 +68,7 @@ void showAnimalContent(ref GameApp app, uint font = 0) {
   igSeparator();
   foreach(herd; app.world.animals) {
     if(herd.selected >= 0 && herd.selected < cast(int)herd.animals.length) {
-      if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back"), ImVec2(0,0))) { herd.selected = -1; }
+      if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back"), ImVec2(0,0))) { herd.selected = -1; return; }
       app.showAnimalSheet(herd, herd.animals[herd.selected], herd.selected);
       return;
     }
