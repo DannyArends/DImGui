@@ -164,7 +164,7 @@
   [CLASS:Item:16][CLASS:Food:0.25]
 
 [MATERIAL:Berry03]
-  [MESH:coconut:greenyellow:colormap-food-kit:Berry:0.04:-0.2]
+  [MESH:coconut:greenyellow:colormap-food-kit:Berry:0.04:-0.1]
   [CLASS:Item:12][CLASS:Food:0.50]
 
 [MATERIAL:Berry04]

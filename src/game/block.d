@@ -184,7 +184,7 @@ void syncStockpileInstances(ref World world) {
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
     float sz = b.item.renderScale * bs;
-    float[3] pos = [base[0]+off[0], base[1]+off[1]+b.item.renderOffsetY*sz, base[2]+off[2]];
+    float[3] pos = [base[0]+off[0], base[1]+off[1]+b.item.renderOffsetY, base[2]+off[2]];
     emitBlock(world.drops.meshes[b.item.renderMesh], *b, pos, [sz, sz, sz], matOverride(b.item));
   } }
 }
@@ -204,7 +204,7 @@ void syncBlockInstances(ref World world) {
       float sz = b.item.renderScale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
-      float by = (b.fall.isFalling ? b.fall.y : base[1]) + b.item.renderOffsetY * sz;
+      float by = (b.fall.isFalling ? b.fall.y : base[1]) + b.item.renderOffsetY;
       emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz], matOverride(b.item));
     }
   }
