@@ -38,7 +38,6 @@ bool isOpenAsset(string path){
 /** Load an OpenAsset 
  */
 OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible = false) {
-verbose = true;
   SDL_Log("Loading: %s", path);
   OpenAsset object = new OpenAsset();
 
