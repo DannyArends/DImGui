@@ -97,6 +97,7 @@ ResourceT[] parseResources(string raw) pure {
         if(p.length > 3) cur.tex3D    = p[3];
         if(p.length > 4) cur.tex2D    = p[4];
         if(p.length > 5) cur.scale    = to!float(p[5]);
+        if(p.length > 6) cur.offsetY  = to!float(p[6]);
         break;
       case "CLASS": cur.classes ~= ClassVal(cast(ubyte)p[1].to!ResourceClass, p.length > 2 ? to!float(p[2]) : 0.0f); break;
       default: break;
@@ -121,11 +122,15 @@ ItemTemplateT[] parseItemTemplates(string raw) pure {
     if(p.length == 0) continue;
     switch(p[0]) {
       case "ITEM":     if(inItem) table ~= cur; cur = ItemTemplateT.init; cur.name = p[1]; inItem = true; break;
-      case "MESH":     if(p.length > 1) cur.mesh = p[1]; if(p.length > 2) cur.tex = p[2]; if(p.length > 3) cur.texFilled = p[3]; break;
+      case "MESH":     if(p.length > 1) cur.mesh = p[1];
+                       if(p.length > 2) cur.tex3D = p[2];
+                       if(p.length > 3) cur.tex = p[3];
+                       if(p.length > 4) cur.texFilled = p[4]; break;
       case "ACCEPTS":  cur.accepts ~= cast(ubyte)p[1].to!ResourceClass; break;
       case "HOLDS":    cur.holds   ~= cast(ubyte)p[1].to!ResourceClass; break;
       case "CAPACITY": cur.capacity = to!uint(p[1]); break;
       case "SCALE":    cur.scale = to!float(p[1]); break;
+      case "OFFSET_Y": cur.offsetY = to!float(p[1]); break;
       case "STACK":    cur.maxStack = to!int(p[1]); break;
       default: break;
     }

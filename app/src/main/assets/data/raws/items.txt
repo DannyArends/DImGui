@@ -7,9 +7,9 @@
   [STACK:1]
 
 [ITEM:Cup]
-  [MESH:Cube:WoodCup:WoodCupFilled]
+  [MESH:cup:colormap-food-kit:WoodCup:WoodCupFilled]
   [ACCEPTS:Wood]
   [HOLDS:Liquid]
   [CAPACITY:1]
-  [SCALE:0.5]
+  [SCALE:0.03]
   [STACK:1]

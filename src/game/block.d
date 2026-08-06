@@ -156,6 +156,8 @@ string renderMesh(const Item it) { return it.isCraft ? templateData(it.shape).me
 /** Render scale for an item: template scale when crafted, else the material's scale. */
 float renderScale(const Item it) { return it.isCraft ? templateData(it.shape).scale : resourceData(it.material).scale; }
 
+float renderOffsetY(const Item it) { return it.isCraft ? templateData(it.shape).offsetY : resourceData(it.material).offsetY; }
+
 /** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
 @nogc pure int matOverride(const Item it) nothrow {
   if(!it.isCraft) return -1;
@@ -182,7 +184,8 @@ void syncStockpileInstances(ref World world) {
     float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
     float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
     float sz = b.item.renderScale * bs;
-    emitBlock(world.drops.meshes[b.item.renderMesh], *b, [base[0]+off[0], base[1]+off[1], base[2]+off[2]], [sz, sz, sz], matOverride(b.item));
+    float[3] pos = [base[0]+off[0], base[1]+off[1]+b.item.renderOffsetY*sz, base[2]+off[2]];
+    emitBlock(world.drops.meshes[b.item.renderMesh], *b, pos, [sz, sz, sz], matOverride(b.item));
   } }
 }
 
@@ -201,7 +204,7 @@ void syncBlockInstances(ref World world) {
       float sz = b.item.renderScale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
-      float by = b.fall.isFalling ? b.fall.y : base[1];
+      float by = (b.fall.isFalling ? b.fall.y : base[1]) + b.item.renderOffsetY * sz;
       emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz], matOverride(b.item));
     }
   }
