@@ -174,7 +174,7 @@ Animals ensureAnimals(ref GameApp app, uint type) {
 void addAnimal(ref GameApp app, ref Animal a) {
   auto herd = app.ensureAnimals(a.type);
   auto wp = app.world.tileToWorld(a.tile);
-  a.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
+  a.visualPos = [wp[0], wp[1], wp[2]];
   a.moveFrom = a.moveTo = a.visualPos; a.moveT = 1.0f;
   float s = animalTable[a.type].scale;
   herd.instances ~= DrawInstance(translateScale(a.visualPos, [s, s, s]), -1, a.color);
@@ -209,7 +209,7 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
       Animal a; a.entity.data = EntityData!4(nextEntityUID++, randomColor(), tile); a.type = cast(uint)t;
       a.idleTicks[1] = uniform(4, 24);
       auto wp = app.world.tileToWorld(tile);
-      a.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
+      a.visualPos = [wp[0], wp[1], wp[2]];
       a.moveFrom = a.moveTo = a.visualPos;
       app.addAnimal(a);
       any = true;
