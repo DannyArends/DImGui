@@ -11,12 +11,11 @@ The engine boasts the following features:
 - Basic geometries (cube, cone, torus, etc.) and complex 3D objects (FBX, 3DS, etc.)
 - Skeletal and key-frame animations
 - HDR Lighting Engine, Dynamic Shadows & Normal mapping
-- Texture & Depth arrays with async GPU upload
-- Compute shaders for culling, particle engines, and texture generation
+- Texture & Depth arrays with a-sync GPU upload
+- Compute shader support (SSAO)
 - Shader reflection for UBOs, SSBOs, and textures
 - Instanced rendering of objects with dynamic vertex/index buffers
 - L-system procedural geometry
-- PDB protein structure viewer
 - GUI windows for settings, objects, textures, lights, and sounds
 
 ### (Cross-)Compilation ⚙️
@@ -44,8 +43,7 @@ DImGui is made possible by, and has dependencies on, the following excellent sof
 
 The following folders are interesting, if you're interested in how the repository is structured:
 
-- [src/](./src/) which stores the D source code 
-- [src/base](./src/base/) Foundation layer: vectors, matrices, quaternions, bounds, containers, search, noise, and the L-system
+- [src/base](./src/base/) vectors, matrices, quaternions, bounds, containers, search, noise, and the L-system
 - [src/engine](./src/engine/) main folder for the engine objects
 - [src/engine/assimp](./src/engine/assimp/) Open Asset Import Library (assimp) folder
 - [src/engine/imgui](./src/engine/imgui/) Dear ImGui UI folder
