@@ -18,7 +18,7 @@ import geometry : Geometry;
 import jobs : Job, JobState, consumeCarried;
 import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord, worldToTile;
 import material : registerMaterials;
-import matrix : translateScale, scale, position;
+import matrix : translateScale, scale, position, rotate;
 import noise : noiseHTT;
 import pathfinding : followPath, pathfindTo, stepMove, repathTo, RepathResult, findGoalTile;
 import resources : foodValue;
@@ -47,6 +47,7 @@ struct AnimalT {
   float thirstDecay = 0.00060f;                 /// Thirst need increase per tick
   string diet = "Berry";                        /// Resource (class or type) this animal eats
   float scale = 0.5f, scaleVariance = 0.1f;     /// Instance scale + per-spawn variance
+  float offsetY = 0.0f;                          /// Vertical render offset (world units) to sit model on the tile
 }
 
 /** Runtime animal: shared pawn (4 inventory slots) + species type. */
@@ -82,11 +83,17 @@ struct Animal {
 void animalFrame(ref GameApp app, Animals herd, float dt) {
   foreach(i, ref a; herd.animals) {
     if(a.isFalling) continue;
-    if(a.state == EntityState.Moving || a.state == EntityState.Wandering)
+    if(a.state == EntityState.Moving || a.state == EntityState.Wandering){
       if(app.stepMove(a, dt, animalStep, animalHop)) a.state = a.hasJob ? EntityState.Working : EntityState.Idle;
+    }
+
+    bool moving = (a.state == EntityState.Moving || a.state == EntityState.Wandering);
+    if(i < herd.states.length) herd.states[i].animation = moving ? 2 : 1;   // 2=walk, 1=idle
+    float[3] d = [a.moveTo[0] - a.moveFrom[0], 0.0f, a.moveTo[2] - a.moveFrom[2]];
+    if(d[0] * d[0] + d[2] * d[2] > 1e-6f) a.heading = atan2(d[0], d[2]) * (180.0f / PI);
     float scl = animalTable[a.type].scale;
     float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;
-    Matrix m = scale(Matrix.init, [sc, sc, sc]);
+    Matrix m = rotate(scale(Matrix.init, [sc, sc, sc]), [a.heading, 0.0f, 0.0f]);
     herd.instances[i] = position(m, a.visualPos);
   }
   Geometry g = herd;
@@ -177,7 +184,8 @@ void addAnimal(ref GameApp app, ref Animal a) {
   a.visualPos = [wp[0], wp[1], wp[2]];
   a.moveFrom = a.moveTo = a.visualPos; a.moveT = 1.0f;
   float s = animalTable[a.type].scale;
-  herd.instances ~= DrawInstance(translateScale(a.visualPos, [s, s, s]), -1, a.color);
+  float[3] p = [a.visualPos[0], a.visualPos[1] + animalTable[a.type].offsetY, a.visualPos[2]];
+  herd.instances ~= DrawInstance(translateScale(p, [s, s, s]), -1, a.color);
   herd ~= a;
 }
 
@@ -206,7 +214,7 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
   bool any = false;
   foreach(size_t t, ref at; animalTable) {
     foreach(tile; animalSpawnTiles(app.world.data, data.coord, data.tileTypes, at)) {
-      Animal a; a.entity.data = EntityData!4(nextEntityUID++, randomColor(), tile); a.type = cast(uint)t;
+      Animal a; a.entity.data = EntityData!4(nextEntityUID++, Colors.white, tile); a.type = cast(uint)t;
       a.idleTicks[1] = uniform(4, 24);
       auto wp = app.world.tileToWorld(tile);
       a.visualPos = [wp[0], wp[1], wp[2]];
