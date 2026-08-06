@@ -1,7 +1,7 @@
 [OBJECT:ITEM]
 
 [ITEM:Axe]
-  [MESH:Cube:StoneAxe]
+  [MESH:Cube:StoneAxe:StoneAxe:StoneAxe]
   [ACCEPTS:Stone][ACCEPTS:Rock][ACCEPTS:Flint]
   [SCALE:0.5]
   [STACK:1]
