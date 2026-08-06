@@ -52,8 +52,8 @@ void main() {
   vec3 N  = normalize(cross(Px - P, Py - P));
   if(dot(N, u.camPos.xyz - P) < 0.0) N = -N;
 
-  float a = fract(sin(dot(vec2(px), vec2(12.9898, 78.233))) * 43758.5453);
-  vec3 rnd = vec3(cos(6.2831853 * a), sin(6.2831853 * a), 0.0);
+  float ign = fract(52.9829189 * fract(dot(vec2(px), vec2(0.06711056, 0.00583715))));
+  vec3 rnd = vec3(cos(6.2831853 * ign), sin(6.2831853 * ign), 0.0);
   vec3 T = normalize(rnd - N * dot(rnd, N));
   mat3 TBN = mat3(T, cross(N, T), N);
 
