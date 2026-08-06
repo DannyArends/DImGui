@@ -6,7 +6,7 @@
 import engine;
 
 import assimp : OpenAsset, name;
-import bone : Bone, BoneWeights, loadBoneWeights;
+import bone : Bone, BoneWeights, loadBoneWeights, synthesizeBone;
 import amat : getChannel;
 import material : ensureMaterial;
 import matrix : Matrix, multiply, inverse, transpose;
@@ -52,7 +52,7 @@ void updateMeshInfo(ref App app) {
   if(needsUpdate) { app.buffers["MeshMatrices"].invalidate(); }
 }
 
-string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool verbose = false) {
+string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, string ownerNode = null, bool verbose = false) {
   if (verbose) {
     SDL_Log("Mesh: %s", toStringz(name(mesh.mName)));
     SDL_Log(" - %u vertices, %u faces, %u bones", mesh.mNumVertices, mesh.mNumFaces, mesh.mNumBones);
@@ -62,6 +62,7 @@ string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool
   size_t vOff = asset.vertices.length;
   auto channel = getChannel(asset, mesh.mMaterialIndex, aiTextureType_DIFFUSE);
   auto weights = asset.loadBoneWeights(mesh, asset.bones, gTransform);
+  int synthBone = (weights.length == 0) ? asset.synthesizeBone(ownerNode, gTransform) : -1;
   auto normMatrix = gTransform.inverse().transpose();
 
   Mesh mMesh = Mesh([cast(uint)(asset.vertices.length), cast(uint)(vOff) + mesh.mNumVertices],  mesh.mMaterialIndex);
@@ -87,7 +88,13 @@ string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, bool
       float w = (cross(N, T).dot(B) < 0.0f) ? -1.0f : 1.0f;
       asset.vertices[gIdx].tangent = [T[0], T[1], T[2], w];
     }
-    asset.assignBoneWeight(gIdx, weights, vIdx, asset.bones);
+
+    if (synthBone >= 0) {
+      asset.vertices[gIdx].bones[0] = cast(uint)synthBone;
+      asset.vertices[gIdx].weights[0] = 1.0f;
+    }else {
+      asset.assignBoneWeight(gIdx, weights, vIdx, asset.bones);
+    }
   }
 
   for (size_t f = 0; f < mesh.mNumFaces; f++) {  // Load faces to indices

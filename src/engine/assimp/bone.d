@@ -34,13 +34,21 @@ BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] glob
       globalBones[name].offset = multiply(toMatrix(aiBone.mOffsetMatrix), pTransform.inverse());
       globalBones[name].index = cast(uint)(globalBones.length-1);
     }
-    //SDL_Log(cstr("%s.bone: %d -> %d", name, globalBones[name].index, aiBone.mNumWeights));
+    SDL_Log(cstr("%s.bone: %d -> %d", name, globalBones[name].index, aiBone.mNumWeights));
     for (uint w = 0; w < aiBone.mNumWeights; w++) {
       auto aiWeight = aiBone.mWeights[w];
       weights[name][aiWeight.mVertexId] = aiWeight.mWeight;
     }
   }
   return(weights);
+}
+
+/** Synthesise one bone from a mesh's owning node for part-rigged (unskinned) meshes; -1 if not needed. */
+int synthesizeBone(ref OpenAsset asset, string ownerNode, const Matrix gTransform) {
+  if (ownerNode is null) return -1;
+  if (!(ownerNode in asset.bones))
+    asset.bones[ownerNode] = Bone(gTransform.inverse(), cast(uint)asset.bones.length);  // offset = inverse bind (verts are baked with gTransform)
+  return cast(int)asset.bones[ownerNode].index;
 }
 
 /** Propagate any animation changes (made by onFrame handlers) into the per-syncIndex BoneMatrices SSBO. */

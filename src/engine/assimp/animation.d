@@ -88,7 +88,7 @@ void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, co
 }
 
 /** load all animations from aiScene* */
-Animation[] loadAnimations(aiScene* scene, const OpenAsset asset, bool verbose = false) {
+Animation[] loadAnimations(aiScene* scene, const OpenAsset asset, bool verbose = true) {
   Animation[] animations;
   animations.length = scene.mNumAnimations;
   if(verbose) SDL_Log("Processing %u animations...", scene.mNumAnimations);
