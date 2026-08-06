@@ -27,6 +27,12 @@ class OpenAsset : Geometry {
     isOpaque = false;
     geometry = (){ return(typeof(this).stringof); };
   }
+
+  /** Load an assimp asset directly into this instance (subclasses call super(path)). */
+  this(const(char)* path, bool verbose = false, bool isVisible = false) {
+    this();
+    loadInto(this, path, verbose, isVisible);
+  }
 }
 
 bool isOpenAsset(string path){
@@ -35,11 +41,9 @@ bool isOpenAsset(string path){
   return(false);
 }
 
-/** Load an OpenAsset 
- */
-OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible = false) {
+/** Load an assimp asset into an existing OpenAsset instance */
+void loadInto(OpenAsset object, const(char)* path, bool verbose = false, bool isVisible = false) {
   SDL_Log("Loading: %s", path);
-  OpenAsset object = new OpenAsset();
 
   auto content = readFile(path);
   auto flags = aiProcess_Triangulate | aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_MaxQuality ;
@@ -47,7 +51,7 @@ OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible 
 
   if (!scene || scene.mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene.mRootNode) {
     SDL_Log("Error loading model '%s': %s", path, aiGetErrorString());
-    return object;
+    return;
   }
 
   object.mName = stripExtension(baseName(to!string(path)));
@@ -78,17 +82,21 @@ OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible 
   object.computeBoundingBox();
   object.isVisible = isVisible;
   object.scale([0.5f, 0.5f, 0.5f]);
+}
+
+/** Load an OpenAsset */
+OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible = false) {
+  OpenAsset object = new OpenAsset();
+  loadInto(object, path, verbose, isVisible);
   return object;
 }
 
-/** Get the name from a char[256]
- */
+/** Get the name from a char[256] */
 string name(T)(T obj) {
   size_t idx = 0;
   do { ++idx; } while (obj.data[idx] != '\0');
   return(to!string(toStringz(obj.data[0 .. idx] ~ '\0'))); 
 }
 
-/** Construct a unique name for a node within an OpenAsset
- */
+/** Construct a unique name for a node within an OpenAsset */
 string nodeName(const OpenAsset asset, const string node){ return(format("%s:%d:%s", asset.mName, asset.uid, node)); }

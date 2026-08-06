@@ -28,13 +28,13 @@ class Animals : OpenAsset {
   alias animals this;
   int selected = -1;
   size_t[] tickOrder;
+  float baseScale = 1.0f;               // fits the model's longest axis to 1 unit
 
-  this(uint type) {
-    super();
-    auto src = cast(OpenAsset)makePrimitive(animalTable[type].mesh);
-    vertices = src.vertices; indices = src.indices; meshes = src.meshes;
-    animations = src.animations; rootnode = src.rootnode; bones = src.bones;
-    materials = src.materials; box = src.box;
+  this(uint type, const(char)* path) {
+    super(path);
+    auto sz = box.bounds.size();
+    float maxDim = fmax(sz[0], fmax(sz[1], sz[2]));
+    baseScale = (maxDim > 0) ? 1.0f / maxDim : 1.0f;
     string key = animalTable[type].mesh;
     initInstanced(() => key);           // distinct GPU buffer key per species
   }
