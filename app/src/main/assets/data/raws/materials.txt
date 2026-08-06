@@ -156,15 +156,15 @@
   [CLASS:Item:4][CLASS:Food:0.10]
 
 [MATERIAL:Berry01]
-  [MESH:Berries:crimson::Berry:0.5]
+  [MESH:apple:white::Berry:0.04]
   [CLASS:Item:16][CLASS:Food:1.00]
 
 [MATERIAL:Berry02]
-  [MESH:Berries:darkviolet::Berry:0.3]
+  [MESH:apple:white::Berry:0.05]
   [CLASS:Item:16][CLASS:Food:0.25]
 
 [MATERIAL:Berry03]
-  [MESH:Berries:greenyellow::Berry:0.4]
+  [MESH:apple:white::Berry:0.04]
   [CLASS:Item:16][CLASS:Food:0.50]
 
 [MATERIAL:Flint]
