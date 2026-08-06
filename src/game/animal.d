@@ -6,26 +6,25 @@
 import game;
 
 import animation : animateAsset;
-import bone : mergeBones;
-import material : registerMaterials;
-import textures : mapTextures;
-import geometry : Geometry;
 import assimp : OpenAsset;
-
 import block : findFreeFood, resourceType, noBlock;
+import bone : mergeBones;
 import color : randomColor;
 import dwarf : findFreeSurfaceTile;
 import entity : tickEntity;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
+import geometry : Geometry;
 import jobs : Job, JobState, consumeCarried;
 import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord, worldToTile;
+import material : registerMaterials;
 import matrix : translateScale, scale, position;
 import noise : noiseHTT;
 import pathfinding : followPath, pathfindTo, stepMove, repathTo, RepathResult, findGoalTile;
 import resources : foodValue;
 import scheduler : roam, dispatchJob, progressJob;
 import sfx : play;
+import textures : mapTextures;
 import tile : getSuccessors, tileAbove, getWater, setWater;
 import vector : manhattan;
 import water : findNearestWater;

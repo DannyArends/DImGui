@@ -29,7 +29,7 @@ void updateMeshInfo(ref App app) {
   bool needsUpdate = false;
   uint boneTop = 0;
   for (size_t o = 0; o < app.objects.length; o++) {
-    if (app.objects[o].instancedMesh) continue;
+    if (app.objects[o].instancedMesh && app.objects[o].boneCount == 0) continue;
     app.ensureMaterial(app.objects[o]);
     int[2] expected = [cast(int)app.meshes.length, cast(int)(app.meshes.length + app.objects[o].meshes.length)];
     bool anyStale = false;
