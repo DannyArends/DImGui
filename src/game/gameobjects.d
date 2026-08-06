@@ -32,9 +32,6 @@ class Animals : OpenAsset {
   this(uint type) {
     super(toStringz(modelPath(animalTable[type].mesh)), false, true);
     string key = animalTable[type].mesh;
-    SDL_Log("HERD type=%u mesh=%s path=%s verts=%u meshes=%u key=%s",
-      type, toStringz(animalTable[type].mesh), toStringz(modelPath(animalTable[type].mesh)),
-      cast(uint)vertices.length, cast(uint)meshes.length, toStringz(key));
     initInstanced(() => key);
   }
   mixin SwapRemove!animals;
