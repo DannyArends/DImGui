@@ -28,6 +28,12 @@ struct Lattice {
 /** A value indexed by an integer 3D lattice coordinate (tile- or chunk-space key) */
 alias LatticeMap(T) = T[int[3]];
 
+/** Attribute-safe AA lookup with default (unlike object.get, this is @nogc/pure/nothrow). */
+@nogc pure V getOr(V, K)(const V[K] map, K key, V fallback) nothrow {
+  if(auto p = key in map) return(*p);
+  return(fallback);
+}
+
 /** One sparse cell change: which chunk, which linear tile index, and the value there */
 struct Diff(T) { int[3] coord; uint idx; T value; }
 

@@ -7,7 +7,7 @@ import game;
 
 import block : resourceType, itemOf, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
 import color : randomColor;
-import entity : tickEntity;
+import entity : tickEntity, entityMove;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import game : GameApp;
@@ -94,7 +94,7 @@ void dwarfFrame(ref GameApp app, float dt) {
   foreach(i, ref d; app.world.dwarves) {
     if(d.isFalling) continue;
     if(d.state != EntityState.Moving && d.state != EntityState.Wandering) continue;
-    if(app.stepMove(d, dt, stepSpeed, hopHeight)) d.state = d.hasJob ? EntityState.Working : EntityState.Idle;
+    app.entityMove(d, dt, stepSpeed, hopHeight);
   }
   foreach(i, ref d; app.world.dwarves) {
     if(d.lightIndex != size_t.max) {

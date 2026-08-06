@@ -119,6 +119,14 @@ struct Entity(uint N) {
   @property bool isFalling() const { return fall.isFalling; }
 }
 
+/** Advance one entity's interpolated step; flip to Working/Idle on arrival. */
+void entityMove(T)(ref GameApp app, ref T e, float dt, float speed, float hop) {
+  if(e.state != EntityState.Moving && e.state != EntityState.Wandering) return;
+  float[3] d = [e.moveTo[0] - e.moveFrom[0], 0.0f, e.moveTo[2] - e.moveFrom[2]];
+  if(d[0] * d[0] + d[2] * d[2] > 1e-6f) e.heading = atan2(d[0], -d[2]) * (180.0f / PI);
+  if(app.stepMove(e, dt, speed, hop)) e.state = e.hasJob ? EntityState.Working : EntityState.Idle;
+}
+
 /** A single dwarf being ticked */
 void tickEntity(T)(ref GameApp app, ref T d) {
   foreach(n; 0 .. d.needs.length){ d.needs[n] = min(1.0f, d.needs[n] + decay[n]); }

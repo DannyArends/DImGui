@@ -11,7 +11,7 @@ import block : findFreeFood, resourceType, noBlock;
 import bone : mergeBones;
 import color : randomColor;
 import dwarf : findFreeSurfaceTile;
-import entity : tickEntity;
+import entity : tickEntity, entityMove;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
 import geometry : Geometry;
@@ -84,14 +84,9 @@ struct Animal {
 void animalFrame(ref GameApp app, Animals herd, float dt) {
   foreach(i, ref a; herd.animals) {
     if(a.isFalling) continue;
-    if(a.state == EntityState.Moving || a.state == EntityState.Wandering){
-      if(app.stepMove(a, dt, animalStep, animalHop)) a.state = a.hasJob ? EntityState.Working : EntityState.Idle;
-    }
-
+    app.entityMove(a, dt, animalStep, animalHop);
     bool moving = (a.state == EntityState.Moving || a.state == EntityState.Wandering);
     if(i < herd.states.length) herd.states[i].animation = moving ? 2 : 1;   // 2=walk, 1=idle
-    float[3] d = [a.moveTo[0] - a.moveFrom[0], 0.0f, a.moveTo[2] - a.moveFrom[2]];
-    if(d[0] * d[0] + d[2] * d[2] > 1e-6f) a.heading = atan2(d[0], -d[2]) * (180.0f / PI);
     float scl = animalTable[a.type].scale;
     float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;
     Matrix m = rotate(scale(Matrix.init, [sc, sc, sc]), [a.heading + animalTable[a.type].facing, 0.0f, 0.0f]);

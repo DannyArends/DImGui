@@ -5,10 +5,12 @@
 
 import game;
 
-import lattice : tileIdx, surfaceLevel, worldToTile, tileCoord, chunkCoord, tileNeighbours;
+import lattice : tileIdx, getOr, surfaceLevel, worldToTile, tileCoord, chunkCoord, tileNeighbours;
 import noise : noise2D;
 import dwarf : invalidatePaths;
 import vector : x,y,z;
+
+enum float IMPASSABLE = 1.0e3f;   // penalties >= this are hard walls, not costs
 
 /** Is the Tile occupied ?  */
 @nogc pure bool isTileOccupied(const GameApp app, const int[3] tile) nothrow {
@@ -158,7 +160,8 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
 }
 
 @nogc pure bool isStandable(T)(const ref T wd, const int[3] tile) nothrow {
-  return(wd.isPassable(tile) && wd.getTileAt(tileBelow(tile)) != ResourceType.None && wd.getTileAt(tileBelow(tile)).traversable);
+  return(wd.isPassable(tile) && wd.getTileAt(tileBelow(tile)) != ResourceType.None &&
+         wd.getTileAt(tileBelow(tile)).traversable && wd.tilePenalties.getOr(tile, 0.0f) < IMPASSABLE);
 }
 
 @nogc pure bool hasStandableNeighbour(T)(const ref T wd, int[3] tile) nothrow {
@@ -185,7 +188,8 @@ pure PathNode[] getSuccessors(T)(const ref T wd, PathNode parent) {
       auto tt = wd.getTileAt([nx, ny, nz]);
       int[3] standTile = [nx, ny+1, nz];
       if(tt != ResourceType.None && tt.traversable && wd.isPassable(standTile)) {
-        float modifier = wd.tilePenalties.get(standTile, 0.0f);
+        float modifier = wd.tilePenalties.getOr(standTile, 0.0f);
+        if(modifier >= IMPASSABLE) break;
         successors ~= PathNode(position: [nx*wd.tileSize, (ny+1)*wd.tileHeight+wd.yOffset, nz*wd.tileSize], cost: tt.cost + modifier);
         break;
       }
