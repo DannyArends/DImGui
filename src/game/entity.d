@@ -106,6 +106,7 @@ struct Entity(uint N) {
   float[3] visualPos = [0.0f, 0.0f, 0.0f];  /// Interpolated position
   float[3] moveFrom = [0.0f, 0.0f, 0.0f];   /// World pos at start of move
   float[3] moveTo = [0.0f, 0.0f, 0.0f];     /// World pos at end of move
+  float heading = 0.0f;                     /// Facing yaw in degrees (kept while idle)
   float moveT = 1.0f;                       /// 1.0 = arrived, 0.0 = just started
 
   Fall fall = { weight: 5.0f };             /// Fall state

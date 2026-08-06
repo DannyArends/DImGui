@@ -156,6 +156,7 @@ AnimalT[] parseAnimals(string raw) pure {
       case "DIET":             a.diet = p[1]; break;
       case "SCALE":            a.scale = to!float(p[1]); break;
       case "SCALE_VARIANCE":   a.scaleVariance = to!float(p[1]); break;
+      case "OFFSET_Y":         a.offsetY = to!float(p[1]); break;
       default: break;
     }
   }
