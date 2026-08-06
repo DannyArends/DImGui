@@ -6,6 +6,7 @@
 import game;
 
 import chunk : getBestTile;
+import feature : stampFeatureFootprints;
 import game : GameApp;
 import jobs : activeTiles;
 import lattice : tileIdx, tileToWorld, tileAbove, chunkCoord, tileNeighbours;
@@ -51,6 +52,7 @@ void syncBuildGhosts(ref GameApp app) {
   if(app.world.inventory is null) return;
   app.world.inventory.instances.reset();
   app.world.data.tilePenalties = null;
+  app.stampFeatureFootprints();
 
   auto buildTiles = app.world.activeTiles("Building");
   auto mineTiles = app.world.activeTiles("Mining");

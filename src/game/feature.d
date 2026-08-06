@@ -180,7 +180,6 @@ int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) 
     batches (static parts + L-system brushes), and emit each via emitInstances. */
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
-    app.world.markFootprint(f, ft);
     auto wp = app.world.tileToWorld(f.rootTile);
     f.instanceRuns = [];
 
@@ -219,6 +218,17 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
   return features;
 }
 
+/** Re-lay every loaded feature's tile-penalty footprint (static hard blocks). */
+void stampFeatureFootprints(ref GameApp app) {
+  foreach(ref ft; features) {
+    if(ft.tilePenalty <= 0.0f) continue;
+    foreach(coord, ref chunkFeatures; app.world.vegetation[ft.name]) {
+      if(coord !in app.world.chunks) continue;
+      foreach(ref f; chunkFeatures) app.world.markFootprint(f, ft);
+    }
+  }
+}
+
 /** Clear and regenerate every feature's instances and tile penalties across all loaded chunks. */
 void rebuildAllFeatures(ref GameApp app) {
   app.world.data.tilePenalties = null;
@@ -229,6 +239,7 @@ void rebuildAllFeatures(ref GameApp app) {
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.vegetation.meshes);
     }
   }
+  app.stampFeatureFootprints();
   foreach(ref mesh; app.world.vegetation.meshes){ mesh.syncInstances(); }
 }
 
