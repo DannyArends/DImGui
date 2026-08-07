@@ -9,17 +9,17 @@ import buffer : createBuffer, copyImageToBuffer;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import images : transitionImageLayout;
 import io : fixPath;
+import vram : mapped;
 
 void saveScreenshot(ref App app) {
   VkDeviceSize size = app.camera.width * app.camera.height * 4;  // RGBA8
 
   // Staging buffer to receive pixel data
   VkBuffer stagingBuffer;
-  VkDeviceMemory stagingMemory;
+  VmaAllocation stagingMemory;
   app.createBuffer(&stagingBuffer, &stagingMemory, size, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
-  void* data;
-  enforceVK(vkMapMemory(app.device, stagingMemory, 0, size, 0, &data));
+  void* data = app.mapped(stagingMemory);
 
   auto cmd = app.beginSingleTimeCommands(app.commandPool);
   app.transitionImageLayout(cmd, app.swapChainImages[app.frameIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -41,8 +41,6 @@ void saveScreenshot(ref App app) {
   SDL_DestroySurface(surface);
   SDL_Log("Screenshot saved: %s", toStringz(path));
 
-  vkUnmapMemory(app.device, stagingMemory);
-  vkFreeMemory(app.device, stagingMemory, app.allocator);
-  vkDestroyBuffer(app.device, stagingBuffer, app.allocator);
+  vmaDestroyBuffer(app.vma, stagingBuffer, stagingMemory);
 }
 

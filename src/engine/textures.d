@@ -13,6 +13,7 @@ import images : nameImageBuffer, generateMipmaps, imageSize, createImage, transi
 import io : dir;
 import validation : nameVulkanObject;
 import views : createImageView, createLayerViews;
+import vram : mapped;
 
 enum MAX_TEXTURES = 512;
 
@@ -167,7 +168,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUA
   app.nameVulkanObject(staging.buffer, toStringz("[IMAGE-SB] " ~ baseName(texture.path)), VK_OBJECT_TYPE_BUFFER);
 
   // Copy the image data to the StagingBuffer memory
-  enforceVK(vkMapMemory(app.device, staging.memory, 0, texture.surface.imageSize, 0, &staging.data));
+  staging.data = app.mapped(staging.memory);
   if(SDL_MUSTLOCK(texture.surface)) SDL_LockSurface(texture.surface);
   memcpy(staging.data, texture.surface.pixels, texture.surface.imageSize);
   if(SDL_MUSTLOCK(texture.surface)) SDL_UnlockSurface(texture.surface);

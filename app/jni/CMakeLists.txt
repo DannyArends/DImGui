@@ -76,8 +76,11 @@ if(ANDROID)
     set(SDLMIXER_TESTS OFF)
     add_subdirectory(SDL_mixer SDL_mixer_build)
 
-    # SDL_ttf
+    # freetype
     add_subdirectory(freetype freetype_build)
+
+    # Vulkan Memory Allocator
+    add_subdirectory(cvma cvma_build)
 endif()
 # Options
 option(CIMGUI_STATIC     "Build as static library"  OFF)

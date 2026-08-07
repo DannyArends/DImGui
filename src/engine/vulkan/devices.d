@@ -82,7 +82,16 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   };
   enforceVK(vkCreateDevice(app.physicalDevice, &createDevice, app.allocator, &app.device));
 
+  VmaVulkanFunctions vkFuncs = { vkGetInstanceProcAddr: &vkGetInstanceProcAddr, vkGetDeviceProcAddr: &vkGetDeviceProcAddr };
+
+  VmaAllocatorCreateInfo vmaInfo = {
+    physicalDevice: app.physicalDevice, device: app.device, instance: app.instance,
+    vulkanApiVersion: app.applicationInfo.apiVersion, pVulkanFunctions: &vkFuncs
+  };
+  enforceVK(vmaCreateAllocator(&vmaInfo, &app.vma));
+
   app.mainDeletionQueue.add((){ if(app.verbose) SDL_Log("Destroy Device: %p", app.device);
+    vmaDestroyAllocator(app.vma);
     vkDestroyDevice(app.device, app.allocator); 
   });
 

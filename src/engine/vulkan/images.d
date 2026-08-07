@@ -17,7 +17,7 @@ VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * SDL
 struct ImageBuffer {
   VkImage image = null;             /// Image
   VkImageView[] views = null;       /// Views
-  VkDeviceMemory memory = null;     /// Memory
+  VmaAllocation memory = null;      /// Memory
   VkExtent3D extent;                /// Extent
   uint arrayLayers = 1;             /// Layers
   @property ref VkImageView view(uint id = 0) { return(views[id]); }
@@ -33,8 +33,7 @@ void nameImageBuffer(ref App app, ImageBuffer buffer, string path){
 /** DeAllocate an ImageBuffer / Texture */
 @nogc void cleanup(ref App app, ImageBuffer buffer) nothrow {
   foreach(v; buffer.views) { vkDestroyImageView(app.device, v, app.allocator); }
-  vkDestroyImage(app.device, buffer.image, app.allocator);
-  vkFreeMemory(app.device, buffer.memory, app.allocator);
+  vmaDestroyImage(app.vma, buffer.image, buffer.memory);
 }
 
 void createColorResources(ref App app) {
@@ -59,21 +58,8 @@ void createImage(ref App app, ref ImageBuffer buffer, uint width, uint height, V
     initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, usage: usage,
     sharingMode: VK_SHARING_MODE_EXCLUSIVE, samples: samples, flags: 0
   };
-  enforceVK(vkCreateImage(app.device, &imageInfo, null, &buffer.image));
-
-  VkMemoryRequirements memoryRequirements;
-  vkGetImageMemoryRequirements(app.device, buffer.image, &memoryRequirements);
-
-  VkMemoryAllocateInfo allocInfo = {
-    sType: VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-    allocationSize: memoryRequirements.size,
-    memoryTypeIndex: app.physicalDevice.findMemoryType(memoryRequirements.memoryTypeBits, properties)
-
-  };
-  if(app.trace) SDL_Log("createImage: Allocating %d Bytes", memoryRequirements.size);
-
-  enforceVK(vkAllocateMemory(app.device, &allocInfo, null, &buffer.memory));
-  vkBindImageMemory(app.device, buffer.image, buffer.memory, 0);
+  VmaAllocationCreateInfo vmaAlloc = { usage: VMA_MEMORY_USAGE_AUTO, requiredFlags: properties };
+  enforceVK(vmaCreateImage(app.vma, &imageInfo, &vmaAlloc, &buffer.image, &buffer.memory, null));
 }
 
 /** Create an image, its layer views, and name it — the common opening sequence shared by every specialized image creator */

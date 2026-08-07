@@ -90,6 +90,7 @@ struct App {
   VramUsage vramLedger;                                                         /// Running VRAM total accumulated
 
   VkDevice device = null;                                                       /// Vulkan device
+  VmaAllocator vma = null;                                                      /// VMA allocator (block suballocation)
   Queues queues;                                                                /// Graphics / Compute / Transfer queues
 
   // Back-compat aliases so existing call sites keep working

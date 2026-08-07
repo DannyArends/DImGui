@@ -108,4 +108,13 @@ cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
 cmake --build . --config Release -j10
 cd ../../../../
 ```
-
+Compile Vulkan Memory Allocator (cvma):
+```
+rm -rf app\jni\cvma\build
+cd app/jni/cvma/
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ../
+cmake --build . --config Release -j10
+cd ../../../../
+```

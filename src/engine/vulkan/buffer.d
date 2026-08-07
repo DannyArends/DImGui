@@ -7,11 +7,12 @@ import engine;
 
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import deletion : deAllocate;
+import vram : mapped;
 
 /** A bound GPU buffer: handle + its memory + mapped pointer (data == null, means device-local / unmapped). */
 struct GPUAllocation {
   VkBuffer buffer;                /// Buffer handle
-  VkDeviceMemory memory;          /// Backing device memory
+  VmaAllocation memory;           /// Backing device memory
   void* data;                     /// Mapped pointer (non-null only for host-visible allocations)
 }
 
@@ -19,15 +20,14 @@ struct GPUAllocation {
 void createAllocation(ref App app, ref GPUAllocation allocation, uint size, bool deviceLocal, bool concurrent = false) {
   VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   VkMemoryPropertyFlags props = deviceLocal ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
   app.createBuffer(&allocation.buffer, &allocation.memory, size, usage, props, concurrent);
-  if(!deviceLocal) { enforceVK(vkMapMemory(app.device, allocation.memory, 0, size, 0, &allocation.data)); (cast(ubyte*)allocation.data)[0 .. size] = 0; }
+  if(!deviceLocal) { allocation.data = app.mapped(allocation.memory); (cast(ubyte*)allocation.data)[0 .. size] = 0; }
 }
 
 /** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
 @nogc void cleanup(ref App app, ref GPUAllocation allocation) nothrow {
-  if(allocation.data) vkUnmapMemory(app.device, allocation.memory);
-  vkDestroyBuffer(app.device, allocation.buffer, app.allocator);
-  vkFreeMemory(app.device, allocation.memory, app.allocator);
+  vmaDestroyBuffer(app.vma, allocation.buffer, allocation.memory);
 }
 
 uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
@@ -57,7 +57,7 @@ void uploadBarrier(ref App app, VkCommandBuffer cmdBuffer) {
   return(f == VK_FORMAT_D32_SFLOAT || f == VK_FORMAT_D32_SFLOAT_S8_UINT || f == VK_FORMAT_D24_UNORM_S8_UINT);
 }
 
-void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDeviceSize size, 
+void createBuffer(App app, VkBuffer* buffer, VmaAllocation* allocation, VkDeviceSize size, 
                   VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
                   VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                   bool concurrent = false) {
@@ -72,20 +72,13 @@ void createBuffer(App app, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkDev
     pQueueFamilyIndices: crossQueue ? &queues[0] : null
   };
 
-  enforceVK(vkCreateBuffer(app.device, &bufferInfo, null, buffer));
-
-  VkMemoryRequirements memoryRequirements;
-  vkGetBufferMemoryRequirements(app.device, (*buffer), &memoryRequirements);
-
-  VkMemoryAllocateInfo allocInfo = {
-    sType: VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-    allocationSize: memoryRequirements.size,
-    memoryTypeIndex: app.physicalDevice.findMemoryType(memoryRequirements.memoryTypeBits, properties)
+  VmaAllocationCreateInfo vmaAlloc = {
+    usage: VMA_MEMORY_USAGE_AUTO,
+    requiredFlags: properties,
+    flags: (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) ? VMA_ALLOCATION_CREATE_MAPPED_BIT : 0,
   };
-
-  enforceVK(vkAllocateMemory(app.device, &allocInfo, null, bufferMemory));
-  vkBindBufferMemory(app.device, (*buffer), (*bufferMemory), 0);
-  if(app.trace) SDL_Log("Buffer %p [size=%d] created, allocated, and bound", (*buffer), size);
+  enforceVK(vmaCreateBuffer(app.vma, &bufferInfo, &vmaAlloc, buffer, allocation, null));
+  if(app.trace) SDL_Log("Buffer %p [size=%d] created via VMA", (*buffer), size);
 }
 
 /** Whole-image color copy region (mip 0, layer 0), shared by the buffer<->image copies. */

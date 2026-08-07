@@ -10,6 +10,7 @@ import quaternion : xyzw;
 import matrix : multiply, rotate, lookAt, perspective;
 import lights : computeLightSpace, LMode;
 import validation : nameVulkanObject;
+import vram : mapped;
 
 struct UniformBufferObject {
   float[4] position;
@@ -41,9 +42,8 @@ void createUBO(ref App app, Descriptor descriptor) {
 
   foreach(i, ref a; app.ubos[descriptor.base]) {
     app.createBuffer(&a.buffer, &a.memory, descriptor.bytes, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    enforceVK(vkMapMemory(app.device, a.memory, 0, descriptor.bytes, 0, &a.data));
+    a.data = app.mapped(a.memory);
     app.nameVulkanObject(a.buffer, cstr("[UBO-BUF] %s #%d", descriptor.base, i), VK_OBJECT_TYPE_BUFFER);
-    app.nameVulkanObject(a.memory, cstr("[UBO-MEM] %s #%d", descriptor.base, i), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
   if(app.verbose) SDL_Log("Created %d UBO of size: %d bytes", app.imageCount, descriptor.bytes);
 

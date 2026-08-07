@@ -43,6 +43,7 @@
 
 #pragma attribute(push, nogc, nothrow)
 #include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 #pragma attribute(pop)
 
 #include <shaderc/shaderc.h>

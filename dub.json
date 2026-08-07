@@ -13,14 +13,15 @@
 		"targetPath": "bin",
 		"platforms": ["linux", "windows"],
 		"sourceFiles": ["src/includes.c"],
-		"libs-linux": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "cimgui", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "assimp"],
-		"libs-windows": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "CImGui", "vulkan-1", "shaderc_shared", "spirv-cross-c-shared", "assimp-vc142-mt"],
+		"libs-linux": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "cimgui", "cvma", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "assimp"],
+		"libs-windows": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "CImGui", "cvma", "vulkan-1", "shaderc_shared", "spirv-cross-c-shared", "assimp-vc142-mt"],
 		"dflags": ["-J$PACKAGE_DIR/app/src/main/assets",
 							 "-P-I$PACKAGE_DIR/src/icons/",
 							 "-P-I$PACKAGE_DIR/app/jni/SDL/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/SDL_image/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/SDL_mixer/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/freetype/include/",
+							 "-P-I$PACKAGE_DIR/app/jni/vma/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/assimp/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/assimp/build/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/shaderc/libshaderc/include/",
@@ -31,6 +32,7 @@
 											 "/LIBPATH:$PACKAGE_DIR/app/jni/SDL_image/build/",
 											 "/LIBPATH:$PACKAGE_DIR/app/jni/SDL_mixer/Release/",
 											 "/LIBPATH:$PACKAGE_DIR/app/jni/freetype/build/",
+											 "/LIBPATH:$PACKAGE_DIR/app/jni/cvma/build/",
 											 "/LIBPATH:$PACKAGE_DIR/app/jni/assimp/build/lib",
 											 "/LIBPATH:$PACKAGE_DIR/app/jni/shaderc/build/libshaderc/Release",
 											 "/LIBPATH:$PACKAGE_DIR/app/jni/build/",
@@ -39,6 +41,7 @@
 													"$PACKAGE_DIR/app/jni/SDL_image/build/SDL3_image.dll",
 													"$PACKAGE_DIR/app/jni/SDL_mixer/Release/SDL3_mixer.dll",
 													"$PACKAGE_DIR/app/jni/freetype/build/freetype.dll",
+													"$PACKAGE_DIR/app/jni/cvma/build/cvma.dll",
 													"$PACKAGE_DIR/app/jni/build/cimgui.dll",
 													"$PACKAGE_DIR/app/jni/assimp/build/bin/assimp-vc142-mt.dll",
 													"$PACKAGE_DIR/app/jni/shaderc/build/libshaderc/shaderc_shared.dll",
@@ -49,6 +52,7 @@
 										 "-L$PACKAGE_DIR/app/jni/SDL_image/build/",
 										 "-L$PACKAGE_DIR/app/jni/SDL_mixer/Release/",
 										 "-L$PACKAGE_DIR/app/jni/freetype/build/",
+										 "-L$PACKAGE_DIR/app/jni/cvma/build/",
 										 "-L$PACKAGE_DIR/app/jni/assimp/build/bin",
 										 "-L$PACKAGE_DIR/app/jni/shaderc/build/libshaderc/Release",
 										 "-L$PACKAGE_DIR/app/jni/build/"],
@@ -56,6 +60,7 @@
 											 "$PACKAGE_DIR/app/jni/SDL_image/build/*.so*",
 											 "$PACKAGE_DIR/app/jni/SDL_mixer/Release/*.so*",
 											 "$PACKAGE_DIR/app/jni/freetype/build/*.so*",
+											 "$PACKAGE_DIR/app/jni/cvms/build/*.so*",
 											 "$PACKAGE_DIR/app/jni/assimp/build/bin/*.so*",
 											 "$PACKAGE_DIR/app/jni/shaderc/build/libshaderc/Release/*.so*",
 											 "$PACKAGE_DIR/app/jni/build/*.so*"
@@ -77,11 +82,12 @@
 							 "-P-I$PACKAGE_DIR/app/jni/shaderc/libshaderc/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/",
 							 "-P-I$PACKAGE_DIR/app/jni/cimgui/",
+							 "-P-I$PACKAGE_DIR/app/jni/vma/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/cimgui/imgui/",
 							 "-P-I$PACKAGE_DIR/app/jni/assimp/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/assimp/build/include/"],
 		"lflags": [ "-L$PACKAGE_DIR/app/build/intermediates/cxx/Release/9t656d2k/obj/arm64-v8a" ],
-		"libs": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "cimgui", "assimp"]
+		"libs": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "cvma", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "cimgui", "assimp"]
 	}
 ]
 }
