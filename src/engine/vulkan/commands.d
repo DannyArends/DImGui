@@ -10,6 +10,7 @@ import commandpool : createCommandBuffer;
 import descriptorupdate : updateDescriptorData;
 import frustum : cullFrustum, extractFrustum;
 import geometry : draw, bufferGeometries;
+import images : transitionImageLayout;
 import matrix : multiply;
 import ssbo : updateSSBO;
 import validation : pushLabel, popLabel, nameVulkanObject;
@@ -56,6 +57,9 @@ void recordUploadPass(ref App app) {
   auto cmd = app.uploadCmd.begin(app, app.syncIndex, "Upload");
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   app.bufferGeometries(cmd);
+  if(!app.worldReady) { // no post pass this frame: hand ImGui a PRESENT_SRC image
+    app.transitionImageLayout(cmd, app.swapChainImages[app.frameIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+  }
   popLabel(cmd);
   app.uploadCmd.end(app.syncIndex);
 }
