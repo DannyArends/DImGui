@@ -19,7 +19,9 @@ import noise : noise2D;
 import textures : idx;
 import timing : timed;
 
-enum float SEAM_BLEED = 0.001f;   // fraction of a tile; closes T-junction hairlines
+enum float SEAM_BLEED = 0.001f;   /// fraction of a tile; closes T-junction hairlines
+private ResourceType[] tlCell;    /// per-worker thread-local reusable scratch, grown once
+private bool[] tlUsed;            /// per-worker thread-local reusable scratch, grown once
 
 /** Holds raw tile data and instanced rendering data for a chunk */
 struct ChunkData {
@@ -197,8 +199,8 @@ void buildTileGeometry(immutable(WorldData) wd, int[3] coord, ref ChunkData data
   data.tileBmin.reserve(surf); data.tileBmax.reserve(surf); data.pickIndices.reserve(surf);
   wd.buildTileBounds(coord, data);              // pick AABBs (per-tile, unchanged granularity)
   immutable int plane = wd.chunkSize * (wd.chunkSize > wd.chunkHeight ? wd.chunkSize : wd.chunkHeight);
-  auto cell = new ResourceType[plane];          // scratch reused across all six sweeps
-  auto used = new bool[plane];
+  if(tlCell.length < plane) { tlCell.length = plane; tlUsed.length = plane; } // Use thread-local reusable scratch
+  auto cell = tlCell; auto used = tlUsed;
   foreach (f; 0 .. 6) {
     immutable p = wd.facePlane(f);
     for (int dpt = 0; dpt < p.dMax; dpt++) {
