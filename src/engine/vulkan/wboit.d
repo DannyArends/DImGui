@@ -47,8 +47,11 @@ void createWBOITResources(ref App app) {
 
 void reportWBOITCommitment(ref App app) {
   VkDeviceSize accumCommit = 0, revealCommit = 0;
-  vkGetDeviceMemoryCommitment(app.device, app.wboit.accumulation.memory, &accumCommit);
-  vkGetDeviceMemoryCommitment(app.device, app.wboit.revealage.memory, &revealCommit);
+  VmaAllocationInfo accum, reveal;
+  vmaGetAllocationInfo(app.vma, app.wboit.accumulation.memory, &accum);
+  vmaGetAllocationInfo(app.vma, app.wboit.revealage.memory, &reveal);
+  vkGetDeviceMemoryCommitment(app.device, accum.deviceMemory, &accumCommit);
+  vkGetDeviceMemoryCommitment(app.device, reveal.deviceMemory, &revealCommit);
   SDL_Log("[lazy] accum committed: %llu bytes, revealage committed: %llu bytes", cast(ulong)accumCommit, cast(ulong)revealCommit);
 }
 

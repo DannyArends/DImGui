@@ -12,6 +12,13 @@ struct VramUsage {
   long deviceUsed, deviceBudget;   // device-local heaps — true VRAM on a discrete GPU
 }
 
+/** Mapped pointer for a VMA allocation (host-visible), or null. */
+@nogc void* mapped(ref App app, VmaAllocation allocation) nothrow {
+  VmaAllocationInfo info;
+  vmaGetAllocationInfo(app.vma, allocation, &info);
+  return(info.pMappedData);
+}
+
 bool hasMemoryCallback(ref App app) { return(app.deviceExtensions.canFind!(e => fromStringz(e) == "VK_EXT_device_memory_report")); }
 bool hasMemoryBudget(ref App app) { return(app.deviceExtensions.canFind!(e => fromStringz(e) == "VK_EXT_memory_budget")); }
 

@@ -11,7 +11,7 @@ import validation : nameVulkanObject;
 
 struct GeometryBuffer(T = ubyte) {
   VkBuffer[] vb = null;           /// Per-frame device buffers
-  VkDeviceMemory[] vbM = null;    /// Backing memory for each vb
+  VmaAllocation[] vbM = null;     /// Backing memory for each vb
   GPUAllocation[] staging;        /// Host-visible upload staging (released once buffered)
   VkDeviceSize[] size;            /// Bytes uploaded per copy
   VkDeviceSize capacity = 0;      /// Allocated bytes per copy (grow-only)
@@ -34,8 +34,7 @@ struct GeometryBuffer(T = ubyte) {
   import buffer : cleanup;
   foreach(i; 0 .. buffer.staging.length){ app.cleanup(buffer.staging[i]); }
   foreach(i; 0 .. buffer.vb.length) {
-    if(buffer.vb[i]) vkDestroyBuffer(app.device, buffer.vb[i], app.allocator);
-    if(buffer.vbM[i]) vkFreeMemory(app.device, buffer.vbM[i], app.allocator);
+    if(buffer.vb[i]) vmaDestroyBuffer(app.vma, buffer.vb[i], buffer.vbM[i]);
   }
   buffer = GeometryBuffer!T();
 }
@@ -62,7 +61,7 @@ bool allocateBuffer(T)(ref App app, ref GeometryBuffer!T buffer, VkBufferUsageFl
   if(buffer.vb.length > 0) { app.deAllocate(buffer); }
 
   buffer.vb = new VkBuffer[app.framesInFlight];
-  buffer.vbM = new VkDeviceMemory[app.framesInFlight];
+  buffer.vbM = new VmaAllocation[app.framesInFlight];
   buffer.size = new VkDeviceSize[app.framesInFlight];
   buffer.dirty = new bool[app.framesInFlight];
   buffer.staging = new GPUAllocation[app.framesInFlight];
@@ -86,15 +85,14 @@ void releaseStaging(T)(ref App app, ref GeometryBuffer!T buffer) {
 void shrinkCopies(T)(ref App app, ref GeometryBuffer!T buffer) {
   if(buffer.vb.length <= 1) return;
   VkBuffer[] oldVb = buffer.vb[1 .. $].dup;
-  VkDeviceMemory[] oldVbM = buffer.vbM[1 .. $].dup;
+  VmaAllocation[] oldVbM = buffer.vbM[1 .. $].dup;
   buffer.vb = buffer.vb[0 .. 1];
   buffer.vbM = buffer.vbM[0 .. 1];
   auto deadline = app.totalFramesRendered + app.framesInFlight;
   app.bufferDeletionQueue.add((bool force) @nogc nothrow {
     if(!force && app.totalFramesRendered < deadline) return(false);
     foreach(i; 0 .. oldVb.length) {
-      if(oldVb[i])  vkDestroyBuffer(app.device, oldVb[i], app.allocator);
-      if(oldVbM[i]) vkFreeMemory(app.device, oldVbM[i], app.allocator);
+      if(oldVb[i] && oldVbM[i]) vmaDestroyBuffer(app.vma, oldVb[i], oldVbM[i]);
     }
     return(true);
   });

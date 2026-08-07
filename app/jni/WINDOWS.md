@@ -115,3 +115,14 @@ cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ^
 cmake --build . --config Release -j10
 cd ../../../../
 ```
+Compile Vulkan Memory Allocator (cvma):
+```
+rm -rf app\jni\cvma\build
+cd app/jni/cvma/
+call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat"
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR="C:/VulkanSDK/1.4.341.1" ../
+cmake --build . --config Release -j10
+cd ../../../../
+```

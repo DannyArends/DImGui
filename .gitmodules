@@ -22,3 +22,6 @@
 [submodule "app/jni/freetype"]
 	path = app/jni/freetype
 	url = https://github.com/freetype/freetype.git
+[submodule "deps/vma"]
+	path = app/jni/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.16)
+project(cvma CXX)
+
+# Paths — override with -DVULKAN_DIR=... (Windows: C:/VulkanSDK/x.x.x.x, Linux: /usr)
+set(VULKAN_DIR "" CACHE PATH "Vulkan SDK root")
+
+add_library(cvma SHARED ${CMAKE_CURRENT_SOURCE_DIR}/src/vma_impl.cpp)
+set_target_properties(cvma PROPERTIES CXX_STANDARD 17 WINDOWS_EXPORT_ALL_SYMBOLS ON)
+target_compile_options(cvma PRIVATE -fvisibility=default)
+
+# VMA header (submodule at app/jni/vma/include)
+target_include_directories(cvma PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../vma/include)
+
+if(ANDROID)
+    target_include_directories(cvma PRIVATE ${VULKAN_DIR}/include)
+    target_link_libraries(cvma PRIVATE vulkan)
+elseif(WIN32)
+    if(VULKAN_DIR STREQUAL "")
+        message(FATAL_ERROR "VULKAN_DIR not set — pass -DVULKAN_DIR=path/to/VulkanSDK")
+    endif()
+    target_include_directories(cvma PRIVATE ${VULKAN_DIR}/Include)
+    target_link_directories(cvma PRIVATE ${VULKAN_DIR}/Lib)
+    target_link_libraries(cvma PRIVATE vulkan-1)
+else()
+    if(NOT VULKAN_DIR STREQUAL "")
+        target_include_directories(cvma PRIVATE ${VULKAN_DIR}/include)
+    endif()
+    target_link_libraries(cvma PRIVATE -lvulkan)
+endif()
+
+install(TARGETS cvma DESTINATION lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../vma/include/vk_mem_alloc.h DESTINATION include)
