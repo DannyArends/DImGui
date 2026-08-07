@@ -9,7 +9,7 @@ import animal : seedChunkAnimalSpawns, seedChunkAnimals;
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
-import feature : buildFeatureData, featureMeshInstances;
+import feature : featureSpawnMask, buildFeatureData, featureMeshInstances;
 import game : GameApp;
 import gameobjects : Chunk;
 import lattice : surfaceLevel, tileCoord, tileIndex, onChunkBoundary, chunkCoord, worldCoord;
@@ -213,8 +213,8 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
     }
   }
   wd.buildTileGeometry(coord, data);
-  foreach(ref ft; features) {
-    data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft);
+  foreach(fi, ref ft; features) {
+    data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft, featureSpawnMask[fi]);
     foreach(ref f; data.featureData[ft.name]) {
       auto byMesh = featureMeshInstances(wd, f, ft);
       foreach(key, insts; byMesh) data.featureInsts[ft.name][key] ~= insts;
