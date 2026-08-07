@@ -5,7 +5,7 @@
 
 import engine;
 
-import buffer : findMemoryType, hasStencilComponent, isDepth;
+import buffer : hasStencilComponent, isDepth;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import devices : getMSAASamples;
 import framebuffer : createHDRImage;
@@ -17,7 +17,7 @@ VkDeviceSize imageSize(SDL_Surface* surface){ return(surface.w * surface.h * SDL
 struct ImageBuffer {
   VkImage image = null;             /// Image
   VkImageView[] views = null;       /// Views
-  VmaAllocation memory = null;      /// Memory
+  VmaAllocation memory = null;      /// VMA allocation backing the image
   VkExtent3D extent;                /// Extent
   uint arrayLayers = 1;             /// Layers
   @property ref VkImageView view(uint id = 0) { return(views[id]); }
@@ -26,7 +26,6 @@ struct ImageBuffer {
 
 void nameImageBuffer(ref App app, ImageBuffer buffer, string path){
   app.nameVulkanObject(buffer.image, cstr("[IMAGE] %s", baseName(path)), VK_OBJECT_TYPE_IMAGE);
-  app.nameVulkanObject(buffer.memory, cstr("[MEMORY] %s", baseName(path)), VK_OBJECT_TYPE_DEVICE_MEMORY);
   foreach(i, v; buffer.views) { app.nameVulkanObject(v, cstr("[VIEW] %s #%d", baseName(path), i), VK_OBJECT_TYPE_IMAGE_VIEW); }
 }
 

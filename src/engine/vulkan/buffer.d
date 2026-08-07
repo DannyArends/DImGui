@@ -6,13 +6,12 @@
 import engine;
 
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
-import deletion : deAllocate;
 import vram : mapped;
 
 /** A bound GPU buffer: handle + its memory + mapped pointer (data == null, means device-local / unmapped). */
 struct GPUAllocation {
   VkBuffer buffer;                /// Buffer handle
-  VmaAllocation memory;           /// Backing device memory
+  VmaAllocation memory;           /// VMA allocation backing the buffer
   void* data;                     /// Mapped pointer (non-null only for host-visible allocations)
 }
 
@@ -28,15 +27,6 @@ void createAllocation(ref App app, ref GPUAllocation allocation, uint size, bool
 /** Reap a retired GPU allocation; deAllocate!GPUAllocation finds this via the arg's module. */
 @nogc void cleanup(ref App app, ref GPUAllocation allocation) nothrow {
   vmaDestroyBuffer(app.vma, allocation.buffer, allocation.memory);
-}
-
-uint findMemoryType(VkPhysicalDevice physicalDevice, uint typeFilter, VkMemoryPropertyFlags properties) {
-  VkPhysicalDeviceMemoryProperties memoryProperties;
-  vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
-  for (uint i = 0; i < memoryProperties.memoryTypeCount; i++) {
-    if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
-  }
-  assert(0, "Failed to find suitable memory type");
 }
 
 /** Single transfer vertex/index-read barrier covering all uploads in this command buffer */
@@ -57,7 +47,7 @@ void uploadBarrier(ref App app, VkCommandBuffer cmdBuffer) {
   return(f == VK_FORMAT_D32_SFLOAT || f == VK_FORMAT_D32_SFLOAT_S8_UINT || f == VK_FORMAT_D24_UNORM_S8_UINT);
 }
 
-void createBuffer(App app, VkBuffer* buffer, VmaAllocation* allocation, VkDeviceSize size, 
+void createBuffer(ref App app, VkBuffer* buffer, VmaAllocation* allocation, VkDeviceSize size, 
                   VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
                   VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                   bool concurrent = false) {

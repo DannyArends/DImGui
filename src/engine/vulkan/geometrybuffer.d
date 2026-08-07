@@ -11,7 +11,7 @@ import validation : nameVulkanObject;
 
 struct GeometryBuffer(T = ubyte) {
   VkBuffer[] vb = null;           /// Per-frame device buffers
-  VmaAllocation[] vbM = null;     /// Backing memory for each vb
+  VmaAllocation[] vbM = null;     /// VMA allocation backing each vb
   GPUAllocation[] staging;        /// Host-visible upload staging (released once buffered)
   VkDeviceSize[] size;            /// Bytes uploaded per copy
   VkDeviceSize capacity = 0;      /// Allocated bytes per copy (grow-only)
@@ -34,7 +34,7 @@ struct GeometryBuffer(T = ubyte) {
   import buffer : cleanup;
   foreach(i; 0 .. buffer.staging.length){ app.cleanup(buffer.staging[i]); }
   foreach(i; 0 .. buffer.vb.length) {
-    if(buffer.vb[i]) vmaDestroyBuffer(app.vma, buffer.vb[i], buffer.vbM[i]);
+    if(buffer.vb[i] && buffer.vbM[i]) { vmaDestroyBuffer(app.vma, buffer.vb[i], buffer.vbM[i]); }
   }
   buffer = GeometryBuffer!T();
 }
@@ -42,11 +42,9 @@ struct GeometryBuffer(T = ubyte) {
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
   foreach(i; 0 .. buffer.vb.length) {
     app.nameVulkanObject(buffer.vb[i], toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
-    app.nameVulkanObject(buffer.vbM[i], toStringz("["~type~"-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
   foreach(i; 0 .. buffer.staging.length) {
     app.nameVulkanObject(buffer.staging[i].buffer, toStringz("["~type~"-STAGE-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);
-    app.nameVulkanObject(buffer.staging[i].memory, toStringz("["~type~"-STAGE-MEM] " ~ name), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
 }
 
