@@ -131,7 +131,7 @@ Job!Dwarf interactFeatureJob(int[3] targetTile) {
 
 /** Pickup Job */
 Job!Dwarf pickupJob(int[3] targetTile, ResourceClass cls) {
-  return Job!Dwarf("Fetching", targetTile, cls, [], true, reach: Reach.Adjacent,
+  return Job!Dwarf("Fetching", targetTile, cls, [], true, reach: Reach.AdjacentOrOnTile,
              onClaim: &claimBlock, onArrive: &doPickup, onFail: &failReleaseRequeue);
 }
 
