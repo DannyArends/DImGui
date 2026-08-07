@@ -176,7 +176,6 @@ bool tryStoreInStockpile(ref GameApp app, ref Dwarf d) {
   foreach(id, ref b; app.world.drops) {
     if(b.tile == noTile || b.tile == builtTile || b.reserved || b.isFalling) continue;
     if(app.world.stockpiles.acceptedByHolder(id, b.item)) continue;
-    if(!(b.tile == storedTile) && !app.world.hasStandableNeighbour(b.tile)) continue;
     if(b.tile != storedTile && app.world.findGoalTile(b.tile, d.tile, Reach.AdjacentOrOnTile) == noTile) continue;
     if(auto until = id in app.world.drops.haulFailedUntil) {
       if(app.totalFramesRendered < *until) continue;
