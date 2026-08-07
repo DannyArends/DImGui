@@ -9,7 +9,7 @@ import animal : seedChunkAnimalSpawns, seedChunkAnimals;
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
-import feature : buildFeatureData;
+import feature : buildFeatureData, featureMeshInstances;
 import game : GameApp;
 import gameobjects : Chunk;
 import lattice : surfaceLevel, tileCoord, tileIndex, onChunkBoundary, chunkCoord, worldCoord;
@@ -36,6 +36,7 @@ struct ChunkData {
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
   Feature[][string] featureData;                            /// Chunk Features
+  DrawInstance[][string][string] featureInsts;              /// [featureName][meshKey] precomputed instances
   AnimalSpawn[] animalSpawns;                               /// Spawn decisions
 }
 
@@ -212,7 +213,13 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
     }
   }
   wd.buildTileGeometry(coord, data);
-  foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
+  foreach(ref ft; features) {
+    data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft);
+    foreach(ref f; data.featureData[ft.name]) {
+      auto byMesh = featureMeshInstances(wd, f, ft);
+      foreach(key, insts; byMesh) data.featureInsts[ft.name][key] ~= insts;
+    }
+  }
   data.seedChunkAnimalSpawns(wd);
   return data;
 }
