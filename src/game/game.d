@@ -5,7 +5,7 @@
 
 public import engine;
 
-public import animal : AnimalT, Animal;
+public import animal : AnimalT, Animal, AnimalSpawn;
 public import block : Block, Drops;
 public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;
