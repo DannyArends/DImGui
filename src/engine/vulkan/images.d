@@ -189,7 +189,7 @@ void transitionImageLayout(ref App app, VkCommandBuffer commandBuffer, VkImage i
     src = 0; dst = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
   } else {
-    SDL_Log("unsupported layout transition!");
+    SDL_Log("Unsupported layout transition! old=%d new=%d", oldLayout, newLayout);
     return;
   }
 

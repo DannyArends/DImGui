@@ -57,13 +57,6 @@ void recordUploadPass(ref App app) {
   auto cmd = app.uploadCmd.begin(app, app.syncIndex, "Upload");
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   app.bufferGeometries(cmd);
-  if(!app.worldReady) { // no post pass this frame: wipe + hand ImGui a PRESENT_SRC image
-    VkImage img = app.swapChainImages[app.frameIndex];
-    VkImageSubresourceRange range = { aspectMask: VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel: 0, levelCount: 1, baseArrayLayer: 0, layerCount: 1 };
-    app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, app.present.format);
-    vkCmdClearColorImage(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &app.clearValue[0].color, 1, &range);
-    app.transitionImageLayout(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, app.present.format);
-  }
   popLabel(cmd);
   app.uploadCmd.end(app.syncIndex);
 }
