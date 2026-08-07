@@ -31,8 +31,9 @@ import animalwindow : showAnimalContent;
 import assimp : loadOpenAsset;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
+import boundingbox : computeBoundingBox;
 import clouds : buildCloudInstances, applyCloudInstances;
-import chunk : buildChunkData, finalizeChunk;
+import chunk : buildChunkData, finalizeChunk, postFinalizeChunks;
 import dwarf : settleDwarves;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
@@ -65,8 +66,9 @@ class GameTaskThread : TaskThread {
   override void handleGameObjects() {
     receiveTimeout(dur!"msecs"(-1),
       (immutable(WorldData) wd, int[3] coord) {
-        auto data = buildChunkData(wd, coord);
-        main.send(cast(immutable(ChunkData))data, mytid);
+        auto chunk = new Chunk(buildChunkData(wd, coord), wd);
+        chunk.tiles.computeBoundingBox();
+        main.send(cast(immutable(Chunk))chunk, mytid);
       },
       (immutable(WorldData) wd, PathRequest req) {
         auto result = pathfindWorker(wd, req);
@@ -188,7 +190,7 @@ void updateGame(ref GameApp app, double dt) {
 /** Per-frame: dispatch queued paths and drain completed chunk-build and pathfinding results from workers */
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
-  if(app.drainMessages!ChunkData((d) { app.timed!finalizeChunk(d); }, 10)) app.camera.isDirty = true;
+  if(app.drainMessages!Chunk((c) { app.timed!finalizeChunk(c); }, 10)) { app.postFinalizeChunks(); }
   app.drainMessages!PathResult((r) { app.dispatchPathResult(r); });
   app.drainMessages!CloudResult((r) { app.world.applyCloudInstances(r.instances); });
 }
