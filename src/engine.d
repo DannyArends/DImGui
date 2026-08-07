@@ -158,6 +158,7 @@ struct App {
   bool hasCompute = true;                                                       /// Is compute enabled / available ?
   uint clusterCapacity = CLUSTER_COUNT;                                         /// Froxel light index capacity, grows on overflow
   uint verbose = 0;                                                             /// Be very verbose
+  bool worldReady = false;                                                      /// Skip until initial working set is resident
   bool minimized = false;                                                       /// minimized ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
