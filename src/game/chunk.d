@@ -52,6 +52,8 @@ struct FacePlane {
   int da, ua, va;        /// normal / U / V axis indices
   int dMax, uMax, vMax;  /// tile extent along depth / U / V
   int sd, su, sv;        /// linear index step per depth / column / row
+  int nStep;             /// linear index delta to the face-normal neighbour (interior tiles)
+  bool nPos;             /// face points along +da (border slice is dMax-1) vs -da (border slice is 0)
 }
 
 /** Derive the plane descriptor for face direction `f`. */
@@ -59,7 +61,8 @@ struct FacePlane {
   immutable int[3] ext = [wd.chunkSize, wd.chunkHeight, wd.chunkSize];
   immutable int[3] st = [1, wd.chunkSize, wd.chunkHeight * wd.chunkSize];
   immutable int da = FACE_AXES[f][0], ua = FACE_AXES[f][1], va = FACE_AXES[f][2];
-  return FacePlane(da, ua, va, ext[da], ext[ua], ext[va], st[da], st[ua], st[va]);
+  immutable int dir = FACE_OFFSETS[f][da];
+  return FacePlane(da, ua, va, ext[da], ext[ua], ext[va], st[da], st[ua], st[va], dir * st[da], dir > 0);
 }
 
 /** Build the full tile-type array for a chunk column-by-column from height/material noise */
@@ -142,19 +145,27 @@ void buildTileBounds(immutable(WorldData) wd, int[3] coord, ref ChunkData data) 
   }
 }
 
-/** Fill the plane grid at depth `dpt` with exposed-face materials; true if any face was exposed. */
+/** Fill the plane grid at depth 'dpt' with exposed-face materials
+  (interior via linear neighbour step, border via faceExposed); true if any face was exposed. */
 bool fillPlane(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f, FacePlane p, int dpt, ResourceType[] cell, bool[] used) {
   cell[0 .. p.uMax * p.vMax] = ResourceType.None;
   used[0 .. p.uMax * p.vMax] = false;
   bool any = false;
+  immutable bool border = p.nPos ? (dpt == p.dMax - 1) : (dpt == 0);   // neighbour leaves the chunk on this depth slice
   for (int vv = 0; vv < p.vMax; vv++) {
     immutable int row = vv * p.uMax;                               // plane-grid row base
     int idx = dpt * p.sd + vv * p.sv;                              // tileTypes index, stepped by su per column
     for (int uu = 0; uu < p.uMax; uu++, idx += p.su) {
       auto t = data.tileTypes[idx];
       if (t == ResourceType.None) continue;
-      int[3] lc; lc[p.da] = dpt; lc[p.ua] = uu; lc[p.va] = vv;
-      if (wd.faceExposed(data, coord, lc, f)) { cell[row + uu] = t; any = true; }
+      bool exposed;
+      if (border) {
+        int[3] lc; lc[p.da] = dpt; lc[p.ua] = uu; lc[p.va] = vv;
+        exposed = wd.faceExposed(data, coord, lc, f);
+      } else {
+        exposed = data.tileTypes[idx + p.nStep] == ResourceType.None;   // interior: linear step, no tileIndex
+      }
+      if (exposed) { cell[row + uu] = t; any = true; }
     }
   }
   return any;
