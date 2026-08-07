@@ -148,7 +148,6 @@ void initGame(ref GameApp app) {
   SDL_Log("createScene: WBOIT test rectangles");
   app.testWBOIT();
   SDL_Log("initGame: done");
-  app.loadTotal = app.textures.pending.length + app.world.chunks.pending.length;
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
 }
@@ -184,7 +183,9 @@ void updateGame(ref GameApp app, double dt) {
   app.settleDwarves(dt);
   app.updateWorld(app.camera.lookat);
   app.shadows.bounds = [app.world.height, app.world.radius];
-  if(!app.worldReady && app.textures.pending.length == 0 && app.world.chunks.pending.length == 0) app.worldReady = true;
+  size_t pending = app.textures.pending.length + app.world.chunks.pending.length;
+  if(pending > app.loadTotal) app.loadTotal = pending;                       // grow the denominator as async work queues
+  if(!app.worldReady && pending == 0 && app.loadTotal > 0) app.worldReady = true;
 }
 
 /** Per-frame: dispatch queued paths and drain completed chunk-build and pathfinding results from workers */
