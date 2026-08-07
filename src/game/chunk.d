@@ -9,6 +9,7 @@ import animal : seedChunkAnimals;
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
+import feature : buildFeatureData;
 import game : GameApp;
 import gameobjects : Chunk;
 import lattice : surfaceLevel, tileCoord, tileIndex, onChunkBoundary, chunkCoord, worldCoord;
@@ -16,7 +17,7 @@ import intersection : intersects;
 import tile : isBuried, isSolid;
 import noise : noise2D;
 import textures : idx;
-import feature : buildFeatureData;
+import timing : timed;
 
 enum float SEAM_BLEED = 0.001f;   // fraction of a tile; closes T-junction hairlines
 
@@ -250,15 +251,15 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     app.world.chunks[data.coord].deAllocate = true;
     foreach(ref slot; app.shadows.slots) { slot.pending = true; }
   } else {
-    chunk.tiles.box = new BoundingBox();
+    //chunk.tiles.box = new BoundingBox();
     app.objects ~= chunk.tiles;
-    app.seedChunkAnimals(data);          // first generation of this chunk: spawn its noise animals
+    app.timed!seedChunkAnimals(data);          // first generation of this chunk: spawn its noise animals
   }
   app.objects ~= chunk;
 
   app.world.chunks[data.coord] = chunk;
   app.world.seedClouds(data.coord);
-  app.requestCloudRebuild();
+  app.timed!requestCloudRebuild();
   app.world.chunks[data.coord].dirty = false;
   app.world.chunks.pending.remove(data.coord);
   app.world.chunks.build = app.world.chunks.build.filter!(t => app.world.chunkCoord(t) != data.coord).array;

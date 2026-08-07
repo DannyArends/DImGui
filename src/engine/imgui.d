@@ -232,21 +232,24 @@ void startImGuiFrame(ref App app) {
 /** Render the GUI and return the ImDrawData* */
 ImDrawData* renderGUI(ref App app) {
   uint font = 0;
-  version(Android) { app.showJoystickwindow(font); }
+  if(app.worldReady) {
+    version(Android) { app.showJoystickwindow(font); }
 
-  app.showMenu(font);
-  app.showSidepanel(font);
-  if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
-  if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, (uint f){ app.showObjectsContent(f); });
-  if(app.gui.showShaders) app.makeWindow("Shader", &app.gui.showShaders, font, (uint f){ app.showShaderContent(f); });
-  if(app.gui.showSFX) app.makeWindow("SFX", &app.gui.showSFX, font, (uint f){ app.showSFXContent(f); });
-  if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, (uint f){ app.showTexturesContent(f); });
-  foreach(ref window; app.gameWindows) {
-    if(window.direct && window.visible) { window.show(font); continue; }
-    if(window.floating && window.visible) app.makeWindow(toStringz(window.label), &window.visible, font, window.show);
+    app.showMenu(font);
+    app.showSidepanel(font);
+    if(app.gui.showDemo) igShowDemoWindow(&app.gui.showDemo);
+    if(app.gui.showObjects) app.makeWindow("Objects", &app.gui.showObjects, font, (uint f){ app.showObjectsContent(f); });
+    if(app.gui.showShaders) app.makeWindow("Shader", &app.gui.showShaders, font, (uint f){ app.showShaderContent(f); });
+    if(app.gui.showSFX) app.makeWindow("SFX", &app.gui.showSFX, font, (uint f){ app.showSFXContent(f); });
+    if(app.gui.showTexture) app.makeWindow("Textures", &app.gui.showTexture, font, (uint f){ app.showTexturesContent(f); });
+    foreach(ref window; app.gameWindows) {
+      if(window.direct && window.visible) { window.show(font); continue; }
+      if(window.floating && window.visible) app.makeWindow(toStringz(window.label), &window.visible, font, window.show);
+    }
+    if(app.gui.showDirectory) app.makeWindow("Directory", &app.gui.showDirectory, font, (uint f){ app.showDirectoryContent(f); });
+  } else {
+    foreach(ref window; app.gameWindows) { if(window.direct && window.visible && window.label == "##loading") { window.show(font); } }
   }
-  if(app.gui.showDirectory) app.makeWindow("Directory", &app.gui.showDirectory, font, (uint f){ app.showDirectoryContent(f); });
-
   igRender();
   auto drawData = igGetDrawData();
   version(Android) { rotateImGui(drawData, app.camera.currentTransform, app.camera.currentExtent.width, app.camera.currentExtent.height); }

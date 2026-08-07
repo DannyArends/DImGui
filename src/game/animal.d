@@ -29,7 +29,7 @@ import tile : getSuccessors, tileAbove, getWater, setWater;
 import vector : manhattan;
 import water : findNearestWater;
 import world : nextEntityUID;
-
+import timing : MS_THRESHOLD;
 enum animalStep = 4.0f;    // base step rate (moveT/sec, divided by tile cost)
 enum animalHop  = 0.9f;    // hop arc height
 enum float NEED_SEEK = 0.55f;    // start foraging when a need crosses this
@@ -186,45 +186,65 @@ void addAnimal(ref GameApp app, ref Animal a) {
   herd ~= a;
 }
 
-/** World tiles where `at` should spawn in this chunk: surface tile, matching spawn type, past the noise + hash gates. */
-int[3][] animalSpawnTiles(ref const(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const AnimalT at) {
-  int[3][] result;
-  for(int i = 0; i < wd.tileCount; i++) {
-    if(tileTypes[i] == ResourceType.None) continue;
-    if(i + wd.chunkSize < wd.tileCount && tileTypes[i + wd.chunkSize] != ResourceType.None) continue;
-    if(!at.spawnOn.canFind(tileTypes[i])) continue;
-    auto lc = wd.tileCoord(i);
-    auto wc = wd.worldCoord(coord, lc);
-    auto n = noiseHTT(wc[0], wc[2], wd.seed);
-    if(n[2] < at.noiseThreshold) continue;
-    uint hash = (wc[0] * at.hashSeed1) ^ (wc[2] * at.hashSeed2);
-    if(at.hashMod != 0 && hash % at.hashMod != at.hashRem) continue;
-    int[3] t = [wc[0], wc[1] + 1, wc[2]];
-    result ~= t;
+private struct SpawnGroup {
+  size_t[animalTable.length] animalIndices;
+  ubyte count;
+}
+
+/** Precomputes an O(1) lookup table mapping ResourceType to matching animal indices. */
+private auto buildSpawnLookup() {
+  SpawnGroup[EnumMembers!ResourceType.length] lookup;
+  foreach(size_t aType, ref at; animalTable) {
+    foreach(st; at.spawnOn) { if(st < EnumMembers!ResourceType.length) { lookup[st].animalIndices[lookup[st].count++] = aType; } }
   }
-  return result;
+  return lookup;
+}
+
+/** Evaluates noise/hash gates for candidate animals on a tile and spawns passing entities. */
+private bool processTileSpawns(ref GameApp app, int[3] wc, const ref SpawnGroup group, float[3] n) {
+  bool spawned = false;
+  for(ubyte g = 0; g < group.count; g++) {
+    const size_t aType = group.animalIndices[g];
+    ref const at = animalTable[aType];
+
+    if(n[2] < at.noiseThreshold || at.hashMod != 0 && ((wc[0] * at.hashSeed1) ^ (wc[2] * at.hashSeed2)) % at.hashMod != at.hashRem) continue;
+
+    const int[3] spawnTile = [wc[0], wc[1] + 1, wc[2]];
+
+    Animal a = {Entity!4(EntityData!4(nextEntityUID++, Colors.white, spawnTile)), cast(uint)aType };
+    a.idleTicks[1] = uniform(4, 24);
+    a.visualPos = app.world.tileToWorld(spawnTile);
+    a.moveFrom = a.moveTo = a.visualPos;
+    app.addAnimal(a);
+    spawned = true;
+  }
+  return spawned;
 }
 
 /** Spawn a chunk's noise-placed animals on first generation. */
 void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
+  const auto spawnLookup = buildSpawnLookup();
+  const int chunkSize = app.world.data.chunkSize;
+  const int surfaceLimit = app.world.data.tileCount - chunkSize;
+
   bool any = false;
-  foreach(size_t t, ref at; animalTable) {
-    foreach(tile; animalSpawnTiles(app.world.data, data.coord, data.tileTypes, at)) {
-      Animal a; a.entity.data = EntityData!4(nextEntityUID++, Colors.white, tile); a.type = cast(uint)t;
-      a.idleTicks[1] = uniform(4, 24);
-      auto wp = app.world.tileToWorld(tile);
-      a.visualPos = [wp[0], wp[1], wp[2]];
-      a.moveFrom = a.moveTo = a.visualPos;
-      app.addAnimal(a);
-      any = true;
-    }
+  for(int i = 0; i < app.world.data.tileCount; i++) {
+    const auto tt = data.tileTypes[i];
+    if(tt == ResourceType.None) continue;
+    if(i < surfaceLimit && data.tileTypes[i + chunkSize] != ResourceType.None) continue;
+
+    const auto ttIdx = cast(size_t)tt;
+    if(ttIdx >= EnumMembers!ResourceType.length || spawnLookup[ttIdx].count == 0) continue;
+
+    const auto wc = app.world.data.worldCoord(data.coord, app.world.data.tileCoord(i));
+    if(processTileSpawns(app, wc, spawnLookup[ttIdx], noiseHTT(wc[0], wc[2], app.world.data.seed))){ any = true; }
   }
   if(any) foreach(herd; app.world.animals) herd.syncInstances();
 }
 
 /** Despawn animals currently inside an evicted chunk (mirrors removeAllFeatures). */
 void removeChunkAnimals(ref GameApp app, int[3] coord) {
-  foreach(_, herd; app.world.animals) {
+  foreach(herd; app.world.animals) {
     bool any = false;
     size_t i = 0;
     while(i < herd.animals.length) {
