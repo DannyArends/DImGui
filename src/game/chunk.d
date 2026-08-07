@@ -5,7 +5,7 @@
 
 import game;
 
-import animal : seedChunkAnimals;
+import animal : seedChunkAnimalSpawns, seedChunkAnimals;
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
@@ -36,6 +36,7 @@ struct ChunkData {
   int[] pickIndices;                                        /// Maps pick result index back to tile index in tileTypes
   DrawInstance[] tileInstances;                             /// GPU instances for all visible tile faces
   Feature[][string] featureData;                            /// Chunk Features
+  AnimalSpawn[] animalSpawns;                               /// Spawn decisions
 }
 
 struct ChunkField {
@@ -212,6 +213,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   }
   wd.buildTileGeometry(coord, data);
   foreach(ref ft; features) { data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft); }
+  data.seedChunkAnimalSpawns(wd);
   return data;
 }
 

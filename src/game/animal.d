@@ -80,6 +80,9 @@ struct Animal {
   }
 }
 
+/** A spawn decision produced off-thread: which animal type at which tile. */
+struct AnimalSpawn { int[3] tile; uint type; }
+
 /** Per-frame: advance each animal's step and refresh its instance transform. */
 void animalFrame(ref GameApp app, Animals herd, float dt) {
   foreach(i, ref a; herd.animals) {
@@ -200,35 +203,13 @@ private auto buildSpawnLookup() {
   return lookup;
 }
 
-/** Evaluates noise/hash gates for candidate animals on a tile and spawns passing entities. */
-private bool processTileSpawns(ref GameApp app, int[3] wc, const ref SpawnGroup group, float[3] n) {
-  bool spawned = false;
-  for(ubyte g = 0; g < group.count; g++) {
-    const size_t aType = group.animalIndices[g];
-    ref const at = animalTable[aType];
-
-    if(n[2] < at.noiseThreshold || at.hashMod != 0 && ((wc[0] * at.hashSeed1) ^ (wc[2] * at.hashSeed2)) % at.hashMod != at.hashRem) continue;
-
-    const int[3] spawnTile = [wc[0], wc[1] + 1, wc[2]];
-
-    Animal a = {Entity!4(EntityData!4(nextEntityUID++, Colors.white, spawnTile)), cast(uint)aType };
-    a.idleTicks[1] = uniform(4, 24);
-    a.visualPos = app.world.tileToWorld(spawnTile);
-    a.moveFrom = a.moveTo = a.visualPos;
-    app.addAnimal(a);
-    spawned = true;
-  }
-  return spawned;
-}
-
-/** Spawn a chunk's noise-placed animals on first generation. */
-void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
+/** the spawn record + worker-side decision */
+void seedChunkAnimalSpawns(ref ChunkData data, immutable(WorldData) wd) {
   const auto spawnLookup = buildSpawnLookup();
-  const int chunkSize = app.world.data.chunkSize;
-  const int surfaceLimit = app.world.data.tileCount - chunkSize;
+  const int chunkSize = wd.chunkSize;
+  const int surfaceLimit = wd.tileCount - chunkSize;
 
-  bool any = false;
-  for(int i = 0; i < app.world.data.tileCount; i++) {
+  for(int i = 0; i < wd.tileCount; i++) {
     const auto tt = data.tileTypes[i];
     if(tt == ResourceType.None) continue;
     if(i < surfaceLimit && data.tileTypes[i + chunkSize] != ResourceType.None) continue;
@@ -236,10 +217,26 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
     const auto ttIdx = cast(size_t)tt;
     if(ttIdx >= EnumMembers!ResourceType.length || spawnLookup[ttIdx].count == 0) continue;
 
-    const auto wc = app.world.data.worldCoord(data.coord, app.world.data.tileCoord(i));
-    if(processTileSpawns(app, wc, spawnLookup[ttIdx], noiseHTT(wc[0], wc[2], app.world.data.seed))){ any = true; }
+    const auto wc = wd.worldCoord(data.coord, wd.tileCoord(i));
+    const auto n = noiseHTT(wc[0], wc[2], wd.seed);
+    const ref group = spawnLookup[ttIdx];
+    for(ubyte g = 0; g < group.count; g++) {
+      const size_t aType = group.animalIndices[g];
+      ref const at = animalTable[aType];
+      if(n[2] < at.noiseThreshold || at.hashMod != 0 && ((wc[0] * at.hashSeed1) ^ (wc[2] * at.hashSeed2)) % at.hashMod != at.hashRem) continue;
+      data.animalSpawns ~= AnimalSpawn([wc[0], wc[1] + 1, wc[2]], cast(uint)aType);
+    }
   }
-  if(any) foreach(herd; app.world.animals) herd.syncInstances();
+}
+
+/** Main-thread: Insert the precomputed spawns */
+void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
+  foreach(ref s; data.animalSpawns) {
+    Animal a = {Entity!4(EntityData!4(nextEntityUID++, Colors.white, s.tile)), s.type };
+    a.idleTicks[1] = uniform(4, 24);
+    app.addAnimal(a);
+  }
+  if(data.animalSpawns.length) foreach(herd; app.world.animals) herd.syncInstances();
 }
 
 /** Despawn animals currently inside an evicted chunk (mirrors removeAllFeatures). */
