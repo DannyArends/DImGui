@@ -7,6 +7,7 @@ import game;
 
 import block : resourceType;
 import io : dir, fixPath;
+import raws : RESOURCE_COUNT;
 import surface : toRGBA;
 import textures : transferTextureAsync, idx;
 
@@ -101,21 +102,20 @@ string itemTex(const Item it) {
 /** Wrap a raw material as an Item (shape == None). The default way to build a material-only Item. */
 @nogc pure Item toItem(ResourceType m) nothrow { return Item(ItemTemplate.None, m); }
 
-/** Material-SSBO layout: slot i (0..ResourceType.max) is material i; item templates follow with 2 slots each (empty, filled). */
-enum uint TEMPLATE_MAT_BASE = ResourceType.max + 1;
-@nogc pure uint templateMat(ItemTemplate t, bool filled = false) nothrow { return TEMPLATE_MAT_BASE + 2 * (cast(uint)t - 1) + (filled ? 1 : 0); }
+/** Material-SSBO layout: slot i (0..RESOURCE_COUNT) is material i; item templates follow with 2 slots each (empty, filled). */
+@nogc pure uint templateMat(ItemTemplate t, bool filled = false) nothrow { return cast(uint)(RESOURCE_COUNT) + 2 * (cast(uint)t - 1) + (filled ? 1 : 0); }
 
 /** Resource-mesh prefix — one mesh per ResourceType; fully determined at compile time. */
-static immutable Mesh[] resourcePrefix = iota(cast(int)ResourceType.max + 1).map!(tt => Mesh([0, 0], tt)).array;
+static immutable Mesh[] resourcePrefix = iota(cast(int)RESOURCE_COUNT).map!(tt => Mesh([0, 0], tt)).array;
 
-void injectResourceMeshes(ref GameApp app, uint minMaterials = TEMPLATE_MAT_BASE + (2 * ItemTemplate.max)) {
+void injectResourceMeshes(ref GameApp app, uint minMaterials = RESOURCE_COUNT + (2 * ItemTemplate.max)) {
   app.meshes.length = resourcePrefix.length;
   app.meshes[0 .. resourcePrefix.length] = resourcePrefix;
   if(app.materials.length < minMaterials) app.materials.length = minMaterials;
 }
 
 void updateMaterials(ref GameApp app) {
-  foreach (tt; 0 .. TEMPLATE_MAT_BASE) {
+  foreach (tt; 0 .. RESOURCE_COUNT) {
     auto ttype = cast(ResourceType)tt;
     app.materials[tt].tid = app.textures.idx(resourceData(ttype).tex3D);
     if(resourceData(ttype).meshName != "Blocks"){ app.materials[tt].nid = app.textures.idx(resourceData(ttype).tex3D.replace("_base", "_normal")); }
