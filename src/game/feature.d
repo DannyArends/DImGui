@@ -118,16 +118,26 @@ void initFeatureMeshes(ref GameApp app) {
   }
 }
 
+alias SpawnMask = bool[ResourceType.max + 1];
+
+/** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
+private SpawnMask spawnMask(const FeatureT ft) pure {
+  SpawnMask m;
+  foreach(s; ft.spawnOn) { auto rt = (s == "None" ? ResourceType.None : s.to!ResourceType); m[rt] = true; }
+  return m;
+}
+immutable SpawnMask[] featureSpawnMask = () {
+  SpawnMask[] a; foreach(ref ft; features) a ~= spawnMask(ft); return a; 
+}();
+
 /** Scan a chunk's surface tiles for valid spawn sites of `ft`; 
  * returns one Feature per accepted tile (gated by spawn type, noise threshold, and hash). */
-Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const FeatureT ft) {
+Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const FeatureT ft, ref const SpawnMask spawnMask) {
   Feature[] result;
-  ResourceType[] spawnTypes;
-  foreach(s; ft.spawnOn) spawnTypes ~= s.to!ResourceType;
   for(int i = 0; i < wd.tileCount; i++) {
     if(tileTypes[i] == ResourceType.None) continue;
     if(i + wd.chunkSize < wd.tileCount && tileTypes[i + wd.chunkSize] != ResourceType.None) continue;
-    if(!spawnTypes.canFind(tileTypes[i])) continue;
+    if(!spawnMask[tileTypes[i]]) continue;
     auto lc = wd.tileCoord(i);
     auto wc = wd.worldCoord(coord, lc);
     auto n = noiseHTT(wc[0], wc[2], wd.seed);  // recompute — only for surface spawn candidates
