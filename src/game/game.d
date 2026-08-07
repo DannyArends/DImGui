@@ -185,13 +185,13 @@ void updateGame(ref GameApp app, double dt) {
   app.shadows.bounds = [app.world.height, app.world.radius];
   size_t pending = app.textures.pending.length + app.world.chunks.pending.length;
   if(pending > app.loadTotal) app.loadTotal = pending;                       // grow the denominator as async work queues
-  if(!app.worldReady && pending == 0 && app.loadTotal > 0) app.worldReady = true;
+  if(!app.worldReady && pending == 0 && app.loadTotal > 0) { SDL_Log("!World Ready!"); app.worldReady = true; }
 }
 
 /** Per-frame: dispatch queued paths and drain completed chunk-build and pathfinding results from workers */
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
-  if(app.drainMessages!Chunk((c) { app.timed!finalizeChunk(c); }, 10)) { app.postFinalizeChunks(); }
+  if(app.drainMessages!Chunk((c) { app.timed!finalizeChunk(c); })) { app.postFinalizeChunks(); }
   app.drainMessages!PathResult((r) { app.dispatchPathResult(r); });
   app.drainMessages!CloudResult((r) { app.world.applyCloudInstances(r.instances); });
 }
