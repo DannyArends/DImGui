@@ -23,7 +23,8 @@ void checkSDLError() {
 
 /** Log function to allow SDL_Log to be redirected to a file */
 extern(C) @nogc void myLogFn(void* userdata, int category, SDL_LogPriority priority, const char* message) nothrow {
-  printf("[%llu] %s\n", SDL_GetTicks(), message);
+  App* app = cast(App*)userdata;
+  printf("[%llu:%d] %s\n", SDL_GetTicks(), app.totalFramesRendered, message);
 }
 
 enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };
@@ -33,13 +34,13 @@ enum { START = 0, STARTUP = 1, FRAMESTART = 2, FRAMESTOP = 3, LASTTICK = 4, LAST
 App initializeSDL() {
   int[4] init;
   App app;
-  int  linked;
+  int linked;
 
   // Initialize the SDL library for video
   init[MAIN] = SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS);
   app.time[START] = SDL_GetTicks();
 
-  version(Android) { }else{ SDL_SetLogOutputFunction(&myLogFn, null); }
+  version(Android) { }else{ SDL_SetLogOutputFunction(&myLogFn, cast(void*)&app); }
 
   // Make sure we know all versions (compiled and linked)
   linked = SDL_GetVersion();

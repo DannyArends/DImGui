@@ -48,6 +48,7 @@ import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
 import stockpilewindow : showStockpileContent;
 import text : addWorldText;
+import timing : timed;
 import threading : TaskThread, drainMessages;
 import toolbar : showToolbar;
 import world : updateWorld;
@@ -109,15 +110,11 @@ struct GameApp {
 
 /** Centered 2D progress bar over the loaded fraction of the initial working set; shown until worldReady. */
 void showLoadingBar(ref GameApp app) {
-  float total = app.loadTotal > 0 ? cast(float)app.loadTotal : 1.0f;
-  float remaining = cast(float)(app.textures.pending.length + app.world.chunks.pending.length);
-  float progress = 1.0f - (remaining / total);
-
   ImVec2 disp = app.gui.io.DisplaySize;
   igSetNextWindowPos(ImVec2(disp.x * 0.5f, disp.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
   igBegin("##loading", null, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
-  igText("Loading world...");
-  igProgressBar(progress, ImVec2(400.0f, 24.0f), "");
+  igText(cstr("Loading world..."));
+  igProgressBar(-1.0f * cast(float)(SDL_GetTicks() % 1000) / 1000.0f, ImVec2(400.0f, 24.0f), "");
   igEnd();
 }
 
@@ -176,7 +173,7 @@ Geometry makePrimitive(string name) {
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
 void updateGame(ref GameApp app, double dt) {
   app.injectResourceMeshes();
-  if(app.textures.loaded) { 
+  if(app.textures.loaded) {
     app.updateMaterials(); app.textures.loaded = false; 
   }
   app.world.settleBlocks(dt);
@@ -191,7 +188,7 @@ void updateGame(ref GameApp app, double dt) {
 /** Per-frame: dispatch queued paths and drain completed chunk-build and pathfinding results from workers */
 void checkGameAsync(ref GameApp app) {
   app.dispatchPendingPaths();
-  if(app.drainMessages!ChunkData((d) { app.finalizeChunk(d); }, 2)) app.camera.isDirty = true;
+  if(app.drainMessages!ChunkData((d) { app.timed!finalizeChunk(d); }, 10)) app.camera.isDirty = true;
   app.drainMessages!PathResult((r) { app.dispatchPathResult(r); });
   app.drainMessages!CloudResult((r) { app.world.applyCloudInstances(r.instances); });
 }
