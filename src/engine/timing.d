@@ -12,7 +12,7 @@ auto timed(alias fn, T, Args...)(ref T app, Args args) {
     ulong t0 = SDL_GetTicksNS();
     scope(exit) {
       ulong dt = app.timings[__traits(identifier, fn)] = (SDL_GetTicksNS() - t0) / 1000;
-      if(dt > MS_THRESHOLD) SDL_Log("SLOW %s=%dms", __traits(identifier, fn).ptr, dt/1000);
+      if(app.trace && dt > MS_THRESHOLD) SDL_Log("SLOW %s=%dms", __traits(identifier, fn).ptr, dt/1000);
     }
   }
   return fn(app, args);
