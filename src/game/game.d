@@ -68,6 +68,7 @@ class GameTaskThread : TaskThread {
       (immutable(WorldData) wd, int[3] coord) {
         auto chunk = new Chunk(buildChunkData(wd, coord), wd);
         chunk.tiles.computeBoundingBox();
+        chunk.computeBoundingBox();
         main.send(cast(immutable(Chunk))chunk, mytid);
       },
       (immutable(WorldData) wd, PathRequest req) {
