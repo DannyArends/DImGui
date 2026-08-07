@@ -86,30 +86,34 @@ void renderFrame(ref App app, double dt) {
 
   // --- Phase 3: Prepare Shadowmap ---
   if(app.trace) SDL_Log("Phase 3: Prepare ShadowMap");
-  if(shadowsThisFrame) {
+  if(app.worldReady && shadowsThisFrame) {
     app.timed!updateLightGeometries(dt);
     app.timed!recordShadowCommandBuffer(app.syncIndex);
   }else{ shadowsThisFrame = false; }
 
   // --- Phase 4: Record Scene renderer, Post-Process and ImGui ---
   if(app.trace) SDL_Log("Phase 4: Recording Scene, Post-processing, and ImGui");
-  app.timed!recordDepthPrePass();
-  app.timed!recordSceneCommandBuffer(app.shaders);
-  app.timed!recordPostCommandBuffer();
+  if(app.worldReady) {
+    app.timed!recordDepthPrePass();
+    app.timed!recordSceneCommandBuffer(app.shaders);
+    app.timed!recordPostCommandBuffer();
+  }
   app.timed!recordImGuiCommandBuffer();
 
   // --- Phase 5:  Submit CommandBuffers: Scene renderer, Post-Depth Compute, PostProcess and ImGui ---
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
   VkCommandBuffer[] submitCommandBuffers;
   submitCommandBuffers ~= app.uploadCmd[app.syncIndex];
-  submitCommandBuffers ~= app.depthCmd[app.syncIndex];
-  if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
-  if(app.hasCompute){ foreach(ref shader; app.compute.shaders) {
-    if(!app.passEnabled(shader.path)) continue;
-    if(app.isStage(shader.path, ComputeStage.PostDepth)){ submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex]; }
-  } }
-  submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
-  submitCommandBuffers ~= app.postCmd[app.syncIndex];
+  if(app.worldReady) {
+    submitCommandBuffers ~= app.depthCmd[app.syncIndex];
+    if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
+    if(app.hasCompute){ foreach(ref shader; app.compute.shaders) {
+      if(!app.passEnabled(shader.path)) continue;
+      if(app.isStage(shader.path, ComputeStage.PostDepth)){ submitCommandBuffers ~= app.compute.commands[shader.path][app.syncIndex]; }
+    } }
+    submitCommandBuffers ~= app.sceneCmd[app.syncIndex];
+    submitCommandBuffers ~= app.postCmd[app.syncIndex];
+  }
   submitCommandBuffers ~= app.imguiCmd[app.syncIndex];
 
   WaitList!2 wait;
