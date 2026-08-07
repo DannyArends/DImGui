@@ -57,6 +57,7 @@ void recordUploadPass(ref App app) {
   auto cmd = app.uploadCmd.begin(app, app.syncIndex, "Upload");
   pushLabel(cmd, "Objects Buffering", Colors.lightgray);
   app.bufferGeometries(cmd);
+  if(!app.worldReady) app.transitionImageLayout(cmd, app.swapChainImages[app.frameIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   popLabel(cmd);
   app.uploadCmd.end(app.syncIndex);
 }
