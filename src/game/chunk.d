@@ -251,7 +251,7 @@ void finalizeChunk(ref GameApp app, ChunkData data) {
     app.world.chunks[data.coord].deAllocate = true;
     foreach(ref slot; app.shadows.slots) { slot.pending = true; }
   } else {
-    //chunk.tiles.box = new BoundingBox();
+    chunk.tiles.box = new BoundingBox();
     app.objects ~= chunk.tiles;
     app.timed!seedChunkAnimals(data);          // first generation of this chunk: spawn its noise animals
   }
