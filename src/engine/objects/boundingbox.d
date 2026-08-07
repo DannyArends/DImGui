@@ -39,17 +39,22 @@ class BoundingBox : Geometry {
 
   /** Compute world-space AABB from object-space bounds and instance matrix.
    * Uses OBB projection: transforms center, then sums absolute column extents. */
-  @nogc pure Bounds boundsWorld(size_t instance = 0) nothrow const {
+  @nogc pure Bounds boundsWorld(ref const Bounds l, size_t instance = 0) nothrow const {
     if(instances.length == 0 || instance >= instances.length) { return(Bounds.init); }
     auto m = instances[instance].matrix;
-    Bounds l;
-    foreach(ref v; vertices) l.update(v.position);
     float[3] c = m.multiply(midpoint(l.min, l.max));
     float[3] h = l.size.vMul(0.5f);
     float[3] e = [abs(m[0])*h[0] + abs(m[4])*h[1] + abs(m[8])*h[2],
                   abs(m[1])*h[0] + abs(m[5])*h[1] + abs(m[9])*h[2],
                   abs(m[2])*h[0] + abs(m[6])*h[1] + abs(m[10])*h[2]];
     return Bounds([c.vSub(e), c.vAdd(e)]);
+  }
+
+  /** World-space AABB for an instance using the box's cached local corners (no per-call vertex scan). */
+  @nogc pure Bounds boundsWorld(size_t instance = 0) nothrow const {
+    if(vertices.length < 8) return(Bounds.init);
+    Bounds l = Bounds([vertices[0].position, vertices[6].position]);
+    return(boundsWorld(l, instance));
   }
 
   @nogc pure void setDimensions(float[3] min, float[3] max) nothrow {
@@ -65,10 +70,14 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   if(object.box is null) { object.box = new BoundingBox(); }
   if(!object.box.dirty) return;
   if(verbose) SDL_Log("Updating %s(%s) VERTEX", toStringz(object.box.geometry()), toStringz(object.geometry()));
-  Bounds bounds;
-  for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
-  object.box.setDimensions(bounds.min, bounds.max);
-  object.box.vertices.invalidate();
+
+  if(object.vertices.needsBuffer || object.box.vertices.length < 8) {
+    Bounds bounds;
+    for (size_t i = 0; i < object.vertices.length; i++) { bounds.update(object.vertices[i].position); }
+    object.box.setDimensions(bounds.min, bounds.max);
+    object.box.vertices.invalidate();
+  }
+  Bounds local = Bounds([object.box.vertices[0].position, object.box.vertices[6].position]);
 
   object.box.instances = object.instances.dup;
   object.box.instances.invalidate();
@@ -76,7 +85,7 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   object.box.bounds = Bounds.init; // Reset bounds
   if(object.box.world.length < object.box.instances.length) { object.box.world.length = object.box.instances.length; }
   foreach(i; 0 .. object.box.instances.length) {
-    object.box.world[i] = object.box.boundsWorld(i);
+    object.box.world[i] = object.box.boundsWorld(local, i);
     object.box.bounds.update(object.box.world[i]);
   }
   object.box.dirty = false;
