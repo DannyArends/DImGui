@@ -10,7 +10,8 @@ import matrix : inverse, lookAt, radian, multiply, perspective, rotate, transpos
 import quaternion : angleAxis, normalize, qMul, rotate;
 import vector : normalize, vAdd, vSub, vMul, xyz, magnitude;
 
-/** Camera */
+/** Camera structure holding everything camera and movement related
+  farPlane, could be defined from the voxels = (renderDistance + 1) * chunkSize * tileSize * √2f; */
 struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
