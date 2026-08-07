@@ -54,7 +54,7 @@ class Chunk : Cube {
   bool dirty = false;
   alias data this;
 
-  this(ChunkData cd, WorldData wd) {
+  this(ChunkData cd, immutable(WorldData) wd) {
     super();
     data = cd;
     castShadow = false;

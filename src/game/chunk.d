@@ -234,47 +234,50 @@ bool getBestTile(const GameApp app, float[3][2] ray, Intersection[] hits, out in
 }
 
 /** Finalize a chunk on the main thread: set up GPU resources, compute chunk AABB, add to scene */
-void finalizeChunk(ref GameApp app, ChunkData data) {
-  if (data.coord !in app.world.chunks.pending) return;
-  if (data.tileInstances.length == 0) { app.world.chunks.pending.remove(data.coord); return; }
+void finalizeChunk(ref GameApp app, Chunk chunk) {
+  if (chunk.data.coord !in app.world.chunks.pending) return;
+  if (chunk.data.tileInstances.length == 0) { app.world.chunks.pending.remove(chunk.data.coord); return; }
 
-  Chunk chunk = new Chunk(data, app.world);
-
-  if (data.coord in app.world.chunks) {
-    auto oldTiles = app.world.chunks[data.coord].tiles;
+  if (chunk.data.coord in app.world.chunks) {
+    auto oldTiles = app.world.chunks[chunk.data.coord].tiles;
     oldTiles.instances = chunk.tiles.instances.dup;
     oldTiles.syncInstances();
     chunk.tiles = oldTiles;
-    chunk.waterLevel = app.world.chunks[data.coord].waterLevel;   // preserve water across rebuild
-    chunk.wetCells = app.world.chunks[data.coord].wetCells;       // preserve wet cells
-    chunk.active = app.world.chunks[data.coord].active;           // preserve active mask
-    app.world.chunks[data.coord].deAllocate = true;
+    chunk.waterLevel = app.world.chunks[chunk.data.coord].waterLevel;   // preserve water across rebuild
+    chunk.wetCells = app.world.chunks[chunk.data.coord].wetCells;       // preserve wet cells
+    chunk.active = app.world.chunks[chunk.data.coord].active;           // preserve active mask
+    app.world.chunks[chunk.data.coord].deAllocate = true;
     foreach(ref slot; app.shadows.slots) { slot.pending = true; }
   } else {
-    chunk.tiles.box = new BoundingBox();
     app.objects ~= chunk.tiles;
-    app.timed!seedChunkAnimals(data);          // first generation of this chunk: spawn its noise animals
+    app.timed!seedChunkAnimals(chunk.data);          // first generation of this chunk: spawn its noise animals
   }
   app.objects ~= chunk;
 
-  app.world.chunks[data.coord] = chunk;
-  app.world.seedClouds(data.coord);
-  app.timed!requestCloudRebuild();
-  app.world.chunks[data.coord].dirty = false;
-  app.world.chunks.pending.remove(data.coord);
-  app.world.chunks.build = app.world.chunks.build.filter!(t => app.world.chunkCoord(t) != data.coord).array;
-  app.world.chunks.mine = app.world.chunks.mine.filter!(t => app.world.chunkCoord(t) != data.coord).array;
+  app.world.chunks[chunk.data.coord] = chunk;
+  app.world.seedClouds(chunk.data.coord);
+  app.world.chunks[chunk.data.coord].dirty = false;
+  app.world.chunks.pending.remove(chunk.data.coord);
+  app.world.chunks.build = app.world.chunks.build.filter!(t => app.world.chunkCoord(t) != chunk.data.coord).array;
+  app.world.chunks.mine = app.world.chunks.mine.filter!(t => app.world.chunkCoord(t) != chunk.data.coord).array;
 
   // Add trees to the chunk
   foreach(ref ft; features) {
     if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
     if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
-    if(data.coord !in app.world.vegetation[ft.name] && data.coord !in app.world.vegetation.pending[ft.name] && data.coord !in app.world.vegetation.modified) {
-      app.world.vegetation.pending[ft.name][data.coord] = data.featureData[ft.name];
+    if(chunk.data.coord !in app.world.vegetation[ft.name] && 
+       chunk.data.coord !in app.world.vegetation.pending[ft.name] && 
+       chunk.data.coord !in app.world.vegetation.modified) {
+      app.world.vegetation.pending[ft.name][chunk.data.coord] = chunk.data.featureData[ft.name];
     }
   }
+}
 
-  if(app.verbose) SDL_Log("finalizeChunk: processing %d pending unsettle tiles", cast(int)app.world.chunks.unsettle.length);
+/** Global chunk work that does not depend on a specific finalized chunk; run once per drain batch. */
+void postFinalizeChunks(ref GameApp app) {
+  if(app.verbose) SDL_Log("postFinalizeChunks: processing %d pending unsettle tiles", cast(int)app.world.chunks.unsettle.length);
   foreach(tile; app.world.chunks.unsettle) { app.world.unsettleBlocks(app.world.drops, tile); }
   app.world.chunks.unsettle = [];
+  app.timed!requestCloudRebuild();
+  app.camera.isDirty = true;
 }
