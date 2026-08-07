@@ -177,15 +177,14 @@ void mergePlane(immutable(WorldData) wd, int[3] coord, ref ChunkData data, int f
     int k = vv*p.uMax + uu;
     if (used[k] || cell[k] == ResourceType.None) continue;
     auto mat = cell[k];
-    int w = 1; while (uu + w < p.uMax && !used[k + w] && cell[k + w] == mat) w++;   // extend width along u
-
-    /** True if the whole w-wide strip at row r is unused and all material 'mat'. */
-    bool strip(int r) {
-      foreach (x; 0 .. w) { immutable kk = r*p.uMax + uu + x; if (used[kk] || cell[kk] != mat) return false; }
-      return true;
-    }
-    int h = 1; while (vv + h < p.vMax && strip(vv + h)) h++;                         // extend height along v
-    for (int dv = 0; dv < h; dv++) for (int du = 0; du < w; du++) used[(vv + dv)*p.uMax + uu + du] = true;
+    int w = 1, h = 1;
+    while (uu + w < p.uMax && !used[k + w] && cell[k + w] == mat){ w++; }  // w extends width along u
+    while (vv + h < p.vMax) {                                              // h extend height along v
+      bool ok = true;
+      foreach (x; 0 .. w) { immutable kk = (vv + h)*p.uMax + uu + x; if (used[kk] || cell[kk] != mat) { ok = false; break; } }
+      if (!ok) break;
+      h++;
+    }    for (int dv = 0; dv < h; dv++) for (int du = 0; du < w; du++) used[(vv + dv)*p.uMax + uu + du] = true;
     int[3] o; o[p.da] = dpt; o[p.ua] = uu; o[p.va] = vv;
     data.tileInstances ~= wd.mergedFace(coord, f, o, w, h, mat);
   }
