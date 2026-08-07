@@ -15,6 +15,7 @@ import mainmenu : showMenu;
 import sidepanel : showSidepanel;
 import shaderswindow : showShaderContent;
 import texturewindow : showTexturesContent;
+import timing : timed;
 import validation : pushLabel, popLabel;
 
 /** Main GUI structure */
@@ -167,7 +168,7 @@ void recordImGuiCommandBuffer(ref App app) {
   pushLabel(cmd, "ImGui", Colors.darkgray);
 
   // Render UI - must be called before begin() so rotation is applied before GPU submission
-  ImDrawData* drawData = app.renderGUI();
+  ImDrawData* drawData = app.timed!renderGUI();
 
   app.imguiCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
   if(!app.worldReady) {
