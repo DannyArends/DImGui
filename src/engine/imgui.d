@@ -170,6 +170,11 @@ void recordImGuiCommandBuffer(ref App app) {
   ImDrawData* drawData = app.renderGUI();
 
   app.imguiCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue);
+  if(!app.worldReady) {
+    VkClearAttachment clear = { aspectMask: VK_IMAGE_ASPECT_COLOR_BIT, colorAttachment: 0, clearValue: app.clearValue[0] };
+    VkClearRect rect = { rect: VkRect2D(VkOffset2D(0, 0), app.camera.currentExtent), baseArrayLayer: 0, layerCount: 1 };
+    vkCmdClearAttachments(cmd, 1, &clear, 1, &rect);
+  }
   ImGui_ImplVulkan_RenderDrawData(drawData, cmd, null);
 
   app.imguiCmd.pass.end(cmd);

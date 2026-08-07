@@ -192,7 +192,7 @@ void createImGuiRenderPass(ref App app) {
       loadOp: VK_ATTACHMENT_LOAD_OP_LOAD,
       storeOp: VK_ATTACHMENT_STORE_OP_STORE,
       stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE, stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-      initialLayout: VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+      initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
       finalLayout: VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
     }],
     subpasses: [{
