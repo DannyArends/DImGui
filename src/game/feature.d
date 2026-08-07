@@ -176,44 +176,46 @@ int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) 
   return best;
 }
 
+/** Pure per-feature instance generation (static parts + L-system brushes), keyed by mesh name. No live state. */
+DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref immutable FeatureT ft) {
+  DrawInstance[][string] out_;
+  auto wp = lat.tileToWorld(f.rootTile);
+  foreach(ref part; ft.parts) {
+    float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
+    float sy = part.scaleY < 0 ? lat.tileHeight : part.scaleY + (f.hash % 5) * part.scaleYVariance;
+    float oy = part.offsetY < 0 ? f.height * lat.tileHeight : part.offsetY;
+    auto rt = resType(part.resourceType);
+    DrawInstance[] insts;
+    if(part.repeat) {
+      foreach(uint h; 0 .. f.height) {
+        float s = sx - h * part.taper; if(s < 0.05f) s = 0.05f;
+        insts ~= DrawInstance(translateScale(lat.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]), cast(int)rt);
+      }
+    } else { insts ~= DrawInstance(translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]), cast(int)rt); }
+    out_[meshKey(ft.name, part.mesh)] ~= insts;
+  }
+  if(ft.brushes.length) {
+    TurtleConfig cfg;
+    cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
+    foreach(ref br; ft.brushes) {
+      auto brt = resType(br.resourceType);
+      cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
+    }
+    auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
+    float groundY = wp[1] - 0.5f * lat.tileHeight;
+    auto grouped = interpret(chars, cfg, [wp[0], groundY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
+    foreach(sym, insts; grouped) { out_[meshKey(ft.name, brushMesh(ft, sym))] ~= insts; }
+  }
+  return out_;
+}
+
 /** Add all DrawInstances for each feature: mark the tile-penalty footprint, build instance
     batches (static parts + L-system brushes), and emit each via emitInstances. */
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
-    auto wp = app.world.tileToWorld(f.rootTile);
     f.instanceRuns = [];
-
-    // Static parts
-    foreach(ref part; ft.parts) {
-      auto mp = meshKey(ft.name, part.mesh) in meshes;
-      if(mp is null || *mp is null) continue;
-      float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
-      float sy = part.scaleY < 0 ? app.world.tileHeight : part.scaleY + (f.hash % 5) * part.scaleYVariance;
-      float oy = part.offsetY < 0 ? f.height * app.world.tileHeight : part.offsetY;
-      auto rt = resType(part.resourceType);
-      DrawInstance[] insts;
-      if(part.repeat) {
-        foreach(uint h; 0 .. f.height) {
-          float s = sx - h * part.taper; if(s < 0.05f) s = 0.05f;
-          insts ~= DrawInstance(translateScale(app.world.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]), cast(int)rt);
-        }
-      } else { insts ~= DrawInstance(translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]), cast(int)rt); }
-      emitInstances(f, *mp, insts);
-    }
-
-    // L-system brushes
-    if(ft.brushes.length) {
-      TurtleConfig cfg;
-      cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
-      foreach(ref br; ft.brushes) {
-        auto brt = resType(br.resourceType);
-        cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
-      }
-      auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
-      float groundY = wp[1] - 0.5f * app.world.tileHeight;   // top face of the surface tile (rootTile is one tile-centre above it)
-      auto grouped = interpret(chars, cfg, [wp[0], groundY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
-      foreach(sym, insts; grouped) { if(auto mp = meshKey(ft.name, brushMesh(ft, sym)) in meshes){ emitInstances(f, *mp, insts); } }
-    }
+    auto byMesh = featureMeshInstances(app.world, f, ft);
+    foreach(key, insts; byMesh) { if(auto mp = key in meshes){ if(*mp !is null) emitInstances(f, *mp, insts); } }
   }
   return features;
 }
