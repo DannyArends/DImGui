@@ -46,7 +46,6 @@ struct SSBOList(T) {
 void nameSSBO(ref App app, SSBO ssbo, string name){
   for(uint i = 0; i < ssbo.length; i++) {
     app.nameVulkanObject(ssbo[i].buffer, cstr("[SSBO-BUF] %s #%d", name, i), VK_OBJECT_TYPE_BUFFER);
-    app.nameVulkanObject(ssbo[i].memory, cstr("[SSBO-MEM] %s #%d", name, i), VK_OBJECT_TYPE_DEVICE_MEMORY);
   }
 }
 
