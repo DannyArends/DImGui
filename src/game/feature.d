@@ -11,6 +11,7 @@ import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord;
 import lsystem : buildGrammar;
 import matrix : translateScale;
 import noise : noiseHTT;
+import raws : RESOURCE_COUNT;
 import sfx : play;
 import turtlegfx : interpret;
 import vector : vAdd, manhattan;
@@ -118,7 +119,7 @@ void initFeatureMeshes(ref GameApp app) {
   }
 }
 
-alias SpawnMask = bool[ResourceType.max + 1];
+alias SpawnMask = bool[RESOURCE_COUNT];
 
 /** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
 private SpawnMask spawnMask(const FeatureT ft) pure {

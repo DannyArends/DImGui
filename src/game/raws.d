@@ -11,6 +11,7 @@ import ctfe : parseTokens, splitColon;
  * import() is resolved at compile-time; dub does not track these as dependencies */
 mixin(enumFromTag(import("data/raws/materials.txt"), "MATERIAL", "ResourceType"));
 mixin(generateResourceClassEnum(import("data/raws/materials.txt")));
+enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members
 mixin(enumFromTag(import("data/raws/items.txt"), "ITEM", "ItemTemplate", "None"));
 
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
@@ -20,7 +21,7 @@ immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
 immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
 
-static assert(resourceTable.length == ResourceType.max + 1, "resourceTable out of sync with ResourceType enum");
+static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
 
 /** One terrain height band: an upper threshold and the resources eligible at that height. */
