@@ -51,7 +51,7 @@ void addTiles(ref World world, const(int[3])[] tiles, ToolMode mode) {
 void syncBuildGhosts(ref GameApp app) {
   if(app.world.inventory is null) return;
   app.world.inventory.instances.reset();
-  app.world.data.tilePenalties = null;
+  app.world.data.tilePenalties.clear();
   app.stampFeatureFootprints();
 
   auto buildTiles = app.world.activeTiles("Building");
