@@ -203,9 +203,11 @@ private auto buildSpawnLookup() {
   return lookup;
 }
 
+/** Spawn lookup computed at compile time from the immutable animalTable. */
+enum spawnLookup = buildSpawnLookup();
+
 /** the spawn record + worker-side decision */
 void seedChunkAnimalSpawns(ref ChunkData data, immutable(WorldData) wd) {
-  const auto spawnLookup = buildSpawnLookup();
   const int chunkSize = wd.chunkSize;
   const int surfaceLimit = wd.tileCount - chunkSize;
 
@@ -219,7 +221,7 @@ void seedChunkAnimalSpawns(ref ChunkData data, immutable(WorldData) wd) {
 
     const auto wc = wd.worldCoord(data.coord, wd.tileCoord(i));
     const auto n = noiseHTT(wc[0], wc[2], wd.seed);
-    const ref group = spawnLookup[ttIdx];
+    const group = spawnLookup[ttIdx];
     for(ubyte g = 0; g < group.count; g++) {
       const size_t aType = group.animalIndices[g];
       ref const at = animalTable[aType];
