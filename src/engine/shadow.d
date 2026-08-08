@@ -21,7 +21,7 @@ enum float SHADOW_HYSTERESIS = 1.25f;
 enum float SHADOW_DEPTH_TEXELS = 1.0f;                    /// Constant bias in texel-depths
 enum float SHADOW_SLOPE_BIAS = 2.0f;                     /// Slope-scaled bias factor (hardware multiplies by real surface slope)
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
-enum float CASCADE_LAMBDA = 0.9f;                         /// Cascade split blend: 0 = uniform, 1 = logarithmic
+enum float CASCADE_LAMBDA = 0.75f;                         /// Cascade split blend: 0 = uniform, 1 = logarithmic
 enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x split, last radius is camera-derived
 enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
 

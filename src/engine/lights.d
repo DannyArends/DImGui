@@ -143,6 +143,7 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
 
   // CSM: cascades stash their half-extent in properties[2] (unused for directional). 0 => full bounds.
   float radius = (sphere[3] > 0.0f) ? sphere[3] : size[1];
+  if(sphere[3] > 0.0f) radius = ceil(radius / 8.0f) * 8.0f;
   float depth = size[0] + 2.0f * radius;
   float[3] centre = (sphere[3] > 0.0f) ? [sphere[0], sphere[1], sphere[2]] : [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
   float[3] s = lightDir.cross(cam.up).normalize();
