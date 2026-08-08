@@ -63,7 +63,7 @@ struct LightUbo {
   uint nlights;                       /// Active light count
 }
 
-/** Initialize the ShadowMap strcuture on App */
+/** Initialize the Shadow & ShadowMap pools and structure on App */
 void initShadowPool(ref App app) {
   app.shadows.cmd.pass(0).framebuffers.length = app.shadows.cmd.pass(1).framebuffers.length = MAX_SHADOW_MAPS;
   for(size_t s = 0; s < MAX_SHADOW_MAPS; s++) { app.initShadowMap(app.shadows, s, 32); }
@@ -102,7 +102,7 @@ void assignShadowSlots(ref App app) {
   }
 }
 
-/** Compute each active slot's light-space matrix and resize its map; a resize forces a static rebuild. */
+/** Compute each active slot's light-space matrix and resize its map; a resize forces a static rebuild */
 void updateShadowSlotMatrices(ref App app) {
   app.shadows.cascadeSplit = cascadeSplitDistances(app.camera.nearfar[0], app.camera.nearfar[1], CASCADE_LAMBDA);
   foreach(ref light; app.lights) {
@@ -113,18 +113,14 @@ void updateShadowSlotMatrices(ref App app) {
     uint resolution = app.shadows.shadowResolution(light);
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
-      float[4] sphere = [0,0,0,0];
+      float[4] sphere = [0, 0, 0, 0];
       if(light.directional) {
         float dn = (c == 0) ? app.camera.nearfar[0] : app.shadows.cascadeSplit[c - 1];
-        float df = app.shadows.cascadeSplit[c];
-        sphere = app.camera.frustumSliceSphere(dn, df);
+        sphere = app.camera.frustumSliceSphere(dn, app.shadows.cascadeSplit[c]);
         app.shadows.cascadeRadius[c] = sphere[3];
       }
       app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, sphere);
-
-      uint before = app.shadows.slots[s].extent.width;
-      app.resizeShadowMap(s, resolution);
-      if(app.shadows.slots[s].extent.width != before) app.shadows.slots[s].dirty = true;  // reallocated: rebuild now
+      if(app.resizeShadowMap(s, resolution)) app.shadows.slots[s].dirty = true;
     }
   }
 }
