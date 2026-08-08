@@ -7,7 +7,7 @@ import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
-import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord;
+import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord, getOr;
 import lsystem : buildGrammar;
 import matrix : translateScale;
 import noise : noiseHTT;
@@ -274,12 +274,10 @@ void rebuildAllFeatures(ref GameApp app) {
 /** Forget cached features for chunk `coord`, but only if it carries no player modifications. */
 void removeAllFeatures(ref GameApp app, int[3] coord) {
   if(coord in app.world.vegetation.modified) return;
-  foreach(ref ft; features) { if(auto p = coord in app.world.vegetation[ft.name]) {
-    if((*p).length > 0){
-      foreach(ref f; *p) app.world.instanceCache.remove(f.rootTile);
-      app.world.vegetation[ft.name].remove(coord);
-    }
-  } }
+  foreach(ref ft; features) {
+    foreach(f; app.world.vegetation[ft.name].getOr(coord, null)){ app.world.instanceCache.remove(f.rootTile); }
+    app.world.vegetation[ft.name].remove(coord);
+  }
 }
 
 /** True if a feature with the given interaction is rooted at this tile */
