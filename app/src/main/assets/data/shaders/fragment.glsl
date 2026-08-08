@@ -79,7 +79,7 @@ void main() {
 
     vec3 surfaceColor = rgb * 0.01;
     bool useShadows = ubo.lightingMode == 2u;
-    float shadowDistance = length(fragPosWorld.xz - ubo.shadowCentre.xz);
+    float shadowDistance = -(ubo.view * fragPosWorld).z;   // linear view-space depth; matches the cascade slice view-Z splits
 
     // Directional/global lights (position.w == 0, not clustered)
     for(int i = 0; i < ubo.nlights; ++i) {

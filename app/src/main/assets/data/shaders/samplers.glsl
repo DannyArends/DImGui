@@ -57,7 +57,7 @@ float calculateShadow(vec4 fragPosWorld, Light light, float shadowDistance, out 
   // blend into the NEXT cascade over a band before this cascade's split, to hide the boundary
   if (c < nSplits) {
     float split = lightUbo.cascadeSplit[c];
-    float band  = split * 0.15;                       // blend over the last 15% before the split
+    float band  = split * 0.08;
     if (shadowDistance > split - band) {
       float next = sampleSlot(fragPosWorld, first + int(c) + 1);
       float t = (shadowDistance - (split - band)) / band;  // 0 at band start, 1 at split
