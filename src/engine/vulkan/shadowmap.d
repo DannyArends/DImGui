@@ -40,13 +40,14 @@ void initShadowMap(ref App app, ref Shadows map, size_t s, uint size) {
 }
 
 /** Resize shadow map in slot s to 'size'; defers old resources, re-points the descriptor next safe frame */
-void resizeShadowMap(ref App app, size_t s, uint size) {
-  if(app.shadows.slots[s].extent.width == size) return;
+bool resizeShadowMap(ref App app, size_t s, uint size) {
+  if(app.shadows.slots[s].extent.width == size) return(false);
   app.deAllocate(app.shadows.cmd.pass(0).framebuffers[s]);
   app.deAllocate(app.shadows.cmd.pass(1).framebuffers[s]);
   app.deAllocate(app.shadows.slots[s]);
   app.initShadowMap(app.shadows, s, size);
   app.shadows.shadowDescriptorsDirty[] = true;
+  return(true);
 }
 
 /** Shadow importance: brighter & nearer scores higher; <=0 means ineligible. */
