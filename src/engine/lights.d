@@ -9,10 +9,10 @@ import devices : getMSAASamples;
 import geometry : setColor;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
 import ssbo : growSSBO, updateSSBO;
-import shadow : assignShadowSlots, updateShadowSlotMatrices, pickStaticRebuilds;
-import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz;
+import shadow : assignShadowSlots, NUM_CASCADES, updateShadowSlotMatrices, pickStaticRebuilds;
+import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz, magnitude;
 import quaternion : aimMatrix, xyzw, w;
-import matrix : degree, translate;
+import matrix : degree, translate, inverse;
 
 enum LMode : uint { Global = 0, Lights, LightsAndShadows, Normals, nLights, UV, Cascades }
 
@@ -97,8 +97,42 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   l.cull[0]  = sqrt(fmax(0.0f, maxI / cutoff - l.properties[1]));
 }
 
+/** Cascade split distances over [near,far], blended uniform<->log by CASCADE_LAMBDA (0=uniform, 1=log). */
+@nogc pure float[NUM_CASCADES + 1] cascadeSplitDistances(float near, float far, float lambda) nothrow {
+  float[NUM_CASCADES + 1] d;
+  d[0] = near;
+  foreach(i; 1 .. NUM_CASCADES + 1) {
+    float p = cast(float)i / NUM_CASCADES;
+    float uni = near + (far - near) * p;
+    float log = near * pow(far / near, p);
+    d[i] = uni + (log - uni) * lambda;
+  }
+  return d;
+}
+
+/** World-space bounding sphere of the view-frustum slice [dn,df]; centre on the view axis, radius covers all 8 corners. */
+@nogc float[4] frustumSliceSphere(ref Camera cam, float dn, float df) nothrow {
+  Matrix invVP = cam.proj.multiply(cam.view).inverse();
+  float[3] centre = [0,0,0]; float[3][8] corner; uint k;
+  foreach(z; [dn, df]) foreach(y; [-1.0f, 1.0f]) foreach(x; [-1.0f, 1.0f]) {
+    // NDC corner at this slice depth; unproject to world. Depth as NDC z = (df/(df-near))*(1 - near/z)... use clip-space directly:
+    float[4] ndc = [x, y, 0.0f, 1.0f];
+    // place the corner at world distance z along the view by unprojecting near&far then lerping:
+    float[4] wn = invVP.multiply([x, y, 0.0f, 1.0f]);   // near plane point (NDC z=0)
+    float[4] wf = invVP.multiply([x, y, 1.0f, 1.0f]);   // far plane point  (NDC z=1)
+    float[3] pn = [wn[0]/wn[3], wn[1]/wn[3], wn[2]/wn[3]];
+    float[3] pf = [wf[0]/wf[3], wf[1]/wf[3], wf[2]/wf[3]];
+    float tn = (z - cam.nearfar[0]) / (cam.nearfar[1] - cam.nearfar[0]);   // fraction along the ray for distance z
+    corner[k] = pn.vAdd(pf.vSub(pn).vMul(tn));
+    centre = centre.vAdd(corner[k]); k++;
+  }
+  centre = centre.vMul(1.0f / 8.0f);
+  float r = 0.0f; foreach(i; 0 .. 8) { float dsq = corner[i].vSub(centre).magnitude(); if(dsq > r) r = dsq; }
+  return [centre[0], centre[1], centre[2], r];
+}
+
 /** Compute lightspace for the provided light. Builds a cascade's light-space matrix: ortho box centred on lookat */
-@nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension, float radiusOverride = 0.0f) nothrow {
+@nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension, float[4] sphere = [0,0,0,0]) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
 
@@ -108,19 +142,18 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   }
 
   // CSM: cascades stash their half-extent in properties[2] (unused for directional). 0 => full bounds.
-  float radius = (radiusOverride > 0.0f) ? radiusOverride : (light.properties[2] > 0.0f) ? light.properties[2] : size[1];
+  float radius = (sphere[3] > 0.0f) ? sphere[3] : size[1];
   float depth = size[0] + 2.0f * radius;
-  float[3] centre = [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
-
-  float[3] s = lightDir.cross(cam.up).normalize();   // shadow-map U axis
-  float[3] v = s.cross(lightDir).normalize();        // shadow-map V axis
+  float[3] centre = (sphere[3] > 0.0f) ? [sphere[0], sphere[1], sphere[2]] : [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
+  float[3] s = lightDir.cross(cam.up).normalize();
+  float[3] v = s.cross(lightDir).normalize();
   float texelSize = 2.0f * radius / cast(float)shadowDimension;
   float du = centre.dot(s), dv = centre.dot(v);
   centre = centre.vAdd(s.vMul(floor(du / texelSize) * texelSize - du)).vAdd(v.vMul(floor(dv / texelSize) * texelSize - dv));
-
-  float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f));
+  // pull eye a full radius toward light so casters above the sphere aren't near-clipped
+  float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f + radius));
   Matrix lightView = lookAt(eye, centre, cam.up);
-  return orthogonal(-radius, radius, -radius, radius, 0.0f, depth).multiply(lightView);
+  return orthogonal(-radius, radius, -radius, radius, 0.0f, depth + 2.0f * radius).multiply(lightView);
 }
 
 /** Update light geometries for rendering */
