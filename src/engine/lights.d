@@ -97,12 +97,11 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   l.cull[0]  = sqrt(fmax(0.0f, maxI / cutoff - l.properties[1]));
 }
 
-/** Cascade split distances over [near,far], blended uniform<->log by CASCADE_LAMBDA (0=uniform, 1=log). */
-@nogc pure float[NUM_CASCADES + 1] cascadeSplitDistances(float near, float far, float lambda) nothrow {
-  float[NUM_CASCADES + 1] d;
-  d[0] = near;
-  foreach(i; 1 .. NUM_CASCADES + 1) {
-    float p = cast(float)i / NUM_CASCADES;
+/** Cascade far distances over [near,far], blended uniform<->log by lambda (0=uniform, 1=log). */
+@nogc pure float[NUM_CASCADES] cascadeSplitDistances(float near, float far, float lambda) nothrow {
+  float[NUM_CASCADES] d;
+  foreach(i; 0 .. NUM_CASCADES) {
+    float p = cast(float)(i + 1) / NUM_CASCADES;
     float uni = near + (far - near) * p;
     float log = near * pow(far / near, p);
     d[i] = uni + (log - uni) * lambda;
