@@ -29,6 +29,9 @@ string humanCount(size_t n) {
   return 1u << (bsr(v - 1) + 1);
 }
 
+/** Assoc Array lazy-fallback (compute-the-default-only-on-miss) */
+V getOrElse(V, K)(const V[K] map, K key, lazy V fallback) { if(auto p = key in map) return *p; return fallback; }
+
 /** Reduce a GC slice's length. */
 void shrink(T)(ref T[] a, size_t n) { a.length = n; }
 
