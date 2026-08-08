@@ -14,7 +14,7 @@ import vector : dot, cross, normalize, vAdd, vSub, negate, vMul, xyz, magnitude;
 import quaternion : aimMatrix, xyzw, w;
 import matrix : degree, translate, inverse;
 
-enum LMode : uint { Global = 0, Lights, LightsAndShadows, Normals, nLights, UV, Cascades, ShadowUV }
+enum LMode : uint { Global = 0, Lights, LightsAndShadows, Normals, nLights, UV, Cascades }
 
 enum TORCH_HEIGHT = 5.0f;
 enum uint[4] LIGHT_GRID = [16, 9, 16, 0];

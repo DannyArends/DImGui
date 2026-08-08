@@ -67,15 +67,11 @@ float calculateShadow(vec4 fragPosWorld, Light light, float shadowDistance, out 
   return shadow;
 }
 
-vec3 shadowUV(vec4 fragPosWorld, Light light, float shadowDistance) {
-  int first = int(light.cull[1]);
-  if (first < 0) return vec3(0.0);
-  uint nSplits = nCascadeSplits(light);
-  uint c = 0u;
-  for (; c < nSplits; ++c) { if (shadowDistance <= lightUbo.cascadeSplit[c]) break; }
-  vec4 p = lightUbo.slotVP[first + int(c)] * fragPosWorld;
-  vec3 pC = p.xyz / p.w; pC.xy = pC.xy * 0.5 + 0.5;
-  return pC;
+vec3 cascadeDebug(vec4 fragPosWorld, Light light, float shadowDistance, vec3 lit) {
+  int usedCascade;
+  float sh = calculateShadow(fragPosWorld, light, shadowDistance, usedCascade);   // 0=shadowed, 1=lit
+  vec3 col = (usedCascade == 0) ? vec3(1.0,0.3,0.3) : (usedCascade == 1) ? vec3(1.0,1.0,0.3) : vec3(0.3,1.0,0.3);
+  return (sh < 0.5) ? lit * col : lit;                                            // shadowed -> tinted; lit -> untouched
 }
 
 // Per-light shading: ambient + shadowed direct contribution

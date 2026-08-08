@@ -80,12 +80,7 @@ void main() {
     vec3 surfaceColor = rgb * 0.01;
     bool useShadows = ubo.lightingMode == 2u;
     float shadowDistance = -(ubo.view * fragPosWorld).z;   // linear view-space depth; matches the cascade slice view-Z splits
-    if (ubo.lightingMode == 2u) {
-      int dbgCascade;
-      float dbgSh = calculateShadow(fragPosWorld, lightSSBO.lights[0u], shadowDistance, dbgCascade);
-      writeOutput(vec3(dbgSh), alpha);   // TEMP: mode 2 outputs raw sun shadow, identical to mode 6
-      return;
-    }
+
     // Directional/global lights (position.w == 0, not clustered)
     for(int i = 0; i < ubo.nlights; ++i) {
       if(lightSSBO.lights[i].properties.w == 0.0) continue; // disabled
@@ -108,18 +103,9 @@ void main() {
     }
 
     if (ubo.lightingMode == 5u) { writeOutput(vec3(fract(fragTexCoord), 0.0), 1.0); return; }
-    if (ubo.lightingMode == 6u) {
-      int usedCascade;
-      float sh = calculateShadow(fragPosWorld, lightSSBO.lights[0u], shadowDistance, usedCascade);
-      writeOutput(vec3(sh), alpha);                           // ISOLATION TEST: shadow term only, no cascade color, no lighting
-      return;
-    }
-    if (ubo.lightingMode == 7u) {
-      vec3 uv = shadowUV(fragPosWorld, lightSSBO.lights[0u], shadowDistance);
-      writeOutput(vec3(fract(uv.xy * 8.0), 0.0), alpha);   // shadow-space UV as an 8x tiled grid; fixed face => fixed pattern if matrix stable
-      return;
-    }
-    // lightingMode: 3 Lights + Shadows (* SSAO)
+    if (ubo.lightingMode == 6u) { writeOutput(cascadeDebug(fragPosWorld, lightSSBO.lights[0u], shadowDistance, surfaceColor * ao), alpha); return; }
+
+    // lightingMode 2u: Lights + Shadows (* SSAO)
     writeOutput(surfaceColor * ao, alpha);
   }
 }

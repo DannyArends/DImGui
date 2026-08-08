@@ -9,8 +9,7 @@ import imgui : clearSettings;
 import lights : toggleLightGeometries;
 import widgets : labelCol, setting, infoRow;
 
-const(char)*[] modes = ["Global Illumination", "Lights", "Lights + Shadows", 
-                        "Debug: Normal", "Debug: nLights", "Debug: UV", "Debug: Cascades", "Debug: ShadowUV"];
+const(char)*[] modes = ["Global Illumination", "Lights", "Lights + Shadows", "[D] Normal", "[D] nLights", "[D] UV", "[D] Cascades"];
 
 /** Show the GUI window with global settings */
 void showSettingsContent(ref App app, uint font = 0) {
