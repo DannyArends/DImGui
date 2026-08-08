@@ -50,7 +50,10 @@ struct Camera {
   @property @nogc Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
   @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
   @property @nogc bool fps() const nothrow { return(onFrame is null); }   /// mode derived: no follow hook => FPS
-  @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
+  @nogc float[3] position() const nothrow { return fps ? fpsEye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
+  @nogc void syncLookat() nothrow { lookat = vAdd(fpsEye, orientation.multiply([0.0f, 0.0f, -distance])); }
+  @nogc void enterFPS() nothrow { fpsEye = position(); syncLookat(); }              // eye stays put; lookat moves ahead
+  @nogc void enterOrbit(float[3] focus) nothrow { lookat = focus; }                 // pivot on focus; eye derives at 'distance'
   @property @nogc float visibleRadius() const nothrow {
     float fov2 = tan(radian(fov) * 0.5f), far = nearfar[1];
     float[2] s = [far - distance, far * fov2 * sqrt(1.0f + aspectRatio * aspectRatio)];
@@ -61,8 +64,8 @@ struct Camera {
 
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
-  app.camera.onFrame = null;
-  auto old = app.camera.lookat;
+  if(!app.camera.fps) { app.camera.onFrame = null; app.camera.enterFPS(); }  // leaving follow -> seed FPS eye, no jump
+  auto old = app.camera.fpsEye;
   app.camera.move(direction);
   if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.lookat = old;
 }
@@ -91,14 +94,17 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 }
 
 /** Move the position the camera looks at */
-@nogc void move(ref Camera camera, float[3] movement) nothrow { 
-  camera.lookat = vAdd(camera.lookat, movement); camera.isDirty = true; 
+@nogc void move(ref Camera camera, float[3] movement) nothrow {
+  if(camera.fps) { camera.fpsEye = vAdd(camera.fpsEye, movement); camera.syncLookat();
+  } else { camera.lookat = vAdd(camera.lookat, movement); }
+  camera.isDirty = true;
 }
 
 /** Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
   camera.rotation[0] = fmod(camera.rotation[0] - xrel + 360.0f, 360.0f);
   camera.rotation[1] = clamp(camera.rotation[1] -= yrel, -65.0f, 65.0f);
+  if(camera.fps) camera.syncLookat();
   camera.isDirty = true;
 }
 
