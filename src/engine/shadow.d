@@ -46,6 +46,7 @@ struct Shadows {
   uint dynamicShadowInstances = 0;            /// Dynamic shadow instances count
 
   @property @nogc auto images() nothrow { return slots[].map!(m => m.image); }
+  alias slots this;
 }
 
 void createShadows(ref App app) {

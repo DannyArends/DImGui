@@ -180,7 +180,7 @@ void updateGame(ref GameApp app, double dt) {
   }
   app.world.settleBlocks(dt);
   app.timed!settleDwarves(dt);
-  app.timed!updateWorld(app.camera.position);
+  app.timed!updateWorld(app.camera.fps ? app.camera.position : app.camera.lookat);
   app.shadows.bounds = [app.world.height, app.world.radius];
   size_t pending = app.textures.pending.length + app.world.chunks.pending.length;
   if(pending > app.loadTotal) app.loadTotal = pending;                       // grow the denominator as async work queues
