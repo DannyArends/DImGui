@@ -9,6 +9,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #define SHADOW_SKIP 0.02
+const float NORMAL_OFFSET = 0.12;   // world-space normal offset per cascade level (kills vertical-face peter-panning)
 
 /// Samplers/Images
 #define BINDING_TEXTURES          5
@@ -27,8 +28,8 @@ vec3 getBumpedNormal(vec3 cameraPos, vec3 fragPos, int fragNid, vec2 fragTexCoor
 }
 
 // Sample one cascade slot; returns 1.0 (lit) if the fragment falls outside this slot's map.
-float sampleSlot(vec4 fragPosWorld, int s) {
-  vec4 position = lightUbo.slotVP[s] * fragPosWorld;
+float sampleSlot(vec4 fragPosWorld, int s, vec3 worldOffset) {
+  vec4 position = lightUbo.slotVP[s] * vec4(fragPosWorld.xyz + worldOffset, 1.0);   // normal-offset receiver
   vec3 pC = position.xyz / position.w;
   pC.xy = pC.xy * 0.5 + 0.5;
   if (pC.x < 0.0 || pC.x > 1.0 || pC.y < 0.0 || pC.y > 1.0 || pC.z < 0.0 || pC.z > 1.0) return 1.0;
@@ -39,39 +40,30 @@ float sampleSlot(vec4 fragPosWorld, int s) {
 uint nCascadeSplits(Light light) { return (light.position.w == 0.0) ? uint(lightUbo.cascadeSplit.w) - 1u : 0u; }
 
 // Sample shadow from cascade shadow map (and blend border)
-float calculateShadow(vec4 fragPosWorld, Light light, float shadowDistance, out int usedCascade) {
+float calculateShadow(vec4 fragPosWorld, Light light, vec3 normal, float shadowDistance, out int usedCascade) {
   usedCascade = -1;
   int first = int(light.cull[1]);
   if (first < 0) return 1.0;
   uint nSplits = nCascadeSplits(light);
 
-  // single-slot (point/spot): no cascade blend
-  if (nSplits == 0u) return sampleSlot(fragPosWorld, first);
+  if (nSplits == 0u) return sampleSlot(fragPosWorld, first, vec3(0.0));
 
-  // pick cascade c by distance
   uint c = 0u;
   for (; c < nSplits; ++c) { if (shadowDistance <= lightUbo.cascadeSplit[c]) break; }
   usedCascade = int(c);
-  float shadow = sampleSlot(fragPosWorld, first + int(c));
+  vec3 off = normal * (NORMAL_OFFSET * float(c + 1u));                 // ~texel-scaled push along the surface normal, grows with cascade
+  float shadow = sampleSlot(fragPosWorld, first + int(c), off);
 
-  // blend into the NEXT cascade over a band before this cascade's split, to hide the boundary
   if (c < nSplits) {
     float split = lightUbo.cascadeSplit[c];
     float band  = split * 0.08;
     if (shadowDistance > split - band) {
-      float next = sampleSlot(fragPosWorld, first + int(c) + 1);
-      float t = (shadowDistance - (split - band)) / band;  // 0 at band start, 1 at split
+      float next = sampleSlot(fragPosWorld, first + int(c) + 1, normal * (NORMAL_OFFSET * float(c + 2u)));
+      float t = (shadowDistance - (split - band)) / band;
       shadow = mix(shadow, next, clamp(t, 0.0, 1.0));
     }
   }
   return shadow;
-}
-
-vec3 cascadeDebug(vec4 fragPosWorld, Light light, float shadowDistance, vec3 lit) {
-  int usedCascade;
-  float sh = calculateShadow(fragPosWorld, light, shadowDistance, usedCascade);   // 0=shadowed, 1=lit
-  vec3 col = (usedCascade == 0) ? vec3(1.0,0.3,0.3) : (usedCascade == 1) ? vec3(1.0,1.0,0.3) : vec3(0.3,1.0,0.3);
-  return (sh < 0.5) ? lit * col : lit;                                            // shadowed -> tinted; lit -> untouched
 }
 
 // Per-light shading: ambient + shadowed direct contribution
@@ -80,7 +72,7 @@ vec3 shadeLight(uint i, vec3 baseColor, vec4 fragPosWorld, vec3 normal, float sh
   vec3 direct = illuminate(lightSSBO.lights[i], baseColor, fragPosWorld.xyz, normal, ambient);
 
   int usedCascade;
-  if (useShadows) { direct *= calculateShadow(fragPosWorld, lightSSBO.lights[i], shadowDistance, usedCascade); }
+  if (useShadows) { direct *= calculateShadow(fragPosWorld, lightSSBO.lights[i], normal, shadowDistance, usedCascade); }
   return(ambient + direct);
 }
 

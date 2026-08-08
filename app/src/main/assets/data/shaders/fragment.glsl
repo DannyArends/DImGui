@@ -103,7 +103,7 @@ void main() {
     }
 
     if (ubo.lightingMode == 5u) { writeOutput(vec3(fract(fragTexCoord), 0.0), 1.0); return; }
-    if (ubo.lightingMode == 6u) { writeOutput(cascadeDebug(fragPosWorld, lightSSBO.lights[0u], shadowDistance, surfaceColor * ao), alpha); return; }
+    if (ubo.lightingMode == 6u) { writeOutput(surfaceColor * ao * cascadeTint(lightSSBO.lights[0u], shadowDistance), alpha); return; }
 
     // lightingMode 2u: Lights + Shadows (* SSAO)
     writeOutput(surfaceColor * ao, alpha);
