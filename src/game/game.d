@@ -47,6 +47,7 @@ import pathfinding : canMoveTo, dispatchPathResult, pathfindWorker, dispatchPend
 import persistence : loadWorld, saveWorld;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
+import shadowwindow : showShadowContent;
 import stockpilewindow : showStockpileContent;
 import text : addWorldText;
 import timing : timed;
@@ -140,6 +141,7 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_PAW, "Animals"), (uint font){ app.showAnimalContent(font); });
   app.gameWindows ~= GameWindow("FPS", (uint font){ app.showFPSContent(font); }, true, false, true);
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_LIGHTBULB, "Lights"), (uint font){ app.showLightsContent(font); });
+  app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_MOON, "Shadows"), (uint font){ app.showShadowContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_GEAR, "Settings"), (uint font){ app.showSettingsContent(font); });
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
 

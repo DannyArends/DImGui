@@ -34,6 +34,7 @@ struct Shadows {
   uint dimension = isAndroid ? 1024 : 4096; /// Shadowmap dimension
   uint budget = isAndroid ? 4 : 24;         /// Max lights casting shadows per frame (stage 1: first-K)
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
+  float[NUM_CASCADES] dbgRadius = 0.0f;     /// Per-cascade coverage radius used this frame
 
   bool[] shadowDescriptorsDirty;            /// Per-frame flag: shadow sampler descriptors need rewriting
   ShadowMap[MAX_SHADOW_MAPS] slots;         /// Shadow Slots
@@ -112,6 +113,7 @@ void updateShadowSlotMatrices(ref App app) {
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
       float radius = (count > 1) ? ((c == count - 1) ? app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
+      if(light.directional && c < NUM_CASCADES) app.shadows.dbgRadius[c] = radius;
       app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
       uint before = app.shadows.slots[s].extent.width;
       app.resizeShadowMap(s, resolution);
