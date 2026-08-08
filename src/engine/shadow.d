@@ -311,9 +311,9 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   uint slot = cast(uint)s;
   vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
 
-  float slotRadius = (s < NUM_CASCADES) ? CASCADE_RADIUS[s] : CASCADE_RADIUS[0];
-  if(slotRadius <= 0.0f) slotRadius = app.camera.visibleRadius;   // far cascade
-  float scale = CASCADE_RADIUS[0] / slotRadius;                   // 1.0 for cascade 0, smaller for wider cascades
+  uint ci = (s < NUM_CASCADES) ? cast(uint)s : 0;
+  float slotRadius = app.shadows.dbgRadius[ci] > 0.0f ? app.shadows.dbgRadius[ci] : app.shadows.dbgRadius[0];
+  float scale = (slotRadius > 0.0f) ? app.shadows.dbgRadius[0] / slotRadius : 1.0f;   // texel-size ratio; cascade 0 = 1.0
   vkCmdSetDepthBias(cmd, SHADOW_DEPTH_BIAS * scale, 0.0f, SHADOW_SLOPE_BIAS * scale);
 
   VkPipeline bound = null;
