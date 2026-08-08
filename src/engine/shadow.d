@@ -275,7 +275,8 @@ void createShadowMapGraphicsPipeline(ref App app) {
 void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
   LightUbo ubo = { scene: Matrix.init, nlights: cast(uint)app.lights.length };
   foreach(s; 0 .. MAX_SHADOW_MAPS) { ubo.slotVP[s] = app.shadows.slots[s].committed; }
-  ubo.cascadeSplit = [CASCADE_SPLIT[0], CASCADE_SPLIT[1], CASCADE_SPLIT[2], cast(float)NUM_CASCADES];
+  auto dist = cascadeSplitDistances(app.camera.nearfar[0], app.camera.nearfar[1], CASCADE_LAMBDA);
+  ubo.cascadeSplit = [dist[1], dist[2], dist[3], cast(float)NUM_CASCADES]; 
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
 
