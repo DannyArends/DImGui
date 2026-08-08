@@ -275,6 +275,7 @@ void rebuildAllFeatures(ref GameApp app) {
 void removeAllFeatures(ref GameApp app, int[3] coord) {
   if(coord in app.world.vegetation.modified) return;
   foreach(ref ft; features) {
+    if(coord !in app.world.vegetation[ft.name]) continue; // Skip: Feature-types not in this chunk
     foreach(f; app.world.vegetation[ft.name].getOr(coord, null)){ app.world.instanceCache.remove(f.rootTile); }
     app.world.vegetation[ft.name].remove(coord);
   }
