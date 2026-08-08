@@ -13,6 +13,7 @@ import matrix : translateScale;
 import noise : noiseHTT;
 import raws : RESOURCE_COUNT;
 import sfx : play;
+import timing : timed;
 import turtlegfx : interpret;
 import vector : vAdd, manhattan;
 
@@ -64,8 +65,9 @@ struct FeatureT {
 struct Feature {
   int[3] rootTile;
   uint height;
-  size_t[2][] instanceRuns;  // [start, count) ranges across this feature's meshes
   uint hash;
+  size_t[2][] instanceRuns;  // [start, count) ranges across this feature's meshes
+  DrawInstance[][string] cachedInstances;  /// Computed instances per mesh key; deterministic in (hash,height,rootTile) so cache once, reuse on rebuild
 
   /** True if DrawInstance index `idx` belongs to this feature (falls within one of its instance runs). */
   bool matchIndex(size_t idx) const {
@@ -146,7 +148,7 @@ Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const Resource
     uint hash = (wc[0] * ft.hashSeed1) ^ (wc[2] * ft.hashSeed2);
     if(hash % ft.hashMod != ft.hashRem) continue;
     uint height = ft.heightMin + (ft.heightMin == ft.heightMax ? 0 : cast(uint)((n[0]+n[1]) * (ft.heightMax-ft.heightMin) * 0.5f));
-    result ~= Feature([wc[0], wc[1]+1, wc[2]], height, [], hash);
+    result ~= Feature([wc[0], wc[1]+1, wc[2]], height, hash);
   }
   return result;
 }
@@ -225,8 +227,8 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
     f.instanceRuns = [];
-    auto byMesh = featureMeshInstances(app.world, f, ft);
-    foreach(key, insts; byMesh) { if(auto mp = key in meshes){ if(*mp !is null) emitInstances(f, *mp, insts); } }
+    if(f.cachedInstances is null) f.cachedInstances = featureMeshInstances(app.world, f, ft);   // compute L-system once; reuse thereafter
+    foreach(key, insts; f.cachedInstances) { if(auto mp = key in meshes){ if(*mp !is null) emitInstances(f, *mp, insts); } }
   }
   return features;
 }
@@ -242,8 +244,8 @@ void stampFeatureFootprints(ref GameApp app) {
   }
 }
 
-/** Clear and regenerate every feature's instances and tile penalties across all loaded chunks. */
-void rebuildAllFeatures(ref GameApp app) {
+/** Phase: clear penalties, reset every mesh buffer, and re-add every loaded chunk's instances. */
+void rebuildInstances(ref GameApp app) {
   app.world.data.tilePenalties.clear();
   foreach(ref mesh; app.world.vegetation.meshes.values) mesh.instances.reset();
   foreach(ref ft; features) {
@@ -252,8 +254,18 @@ void rebuildAllFeatures(ref GameApp app) {
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.vegetation.meshes);
     }
   }
-  app.stampFeatureFootprints();
+}
+
+/** Phase: flag every vegetation mesh buffer for GPU re-upload. */
+void syncAllMeshes(ref GameApp app) {
   foreach(ref mesh; app.world.vegetation.meshes){ mesh.syncInstances(); }
+}
+
+/** Clear and regenerate every feature's instances and tile penalties across all loaded chunks. */
+void rebuildAllFeatures(ref GameApp app) {
+  app.timed!rebuildInstances();
+  app.timed!stampFeatureFootprints();
+  app.timed!syncAllMeshes();
 }
 
 /** Forget cached features for chunk `coord`, but only if it carries no player modifications. */
