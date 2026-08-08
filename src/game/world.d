@@ -9,6 +9,7 @@ import animal : removeChunkAnimals;
 import dwarf : deleteDwarf, invalidatePaths;
 import events : removeGeometry;
 import feature : removeAllFeatures, rebuildAllFeatures, addFeatureInstances;
+import instancing : DrawInstance;
 import io : fixPath;
 import lattice : chunkCoord, localCoord, worldCoord;
 import lights : updateSun;
@@ -33,6 +34,7 @@ struct WorldData {
   LatticeMap!(ResourceType[uint]) diffs;
   LatticeMap!(ubyte[uint]) waterDiffs;
   LatticeMap!float tilePenalties;
+  LatticeMap!(DrawInstance[][string]) instanceCache;
 
   /** Build a world-data file path: data/world/<seed>_<suffix>.bin (empty suffix = the main world file). */
   private const(char)* worldFile(string suffix) const {

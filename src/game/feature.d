@@ -67,7 +67,6 @@ struct Feature {
   uint height;
   uint hash;
   size_t[2][] instanceRuns;  // [start, count) ranges across this feature's meshes
-  DrawInstance[][string] cachedInstances;  /// Computed instances per mesh key; deterministic in (hash,height,rootTile) so cache once, reuse on rebuild
 
   /** True if DrawInstance index `idx` belongs to this feature (falls within one of its instance runs). */
   bool matchIndex(size_t idx) const {
@@ -227,8 +226,12 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
     f.instanceRuns = [];
-    if(f.cachedInstances is null) f.cachedInstances = featureMeshInstances(app.world, f, ft);   // compute L-system once; reuse thereafter
-    foreach(key, insts; f.cachedInstances) { if(auto mp = key in meshes){ if(*mp !is null) emitInstances(f, *mp, insts); } }
+    auto cp = f.rootTile in app.world.instanceCache;
+    if(cp is null) {
+      app.world.instanceCache[f.rootTile] = featureMeshInstances(app.world, f, ft); 
+      cp = f.rootTile in app.world.instanceCache;
+    }
+    foreach(key, insts; *cp) { if(auto mp = key in meshes){ if(*mp !is null) emitInstances(f, *mp, insts); } }
   }
   return features;
 }
