@@ -19,7 +19,7 @@ void entityGlyph(T)(ref T e, string icon) {
 void followEntity(M)(ref GameApp app, uint uid, M manager) {
   app.camera.onFrame = (dt) {
     foreach(ref e; manager){ if(e.uid == uid) { app.camera.lookat = e.visualPos; app.camera.isDirty = true; return; } }
-    app.camera.onFrame = null;
+    app.camera.onFrame = null; app.camera.enterFPS();
   };
 }
 

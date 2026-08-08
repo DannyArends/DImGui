@@ -15,13 +15,13 @@ import vector : normalize, vAdd, vSub, vMul, xyz, magnitude;
 struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
-  float[3]        fpsEye        = [0.0f, 5.0f, 15.0f];    /// FPS eye position (authoritative in FPS mode)
+  float[3]        fpsEye        = [-15.0f, 5.0f, 0.0f];    /// FPS eye position (authoritative in FPS mode)
   float[3]        lookat        = [0.0f, 5.0f, 0.0f];     /// Position in the middle of the screen
   float[2]        nearfar       = [1.0f, 500.0f];         /// View distances, near [0], far [1]
   float[3]        up            = [0.0f, 1.0f, 0.0f];     /// Defined up vector
   float           fov           = 45.0f;                  /// Field of view
   float           speed         =  0.5f;                  /// Movement speed
-  float[3]        rotation      = [0.0f, 0.0f, 0.0f];     /// Horizontal [0], Vertical [1]
+  float[3]        rotation      = [90.0f, 0.0f, 0.0f];     /// Horizontal [0], Vertical [1]
   float           distance      = 15.0f;                  /// Distance of camera to lookat
   bool[2]         isdrag        = [false, false];         /// Mouse dragging
   SDL_FingerID[2] fingerIDs     = [-1, -1];               /// Android FingerIDs
@@ -43,7 +43,7 @@ struct Camera {
   @property @nogc uint height() const nothrow { return(currentExtent.height); };
   @property @nogc float aspectRatio() const nothrow { return(width / cast(float) height); }
   @nogc Matrix orientation() const nothrow {
-    float[4] qYaw = angleAxis!float(rotation[0] + 90.0f, [0.0f, 1.0f, 0.0f]);
+    float[4] qYaw = angleAxis!float(rotation[0], [0.0f, 1.0f, 0.0f]);
     float[4] qPitch = angleAxis!float(-rotation[1], [1.0f, 0.0f, 0.0f]);
     return qMul(qPitch, qYaw).normalize().rotate().transpose();
   }
@@ -52,7 +52,7 @@ struct Camera {
   @property @nogc bool fps() const nothrow { return(onFrame is null); }   /// mode derived: no follow hook => FPS
   @nogc float[3] position() const nothrow { return fps ? fpsEye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
   @nogc void syncLookat() nothrow { lookat = vAdd(fpsEye, orientation.multiply([0.0f, 0.0f, -distance])); }
-  @nogc void enterFPS() nothrow { fpsEye = position(); syncLookat(); }              // eye stays put; lookat moves ahead
+  @nogc void enterFPS() nothrow { fpsEye = vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); syncLookat(); }
   @nogc void enterOrbit(float[3] focus) nothrow { lookat = focus; }                 // pivot on focus; eye derives at 'distance'
   @property @nogc float visibleRadius() const nothrow {
     float fov2 = tan(radian(fov) * 0.5f), far = nearfar[1];
@@ -64,10 +64,12 @@ struct Camera {
 
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
-  if(!app.camera.fps) { app.camera.onFrame = null; app.camera.enterFPS(); }  // leaving follow -> seed FPS eye, no jump
-  auto old = app.camera.fpsEye;
+  if(!app.camera.fps) { app.camera.fpsEye = app.camera.position(); app.camera.onFrame = null; app.camera.syncLookat(); }
+  auto oldEye = app.camera.fpsEye; auto oldLook = app.camera.lookat;
   app.camera.move(direction);
-  if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.lookat = old;
+  if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) {
+    app.camera.fpsEye = oldEye; app.camera.lookat = oldLook; app.camera.syncLookat();
+  }
 }
 
 /** tryDrag (checks God-mode) */
