@@ -115,9 +115,9 @@ void updateShadowSlotMatrices(ref App app) {
       int s = first + cast(int)c;
       float[4] sphere = [0,0,0,0];
       if(light.directional) {
-float dn = (c == 0) ? app.camera.nearfar[0] : app.shadows.cascadeSplit[c - 1];
-float df = app.shadows.cascadeSplit[c];
-sphere = app.camera.frustumSliceSphere(dn, df);
+        float dn = (c == 0) ? app.camera.nearfar[0] : app.shadows.cascadeSplit[c - 1];
+        float df = app.shadows.cascadeSplit[c];
+        sphere = app.camera.frustumSliceSphere(dn, df);
         app.shadows.cascadeRadius[c] = sphere[3];
       }
       app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, sphere);
