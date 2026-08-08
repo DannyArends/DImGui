@@ -18,10 +18,10 @@ import validation : popLabel, pushLabel;
 
 enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
 enum float SHADOW_HYSTERESIS = 1.25f;
-enum float SHADOW_DEPTH_BIAS = 2.0f;     /// Constant depth bias
-enum float SHADOW_SLOPE_BIAS = 10.0f;    /// Slope-scaled bias (dominant term for grazing faces)
+enum float SHADOW_DEPTH_TEXELS = 1.0f;                    /// Constant bias in texel-depths
+enum float SHADOW_SLOPE_BIAS = 2.0f;                     /// Slope-scaled bias factor (hardware multiplies by real surface slope)
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
-enum float CASCADE_LAMBDA = 0.6f;                         /// Cascade split blend: 0 = uniform, 1 = logarithmic
+enum float CASCADE_LAMBDA = 0.9f;                         /// Cascade split blend: 0 = uniform, 1 = logarithmic
 enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x split, last radius is camera-derived
 enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
 
@@ -312,9 +312,12 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
 
   uint ci = (s < NUM_CASCADES) ? cast(uint)s : 0;
-  float slotRadius = app.shadows.dbgRadius[ci] > 0.0f ? app.shadows.dbgRadius[ci] : app.shadows.dbgRadius[0];
-  float scale = (slotRadius > 0.0f) ? app.shadows.dbgRadius[0] / slotRadius : 1.0f;   // texel-size ratio; cascade 0 = 1.0
-  vkCmdSetDepthBias(cmd, SHADOW_DEPTH_BIAS * scale, 0.0f, SHADOW_SLOPE_BIAS * scale);
+  float r = app.shadows.dbgRadius[ci] > 0.0f ? app.shadows.dbgRadius[ci] : app.shadows.dbgRadius[0];
+  float texelWorld = (r > 0.0f) ? 2.0f * r / cast(float)ext.width : 1.0f;             // world units per shadow texel
+  float span = app.shadows.bounds[0] + 4.0f * r;                                      // ortho depth range this cascade covers (world units)
+  float elev = fmax(0.1f, -app.lights[0].direction[1]);                              // sun elevation factor; low sun -> more depth-slop per texel
+  float ndcBias = (texelWorld / elev) / span;                                         // NDC-depth shift needed to clear one texel
+  vkCmdSetDepthBias(cmd, SHADOW_DEPTH_TEXELS * ndcBias * cast(float)(1 << 23), 0.0f, SHADOW_SLOPE_BIAS);
 
   VkPipeline bound = null;
   foreach(obj; app.objects) {
