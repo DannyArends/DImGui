@@ -84,7 +84,9 @@ size_t removeLight(ref App app, size_t index) {
   app.lights.scoreBuf.length = app.lights.length;
   app.buffers["LightMatrices"].invalidate();
   size_t last = (moved != size_t.max) ? moved : index;
-  foreach(ref slot; app.shadows.slots) { if(slot.owner == cast(int)index || slot.owner == cast(int)last){ slot.owner = -1; } }
+  foreach(ref slot; app.shadows.slots) {
+    if(slot.owner == cast(int)index) { slot.owner = -1; }else if(slot.owner == cast(int)last) { slot.owner = cast(int)index; }
+  }
   return(moved);
 }
 
