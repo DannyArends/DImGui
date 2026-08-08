@@ -164,9 +164,7 @@ void animalTick(ref GameApp app, Animals herd) {
   foreach(ref a; herd.animals) app.tickEntity(a);
 }
 
-/** Create the Animals container and register it for rendering + ticking. */
-Animals ensureAnimals(ref GameApp app, uint type) {
-  if(auto h = type in app.world.animals) return *h;
+Animals buildHerd(ref GameApp app, uint type) {
   auto herd = new Animals(type);
   OpenAsset oa = herd; app.mergeBones(oa);          // merge skeleton into app.bones, set boneBase/boneCount
   Geometry  g  = herd; app.registerMaterials(g); app.mapTextures(g);
@@ -174,12 +172,12 @@ Animals ensureAnimals(ref GameApp app, uint type) {
   herd.onTick  = (){ animalTick(app, herd); };
   app.world.animals[type] = herd;
   app.objects ~= herd;
-  return herd;
+  return(herd);
 }
 
 /** Place an animal in the world and append its instance row. */
 void addAnimal(ref GameApp app, ref Animal a) {
-  auto herd = app.ensureAnimals(a.type);
+  auto herd = app.world.animals.getOrElse(a.type, app.buildHerd(a.type));
   auto wp = app.world.tileToWorld(a.tile);
   a.visualPos = [wp[0], wp[1], wp[2]];
   a.moveFrom = a.moveTo = a.visualPos; a.moveT = 1.0f;

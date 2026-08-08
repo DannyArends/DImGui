@@ -19,10 +19,7 @@ struct GraphicsPipeline {
   @property VkPipeline pipeline(Specialization s = Specialization.init) { return variants[s]; }
 
   /** Lazy: return the variant, building + caching on first request */
-  VkPipeline get(ref App app, Specialization s = Specialization.init) {
-    if(auto p = s in variants) return *p;
-    return app.buildVariant(topology, layout, s);
-  }
+  VkPipeline get(ref App app, Specialization s = Specialization.init) { return variants.getOrElse(s, app.buildVariant(topology, layout, s)); }
 
   /** Store an externally-created pipeline (e.g. compute, which builds outside create) */
   void set(VkPipeline p, Specialization s = Specialization.init) { variants[s] = p; }
