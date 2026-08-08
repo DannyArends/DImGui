@@ -175,13 +175,13 @@ Geometry makePrimitive(string name) {
 
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
 void updateGame(ref GameApp app, double dt) {
-  app.injectResourceMeshes();
+  app.timed!injectResourceMeshes();
   if(app.textures.loaded) {
-    app.updateMaterials(); app.textures.loaded = false; 
+    app.timed!updateMaterials(); app.textures.loaded = false;
   }
   app.world.settleBlocks(dt);
-  app.settleDwarves(dt);
-  app.updateWorld(app.camera.lookat);
+  app.timed!settleDwarves(dt);
+  app.timed!updateWorld(app.camera.position);
   app.shadows.bounds = [app.world.height, app.world.radius];
   size_t pending = app.textures.pending.length + app.world.chunks.pending.length;
   if(pending > app.loadTotal) app.loadTotal = pending;                       // grow the denominator as async work queues

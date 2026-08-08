@@ -16,6 +16,7 @@ import jobs : jobQueue;
 import persistence : loadWorld;
 import text : addWorldText, ensureWorldText;
 import tile : tileBelow, getTile, isStandable, isPassable;
+import timing : timed;
 import vector : sqDist, vAdd, vMul, x, y, z;
 
 uint nextEntityUID = 1;    /// Global unique id for path-routable entities (dwarves, animals)
@@ -127,7 +128,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
     foreach(coord; app.world.vegetation.pending[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;
       if(coord !in app.world.vegetation[ft.name]) {
-        app.world.vegetation[ft.name][coord] = app.addFeatureInstances(app.world.vegetation.pending[ft.name][coord], ft, app.world.vegetation.meshes);
+        app.world.vegetation[ft.name][coord] = app.timed!addFeatureInstances(app.world.vegetation.pending[ft.name][coord], ft, app.world.vegetation.meshes);
       }
       app.world.vegetation.pending[ft.name].remove(coord);
     }
@@ -139,16 +140,16 @@ void updateWorld(ref GameApp app, float[3] lookat) {
     if (abs(coord[0] - pc[0]) > effectiveRD || abs(coord[2] - pc[2]) > effectiveRD) {
       if (app.world.chunks[coord] !is null) { app.world.deallocateChunk(coord); }
       app.world.chunks.loaded.remove(coord);
-      app.removeAllFeatures(coord);
-      app.removeChunkAnimals(coord);
+      app.timed!removeAllFeatures(coord);
+      app.timed!removeChunkAnimals(coord);
       evicted = true;
     }
   }
-  if(evicted) app.rebuildAllFeatures();
+  if(evicted) app.timed!rebuildAllFeatures();
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
-    if (app.world.chunks[coord].dirty && coord !in app.world.chunks.pending) { app.dispatchWorker(coord); }
+    if (app.world.chunks[coord].dirty && coord !in app.world.chunks.pending) { app.timed!dispatchWorker(coord); }
   }
 }
 
