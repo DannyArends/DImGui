@@ -112,19 +112,19 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
 /** World-space bounding sphere of the view-frustum slice [dn,df]; centre on the view axis, radius covers all 8 corners. */
 @nogc float[4] frustumSliceSphere(ref Camera cam, float dn, float df) nothrow {
   Matrix invVP = cam.proj.multiply(cam.view).inverse();
-  float[3] centre = [0,0,0]; float[3][8] corner; uint k;
-  foreach(z; [dn, df]) foreach(y; [-1.0f, 1.0f]) foreach(x; [-1.0f, 1.0f]) {
-    // Place the corner at world distance z along the view by unprojecting near&far then lerping:
+  float[3][8] corner; float[3] centre = [0, 0, 0];
+  foreach(i; 0 .. 8) {
+    float x = (i & 1) ? 1.0f : -1.0f, y = (i & 2) ? 1.0f : -1.0f, z = (i & 4) ? df : dn;
     float[4] wn = invVP.multiply([x, y, 0.0f, 1.0f]);   // near plane point (NDC z=0)
     float[4] wf = invVP.multiply([x, y, 1.0f, 1.0f]);   // far plane point  (NDC z=1)
     float[3] pn = [wn[0]/wn[3], wn[1]/wn[3], wn[2]/wn[3]];
     float[3] pf = [wf[0]/wf[3], wf[1]/wf[3], wf[2]/wf[3]];
-    float tn = (z - cam.nearfar[0]) / (cam.nearfar[1] - cam.nearfar[0]);   // fraction along the ray for distance z
-    corner[k] = pn.vAdd(pf.vSub(pn).vMul(tn));
-    centre = centre.vAdd(corner[k]); k++;
+    float tn = (z - cam.nearfar[0]) / (cam.nearfar[1] - cam.nearfar[0]);   // fraction along the ray for world distance z
+    corner[i] = pn.vAdd(pf.vSub(pn).vMul(tn));
+    centre = centre.vAdd(corner[i]);
   }
   centre = centre.vMul(1.0f / 8.0f);
-  float r = 0.0f; foreach(i; 0 .. 8) { float dsq = corner[i].vSub(centre).magnitude(); if(dsq > r) r = dsq; }
+  float r = 0.0f; foreach(i; 0 .. 8) { float d = corner[i].vSub(centre).magnitude(); if(d > r) r = d; }
   return [centre[0], centre[1], centre[2], r];
 }
 
