@@ -15,7 +15,7 @@ import vector : normalize, vAdd, vSub, vMul, xyz, magnitude;
 struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
-
+  float[3]        fpsEye        = [0.0f, 5.0f, 15.0f];    /// FPS eye position (authoritative in FPS mode)
   float[3]        lookat        = [0.0f, 5.0f, 0.0f];     /// Position in the middle of the screen
   float[2]        nearfar       = [1.0f, 500.0f];         /// View distances, near [0], far [1]
   float[3]        up            = [0.0f, 1.0f, 0.0f];     /// Defined up vector
@@ -49,6 +49,7 @@ struct Camera {
   }
   @property @nogc Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
   @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
+  @property @nogc bool fps() const nothrow { return(onFrame is null); }   /// mode derived: no follow hook => FPS
   @nogc float[3] position() const nothrow { return vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
   @property @nogc float visibleRadius() const nothrow {
     float fov2 = tan(radian(fov) * 0.5f), far = nearfar[1];
