@@ -24,25 +24,26 @@ enum uint NUM_CASCADES = 3;                               /// Number of shadow m
 enum float CASCADE_LAMBDA = 0.75f;                         /// Cascade split blend: 0 = uniform, 1 = logarithmic
 
 struct Shadows {
-  VkSampler sampler;                        /// Comparison sampler for depth lookups
-  Shader[] shaders;                         /// Shadow depth-only shader(s)
-  CommandBuffer!2 cmd;                      /// Two-pass command buffer: static (0), dynamic (1)
-  GraphicsPipeline pipeline;                /// Shadow depth-only pipeline
+  VkSampler sampler;                          /// Comparison sampler for depth lookups
+  Shader[] shaders;                           /// Shadow depth-only shader(s)
+  CommandBuffer!2 cmd;                        /// Two-pass command buffer: static (0), dynamic (1)
+  GraphicsPipeline pipeline;                  /// Shadow depth-only pipeline
 
-  VkFormat format = VK_FORMAT_D32_SFLOAT;   /// Shadowmap format
-  uint dimension = isAndroid ? 1024 : 4096; /// Shadowmap dimension
-  uint budget = isAndroid ? 4 : 24;         /// Max lights casting shadows per frame (stage 1: first-K)
-  float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
+  VkFormat format = VK_FORMAT_D32_SFLOAT;     /// Shadowmap format
+  uint dimension = isAndroid ? 1024 : 4096;   /// Shadowmap dimension
+  uint budget = isAndroid ? 4 : 24;           /// Max lights casting shadows per frame (stage 1: first-K)
+  float[2] bounds = [0.0f, 0.0f];             /// [height, radius] for shadow projection
   float[NUM_CASCADES] cascadeRadius = 0.0f;   /// Per-cascade coverage radius used this frame
+  float[NUM_CASCADES] cascadeSplit = 0.0f;    /// far distance of each cascade; near edge = previous cascade's far (or camera near for c==0)
 
-  bool[] shadowDescriptorsDirty;            /// Per-frame flag: shadow sampler descriptors need rewriting
-  ShadowMap[MAX_SHADOW_MAPS] slots;         /// Shadow Slots
+  bool[] shadowDescriptorsDirty;              /// Per-frame flag: shadow sampler descriptors need rewriting
+  ShadowMap[MAX_SHADOW_MAPS] slots;           /// Shadow Slots
 
-  uint staticCursor = 0;                    /// round-robin cursor over pending static rebuilds
-  uint staticRebuilds = 0;                  /// slots that re-rendered layer 0 this frame
-  uint activeShadowMaps = 0;                /// slots rendered this frame
-  uint staticShadowInstances = 0;           /// Static shadow instances count
-  uint dynamicShadowInstances = 0;          /// Dynamic shadow instances count
+  uint staticCursor = 0;                      /// round-robin cursor over pending static rebuilds
+  uint staticRebuilds = 0;                    /// slots that re-rendered layer 0 this frame
+  uint activeShadowMaps = 0;                  /// slots rendered this frame
+  uint staticShadowInstances = 0;             /// Static shadow instances count
+  uint dynamicShadowInstances = 0;            /// Dynamic shadow instances count
 
   @property @nogc auto images() nothrow { return slots[].map!(m => m.image); }
 }
@@ -103,6 +104,7 @@ void assignShadowSlots(ref App app) {
 
 /** Compute each active slot's light-space matrix and resize its map; a resize forces a static rebuild. */
 void updateShadowSlotMatrices(ref App app) {
+  app.shadows.cascadeSplit = cascadeSplitDistances(app.camera.nearfar[0], app.camera.nearfar[1], CASCADE_LAMBDA);
   foreach(ref light; app.lights) {
     light.computeRadius();
     int first = cast(int)light.cull[1];
@@ -113,8 +115,9 @@ void updateShadowSlotMatrices(ref App app) {
       int s = first + cast(int)c;
       float[4] sphere = [0,0,0,0];
       if(light.directional) {
-        auto d = cascadeSplitDistances(app.camera.nearfar[0], app.camera.nearfar[1], CASCADE_LAMBDA);
-        sphere = app.camera.frustumSliceSphere(d[c], d[c + 1]);
+float dn = (c == 0) ? app.camera.nearfar[0] : app.shadows.cascadeSplit[c - 1];
+float df = app.shadows.cascadeSplit[c];
+sphere = app.camera.frustumSliceSphere(dn, df);
         app.shadows.cascadeRadius[c] = sphere[3];
       }
       app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, sphere);
@@ -273,8 +276,7 @@ void createShadowMapGraphicsPipeline(ref App app) {
 void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
   LightUbo ubo = { scene: Matrix.init, nlights: cast(uint)app.lights.length };
   foreach(s; 0 .. MAX_SHADOW_MAPS) { ubo.slotVP[s] = app.shadows.slots[s].committed; }
-  auto dist = cascadeSplitDistances(app.camera.nearfar[0], app.camera.nearfar[1], CASCADE_LAMBDA);
-  ubo.cascadeSplit = [dist[1], dist[2], dist[3], cast(float)NUM_CASCADES]; 
+  ubo.cascadeSplit = [app.shadows.cascadeSplit[0], app.shadows.cascadeSplit[1], app.shadows.cascadeSplit[2], cast(float)NUM_CASCADES];
   memcpy(app.ubos[d.base][syncIndex].data, &ubo, d.bytes);
 }
 
