@@ -29,7 +29,7 @@ struct Lattice {
 alias LatticeMap(T) = T[int[3]];
 
 /** Attribute-safe AA lookup with default (unlike object.get, this is @nogc/pure/nothrow). */
-@nogc pure V getOr(V, K)(const V[K] map, K key, V fallback) nothrow {
+@nogc pure const(V) getOr(V, K)(const V[K] map, K key, V fallback) nothrow {
   if(auto p = key in map) return(*p);
   return(fallback);
 }
