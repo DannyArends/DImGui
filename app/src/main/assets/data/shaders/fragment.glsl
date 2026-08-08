@@ -103,7 +103,13 @@ void main() {
     }
 
     if (ubo.lightingMode == 5u) { writeOutput(vec3(fract(fragTexCoord), 0.0), 1.0); return; }
-    if (ubo.lightingMode == 6u) { writeOutput(surfaceColor * ao * cascadeTint(lightSSBO.lights[0u], shadowDistance), alpha); return; }
+    if (ubo.lightingMode == 6u) {
+      int usedCascade;
+      float sh = calculateShadow(fragPosWorld, lightSSBO.lights[0u], shadowDistance, usedCascade);
+      vec3 col = (usedCascade == 0) ? vec3(1.0,0.3,0.3) : (usedCascade == 1) ? vec3(1.0,1.0,0.3) : vec3(0.3,1.0,0.3);
+      writeOutput(surfaceColor * ao * ((sh < 0.5) ? col : vec3(1.0)), alpha);
+      return;
+    }
 
     // lightingMode: 3 Lights + Shadows (* SSAO)
     writeOutput(surfaceColor * ao, alpha);
