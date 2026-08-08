@@ -273,11 +273,13 @@ void rebuildAllFeatures(ref GameApp app) {
 
 /** Forget cached features for chunk `coord`, but only if it carries no player modifications. */
 void removeAllFeatures(ref GameApp app, int[3] coord) {
-  if(coord !in app.world.vegetation.modified) {
-    foreach(ref ft; features) { 
-      if(auto p = coord in app.world.vegetation[ft.name]) { if((*p).length > 0){ app.world.vegetation[ft.name].remove(coord); } }
+  if(coord in app.world.vegetation.modified) return;
+  foreach(ref ft; features) { if(auto p = coord in app.world.vegetation[ft.name]) {
+    if((*p).length > 0){
+      foreach(ref f; *p) app.world.instanceCache.remove(f.rootTile);
+      app.world.vegetation[ft.name].remove(coord);
     }
-  }
+  } }
 }
 
 /** True if a feature with the given interaction is rooted at this tile */
@@ -305,6 +307,7 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
         foreach(n; 0..count){ app.spawnBlock(tile, rt); }
       } else { for(uint h = 0; h < f.height; h++){ app.spawnBlock([tile[0], tile[1]+cast(int)h, tile[2]], rt); } }
     }
+    app.world.instanceCache.remove(f.rootTile);   // drop cached instances for the harvested feature
     app.world.vegetation[ft.name][coord] = app.world.vegetation[ft.name][coord][0..i] ~ app.world.vegetation[ft.name][coord][i+1..$];
     app.dropPending(ft, coord, tile);
     app.world.vegetation.modified[coord] = true;
