@@ -15,7 +15,7 @@ import vector : normalize, vAdd, vSub, vMul, xyz, magnitude;
 struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
-  float[3]        fpsEye        = [-15.0f, 5.0f, 0.0f];    /// FPS eye position (authoritative in FPS mode)
+  float[3]        fpsEye        = [-15.0f, 5.0f, 0.0f];   /// FPS eye position (authoritative in FPS mode)
   float[3]        lookat        = [0.0f, 5.0f, 0.0f];     /// Position in the middle of the screen
   float[2]        nearfar       = [1.0f, 500.0f];         /// View distances, near [0], far [1]
   float[3]        up            = [0.0f, 1.0f, 0.0f];     /// Defined up vector
