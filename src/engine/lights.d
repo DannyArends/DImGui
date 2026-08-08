@@ -115,9 +115,7 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   Matrix invVP = cam.proj.multiply(cam.view).inverse();
   float[3] centre = [0,0,0]; float[3][8] corner; uint k;
   foreach(z; [dn, df]) foreach(y; [-1.0f, 1.0f]) foreach(x; [-1.0f, 1.0f]) {
-    // NDC corner at this slice depth; unproject to world. Depth as NDC z = (df/(df-near))*(1 - near/z)... use clip-space directly:
-    float[4] ndc = [x, y, 0.0f, 1.0f];
-    // place the corner at world distance z along the view by unprojecting near&far then lerping:
+    // Place the corner at world distance z along the view by unprojecting near&far then lerping:
     float[4] wn = invVP.multiply([x, y, 0.0f, 1.0f]);   // near plane point (NDC z=0)
     float[4] wf = invVP.multiply([x, y, 1.0f, 1.0f]);   // far plane point  (NDC z=1)
     float[3] pn = [wn[0]/wn[3], wn[1]/wn[3], wn[2]/wn[3]];
