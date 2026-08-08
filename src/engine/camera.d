@@ -53,7 +53,6 @@ struct Camera {
   @nogc float[3] position() const nothrow { return fps ? fpsEye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
   @nogc void syncLookat() nothrow { lookat = vAdd(fpsEye, orientation.multiply([0.0f, 0.0f, -distance])); }
   @nogc void enterFPS() nothrow { fpsEye = vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); syncLookat(); }
-  @nogc void enterOrbit(float[3] focus) nothrow { lookat = focus; }                 // pivot on focus; eye derives at 'distance'
   @property @nogc float visibleRadius() const nothrow {
     float fov2 = tan(radian(fov) * 0.5f), far = nearfar[1];
     float[2] s = [far - distance, far * fov2 * sqrt(1.0f + aspectRatio * aspectRatio)];

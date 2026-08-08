@@ -44,7 +44,7 @@ void showLightsContent(ref App app, uint font = 0) {
         } else if(light.directional) {
           foreach(c; 0 .. NUM_CASCADES) {
             infoRow(iconTextStr(format("Cascade %d", c), cast(string)ICON_FA_MOON), "%dx%d  r=%.0f",
-                    app.shadows.slots[first + c].extent.width, app.shadows.slots[first + c].extent.height, app.shadows.dbgRadius[c]);
+                    app.shadows.slots[first + c].extent.width, app.shadows.slots[first + c].extent.height, app.shadows.cascadeRadius[c]);
           }
         } else {
           infoRow(iconTextStr("Shadow", cast(string)ICON_FA_MOON), "CASTING  %dx%d",

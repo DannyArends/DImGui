@@ -33,7 +33,7 @@ struct Shadows {
   uint dimension = isAndroid ? 1024 : 4096; /// Shadowmap dimension
   uint budget = isAndroid ? 4 : 24;         /// Max lights casting shadows per frame (stage 1: first-K)
   float[2] bounds = [0.0f, 0.0f];           /// [height, radius] for shadow projection
-  float[NUM_CASCADES] dbgRadius = 0.0f;     /// Per-cascade coverage radius used this frame
+  float[NUM_CASCADES] cascadeRadius = 0.0f;   /// Per-cascade coverage radius used this frame
 
   bool[] shadowDescriptorsDirty;            /// Per-frame flag: shadow sampler descriptors need rewriting
   ShadowMap[MAX_SHADOW_MAPS] slots;         /// Shadow Slots
@@ -115,7 +115,7 @@ void updateShadowSlotMatrices(ref App app) {
       if(light.directional) {
         auto d = cascadeSplitDistances(app.camera.nearfar[0], app.camera.nearfar[1], CASCADE_LAMBDA);
         sphere = app.camera.frustumSliceSphere(d[c], d[c + 1]);
-        app.shadows.dbgRadius[c] = sphere[3];
+        app.shadows.cascadeRadius[c] = sphere[3];
       }
       app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, sphere);
 
@@ -310,7 +310,7 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   vkCmdPushConstants(cmd, app.shadows.pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uint.sizeof, &slot);
 
   uint ci = (s < NUM_CASCADES) ? cast(uint)s : 0;
-  float r = app.shadows.dbgRadius[ci] > 0.0f ? app.shadows.dbgRadius[ci] : app.shadows.dbgRadius[0];
+  float r = app.shadows.cascadeRadius[ci] > 0.0f ? app.shadows.cascadeRadius[ci] : app.shadows.cascadeRadius[0];
   float texelWorld = (r > 0.0f) ? 2.0f * r / cast(float)ext.width : 1.0f;             // world units per shadow texel
   float span = app.shadows.bounds[0] + 4.0f * r;                                      // ortho depth range this cascade covers (world units)
   float elev = fmax(0.1f, -app.lights[0].direction[1]);                              // sun elevation factor; low sun -> more depth-slop per texel
