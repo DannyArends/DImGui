@@ -9,7 +9,7 @@ import descriptorupdate : updateDescriptorData;
 import frustum : aabbInFrustum, extractFrustum;
 import framebuffer : cleanup;
 import geometry : draw;
-import lights : computeLightSpace, computeRadius;
+import lights : cascadeSplitDistances, computeLightSpace, computeRadius, frustumSliceSphere;
 import images : cleanup, copyImageLayer;
 import sampler : createShadowSampler;
 import shaders : createStageInfo, loadShaders;
@@ -21,6 +21,7 @@ enum float SHADOW_HYSTERESIS = 1.25f;
 enum float SHADOW_DEPTH_BIAS = 2.0f;     /// Constant depth bias
 enum float SHADOW_SLOPE_BIAS = 10.0f;    /// Slope-scaled bias (dominant term for grazing faces)
 enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
+enum float CASCADE_LAMBDA = 0.6f;                         /// Cascade split blend: 0 = uniform, 1 = logarithmic
 enum float[3] CASCADE_RADIUS = [ 64.0f, 256.0f, 0.0f];    /// Near cascades 2x split, last radius is camera-derived
 enum float[3] CASCADE_SPLIT  = [ 32.0f, 128.0f, 1e9f];    /// Cascade selection thresholds (shadowDistances, radial from lookat)
 
@@ -112,9 +113,14 @@ void updateShadowSlotMatrices(ref App app) {
     uint resolution = app.shadows.shadowResolution(light);
     foreach(c; 0 .. count) {
       int s = first + cast(int)c;
-      float radius = (count > 1) ? ((c == count - 1) ? app.camera.visibleRadius : CASCADE_RADIUS[c]) : 0.0f;
-      if(light.directional && c < NUM_CASCADES) app.shadows.dbgRadius[c] = radius;
-      app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, radius);
+      float[4] sphere = [0,0,0,0];
+      if(light.directional) {
+        auto d = cascadeSplitDistances(app.camera.nearfar[0], app.camera.nearfar[1], CASCADE_LAMBDA);
+        sphere = app.camera.frustumSliceSphere(d[c], d[c + 1]);
+        app.shadows.dbgRadius[c] = sphere[3];
+      }
+      app.shadows.slots[s].desired = app.camera.computeLightSpace(light, app.shadows.bounds, resolution, sphere);
+
       uint before = app.shadows.slots[s].extent.width;
       app.resizeShadowMap(s, resolution);
       if(app.shadows.slots[s].extent.width != before) app.shadows.slots[s].dirty = true;  // reallocated: rebuild now
