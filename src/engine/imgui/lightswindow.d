@@ -7,7 +7,7 @@ import engine;
 
 import imgui : iconText, iconTextStr;
 import lights : Light, updateSun, sunElevation, sunAzimuth;
-import shadow : NUM_CASCADES, CASCADE_RADIUS;
+import shadow : NUM_CASCADES;
 import widgets : colValue, setting, text, sliderFloat3, infoRow, labelCol;
 
 /** Show the GUI window which allows us to manipulate lighting */
@@ -43,9 +43,8 @@ void showLightsContent(ref App app, uint font = 0) {
           infoRow(iconTextStr("Shadow", cast(string)ICON_FA_MOON), "%s", "evicted");
         } else if(light.directional) {
           foreach(c; 0 .. NUM_CASCADES) {
-            float r = (c + 1 == NUM_CASCADES) ? app.camera.visibleRadius : CASCADE_RADIUS[c];
             infoRow(iconTextStr(format("Cascade %d", c), cast(string)ICON_FA_MOON), "%dx%d  r=%.0f",
-                    app.shadows.slots[first + c].extent.width, app.shadows.slots[first + c].extent.height, r);
+                    app.shadows.slots[first + c].extent.width, app.shadows.slots[first + c].extent.height, app.shadows.dbgRadius[c]);
           }
         } else {
           infoRow(iconTextStr("Shadow", cast(string)ICON_FA_MOON), "CASTING  %dx%d",
