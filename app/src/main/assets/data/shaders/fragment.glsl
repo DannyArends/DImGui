@@ -105,13 +105,15 @@ void main() {
     if (ubo.lightingMode == 5u) { writeOutput(vec3(fract(fragTexCoord), 0.0), 1.0); return; }
     if (ubo.lightingMode == 6u) {
       int usedCascade;
-      float sh = calculateShadow(fragPosWorld, lightSSBO.lights[0u], shadowDistance, usedCascade);   // sample sun shadow (useShadows is false in mode 6)
-      vec3 col = (usedCascade == 0) ? vec3(1.0,0.3,0.3) : (usedCascade == 1) ? vec3(1.0,1.0,0.3) : vec3(0.3,1.0,0.3);
-      vec3 lit = surfaceColor * ao;                          // unshadowed lit scene (mode 6 skipped shadows in shadeLight)
-      writeOutput(mix(lit * col, lit, sh), alpha);           // shadowed -> cascade-tinted & darkened by sh; lit -> normal
+      float sh = calculateShadow(fragPosWorld, lightSSBO.lights[0u], shadowDistance, usedCascade);
+      writeOutput(vec3(sh), alpha);                           // ISOLATION TEST: shadow term only, no cascade color, no lighting
       return;
     }
-
+    if (ubo.lightingMode == 7u) {
+      vec3 uv = shadowUV(fragPosWorld, lightSSBO.lights[0u], shadowDistance);
+      writeOutput(vec3(fract(uv.xy * 8.0), 0.0), alpha);   // shadow-space UV as an 8x tiled grid; fixed face => fixed pattern if matrix stable
+      return;
+    }
     // lightingMode: 3 Lights + Shadows (* SSAO)
     writeOutput(surfaceColor * ao, alpha);
   }
