@@ -9,8 +9,105 @@ import inventory : InventorySlot;
 import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
 import resources : itemStack;
 import scheduler : atDestination;
+import ctfe : parseTokens, splitColon;
+import lsystem : Rule, LSystemBrushT, TurtleConfig, TurtleBrush, buildGrammar;
+import turtlegfx : interpret;
+import assimp : OpenAsset;
+import node : Node;
+import mesh : Mesh;
+import bone : synthesizeBone;
+import vertex : Vertex;
+import matrix : Matrix, multiply, inverse, transpose;
+import std.conv : to;
+import std.format : format;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
+
+
+/** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
+struct EntityT {
+  string name;                                   /// Species name, e.g. "Dwarf"
+  float moveSpeed = 2.0f;                        /// Tiles per second
+  float hungerDecay = 0.0f, thirstDecay = 0.0f;  /// Need growth per tick
+  string diet;                                   /// Substance/type eaten (empty = none)
+  float scale = 1.0f, scaleVariance = 0.0f;      /// Instance scale + per-spawn variance
+  float offsetY = 0.0f;                          /// Vertical render offset to seat on the tile
+  float facing = 0.0f;                           /// Yaw offset correcting the model's forward axis
+  string axiom = "B";                            /// L-system start symbol(s)
+  Rule[] rules;                                  /// L-system production rules (empty = axiom as-is)
+  LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
+  float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;
+}
+
+/** CTFE: parse [ENTITY] blocks into per-species EntityT. Entity brushes carry no substance (0). */
+EntityT[] parseEntities(string raw) pure {
+  EntityT[] entities; EntityT e; bool inEntity;
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    switch(p[0]) {
+      case "ENTITY":           if(inEntity){ entities ~= e; } e = EntityT.init; e.name = p[1]; inEntity = true; break;
+      case "MOVE_SPEED":       e.moveSpeed = to!float(p[1]); break;
+      case "HUNGER_DECAY":     e.hungerDecay = to!float(p[1]); break;
+      case "THIRST_DECAY":     e.thirstDecay = to!float(p[1]); break;
+      case "DIET":             e.diet = p[1]; break;
+      case "SCALE":            e.scale = to!float(p[1]); break;
+      case "SCALE_VARIANCE":   e.scaleVariance = to!float(p[1]); break;
+      case "OFFSET_Y":         e.offsetY = to!float(p[1]); break;
+      case "FACING":           e.facing = to!float(p[1]); break;
+      case "LSYSTEM_ANGLE":    e.lsystemYaw = e.lsystemPitch = e.lsystemRoll = to!float(p[1]); break;
+      case "LSYSTEM_YAW":      e.lsystemYaw   = to!float(p[1]); break;
+      case "LSYSTEM_PITCH":    e.lsystemPitch = to!float(p[1]); break;
+      case "LSYSTEM_ROLL":     e.lsystemRoll  = to!float(p[1]); break;
+      case "AXIOM":            e.axiom = p[1]; break;
+      case "BRUSH":            if(p.length >= 8){
+                                 e.brushes ~= LSystemBrushT(p[1][0], p[2], 0, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f, p.length > 9 ? to!bool(p[9]) : true, p.length > 10 ? to!float(p[10]) : 1.0f);
+                               } break;
+      case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+      default: break;
+    }
+  }
+  if(inEntity){ entities ~= e; }
+  return(entities);
+}
+
+immutable EntityT[] entityTable = parseEntities(import("data/raws/entity.txt"));
+
+/** Bake an entity's L-system body into an OpenAsset: one bone-tagged sub-mesh per drawn brush (independently movable). */
+void bakeEntity(OpenAsset dest, const EntityT et) {
+  TurtleConfig cfg;
+  cfg.yaw = et.lsystemYaw; cfg.pitch = et.lsystemPitch; cfg.roll = et.lsystemRoll;
+  foreach(ref br; et.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, [1.0f, 1.0f, 1.0f, 1.0f]);
+  auto chars = buildGrammar(0, 1, et.axiom, et.rules);
+  auto grouped = interpret(chars, cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+
+  dest.rootnode = Node(et.name, 0, Matrix());
+  uint meshNo = 0;
+  foreach(ref br; et.brushes) {
+    if(br.symbol !in grouped) continue;
+    auto prim = makePrimitive(br.mesh);
+    foreach(ref inst; grouped[br.symbol]) {
+      string nodeName = format("%s:%s:%u", et.name, br.symbol, meshNo);
+      int bone = dest.synthesizeBone(nodeName, inst.matrix);
+      auto normM = inst.matrix.inverse().transpose();
+      uint start = cast(uint)dest.vertices.length;
+      foreach(vi; 0 .. prim.vertices.length) {
+        Vertex v = prim.vertices[vi];
+        auto pp = inst.matrix.multiply([v.position[0], v.position[1], v.position[2], 1.0f]);
+        auto nn = normM.multiply([v.normal[0], v.normal[1], v.normal[2], 0.0f]);
+        v.position = [pp[0], pp[1], pp[2]];
+        v.normal   = [nn[0], nn[1], nn[2]];
+        v.bones[0] = cast(uint)bone; v.weights[0] = 1.0f;
+        dest.vertices ~= v;
+      }
+      foreach(ii; 0 .. prim.indices.length) dest.indices ~= start + prim.indices[ii];
+      dest.meshes[nodeName] = Mesh([start, cast(uint)dest.vertices.length], 0);
+      dest.rootnode.children ~= Node(nodeName, 1, inst.matrix, [], [nodeName]);
+      meshNo++;
+    }
+  }
+  dest.vertices.invalidate(); dest.indices.invalidate();
+}
 
 /** Serializable pawn state (POD): saved to disk via Persist.pod. N = inventory slot count. */
 struct EntityData(uint N) {
