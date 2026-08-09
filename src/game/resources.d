@@ -5,7 +5,7 @@
 
 import game;
 
-import block : resourceType;
+import block : resourceType, itemOf;
 import io : dir, fixPath;
 import raws : RESOURCE_COUNT;
 import surface : toRGBA;

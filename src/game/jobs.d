@@ -24,7 +24,6 @@ struct Job(T) {
   string name;
   int[3] targetTile = noTile;
   ResourceClass tileClass = ResourceClass.None;
-  ItemTemplate want = ItemTemplate.None;       /// when set, fetch an item by template instead of tileClass
   Job!T[] prereqs;
   bool personal = false;
   uint[] blockIDs;
@@ -32,6 +31,7 @@ struct Job(T) {
   JobState state = JobState.Pending;
   Reach reach = Reach.Adjacent;
   int basePriority = 0;
+  ItemTemplate want = ItemTemplate.None;       /// when set, fetch an item by template instead of tileClass
 
   bool function(ref GameApp app, ref Job!T j) isValid;
   void function(ref GameApp app, ref T d, ref Job!T j) onClaim;
@@ -309,9 +309,9 @@ Job!Dwarf craftJob(string name) {
       app.progressJob(d, rr.progressRate, () {
         ResourceType[ubyte] srcMat;                          // consumed input class -> its material, for item inheritance
         foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
-          auto found = ing.item
-            ? d.carrying.filter!(cid => app.world.drops.itemOf(cid).shape == cast(ItemTemplate)ing.item)
-            : d.carrying.filter!(cid => app.world.drops.rawHasClass(cid, cast(ResourceClass)ing.cls));
+          auto found = d.carrying.filter!(cid => ing.item
+            ? app.world.drops.itemOf(cid).shape == cast(ItemTemplate)ing.item
+            : app.world.drops.rawHasClass(cid, cast(ResourceClass)ing.cls));
           if(found.empty) continue;
           auto m = app.world.drops.resourceType(found.front);
           if(ing.item){ srcMat[cast(ubyte)substanceOf(m)] = m; } else srcMat[ing.cls] = m;
