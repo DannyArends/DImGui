@@ -6,6 +6,7 @@
 public import engine;
 
 public import rawstructs : EntityT, FeatureT, ItemTemplateT, ResourceT;
+public import rawstructs : Ingredient, Product, Reaction, WorkshopUse;
 
 public import animal : AnimalT, Animal, AnimalSpawn;
 public import block : Block, Drops;
@@ -21,7 +22,6 @@ public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostC
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
 public import fall : Fall;
-public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
