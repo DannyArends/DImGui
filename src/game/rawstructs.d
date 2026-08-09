@@ -1,13 +1,8 @@
-/** 
- * Authors: Danny Arends
- * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
- */
 /**
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  * All CTFE raw template structs. Engine-only (imports lsystem/color, never game/raws) so raws' CTFE cannot cycle.
  */
-module rawstructs;
 
 import lsystem : LSystemBrushT, Rule;
 
