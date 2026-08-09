@@ -48,9 +48,9 @@ HeightBand[] parseHeightBands(string raw) pure {
     Bands are tested in order; the last band is the unconditional fallback (its threshold is unused). */
 @nogc pure ResourceType heightToResource(float h, float t) nothrow {
   foreach(ref b; heightBands[0 .. $-1]){
-    if(h < b.threshold){ return(b.results[cast(uint)(t * b.results.length) % b.results.length]); }
+    if(h < b.threshold){ return(cast(ResourceType)b.results[cast(uint)(t * b.results.length) % b.results.length]); }
   }
-  return(heightBands[$-1].results[0]);
+  return(cast(ResourceType)heightBands[$-1].results[0]);
 }
 
 /** CTFE: emit 'enum <name> : ubyte { [sentinel,] one member per [tag:member] }'. */
