@@ -9,8 +9,7 @@ import inventory : InventorySlot;
 import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
 import resources : itemStack;
 import scheduler : atDestination;
-import lsystem : Rule;
-import feature : LSystemBrushT;
+import lsystem : Rule, LSystemBrushT;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 

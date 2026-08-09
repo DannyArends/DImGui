@@ -8,7 +8,7 @@ import game;
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, getOr;
-import lsystem : buildGrammar;
+import lsystem : buildGrammar, LSystemBrushT;
 import matrix : translateScale, position;
 import noise : noiseHTT;
 import resources : variantOf;
@@ -19,18 +19,6 @@ import turtlegfx : interpret;
 import vector : vAdd, manhattan;
 
 /** One drawing-symbol -> primitive brush for an L-system part (the data half of TurtleBrush). */
-struct LSystemBrushT {
-  char symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
-  string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
-  ubyte substance;                              /// cast(ubyte)Substance drawn (-> the substance@feature variant)
-  string texture;                               /// per-instance texture for the drawn geometry
-  float radius = 0.1f;                          /// local X/Z scale
-  float length = 1.0f;                          /// local Y scale / segment length
-  bool advance = true;                          /// move turtle forward after drawing
-  float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
-  bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
-  float dropScale = 1.0f;                       /// render size of the harvested drop (1.0 = one block); independent of radius
-}
 
 struct FeatureT {
   string name;
