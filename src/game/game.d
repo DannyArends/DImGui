@@ -5,7 +5,7 @@
 
 public import engine;
 
-public import rawstructs : EntityT, FeatureT;
+public import rawstructs : EntityT, FeatureT, ItemTemplateT, ResourceT;
 
 public import animal : AnimalT, Animal, AnimalSpawn;
 public import block : Block, Drops;
@@ -26,7 +26,7 @@ public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
 public import raws;
-public import resources : ResourceT, ItemTemplateT, Item, traversable, buildable, cost, maxStack, isFood, foodValue;
+public import resources : Item, traversable, buildable, cost, maxStack, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 

@@ -11,37 +11,6 @@ import raws : RESOURCE_COUNT;
 import surface : toRGBA;
 import textures : transferTextureAsync, idx;
 
-
-struct ResourceT {
-  string name = "None", meshName = "Blocks", tex3D = "", tex2D = "";
-  float scale = 1.0f;
-  float offsetY = 0.0f;                     /// vertical render offset (world units) for model-backed drops
-  Colors color = Colors.white;
-  ubyte substance = 0;                      /// cast(ubyte)Substance — the variant's match key (was the name-class)
-  ubyte source = 0;                         /// cast(ubyte)Source — which tile/feature produced this variant
-  float food = 0.0f;                        /// edibility (from the producing brush); 0 => inedible
-  float traverse = 0.0f;                    /// walk cost; 0 => impassable (liquids)
-  bool build = false;                       /// may be placed/built with
-  int maxStack = 1;                         /// stack size when carried as a raw item
-}
-
-/** An item template = a shape/type (Axe, Cup, Barrel, Bin). A concrete item is (template x material).
- *  accepts/holds are cast(ubyte)Substance to dodge a cross-module enum forward-ref. */
-struct ItemTemplateT {
-  string name = "None";
-  string mesh = "Cube";    /// shape geometry (tinted/textured by material at use time)
-  string tex3D = "";       /// world texture (model atlas); empty => use `tex`
-  string tex  = "";        /// template skin; empty => fall back to the material's texture
-  string texFilled = "";   /// skin when the container holds contents (amount > 0); empty => use `tex`
-  float scale = 1.0f;      /// render scale of the crafted item
-  float offsetY = 0.0f;    /// vertical render offset (model units) for model-backed items
-  ubyte[] accepts;         /// Substance the material may belong to; empty => any
-  ubyte[] holds;           /// Substance the contents may belong to; empty => not a container
-  uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
-  int maxStack = 1;        /// stack size of the crafted item
-  float food = 0.0f;       /// nutrition restored when eaten (0 => not edible)
-}
-
 /** A concrete item = (shape x material), optionally holding `amount` units of `contents`.
  *  shape == None => a raw material block (berry/flint/log/stone) keyed purely on `material`. */
 struct Item {
