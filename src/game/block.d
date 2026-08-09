@@ -209,10 +209,10 @@ void syncBlockInstances(ref World world) {
 }
 
 /** Mark blocks above a mined tile as falling */
-void unsettleBlocks(ref World world, ref Block[uint] drops, int[3] minedTile) {
+void unsettleBlocks(ref World world, ref Block[uint] drops, int[3] minedTile, float hop = 0.0f) {
   foreach(id, ref b; drops) {
     if(!inColumn(b.tile, minedTile)) continue;
-    b.fall.start(world, b.tile, landingTile(world, b.tile), -world.blockOffset);
+    b.fall.start(world, b.tile, landingTile(world, b.tile), -world.blockOffset, hop);
   }
 }
 

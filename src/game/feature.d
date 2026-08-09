@@ -233,9 +233,7 @@ void rebuildInstances(ref GameApp app) {
 }
 
 /** Phase: flag every vegetation mesh buffer for GPU re-upload. */
-void syncAllMeshes(ref GameApp app) {
-  foreach(ref mesh; app.world.vegetation.meshes){ mesh.syncInstances(); }
-}
+void syncAllMeshes(ref GameApp app) { foreach(ref mesh; app.world.vegetation.meshes){ mesh.syncInstances(); } }
 
 /** Clear and regenerate every feature's instances and tile penalties across all loaded chunks. */
 void rebuildAllFeatures(ref GameApp app) {
@@ -305,7 +303,7 @@ void interactFeaturesAt(ref GameApp app, int[3] tile) {
   bool any = false;
   foreach(const ft; features) any |= app.harvestFeatureType(ft, tile, coord);
   if(any) {
-    app.world.unsettleBlocks(app.world.drops, tile);
+    app.world.unsettleBlocks(app.world.drops, tile, 0.25f);
     app.rebuildAllFeatures();
   }
 }

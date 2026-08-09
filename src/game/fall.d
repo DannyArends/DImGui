@@ -23,11 +23,11 @@ struct Fall {
   @property @nogc void y(float val) nothrow { state[0] = val; }
   @property @nogc void v(float val) nothrow { state[1] = val; }
 
-  @nogc void start(T)(const T lattice, int[3] from, int[3] to, float yOff = 0.0f) nothrow {
+  @nogc void start(T)(const T lattice, int[3] from, int[3] to, float yOff = 0.0f, float hop = 0.0f) nothrow {
     if(isFalling) return;
     landedTile = to;
     landY = lattice.tileToWorld(to, yOff).y;
-    state = [lattice.tileToWorld(from, yOff).y, 0.001f];
+    state = [lattice.tileToWorld(from, yOff).y + hop, 0.001f];
   }
 
   @nogc bool step(float dt) nothrow {
