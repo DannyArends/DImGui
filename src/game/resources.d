@@ -71,7 +71,7 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 // A variant's substance is its "class"; converting the other way picks a representative variant of that substance.
 @nogc Substance toClass(ResourceType t) pure nothrow { return substanceOf(t); }
 @nogc ResourceType toType(Substance c) pure nothrow {
-  foreach(rt; EnumMembers!ResourceType) if(substanceOf(rt) == c) return rt;
+  foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && substanceOf(rt) == c) return rt;
   return ResourceType.None;
 }
 

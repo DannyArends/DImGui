@@ -1,6 +1,6 @@
 [OBJECT:TILE]
 
-[TILE:None][SUBSTANCE:Stone][MESH:Blocks::::1.0]
+[TILE:None][SUBSTANCE:None][MESH:Blocks::::1.0]
 
 [TILE:Lava][SUBSTANCE:Liquid][MESH:Blocks::Lava_01_base::1.0]
 [TILE:Water][SUBSTANCE:Liquid][MESH:Blocks::Water_01_base::1.0]
