@@ -18,7 +18,10 @@ struct ResourceT {
   float scale = 1.0f;
   float offsetY = 0.0f;                     /// vertical render offset (world units) for model-backed drops
   Colors color = Colors.white;
-  ClassVal[] classes;
+  ubyte substance = 0;                      /// cast(ubyte)Substance — the variant's match key (was the name-class)
+  float traverse = 0.0f;                    /// walk cost; 0 => impassable (liquids)
+  bool build = false;                       /// may be placed/built with
+  int maxStack = 1;                         /// stack size when carried as a raw item
 }
 
 /** An item template = a shape/type (Axe, Cup, Barrel, Bin). A concrete item is (template x material).
@@ -47,13 +50,11 @@ struct Item {
   uint amount = 0;                             /// units of `contents` held (0 => empty; a full cup = 1)
 }
 
-/** Primitives on ResourceT */
-@nogc bool hasClass(ResourceType t, ResourceClass c) pure nothrow {
-  foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return true; } } return false;
-}
-@nogc float classVal(ResourceType t, ResourceClass c) pure nothrow {
-  foreach(cv; resourceData(t).classes) { if(cv.cls == cast(ubyte)c) { return cv.value; } } return 0.0f;
-}
+/** The substance (match key) of a variant. */
+@nogc Substance substanceOf(ResourceType t) pure nothrow { return cast(Substance)resourceData(t).substance; }
+
+/** A variant "has class c" iff its substance IS c (one substance per variant). ResourceClass == Substance. */
+@nogc bool hasClass(ResourceType t, ResourceClass c) pure nothrow { return substanceOf(t) == c; }
 
 /** Carried block ids whose resource matches class cls */
 auto carriedOfClass(ref GameApp app, ref Dwarf d, ResourceClass cls) {
@@ -64,16 +65,18 @@ auto carriedOfTemplate(ref GameApp app, ref Dwarf d, ItemTemplate t) {
   return d.carrying.filter!(id => app.world.drops.itemOf(id).shape == t);
 }
 
-// INVARIANT: Name-based conversions: a ResourceType maps to the ResourceClass of the SAME name (and back). 
-// We rely on this in inventory tracking, building jobs, and order persistence
-ResourceClass toClass(ResourceType t) { return t.to!string.to!ResourceClass; }
-ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
+// A variant's substance is its "class"; converting the other way picks a representative variant of that substance.
+@nogc Substance toClass(ResourceType t) pure nothrow { return substanceOf(t); }
+@nogc ResourceType toType(Substance c) pure nothrow {
+  foreach(rt; EnumMembers!ResourceType) if(substanceOf(rt) == c) return rt;
+  return ResourceType.None;
+}
 
-// Convenience field accessors (UFCS shims over classes)
-@nogc bool traversable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Traversable); }
-@nogc bool buildable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Buildable); }
-@nogc float cost(const ResourceType r) pure nothrow { return r.classVal(ResourceClass.Traversable); }
-@nogc int maxStack(const ResourceType r) pure nothrow { return cast(int)r.classVal(ResourceClass.Item); }
+// Convenience field accessors (UFCS shims over the variant's own fields)
+@nogc bool traversable(const ResourceType r) pure nothrow { return resourceData(r).traverse > 0.0f; }
+@nogc bool buildable(const ResourceType r) pure nothrow { return resourceData(r).build; }
+@nogc float cost(const ResourceType r) pure nothrow { return resourceData(r).traverse; }
+@nogc int maxStack(const ResourceType r) pure nothrow { return resourceData(r).maxStack; }
 @nogc pure bool isFood(const Item it) nothrow { return it.isCraft && templateData(it.shape).food > 0.0f; }
 @nogc pure float foodValue(const Item it) nothrow { return it.isCraft ? templateData(it.shape).food : 0.0f; }
 

@@ -9,7 +9,7 @@ import block : resourceType, itemOf, rawHasClass, spawnBlock, findFreeClass, fin
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import lattice : tileAbove, tileNeighbours;
 import reactions : reactionFor;
-import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup, carriedOfClass, carriedOfTemplate;
+import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup, carriedOfClass, carriedOfTemplate, substanceOf;
 import scheduler : doPickup, failComplete, failReleaseRequeue, failRequeue, failReleaseComplete, pathTileFor, progressJob;
 import sfx : play;
 import stockpile : storeBlockAt;
@@ -314,7 +314,7 @@ Job!Dwarf craftJob(string name) {
             : d.carrying.filter!(cid => app.world.drops.rawHasClass(cid, cast(ResourceClass)ing.cls));
           if(found.empty) continue;
           auto m = app.world.drops.resourceType(found.front);
-          if(ing.item){ foreach(cv; resourceData(m).classes) srcMat[cv.cls] = m; } else srcMat[ing.cls] = m;
+          if(ing.item){ srcMat[cast(ubyte)substanceOf(m)] = m; } else srcMat[ing.cls] = m;
           app.consumeCarried(d, found.front);
         }
         foreach(prod; rr.outputs) { foreach(n; 0 .. prod.count) {

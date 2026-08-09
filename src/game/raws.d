@@ -9,14 +9,20 @@ import ctfe : parseTokens, splitColon;
 
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
-mixin(enumFromTag(import("data/raws/materials.txt"), "MATERIAL", "ResourceType"));
-mixin(generateResourceClassEnum(import("data/raws/materials.txt")));
-enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members
+// Substance = the abstract match key (Stone, Wood, ...). Replaces the old [CLASS:x] name-hack.
+mixin(enumFromTag(import("data/raws/substance.txt"), "SUBSTANCE", "Substance", "None"));
+alias ResourceClass = Substance;   /// transitional: a "class" IS a substance name (one per variant)
+
+// A ResourceType is a variant = substance @ source. Sources are tiles (terrain) and feature PRODUCES.
+// The variant table is built first; the ResourceType enum is generated from its member names (preserved).
+immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
+mixin(variantEnum(resourceTable));
+enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)
+
 mixin(enumFromTag(import("data/raws/items.txt"), "ITEM", "ItemTemplate", "None"));
 
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
 immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
-immutable ResourceT[] resourceTable = parseResources(import("data/raws/materials.txt"));
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
 immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
@@ -60,17 +66,10 @@ string enumFromTag(string raw, string tag, string name, string sentinel = "") pu
   return result ~ "}\n";
 }
 
-/** CTFE: collect every distinct [CLASS:x] tag into the ResourceClass enum (None = sentinel). */
-string generateResourceClassEnum(string raw) pure {
-  string[] seen;
-  void add(string s){ foreach(x; seen) if(x == s) return; seen ~= s; }
-  foreach(token; parseTokens(raw)) {
-    auto p = splitColon(token);
-    if(p.length >= 2 && p[0] == "CLASS") { add(p[1]); }
-    if(p.length >= 2 && p[0] == "MATERIAL" && p[1] != "None") { add(p[1]); }
-  }
-  string result = "enum ResourceClass : ubyte {\n  None,\n";
-  foreach(s; seen) result ~= "  " ~ s ~ ",\n";
+/** CTFE: 'enum ResourceType : ubyte { <one member per variant, in table order> }'. */
+string variantEnum(const ResourceT[] table) pure {
+  string result = "enum ResourceType : ubyte {\n";
+  foreach(v; table) result ~= "  " ~ v.name ~ ",\n";
   return result ~ "}\n";
 }
 
@@ -80,31 +79,38 @@ Colors toColor(string name) pure {
   return Colors.white;
 }
 
-/** CTFE: parse materials into the per-ResourceType data table (parallel to the enum's member order). */
-ResourceT[] parseResources(string raw) pure {
-  ResourceT[] table; ResourceT cur; bool inMat;
-  foreach(token; parseTokens(raw)) {
+/** CTFE: build the variant table (parallel to the ResourceType enum) from tiles + feature PRODUCES.
+ *  A tile IS a variant (its name is the enum member); a feature PRODUCES named variants of a substance. */
+ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
+  ResourceT[] table; ResourceT cur; bool inTile;
+  foreach(token; parseTokens(tilesRaw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     switch(p[0]) {
-      case "MATERIAL":
-        if(inMat) table ~= cur;
-        cur = ResourceT.init; cur.name = p[1]; inMat = true;
-        if(p[1] != "None") cur.classes ~= ClassVal(cast(ubyte)p[1].to!ResourceClass, 0.0f);
-        break;
-      case "MESH":     // MESH:mesh:color:tex3D:tex2D:scale
+      case "TILE":        if(inTile) table ~= cur; cur = ResourceT.init; cur.name = p[1]; inTile = true; break;
+      case "SUBSTANCE":   cur.substance = cast(ubyte)p[1].to!Substance; break;
+      case "MESH":        // MESH:mesh:color:tex3D:tex2D
         if(p.length > 1) cur.meshName = p[1];
         if(p.length > 2) cur.color    = toColor(p[2]);
         if(p.length > 3) cur.tex3D    = p[3];
         if(p.length > 4) cur.tex2D    = p[4];
-        if(p.length > 5) cur.scale    = to!float(p[5]);
-        if(p.length > 6) cur.offsetY  = to!float(p[6]);
         break;
-      case "CLASS": cur.classes ~= ClassVal(cast(ubyte)p[1].to!ResourceClass, p.length > 2 ? to!float(p[2]) : 0.0f); break;
+      case "TRAVERSABLE": cur.traverse = p.length > 1 ? to!float(p[1]) : 1.0f; break;
+      case "BUILDABLE":   cur.build = true; break;
+      case "STACK":       cur.maxStack = to!int(p[1]); break;
       default: break;
     }
   }
-  if(inMat) table ~= cur;
+  if(inTile) table ~= cur;
+  // Feature products: [PRODUCES:substance:variantName:tex] -> a variant of that substance, textured from the drop.
+  foreach(token; parseTokens(featuresRaw)) {
+    auto p = splitColon(token);
+    if(p.length >= 3 && p[0] == "PRODUCES") {
+      ResourceT v; v.name = p[2]; v.substance = cast(ubyte)p[1].to!Substance;
+      if(p.length > 3){ v.tex3D = p[3]; v.tex2D = p[3]; }
+      table ~= v;
+    }
+  }
   return table;
 }
 
