@@ -6,7 +6,6 @@
 import game;
 
 import jobs : buildingJob, interactFeatureJob, miningJob, jobQueue;
-import resources : toType;
 
 /** Player-issued order kinds that persist. Extend (e.g. Craft) as needed */
 enum OrderKind : ubyte { Mine, Build, InteractFeature }
@@ -32,7 +31,6 @@ bool orderOf(const Job!Dwarf j, out Order o) {
 Job!Dwarf jobOf(const Order o) {
   final switch(o.kind) {
     case OrderKind.Mine: return miningJob(o.tile);
-    // Building stores only tileClass; toType recovers the material: Each Buildable type needs its name to be a Substance (see resources.d)
     case OrderKind.Build: return buildingJob(o.tile, o.tileType);
     case OrderKind.InteractFeature: return interactFeatureJob(o.tile);
   }

@@ -11,7 +11,7 @@ public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf;
 public import entity : Entity, EntityData, EntityState;
-public import feature : FeatureT, FeaturePartT, LSystemBrushT, Feature;
+public import feature : FeatureT, LSystemBrushT, Feature;
 public import inventory : Inventory, InventorySlot;
 public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
@@ -23,7 +23,7 @@ public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
 public import raws : reactionTable, ResourceType, Substance, Source, ItemTemplate, templateData, resourceData, heightToResource, features, animalTable;
-public import resources : ClassVal, ResourceT, ItemTemplateT, Item, traversable, buildable, cost, maxStack, isFood, foodValue;
+public import resources : ResourceT, ItemTemplateT, Item, traversable, buildable, cost, maxStack, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 

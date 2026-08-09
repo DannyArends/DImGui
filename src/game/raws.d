@@ -142,6 +142,7 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
       v.substance = cast(ubyte)p[3].to!Substance;
       v.source    = cast(ubyte)feat.to!Source;
       v.meshName  = p[2];
+      v.scale     = to!float(p[5]);
       v.tex3D = p[4]; v.tex2D = p[4];
       if(p.length > 8) v.food = to!float(p[8]);
       table ~= v;
@@ -217,7 +218,7 @@ AnimalT[] parseAnimals(string raw) pure {
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure {
   FeatureT[] features;
-  FeatureT ft; FeaturePartT part;
+  FeatureT ft;
   bool inFeature;
   foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
@@ -225,7 +226,7 @@ FeatureT[] parseFeatures(string raw) pure {
     switch(p[0]) {
       case "FEATURE":          if(inFeature){features ~= ft;}
                                ft = FeatureT.init; ft.name = p[1];
-                               part = FeaturePartT.init; inFeature = true; break;
+                               inFeature = true; break;
       case "SPAWN_ON":         ft.spawnOn ~= p[1]; break;
       case "NOISE_THRESHOLD":  ft.noiseThreshold = to!float(p[1]); break;
       case "HASH_SEED1":       ft.hashSeed1 = to!uint(p[1]); break;
@@ -249,16 +250,6 @@ FeatureT[] parseFeatures(string raw) pure {
                                } break;
       case "RULE":             if(p.length >= 4){ ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
       // Current part
-      case "MESH":             part.mesh = p[1]; break;
-      case "RESOURCE":         part.resourceType = p[1]; break;
-      case "SCALE_X":          part.scaleX = to!float(p[1]); break;
-      case "SCALE_X_VARIANCE": part.scaleXVariance = to!float(p[1]); break;
-      case "SCALE_Y":          part.scaleY = (p[1] == "tileHeight" ? -1.0f : to!float(p[1])); break;
-      case "SCALE_Y_VARIANCE": part.scaleYVariance = to!float(p[1]); break;
-      case "TAPER":            part.taper = to!float(p[1]); break;
-      case "OFFSET_Y":         part.offsetY = (p[1] == "height" ? -1.0f : to!float(p[1])); break;
-      case "REPEAT":           part.repeat = true; break;
-      case "PART_END":         if(part.mesh != "") ft.parts ~= part; part = FeaturePartT.init; break;
       default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
     }
   }

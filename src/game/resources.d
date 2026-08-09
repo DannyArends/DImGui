@@ -11,7 +11,6 @@ import raws : RESOURCE_COUNT;
 import surface : toRGBA;
 import textures : transferTextureAsync, idx;
 
-struct ClassVal { ubyte cls; float value = 0.0f; }   // cls = cast(ubyte)Substance (legacy; unused since variants carry a single substance)
 
 struct ResourceT {
   string name = "None", meshName = "Blocks", tex3D = "", tex2D = "";
@@ -27,7 +26,7 @@ struct ResourceT {
 }
 
 /** An item template = a shape/type (Axe, Cup, Barrel, Bin). A concrete item is (template x material).
- *  accepts/holds are cast(ubyte)Substance to dodge the same cross-module enum forward-ref as ClassVal. */
+ *  accepts/holds are cast(ubyte)Substance to dodge a cross-module enum forward-ref. */
 struct ItemTemplateT {
   string name = "None";
   string mesh = "Cube";    /// shape geometry (tinted/textured by material at use time)
@@ -73,10 +72,6 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 
 // A variant's substance is its "class"; converting the other way picks a representative variant of that substance.
 @nogc Substance toClass(ResourceType t) pure nothrow { return substanceOf(t); }
-@nogc ResourceType toType(Substance c) pure nothrow {
-  foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && substanceOf(rt) == c) return rt;
-  return ResourceType.None;
-}
 
 // Convenience field accessors (UFCS shims over the variant's own fields)
 @nogc bool traversable(const ResourceType r) pure nothrow { return resourceData(r).traverse > 0.0f; }

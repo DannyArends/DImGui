@@ -18,16 +18,6 @@ import timing : timed;
 import turtlegfx : interpret;
 import vector : vAdd, manhattan;
 
-struct FeaturePartT {
-  string mesh;
-  float scaleX = 1.0f, scaleXVariance = 0.0f;
-  float scaleY = 1.0f, scaleYVariance = 0.0f;
-  float taper  = 0.0f;                          /// scaleX reduction per repeated segment
-  float offsetY = 0.0f;                         /// 0.0 = ground, 1.0 = top (height * tileHeight)
-  bool repeat  = false;                         /// repeat per height segment
-  string resourceType = "None";                 /// DrawInstance material
-}
-
 /** One drawing-symbol -> primitive brush for an L-system part (the data half of TurtleBrush). */
 struct LSystemBrushT {
   char symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
@@ -52,7 +42,6 @@ struct FeatureT {
   float progressRate = 0.25f;
   string interaction;
   string sound;
-  FeaturePartT[] parts;
   float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;  /// per-axis L-system turn angles
   LSystemBrushT[] brushes;                 /// single-level array, converts to immutable like parts/drops
   string axiom = "X";                      /// L-system start symbol(s)
@@ -80,7 +69,6 @@ private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
 private string delegate() nothrow captureKey(string k) { return () => k; }
 
 /** Resolve a raw resourceType string to its enum, treating "None" as ResourceType.None. */
-private ResourceType resType(string s) { return s == "None" ? ResourceType.None : s.to!ResourceType; }
 
 /** The FeatureT whose placed feature is rooted at `tile`, or null if none. */
 private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
@@ -106,7 +94,7 @@ private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] i
 
 /** Create and register one instanced primitive mesh per (feature, part/brush mesh); skips keys already built. */
 void initFeatureMeshes(ref GameApp app) {
-  foreach(ref ft; features) foreach(name; chain(ft.parts.map!(p => p.mesh), ft.brushes.map!(b => b.mesh))) {
+  foreach(ref ft; features) foreach(name; ft.brushes.map!(b => b.mesh)) {
     string key = ft.name ~ ":" ~ name;
     if(key in app.world.vegetation.meshes) continue;
     auto mesh = makePrimitive(name);
@@ -157,7 +145,7 @@ float getFeatureProgressRate(ref GameApp app, int[3] tile) {
 /** Mark a feature's tile-penalty footprint: a column for tall features (trunk part or L-system), else the root. */
 private void markFootprint(ref World world, ref Feature f, ref immutable FeatureT ft) {
   if(ft.tilePenalty <= 0.0f) return;
-  bool tall = ft.brushes.length > 0 || ft.parts.any!(p => p.repeat);
+  bool tall = ft.brushes.length > 0;
   foreach(uint h; 0 .. (tall ? f.height : 1)){
     world.data.tilePenalties[[f.rootTile[0], f.rootTile[1] + cast(int)h, f.rootTile[2]]] = ft.tilePenalty;
   }
@@ -189,20 +177,6 @@ int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) 
 DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref immutable FeatureT ft) {
   DrawInstance[][string] out_;
   auto wp = lat.tileToWorld(f.rootTile);
-  foreach(ref part; ft.parts) {
-    float sx = part.scaleX + (f.hash % 10) * part.scaleXVariance;
-    float sy = part.scaleY < 0 ? lat.tileHeight : part.scaleY + (f.hash % 5) * part.scaleYVariance;
-    float oy = part.offsetY < 0 ? f.height * lat.tileHeight : part.offsetY;
-    auto rt = resType(part.resourceType);
-    DrawInstance[] insts;
-    if(part.repeat) {
-      foreach(uint h; 0 .. f.height) {
-        float s = sx - h * part.taper; if(s < 0.05f) s = 0.05f;
-        insts ~= DrawInstance(translateScale(lat.tileToWorld(f.rootTile.vAdd([0, cast(int)h, 0])), [s, sy, s]), cast(int)rt);
-      }
-    } else { insts ~= DrawInstance(translateScale([wp[0], wp[1] + oy, wp[2]], [sx, sy, sx]), cast(int)rt); }
-    out_[meshKey(ft.name, part.mesh)] ~= insts;
-  }
   if(ft.brushes.length) {
     TurtleConfig cfg;
     cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
