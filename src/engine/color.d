@@ -45,3 +45,8 @@ mixin(generateColorMaps(import("data/raws/colors.txt")));
 /** Generate a random color */
 float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), alpha]); }
 
+/** CTFE: resolve a Colors member by name, defaults to white. */
+Colors toColor(string name) pure {
+  static foreach(m; __traits(allMembers, Colors)) if(name == m) return __traits(getMember, Colors, m);
+  return Colors.white;
+}

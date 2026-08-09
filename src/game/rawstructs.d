@@ -5,13 +5,24 @@
  */
 
 import color : Colors;
-import ctfe : enumFromTag;
+import ctfe : composedEnum, enumFromTag, EnumRule;
 import lsystem : LSystemBrushT, Rule;
 
 enum WorkshopUse : ubyte { None, Required, Preferred }
 
 mixin(enumFromTag(import("data/raws/items.txt"), "ITEM", "ItemTemplate", "None"));
 mixin(enumFromTag(import("data/raws/substance.txt"), "SUBSTANCE", "Substance", "None"));
+
+mixin(composedEnum("Source", "None",
+  [EnumRule("TILE"), EnumRule("FEATURE")],
+  import("data/raws/tiles.txt"), import("data/raws/features.txt")));
+
+// ResourceType = every tile, then <Feature><Substance> per brush (grouped by FEATURE, brush field 3)
+mixin(composedEnum("ResourceType", "",
+  [EnumRule("TILE"), EnumRule("BRUSH", "FEATURE", 3)],
+  import("data/raws/tiles.txt"), import("data/raws/features.txt")));
+
+enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)
 
 /** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
 struct EntityT {

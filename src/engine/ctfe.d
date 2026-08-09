@@ -47,3 +47,29 @@ string enumFromTag(string raw, string tag, string name, string sentinel = "") pu
   }
   return result ~ "}\n";
 }
+
+/** One member-emission rule for composedEnum.
+ *  Plain:   groupTag=="" -> every [tag:x] emits member x (field-th token).
+ *  Grouped: [groupTag:g] sets the prefix; every [tag:...] emits g ~ (field-th token). */
+struct EnumRule { string tag; string groupTag = ""; int field = 1; }
+
+/** Generic CTFE enum codegen: scan raws in order, emit `enum name : ubyte { sentinel, members... }`.
+ *  Members are deduped; the sentinel (e.g. "None") is skipped if a rule would re-emit it. Game-unaware. */
+string composedEnum(string name, string sentinel, EnumRule[] rules, string[] raws...) pure {
+  string[] members; bool[string] seen; string prefix;
+  foreach(raw; raws) foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length < 2) continue;
+    foreach(r; rules) {
+      if(r.groupTag.length && p[0] == r.groupTag) prefix = p[1];
+      else if(p[0] == r.tag && p.length > r.field) {
+        string m = (r.groupTag.length ? prefix : "") ~ p[r.field];
+        if(m != sentinel && m !in seen) { seen[m] = true; members ~= m; }
+      }
+    }
+  }
+  string s = "enum " ~ name ~ " : ubyte {\n";
+  if(sentinel.length) s ~= "  " ~ sentinel ~ ",\n";
+  foreach(m; members) s ~= "  " ~ m ~ ",\n";
+  return s ~ "}\n";
+}

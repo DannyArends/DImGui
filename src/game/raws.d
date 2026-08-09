@@ -5,18 +5,11 @@
 
 import game;
 
+import color : toColor;
 import ctfe : parseTokens, splitColon;
 
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
-// Substance = the abstract match key (Stone, Wood, ...). Replaces the old [CLASS:x] name-hack.
-
-mixin(sourceEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
-
-// A ResourceType is a variant = substance @ source. Sources are tiles (terrain) and feature brushes.
-// The variant table is built first; the ResourceType enum is generated from its member names (preserved).
-mixin(variantEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
-enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)
 
 // Tables (below all enum mixins: their CTFE pulls resources->game->raws, so every enum must exist first).
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
@@ -71,20 +64,6 @@ string variantEnum(string tilesRaw, string featuresRaw) pure {
     }
   }
   return result ~ "}\n";
-}
-
-/** CTFE: 'enum Source : ubyte { None, <tile names>, <feature names> }' — a variant's origin axis. */
-string sourceEnum(string tilesRaw, string featuresRaw) pure {
-  string result = "enum Source : ubyte {\n  None,\n";
-  foreach(token; parseTokens(tilesRaw)) { auto p = splitColon(token); if(p.length >= 2 && p[0] == "TILE" && p[1] != "None") result ~= "  " ~ p[1] ~ ",\n"; }
-  foreach(token; parseTokens(featuresRaw)) { auto p = splitColon(token); if(p.length >= 2 && p[0] == "FEATURE") result ~= "  " ~ p[1] ~ ",\n"; }
-  return result ~ "}\n";
-}
-
-/** CTFE: resolve a Colors member by name, defaults to white. */
-Colors toColor(string name) pure {
-  static foreach(m; __traits(allMembers, Colors)) if(name == m) return __traits(getMember, Colors, m);
-  return Colors.white;
 }
 
 /** CTFE: build the variant table (parallel to the ResourceType enum) from tiles + feature brushes.

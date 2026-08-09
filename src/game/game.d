@@ -5,7 +5,7 @@
 
 public import engine;
 
-public import rawstructs : AnimalT, EntityT, FeatureT, ItemTemplateT, ResourceT;
+public import rawstructs : AnimalT, EntityT, FeatureT, ItemTemplateT, ResourceT, ResourceType, Source, RESOURCE_COUNT;
 public import rawstructs : HeightBand, ItemTemplate, Ingredient, Product, Reaction, Substance, WorkshopUse;
 
 public import animal : Animal, AnimalSpawn;

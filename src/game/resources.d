@@ -7,7 +7,6 @@ import game;
 
 import block : resourceType, itemOf;
 import io : dir, fixPath;
-import raws : RESOURCE_COUNT;
 import surface : toRGBA;
 import textures : transferTextureAsync, idx;
 

@@ -12,7 +12,6 @@ import lsystem : buildGrammar, LSystemBrushT;
 import matrix : translateScale, position;
 import noise : noiseHTT;
 import resources : variantOf;
-import raws : RESOURCE_COUNT;
 import sfx : play;
 import timing : timed;
 import turtlegfx : interpret;
