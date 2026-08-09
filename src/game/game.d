@@ -24,7 +24,7 @@ public import reactions : Reaction, Product, Ingredient, WorkshopUse;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
-public import raws : reactionTable, ResourceType, Substance, Source, ItemTemplate, templateData, resourceData, heightToResource, features, animalTable;
+public import raws;
 public import resources : ResourceT, ItemTemplateT, Item, traversable, buildable, cost, maxStack, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;

@@ -5,13 +5,14 @@
 
 import game;
 
+import assimp : OpenAsset;
+import entitytype : EntityT;
+import geometry : addVertex;
+import lsystem : TurtleConfig, TurtleBrush, buildGrammar;
 import matrix : translateScale, multiply;
 import turtlegfx : interpret;
-import lsystem : TurtleConfig, TurtleBrush, buildGrammar;
 import vertex : Vertex;
-import assimp : OpenAsset;
-import raws : entityTable;
-import entitytype : EntityT;
+import vector : midpoint;
 
 /** Bake an entity's L-system body into an OpenAsset's buffers: merge each brush's primitive,
  *  transformed by its interpreted instance matrix. Rigid for now; per-dwarf transform/colour drive it. */
@@ -37,6 +38,10 @@ void bakeEntity(OpenAsset dest, const EntityT et) {
       foreach(ii; 0 .. prim.indices.length) dest.indices ~= base + prim.indices[ii];
     }
   }
+  Bounds b;
+  foreach(vi; 0 .. dest.vertices.length) b.update(dest.vertices[vi].position);
+  float midY = midpoint(b.min, b.max)[1];
+  foreach(vi; 0 .. dest.vertices.length) dest.vertices[vi].position[1] -= midY;
   dest.indices.invalidate();
 }
 

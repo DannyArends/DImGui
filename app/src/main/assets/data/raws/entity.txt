@@ -6,5 +6,5 @@
   [OFFSET_Y:0.0][FACING:0.0]
   [LSYSTEM_BEGIN]
   [AXIOM:B]
-  [BRUSH:B:Cylinder:None::0.5:1.0:false]
+  [BRUSH:B:Cylinder:None::1.25:0.8:false]
   [LSYSTEM_END]
