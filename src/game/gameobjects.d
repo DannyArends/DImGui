@@ -14,10 +14,12 @@ class Dwarves : OpenAsset {
   alias dwarves this;
   int selected = -1;
   size_t[] tickOrder;
+  float footY = 0.0f;                           /// lowest baked vertex Y (feet), used to seat on the ground
 
   this() {
     super();
     foreach(ref e; entityTable) if(e.name == "Dwarf") { bakeEntity(this, e); break; }
+    if(vertices.length){ footY = vertices[0].position[1]; foreach(vi; 1 .. vertices.length) if(vertices[vi].position[1] < footY) footY = vertices[vi].position[1]; }
     initInstanced(() => "Dwarves");
   }
 

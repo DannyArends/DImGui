@@ -106,7 +106,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     float sc = (app.world.chunkCoord(d.tile) in app.world.chunks) ? 1.0f : 0.0f;
     float[3] s = [sc, sc, sc];
     Matrix m = scale(Matrix.init, s);
-    app.world.dwarves.instances[i] = position(m, [d.visualPos[0], d.visualPos[1] - 0.5f, d.visualPos[2]]);
+    app.world.dwarves.instances[i] = position(m, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY, d.visualPos[2]]);
   }
   app.world.dwarves.syncInstances();
   app.buffers["LightMatrices"].invalidate();
