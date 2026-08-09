@@ -11,7 +11,7 @@ import raws : RESOURCE_COUNT;
 import surface : toRGBA;
 import textures : transferTextureAsync, idx;
 
-struct ClassVal { ubyte cls; float value = 0.0f; }   // cls = cast(ubyte)ResourceClass — avoids the cross-module enum forward-ref
+struct ClassVal { ubyte cls; float value = 0.0f; }   // cls = cast(ubyte)Substance (legacy; unused since variants carry a single substance)
 
 struct ResourceT {
   string name = "None", meshName = "Blocks", tex3D = "", tex2D = "";
@@ -25,7 +25,7 @@ struct ResourceT {
 }
 
 /** An item template = a shape/type (Axe, Cup, Barrel, Bin). A concrete item is (template x material).
- *  accepts/holds are cast(ubyte)ResourceClass to dodge the same cross-module enum forward-ref as ClassVal. */
+ *  accepts/holds are cast(ubyte)Substance to dodge the same cross-module enum forward-ref as ClassVal. */
 struct ItemTemplateT {
   string name = "None";
   string mesh = "Cube";    /// shape geometry (tinted/textured by material at use time)
@@ -34,8 +34,8 @@ struct ItemTemplateT {
   string texFilled = "";   /// skin when the container holds contents (amount > 0); empty => use `tex`
   float scale = 1.0f;      /// render scale of the crafted item
   float offsetY = 0.0f;    /// vertical render offset (model units) for model-backed items
-  ubyte[] accepts;         /// ResourceClass the material may belong to; empty => any
-  ubyte[] holds;           /// ResourceClass the contents may belong to; empty => not a container
+  ubyte[] accepts;         /// Substance the material may belong to; empty => any
+  ubyte[] holds;           /// Substance the contents may belong to; empty => not a container
   uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
   int maxStack = 1;        /// stack size of the crafted item
   float food = 0.0f;       /// nutrition restored when eaten (0 => not edible)
@@ -53,11 +53,11 @@ struct Item {
 /** The substance (match key) of a variant. */
 @nogc Substance substanceOf(ResourceType t) pure nothrow { return cast(Substance)resourceData(t).substance; }
 
-/** A variant "has class c" iff its substance IS c (one substance per variant). ResourceClass == Substance. */
-@nogc bool hasClass(ResourceType t, ResourceClass c) pure nothrow { return substanceOf(t) == c; }
+/** A variant "has class c" iff its substance IS c (one substance per variant). */
+@nogc bool hasClass(ResourceType t, Substance c) pure nothrow { return substanceOf(t) == c; }
 
 /** Carried block ids whose resource matches class cls */
-auto carriedOfClass(ref GameApp app, ref Dwarf d, ResourceClass cls) {
+auto carriedOfClass(ref GameApp app, ref Dwarf d, Substance cls) {
   return d.carrying.filter!(id => app.world.drops.resourceType(id).hasClass(cls));
 }
 

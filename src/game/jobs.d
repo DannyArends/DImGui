@@ -23,7 +23,7 @@ enum Need { Hunger, Thirst, Rest }                                    /// Curren
 struct Job(T) {
   string name;
   int[3] targetTile = noTile;
-  ResourceClass tileClass = ResourceClass.None;
+  Substance tileClass = Substance.None;
   Job!T[] prereqs;
   bool personal = false;
   uint[] blockIDs;
@@ -60,7 +60,7 @@ const(int[3])[] activeTiles(const World world, string jobName) { return world.li
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
   bool haveCarried = j.want != ItemTemplate.None ? !app.carriedOfTemplate(d, j.want).empty
-                   : (j.tileClass != ResourceClass.None && !app.carriedOfClass(d, j.tileClass).empty);
+                   : (j.tileClass != Substance.None && !app.carriedOfClass(d, j.tileClass).empty);
   if(j.blockIDs.length == 0 && haveCarried) { j.state = JobState.Satisfied; return; }
   uint id = j.blockIDs.length ? j.blockIDs[0]
           : (j.want != ItemTemplate.None ? app.world.findFreeItem(d.tile, j.want)
@@ -88,7 +88,7 @@ void claimSelf(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) { j.targetTile = d
 
 /** Mining Job */
 Job!Dwarf miningJob(int[3] targetTile) {
-  return Job!Dwarf("Mining", targetTile, ResourceClass.None, [], reach: Reach.AdjacentOrAbove,
+  return Job!Dwarf("Mining", targetTile, Substance.None, [], reach: Reach.AdjacentOrAbove,
     isValid: (ref GameApp app, ref Job!Dwarf j){ return(app.world.getTileAt(j.targetTile) != ResourceType.None); },
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.25f, () {
@@ -125,7 +125,7 @@ Job!Dwarf storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTi
 
 /** Interact with features Job (gathering / woodcutting) */
 Job!Dwarf interactFeatureJob(int[3] targetTile) {
-  return Job!Dwarf("InteractFeature", targetTile, ResourceClass.None, [],
+  return Job!Dwarf("InteractFeature", targetTile, Substance.None, [],
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, app.getFeatureProgressRate(d.currentJob.targetTile), () { app.interactFeaturesAt(d.currentJob.targetTile); });
     },
@@ -133,7 +133,7 @@ Job!Dwarf interactFeatureJob(int[3] targetTile) {
 }
 
 /** Pickup Job */
-Job!Dwarf pickupJob(int[3] targetTile, ResourceClass cls, ItemTemplate want = ItemTemplate.None) {
+Job!Dwarf pickupJob(int[3] targetTile, Substance cls, ItemTemplate want = ItemTemplate.None) {
   auto j = Job!Dwarf("Fetching", targetTile, cls, [], true, reach: Reach.AdjacentOrOnTile,
              onClaim: &claimBlock, onArrive: &doPickup, onFail: &failReleaseRequeue);
   j.want = want; return j;
@@ -141,7 +141,7 @@ Job!Dwarf pickupJob(int[3] targetTile, ResourceClass cls, ItemTemplate want = It
 
 /** Job: move the dwarf to a free neighbouring tile away from their current position */
 Job!Dwarf moveAwayJob(int[3] from) {
-  return Job!Dwarf("MoveAway", from, ResourceClass.None, [],
+  return Job!Dwarf("MoveAway", from, Substance.None, [],
              onClaim: &claimNeighbour, onArrive: &failComplete,onFail: &failComplete);
 }
 
@@ -152,7 +152,7 @@ void requestStepAside(ref Dwarf other) {
 
 /** Move to a free neighbouring tile and drops a carried block */
 Job!Dwarf dropBlockJob(int[3] fromTile, uint blockID) {
-  return Job!Dwarf("DropBlock", fromTile, ResourceClass.None, [], true, [blockID],
+  return Job!Dwarf("DropBlock", fromTile, Substance.None, [], true, [blockID],
     onClaim: &claimNeighbour,
     onArrive: (ref GameApp app, ref Dwarf d) {
       auto target = d.currentJob.blockIDs[0];
@@ -166,7 +166,7 @@ Job!Dwarf dropBlockJob(int[3] fromTile, uint blockID) {
 
 /** Clean the worksite (generates a pickup job prereq) */
 Job!Dwarf cleanWorksiteJob(int[3] targetTile) {
-  return Job!Dwarf("CleanWorksite", targetTile, ResourceClass.None, [],
+  return Job!Dwarf("CleanWorksite", targetTile, Substance.None, [],
     onClaim: (ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
       foreach(id, ref b; app.world.drops) { if(b.tile == j.targetTile) { j.blockIDs = [id]; j.tileClass = b.item.material.toClass; return; } }
       j.state = JobState.Satisfied;
@@ -236,7 +236,7 @@ Job!Dwarf buildingJob(int[3] targetTile, ResourceType tileType) {
 
 /** Eat Job — claim nearest free Berry on the floor, walk to it, consume it */
 Job!Dwarf eatJob() {
-  return Job!Dwarf("Eating", noTile, ResourceClass.None, [], true, reach: Reach.OnTile,
+  return Job!Dwarf("Eating", noTile, Substance.None, [], true, reach: Reach.OnTile,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
       auto carried = d.carrying.filter!(id => app.world.drops.itemOf(id).isFood);
       if(carried.empty) { j.state = JobState.Unavailable; return; }
@@ -257,7 +257,7 @@ Job!Dwarf eatJob() {
 }
 
 Job!Dwarf fillCupJob() {
-  return Job!Dwarf("FillCup", noTile, ResourceClass.None, [], true, reach: Reach.Adjacent,
+  return Job!Dwarf("FillCup", noTile, Substance.None, [], true, reach: Reach.Adjacent,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
       int[3] standAt;
       int[3] cell = app.world.findNearestWater(d.tile, standAt);
@@ -279,7 +279,7 @@ Job!Dwarf fillCupJob() {
 }
 
 Job!T drinkJob(T)() {
-  return Job!T("Drinking", noTile, ResourceClass.None, [], true, reach: Reach.OnTile,
+  return Job!T("Drinking", noTile, Substance.None, [], true, reach: Reach.OnTile,
     onClaim: &claimSelf,
     onArrive: (ref GameApp app, ref T d) {
       app.progressJob(d, 0.5f, () {
@@ -299,10 +299,10 @@ Job!Dwarf craftJob(string name) {
   auto r = reactionFor(name);
   Job!Dwarf[] prereqs;
   foreach(ing; r.inputs){ foreach(n; 0 .. ing.count) {
-    prereqs ~= (ing.item ? pickupJob(noTile, ResourceClass.None, cast(ItemTemplate)ing.item)
-                         : pickupJob(noTile, cast(ResourceClass)ing.cls));
+    prereqs ~= (ing.item ? pickupJob(noTile, Substance.None, cast(ItemTemplate)ing.item)
+                         : pickupJob(noTile, cast(Substance)ing.cls));
   } }
-  return Job!Dwarf(name, noTile, ResourceClass.None, prereqs, true, reach: Reach.OnTile,
+  return Job!Dwarf(name, noTile, Substance.None, prereqs, true, reach: Reach.OnTile,
     onClaim: &claimSelf,
     onArrive: (ref GameApp app, ref Dwarf d) {
       auto rr = reactionFor(d.currentJob.name);
@@ -311,7 +311,7 @@ Job!Dwarf craftJob(string name) {
         foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
           auto found = d.carrying.filter!(cid => ing.item
             ? app.world.drops.itemOf(cid).shape == cast(ItemTemplate)ing.item
-            : app.world.drops.rawHasClass(cid, cast(ResourceClass)ing.cls));
+            : app.world.drops.rawHasClass(cid, cast(Substance)ing.cls));
           if(found.empty) continue;
           auto m = app.world.drops.resourceType(found.front);
           if(ing.item){ srcMat[cast(ubyte)substanceOf(m)] = m; } else srcMat[ing.cls] = m;
@@ -332,7 +332,7 @@ Job!Dwarf craftJob(string name) {
     onFail: &failReleaseRequeue);
 }
 Job!T sleepJob(T)(int[3] atTile) {
-  return Job!T("Sleeping", atTile, ResourceClass.None, [], true, reach: Reach.OnTile,
+  return Job!T("Sleeping", atTile, Substance.None, [], true, reach: Reach.OnTile,
     basePriority: 100,
     onClaim: &claimSelf,
     onArrive: (ref GameApp app, ref T d) {

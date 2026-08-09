@@ -103,7 +103,7 @@ void animalFrame(ref GameApp app, Animals herd, float dt) {
 
 /** Graze: walk to a free food block or berry bush; eat / harvest on arrival. */
 Job!Animal grazeJob(int[3] target) {
-  return Job!Animal("Grazing", target, ResourceClass.None, [], true, reach: Reach.Adjacent,
+  return Job!Animal("Grazing", target, Substance.None, [], true, reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Animal a) {
       app.progressJob(a, 0.5f, () {
         uint food = findFreeFood(app.world, a.tile, false);        // loose food, not stockpiles
@@ -123,7 +123,7 @@ Job!Animal grazeJob(int[3] target) {
 
 /** Drink: walk to water's edge; reset thirst on arrival (no cup). */
 Job!Animal animalDrinkJob(int[3] waterCell) {
-  return Job!Animal("Drinking", waterCell, ResourceClass.None, [], true, reach: Reach.Adjacent,
+  return Job!Animal("Drinking", waterCell, Substance.None, [], true, reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Animal a) {
       app.progressJob(a, 0.5f, () {
         int[3] w = a.currentJob.targetTile;

@@ -11,7 +11,6 @@ import ctfe : parseTokens, splitColon;
  * import() is resolved at compile-time; dub does not track these as dependencies */
 // Substance = the abstract match key (Stone, Wood, ...). Replaces the old [CLASS:x] name-hack.
 mixin(enumFromTag(import("data/raws/substance.txt"), "SUBSTANCE", "Substance", "None"));
-alias ResourceClass = Substance;   /// transitional: a "class" IS a substance name (one per variant)
 
 // A ResourceType is a variant = substance @ source. Sources are tiles (terrain) and feature PRODUCES.
 // The variant table is built first; the ResourceType enum is generated from its member names (preserved).
@@ -143,8 +142,8 @@ ItemTemplateT[] parseItemTemplates(string raw) pure {
                        if(p.length > 2) cur.tex3D = p[2];
                        if(p.length > 3) cur.tex = p[3];
                        if(p.length > 4) cur.texFilled = p[4]; break;
-      case "ACCEPTS":  cur.accepts ~= cast(ubyte)p[1].to!ResourceClass; break;
-      case "HOLDS":    cur.holds   ~= cast(ubyte)p[1].to!ResourceClass; break;
+      case "ACCEPTS":  cur.accepts ~= cast(ubyte)p[1].to!Substance; break;
+      case "HOLDS":    cur.holds   ~= cast(ubyte)p[1].to!Substance; break;
       case "CAPACITY": cur.capacity = to!uint(p[1]); break;
       case "SCALE":    cur.scale = to!float(p[1]); break;
       case "OFFSET_Y": cur.offsetY = to!float(p[1]); break;
@@ -259,10 +258,10 @@ Reaction[] parseReactions(string raw) pure {
       case "SKILL": r.skill = p[1]; break;
       case "WORKSHOP": r.workshop = p[1].to!WorkshopUse; break;
       case "PROGRESS_RATE": r.progressRate = to!float(p[1]); break;
-      case "INPUT": if(p.length >= 3) r.inputs  ~= Ingredient(cast(ubyte)p[1].to!ResourceClass, 0, p[2].to!uint); break;
+      case "INPUT": if(p.length >= 3) r.inputs  ~= Ingredient(cast(ubyte)p[1].to!Substance, 0, p[2].to!uint); break;
       case "INPUT_ITEM": if(p.length >= 3) r.inputs ~= Ingredient(0, cast(ubyte)p[1].to!ItemTemplate, p[2].to!uint); break;
       case "OUTPUT": if(p.length >= 3) r.outputs ~= Product(0, cast(ubyte)p[1].to!ResourceType, 0, 1.0f, p[2].to!uint); break;
-      case "OUTPUT_ITEM": if(p.length >= 4) r.outputs ~= Product(cast(ubyte)p[1].to!ItemTemplate, 0, cast(ubyte)p[2].to!ResourceClass, 1.0f, p[3].to!uint); break;
+      case "OUTPUT_ITEM": if(p.length >= 4) r.outputs ~= Product(cast(ubyte)p[1].to!ItemTemplate, 0, cast(ubyte)p[2].to!Substance, 1.0f, p[3].to!uint); break;
       default: break;
     }
   }
