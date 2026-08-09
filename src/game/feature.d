@@ -18,25 +18,6 @@ import timing : timed;
 import turtlegfx : interpret;
 import vector : vAdd, manhattan;
 
-/** One drawing-symbol -> primitive brush for an L-system part (the data half of TurtleBrush). */
-
-struct FeatureT {
-  string name;
-  string[] spawnOn;
-  float noiseThreshold = 0.65f;
-  uint hashSeed1, hashSeed2;
-  uint hashMod, hashRem;
-  uint heightMin = 1, heightMax = 1;
-  float tilePenalty = 0.0f;
-  float progressRate = 0.25f;
-  string interaction;
-  string sound;
-  float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;  /// per-axis L-system turn angles
-  LSystemBrushT[] brushes;                 /// single-level array, converts to immutable like parts/drops
-  string axiom = "X";                      /// L-system start symbol(s)
-  Rule[] rules;                            /// L-system production rules
-}
-
 struct Feature {
   int[3] rootTile;
   uint height;

@@ -21,3 +21,21 @@ struct EntityT {
   float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;
   float lsystemGap = 0.2f;                       /// f translation step (no draw)
 }
+
+/** Data-driven terrain feature (tree/bush/cactus): spawn rules + an L-system body. */
+struct FeatureT {
+  string name;
+  string[] spawnOn;
+  float noiseThreshold = 0.65f;
+  uint hashSeed1, hashSeed2;
+  uint hashMod, hashRem;
+  uint heightMin = 1, heightMax = 1;
+  float tilePenalty = 0.0f;
+  float progressRate = 0.25f;
+  string interaction;
+  string sound;
+  float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;
+  LSystemBrushT[] brushes;
+  string axiom = "X";
+  Rule[] rules;
+}
