@@ -11,7 +11,7 @@ import lsystem : TurtleConfig, TurtleBrush, buildGrammar;
 import vertex : Vertex;
 import assimp : OpenAsset;
 import raws : entityTable;
-import entity : EntityT;
+import entitytype : EntityT;
 
 /** Bake an entity's L-system body into an OpenAsset's buffers: merge each brush's primitive,
  *  transformed by its interpreted instance matrix. Rigid for now; per-dwarf transform/colour drive it. */

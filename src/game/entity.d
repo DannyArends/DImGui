@@ -9,26 +9,10 @@ import inventory : InventorySlot;
 import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
 import resources : itemStack;
 import scheduler : atDestination;
-import lsystem : Rule, LSystemBrushT;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 
 /** Serializable pawn state (POD): saved to disk via Persist.pod. N = inventory slot count. */
-/** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
-struct EntityT {
-  string name;                                   /// Species name, e.g. "Dwarf"
-  float moveSpeed = 2.0f;                        /// Tiles per second
-  float hungerDecay = 0.0f, thirstDecay = 0.0f;  /// Need growth per tick
-  string diet;                                   /// Substance/type eaten (empty = none)
-  float scale = 1.0f, scaleVariance = 0.0f;      /// Instance scale + per-spawn variance
-  float offsetY = 0.0f;                          /// Vertical render offset to seat on the tile
-  float facing = 0.0f;                           /// Yaw offset correcting the model's forward axis
-  string axiom = "B";                            /// L-system start symbol(s)
-  Rule[] rules;                                  /// L-system production rules (empty = axiom as-is)
-  LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (material fields unused for entities)
-  float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;
-}
-
 struct EntityData(uint N) {
   uint uid = 0;                                 /// Unique ID
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// Tint
