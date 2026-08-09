@@ -142,7 +142,7 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
       v.substance = cast(ubyte)p[3].to!Substance;
       v.source    = cast(ubyte)feat.to!Source;
       v.meshName  = p[2];
-      v.scale     = to!float(p[5]);
+      v.scale     = p.length > 10 ? to!float(p[10]) : 1.0f;
       v.tex3D = p[4]; v.tex2D = p[4];
       if(p.length > 8) v.food = to!float(p[8]);
       table ~= v;
@@ -246,7 +246,7 @@ FeatureT[] parseFeatures(string raw) pure {
       case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
       case "AXIOM":            ft.axiom = p[1]; break;
       case "BRUSH":            if(p.length >= 8){
-                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], cast(ubyte)p[3].to!Substance, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f, p.length > 9 ? to!bool(p[9]) : true);
+                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], cast(ubyte)p[3].to!Substance, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f, p.length > 9 ? to!bool(p[9]) : true, p.length > 10 ? to!float(p[10]) : 1.0f);
                                } break;
       case "RULE":             if(p.length >= 4){ ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
       // Current part

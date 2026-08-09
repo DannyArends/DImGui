@@ -29,6 +29,7 @@ struct LSystemBrushT {
   bool advance = true;                          /// move turtle forward after drawing
   float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
   bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
+  float dropScale = 1.0f;                       /// render size of the harvested drop (1.0 = one block); independent of radius
 }
 
 struct FeatureT {
@@ -283,7 +284,9 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
     foreach(ref br; ft.brushes) {                                  // spawn one drop per drawn instance, at its tile
       if(br.symbol !in grouped) continue;
       auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
-      foreach(ref inst; grouped[br.symbol]) app.spawnBlock(app.world.worldToTile(position(inst.matrix)), Item(ItemTemplate.None, brt));
+      foreach(ref inst; grouped[br.symbol]){
+        app.spawnBlock([tile[0], app.world.worldToTile(position(inst.matrix))[1], tile[2]], Item(ItemTemplate.None, brt));
+      }
     }
     app.world.instanceCache.remove(f.rootTile);   // drop cached instances for the harvested feature
     app.world.vegetation[ft.name][coord] = app.world.vegetation[ft.name][coord][0..i] ~ app.world.vegetation[ft.name][coord][i+1..$];
