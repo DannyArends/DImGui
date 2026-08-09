@@ -21,11 +21,11 @@
   [STACK:1]
 
 [ITEM:OakLeaves]
-  [MESH:Blocks::Hedge_01_base:Hedge_01_base:1.0]
+  [MESH:Blocks::Hedge_01_base:Hedge_01_base]
   [STACK:1]
 
 [ITEM:OliveLeaves]
-  [MESH:Blocks::Foliage_01_base:Foliage_01_base:1.0]
+  [MESH:Blocks::Foliage_01_base:Foliage_01_base]
   [STACK:1]
 
 [ITEM:Sponge]

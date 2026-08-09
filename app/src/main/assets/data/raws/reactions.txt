@@ -11,7 +11,7 @@
   [VERB:Assemble][SKILL:Crafting]
   [WORKSHOP:None]
   [PROGRESS_RATE:0.10]
-  [INPUT:Flint:1]
+  [INPUT_ITEM:Flint:1]
   [INPUT:Wood:1]
   [OUTPUT_ITEM:Axe:Stone:1]
   [OUTPUT_ITEM:Leaf::1]
