@@ -3,24 +3,15 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import game;
+import phobos;
 
 import color : toColor;
 import ctfe : parseTokens, splitColon;
+import lsystem : LSystemBrushT, Rule;    // brush/rule types used when parsing
+import rawstructs;
 
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
-
-// Tables (below all enum mixins: their CTFE pulls resources->game->raws, so every enum must exist first).
-immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
-immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
-immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
-immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
-immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
-immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
-
-static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
-static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
 
 /** CTFE: parse terrain raws into height bands (resources resolved to enum at compile time). */
 HeightBand[] parseHeightBands(string raw) pure {
@@ -244,3 +235,13 @@ Reaction[] parseReactions(string raw) pure {
 }
 
 
+// Tables (below all enum mixins: their CTFE pulls resources->game->raws, so every enum must exist first).
+immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
+immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
+immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
+immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
+immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
+immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
+
+static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
+static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");

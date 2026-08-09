@@ -4,6 +4,8 @@
  * All CTFE raw template structs. Engine-only (imports lsystem/color, never game/raws) so raws' CTFE cannot cycle.
  */
 
+import phobos;
+
 import color : Colors;
 import ctfe : composedEnum, enumFromTag, EnumRule;
 import lsystem : LSystemBrushT, Rule;
