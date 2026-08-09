@@ -106,7 +106,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     float sc = (app.world.chunkCoord(d.tile) in app.world.chunks) ? 1.0f : 0.0f;
     float[3] s = [sc, sc, sc];
     Matrix m = scale(Matrix.init, s);
-    app.world.dwarves.instances[i] = position(m, d.visualPos);
+    app.world.dwarves.instances[i] = position(m, [d.visualPos[0], d.visualPos[1] - 0.5f, d.visualPos[2]]);
   }
   app.world.dwarves.syncInstances();
   app.buffers["LightMatrices"].invalidate();
@@ -252,7 +252,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.idleTicks[1] = uniform(3, 18);
   d.state = EntityState.Idle;
   auto wp = app.world.tileToWorld(d.tile);
-  d.visualPos = [wp[0], wp[1] + 0.5f, wp[2]];
+  d.visualPos = [wp[0], wp[1], wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
   app.world.dwarves.instances ~= DrawInstance(translate(d.visualPos), -1, d.color);
