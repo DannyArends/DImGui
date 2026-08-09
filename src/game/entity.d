@@ -31,22 +31,6 @@ float[4] namedColor(string name) pure {
   return [1.0f, 1.0f, 1.0f, 1.0f];
 }
 
-/** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
-struct EntityT {
-  string name;                                   /// Species name, e.g. "Dwarf"
-  float moveSpeed = 2.0f;                        /// Tiles per second
-  float hungerDecay = 0.0f, thirstDecay = 0.0f;  /// Need growth per tick
-  string diet;                                   /// Substance/type eaten (empty = none)
-  float scale = 1.0f, scaleVariance = 0.0f;      /// Instance scale + per-spawn variance
-  float offsetY = 0.0f;                          /// Vertical render offset to seat on the tile
-  float facing = 0.0f;                           /// Yaw offset correcting the model's forward axis
-  string axiom = "B";                            /// L-system start symbol(s)
-  Rule[] rules;                                  /// L-system production rules (empty = axiom as-is)
-  LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
-  float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;
-  float lsystemGap = 0.2f;                       /// f translation step (no draw)
-}
-
 /** CTFE: parse [ENTITY] blocks into per-species EntityT. Entity brushes carry no substance (0). */
 EntityT[] parseEntities(string raw) pure {
   EntityT[] entities; EntityT e; bool inEntity;
