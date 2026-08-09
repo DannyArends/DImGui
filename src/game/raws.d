@@ -35,28 +35,6 @@ HeightBand[] parseHeightBands(string raw) pure {
   return(cast(ResourceType)heightBands[$-1].results[0]);
 }
 
-/** CTFE: 'enum ResourceType : ubyte { <member per [TILE:x], then <Feature><Substance> per brush> }'.
- *  Parses the raw strings directly (like enumFromTag) so it is a compile-time mixin argument;
- *  parseVariants walks the same order so resourceTable stays parallel to the enum. */
-string variantEnum(string tilesRaw, string featuresRaw) pure {
-  string result = "enum ResourceType : ubyte {\n";
-  foreach(token; parseTokens(tilesRaw)) {
-    auto p = splitColon(token);
-    if(p.length >= 2 && p[0] == "TILE") result ~= "  " ~ p[1] ~ ",\n";
-  }
-  string feat; string[] seen;
-  foreach(token; parseTokens(featuresRaw)) {
-    auto p = splitColon(token);
-    if(p.length >= 2 && p[0] == "FEATURE") { feat = p[1]; continue; }
-    if(p.length >= 4 && p[0] == "BRUSH") {
-      string member = feat ~ p[3];                      // <Feature><Substance>
-      bool dup = false; foreach(x; seen) if(x == member) dup = true;
-      if(!dup){ seen ~= member; result ~= "  " ~ member ~ ",\n"; }
-    }
-  }
-  return result ~ "}\n";
-}
-
 /** CTFE: build the variant table (parallel to the ResourceType enum) from tiles + feature brushes.
  *  A tile IS a variant (its name is the enum member); a feature brush yields a substance@feature variant. */
 ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
@@ -172,14 +150,14 @@ AnimalT[] parseAnimals(string raw) pure {
 
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure {
-  FeatureT[] features;
+  FeatureT[] list;
   FeatureT ft;
   bool inFeature;
   foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     switch(p[0]) {
-      case "FEATURE":          if(inFeature){features ~= ft;}
+      case "FEATURE":          if(inFeature){list ~= ft;}
                                ft = FeatureT.init; ft.name = p[1];
                                inFeature = true; break;
       case "SPAWN_ON":         ft.spawnOn ~= p[1]; break;
@@ -208,8 +186,8 @@ FeatureT[] parseFeatures(string raw) pure {
       default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
     }
   }
-  if(inFeature){ features ~= ft; }
-  return(features);
+  if(inFeature){ list ~= ft; }
+  return(list);
 }
 
 Reaction[] parseReactions(string raw) pure {
