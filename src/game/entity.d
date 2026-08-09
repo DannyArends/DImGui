@@ -62,8 +62,9 @@ EntityT[] parseEntities(string raw) pure {
       case "LSYSTEM_PITCH":    e.lsystemPitch = to!float(p[1]); break;
       case "LSYSTEM_ROLL":     e.lsystemRoll  = to!float(p[1]); break;
       case "AXIOM":            e.axiom = p[1]; break;
-      case "BRUSH":            if(p.length >= 8){
-                                 e.brushes ~= LSystemBrushT(p[1][0], p[2], 0, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f, p.length > 9 ? to!bool(p[9]) : true, p.length > 10 ? to!float(p[10]) : 1.0f);
+      case "BRUSH":            if(p.length >= 6){
+                                 e.brushes ~= LSystemBrushT(p[1][0], p[2], 0, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]), 0.0f, true, 1.0f,
+                                   [p.length > 6 ? to!float(p[6]) : 0.0f, p.length > 7 ? to!float(p[7]) : 0.0f, p.length > 8 ? to!float(p[8]) : 0.0f]);
                                } break;
       case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
       default: break;
@@ -79,7 +80,7 @@ immutable EntityT[] entityTable = parseEntities(import("data/raws/entity.txt"));
 void bakeEntity(OpenAsset dest, const EntityT et) {
   TurtleConfig cfg;
   cfg.yaw = et.lsystemYaw; cfg.pitch = et.lsystemPitch; cfg.roll = et.lsystemRoll; cfg.gap = et.lsystemGap;
-  foreach(ref br; et.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, [1.0f, 1.0f, 1.0f, 1.0f]);
+  foreach(ref br; et.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, [1.0f, 1.0f, 1.0f, 1.0f], br.offset);
   auto chars = buildGrammar(0, 1, et.axiom, et.rules);
   auto grouped = interpret(chars, cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
 

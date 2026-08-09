@@ -28,7 +28,11 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
         if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(turnAngle(c, cfg), ax)); break; }
         if(auto br = c in cfg.brush) {
           const Matrix R = rotate(st.orient);
-          instances[c] ~= DrawInstance(segmentTransform(st.pos, R, br.radius, br.length), br.material, br.color);
+          const float[3] o = br.offset;
+          const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
+                               st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
+                               st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
+          instances[c] ~= DrawInstance(segmentTransform(dp, R, br.radius, br.length), br.material, br.color);
           if(br.advance){ st.pos = st.pos.vAdd([R[4]*br.length*0.95f, R[5]*br.length*0.95f, R[6]*br.length*0.95f]); }
         }
       break;

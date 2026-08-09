@@ -50,6 +50,7 @@ struct LSystemBrushT {
   float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
   bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
   float dropScale = 1.0f;                       /// render size of the harvested drop (1.0 = one block); independent of radius
+  float[3] offset = [0.0f, 0.0f, 0.0f];         /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
 }
 
 struct TurtleBrush {
@@ -58,6 +59,7 @@ struct TurtleBrush {
   float length = 1.0f;
   bool advance = true;
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];   /// per-instance tint (from the material's color)
+  float[3] offset = [0.0f, 0.0f, 0.0f];        /// local-frame draw offset [right, up/heading, forward]; does not move the turtle
 }
 
 /** Turtle config: per-axis turn angles (degrees) + the per-drawing-symbol brush table. */
