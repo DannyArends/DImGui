@@ -45,7 +45,7 @@ void main() {
   gl_Position = ubo.viewProj * worldPos;
   gl_PointSize = 2.0f;
 
-  fragColor = INSTANCED ? instanceColor : inColor;
+  fragColor = INSTANCED ? (inColor * instanceColor) : inColor;
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
   uint meshID = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
