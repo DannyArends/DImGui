@@ -2,8 +2,8 @@
 
 [TILE:None][SUBSTANCE:Stone][MESH:Blocks::::1.0]
 
-[TILE:Lava][SUBSTANCE:Lava][MESH:Blocks::Lava_01_base::1.0]
-[TILE:Water][SUBSTANCE:Water][MESH:Blocks::Water_01_base::1.0]
+[TILE:Lava][SUBSTANCE:Liquid][MESH:Blocks::Lava_01_base::1.0]
+[TILE:Water][SUBSTANCE:Liquid][MESH:Blocks::Water_01_base::1.0]
 
 [TILE:Beach01][SUBSTANCE:Sand][MESH:Blocks::Beach_01_base:Beach_01_base][TRAVERSABLE:2.0][BUILDABLE][STACK:1]
 [TILE:Sand01][SUBSTANCE:Sand][MESH:Blocks::Sand_01_base:Sand_01_base][TRAVERSABLE:2.0][BUILDABLE][STACK:1]
