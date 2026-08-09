@@ -218,7 +218,7 @@ FeatureT[] parseFeatures(string raw) pure {
       case "REPEAT":           part.repeat = true; break;
       case "PART_END":         if(part.mesh != "") ft.parts ~= part; part = FeaturePartT.init; break;
       // Current drop
-      case "MATERIAL":         drop.material = p[1]; break;
+      case "MATERIAL":         drop.item = Item(ItemTemplate.None, p[1].to!ResourceType); break;
       case "ITEM":             drop.item = Item(p[1].to!ItemTemplate); break;
       case "DROP_MIN":         drop.countMin = to!int(p[1]); break;
       case "DROP_MAX":         drop.countMax = to!int(p[1]); break;
@@ -243,7 +243,7 @@ Reaction[] parseReactions(string raw) pure {
       case "SKILL": r.skill = p[1]; break;
       case "WORKSHOP": r.workshop = p[1].to!WorkshopUse; break;
       case "PROGRESS_RATE": r.progressRate = to!float(p[1]); break;
-      case "INPUT": if(p.length >= 3) r.inputs  ~= Ingredient(cast(ubyte)p[1].to!ResourceClass, p[2].to!uint); break;
+      case "INPUT": if(p.length >= 3) r.inputs  ~= Ingredient(cast(ubyte)p[1].to!ResourceClass, 0, p[2].to!uint); break;
       case "INPUT_ITEM": if(p.length >= 3) r.inputs ~= Ingredient(0, cast(ubyte)p[1].to!ItemTemplate, p[2].to!uint); break;
       case "OUTPUT": if(p.length >= 3) r.outputs ~= Product(0, cast(ubyte)p[1].to!ResourceType, 0, 1.0f, p[2].to!uint); break;
       case "OUTPUT_ITEM": if(p.length >= 4) r.outputs ~= Product(cast(ubyte)p[1].to!ItemTemplate, 0, cast(ubyte)p[2].to!ResourceClass, 1.0f, p[3].to!uint); break;

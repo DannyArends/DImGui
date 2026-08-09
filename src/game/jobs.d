@@ -5,11 +5,11 @@
 
 import game;
 
-import block : resourceType, itemOf, rawHasClass, spawnBlock, findFreeClass, noBlock;
+import block : resourceType, itemOf, rawHasClass, spawnBlock, findFreeClass, findFreeItem, noBlock;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import lattice : tileAbove, tileNeighbours;
 import reactions : reactionFor;
-import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup, carriedOfClass;
+import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup, carriedOfClass, carriedOfTemplate;
 import scheduler : doPickup, failComplete, failReleaseRequeue, failRequeue, failReleaseComplete, pathTileFor, progressJob;
 import sfx : play;
 import stockpile : storeBlockAt;
@@ -24,6 +24,7 @@ struct Job(T) {
   string name;
   int[3] targetTile = noTile;
   ResourceClass tileClass = ResourceClass.None;
+  ItemTemplate want = ItemTemplate.None;       /// when set, fetch an item by template instead of tileClass
   Job!T[] prereqs;
   bool personal = false;
   uint[] blockIDs;
@@ -58,10 +59,12 @@ const(int[3])[] activeTiles(const World world, string jobName) { return world.li
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
-  if(j.blockIDs.length == 0 && j.tileClass != ResourceClass.None && !app.carriedOfClass(d, j.tileClass).empty) {
-    j.state = JobState.Satisfied; return; 
-  }
-  uint id = j.blockIDs.length ? j.blockIDs[0] : app.world.findFreeClass(d.tile, j.tileClass);
+  bool haveCarried = j.want != ItemTemplate.None ? !app.carriedOfTemplate(d, j.want).empty
+                   : (j.tileClass != ResourceClass.None && !app.carriedOfClass(d, j.tileClass).empty);
+  if(j.blockIDs.length == 0 && haveCarried) { j.state = JobState.Satisfied; return; }
+  uint id = j.blockIDs.length ? j.blockIDs[0]
+          : (j.want != ItemTemplate.None ? app.world.findFreeItem(d.tile, j.want)
+                                          : app.world.findFreeClass(d.tile, j.tileClass));
   auto b = (id == noBlock ? null : id in app.world.drops);
   if(b is null) { j.state = JobState.Unavailable; return; }
   bool stored = (b.tile == storedTile);
@@ -130,9 +133,10 @@ Job!Dwarf interactFeatureJob(int[3] targetTile) {
 }
 
 /** Pickup Job */
-Job!Dwarf pickupJob(int[3] targetTile, ResourceClass cls) {
-  return Job!Dwarf("Fetching", targetTile, cls, [], true, reach: Reach.AdjacentOrOnTile,
+Job!Dwarf pickupJob(int[3] targetTile, ResourceClass cls, ItemTemplate want = ItemTemplate.None) {
+  auto j = Job!Dwarf("Fetching", targetTile, cls, [], true, reach: Reach.AdjacentOrOnTile,
              onClaim: &claimBlock, onArrive: &doPickup, onFail: &failReleaseRequeue);
+  j.want = want; return j;
 }
 
 /** Job: move the dwarf to a free neighbouring tile away from their current position */
@@ -295,7 +299,8 @@ Job!Dwarf craftJob(string name) {
   auto r = reactionFor(name);
   Job!Dwarf[] prereqs;
   foreach(ing; r.inputs){ foreach(n; 0 .. ing.count) {
-    prereqs ~= pickupJob(noTile, cast(ResourceClass)ing.cls);
+    prereqs ~= (ing.item ? pickupJob(noTile, ResourceClass.None, cast(ItemTemplate)ing.item)
+                         : pickupJob(noTile, cast(ResourceClass)ing.cls));
   } }
   return Job!Dwarf(name, noTile, ResourceClass.None, prereqs, true, reach: Reach.OnTile,
     onClaim: &claimSelf,
@@ -304,10 +309,12 @@ Job!Dwarf craftJob(string name) {
       app.progressJob(d, rr.progressRate, () {
         ResourceType[ubyte] srcMat;                          // consumed input class -> its material, for item inheritance
         foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
-          ResourceClass need = cast(ResourceClass)ing.cls;
-          auto found = d.carrying.filter!(cid => app.world.drops.rawHasClass(cid, need));
+          auto found = ing.item
+            ? d.carrying.filter!(cid => app.world.drops.itemOf(cid).shape == cast(ItemTemplate)ing.item)
+            : d.carrying.filter!(cid => app.world.drops.rawHasClass(cid, cast(ResourceClass)ing.cls));
           if(found.empty) continue;
-          srcMat[ing.cls] = app.world.drops.resourceType(found.front);
+          auto m = app.world.drops.resourceType(found.front);
+          if(ing.item){ foreach(cv; resourceData(m).classes) srcMat[cv.cls] = m; } else srcMat[ing.cls] = m;
           app.consumeCarried(d, found.front);
         }
         foreach(prod; rr.outputs) { foreach(n; 0 .. prod.count) {

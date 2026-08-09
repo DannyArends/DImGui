@@ -60,6 +60,10 @@ auto carriedOfClass(ref GameApp app, ref Dwarf d, ResourceClass cls) {
   return d.carrying.filter!(id => app.world.drops.resourceType(id).hasClass(cls));
 }
 
+auto carriedOfTemplate(ref GameApp app, ref Dwarf d, ItemTemplate t) {
+  return d.carrying.filter!(id => app.world.drops.itemOf(id).shape == t);
+}
+
 // INVARIANT: Name-based conversions: a ResourceType maps to the ResourceClass of the SAME name (and back). 
 // We rely on this in inventory tracking, building jobs, and order persistence
 ResourceClass toClass(ResourceType t) { return t.to!string.to!ResourceClass; }

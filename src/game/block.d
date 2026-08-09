@@ -71,6 +71,9 @@ void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in 
 @nogc pure uint available(const Drops drops, ItemTemplate t) nothrow {
   return cast(uint)drops.byValue.count!(b => b.item.shape == t && !b.reserved); }
 
+uint findFreeItem(const World world, int[3] dwarfTile, ItemTemplate t, bool includeStored = true) {
+  return findFreeBlockWhere!(b => b.item.shape == t)(world, dwarfTile, includeStored); }
+
 /** A reaction can run iff every ingredient is available in the required count (by item or by class). */
 bool canReact(const Drops drops, const Ingredient[] inputs) {
   return inputs.all!(i => (i.item ? drops.available(cast(ItemTemplate)i.item)
