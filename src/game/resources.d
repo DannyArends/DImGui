@@ -56,13 +56,16 @@ struct Item {
 /** A variant "has class c" iff its substance IS c (one substance per variant). */
 @nogc bool hasClass(ResourceType t, Substance c) pure nothrow { return substanceOf(t) == c; }
 
-/** Carried block ids whose resource matches class cls */
-auto carriedOfClass(ref GameApp app, ref Dwarf d, Substance cls) {
-  return d.carrying.filter!(id => app.world.drops.resourceType(id).hasClass(cls));
+/** Does an item satisfy a demand: an item template (want) if set, else a material of substance cls
+ *  (restricted to raw blocks when `raw`, so crafted items never fill a build/ingredient demand). */
+@nogc pure bool matchDemand(const Item it, Substance cls, ItemTemplate want, bool raw = true) nothrow {
+  if(want != ItemTemplate.None) return it.shape == want;
+  return (!raw || it.isRaw) && (cls == Substance.None || it.material.hasClass(cls));
 }
 
-auto carriedOfTemplate(ref GameApp app, ref Dwarf d, ItemTemplate t) {
-  return d.carrying.filter!(id => app.world.drops.itemOf(id).shape == t);
+/** Carried block ids satisfying a demand (want ? by template : by material substance; crafted allowed). */
+auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want = ItemTemplate.None) {
+  return d.carrying.filter!(id => app.world.drops.itemOf(id).matchDemand(cls, want, false));
 }
 
 // A variant's substance is its "class"; converting the other way picks a representative variant of that substance.

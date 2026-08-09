@@ -9,7 +9,7 @@ import inventory : deriveInventory;
 import lattice : tileToWorld, worldToTile, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood, hasClass, toItem, isRaw, isCraft, templateMat;
+import resources : isFood, hasClass, toItem, isRaw, isCraft, templateMat, matchDemand;
 import tile : isStandable, inColumn, landingTile, surfaceAt, hasStandableNeighbour;
 import vector : manhattan;
 
@@ -68,25 +68,16 @@ void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in 
 @nogc pure uint available(const Drops drops, ResourceType tt) nothrow { 
   return cast(uint)drops.byValue.count!(b => b.item.isRaw && b.item.material == tt && !b.reserved); }
 
-@nogc pure uint available(const Drops drops, ItemTemplate t) nothrow {
-  return cast(uint)drops.byValue.count!(b => b.item.shape == t && !b.reserved); }
+/** Count unreserved drops satisfying an ingredient demand (raw material of a substance, or an item template). */
+@nogc pure uint available(const Drops drops, const Ingredient ing) nothrow {
+  return cast(uint)drops.byValue.count!(b => b.item.matchDemand(cast(Substance)ing.cls, cast(ItemTemplate)ing.item) && !b.reserved); }
 
-uint findFreeItem(const World world, int[3] dwarfTile, ItemTemplate t, bool includeStored = true) {
-  return findFreeBlockWhere!(b => b.item.shape == t)(world, dwarfTile, includeStored); }
+/** A reaction can run iff every ingredient is available in the required count. */
+bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!(i => drops.available(i) >= i.count); }
 
-/** A reaction can run iff every ingredient is available in the required count (by item or by class). */
-bool canReact(const Drops drops, const Ingredient[] inputs) {
-  return inputs.all!(i => (i.item ? drops.available(cast(ItemTemplate)i.item)
-                                  : drops.available(cast(Substance)i.cls)) >= i.count); }
-
-/** on the Drops unit — class-based, the same shape eating already wants */
-@nogc pure uint available(const Drops drops, Substance c) nothrow { 
-  return cast(uint)drops.byValue.count!(b => b.item.isRaw && b.item.material.hasClass(c) && !b.reserved); }
-
-/** on */
-uint findFreeClass(const World world, int[3] dwarfTile, Substance c, bool includeStored = true) {
-  return findFreeBlockWhere!(b => b.item.isRaw && (c == Substance.None || b.item.material.hasClass(c)))(world, dwarfTile, includeStored);
-}
+/** Nearest free drop satisfying a demand (want ? by template : by raw material substance), or noBlock. */
+uint findFor(const World world, int[3] dwarfTile, Substance cls, ItemTemplate want = ItemTemplate.None, bool includeStored = true) {
+  return findFreeBlockWhere!(b => b.item.matchDemand(cls, want))(world, dwarfTile, includeStored); }
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
 int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStored) {
@@ -119,9 +110,6 @@ uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = 
 uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored = true) {
   return findFreeBlockWhere!(b => b.item.isFood)(world, dwarfTile, includeStored);
 }
-
-/** True iff block `id` is a RAW material (not a crafted item) of class `c`; crafted items never satisfy ingredient demand. */
-bool rawHasClass(const Drops drops, uint id, Substance c) { auto b = id in drops; return b !is null && b.item.isRaw && b.item.material.hasClass(c); }
 
 void ensureBlocks(ref GameApp app) {
   foreach(rt; EnumMembers!ResourceType) {

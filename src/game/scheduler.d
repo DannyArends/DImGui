@@ -5,11 +5,11 @@
 
 import game;
 
-import block : resourceType, findFreeClass, noBlock, release, findFreeItem;
+import block : resourceType, findFor, noBlock, release;
 import pathfinding : findGoalTile, pathfindTo;
 import jobs : flatten, jobQueue, storeJob;
 import lattice : tileToWorld, worldToTile;
-import resources : hasClass, carriedOfClass, carriedOfTemplate;
+import resources : hasClass, carriedFor;
 import stockpile : acceptedByHolder, findStockpileSlot, storedTileOf, withdrawBlock;
 import tile : getSuccessors, tileAbove, isTileOccupied, hasStandableNeighbour;
 import vector : manhattan, manhattan2D;
@@ -206,9 +206,7 @@ void roam(T)(ref GameApp app, ref T obj, int n = 5) {
 
 /** True if the dwarf can obtain a block of the job's type — already carrying one, or one is free to fetch. */
 bool canObtainBlock(T)(ref GameApp app, ref Job!T job, ref T d) {
-  return job.want != ItemTemplate.None
-    ? (!app.carriedOfTemplate(d, job.want).empty || app.world.findFreeItem(d.tile, job.want) != noBlock)
-    : (!app.carriedOfClass(d, job.tileClass).empty || app.world.findFreeClass(d.tile, job.tileClass) != noBlock);
+  return !app.carriedFor(d, job.tileClass, job.want).empty || app.world.findFor(d.tile, job.tileClass, job.want) != noBlock;
 }
 
 /** Higher is better. Distance is a soft penalty; basePriority and need-urgency dominate. */

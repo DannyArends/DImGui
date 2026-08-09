@@ -5,11 +5,11 @@
 
 import game;
 
-import block : resourceType, itemOf, rawHasClass, spawnBlock, findFreeClass, findFreeItem, noBlock;
+import block : resourceType, itemOf, spawnBlock, findFor, noBlock;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import lattice : tileAbove, tileNeighbours;
 import reactions : reactionFor;
-import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup, carriedOfClass, carriedOfTemplate, substanceOf;
+import resources : isFood, foodValue, hasClass, toClass, toType, toItem, isEmptyCup, isWaterCup, carriedFor, matchDemand, substanceOf;
 import scheduler : doPickup, failComplete, failReleaseRequeue, failRequeue, failReleaseComplete, pathTileFor, progressJob;
 import sfx : play;
 import stockpile : storeBlockAt;
@@ -59,12 +59,9 @@ const(int[3])[] activeTiles(const World world, string jobName) { return world.li
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
 void claimBlock(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
-  bool haveCarried = j.want != ItemTemplate.None ? !app.carriedOfTemplate(d, j.want).empty
-                   : (j.tileClass != Substance.None && !app.carriedOfClass(d, j.tileClass).empty);
+  bool haveCarried = (j.tileClass != Substance.None || j.want != ItemTemplate.None) && !app.carriedFor(d, j.tileClass, j.want).empty;
   if(j.blockIDs.length == 0 && haveCarried) { j.state = JobState.Satisfied; return; }
-  uint id = j.blockIDs.length ? j.blockIDs[0]
-          : (j.want != ItemTemplate.None ? app.world.findFreeItem(d.tile, j.want)
-                                          : app.world.findFreeClass(d.tile, j.tileClass));
+  uint id = j.blockIDs.length ? j.blockIDs[0] : app.world.findFor(d.tile, j.tileClass, j.want);
   auto b = (id == noBlock ? null : id in app.world.drops);
   if(b is null) { j.state = JobState.Unavailable; return; }
   bool stored = (b.tile == storedTile);
@@ -113,7 +110,7 @@ Job!Dwarf storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTi
   return Job!Dwarf("Store", toTile, type.toClass, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID], reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Dwarf d) {
       /* SDL_Log(cstr("STORED %s tgt=[%d,%d,%d]", d.name, d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2])); */
-      auto picked = app.carriedOfClass(d, d.currentJob.tileClass);
+      auto picked = app.carriedFor(d, d.currentJob.tileClass);
       if(picked.empty) { d.currentJob.onFail(app, d); return; }
       auto blockID = picked.front;
       d.use(app.world.drops, blockID);  // remove from inventory (no builtTile)
@@ -299,8 +296,7 @@ Job!Dwarf craftJob(string name) {
   auto r = reactionFor(name);
   Job!Dwarf[] prereqs;
   foreach(ing; r.inputs){ foreach(n; 0 .. ing.count) {
-    prereqs ~= (ing.item ? pickupJob(noTile, Substance.None, cast(ItemTemplate)ing.item)
-                         : pickupJob(noTile, cast(Substance)ing.cls));
+    prereqs ~= pickupJob(noTile, cast(Substance)ing.cls, cast(ItemTemplate)ing.item);
   } }
   return Job!Dwarf(name, noTile, Substance.None, prereqs, true, reach: Reach.OnTile,
     onClaim: &claimSelf,
@@ -309,9 +305,7 @@ Job!Dwarf craftJob(string name) {
       app.progressJob(d, rr.progressRate, () {
         ResourceType[ubyte] srcMat;                          // consumed input class -> its material, for item inheritance
         foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
-          auto found = d.carrying.filter!(cid => ing.item
-            ? app.world.drops.itemOf(cid).shape == cast(ItemTemplate)ing.item
-            : app.world.drops.rawHasClass(cid, cast(Substance)ing.cls));
+          auto found = d.carrying.filter!(cid => app.world.drops.itemOf(cid).matchDemand(cast(Substance)ing.cls, cast(ItemTemplate)ing.item));
           if(found.empty) continue;
           auto m = app.world.drops.resourceType(found.front);
           if(ing.item){ srcMat[cast(ubyte)substanceOf(m)] = m; } else srcMat[ing.cls] = m;
