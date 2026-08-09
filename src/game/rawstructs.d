@@ -25,6 +25,7 @@ mixin(composedEnum("ResourceType", "",
   import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 
 enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)
+alias SpawnMask = bool[RESOURCE_COUNT];
 
 /** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
 struct EntityT {

@@ -217,9 +217,6 @@ Reaction[] parseReactions(string raw) pure {
   return table;
 }
 
-
-alias SpawnMask = bool[RESOURCE_COUNT];
-
 /** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
 private SpawnMask spawnMask(const FeatureT ft) pure {
   SpawnMask m;
@@ -229,7 +226,6 @@ private SpawnMask spawnMask(const FeatureT ft) pure {
 immutable SpawnMask[] featureSpawnMask = () {
   SpawnMask[] a; foreach(ref ft; features) a ~= spawnMask(ft); return a; 
 }();
-
 
 // Tables (below all enum mixins: their CTFE pulls resources->game->raws, so every enum must exist first).
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
