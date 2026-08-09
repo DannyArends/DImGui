@@ -1,5 +1,42 @@
 [OBJECT:ITEM]
 
+[ITEM:Berry01]
+  [MESH:watermelon:colormap-food-kit:Berry]
+  [SCALE:0.02][OFFSET_Y:-0.1][FOOD:1.00][STACK:8]
+
+[ITEM:Berry02]
+  [MESH:grapes:colormap-food-kit:Berry]
+  [SCALE:0.05][OFFSET_Y:-0.25][FOOD:0.25][STACK:16]
+
+[ITEM:Berry03]
+  [MESH:coconut:colormap-food-kit:Berry]
+  [SCALE:0.04][OFFSET_Y:-0.1][FOOD:0.50][STACK:12]
+
+[ITEM:Berry04]
+  [MESH:apple:colormap-food-kit:Berry]
+  [SCALE:0.04][OFFSET_Y:-0.5][FOOD:1.00][STACK:16]
+
+[ITEM:Leaf]
+  [MESH:Blocks:Foliage_01_base:Foliage_01_base]
+  [STACK:1]
+
+[ITEM:OakLeaves]
+  [MESH:Blocks::Hedge_01_base:Hedge_01_base:1.0]
+  [STACK:1]
+
+[ITEM:OliveLeaves]
+  [MESH:Blocks::Foliage_01_base:Foliage_01_base:1.0]
+  [STACK:1]
+
+[ITEM:Sponge]
+  [MESH:Blocks:Sponge_01_base:Sponge_01_base]
+  [FOOD:0.10][STACK:4]
+
+[ITEM:Flint]
+  [MESH:Cube::Flint]
+  [ACCEPTS:Stone][ACCEPTS:Rock]
+  [SCALE:0.4][STACK:4]
+
 [ITEM:Axe]
   [MESH:Cube:StoneAxe:StoneAxe:StoneAxe]
   [ACCEPTS:Stone][ACCEPTS:Rock][ACCEPTS:Flint]

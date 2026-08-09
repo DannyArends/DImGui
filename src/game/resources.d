@@ -35,6 +35,7 @@ struct ItemTemplateT {
   ubyte[] holds;           /// ResourceClass the contents may belong to; empty => not a container
   uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
   int maxStack = 1;        /// stack size of the crafted item
+  float food = 0.0f;       /// nutrition restored when eaten (0 => not edible)
 }
 
 /** A concrete item = (shape x material), optionally holding `amount` units of `contents`.
@@ -69,8 +70,8 @@ ResourceType toType(ResourceClass c) { return c.to!string.to!ResourceType; }
 @nogc bool buildable(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Buildable); }
 @nogc float cost(const ResourceType r) pure nothrow { return r.classVal(ResourceClass.Traversable); }
 @nogc int maxStack(const ResourceType r) pure nothrow { return cast(int)r.classVal(ResourceClass.Item); }
-@nogc bool isFood(const ResourceType r) pure nothrow { return r.hasClass(ResourceClass.Food); }
-@nogc float foodValue(const ResourceType r) pure nothrow { return r.classVal(ResourceClass.Food); }
+@nogc pure bool isFood(const Item it) nothrow { return it.isCraft && templateData(it.shape).food > 0.0f; }
+@nogc pure float foodValue(const Item it) nothrow { return it.isCraft ? templateData(it.shape).food : 0.0f; }
 
 // Item = (shape template x material [+ contents]); accessors compute everything from the pair at use time.
 @nogc pure bool isRaw(const Item it) nothrow { return it.shape == ItemTemplate.None; }

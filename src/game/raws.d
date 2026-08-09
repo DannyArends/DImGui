@@ -133,6 +133,7 @@ ItemTemplateT[] parseItemTemplates(string raw) pure {
       case "SCALE":    cur.scale = to!float(p[1]); break;
       case "OFFSET_Y": cur.offsetY = to!float(p[1]); break;
       case "STACK":    cur.maxStack = to!int(p[1]); break;
+      case "FOOD":     cur.food = to!float(p[1]); break;
       default: break;
     }
   }

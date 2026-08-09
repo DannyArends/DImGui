@@ -5,7 +5,7 @@
   [WORKSHOP:None]
   [PROGRESS_RATE:0.25]
   [INPUT:Stone:1]
-  [OUTPUT:Flint:2]
+  [OUTPUT_ITEM:Flint:Stone:2]
 
 [REACTION:AxeMaking]
   [VERB:Assemble][SKILL:Crafting]
@@ -13,8 +13,8 @@
   [PROGRESS_RATE:0.10]
   [INPUT:Flint:1]
   [INPUT:Wood:1]
-  [OUTPUT_ITEM:Axe:Flint:1]
-  [OUTPUT:OakLeaves:1]
+  [OUTPUT_ITEM:Axe:Stone:1]
+  [OUTPUT_ITEM:Leaf::1]
 
 [REACTION:CupMaking]
   [VERB:Assemble][SKILL:Crafting]
