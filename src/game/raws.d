@@ -15,9 +15,9 @@ alias ResourceClass = Substance;   /// transitional: a "class" IS a substance na
 
 // A ResourceType is a variant = substance @ source. Sources are tiles (terrain) and feature PRODUCES.
 // The variant table is built first; the ResourceType enum is generated from its member names (preserved).
-immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
-mixin(variantEnum(resourceTable));
+mixin(variantEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)
+immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
 
 mixin(enumFromTag(import("data/raws/items.txt"), "ITEM", "ItemTemplate", "None"));
 
@@ -66,10 +66,19 @@ string enumFromTag(string raw, string tag, string name, string sentinel = "") pu
   return result ~ "}\n";
 }
 
-/** CTFE: 'enum ResourceType : ubyte { <one member per variant, in table order> }'. */
-string variantEnum(const ResourceT[] table) pure {
+/** CTFE: 'enum ResourceType : ubyte { <member per [TILE:x], then per [PRODUCES:s:name:tex]> }'.
+ *  Parses the raw strings directly (like enumFromTag) so it is a compile-time mixin argument;
+ *  parseVariants walks the same order so resourceTable stays parallel to the enum. */
+string variantEnum(string tilesRaw, string featuresRaw) pure {
   string result = "enum ResourceType : ubyte {\n";
-  foreach(v; table) result ~= "  " ~ v.name ~ ",\n";
+  foreach(token; parseTokens(tilesRaw)) {
+    auto p = splitColon(token);
+    if(p.length >= 2 && p[0] == "TILE") result ~= "  " ~ p[1] ~ ",\n";
+  }
+  foreach(token; parseTokens(featuresRaw)) {
+    auto p = splitColon(token);
+    if(p.length >= 3 && p[0] == "PRODUCES") result ~= "  " ~ p[2] ~ ",\n";
+  }
   return result ~ "}\n";
 }
 
