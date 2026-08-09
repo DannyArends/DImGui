@@ -10,15 +10,13 @@ import ctfe : parseTokens, splitColon;
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
 // Substance = the abstract match key (Stone, Wood, ...). Replaces the old [CLASS:x] name-hack.
-mixin(enumFromTag(import("data/raws/substance.txt"), "SUBSTANCE", "Substance", "None"));
+
 mixin(sourceEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 
 // A ResourceType is a variant = substance @ source. Sources are tiles (terrain) and feature brushes.
 // The variant table is built first; the ResourceType enum is generated from its member names (preserved).
 mixin(variantEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)
-
-mixin(enumFromTag(import("data/raws/items.txt"), "ITEM", "ItemTemplate", "None"));
 
 // Tables (below all enum mixins: their CTFE pulls resources->game->raws, so every enum must exist first).
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
@@ -51,17 +49,6 @@ HeightBand[] parseHeightBands(string raw) pure {
     if(h < b.threshold){ return(cast(ResourceType)b.results[cast(uint)(t * b.results.length) % b.results.length]); }
   }
   return(cast(ResourceType)heightBands[$-1].results[0]);
-}
-
-/** CTFE: emit 'enum <name> : ubyte { [sentinel,] one member per [tag:member] }'. */
-string enumFromTag(string raw, string tag, string name, string sentinel = "") pure {
-  string result = "enum " ~ name ~ " : ubyte {\n";
-  if(sentinel.length) result ~= "  " ~ sentinel ~ ",\n";
-  foreach(token; parseTokens(raw)) {
-    auto p = splitColon(token);
-    if(p.length >= 2 && p[0] == tag) result ~= "  " ~ p[1] ~ ",\n";
-  }
-  return result ~ "}\n";
 }
 
 /** CTFE: 'enum ResourceType : ubyte { <member per [TILE:x], then <Feature><Substance> per brush> }'.

@@ -6,7 +6,7 @@
 public import engine;
 
 public import rawstructs : AnimalT, EntityT, FeatureT, ItemTemplateT, ResourceT;
-public import rawstructs : HeightBand, Ingredient, Product, Reaction, WorkshopUse;
+public import rawstructs : HeightBand, ItemTemplate, Ingredient, Product, Reaction, Substance, WorkshopUse;
 
 public import animal : Animal, AnimalSpawn;
 public import block : Block, Drops;

@@ -37,3 +37,13 @@ string[] splitColon(string s) pure {
   return parts;
 }
 
+/** CTFE: emit 'enum <name> : ubyte { [sentinel,] one member per [tag:member] }'. */
+string enumFromTag(string raw, string tag, string name, string sentinel = "") pure {
+  string result = "enum " ~ name ~ " : ubyte {\n";
+  if(sentinel.length) result ~= "  " ~ sentinel ~ ",\n";
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length >= 2 && p[0] == tag) result ~= "  " ~ p[1] ~ ",\n";
+  }
+  return result ~ "}\n";
+}
