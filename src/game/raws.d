@@ -143,6 +143,7 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
       v.source    = cast(ubyte)feat.to!Source;
       v.meshName  = p[2];
       v.scale     = p.length > 10 ? to!float(p[10]) : 1.0f;
+      v.offsetY   = p.length > 11 ? to!float(p[11]) : 0.0f;
       v.tex3D = p[4]; v.tex2D = p[4];
       if(p.length > 8) v.food = to!float(p[8]);
       table ~= v;

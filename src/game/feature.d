@@ -176,7 +176,7 @@ int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) 
 
 /** Pure per-feature instance generation (static parts + L-system brushes), keyed by mesh name. No live state. */
 DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref immutable FeatureT ft) {
-  DrawInstance[][string] out_;
+  DrawInstance[][string] meshes;
   auto wp = lat.tileToWorld(f.rootTile);
   if(ft.brushes.length) {
     TurtleConfig cfg;
@@ -189,9 +189,9 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
     auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
     float groundY = wp[1] - 0.5f * lat.tileHeight;
     auto grouped = interpret(chars, cfg, [wp[0], groundY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
-    foreach(sym, insts; grouped) { out_[meshKey(ft.name, brushMesh(ft, sym))] ~= insts; }
+    foreach(sym, insts; grouped) { meshes[meshKey(ft.name, brushMesh(ft, sym))] ~= insts; }
   }
-  return out_;
+  return meshes;
 }
 
 /** Add all DrawInstances for each feature: mark the tile-penalty footprint, build instance
@@ -285,7 +285,8 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
       if(br.symbol !in grouped) continue;
       auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
       foreach(ref inst; grouped[br.symbol]){
-        app.spawnBlock([tile[0], app.world.worldToTile(position(inst.matrix))[1], tile[2]], Item(ItemTemplate.None, brt));
+        int hy = app.world.worldToTile(position(inst.matrix))[1];
+        app.spawnBlock([tile[0], hy < tile[1] ? tile[1] : hy, tile[2]], Item(ItemTemplate.None, brt));
       }
     }
     app.world.instanceCache.remove(f.rootTile);   // drop cached instances for the harvested feature
