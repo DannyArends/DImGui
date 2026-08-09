@@ -65,7 +65,7 @@
   [LSYSTEM_ANGLE:35]
   [AXIOM:I(+W)(-W)(&W)(^W)]
   [BRUSH:I:Icosahedron:Leaf:Foliage_01_base:0.6:0.5:false:0]
-  [BRUSH:W:watermelon:Berry:colormap-food-kit:0.3:0.3:true:1.0]
+  [BRUSH:W:watermelon:Berry:colormap-food-kit:0.01:0.01:true:1.0]
   [LSYSTEM_END]
 
 [FEATURE:Cactus]
