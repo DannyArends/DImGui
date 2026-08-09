@@ -58,14 +58,15 @@ struct Item {
 
 /** Does an item satisfy a demand: an item template (want) if set, else a material of substance cls
  *  (restricted to raw blocks when `raw`, so crafted items never fill a build/ingredient demand). */
-@nogc pure bool matchDemand(const Item it, Substance cls, ItemTemplate want, bool raw = true) nothrow {
+@nogc pure bool matchDemand(const Item it, Substance cls, ItemTemplate want, ResourceType type = ResourceType.None, bool raw = true) nothrow {
   if(want != ItemTemplate.None) return it.shape == want;
+  if(type != ResourceType.None) return it.isRaw && it.material == type;   // exact variant (Building)
   return (!raw || it.isRaw) && (cls == Substance.None || it.material.hasClass(cls));
 }
 
 /** Carried block ids satisfying a demand (want ? by template : by material substance; crafted allowed). */
-auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want = ItemTemplate.None) {
-  return d.carrying.filter!(id => app.world.drops.itemOf(id).matchDemand(cls, want, false));
+auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want = ItemTemplate.None, ResourceType type = ResourceType.None) {
+  return d.carrying.filter!(id => app.world.drops.itemOf(id).matchDemand(cls, want, type, false));
 }
 
 // A variant's substance is its "class"; converting the other way picks a representative variant of that substance.

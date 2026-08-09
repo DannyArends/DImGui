@@ -70,14 +70,14 @@ void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in 
 
 /** Count unreserved drops satisfying an ingredient demand (raw material of a substance, or an item template). */
 @nogc pure uint available(const Drops drops, const Ingredient ing) nothrow {
-  return cast(uint)drops.byValue.count!(b => b.item.matchDemand(cast(Substance)ing.cls, cast(ItemTemplate)ing.item) && !b.reserved); }
+  return cast(uint)drops.byValue.count!(b => b.item.matchDemand(cast(Substance)ing.cls, cast(ItemTemplate)ing.item, ResourceType.None) && !b.reserved); }
 
 /** A reaction can run iff every ingredient is available in the required count. */
 bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!(i => drops.available(i) >= i.count); }
 
 /** Nearest free drop satisfying a demand (want ? by template : by raw material substance), or noBlock. */
-uint findFor(const World world, int[3] dwarfTile, Substance cls, ItemTemplate want = ItemTemplate.None, bool includeStored = true) {
-  return findFreeBlockWhere!(b => b.item.matchDemand(cls, want))(world, dwarfTile, includeStored); }
+uint findFor(const World world, int[3] dwarfTile, Substance cls, ItemTemplate want = ItemTemplate.None, ResourceType type = ResourceType.None, bool includeStored = true) {
+  return findFreeBlockWhere!(b => b.item.matchDemand(cls, want, type))(world, dwarfTile, includeStored); }
 
 /** Tile a dwarf would path to in order to pick up block `b`, or noTile if unavailable */
 int[3] pickupTileFor(const World world, uint id, const Block b, bool includeStored) {

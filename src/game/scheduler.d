@@ -206,7 +206,7 @@ void roam(T)(ref GameApp app, ref T obj, int n = 5) {
 
 /** True if the dwarf can obtain a block of the job's type — already carrying one, or one is free to fetch. */
 bool canObtainBlock(T)(ref GameApp app, ref Job!T job, ref T d) {
-  return !app.carriedFor(d, job.tileClass, job.want).empty || app.world.findFor(d.tile, job.tileClass, job.want) != noBlock;
+  return !app.carriedFor(d, job.tileClass, job.want, job.buildType).empty || app.world.findFor(d.tile, job.tileClass, job.want, job.buildType) != noBlock;
 }
 
 /** Higher is better. Distance is a soft penalty; basePriority and need-urgency dominate. */

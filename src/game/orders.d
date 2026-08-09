@@ -23,7 +23,7 @@ bool orderOf(const Job!Dwarf j, out Order o) {
   switch(j.name) {
     case "Mining": o = Order(OrderKind.Mine, j.targetTile); return true;
     case "InteractFeature": o = Order(OrderKind.InteractFeature, j.targetTile); return true;
-    case "Building": o = Order(OrderKind.Build, j.targetTile, j.tileClass.toType); return true;
+    case "Building": o = Order(OrderKind.Build, j.targetTile, j.buildType); return true;
     default: return false;
   }
 }

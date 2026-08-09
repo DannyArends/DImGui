@@ -51,14 +51,14 @@ struct Inventory {
 void deriveInventory(ref GameApp app) {
   app.world.inventory.queued.clear();
   foreach(ref j; jobQueue.filter!(j => j.name == "Building")) {
-    app.world.inventory.queued[j.tileClass.toType] = app.world.inventory.queued.get(j.tileClass.toType, 0) + 1;
+    app.world.inventory.queued[j.buildType] = app.world.inventory.queued.get(j.buildType, 0) + 1;
   }
   if(app.world.dwarves !is null){
     foreach(ref d; app.world.dwarves.dwarves){ foreach(ref j; d.jobStack){
-        if(j.name == "Building"){ app.world.inventory.queued[j.tileClass.toType] = app.world.inventory.queued.get(j.tileClass.toType, 0) + 1; }
+        if(j.name == "Building"){ app.world.inventory.queued[j.buildType] = app.world.inventory.queued.get(j.buildType, 0) + 1; }
     } }
   }
-  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.tileClass.toType, app) > 0).array;
+  jobQueue = jobQueue.filter!(j => j.name != "Building" || app.world.inventory.total(j.buildType, app) > 0).array;
   if(app.world.inventory.get(app.world.inventory.type, app) <= 0) { app.world.inventory.type = ResourceType.None; }
 }
 
