@@ -9,7 +9,7 @@ import game;
 enum WorkshopUse : ubyte { None, Required, Preferred }
 
 /** One input line of a reaction: a resource type and a count. */
-struct Ingredient { ubyte cls; uint count = 1; }
+struct Ingredient { ubyte cls; ubyte item = 0; uint count = 1; } 
 
 /** One output line: a raw material (shape == None, `type` names the ResourceType) OR a crafted item
  *  (shape != None) whose material is inherited from the consumed input of class `materialFrom`. */
