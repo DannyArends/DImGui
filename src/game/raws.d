@@ -6,7 +6,7 @@
 import phobos;
 
 import color : toColor;
-import ctfe : parseTokens, splitColon;
+import ctfe : parseTokens, splitColon, toEnum;
 import lsystem : LSystemBrushT, Rule;    // brush/rule types used when parsing
 import rawstructs;
 
@@ -151,7 +151,7 @@ AnimalT[] parseAnimals(string raw) pure {
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure {
   FeatureT[] list;
-  FeatureT ft;
+ FeatureT ft;
   bool inFeature;
   foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
@@ -178,9 +178,14 @@ FeatureT[] parseFeatures(string raw) pure {
       case "LSYSTEM_PITCH":    ft.lsystemPitch = to!float(p[1]); break;
       case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
       case "AXIOM":            ft.axiom = p[1]; break;
-      case "BRUSH":            if(p.length >= 8){
-                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], cast(ubyte)p[3].to!Substance, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f, p.length > 9 ? to!bool(p[9]) : true, p.length > 10 ? to!float(p[10]) : 1.0f);
-                               } break;
+      case "BRUSH": if(p.length >= 8){
+        immutable ubyte sub = p[3].toEnum!Substance;   // __traits-based, resolved before the ctor
+        ft.brushes ~= LSystemBrushT(p[1][0], p[2], sub, p[4],
+          to!float(p[5]), to!float(p[6]), to!bool(p[7]),
+          p.length > 8 ? to!float(p[8]) : 0.0f,
+          p.length > 9 ? to!bool(p[9]) : true,
+          p.length > 10 ? to!float(p[10]) : 1.0f);
+      } break;
       case "RULE":             if(p.length >= 4){ ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
       // Current part
       default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
@@ -211,6 +216,19 @@ Reaction[] parseReactions(string raw) pure {
   if(inReaction) table ~= r;
   return table;
 }
+
+
+alias SpawnMask = bool[RESOURCE_COUNT];
+
+/** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
+private SpawnMask spawnMask(const FeatureT ft) pure {
+  SpawnMask m;
+  foreach(s; ft.spawnOn) { auto rt = (s == "None" ? ResourceType.None : s.to!ResourceType); m[rt] = true; }
+  return m;
+}
+immutable SpawnMask[] featureSpawnMask = () {
+  SpawnMask[] a; foreach(ref ft; features) a ~= spawnMask(ft); return a; 
+}();
 
 
 // Tables (below all enum mixins: their CTFE pulls resources->game->raws, so every enum must exist first).

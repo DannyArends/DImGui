@@ -9,7 +9,7 @@ import animal : seedChunkAnimalSpawns, seedChunkAnimals;
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
 import deletion : deAllocate;
-import feature : featureSpawnMask, buildFeatureData, featureMeshInstances;
+import feature : buildFeatureData, featureMeshInstances;
 import game : GameApp;
 import gameobjects : Chunk;
 import lattice : surfaceLevel, tileCoord, tileIndex, onChunkBoundary, chunkCoord, worldCoord;

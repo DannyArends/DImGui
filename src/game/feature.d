@@ -74,18 +74,6 @@ void initFeatureMeshes(ref GameApp app) {
   }
 }
 
-alias SpawnMask = bool[RESOURCE_COUNT];
-
-/** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
-private SpawnMask spawnMask(const FeatureT ft) pure {
-  SpawnMask m;
-  foreach(s; ft.spawnOn) { auto rt = (s == "None" ? ResourceType.None : s.to!ResourceType); m[rt] = true; }
-  return m;
-}
-immutable SpawnMask[] featureSpawnMask = () {
-  SpawnMask[] a; foreach(ref ft; features) a ~= spawnMask(ft); return a; 
-}();
-
 /** Scan a chunk's surface tiles for valid spawn sites of `ft`; 
  * returns one Feature per accepted tile (gated by spawn type, noise threshold, and hash). */
 Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const FeatureT ft, ref const SpawnMask spawnMask) {

@@ -73,3 +73,9 @@ string composedEnum(string name, string sentinel, EnumRule[] rules, string[] raw
   foreach(m; members) s ~= "  " ~ m ~ ",\n";
   return s ~ "}\n";
 }
+
+/** CTFE string -> enum by member name. Avoids std.conv.to's module-init CTFE fragility. */
+E toEnum(E)(string s) pure nothrow @nogc if(is(E == enum)) {
+  static foreach(m; __traits(allMembers, E)) if(s == m) return __traits(getMember, E, m);
+  return E.init;
+}
