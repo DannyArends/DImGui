@@ -5,10 +5,10 @@
 
 public import engine;
 
-public import rawstructs : EntityT, FeatureT, ItemTemplateT, ResourceT;
-public import rawstructs : Ingredient, Product, Reaction, WorkshopUse;
+public import rawstructs : AnimalT, EntityT, FeatureT, ItemTemplateT, ResourceT;
+public import rawstructs : HeightBand, Ingredient, Product, Reaction, WorkshopUse;
 
-public import animal : AnimalT, Animal, AnimalSpawn;
+public import animal : Animal, AnimalSpawn;
 public import block : Block, Drops;
 public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;

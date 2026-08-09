@@ -31,9 +31,6 @@ immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
 static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
 
-/** One terrain height band: an upper threshold and the resources eligible at that height. */
-struct HeightBand { float threshold; ResourceType[] results; }
-
 /** CTFE: parse terrain raws into height bands (resources resolved to enum at compile time). */
 HeightBand[] parseHeightBands(string raw) pure {
   HeightBand[] bands;
