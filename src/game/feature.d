@@ -38,6 +38,7 @@ struct LSystemBrushT {
   float length = 1.0f;                          /// local Y scale / segment length
   bool advance = true;                          /// move turtle forward after drawing
   float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
+  bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
 }
 
 struct FeatureT {
@@ -206,6 +207,7 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
     TurtleConfig cfg;
     cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
     foreach(ref br; ft.brushes) {
+      if(!br.render) continue;                                     // harvest-only brush: counted on cut, never drawn
       auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
       cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
     }

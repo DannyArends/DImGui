@@ -53,7 +53,7 @@
 
 [FEATURE:Bush]
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02][SPAWN_ON:Forest01][SPAWN_ON:Forest02]
-  [NOISE_THRESHOLD:0.25]
+  [NOISE_THRESHOLD:0.4]
   [HASH_SEED1:1234567891][HASH_SEED2:987654321]
   [HASH_MOD:8][HASH_REM:1]
   [HEIGHT_MIN:1][HEIGHT_MAX:1]
@@ -65,7 +65,7 @@
   [LSYSTEM_ANGLE:35]
   [AXIOM:I(+W)(-W)(&W)(^W)]
   [BRUSH:I:Icosahedron:Leaf:Foliage_01_base:0.6:0.5:false:0]
-  [BRUSH:W:watermelon:Berry:colormap-food-kit:0.01:0.01:true:1.0]
+  [BRUSH:W:watermelon:Berry:colormap-food-kit:0.15:0.15:true:1.0:false]
   [LSYSTEM_END]
 
 [FEATURE:Cactus]

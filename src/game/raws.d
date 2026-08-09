@@ -245,7 +245,7 @@ FeatureT[] parseFeatures(string raw) pure {
       case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
       case "AXIOM":            ft.axiom = p[1]; break;
       case "BRUSH":            if(p.length >= 8){
-                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], cast(ubyte)p[3].to!Substance, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f);
+                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], cast(ubyte)p[3].to!Substance, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f, p.length > 9 ? to!bool(p[9]) : true);
                                } break;
       case "RULE":             if(p.length >= 4){ ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
       // Current part
