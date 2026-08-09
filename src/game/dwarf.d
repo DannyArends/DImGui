@@ -13,7 +13,7 @@ import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
-import matrix : translate, position, scale, translateScale;
+import matrix : translate, rotate, position, scale, translateScale;
 import names : randomizeName;
 import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
 import jobs : pickupJob, pinnedPickup, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
@@ -105,7 +105,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     }
     float sc = (app.world.chunkCoord(d.tile) in app.world.chunks) ? 1.0f : 0.0f;
     float[3] s = [sc, sc, sc];
-    Matrix m = scale(Matrix.init, s);
+    Matrix m = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]);
     app.world.dwarves.instances[i] = position(m, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY, d.visualPos[2]]);
   }
   app.world.dwarves.syncInstances();
@@ -255,7 +255,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1], wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  app.world.dwarves.instances ~= DrawInstance(translate(d.visualPos), -1, d.color);
+  app.world.dwarves.instances ~= DrawInstance(translate(d.visualPos), -1, Colors.white);
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
   d.nameLabel = app.addWorldText(d.firstname, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);
@@ -267,7 +267,7 @@ void spawnDwarf(ref GameApp app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
-  Dwarf d; d.entity.data = EntityData!32(nextEntityUID++, Colors.white, tile);
+  Dwarf d; d.entity.data = EntityData!32(nextEntityUID++, randomColor(), tile);
   randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.syncInstances();
