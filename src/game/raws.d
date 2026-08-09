@@ -17,9 +17,11 @@ alias ResourceClass = Substance;   /// transitional: a "class" IS a substance na
 // The variant table is built first; the ResourceType enum is generated from its member names (preserved).
 mixin(variantEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)
-immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
 
 mixin(enumFromTag(import("data/raws/items.txt"), "ITEM", "ItemTemplate", "None"));
+
+// Tables (below all enum mixins: their CTFE pulls resources->game->raws, so every enum must exist first).
+immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
 
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
 immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
