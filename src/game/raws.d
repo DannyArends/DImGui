@@ -10,6 +10,7 @@ import ctfe : parseTokens, splitColon;
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
 // Substance = the abstract match key (Stone, Wood, ...). Replaces the old [CLASS:x] name-hack.
+import entity : EntityT;
 mixin(enumFromTag(import("data/raws/substance.txt"), "SUBSTANCE", "Substance", "None"));
 mixin(sourceEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 
@@ -27,6 +28,7 @@ immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
 immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
+immutable EntityT[] entityTable = parseEntities(import("data/raws/entity.txt"));
 
 static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
@@ -280,3 +282,36 @@ Reaction[] parseReactions(string raw) pure {
   return table;
 }
 
+
+/** CTFE: parse [ENTITY] blocks into per-species EntityT (pawn behaviour + L-system body). */
+EntityT[] parseEntities(string raw) pure {
+  EntityT[] entities;
+  EntityT e; bool inEntity;
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    switch(p[0]) {
+      case "ENTITY":           if(inEntity){ entities ~= e; } e = EntityT.init; e.name = p[1]; inEntity = true; break;
+      case "MOVE_SPEED":       e.moveSpeed = to!float(p[1]); break;
+      case "HUNGER_DECAY":     e.hungerDecay = to!float(p[1]); break;
+      case "THIRST_DECAY":     e.thirstDecay = to!float(p[1]); break;
+      case "DIET":             e.diet = p[1]; break;
+      case "SCALE":            e.scale = to!float(p[1]); break;
+      case "SCALE_VARIANCE":   e.scaleVariance = to!float(p[1]); break;
+      case "OFFSET_Y":         e.offsetY = to!float(p[1]); break;
+      case "FACING":           e.facing = to!float(p[1]); break;
+      case "LSYSTEM_ANGLE":    e.lsystemYaw = e.lsystemPitch = e.lsystemRoll = to!float(p[1]); break;
+      case "LSYSTEM_YAW":      e.lsystemYaw   = to!float(p[1]); break;
+      case "LSYSTEM_PITCH":    e.lsystemPitch = to!float(p[1]); break;
+      case "LSYSTEM_ROLL":     e.lsystemRoll  = to!float(p[1]); break;
+      case "AXIOM":            e.axiom = p[1]; break;
+      case "BRUSH":            if(p.length >= 8){
+                                 e.brushes ~= LSystemBrushT(p[1][0], p[2], cast(ubyte)p[3].to!Substance, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f, p.length > 9 ? to!bool(p[9]) : true, p.length > 10 ? to!float(p[10]) : 1.0f);
+                               } break;
+      case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+      default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
+    }
+  }
+  if(inEntity){ entities ~= e; }
+  return(entities);
+}

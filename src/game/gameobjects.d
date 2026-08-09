@@ -5,17 +5,51 @@
 
 import game;
 
-import matrix : translateScale;
+import matrix : translateScale, multiply;
+import turtlegfx : interpret;
+import lsystem : TurtleConfig, TurtleBrush, buildGrammar;
+import vertex : Vertex;
+import assimp : OpenAsset;
+import raws : entityTable;
+import entity : EntityT;
 
-/** Dwarven Cylinderz */
-class Dwarves : Cylinder {
+/** Bake an entity's L-system body into an OpenAsset's buffers: merge each brush's primitive,
+ *  transformed by its interpreted instance matrix. Rigid for now; per-dwarf transform/colour drive it. */
+void bakeEntity(OpenAsset dest, const EntityT et) {
+  TurtleConfig cfg;
+  cfg.yaw = et.lsystemYaw; cfg.pitch = et.lsystemPitch; cfg.roll = et.lsystemRoll;
+  foreach(ref br; et.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, [1.0f, 1.0f, 1.0f, 1.0f]);
+  auto chars = buildGrammar(0, 1, et.axiom, et.rules);
+  auto grouped = interpret(chars, cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+  foreach(ref br; et.brushes) {
+    if(br.symbol !in grouped) continue;
+    auto prim = makePrimitive(br.mesh);
+    foreach(ref inst; grouped[br.symbol]) {
+      uint base = cast(uint)dest.vertices.length;
+      foreach(vi; 0 .. prim.vertices.length) {
+        Vertex nv = prim.vertices[vi];
+        auto pp = inst.matrix.multiply([nv.position[0], nv.position[1], nv.position[2], 1.0f]);
+        auto nn = inst.matrix.multiply([nv.normal[0],   nv.normal[1],   nv.normal[2],   0.0f]);
+        nv.position = [pp[0], pp[1], pp[2]];
+        nv.normal   = [nn[0], nn[1], nn[2]];
+        dest.addVertex(nv);
+      }
+      foreach(ii; 0 .. prim.indices.length) dest.indices ~= base + prim.indices[ii];
+    }
+  }
+  dest.indices.invalidate();
+}
+
+/** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
+class Dwarves : OpenAsset {
   Dwarf[] dwarves;
   alias dwarves this;
   int selected = -1;
   size_t[] tickOrder;
 
   this() {
-    super(0.5f, 1.0f, 6);
+    super();
+    foreach(ref e; entityTable) if(e.name == "Dwarf") { bakeEntity(this, e); break; }
     initInstanced(() => "Dwarves");
   }
 

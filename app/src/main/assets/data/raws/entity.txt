@@ -1,0 +1,10 @@
+[OBJECT:ENTITY]
+
+[ENTITY:Dwarf]
+  [MOVE_SPEED:2.5]
+  [SCALE:1.0][SCALE_VARIANCE:0.0]
+  [OFFSET_Y:0.0][FACING:0.0]
+  [LSYSTEM_BEGIN]
+  [AXIOM:B]
+  [BRUSH:B:Cylinder:None::0.5:1.0:false]
+  [LSYSTEM_END]
