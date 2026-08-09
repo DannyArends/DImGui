@@ -19,6 +19,8 @@ struct ResourceT {
   float offsetY = 0.0f;                     /// vertical render offset (world units) for model-backed drops
   Colors color = Colors.white;
   ubyte substance = 0;                      /// cast(ubyte)Substance — the variant's match key (was the name-class)
+  ubyte source = 0;                         /// cast(ubyte)Source — which tile/feature produced this variant
+  float food = 0.0f;                        /// edibility (from the producing brush); 0 => inedible
   float traverse = 0.0f;                    /// walk cost; 0 => impassable (liquids)
   bool build = false;                       /// may be placed/built with
   int maxStack = 1;                         /// stack size when carried as a raw item
@@ -81,8 +83,15 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 @nogc bool buildable(const ResourceType r) pure nothrow { return resourceData(r).build; }
 @nogc float cost(const ResourceType r) pure nothrow { return resourceData(r).traverse; }
 @nogc int maxStack(const ResourceType r) pure nothrow { return resourceData(r).maxStack; }
-@nogc pure bool isFood(const Item it) nothrow { return it.isCraft && templateData(it.shape).food > 0.0f; }
-@nogc pure float foodValue(const Item it) nothrow { return it.isCraft ? templateData(it.shape).food : 0.0f; }
+@nogc bool isFood(const Item it) pure nothrow { return it.material != ResourceType.None && resourceData(it.material).food > 0.0f; }
+@nogc float foodValue(const Item it) pure nothrow { return it.material != ResourceType.None ? resourceData(it.material).food : 0.0f; }
+
+/** The source (origin tile/feature) of a variant, and the reverse lookup (substance @ source -> variant). */
+@nogc Source sourceOf(ResourceType t) pure nothrow { return cast(Source)resourceData(t).source; }
+@nogc ResourceType variantOf(Substance s, Source src) pure nothrow {
+  foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && substanceOf(rt) == s && sourceOf(rt) == src) return rt;
+  return ResourceType.None;
+}
 
 // Item = (shape template x material [+ contents]); accessors compute everything from the pair at use time.
 @nogc pure bool isRaw(const Item it) nothrow { return it.shape == ItemTemplate.None; }

@@ -14,7 +14,6 @@
   [INPUT_ITEM:Flint:1]
   [INPUT:Wood:1]
   [OUTPUT_ITEM:Axe:Stone:1]
-  [OUTPUT_ITEM:Leaf:Wood:1]
 
 [REACTION:CupMaking]
   [VERB:Assemble][SKILL:Crafting]

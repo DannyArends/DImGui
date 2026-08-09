@@ -11,6 +11,7 @@ import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord, getOr;
 import lsystem : buildGrammar;
 import matrix : translateScale;
 import noise : noiseHTT;
+import resources : variantOf;
 import raws : RESOURCE_COUNT;
 import sfx : play;
 import timing : timed;
@@ -30,17 +31,13 @@ struct FeaturePartT {
 /** One drawing-symbol -> primitive brush for an L-system part (the data half of TurtleBrush). */
 struct LSystemBrushT {
   char symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
-  string mesh;                                  /// primitive mesh name: "Cylinder", "Icosahedron", ...
-  string resourceType = "None";                 /// DrawInstance material
+  string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
+  ubyte substance;                              /// cast(ubyte)Substance drawn (-> the substance@feature variant)
+  string texture;                               /// per-instance texture for the drawn geometry
   float radius = 0.1f;                          /// local X/Z scale
   float length = 1.0f;                          /// local Y scale / segment length
   bool advance = true;                          /// move turtle forward after drawing
-}
-
-struct FeatureDropT {
-  Item item; 
-  int countMin = 1, countMax = 1;
-  bool perHeight = false;
+  float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
 }
 
 struct FeatureT {
@@ -55,7 +52,6 @@ struct FeatureT {
   string interaction;
   string sound;
   FeaturePartT[] parts;
-  FeatureDropT[] drops;
   float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;  /// per-axis L-system turn angles
   LSystemBrushT[] brushes;                 /// single-level array, converts to immutable like parts/drops
   string axiom = "X";                      /// L-system start symbol(s)
@@ -168,7 +164,7 @@ private void markFootprint(ref World world, ref Feature f, ref immutable Feature
 
 /** True if this feature type drops a Food-class raw (a forageable bush). */
 bool featureDropsFood(const FeatureT ft) {
-  foreach(ref d; ft.drops) { if(d.item.isFood) { return(true); } }
+  foreach(ref br; ft.brushes) { if(br.food > 0.0f) { return(true); } }
   return(false);
 }
 
@@ -210,7 +206,7 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
     TurtleConfig cfg;
     cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
     foreach(ref br; ft.brushes) {
-      auto brt = resType(br.resourceType);
+      auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
       cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
     }
     auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
@@ -299,11 +295,11 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
   for(size_t i = 0; i < app.world.vegetation[ft.name][coord].length; ) {
     auto f = app.world.vegetation[ft.name][coord][i];
     if(f.rootTile != tile) { i++; continue; }
-    foreach(ref drop; ft.drops) {
-      if(!drop.perHeight) {
-        uint count = drop.countMin + (f.hash % max(1, drop.countMax - drop.countMin + 1));
-        foreach(n; 0..count){ app.spawnBlock(tile, drop.item); }
-      } else { for(uint h = 0; h < f.height; h++){ app.spawnBlock([tile[0], tile[1]+cast(int)h, tile[2]], drop.item); } }
+    auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
+    foreach(ref br; ft.brushes) {
+      auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
+      uint n = 0; foreach(c; chars) if(c == br.symbol) n++;
+      foreach(_; 0 .. n) app.spawnBlock(tile, Item(ItemTemplate.None, brt));
     }
     app.world.instanceCache.remove(f.rootTile);   // drop cached instances for the harvested feature
     app.world.vegetation[ft.name][coord] = app.world.vegetation[ft.name][coord][0..i] ~ app.world.vegetation[ft.name][coord][i+1..$];

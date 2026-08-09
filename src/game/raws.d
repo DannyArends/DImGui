@@ -11,8 +11,9 @@ import ctfe : parseTokens, splitColon;
  * import() is resolved at compile-time; dub does not track these as dependencies */
 // Substance = the abstract match key (Stone, Wood, ...). Replaces the old [CLASS:x] name-hack.
 mixin(enumFromTag(import("data/raws/substance.txt"), "SUBSTANCE", "Substance", "None"));
+mixin(sourceEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 
-// A ResourceType is a variant = substance @ source. Sources are tiles (terrain) and feature PRODUCES.
+// A ResourceType is a variant = substance @ source. Sources are tiles (terrain) and feature brushes.
 // The variant table is built first; the ResourceType enum is generated from its member names (preserved).
 mixin(variantEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)
@@ -66,7 +67,7 @@ string enumFromTag(string raw, string tag, string name, string sentinel = "") pu
   return result ~ "}\n";
 }
 
-/** CTFE: 'enum ResourceType : ubyte { <member per [TILE:x], then per [PRODUCES:s:name:tex]> }'.
+/** CTFE: 'enum ResourceType : ubyte { <member per [TILE:x], then <Feature><Substance> per brush> }'.
  *  Parses the raw strings directly (like enumFromTag) so it is a compile-time mixin argument;
  *  parseVariants walks the same order so resourceTable stays parallel to the enum. */
 string variantEnum(string tilesRaw, string featuresRaw) pure {
@@ -75,10 +76,24 @@ string variantEnum(string tilesRaw, string featuresRaw) pure {
     auto p = splitColon(token);
     if(p.length >= 2 && p[0] == "TILE") result ~= "  " ~ p[1] ~ ",\n";
   }
+  string feat; string[] seen;
   foreach(token; parseTokens(featuresRaw)) {
     auto p = splitColon(token);
-    if(p.length >= 3 && p[0] == "PRODUCES") result ~= "  " ~ p[2] ~ ",\n";
+    if(p.length >= 2 && p[0] == "FEATURE") { feat = p[1]; continue; }
+    if(p.length >= 4 && p[0] == "BRUSH") {
+      string member = feat ~ p[3];                      // <Feature><Substance>
+      bool dup = false; foreach(x; seen) if(x == member) dup = true;
+      if(!dup){ seen ~= member; result ~= "  " ~ member ~ ",\n"; }
+    }
   }
+  return result ~ "}\n";
+}
+
+/** CTFE: 'enum Source : ubyte { None, <tile names>, <feature names> }' — a variant's origin axis. */
+string sourceEnum(string tilesRaw, string featuresRaw) pure {
+  string result = "enum Source : ubyte {\n  None,\n";
+  foreach(token; parseTokens(tilesRaw)) { auto p = splitColon(token); if(p.length >= 2 && p[0] == "TILE" && p[1] != "None") result ~= "  " ~ p[1] ~ ",\n"; }
+  foreach(token; parseTokens(featuresRaw)) { auto p = splitColon(token); if(p.length >= 2 && p[0] == "FEATURE") result ~= "  " ~ p[1] ~ ",\n"; }
   return result ~ "}\n";
 }
 
@@ -88,15 +103,15 @@ Colors toColor(string name) pure {
   return Colors.white;
 }
 
-/** CTFE: build the variant table (parallel to the ResourceType enum) from tiles + feature PRODUCES.
- *  A tile IS a variant (its name is the enum member); a feature PRODUCES named variants of a substance. */
+/** CTFE: build the variant table (parallel to the ResourceType enum) from tiles + feature brushes.
+ *  A tile IS a variant (its name is the enum member); a feature brush yields a substance@feature variant. */
 ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
   ResourceT[] table; ResourceT cur; bool inTile;
   foreach(token; parseTokens(tilesRaw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
     switch(p[0]) {
-      case "TILE":        if(inTile) table ~= cur; cur = ResourceT.init; cur.name = p[1]; inTile = true; break;
+      case "TILE":        if(inTile) table ~= cur; cur = ResourceT.init; cur.name = p[1]; cur.source = cast(ubyte)p[1].to!Source; inTile = true; break;
       case "SUBSTANCE":   cur.substance = cast(ubyte)p[1].to!Substance; break;
       case "MESH":        // MESH:mesh:color:tex3D:tex2D
         if(p.length > 1) cur.meshName = p[1];
@@ -111,12 +126,24 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
     }
   }
   if(inTile) table ~= cur;
-  // Feature products: [PRODUCES:substance:variantName:tex] -> a variant of that substance, textured from the drop.
+  // Feature variants: each distinct brush substance in a feature -> a <Feature><Substance> variant,
+  // carrying that brush's mesh, texture, edibility and source. First brush of a substance wins.
+  string feat; string[] seen;
   foreach(token; parseTokens(featuresRaw)) {
     auto p = splitColon(token);
-    if(p.length >= 3 && p[0] == "PRODUCES") {
-      ResourceT v; v.name = p[2]; v.substance = cast(ubyte)p[1].to!Substance;
-      if(p.length > 3){ v.tex3D = p[3]; v.tex2D = p[3]; }
+    if(p.length >= 2 && p[0] == "FEATURE") { feat = p[1]; continue; }
+    if(p.length >= 5 && p[0] == "BRUSH") {
+      string member = feat ~ p[3];
+      bool dup = false; foreach(x; seen) if(x == member) dup = true;
+      if(dup) continue;
+      seen ~= member;
+      ResourceT v;
+      v.name      = member;
+      v.substance = cast(ubyte)p[3].to!Substance;
+      v.source    = cast(ubyte)feat.to!Source;
+      v.meshName  = p[2];
+      v.tex3D = p[4]; v.tex2D = p[4];
+      if(p.length > 8) v.food = to!float(p[8]);
       table ~= v;
     }
   }
@@ -190,7 +217,7 @@ AnimalT[] parseAnimals(string raw) pure {
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure {
   FeatureT[] features;
-  FeatureT ft; FeaturePartT part; FeatureDropT drop;
+  FeatureT ft; FeaturePartT part;
   bool inFeature;
   foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
@@ -198,7 +225,7 @@ FeatureT[] parseFeatures(string raw) pure {
     switch(p[0]) {
       case "FEATURE":          if(inFeature){features ~= ft;}
                                ft = FeatureT.init; ft.name = p[1];
-                               part = FeaturePartT.init; drop = FeatureDropT.init; inFeature = true; break;
+                               part = FeaturePartT.init; inFeature = true; break;
       case "SPAWN_ON":         ft.spawnOn ~= p[1]; break;
       case "NOISE_THRESHOLD":  ft.noiseThreshold = to!float(p[1]); break;
       case "HASH_SEED1":       ft.hashSeed1 = to!uint(p[1]); break;
@@ -217,8 +244,8 @@ FeatureT[] parseFeatures(string raw) pure {
       case "LSYSTEM_PITCH":    ft.lsystemPitch = to!float(p[1]); break;
       case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
       case "AXIOM":            ft.axiom = p[1]; break;
-      case "BRUSH":            if(p.length >= 7){
-                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3], to!float(p[4]), to!float(p[5]), to!bool(p[6]));
+      case "BRUSH":            if(p.length >= 8){
+                                 ft.brushes ~= LSystemBrushT(p[1][0], p[2], cast(ubyte)p[3].to!Substance, p[4], to!float(p[5]), to!float(p[6]), to!bool(p[7]), p.length > 8 ? to!float(p[8]) : 0.0f);
                                } break;
       case "RULE":             if(p.length >= 4){ ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
       // Current part
@@ -232,14 +259,6 @@ FeatureT[] parseFeatures(string raw) pure {
       case "OFFSET_Y":         part.offsetY = (p[1] == "height" ? -1.0f : to!float(p[1])); break;
       case "REPEAT":           part.repeat = true; break;
       case "PART_END":         if(part.mesh != "") ft.parts ~= part; part = FeaturePartT.init; break;
-      // Current drop
-      case "MATERIAL":         drop.item = Item(ItemTemplate.None, p[1].to!ResourceType); break;
-      case "ITEM":             drop.item = Item(p[1].to!ItemTemplate); break;
-      case "DROP_MIN":         drop.countMin = to!int(p[1]); break;
-      case "DROP_MAX":         drop.countMax = to!int(p[1]); break;
-      case "DROP_COUNT":       drop.countMin = to!int(p[1]); drop.countMax = drop.countMin; break;
-      case "DROP_PER_HEIGHT":  drop.perHeight = true; break;
-      case "DROP_END":         if(drop.item != Item.init) { ft.drops ~= drop; } drop = FeatureDropT.init; break;
       default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
     }
   }
