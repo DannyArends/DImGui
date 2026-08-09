@@ -7,7 +7,7 @@ import game;
 
 import animation : animateAsset;
 import assimp : OpenAsset;
-import block : findFreeFood, resourceType, noBlock;
+import block : findFreeFood, resourceType, noBlock, itemOf;
 import bone : mergeBones;
 import color : randomColor;
 import dwarf : findFreeSurfaceTile;
@@ -108,7 +108,7 @@ Job!Animal grazeJob(int[3] target) {
       app.progressJob(a, 0.5f, () {
         uint food = findFreeFood(app.world, a.tile, false);        // loose food, not stockpiles
         if(food != noBlock && manhattan(app.world.drops[food].tile, a.tile) <= 1) {
-          float restore = foodValue(app.world.drops.resourceType(food));
+          float restore = foodValue(app.world.drops.itemOf(food));
           app.consumeCarried(a, food);
           a.hunger = a.hunger > restore ? a.hunger - restore : 0.0f;
           app.play("DM-CGS-16", 0.4f);

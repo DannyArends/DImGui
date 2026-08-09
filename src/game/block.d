@@ -114,7 +114,7 @@ uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = 
 }
 
 uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored = true) {
-  return findFreeBlockWhere!(b => b.item.isRaw && b.item.material.isFood)(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b.item.isFood)(world, dwarfTile, includeStored);
 }
 
 /** True iff block `id` is a RAW material (not a crafted item) of class `c`; crafted items never satisfy ingredient demand. */

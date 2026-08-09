@@ -39,7 +39,7 @@
 
 [ITEM:Axe]
   [MESH:Cube:StoneAxe:StoneAxe:StoneAxe]
-  [ACCEPTS:Stone][ACCEPTS:Rock][ACCEPTS:Flint]
+  [ACCEPTS:Stone][ACCEPTS:Rock]
   [SCALE:0.5]
   [STACK:1]
 

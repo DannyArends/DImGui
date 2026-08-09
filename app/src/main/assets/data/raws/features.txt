@@ -28,7 +28,7 @@
     [MATERIAL:OakWood][DROP_PER_HEIGHT]
   [DROP_END]
   [DROP_BEGIN]
-    [MATERIAL:OakLeaves][DROP_COUNT:1]
+    [ITEM:OakLeaves][DROP_COUNT:1]
   [DROP_END]
 
 [FEATURE:Olive]
@@ -59,7 +59,7 @@
     [MATERIAL:OliveWood][DROP_PER_HEIGHT]
   [DROP_END]
   [DROP_BEGIN]
-    [MATERIAL:OliveLeaves][DROP_COUNT:1]
+    [ITEM:OliveLeaves][DROP_COUNT:1]
   [DROP_END]
 
 [FEATURE:Bush]
@@ -76,7 +76,7 @@
     [MESH:Icosahedron][SCALE_X:0.6][SCALE_X_VARIANCE:0.05][SCALE_Y:0.5][RESOURCE:Leaves]
   [PART_END]
   [DROP_BEGIN]
-    [MATERIAL:Berry01][DROP_MIN:3][DROP_MAX:5]
+    [ITEM:Berry01][DROP_MIN:3][DROP_MAX:5]
   [DROP_END]
 
 [FEATURE:Cactus]
@@ -107,5 +107,5 @@
     [MATERIAL:OliveWood][DROP_PER_HEIGHT]
   [DROP_END]
   [DROP_BEGIN]
-    [MATERIAL:Berry03][DROP_MIN:0][DROP_MAX:3]
+    [ITEM:Berry03][DROP_MIN:0][DROP_MAX:3]
   [DROP_END]

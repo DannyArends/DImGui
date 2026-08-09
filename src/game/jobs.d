@@ -234,7 +234,7 @@ Job!Dwarf buildingJob(int[3] targetTile, ResourceType tileType) {
 Job!Dwarf eatJob() {
   return Job!Dwarf("Eating", noTile, ResourceClass.None, [], true, reach: Reach.OnTile,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
-      auto carried = d.carrying.filter!(id => app.world.drops.resourceType(id).isFood);
+      auto carried = d.carrying.filter!(id => app.world.drops.itemOf(id).isFood);
       if(carried.empty) { j.state = JobState.Unavailable; return; }
       j.blockIDs = [carried.front];
       j.targetTile = d.tile;
@@ -242,7 +242,7 @@ Job!Dwarf eatJob() {
     onArrive: (ref GameApp app, ref Dwarf d) {
       app.progressJob(d, 0.5f, () {
         auto id = d.currentJob.blockIDs[0];
-        float restore = foodValue(app.world.drops.resourceType(id));   // read type before removal
+        float restore = foodValue(app.world.drops.itemOf(id));   // read type before removal
         app.consumeCarried(d, id);
         d.hunger = d.hunger > restore ? d.hunger - restore : 0.0f;
         app.play("DM-CGS-16", 0.4f);

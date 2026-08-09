@@ -38,7 +38,7 @@ struct LSystemBrushT {
 }
 
 struct FeatureDropT {
-  string material;
+  Item item; 
   int countMin = 1, countMax = 1;
   bool perHeight = false;
 }
@@ -168,8 +168,8 @@ private void markFootprint(ref World world, ref Feature f, ref immutable Feature
 
 /** True if this feature type drops a Food-class raw (a forageable bush). */
 bool featureDropsFood(const FeatureT ft) {
-  foreach(ref d; ft.drops) if(d.material.to!ResourceType.isFood) return true;
-  return false;
+  foreach(ref d; ft.drops) { if(d.item.isFood) { return(true); } }
+  return(false);
 }
 
 /** Nearest rooted tile of a food-dropping feature within maxTiles; noTile if none. */
@@ -300,11 +300,10 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
     auto f = app.world.vegetation[ft.name][coord][i];
     if(f.rootTile != tile) { i++; continue; }
     foreach(ref drop; ft.drops) {
-      auto rt = drop.material.to!ResourceType;
       if(!drop.perHeight) {
         uint count = drop.countMin + (f.hash % max(1, drop.countMax - drop.countMin + 1));
-        foreach(n; 0..count){ app.spawnBlock(tile, rt); }
-      } else { for(uint h = 0; h < f.height; h++){ app.spawnBlock([tile[0], tile[1]+cast(int)h, tile[2]], rt); } }
+        foreach(n; 0..count){ app.spawnBlock(tile, drop.item); }
+      } else { for(uint h = 0; h < f.height; h++){ app.spawnBlock([tile[0], tile[1]+cast(int)h, tile[2]], drop.item); } }
     }
     app.world.instanceCache.remove(f.rootTile);   // drop cached instances for the harvested feature
     app.world.vegetation[ft.name][coord] = app.world.vegetation[ft.name][coord][0..i] ~ app.world.vegetation[ft.name][coord][i+1..$];

@@ -161,7 +161,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   // Hunger
   if(d.needs[Need.Hunger] >= 0.6f && d.needBackoff[Need.Hunger] == 0) {
     d.needBackoff[Need.Hunger] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Hunger]*4)));
-    if(d.carrying.any!(id => app.world.drops.resourceType(id).isFood)) { app.dispatchJob(d, eatJob()); return(true); }
+    if(d.carrying.any!(id => app.world.drops.itemOf(id).isFood)) { app.dispatchJob(d, eatJob()); return(true); }
     auto food = app.world.findFreeFood(d.tile);
     if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food).toClass)); return(true); }
   }

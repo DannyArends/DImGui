@@ -219,11 +219,12 @@ FeatureT[] parseFeatures(string raw) pure {
       case "PART_END":         if(part.mesh != "") ft.parts ~= part; part = FeaturePartT.init; break;
       // Current drop
       case "MATERIAL":         drop.material = p[1]; break;
+      case "ITEM":             drop.item = Item(p[1].to!ItemTemplate); break;
       case "DROP_MIN":         drop.countMin = to!int(p[1]); break;
       case "DROP_MAX":         drop.countMax = to!int(p[1]); break;
       case "DROP_COUNT":       drop.countMin = to!int(p[1]); drop.countMax = drop.countMin; break;
       case "DROP_PER_HEIGHT":  drop.perHeight = true; break;
-      case "DROP_END":         if(drop.material != "") ft.drops ~= drop; drop = FeatureDropT.init; break;
+      case "DROP_END":         if(drop.item != Item.init) { ft.drops ~= drop; } drop = FeatureDropT.init; break;
       default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
     }
   }
