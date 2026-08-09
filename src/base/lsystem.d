@@ -65,6 +65,7 @@ struct TurtleConfig {
   float yaw = 25.0f;     /// + / -  spread
   float pitch = 25.0f;   /// & / ^  arch down / up
   float roll = 25.0f;    /// < / >  twist around heading
+  float gap = 0.2f;      /// f       move without drawing (translation)
   TurtleBrush[char] brush;
 }
 

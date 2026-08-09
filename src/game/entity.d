@@ -37,6 +37,7 @@ struct EntityT {
   Rule[] rules;                                  /// L-system production rules (empty = axiom as-is)
   LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
   float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;
+  float lsystemGap = 0.2f;                       /// f translation step (no draw)
 }
 
 /** CTFE: parse [ENTITY] blocks into per-species EntityT. Entity brushes carry no substance (0). */
@@ -56,6 +57,7 @@ EntityT[] parseEntities(string raw) pure {
       case "OFFSET_Y":         e.offsetY = to!float(p[1]); break;
       case "FACING":           e.facing = to!float(p[1]); break;
       case "LSYSTEM_ANGLE":    e.lsystemYaw = e.lsystemPitch = e.lsystemRoll = to!float(p[1]); break;
+      case "LSYSTEM_GAP":      e.lsystemGap = to!float(p[1]); break;
       case "LSYSTEM_YAW":      e.lsystemYaw   = to!float(p[1]); break;
       case "LSYSTEM_PITCH":    e.lsystemPitch = to!float(p[1]); break;
       case "LSYSTEM_ROLL":     e.lsystemRoll  = to!float(p[1]); break;
@@ -76,7 +78,7 @@ immutable EntityT[] entityTable = parseEntities(import("data/raws/entity.txt"));
 /** Bake an entity's L-system body into an OpenAsset: one bone-tagged sub-mesh per drawn brush (independently movable). */
 void bakeEntity(OpenAsset dest, const EntityT et) {
   TurtleConfig cfg;
-  cfg.yaw = et.lsystemYaw; cfg.pitch = et.lsystemPitch; cfg.roll = et.lsystemRoll;
+  cfg.yaw = et.lsystemYaw; cfg.pitch = et.lsystemPitch; cfg.roll = et.lsystemRoll; cfg.gap = et.lsystemGap;
   foreach(ref br; et.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, [1.0f, 1.0f, 1.0f, 1.0f]);
   auto chars = buildGrammar(0, 1, et.axiom, et.rules);
   auto grouped = interpret(chars, cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);

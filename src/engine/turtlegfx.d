@@ -22,6 +22,7 @@ DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, fl
       case '(': stack ~= st; break;
       case ')': if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; } break;
       case 'X': break;
+      case 'f': { const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*cfg.gap, R[5]*cfg.gap, R[6]*cfg.gap]); } break;   // translate, no draw
       default:
         const ax = turnAxis(c);
         if(ax != [0.0f, 0.0f, 0.0f]) { st.orient = qMul(st.orient, angleAxis(turnAngle(c, cfg), ax)); break; }
