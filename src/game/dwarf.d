@@ -16,7 +16,7 @@ import ghost : syncBuildGhosts;
 import matrix : translate, position, scale, translateScale;
 import names : randomizeName;
 import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
-import jobs : pickupJob, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
+import jobs : pickupJob, pinnedPickup, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
 import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
 import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;
@@ -163,7 +163,9 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
     d.needBackoff[Need.Hunger] = max(1, NEED_RETRY / (1 + cast(int)(d.needs[Need.Hunger]*4)));
     if(d.carrying.any!(id => app.world.drops.itemOf(id).isFood)) { app.dispatchJob(d, eatJob()); return(true); }
     auto food = app.world.findFreeFood(d.tile);
-    if(food != noBlock) { app.dispatchJob(d, pickupJob(noTile, app.world.drops.resourceType(food).toClass)); return(true); }
+    if(food != noBlock) { 
+      app.dispatchJob(d, pinnedPickup(food, app.world.drops[food].tile, app.world.drops.itemOf(food).material)); return(true);
+    }
   }
   // Thirst
   if(d.needs[Need.Thirst] >= 0.6f && d.needBackoff[Need.Thirst] == 0) {
