@@ -7,9 +7,9 @@ import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
-import lattice : tileCoord, tileToWorld, chunkCoord, worldCoord, getOr;
+import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, getOr;
 import lsystem : buildGrammar;
-import matrix : translateScale;
+import matrix : translateScale, position;
 import noise : noiseHTT;
 import resources : variantOf;
 import raws : RESOURCE_COUNT;
@@ -271,11 +271,19 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
   for(size_t i = 0; i < app.world.vegetation[ft.name][coord].length; ) {
     auto f = app.world.vegetation[ft.name][coord][i];
     if(f.rootTile != tile) { i++; continue; }
-    auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
-    foreach(ref br; ft.brushes) {
+    TurtleConfig cfg;
+    cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
+    foreach(ref br; ft.brushes) {                                  // ALL brushes: harvest-only geometry needs positions too
       auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
-      uint n = 0; foreach(c; chars) if(c == br.symbol) n++;
-      foreach(_; 0 .. n) app.spawnBlock(tile, Item(ItemTemplate.None, brt));
+      cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color);
+    }
+    auto wp = app.world.tileToWorld(tile);
+    auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
+    auto grouped = interpret(chars, cfg, [wp[0], wp[1] - 0.5f * app.world.tileHeight, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
+    foreach(ref br; ft.brushes) {                                  // spawn one drop per drawn instance, at its tile
+      if(br.symbol !in grouped) continue;
+      auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
+      foreach(ref inst; grouped[br.symbol]) app.spawnBlock(app.world.worldToTile(position(inst.matrix)), Item(ItemTemplate.None, brt));
     }
     app.world.instanceCache.remove(f.rootTile);   // drop cached instances for the harvested feature
     app.world.vegetation[ft.name][coord] = app.world.vegetation[ft.name][coord][0..i] ~ app.world.vegetation[ft.name][coord][i+1..$];
