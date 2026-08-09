@@ -10,7 +10,6 @@ import ctfe : parseTokens, splitColon;
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
 // Substance = the abstract match key (Stone, Wood, ...). Replaces the old [CLASS:x] name-hack.
-import entity : EntityT;
 mixin(enumFromTag(import("data/raws/substance.txt"), "SUBSTANCE", "Substance", "None"));
 mixin(sourceEnum(import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 
