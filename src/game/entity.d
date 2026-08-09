@@ -20,9 +20,16 @@ import vertex : Vertex;
 import matrix : Matrix, multiply, inverse, transpose;
 import std.conv : to;
 import std.format : format;
+import color : Colors;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 
+
+/** Named colour -> float[4] via the Colors palette (no raws dependency, CTFE-safe). */
+float[4] namedColor(string name) pure {
+  static foreach(m; __traits(allMembers, Colors)) if(name == m) return cast(float[4])__traits(getMember, Colors, m);
+  return [1.0f, 1.0f, 1.0f, 1.0f];
+}
 
 /** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
 struct EntityT {
@@ -64,7 +71,8 @@ EntityT[] parseEntities(string raw) pure {
       case "AXIOM":            e.axiom = p[1]; break;
       case "BRUSH":            if(p.length >= 6){
                                  e.brushes ~= LSystemBrushT(p[1][0], p[2], 0, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]), 0.0f, true, 1.0f,
-                                   [p.length > 6 ? to!float(p[6]) : 0.0f, p.length > 7 ? to!float(p[7]) : 0.0f, p.length > 8 ? to!float(p[8]) : 0.0f]);
+                                   [p.length > 7 ? to!float(p[7]) : 0.0f, p.length > 8 ? to!float(p[8]) : 0.0f, p.length > 9 ? to!float(p[9]) : 0.0f],
+                                   p.length > 6 ? namedColor(p[6]) : [1.0f, 1.0f, 1.0f, 1.0f]);
                                } break;
       case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
       default: break;
@@ -101,6 +109,7 @@ void bakeEntity(OpenAsset dest, const EntityT et) {
         v.position = [pp[0], pp[1], pp[2]];
         v.normal   = [nn[0], nn[1], nn[2]];
         v.bones[0] = cast(uint)bone; v.weights[0] = 1.0f;
+        v.color = br.color;
         dest.vertices ~= v;
       }
       foreach(ii; 0 .. prim.indices.length) dest.indices ~= start + prim.indices[ii];

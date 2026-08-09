@@ -267,7 +267,7 @@ void spawnDwarf(ref GameApp app) {
   auto tile = app.findFreeSurfaceTile();
   if(tile[0] == int.min) return;
   app.ensureDwarves();
-  Dwarf d; d.entity.data = EntityData!32(nextEntityUID++, randomColor(), tile);
+  Dwarf d; d.entity.data = EntityData!32(nextEntityUID++, Colors.white, tile);
   randomizeName(d);
   app.addDwarf(d);
   app.world.dwarves.syncInstances();
