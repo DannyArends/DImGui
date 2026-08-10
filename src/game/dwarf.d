@@ -30,6 +30,7 @@ import world : nextEntityUID;
 
 enum int NEED_RETRY = 30;
 enum float WALK_AMP  = 28.0f;   /// leg/arm swing amplitude, degrees
+enum float SWAY_AMP  = 3.5f;    /// idle/torso side-sway amplitude, degrees
 enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
 
 struct Dwarf {
@@ -112,10 +113,10 @@ void dwarfFrame(ref GameApp app, float dt) {
     auto sc = app.world.dwarves.dscale[d.uid];
     Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
     position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY[d.uid] * sc[1], d.visualPos[2]]);
-    float amp = (d.state == EntityState.Moving || d.state == EntityState.Wandering) ? WALK_AMP : 0.0f;
-    if(amp > 0.0f) d.animPhase += dt * WALK_RATE;
+    bool moving = (d.state == EntityState.Moving || d.state == EntityState.Wandering);
+    d.animPhase += dt * WALK_RATE;                    // advance always so idle sway animates
     auto rig = app.world.dwarves.rigs[d.uid];
-    auto posed = poseRig(rig, d.animPhase, amp);
+    auto posed = poseRig(rig, d.animPhase, moving ? WALK_AMP : 0.0f, SWAY_AMP);
     foreach(k, ref n; rig) {
       auto di = n.inst; di.matrix = world.multiply(posed[k]);
       app.world.dwarves.meshes[app.world.dwarves.symMesh[n.symbol]].instances ~= di;
@@ -164,17 +165,19 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
 
 /** Re-pose a rig for a walk cycle: L/A swing about their joint (opposite by side, arms counter legs).
  *  amp == 0 reproduces the bind pose exactly. Returns per-node posed world matrices (dwarf-local). */
-Matrix[] poseRig(const RigNode[] rig, float phase, float amp) {
+Matrix[] poseRig(const RigNode[] rig, float phase, float walkAmp, float swayAmp) {
   Matrix[] posed; posed.length = rig.length;
   foreach(k, ref n; rig) {
     Matrix parentW = (n.parent < 0) ? Matrix.init : posed[n.parent];
     float side = (n.inst.matrix[12] < 0.0f) ? 1.0f : -1.0f;   // bind world X: left vs right
-    float ang = 0.0f;
-    if(n.symbol == 'L')      ang =  amp * sin(phase) * side;
-    else if(n.symbol == 'A') ang = -amp * sin(phase) * side;
-    if(ang != 0.0f) {
+    float[3] e = [0.0f, 0.0f, 0.0f];
+    if(n.symbol == 'L')      e[2] =  walkAmp * sin(phase) * side;          // fwd/back leg swing (roll about X)
+    else if(n.symbol == 'A') e[2] = -walkAmp * sin(phase) * side;          // arms counter the legs
+    else if(n.symbol == 'T') e[1] =  swayAmp * sin(phase * 0.35f);         // gentle side lean at the waist
+    if(e != [0.0f, 0.0f, 0.0f]) {
       float[3] piv = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
-      Matrix swung = translate(piv).multiply(rotate([0.0f, 0.0f, ang])).multiply(translate([-piv[0], -piv[1], -piv[2]])).multiply(n.local);
+      Matrix swung = translate(piv).multiply(rotate(e))
+                       .multiply(translate([-piv[0], -piv[1], -piv[2]])).multiply(n.local);
       posed[k] = parentW.multiply(swung);
     } else {
       posed[k] = parentW.multiply(n.local);
