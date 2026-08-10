@@ -6,7 +6,7 @@
 import game;
 
 import inventory : InventorySlot;
-import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
+import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack;
 import scheduler : atDestination;
 import lsystem : TurtleConfig, TurtleBrush, buildGrammar;

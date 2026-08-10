@@ -9,13 +9,13 @@ import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, getOr;
 import lsystem : buildGrammar;
-import matrix : translateScale, position;
+import matrix : position;
 import noise : noiseHTT;
 import resources : variantOf;
 import sfx : play;
 import timing : timed;
 import turtlegfx : interpret;
-import vector : vAdd, manhattan;
+import vector : manhattan;
 
 struct Feature {
   int[3] rootTile;

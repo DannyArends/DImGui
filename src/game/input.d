@@ -9,7 +9,6 @@ import block : syncBlockInstances;
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
 import clouds : rainTick, settleRain, requestCloudRebuild;
 import game : GameApp;
-import hits : getHits;
 import screenshot : saveScreenshot;
 import timing : timed;
 import jobs : craftJob, jobQueue;

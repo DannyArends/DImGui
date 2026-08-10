@@ -5,7 +5,7 @@
 
 import game;
 
-import block : resourceType, itemOf, syncBlockInstances, findFreeBlock, findFreeFood, noBlock, hasResource, release;
+import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
 import entity : tickEntity, entityMove;
 import inventory : deriveInventory;
@@ -13,11 +13,11 @@ import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
-import matrix : translate, rotate, position, scale, translateScale;
+import matrix : translate, rotate, position, scale;
 import names : randomizeName;
-import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
-import jobs : pickupJob, pinnedPickup, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
-import resources : isFood, itemStack, isEmptyCup, isWaterCup;
+import pathfinding : repathTo, RepathResult, findGoalTile;
+import jobs : pinnedPickup, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
+import resources : isFood, isEmptyCup, isWaterCup;
 import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;
 import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;

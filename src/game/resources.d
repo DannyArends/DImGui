@@ -5,10 +5,8 @@
 
 import game;
 
-import block : resourceType, itemOf;
-import io : dir, fixPath;
-import surface : toRGBA;
-import textures : transferTextureAsync, idx;
+import block : itemOf;
+import textures : idx;
 
 /** A concrete item = (shape x material), optionally holding `amount` units of `contents`.
  *  shape == None => a raw material block (berry/flint/log/stone) keyed purely on `material`. */
@@ -37,7 +35,7 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 @nogc bool buildable(const ResourceType r) pure nothrow { return resourceTable[r].build; }
 @nogc float cost(const ResourceType r) pure nothrow { return resourceTable[r].traverse; }
 @nogc int maxStack(const ResourceType r) pure nothrow { return resourceTable[r].maxStack; }
-@nogc bool isFood(const Item it) pure nothrow { return it.material != ResourceType.None && resourceTable[it.material].food > 0.0f; }
+@nogc bool isFood(const Item it) pure nothrow { return it.foodValue() > 0.0f; }
 @nogc float foodValue(const Item it) pure nothrow { return it.material != ResourceType.None ? resourceTable[it.material].food : 0.0f; }
 
 /** The source (origin tile/feature) of a variant, and the reverse lookup (substance @ source -> variant). */

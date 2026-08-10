@@ -5,12 +5,11 @@
 
 import game;
 
-import inventory : deriveInventory;
-import lattice : tileToWorld, worldToTile, tileAbove, chunkCoord;
+import lattice : tileToWorld, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
 import resources : isFood, toItem, isRaw, isCraft, templateMat, matchDemand;
-import tile : isStandable, inColumn, landingTile, surfaceAt, hasStandableNeighbour;
+import tile : isStandable, inColumn, landingTile, hasStandableNeighbour;
 import vector : manhattan;
 
 enum uint noBlock = uint.max;

@@ -6,7 +6,7 @@
 import game;
 
 import assimp : OpenAsset;
-import matrix : translateScale, multiply;
+import matrix : translateScale;
 
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
 class Dwarves : OpenAsset {

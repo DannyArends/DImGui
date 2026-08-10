@@ -10,7 +10,7 @@ import feature : stampFeatureFootprints;
 import game : GameApp;
 import jobs : activeTiles;
 import lattice : tileIdx, tileToWorld, tileAbove, chunkCoord, tileNeighbours;
-import tool : tools, buildHighlight;
+import tool : tools;
 import vector : dot;
 
 int[3] getGhostTile(const GameApp app, float[3][2] ray, Intersection[] hits) {

@@ -6,7 +6,6 @@
 import game;
 
 import lattice : tileToWorld, worldToTile, tileAbove, tileNeighbours, tileBelow;
-import matrix : translate;
 import search : performSearch, atGoal, stepThroughPath;
 import tile : getSuccessors, isStandable, isPassable, getTileAt;
 import vector : manhattan2D, interpolate;

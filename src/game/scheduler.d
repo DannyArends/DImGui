@@ -5,7 +5,7 @@
 
 import game;
 
-import block : resourceType, findFor, noBlock, release;
+import block : findFor, noBlock, release;
 import pathfinding : findGoalTile, pathfindTo;
 import jobs : flatten, jobQueue, storeJob;
 import lattice : tileToWorld, worldToTile;

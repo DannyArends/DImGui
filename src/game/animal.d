@@ -7,29 +7,26 @@ import game;
 
 import animation : animateAsset;
 import assimp : OpenAsset;
-import block : findFreeFood, resourceType, noBlock, itemOf;
+import block : findFreeFood, noBlock, itemOf;
 import bone : mergeBones;
-import color : randomColor;
-import dwarf : findFreeSurfaceTile;
 import entity : tickEntity, entityMove;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
 import geometry : Geometry;
-import jobs : Job, JobState, consumeCarried;
-import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord, worldToTile;
+import jobs : Job, consumeCarried;
+import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord;
 import material : registerMaterials;
 import matrix : translateScale, scale, position, rotate;
 import noise : noiseHTT;
-import pathfinding : followPath, pathfindTo, stepMove, repathTo, RepathResult, findGoalTile;
 import resources : foodValue;
 import scheduler : roam, dispatchJob, progressJob;
 import sfx : play;
 import textures : mapTextures;
-import tile : getSuccessors, tileAbove, getWater, setWater;
+import tile : getWater, setWater;
 import vector : manhattan;
 import water : findNearestWater;
 import world : nextEntityUID;
-import timing : MS_THRESHOLD;
+
 enum animalStep = 4.0f;    // base step rate (moveT/sec, divided by tile cost)
 enum animalHop  = 0.9f;    // hop arc height
 enum float NEED_SEEK = 0.55f;    // start foraging when a need crosses this
