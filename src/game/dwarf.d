@@ -255,6 +255,7 @@ void ensureDwarves(ref GameApp app) {
   app.world.dwarves = new Dwarves();
   app.world.dwarves.onFrame = (float dt){ dwarfFrame(app, dt); };
   app.world.dwarves.onTick  = (){ dwarfTick(app); };
+  app.objects ~= app.world.dwarves;
   app.initDwarfMeshes();
   app.world.paths.markers = new PathMarkers();
   app.objects ~= app.world.paths.markers;
