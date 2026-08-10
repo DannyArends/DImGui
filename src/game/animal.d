@@ -181,7 +181,7 @@ void seedChunkAnimalSpawns(ref ChunkData data, immutable(WorldData) wd) {
     if(i < surfaceLimit && data.tileTypes[i + chunkSize] != ResourceType.None) continue;
 
     const auto ttIdx = cast(size_t)tt;
-    if(ttIdx >= EnumMembers!ResourceType.length || spawnLookup[ttIdx].count == 0) continue;
+    if(ttIdx >= RESOURCE_COUNT || spawnLookup[ttIdx].count == 0) continue;
 
     const auto wc = wd.worldCoord(data.coord, wd.tileCoord(i));
     const auto n = noiseHTT(wc[0], wc[2], wd.seed);
