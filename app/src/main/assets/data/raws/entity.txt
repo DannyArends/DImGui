@@ -16,7 +16,7 @@
 
   # --- legs / feet ---
   [BRUSH:L:Cylinder:0.20:0.15:true:saddlebrown]
-  [BRUSH:B:Cube:0.24:0.10:false:black:0.0:0.0:0.05]
+  [BRUSH:B:Cube:0.24:0.10:false:black:0.0:0.0:-0.05]
 
   # --- torso / belt / buckle ---
   [BRUSH:T:Cube:0.48:0.20:true:tint]
