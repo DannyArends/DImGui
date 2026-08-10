@@ -37,8 +37,8 @@
   [BRUSH:c:Cube:0.10:0.09:false:burlywood:-0.26:-0.22:0.16]
   [BRUSH:C:Cube:0.10:0.09:false:burlywood:0.26:-0.22:0.16]
   [BRUSH:v:Cube:0.22:0.05:false:sienna:0.0:-0.30:0.23]
-  [BRUSH:p:Cube:0.07:0.12:false:burlywood:-0.34:-0.15:0.02]
-  [BRUSH:P:Cube:0.07:0.12:false:burlywood:0.34:-0.15:0.02]
+  [BRUSH:p:Cube:0.07:0.12:false:burlywood:-0.28:-0.15:0.02]
+  [BRUSH:P:Cube:0.07:0.12:false:burlywood:0.28:-0.15:0.02]
 
   # --- nose (S -> Z small | z big) ---
   [BRUSH:Z:Sphere:0.085:0.085:false:burlywood:0.0:-0.20:0.26]
@@ -54,11 +54,11 @@
   [BRUSH:a:Cube:0.07:0.06:false:goldenrod:0.0:-0.48:0.14]
 
   # --- hair (K -> style); h cap, i/j/k mohawk spikes, t topknot ---
-  [BRUSH:h:Cube:0.50:0.10:false:sienna:0.0:0.03:-0.02]
-  [BRUSH:i:Cube:0.08:0.16:false:sienna:0.0:0.12:0.14]
-  [BRUSH:j:Cube:0.08:0.22:false:sienna:0.0:0.15:0.00]
-  [BRUSH:k:Cube:0.08:0.16:false:sienna:0.0:0.12:-0.14]
-  [BRUSH:t:Cube:0.16:0.16:false:sienna:0.0:0.15:-0.10]
+  [BRUSH:h:Cube:0.50:0.10:false:sienna:0.0:0.0:-0.02]
+  [BRUSH:i:Cube:0.08:0.16:false:sienna:0.0:0.08:0.14]
+  [BRUSH:j:Cube:0.08:0.22:false:sienna:0.0:0.08:0.00]
+  [BRUSH:k:Cube:0.08:0.16:false:sienna:0.0:0.08:-0.14]
+  [BRUSH:t:Cube:0.16:0.16:false:sienna:0.0:0.08:-0.10]
 
   # --- beard style ---
   [RULE:J:DE:25]

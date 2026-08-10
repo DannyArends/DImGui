@@ -115,10 +115,11 @@ void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
   position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1], d.visualPos[2]]);
   d.anim.animTime += dt;
   float phase = cast(float)d.anim.animTime * WALK_RATE + (d.uid % 100);
+  bool walking = d.moveT < 1.0f;               // actually displacing this step, not just in a moving state
   const r = dw.rig[d.uid];
   auto g = globals(r, world, (size_t k) {
     float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-    return posedLocal(r[k], channelEuler(dw.anims, r[k].symbol, side, phase, d.state.isMoving));
+    return posedLocal(r[k], channelEuler(dw.anims, r[k].symbol, side, phase, walking));
   });
   foreach(k, ref n; r) {
     if(n.symbol in dw.symMesh) {
