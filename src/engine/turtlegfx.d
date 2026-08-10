@@ -18,6 +18,13 @@ struct RigNode {
   char symbol;          /// brush symbol -> shared geometry
 }
 
+/** Accumulate world matrices over a parent-indexed rig; `localOf(k)` supplies node k's posed local. */
+Matrix[] globals(const RigNode[] rig, const Matrix root, scope Matrix delegate(size_t) localOf) {
+  Matrix[] g; g.length = rig.length;
+  foreach(k, ref n; rig) g[k] = (n.parent < 0 ? root : g[n.parent]).multiply(localOf(k));
+  return g;
+}
+
 /** Turtle walk that RETAINS the branch hierarchy: each drawn brush becomes a RigNode with a parent
  *  (the enclosing part) and a local transform, so a joint can be re-posed and its children follow. */
 RigNode[] interpretRig(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {

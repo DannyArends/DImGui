@@ -10,20 +10,6 @@ import lsystem : buildGrammar;
 import matrix : translateScale;
 import turtlegfx : interpretRig;
 
-/** Build an engine Node hierarchy from the turtle rig: name "<symbol><idx>", transform = local,
- *  meshes = [brush mesh]; branch parenting preserved. */
-private Node buildNode(const RigNode[] r, const string[char] symMesh) {
-  int[][] kids; kids.length = r.length + 1;                 // [0] = root's children, [k+1] = children of node k
-  foreach(k, ref n; r) kids[n.parent + 1] ~= cast(int)k;
-  Node make(int k) {
-    Node n = (k < 0) ? Node("rig", 0, Matrix.init)
-                     : Node(text(r[k].symbol, k), 0, r[k].local, [], (r[k].symbol in symMesh) ? [symMesh[r[k].symbol]] : []);
-    foreach(c; kids[k + 1]) n.children ~= make(c);
-    return n;
-  }
-  return make(-1);
-}
-
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
 class Dwarves : OpenAsset {
   Dwarf[] dwarves;
@@ -31,9 +17,7 @@ class Dwarves : OpenAsset {
   int selected = -1;
   size_t[] tickOrder;
   Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
-  Node[uint] rig;                   /// per-dwarf Node hierarchy (walked by walkPose)
-  float[string][uint] side;         /// per-node left/right sign (bind world X), keyed by node name
-  AnimationState[uint] states;      /// per-dwarf animation clock (engine type; replaces animPhase)
+  RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
   float[4][char] symColor;          /// brush symbol -> baked color
   float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
@@ -62,13 +46,9 @@ class Dwarves : OpenAsset {
   void buildRig(uint uid) {
     if(uid in rig) return;
     auto r = interpretRig(buildGrammar(cast(uint)(uid * 2654435761u), 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
-    float lo = 0.0f; bool any = false; float[string] sd;
-    foreach(k, ref n; r) {
-      float y = n.inst.matrix[13]; if(!any || y < lo){ lo = y; any = true; }
-      sd[text(n.symbol, k)] = (n.inst.matrix[12] < 0.0f) ? 1.0f : -1.0f;
-    }
-    rig[uid] = buildNode(r, symMesh); side[uid] = sd; footY[uid] = lo;
-    states[uid] = AnimationState(0, uniform(0.0, 1000.0));
+    float lo = 0.0f; bool any = false;
+    foreach(ref n; r) { float y = n.inst.matrix[13]; if(!any || y < lo){ lo = y; any = true; } }
+    rig[uid] = r; footY[uid] = lo;
     uint h = cast(uint)(uid * 2654435761u);
     float sy  = 0.90f + (h & 255) / 255.0f * 0.22f;
     float sxz = 0.85f + ((h >> 8) & 255) / 255.0f * 0.35f;

@@ -48,14 +48,6 @@ struct Animation {
 
 @nogc double calculateCurrentTick(double seconds, double tps, double dur) nothrow { return fmod(seconds * tps, dur); }
 
-/** Walk a Node hierarchy accumulating parent·local; `localOf` supplies each node's (possibly animated)
- *  local transform, `emit` consumes each node's global. The one traversal for skinned models and rigs. */
-void walkPose(ref App app, const Node node, const Matrix pTransform, const(Matrix) delegate(const Node) localOf, void delegate(const Node, const Matrix) emit) {
-  Matrix g = pTransform.multiply(localOf(node));
-  emit(node, g);
-  foreach(cNode; node.children) { app.walkPose(cNode, g, localOf, emit); }
-}
-
 /** Advance one animated asset's animation by dt and recompute its bone transforms. */
 void animateAsset(ref App app, ref Geometry obj, float dt) {
   if(dt == 0.0f) return;
@@ -71,23 +63,20 @@ void animateAsset(ref App app, ref Geometry obj, float dt) {
   }
 }
 
-/** Skinned-model driver: sample keyframes for the local pose, write the animated bone palette. */
+/** Skinned-model driver: sample keyframes, accumulate parent·local, write the animated bone palette. */
 void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform,
                               double animationTime, uint animIndex, uint regionBase) {
   Animation animation = obj.animations[animIndex];
-  app.walkPose(node, pTransform,
-    (const Node n) {
-      if(n.name !in animation.nodeAnimations) return n.transform;
-      Matrix positionM = translate(sampleKeyframes!interpolate(animation.nodeAnimations[n.name].positionKeys, animationTime));
-      Matrix rotationM = rotate(sampleKeyframes!slerp(animation.nodeAnimations[n.name].rotationKeys, animationTime));
-      Matrix scaleM    = scale(sampleKeyframes!interpolate(animation.nodeAnimations[n.name].scalingKeys, animationTime));
-      return scaleM.multiply(positionM.multiply(rotationM));
-    },
-    (const Node n, const Matrix gTransform) {
-      if(n.name in app.bones) {
-        app.boneOffsets[regionBase + (app.bones[n.name].index - obj.boneBase)] = gTransform.multiply(app.bones[n.name].offset);
-      }
-    });
+  Matrix local = node.transform;
+  if (node.name in animation.nodeAnimations) {
+    Matrix positionM = translate(sampleKeyframes!interpolate(animation.nodeAnimations[node.name].positionKeys, animationTime));
+    Matrix rotationM = rotate(sampleKeyframes!slerp(animation.nodeAnimations[node.name].rotationKeys, animationTime));
+    Matrix scaleM    = scale(sampleKeyframes!interpolate(animation.nodeAnimations[node.name].scalingKeys, animationTime));
+    local = scaleM.multiply(positionM.multiply(rotationM));
+  }
+  Matrix gTransform = pTransform.multiply(local);
+  if (node.name in app.bones) app.boneOffsets[regionBase + (app.bones[node.name].index - obj.boneBase)] = gTransform.multiply(app.bones[node.name].offset);
+  foreach(cNode; node.children) app.calculateGlobalTransform(obj, cNode, gTransform, animationTime, animIndex, regionBase);
 }
 
 /** load all animations from aiScene* */
