@@ -5,8 +5,8 @@
  
 import game;
 
-import widgets : infoRow, text;
-import tile : getWater, tileBelow, tileAbove, getTileAt;
+import widgets : infoRow;
+import tile : getWater, tileBelow;
 
 /** Read-only water stats + cursor inspection. */
 void showWaterContent(ref GameApp app, uint font = 0) {

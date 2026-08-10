@@ -6,17 +6,17 @@
 import game;
 
 import animal : removeChunkAnimals;
-import dwarf : deleteDwarf, invalidatePaths;
+import dwarf : deleteDwarf;
 import events : removeGeometry;
 import feature : removeAllFeatures, rebuildAllFeatures, addFeatureInstances;
 import instancing : DrawInstance;
 import io : fixPath;
-import lattice : chunkCoord, localCoord, worldCoord;
+import lattice : chunkCoord;
 import lights : updateSun;
 import jobs : jobQueue;
 import persistence : loadWorld;
-import text : addWorldText, ensureWorldText;
-import tile : tileBelow, getTile, isStandable, isPassable;
+import text : addWorldText;
+import tile : getTile, isStandable, isPassable;
 import timing : timed;
 import vector : sqDist, vAdd, vMul, x, y, z;
 

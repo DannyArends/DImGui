@@ -11,7 +11,7 @@ import jobs : flatten, jobQueue, storeJob;
 import lattice : tileToWorld, worldToTile;
 import resources : carriedFor;
 import stockpile : acceptedByHolder, findStockpileSlot, storedTileOf, withdrawBlock;
-import tile : getSuccessors, tileAbove, isTileOccupied, hasStandableNeighbour;
+import tile : getSuccessors, tileAbove, isTileOccupied;
 import vector : manhattan, manhattan2D;
 
 enum uint HAUL_COOLDOWN = 600;   /// Cooldown for unreachable blocks

@@ -9,7 +9,6 @@ import dwarf : spawnDwarf, deleteDwarf;
 import entitywindow : entityGlyph, followEntity, needToggle;
 import imgui : iconText;
 import jobs : jobQueue, dropBlockJob;
-import lattice : tileToWorld;
 import resources : itemName, itemTex;
 import scheduler : dispatchJob;
 import textures : ImTextureRefFromID, idx;

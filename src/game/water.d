@@ -6,10 +6,10 @@
 import game;
 
 import chunk : faceData;
-import clouds : CLOUD_STEP, cloudCell;
-import lattice : tileBelow, tileCoord, tileIdx, tileToWorld, chunkCoord, worldCoord, flatten, unflatten, Diff;
-import tile : neighbourAt, isStandable, standableNeighbour, getWater, setWater;
-import vector : manhattan, manhattan2D, x, y, z;
+import clouds : cloudCell;
+import lattice : tileCoord, tileToWorld, worldCoord, flatten, unflatten, Diff;
+import tile : neighbourAt, isStandable, standableNeighbour, setWater;
+import vector : manhattan, x, y, z;
 
 enum ubyte WATER_MAX = 7;               // Maximum water density
 enum int WATER_TARGET_ACTIVE = 1250;    // Desired number of live water cells in sim

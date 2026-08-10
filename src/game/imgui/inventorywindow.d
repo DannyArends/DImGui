@@ -5,7 +5,6 @@
 
 import game;
 
-import imgui : faIcon;
 import textures : ImTextureRefFromID, idx;
 import tool : setActiveTool;
 import widgets : drawCenteredText, text;

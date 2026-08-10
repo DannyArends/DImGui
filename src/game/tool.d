@@ -6,16 +6,13 @@
 import game;
 
 import block : release;
-import camera : castRay;
 import chunk : getBestTile;
 import ghost : getGhostTile, syncBuildGhosts;
-import lattice : tileToWorld, tileAbove, tileBelow;
 import feature : hasFeature;
-import inventory : placeTile, computeDragPreview;
+import inventory : computeDragPreview;
 import jobs : jobQueue, miningJob, interactFeatureJob;
 import hits : getHits;
 import gameobjects : PendingBuild;
-import geometry : setColor;
 import stockpile : createStockpile;
 import tile : getTileAt, getWater, setWater;
 import matrix : translateScale;

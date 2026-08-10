@@ -6,13 +6,10 @@
 import game;
 
 import block : itemOf;
-import io : writeFile, readFile;
-import jobs : jobQueue, liveJobs, Reach;
-import lattice : tileToWorld, tileBelow, tileAbove;
+import jobs : liveJobs, Reach;
+import lattice : tileBelow, tileAbove;
 import pathfinding : findGoalTile;
 import resources : isCraft;
-import serialization : WORLD_MAGIC;
-import tile : isStandable, hasStandableNeighbour;
 import vector : sqDist;
 
 struct Stockpile {
