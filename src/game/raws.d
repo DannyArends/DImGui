@@ -151,8 +151,7 @@ AnimalT[] parseAnimals(string raw) pure {
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure {
   FeatureT[] list;
- FeatureT ft;
-  bool inFeature;
+  FeatureT ft; bool inFeature;
   foreach(token; parseTokens(raw)) {
     auto p = splitColon(token);
     if(p.length == 0) continue;
@@ -195,6 +194,44 @@ FeatureT[] parseFeatures(string raw) pure {
   return(list);
 }
 
+/** CTFE: parse [ENTITY] blocks into per-species EntityT. Entity brushes carry no substance (0). */
+EntityT[] parseEntities(string raw) pure {
+  EntityT[] entities; EntityT e; bool inEntity;
+  foreach(token; parseTokens(raw)) {
+    auto p = splitColon(token);
+    if(p.length == 0) continue;
+    switch(p[0]) {
+      case "ENTITY":           if(inEntity){ entities ~= e; } e = EntityT.init; e.name = p[1]; inEntity = true; break;
+      case "MOVE_SPEED":       e.moveSpeed = to!float(p[1]); break;
+      case "HUNGER_DECAY":     e.hungerDecay = to!float(p[1]); break;
+      case "THIRST_DECAY":     e.thirstDecay = to!float(p[1]); break;
+      case "DIET":             e.diet = p[1]; break;
+      case "SCALE":            e.scale = to!float(p[1]); break;
+      case "SCALE_VARIANCE":   e.scaleVariance = to!float(p[1]); break;
+      case "OFFSET_Y":         e.offsetY = to!float(p[1]); break;
+      case "FACING":           e.facing = to!float(p[1]); break;
+      case "LSYSTEM_ANGLE":    e.lsystemYaw = e.lsystemPitch = e.lsystemRoll = to!float(p[1]); break;
+      case "LSYSTEM_GAP":      e.lsystemGap = to!float(p[1]); break;
+      case "LSYSTEM_YAW":      e.lsystemYaw   = to!float(p[1]); break;
+      case "LSYSTEM_PITCH":    e.lsystemPitch = to!float(p[1]); break;
+      case "LSYSTEM_ROLL":     e.lsystemRoll  = to!float(p[1]); break;
+      case "AXIOM":            e.axiom = p[1]; break;
+      case "BRUSH": if(p.length >= 6){
+        immutable float[4] col = p.length > 6 ? cast(float[4])toColor(p[6]) : [1.0f, 1.0f, 1.0f, 1.0f];
+        immutable float[3] off = [p.length > 7 ? to!float(p[7]) : 0.0f,
+                                  p.length > 8 ? to!float(p[8]) : 0.0f,
+                                  p.length > 9 ? to!float(p[9]) : 0.0f];
+        e.brushes ~= LSystemBrushT(p[1][0], p[2], 0, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]),
+                                   0.0f, true, 1.0f, off, col);
+      } break;
+      case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+      default: break;
+    }
+  }
+  if(inEntity){ entities ~= e; }
+  return(entities);
+}
+
 Reaction[] parseReactions(string raw) pure {
   Reaction[] table; Reaction r; bool inReaction;
   foreach(token; parseTokens(raw)) {
@@ -234,6 +271,7 @@ immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
 immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
+immutable EntityT[] entityTable = parseEntities(import("data/raws/entity.txt"));
 
 static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");

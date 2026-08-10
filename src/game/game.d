@@ -13,7 +13,7 @@ public import block : Block, Drops;
 public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
 public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf;
-public import entity : Entity, EntityData, EntityState, entityTable, bakeEntity;
+public import entity : Entity, EntityData, EntityState, bakeEntity;
 public import feature : Feature;
 public import lsystem : LSystemBrushT;
 public import inventory : Inventory, InventorySlot;
