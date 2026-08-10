@@ -106,8 +106,9 @@ void dwarfFrame(ref GameApp app, float dt) {
     }
     if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;   // off-loaded-chunk: don't emit
     app.world.dwarves.buildRig(d.uid);
-    Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]);
-    position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY[d.uid], d.visualPos[2]]);
+    auto sc = app.world.dwarves.dscale[d.uid];
+    Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
+    position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY[d.uid] * sc[1], d.visualPos[2]]);
     foreach(ref n; app.world.dwarves.rigs[d.uid]) {
       auto di = n.inst; di.matrix = world.multiply(n.inst.matrix);
       app.world.dwarves.meshes[app.world.dwarves.symMesh[n.symbol]].instances ~= di;

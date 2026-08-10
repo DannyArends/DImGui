@@ -18,6 +18,7 @@ class Dwarves : OpenAsset {
   size_t[] tickOrder;
   Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
   RigNode[][uint] rigs;             /// per-dwarf rig (buildGrammar(uid) -> interpretRig), keyed by uid
+  float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
   TurtleConfig cfg;                 /// turtle config built from the Dwarf entity brushes
   string[char] symMesh;             /// brush symbol -> primitive mesh name
@@ -41,10 +42,14 @@ class Dwarves : OpenAsset {
   /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
   void buildRig(uint uid) {
     if(uid in rigs) return;
-    auto nodes = interpretRig(buildGrammar(uid, 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+    auto nodes = interpretRig(buildGrammar(cast(uint)(uid * 2654435761u), 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
     float lo = 0.0f; bool any = false;
     foreach(ref n; nodes){ float y = n.inst.matrix[13]; if(!any || y < lo){ lo = y; any = true; } }
     rigs[uid] = nodes; footY[uid] = lo;
+    uint h = cast(uint)(uid * 2654435761u);
+    float sy  = 0.90f + (h & 255) / 255.0f * 0.22f;          // height 0.90..1.12
+    float sxz = 0.85f + ((h >> 8) & 255) / 255.0f * 0.35f;   // girth  0.85..1.20
+    dscale[uid] = [sxz, sy, sxz];
   }
 
   mixin SwapRemove!dwarves;
