@@ -13,7 +13,7 @@ import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
-import matrix : translate, rotate, position, scale;
+import matrix : multiply, translate, rotate, position, scale;
 import names : randomizeName;
 import pathfinding : repathTo, RepathResult, findGoalTile;
 import jobs : pinnedPickup, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
@@ -96,18 +96,24 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.state != EntityState.Moving && d.state != EntityState.Wandering) continue;
     app.entityMove(d, dt, stepSpeed, hopHeight);
   }
+  foreach(mesh; app.world.dwarves.meshes) { mesh.instances.reset(); }
   foreach(i, ref d; app.world.dwarves) {
-    if(d.lightIndex != size_t.max) {
+    if(d.lightIndex != size_t.max){
       app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f];
     }
-    if(d.nameLabel != size_t.max) {
+    if(d.nameLabel != size_t.max){
       app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]);
     }
-    float sc = (app.world.chunkCoord(d.tile) in app.world.chunks) ? 1.0f : 0.0f;
-    float[3] s = [sc, sc, sc];
-    Matrix m = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]);
-    app.world.dwarves.instances[i] = position(m, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY, d.visualPos[2]]);
+    if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;   // off-loaded-chunk: don't emit
+    app.world.dwarves.buildRig(d.uid);
+    Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]);
+    position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY[d.uid], d.visualPos[2]]);
+    foreach(ref n; app.world.dwarves.rigs[d.uid]) {
+      auto di = n.inst; di.matrix = world.multiply(n.inst.matrix);
+      app.world.dwarves.meshes[app.world.dwarves.symMesh[n.symbol]].instances ~= di;
+    }
   }
+  foreach(mesh; app.world.dwarves.meshes) { mesh.syncInstances(); }
   app.world.dwarves.syncInstances();
   app.buffers["LightMatrices"].invalidate();
 }
@@ -232,12 +238,24 @@ void dwarfTick(ref GameApp app) {
   app.timed!deriveInventory();
 }
 
+/** Create and register one instanced primitive per distinct Dwarf brush mesh. */
+void initDwarfMeshes(ref GameApp app) {
+  foreach(sym, name; app.world.dwarves.symMesh) {
+    if(name in app.world.dwarves.meshes) continue;
+    auto mesh = makePrimitive(name);
+    if(mesh is null) continue;
+    mesh.initInstanced((){ return "Dwarf:" ~ name; });
+    app.world.dwarves.meshes[name] = mesh;
+    app.objects ~= mesh;
+  }
+}
+
 void ensureDwarves(ref GameApp app) {
   if(app.world.dwarves !is null) return;
   app.world.dwarves = new Dwarves();
   app.world.dwarves.onFrame = (float dt){ dwarfFrame(app, dt); };
   app.world.dwarves.onTick  = (){ dwarfTick(app); };
-  app.objects ~= app.world.dwarves;
+  app.initDwarfMeshes();
   app.world.paths.markers = new PathMarkers();
   app.objects ~= app.world.paths.markers;
 
@@ -255,7 +273,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1], wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  app.world.dwarves.instances ~= DrawInstance(translate(d.visualPos), -1, Colors.white);
+  app.world.dwarves.buildRig(d.uid);
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
   d.nameLabel = app.addWorldText(d.firstname, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);

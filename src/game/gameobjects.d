@@ -6,7 +6,9 @@
 import game;
 
 import assimp : OpenAsset;
+import lsystem : buildGrammar;
 import matrix : translateScale;
+import turtlegfx : interpretRig;
 
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
 class Dwarves : OpenAsset {
@@ -14,13 +16,35 @@ class Dwarves : OpenAsset {
   alias dwarves this;
   int selected = -1;
   size_t[] tickOrder;
-  float footY = 0.0f;                           /// lowest baked vertex Y (feet), used to seat on the ground
+  Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
+  RigNode[][uint] rigs;             /// per-dwarf rig (buildGrammar(uid) -> interpretRig), keyed by uid
+  float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
+  TurtleConfig cfg;                 /// turtle config built from the Dwarf entity brushes
+  string[char] symMesh;             /// brush symbol -> primitive mesh name
+  string axiom;                     /// Dwarf grammar axiom
+  Rule[] rules;                     /// Dwarf grammar rules
 
   this() {
     super();
-    foreach(ref e; entityTable) if(e.name == "Dwarf") { bakeEntity(this, e); break; }
-    if(vertices.length){ footY = vertices[0].position[1]; foreach(vi; 1 .. vertices.length) if(vertices[vi].position[1] < footY) footY = vertices[vi].position[1]; }
+    foreach(ref e; entityTable) if(e.name == "Dwarf") {
+      cfg.yaw = e.lsystemYaw; cfg.pitch = e.lsystemPitch; cfg.roll = e.lsystemRoll; cfg.gap = e.lsystemGap;
+      axiom = e.axiom; rules = e.rules.dup;
+      foreach(ref br; e.brushes) {
+        cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
+        symMesh[br.symbol] = br.mesh;
+      }
+      break;
+    }
     initInstanced(() => "Dwarves");
+  }
+
+  /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
+  void buildRig(uint uid) {
+    if(uid in rigs) return;
+    auto nodes = interpretRig(buildGrammar(uid, 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+    float lo = 0.0f; bool any = false;
+    foreach(ref n; nodes){ float y = n.inst.matrix[13]; if(!any || y < lo){ lo = y; any = true; } }
+    rigs[uid] = nodes; footY[uid] = lo;
   }
 
   mixin SwapRemove!dwarves;
