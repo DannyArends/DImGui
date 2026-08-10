@@ -9,7 +9,7 @@ import block : resourceType, itemOf, spawnBlock, findFor, noBlock;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import lattice : tileAbove, tileNeighbours;
 import reactions : reactionFor;
-import resources : isFood, foodValue, hasClass, toClass, toItem, isEmptyCup, isWaterCup, carriedFor, matchDemand, substanceOf;
+import resources : isFood, foodValue, hasClass, toItem, isEmptyCup, isWaterCup, carriedFor, matchDemand;
 import scheduler : doPickup, failComplete, failReleaseRequeue, failRequeue, failReleaseComplete, pathTileFor, progressJob;
 import sfx : play;
 import stockpile : storeBlockAt;
@@ -103,12 +103,12 @@ Job!Dwarf miningJob(int[3] targetTile) {
 
 /** A pickup bound to one specific block id (not "any block of type") */
 Job!Dwarf pinnedPickup(uint blockID, int[3] fromTile, ResourceType type) { 
-  auto j = pickupJob(fromTile, type.toClass); j.blockIDs = [blockID]; return j; 
+  auto j = pickupJob(fromTile, resourceTable[type].substance); j.blockIDs = [blockID]; return j; 
 }
 
 /** Store in stockpile */
 Job!Dwarf storeJob(uint blockID, int[3] fromTile, ResourceType type, int[3] toTile) {
-  return Job!Dwarf("Store", toTile, type.toClass, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID], reach: Reach.Adjacent,
+  return Job!Dwarf("Store", toTile, resourceTable[type].substance, [pinnedPickup(blockID, fromTile, type)], blockIDs: [blockID], reach: Reach.Adjacent,
     onArrive: (ref GameApp app, ref Dwarf d) {
       /* SDL_Log(cstr("STORED %s tgt=[%d,%d,%d]", d.name, d.currentJob.targetTile[0], d.currentJob.targetTile[1], d.currentJob.targetTile[2])); */
       auto picked = app.carriedFor(d, d.currentJob.tileClass);
@@ -166,7 +166,7 @@ Job!Dwarf dropBlockJob(int[3] fromTile, uint blockID) {
 Job!Dwarf cleanWorksiteJob(int[3] targetTile) {
   return Job!Dwarf("CleanWorksite", targetTile, Substance.None, [],
     onClaim: (ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
-      foreach(id, ref b; app.world.drops) { if(b.tile == j.targetTile) { j.blockIDs = [id]; j.tileClass = b.item.material.toClass; return; } }
+      foreach(id, ref b; app.world.drops) { if(b.tile == j.targetTile) { j.blockIDs = [id]; j.tileClass = resourceTable[b.item.material].substance ; return; } }
       j.state = JobState.Satisfied;
     },
     onArrive: (ref GameApp app, ref Dwarf d) {
@@ -308,7 +308,7 @@ Job!Dwarf craftJob(string name) {
           auto found = d.carrying.filter!(cid => app.world.drops.itemOf(cid).matchDemand(ing.cls, ing.item));
           if(found.empty) continue;
           auto m = app.world.drops.resourceType(found.front);
-          if(ing.item){ srcMat[cast(ubyte)substanceOf(m)] = m; } else srcMat[ing.cls] = m;
+          if(ing.item){ srcMat[resourceTable[m].substance] = m; } else srcMat[ing.cls] = m;
           app.consumeCarried(d, found.front);
         }
         foreach(prod; rr.outputs) { foreach(n; 0 .. prod.count) {

@@ -19,11 +19,8 @@ struct Item {
   uint amount = 0;                             /// units of `contents` held (0 => empty; a full cup = 1)
 }
 
-/** The substance (match key) of a variant. */
-@nogc Substance substanceOf(ResourceType t) pure nothrow { return(resourceTable[t].substance); }
-
 /** A variant "has class c" iff its substance IS c (one substance per variant). */
-@nogc bool hasClass(ResourceType t, Substance c) pure nothrow { return substanceOf(t) == c; }
+@nogc bool hasClass(ResourceType t, Substance c) pure nothrow { return resourceTable[t].substance == c; }
 
 /** Does an item satisfy a demand: an item template (want) if set, else a material of substance cls
  *  (restricted to raw blocks when `raw`, so crafted items never fill a build/ingredient demand). */
@@ -38,9 +35,6 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
   return d.carrying.filter!(id => app.world.drops.itemOf(id).matchDemand(cls, want, type, false));
 }
 
-// A variant's substance is its "class"; converting the other way picks a representative variant of that substance.
-@nogc Substance toClass(ResourceType t) pure nothrow { return substanceOf(t); }
-
 // Convenience field accessors (UFCS shims over the variant's own fields)
 @nogc bool traversable(const ResourceType r) pure nothrow { return resourceTable[r].traverse > 0.0f; }
 @nogc bool buildable(const ResourceType r) pure nothrow { return resourceTable[r].build; }
@@ -52,7 +46,7 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 /** The source (origin tile/feature) of a variant, and the reverse lookup (substance @ source -> variant). */
 @nogc Source sourceOf(ResourceType t) pure nothrow { return(resourceTable[t].source); }
 @nogc ResourceType variantOf(Substance s, Source src) pure nothrow {
-  foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && substanceOf(rt) == s && sourceOf(rt) == src) return rt;
+  foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && resourceTable[rt].substance == s && sourceOf(rt) == src) return rt;
   return ResourceType.None;
 }
 

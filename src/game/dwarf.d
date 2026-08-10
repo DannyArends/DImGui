@@ -17,7 +17,7 @@ import matrix : translate, rotate, position, scale, translateScale;
 import names : randomizeName;
 import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
 import jobs : pickupJob, pinnedPickup, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
-import resources : isFood, toClass, itemStack, isEmptyCup, isWaterCup;
+import resources : isFood, itemStack, isEmptyCup, isWaterCup;
 import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;
 import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;
