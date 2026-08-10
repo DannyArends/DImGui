@@ -19,7 +19,7 @@ private void seed(ref Stockpile sp) {
   foreach(t; typesWhere(t => true)) sp.accepts[matKey(t)] = true;
   foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) sp.accepts[Item(cast(ItemTemplate)ti)] = true;
 }
-private string base(ResourceType t) { return resourceData(t).name.stripRight("0123456789_"); }
+private string base(ResourceType t) { return resourceTable[t].name.stripRight("0123456789_"); }
 private Colors tri(int on, int total) { return on == 0 ? Colors.firebrick : on == total ? Colors.green : Colors.yellow; }
 private auto typesWhere(scope bool delegate(ResourceType) keep) { return [EnumMembers!ResourceType].filter!(t => t != ResourceType.None && keep(t)); }
 private Item craftKey(ItemTemplate t) { return Item(t); }
@@ -55,7 +55,7 @@ private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool b
       }
     } else if(cNode(cstr("%s##b", b), tri(bOn, bT), () => sp.setAll(t => inBase(t), bOn != bT))) {
       foreach(t; typesWhere(t => inBase(t))) {
-        if(cTag(sp.leaf(app.world.drops, t, resourceData(t).name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[matKey(t)] = !sp.ok(t); }
+        if(cTag(sp.leaf(app.world.drops, t, resourceTable[t].name), sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[matKey(t)] = !sp.ok(t); }
       }
       igTreePop();
     }

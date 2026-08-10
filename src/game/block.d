@@ -113,7 +113,7 @@ uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored 
 
 void ensureBlocks(ref GameApp app) {
   foreach(rt; EnumMembers!ResourceType) {
-    auto meshName = resourceData(rt).meshName;
+    auto meshName = resourceTable[rt].meshName;
     if(meshName in app.world.drops.meshes) continue;
     auto m = makePrimitive(meshName);
     if(m is null) { SDL_Log("ensureBlocks: unknown mesh type '%s'", toStringz(meshName)); continue; }
@@ -147,12 +147,12 @@ uint spawnBlock(ref GameApp app, int[3] tile, Item it) {
 }
 
 /** Geometry mesh name for an item: template shape when crafted, else the material's mesh. */
-string renderMesh(const Item it) { return it.isCraft ? templateData(it.shape).mesh : resourceData(it.material).meshName; }
+string renderMesh(const Item it) { return it.isCraft ? templateData(it.shape).mesh : resourceTable[it.material].meshName; }
 
 /** Render scale for an item: template scale when crafted, else the material's scale. */
-float renderScale(const Item it) { return it.isCraft ? templateData(it.shape).scale : resourceData(it.material).scale; }
+float renderScale(const Item it) { return it.isCraft ? templateData(it.shape).scale : resourceTable[it.material].scale; }
 
-float renderOffsetY(const Item it) { return it.isCraft ? templateData(it.shape).offsetY : resourceData(it.material).offsetY; }
+float renderOffsetY(const Item it) { return it.isCraft ? templateData(it.shape).offsetY : resourceTable[it.material].offsetY; }
 
 /** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
 @nogc pure int matOverride(const Item it) nothrow {
@@ -161,7 +161,7 @@ float renderOffsetY(const Item it) { return it.isCraft ? templateData(it.shape).
 }
 
 void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale, int matOverride = -1) {
-  auto col = resourceData(b.item.material).color;                        // material colour tints the template skin
+  auto col = resourceTable[b.item.material].color;                        // material colour tints the template skin
   auto m = translateScale(pos, scale);
   if(matOverride >= 0){
     mesh.addInstances([DrawInstance(m, matOverride, col)]);

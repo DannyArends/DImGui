@@ -77,9 +77,6 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
   return table;
 }
 
-/** Per-material data, indexed by ResourceType (enum's ubyte value indexes the table). */
-@nogc pure const(ResourceT) resourceData(ResourceType rt) nothrow { return resourceTable[rt]; }
-
 /** Per-template data, indexed by ItemTemplate (enum's ubyte value indexes the table). */
 @nogc pure const(ItemTemplateT) templateData(ItemTemplate t) nothrow { return itemTemplateTable[t]; }
 

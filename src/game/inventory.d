@@ -44,7 +44,7 @@ struct Inventory {
   int total(ResourceType tt, ref GameApp app) const { return onFloor(tt, app) + carried(tt, app); }
   string toString(ResourceType tt, ref GameApp app) const {
     return format("%s | Available:%d (Floor:%d Carried:%d Queued:%d Built:%d)",
-      resourceData(tt).name, get(tt, app), onFloor(tt, app), carried(tt, app), queued.get(tt, 0), built(tt, app));
+      resourceTable[tt].name, get(tt, app), onFloor(tt, app), carried(tt, app), queued.get(tt, 0), built(tt, app));
   }
 }
 

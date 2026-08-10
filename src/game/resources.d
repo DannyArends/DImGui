@@ -20,7 +20,7 @@ struct Item {
 }
 
 /** The substance (match key) of a variant. */
-@nogc Substance substanceOf(ResourceType t) pure nothrow { return(resourceData(t).substance); }
+@nogc Substance substanceOf(ResourceType t) pure nothrow { return(resourceTable[t].substance); }
 
 /** A variant "has class c" iff its substance IS c (one substance per variant). */
 @nogc bool hasClass(ResourceType t, Substance c) pure nothrow { return substanceOf(t) == c; }
@@ -42,15 +42,15 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 @nogc Substance toClass(ResourceType t) pure nothrow { return substanceOf(t); }
 
 // Convenience field accessors (UFCS shims over the variant's own fields)
-@nogc bool traversable(const ResourceType r) pure nothrow { return resourceData(r).traverse > 0.0f; }
-@nogc bool buildable(const ResourceType r) pure nothrow { return resourceData(r).build; }
-@nogc float cost(const ResourceType r) pure nothrow { return resourceData(r).traverse; }
-@nogc int maxStack(const ResourceType r) pure nothrow { return resourceData(r).maxStack; }
-@nogc bool isFood(const Item it) pure nothrow { return it.material != ResourceType.None && resourceData(it.material).food > 0.0f; }
-@nogc float foodValue(const Item it) pure nothrow { return it.material != ResourceType.None ? resourceData(it.material).food : 0.0f; }
+@nogc bool traversable(const ResourceType r) pure nothrow { return resourceTable[r].traverse > 0.0f; }
+@nogc bool buildable(const ResourceType r) pure nothrow { return resourceTable[r].build; }
+@nogc float cost(const ResourceType r) pure nothrow { return resourceTable[r].traverse; }
+@nogc int maxStack(const ResourceType r) pure nothrow { return resourceTable[r].maxStack; }
+@nogc bool isFood(const Item it) pure nothrow { return it.material != ResourceType.None && resourceTable[it.material].food > 0.0f; }
+@nogc float foodValue(const Item it) pure nothrow { return it.material != ResourceType.None ? resourceTable[it.material].food : 0.0f; }
 
 /** The source (origin tile/feature) of a variant, and the reverse lookup (substance @ source -> variant). */
-@nogc Source sourceOf(ResourceType t) pure nothrow { return(resourceData(t).source); }
+@nogc Source sourceOf(ResourceType t) pure nothrow { return(resourceTable[t].source); }
 @nogc ResourceType variantOf(Substance s, Source src) pure nothrow {
   foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && substanceOf(rt) == s && sourceOf(rt) == src) return rt;
   return ResourceType.None;
@@ -70,15 +70,15 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 
 /** Name to display for an item */
 string itemName(const Item it) {
-  if(!it.isCraft) return resourceData(it.material).name;
-  string n = resourceData(it.material).name ~ " " ~ templateData(it.shape).name;
-  if(it.contents != ResourceType.None) n ~= " of " ~ resourceData(it.contents).name;
+  if(!it.isCraft) return resourceTable[it.material].name;
+  string n = resourceTable[it.material].name ~ " " ~ templateData(it.shape).name;
+  if(it.contents != ResourceType.None) n ~= " of " ~ resourceTable[it.contents].name;
   return n;
 }
 
 /** Texture to display for an item: template skin (filled variant when holding contents), else the raw material's 2D texture. */
 string itemTex(const Item it) {
-  if(!it.isCraft) return resourceData(it.material).tex2D;
+  if(!it.isCraft) return resourceTable[it.material].tex2D;
   auto t = templateData(it.shape);
   return (it.amount > 0 && t.texFilled.length) ? t.texFilled : t.tex;
 }
@@ -101,8 +101,8 @@ void injectResourceMeshes(ref GameApp app, uint minMaterials = RESOURCE_COUNT + 
 void updateMaterials(ref GameApp app) {
   foreach (tt; 0 .. RESOURCE_COUNT) {
     auto ttype = cast(ResourceType)tt;
-    app.materials[tt].tid = app.textures.idx(resourceData(ttype).tex3D);
-    if(resourceData(ttype).meshName != "Blocks"){ app.materials[tt].nid = app.textures.idx(resourceData(ttype).tex3D.replace("_base", "_normal")); }
+    app.materials[tt].tid = app.textures.idx(resourceTable[ttype].tex3D);
+    if(resourceTable[ttype].meshName != "Blocks"){ app.materials[tt].nid = app.textures.idx(resourceTable[ttype].tex3D.replace("_base", "_normal")); }
   }
   foreach (ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
