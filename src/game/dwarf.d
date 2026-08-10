@@ -121,7 +121,10 @@ void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
     return posedLocal(r[k], channelEuler(dw.anims, r[k].symbol, side, phase, d.state.isMoving));
   });
   foreach(k, ref n; r) {
-    if(n.symbol in dw.symMesh) dw.meshes[dw.symMesh[n.symbol]].instances ~= DrawInstance(g[k], -1, dw.symColor[n.symbol]);
+    if(n.symbol in dw.symMesh) {
+      float[4] col = dw.symTint.get(n.symbol, false) ? d.color : dw.symColor[n.symbol];
+      dw.meshes[dw.symMesh[n.symbol]].instances ~= DrawInstance(g[k], -1, col);
+    }
   }
 }
 

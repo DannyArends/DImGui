@@ -19,13 +19,13 @@
   [BRUSH:B:Cube:0.24:0.10:false:black:0.0:0.0:0.05]
 
   # --- torso / belt / buckle ---
-  [BRUSH:T:Cube:0.48:0.20:true:firebrick]
+  [BRUSH:T:Cube:0.48:0.20:true:tint]
   [BRUSH:W:Cube:0.54:0.06:false:saddlebrown:0.0:-0.02:0.0]
   [BRUSH:U:Cube:0.10:0.07:false:goldenrod:0.0:-0.02:0.30]
 
   # --- shoulders / arms / hands ---
-  [BRUSH:m:Cube:0.22:0.09:false:firebrick:0.0:0.04:0.0]
-  [BRUSH:A:Cylinder:0.16:0.14:true:firebrick]
+  [BRUSH:m:Cube:0.22:0.09:false:tint:0.0:0.04:0.0]
+  [BRUSH:A:Cylinder:0.16:0.14:true:tint]
   [BRUSH:N:Cube:0.22:0.10:false:saddlebrown]
 
   # --- head ---
@@ -68,9 +68,8 @@
 
   # --- hair style ---
   [RULE:K:h:40]
-  [RULE:K:ht:20]
-  [RULE:K:ijk:20]
-  [RULE:K:t:15]
+  [RULE:K:ht:35]
+  [RULE:K:hijk:20]
   [RULE:K:o:5]
 
   # --- nose size ---

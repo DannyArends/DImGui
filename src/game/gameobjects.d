@@ -19,6 +19,7 @@ class Dwarves : OpenAsset {
   Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
   RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
   float[4][char] symColor;          /// brush symbol -> baked color
+  bool[char] symTint;               /// brush symbols that tint with the dwarf's own colour
   float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
   TurtleConfig cfg;                 /// turtle config built from the Dwarf entity brushes
@@ -36,6 +37,7 @@ class Dwarves : OpenAsset {
         cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
         symMesh[br.symbol] = br.mesh;
         symColor[br.symbol] = br.color;
+        symTint[br.symbol]  = br.tint;
       }
       break;
     }

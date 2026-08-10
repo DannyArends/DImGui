@@ -177,12 +177,13 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
     } break;
     case "AXIOM":            e.axiom = p[1]; break;
     case "BRUSH": if(p.length >= 6){
-      immutable float[4] col = p.length > 6 ? cast(float[4])toColor(p[6]) : [1.0f, 1.0f, 1.0f, 1.0f];
+      immutable bool tnt = p.length > 6 && p[6] == "tint";
+      immutable float[4] col = (p.length > 6 && !tnt) ? cast(float[4])toColor(p[6]) : [1.0f, 1.0f, 1.0f, 1.0f];
       immutable float[3] off = [p.length > 7 ? to!float(p[7]) : 0.0f,
                                 p.length > 8 ? to!float(p[8]) : 0.0f,
                                 p.length > 9 ? to!float(p[9]) : 0.0f];
       e.brushes ~= LSystemBrushT(p[1][0], p[2], Substance.init, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]),
-                                 0.0f, true, 1.0f, off, col);
+                                 0.0f, true, 1.0f, off, col, tnt);
     } break;
     case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
     default: break;

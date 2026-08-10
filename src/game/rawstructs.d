@@ -72,6 +72,7 @@ struct LSystemBrushT {
   float dropScale = 1.0f;                       /// render size of the harvested drop (1.0 = one block); independent of radius
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// per-brush vertex colour (entities)
+  bool tint = false;                            /// tint with the entity's per-instance colour instead of `color`
 }
 
 /** Data-driven animal species, parsed from data/raws/animals.txt into animalTable. */
