@@ -47,7 +47,7 @@ struct EntityT {
 struct AnimalT {
   string name;                                  /// Species name
   string mesh = "Torus";                        /// Instance mesh (primitive for now)
-  ubyte[] spawnOn;                              /// cast(ubyte)ResourceType tiles this animal spawns on
+  ResourceType[] spawnOn;                       /// ResourceType tiles this animal spawns on
   float noiseThreshold = 0.92f;                 /// Hash-noise spawn gate (higher = rarer)
   uint hashSeed1, hashSeed2;                    /// Per-species spawn hash seeds
   uint hashMod, hashRem;                        /// Optional hash bucketing (0 = unused)
@@ -84,8 +84,8 @@ struct ResourceT {
   float scale = 1.0f;
   float offsetY = 0.0f;                     /// vertical render offset (world units) for model-backed drops
   Colors color = Colors.white;
-  ubyte substance = 0;                      /// cast(ubyte)Substance — the variant's match key (was the name-class)
-  ubyte source = 0;                         /// cast(ubyte)Source — which tile/feature produced this variant
+  Substance substance;                      /// Substance — the variant's match key (was the name-class)
+  Source source;                            /// Source — which tile/feature produced this variant
   float food = 0.0f;                        /// edibility (from the producing brush); 0 => inedible
   float traverse = 0.0f;                    /// walk cost; 0 => impassable (liquids)
   bool build = false;                       /// may be placed/built with
@@ -101,18 +101,18 @@ struct ItemTemplateT {
   string texFilled = "";   /// skin when the container holds contents (amount > 0); empty => use `tex`
   float scale = 1.0f;      /// render scale of the crafted item
   float offsetY = 0.0f;    /// vertical render offset (model units) for model-backed items
-  ubyte[] accepts;         /// Substance the material may belong to; empty => any
-  ubyte[] holds;           /// Substance the contents may belong to; empty => not a container
+  Substance[] accepts;     /// Substance the material may belong to; empty => any
+  Substance[] holds;       /// Substance the contents may belong to; empty => not a container
   uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
   int maxStack = 1;        /// stack size of the crafted item
   float food = 0.0f;       /// nutrition restored when eaten (0 => not edible)
 }
 
-struct Ingredient { ubyte cls; ubyte item = 0; uint count = 1; }
+struct Ingredient { Substance cls; ItemTemplate item; uint count = 1; }
 
 /** One output line: a raw material (shape == None, `type` names the ResourceType) OR a crafted item
  *  (shape != None) whose material is inherited from the consumed input of class `materialFrom`. */
-struct Product { ubyte shape = 0; ubyte type = 0; ubyte materialFrom = 0; float chance = 1.0f; uint count = 1; }
+struct Product { ItemTemplate shape; ResourceType type; Substance materialFrom; float chance = 1.0f; uint count = 1; }
 
 struct Reaction {
   string name, verb, skill;
@@ -123,4 +123,5 @@ struct Reaction {
 }
 
 /** One terrain height band: an upper threshold and the resources eligible at that height. */
-struct HeightBand { float threshold; ubyte[] results; }
+struct HeightBand { float threshold; ResourceType[] results; }
+
