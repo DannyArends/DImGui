@@ -175,30 +175,6 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
   }
 }
 
-/** Re-pose a rig for a walk cycle: L/A swing about their joint (opposite by side, arms counter legs).
- *  amp == 0 reproduces the bind pose exactly. Returns per-node posed world matrices (dwarf-local). */
-Matrix[] poseRig(const RigNode[] rig, float phase, const AnimChannel[] anims, bool moving) {
-  Matrix[] posed; posed.length = rig.length;
-  foreach(k, ref n; rig) {
-    Matrix parentW = (n.parent < 0) ? Matrix.init : posed[n.parent];
-    float side = (n.inst.matrix[12] < 0.0f) ? 1.0f : -1.0f;
-    float[3] e = [0.0f, 0.0f, 0.0f];
-    foreach(ref ch; anims) {
-      if(ch.symbol != n.symbol || (ch.whenMoving && !moving)) continue;
-      e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
-    }
-    if(e != [0.0f, 0.0f, 0.0f]) {
-      float[3] piv = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
-      Matrix swung = translate(piv).multiply(rotate(e))
-                       .multiply(translate([-piv[0], -piv[1], -piv[2]])).multiply(n.local);
-      posed[k] = parentW.multiply(swung);
-    } else {
-      posed[k] = parentW.multiply(n.local);
-    }
-  }
-  return posed;
-}
-
 void logStuck(ref GameApp app, ref Dwarf d) {
   static uint last = 0;
   if(app.totalFramesRendered - last < 60) return;
