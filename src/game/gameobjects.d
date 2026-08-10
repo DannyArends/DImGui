@@ -7,8 +7,26 @@ import game;
 
 import assimp : OpenAsset;
 import lsystem : buildGrammar;
-import matrix : translateScale;
-import turtlegfx : interpretRig;
+import matrix : multiply, translate, rotate, position, scale, translateScale;
+import turtlegfx : interpretRig, globals;
+
+enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
+
+/** Euler swing for a brush symbol from its animation channels (side = left/right sign). */
+float[3] channelEuler(const AnimChannel[] anims, char sym, float side, float phase, bool moving) {
+  float[3] e = [0.0f, 0.0f, 0.0f];
+  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving)){
+    e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
+  }
+  return e;
+}
+
+/** A rig node's local transform with euler `e` applied at its joint (segment top). */
+Matrix posedLocal(ref const RigNode n, const float[3] e) {
+  if(e == [0.0f, 0.0f, 0.0f]) return n.local;
+  float[3] p = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
+  return translate(p).multiply(rotate(e)).multiply(translate([-p[0], -p[1], -p[2]])).multiply(n.local);
+}
 
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
 class Dwarves : OpenAsset {
@@ -55,6 +73,24 @@ class Dwarves : OpenAsset {
     dscale[uid] = [sxz, sy, sxz];
   }
 
+  /** Pose dwarf `d`'s rig this frame and emit its parts into the shared brush meshes. */
+  void poseDwarf(ref Dwarf d, float dt) {
+    buildRig(d.uid);
+    auto sc = dscale[d.uid];
+    Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
+    position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - footY[d.uid] * sc[1], d.visualPos[2]]);
+    bool moving = (d.state == EntityState.Moving || d.state == EntityState.Wandering);
+    d.anim.animTime += dt;
+    float phase = cast(float)d.anim.animTime * WALK_RATE + (d.uid % 100);
+    const r = rig[d.uid];
+    auto g = globals(r, world, (size_t k) {
+      float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
+      return posedLocal(r[k], channelEuler(r[k].symbol, side, phase, moving));
+    });
+    foreach(k, ref n; r) {
+      if(n.symbol in symMesh) { meshes[symMesh[n.symbol]].instances ~= DrawInstance(g[k], -1, symColor[n.symbol]); }
+    }
+  }
   mixin SwapRemove!dwarves;
 }
 

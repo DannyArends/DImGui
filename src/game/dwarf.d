@@ -24,14 +24,12 @@ import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;
 import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;
 import timing : timed;
-import turtlegfx : globals;
 import scheduler : applyPathResult, atDestination, claimNextJob, dispatchJob, pruneJobQueue, rejectJob, completeSubJob;
 import vector : vAdd;
 import water : findNearestWater;
 import world : nextEntityUID;
 
 enum int NEED_RETRY = 30;
-enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
 
 struct Dwarf {
   Entity!32 entity;                         /// Shared pawn (32 inventory slots)
@@ -74,22 +72,6 @@ void deleteDwarf(ref GameApp app, int index) {
   app.world.dwarves.syncInstances();
 }
 
-/** Euler swing for a brush symbol from its animation channels (side = left/right sign). */
-float[3] channelEuler(const AnimChannel[] anims, char sym, float side, float phase, bool moving) {
-  float[3] e = [0.0f, 0.0f, 0.0f];
-  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving)){
-    e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
-  }
-  return e;
-}
-
-/** A rig node's local transform with euler `e` applied at its joint (segment top). */
-Matrix posedLocal(ref const RigNode n, const float[3] e) {
-  if(e == [0.0f, 0.0f, 0.0f]) return n.local;
-  float[3] p = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
-  return translate(p).multiply(rotate(e)).multiply(translate([-p[0], -p[1], -p[2]])).multiply(n.local);
-}
-
 /** Find a free surface tile (as in non-occupado) and on top of the world */
 int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
   foreach(radius; 0..app.world.chunkSize) {
@@ -125,26 +107,7 @@ void dwarfFrame(ref GameApp app, float dt) {
       app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]);
     }
     if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;   // off-loaded-chunk: don't emit
-    app.world.dwarves.buildRig(d.uid);
-    auto sc = app.world.dwarves.dscale[d.uid];
-    Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
-    position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY[d.uid] * sc[1], d.visualPos[2]]);
-    bool moving = (d.state == EntityState.Moving || d.state == EntityState.Wandering);
-    auto dw = app.world.dwarves;
-    dw.buildRig(d.uid);
-    auto sc = dw.dscale[d.uid];
-    Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
-    position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1], d.visualPos[2]]);
-    bool moving = (d.state == EntityState.Moving || d.state == EntityState.Wandering);
-    d.anim.animTime += dt;
-    float phase = cast(float)d.anim.animTime * WALK_RATE + (d.uid % 100);
-    const rig = dw.rig[d.uid];
-    auto g = globals(rig, world, (size_t k) {
-      float side = rig[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-      return posedLocal(rig[k], channelEuler(dw.anims, rig[k].symbol, side, phase, moving));
-    });
-    foreach(k, ref n; rig)
-      if(n.symbol in dw.symMesh) dw.meshes[dw.symMesh[n.symbol]].instances ~= DrawInstance(g[k], -1, dw.symColor[n.symbol]);
+    app.world.dwarves.poseDwarf(d, dt);
   }
   foreach(mesh; app.world.dwarves.meshes) { mesh.syncInstances(); }
   app.world.dwarves.syncInstances();
