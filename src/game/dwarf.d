@@ -91,12 +91,10 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
   return(noTile);
 }
 
-
-
 /** Euler swing for a brush symbol from its animation channels (side = left/right sign). */
 float[3] channelEuler(const AnimChannel[] anims, char sym, float side, float phase, bool moving) {
   float[3] e = [0.0f, 0.0f, 0.0f];
-  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving)){
+  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving)) {
     e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
   }
   return e;
@@ -109,7 +107,7 @@ Matrix posedLocal(ref const RigNode n, const float[3] e) {
   return translate(p).multiply(rotate(e)).multiply(translate([-p[0], -p[1], -p[2]])).multiply(n.local);
 }
 
-/** Pose dwarf `d`'s rig this frame and emit its parts into `dw`'s shared brush meshes. */
+/** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */
 void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
   dw.buildRig(d.uid);
   auto sc = dw.dscale[d.uid];

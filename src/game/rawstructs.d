@@ -40,7 +40,9 @@ struct EntityT {
   Rule[] rules;                                   /// L-system production rules (empty = axiom as-is)
   AnimChannel[] anims;                            /// procedural animation channels (per brush symbol)
   LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
-  float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;
+  float lsystemYaw = 25.0f;                       /// Yaw
+  float lsystemPitch = 25.0f;                     /// Pitch
+  float lsystemRoll = 25.0f;                      /// Roll
   float lsystemGap = 0.2f;                        /// f translation step (no draw)
 }
 

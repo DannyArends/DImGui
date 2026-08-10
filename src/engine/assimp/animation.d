@@ -71,12 +71,16 @@ void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, co
   if (node.name in animation.nodeAnimations) {
     Matrix positionM = translate(sampleKeyframes!interpolate(animation.nodeAnimations[node.name].positionKeys, animationTime));
     Matrix rotationM = rotate(sampleKeyframes!slerp(animation.nodeAnimations[node.name].rotationKeys, animationTime));
-    Matrix scaleM    = scale(sampleKeyframes!interpolate(animation.nodeAnimations[node.name].scalingKeys, animationTime));
+    Matrix scaleM = scale(sampleKeyframes!interpolate(animation.nodeAnimations[node.name].scalingKeys, animationTime));
     local = scaleM.multiply(positionM.multiply(rotationM));
   }
   Matrix gTransform = pTransform.multiply(local);
-  if (node.name in app.bones) app.boneOffsets[regionBase + (app.bones[node.name].index - obj.boneBase)] = gTransform.multiply(app.bones[node.name].offset);
-  foreach(cNode; node.children) app.calculateGlobalTransform(obj, cNode, gTransform, animationTime, animIndex, regionBase);
+  if (node.name in app.bones) {
+    app.boneOffsets[regionBase + (app.bones[node.name].index - obj.boneBase)] = gTransform.multiply(app.bones[node.name].offset);
+  }
+  foreach(cNode; node.children) {
+    app.calculateGlobalTransform(obj, cNode, gTransform, animationTime, animIndex, regionBase);
+  }
 }
 
 /** load all animations from aiScene* */
@@ -135,9 +139,7 @@ Animation[] loadAnimations(aiScene* scene, const OpenAsset asset, bool verbose =
 }
 
 @nogc pure size_t findKeyframeIndex(T)(const T[] keys, double animationTime) nothrow {
-  for (size_t i = 0; i < (keys.length - 1); i++) {
-    if (animationTime < keys[i + 1].time) { return i; }
-  }
+  for (size_t i = 0; i < (keys.length - 1); i++) { if (animationTime < keys[i + 1].time) { return i; } }
   return(keys.length - 1);
 }
 
@@ -150,3 +152,4 @@ Animation[] loadAnimations(aiScene* scene, const OpenAsset asset, bool verbose =
   float factor = (t1 != t0) ? cast(float)((animationTime - t0) / (t1 - t0)) : 0.0f;
   return interp(keys[i0].value, keys[i1].value, factor);
 }
+
