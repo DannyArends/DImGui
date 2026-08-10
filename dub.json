@@ -60,7 +60,7 @@
 											 "$PACKAGE_DIR/app/jni/SDL_image/build/*.so*",
 											 "$PACKAGE_DIR/app/jni/SDL_mixer/Release/*.so*",
 											 "$PACKAGE_DIR/app/jni/freetype/build/*.so*",
-											 "$PACKAGE_DIR/app/jni/cvms/build/*.so*",
+											 "$PACKAGE_DIR/app/jni/cvma/build/*.so*",
 											 "$PACKAGE_DIR/app/jni/assimp/build/bin/*.so*",
 											 "$PACKAGE_DIR/app/jni/shaderc/build/libshaderc/Release/*.so*",
 											 "$PACKAGE_DIR/app/jni/build/*.so*"
