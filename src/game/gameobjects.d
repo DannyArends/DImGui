@@ -45,20 +45,18 @@ class Dwarves : OpenAsset {
   /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
   void buildRig(uint uid) {
     if(uid in rig) return;
-    auto r = interpretRig(buildGrammar(cast(uint)(uid * 2654435761u), 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+    uint hash = cast(uint)(uid * 2654435761u);
+    auto r = interpretRig(buildGrammar(hash, 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
     float lo = 0.0f; bool any = false;
     foreach(ref n; r) { float y = n.inst.matrix[13]; if(!any || y < lo){ lo = y; any = true; } }
     rig[uid] = r; footY[uid] = lo;
-    uint h = cast(uint)(uid * 2654435761u);
-    float sy  = 0.90f + (h & 255) / 255.0f * 0.22f;
-    float sxz = 0.85f + ((h >> 8) & 255) / 255.0f * 0.35f;
+    float sy  = 0.90f + (hash & 255) / 255.0f * 0.22f;
+    float sxz = 0.85f + ((hash >> 8) & 255) / 255.0f * 0.35f;
     dscale[uid] = [sxz, sy, sxz];
   }
 
   mixin SwapRemove!dwarves;
 }
-
-
 
 /** Data-driven foraging animals, rendered as instanced tori */
 class Animals : OpenAsset {

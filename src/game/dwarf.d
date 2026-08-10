@@ -8,7 +8,7 @@ import game;
 import animation : AnimationState;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
-import entity : tickEntity, entityMove;
+import entity : tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
@@ -113,13 +113,12 @@ void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
   auto sc = dw.dscale[d.uid];
   Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
   position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1], d.visualPos[2]]);
-  bool moving = (d.state == EntityState.Moving || d.state == EntityState.Wandering);
   d.anim.animTime += dt;
   float phase = cast(float)d.anim.animTime * WALK_RATE + (d.uid % 100);
   const r = dw.rig[d.uid];
   auto g = globals(r, world, (size_t k) {
     float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-    return posedLocal(r[k], channelEuler(dw.anims, r[k].symbol, side, phase, moving));
+    return posedLocal(r[k], channelEuler(dw.anims, r[k].symbol, side, phase, d.state.isMoving));
   });
   foreach(k, ref n; r) {
     if(n.symbol in dw.symMesh) dw.meshes[dw.symMesh[n.symbol]].instances ~= DrawInstance(g[k], -1, dw.symColor[n.symbol]);
@@ -129,23 +128,18 @@ void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
-  foreach(i, ref d; app.world.dwarves) {
-    if(d.isFalling) continue;
-    if(d.state != EntityState.Moving && d.state != EntityState.Wandering) continue;
+  foreach(ref d; app.world.dwarves) {
+    if(d.isFalling ||!d.state.isMoving) continue;
     app.entityMove(d, dt, stepSpeed, hopHeight);
   }
   foreach(mesh; app.world.dwarves.meshes) { mesh.instances.reset(); }
   foreach(i, ref d; app.world.dwarves) {
-    if(d.lightIndex != size_t.max){
-      app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f];
-    }
-    if(d.nameLabel != size_t.max){
-      app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]);
-    }
-    if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;   // off-loaded-chunk: don't emit
+    if(d.lightIndex != size_t.max) { app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
+    if(d.nameLabel != size_t.max) { app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]); }
+    if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;
     app.world.dwarves.poseDwarf(d, dt);
   }
-  foreach(mesh; app.world.dwarves.meshes) { mesh.syncInstances(); }
+  foreach(mesh; app.world.dwarves.meshes) mesh.syncInstances();
   app.world.dwarves.syncInstances();
   app.buffers["LightMatrices"].invalidate();
 }

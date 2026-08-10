@@ -20,43 +20,6 @@ import matrix : Matrix, multiply, inverse, transpose;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 
-/** Bake an entity's L-system body into an OpenAsset: one bone-tagged sub-mesh per drawn brush (independently movable). */
-void bakeEntity(OpenAsset dest, const EntityT et) {
-  TurtleConfig cfg;
-  cfg.yaw = et.lsystemYaw; cfg.pitch = et.lsystemPitch; cfg.roll = et.lsystemRoll; cfg.gap = et.lsystemGap;
-  foreach(ref br; et.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, [1.0f, 1.0f, 1.0f, 1.0f], br.offset);
-  auto chars = buildGrammar(0, 1, et.axiom, et.rules);
-  auto grouped = interpret(chars, cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
-
-  dest.rootnode = Node(et.name, 0, Matrix());
-  uint meshNo = 0;
-  foreach(ref br; et.brushes) {
-    if(br.symbol !in grouped) continue;
-    auto prim = makePrimitive(br.mesh);
-    foreach(ref inst; grouped[br.symbol]) {
-      string nodeName = format("%s:%s:%u", et.name, br.symbol, meshNo);
-      int bone = dest.synthesizeBone(nodeName, inst.matrix);
-      auto normM = inst.matrix.inverse().transpose();
-      uint start = cast(uint)dest.vertices.length;
-      foreach(vi; 0 .. prim.vertices.length) {
-        Vertex v = prim.vertices[vi];
-        auto pp = inst.matrix.multiply([v.position[0], v.position[1], v.position[2], 1.0f]);
-        auto nn = normM.multiply([v.normal[0], v.normal[1], v.normal[2], 0.0f]);
-        v.position = [pp[0], pp[1], pp[2]];
-        v.normal   = [nn[0], nn[1], nn[2]];
-        v.bones[0] = cast(uint)bone; v.weights[0] = 1.0f;
-        v.color = br.color;
-        dest.vertices ~= v;
-      }
-      foreach(ii; 0 .. prim.indices.length) dest.indices ~= start + prim.indices[ii];
-      dest.meshes[nodeName] = Mesh([start, cast(uint)dest.vertices.length], 0);
-      dest.rootnode.children ~= Node(nodeName, 1, inst.matrix, [], [nodeName]);
-      meshNo++;
-    }
-  }
-  dest.vertices.invalidate(); dest.indices.invalidate();
-}
-
 /** Serializable pawn state (POD): saved to disk via Persist.pod. N = inventory slot count. */
 struct EntityData(uint N) {
   uint uid = 0;                                 /// Unique ID
@@ -164,9 +127,12 @@ struct Entity(uint N) {
   @property bool isFalling() const { return fall.isFalling; }
 }
 
+/** True while the entity is en route: following a goal path or wandering. */
+@nogc bool isMoving(EntityState s) pure nothrow { return s == EntityState.Moving || s == EntityState.Wandering; }
+
 /** Advance one entity's interpolated step; flip to Working/Idle on arrival. */
 void entityMove(T)(ref GameApp app, ref T e, float dt, float speed, float hop) {
-  if(e.state != EntityState.Moving && e.state != EntityState.Wandering) return;
+  if(!e.state.isMoving) return;
   float[3] d = [e.moveTo[0] - e.moveFrom[0], 0.0f, e.moveTo[2] - e.moveFrom[2]];
   if(d[0] * d[0] + d[2] * d[2] > 1e-6f) e.heading = atan2(d[0], -d[2]) * (180.0f / PI);
   if(app.stepMove(e, dt, speed, hop)) e.state = e.hasJob ? EntityState.Working : EntityState.Idle;
