@@ -29,6 +29,8 @@ import water : findNearestWater;
 import world : nextEntityUID;
 
 enum int NEED_RETRY = 30;
+enum float WALK_AMP  = 28.0f;   /// leg/arm swing amplitude, degrees
+enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
 
 struct Dwarf {
   Entity!32 entity;                         /// Shared pawn (32 inventory slots)
@@ -37,6 +39,7 @@ struct Dwarf {
   Job!Dwarf[] jobStack;                     /// Job stack, [0] active, rest pending
   size_t lightIndex = size_t.max;
   size_t nameLabel = size_t.max;
+  float animPhase = 0.0f;                   /// walk-cycle phase, advanced while moving
 
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = EntityState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }
@@ -109,8 +112,12 @@ void dwarfFrame(ref GameApp app, float dt) {
     auto sc = app.world.dwarves.dscale[d.uid];
     Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
     position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY[d.uid] * sc[1], d.visualPos[2]]);
-    foreach(ref n; app.world.dwarves.rigs[d.uid]) {
-      auto di = n.inst; di.matrix = world.multiply(n.inst.matrix);
+    float amp = (d.state == EntityState.Moving || d.state == EntityState.Wandering) ? WALK_AMP : 0.0f;
+    if(amp > 0.0f) d.animPhase += dt * WALK_RATE;
+    auto rig = app.world.dwarves.rigs[d.uid];
+    auto posed = poseRig(rig, d.animPhase, amp);
+    foreach(k, ref n; rig) {
+      auto di = n.inst; di.matrix = world.multiply(posed[k]);
       app.world.dwarves.meshes[app.world.dwarves.symMesh[n.symbol]].instances ~= di;
     }
   }
@@ -153,6 +160,27 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
     d.drop(app.world.drops, slot);   // no-op if that slot is empty
     app.play("DM-CGS-03", 0.2f);
   }
+}
+
+/** Re-pose a rig for a walk cycle: L/A swing about their joint (opposite by side, arms counter legs).
+ *  amp == 0 reproduces the bind pose exactly. Returns per-node posed world matrices (dwarf-local). */
+Matrix[] poseRig(const RigNode[] rig, float phase, float amp) {
+  Matrix[] posed; posed.length = rig.length;
+  foreach(k, ref n; rig) {
+    Matrix parentW = (n.parent < 0) ? Matrix.init : posed[n.parent];
+    float side = (n.inst.matrix[12] < 0.0f) ? 1.0f : -1.0f;   // bind world X: left vs right
+    float ang = 0.0f;
+    if(n.symbol == 'L')      ang =  amp * sin(phase) * side;
+    else if(n.symbol == 'A') ang = -amp * sin(phase) * side;
+    if(ang != 0.0f) {
+      float[3] piv = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
+      Matrix swung = translate(piv).multiply(rotate([0.0f, 0.0f, ang])).multiply(translate([-piv[0], -piv[1], -piv[2]])).multiply(n.local);
+      posed[k] = parentW.multiply(swung);
+    } else {
+      posed[k] = parentW.multiply(n.local);
+    }
+  }
+  return posed;
 }
 
 void logStuck(ref GameApp app, ref Dwarf d) {
