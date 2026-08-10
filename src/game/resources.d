@@ -36,12 +36,12 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 @nogc float cost(const ResourceType r) pure nothrow { return resourceTable[r].traverse; }
 @nogc int maxStack(const ResourceType r) pure nothrow { return resourceTable[r].maxStack; }
 @nogc bool isFood(const Item it) pure nothrow { return it.foodValue() > 0.0f; }
-@nogc float foodValue(const Item it) pure nothrow { return it.material != ResourceType.None ? resourceTable[it.material].food : 0.0f; }
-
+@nogc float foodValue(const Item it) pure nothrow {
+  return it.isCraft ? itemTemplateTable[it.shape].food : it.material != ResourceType.None ? resourceTable[it.material].food : 0.0f;
+}
 /** The source (origin tile/feature) of a variant, and the reverse lookup (substance @ source -> variant). */
-@nogc Source sourceOf(ResourceType t) pure nothrow { return(resourceTable[t].source); }
 @nogc ResourceType variantOf(Substance s, Source src) pure nothrow {
-  foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && resourceTable[rt].substance == s && sourceOf(rt) == src) return rt;
+  foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && resourceTable[rt].substance == s && resourceTable[rt].source == src) return rt;
   return ResourceType.None;
 }
 
