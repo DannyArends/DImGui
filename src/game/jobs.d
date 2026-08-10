@@ -297,9 +297,7 @@ Job!T drinkJob(T)() {
 Job!Dwarf craftJob(string name) {
   auto r = reactionFor(name);
   Job!Dwarf[] prereqs;
-  foreach(ing; r.inputs){ foreach(n; 0 .. ing.count) {
-    prereqs ~= pickupJob(noTile, cast(Substance)ing.cls, cast(ItemTemplate)ing.item);
-  } }
+  foreach(ing; r.inputs){ foreach(n; 0 .. ing.count) { prereqs ~= pickupJob(noTile, ing.cls, ing.item); } }
   return Job!Dwarf(name, noTile, Substance.None, prereqs, true, reach: Reach.OnTile,
     onClaim: &claimSelf,
     onArrive: (ref GameApp app, ref Dwarf d) {
@@ -307,16 +305,14 @@ Job!Dwarf craftJob(string name) {
       app.progressJob(d, rr.progressRate, () {
         ResourceType[ubyte] srcMat;                          // consumed input class -> its material, for item inheritance
         foreach(ing; rr.inputs) foreach(n; 0 .. ing.count) {
-          auto found = d.carrying.filter!(cid => app.world.drops.itemOf(cid).matchDemand(cast(Substance)ing.cls, cast(ItemTemplate)ing.item));
+          auto found = d.carrying.filter!(cid => app.world.drops.itemOf(cid).matchDemand(ing.cls, ing.item));
           if(found.empty) continue;
           auto m = app.world.drops.resourceType(found.front);
           if(ing.item){ srcMat[cast(ubyte)substanceOf(m)] = m; } else srcMat[ing.cls] = m;
           app.consumeCarried(d, found.front);
         }
         foreach(prod; rr.outputs) { foreach(n; 0 .. prod.count) {
-          Item it = (prod.shape == cast(ubyte)ItemTemplate.None)
-                  ? (cast(ResourceType)prod.type).toItem
-                  : Item(cast(ItemTemplate)prod.shape, srcMat.get(prod.materialFrom, ResourceType.None));
+          Item it = (prod.shape == ItemTemplate.None)? prod.type.toItem : Item(prod.shape, srcMat.get(prod.materialFrom, ResourceType.None));
           auto pid = app.spawnBlock(d.tile, it);
           if(d.pickup(pid, it)) {
             if(auto nb = pid in app.world.drops) { nb.tile = noTile; nb.fall = Fall.init; }

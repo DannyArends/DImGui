@@ -20,7 +20,7 @@ struct Item {
 }
 
 /** The substance (match key) of a variant. */
-@nogc Substance substanceOf(ResourceType t) pure nothrow { return cast(Substance)resourceData(t).substance; }
+@nogc Substance substanceOf(ResourceType t) pure nothrow { return(resourceData(t).substance); }
 
 /** A variant "has class c" iff its substance IS c (one substance per variant). */
 @nogc bool hasClass(ResourceType t, Substance c) pure nothrow { return substanceOf(t) == c; }
@@ -50,7 +50,7 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 @nogc float foodValue(const Item it) pure nothrow { return it.material != ResourceType.None ? resourceData(it.material).food : 0.0f; }
 
 /** The source (origin tile/feature) of a variant, and the reverse lookup (substance @ source -> variant). */
-@nogc Source sourceOf(ResourceType t) pure nothrow { return cast(Source)resourceData(t).source; }
+@nogc Source sourceOf(ResourceType t) pure nothrow { return(resourceData(t).source); }
 @nogc ResourceType variantOf(Substance s, Source src) pure nothrow {
   foreach(rt; EnumMembers!ResourceType) if(rt != ResourceType.None && substanceOf(rt) == s && sourceOf(rt) == src) return rt;
   return ResourceType.None;

@@ -70,7 +70,7 @@ void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in 
 
 /** Count unreserved drops satisfying an ingredient demand (raw material of a substance, or an item template). */
 @nogc pure uint available(const Drops drops, const Ingredient ing) nothrow {
-  return cast(uint)drops.byValue.count!(b => b.item.matchDemand(cast(Substance)ing.cls, cast(ItemTemplate)ing.item, ResourceType.None) && !b.reserved); }
+  return cast(uint)drops.byValue.count!(b => b.item.matchDemand(ing.cls, ing.item, ResourceType.None) && !b.reserved); }
 
 /** A reaction can run iff every ingredient is available in the required count. */
 bool canReact(const Drops drops, const Ingredient[] inputs) { return inputs.all!(i => drops.available(i) >= i.count); }
