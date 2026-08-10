@@ -37,23 +37,6 @@ struct LSystem {
   }
 }
 
-/** Per-drawing-symbol spec: which material/size, and whether it advances the turtle. No Geometry here — the turtle is pure. */
-/** Data half of a TurtleBrush: one grammar symbol -> a mesh + its render/harvest bindings. */
-struct LSystemBrushT {
-  char symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
-  string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
-  ubyte substance;                              /// cast(ubyte)Substance drawn (-> the substance@feature variant)
-  string texture;                               /// per-instance texture for the drawn geometry
-  float radius = 0.1f;                          /// local X/Z scale
-  float length = 1.0f;                          /// local Y scale / segment length
-  bool advance = true;                          /// move turtle forward after drawing
-  float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
-  bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
-  float dropScale = 1.0f;                       /// render size of the harvested drop (1.0 = one block); independent of radius
-  float[3] offset = [0.0f, 0.0f, 0.0f];         /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// per-brush vertex colour (entities)
-}
-
 struct TurtleBrush {
   int material = -1;
   float radius = 0.1f;

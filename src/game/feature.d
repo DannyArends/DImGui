@@ -8,7 +8,7 @@ import game;
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, getOr;
-import lsystem : buildGrammar, LSystemBrushT;
+import lsystem : buildGrammar;
 import matrix : translateScale, position;
 import noise : noiseHTT;
 import resources : variantOf;
@@ -139,7 +139,7 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
     cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
     foreach(ref br; ft.brushes) {
       if(!br.render) continue;                                     // harvest-only brush: counted on cut, never drawn
-      auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
+      auto brt = variantOf(br.substance, ft.name.to!Source);
       cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color, br.offset);
     }
     auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
@@ -229,7 +229,7 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
     TurtleConfig cfg;
     cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
     foreach(ref br; ft.brushes) {                                  // ALL brushes: harvest-only geometry needs positions too
-      auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
+      auto brt = variantOf(br.substance, ft.name.to!Source);
       cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceData(brt).color, br.offset);
     }
     auto wp = app.world.tileToWorld(tile);
@@ -237,7 +237,7 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
     auto grouped = interpret(chars, cfg, [wp[0], wp[1] - 0.5f * app.world.tileHeight, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
     foreach(ref br; ft.brushes) {                                  // spawn one drop per drawn instance, at its tile
       if(br.symbol !in grouped) continue;
-      auto brt = variantOf(cast(Substance)br.substance, ft.name.to!Source);
+      auto brt = variantOf(br.substance, ft.name.to!Source);
       foreach(ref inst; grouped[br.symbol]){
         int hy = app.world.worldToTile(position(inst.matrix))[1];
         app.spawnBlock([tile[0], hy < tile[1] ? tile[1] : hy, tile[2]], Item(ItemTemplate.None, brt));

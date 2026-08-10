@@ -7,16 +7,14 @@ import phobos;
 
 import color : toColor;
 import ctfe : parseRawsGeneric, parseTokens, splitColon, toEnum;
-import lsystem : LSystemBrushT, Rule;    // brush/rule types used when parsing
+import lsystem : Rule;    // brush/rule types used when parsing
 import rawstructs;
 
 /** NOTE: changes to .txt files require: dub build --force
  * import() is resolved at compile-time; dub does not track these as dependencies */
 
 /** Pick a result from a band by the [0,1) selector `t` (uniform bucket over results). */
-@nogc pure nothrow ResourceType rSelect(ref const HeightBand b, float t) {
-  return cast(ResourceType)b.results[cast(uint)(t * b.results.length) % b.results.length];
-}
+@nogc pure nothrow ResourceType rSelect(ref const HeightBand b, float t) { return b.results[cast(uint)(t * b.results.length) % b.results.length]; }
 
 /** CTFE: parse terrain raws into height bands (resources resolved to enum at compile time). */
 HeightBand[] parseHeightBands(string raw) pure {
@@ -147,8 +145,7 @@ FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "
     case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
     case "AXIOM":            ft.axiom = p[1]; break;
     case "BRUSH": if(p.length >= 8){
-      immutable ubyte sub = p[3].toEnum!Substance;   // __traits-based, resolved before the ctor
-      ft.brushes ~= LSystemBrushT(p[1][0], p[2], sub, p[4],
+      ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3].toEnum!Substance, p[4],
         to!float(p[5]), to!float(p[6]), to!bool(p[7]),
         p.length > 8 ? to!float(p[8]) : 0.0f,
         p.length > 9 ? to!bool(p[9]) : true,
@@ -182,7 +179,7 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
       immutable float[3] off = [p.length > 7 ? to!float(p[7]) : 0.0f,
                                 p.length > 8 ? to!float(p[8]) : 0.0f,
                                 p.length > 9 ? to!float(p[9]) : 0.0f];
-      e.brushes ~= LSystemBrushT(p[1][0], p[2], 0, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]),
+      e.brushes ~= LSystemBrushT(p[1][0], p[2], Substance.init, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]),
                                  0.0f, true, 1.0f, off, col);
     } break;
     case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;

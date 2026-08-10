@@ -17,7 +17,6 @@ public import chunk : ChunkData, ChunkField;
 public import dwarf : Dwarf;
 public import entity : Entity, EntityData, EntityState, bakeEntity;
 public import feature : Feature;
-public import lsystem : LSystemBrushT;
 public import inventory : Inventory, InventorySlot;
 public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
