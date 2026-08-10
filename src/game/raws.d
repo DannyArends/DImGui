@@ -77,9 +77,6 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
   return table;
 }
 
-/** Per-template data, indexed by ItemTemplate (enum's ubyte value indexes the table). */
-@nogc pure const(ItemTemplateT) templateData(ItemTemplate t) nothrow { return itemTemplateTable[t]; }
-
 /** CTFE: parse items.txt into the per-template table (index 0 == ItemTemplate.None, then parallel to the enum). */
 ItemTemplateT[] parseItemTemplates(string raw) pure { return parseRawsGeneric!(ItemTemplateT, "ITEM", (ref cur, p) {
   switch(p[0]) {

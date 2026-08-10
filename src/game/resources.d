@@ -59,9 +59,9 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 // Item = (shape template x material [+ contents]); accessors compute everything from the pair at use time.
 @nogc pure bool isRaw(const Item it) nothrow { return it.shape == ItemTemplate.None; }
 @nogc pure bool isCraft(const Item it) nothrow { return it.shape != ItemTemplate.None; }
-@nogc pure bool isContainer(const Item it) nothrow { return templateData(it.shape).capacity > 0; }
-@nogc pure bool isFull(const Item it) nothrow { return it.amount >= templateData(it.shape).capacity; }
-@nogc pure int itemStack(const Item it) nothrow { return it.isCraft ? templateData(it.shape).maxStack : it.material.maxStack; }
+@nogc pure bool isContainer(const Item it) nothrow { return itemTemplateTable[it.shape].capacity > 0; }
+@nogc pure bool isFull(const Item it) nothrow { return it.amount >= itemTemplateTable[it.shape].capacity; }
+@nogc pure int itemStack(const Item it) nothrow { return it.isCraft ? itemTemplateTable[it.shape].maxStack : it.material.maxStack; }
 
 // Cup container predicates (Water fill mechanic; generalises to barrels/bins later)
 @nogc pure bool isCup(const Item it) nothrow { return it.shape == ItemTemplate.Cup; }
@@ -71,7 +71,7 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 /** Name to display for an item */
 string itemName(const Item it) {
   if(!it.isCraft) return resourceTable[it.material].name;
-  string n = resourceTable[it.material].name ~ " " ~ templateData(it.shape).name;
+  string n = resourceTable[it.material].name ~ " " ~ itemTemplateTable[it.shape].name;
   if(it.contents != ResourceType.None) n ~= " of " ~ resourceTable[it.contents].name;
   return n;
 }
@@ -79,7 +79,7 @@ string itemName(const Item it) {
 /** Texture to display for an item: template skin (filled variant when holding contents), else the raw material's 2D texture. */
 string itemTex(const Item it) {
   if(!it.isCraft) return resourceTable[it.material].tex2D;
-  auto t = templateData(it.shape);
+  auto t = itemTemplateTable[it.shape];
   return (it.amount > 0 && t.texFilled.length) ? t.texFilled : t.tex;
 }
 
@@ -106,7 +106,7 @@ void updateMaterials(ref GameApp app) {
   }
   foreach (ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
-    int tid = app.textures.idx(templateData(t).tex3D);   // 3D objects always use tex3D; tex/texFilled are 2D-display only
+    int tid = app.textures.idx(itemTemplateTable[t].tex3D);   // 3D objects always use tex3D; tex/texFilled are 2D-display only
     app.materials[templateMat(t)].tid = tid;
     app.materials[templateMat(t, true)].tid = tid;
   }

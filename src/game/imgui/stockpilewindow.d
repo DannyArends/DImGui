@@ -73,7 +73,7 @@ private void acceptCraftGroup(ref GameApp app, ref Stockpile sp) {
   foreach(ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
     uint n = sp.countOf(app.world.drops, craftKey(t));
-    auto lbl = n > 0 ? cstr("%s  (%d)##c%d", templateData(t).name, n, ti) : cstr("%s##c%d", templateData(t).name, ti);
+    auto lbl = n > 0 ? cstr("%s  (%d)##c%d", itemTemplateTable[t].name, n, ti) : cstr("%s##c%d", itemTemplateTable[t].name, ti);
     if(cTag(lbl, sp.ok(t) ? Colors.green : Colors.firebrick)) { sp.seed(); sp.accepts[craftKey(t)] = !sp.ok(t); }
   }
   igTreePop();

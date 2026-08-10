@@ -124,7 +124,7 @@ void ensureBlocks(ref GameApp app) {
   foreach(ti; 0 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
     if(t == ItemTemplate.None) continue;
-    auto meshName = templateData(t).mesh;
+    auto meshName = itemTemplateTable[t].mesh;
     if(meshName in app.world.drops.meshes) continue;
     auto m = makePrimitive(meshName);
     if(m is null) { SDL_Log("ensureBlocks: unknown template mesh '%s'", toStringz(meshName)); continue; }
@@ -147,17 +147,17 @@ uint spawnBlock(ref GameApp app, int[3] tile, Item it) {
 }
 
 /** Geometry mesh name for an item: template shape when crafted, else the material's mesh. */
-string renderMesh(const Item it) { return it.isCraft ? templateData(it.shape).mesh : resourceTable[it.material].meshName; }
+string renderMesh(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].mesh : resourceTable[it.material].meshName; }
 
 /** Render scale for an item: template scale when crafted, else the material's scale. */
-float renderScale(const Item it) { return it.isCraft ? templateData(it.shape).scale : resourceTable[it.material].scale; }
+float renderScale(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].scale : resourceTable[it.material].scale; }
 
-float renderOffsetY(const Item it) { return it.isCraft ? templateData(it.shape).offsetY : resourceTable[it.material].offsetY; }
+float renderOffsetY(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].offsetY : resourceTable[it.material].offsetY; }
 
 /** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
 @nogc pure int matOverride(const Item it) nothrow {
   if(!it.isCraft) return -1;
-  return cast(int)templateMat(it.shape, it.amount > 0 && templateData(it.shape).texFilled.length > 0);
+  return cast(int)templateMat(it.shape, it.amount > 0 && itemTemplateTable[it.shape].texFilled.length > 0);
 }
 
 void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale, int matOverride = -1) {
