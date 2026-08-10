@@ -9,7 +9,7 @@ import inventory : deriveInventory;
 import lattice : tileToWorld, worldToTile, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood, hasClass, toItem, isRaw, isCraft, templateMat, matchDemand;
+import resources : isFood, toItem, isRaw, isCraft, templateMat, matchDemand;
 import tile : isStandable, inColumn, landingTile, surfaceAt, hasStandableNeighbour;
 import vector : manhattan;
 

@@ -9,7 +9,7 @@ import block : resourceType, itemOf, spawnBlock, findFor, noBlock;
 import feature : interactFeaturesAt, getFeatureProgressRate;
 import lattice : tileAbove, tileNeighbours;
 import reactions : reactionFor;
-import resources : isFood, foodValue, hasClass, toItem, isEmptyCup, isWaterCup, carriedFor, matchDemand;
+import resources : isFood, foodValue, toItem, isEmptyCup, isWaterCup, carriedFor, matchDemand;
 import scheduler : doPickup, failComplete, failReleaseRequeue, failRequeue, failReleaseComplete, pathTileFor, progressJob;
 import sfx : play;
 import stockpile : storeBlockAt;

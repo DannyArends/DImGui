@@ -19,15 +19,12 @@ struct Item {
   uint amount = 0;                             /// units of `contents` held (0 => empty; a full cup = 1)
 }
 
-/** A variant "has class c" iff its substance IS c (one substance per variant). */
-@nogc bool hasClass(ResourceType t, Substance c) pure nothrow { return resourceTable[t].substance == c; }
-
 /** Does an item satisfy a demand: an item template (want) if set, else a material of substance cls
  *  (restricted to raw blocks when `raw`, so crafted items never fill a build/ingredient demand). */
 @nogc pure bool matchDemand(const Item it, Substance cls, ItemTemplate want, ResourceType type = ResourceType.None, bool raw = true) nothrow {
   if(want != ItemTemplate.None) return it.shape == want;
   if(type != ResourceType.None) return it.isRaw && it.material == type;   // exact variant (Building)
-  return (!raw || it.isRaw) && (cls == Substance.None || it.material.hasClass(cls));
+  return (!raw || it.isRaw) && (cls == Substance.None || resourceTable[it.material].substance == cls);
 }
 
 /** Carried block ids satisfying a demand (want ? by template : by material substance; crafted allowed). */

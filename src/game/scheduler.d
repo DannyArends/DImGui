@@ -9,7 +9,7 @@ import block : resourceType, findFor, noBlock, release;
 import pathfinding : findGoalTile, pathfindTo;
 import jobs : flatten, jobQueue, storeJob;
 import lattice : tileToWorld, worldToTile;
-import resources : hasClass, carriedFor;
+import resources : carriedFor;
 import stockpile : acceptedByHolder, findStockpileSlot, storedTileOf, withdrawBlock;
 import tile : getSuccessors, tileAbove, isTileOccupied, hasStandableNeighbour;
 import vector : manhattan, manhattan2D;
