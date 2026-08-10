@@ -50,7 +50,12 @@ class Dwarves : OpenAsset {
     uint hash = cast(uint)(uid * 2654435761u);
     auto r = interpretRig(buildGrammar(hash, 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
     float lo = 0.0f; bool any = false;
-    foreach(ref n; r) { float y = n.inst.matrix[13]; if(!any || y < lo){ lo = y; any = true; } }
+    foreach(ref n; r) {
+      if(n.symbol != 'L' && n.symbol != 'B') continue;   // seat on legs/boots, never a dangling beard
+      auto m = n.inst.matrix;
+      float y = m[13] - 0.5f * (abs(m[1]) + abs(m[5]) + abs(m[9]));   // lowest vertex of the segment
+      if(!any || y < lo){ lo = y; any = true; }
+    }
     rig[uid] = r; footY[uid] = lo;
     float sy  = 0.90f + (hash & 255) / 255.0f * 0.22f;
     float sxz = 0.85f + ((hash >> 8) & 255) / 255.0f * 0.35f;
