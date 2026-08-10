@@ -261,12 +261,12 @@ private SpawnMask spawnMask(const FeatureT ft) pure {
   return m;
 }
 immutable SpawnMask[] featureSpawnMask = () {
-  SpawnMask[] a; foreach(ref ft; features) a ~= spawnMask(ft); return a; 
+  SpawnMask[] a; foreach(ref ft; featureTable) a ~= spawnMask(ft); return a; 
 }();
 
-// Tables (below all enum mixins: their CTFE pulls resources->game->raws, so every enum must exist first).
+// Tables
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
-immutable FeatureT[] features = parseFeatures(import("data/raws/features.txt"));
+immutable FeatureT[] featureTable = parseFeatures(import("data/raws/features.txt"));
 immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));

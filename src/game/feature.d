@@ -42,7 +42,7 @@ private string delegate() nothrow captureKey(string k) { return () => k; }
 /** The FeatureT whose placed feature is rooted at `tile`, or null if none. */
 private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
-  foreach(ref ft; features) {
+  foreach(ref ft; featureTable) {
     if(ft.name !in app.world.vegetation) continue;
     if(auto fs = coord in app.world.vegetation[ft.name]){ if((*fs).canFind!(f => f.rootTile == tile)) { return &ft; } }
   }
@@ -63,7 +63,7 @@ private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] i
 
 /** Create and register one instanced primitive mesh per (feature, part/brush mesh); skips keys already built. */
 void initFeatureMeshes(ref GameApp app) {
-  foreach(ref ft; features) foreach(name; ft.brushes.map!(b => b.mesh)) {
+  foreach(ref ft; featureTable) foreach(name; ft.brushes.map!(b => b.mesh)) {
     string key = ft.name ~ ":" ~ name;
     if(key in app.world.vegetation.meshes) continue;
     auto mesh = makePrimitive(name);
@@ -117,7 +117,7 @@ bool featureDropsFood(const FeatureT ft) {
 /** Nearest rooted tile of a food-dropping feature within maxTiles; noTile if none. */
 int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) {
   int[3] best = noTile; float bestD = float.max;
-  foreach(const ft; features) {
+  foreach(const ft; featureTable) {
     if(!featureDropsFood(ft) || ft.name !in app.world.vegetation) continue;
     foreach(coord, feats; app.world.vegetation[ft.name]) {
       foreach(ref f; feats) {
@@ -167,7 +167,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
 
 /** Re-lay every loaded feature's tile-penalty footprint (static hard blocks). */
 void stampFeatureFootprints(ref GameApp app) {
-  foreach(ref ft; features) {
+  foreach(ref ft; featureTable) {
     if(ft.tilePenalty <= 0.0f) continue;
     foreach(coord, ref chunkFeatures; app.world.vegetation[ft.name]) {
       if(coord !in app.world.chunks) continue;
@@ -180,7 +180,7 @@ void stampFeatureFootprints(ref GameApp app) {
 void rebuildInstances(ref GameApp app) {
   app.world.data.tilePenalties.clear();
   foreach(ref mesh; app.world.vegetation.meshes.values) mesh.instances.reset();
-  foreach(ref ft; features) {
+  foreach(ref ft; featureTable) {
     foreach(coord, ref chunkFeatures; app.world.vegetation[ft.name]){
       if(coord !in app.world.chunks) continue;
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.vegetation.meshes);
@@ -201,7 +201,7 @@ void rebuildAllFeatures(ref GameApp app) {
 /** Forget cached features for chunk `coord`, but only if it carries no player modifications. */
 void removeAllFeatures(ref GameApp app, int[3] coord) {
   if(coord in app.world.vegetation.modified) return;
-  foreach(ref ft; features) {
+  foreach(ref ft; featureTable) {
     if(coord !in app.world.vegetation[ft.name]) continue; // Skip: Feature-types not in this chunk
     foreach(f; app.world.vegetation[ft.name].getOr(coord, null)){ app.world.instanceCache.remove(f.rootTile); }
     app.world.vegetation[ft.name].remove(coord);
@@ -257,7 +257,7 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
 void interactFeaturesAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   bool any = false;
-  foreach(const ft; features) any |= app.harvestFeatureType(ft, tile, coord);
+  foreach(const ft; featureTable) any |= app.harvestFeatureType(ft, tile, coord);
   if(any) {
     app.world.unsettleBlocks(app.world.drops, tile, 0.25f);
     app.rebuildAllFeatures();

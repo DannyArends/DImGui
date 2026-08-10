@@ -125,7 +125,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
 
   // Load pending trees onto chunks that have been loaded
-  foreach(ref ft; features) {
+  foreach(ref ft; featureTable) {
     if(ft.name !in app.world.vegetation.pending) continue;
     foreach(coord; app.world.vegetation.pending[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;

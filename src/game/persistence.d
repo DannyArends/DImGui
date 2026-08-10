@@ -29,7 +29,7 @@ void registerPersistables(ref GameApp app) {
   app.persistables ~= Persist.pod!ubyte("stock", () => app.world.saveStockpiles(), (f) { app.world.loadStockpiles(f); });
   app.persistables ~= Persist.pod!Block("blocks", () => app.world.saveBlocks(), (f) { app.loadBlocks(f); });
   app.persistables ~= Persist.pod!Order("jobs", () => app.saveOrders(), (o) { app.loadOrders(o); });
-  foreach(ref ftr; features) app.persistables ~= vegetationSection(app, ftr.name);
+  foreach(ref ftr; featureTable) app.persistables ~= vegetationSection(app, ftr.name);
 }
 
 /** Load the world from HDD */
@@ -41,7 +41,7 @@ void loadWorld(ref GameApp app) {
   app.objects ~= app.world.inventory.ghost;
 
   app.ensureBlocks();
-  foreach(ref ft; features) {
+  foreach(ref ft; featureTable) {
     if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
     if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
   }

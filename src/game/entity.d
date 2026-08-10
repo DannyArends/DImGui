@@ -9,8 +9,7 @@ import inventory : InventorySlot;
 import pathfinding : followPath, stepMove, pathfindTo, repathTo, RepathResult, findGoalTile;
 import resources : itemStack;
 import scheduler : atDestination;
-import ctfe : parseTokens, splitColon;
-import lsystem : Rule, LSystemBrushT, TurtleConfig, TurtleBrush, buildGrammar;
+import lsystem : TurtleConfig, TurtleBrush, buildGrammar;
 import turtlegfx : interpret;
 import assimp : OpenAsset;
 import node : Node;
@@ -18,9 +17,6 @@ import mesh : Mesh;
 import bone : synthesizeBone;
 import vertex : Vertex;
 import matrix : Matrix, multiply, inverse, transpose;
-import std.conv : to;
-import std.format : format;
-import color : Colors;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 

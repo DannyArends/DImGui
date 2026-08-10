@@ -225,7 +225,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
     }
   }
   wd.buildTileGeometry(coord, data);
-  foreach(fi, ref ft; features) {
+  foreach(fi, ref ft; featureTable) {
     data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft, featureSpawnMask[fi]);
     foreach(ref f; data.featureData[ft.name]) {
       auto byMesh = featureMeshInstances(wd, f, ft);
@@ -283,7 +283,7 @@ void finalizeChunk(ref GameApp app, Chunk chunk) {
   app.world.chunks.mine = app.world.chunks.mine.filter!(t => app.world.chunkCoord(t) != chunk.data.coord).array;
 
   // Add trees to the chunk
-  foreach(ref ft; features) {
+  foreach(ref ft; featureTable) {
     if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
     if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
     if(chunk.data.coord !in app.world.vegetation[ft.name] && 

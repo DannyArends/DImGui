@@ -5,9 +5,11 @@
 
 public import engine;
 
-public import rawstructs : AnimalT, EntityT, FeatureT, ItemTemplateT, ResourceT, ResourceType, Source, SpawnMask, RESOURCE_COUNT;
-public import rawstructs : HeightBand, ItemTemplate, Ingredient, Product, Reaction, Substance, WorkshopUse;
+// CTFE Structs
+public import rawstructs;
+public import raws;
 
+// Normal Structs
 public import animal : Animal, AnimalSpawn;
 public import block : Block, Drops;
 public import clouds : Weather, CloudRequest, CloudResult, CloudDiff;
@@ -25,7 +27,6 @@ public import fall : Fall;
 public import searchnode : PathNode;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
-public import raws;
 public import resources : Item, traversable, buildable, cost, maxStack, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;
