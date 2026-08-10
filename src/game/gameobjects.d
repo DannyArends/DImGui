@@ -22,6 +22,7 @@ class Dwarves : OpenAsset {
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
   TurtleConfig cfg;                 /// turtle config built from the Dwarf entity brushes
   string[char] symMesh;             /// brush symbol -> primitive mesh name
+  AnimChannel[] anims;
   string axiom;                     /// Dwarf grammar axiom
   Rule[] rules;                     /// Dwarf grammar rules
 

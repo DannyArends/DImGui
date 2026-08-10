@@ -114,9 +114,9 @@ void dwarfFrame(ref GameApp app, float dt) {
     Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
     position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY[d.uid] * sc[1], d.visualPos[2]]);
     bool moving = (d.state == EntityState.Moving || d.state == EntityState.Wandering);
-    d.animPhase += dt * WALK_RATE;                    // advance always so idle sway animates
+    d.animPhase += dt * WALK_RATE;
     auto rig = app.world.dwarves.rigs[d.uid];
-    auto posed = poseRig(rig, d.animPhase, moving ? WALK_AMP : 0.0f, SWAY_AMP);
+    auto posed = poseRig(rig, d.animPhase, app.world.dwarves.anims, moving);
     foreach(k, ref n; rig) {
       auto di = n.inst; di.matrix = world.multiply(posed[k]);
       app.world.dwarves.meshes[app.world.dwarves.symMesh[n.symbol]].instances ~= di;
@@ -165,15 +165,16 @@ void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
 
 /** Re-pose a rig for a walk cycle: L/A swing about their joint (opposite by side, arms counter legs).
  *  amp == 0 reproduces the bind pose exactly. Returns per-node posed world matrices (dwarf-local). */
-Matrix[] poseRig(const RigNode[] rig, float phase, float walkAmp, float swayAmp) {
+Matrix[] poseRig(const RigNode[] rig, float phase, const AnimChannel[] anims, bool moving) {
   Matrix[] posed; posed.length = rig.length;
   foreach(k, ref n; rig) {
     Matrix parentW = (n.parent < 0) ? Matrix.init : posed[n.parent];
-    float side = (n.inst.matrix[12] < 0.0f) ? 1.0f : -1.0f;   // bind world X: left vs right
+    float side = (n.inst.matrix[12] < 0.0f) ? 1.0f : -1.0f;
     float[3] e = [0.0f, 0.0f, 0.0f];
-    if(n.symbol == 'L')      e[2] =  walkAmp * sin(phase) * side;          // fwd/back leg swing (roll about X)
-    else if(n.symbol == 'A') e[2] = -walkAmp * sin(phase) * side;          // arms counter the legs
-    else if(n.symbol == 'T') e[1] =  swayAmp * sin(phase * 0.35f);         // gentle side lean at the waist
+    foreach(ref ch; anims) {
+      if(ch.symbol != n.symbol || (ch.whenMoving && !moving)) continue;
+      e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
+    }
     if(e != [0.0f, 0.0f, 0.0f]) {
       float[3] piv = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
       Matrix swung = translate(piv).multiply(rotate(e))

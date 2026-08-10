@@ -167,6 +167,14 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
     case "LSYSTEM_YAW":      e.lsystemYaw   = to!float(p[1]); break;
     case "LSYSTEM_PITCH":    e.lsystemPitch = to!float(p[1]); break;
     case "LSYSTEM_ROLL":     e.lsystemRoll  = to!float(p[1]); break;
+    case "ANIM": if(p.length >= 5) {
+      immutable char sym = p[1][0];
+      immutable ubyte ax = cast(ubyte)p[2].to!uint;
+      e.anims ~= AnimChannel(sym, ax, p[3].to!float, p[4].to!float,
+                             p.length > 5 ? p[5].to!float : 0.0f,
+                             p.length > 6 && p[6] == "side",
+                             p.length > 7 && p[7] == "moving");
+    } break;
     case "AXIOM":            e.axiom = p[1]; break;
     case "BRUSH": if(p.length >= 6){
       immutable float[4] col = p.length > 6 ? cast(float[4])toColor(p[6]) : [1.0f, 1.0f, 1.0f, 1.0f];
