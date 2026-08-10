@@ -6,7 +6,7 @@
 import phobos;
 
 import color : toColor;
-import ctfe : parseRawsGeneric, parseTokens, splitColon, toEnum;
+import ctfe : parseRawsGeneric, parseTokens, splitColon;
 import lsystem : Rule;    // brush/rule types used when parsing
 import rawstructs;
 
@@ -145,7 +145,7 @@ FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "
     case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
     case "AXIOM":            ft.axiom = p[1]; break;
     case "BRUSH": if(p.length >= 8){
-      ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3].toEnum!Substance, p[4],
+      ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3].to!Substance, p[4],
         to!float(p[5]), to!float(p[6]), to!bool(p[7]),
         p.length > 8 ? to!float(p[8]) : 0.0f,
         p.length > 9 ? to!bool(p[9]) : true,
@@ -203,12 +203,16 @@ Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, 
 
 /** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
 private SpawnMask spawnMask(const FeatureT ft) pure {
-  SpawnMask m;
-  foreach(s; ft.spawnOn) { auto rt = (s == "None" ? ResourceType.None : s.to!ResourceType); m[rt] = true; }
-  return m;
+  SpawnMask m; foreach(s; ft.spawnOn) { auto rt = (s == "None" ? ResourceType.None : s.to!ResourceType); m[rt] = true; } return m;
 }
-immutable SpawnMask[] featureSpawnMask = () {
-  SpawnMask[] a; foreach(ref ft; featureTable) a ~= spawnMask(ft); return a; 
+
+immutable SpawnMask[] featureSpawnMask = () { SpawnMask[] a; foreach(ref ft; featureTable) a ~= spawnMask(ft); return a; }();
+
+/** Precomputes an O(1) lookup table mapping ResourceType to matching animal indices. */
+enum spawnLookup= () {
+  SpawnGroup!(animalTable.length)[RESOURCE_COUNT] lookup;
+  foreach(size_t aType, ref at; animalTable) { foreach(st; at.spawnOn) { lookup[st].animalIndices[lookup[st].count++] = aType; } }
+  return lookup;
 }();
 
 // Tables

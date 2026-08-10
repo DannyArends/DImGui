@@ -74,12 +74,6 @@ string composedEnum(string name, string sentinel, EnumRule[] rules, string[] raw
   return s ~ "}\n";
 }
 
-/** CTFE string -> enum by member name. Avoids std.conv.to's module-init CTFE fragility. */
-E toEnum(E)(string s) pure nothrow @nogc if(is(E == enum)) {
-  static foreach(m; __traits(allMembers, E)) if(s == m) return __traits(getMember, E, m);
-  return E.init;
-}
-
 /** Generic block-list parser: `[blockTag:name]` starts a record; `handler` fills fields. seedNone prepends index-0 None. */
 T[] parseRawsGeneric(T, string blockTag, alias handler)(string raw, bool seedNone = false) pure {
   T[] items; if(seedNone) items ~= T.init;   // index 0 == None, for enum-parallel tables (ItemTemplate/ResourceType)

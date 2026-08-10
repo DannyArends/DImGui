@@ -139,6 +139,8 @@ struct Reaction {
   Product[] outputs;
 }
 
+struct SpawnGroup(size_t N){ size_t[N] animalIndices; ubyte count; }
+
 /** One terrain height band: an upper threshold and the resources eligible at that height. */
 struct HeightBand { float threshold; ResourceType[] results; }
 

@@ -170,23 +170,6 @@ void addAnimal(ref GameApp app, ref Animal a) {
   herd ~= a;
 }
 
-private struct SpawnGroup {
-  size_t[animalTable.length] animalIndices;
-  ubyte count;
-}
-
-/** Precomputes an O(1) lookup table mapping ResourceType to matching animal indices. */
-private auto buildSpawnLookup() {
-  SpawnGroup[EnumMembers!ResourceType.length] lookup;
-  foreach(size_t aType, ref at; animalTable) {
-    foreach(st; at.spawnOn) { if(st < EnumMembers!ResourceType.length) { lookup[st].animalIndices[lookup[st].count++] = aType; } }
-  }
-  return lookup;
-}
-
-/** Spawn lookup computed at compile time from the immutable animalTable. */
-enum spawnLookup = buildSpawnLookup();
-
 /** the spawn record + worker-side decision */
 void seedChunkAnimalSpawns(ref ChunkData data, immutable(WorldData) wd) {
   const int chunkSize = wd.chunkSize;
