@@ -10,6 +10,20 @@ import lsystem : buildGrammar;
 import matrix : translateScale;
 import turtlegfx : interpretRig;
 
+/** Build an engine Node hierarchy from the turtle rig: name "<symbol><idx>", transform = local,
+ *  meshes = [brush mesh]; branch parenting preserved. */
+private Node buildNode(const RigNode[] r, const string[char] symMesh) {
+  int[][] kids; kids.length = r.length + 1;                 // [0] = root's children, [k+1] = children of node k
+  foreach(k, ref n; r) kids[n.parent + 1] ~= cast(int)k;
+  Node make(int k) {
+    Node n = (k < 0) ? Node("rig", 0, Matrix.init)
+                     : Node(text(r[k].symbol, k), 0, r[k].local, [], (r[k].symbol in symMesh) ? [symMesh[r[k].symbol]] : []);
+    foreach(c; kids[k + 1]) n.children ~= make(c);
+    return n;
+  }
+  return make(-1);
+}
+
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
 class Dwarves : OpenAsset {
   Dwarf[] dwarves;
@@ -17,7 +31,10 @@ class Dwarves : OpenAsset {
   int selected = -1;
   size_t[] tickOrder;
   Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
-  RigNode[][uint] rigs;             /// per-dwarf rig (buildGrammar(uid) -> interpretRig), keyed by uid
+  Node[uint] rig;                   /// per-dwarf Node hierarchy (walked by walkPose)
+  float[string][uint] side;         /// per-node left/right sign (bind world X), keyed by node name
+  AnimationState[uint] states;      /// per-dwarf animation clock (engine type; replaces animPhase)
+  float[4][char] symColor;          /// brush symbol -> baked color
   float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
   TurtleConfig cfg;                 /// turtle config built from the Dwarf entity brushes
@@ -34,6 +51,7 @@ class Dwarves : OpenAsset {
       foreach(ref br; e.brushes) {
         cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
         symMesh[br.symbol] = br.mesh;
+        symColor[br.symbol] = br.color;
       }
       break;
     }
@@ -42,14 +60,18 @@ class Dwarves : OpenAsset {
 
   /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
   void buildRig(uint uid) {
-    if(uid in rigs) return;
-    auto nodes = interpretRig(buildGrammar(cast(uint)(uid * 2654435761u), 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
-    float lo = 0.0f; bool any = false;
-    foreach(ref n; nodes){ float y = n.inst.matrix[13]; if(!any || y < lo){ lo = y; any = true; } }
-    rigs[uid] = nodes; footY[uid] = lo;
+    if(uid in rig) return;
+    auto r = interpretRig(buildGrammar(cast(uint)(uid * 2654435761u), 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+    float lo = 0.0f; bool any = false; float[string] sd;
+    foreach(k, ref n; r) {
+      float y = n.inst.matrix[13]; if(!any || y < lo){ lo = y; any = true; }
+      sd[text(n.symbol, k)] = (n.inst.matrix[12] < 0.0f) ? 1.0f : -1.0f;
+    }
+    rig[uid] = buildNode(r, symMesh); side[uid] = sd; footY[uid] = lo;
+    states[uid] = AnimationState(0, uniform(0.0, 1000.0));
     uint h = cast(uint)(uid * 2654435761u);
-    float sy  = 0.90f + (h & 255) / 255.0f * 0.22f;          // height 0.90..1.12
-    float sxz = 0.85f + ((h >> 8) & 255) / 255.0f * 0.35f;   // girth  0.85..1.20
+    float sy  = 0.90f + (h & 255) / 255.0f * 0.22f;
+    float sxz = 0.85f + ((h >> 8) & 255) / 255.0f * 0.35f;
     dscale[uid] = [sxz, sy, sxz];
   }
 

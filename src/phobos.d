@@ -19,7 +19,7 @@ public import core.stdc.stdio : printf;
 public import std.algorithm;
 public import std.array : array, split, replace, empty, join;
 public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, receiveOnly, receiveTimeout;
-public import std.conv : to;
+public import std.conv : to, text;
 public import std.format : format;
 public import std.math : abs, ceil, sqrt, pow, PI, cos, sin, tan, acos, asin, atan, atan2, floor, fmod, isFinite, isNaN;
 public import std.path : baseName, dirName, extension, globMatch, stripExtension;

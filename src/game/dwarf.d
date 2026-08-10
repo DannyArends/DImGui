@@ -5,6 +5,7 @@
 
 import game;
 
+import animation : walkPose;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
 import entity : tickEntity, entityMove;
@@ -29,8 +30,6 @@ import water : findNearestWater;
 import world : nextEntityUID;
 
 enum int NEED_RETRY = 30;
-enum float WALK_AMP  = 28.0f;   /// leg/arm swing amplitude, degrees
-enum float SWAY_AMP  = 3.5f;    /// idle/torso side-sway amplitude, degrees
 enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
 
 struct Dwarf {
@@ -40,7 +39,6 @@ struct Dwarf {
   Job!Dwarf[] jobStack;                     /// Job stack, [0] active, rest pending
   size_t lightIndex = size_t.max;
   size_t nameLabel = size_t.max;
-  float animPhase = 0.0f;                   /// walk-cycle phase, advanced while moving
 
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = EntityState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }
@@ -114,13 +112,27 @@ void dwarfFrame(ref GameApp app, float dt) {
     Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
     position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - app.world.dwarves.footY[d.uid] * sc[1], d.visualPos[2]]);
     bool moving = (d.state == EntityState.Moving || d.state == EntityState.Wandering);
-    d.animPhase += dt * WALK_RATE;
-    auto rig = app.world.dwarves.rigs[d.uid];
-    auto posed = poseRig(rig, d.animPhase, app.world.dwarves.anims, moving);
-    foreach(k, ref n; rig) {
-      auto di = n.inst; di.matrix = world.multiply(posed[k]);
-      app.world.dwarves.meshes[app.world.dwarves.symMesh[n.symbol]].instances ~= di;
-    }
+    auto dw = app.world.dwarves;
+    dw.states[d.uid].animTime += dt;
+    float phase = cast(float)dw.states[d.uid].animTime * WALK_RATE;
+    auto sd = dw.side[d.uid]; auto anims = dw.anims; auto scv = dw.symColor; auto mp = dw.meshes;
+    app.walkPose(dw.rig[d.uid], world,
+      (const Node n) {
+        Matrix bind = n.transform;
+        char sym = n.name.length ? n.name[0] : ' ';
+        float[3] e = [0.0f, 0.0f, 0.0f];
+        float s = (n.name in sd) ? sd[n.name] : 1.0f;
+        foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving))
+          e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? s : 1.0f);
+        if(e == [0.0f, 0.0f, 0.0f]) return bind;
+        float[3] piv = [bind[12] - 0.5f*bind[4], bind[13] - 0.5f*bind[5], bind[14] - 0.5f*bind[6]];
+        return translate(piv).multiply(rotate(e)).multiply(translate([-piv[0], -piv[1], -piv[2]])).multiply(bind);
+      },
+      (const Node n, const Matrix g) {
+        if(n.meshes.length == 0) return;
+        char sym = n.name[0];
+        mp[n.meshes[0]].instances ~= DrawInstance(g, -1, (sym in scv) ? scv[sym] : [1.0f, 1.0f, 1.0f, 1.0f]);
+      });
   }
   foreach(mesh; app.world.dwarves.meshes) { mesh.syncInstances(); }
   app.world.dwarves.syncInstances();
