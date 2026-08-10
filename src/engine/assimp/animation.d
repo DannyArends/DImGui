@@ -84,8 +84,9 @@ void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, co
       return scaleM.multiply(positionM.multiply(rotationM));
     },
     (const Node n, const Matrix gTransform) {
-      if(n.name in app.bones)
+      if(n.name in app.bones) {
         app.boneOffsets[regionBase + (app.bones[n.name].index - obj.boneBase)] = gTransform.multiply(app.bones[n.name].offset);
+      }
     });
 }
 

@@ -47,7 +47,7 @@ class Dwarves : OpenAsset {
     super();
     foreach(ref e; entityTable) if(e.name == "Dwarf") {
       cfg.yaw = e.lsystemYaw; cfg.pitch = e.lsystemPitch; cfg.roll = e.lsystemRoll; cfg.gap = e.lsystemGap;
-      axiom = e.axiom; rules = e.rules.dup;
+      axiom = e.axiom; rules = e.rules.dup; anims = e.anims.dup;
       foreach(ref br; e.brushes) {
         cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
         symMesh[br.symbol] = br.mesh;
