@@ -60,8 +60,8 @@ class Geometry {
   bool castShadow = true;                           /// Boolean flag
 
   @property @nogc bool inFrustum() nothrow const { return(box is null || box.visible); }
-  @property bool isSDF() nothrow const { return(geometry !is null && geometry() == "Text"); }
-  @property bool isAnimated() nothrow { return(geometry !is null && animations.length > 0); }
+  @property @nogc bool isSDF() nothrow const { return(mName == "Text"); }
+  @property bool isAnimated() nothrow { return(animations.length > 0); }
   @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null; }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
@@ -71,10 +71,10 @@ class Geometry {
     foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return(true); } } return(false);
   }
 
-  @nogc void initInstanced(string delegate() nothrow name, DrawInstance[] initial = []) nothrow {
+  @nogc void initInstanced(string name, DrawInstance[] initial = []) nothrow {
     instancedMesh = true;
     instances = initial;
-    geometry = name;
+    mName = name;
   }
 
   /** Flag the instance buffer for re-upload and mark the bounding box stale. */
@@ -121,7 +121,7 @@ class Geometry {
 
   void delegate(float dt) onFrame;
   void delegate() onTick;
-  string delegate() nothrow geometry;
+  @nogc string geometry() nothrow const { return(mName); }
 }
 
 void cleanup(T)(ref App app, ref T object) if(is(T : Geometry)) {

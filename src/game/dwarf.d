@@ -274,7 +274,7 @@ void initDwarfMeshes(ref GameApp app) {
     if(name in app.world.dwarves.meshes) continue;
     auto mesh = makePrimitive(name);
     if(mesh is null) continue;
-    mesh.initInstanced((){ return "Dwarf:" ~ name; });
+    mesh.initInstanced("Dwarf:" ~ name);
     app.world.dwarves.meshes[name] = mesh;
     app.objects ~= mesh;
   }

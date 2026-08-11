@@ -116,7 +116,7 @@ void ensureBlocks(ref GameApp app) {
     if(meshName in app.world.drops.meshes) continue;
     auto m = makePrimitive(meshName);
     if(m is null) { SDL_Log("ensureBlocks: unknown mesh type '%s'", toStringz(meshName)); continue; }
-    m.initInstanced(() => meshName);
+    m.initInstanced(meshName);
     app.world.drops.meshes[meshName] = m;
     app.objects ~= m;
   }
@@ -127,7 +127,7 @@ void ensureBlocks(ref GameApp app) {
     if(meshName in app.world.drops.meshes) continue;
     auto m = makePrimitive(meshName);
     if(m is null) { SDL_Log("ensureBlocks: unknown template mesh '%s'", toStringz(meshName)); continue; }
-    m.initInstanced(() => meshName);
+    m.initInstanced(meshName);
     app.world.drops.meshes[meshName] = m;
     app.objects ~= m;
   }

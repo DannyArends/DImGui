@@ -19,7 +19,7 @@ class Line : Geometry {
 
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     onTick = (){ this.deAllocate = true; };
-    geometry = (){ return(typeof(this).stringof); };
+    mName = typeof(this).stringof;
   }
 }
 

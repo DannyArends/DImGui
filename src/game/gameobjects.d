@@ -41,7 +41,7 @@ class Dwarves : OpenAsset {
       }
       break;
     }
-    initInstanced(() => "Dwarves");
+    initInstanced("Dwarves");
   }
 
   /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
@@ -74,8 +74,7 @@ class Animals : OpenAsset {
 
   this(uint type) {
     super(toStringz(modelPath(animalTable[type].mesh)), false, true);
-    string key = animalTable[type].mesh;
-    initInstanced(() => key);
+    initInstanced(animalTable[type].mesh);
   }
   mixin SwapRemove!animals;
 }
@@ -84,7 +83,7 @@ class Animals : OpenAsset {
 class Tiles : Square {
   this(ChunkData cd) {
     super();
-    initInstanced(() => "Tiles", cd.tileInstances);
+    initInstanced("Tiles", cd.tileInstances);
     isSelectable = false;
     hideInObjectsWindow = true;
   }
@@ -110,7 +109,7 @@ class Chunk : Cube {
     float cy = sy * 0.5f + wd.yOffset;
     instances = [DrawInstance(translateScale([cx, cy, cz], [sx, sy, sx]))];
     tiles = new Tiles(cd);
-    geometry = (){ return "Chunk"; };
+    mName = "Chunk";
   }
 }
 
@@ -118,7 +117,7 @@ class Chunk : Cube {
 class Clouds : Square {
   this() {
     super();
-    initInstanced(() => "Clouds");
+    initInstanced("Clouds");
     isSelectable = false;
     castShadow = false;
     hideInObjectsWindow = true;
@@ -128,7 +127,7 @@ class Clouds : Square {
 class WaterTiles : Square {
   this() {
     super();
-    initInstanced(() => "WaterTiles");
+    initInstanced("WaterTiles");
     isSelectable = false;
     castShadow = false;
     hideInObjectsWindow = true;
@@ -154,14 +153,14 @@ class GhostCube : Cube {
     isVisible = false;
     castShadow = false;
     scale([dim[0], dim[1], dim[0]]);
-    geometry = (){ return(typeof(this).stringof); };
-    initInstanced(() => "BuildingGhosts");
+    mName = typeof(this).stringof;
+    initInstanced("BuildingGhosts");
   }
 }
 
 class PathMarkers : Cylinder {
   this() {
     super(0.1f, 0.2f, 6);
-    initInstanced(() => "PathMarkers");
+    initInstanced("PathMarkers");
   }
 }

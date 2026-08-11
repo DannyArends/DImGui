@@ -39,7 +39,7 @@ class Icosahedron : Geometry {
 
     meshes["Icosahedron"] = Mesh([0, cast(uint)vertices.length]);
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    geometry = (){ return(typeof(this).stringof); };
+    mName = typeof(this).stringof;
   }
 }
 

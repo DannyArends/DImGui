@@ -24,7 +24,7 @@ class Cylinder : Geometry {
 
     instances = [DrawInstance()];
     meshes["Cylinder"] = Mesh([0, cast(uint)vertices.length]);
-    geometry = (){ return(typeof(this).stringof); };
+    mName = typeof(this).stringof;
   }
 }
 

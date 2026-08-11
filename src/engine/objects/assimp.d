@@ -25,7 +25,7 @@ class OpenAsset : Geometry {
   this() {
     instances = [DrawInstance()];
     isOpaque = false;
-    geometry = (){ return(typeof(this).stringof); };
+    mName = typeof(this).stringof;
   }
 
   /** Load an assimp asset directly into this instance (subclasses call super(path)). */

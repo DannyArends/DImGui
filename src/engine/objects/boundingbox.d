@@ -33,8 +33,8 @@ class BoundingBox : Geometry {
                1, 5, 2, 3, 2, 6, 3, 7,
                4, 5, 4, 7, 5, 6, 6, 7];
     instances = [DrawInstance()];
-    geometry = (){ return("BoundingBox"); };
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    mName = typeof(this).stringof;
   };
 
   /** Compute world-space AABB from object-space bounds and instance matrix.

@@ -193,12 +193,12 @@ void toggleLightGeometries(ref App app) {
   if(!app.showLights) return;
 
   auto sun = new Sphere();
-  sun.geometry = (){ return "SunGeometry"; };
+  sun.mName = "SunGeometry";
   sun.castShadow = false;
   app.objects ~= sun;
 
   auto cones = new Cone();
-  cones.initInstanced((){ return "LightCones"; });   // instancedMesh = true, instances = []
+  cones.initInstanced("LightCones");   // instancedMesh = true, instances = []
   cones.castShadow = false;
   app.objects ~= cones;
 }

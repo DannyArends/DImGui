@@ -24,7 +24,7 @@ class Text : Geometry {
     this.opacity(app.glyphAtlas.path);
     isOpaque = false;
     castShadow = false;
-    geometry = (){ return(typeof(this).stringof); };
+    mName = typeof(this).stringof;
   }
 }
 

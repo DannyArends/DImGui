@@ -34,11 +34,6 @@ struct Feature {
 
 private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
 
-/** Wrap a mesh key in a delegate — a lazy key provider for Geometry.initInstanced. */
-private string delegate() nothrow captureKey(string k) { return () => k; }
-
-/** Resolve a raw resourceType string to its enum, treating "None" as ResourceType.None. */
-
 /** The FeatureT whose placed feature is rooted at `tile`, or null if none. */
 private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
@@ -68,7 +63,7 @@ void initFeatureMeshes(ref GameApp app) {
     if(key in app.world.vegetation.meshes) continue;
     auto mesh = makePrimitive(name);
     if(mesh is null) continue;
-    mesh.initInstanced(captureKey(key));
+    mesh.initInstanced(key);
     app.world.vegetation.meshes[key] = mesh;
     app.objects ~= mesh;
   }

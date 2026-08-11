@@ -16,7 +16,7 @@ class Square : Geometry {
     indices = [0, 2, 1, 0, 3, 2];
     instances = [DrawInstance()];
     meshes["Square"] = Mesh([0, cast(uint)vertices.length]);
-    geometry = (){ return(typeof(this).stringof); };
+    mName = typeof(this).stringof;
   };
 }
 

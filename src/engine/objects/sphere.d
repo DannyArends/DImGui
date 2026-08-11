@@ -14,5 +14,6 @@ class Sphere : Icosahedron {
     super(color);
     this.computeTangents();
     this.refineIcosahedron(level, color);
+    mName = typeof(this).stringof;
   }
 }
