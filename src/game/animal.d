@@ -53,11 +53,11 @@ struct Animal {
   void onSubJobComplete(ref GameApp app) { if(jobStack.length) jobStack = jobStack[1..$]; if(!hasJob) state = EntityState.Idle; }
   void onStuck(ref GameApp app) {}
   void onPathResult(ref GameApp app, PathResult r) {
-    foreach(herd; app.world.animals) foreach(ref x; herd.animals) if(x.uid == r.uid) {
+    if(app.world.animals !is null) { foreach(ref x; app.world.animals.animals) if(x.uid == r.uid) {
       x.path = r.success ? r.path : null;
       x.state = r.success ? (x.hasJob ? EntityState.Moving : EntityState.Wandering) : EntityState.Idle;
       return;
-    }
+    } }
   }
 }
 
@@ -73,7 +73,7 @@ void animalFrame(ref GameApp app, Animals herd, float dt) {
   foreach(mesh; herd.meshes) mesh.instances.reset();
   foreach(ref a; herd.animals) {
     if(app.world.chunkCoord(a.tile) !in app.world.chunks) continue;
-    herd.poseEntity(a, entityFor(entityTable[a.type].name), dt);
+    herd.poseEntity(a, entityTable[a.type], dt);
   }
   foreach(mesh; herd.meshes) mesh.syncInstances();
   herd.syncInstances();
@@ -202,19 +202,19 @@ void seedChunkAnimals(ref GameApp app, ref ChunkData data) {
     a.idleTicks[1] = uniform(4, 24);
     app.addAnimal(a);
   }
-  if(data.animalSpawns.length) foreach(herd; app.world.animals) herd.syncInstances();
+  if(data.animalSpawns.length && app.world.animals !is null) app.world.animals.syncInstances();
 }
 
 /** Despawn animals currently inside an evicted chunk (mirrors removeAllFeatures). */
 void removeChunkAnimals(ref GameApp app, int[3] coord) {
-  foreach(herd; app.world.animals) {
-    bool any = false;
-    size_t i = 0;
-    while(i < herd.animals.length) {
-      if(app.world.chunkCoord(herd.animals[i].tile) == coord) { herd.remove(i); any = true; }  // swap-remove
-      else i++;
-    }
-    if(any) herd.syncInstances();
+  auto herd = app.world.animals;
+  if(herd is null) return;
+  bool any = false;
+  size_t i = 0;
+  while(i < herd.animals.length) {
+    if(app.world.chunkCoord(herd.animals[i].tile) == coord) { herd.remove(i); any = true; }  // swap-remove
+    else i++;
   }
+  if(any) herd.syncInstances();
 }
 
