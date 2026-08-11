@@ -33,12 +33,12 @@ class Dwarves : OpenAsset {
   }
 
   /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
-  void buildRig(uint uid) {
+  void buildRig(uint uid, immutable(EntityT) prototype) {
     if(uid in rig) return;
-    TurtleConfig cfg = { yaw: proto.lsystemYaw, pitch: proto.lsystemPitch, roll: proto.lsystemRoll, gap: proto.lsystemGap };
-    foreach(ref br; proto.brushes) { cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset); }
+    TurtleConfig cfg = { yaw: prototype.lsystemYaw, pitch: prototype.lsystemPitch, roll: prototype.lsystemRoll, gap: prototype.lsystemGap };
+    foreach(ref br; prototype.brushes) { cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset); }
     uint hash = cast(uint)(uid * 2654435761u);
-    auto r = interpretRig(buildGrammar(hash, 1, proto.axiom, proto.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+    auto r = interpretRig(buildGrammar(hash, 1, prototype.axiom, prototype.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
     float lo = 0.0f; bool any = false;
     foreach(ref n; r) {
       auto m = n.inst.matrix;

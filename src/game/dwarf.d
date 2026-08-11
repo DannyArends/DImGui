@@ -109,7 +109,9 @@ Matrix posedLocal(ref const RigNode n, const float[3] e) {
 
 /** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */
 void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
-  dw.buildRig(d.uid);
+  auto prototype = dw.proto;                 // one table lookup per dwarf, not per node
+
+  dw.buildRig(d.uid, prototype);
   auto sc = dw.dscale[d.uid];
   Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
   position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1], d.visualPos[2]]);
@@ -119,10 +121,10 @@ void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
   const r = dw.rig[d.uid];
   auto g = globals(r, world, (size_t k) {
     float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-    return posedLocal(r[k], channelEuler(dw.proto.anims, r[k].symbol, side, phase, walking));
+    return posedLocal(r[k], channelEuler(prototype.anims, r[k].symbol, side, phase, walking));
   });
   foreach(k, ref n; r) {
-    foreach(ref br; dw.proto.brushes) if(br.symbol == n.symbol) {
+    foreach(ref br; prototype.brushes) if(br.symbol == n.symbol) {
       float[4] col = br.tint ? d.color : br.color;
       dw.meshes[br.mesh].instances ~= DrawInstance(g[k], -1, col);
       break;
@@ -305,7 +307,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1], wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  app.world.dwarves.buildRig(d.uid);
+  app.world.dwarves.buildRig(d.uid, app.world.dwarves.proto());
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
   d.nameLabel = app.addWorldText(d.firstname, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);
