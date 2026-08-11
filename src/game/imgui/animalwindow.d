@@ -25,10 +25,10 @@ string animalStatus(ref Animal a) {
 void showAnimalRow(ref GameApp app, Animals herd, size_t i, ref Animal a) {
   entityGlyph(a, cast(string)ICON_FA_PAW);
   igSameLine(0, 5);
-  string species = animalTable[a.type].name;
+  string species = entityTable[a.type].name;
   bool isSel = herd.selected == cast(int)i;
   if(igSelectable_Bool(cstr("%s##anm%d_%d", species, a.type, i), isSel, 0, ImVec2(0, 0))) {
-    foreach(_, h; app.world.animals) h.selected = -1;   // single selection across herds
+    app.world.animals.selected = -1;   // single container, single selection
     herd.selected = cast(int)i;
   }
   igSameLine(0, 5);
@@ -38,7 +38,7 @@ void showAnimalRow(ref GameApp app, Animals herd, size_t i, ref Animal a) {
 /** Detailed sheet for the selected animal. */
 void showAnimalSheet(ref GameApp app, Animals herd, ref Animal a, int selected) {
   entityGlyph(a, cast(string)ICON_FA_PAW); igSameLine(0, 5);
-  string species = animalTable[a.type].name;
+  string species = entityTable[a.type].name;
   if(igSelectable_Bool(cstr("%s##anmfollow", species), false, 0, ImVec2(0, 0))) { app.followEntity(a.uid, herd); }
   text("Tile: %s", a.tile);
   needToggle("Hunger", "hungry", a.needs[Need.Hunger], "anm_hunger");
@@ -49,29 +49,28 @@ void showAnimalSheet(ref GameApp app, Animals herd, ref Animal a, int selected) 
 /** Roster of all animals + state summary. */
 void showAnimalOverview(ref GameApp app) {
   int idle, walking, working; size_t total;
-  foreach(_, herd; app.world.animals) {
-    total += herd.animals.length;
-    foreach(i, ref a; herd.animals) {
-      switch(a.state) {
-        case EntityState.Idle: idle++; break;
-        case EntityState.Moving: case EntityState.Wandering: walking++; break;
-        case EntityState.Working: working++; break;
-        default: break;
-      }
-      app.showAnimalRow(herd, i, a);
+  auto herd = app.world.animals;
+  if(herd !is null) foreach(i, ref a; herd.animals) {
+    total++;
+    switch(a.state) {
+      case EntityState.Idle: idle++; break;
+      case EntityState.Moving: case EntityState.Wandering: walking++; break;
+      case EntityState.Working: working++; break;
+      default: break;
     }
+    app.showAnimalRow(herd, i, a);
   }
   text("Animals: %d | Idle: %d | Moving: %d | Feeding: %d", total, idle, walking, working);
 }
 
 void showAnimalContent(ref GameApp app, uint font = 0) {
   igSeparator();
-  foreach(herd; app.world.animals) {
-    if(herd.selected >= 0 && herd.selected < cast(int)herd.animals.length) {
-      if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back"), ImVec2(0,0))) { herd.selected = -1; return; }
-      app.showAnimalSheet(herd, herd.animals[herd.selected], herd.selected);
-      return;
-    }
+  auto herd = app.world.animals;
+  if(herd !is null && herd.selected >= 0 && herd.selected < cast(int)herd.animals.length) {
+    if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back"), ImVec2(0,0))) { herd.selected = -1; return; }
+    app.showAnimalSheet(herd, herd.animals[herd.selected], herd.selected);
+    return;
   }
   app.showAnimalOverview();
 }
+

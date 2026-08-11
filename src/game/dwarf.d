@@ -231,7 +231,7 @@ void dwarfTick(ref GameApp app) {
 
 /** Create and register one instanced primitive per distinct Dwarf brush mesh. */
 void initDwarfMeshes(ref GameApp app) {
-  foreach(ref br; dwarfEntity().brushes) {
+  foreach(ref br; entityFor("Dwarf").brushes) {
     if(br.mesh in app.world.dwarves.meshes) continue;
     auto mesh = makePrimitive(br.mesh);
     if(mesh is null) continue;
@@ -265,7 +265,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1], wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  app.world.dwarves.buildRig(d.uid, dwarfEntity());
+  app.world.dwarves.buildRig(d.uid, entityFor("Dwarf"));
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
   d.nameLabel = app.addWorldText(d.firstname, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);

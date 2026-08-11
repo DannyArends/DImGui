@@ -79,23 +79,6 @@ struct LSystemBrushT {
   bool tint = false;                            /// tint with the entity's per-instance colour instead of `color`
 }
 
-/** Data-driven animal species, parsed from data/raws/animals.txt into animalTable. */
-struct AnimalT {
-  string name;                                  /// Species name
-  string mesh = "Torus";                        /// Instance mesh (primitive for now)
-  ResourceType[] spawnOn;                       /// ResourceType tiles this animal spawns on
-  float noiseThreshold = 0.92f;                 /// Hash-noise spawn gate (higher = rarer)
-  uint hashSeed1, hashSeed2;                    /// Per-species spawn hash seeds
-  uint hashMod, hashRem;                        /// Optional hash bucketing (0 = unused)
-  float moveSpeed = 2.0f;                       /// Tiles per second
-  float hungerDecay = 0.00040f;                 /// Hunger need increase per tick
-  float thirstDecay = 0.00060f;                 /// Thirst need increase per tick
-  string diet = "Berry";                        /// Resource (class or type) this animal eats
-  float scale = 0.5f, scaleVariance = 0.1f;     /// Instance scale + per-spawn variance
-  float offsetY = 0.0f;                          /// Vertical render offset (world units) to sit model on the tile
-  float facing = 0.0f;                          /// Yaw offset (degrees) correcting the model's forward axis
-}
-
 /** Data-driven terrain feature (tree/bush/cactus): spawn rules + an L-system body. */
 struct FeatureT {
   string name;
