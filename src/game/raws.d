@@ -155,6 +155,12 @@ FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "
 EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "ENTITY", (ref e, p) {
   switch(p[0]) {
     case "MOVE_SPEED":       e.moveSpeed = to!float(p[1]); break;
+    case "SPAWN_ON":         e.spawnOn ~= p[1].to!ResourceType; break;
+    case "NOISE_THRESHOLD":  e.noiseThreshold = to!float(p[1]); break;
+    case "HASH_SEED1":       e.hashSeed1 = to!uint(p[1]); break;
+    case "HASH_SEED2":       e.hashSeed2 = to!uint(p[1]); break;
+    case "HASH_MOD":         e.hashMod = to!uint(p[1]); break;
+    case "HASH_REM":         e.hashRem = to!uint(p[1]); break;
     case "HUNGER_DECAY":     e.hungerDecay = to!float(p[1]); break;
     case "THIRST_DECAY":     e.thirstDecay = to!float(p[1]); break;
     case "DIET":             e.diet = p[1]; break;

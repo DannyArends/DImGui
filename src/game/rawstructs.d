@@ -30,6 +30,10 @@ alias SpawnMask = bool[RESOURCE_COUNT];
 /** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
 struct EntityT {
   string name;                                    /// Species name, e.g. "Dwarf"
+  ResourceType[] spawnOn;                         /// tiles this entity spawns on (empty = not wild-spawned, e.g. Dwarf)
+  float noiseThreshold = 0.92f;                   /// hash-noise spawn gate (higher = rarer)
+  uint hashSeed1, hashSeed2;                      /// per-species spawn hash seeds
+  uint hashMod, hashRem;                          /// optional hash bucketing (0 = unused)
   float moveSpeed = 2.0f;                         /// Tiles per second
   float hungerDecay = 0.0f, thirstDecay = 0.0f;   /// Need growth per tick
   string diet;                                    /// Substance/type eaten (empty = none)
