@@ -35,7 +35,8 @@ enum float NEED_SEEK = 0.55f;    // start foraging when a need crosses this
 struct Animal {
   Entity!4 entity;                              /// Shared pawn state
   alias entity this;
-  uint type = 0;                                /// Index into animalTable
+  uint type = 0;                                /// Index into entityTable
+  AnimationState anim;                      /// walk-cycle clock (engine type)
 
   Job!Animal[] jobStack;                        /// Personal jobs (graze / drink)
   @property bool hasJob() const { return jobStack.length > 0; }
@@ -70,10 +71,10 @@ void animalFrame(ref GameApp app, Animals herd, float dt) {
     app.entityMove(a, dt, animalStep, animalHop);
     bool moving = (a.state == EntityState.Moving || a.state == EntityState.Wandering);
     if(i < herd.states.length) herd.states[i].animation = moving ? 2 : 1;   // 2=walk, 1=idle
-    float scl = animalTable[a.type].scale;
+    float scl = entityTable[a.type].scale;
     float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;
-    Matrix m = rotate(scale(Matrix.init, [sc, sc, sc]), [a.heading + animalTable[a.type].facing, 0.0f, 0.0f]);
-    float[3] p = [a.visualPos[0], a.visualPos[1] + animalTable[a.type].offsetY, a.visualPos[2]];
+    Matrix m = rotate(scale(Matrix.init, [sc, sc, sc]), [a.heading + entityTable[a.type].facing, 0.0f, 0.0f]);
+    float[3] p = [a.visualPos[0], a.visualPos[1] + entityTable[a.type].offsetY, a.visualPos[2]];
     herd.instances[i] = position(m, p);
   }
   Geometry g = herd;
@@ -161,8 +162,8 @@ void addAnimal(ref GameApp app, ref Animal a) {
   auto wp = app.world.tileToWorld(a.tile);
   a.visualPos = [wp[0], wp[1], wp[2]];
   a.moveFrom = a.moveTo = a.visualPos; a.moveT = 1.0f;
-  float s = animalTable[a.type].scale;
-  float[3] p = [a.visualPos[0], a.visualPos[1] + animalTable[a.type].offsetY, a.visualPos[2]];
+  float s = entityTable[a.type].scale;
+  float[3] p = [a.visualPos[0], a.visualPos[1] + entityTable[a.type].offsetY, a.visualPos[2]];
   herd.instances ~= DrawInstance(translateScale(p, [s, s, s]), -1, a.color);
   herd ~= a;
 }
@@ -185,7 +186,7 @@ void seedChunkAnimalSpawns(ref ChunkData data, immutable(WorldData) wd) {
     const group = spawnLookup[ttIdx];
     for(ubyte g = 0; g < group.count; g++) {
       const size_t aType = group.animalIndices[g];
-      ref const at = animalTable[aType];
+      ref const at = entityTable[aType];
       if(n[2] < at.noiseThreshold || at.hashMod != 0 && ((wc[0] * at.hashSeed1) ^ (wc[2] * at.hashSeed2)) % at.hashMod != at.hashRem) continue;
       data.animalSpawns ~= AnimalSpawn([wc[0], wc[1] + 1, wc[2]], cast(uint)aType);
     }

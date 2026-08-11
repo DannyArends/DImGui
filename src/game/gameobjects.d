@@ -33,10 +33,14 @@ class Animals : OpenAsset {
   alias animals this;
   int selected = -1;
   size_t[] tickOrder;
+  Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
+  RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
+  float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
+  float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
 
   this(uint type) {
-    super(toStringz(modelPath(animalTable[type].mesh)), false, true);
-    initInstanced(animalTable[type].mesh);
+    super();
+    initInstanced("Dwarves");
   }
   mixin SwapRemove!animals;
 }

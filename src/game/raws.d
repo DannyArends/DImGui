@@ -219,8 +219,8 @@ immutable SpawnMask[] featureSpawnMask = () { SpawnMask[] a; foreach(ref ft; fea
 
 /** Precomputes an O(1) lookup table mapping ResourceType to matching animal indices. */
 enum spawnLookup= () {
-  SpawnGroup!(animalTable.length)[RESOURCE_COUNT] lookup;
-  foreach(size_t aType, ref at; animalTable) { foreach(st; at.spawnOn) { lookup[st].animalIndices[lookup[st].count++] = aType; } }
+  SpawnGroup!(entityTable.length)[RESOURCE_COUNT] lookup;
+  foreach(size_t aType, ref at; entityTable) { foreach(st; at.spawnOn) { lookup[st].animalIndices[lookup[st].count++] = aType; } }
   return lookup;
 }();
 
