@@ -107,11 +107,15 @@ Matrix posedLocal(ref const RigNode n, const float[3] e) {
   return translate(p).multiply(rotate(e)).multiply(translate([-p[0], -p[1], -p[2]])).multiply(n.local);
 }
 
-/** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */
-void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
-  auto prototype = dw.proto;                 // one table lookup per dwarf, not per node
+/** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up by name. */
+ref immutable(EntityT) dwarfEntity() {
+  foreach(ref e; entityTable) { if(e.name == "Dwarf") { return(e); } }
+  assert(0, "no [ENTITY:Dwarf]");
+}
 
-  dw.buildRig(d.uid, prototype);
+/** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */
+void poseDwarf(Dwarves dw, ref Dwarf d, ref immutable EntityT e, float dt) {
+  dw.buildRig(d.uid, e);
   auto sc = dw.dscale[d.uid];
   Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
   position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1], d.visualPos[2]]);
@@ -121,10 +125,10 @@ void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
   const r = dw.rig[d.uid];
   auto g = globals(r, world, (size_t k) {
     float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-    return posedLocal(r[k], channelEuler(prototype.anims, r[k].symbol, side, phase, walking));
+    return posedLocal(r[k], channelEuler(e.anims, r[k].symbol, side, phase, walking));
   });
   foreach(k, ref n; r) {
-    foreach(ref br; prototype.brushes) if(br.symbol == n.symbol) {
+    foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
       float[4] col = br.tint ? d.color : br.color;
       dw.meshes[br.mesh].instances ~= DrawInstance(g[k], -1, col);
       break;
@@ -140,11 +144,12 @@ void dwarfFrame(ref GameApp app, float dt) {
     app.entityMove(d, dt, stepSpeed, hopHeight);
   }
   foreach(mesh; app.world.dwarves.meshes) { mesh.instances.reset(); }
+  auto e = dwarfEntity();
   foreach(i, ref d; app.world.dwarves) {
     if(d.lightIndex != size_t.max) { app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
     if(d.nameLabel != size_t.max) { app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]); }
     if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;
-    app.world.dwarves.poseDwarf(d, dt);
+    app.world.dwarves.poseDwarf(d, e, dt);
   }
   foreach(mesh; app.world.dwarves.meshes) mesh.syncInstances();
   app.world.dwarves.syncInstances();
@@ -273,7 +278,7 @@ void dwarfTick(ref GameApp app) {
 
 /** Create and register one instanced primitive per distinct Dwarf brush mesh. */
 void initDwarfMeshes(ref GameApp app) {
-  foreach(ref br; app.world.dwarves.proto.brushes) {
+  foreach(ref br; dwarfEntity().brushes) {
     if(br.mesh in app.world.dwarves.meshes) continue;
     auto mesh = makePrimitive(br.mesh);
     if(mesh is null) continue;
@@ -307,7 +312,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1], wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  app.world.dwarves.buildRig(d.uid, app.world.dwarves.proto());
+  app.world.dwarves.buildRig(d.uid, dwarfEntity());
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
   d.nameLabel = app.addWorldText(d.firstname, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);

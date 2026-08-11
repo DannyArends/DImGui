@@ -26,12 +26,6 @@ class Dwarves : OpenAsset {
     initInstanced("Dwarves");
   }
 
-  /** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up, never stored. */
-  static ref immutable(EntityT) proto() {
-    foreach(ref e; entityTable) if(e.name == "Dwarf") return e;
-    assert(0, "no [ENTITY:Dwarf]");
-  }
-
   /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
   void buildRig(uint uid, immutable(EntityT) prototype) {
     if(uid in rig) return;
