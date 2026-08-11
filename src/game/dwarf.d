@@ -12,10 +12,11 @@ import entity : tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
+import lsystem : buildGrammar;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
-import matrix : multiply, translate, rotate, position, scale;
+import matrix : multiply, translate, rotate, position, scale, halfExtent;
 import names : randomizeName;
 import pathfinding : repathTo, RepathResult, findGoalTile;
 import jobs : pinnedPickup, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
@@ -24,7 +25,7 @@ import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;
 import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;
 import timing : timed;
-import turtlegfx : globals;
+import turtlegfx : interpretRig, globals;
 import scheduler : applyPathResult, atDestination, claimNextJob, dispatchJob, pruneJobQueue, rejectJob, completeSubJob;
 import vector : vAdd;
 import water : findNearestWater;
@@ -111,6 +112,25 @@ Matrix posedLocal(ref const RigNode n, const float[3] e) {
 ref immutable(EntityT) dwarfEntity() {
   foreach(ref e; entityTable) { if(e.name == "Dwarf") { return(e); } }
   assert(0, "no [ENTITY:Dwarf]");
+}
+
+/** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
+void buildRig(Dwarves dw, uint uid, ref immutable EntityT e) {
+  if(uid in dw.rig) return;
+  TurtleConfig cfg = { yaw: e.lsystemYaw, pitch: e.lsystemPitch, roll: e.lsystemRoll, gap: e.lsystemGap };
+  foreach(ref br; e.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
+  uint hash = cast(uint)(uid * 2654435761u);
+  auto r = interpretRig(buildGrammar(hash, 1, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+  float lo = 0.0f; bool any = false;
+  foreach(ref n; r) {
+    auto m = n.inst.matrix;
+    float y = m[13] - m.halfExtent[1];   // lowest vertex of the segment
+    if(!any || y < lo){ lo = y; any = true; }
+  }
+  dw.rig[uid] = r; dw.footY[uid] = lo;
+  float sy  = 0.90f + (hash & 255) / 255.0f * 0.22f;
+  float sxz = 0.85f + ((hash >> 8) & 255) / 255.0f * 0.35f;
+  dw.dscale[uid] = [sxz, sy, sxz];
 }
 
 /** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */

@@ -6,9 +6,7 @@
 import game;
 
 import assimp : OpenAsset;
-import lsystem : buildGrammar;
-import matrix : halfExtent, multiply, translate, rotate, position, scale, translateScale;
-import turtlegfx : interpretRig, globals;
+import matrix : multiply, translate, rotate, position, scale, translateScale;
 
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
 class Dwarves : OpenAsset {
@@ -24,25 +22,6 @@ class Dwarves : OpenAsset {
   this() {
     super();
     initInstanced("Dwarves");
-  }
-
-  /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
-  void buildRig(uint uid, immutable(EntityT) prototype) {
-    if(uid in rig) return;
-    TurtleConfig cfg = { yaw: prototype.lsystemYaw, pitch: prototype.lsystemPitch, roll: prototype.lsystemRoll, gap: prototype.lsystemGap };
-    foreach(ref br; prototype.brushes) { cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset); }
-    uint hash = cast(uint)(uid * 2654435761u);
-    auto r = interpretRig(buildGrammar(hash, 1, prototype.axiom, prototype.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
-    float lo = 0.0f; bool any = false;
-    foreach(ref n; r) {
-      auto m = n.inst.matrix;
-      float y = m[13] - m.halfExtent[1];   // lowest vertex of the segment
-      if(!any || y < lo){ lo = y; any = true; }
-    }
-    rig[uid] = r; footY[uid] = lo;
-    float sy  = 0.90f + (hash & 255) / 255.0f * 0.22f;
-    float sxz = 0.85f + ((hash >> 8) & 255) / 255.0f * 0.35f;
-    dscale[uid] = [sxz, sy, sxz];
   }
 
   mixin SwapRemove!dwarves;
