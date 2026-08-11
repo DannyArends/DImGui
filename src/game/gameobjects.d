@@ -38,9 +38,9 @@ class Animals : OpenAsset {
   float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
 
-  this(uint type) {
+  this() {
     super();
-    initInstanced("Dwarves");
+    initInstanced("Animals");
   }
   mixin SwapRemove!animals;
 }

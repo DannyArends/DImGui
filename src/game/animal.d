@@ -9,7 +9,7 @@ import animation : animateAsset;
 import assimp : OpenAsset;
 import block : findFreeFood, noBlock, itemOf;
 import bone : mergeBones;
-import entity : tickEntity, entityMove;
+import entity : entityFor, tickEntity, entityMove;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
 import geometry : Geometry;
@@ -66,19 +66,16 @@ struct AnimalSpawn { int[3] tile; uint type; }
 
 /** Per-frame: advance each animal's step and refresh its instance transform. */
 void animalFrame(ref GameApp app, Animals herd, float dt) {
-  foreach(i, ref a; herd.animals) {
-    if(a.isFalling) continue;
+  foreach(ref a; herd.animals) {
+    if(a.isFalling || !a.state.isMoving) continue;
     app.entityMove(a, dt, animalStep, animalHop);
-    bool moving = (a.state == EntityState.Moving || a.state == EntityState.Wandering);
-    if(i < herd.states.length) herd.states[i].animation = moving ? 2 : 1;   // 2=walk, 1=idle
-    float scl = entityTable[a.type].scale;
-    float sc = (app.world.chunkCoord(a.tile) in app.world.chunks) ? scl : 0.0f;
-    Matrix m = rotate(scale(Matrix.init, [sc, sc, sc]), [a.heading + entityTable[a.type].facing, 0.0f, 0.0f]);
-    float[3] p = [a.visualPos[0], a.visualPos[1] + entityTable[a.type].offsetY, a.visualPos[2]];
-    herd.instances[i] = position(m, p);
   }
-  Geometry g = herd;
-  app.animateAsset(g, dt);             // per-instance bone poses
+  foreach(mesh; herd.meshes) mesh.instances.reset();
+  foreach(ref a; herd.animals) {
+    if(app.world.chunkCoord(a.tile) !in app.world.chunks) continue;
+    herd.poseEntity(a, entityFor(entityTable[a.type].name), dt);
+  }
+  foreach(mesh; herd.meshes) mesh.syncInstances();
   herd.syncInstances();
 }
 
@@ -145,26 +142,31 @@ void animalTick(ref GameApp app, Animals herd) {
   foreach(ref a; herd.animals) app.tickEntity(a);
 }
 
-Animals buildHerd(ref GameApp app, uint type) {
-  auto herd = new Animals(type);
-  OpenAsset oa = herd; app.mergeBones(oa);          // merge skeleton into app.bones, set boneBase/boneCount
-  Geometry  g  = herd; app.registerMaterials(g); app.mapTextures(g);
+Animals ensureAnimals(ref GameApp app) {
+  if(app.world.animals !is null) return app.world.animals;
+  auto herd = new Animals();
   herd.onFrame = (float dt){ animalFrame(app, herd, dt); };
   herd.onTick  = (){ animalTick(app, herd); };
-  app.world.animals[type] = herd;
+  app.world.animals = herd;
   app.objects ~= herd;
-  return(herd);
+  foreach(ref e; entityTable) foreach(ref br; e.brushes) {   // register every animal brush mesh once
+    if(e.spawnOn.length == 0 || br.mesh in herd.meshes) continue;
+    auto mesh = makePrimitive(br.mesh);
+    if(mesh is null) continue;
+    mesh.initInstanced("Animal:" ~ br.mesh);
+    herd.meshes[br.mesh] = mesh;
+    app.objects ~= mesh;
+  }
+  return herd;
 }
 
 /** Place an animal in the world and append its instance row. */
 void addAnimal(ref GameApp app, ref Animal a) {
-  auto herd = app.world.animals.getOrElse(a.type, app.buildHerd(a.type));
+  auto herd = app.ensureAnimals();
   auto wp = app.world.tileToWorld(a.tile);
   a.visualPos = [wp[0], wp[1], wp[2]];
   a.moveFrom = a.moveTo = a.visualPos; a.moveT = 1.0f;
-  float s = entityTable[a.type].scale;
-  float[3] p = [a.visualPos[0], a.visualPos[1] + entityTable[a.type].offsetY, a.visualPos[2]];
-  herd.instances ~= DrawInstance(translateScale(p, [s, s, s]), -1, a.color);
+  herd.buildRig(a.uid, entityTable[a.type]);
   herd ~= a;
 }
 

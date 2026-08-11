@@ -8,7 +8,7 @@ import game;
 import animation : AnimationState;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
-import entity : buildRig, poseEntity, tickEntity, entityMove, isMoving;
+import entity : buildRig, entityFor, poseEntity, tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
@@ -89,12 +89,6 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
   return(noTile);
 }
 
-/** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up by name. */
-ref immutable(EntityT) dwarfEntity() {
-  foreach(ref e; entityTable) { if(e.name == "Dwarf") { return(e); } }
-  assert(0, "no [ENTITY:Dwarf]");
-}
-
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
@@ -103,7 +97,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     app.entityMove(d, dt, stepSpeed, hopHeight);
   }
   foreach(mesh; app.world.dwarves.meshes) { mesh.instances.reset(); }
-  auto e = dwarfEntity();
+  auto e = entityFor("Dwarf");
   foreach(i, ref d; app.world.dwarves) {
     if(d.lightIndex != size_t.max) { app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
     if(d.nameLabel != size_t.max) { app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]); }

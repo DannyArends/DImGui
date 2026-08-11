@@ -144,6 +144,12 @@ float[3] channelEuler(const AnimChannel[] anims, char sym, float side, float pha
   return e;
 }
 
+/** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up by name. */
+ref immutable(EntityT) entityFor(string name) {
+  foreach(ref e; entityTable) { if(e.name == name) { return(e); } }
+  assert(0, "no [ENTITY] named " ~ name);
+}
+
 /** A rig node's local transform with euler `e` applied at its joint (segment top). */
 Matrix posedLocal(ref const RigNode n, const float[3] e) {
   if(e == [0.0f, 0.0f, 0.0f]) return n.local;
