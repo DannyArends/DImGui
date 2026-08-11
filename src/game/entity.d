@@ -5,14 +5,17 @@
 
 import game;
 
+import lsystem : buildGrammar;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack;
 import scheduler : atDestination;
 import turtlegfx : interpret;
 import bone : synthesizeBone;
-import matrix : multiply, translate, inverse, rotate, transpose;
+import matrix : multiply, translate, position, inverse, rotate, transpose, halfExtent, scale;
+import turtlegfx : interpretRig, globals;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
+enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
 
 /** Serializable pawn state (POD): saved to disk via Persist.pod. N = inventory slot count. */
 struct EntityData(uint N) {
@@ -146,6 +149,48 @@ Matrix posedLocal(ref const RigNode n, const float[3] e) {
   if(e == [0.0f, 0.0f, 0.0f]) return n.local;
   float[3] p = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
   return translate(p).multiply(rotate(e)).multiply(translate([-p[0], -p[1], -p[2]])).multiply(n.local);
+}
+
+/** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
+void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
+  if(uid in dw.rig) return;
+  TurtleConfig cfg = { yaw: e.lsystemYaw, pitch: e.lsystemPitch, roll: e.lsystemRoll, gap: e.lsystemGap };
+  foreach(ref br; e.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
+  uint hash = cast(uint)(uid * 2654435761u);
+  auto r = interpretRig(buildGrammar(hash, 1, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+  float lo = 0.0f; bool any = false;
+  foreach(ref n; r) {
+    auto m = n.inst.matrix;
+    float y = m[13] - m.halfExtent[1];   // lowest vertex of the segment
+    if(!any || y < lo){ lo = y; any = true; }
+  }
+  dw.rig[uid] = r; dw.footY[uid] = lo;
+  float sy  = 0.90f + (hash & 255) / 255.0f * 0.22f;
+  float sxz = 0.85f + ((hash >> 8) & 255) / 255.0f * 0.35f;
+  dw.dscale[uid] = [sxz, sy, sxz];
+}
+
+/** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */
+void poseEntity(C, P)(C dw, ref P d, ref immutable EntityT e, float dt) {
+  dw.buildRig(d.uid, e);
+  auto sc = dw.dscale[d.uid];
+  Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
+  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1], d.visualPos[2]]);
+  d.anim.animTime += dt;
+  float phase = cast(float)d.anim.animTime * WALK_RATE + (d.uid % 100);
+  bool walking = d.moveT < 1.0f;               // actually displacing this step, not just in a moving state
+  const r = dw.rig[d.uid];
+  auto g = globals(r, world, (size_t k) {
+    float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
+    return posedLocal(r[k], channelEuler(e.anims, r[k].symbol, side, phase, walking));
+  });
+  foreach(k, ref n; r) {
+    foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
+      float[4] col = br.tint ? d.color : br.color;
+      dw.meshes[br.mesh].instances ~= DrawInstance(g[k], -1, col);
+      break;
+    }
+  }
 }
 
 /** A single dwarf being ticked */

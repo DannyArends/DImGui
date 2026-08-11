@@ -8,11 +8,10 @@ import game;
 import animation : AnimationState;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
-import entity : channelEuler, tickEntity, entityMove, isMoving, posedLocal;
+import entity : buildRig, poseEntity, tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
-import lsystem : buildGrammar;
 import game : GameApp;
 import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
@@ -25,7 +24,6 @@ import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;
 import tile : isTileOccupied, getTileAt, surfaceAt, landingTile;
 import timing : timed;
-import turtlegfx : interpretRig, globals;
 import scheduler : applyPathResult, atDestination, claimNextJob, dispatchJob, pruneJobQueue, rejectJob, completeSubJob;
 import vector : vAdd;
 import water : findNearestWater;
@@ -36,7 +34,6 @@ enum stepSpeed = 5.0f;    // base step rate
 enum hopHeight = 2.5f;    // peak of the hop
 enum nameHeight = 0.8f;   // name tag height above visualPos
 enum nameScale = 0.5f;    // name tag glyph scale
-enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
 
 struct Dwarf {
   Entity!32 entity;                         /// Shared pawn (32 inventory slots)
@@ -98,48 +95,6 @@ ref immutable(EntityT) dwarfEntity() {
   assert(0, "no [ENTITY:Dwarf]");
 }
 
-/** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
-void buildRig(Dwarves dw, uint uid, ref immutable EntityT e) {
-  if(uid in dw.rig) return;
-  TurtleConfig cfg = { yaw: e.lsystemYaw, pitch: e.lsystemPitch, roll: e.lsystemRoll, gap: e.lsystemGap };
-  foreach(ref br; e.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
-  uint hash = cast(uint)(uid * 2654435761u);
-  auto r = interpretRig(buildGrammar(hash, 1, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
-  float lo = 0.0f; bool any = false;
-  foreach(ref n; r) {
-    auto m = n.inst.matrix;
-    float y = m[13] - m.halfExtent[1];   // lowest vertex of the segment
-    if(!any || y < lo){ lo = y; any = true; }
-  }
-  dw.rig[uid] = r; dw.footY[uid] = lo;
-  float sy  = 0.90f + (hash & 255) / 255.0f * 0.22f;
-  float sxz = 0.85f + ((hash >> 8) & 255) / 255.0f * 0.35f;
-  dw.dscale[uid] = [sxz, sy, sxz];
-}
-
-/** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */
-void poseDwarf(Dwarves dw, ref Dwarf d, ref immutable EntityT e, float dt) {
-  dw.buildRig(d.uid, e);
-  auto sc = dw.dscale[d.uid];
-  Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
-  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1], d.visualPos[2]]);
-  d.anim.animTime += dt;
-  float phase = cast(float)d.anim.animTime * WALK_RATE + (d.uid % 100);
-  bool walking = d.moveT < 1.0f;               // actually displacing this step, not just in a moving state
-  const r = dw.rig[d.uid];
-  auto g = globals(r, world, (size_t k) {
-    float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-    return posedLocal(r[k], channelEuler(e.anims, r[k].symbol, side, phase, walking));
-  });
-  foreach(k, ref n; r) {
-    foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
-      float[4] col = br.tint ? d.color : br.color;
-      dw.meshes[br.mesh].instances ~= DrawInstance(g[k], -1, col);
-      break;
-    }
-  }
-}
-
 /** All dwarves being framed */
 void dwarfFrame(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
@@ -153,7 +108,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.lightIndex != size_t.max) { app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
     if(d.nameLabel != size_t.max) { app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]); }
     if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;
-    app.world.dwarves.poseDwarf(d, e, dt);
+    app.world.dwarves.poseEntity(d, e, dt);
   }
   foreach(mesh; app.world.dwarves.meshes) mesh.syncInstances();
   app.world.dwarves.syncInstances();
