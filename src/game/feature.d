@@ -9,7 +9,7 @@ import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, getOr;
 import lsystem : buildGrammar;
-import matrix : position;
+import matrix : position, halfExtent;
 import noise : noiseHTT;
 import resources : variantOf;
 import sfx : play;
@@ -28,8 +28,7 @@ struct Feature {
     foreach(run; instanceRuns){ if(idx >= run[0] && idx < run[0] + run[1]) { return(true); } } return(false);
   }
 
-  /** Feature height as a float, for bounding-box / picking math. */
-  @property float bboxHeight() const { return cast(float)height; }
+  Bounds bounds; /// world-space AABB over this feature's drawn instances (picking)
 }
 
 private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
@@ -53,6 +52,12 @@ private string brushMesh(ref immutable FeatureT ft, char sym) {
 private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] insts) {
   if(mesh is null) return;
   f.instanceRuns ~= mesh.addInstances(insts);
+  foreach(ref di; insts) {
+    float[3] c = [di.matrix[12], di.matrix[13], di.matrix[14]];
+    float[3] e = di.matrix.halfExtent;
+    f.bounds.update([c[0]-e[0], c[1]-e[1], c[2]-e[2]]);
+    f.bounds.update([c[0]+e[0], c[1]+e[1], c[2]+e[2]]);
+  }
   mesh.syncInstances();
 }
 
@@ -149,7 +154,7 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
     batches (static parts + L-system brushes), and emit each via emitInstances. */
 Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
-    f.instanceRuns = [];
+    f.instanceRuns = []; f.bounds = Bounds.init;
     auto cp = f.rootTile in app.world.instanceCache;
     if(cp is null) {
       app.world.instanceCache[f.rootTile] = featureMeshInstances(app.world, f, ft); 

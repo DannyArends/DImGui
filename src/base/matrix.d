@@ -199,6 +199,14 @@ float[3] scale(const Matrix m) {
   return(mt);
 }
 
+/** World-space AABB half-extent of a transformed unit primitive (the ±0.5 cube under matrix `m`). */
+@nogc float[3] halfExtent(ref const Matrix m) pure nothrow {
+  import std.math : abs;
+  return [0.5f * (abs(m[0]) + abs(m[4]) + abs(m[8])),
+          0.5f * (abs(m[1]) + abs(m[5]) + abs(m[9])),
+          0.5f * (abs(m[2]) + abs(m[6]) + abs(m[10]))];
+}
+
 /** inverse of a Matrix using the determinant */
 @nogc pure Matrix inverse(const Matrix m) nothrow {
   Matrix inv;

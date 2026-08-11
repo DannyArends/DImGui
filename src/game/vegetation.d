@@ -52,10 +52,7 @@ bool getBestVegetation(T, alias matchGeometry)(ref GameApp app, float[3][2] ray,
     if(!matchGeometry(app.objects[hit.idx[0]].geometry())) continue;
     foreach(ref chunk; objects.values) foreach(ref t; chunk) {
       if(!t.matchIndex(hit.idx[1])) continue;
-      auto wp = app.world.tileToWorld(t.rootTile);
-      float[3] bmin = [wp[0] - 1.0f, wp[1], wp[2] - 1.0f];
-      float[3] bmax = [wp[0] + 1.0f, wp[1] + t.bboxHeight + 1.5f, wp[2] + 1.0f];
-      auto i = ray.intersects(bmin, bmax, hit.idx[0], hit.idx[1]);
+      auto i = ray.intersects(t.bounds.min, t.bounds.max, hit.idx[0], hit.idx[1]);
       if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = t.rootTile; }
     }
   }
