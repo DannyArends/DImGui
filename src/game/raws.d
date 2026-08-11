@@ -95,28 +95,6 @@ ItemTemplateT[] parseItemTemplates(string raw) pure { return parseRawsGeneric!(I
   }
 })(raw, true); }
 
-/** CTFE: parse animal raws into species definitions. */
-AnimalT[] parseAnimals(string raw) pure { return parseRawsGeneric!(AnimalT, "ANIMAL", (ref a, p) {
-  switch(p[0]) {
-    case "MESH":             a.mesh = p[1]; break;
-    case "SPAWN_ON":         a.spawnOn ~= p[1].to!ResourceType; break;
-    case "NOISE_THRESHOLD":  a.noiseThreshold = to!float(p[1]); break;
-    case "HASH_SEED1":       a.hashSeed1 = to!uint(p[1]); break;
-    case "HASH_SEED2":       a.hashSeed2 = to!uint(p[1]); break;
-    case "HASH_MOD":         a.hashMod = to!uint(p[1]); break;
-    case "HASH_REM":         a.hashRem = to!uint(p[1]); break;
-    case "MOVE_SPEED":       a.moveSpeed = to!float(p[1]); break;
-    case "HUNGER_DECAY":     a.hungerDecay = to!float(p[1]); break;
-    case "THIRST_DECAY":     a.thirstDecay = to!float(p[1]); break;
-    case "DIET":             a.diet = p[1]; break;
-    case "SCALE":            a.scale = to!float(p[1]); break;
-    case "SCALE_VARIANCE":   a.scaleVariance = to!float(p[1]); break;
-    case "OFFSET_Y":         a.offsetY = to!float(p[1]); break;
-    case "FACING":           a.facing = to!float(p[1]); break;
-    default: break;
-  }
-})(raw); }
-
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "FEATURE", (ref ft, p) {
   switch(p[0]) {
@@ -230,7 +208,6 @@ immutable FeatureT[] featureTable = parseFeatures(import("data/raws/features.txt
 immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
-immutable AnimalT[] animalTable = parseAnimals(import("data/raws/animals.txt"));
 immutable EntityT[] entityTable = parseEntities(import("data/raws/entity.txt"));
 
 static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
