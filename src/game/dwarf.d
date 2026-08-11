@@ -122,9 +122,9 @@ void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
     return posedLocal(r[k], channelEuler(dw.anims, r[k].symbol, side, phase, walking));
   });
   foreach(k, ref n; r) {
-    if(n.symbol in dw.symMesh) {
-      float[4] col = dw.symTint.get(n.symbol, false) ? d.color : dw.symColor[n.symbol];
-      dw.meshes[dw.symMesh[n.symbol]].instances ~= DrawInstance(g[k], -1, col);
+    if(auto br = n.symbol in dw.brushOf) {
+      float[4] col = br.tint ? d.color : br.color;
+      dw.meshes[br.mesh].instances ~= DrawInstance(g[k], -1, col);
     }
   }
 }
@@ -270,12 +270,12 @@ void dwarfTick(ref GameApp app) {
 
 /** Create and register one instanced primitive per distinct Dwarf brush mesh. */
 void initDwarfMeshes(ref GameApp app) {
-  foreach(sym, name; app.world.dwarves.symMesh) {
-    if(name in app.world.dwarves.meshes) continue;
-    auto mesh = makePrimitive(name);
+  foreach(sym, br; app.world.dwarves.brushOf) {
+    if(br.mesh in app.world.dwarves.meshes) continue;
+    auto mesh = makePrimitive(br.mesh);
     if(mesh is null) continue;
-    mesh.initInstanced("Dwarf:" ~ name);
-    app.world.dwarves.meshes[name] = mesh;
+    mesh.initInstanced("Dwarf:" ~ br.mesh);
+    app.world.dwarves.meshes[br.mesh] = mesh;
     app.objects ~= mesh;
   }
 }

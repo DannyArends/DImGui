@@ -18,12 +18,10 @@ class Dwarves : OpenAsset {
   size_t[] tickOrder;
   Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
   RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
-  float[4][char] symColor;          /// brush symbol -> baked color
-  bool[char] symTint;               /// brush symbols that tint with the dwarf's own colour
   float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
   TurtleConfig cfg;                 /// turtle config built from the Dwarf entity brushes
-  string[char] symMesh;             /// brush symbol -> primitive mesh name
+  LSystemBrushT[char] brushOf;      /// brush symbol -> its entity brush (mesh/color/tint/…)
   AnimChannel[] anims;
   string axiom;                     /// Dwarf grammar axiom
   Rule[] rules;                     /// Dwarf grammar rules
@@ -35,9 +33,7 @@ class Dwarves : OpenAsset {
       axiom = e.axiom; rules = e.rules.dup; anims = e.anims.dup;
       foreach(ref br; e.brushes) {
         cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
-        symMesh[br.symbol] = br.mesh;
-        symColor[br.symbol] = br.color;
-        symTint[br.symbol] = br.tint;
+        brushOf[br.symbol] = br;
       }
       break;
     }
