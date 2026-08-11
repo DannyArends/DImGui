@@ -21,6 +21,7 @@ class Text : Geometry {
                   Vertex([0.0f, 1.0f, 0.0f], [0.0f, 1.0f], [1.0f, 1.0f, 1.0f, 1.0f]) ];
     indices ~= [0, 2, 1, 0, 3, 2];
     meshes["Text"] = Mesh([0, cast(uint)vertices.length]);
+    initInstanced("Text");
     this.opacity(app.glyphAtlas.path);
     isOpaque = false;
     castShadow = false;
@@ -86,7 +87,7 @@ private DrawInstance[] layoutText(ref App app, TextInfo info) {
     float h = atlas.qH(g, glyphscale);
     Matrix m = labelTransform.multiply(translateScale([pX, pY, 0.0f], [w, h, 1.0f]));
     float[4] uv = [atlas.tX(g), atlas.tY(g) + atlas.tYo(g), atlas.tXo(g), -atlas.tYo(g)];
-    insts ~= DrawInstance(m, -1, info.color, uv);
+    insts ~= DrawInstance(m, 0, info.color, uv);
     penX += g.advance;
   }
   return insts;
