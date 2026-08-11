@@ -32,7 +32,7 @@ void showObjectsContent(ref App app, uint font = 0) {
 
 /** Per-object detail: transform, animation, and material editing. */
 void showObjectwindow(ref App app, ref Geometry obj) {
-  text("Name: %s %s", obj.geometry(), obj.mName);
+  text("Name: %s", obj.mName);
   text("Vertices: %s   Indices: %s   Topology: %s", obj.vertices.length, obj.indices.length, obj.topology);
 
   if(igButton(faIcon(cast(string)ICON_FA_CUBES), ImVec2(0,0))) obj.window = false;
