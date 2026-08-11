@@ -5,18 +5,12 @@
 
 import game;
 
-import inventory : InventorySlot;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack;
 import scheduler : atDestination;
-import lsystem : TurtleConfig, TurtleBrush, buildGrammar;
 import turtlegfx : interpret;
-import assimp : OpenAsset;
-import node : Node;
-import mesh : Mesh;
 import bone : synthesizeBone;
-import vertex : Vertex;
-import matrix : Matrix, multiply, inverse, transpose;
+import matrix : multiply, translate, inverse, rotate, transpose;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 
@@ -136,6 +130,22 @@ void entityMove(T)(ref GameApp app, ref T e, float dt, float speed, float hop) {
   float[3] d = [e.moveTo[0] - e.moveFrom[0], 0.0f, e.moveTo[2] - e.moveFrom[2]];
   if(d[0] * d[0] + d[2] * d[2] > 1e-6f) e.heading = atan2(d[0], -d[2]) * (180.0f / PI);
   if(app.stepMove(e, dt, speed, hop)) e.state = e.hasJob ? EntityState.Working : EntityState.Idle;
+}
+
+/** Euler swing for a brush symbol from its animation channels (side = left/right sign). */
+float[3] channelEuler(const AnimChannel[] anims, char sym, float side, float phase, bool moving) {
+  float[3] e = [0.0f, 0.0f, 0.0f];
+  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving)) {
+    e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
+  }
+  return e;
+}
+
+/** A rig node's local transform with euler `e` applied at its joint (segment top). */
+Matrix posedLocal(ref const RigNode n, const float[3] e) {
+  if(e == [0.0f, 0.0f, 0.0f]) return n.local;
+  float[3] p = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
+  return translate(p).multiply(rotate(e)).multiply(translate([-p[0], -p[1], -p[2]])).multiply(n.local);
 }
 
 /** A single dwarf being ticked */

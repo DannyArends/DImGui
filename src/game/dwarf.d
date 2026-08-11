@@ -8,7 +8,7 @@ import game;
 import animation : AnimationState;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
-import entity : tickEntity, entityMove, isMoving;
+import entity : channelEuler, tickEntity, entityMove, isMoving, posedLocal;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
@@ -90,22 +90,6 @@ int[3] findFreeSurfaceTile(ref GameApp app, int startX = 0, int startZ = 0) {
     }
   }
   return(noTile);
-}
-
-/** Euler swing for a brush symbol from its animation channels (side = left/right sign). */
-float[3] channelEuler(const AnimChannel[] anims, char sym, float side, float phase, bool moving) {
-  float[3] e = [0.0f, 0.0f, 0.0f];
-  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving)) {
-    e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
-  }
-  return e;
-}
-
-/** A rig node's local transform with euler `e` applied at its joint (segment top). */
-Matrix posedLocal(ref const RigNode n, const float[3] e) {
-  if(e == [0.0f, 0.0f, 0.0f]) return n.local;
-  float[3] p = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
-  return translate(p).multiply(rotate(e)).multiply(translate([-p[0], -p[1], -p[2]])).multiply(n.local);
 }
 
 /** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up by name. */
