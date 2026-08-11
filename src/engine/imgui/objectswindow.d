@@ -19,7 +19,7 @@ void showObjectsContent(ref App app, uint font = 0) {
     if(object.hideInObjectsWindow || object.instances.length == 0) continue;
     igPushID_Int(to!int(i)); scope(exit) igPopID();
     igTableNextRow(0, 5.0f);
-    string lbl = object.geometry() ? object.geometry() ~ " " ~ to!string(i) : to!string(i);
+    string lbl = object.geometry().length ? object.geometry() ~ " " ~ to!string(i) : to!string(i);
     igTableNextColumn();
       text("%s: %s (%d)", lbl, object.mName, object.uid);
     igTableNextColumn();
