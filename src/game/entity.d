@@ -179,9 +179,10 @@ void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
 /** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */
 void poseEntity(C, P)(C dw, ref P d, ref immutable EntityT e, float dt) {
   dw.buildRig(d.uid, e);
-  auto sc = dw.dscale[d.uid];
-  Matrix world = rotate(Matrix.init, [d.heading + 180.0f, 0.0f, 0.0f]).multiply(scale(sc));
-  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1], d.visualPos[2]]);
+  auto ds = dw.dscale[d.uid];
+  float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];   // species scale × per-instance variance
+  Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
+  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1] + e.offsetY, d.visualPos[2]]);
   d.anim.animTime += dt;
   float phase = cast(float)d.anim.animTime * WALK_RATE + (d.uid % 100);
   bool walking = d.moveT < 1.0f;               // actually displacing this step, not just in a moving state
