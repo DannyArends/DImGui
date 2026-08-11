@@ -7,7 +7,7 @@ import game;
 
 import assimp : OpenAsset;
 import lsystem : buildGrammar;
-import matrix : multiply, translate, rotate, position, scale, translateScale;
+import matrix : halfExtent, multiply, translate, rotate, position, scale, translateScale;
 import turtlegfx : interpretRig, globals;
 
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
@@ -37,7 +37,7 @@ class Dwarves : OpenAsset {
         cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
         symMesh[br.symbol] = br.mesh;
         symColor[br.symbol] = br.color;
-        symTint[br.symbol]  = br.tint;
+        symTint[br.symbol] = br.tint;
       }
       break;
     }
@@ -51,9 +51,8 @@ class Dwarves : OpenAsset {
     auto r = interpretRig(buildGrammar(hash, 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
     float lo = 0.0f; bool any = false;
     foreach(ref n; r) {
-      if(n.symbol != 'L' && n.symbol != 'B') continue;   // seat on legs/boots, never a dangling beard
       auto m = n.inst.matrix;
-      float y = m[13] - 0.5f * (abs(m[1]) + abs(m[5]) + abs(m[9]));   // lowest vertex of the segment
+      float y = m[13] - m.halfExtent[1];
       if(!any || y < lo){ lo = y; any = true; }
     }
     rig[uid] = r; footY[uid] = lo;
