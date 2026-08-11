@@ -20,35 +20,29 @@ class Dwarves : OpenAsset {
   RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
   float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
-  TurtleConfig cfg;                 /// turtle config built from the Dwarf entity brushes
-  LSystemBrushT[char] brushOf;      /// brush symbol -> its entity brush (mesh/color/tint/…)
-  AnimChannel[] anims;
-  string axiom;                     /// Dwarf grammar axiom
-  Rule[] rules;                     /// Dwarf grammar rules
 
   this() {
     super();
-    foreach(ref e; entityTable) if(e.name == "Dwarf") {
-      cfg.yaw = e.lsystemYaw; cfg.pitch = e.lsystemPitch; cfg.roll = e.lsystemRoll; cfg.gap = e.lsystemGap;
-      axiom = e.axiom; rules = e.rules.dup; anims = e.anims.dup;
-      foreach(ref br; e.brushes) {
-        cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
-        brushOf[br.symbol] = br;
-      }
-      break;
-    }
     initInstanced("Dwarves");
+  }
+
+  /** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up, never stored. */
+  static ref immutable(EntityT) proto() {
+    foreach(ref e; entityTable) if(e.name == "Dwarf") return e;
+    assert(0, "no [ENTITY:Dwarf]");
   }
 
   /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
   void buildRig(uint uid) {
     if(uid in rig) return;
+    TurtleConfig cfg = { yaw: proto.lsystemYaw, pitch: proto.lsystemPitch, roll: proto.lsystemRoll, gap: proto.lsystemGap };
+    foreach(ref br; proto.brushes) { cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset); }
     uint hash = cast(uint)(uid * 2654435761u);
-    auto r = interpretRig(buildGrammar(hash, 1, axiom, rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+    auto r = interpretRig(buildGrammar(hash, 1, proto.axiom, proto.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
     float lo = 0.0f; bool any = false;
     foreach(ref n; r) {
       auto m = n.inst.matrix;
-      float y = m[13] - m.halfExtent[1];
+      float y = m[13] - m.halfExtent[1];   // lowest vertex of the segment
       if(!any || y < lo){ lo = y; any = true; }
     }
     rig[uid] = r; footY[uid] = lo;

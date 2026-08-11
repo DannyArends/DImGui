@@ -119,12 +119,13 @@ void poseDwarf(Dwarves dw, ref Dwarf d, float dt) {
   const r = dw.rig[d.uid];
   auto g = globals(r, world, (size_t k) {
     float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-    return posedLocal(r[k], channelEuler(dw.anims, r[k].symbol, side, phase, walking));
+    return posedLocal(r[k], channelEuler(dw.proto.anims, r[k].symbol, side, phase, walking));
   });
   foreach(k, ref n; r) {
-    if(auto br = n.symbol in dw.brushOf) {
+    foreach(ref br; dw.proto.brushes) if(br.symbol == n.symbol) {
       float[4] col = br.tint ? d.color : br.color;
       dw.meshes[br.mesh].instances ~= DrawInstance(g[k], -1, col);
+      break;
     }
   }
 }
@@ -270,7 +271,7 @@ void dwarfTick(ref GameApp app) {
 
 /** Create and register one instanced primitive per distinct Dwarf brush mesh. */
 void initDwarfMeshes(ref GameApp app) {
-  foreach(sym, br; app.world.dwarves.brushOf) {
+  foreach(ref br; app.world.dwarves.proto.brushes) {
     if(br.mesh in app.world.dwarves.meshes) continue;
     auto mesh = makePrimitive(br.mesh);
     if(mesh is null) continue;
