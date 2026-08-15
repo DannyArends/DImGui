@@ -144,7 +144,7 @@ ref immutable(EntityT) entityFor(string name) {
 void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
   if(uid in dw.rig) return;
   TurtleConfig cfg = { yaw: e.lsystemYaw, pitch: e.lsystemPitch, roll: e.lsystemRoll, gap: e.lsystemGap };
-  foreach(ref br; e.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset);
+  foreach(ref br; e.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset, br.depth);
   uint hash = cast(uint)(uid * 2654435761u);
   auto r = interpretRig(buildGrammar(hash, 1, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
   float lo = 0.0f; bool any = false;

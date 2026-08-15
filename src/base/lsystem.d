@@ -44,6 +44,7 @@ struct TurtleBrush {
   bool advance = true;
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];   /// per-instance tint (from the material's color)
   float[3] offset = [0.0f, 0.0f, 0.0f];        /// local-frame draw offset [right, up/heading, forward]; does not move the turtle
+  float depth = -1.0f;                         /// Z half-extent; -1 means "use radius" (square section)
 }
 
 /** Turtle config: per-axis turn angles (degrees) + the per-drawing-symbol brush table. */

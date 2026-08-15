@@ -228,7 +228,7 @@ RigNode[] interpretRig(const(char)[] symbols, const TurtleConfig cfg, float[3] o
           const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
                                st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
                                st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
-          nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, br.radius, br.length), br.material, br.color), c);
+          nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, br.radius, br.length, br.depth), br.material, br.color), c);
           current = cast(int)nodes.length - 1;
           if(br.advance){ st.pos = st.pos.vAdd([R[4]*br.length*0.95f, R[5]*br.length*0.95f, R[6]*br.length*0.95f]); }
         }

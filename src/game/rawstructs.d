@@ -67,6 +67,7 @@ struct LSystemBrushT {
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// per-brush vertex colour (entities)
   bool tint = false;                            /// tint with the entity's per-instance colour instead of `color`
+  float depth = -1.0f;                          /// local Z scale; -1 = use radius (square section)
 }
 
 /** Data-driven terrain feature (tree/bush/cactus): spawn rules + an L-system body. */

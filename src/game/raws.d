@@ -158,8 +158,9 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
       immutable float[3] off = [p.length > 7 ? to!float(p[7]) : 0.0f,
                                 p.length > 8 ? to!float(p[8]) : 0.0f,
                                 p.length > 9 ? to!float(p[9]) : 0.0f];
+      immutable float dep = p.length > 10 ? to!float(p[10]) : -1.0f;   // -1 -> square section
       e.brushes ~= LSystemBrushT(p[1][0], p[2], Substance.init, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]),
-                                 0.0f, true, 1.0f, off, col, tnt);
+                                 0.0f, true, 1.0f, off, col, tnt, dep);
     } break;
     case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
     case "CLIP": if(p.length >= 2){       // [CLIP:name:axiom:whenMoving:fps]
