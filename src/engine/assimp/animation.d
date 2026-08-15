@@ -49,7 +49,7 @@ struct Animation {
 @nogc double calculateCurrentTick(double seconds, double tps, double dur) nothrow { return fmod(seconds * tps, dur); }
 
 /** Advance one animated asset's animation by dt and recompute its bone transforms. */
-void animateAsset(ref App app, ref Geometry obj, float dt) {
+void animateAsset(T)(ref App app, T obj, float dt) {
   if(dt == 0.0f) return;
   if(obj.states.length != obj.instances.length) {
     size_t old = obj.states.length;
@@ -64,8 +64,8 @@ void animateAsset(ref App app, ref Geometry obj, float dt) {
 }
 
 /** Skinned-model driver: sample keyframes, accumulate parent·local, write the animated bone palette. */
-void calculateGlobalTransform(ref App app, ref Geometry obj, const Node node, const Matrix pTransform,
-                              double animationTime, uint animIndex, uint regionBase) {
+void calculateGlobalTransform(T)(ref App app, T obj, const Node node, const Matrix pTransform,
+                                 double animationTime, uint animIndex, uint regionBase) {
   Animation animation = obj.animations[animIndex];
   Matrix local = node.transform;
   if (node.name in animation.nodeAnimations) {

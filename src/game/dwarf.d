@@ -5,10 +5,10 @@
 
 import game;
 
-import animation : AnimationState;
+import animation : AnimationState, animateAsset;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
-import entity : buildRig, entityFor, poseEntity, tickEntity, entityMove, isMoving;
+import entity : buildRig, buildSkeleton, entityFor, poseEntity, tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
@@ -102,7 +102,8 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.lightIndex != size_t.max) { app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
     if(d.nameLabel != size_t.max) { app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]); }
     if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;
-    app.world.dwarves.poseEntity(d, e, dt);
+    app.poseEntity(app.world.dwarves, d, e);
+    if(auto s = d.uid in app.world.dwarves.skel) app.animateAsset(*s, dt);
   }
   foreach(mesh; app.world.dwarves.meshes) mesh.syncInstances();
   app.world.dwarves.syncInstances();
@@ -236,6 +237,8 @@ void initDwarfMeshes(ref GameApp app) {
     auto mesh = makePrimitive(br.mesh);
     if(mesh is null) continue;
     mesh.initInstanced("Dwarf:" ~ br.mesh);
+    foreach(ref v; mesh.vertices) { v.bones = [0, 0, 0, 0]; v.weights = [1.0f, 0.0f, 0.0f, 0.0f]; }
+    mesh.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
     app.world.dwarves.meshes[br.mesh] = mesh;
     app.objects ~= mesh;
   }
@@ -265,7 +268,7 @@ void addDwarf(ref GameApp app, ref Dwarf d) {
   d.visualPos = [wp[0], wp[1], wp[2]];
   d.moveFrom = d.moveTo = d.visualPos;
   d.moveT = 1.0f;
-  app.world.dwarves.buildRig(d.uid, entityFor("Dwarf"));
+  app.buildSkeleton(app.world.dwarves, d.uid, entityFor("Dwarf"));
   app.addLight(torchLight(d.visualPos, d.color));
   d.lightIndex = app.lights.length - 1;
   d.nameLabel = app.addWorldText(d.firstname, d.visualPos.vAdd([0.0f, nameHeight, 0.0f]), [0.0f, 0.0f, 0.0f], nameScale, d.color, true);

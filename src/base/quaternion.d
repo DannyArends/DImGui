@@ -14,6 +14,21 @@ struct Quaternion {
   alias data this;
 }
 
+/** Rotation quaternion from a matrix's upper-left 3x3 (assumed orthonormal); inverse of rotate(quat). */
+@nogc pure float[4] toQuaternion(const Matrix m) nothrow {
+  float t = m[0] + m[5] + m[10];
+  float[4] q;
+  if (t > 0.0f) { float s = 0.5f / sqrt(t + 1.0f);
+    q = [(m[6]-m[9])*s, (m[8]-m[2])*s, (m[1]-m[4])*s, 0.25f/s];
+  } else if (m[0] > m[5] && m[0] > m[10]) { float s = 2.0f*sqrt(1.0f+m[0]-m[5]-m[10]);
+    q = [0.25f*s, (m[4]+m[1])/s, (m[8]+m[2])/s, (m[6]-m[9])/s];
+  } else if (m[5] > m[10]) { float s = 2.0f*sqrt(1.0f+m[5]-m[0]-m[10]);
+    q = [(m[4]+m[1])/s, 0.25f*s, (m[9]+m[6])/s, (m[8]-m[2])/s];
+  } else { float s = 2.0f*sqrt(1.0f+m[10]-m[0]-m[5]);
+    q = [(m[8]+m[2])/s, (m[9]+m[6])/s, 0.25f*s, (m[1]-m[4])/s]; }
+  return normalize(q);
+}
+
 /** Quaternion multiplication */
 @nogc pure float[4] qMul(const float[4] a, const float[4] b) nothrow {
   return [

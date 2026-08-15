@@ -7,6 +7,8 @@ import engine;
 
 import lsystem : turnAxis, turnAngle;
 import matrix : segmentTransform, inverse, multiply;
+import bone : Bone;
+import node : Node;
 import quaternion : angleAxis, qMul, rotate;
 import vector : vAdd;
 
@@ -23,6 +25,39 @@ Matrix[] globals(const RigNode[] rig, const Matrix root, scope Matrix delegate(s
   Matrix[] g; g.length = rig.length;
   foreach(k, ref n; rig) g[k] = (n.parent < 0 ? root : g[n.parent]).multiply(localOf(k));
   return g;
+}
+
+/** Rigid joint frame of a rig node: normalized bind rotation, origin at the segment base (the pivot). */
+@nogc Matrix jointWorld(ref const RigNode n) nothrow {
+  const Matrix M = n.inst.matrix;
+  const float lx = sqrt(M[0]*M[0]+M[1]*M[1]+M[2]*M[2]);
+  const float ly = sqrt(M[4]*M[4]+M[5]*M[5]+M[6]*M[6]);
+  const float lz = sqrt(M[8]*M[8]+M[9]*M[9]+M[10]*M[10]);
+  Matrix J;
+  J[0]=M[0]/lx; J[1]=M[1]/lx; J[2]=M[2]/lx;
+  J[4]=M[4]/ly; J[5]=M[5]/ly; J[6]=M[6]/ly;
+  J[8]=M[8]/lz; J[9]=M[9]/lz; J[10]=M[10]/lz;
+  J[12]=M[12]-0.5f*M[4]; J[13]=M[13]-0.5f*M[5]; J[14]=M[14]-0.5f*M[6];
+  return J;
+}
+
+/** Node tree calculateGlobalTransform walks: rigid joint frames, node k named `prefix~k`. */
+Node rigToNode(const RigNode[] rig, string prefix) {
+  Matrix[] J; J.length = rig.length;
+  foreach(k, ref n; rig) J[k] = jointWorld(n);
+  Node[] nodes; nodes.length = rig.length;
+  foreach(k, ref n; rig) nodes[k] = Node(format("%s%d", prefix, k), 0, (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]));
+  foreach_reverse(k, ref n; rig) if(n.parent >= 0) nodes[n.parent].children ~= nodes[k];
+  Node root = Node(prefix ~ "root", 0, Matrix());
+  foreach(k, ref n; rig) if(n.parent < 0) root.children ~= nodes[k];
+  return root;
+}
+
+/** One bone per node; offset = jointWorld^-1 . bindWorld so a UNIT primitive at bone k lands as that segment. */
+Bone[string] rigBones(const RigNode[] rig, string prefix) {
+  Bone[string] bones;
+  foreach(k, ref n; rig) bones[format("%s%d", prefix, k)] = Bone(jointWorld(n).inverse().multiply(n.inst.matrix), cast(uint)k);
+  return bones;
 }
 
 /** Turtle walk that RETAINS the branch hierarchy: each drawn brush becomes a RigNode with a parent

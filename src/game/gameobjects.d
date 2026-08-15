@@ -18,6 +18,8 @@ class Dwarves : OpenAsset {
   RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
   float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
+  OpenAsset[uint] skel;             /// per-uid vertexless skeleton (nodes+bones+clips) driving a palette region
+  int[][uint] boneSlot;             /// per-uid: node k -> local palette slot after mergeBones
 
   this() {
     super();
@@ -37,6 +39,8 @@ class Animals : OpenAsset {
   RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
   float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
   float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
+  OpenAsset[uint] skel;             /// per-uid vertexless skeleton (nodes+bones+clips) driving a palette region
+  int[][uint] boneSlot;             /// per-uid: node k -> local palette slot after mergeBones
 
   this() {
     super();

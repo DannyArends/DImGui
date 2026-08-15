@@ -9,7 +9,7 @@ import animation : animateAsset;
 import assimp : OpenAsset;
 import block : findFreeFood, noBlock, itemOf;
 import bone : mergeBones;
-import entity : buildRig, isMoving, poseEntity, entityFor, tickEntity, entityMove;
+import entity : buildRig, buildSkeleton, isMoving, poseEntity, entityFor, tickEntity, entityMove;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
 import geometry : Geometry;
@@ -73,7 +73,8 @@ void animalFrame(ref GameApp app, Animals herd, float dt) {
   foreach(mesh; herd.meshes) mesh.instances.reset();
   foreach(ref a; herd.animals) {
     if(app.world.chunkCoord(a.tile) !in app.world.chunks) continue;
-    herd.poseEntity(a, entityTable[a.type], dt);
+    app.poseEntity(herd, a, entityTable[a.type]);
+    if(auto s = a.uid in herd.skel) app.animateAsset(*s, dt);
   }
   foreach(mesh; herd.meshes) mesh.syncInstances();
   herd.syncInstances();
@@ -154,6 +155,8 @@ Animals ensureAnimals(ref GameApp app) {
     auto mesh = makePrimitive(br.mesh);
     if(mesh is null) continue;
     mesh.initInstanced("Animal:" ~ br.mesh);
+    foreach(ref v; mesh.vertices) { v.bones = [0, 0, 0, 0]; v.weights = [1.0f, 0.0f, 0.0f, 0.0f]; }
+    mesh.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
     herd.meshes[br.mesh] = mesh;
     app.objects ~= mesh;
   }
@@ -166,7 +169,7 @@ void addAnimal(ref GameApp app, ref Animal a) {
   auto wp = app.world.tileToWorld(a.tile);
   a.visualPos = [wp[0], wp[1], wp[2]];
   a.moveFrom = a.moveTo = a.visualPos; a.moveT = 1.0f;
-  herd.buildRig(a.uid, entityTable[a.type]);
+  app.buildSkeleton(herd, a.uid, entityTable[a.type]);
   herd ~= a;
 }
 

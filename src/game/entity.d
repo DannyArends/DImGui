@@ -12,7 +12,13 @@ import scheduler : atDestination;
 import turtlegfx : interpret;
 import bone : synthesizeBone;
 import matrix : multiply, translate, position, inverse, rotate, transpose, halfExtent, scale;
-import turtlegfx : interpretRig, globals;
+import turtlegfx : interpretRig, globals, jointWorld, rigToNode, rigBones;
+import animation : Animation, NodeAnimation, PositionKey, RotationKey, ScalingKey, animateAsset;
+import quaternion : toQuaternion;
+import assimp : OpenAsset;
+import bone : mergeBones;
+import node : Node;
+import mesh : updateMeshInfo;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
@@ -135,26 +141,10 @@ void entityMove(T)(ref GameApp app, ref T e, float dt, float speed, float hop) {
   if(app.stepMove(e, dt, speed, hop)) e.state = e.hasJob ? EntityState.Working : EntityState.Idle;
 }
 
-/** Euler swing for a brush symbol from its animation channels (side = left/right sign). */
-float[3] channelEuler(const AnimChannel[] anims, char sym, float side, float phase, bool moving) {
-  float[3] e = [0.0f, 0.0f, 0.0f];
-  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving)) {
-    e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
-  }
-  return e;
-}
-
 /** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up by name. */
 ref immutable(EntityT) entityFor(string name) {
   foreach(ref e; entityTable) { if(e.name == name) { return(e); } }
   assert(0, "no [ENTITY] named " ~ name);
-}
-
-/** A rig node's local transform with euler `e` applied at its joint (segment top). */
-Matrix posedLocal(ref const RigNode n, const float[3] e) {
-  if(e == [0.0f, 0.0f, 0.0f]) return n.local;
-  float[3] p = [n.local[12] - 0.5f*n.local[4], n.local[13] - 0.5f*n.local[5], n.local[14] - 0.5f*n.local[6]];
-  return translate(p).multiply(rotate(e)).multiply(translate([-p[0], -p[1], -p[2]])).multiply(n.local);
 }
 
 /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
@@ -176,25 +166,77 @@ void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
   dw.dscale[uid] = [sxz, sy, sxz];
 }
 
-/** Pose dwarf 'd' rig this frame and emit its parts into 'dw' shared brush meshes. */
-void poseEntity(C, P)(C dw, ref P d, ref immutable EntityT e, float dt) {
-  dw.buildRig(d.uid, e);
+enum uint ANIM_KEYS = 32;   /// rotation-key samples per 2*PI walk cycle
+
+/** Sum of channel euler for a symbol at a phase (bakes the swing that used to run per-frame). */
+float[3] channelEulerAt(const AnimChannel[] anims, char sym, float side, float phase, bool moving) {
+  float[3] e = [0.0f, 0.0f, 0.0f];
+  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving))
+    e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
+  return e;
+}
+
+/** Bake a rig's AnimChannels into one clip (moving = walk vs idle) on the rigid joint nodes. */
+Animation rigAnimation(const RigNode[] rig, string prefix, const AnimChannel[] anims, bool moving) {
+  Animation clip = { name: (moving ? "walk" : "idle"), duration: ANIM_KEYS, ticksPerSecond: ANIM_KEYS * WALK_RATE / (2.0f * PI) };
+  Matrix[] J; J.length = rig.length; foreach(k, ref n; rig) J[k] = jointWorld(n);
+  foreach(k, ref n; rig) {
+    if(!anims.any!(ch => ch.symbol == n.symbol && ch.amp != 0.0f && !(ch.whenMoving && !moving))) continue;
+    const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
+    Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
+    const float side = n.inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
+    NodeAnimation na;
+    na.positionKeys = [PositionKey(0.0, position(localJ))];
+    na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
+    na.rotationKeys.length = ANIM_KEYS + 1;
+    foreach(i; 0 .. ANIM_KEYS + 1) {
+      float phase = 2.0f * PI * i / ANIM_KEYS;
+      na.rotationKeys[i] = RotationKey(cast(double)i, toQuaternion(rotate(channelEulerAt(anims, n.symbol, side, phase, moving)).multiply(Rr)));
+    }
+    clip.nodeAnimations[format("%s%d", prefix, k)] = na;
+  }
+  return clip;
+}
+
+/** Build (once per uid) the pawn's vertexless skeleton object; stamp its palette region immediately (no frame lag). */
+void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) {
+  if(uid in dw.skel) return;
+  dw.buildRig(uid, e);
+  const r = dw.rig[uid];
+  string pfx = format("%s%u.", e.name, uid);       // unique per pawn: no cross-pawn bone-name collision
+  auto s = new OpenAsset();
+  s.mName = format("%s:skel:%u", e.name, uid);
+  s.instancedMesh = true; s.instances = [DrawInstance()]; s.states.length = 1;
+  s.rootnode = rigToNode(r, pfx);
+  s.bones = rigBones(r, pfx);
+  s.animations = [rigAnimation(r, pfx, e.anims, false), rigAnimation(r, pfx, e.anims, true)];
+  app.mergeBones(s);
+  int[] slot; slot.length = r.length;
+  foreach(k; 0 .. r.length) slot[k] = cast(int)(app.bones[format("%s%d", pfx, k)].index - s.boneBase);
+  dw.boneSlot[uid] = slot;
+  dw.skel[uid] = s;
+  app.objects ~= s;
+  app.updateMeshInfo();                            // stamp s.instances[0].meshdef[3] now so poseEntity's region is valid this frame
+}
+
+/** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */
+void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable EntityT e) {
+  app.buildSkeleton(dw, d.uid, e);
+  auto s = dw.skel[d.uid];
+  s.states[0].animation = (d.moveT < 1.0f) ? 1 : 0;
   auto ds = dw.dscale[d.uid];
-  float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];   // species scale × per-instance variance
+  float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
   Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
   position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1] + e.offsetY, d.visualPos[2]]);
-  d.anim.animTime += dt;
-  float phase = cast(float)d.anim.animTime * WALK_RATE + (d.uid % 100);
-  bool walking = d.moveT < 1.0f;               // actually displacing this step, not just in a moving state
+  const int region = s.instances[0].meshdef[3];
+  auto slot = dw.boneSlot[d.uid];
   const r = dw.rig[d.uid];
-  auto g = globals(r, world, (size_t k) {
-    float side = r[k].inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-    return posedLocal(r[k], channelEuler(e.anims, r[k].symbol, side, phase, walking));
-  });
   foreach(k, ref n; r) {
     foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
       float[4] col = br.tint ? d.color : br.color;
-      dw.meshes[br.mesh].instances ~= DrawInstance(g[k], -1, col);
+      auto inst = DrawInstance(world, -1, col);
+      inst.boneOffset = region + slot[k];
+      dw.meshes[br.mesh].instances ~= inst;
       break;
     }
   }

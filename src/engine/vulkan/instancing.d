@@ -14,6 +14,7 @@ struct DrawInstance {
   float[4] worldTangent = [1.0f, 0.0f, 0.0f, 1.0f]; /// baked world-space tangent (xyz) + handedness (w)
   Matrix matrix = Matrix.init;                      /// Matrix
   alias matrix this;
+  int boneOffset = 0;                               /// absolute palette slot for GPU rigid skin (added to meshdef[3])
 
   static assert(DrawInstance.color.offsetof  == 16);
   static assert(DrawInstance.uvRect.offsetof == 32);

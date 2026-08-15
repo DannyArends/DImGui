@@ -26,8 +26,8 @@ struct Vertex {
     return bindingDescription;
   }
 
-  @nogc static VkVertexInputAttributeDescription[16] getRenderDescriptions() nothrow {
-    VkVertexInputAttributeDescription[16] attributeDescriptions = [
+  @nogc static VkVertexInputAttributeDescription[17] getRenderDescriptions() nothrow {
+    VkVertexInputAttributeDescription[17] attributeDescriptions = [
       { binding: VERTEX, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.position.offsetof },
       { binding: VERTEX, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.color.offsetof },
       { binding: VERTEX, location: 2, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.normal.offsetof },
@@ -45,13 +45,14 @@ struct Vertex {
       { binding: INSTANCE, location: 12, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
       { binding: INSTANCE, location: 13, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 4 * float.sizeof },
       { binding: INSTANCE, location: 14, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 8 * float.sizeof },
-      { binding: INSTANCE, location: 15, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12 * float.sizeof }
+      { binding: INSTANCE, location: 15, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12 * float.sizeof },
+      { binding: INSTANCE, location: 16, format: VK_FORMAT_R32_SINT, offset: DrawInstance.boneOffset.offsetof }
     ];
     return attributeDescriptions;
   }
 
-  @nogc static VkVertexInputAttributeDescription[8] getShadowDescriptions() nothrow {
-    VkVertexInputAttributeDescription[8] attributeDescriptions = [
+  @nogc static VkVertexInputAttributeDescription[9] getShadowDescriptions() nothrow {
+    VkVertexInputAttributeDescription[9] attributeDescriptions = [
       {binding: VERTEX,   location: 0, format: VK_FORMAT_R32G32B32_SFLOAT,    offset: Vertex.position.offsetof },
       {binding: VERTEX,   location: 1, format: VK_FORMAT_R32G32B32A32_UINT,   offset: Vertex.bones.offsetof },
       {binding: VERTEX,   location: 2, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
@@ -60,7 +61,8 @@ struct Vertex {
       {binding: INSTANCE, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
       {binding: INSTANCE, location: 5, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof +  4*float.sizeof },
       {binding: INSTANCE, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof +  8*float.sizeof },
-      {binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12*float.sizeof }
+      {binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12*float.sizeof },
+      {binding: INSTANCE, location: 8, format: VK_FORMAT_R32_SINT, offset: DrawInstance.boneOffset.offsetof }
     ];
     return attributeDescriptions;
   }
