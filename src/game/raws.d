@@ -130,8 +130,9 @@ FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "
 })(raw); }
 
 /** CTFE: parse [ENTITY] blocks into per-species EntityT. Entity brushes carry no substance (0). */
-EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "ENTITY", (ref e, p) {
+EntityT[] parseEntities(string raw) pure { return resolveBases(parseRawsGeneric!(EntityT, "ENTITY", (ref e, p) {
   switch(p[0]) {
+    case "BASE":             e.base = p[1]; break;
     case "MOVE_SPEED":       e.moveSpeed = to!float(p[1]); break;
     case "SPAWN_ON":         e.spawnOn ~= p[1].to!ResourceType; break;
     case "NOISE_THRESHOLD":  e.noiseThreshold = to!float(p[1]); break;
@@ -177,7 +178,20 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
     } break;
     default: break;
   }
-})(raw); }
+})(raw)); }
+
+/** CTFE: fold each [BASE] parent's brushes/clips/rules into the child (child overrides win by symbol/name). */
+EntityT[] resolveBases(EntityT[] es) pure {
+  foreach(ref e; es) {
+    if(e.base.length == 0) continue;
+    auto b = es.find!(x => x.name == e.base);
+    assert(b.length, "[ENTITY:" ~ e.name ~ "] BASE:" ~ e.base ~ " not found");
+    foreach(ref br; b[0].brushes) if(!e.brushes.canFind!(x => x.symbol == br.symbol)) e.brushes ~= br;
+    foreach(ref cl; b[0].clips)   if(!e.clips.canFind!(x => x.name == cl.name))       e.clips  ~= cl;
+    foreach(ref r; b[0].rules)    e.rules ~= r;
+  }
+  return es;
+}
 
 Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, "REACTION", (ref r, p) {
   switch(p[0]) {
@@ -192,6 +206,34 @@ Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, 
     default: break;
   }
 })(raw); }
+
+/** CTFE: turtle control chars that never map to a brush or pose. */
+private bool isControl(char c) pure { return "fX()+-&^<> \t\r\n".canFind(c); }
+
+/** CTFE: symbols an entity/clip grammar can produce (axiom + every rule production). */
+private bool[char] produced(string axiom, const Rule[] rules) pure {
+  bool[char] s; foreach(c; axiom) s[c] = true;
+  foreach(ref r; rules) foreach(c; r.production) s[c] = true;
+  return s;
+}
+
+/** CTFE: first symbol-consistency error across all entities ("" == valid). */
+string validateEntities(const EntityT[] es) pure {
+  foreach(ref e; es) {
+    bool[char] brush; foreach(ref b; e.brushes) brush[b.symbol] = true;
+    foreach(c, _; produced(e.axiom, e.rules))
+      if(!isControl(c) && c !in brush && e.rules.all!(r => r.predecessor != c))
+        return e.name ~ ": body symbol '" ~ c ~ "' has no [BRUSH] and no [RULE]";
+    foreach(ref cl; e.clips) {
+      auto emitted = produced(cl.axiom, cl.rules);
+      foreach(sym, ref pb; cl.poses) {
+        if(sym !in emitted) return e.name ~ "/" ~ cl.name ~ ": [POSE] symbol '" ~ sym ~ "' never produced by the clip";
+        if(pb.target !in brush) return e.name ~ "/" ~ cl.name ~ ": [POSE] target '" ~ pb.target ~ "' has no [BRUSH]";
+      }
+    }
+  }
+  return "";
+}
 
 /** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
 private SpawnMask spawnMask(const FeatureT ft) pure {
@@ -217,3 +259,4 @@ immutable EntityT[] entityTable = parseEntities(import("data/raws/entity.txt"));
 
 static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
+static assert(validateEntities(entityTable).length == 0, validateEntities(entityTable));

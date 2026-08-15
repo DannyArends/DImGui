@@ -31,6 +31,7 @@ alias SpawnMask = bool[RESOURCE_COUNT];
 /** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
 struct EntityT {
   string name;                                    /// Species name, e.g. "Dwarf"
+  string base;                                    /// optional parent species to inherit brushes/clips/rules from
   ResourceType[] spawnOn;                         /// tiles this entity spawns on (empty = not wild-spawned, e.g. Dwarf)
   float noiseThreshold = 0.92f;                   /// hash-noise spawn gate (higher = rarer)
   uint hashSeed1, hashSeed2;                      /// per-species spawn hash seeds

@@ -78,7 +78,7 @@
   [RULE:K:h:40]
   [RULE:K:ht:35]
   [RULE:K:hijk:20]
-  [RULE:K:o:5]
+  [RULE:K::5]
 
   # --- nose size ---
   [RULE:S:Z:55]
@@ -205,7 +205,7 @@
     [POSE:q:q:side]
     [POSE:r:r:side]
   [CLIP:idle:t f +t f -t f -t f +t::4:1.6]
-    [POSE:t:T:]
+    [POSE:t:t:]
   [BRUSH:C:Cube:0.50:0.60:false:ghostwhite:0.0:0.10:0.0]
   [BRUSH:G:Cube:0.46:0.30:false:ghostwhite:0.0:0.10:-0.34]
   [BRUSH:H:Cube:0.34:0.30:false:ghostwhite:0.0:0.20:0.44]
