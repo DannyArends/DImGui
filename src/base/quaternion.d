@@ -30,7 +30,7 @@ struct Quaternion {
 }
 
 /** Quaternion multiplication */
-@nogc pure float[4] qMul(const float[4] a, const float[4] b) nothrow {
+@nogc pure T[4] qMul(T)(const T[4] a, const T[4] b) nothrow {
   return [
     a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
     a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],

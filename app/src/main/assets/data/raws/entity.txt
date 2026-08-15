@@ -16,7 +16,7 @@
     [CRULE:W:&&&&l^^^^a f ^^^^l&&&&a f ^^^^l&&&&a f &&&&l^^^^a:20]
     [POSE:l:L:side:X]
     [POSE:a:A:side:X]
-  [CLIP:idle:V::4:6]
+  [CLIP:idle:V::4:2]
     [CRULE:V:t u f &t+u f ^t-u f ^t-u f &t+u:40]
     [CRULE:V:t u f &t-u f ^t+u f ^t-u f &t+u:30]
     [CRULE:V:t u f &&t f ^^t f ^^t f &&t:30]
