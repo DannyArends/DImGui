@@ -144,19 +144,22 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
  *  Returns per-target-symbol key streams + the total step count (clip duration). */
 PoseKey[][char] interpretAnim(const(char)[] symbols, const TurtleConfig cfg, const char[char] poses, out int steps) {
   PoseKey[][char] tracks;
-  float[4] orient = [0.0f, 0.0f, 0.0f, 1.0f];
-  float[4][] stack;
+  float[4][char] cursor;                          // independent accumulated orientation per pose symbol
+  float[4] pending = [0.0f, 0.0f, 0.0f, 1.0f];    // turns since the last pose, applied to the NEXT pose only
   int t = 0;
   foreach(c; symbols) {
     switch(c) {
-      case '(': stack ~= orient; break;
-      case ')': if(stack.length){ orient = stack[$-1]; stack = stack[0 .. $-1]; } break;
       case 'X': break;
-      case 'f': t++; orient = [0.0f, 0.0f, 0.0f, 1.0f]; break;   // each time-step starts from rest (no cross-step drift)
+      case 'f': t++; break;
       default:
         const ax = turnAxis(c);
-        if(ax != [0.0f, 0.0f, 0.0f]) { orient = qMul(orient, angleAxis(turnAngle(c, cfg), ax)); break; }
-        if(c in poses) tracks[c] ~= PoseKey(t, orient);
+        if(ax != [0.0f, 0.0f, 0.0f]) { pending = qMul(pending, angleAxis(turnAngle(c, cfg), ax)); break; }
+        if(c in poses) {
+          if(c !in cursor) cursor[c] = [0.0f, 0.0f, 0.0f, 1.0f];
+          cursor[c] = qMul(cursor[c], pending);           // accumulate this pose's own turns (oscillates via +/-)
+          tracks[c] ~= PoseKey(t, cursor[c]);
+          pending = [0.0f, 0.0f, 0.0f, 1.0f];
+        }
       break;
     }
   }
