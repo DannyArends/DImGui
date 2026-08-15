@@ -42,6 +42,8 @@ struct AnimClip {
   float turn = 25.0f;       /// degrees per turn symbol (swing amplitude)
 }
 
+string boneName(string prefix, size_t k) { return format("%s%d", prefix, k); }
+
 /** Rigid joint frame of a rig node: normalized bind rotation, origin at the segment base (the pivot). */
 @nogc Matrix jointWorld(ref const RigNode n) nothrow {
   const Matrix M = n.inst.matrix;
@@ -56,12 +58,18 @@ struct AnimClip {
   return J;
 }
 
+/** Rigid joint frame of every rig node, indexed like `rig`. */
+Matrix[] jointWorlds(const RigNode[] rig) {
+  auto J = new Matrix[](rig.length);
+  foreach(k, ref n; rig) J[k] = jointWorld(n);
+  return J;
+}
+
 /** Node tree calculateGlobalTransform walks: rigid joint frames, node k named `prefix~k`. */
 Node rigToNode(const RigNode[] rig, string prefix) {
-  Matrix[] J; J.length = rig.length;
-  foreach(k, ref n; rig) J[k] = jointWorld(n);
+  auto J = jointWorlds(rig);
   Node[] nodes; nodes.length = rig.length;
-  foreach(k, ref n; rig) nodes[k] = Node(format("%s%d", prefix, k), 0, (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]));
+  foreach(k, ref n; rig) nodes[k] = Node(boneName(prefix, k), 0, (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]));
   foreach_reverse(k, ref n; rig) if(n.parent >= 0) nodes[n.parent].children ~= nodes[k];
   Node root = Node(prefix ~ "root", 0, Matrix());
   foreach(k, ref n; rig) if(n.parent < 0) root.children ~= nodes[k];
@@ -71,7 +79,7 @@ Node rigToNode(const RigNode[] rig, string prefix) {
 /** One bone per node; offset = jointWorld^-1 . bindWorld so a UNIT primitive at bone k lands as that segment. */
 Bone[string] rigBones(const RigNode[] rig, string prefix) {
   Bone[string] bones;
-  foreach(k, ref n; rig) bones[format("%s%d", prefix, k)] = Bone(jointWorld(n).inverse().multiply(n.inst.matrix), cast(uint)k);
+  foreach(k, ref n; rig) bones[boneName(prefix, k)] = Bone(jointWorld(n).inverse().multiply(n.inst.matrix), cast(uint)k);
   return bones;
 }
 
@@ -137,12 +145,12 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
   auto tracks = interpretAnim(buildGrammar(seed, 1, clip.axiom, clip.rules), cfg, poses, steps);
 
   Animation a = { name: clip.name, duration: cast(double)steps, ticksPerSecond: clip.fps };
-  Matrix[] J; J.length = rig.length; foreach(k, ref n; rig) J[k] = jointWorld(n);
+  auto J = jointWorlds(rig);
   foreach(k, ref n; rig) {
     char[] syms; foreach(sym, ref b; clip.poses) if(b.target == n.symbol && sym in tracks) syms ~= sym;
     if(syms.length == 0) continue;
     const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
-    a.nodeAnimations[format("%s%d", prefix, k)] = nodeAnimation(n, syms, clip, tracks, localJ);
+    a.nodeAnimations[boneName(prefix, k)] = nodeAnimation(n, syms, clip, tracks, localJ);
   }
   return a;
 }
