@@ -16,9 +16,12 @@
     [CRULE:W:&&&&l^^^^a f ^^^^l&&&&a f ^^^^l&&&&a f &&&&l^^^^a:20]
     [POSE:l:L:side:X]
     [POSE:a:A:side:X]
-  [CLIP:idle:t u f &t+u f ^t-u f ^t-u f &t+u::4:6]
-    [POSE:t:T:X]
-    [POSE:u:T:Z]
+  [CLIP:idle:V::4:6]
+    [CRULE:V:t u f &t+u f ^t-u f ^t-u f &t+u:40]
+    [CRULE:V:t u f &t-u f ^t+u f ^t-u f &t+u:30]
+    [CRULE:V:t u f &&t f ^^t f ^^t f &&t:30]
+    [POSE:t:T:_:X]
+    [POSE:u:T:_:Z]
 
   # --- legs / feet ---
   [BRUSH:L:Cylinder:0.20:0.15:true:saddlebrown]

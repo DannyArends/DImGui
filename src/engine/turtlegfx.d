@@ -92,12 +92,18 @@ Matrix poseLocal(ref immutable PoseBrush pb, const float[4] quat, float side, co
   return rotate(q).multiply(Rr);
 }
 
+float[4] quatAtStep(const PoseKey[] keys, int step) {
+  float[4] q = [0.0f, 0.0f, 0.0f, 1.0f];
+  foreach(ref pk; keys) { if(pk.step > step) break; q = pk.quat; }
+  return q;
+}
+
 /** Compose every axis-pose targeting a bone at one key (multi-pose bones must name an axis). */
-Matrix posesLocal(const char[] syms, ref immutable AnimClip clip, const PoseKey[][char] tracks, size_t i, float side, const Matrix localJ) {
+Matrix posesLocal(const char[] syms, ref immutable AnimClip clip, const PoseKey[][char] tracks, int step, float side, const Matrix localJ) {
   Matrix rot = Matrix();
   foreach(sym; syms) {
     const pb = clip.poses[sym];
-    const float ang = quatAxisAngle(tracks[sym][i].quat, pb.axis) * (pb.bySide ? side : 1.0f);
+    const float ang = quatAxisAngle(quatAtStep(tracks[sym], step), pb.axis) * (pb.bySide ? side : 1.0f);
     rot = rotate(angleAxis(ang, pb.axis)).multiply(rot);
   }
   return rot.multiply(localJ);
@@ -107,16 +113,18 @@ Matrix posesLocal(const char[] syms, ref immutable AnimClip clip, const PoseKey[
 NodeAnimation nodeAnimation(ref const RigNode n, const char[] syms, ref immutable AnimClip clip, const PoseKey[][char] tracks, const Matrix localJ) {
   const float side = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
   Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
-  size_t nkeys = tracks[syms[0]].length;
-  foreach(sym; syms) if(tracks[sym].length < nkeys) nkeys = tracks[sym].length;
+  int[] steps;                                          // union of every symbol's key steps, sorted, unique
+  foreach(sym; syms) foreach(ref pk; tracks[sym]) if(!steps.canFind(pk.step)) steps ~= pk.step;
+  steps.sort();
   NodeAnimation na;
   na.positionKeys = [PositionKey(0.0, position(localJ))];
   na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
-  na.rotationKeys.length = nkeys;
-  foreach(i; 0 .. nkeys) {
-    Matrix local = (syms.length == 1) ? poseLocal(clip.poses[syms[0]], tracks[syms[0]][i].quat, side, localJ, Rr)
-                                      : posesLocal(syms, clip, tracks, i, side, localJ);
-    na.rotationKeys[i] = RotationKey(cast(double)tracks[syms[0]][i].step, toQuaternion(local));
+  na.rotationKeys.length = steps.length;
+  foreach(i, step; steps) {
+    Matrix local = (clip.poses[syms[0]].axis != [0.0f, 0.0f, 0.0f])
+      ? posesLocal(syms, clip, tracks, step, side, localJ)
+      : poseLocal(clip.poses[syms[0]], quatAtStep(tracks[syms[0]], step), side, localJ, Rr);
+    na.rotationKeys[i] = RotationKey(cast(double)step, toQuaternion(local));
   }
   return na;
 }
