@@ -130,9 +130,8 @@ FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "
 })(raw); }
 
 /** CTFE: parse [ENTITY] blocks into per-species EntityT. Entity brushes carry no substance (0). */
-EntityT[] parseEntities(string raw) pure { return resolveBases(parseRawsGeneric!(EntityT, "ENTITY", (ref e, p) {
+EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "ENTITY", (ref e, p) {
   switch(p[0]) {
-    case "BASE":             e.base = p[1]; break;
     case "MOVE_SPEED":       e.moveSpeed = to!float(p[1]); break;
     case "SPAWN_ON":         e.spawnOn ~= p[1].to!ResourceType; break;
     case "NOISE_THRESHOLD":  e.noiseThreshold = to!float(p[1]); break;
@@ -178,20 +177,7 @@ EntityT[] parseEntities(string raw) pure { return resolveBases(parseRawsGeneric!
     } break;
     default: break;
   }
-})(raw)); }
-
-/** CTFE: fold each [BASE] parent's brushes/clips/rules into the child (child overrides win by symbol/name). */
-EntityT[] resolveBases(EntityT[] es) pure {
-  foreach(ref e; es) {
-    if(e.base.length == 0) continue;
-    auto b = es.find!(x => x.name == e.base);
-    assert(b.length, "[ENTITY:" ~ e.name ~ "] BASE:" ~ e.base ~ " not found");
-    foreach(ref br; b[0].brushes) if(!e.brushes.canFind!(x => x.symbol == br.symbol)) e.brushes ~= br;
-    foreach(ref cl; b[0].clips)   if(!e.clips.canFind!(x => x.name == cl.name))       e.clips  ~= cl;
-    foreach(ref r; b[0].rules)    e.rules ~= r;
-  }
-  return es;
-}
+})(raw); }
 
 Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, "REACTION", (ref r, p) {
   switch(p[0]) {

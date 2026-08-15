@@ -67,19 +67,10 @@ struct Matrix {
 @nogc pure Matrix rotate(const Matrix m, const float[3] v) nothrow { return m.multiply(rotate(v)); }
 @nogc pure Matrix translateScale(float[3] p, float[3] s) nothrow { return translate(p).multiply(scale(s)); }
 
-/** Compose translate(pos)·R·translate(0,length/2,0)·scale(radius,length,radius) directly.
-    Places a unit primitive along the turtle's local +Y; avoids 3 intermediate 4x4 multiplies. */
+/** Place a unit primitive along the turtle's local +Y: translate(pos)·R·translate(0,length/2,0)·scale(radius,length,dz). */
 @nogc pure Matrix segmentTransform(const float[3] pos, const Matrix R, const float radius, const float length, const float depth) nothrow {
   const float dz = (depth < 0.0f) ? radius : depth;   // -1 -> square section (back-compat)
-  const float[3] r0 = [R[0], R[1], R[2]];
-  const float[3] r1 = [R[4], R[5], R[6]];   // local +Y after rotation
-  const float[3] r2 = [R[8], R[9], R[10]];
-  Matrix m;
-  m[0]=r0[0]*radius; m[1]=r0[1]*radius; m[2]=r0[2]*radius;
-  m[4]=r1[0]*length; m[5]=r1[1]*length; m[6]=r1[2]*length;
-  m[8]=r2[0]*dz; m[9]=r2[1]*dz; m[10]=r2[2]*dz;
-  m[12]=pos[0]+r1[0]*length*0.5f; m[13]=pos[1]+r1[1]*length*0.5f; m[14]=pos[2]+r1[2]*length*0.5f;
-  return m;
+  return translate(pos).multiply(R).multiply(translate([0.0f, length * 0.5f, 0.0f])).multiply(scale([radius, length, dz]));
 }
 
 @nogc pure Matrix rotate(const float[3] v) nothrow {
