@@ -11,7 +11,7 @@ import resources : itemStack;
 import scheduler : atDestination;
 import bone : synthesizeBone;
 import matrix : multiply, translate, position, inverse, rotate, transpose, halfExtent, scale;
-import turtlegfx : interpretRig, jointWorld, rigToNode, rigBones;
+import turtlegfx : interpretRig, jointWorld, rigToNode, rigBones, interpretAnim;
 import animation : Animation, NodeAnimation, PositionKey, RotationKey, ScalingKey, animateAsset;
 import quaternion : toQuaternion;
 import assimp : OpenAsset;
@@ -196,6 +196,42 @@ Animation rigAnimation(const RigNode[] rig, string prefix, const AnimChannel[] a
   return clip;
 }
 
+/** Bake one AnimClip: walk its L-system in time, then map each target symbol's cursor stream
+ *  onto every rig node with that symbol (side-mirrored), producing rigid-joint rotation keys. */
+Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimClip clip) {
+  char[char] poses; foreach(sym, ref pb; clip.poses) poses[sym] = pb.target;
+  int steps;
+  auto tracks = interpretAnim(buildGrammar(0u, 1, clip.axiom, clip.rules), TurtleConfig(), poses, steps);
+
+  Animation a = { name: clip.name, duration: cast(double)steps, ticksPerSecond: clip.fps };
+  Matrix[] J; J.length = rig.length; foreach(k, ref n; rig) J[k] = jointWorld(n);
+  foreach(k, ref n; rig) {
+    auto keys = n.symbol in tracks;
+    if(!keys || (*keys).length == 0) continue;
+    const bool bySide = clip.poses[n.symbol].bySide;
+    const float side  = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
+    const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
+    Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
+    NodeAnimation na;
+    na.positionKeys = [PositionKey(0.0, position(localJ))];
+    na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
+    na.rotationKeys.length = (*keys).length;
+    foreach(i, ref pk; *keys) {
+      float[3] e = bySide ? [pk.euler[0]*side, pk.euler[1]*side, pk.euler[2]*side] : pk.euler;
+      na.rotationKeys[i] = RotationKey(cast(double)pk.step, toQuaternion(rotate(e).multiply(Rr)));
+    }
+    a.nodeAnimations[format("%s%d", prefix, k)] = na;
+  }
+  return a;
+}
+
+/** Build the clip list for a species: authored [CLIP]s, in raw order (index 0 = default/idle). */
+Animation[] buildClips(const RigNode[] rig, string prefix, ref immutable EntityT e) {
+  Animation[] clips;
+  foreach(ref c; e.clips) clips ~= clipAnimation(rig, prefix, c);
+  return clips;
+}
+
 /** Build (once per uid) the pawn's vertexless skeleton object; stamp its palette region immediately (no frame lag). */
 void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) {
   if(uid in dw.skel) return;
@@ -207,7 +243,8 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
   s.instancedMesh = true; s.instances = [DrawInstance()]; s.states.length = 1;
   s.rootnode = rigToNode(r, pfx);
   s.bones = rigBones(r, pfx);
-  s.animations = [rigAnimation(r, pfx, e.anims, false), rigAnimation(r, pfx, e.anims, true)];
+  s.animations = buildClips(r, pfx, e);
+  if(s.animations.length == 0) s.animations = [rigAnimation(r, pfx, e.anims, false), rigAnimation(r, pfx, e.anims, true)];
   app.mergeBones(s);
   int[] slot; slot.length = r.length;
   foreach(k; 0 .. r.length) slot[k] = cast(int)(app.bones[format("%s%d", pfx, k)].index - s.boneBase);
