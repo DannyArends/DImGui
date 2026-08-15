@@ -42,7 +42,8 @@ struct EntityT {
   float facing = 0.0f;                            /// Yaw offset correcting the model's forward axis
   string axiom = "B";                             /// L-system start symbol(s)
   Rule[] rules;                                   /// L-system production rules (empty = axiom as-is)
-  AnimChannel[] anims;                            /// procedural animation channels (per brush symbol)
+  AnimChannel[] anims;                            /// procedural animation channels (per brush symbol) [legacy]
+  AnimClip[] clips;                               /// animation L-systems, walked in time -> keyframe tracks
   LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
   float lsystemYaw = 25.0f;                       /// Yaw
   float lsystemPitch = 25.0f;                     /// Pitch
@@ -59,6 +60,23 @@ struct AnimChannel {
   float phase = 0.0f;       /// phase offset, radians (PI => counter-swing)
   bool bySide = false;      /// multiply by left/right sign (bind world X)
   bool whenMoving = false;  /// true = only while moving (walk); false = always (idle)
+}
+
+/** One animation primitive: a clip symbol that writes the pose cursor onto a target bone symbol. */
+struct PoseBrush {
+  char target;              /// brush symbol (bone) this pose writes a key to
+  bool bySide = false;      /// mirror the cursor euler by the bone's left/right sign
+}
+
+/** An animation as its own L-system, walked in TIME: `f` advances a step, turns rotate the cursor,
+ *  a pose symbol emits a rotation key for its target bone. Baked into NodeAnimation tracks. */
+struct AnimClip {
+  string name;              /// "walk", "idle", ...
+  string axiom = "";        /// clip L-system start symbols
+  Rule[] rules;             /// clip production rules
+  PoseBrush[char] poses;    /// symbol -> which bone it poses
+  bool whenMoving = false;  /// select walk vs idle (same gate as the old channels)
+  float fps = 8.0f;         /// steps per second (drives ticksPerSecond)
 }
 
 /** Per-drawing-symbol spec: which material/size, and whether it advances the turtle. No Geometry here — the turtle is pure. */
