@@ -5,7 +5,7 @@
 
 import engine;
 
-import lsystem : buildGrammar, turnAxis, turnAngle;
+import lsystem : expand, turnAxis, turnAngle;
 import matrix : segmentTransform, position, inverse, multiply;
 import quaternion : angleAxis, quatAxisAngle, qMul, rotate, toQuaternion;
 import vector : vAdd;
@@ -161,7 +161,7 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
   char[char] poses; foreach(sym, ref pb; clip.poses) poses[sym] = pb.target;
   int steps;
   TurtleConfig cfg = { yaw: clip.turn, pitch: clip.turn, roll: clip.turn };
-  auto tracks = interpretAnim(buildGrammar(seed, 1, clip.axiom, clip.rules), cfg, poses, steps);
+  auto tracks = interpretAnim(expand(seed, 1, clip.axiom, clip.rules), cfg, poses, steps);
 
   Animation a = { name: clip.name, duration: cast(double)steps, ticksPerSecond: clip.fps };
   auto J = jointWorlds(rig);

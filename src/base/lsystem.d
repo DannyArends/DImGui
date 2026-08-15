@@ -37,6 +37,15 @@ struct LSystem {
   }
 }
 
+/** Expand an axiom by 'iterations' stochastic rewrite passes; deterministic from seed. No tree/canopy logic. */
+char[] expand(uint seed, uint iterations, string axiom, const(Rule)[] specs) {
+  auto ls = LSystem(axiom.dup);
+  foreach(ref r; specs) { ls.rules[r.predecessor] ~= r; }
+  auto rnd = Random(seed | 1);
+  foreach(k; 0 .. iterations) { if(!ls.iterate(rnd)) break; }
+  return ls.state;
+}
+
 struct TurtleBrush {
   int material = -1;
   float radius = 0.1f;

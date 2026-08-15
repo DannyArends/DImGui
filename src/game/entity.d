@@ -6,7 +6,7 @@
 import game;
 
 import assimp : buildSkinnedAsset;
-import lsystem : buildGrammar;
+import lsystem : expand;
 import matrix : multiply, position, rotate, halfExtent, scale;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack;
@@ -146,7 +146,7 @@ void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
   TurtleConfig cfg = { yaw: e.lsystemYaw, pitch: e.lsystemPitch, roll: e.lsystemRoll, gap: e.lsystemGap };
   foreach(ref br; e.brushes) cfg.brush[br.symbol] = TurtleBrush(-1, br.radius, br.length, br.advance, br.color, br.offset, br.depth);
   uint hash = cast(uint)(uid * 2654435761u);
-  auto r = interpretRig(buildGrammar(hash, 1, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+  auto r = interpretRig(expand(hash, e.lsystemIter, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
   float lo = 0.0f; bool any = false;
   foreach(ref n; r) {
     auto m = n.inst.matrix;

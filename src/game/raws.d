@@ -152,6 +152,7 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
     case "LSYSTEM_PITCH":    e.lsystemPitch = to!float(p[1]); break;
     case "LSYSTEM_ROLL":     e.lsystemRoll  = to!float(p[1]); break;
     case "AXIOM":            e.axiom = p[1]; break;
+    case "LSYSTEM_ITER":     e.lsystemIter = to!uint(p[1]); break;
     case "BRUSH": if(p.length >= 6){
       immutable bool tnt = p.length > 6 && p[6] == "tint";
       immutable float[4] col = (p.length > 6 && !tnt) ? cast(float[4])toColor(p[6]) : [1.0f, 1.0f, 1.0f, 1.0f];
