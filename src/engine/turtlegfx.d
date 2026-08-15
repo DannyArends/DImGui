@@ -7,7 +7,7 @@ import engine;
 
 import lsystem : buildGrammar, turnAxis, turnAngle;
 import matrix : segmentTransform, position, inverse, multiply;
-import quaternion : angleAxis, quatAngle, qMul, rotate, toQuaternion;
+import quaternion : angleAxis, quatAxisAngle, qMul, rotate, toQuaternion;
 import vector : vAdd;
 
 /** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree. */
@@ -101,18 +101,15 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
     const bool worldAxis = pb.axis != [0.0f, 0.0f, 0.0f];
     const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
     Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
-    const Matrix Rw = worldAxis ? J[n.parent < 0 ? k : n.parent] : Matrix();   // parent world frame the swing lives in
     NodeAnimation na;
     na.positionKeys = [PositionKey(0.0, position(localJ))];
     na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
     na.rotationKeys.length = (*keys).length;
     foreach(i, ref pk; *keys) {
       Matrix local;
-      if(worldAxis) {                                   // swing about a fixed WORLD axis, then the bind local
-        const float ang = quatAngle(pk.quat) * (pb.bySide ? side : 1.0f);
-        // express world-axis rotation in the parent's frame: Rw^-1 . R(worldAxis) . Rw . localJ
-        local = Rw.inverse().multiply(rotate(angleAxis(ang, pb.axis)).multiply(Rw.multiply(localJ)));
-        local[12] = position(localJ)[0]; local[13] = position(localJ)[1]; local[14] = position(localJ)[2];
+      if(worldAxis) {                                   // swing about a fixed axis in the parent (body) frame
+        const float ang = quatAxisAngle(pk.quat, pb.axis) * (pb.bySide ? side : 1.0f);
+        local = rotate(angleAxis(ang, pb.axis)).multiply(localJ);
       } else {
         float[4] q = (pb.bySide && side < 0.0f) ? [-pk.quat[0], -pk.quat[1], -pk.quat[2], pk.quat[3]] : pk.quat;
         local = rotate(q).multiply(Rr);
