@@ -7,7 +7,7 @@ import engine;
 
 import lsystem : buildGrammar, turnAxis, turnAngle;
 import matrix : segmentTransform, position, inverse, multiply;
-import quaternion : angleAxis, qMul, rotate, toQuaternion;
+import quaternion : angleAxis, quatAngle, qMul, rotate, toQuaternion;
 import vector : vAdd;
 
 /** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree. */
@@ -26,8 +26,9 @@ struct PoseKey {
 
 /** One animation primitive: a clip symbol that writes the pose cursor onto a target bone symbol. */
 struct PoseBrush {
-  char target;              /// brush symbol (bone) this pose writes a key to
-  bool bySide = false;      /// mirror the cursor by the bone's left/right sign
+  char target;                            /// brush symbol (bone) this pose writes a key to
+  bool bySide = false;                    /// mirror the cursor by the bone's left/right sign
+  float[3] axis = [0.0f, 0.0f, 0.0f];     /// if non-zero: swing about this WORLD axis (ignores bind orientation)
 }
 
 /** An animation as its own L-system, walked in TIME -> baked into NodeAnimation tracks. */
@@ -94,18 +95,29 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
   foreach(k, ref n; rig) {
     auto keys = n.symbol in tracks;
     if(!keys || (*keys).length == 0) continue;
-    bool bySide = false;
-    foreach(sym, ref pb; clip.poses) if(pb.target == n.symbol) { bySide = pb.bySide; break; }
+    PoseBrush pb;
+    foreach(sym, ref b; clip.poses) if(b.target == n.symbol) { pb = b; break; }
     const float side = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
+    const bool worldAxis = pb.axis != [0.0f, 0.0f, 0.0f];
     const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
     Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
+    const Matrix Rw = worldAxis ? J[n.parent < 0 ? k : n.parent] : Matrix();   // parent world frame the swing lives in
     NodeAnimation na;
     na.positionKeys = [PositionKey(0.0, position(localJ))];
     na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
     na.rotationKeys.length = (*keys).length;
     foreach(i, ref pk; *keys) {
-      float[4] q = (bySide && side < 0.0f) ? [-pk.quat[0], -pk.quat[1], -pk.quat[2], pk.quat[3]] : pk.quat;
-      na.rotationKeys[i] = RotationKey(cast(double)pk.step, toQuaternion(rotate(q).multiply(Rr)));
+      Matrix local;
+      if(worldAxis) {                                   // swing about a fixed WORLD axis, then the bind local
+        const float ang = quatAngle(pk.quat) * (pb.bySide ? side : 1.0f);
+        // express world-axis rotation in the parent's frame: Rw^-1 . R(worldAxis) . Rw . localJ
+        local = Rw.inverse().multiply(rotate(angleAxis(ang, pb.axis)).multiply(Rw.multiply(localJ)));
+        local[12] = position(localJ)[0]; local[13] = position(localJ)[1]; local[14] = position(localJ)[2];
+      } else {
+        float[4] q = (pb.bySide && side < 0.0f) ? [-pk.quat[0], -pk.quat[1], -pk.quat[2], pk.quat[3]] : pk.quat;
+        local = rotate(q).multiply(Rr);
+      }
+      na.rotationKeys[i] = RotationKey(cast(double)pk.step, toQuaternion(local));
     }
     a.nodeAnimations[format("%s%d", prefix, k)] = na;
   }

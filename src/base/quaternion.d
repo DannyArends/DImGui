@@ -39,6 +39,11 @@ struct Quaternion {
   ];
 }
 
+/** Rotation angle (degrees) encoded by a unit quaternion. */
+@nogc float quatAngle(const float[4] q) nothrow {
+  return cast(float)(2.0 * acos(q[3] > 1.0f ? 1.0f : (q[3] < -1.0f ? -1.0f : q[3])) * 180.0 / PI);
+}
+
 /** Returns the normalized vector of v */
 @nogc pure T[4] normalize(T)(T[4] v) nothrow {
   float sqr = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3];
