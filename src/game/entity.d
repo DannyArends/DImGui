@@ -219,7 +219,7 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
   foreach(k; 0 .. r.length) slot[k] = cast(int)(app.bones[format("%s%d", pfx, k)].index - s.boneBase);
   dw.boneSlot[uid] = slot;
   dw.skel[uid] = s;
-  s.onFrame = (float dt){ app.animateAsset(s, dt); };
+  if(s.animations.length) s.onFrame = (float dt){ app.animateAsset(s, dt); };   // only drive skeletons that have clips
   app.objects ~= s;
   app.updateMeshInfo();                            // stamp s.instances[0].meshdef[3] now so poseEntity's region is valid this frame
 }
