@@ -228,11 +228,9 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
 void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable EntityT e) {
   app.buildSkeleton(dw, d.uid, e);
   auto s = dw.skel[d.uid];
-  if(e.clips.length) {
-    uint pick = 0;
-    foreach(ci, ref c; e.clips) if(c.whenMoving == (d.moveT < 1.0f)) { pick = cast(uint)ci; break; }
-    s.states[0].animation = pick;
-  } else s.states[0].animation = (d.moveT < 1.0f) ? 1 : 0;
+  uint pick = 0;
+  foreach(ci, ref c; e.clips) if(c.whenMoving == (d.moveT < 1.0f)) { pick = cast(uint)ci; break; }
+  s.states[0].animation = pick;
   auto ds = dw.dscale[d.uid];
   float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
   Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));

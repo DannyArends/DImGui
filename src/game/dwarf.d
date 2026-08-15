@@ -8,7 +8,7 @@ import game;
 import animation : AnimationState, animateAsset;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
-import entity : buildRig, buildSkeleton, entityFor, poseEntity, tickEntity, entityMove, isMoving;
+import entity : buildSkeleton, entityFor, poseEntity, tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;

@@ -9,7 +9,7 @@ import animation : animateAsset;
 import assimp : OpenAsset;
 import block : findFreeFood, noBlock, itemOf;
 import bone : mergeBones;
-import entity : buildRig, buildSkeleton, isMoving, poseEntity, entityFor, tickEntity, entityMove;
+import entity : buildSkeleton, isMoving, poseEntity, entityFor, tickEntity, entityMove;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
 import geometry : Geometry;
