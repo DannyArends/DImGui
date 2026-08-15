@@ -42,24 +42,12 @@ struct EntityT {
   float facing = 0.0f;                            /// Yaw offset correcting the model's forward axis
   string axiom = "B";                             /// L-system start symbol(s)
   Rule[] rules;                                   /// L-system production rules (empty = axiom as-is)
-  AnimChannel[] anims;                            /// procedural animation channels (per brush symbol) [legacy]
   AnimClip[] clips;                               /// animation L-systems, walked in time -> keyframe tracks
   LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
   float lsystemYaw = 25.0f;                       /// Yaw
   float lsystemPitch = 25.0f;                     /// Pitch
   float lsystemRoll = 25.0f;                      /// Roll
   float lsystemGap = 0.2f;                        /// f translation step (no draw)
-}
-
-/** One procedural animation channel: oscillate a brush symbol's joint on a euler axis. */
-struct AnimChannel {
-  char symbol;              /// brush symbol this animates
-  ubyte axis;               /// euler slot: 0 yaw(Y), 1 pitch(Z), 2 roll(X)
-  float amp = 0.0f;         /// amplitude, degrees
-  float freq = 1.0f;        /// phase multiplier
-  float phase = 0.0f;       /// phase offset, radians (PI => counter-swing)
-  bool bySide = false;      /// multiply by left/right sign (bind world X)
-  bool whenMoving = false;  /// true = only while moving (walk); false = always (idle)
 }
 
 /** One animation primitive: a clip symbol that writes the pose cursor onto a target bone symbol. */

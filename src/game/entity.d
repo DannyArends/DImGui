@@ -164,38 +164,6 @@ void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
   dw.dscale[uid] = [v, v, v];
 }
 
-enum uint ANIM_KEYS = 32;   /// rotation-key samples per 2*PI walk cycle
-
-/** Sum of channel euler for a symbol at a phase (bakes the swing that used to run per-frame). */
-float[3] channelEulerAt(const AnimChannel[] anims, char sym, float side, float phase, bool moving) {
-  float[3] e = [0.0f, 0.0f, 0.0f];
-  foreach(ref ch; anims) if(ch.symbol == sym && !(ch.whenMoving && !moving))
-    e[ch.axis] += ch.amp * sin(phase * ch.freq + ch.phase) * (ch.bySide ? side : 1.0f);
-  return e;
-}
-
-/** Bake a rig's AnimChannels into one clip (moving = walk vs idle) on the rigid joint nodes. */
-Animation rigAnimation(const RigNode[] rig, string prefix, const AnimChannel[] anims, bool moving) {
-  Animation clip = { name: (moving ? "walk" : "idle"), duration: ANIM_KEYS, ticksPerSecond: ANIM_KEYS * WALK_RATE / (2.0f * PI) };
-  Matrix[] J; J.length = rig.length; foreach(k, ref n; rig) J[k] = jointWorld(n);
-  foreach(k, ref n; rig) {
-    if(!anims.any!(ch => ch.symbol == n.symbol && ch.amp != 0.0f && !(ch.whenMoving && !moving))) continue;
-    const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
-    Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
-    const float side = n.inst.matrix[12] < 0.0f ? 1.0f : -1.0f;
-    NodeAnimation na;
-    na.positionKeys = [PositionKey(0.0, position(localJ))];
-    na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
-    na.rotationKeys.length = ANIM_KEYS + 1;
-    foreach(i; 0 .. ANIM_KEYS + 1) {
-      float phase = 2.0f * PI * i / ANIM_KEYS;
-      na.rotationKeys[i] = RotationKey(cast(double)i, toQuaternion(rotate(channelEulerAt(anims, n.symbol, side, phase, moving)).multiply(Rr)));
-    }
-    clip.nodeAnimations[format("%s%d", prefix, k)] = na;
-  }
-  return clip;
-}
-
 /** Bake one AnimClip: walk its L-system in time, then map each target symbol's cursor stream
  *  onto every rig node with that symbol (side-mirrored), producing rigid-joint rotation keys. */
 Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimClip clip) {
@@ -246,7 +214,6 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
   s.rootnode = rigToNode(r, pfx);
   s.bones = rigBones(r, pfx);
   s.animations = buildClips(r, pfx, e);
-  if(s.animations.length == 0) s.animations = [rigAnimation(r, pfx, e.anims, false), rigAnimation(r, pfx, e.anims, true)];
   app.mergeBones(s);
   int[] slot; slot.length = r.length;
   foreach(k; 0 .. r.length) slot[k] = cast(int)(app.bones[format("%s%d", pfx, k)].index - s.boneBase);
