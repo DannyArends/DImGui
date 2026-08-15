@@ -152,7 +152,7 @@ PoseKey[][char] interpretAnim(const(char)[] symbols, const TurtleConfig cfg, con
       case '(': stack ~= orient; break;
       case ')': if(stack.length){ orient = stack[$-1]; stack = stack[0 .. $-1]; } break;
       case 'X': break;
-      case 'f': t++; break;
+      case 'f': t++; orient = [0.0f, 0.0f, 0.0f, 1.0f]; break;   // each time-step starts from rest (no cross-step drift)
       default:
         const ax = turnAxis(c);
         if(ax != [0.0f, 0.0f, 0.0f]) { orient = qMul(orient, angleAxis(turnAngle(c, cfg), ax)); break; }
