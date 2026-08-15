@@ -107,7 +107,8 @@ Matrix posesLocal(const char[] syms, ref immutable AnimClip clip, const PoseKey[
 NodeAnimation nodeAnimation(ref const RigNode n, const char[] syms, ref immutable AnimClip clip, const PoseKey[][char] tracks, const Matrix localJ) {
   const float side = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
   Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
-  const size_t nkeys = tracks[syms[0]].length;
+  size_t nkeys = tracks[syms[0]].length;
+  foreach(sym; syms) if(tracks[sym].length < nkeys) nkeys = tracks[sym].length;
   NodeAnimation na;
   na.positionKeys = [PositionKey(0.0, position(localJ))];
   na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
