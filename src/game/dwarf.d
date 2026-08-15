@@ -103,7 +103,6 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.nameLabel != size_t.max) { app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]); }
     if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;
     app.poseEntity(app.world.dwarves, d, e);
-    if(auto s = d.uid in app.world.dwarves.skel) app.animateAsset(*s, dt);
   }
 
   foreach(mesh; app.world.dwarves.meshes) mesh.syncInstances();

@@ -46,7 +46,7 @@ void main() {
   gl_PointSize = 2.0f;
 
   fragColor = INSTANCED ? (inColor * instanceColor) : inColor;
-  fragColor = ANIMATED ? vec4(0,1,0,1) : vec4(1,0,0,1);
+
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
   uint meshID = meshdef[0];
   if(meshdef[0] != meshdef[1]) {

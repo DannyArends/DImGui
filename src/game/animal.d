@@ -74,7 +74,6 @@ void animalFrame(ref GameApp app, Animals herd, float dt) {
   foreach(ref a; herd.animals) {
     if(app.world.chunkCoord(a.tile) !in app.world.chunks) continue;
     app.poseEntity(herd, a, entityTable[a.type]);
-    if(auto s = a.uid in herd.skel) app.animateAsset(*s, dt);
   }
   foreach(mesh; herd.meshes) mesh.syncInstances();
   herd.syncInstances();

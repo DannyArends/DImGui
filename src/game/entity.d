@@ -215,6 +215,7 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
   foreach(k; 0 .. r.length) slot[k] = cast(int)(app.bones[format("%s%d", pfx, k)].index - s.boneBase);
   dw.boneSlot[uid] = slot;
   dw.skel[uid] = s;
+  s.onFrame = (float dt){ app.animateAsset(s, dt); };
   app.objects ~= s;
   app.updateMeshInfo();                            // stamp s.instances[0].meshdef[3] now so poseEntity's region is valid this frame
 }
@@ -223,7 +224,7 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
 void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable EntityT e) {
   app.buildSkeleton(dw, d.uid, e);
   auto s = dw.skel[d.uid];
-  s.states[0].animation = 1;   // TEMP: force walk clip regardless of movement
+  s.states[0].animation = (d.moveT < 1.0f) ? 1 : 0;
   auto ds = dw.dscale[d.uid];
   float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
   Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
