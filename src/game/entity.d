@@ -209,8 +209,9 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
   foreach(k, ref n; rig) {
     auto keys = n.symbol in tracks;
     if(!keys || (*keys).length == 0) continue;
-    const bool bySide = clip.poses[n.symbol].bySide;
-    const float side  = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
+    bool bySide = false;
+    foreach(sym, ref pb; clip.poses) if(pb.target == n.symbol) { bySide = pb.bySide; break; }
+    const float side = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
     const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
     Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
     NodeAnimation na;

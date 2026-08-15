@@ -10,7 +10,7 @@
   [LSYSTEM_GAP:0.15]
   [AXIOM:(+f-&&LB)(-f+&&LB)TWU J(+ff-&&mAN)(-ff+&&mAN)H qw lr S cC v pP K]
 
-  [CLIP:walk:la f &&l^^a f ^^l&&a f ^^l&&a f &&l^^a:moving:8:14]
+  [CLIP:walk:la f &&&l^^^a f ^^^l&&&a f ^^^l&&&a f &&&l^^^a:moving:8:14]
     [POSE:l:L:side]
     [POSE:a:A:side]
   [CLIP:idle:t f +t f -t f -t f +t::4:3.5]
