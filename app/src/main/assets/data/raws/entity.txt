@@ -10,9 +10,15 @@
   [LSYSTEM_GAP:0.15]
   [AXIOM:(+f-&&LB)(-f+&&LB)TWU J(+ff-&&mAN)(-ff+&&mAN)H qw lr S cC v pP K]
 
-  [ANIM:L:2:28:1.0:0.0:side:moving]
-  [ANIM:A:2:28:1.0:3.14159:side:moving]
-  [ANIM:T:1:3.5:0.35:0.0:_:_]
+  [CLIP:walk:la f &&l^^a f ^^l&&a f ^^l&&a f &&l^^a:moving:8:14]
+    [POSE:l:L:side]
+    [POSE:a:A:side]
+  [CLIP:idle:t f +t f -t f -t f +t::4:3.5]
+    [POSE:t:T:]
+
+  #[ANIM:L:2:28:1.0:0.0:side:moving]
+  #[ANIM:A:2:28:1.0:3.14159:side:moving]
+  #[ANIM:T:1:3.5:0.35:0.0:_:_]
 
   # --- legs / feet ---
   [BRUSH:L:Cylinder:0.20:0.15:true:saddlebrown]
