@@ -42,7 +42,6 @@ struct Dwarf {
   Job!Dwarf[] jobStack;                     /// Job stack, [0] active, rest pending
   size_t lightIndex = size_t.max;
   size_t nameLabel = size_t.max;
-  AnimationState anim;                      /// walk-cycle clock (engine type)
 
   @nogc void clearGoal() nothrow { jobStack = []; targetTile = noTile; repathAttempts = 0; state = EntityState.Idle; }
   @property bool hasJob() const { return(jobStack.length > 0); }

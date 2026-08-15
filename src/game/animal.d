@@ -36,7 +36,6 @@ struct Animal {
   Entity!4 entity;                              /// Shared pawn state
   alias entity this;
   uint type = 0;                                /// Index into entityTable
-  AnimationState anim;                      /// walk-cycle clock (engine type)
 
   Job!Animal[] jobStack;                        /// Personal jobs (graze / drink)
   @property bool hasJob() const { return jobStack.length > 0; }

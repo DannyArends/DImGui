@@ -9,10 +9,9 @@ import lsystem : buildGrammar;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack;
 import scheduler : atDestination;
-import turtlegfx : interpret;
 import bone : synthesizeBone;
 import matrix : multiply, translate, position, inverse, rotate, transpose, halfExtent, scale;
-import turtlegfx : interpretRig, globals, jointWorld, rigToNode, rigBones;
+import turtlegfx : interpretRig, jointWorld, rigToNode, rigBones;
 import animation : Animation, NodeAnimation, PositionKey, RotationKey, ScalingKey, animateAsset;
 import quaternion : toQuaternion;
 import assimp : OpenAsset;
@@ -161,9 +160,8 @@ void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
     if(!any || y < lo){ lo = y; any = true; }
   }
   dw.rig[uid] = r; dw.footY[uid] = lo;
-  float sy  = 0.90f + (hash & 255) / 255.0f * 0.22f;
-  float sxz = 0.85f + ((hash >> 8) & 255) / 255.0f * 0.35f;
-  dw.dscale[uid] = [sxz, sy, sxz];
+  float v = 1.0f + ((hash & 255) / 255.0f * 2.0f - 1.0f) * e.scaleVariance;
+  dw.dscale[uid] = [v, v, v];
 }
 
 enum uint ANIM_KEYS = 32;   /// rotation-key samples per 2*PI walk cycle

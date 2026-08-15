@@ -18,13 +18,6 @@ struct RigNode {
   char symbol;          /// brush symbol -> shared geometry
 }
 
-/** Accumulate world matrices over a parent-indexed rig; `localOf(k)` supplies node k's posed local. */
-Matrix[] globals(const RigNode[] rig, const Matrix root, scope Matrix delegate(size_t) localOf) {
-  Matrix[] g; g.length = rig.length;
-  foreach(k, ref n; rig) g[k] = (n.parent < 0 ? root : g[n.parent]).multiply(localOf(k));
-  return g;
-}
-
 /** Rigid joint frame of a rig node: normalized bind rotation, origin at the segment base (the pivot). */
 @nogc Matrix jointWorld(ref const RigNode n) nothrow {
   const Matrix M = n.inst.matrix;
