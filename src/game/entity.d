@@ -5,19 +5,13 @@
 
 import game;
 
-import animation : animateAsset;
+import assimp : buildSkinnedAsset;
 import lsystem : buildGrammar;
+import matrix : multiply, position, rotate, halfExtent, scale;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack;
 import scheduler : atDestination;
-import bone : synthesizeBone;
-import matrix : multiply, translate, position, inverse, rotate, transpose, halfExtent, scale;
-import turtlegfx : buildClips, interpretRig, jointWorld, rigToNode, rigBones, interpretAnim;
-import quaternion : toQuaternion, rotate;
-import assimp : OpenAsset;
-import bone : mergeBones;
-import node : Node;
-import mesh : updateMeshInfo;
+import turtlegfx : interpretRig;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
@@ -168,22 +162,9 @@ void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
 void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) {
   if(uid in dw.skel) return;
   dw.buildRig(uid, e);
-  const r = dw.rig[uid];
-  string pfx = format("%s%u.", e.name, uid);       // unique per pawn: no cross-pawn bone-name collision
-  auto s = new OpenAsset();
-  s.mName = format("%s:skel:%u", e.name, uid);
-  s.instancedMesh = true; s.instances = [DrawInstance()]; s.states.length = 1;
-  s.rootnode = rigToNode(r, pfx);
-  s.bones = rigBones(r, pfx);
-  s.animations = buildClips(r, pfx, e.clips);
-  app.mergeBones(s);
-  int[] slot; slot.length = r.length;
-  foreach(k; 0 .. r.length) slot[k] = cast(int)(app.bones[format("%s%d", pfx, k)].index - s.boneBase);
+  int[] slot;
+  dw.skel[uid] = app.buildSkinnedAsset(dw.rig[uid], e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), slot);
   dw.boneSlot[uid] = slot;
-  dw.skel[uid] = s;
-  if(s.animations.length) s.onFrame = (float dt){ app.animateAsset(s, dt); };   // only drive skeletons that have clips
-  app.objects ~= s;
-  app.updateMeshInfo();                            // stamp s.instances[0].meshdef[3] now so poseEntity's region is valid this frame
 }
 
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */

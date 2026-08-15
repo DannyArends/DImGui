@@ -5,15 +5,17 @@
  
 import engine;
 
-import animation : loadAnimations;
-import bone : Bone;
+import animation : loadAnimations, animateAsset;
+import bone : mergeBones;
 import boundingbox : computeBoundingBox, calculateBounds, computeScaleAdjustment;
 import matrix : toMatrix, multiply, inverse, transpose, rotate;
 import node : loadNode;
+import mesh : updateMeshInfo;
 import meta : loadMetaData;
 import io : readFile;
 import amat : loadMaterials;
 import textures : idx;
+import turtlegfx : buildClips, rigToNode, rigBones;
 import matrix : translate;
 import normals : computeNormals, computeTangents;
 import vector : x, y, z, euclidean;
@@ -35,10 +37,28 @@ class OpenAsset : Geometry {
   }
 }
 
-bool isOpenAsset(string path){
+bool isOpenAsset(string path) {
   if(extension(path) == ".obj") return(true);
   if(extension(path) == ".fbx") return(true);
   return(false);
+}
+
+/** Assemble a vertexless skinned asset from a rig + clips: node tree, bones, animations, palette region,
+ *  and the per-node local bone slot table. Registers it in app.objects and stamps its region immediately. */
+OpenAsset buildSkinnedAsset(ref App app, const RigNode[] rig, immutable AnimClip[] clips, string prefix, string name, out int[] slot) {
+  auto s = new OpenAsset();
+  s.mName = name;
+  s.instancedMesh = true; s.instances = [DrawInstance()]; s.states.length = 1;
+  s.rootnode = rigToNode(rig, prefix);
+  s.bones = rigBones(rig, prefix);
+  s.animations = buildClips(rig, prefix, clips);
+  app.mergeBones(s);
+  slot.length = rig.length;
+  foreach(k; 0 .. rig.length) slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - s.boneBase);
+  if(s.animations.length) s.onFrame = (float dt){ app.animateAsset(s, dt); };
+  app.objects ~= s;
+  app.updateMeshInfo();
+  return s;
 }
 
 /** Load an assimp asset into an existing OpenAsset instance */

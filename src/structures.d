@@ -6,7 +6,7 @@
 public import amat : AMat, TexureInfo;
 public import animation : Animation, NodeAnimation, AnimationState, PositionKey, RotationKey, ScalingKey;
 public import assimp : OpenAsset;
-public import bone : Bone;
+public import bone : Bone, BoneWeights;
 public import bounds : Bounds;
 public import boundingbox : BoundingBox;
 public import buffer : GPUAllocation;
@@ -60,7 +60,7 @@ public import sfx : Audio, WavFMT;
 public import text : WorldText;
 public import textures : Texture, Textures;
 public import timing : MS_THRESHOLD;
-public import turtlegfx : RigNode;
+public import turtlegfx : RigNode, AnimClip;
 public import torus : Torus;
 public import threading : Threading;
 public import uniforms : ParticleUniformBuffer, UBO;

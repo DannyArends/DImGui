@@ -8,7 +8,6 @@ import engine;
 import animation : calculateCurrentTick, calculateGlobalTransform;
 import assimp : name, nodeName, OpenAsset;
 import matrix : inverse, Matrix, multiply, position, toMatrix;
-import sdl : STARTUP;
 
 /** Our Bone structure matching the GPU */
 struct Bone {
@@ -25,17 +24,17 @@ alias float[uint][string] BoneWeights;
 /** loadBoneWeights - writes to asset-local bones, merged into app.bones on main thread */
 BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] globalBones, Matrix pTransform) {
   BoneWeights weights;
-  for (uint b = 0; b < mesh.mNumBones; b++) {
+  for(uint b = 0; b < mesh.mNumBones; b++) {
     auto aiBone = mesh.mBones[b];
-    if (aiBone.mNumWeights == 0) continue; // No weights, no effect, skip
+    if(aiBone.mNumWeights == 0) continue; // No weights, no effect, skip
     string name = asset.nodeName(name(aiBone.mName));
-    if (!(name in globalBones)) { // New bone, add it to the global bones
+    if(!(name in globalBones)) { // New bone, add it to the global bones
       globalBones[name] = Bone();
       globalBones[name].offset = multiply(toMatrix(aiBone.mOffsetMatrix), pTransform.inverse());
       globalBones[name].index = cast(uint)(globalBones.length-1);
     }
     //SDL_Log(cstr("%s.bone: %d -> %d", name, globalBones[name].index, aiBone.mNumWeights));
-    for (uint w = 0; w < aiBone.mNumWeights; w++) {
+    for(uint w = 0; w < aiBone.mNumWeights; w++) {
       auto aiWeight = aiBone.mWeights[w];
       weights[name][aiWeight.mVertexId] = aiWeight.mWeight;
     }
@@ -45,15 +44,14 @@ BoneWeights loadBoneWeights(OpenAsset asset, aiMesh* mesh, ref Bone[string] glob
 
 /** Synthesise one bone from a mesh's owning node for part-rigged (unskinned) meshes; -1 if not needed. */
 int synthesizeBone(ref OpenAsset asset, string ownerNode, const Matrix gTransform) {
-  if (ownerNode is null) return -1;
-  if (!(ownerNode in asset.bones))
-    asset.bones[ownerNode] = Bone(gTransform.inverse(), cast(uint)asset.bones.length);  // offset = inverse bind (verts are baked with gTransform)
+  if(ownerNode is null) return -1;
+  if(!(ownerNode in asset.bones)) { asset.bones[ownerNode] = Bone(gTransform.inverse(), cast(uint)asset.bones.length); }
   return cast(int)asset.bones[ownerNode].index;
 }
 
 /** Propagate any animation changes (made by onFrame handlers) into the per-syncIndex BoneMatrices SSBO. */
 void updateBoneOffsets(App app, uint syncIndex) {
-  foreach(ref obj; app.objects){
+  foreach(ref obj; app.objects) {
     if(obj.animations.length > 0 && obj.onFrame !is null) { app.buffers["BoneMatrices"].invalidate(syncIndex); break; }
   }
 }
