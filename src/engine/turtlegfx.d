@@ -7,8 +7,6 @@ import engine;
 
 import lsystem : turnAxis, turnAngle;
 import matrix : segmentTransform, inverse, multiply;
-import bone : Bone;
-import node : Node;
 import quaternion : angleAxis, qMul, rotate;
 import vector : vAdd;
 

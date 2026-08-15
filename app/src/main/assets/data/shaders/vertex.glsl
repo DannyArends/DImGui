@@ -24,7 +24,6 @@ layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap 
 layout(location = 10) in vec4 instanceNormal;         /// baked world normal (instanced faces)
 layout(location = 11) in vec4 instanceTangent;        /// baked world tangent + handedness
 layout(location = 12) in mat4 instance;               /// Instance matrix
-layout(location = 16) in int  inBoneOffset;           /// absolute palette slot (rigid single-bone primitives)
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;           /// Fragment world position
@@ -37,7 +36,7 @@ layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, No
 
 void main() {
   /// Compute bone effects on vertex
-  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(meshdef[3] + inBoneOffset)) : vec4(inPosition, 1.0f);
+  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(meshdef[3])) : vec4(inPosition, 1.0f);
 
   /// Compute our model matrix
   vec4 worldPos = instance * position;
@@ -47,6 +46,7 @@ void main() {
   gl_PointSize = 2.0f;
 
   fragColor = INSTANCED ? (inColor * instanceColor) : inColor;
+  fragColor = ANIMATED ? vec4(0,1,0,1) : vec4(1,0,0,1);
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
   uint meshID = meshdef[0];
   if(meshdef[0] != meshdef[1]) {

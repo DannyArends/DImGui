@@ -223,7 +223,7 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
 void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable EntityT e) {
   app.buildSkeleton(dw, d.uid, e);
   auto s = dw.skel[d.uid];
-  s.states[0].animation = (d.moveT < 1.0f) ? 1 : 0;
+  s.states[0].animation = 1;   // TEMP: force walk clip regardless of movement
   auto ds = dw.dscale[d.uid];
   float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
   Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
@@ -235,7 +235,7 @@ void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable EntityT e) {
     foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
       float[4] col = br.tint ? d.color : br.color;
       auto inst = DrawInstance(world, -1, col);
-      inst.boneOffset = region + slot[k];
+      inst.meshdef[3] = region + slot[k];
       dw.meshes[br.mesh].instances ~= inst;
       break;
     }

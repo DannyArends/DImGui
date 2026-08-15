@@ -155,7 +155,6 @@ Animals ensureAnimals(ref GameApp app) {
     auto mesh = makePrimitive(br.mesh);
     if(mesh is null) continue;
     mesh.initInstanced("Animal:" ~ br.mesh);
-    foreach(ref v; mesh.vertices) { v.bones = [0, 0, 0, 0]; v.weights = [1.0f, 0.0f, 0.0f, 0.0f]; }
     mesh.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
     herd.meshes[br.mesh] = mesh;
     app.objects ~= mesh;

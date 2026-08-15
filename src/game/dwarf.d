@@ -105,6 +105,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     app.poseEntity(app.world.dwarves, d, e);
     if(auto s = d.uid in app.world.dwarves.skel) app.animateAsset(*s, dt);
   }
+
   foreach(mesh; app.world.dwarves.meshes) mesh.syncInstances();
   app.world.dwarves.syncInstances();
   app.buffers["LightMatrices"].invalidate();
@@ -237,7 +238,6 @@ void initDwarfMeshes(ref GameApp app) {
     auto mesh = makePrimitive(br.mesh);
     if(mesh is null) continue;
     mesh.initInstanced("Dwarf:" ~ br.mesh);
-    foreach(ref v; mesh.vertices) { v.bones = [0, 0, 0, 0]; v.weights = [1.0f, 0.0f, 0.0f, 0.0f]; }
     mesh.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
     app.world.dwarves.meshes[br.mesh] = mesh;
     app.objects ~= mesh;
