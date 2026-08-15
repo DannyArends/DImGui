@@ -45,13 +45,13 @@ bool isOpenAsset(string path) {
 
 /** Assemble a vertexless skinned asset from a rig + clips: node tree, bones, animations, palette region,
  *  and the per-node local bone slot table. Registers it in app.objects and stamps its region immediately. */
-OpenAsset buildSkinnedAsset(ref App app, const RigNode[] rig, immutable AnimClip[] clips, string prefix, string name, out int[] slot) {
+OpenAsset buildSkinnedAsset(ref App app, const RigNode[] rig, immutable AnimClip[] clips, string prefix, string name, uint seed, out int[] slot) {
   auto s = new OpenAsset();
   s.mName = name;
   s.instancedMesh = true; s.instances = [DrawInstance()]; s.states.length = 1;
   s.rootnode = rigToNode(rig, prefix);
   s.bones = rigBones(rig, prefix);
-  s.animations = buildClips(rig, prefix, clips);
+  s.animations = buildClips(rig, prefix, clips, seed);
   app.mergeBones(s);
   slot.length = rig.length;
   foreach(k; 0 .. rig.length) slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - s.boneBase);

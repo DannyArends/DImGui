@@ -10,11 +10,18 @@
   [LSYSTEM_GAP:0.15]
   [AXIOM:(+f-&&LB)(-f+&&LB)TWU J(+ff-&&mAN)(-ff+&&mAN)H qw lr S cC v pP K]
 
-  [CLIP:walk:la f &&&l>>>a f ^^^l<<<a f ^^^l<<<a f &&&l>>>a:moving:8:14]
+  [CLIP:walk:la f Wa:moving:8:14]
+    [CRULE:W:&&&l>>>a f ^^^l<<<a f ^^^l<<<a f &&&l:50]
+    [CRULE:W:&&l>>>a f ^^l<<<a f ^^l<<<a f &&l:30]
+    [CRULE:W:&&&&l>>>a f ^^^^l<<<a f ^^^^l<<<a f &&&&l:20]
     [POSE:l:L:side:X]
-    [POSE:a:A:side]
-  [CLIP:idle:t f +t f -t f -t f +t::4:3.5]
-    [POSE:t:T:]
+    [POSE:a:A:side:X]
+  [CLIP:idle:Vwt::4:3.5]
+    [CRULE:V:+t f -t f -t f +t:34]
+    [CRULE:V:<u f >u f >u f <u:33]
+    [CRULE:V:+t<u f -t>u f -t<u f +t>u:33]
+    [POSE:t:T:X]
+    [POSE:u:T:Z]
 
   # --- legs / feet ---
   [BRUSH:L:Cylinder:0.20:0.15:true:saddlebrown]
@@ -26,9 +33,9 @@
   [BRUSH:U:Cube:0.10:0.07:false:goldenrod:0.0:-0.02:0.30]
 
   # --- shoulders / arms / hands ---
-  [BRUSH:m:Cube:0.22:0.09:false:tint:0.0:0.04:0.0]
+  [BRUSH:m:Cube:0.22:0.09:false:tint:0.0:-0.04:0.0]
   [BRUSH:A:Cylinder:0.16:0.14:true:tint]
-  [BRUSH:N:Cube:0.22:0.10:false:saddlebrown]
+  [BRUSH:N:Cube:0.18:0.10:false:saddlebrown]
 
   # --- head ---
   [BRUSH:H:Cube:0.52:0.30:true:burlywood]

@@ -76,47 +76,64 @@ Bone[string] rigBones(const RigNode[] rig, string prefix) {
 }
 
 /** Bake a species' authored clips into NodeAnimation tracks (raw order; index 0 = default). */
-Animation[] buildClips(const RigNode[] rig, string prefix, immutable AnimClip[] clips) {
+Animation[] buildClips(const RigNode[] rig, string prefix, immutable AnimClip[] clips, uint seed) {
   Animation[] anims;
-  foreach(ref c; clips) anims ~= clipAnimation(rig, prefix, c);
+  foreach(ref c; clips) anims ~= clipAnimation(rig, prefix, c, seed);
   return anims;
 }
 
-/** Bake one AnimClip: walk its L-system in time, then map each target symbol's cursor stream
- *  onto every rig node with that symbol (side-mirrored), producing rigid-joint rotation keys. */
-Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimClip clip) {
+/** One pose's contribution to a bone's local rotation at a key: world-axis swing (body frame) or cursor swing. */
+Matrix poseLocal(ref immutable PoseBrush pb, const float[4] quat, float side, const Matrix localJ, const Matrix Rr) {
+  if(pb.axis != [0.0f, 0.0f, 0.0f]) {
+    const float ang = quatAxisAngle(quat, pb.axis) * (pb.bySide ? side : 1.0f);
+    return rotate(angleAxis(ang, pb.axis)).multiply(localJ);
+  }
+  const float[4] q = (pb.bySide && side < 0.0f) ? [-quat[0], -quat[1], -quat[2], quat[3]] : quat;
+  return rotate(q).multiply(Rr);
+}
+
+/** Compose every axis-pose targeting a bone at one key (multi-pose bones must name an axis). */
+Matrix posesLocal(const char[] syms, ref immutable AnimClip clip, const PoseKey[][char] tracks, size_t i, float side, const Matrix localJ) {
+  Matrix rot = Matrix();
+  foreach(sym; syms) {
+    const pb = clip.poses[sym];
+    const float ang = quatAxisAngle(tracks[sym][i].quat, pb.axis) * (pb.bySide ? side : 1.0f);
+    rot = rotate(angleAxis(ang, pb.axis)).multiply(rot);
+  }
+  return rot.multiply(localJ);
+}
+
+/** Bake the keyframe track for one rig node from all clip poses that target its symbol. */
+NodeAnimation nodeAnimation(ref const RigNode n, const char[] syms, ref immutable AnimClip clip, const PoseKey[][char] tracks, const Matrix localJ) {
+  const float side = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
+  Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
+  const size_t nkeys = tracks[syms[0]].length;
+  NodeAnimation na;
+  na.positionKeys = [PositionKey(0.0, position(localJ))];
+  na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
+  na.rotationKeys.length = nkeys;
+  foreach(i; 0 .. nkeys) {
+    Matrix local = (syms.length == 1) ? poseLocal(clip.poses[syms[0]], tracks[syms[0]][i].quat, side, localJ, Rr)
+                                      : posesLocal(syms, clip, tracks, i, side, localJ);
+    na.rotationKeys[i] = RotationKey(cast(double)tracks[syms[0]][i].step, toQuaternion(local));
+  }
+  return na;
+}
+
+/** Bake one AnimClip: walk its L-system in time, then map each target symbol's key stream onto every matching rig node. */
+Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimClip clip, uint seed) {
   char[char] poses; foreach(sym, ref pb; clip.poses) poses[sym] = pb.target;
   int steps;
   TurtleConfig cfg = { yaw: clip.turn, pitch: clip.turn, roll: clip.turn };
-  auto tracks = interpretAnim(buildGrammar(0u, 1, clip.axiom, clip.rules), cfg, poses, steps);
+  auto tracks = interpretAnim(buildGrammar(seed, 1, clip.axiom, clip.rules), cfg, poses, steps);
 
   Animation a = { name: clip.name, duration: cast(double)steps, ticksPerSecond: clip.fps };
   Matrix[] J; J.length = rig.length; foreach(k, ref n; rig) J[k] = jointWorld(n);
   foreach(k, ref n; rig) {
-    auto keys = n.symbol in tracks;
-    if(!keys || (*keys).length == 0) continue;
-    PoseBrush pb;
-    foreach(sym, ref b; clip.poses) if(b.target == n.symbol) { pb = b; break; }
-    const float side = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
-    const bool worldAxis = pb.axis != [0.0f, 0.0f, 0.0f];
+    char[] syms; foreach(sym, ref b; clip.poses) if(b.target == n.symbol && sym in tracks) syms ~= sym;
+    if(syms.length == 0) continue;
     const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
-    Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
-    NodeAnimation na;
-    na.positionKeys = [PositionKey(0.0, position(localJ))];
-    na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
-    na.rotationKeys.length = (*keys).length;
-    foreach(i, ref pk; *keys) {
-      Matrix local;
-      if(worldAxis) {                                   // swing about a fixed axis in the parent (body) frame
-        const float ang = quatAxisAngle(pk.quat, pb.axis) * (pb.bySide ? side : 1.0f);
-        local = rotate(angleAxis(ang, pb.axis)).multiply(localJ);
-      } else {
-        float[4] q = (pb.bySide && side < 0.0f) ? [-pk.quat[0], -pk.quat[1], -pk.quat[2], pk.quat[3]] : pk.quat;
-        local = rotate(q).multiply(Rr);
-      }
-      na.rotationKeys[i] = RotationKey(cast(double)pk.step, toQuaternion(local));
-    }
-    a.nodeAnimations[format("%s%d", prefix, k)] = na;
+    a.nodeAnimations[format("%s%d", prefix, k)] = nodeAnimation(n, syms, clip, tracks, localJ);
   }
   return a;
 }
@@ -138,7 +155,7 @@ PoseKey[][char] interpretAnim(const(char)[] symbols, const TurtleConfig cfg, con
       default:
         const ax = turnAxis(c);
         if(ax != [0.0f, 0.0f, 0.0f]) { orient = qMul(orient, angleAxis(turnAngle(c, cfg), ax)); break; }
-        if(auto tgt = c in poses) tracks[*tgt] ~= PoseKey(t, orient);
+        if(c in poses) tracks[c] ~= PoseKey(t, orient);
       break;
     }
   }

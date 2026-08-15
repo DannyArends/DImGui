@@ -163,7 +163,8 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
   if(uid in dw.skel) return;
   dw.buildRig(uid, e);
   int[] slot;
-  dw.skel[uid] = app.buildSkinnedAsset(dw.rig[uid], e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), slot);
+  uint gait = cast(uint)(uid % 6);   // 6 shared gait personalities, stable per dwarf
+  dw.skel[uid] = app.buildSkinnedAsset(dw.rig[uid], e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), gait, slot);
   dw.boneSlot[uid] = slot;
 }
 
