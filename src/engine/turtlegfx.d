@@ -52,30 +52,26 @@ Bone[string] rigBones(const RigNode[] rig, string prefix) {
 }
 
 /** One keyframe from the time-walk: a step index and the cursor euler (degrees) recorded for a bone. */
-struct PoseKey { int step; float[3] euler; }
+struct PoseKey { int step; float[4] quat; }
 
 /** Walk an animation L-system in TIME: `f` advances a step, +/-/&/^/</> rotate the cursor,
  *  `()` branch the cursor, a pose symbol records the cursor onto its target bone symbol.
  *  Returns per-target-symbol key streams + the total step count (clip duration). */
 PoseKey[][char] interpretAnim(const(char)[] symbols, const TurtleConfig cfg, const char[char] poses, out int steps) {
   PoseKey[][char] tracks;
-  float[3] cur = [0.0f, 0.0f, 0.0f];
-  float[3][] stack;
+  float[4] orient = [0.0f, 0.0f, 0.0f, 1.0f];
+  float[4][] stack;
   int t = 0;
   foreach(c; symbols) {
     switch(c) {
-      case '(': stack ~= cur; break;
-      case ')': if(stack.length){ cur = stack[$-1]; stack = stack[0 .. $-1]; } break;
+      case '(': stack ~= orient; break;
+      case ')': if(stack.length){ orient = stack[$-1]; stack = stack[0 .. $-1]; } break;
       case 'X': break;
-      case 'f': t++; break;                                  // advance one time-step (emit a key boundary)
+      case 'f': t++; break;
       default:
         const ax = turnAxis(c);
-        if(ax != [0.0f, 0.0f, 0.0f]) {                       // rotate the pose cursor by cfg angle
-          const float a = turnAngle(c, cfg);
-          cur[0] += ax[0] * a; cur[1] += ax[1] * a; cur[2] += ax[2] * a;
-          break;
-        }
-        if(auto tgt = c in poses) tracks[*tgt] ~= PoseKey(t, cur);   // record cursor for this bone at time t
+        if(ax != [0.0f, 0.0f, 0.0f]) { orient = qMul(orient, angleAxis(turnAngle(c, cfg), ax)); break; }
+        if(auto tgt = c in poses) tracks[*tgt] ~= PoseKey(t, orient);
       break;
     }
   }

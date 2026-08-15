@@ -172,7 +172,8 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
     case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
     case "CLIP": if(p.length >= 2){       // [CLIP:name:axiom:whenMoving:fps]
       e.clips ~= AnimClip(p[1], p.length > 2 ? p[2] : "", [], (PoseBrush[char]).init,
-                          p.length > 3 && p[3] == "moving", p.length > 4 ? to!float(p[4]) : 8.0f);
+                          p.length > 3 && p[3] == "moving", p.length > 4 ? to!float(p[4]) : 8.0f,
+                          p.length > 5 ? to!float(p[5]) : 25.0f);
     } break;
     case "CRULE":            if(p.length >= 4 && e.clips.length){ e.clips[$-1].rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
     case "POSE": if(p.length >= 3 && e.clips.length){    // [POSE:sym:target:side]

@@ -13,7 +13,7 @@ import bone : synthesizeBone;
 import matrix : multiply, translate, position, inverse, rotate, transpose, halfExtent, scale;
 import turtlegfx : interpretRig, jointWorld, rigToNode, rigBones, interpretAnim;
 import animation : Animation, NodeAnimation, PositionKey, RotationKey, ScalingKey, animateAsset;
-import quaternion : toQuaternion;
+import quaternion : toQuaternion, rotate;
 import assimp : OpenAsset;
 import bone : mergeBones;
 import node : Node;
@@ -201,7 +201,8 @@ Animation rigAnimation(const RigNode[] rig, string prefix, const AnimChannel[] a
 Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimClip clip) {
   char[char] poses; foreach(sym, ref pb; clip.poses) poses[sym] = pb.target;
   int steps;
-  auto tracks = interpretAnim(buildGrammar(0u, 1, clip.axiom, clip.rules), TurtleConfig(), poses, steps);
+  TurtleConfig cfg = { yaw: clip.turn, pitch: clip.turn, roll: clip.turn };
+  auto tracks = interpretAnim(buildGrammar(0u, 1, clip.axiom, clip.rules), cfg, poses, steps);
 
   Animation a = { name: clip.name, duration: cast(double)steps, ticksPerSecond: clip.fps };
   Matrix[] J; J.length = rig.length; foreach(k, ref n; rig) J[k] = jointWorld(n);
@@ -217,8 +218,8 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
     na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
     na.rotationKeys.length = (*keys).length;
     foreach(i, ref pk; *keys) {
-      float[3] e = bySide ? [pk.euler[0]*side, pk.euler[1]*side, pk.euler[2]*side] : pk.euler;
-      na.rotationKeys[i] = RotationKey(cast(double)pk.step, toQuaternion(rotate(e).multiply(Rr)));
+      float[4] q = (bySide && side < 0.0f) ? [-pk.quat[0], -pk.quat[1], -pk.quat[2], pk.quat[3]] : pk.quat;
+      na.rotationKeys[i] = RotationKey(cast(double)pk.step, toQuaternion(rotate(q).multiply(Rr)));
     }
     a.nodeAnimations[format("%s%d", prefix, k)] = na;
   }
@@ -259,7 +260,11 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
 void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable EntityT e) {
   app.buildSkeleton(dw, d.uid, e);
   auto s = dw.skel[d.uid];
-  s.states[0].animation = (d.moveT < 1.0f) ? 1 : 0;
+  if(e.clips.length) {
+    uint pick = 0;
+    foreach(ci, ref c; e.clips) if(c.whenMoving == (d.moveT < 1.0f)) { pick = cast(uint)ci; break; }
+    s.states[0].animation = pick;
+  } else s.states[0].animation = (d.moveT < 1.0f) ? 1 : 0;
   auto ds = dw.dscale[d.uid];
   float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
   Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));

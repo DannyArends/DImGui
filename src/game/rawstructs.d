@@ -77,6 +77,7 @@ struct AnimClip {
   PoseBrush[char] poses;    /// symbol -> which bone it poses
   bool whenMoving = false;  /// select walk vs idle (same gate as the old channels)
   float fps = 8.0f;         /// steps per second (drives ticksPerSecond)
+  float turn = 25.0f;       /// degrees per turn symbol (swing amplitude granularity)
 }
 
 /** Per-drawing-symbol spec: which material/size, and whether it advances the turtle. No Geometry here — the turtle is pure. */
