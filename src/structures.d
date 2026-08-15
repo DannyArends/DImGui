@@ -4,7 +4,7 @@
  */
 
 public import amat : AMat, TexureInfo;
-public import animation : Animation, AnimationState;
+public import animation : Animation, NodeAnimation, AnimationState, PositionKey, RotationKey, ScalingKey;
 public import assimp : OpenAsset;
 public import bone : Bone;
 public import bounds : Bounds;

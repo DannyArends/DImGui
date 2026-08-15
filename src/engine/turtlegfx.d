@@ -5,9 +5,9 @@
 
 import engine;
 
-import lsystem : turnAxis, turnAngle;
-import matrix : segmentTransform, inverse, multiply;
-import quaternion : angleAxis, qMul, rotate;
+import lsystem : buildGrammar, turnAxis, turnAngle;
+import matrix : segmentTransform, position, inverse, multiply;
+import quaternion : angleAxis, qMul, rotate, toQuaternion;
 import vector : vAdd;
 
 /** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree. */
@@ -16,6 +16,29 @@ struct RigNode {
   Matrix local;         /// transform relative to parent (world == parent.world · local)
   DrawInstance inst;    /// draw instance: world matrix (bind pose) + material + color
   char symbol;          /// brush symbol -> shared geometry
+}
+
+/** One keyframe from the time-walk: a step index and the cursor euler (degrees) recorded for a bone. */
+struct PoseKey {
+  int step;
+  float[4] quat;
+}
+
+/** One animation primitive: a clip symbol that writes the pose cursor onto a target bone symbol. */
+struct PoseBrush {
+  char target;              /// brush symbol (bone) this pose writes a key to
+  bool bySide = false;      /// mirror the cursor by the bone's left/right sign
+}
+
+/** An animation as its own L-system, walked in TIME -> baked into NodeAnimation tracks. */
+struct AnimClip {
+  string name;              /// "walk", "idle", ...
+  string axiom = "";        /// clip L-system start symbols
+  Rule[] rules;             /// clip production rules
+  PoseBrush[char] poses;    /// symbol -> which bone it poses
+  bool whenMoving = false;  /// select walk vs idle
+  float fps = 8.0f;         /// steps per second (drives ticksPerSecond)
+  float turn = 25.0f;       /// degrees per turn symbol (swing amplitude)
 }
 
 /** Rigid joint frame of a rig node: normalized bind rotation, origin at the segment base (the pivot). */
@@ -51,8 +74,43 @@ Bone[string] rigBones(const RigNode[] rig, string prefix) {
   return bones;
 }
 
-/** One keyframe from the time-walk: a step index and the cursor euler (degrees) recorded for a bone. */
-struct PoseKey { int step; float[4] quat; }
+/** Bake a species' authored clips into NodeAnimation tracks (raw order; index 0 = default). */
+Animation[] buildClips(const RigNode[] rig, string prefix, immutable AnimClip[] clips) {
+  Animation[] anims;
+  foreach(ref c; clips) anims ~= clipAnimation(rig, prefix, c);
+  return anims;
+}
+
+/** Bake one AnimClip: walk its L-system in time, then map each target symbol's cursor stream
+ *  onto every rig node with that symbol (side-mirrored), producing rigid-joint rotation keys. */
+Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimClip clip) {
+  char[char] poses; foreach(sym, ref pb; clip.poses) poses[sym] = pb.target;
+  int steps;
+  TurtleConfig cfg = { yaw: clip.turn, pitch: clip.turn, roll: clip.turn };
+  auto tracks = interpretAnim(buildGrammar(0u, 1, clip.axiom, clip.rules), cfg, poses, steps);
+
+  Animation a = { name: clip.name, duration: cast(double)steps, ticksPerSecond: clip.fps };
+  Matrix[] J; J.length = rig.length; foreach(k, ref n; rig) J[k] = jointWorld(n);
+  foreach(k, ref n; rig) {
+    auto keys = n.symbol in tracks;
+    if(!keys || (*keys).length == 0) continue;
+    bool bySide = false;
+    foreach(sym, ref pb; clip.poses) if(pb.target == n.symbol) { bySide = pb.bySide; break; }
+    const float side = n.inst.matrix[12] < 0.0f ? -1.0f : 1.0f;
+    const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
+    Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
+    NodeAnimation na;
+    na.positionKeys = [PositionKey(0.0, position(localJ))];
+    na.scalingKeys  = [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])];
+    na.rotationKeys.length = (*keys).length;
+    foreach(i, ref pk; *keys) {
+      float[4] q = (bySide && side < 0.0f) ? [-pk.quat[0], -pk.quat[1], -pk.quat[2], pk.quat[3]] : pk.quat;
+      na.rotationKeys[i] = RotationKey(cast(double)pk.step, toQuaternion(rotate(q).multiply(Rr)));
+    }
+    a.nodeAnimations[format("%s%d", prefix, k)] = na;
+  }
+  return a;
+}
 
 /** Walk an animation L-system in TIME: `f` advances a step, +/-/&/^/</> rotate the cursor,
  *  `()` branch the cursor, a pose symbol records the cursor onto its target bone symbol.

@@ -9,6 +9,7 @@ import phobos;
 import color : Colors;
 import ctfe : composedEnum, enumFromTag, EnumRule;
 import lsystem : Rule;
+public import turtlegfx : AnimClip, PoseBrush;
 
 enum WorkshopUse : ubyte { None, Required, Preferred }
 
@@ -48,24 +49,6 @@ struct EntityT {
   float lsystemPitch = 25.0f;                     /// Pitch
   float lsystemRoll = 25.0f;                      /// Roll
   float lsystemGap = 0.2f;                        /// f translation step (no draw)
-}
-
-/** One animation primitive: a clip symbol that writes the pose cursor onto a target bone symbol. */
-struct PoseBrush {
-  char target;              /// brush symbol (bone) this pose writes a key to
-  bool bySide = false;      /// mirror the cursor euler by the bone's left/right sign
-}
-
-/** An animation as its own L-system, walked in TIME: `f` advances a step, turns rotate the cursor,
- *  a pose symbol emits a rotation key for its target bone. Baked into NodeAnimation tracks. */
-struct AnimClip {
-  string name;              /// "walk", "idle", ...
-  string axiom = "";        /// clip L-system start symbols
-  Rule[] rules;             /// clip production rules
-  PoseBrush[char] poses;    /// symbol -> which bone it poses
-  bool whenMoving = false;  /// select walk vs idle (same gate as the old channels)
-  float fps = 8.0f;         /// steps per second (drives ticksPerSecond)
-  float turn = 25.0f;       /// degrees per turn symbol (swing amplitude granularity)
 }
 
 /** Per-drawing-symbol spec: which material/size, and whether it advances the turtle. No Geometry here — the turtle is pure. */
