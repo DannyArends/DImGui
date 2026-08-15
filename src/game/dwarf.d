@@ -238,6 +238,7 @@ void initDwarfMeshes(ref GameApp app) {
     if(mesh is null) continue;
     mesh.initInstanced("Dwarf:" ~ br.mesh);
     mesh.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
+    mesh.movable = true;
     app.world.dwarves.meshes[br.mesh] = mesh;
     app.objects ~= mesh;
   }

@@ -155,6 +155,7 @@ Animals ensureAnimals(ref GameApp app) {
     if(mesh is null) continue;
     mesh.initInstanced("Animal:" ~ br.mesh);
     mesh.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
+    mesh.movable = true;
     herd.meshes[br.mesh] = mesh;
     app.objects ~= mesh;
   }

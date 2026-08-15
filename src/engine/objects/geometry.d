@@ -58,11 +58,12 @@ class Geometry {
   bool deAllocate = false;                          /// Boolean flag
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
-
+  bool movable = false;                             /// re-emitted every frame (dynamic shadow caster) despite no onFrame
+  
   @property @nogc bool inFrustum() nothrow const { return(box is null || box.visible); }
   @property @nogc bool isSDF() nothrow const { return(mName == "Text"); }
   @property bool isAnimated() nothrow { return(animations.length > 0); }
-  @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null; }
+  @property @nogc bool isStatic() nothrow const { return onFrame is null && onTick is null && !movable; }
   @property @nogc bool isBuffered() nothrow const { return(!vertices.needsBuffer && !indices.needsBuffer && !instances.needsBuffer); }
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
