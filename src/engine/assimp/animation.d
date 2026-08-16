@@ -61,6 +61,7 @@ void animateAsset(T)(ref App app, T obj, float dt) {
     double cT = calculateCurrentTick(st.animTime, obj.animations[st.animation].ticksPerSecond, obj.animations[st.animation].duration);
     app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT, st.animation, cast(uint)obj.instances[i].meshdef[3]);
   }
+  app.buffers["BoneMatrices"].invalidate();
 }
 
 /** Skinned-model driver: sample keyframes, accumulate parent·local, write the animated bone palette. */

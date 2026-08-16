@@ -49,13 +49,6 @@ int synthesizeBone(ref OpenAsset asset, string ownerNode, const Matrix gTransfor
   return cast(int)asset.bones[ownerNode].index;
 }
 
-/** Propagate any animation changes (made by onFrame handlers) into the per-syncIndex BoneMatrices SSBO. */
-void updateBoneOffsets(App app, uint syncIndex) {
-  foreach(ref obj; app.objects) {
-    if(obj.animations.length > 0 && obj.onFrame !is null) { app.buffers["BoneMatrices"].invalidate(syncIndex); break; }
-  }
-}
-
 void mergeBones(ref App app, ref OpenAsset obj) {
   obj.boneBase = cast(uint)app.bones.length;
   uint[uint] indexMap;

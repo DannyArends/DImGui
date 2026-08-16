@@ -5,7 +5,6 @@
 
 import engine;
 
-import bone : updateBoneOffsets;
 import descriptorupdate : repointDirtyDescriptors;
 import commands : recordSceneCommandBuffer, recordPostCommandBuffer, recordDepthPrePass, recordUploadPass;
 import compute : recordComputeCommandBuffer, ComputeStage, passEnabled, isStage;
@@ -54,7 +53,6 @@ void renderFrame(ref App app, double dt) {
   app.timed!updateTracks();                         /// Check for sound effects that have finished
   app.timed!updateTextures();                       /// If a texture was loaded, update it
   app.timed!updateMeshInfo();                       /// Check for Mesh Information change
-  app.timed!updateBoneOffsets(app.syncIndex);       /// Check for animation causing BoneOffsets changes
   app.timed!updateDisco(dt);                        /// Update when disco mode 🕺 🪩 💃
   app.timed!computeActiveLighting();                /// Compute active lighting
   app.timed!updateWorldTextBillboards();            /// Face billboarded world text toward the camera
