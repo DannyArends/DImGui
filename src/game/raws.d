@@ -96,8 +96,28 @@ ItemTemplateT[] parseItemTemplates(string raw) pure { return parseRawsGeneric!(I
   }
 })(raw, true); }
 
+/** Parse a grammar token (AXIOM/RULE/LSYSTEM_*) shared by every raw template. Returns true if handled. */
+bool parseGrammarToken(ref string axiom, ref Rule[] rules,
+                       ref float yaw, ref float pitch, ref float roll, const string[] p) pure {
+  switch(p[0]) {
+    case "AXIOM":         axiom = p[1]; return true;
+    case "LSYSTEM_ANGLE": yaw = pitch = roll = to!float(p[1]); return true;
+    case "LSYSTEM_YAW":   yaw   = to!float(p[1]); return true;
+    case "LSYSTEM_PITCH": pitch = to!float(p[1]); return true;
+    case "LSYSTEM_ROLL":  roll  = to!float(p[1]); return true;
+    case "RULE": if(p.length >= 4){
+      int gmin = 0, gmax = int.max;
+      if(p.length > 4 && p[4].length){ gmin = (p[4] == "@") ? GEN_END : to!int(p[4]); }
+      if(p.length > 5 && p[5].length){ gmax = (p[5] == "@") ? GEN_END : to!int(p[5]); }
+      rules ~= Rule(p[1][0], p[2], to!uint(p[3]), gmin, gmax);
+    } return true;
+    default: return false;
+  }
+}
+
 /** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
 FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "FEATURE", (ref ft, p) {
+  if(parseGrammarToken(ft.axiom, ft.rules, ft.lsystemYaw, ft.lsystemPitch, ft.lsystemRoll, p)) return;
   switch(p[0]) {
     case "SPAWN_ON":         ft.spawnOn ~= p[1]; break;
     case "NOISE_THRESHOLD":  ft.noiseThreshold = to!float(p[1]); break;
@@ -112,31 +132,20 @@ FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "
     case "INTERACTION":      ft.interaction = p[1]; break;
     case "SOUND":            ft.sound = p[1]; break;
     // Lsystem
-    case "LSYSTEM_ANGLE":    ft.lsystemYaw = ft.lsystemPitch = ft.lsystemRoll = to!float(p[1]); break;
-    case "LSYSTEM_YAW":      ft.lsystemYaw   = to!float(p[1]); break;
-    case "LSYSTEM_PITCH":    ft.lsystemPitch = to!float(p[1]); break;
-    case "LSYSTEM_ROLL":     ft.lsystemRoll  = to!float(p[1]); break;
-    case "AXIOM":            ft.axiom = p[1]; break;
-    case "BRUSH": if(p.length >= 8){
+    case "BRUSH": if(p.length >= 8) {
       ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3].to!Substance, p[4],
         to!float(p[5]), to!float(p[6]), to!bool(p[7]),
         p.length > 8 ? to!float(p[8]) : 0.0f,
         p.length > 9 ? to!bool(p[9]) : true,
         p.length > 10 ? to!float(p[10]) : 1.0f);
     } break;
-    case "RULE": if(p.length >= 4){
-      int gmin = 0, gmax = int.max;
-      if(p.length > 4 && p[4].length){ gmin = (p[4] == "@") ? GEN_END : to!int(p[4]); }
-      if(p.length > 5 && p[5].length){ gmax = (p[5] == "@") ? GEN_END : to!int(p[5]); }
-      ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3]), gmin, gmax);
-    } break;
-    // Current part
     default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
   }
 })(raw); }
 
 /** CTFE: parse [ENTITY] blocks into per-species EntityT. Entity brushes carry no substance (0). */
 EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "ENTITY", (ref e, p) {
+  if(parseGrammarToken(e.axiom, e.rules, e.lsystemYaw, e.lsystemPitch, e.lsystemRoll, p)) return;
   switch(p[0]) {
     case "MOVE_SPEED":       e.moveSpeed = to!float(p[1]); break;
     case "SPAWN_ON":         e.spawnOn ~= p[1].to!ResourceType; break;
@@ -154,10 +163,6 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
     case "FACING":           e.facing = to!float(p[1]); break;
     case "LSYSTEM_ANGLE":    e.lsystemYaw = e.lsystemPitch = e.lsystemRoll = to!float(p[1]); break;
     case "LSYSTEM_GAP":      e.lsystemGap = to!float(p[1]); break;
-    case "LSYSTEM_YAW":      e.lsystemYaw   = to!float(p[1]); break;
-    case "LSYSTEM_PITCH":    e.lsystemPitch = to!float(p[1]); break;
-    case "LSYSTEM_ROLL":     e.lsystemRoll  = to!float(p[1]); break;
-    case "AXIOM":            e.axiom = p[1]; break;
     case "LSYSTEM_ITER":     e.lsystemIter = to!uint(p[1]); break;
     case "BRUSH": if(p.length >= 6){
       immutable bool tnt = p.length > 6 && p[6] == "tint";
@@ -168,12 +173,6 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
       immutable float dep = p.length > 10 ? to!float(p[10]) : -1.0f;   // -1 -> square section
       e.brushes ~= LSystemBrushT(p[1][0], p[2], Substance.init, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]),
                                  0.0f, true, 1.0f, off, col, tnt, dep);
-    } break;
-    case "RULE": if(p.length >= 4){
-      int gmin = 0, gmax = int.max;
-      if(p.length > 4 && p[4].length){ gmin = (p[4] == "@") ? GEN_END : to!int(p[4]); }
-      if(p.length > 5 && p[5].length){ gmax = (p[5] == "@") ? GEN_END : to!int(p[5]); }
-      e.rules ~= Rule(p[1][0], p[2], to!uint(p[3]), gmin, gmax);
     } break;
     case "CLIP": if(p.length >= 2){       // [CLIP:name:axiom:whenMoving:fps]
       e.clips ~= AnimClip(p[1], p.length > 2 ? p[2] : "", [], (Symbol[char]).init,
