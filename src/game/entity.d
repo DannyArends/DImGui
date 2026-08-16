@@ -125,13 +125,13 @@ struct Entity(uint N) {
 /** True while the entity is en route: following a goal path or wandering. */
 @nogc bool isMoving(EntityState s) pure nothrow { return s == EntityState.Moving || s == EntityState.Wandering; }
 
-/** Advance one entity's interpolated step; flip to Working/Idle on arrival. */
-void entityMove(E)(ref GameApp app, ref E entity, float dt, float speed, float hop) {
-  if(!entity.state.isMoving) return;
-  float[3] d = [entity.moveTo[0] - entity.moveFrom[0], 0.0f, entity.moveTo[2] - entity.moveFrom[2]];
-  if(d[0] * d[0] + d[2] * d[2] > 1e-6f) { entity.heading = atan2(d[0], -d[2]) * (180.0f / PI); }
-  if(app.stepMove(entity, dt, speed, hop)) {
-    entity.state = entity.hasJob ? EntityState.Working : EntityState.Idle;
+/** Advance one pawn's interpolated step; flip to Working/Idle on arrival. */
+void entityMove(Pawn)(ref GameApp app, ref Pawn pawn, float dt, float speed, float hop) {
+  if(!pawn.state.isMoving) return;
+  float[3] d = [pawn.moveTo[0] - pawn.moveFrom[0], 0.0f, pawn.moveTo[2] - pawn.moveFrom[2]];
+  if(d[0] * d[0] + d[2] * d[2] > 1e-6f) { pawn.heading = atan2(d[0], -d[2]) * (180.0f / PI); }
+  if(app.stepMove(pawn, dt, speed, hop)) {
+    pawn.state = pawn.hasJob ? EntityState.Working : EntityState.Idle;
   }
 }
 
@@ -142,71 +142,71 @@ ref immutable(RawT) entityFor(string name) {
 }
 
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */
-void poseEntity(E, P)(ref GameApp app, E entity, ref P d, ref immutable RawT e, float dt) {
-  app.buildSkeleton(entity, d.uid, e);
-  auto s = &entity.skel[d.uid];                 // pointer: mutate state & read all per-uid data via one lookup
+void poseEntity(Container, Pawn)(ref GameApp app, Container container, ref Pawn pawn, ref immutable RawT e, float dt) {
+  app.buildSkeleton(container, pawn.uid, e);
+  auto s = &container.skel[pawn.uid];                 // pointer: mutate state & read all per-uid data via one lookup
   uint pick = 0;
-  foreach(ci, ref c; e.clips) if(c.whenMoving == (d.moveT < 1.0f)) { pick = cast(uint)ci; break; }
+  foreach(ci, ref c; e.clips) if(c.whenMoving == (pawn.moveT < 1.0f)) { pick = cast(uint)ci; break; }
   s.state.animation = pick;
   app.animateSkeleton(*s, dt);
   auto ds = s.dscale;
   float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
-  Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
-  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - s.footY * sc[1] + e.offsetY, d.visualPos[2]]);
+  Matrix world = rotate(Matrix.init, [pawn.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
+  position(world, [pawn.visualPos[0], pawn.visualPos[1] - 0.5f - s.footY * sc[1] + e.offsetY, pawn.visualPos[2]]);
   const int region = s.region;
   foreach(k, ref n; s.rig) {
     foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
-      float[4] col = br.tint ? d.color : br.color;
+      float[4] col = br.tint ? pawn.color : br.color;
       auto inst = DrawInstance(world, -1, col);
       inst.meshdef[3] = region + s.boneSlot[k];
-      entity.meshes[br.mesh].instances ~= inst;
+      container.meshes[br.mesh].instances ~= inst;
       break;
     }
   }
 }
 
 /** A single dwarf being ticked */
-void tickEntity(E)(ref GameApp app, ref E entity) {
-  foreach(n; 0 .. entity.needs.length){ entity.needs[n] = min(1.0f, entity.needs[n] + decay[n]); }
-  foreach(n; 0 .. entity.needBackoff.length) { if(entity.needBackoff[n] > 0) { entity.needBackoff[n]--; } }
-  if(entity.isFalling) return;
+void tickEntity(Pawn)(ref GameApp app, ref Pawn pawn) {
+  foreach(n; 0 .. pawn.needs.length){ pawn.needs[n] = min(1.0f, pawn.needs[n] + decay[n]); }
+  foreach(n; 0 .. pawn.needBackoff.length) { if(pawn.needBackoff[n] > 0) { pawn.needBackoff[n]--; } }
+  if(pawn.isFalling) return;
 
   // Drop a job the moment it becomes invalid, in any state
-  if(entity.hasJob && entity.currentJob.isValid !is null && !entity.currentJob.isValid(app, entity.currentJob)) {
-    entity.currentJob.onFail(app, entity);
+  if(pawn.hasJob && pawn.currentJob.isValid !is null && !pawn.currentJob.isValid(app, pawn.currentJob)) {
+    pawn.currentJob.onFail(app, pawn);
   }
 
-  final switch(entity.state) {
+  final switch(pawn.state) {
     case EntityState.Idle:
-      if(entity.tickNeeds(app)) break;
-      entity.whenIdle(app);
+      if(pawn.tickNeeds(app)) break;
+      pawn.whenIdle(app);
       break;
     case EntityState.WaitingForPath: break;
     case EntityState.Moving:
     case EntityState.Wandering:
-      entity.onWork(app);
-      if(entity.moveT >= 1.0f && entity.path.length > 0) app.followPath(entity);
+      pawn.onWork(app);
+      if(pawn.moveT >= 1.0f && pawn.path.length > 0) app.followPath(pawn);
       break;
     case EntityState.Working:
-      if(!entity.hasJob) { entity.state = EntityState.Idle; break; }
-      if(app.atDestination(entity, entity.currentJob.targetTile, entity.currentJob.reach)) {
-        entity.blockedSince = 0;
-        entity.repathAttempts = 0;
-        entity.currentJob.onArrive(app, entity);
+      if(!pawn.hasJob) { pawn.state = EntityState.Idle; break; }
+      if(app.atDestination(pawn, pawn.currentJob.targetTile, pawn.currentJob.reach)) {
+        pawn.blockedSince = 0;
+        pawn.repathAttempts = 0;
+        pawn.currentJob.onArrive(app, pawn);
       } else {
-        if(!entity.lastPathPartial && ++entity.repathAttempts > 3) { 
-          entity.onStuck(app);
-          entity.currentJob.onFail(app, entity);
+        if(!pawn.lastPathPartial && ++pawn.repathAttempts > 3) { 
+          pawn.onStuck(app);
+          pawn.currentJob.onFail(app, pawn);
           break;
         }
-        final switch(app.repathTo(entity, entity.currentJob.targetTile, entity.currentJob.reach, (PathResult r){ entity.onPathResult(app, r); })) {
-          case RepathResult.Unreachable: entity.state = EntityState.WaitingForPath; entity.currentJob.onFail(app, entity); break;
-          case RepathResult.AtTarget: entity.state = EntityState.Working; break;
-          case RepathResult.Pathing: entity.state = EntityState.WaitingForPath; break;
+        final switch(app.repathTo(pawn, pawn.currentJob.targetTile, pawn.currentJob.reach, (PathResult r){ pawn.onPathResult(app, r); })) {
+          case RepathResult.Unreachable: pawn.state = EntityState.WaitingForPath; pawn.currentJob.onFail(app, pawn); break;
+          case RepathResult.AtTarget: pawn.state = EntityState.Working; break;
+          case RepathResult.Pathing: pawn.state = EntityState.WaitingForPath; break;
         }
       }
       break;
-    case EntityState.Blocked: entity.onBlocked(app); break;
+    case EntityState.Blocked: pawn.onBlocked(app); break;
   }
 }
 

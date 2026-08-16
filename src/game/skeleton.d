@@ -59,8 +59,8 @@ void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, 
 }
 
 /** Build (once) the procedural skeleton for an entity uid: seed the grammar by uid so each entity differs. */
-void buildSkeleton(E)(ref GameApp app, E entity, uint uid, ref immutable RawT e) {
-  if(uid in entity.skel) return;
+void buildSkeleton(Container)(ref GameApp app, Container container, uint uid, ref immutable RawT e) {
+  if(uid in container.skel) return;
   Skeleton sk;
   auto cfg = rawConfig(e);
   uint hash = uid * 2654435761u;
@@ -70,7 +70,7 @@ void buildSkeleton(E)(ref GameApp app, E entity, uint uid, ref immutable RawT e)
   immutable v = 1.0f + ((hash & 255) / 255.0f * 2.0f - 1.0f) * e.scaleVariance;
   sk.dscale = [v, v, v];
   app.bakeSkeleton(sk, e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), hash);
-  entity.skel[uid] = sk;
+  container.skel[uid] = sk;
   app.updateSkeletons();
 }
 
@@ -85,8 +85,8 @@ void animateSkeleton(ref GameApp app, ref Skeleton s, float dt) {
 
 /** Tear down a pawn's skeleton: drop the sole reference (its palette region reclaims next updateSkeletons)
     and queue any GPU buffers for deletion. (app.bones stays append-only for now.) */
-void freeSkeleton(E)(ref GameApp app, E entity, uint uid) {
-  if(uid !in entity.skel) return;
-  foreach(name; entity.skel[uid].bones.keys) app.bones.remove(name);
-  entity.skel.remove(uid);
+void freeSkeleton(Container)(ref GameApp app, Container container, uint uid) {
+  if(uid !in container.skel) return;
+  foreach(name; container.skel[uid].bones.keys) app.bones.remove(name);
+  container.skel.remove(uid);
 }
