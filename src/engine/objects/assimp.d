@@ -25,8 +25,8 @@ class OpenAsset : Geometry {
 
   /** Load an assimp asset directly into this instance (subclasses call super(path)). */
   this(const(char)* path, bool verbose = false, bool isVisible = false) {
-    loadInto(this, path, verbose, isVisible);
     instances = [DrawInstance()];
+    loadInto(this, path, verbose, isVisible);
     isOpaque = false;
     mName = typeof(this).stringof;
   }
