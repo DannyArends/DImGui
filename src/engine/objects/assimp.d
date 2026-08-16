@@ -15,7 +15,6 @@ import meta : loadMetaData;
 import io : readFile;
 import amat : loadMaterials;
 import textures : idx;
-import turtlegfx : buildClips, rigToNode, rigBones;
 import matrix : translate;
 import normals : computeNormals, computeTangents;
 import vector : x, y, z, euclidean;
@@ -23,16 +22,13 @@ import vector : x, y, z, euclidean;
 /** OpenAsset using assimp */
 class OpenAsset : Geometry {
   Bone[string] bones;   /// Local bone map, merged into app.bones on main thread
-  this() {
-    instances = [DrawInstance()];
-    isOpaque = false;
-    mName = typeof(this).stringof;
-  }
 
   /** Load an assimp asset directly into this instance (subclasses call super(path)). */
   this(const(char)* path, bool verbose = false, bool isVisible = false) {
-    this();
     loadInto(this, path, verbose, isVisible);
+    instances = [DrawInstance()];
+    isOpaque = false;
+    mName = typeof(this).stringof;
   }
 }
 
@@ -40,23 +36,6 @@ bool isOpenAsset(string path) {
   if(extension(path) == ".obj") return(true);
   if(extension(path) == ".fbx") return(true);
   return(false);
-}
-
-/** Assemble a vertexless skinned asset from a rig + clips: node tree, bones, animations, palette region,
- *  and the per-node local bone slot table. Registers it in app.objects and stamps its region immediately. */
-OpenAsset buildSkinnedAsset(ref App app, const RigNode[] rig, immutable AnimClip[] clips, string prefix, string name, uint seed, out int[] slot) {
-  auto s = new OpenAsset();
-  s.mName = name;
-  s.instancedMesh = true; s.instances = [DrawInstance()]; s.states.length = 1;
-  s.rootnode = rigToNode(rig, prefix);
-  s.bones = rigBones(rig, prefix);
-  s.animations = buildClips(rig, prefix, clips, seed);
-  app.mergeBones(s);
-  slot.length = rig.length;
-  foreach(k; 0 .. rig.length) {
-    slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - s.boneBase);
-  }
-  return s;
 }
 
 /** Load an assimp asset into an existing OpenAsset instance */
@@ -104,7 +83,7 @@ void loadInto(OpenAsset object, const(char)* path, bool verbose = false, bool is
 
 /** Load an OpenAsset */
 OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible = false) {
-  OpenAsset object = new OpenAsset();
+  OpenAsset object = new OpenAsset(path, verbose, isVisible);
   loadInto(object, path, verbose, isVisible);
   return object;
 }

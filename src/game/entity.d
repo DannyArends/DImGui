@@ -5,15 +5,15 @@
 
 import game;
 
-import animation : animateAsset;
-import assimp : buildSkinnedAsset;
+import animation : animateAsset, calculateCurrentTick, calculateGlobalTransform;
+import bone : mergeBones;
 import geometry : cleanup;
 import lsystem : grammar;
 import matrix : multiply, position, rotate, halfExtent, scale;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack, rawConfig;
 import scheduler : atDestination;
-import turtlegfx : interpretRig;
+import turtlegfx : interpretRig, buildClips, rigToNode, rigBones;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
@@ -152,9 +152,9 @@ void updateSkeletons(ref GameApp app) {
     if(o.boneCount == 0) continue;
     foreach(ref inst; o.instances) { inst.meshdef[3] = cast(int)top; top += o.boneCount; }
   }
-  void assign(E)(E entity) { // dynamic per-pawn skeletons owned by the containers
+  void assign(E)(E entity) {
     if(entity is null) return;
-    foreach(uid, s; entity.skel) { s.instances[0].meshdef[3] = cast(int)top; top += s.boneCount; }
+    foreach(uid, ref s; entity.skel) { s.region = cast(int)top; top += s.boneCount; }   // ref: mutate in place
   }
   assign(app.world.dwarves);
   assign(app.world.animals);
@@ -162,6 +162,17 @@ void updateSkeletons(ref GameApp app) {
     if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
     while(app.boneOffsets.length < top) app.boneOffsets.length *= 2;
   }
+}
+
+/** Fill a Skeleton's node/bone/animation data from its rig; assigns the local palette slots. */
+void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, string prefix, string name, uint seed) {
+  sk.name = name;
+  sk.rootnode = rigToNode(sk.rig, prefix);
+  sk.bones = rigBones(sk.rig, prefix);
+  sk.animations = buildClips(sk.rig, prefix, clips, seed);
+  app.mergeBones(sk);
+  sk.boneSlot.length = sk.rig.length;
+  foreach(k; 0 .. sk.rig.length) sk.boneSlot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - sk.boneBase);
 }
 
 /** Build (once) the procedural skeleton for an entity uid: seed the grammar by uid so each entity differs. */
@@ -175,9 +186,18 @@ void buildSkeleton(E)(ref GameApp app, E entity, uint uid, ref immutable RawT e)
   foreach(ref n; sk.rig) { immutable y = n.inst.matrix[13] - n.inst.matrix.halfExtent[1]; if(!any || y < sk.footY) { sk.footY = y; any = true; } }
   immutable v = 1.0f + ((hash & 255) / 255.0f * 2.0f - 1.0f) * e.scaleVariance;
   sk.dscale = [v, v, v];
-  app.bakeSkeleton(sk, e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), hash);  // fills rootnode/bones/animations/boneBase/boneCount/boneSlot/name
+  app.bakeSkeleton(sk, e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), hash);
   entity.skel[uid] = sk;
   app.updateSkeletons();
+}
+
+/** Advance and evaluate a skeleton's current clip into its palette region. */
+void animateSkeleton(ref GameApp app, ref Skeleton s, float dt) {
+  if(dt == 0.0f) return;
+  s.state.animTime += dt;
+  immutable cT = calculateCurrentTick(s.state.animTime, s.animations[s.state.animation].ticksPerSecond, s.animations[s.state.animation].duration);
+  app.calculateGlobalTransform(s, s.rootnode, Matrix(), cT, s.state.animation, cast(uint)s.region);
+  app.buffers["BoneMatrices"].invalidate();
 }
 
 /** Tear down a pawn's skeleton: drop the sole reference (its palette region reclaims next updateSkeletons)
@@ -191,23 +211,21 @@ void freeSkeleton(E)(ref GameApp app, E entity, uint uid) {
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */
 void poseEntity(E, P)(ref GameApp app, E entity, ref P d, ref immutable RawT e, float dt) {
   app.buildSkeleton(entity, d.uid, e);
-  auto s = entity.skel[d.uid];
+  auto s = &entity.skel[d.uid];                 // pointer: mutate state & read all per-uid data via one lookup
   uint pick = 0;
   foreach(ci, ref c; e.clips) if(c.whenMoving == (d.moveT < 1.0f)) { pick = cast(uint)ci; break; }
-  s.states[0].animation = pick;
-  app.animateAsset(s, dt);                        // eval clip `pick` into boneOffsets[region..] this frame
-  auto ds = entity.dscale[d.uid];
+  s.state.animation = pick;
+  app.animateSkeleton(*s, dt);
+  auto ds = s.dscale;
   float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
   Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
-  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - entity.footY[d.uid] * sc[1] + e.offsetY, d.visualPos[2]]);
-  const int region = s.instances[0].meshdef[3];
-  auto slot = entity.boneSlot[d.uid];
-  const r = entity.rig[d.uid];
-  foreach(k, ref n; r) {
+  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - s.footY * sc[1] + e.offsetY, d.visualPos[2]]);
+  const int region = s.region;
+  foreach(k, ref n; s.rig) {
     foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
       float[4] col = br.tint ? d.color : br.color;
       auto inst = DrawInstance(world, -1, col);
-      inst.meshdef[3] = region + slot[k];
+      inst.meshdef[3] = region + s.boneSlot[k];
       entity.meshes[br.mesh].instances ~= inst;
       break;
     }

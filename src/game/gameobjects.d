@@ -24,7 +24,7 @@ struct Skeleton {
 }
 
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
-class Dwarves : OpenAsset {
+class Dwarves : Geometry {
   Dwarf[] dwarves;
   alias dwarves this;
   int selected = -1;
@@ -41,7 +41,7 @@ class Dwarves : OpenAsset {
 }
 
 /** Data-driven foraging animals, rendered as instanced tori */
-class Animals : OpenAsset {
+class Animals : Geometry {
   Animal[] animals;
   alias animals this;
   int selected = -1;

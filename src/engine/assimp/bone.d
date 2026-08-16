@@ -49,21 +49,19 @@ int synthesizeBone(ref OpenAsset asset, string ownerNode, const Matrix gTransfor
   return cast(int)asset.bones[ownerNode].index;
 }
 
-void mergeBones(ref App app, ref OpenAsset obj) {
+void mergeBones(T)(ref App app, ref T obj) {
   obj.boneBase = cast(uint)app.bones.length;
   uint[uint] indexMap;
   foreach(boneName, ref bone; obj.bones) {
     if(!(boneName in app.bones)) {
       uint newIndex = cast(uint)app.bones.length;
-      indexMap[bone.index] = newIndex;
-      bone.index = newIndex;
-      app.bones[boneName] = bone;
+      indexMap[bone.index] = newIndex; bone.index = newIndex; app.bones[boneName] = bone;
     } else { indexMap[bone.index] = app.bones[boneName].index; }
   }
   obj.boneCount = cast(uint)app.bones.length - obj.boneBase;
-  foreach(ref v; obj.vertices) {
-    for(uint i = 0; i < v.bones.length; i++) {
-      if(v.bones[i] in indexMap){ v.bones[i] = indexMap[v.bones[i]] - obj.boneBase; }
-    }
+  static if(__traits(hasMember, T, "vertices")) {   // skinned FBX remap; skeletons are vertexless
+    foreach(ref v; obj.vertices) { for(uint i = 0; i < v.bones.length; i++) {
+      if(v.bones[i] in indexMap) { v.bones[i] = indexMap[v.bones[i]] - obj.boneBase; }
+    } }
   }
 }
