@@ -17,6 +17,23 @@ struct Item {
   uint amount = 0;                             /// units of `contents` held (0 => empty; a full cup = 1)
 }
 
+/** Turtle config (angles + gap + brush->Symbol alphabet) for a raw's brushes. Vegetation brushes carry a
+    substance -> resolved to a resource variant's material + colour; pawn brushes use their literal colour.
+    renderOnly skips harvest-only brushes (features draw a subset; harvest needs every brush's position). */
+TurtleConfig rawConfig(ref const RawT r, bool renderOnly = false) {
+  TurtleConfig cfg = { yaw: r.lsystemYaw, pitch: r.lsystemPitch, roll: r.lsystemRoll, gap: r.lsystemGap };
+  foreach(ref br; r.brushes) {
+    if(renderOnly && !br.render) continue;
+    if(br.substance != Substance.init) {
+      immutable brt = variantOf(br.substance, r.name.to!Source);
+      cfg.alpha[br.symbol] = Symbol(Effect.brush, cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, br.offset);
+    } else {
+      cfg.alpha[br.symbol] = Symbol(Effect.brush, -1, br.radius, br.length, br.advance, br.color, br.offset, br.depth);
+    }
+  }
+  return cfg;
+}
+
 /** Does an item satisfy a demand: an item template (want) if set, else a material of substance cls
  *  (restricted to raw blocks when `raw`, so crafted items never fill a build/ingredient demand). */
 @nogc pure bool matchDemand(const Item it, Substance cls, ItemTemplate want, ResourceType type = ResourceType.None, bool raw = true) nothrow {

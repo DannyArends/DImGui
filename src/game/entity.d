@@ -9,7 +9,7 @@ import assimp : buildSkinnedAsset;
 import lsystem : grammar;
 import matrix : multiply, position, rotate, halfExtent, scale;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
-import resources : itemStack;
+import resources : itemStack, rawConfig;
 import scheduler : atDestination;
 import turtlegfx : interpretRig;
 
@@ -143,8 +143,7 @@ ref immutable(RawT) entityFor(string name) {
 /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
 void buildRig(C)(C dw, uint uid, ref immutable RawT e) {
   if(uid in dw.rig) return;
-  TurtleConfig cfg = { yaw: e.lsystemYaw, pitch: e.lsystemPitch, roll: e.lsystemRoll, gap: e.lsystemGap };
-  foreach(ref br; e.brushes) cfg.alpha[br.symbol] = Symbol(Effect.brush, -1, br.radius, br.length, br.advance, br.color, br.offset, br.depth);
+  auto cfg = rawConfig(e);
   uint hash = cast(uint)(uid * 2654435761u);
   auto r = interpretRig(grammar(hash, cast(int)e.lsystemIter, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
   float lo = 0.0f; bool any = false;

@@ -11,7 +11,7 @@ import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, ge
 import lsystem : grammar;
 import matrix : position, halfExtent;
 import noise : noiseHTT;
-import resources : variantOf;
+import resources : variantOf, rawConfig;
 import sfx : play;
 import timing : timed;
 import turtlegfx : interpret;
@@ -130,23 +130,12 @@ int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) 
   return best;
 }
 
-/** Turtle config for a feature: angles + brush->Symbol alphabet. renderOnly skips harvest-only brushes. */
-TurtleConfig featureConfig(ref const RawT ft, bool renderOnly) {
-  TurtleConfig cfg = { yaw: ft.lsystemYaw, pitch: ft.lsystemPitch, roll: ft.lsystemRoll };
-  foreach(ref br; ft.brushes) {
-    if(renderOnly && !br.render) continue;
-    auto brt = variantOf(br.substance, ft.name.to!Source);
-    cfg.alpha[br.symbol] = Symbol(Effect.brush, cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, br.offset);
-  }
-  return cfg;
-}
-
 /** Pure per-feature instance generation (static parts + L-system brushes), keyed by mesh name. No live state. */
 DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref immutable RawT ft) {
   DrawInstance[][string] meshes;
   auto wp = lat.tileToWorld(f.rootTile);
   if(ft.brushes.length) {
-    auto cfg = featureConfig(ft, true);
+    auto cfg = rawConfig(ft, true);
     auto chars = grammar(f.hash, cast(int)f.height, ft.axiom, ft.rules);
     float groundY = wp[1] - 0.5f * lat.tileHeight;
     auto grouped = interpret(chars, cfg, [wp[0], groundY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
@@ -231,7 +220,7 @@ bool harvestFeatureType(ref GameApp app, const RawT ft, int[3] tile, int[3] coor
   for(size_t i = 0; i < app.world.vegetation[ft.name][coord].length; ) {
     auto f = app.world.vegetation[ft.name][coord][i];
     if(f.rootTile != tile) { i++; continue; }
-    auto cfg = featureConfig(ft, false);
+    auto cfg = rawConfig(ft, false);
     auto wp = app.world.tileToWorld(tile);
     auto chars = grammar(f.hash, cast(int)f.height, ft.axiom, ft.rules);
     auto grouped = interpret(chars, cfg, [wp[0], wp[1] - 0.5f * app.world.tileHeight, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);

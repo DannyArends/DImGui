@@ -71,7 +71,7 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
       seen ~= member;
       immutable string tex = namedField(p, "texture");
       table ~= ResourceT(name: member, meshName: p[2], tex3D: tex, tex2D: tex,
-                         scale:   namedField(p, "dropScale",   "1.0").to!float,
+                         scale: namedField(p, "scale", "1.0").to!float,
                          offsetY: namedField(p, "dropOffsetY", "0.0").to!float,
                          substance: sub.to!Substance,
                          source: feat.to!Source,

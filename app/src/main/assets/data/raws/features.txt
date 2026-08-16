@@ -67,7 +67,7 @@
   [LSYSTEM_ANGLE:35]
   [AXIOM:I(+W)(-W)(&W)(^W)]
   [BRUSH:I:Icosahedron:0.6:0.5:false:substance=Leaf:texture=Foliage_01_base]
-  [BRUSH:W:watermelon:0.03:0.03:true:substance=Berry:texture=colormap-food-kit:food=1.0:render=false:dropScale=0.03:dropOffsetY=-0.15]
+  [BRUSH:W:watermelon:0.03:0.03:true:substance=Berry:texture=colormap-food-kit:food=1.0:render=false:scale=0.03:dropOffsetY=-0.15]
   [LSYSTEM_END]
 
 [FEATURE:Cactus]
@@ -94,5 +94,5 @@
   [RULE:V:YE:100:@]
   [RULE:E:I:100]
   [BRUSH:Y:Cylinder:0.45:0.6:true:substance=Sponge:texture=Sponge_01_base]
-  [BRUSH:I:coconut:0.04:0.04:false:substance=Berry:texture=colormap-food-kit:food=1.0:render=false:dropScale=0.04:dropOffsetY=-0.12]
+  [BRUSH:I:coconut:0.04:0.04:false:substance=Berry:texture=colormap-food-kit:food=1.0:render=false:scale=0.04:dropOffsetY=-0.12]
   [LSYSTEM_END]
