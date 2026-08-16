@@ -9,7 +9,7 @@ import animation : animateAsset;
 import assimp : OpenAsset;
 import block : findFreeFood, noBlock, itemOf;
 import bone : mergeBones;
-import entity : buildSkeleton, freeSkeleton, isMoving, poseEntity, entityFor, tickEntity, entityMove;
+import entity : buildSkeleton, updateSkeletons, freeSkeleton, isMoving, poseEntity, entityFor, tickEntity, entityMove;
 import feature : interactFeaturesAt, findNearestFoodFeature;
 import gameobjects : Animals;
 import geometry : Geometry;
@@ -212,11 +212,11 @@ void removeChunkAnimals(ref GameApp app, int[3] coord) {
   if(herd is null) return;
   bool any = false;
   size_t i = 0;
-  app.freeSkeleton(herd, herd.animals[i].uid);
   while(i < herd.animals.length) {
-    if(app.world.chunkCoord(herd.animals[i].tile) == coord) { herd.remove(i); any = true; }  // swap-remove
-    else i++;
+    if(app.world.chunkCoord(herd.animals[i].tile) == coord) {
+      app.freeSkeleton(herd, herd.animals[i].uid);   // free this animal's skel, then swap-remove
+      herd.remove(i); any = true;
+    } else i++;
   }
-  if(any) herd.syncInstances();
+  if(any) { app.updateSkeletons(); herd.syncInstances(); }   // recompact palette regions once
 }
-

@@ -194,7 +194,6 @@ void freeSkeleton(C)(ref GameApp app, C dw, uint uid) {
   app.mainDeletionQueue.add((){ app.cleanup(s); });
   dw.skel.remove(uid); dw.rig.remove(uid); dw.boneSlot.remove(uid);
   dw.footY.remove(uid); dw.dscale.remove(uid);
-  app.updateSkeletons();   // recompact remaining regions, reclaiming the freed slot
 }
 
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */

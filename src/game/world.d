@@ -125,16 +125,19 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   foreach (coord; toLoad.sort!((a, b) => a.sqDist(pc) < b.sqDist(pc))){ app.dispatchWorker(coord); }
 
   // Load pending trees onto chunks that have been loaded
+  bool grew = false;
   foreach(ref ft; featureTable) {
     if(ft.name !in app.world.vegetation.pending) continue;
     foreach(coord; app.world.vegetation.pending[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;
       if(coord !in app.world.vegetation[ft.name]) {
-        app.world.vegetation[ft.name][coord] = app.timed!addFeatureInstances(app.world.vegetation.pending[ft.name][coord], ft, app.world.vegetation.meshes);
+        app.world.vegetation[ft.name][coord] = app.addFeatureInstances(app.world.vegetation.pending[ft.name][coord], ft, app.world.vegetation.meshes);
+        grew = true;
       }
       app.world.vegetation.pending[ft.name].remove(coord);
     }
   }
+  if(grew) app.camera.isDirty = true; 
 
   // Evict chunks outside render distance
   bool evicted = false;
