@@ -43,7 +43,7 @@ struct App {
   ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
-  Bone[string] bones;                                                           /// All animation bones across all objects
+  Bone[string] bones;                                                           /// All animation bones across all objects [TODO: add a deAllocate]
   SSBOList!Matrix boneOffsets;                                                  /// Animated BoneOffsets for GPU SSBO
   SSBOList!Mesh meshes;                                                         /// Meshes for GPU SSBO
   Textures textures;                                                            /// Textures
