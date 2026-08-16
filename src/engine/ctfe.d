@@ -48,6 +48,11 @@ string enumFromTag(string raw, string tag, string name, string sentinel = "") pu
   return result ~ "}\n";
 }
 
+/** CTFE: Optional positional token field parsed to T (default string); `def` if absent/empty. */
+T opt(T = string)(const string[] p, size_t i, T def = T.init) pure {
+  return i < p.length && p[i].length ? p[i].to!T : def;
+}
+
 /** CTFE: value of the `key=...` part among token fields, or `def` if absent. */
 string namedField(const string[] p, string key, string def = "") pure {
   foreach(kv; p){ if(kv.length > key.length + 1 && kv[0 .. key.length] == key && kv[key.length] == '=') {

@@ -6,7 +6,7 @@
 import phobos;
 
 import color : toColor;
-import ctfe : namedField, parseRawsGeneric, parseTokens, splitColon;
+import ctfe : namedField, opt, parseRawsGeneric, parseTokens, splitColon;
 import lsystem : Effect, Rule, Symbol, GEN_END;
 import turtlegfx : AnimClip;
 import rawstructs;
@@ -16,6 +16,14 @@ import rawstructs;
 
 /** Pick a result from a band by the [0,1) selector `t` (uniform bucket over results). */
 @nogc pure nothrow ResourceType rSelect(ref const HeightBand b, float t) { return b.results[cast(uint)(t * b.results.length) % b.results.length]; }
+
+/** Rule generation bound: "@" -> the growth budget (GEN_END), a number -> itself, absent -> `def`. */
+private int optGen(const string[] p, size_t i, int def) pure { return (i < p.length && p[i] == "@") ? GEN_END : opt(p, i, def); }
+
+/** Unit swing axis for "X"/"Y"/"Z", else NO_AXIS (cursor-frame swing). */
+private float[3] axisOf(string s) pure {
+  switch(s) { case "X": return [1.0f,0,0]; case "Y": return [0,1.0f,0]; case "Z": return [0,0,1.0f]; default: return [0,0,0]; }
+}
 
 /** CTFE: parse terrain raws into height bands (resources resolved to enum at compile time). */
 HeightBand[] parseHeightBands(string raw) pure {
@@ -65,9 +73,8 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
     if(p.length >= 6 && p[0] == "BRUSH") {
       immutable string sub = namedField(p, "substance");
       if(sub.length == 0) continue;                         // render-only brush -> no resource variant
-      string member = feat ~ sub;
-      bool dup = false; foreach(x; seen) if(x == member) dup = true;
-      if(dup) continue;
+      immutable string member = feat ~ sub;
+      if(seen.canFind(member)) continue;                    // first brush of a substance wins
       seen ~= member;
       immutable string tex = namedField(p, "texture");
       table ~= ResourceT(name: member, meshName: p[2], tex3D: tex, tex2D: tex,
@@ -100,53 +107,18 @@ ItemTemplateT[] parseItemTemplates(string raw) pure { return parseRawsGeneric!(I
 })(raw, true); }
 
 /** Parse a grammar token (AXIOM/RULE/LSYSTEM_*) shared by every raw template. Returns true if handled. */
-bool parseGrammarToken(ref string axiom, ref Rule[] rules,
-                       ref float yaw, ref float pitch, ref float roll, const string[] p) pure {
+bool parseGrammarToken(ref RawT x, const string[] p) pure {
   switch(p[0]) {
-    case "AXIOM":         axiom = p[1]; return true;
-    case "LSYSTEM_ANGLE": yaw = pitch = roll = to!float(p[1]); return true;
-    case "LSYSTEM_YAW":   yaw   = to!float(p[1]); return true;
-    case "LSYSTEM_PITCH": pitch = to!float(p[1]); return true;
-    case "LSYSTEM_ROLL":  roll  = to!float(p[1]); return true;
+    case "AXIOM":         x.axiom = p[1]; return true;
+    case "LSYSTEM_ANGLE": x.lsystemYaw = x.lsystemPitch = x.lsystemRoll = to!float(p[1]); return true;
+    case "LSYSTEM_YAW":   x.lsystemYaw   = to!float(p[1]); return true;
+    case "LSYSTEM_PITCH": x.lsystemPitch = to!float(p[1]); return true;
+    case "LSYSTEM_ROLL":  x.lsystemRoll  = to!float(p[1]); return true;
+    case "LSYSTEM_GAP":   x.lsystemGap   = to!float(p[1]); return true;
+    case "LSYSTEM_ITER":  x.lsystemIter  = to!uint(p[1]);  return true;
     case "RULE": if(p.length >= 4){
-      int gmin = 0, gmax = int.max;
-      if(p.length > 4 && p[4].length){ gmin = (p[4] == "@") ? GEN_END : to!int(p[4]); }
-      if(p.length > 5 && p[5].length){ gmax = (p[5] == "@") ? GEN_END : to!int(p[5]); }
-      rules ~= Rule(p[1][0], p[2], to!uint(p[3]), gmin, gmax);
+      x.rules ~= Rule(p[1][0], p[2], to!uint(p[3]), optGen(p, 4, 0), optGen(p, 5, int.max));
     } return true;
-    default: return false;
-  }
-}
-/** One raw handler for every template: grammar tokens (via parseGrammarToken) + all domain tokens. A
-    features file never emits MOVE_SPEED, a pawn file never emits HEIGHT_MIN — one parser, no drift. */
-void rawHandler(ref RawT x, const string[] p) pure {
-  if(parseGrammarToken(x.axiom, x.rules, x.lsystemYaw, x.lsystemPitch, x.lsystemRoll, p)) return;
-  switch(p[0]) {
-    // shared spawn gate
-    case "SPAWN_ON":         x.spawnOn ~= p[1].to!ResourceType; break;
-    case "NOISE_THRESHOLD":  x.noiseThreshold = to!float(p[1]); break;
-    case "HASH_SEED1":       x.hashSeed1 = to!uint(p[1]); break;
-    case "HASH_SEED2":       x.hashSeed2 = to!uint(p[1]); break;
-    case "HASH_MOD":         x.hashMod = to!uint(p[1]); break;
-    case "HASH_REM":         x.hashRem = to!uint(p[1]); break;
-    // vegetation domain
-    case "HEIGHT_MIN":       x.heightMin = to!uint(p[1]); break;
-    case "HEIGHT_MAX":       x.heightMax = to!uint(p[1]); break;
-    case "TILE_PENALTY":     x.tilePenalty = to!float(p[1]); break;
-    case "PROGRESS_RATE":    x.progressRate = to!float(p[1]); break;
-    case "INTERACTION":      x.interaction = p[1]; break;
-    case "SOUND":            x.sound = p[1]; break;
-    // pawn domain
-    case "MOVE_SPEED":       x.moveSpeed = to!float(p[1]); break;
-    case "HUNGER_DECAY":     x.hungerDecay = to!float(p[1]); break;
-    case "THIRST_DECAY":     x.thirstDecay = to!float(p[1]); break;
-    case "DIET":             x.diet = p[1]; break;
-    case "SCALE":            x.scale = to!float(p[1]); break;
-    case "SCALE_VARIANCE":   x.scaleVariance = to!float(p[1]); break;
-    case "OFFSET_Y":         x.offsetY = to!float(p[1]); break;
-    case "FACING":           x.facing = to!float(p[1]); break;
-    case "LSYSTEM_GAP":      x.lsystemGap = to!float(p[1]); break;
-    case "LSYSTEM_ITER":     x.lsystemIter = to!uint(p[1]); break;
     case "BRUSH": if(p.length >= 6){
       LSystemBrushT b = { symbol: p[1][0], mesh: p[2], radius: to!float(p[3]), length: to!float(p[4]), advance: to!bool(p[5]) };
       foreach(kv; p[6 .. $]) {
@@ -168,22 +140,48 @@ void rawHandler(ref RawT x, const string[] p) pure {
         }
       }
       x.brushes ~= b;
-    } break;
+    } return true;
     case "CLIP": if(p.length >= 2){
-      x.clips ~= AnimClip(p[1], p.length > 2 ? p[2] : "", [], (Symbol[char]).init,
-                          p.length > 3 && p[3] == "moving", p.length > 4 ? to!float(p[4]) : 8.0f,
-                          p.length > 5 ? to!float(p[5]) : 25.0f);
-    } break;
-    case "CRULE": if(p.length >= 4 && x.clips.length){ x.clips[$-1].rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+      x.clips ~= AnimClip(p[1], opt(p, 2), [], (Symbol[char]).init, opt(p, 3) == "moving", opt(p, 4, 8.0f), opt(p, 5, 25.0f));
+    } return true;
+    case "CRULE": if(p.length >= 4 && x.clips.length){ x.clips[$-1].rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } return true;
     case "POSE": if(p.length >= 3 && x.clips.length){
-      float[3] ax = [0.0f, 0.0f, 0.0f];
-      if(p.length > 4) { if(p[4] == "X") ax = [1,0,0]; else if(p[4] == "Y") ax = [0,1,0]; else if(p[4] == "Z") ax = [0,0,1]; }
-      Symbol ps = { effect: Effect.pose, target: p[2][0], bySide: p.length > 3 && p[3] == "side", axis: ax };
+      Symbol ps = { effect: Effect.pose, target: p[2][0], bySide: opt(p, 3) == "side", axis: axisOf(opt(p, 4)) };
       x.clips[$-1].poses[p[1][0]] = ps;
-    } break;
+    } return true;
+    default: return false;
+  }
+}
+
+/** One raw handler for every template: grammar tokens (via parseGrammarToken) + all domain tokens. A
+    features file never emits MOVE_SPEED, a pawn file never emits HEIGHT_MIN — one parser, no drift. */
+void rawHandler(ref RawT x, const string[] p) pure {
+  if(parseGrammarToken(x, p)) return;
+  switch(p[0]) {
+    case "SPAWN_ON":         x.spawnOn ~= p[1].to!ResourceType; break;
+    case "NOISE_THRESHOLD":  x.noiseThreshold = to!float(p[1]); break;
+    case "HASH_SEED1":       x.hashSeed1 = to!uint(p[1]); break;
+    case "HASH_SEED2":       x.hashSeed2 = to!uint(p[1]); break;
+    case "HASH_MOD":         x.hashMod = to!uint(p[1]); break;
+    case "HASH_REM":         x.hashRem = to!uint(p[1]); break;
+    case "HEIGHT_MIN":       x.heightMin = to!uint(p[1]); break;
+    case "HEIGHT_MAX":       x.heightMax = to!uint(p[1]); break;
+    case "TILE_PENALTY":     x.tilePenalty = to!float(p[1]); break;
+    case "PROGRESS_RATE":    x.progressRate = to!float(p[1]); break;
+    case "INTERACTION":      x.interaction = p[1]; break;
+    case "SOUND":            x.sound = p[1]; break;
+    case "MOVE_SPEED":       x.moveSpeed = to!float(p[1]); break;
+    case "HUNGER_DECAY":     x.hungerDecay = to!float(p[1]); break;
+    case "THIRST_DECAY":     x.thirstDecay = to!float(p[1]); break;
+    case "DIET":             x.diet = p[1]; break;
+    case "SCALE":            x.scale = to!float(p[1]); break;
+    case "SCALE_VARIANCE":   x.scaleVariance = to!float(p[1]); break;
+    case "OFFSET_Y":         x.offsetY = to!float(p[1]); break;
+    case "FACING":           x.facing = to!float(p[1]); break;
     default: break;
   }
 }
+
 Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, "REACTION", (ref r, p) {
   switch(p[0]) {
     case "VERB": r.verb  = p[1]; break;
