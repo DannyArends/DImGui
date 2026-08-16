@@ -29,9 +29,8 @@ enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType 
 alias SpawnMask = bool[RESOURCE_COUNT];
 
 /** Per-species entity template: pawn behaviour + an L-system body baked into an OpenAsset. */
-struct EntityT {
+struct RawT {
   string name;                                    /// Species name, e.g. "Dwarf"
-  string base;                                    /// optional parent species to inherit brushes/clips/rules from
   ResourceType[] spawnOn;                         /// tiles this entity spawns on (empty = not wild-spawned, e.g. Dwarf)
   float noiseThreshold = 0.92f;                   /// hash-noise spawn gate (higher = rarer)
   uint hashSeed1, hashSeed2;                      /// per-species spawn hash seeds
@@ -58,8 +57,7 @@ struct EntityT {
   string sound;                                   /// harvest sound
 }
 
-/** Per-drawing-symbol spec: which material/size, and whether it advances the turtle. No Geometry here — the turtle is pure. */
-/** Data half of a TurtleBrush: one grammar symbol -> a mesh + its render/harvest bindings. */
+/** L-system brush: one grammar symbol. */
 struct LSystemBrushT {
   char symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
   string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
@@ -70,7 +68,6 @@ struct LSystemBrushT {
   bool advance = true;                          /// move turtle forward after drawing
   float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
   bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
-  float dropScale = 1.0f;                       /// render size of the harvested drop (1.0 = one block); independent of radius
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// per-brush vertex colour (entities)
   bool tint = false;                            /// tint with the entity's per-instance colour instead of `color`

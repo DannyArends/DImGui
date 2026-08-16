@@ -135,13 +135,13 @@ void entityMove(T)(ref GameApp app, ref T e, float dt, float speed, float hop) {
 }
 
 /** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up by name. */
-ref immutable(EntityT) entityFor(string name) {
+ref immutable(RawT) entityFor(string name) {
   foreach(ref e; entityTable) { if(e.name == name) { return(e); } }
   assert(0, "no [ENTITY] named " ~ name);
 }
 
 /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
-void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
+void buildRig(C)(C dw, uint uid, ref immutable RawT e) {
   if(uid in dw.rig) return;
   TurtleConfig cfg = { yaw: e.lsystemYaw, pitch: e.lsystemPitch, roll: e.lsystemRoll, gap: e.lsystemGap };
   foreach(ref br; e.brushes) cfg.alpha[br.symbol] = Symbol(Effect.brush, -1, br.radius, br.length, br.advance, br.color, br.offset, br.depth);
@@ -159,7 +159,7 @@ void buildRig(C)(C dw, uint uid, ref immutable EntityT e) {
 }
 
 /** Build (once per uid) the pawn's vertexless skeleton object; stamp its palette region immediately (no frame lag). */
-void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) {
+void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable RawT e) {
   if(uid in dw.skel) return;
   dw.buildRig(uid, e);
   int[] slot;
@@ -169,7 +169,7 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable EntityT e) 
 }
 
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */
-void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable EntityT e) {
+void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable RawT e) {
   app.buildSkeleton(dw, d.uid, e);
   auto s = dw.skel[d.uid];
   uint pick = 0;

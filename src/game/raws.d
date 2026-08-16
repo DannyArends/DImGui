@@ -119,7 +119,7 @@ bool parseGrammarToken(ref string axiom, ref Rule[] rules,
 }
 /** One raw handler for every template: grammar tokens (via parseGrammarToken) + all domain tokens. A
     features file never emits MOVE_SPEED, a pawn file never emits HEIGHT_MIN — one parser, no drift. */
-void rawHandler(ref EntityT x, const string[] p) pure {
+void rawHandler(ref RawT x, const string[] p) pure {
   if(parseGrammarToken(x.axiom, x.rules, x.lsystemYaw, x.lsystemPitch, x.lsystemRoll, p)) return;
   switch(p[0]) {
     // shared spawn gate
@@ -158,7 +158,6 @@ void rawHandler(ref EntityT x, const string[] p) pure {
           case "texture":   b.texture = v; break;
           case "food":      b.food = to!float(v); break;
           case "render":    b.render = to!bool(v); break;
-          case "dropScale": b.dropScale = to!float(v); break;
           case "color":     b.color = cast(float[4])toColor(v); break;
           case "tint":      b.tint = true; break;
           case "offX":      b.offset[0] = to!float(v); break;
@@ -210,7 +209,7 @@ private bool[char] produced(string axiom, const Rule[] rules) pure {
 }
 
 /** CTFE: first symbol-consistency error across all entities ("" == valid). */
-string validateEntities(const EntityT[] es) pure {
+string validateEntities(const RawT[] es) pure {
   foreach(ref e; es) {
     bool[char] brush; foreach(ref b; e.brushes) brush[b.symbol] = true;
     foreach(c, _; produced(e.axiom, e.rules))
@@ -228,7 +227,7 @@ string validateEntities(const EntityT[] es) pure {
 }
 
 /** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
-private SpawnMask spawnMask(const EntityT ft) pure {
+private SpawnMask spawnMask(const RawT ft) pure {
   SpawnMask m; foreach(rt; ft.spawnOn) m[rt] = true; return m;
 }
 
@@ -246,8 +245,8 @@ immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.
 immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
-immutable EntityT[] featureTable = parseRawsGeneric!(EntityT, "FEATURE", rawHandler)(import("data/raws/features.txt"));
-immutable EntityT[] entityTable  = parseRawsGeneric!(EntityT, "ENTITY",  rawHandler)(import("data/raws/entity.txt"));
+immutable RawT[] featureTable = parseRawsGeneric!(RawT, "FEATURE", rawHandler)(import("data/raws/features.txt"));
+immutable RawT[] entityTable  = parseRawsGeneric!(RawT, "ENTITY",  rawHandler)(import("data/raws/entity.txt"));
 
 static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
