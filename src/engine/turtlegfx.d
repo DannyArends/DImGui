@@ -10,8 +10,6 @@ import matrix : segmentTransform, position, inverse, multiply;
 import quaternion : angleAxis, quatAxisAngle, qMul, rotate, toQuaternion;
 import vector : vAdd;
 
-enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];         /// PoseBrush.axis sentinel: use cursor frame, not a world axis
-
 /** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree. */
 struct RigNode {
   int parent = -1;      /// index of parent RigNode in the returned array; -1 == root
@@ -26,13 +24,6 @@ struct PoseKey {
   float[4] quat;    /// accumulated cursor orientation at that step
 }
 
-/** One animation primitive: a clip symbol that writes the pose cursor onto a target bone symbol. */
-struct PoseBrush {
-  char target;                            /// brush symbol (bone) this pose writes a key to
-  bool bySide = false;                    /// mirror the cursor by the bone's left/right sign
-  float[3] axis = NO_AXIS;     /// if non-zero: swing about this WORLD axis (ignores bind orientation)
-}
-
 /** Everything the per-step bake needs for one rig node. */
 struct PoseCtx {
   const(char)[] syms;                 /// clip symbols targeting this bone
@@ -44,13 +35,13 @@ struct PoseCtx {
 
 /** An animation as its own L-system, walked in TIME -> baked into NodeAnimation tracks. */
 struct AnimClip {
-  string name;              /// "walk", "idle", ...
-  string axiom = "";        /// clip L-system start symbols
-  Rule[] rules;             /// clip production rules
-  PoseBrush[char] poses;    /// symbol -> which bone it poses
-  bool whenMoving = false;  /// select walk vs idle
-  float fps = 8.0f;         /// steps per second (drives ticksPerSecond)
-  float turn = 25.0f;       /// degrees per turn symbol (swing amplitude)
+  string name;                /// "walk", "idle", ...
+  string axiom = "";          /// clip L-system start symbols
+  Rule[] rules;               /// clip production rules
+  Symbol[char] poses;         /// symbol -> which bone it poses
+  bool whenMoving = false;    /// select walk vs idle
+  float fps = 8.0f;           /// steps per second (drives ticksPerSecond)
+  float turn = 25.0f;         /// degrees per turn symbol (swing amplitude)
 }
 
 string boneName(string prefix, size_t k) { return format("%s%d", prefix, k); }
@@ -161,7 +152,7 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
   char[char] poses; foreach(sym, ref pb; clip.poses) poses[sym] = pb.target;
   int steps;
   TurtleConfig cfg = { yaw: clip.turn, pitch: clip.turn, roll: clip.turn };
-  auto tracks = interpretAnim(expand(seed, 1, clip.axiom, clip.rules), cfg, poses, steps);
+  auto tracks = interpretAnim(expand(seed, 1, clip.axiom, clip.rules), clip.poses, cfg, steps);
 
   Animation a = { name: clip.name, duration: cast(double)steps, ticksPerSecond: clip.fps };
   auto J = jointWorlds(rig);
@@ -175,75 +166,81 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
   return(a);
 }
 
-/** Walk an animation L-system in TIME: `f` advances a step, +/-/&/^/</> rotate the cursor,
- *  '()' branch the cursor, a pose symbol records the cursor onto its target bone symbol.
- *  Returns per-target-symbol key streams + the total step count (clip duration). */
-PoseKey[][char] interpretAnim(const(char)[] symbols, const TurtleConfig cfg, const char[char] poses, out int steps) {
+/** The single turtle traversal. Structural glyphs are built-in; content symbols dispatch to the sink,
+    which decides what to emit (space -> RigNode, time -> PoseKey). */
+void walk(Sink)(const(char)[] symbols, const Symbol[char] alpha, const TurtleConfig cfg, ref Sink sink) {
+  foreach(c; symbols) {
+    if(c == '('){ sink.push(); continue; }
+    if(c == ')'){ sink.pop();  continue; }
+    if(c == 'f'){ sink.move(cfg.gap); continue; }
+    const ax = turnAxis(c);
+    if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg)); continue; }
+    if(auto s = c in alpha) sink.place(c, *s);
+  }
+}
+
+/** Space sink: emits one RigNode per placed brush, retaining branch parentage. */
+struct RigSink {
+  RigNode[] nodes;            /// emitted parts (result)
+  TurtleState st;             /// live cursor
+  TurtleState[] stack;        /// saved cursors
+  int current = -1;           /// parent for the next placed node
+  int[] parents;              /// saved parents
+  void push(){ stack ~= st; parents ~= current; }
+  void pop(){ if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; current = parents[$-1]; parents = parents[0 .. $-1]; } }
+  void turn(const float[3] ax, float ang){ st.orient = qMul(st.orient, angleAxis(ang, ax)); }
+  void move(float d){ const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]); }
+  void place(char c, ref const Symbol s){
+    if(s.effect != Effect.brush) return;
+    const Matrix R = rotate(st.orient);
+    const float[3] o = s.offset;
+    const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
+                         st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
+                         st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
+    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, s.radius, s.length, s.depth), s.material, s.color), c);
+    current = cast(int)nodes.length - 1;
+    if(s.advance){ st.pos = st.pos.vAdd([R[4]*s.length*0.95f, R[5]*s.length*0.95f, R[6]*s.length*0.95f]); }
+  }
+}
+
+/** Time sink: turns accumulate into `pending` (applied to the next pose only); `f` advances a step; a pose
+    symbol records the accumulated cursor onto its own track. Branches are ignored (as the old time walk was). */
+struct AnimSink {
   PoseKey[][char] tracks;
-  float[4][char] cursor;                          // independent accumulated orientation per pose symbol
-  float[4] pending = [0.0f, 0.0f, 0.0f, 1.0f];    // turns since the last pose, applied to the NEXT pose only
+  float[4][char] cursor;
+  float[4] pending = [0.0f, 0.0f, 0.0f, 1.0f];
   int t = 0;
-  foreach(c; symbols) {
-    switch(c) {
-      case 'X': break;
-      case 'f': t++; break;
-      default:
-        const ax = turnAxis(c);
-        if(ax != NO_AXIS) { pending = qMul(pending, angleAxis(turnAngle(c, cfg), ax)); break; }
-        if(c in poses) {
-          if(c !in cursor) cursor[c] = Quaternion.init;
-          cursor[c] = qMul(cursor[c], pending);           // accumulate this pose's own turns (oscillates via +/-)
-          tracks[c] ~= PoseKey(t, cursor[c]);
-          pending = Quaternion.init;
-        }
-      break;
-    }
+  void push(){} void pop(){}
+  void turn(const float[3] ax, float ang){ pending = qMul(pending, angleAxis(ang, ax)); }
+  void move(float d){ t++; }
+  void place(char c, ref const Symbol s){
+    if(s.effect != Effect.pose) return;
+    if(c !in cursor) cursor[c] = Quaternion.init;
+    cursor[c] = qMul(cursor[c], pending);
+    tracks[c] ~= PoseKey(t, cursor[c]);
+    pending = Quaternion.init;
   }
-  steps = (t > 0) ? t : 1;
-  return(tracks);
 }
 
-/** Turtle walk that RETAINS the branch hierarchy: each drawn brush becomes a RigNode with a parent
- *  (the enclosing part) and a local transform, so a joint can be re-posed and its children follow. */
+/** Structure walk: retains branch hierarchy; each placed brush becomes a re-poseable RigNode. */
 RigNode[] interpretRig(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
-  RigNode[] nodes;
-  TurtleState st = TurtleState(origin, orient0);
-  TurtleState[] stack;
-  int current = -1;         // most-recent drawn node at this depth == parent for the next draw
-  int[] parentStack;
-
-  foreach(c; symbols) {
-    switch(c) {
-      case '(': stack ~= st; parentStack ~= current; break;
-      case ')': if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1];
-                                  current = parentStack[$-1]; parentStack = parentStack[0 .. $-1]; } break;
-      case 'X': break;
-      case 'f': { const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*cfg.gap, R[5]*cfg.gap, R[6]*cfg.gap]); } break;
-      default:
-        const ax = turnAxis(c);
-        if(ax != NO_AXIS) { st.orient = qMul(st.orient, angleAxis(turnAngle(c, cfg), ax)); break; }
-        if(auto br = c in cfg.brush) {
-          const Matrix R = rotate(st.orient);
-          const float[3] o = br.offset;
-          const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
-                               st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
-                               st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
-          nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, br.radius, br.length, br.depth), br.material, br.color), c);
-          current = cast(int)nodes.length - 1;
-          if(br.advance){ st.pos = st.pos.vAdd([R[4]*br.length*0.95f, R[5]*br.length*0.95f, R[6]*br.length*0.95f]); }
-        }
-      break;
-    }
-  }
-  foreach(ref n; nodes) { n.local = (n.parent < 0) ? n.inst.matrix : nodes[n.parent].inst.matrix.inverse().multiply(n.inst.matrix); }
-  return(nodes);
+  auto sink = RigSink(); sink.st = TurtleState(origin, orient0);
+  walk(symbols, cfg.alpha, cfg, sink);
+  foreach(ref n; sink.nodes){ n.local = (n.parent < 0) ? n.inst.matrix : sink.nodes[n.parent].inst.matrix.inverse().multiply(n.inst.matrix); }
+  return sink.nodes;
 }
 
-/** Flattened turtle walk: per brush symbol, the world-space DrawInstances (branch hierarchy discarded).
- *  Thin wrapper over interpretRig — used by static features (trees) that never re-pose. */
+/** Flattened structure walk: per brush symbol, world-space DrawInstances (hierarchy discarded). */
 DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
   DrawInstance[][char] instances;
   foreach(ref n; interpretRig(symbols, cfg, origin, orient0)) instances[n.symbol] ~= n.inst;
-  return(instances);
+  return instances;
 }
 
+/** Time walk: bake per-target-symbol key streams; `steps` = clip duration. */
+PoseKey[][char] interpretAnim(const(char)[] symbols, const Symbol[char] poses, const TurtleConfig cfg, out int steps) {
+  auto sink = AnimSink();
+  walk(symbols, poses, cfg, sink);
+  steps = (sink.t > 0) ? sink.t : 1;
+  return sink.tracks;
+}

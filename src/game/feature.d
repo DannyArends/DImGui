@@ -140,7 +140,7 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
     foreach(ref br; ft.brushes) {
       if(!br.render) continue;                                     // harvest-only brush: counted on cut, never drawn
       auto brt = variantOf(br.substance, ft.name.to!Source);
-      cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, br.offset);
+      cfg.alpha[br.symbol] = Symbol(Effect.brush, cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, br.offset);
     }
     auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
     float groundY = wp[1] - 0.5f * lat.tileHeight;
@@ -230,7 +230,7 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
     cfg.yaw = ft.lsystemYaw; cfg.pitch = ft.lsystemPitch; cfg.roll = ft.lsystemRoll;
     foreach(ref br; ft.brushes) {                                  // ALL brushes: harvest-only geometry needs positions too
       auto brt = variantOf(br.substance, ft.name.to!Source);
-      cfg.brush[br.symbol] = TurtleBrush(cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, br.offset);
+      cfg.alpha[br.symbol] = Symbol(Effect.brush, cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, br.offset);
     }
     auto wp = app.world.tileToWorld(tile);
     auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
