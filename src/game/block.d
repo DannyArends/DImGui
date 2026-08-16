@@ -110,27 +110,19 @@ uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored 
   return findFreeBlockWhere!(b => b.item.isFood)(world, dwarfTile, includeStored);
 }
 
+/** Register `meshName` as an instanced primitive in the drops registry, once. */
+private void ensureBlockMesh(ref GameApp app, string meshName) {
+  if(meshName in app.world.drops.meshes) return;
+  auto m = makePrimitive(meshName);
+  if(m is null) { SDL_Log("ensureBlocks: unknown mesh type '%s'", toStringz(meshName)); return; }
+  m.initInstanced(meshName);
+  app.world.drops.meshes[meshName] = m;
+  app.objects ~= m;
+}
+
 void ensureBlocks(ref GameApp app) {
-  foreach(rt; EnumMembers!ResourceType) {
-    auto meshName = resourceTable[rt].meshName;
-    if(meshName in app.world.drops.meshes) continue;
-    auto m = makePrimitive(meshName);
-    if(m is null) { SDL_Log("ensureBlocks: unknown mesh type '%s'", toStringz(meshName)); continue; }
-    m.initInstanced(meshName);
-    app.world.drops.meshes[meshName] = m;
-    app.objects ~= m;
-  }
-  foreach(ti; 0 .. cast(int)ItemTemplate.max + 1) {
-    auto t = cast(ItemTemplate)ti;
-    if(t == ItemTemplate.None) continue;
-    auto meshName = itemTemplateTable[t].mesh;
-    if(meshName in app.world.drops.meshes) continue;
-    auto m = makePrimitive(meshName);
-    if(m is null) { SDL_Log("ensureBlocks: unknown template mesh '%s'", toStringz(meshName)); continue; }
-    m.initInstanced(meshName);
-    app.world.drops.meshes[meshName] = m;
-    app.objects ~= m;
-  }
+  foreach(rt; EnumMembers!ResourceType) { app.ensureBlockMesh(resourceTable[rt].mesh); }
+  foreach(t; EnumMembers!ItemTemplate) { if(t != ItemTemplate.None) { app.ensureBlockMesh(itemTemplateTable[t].mesh); } }
 }
 
 /** Spawn a raw-material block into the registry */
@@ -146,7 +138,7 @@ uint spawnBlock(ref GameApp app, int[3] tile, Item it) {
 }
 
 /** Geometry mesh name for an item: template shape when crafted, else the material's mesh. */
-string renderMesh(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].mesh : resourceTable[it.material].meshName; }
+string renderMesh(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].mesh : resourceTable[it.material].mesh; }
 
 /** Render scale for an item: template scale when crafted, else the material's scale. */
 float renderScale(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].scale : resourceTable[it.material].scale; }

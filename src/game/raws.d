@@ -48,6 +48,14 @@ HeightBand[] parseHeightBands(string raw) pure {
 /** Shared render tokens for any template carrying scale/offsetY/maxStack/food. Returns true if handled. */
 bool parseRenderToken(T)(ref T cur, const string[] p) pure {
   switch(p[0]) {
+    case "MESH": if(p.length > 1) {
+      cur.mesh  = p[1];
+      cur.tex3D = namedField(p, "tex3D");
+      static if(__traits(hasMember, T, "tex2D")) cur.tex2D = namedField(p, "tex2D");
+      static if(__traits(hasMember, T, "tex")) cur.tex = namedField(p, "tex");
+      static if(__traits(hasMember, T, "texFilled")) cur.texFilled = namedField(p, "texFilled");
+      static if(__traits(hasMember, T, "color")) { immutable c = namedField(p, "color"); if(c.length) cur.color = toColor(c); }
+    } return true;
     case "SCALE":    cur.scale    = to!float(p[1]); return true;
     case "OFFSET_Y": cur.offsetY  = to!float(p[1]); return true;
     case "STACK":    cur.maxStack = to!int(p[1]);   return true;
@@ -59,11 +67,7 @@ bool parseRenderToken(T)(ref T cur, const string[] p) pure {
 ResourceT[] parseResources(string tilesRaw) pure { return parseRawsGeneric!(ResourceT, "TILE", (ref cur, p) {
   if(parseRenderToken(cur, p)) return;
   switch(p[0]) {
-    case "SUBSTANCE": cur.substance = p[1].to!Substance; break;
-    case "MESH": if(p.length > 1) cur.meshName = p[1];
-                 if(p.length > 2) cur.color = toColor(p[2]);
-                 if(p.length > 3) cur.tex3D = p[3];
-                 if(p.length > 4) cur.tex2D = p[4]; break;
+    case "SUBSTANCE":   cur.substance = p[1].to!Substance; break;
     case "TRAVERSABLE": cur.traverse = opt(p, 1, 1.0f); break;
     case "BUILDABLE":   cur.build = true; break;
     default: break;
@@ -88,7 +92,7 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
       if(seen.canFind(member)) continue;                    // first brush of a substance wins
       seen ~= member;
       immutable string tex = namedField(p, "texture");
-      table ~= ResourceT(name: member, meshName: p[2], tex3D: tex, tex2D: tex,
+      table ~= ResourceT(name: member, mesh: p[2], tex3D: tex, tex2D: tex,
                          scale: namedField(p, "dropScale", "1.0").to!float,
                          offsetY: namedField(p, "dropOffsetY", "0.0").to!float,
                          substance: sub.to!Substance,
@@ -103,10 +107,6 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
 ItemTemplateT[] parseItemTemplates(string raw) pure { return parseRawsGeneric!(ItemTemplateT, "ITEM", (ref cur, p) {
   if(parseRenderToken(cur, p)) return;
   switch(p[0]) {
-    case "MESH":     if(p.length > 1) cur.mesh = p[1];
-                     if(p.length > 2) cur.tex3D = p[2];
-                     if(p.length > 3) cur.tex = p[3];
-                     if(p.length > 4) cur.texFilled = p[4]; break;
     case "ACCEPTS":  cur.accepts ~= p[1].to!Substance; break;
     case "HOLDS":    cur.holds   ~= p[1].to!Substance; break;
     case "CAPACITY": cur.capacity = to!uint(p[1]); break;

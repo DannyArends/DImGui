@@ -76,7 +76,7 @@ struct LSystemBrushT {
 
 /** A tile/feature variant = substance @ source; the row backing each ResourceType member. */
 struct ResourceT {
-  string name = "None", meshName = "Blocks", tex3D = "", tex2D = "";
+  string name = "None", mesh = "Blocks", tex3D = "", tex2D = "";
   float scale = 1.0f;
   float offsetY = 0.0f;                     /// vertical render offset (world units) for model-backed drops
   Colors color = Colors.white;

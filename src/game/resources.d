@@ -108,7 +108,7 @@ void updateMaterials(ref GameApp app) {
   foreach (tt; 0 .. RESOURCE_COUNT) {
     auto ttype = cast(ResourceType)tt;
     app.materials[tt].tid = app.textures.idx(resourceTable[ttype].tex3D);
-    if(resourceTable[ttype].meshName != "Blocks"){ app.materials[tt].nid = app.textures.idx(resourceTable[ttype].tex3D.replace("_base", "_normal")); }
+    if(resourceTable[ttype].mesh != "Blocks"){ app.materials[tt].nid = app.textures.idx(resourceTable[ttype].tex3D.replace("_base", "_normal")); }
   }
   foreach (ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
