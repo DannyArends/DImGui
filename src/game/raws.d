@@ -47,14 +47,14 @@ HeightBand[] parseHeightBands(string raw) pure {
 
 ResourceT[] parseResources(string tilesRaw) pure { return parseRawsGeneric!(ResourceT, "TILE", (ref cur, p) {
   switch(p[0]) {
-    case "SUBSTANCE":   cur.substance = p[1].to!Substance; break;
-    case "MESH":        if(p.length > 1) cur.meshName = p[1];
-                        if(p.length > 2) cur.color    = toColor(p[2]);
-                        if(p.length > 3) cur.tex3D    = p[3];
-                        if(p.length > 4) cur.tex2D    = p[4]; break;
-    case "TRAVERSABLE": cur.traverse = p.length > 1 ? p[1].to!float : 1.0f; break;
-    case "BUILDABLE":   cur.build = true; break;
-    case "STACK":       cur.maxStack = p[1].to!int; break;
+    case "SUBSTANCE": cur.substance = p[1].to!Substance; break;
+    case "MESH": if(p.length > 1) cur.meshName = p[1];
+                 if(p.length > 2) cur.color = toColor(p[2]);
+                 if(p.length > 3) cur.tex3D = p[3];
+                 if(p.length > 4) cur.tex2D = p[4]; break;
+    case "TRAVERSABLE": cur.traverse = opt(p, 1, 1.0f); break;
+    case "BUILDABLE": cur.build = true; break;
+    case "STACK": cur.maxStack = p[1].to!int; break;
     default: break;
   }
 })(tilesRaw); }
