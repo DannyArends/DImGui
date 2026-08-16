@@ -8,6 +8,7 @@ import game;
 import block : syncBlockInstances;
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
 import clouds : rainTick, settleRain, requestCloudRebuild;
+import entity : updateSkeletons;
 import game : GameApp;
 import screenshot : saveScreenshot;
 import timing : timed;

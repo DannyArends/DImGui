@@ -5,7 +5,7 @@
  
 import engine;
 
-import animation : loadAnimations, animateAsset;
+import animation : loadAnimations;
 import bone : mergeBones;
 import boundingbox : computeBoundingBox, calculateBounds, computeScaleAdjustment;
 import matrix : toMatrix, multiply, inverse, transpose, rotate;

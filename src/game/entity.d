@@ -5,7 +5,9 @@
 
 import game;
 
+import animation : animateAsset;
 import assimp : buildSkinnedAsset;
+import geometry : cleanup;
 import lsystem : grammar;
 import matrix : multiply, position, rotate, halfExtent, scale;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
