@@ -251,12 +251,10 @@ void ensureDwarves(ref GameApp app) {
   app.initDwarfMeshes();
 }
 
-void addDwarf(ref GameApp app, ref Dwarf d) {
+void addDwarf(ref GameApp app, ref Dwarf d, float[3] worldPos) {
   d.idleTicks[1] = uniform(3, 18);
   d.state = EntityState.Idle;
-  auto wp = app.world.tileToWorld(d.tile);
-  d.visualPos = [wp[0], wp[1], wp[2]];
-  d.moveFrom = d.moveTo = d.visualPos;
+  d.moveFrom = d.moveTo = d.visualPos = worldPos;
   d.moveT = 1.0f;
   app.buildSkeleton(app.world.dwarves, d.uid, entityFor("Dwarf"));
   app.addLight(torchLight(d.visualPos, d.color));
@@ -272,7 +270,7 @@ void spawnDwarf(ref GameApp app) {
   app.ensureDwarves();
   Dwarf d; d.entity.data = EntityData!32(nextEntityUID++, randomColor(), tile);
   randomizeName(d);
-  app.addDwarf(d);
+  app.addDwarf(d, app.world.tileToWorld(d.tile));
   app.world.dwarves.syncInstances();
 }
 
@@ -303,7 +301,7 @@ EntityData!32[] saveDwarfs(ref GameApp app) {
 
 void loadDwarfs(ref GameApp app, EntityData!32[] data) {
   app.ensureDwarves();
-  foreach(ref dd; data) { Dwarf d; d.entity.data = dd; app.addDwarf(d); }
+  foreach(ref dd; data) { Dwarf d; d.entity.data = dd; app.addDwarf(d, app.world.tileToWorld(d.tile)); }
   app.world.dwarves.syncInstances();
   SDL_Log("loadDwarfs: %d dwarfs", cast(int)data.length);
   app.deriveInventory();
