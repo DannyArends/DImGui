@@ -67,7 +67,7 @@ void deleteDwarf(ref GameApp app, int index) {
   }
   app.world.drops.dirty = true;
 
-  //app.freeSkeleton(app.world.dwarves, index);   // free this animal's skel, then swap-remove
+  app.freeSkeleton(app.world.dwarves, app.world.dwarves.dwarves[index].uid);
   app.removeDwarfLight(app.world.dwarves.dwarves[index]);
   app.removeDwarfNameLabel(app.world.dwarves.dwarves[index]);
 
