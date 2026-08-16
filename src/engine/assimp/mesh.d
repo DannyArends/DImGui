@@ -26,27 +26,15 @@ void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; 
 
 void updateMeshInfo(ref App app) {
   bool needsUpdate = false;
-  uint boneTop = 0;
   for (size_t o = 0; o < app.objects.length; o++) {
     if (app.objects[o].instancedMesh && app.objects[o].boneCount == 0) continue;
     app.ensureMaterial(app.objects[o]);
     int[2] expected = [cast(int)app.meshes.length, cast(int)(app.meshes.length + app.objects[o].meshes.length)];
     bool anyStale = false;
-    foreach (i, ref inst; app.objects[o].instances) {
-      int rt = cast(int)(boneTop + cast(uint)i * app.objects[o].boneCount);   // runtime slice offset
-      if(inst.meshdef[0..2] != expected || inst.meshdef[3] != rt) {
-        inst.meshdef[0..2] = expected;
-        inst.meshdef[3] = rt;
-        anyStale = true;
-      }
-    }
-    boneTop += cast(uint)app.objects[o].instances.length * app.objects[o].boneCount;
+    foreach (ref inst; app.objects[o].instances)
+      if(inst.meshdef[0..2] != expected) { inst.meshdef[0..2] = expected; anyStale = true; }
     if (anyStale) { app.objects[o].syncInstances(); needsUpdate = true; }
     app.meshes ~= app.objects[o].meshes.values;
-  }
-  if(boneTop > app.boneOffsets.length) {
-    if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
-    while(app.boneOffsets.length < boneTop) app.boneOffsets.length *= 2;
   }
   if(needsUpdate) { app.buffers["MeshMatrices"].invalidate(); }
 }

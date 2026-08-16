@@ -72,7 +72,7 @@ void animalFrame(ref GameApp app, Animals herd, float dt) {
   foreach(mesh; herd.meshes) mesh.instances.reset();
   foreach(ref a; herd.animals) {
     if(app.world.chunkCoord(a.tile) !in app.world.chunks) continue;
-    app.poseEntity(herd, a, entityTable[a.type]);
+    app.poseEntity(herd, a, entityTable[a.type], dt);
   }
   foreach(mesh; herd.meshes) mesh.syncInstances();
   herd.syncInstances();
@@ -212,6 +212,7 @@ void removeChunkAnimals(ref GameApp app, int[3] coord) {
   if(herd is null) return;
   bool any = false;
   size_t i = 0;
+  app.freeSkeleton(herd, herd.animals[i].uid);
   while(i < herd.animals.length) {
     if(app.world.chunkCoord(herd.animals[i].tile) == coord) { herd.remove(i); any = true; }  // swap-remove
     else i++;

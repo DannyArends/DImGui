@@ -54,10 +54,9 @@ OpenAsset buildSkinnedAsset(ref App app, const RigNode[] rig, immutable AnimClip
   s.animations = buildClips(rig, prefix, clips, seed);
   app.mergeBones(s);
   slot.length = rig.length;
-  foreach(k; 0 .. rig.length) slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - s.boneBase);
-  if(s.animations.length) s.onFrame = (float dt){ app.animateAsset(s, dt); };
-  app.objects ~= s;
-  app.updateMeshInfo();
+  foreach(k; 0 .. rig.length){
+    slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - s.boneBase);
+  }
   return s;
 }
 

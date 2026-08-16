@@ -140,6 +140,22 @@ ref immutable(RawT) entityFor(string name) {
   assert(0, "no [ENTITY] named " ~ name);
 }
 
+/** Assign every live pawn skeleton a contiguous palette region and grow the palette to fit. Skeletons are
+    owned by the per-species containers (dw.skel), never app.objects. Runs once per frame before posing. */
+void updateSkeletons(ref GameApp app) {
+  uint top = 0;
+  void assign(C)(C dw) {
+    if(dw is null) return;
+    foreach(uid, s; dw.skel) { s.instances[0].meshdef[3] = cast(int)top; top += s.boneCount; }
+  }
+  assign(app.world.dwarves);
+  assign(app.world.animals);
+  if(top > app.boneOffsets.length) {
+    if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
+    while(app.boneOffsets.length < top) app.boneOffsets.length *= 2;
+  }
+}
+
 /** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
 void buildRig(C)(C dw, uint uid, ref immutable RawT e) {
   if(uid in dw.rig) return;
@@ -167,13 +183,24 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable RawT e) {
   dw.boneSlot[uid] = slot;
 }
 
+/** Tear down a pawn's skeleton: drop the sole reference (its palette region reclaims next updateSkeletons)
+    and queue any GPU buffers for deletion. (app.bones stays append-only for now.) */
+void freeSkeleton(C)(ref GameApp app, C dw, uint uid) {
+  if(uid !in dw.skel) return;
+  auto s = dw.skel[uid];
+  app.mainDeletionQueue.add((){ app.cleanup(s); });
+  dw.skel.remove(uid); dw.rig.remove(uid); dw.boneSlot.remove(uid);
+  dw.footY.remove(uid); dw.dscale.remove(uid);
+}
+
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */
-void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable RawT e) {
+void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable RawT e, float dt) {
   app.buildSkeleton(dw, d.uid, e);
   auto s = dw.skel[d.uid];
   uint pick = 0;
   foreach(ci, ref c; e.clips) if(c.whenMoving == (d.moveT < 1.0f)) { pick = cast(uint)ci; break; }
   s.states[0].animation = pick;
+  app.animateAsset(s, dt);                        // eval clip `pick` into boneOffsets[region..] this frame
   auto ds = dw.dscale[d.uid];
   float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
   Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));

@@ -101,7 +101,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     if(d.lightIndex != size_t.max) { app.lights[d.lightIndex].position = [d.visualPos[0], d.visualPos[1] + TORCH_HEIGHT, d.visualPos[2], 1.0f]; }
     if(d.nameLabel != size_t.max) { app.moveWorldText(d.nameLabel, [d.visualPos[0], d.visualPos[1] + nameHeight, d.visualPos[2]]); }
     if(app.world.chunkCoord(d.tile) !in app.world.chunks) continue;
-    app.poseEntity(app.world.dwarves, d, e);
+    app.poseEntity(app.world.dwarves, d, e, dt);
   }
 
   foreach(mesh; app.world.dwarves.meshes) mesh.syncInstances();
