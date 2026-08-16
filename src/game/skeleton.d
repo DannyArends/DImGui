@@ -27,11 +27,10 @@ struct Skeleton {
   int[] boneSlot;            /// node k -> local palette slot
 }
 
-/** Assign every live pawn skeleton a contiguous palette region and grow the palette to fit. Skeletons are
-    owned by the per-species containers (dw.skel), never app.objects. Runs once per frame before posing. */
+/** Assign every live pawn skeleton a contiguous palette region and grow the palette to fit. Runs once per frame before posing */
 void updateSkeletons(ref GameApp app) {
   uint top = 0;
-  foreach(ref o; app.objects) { // static/loaded skinned assets (e.g. spider.fbx)
+  foreach(ref o; app.objects) { /// static/loaded skinned assets (e.g. spider.fbx)
     if(o.boneCount == 0) continue;
     foreach(ref inst; o.instances) { inst.meshdef[3] = cast(int)top; top += o.boneCount; }
   }
@@ -47,7 +46,7 @@ void updateSkeletons(ref GameApp app) {
   }
 }
 
-/** Fill a Skeleton's node/bone/animation data from its rig; assigns the local palette slots. */
+/** Fill a Skeleton's node/bone/animation data from its rig; assigns the local palette slots */
 void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, string prefix, string name, uint seed) {
   sk.name = name;
   sk.rootnode = rigToNode(sk.rig, prefix);
@@ -58,7 +57,7 @@ void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, 
   foreach(k; 0 .. sk.rig.length) sk.boneSlot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - sk.boneBase);
 }
 
-/** Build (once) the procedural skeleton for an entity uid: seed the grammar by uid so each entity differs. */
+/** Build (once) the procedural skeleton for an entity uid: seed the grammar by uid so each entity differs */
 void buildSkeleton(Container)(ref GameApp app, Container container, uint uid, ref immutable RawT e) {
   if(uid in container.skel) return;
   Skeleton sk;
@@ -74,17 +73,19 @@ void buildSkeleton(Container)(ref GameApp app, Container container, uint uid, re
   app.updateSkeletons();
 }
 
-/** Advance and evaluate a skeleton's current clip into its palette region. */
-void animateSkeleton(ref GameApp app, ref Skeleton s, float dt) {
+/** Select and evaluate a skeleton's clip into its palette region */
+void animateSkeleton(Pawn)(ref GameApp app, ref Skeleton s, ref Pawn pawn, ref immutable RawT raw, float dt) {
   if(dt == 0.0f) return;
+  uint clip = 0;
+  foreach(ci, ref c; raw.clips) { if(c.whenMoving == (pawn.moveT < 1.0f)) { clip = cast(uint)ci; break; } }
+  s.state.animation = clip;
   s.state.animTime += dt;
-  immutable cT = calculateCurrentTick(s.state.animTime, s.animations[s.state.animation].ticksPerSecond, s.animations[s.state.animation].duration);
-  app.calculateGlobalTransform(s, s.rootnode, Matrix(), cT, s.state.animation, cast(uint)s.region);
+  immutable cT = calculateCurrentTick(s.state.animTime, s.animations[clip].ticksPerSecond, s.animations[clip].duration);
+  app.calculateGlobalTransform(s, s.rootnode, Matrix(), cT, clip, cast(uint)s.region);
   app.buffers["BoneMatrices"].invalidate();
 }
 
-/** Tear down a pawn's skeleton: drop the sole reference (its palette region reclaims next updateSkeletons)
-    and queue any GPU buffers for deletion. (app.bones stays append-only for now.) */
+/** Tear down a skeleton */
 void freeSkeleton(Container)(ref GameApp app, Container container, uint uid) {
   if(uid !in container.skel) return;
   foreach(name; container.skel[uid].bones.keys) app.bones.remove(name);

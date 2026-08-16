@@ -36,9 +36,10 @@ void registerPersistables(ref GameApp app) {
 void loadWorld(ref GameApp app) {
   ensureWorldDir();
   app.initFeatureMeshes();
-
-  app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]);
-  app.objects ~= app.world.inventory.ghost;
+  app.objects ~= (app.world.inventory.ghost = new GhostCube([app.world.tileSize, app.world.tileHeight]));
+  app.objects ~= (app.world.paths.markers = new PathMarkers());
+  app.objects ~= (app.world.weather.clouds = new Clouds());
+  app.objects ~= (app.world.water = new WaterTiles());
 
   app.ensureBlocks();
   foreach(ref ft; featureTable) {

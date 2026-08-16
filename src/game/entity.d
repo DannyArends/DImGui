@@ -11,6 +11,7 @@ import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack;
 import scheduler : atDestination;
 import skeleton : animateSkeleton, buildSkeleton;
+import vector : vMul;
 
 static immutable float[Need.max + 1] decay = [0.00040f, 0.00055f, 0.00018f];  /// Need decay per tick [Hunger, Thirst, Rest]
 enum float WALK_RATE = 8.0f;    /// phase advance per second while moving
@@ -141,27 +142,29 @@ ref immutable(RawT) entityFor(string name) {
   assert(0, "no [ENTITY] named " ~ name);
 }
 
+/** World transform for a posed pawn: species scale × per-uid build variance, yaw, feet seated on the ground. */
+Matrix positionPawn(Pawn)(ref Skeleton s, ref const Pawn pawn, ref immutable RawT raw) {
+  float[3] sc = s.dscale.vMul(raw.scale);
+  Matrix world = rotate(Matrix.init, [pawn.heading + raw.facing, 0.0f, 0.0f]).multiply(scale(sc));
+  position(world, [pawn.visualPos[0], pawn.visualPos[1] - 0.5f - s.footY * sc[1] + raw.offsetY, pawn.visualPos[2]]);
+  return world;
+}
+
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */
-void poseEntity(Container, Pawn)(ref GameApp app, Container container, ref Pawn pawn, ref immutable RawT e, float dt) {
-  app.buildSkeleton(container, pawn.uid, e);
-  auto s = &container.skel[pawn.uid];                 // pointer: mutate state & read all per-uid data via one lookup
-  uint pick = 0;
-  foreach(ci, ref c; e.clips) if(c.whenMoving == (pawn.moveT < 1.0f)) { pick = cast(uint)ci; break; }
-  s.state.animation = pick;
-  app.animateSkeleton(*s, dt);
-  auto ds = s.dscale;
-  float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
-  Matrix world = rotate(Matrix.init, [pawn.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
-  position(world, [pawn.visualPos[0], pawn.visualPos[1] - 0.5f - s.footY * sc[1] + e.offsetY, pawn.visualPos[2]]);
+void poseEntity(Container, Pawn)(ref GameApp app, Container container, ref Pawn pawn, ref immutable RawT raw, float dt) {
+  app.buildSkeleton(container, pawn.uid, raw);
+  app.animateSkeleton(container.skel[pawn.uid], pawn, raw, dt);
+  auto s = container.skel[pawn.uid];
+  Matrix world = positionPawn(s, pawn, raw);
   const int region = s.region;
   foreach(k, ref n; s.rig) {
-    foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
+    foreach(ref br; raw.brushes) { if(br.symbol == n.symbol) {
       float[4] col = br.tint ? pawn.color : br.color;
       auto inst = DrawInstance(world, -1, col);
       inst.meshdef[3] = region + s.boneSlot[k];
       container.meshes[br.mesh].instances ~= inst;
       break;
-    }
+    } }
   }
 }
 

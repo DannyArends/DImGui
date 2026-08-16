@@ -104,7 +104,7 @@ void dwarfFrame(ref GameApp app, float dt) {
     app.poseEntity(app.world.dwarves, d, e, dt);
   }
 
-  foreach(mesh; app.world.dwarves.meshes) mesh.syncInstances();
+  foreach(mesh; app.world.dwarves.meshes) { mesh.syncInstances(); }
   app.world.dwarves.syncInstances();
   app.buffers["LightMatrices"].invalidate();
 }
@@ -113,10 +113,9 @@ void dwarfFrame(ref GameApp app, float dt) {
 void syncPathMarkers(ref World world, bool showPaths = false) {
   if(world.paths.markers is null || world.dwarves is null) return;
   world.paths.markers.instances.reset();
-  if(showPaths) {
-    foreach(ref d; world.dwarves)
-      foreach(l; d.path) world.paths.markers.instances ~= DrawInstance(translate([l[0], l[1] - 0.4f, l[2]]), -1, d.color);
-  }
+  if(showPaths) { foreach(ref d; world.dwarves){ foreach(l; d.path) {
+    world.paths.markers.instances ~= DrawInstance(translate([l[0], l[1] - 0.4f, l[2]]), -1, d.color);
+  } } }
   world.paths.markers.syncInstances();
 }
 
@@ -250,14 +249,6 @@ void ensureDwarves(ref GameApp app) {
   app.world.dwarves.onTick  = (){ dwarfTick(app); };
   app.objects ~= app.world.dwarves;
   app.initDwarfMeshes();
-  app.world.paths.markers = new PathMarkers();
-  app.objects ~= app.world.paths.markers;
-
-  app.world.weather.clouds = new Clouds();
-  app.objects ~= app.world.weather.clouds;
-
-  app.world.water = new WaterTiles();
-  app.objects ~= app.world.water;
 }
 
 void addDwarf(ref GameApp app, ref Dwarf d) {
