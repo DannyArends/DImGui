@@ -8,6 +8,21 @@ import game;
 import assimp : OpenAsset;
 import matrix : multiply, translate, rotate, position, scale, translateScale;
 
+/** A pawn's full per-uid rig+animation state. Owned solely by the container's Skeleton[uint] map; never drawn. */
+struct Skeleton {
+  RigNode[] rig;             /// turtle rig, parent-indexed, walked to emit brush instances
+  float[3] dscale;           /// build girth/height, seeded by uid
+  float footY;               /// lowest bind-pose Y, to seat feet on the ground
+  Node rootnode;             /// posed each frame
+  Bone[string] bones;        /// name -> (local index, inverse bind), merged into app.bones
+  Animation[] animations;    /// baked clips
+  AnimationState state;      /// single clip state
+  int region;                /// palette base in boneOffsets
+  uint boneBase, boneCount;  /// global bone range
+  int[] boneSlot;            /// node k -> local palette slot
+  string name;               /// "Species:skel:uid"
+}
+
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
 class Dwarves : OpenAsset {
   Dwarf[] dwarves;
@@ -15,11 +30,7 @@ class Dwarves : OpenAsset {
   int selected = -1;
   size_t[] tickOrder;
   Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
-  RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
-  float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
-  float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
-  OpenAsset[uint] skel;             /// per-uid vertexless skeleton (nodes+bones+clips) driving a palette region
-  int[][uint] boneSlot;             /// per-uid: node k -> local palette slot after mergeBones
+  Skeleton[uint] skel;              /// per-uid rig + skeleton + animation
 
   this() {
     super();
@@ -36,11 +47,7 @@ class Animals : OpenAsset {
   int selected = -1;
   size_t[] tickOrder;
   Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
-  RigNode[][uint] rig;              /// per-dwarf turtle rig (parent-indexed, walked by globals)
-  float[3][uint] dscale;            /// per-dwarf build (girth/height), seeded by uid
-  float[uint] footY;                /// per-dwarf lowest bind-pose Y, to seat feet on the ground
-  OpenAsset[uint] skel;             /// per-uid vertexless skeleton (nodes+bones+clips) driving a palette region
-  int[][uint] boneSlot;             /// per-uid: node k -> local palette slot after mergeBones
+  Skeleton[uint] skel;              /// per-uid rig + skeleton + animation
 
   this() {
     super();

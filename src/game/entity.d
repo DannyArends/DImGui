@@ -164,34 +164,19 @@ void updateSkeletons(ref GameApp app) {
   }
 }
 
-/** Build (once) the procedural rig for an entity uid: seed the grammar by uid so each entity differs. */
-void buildRig(E)(E entity, uint uid, ref immutable RawT e) {
-  if(uid in entity.rig) return;
-  auto cfg = rawConfig(e);
-  uint hash = cast(uint)(uid * 2654435761u);
-  entity.rig[uid] = interpretRig(grammar(hash, cast(int)e.lsystemIter, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
-  entity.footY[uid] = 0.0f; bool any = false;
-  foreach(ref n; entity.rig[uid]) {
-    auto m = n.inst.matrix;
-    float y = m[13] - m.halfExtent[1];   // lowest vertex of the segment
-    if(!any || y < entity.footY[uid]) {
-      entity.footY[uid] = y; any = true;
-    }
-  }
-  float v = 1.0f + ((hash & 255) / 255.0f * 2.0f - 1.0f) * e.scaleVariance;
-  entity.dscale[uid] = [v, v, v];
-}
-
-/** Build (once per uid) the pawn's vertexless skeleton object; stamp its palette region immediately (no frame lag). */
+/** Build (once) the procedural skeleton for an entity uid: seed the grammar by uid so each entity differs. */
 void buildSkeleton(E)(ref GameApp app, E entity, uint uid, ref immutable RawT e) {
   if(uid in entity.skel) return;
-  entity.buildRig(uid, e);
-  int[] slot;
-  string prefix = format("%s%u.", e.name, uid);
-  string name = format("%s:skel:%u", e.name, uid);
-  uint seed = uid * 2654435761u;
-  entity.skel[uid] = app.buildSkinnedAsset(entity.rig[uid], e.clips, prefix, name, seed, slot);
-  entity.boneSlot[uid] = slot;
+  Skeleton sk;
+  auto cfg = rawConfig(e);
+  uint hash = uid * 2654435761u;
+  sk.rig = interpretRig(grammar(hash, cast(int)e.lsystemIter, e.axiom, e.rules), cfg, [0,0,0], [0,0,0,1]);
+  bool any = false;
+  foreach(ref n; sk.rig) { immutable y = n.inst.matrix[13] - n.inst.matrix.halfExtent[1]; if(!any || y < sk.footY) { sk.footY = y; any = true; } }
+  immutable v = 1.0f + ((hash & 255) / 255.0f * 2.0f - 1.0f) * e.scaleVariance;
+  sk.dscale = [v, v, v];
+  app.bakeSkeleton(sk, e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), hash);  // fills rootnode/bones/animations/boneBase/boneCount/boneSlot/name
+  entity.skel[uid] = sk;
   app.updateSkeletons();
 }
 
@@ -199,11 +184,8 @@ void buildSkeleton(E)(ref GameApp app, E entity, uint uid, ref immutable RawT e)
     and queue any GPU buffers for deletion. (app.bones stays append-only for now.) */
 void freeSkeleton(E)(ref GameApp app, E entity, uint uid) {
   if(uid !in entity.skel) return;
-  auto s = entity.skel[uid];
-  foreach(name; s.bones.keys) app.bones.remove(name);   // reclaim global bone slots
-  app.mainDeletionQueue.add((){ app.cleanup(s); });
-  entity.skel.remove(uid); entity.rig.remove(uid); entity.boneSlot.remove(uid);
-  entity.footY.remove(uid); entity.dscale.remove(uid);
+  foreach(name; entity.skel[uid].bones.keys) app.bones.remove(name);
+  entity.skel.remove(uid);
 }
 
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */

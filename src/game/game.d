@@ -19,7 +19,7 @@ public import entity : Entity, EntityData, EntityState;
 public import feature : Feature;
 public import inventory : Inventory, InventorySlot;
 public import jobs : Job, Need, JobState, Reach;
-public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
+public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, Skeleton, WaterTiles;
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
 public import fall : Fall;
