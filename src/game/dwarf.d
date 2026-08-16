@@ -8,7 +8,7 @@ import game;
 import animation : AnimationState, animateAsset;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
-import entity : buildSkeleton, entityFor, poseEntity, tickEntity, entityMove, isMoving;
+import entity : buildSkeleton, updateSkeletons, freeSkeleton, entityFor, poseEntity, tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
@@ -67,11 +67,13 @@ void deleteDwarf(ref GameApp app, int index) {
   }
   app.world.drops.dirty = true;
 
+  //app.freeSkeleton(app.world.dwarves, index);   // free this animal's skel, then swap-remove
   app.removeDwarfLight(app.world.dwarves.dwarves[index]);
   app.removeDwarfNameLabel(app.world.dwarves.dwarves[index]);
 
   app.world.dwarves.remove(index);
   app.world.dwarves.selected = -1;
+  //app.updateSkeletons();
   app.world.dwarves.syncInstances();
 }
 

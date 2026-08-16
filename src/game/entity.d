@@ -146,7 +146,11 @@ ref immutable(RawT) entityFor(string name) {
     owned by the per-species containers (dw.skel), never app.objects. Runs once per frame before posing. */
 void updateSkeletons(ref GameApp app) {
   uint top = 0;
-  void assign(C)(C dw) {
+  foreach(ref o; app.objects) { // static/loaded skinned assets (e.g. spider.fbx)
+    if(o.boneCount == 0) continue;
+    foreach(ref inst; o.instances) { inst.meshdef[3] = cast(int)top; top += o.boneCount; }
+  }
+  void assign(C)(C dw) { // dynamic per-pawn skeletons owned by the containers
     if(dw is null) return;
     foreach(uid, s; dw.skel) { s.instances[0].meshdef[3] = cast(int)top; top += s.boneCount; }
   }
