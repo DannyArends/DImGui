@@ -218,5 +218,5 @@ void removeChunkAnimals(ref GameApp app, int[3] coord) {
       herd.remove(i); any = true;
     } else i++;
   }
-  if(any) { app.updateSkeletons(); herd.syncInstances(); }   // recompact palette regions once
+  if(any) { herd.syncInstances(); }   // recompact palette regions once
 }

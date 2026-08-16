@@ -187,7 +187,6 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable RawT e) {
   uint gait = cast(uint)(uid % 6);   // 6 shared gait personalities, stable per dwarf
   dw.skel[uid] = app.buildSkinnedAsset(dw.rig[uid], e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), gait, slot);
   dw.boneSlot[uid] = slot;
-  app.updateSkeletons();   // stamp this skel's palette region + grow boneOffsets before it can be animated
 }
 
 /** Tear down a pawn's skeleton: drop the sole reference (its palette region reclaims next updateSkeletons)

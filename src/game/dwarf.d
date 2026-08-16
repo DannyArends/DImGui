@@ -73,7 +73,6 @@ void deleteDwarf(ref GameApp app, int index) {
 
   app.world.dwarves.remove(index);
   app.world.dwarves.selected = -1;
-  //app.updateSkeletons();
   app.world.dwarves.syncInstances();
 }
 
