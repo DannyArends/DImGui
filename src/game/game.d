@@ -19,11 +19,12 @@ public import entity : Entity, EntityData, EntityState;
 public import feature : Feature;
 public import inventory : Inventory, InventorySlot;
 public import jobs : Job, Need, JobState, Reach;
-public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, Skeleton, WaterTiles;
+public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
 public import fall : Fall;
 public import searchnode : PathNode;
+public import skeleton : Skeleton;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
 public import resources : Item, traversable, buildable, cost, maxStack, isFood, foodValue;
@@ -31,7 +32,6 @@ public import vegetation : Vegetation;
 public import world : World, WorldData;
 
 import animalwindow : showAnimalContent;
-import assimp : loadOpenAsset;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
 import boundingbox : computeBoundingBox;
@@ -172,7 +172,7 @@ Geometry makePrimitive(string name) {
     case "Capsule": m = new Capsule(0.5f, 1.0f, 16, 6); break;
     case "Torus": m = new Torus(); break;
     case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
-    default: return loadOpenAsset(toStringz(modelPath(name)), false, true);
+    default: return new OpenAsset(toStringz(modelPath(name)), false, true);
   }
   return m;
 }

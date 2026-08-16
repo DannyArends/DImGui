@@ -8,21 +8,6 @@ import game;
 import assimp : OpenAsset;
 import matrix : multiply, translate, rotate, position, scale, translateScale;
 
-/** A pawn's full per-uid rig+animation state. Owned solely by the container's Skeleton[uint] map; never drawn. */
-struct Skeleton {
-  RigNode[] rig;             /// turtle rig, parent-indexed, walked to emit brush instances
-  float[3] dscale;           /// build girth/height, seeded by uid
-  float footY;               /// lowest bind-pose Y, to seat feet on the ground
-  Node rootnode;             /// posed each frame
-  Bone[string] bones;        /// name -> (local index, inverse bind), merged into app.bones
-  Animation[] animations;    /// baked clips
-  AnimationState state;      /// single clip state
-  int region;                /// palette base in boneOffsets
-  uint boneBase, boneCount;  /// global bone range
-  int[] boneSlot;            /// node k -> local palette slot
-  string name;               /// "Species:skel:uid"
-}
-
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
 class Dwarves : Geometry {
   Dwarf[] dwarves;

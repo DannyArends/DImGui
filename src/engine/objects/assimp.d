@@ -28,7 +28,6 @@ class OpenAsset : Geometry {
     instances = [DrawInstance()];
     loadInto(this, path, verbose, isVisible);
     isOpaque = false;
-    mName = typeof(this).stringof;
   }
 }
 
@@ -79,13 +78,6 @@ void loadInto(OpenAsset object, const(char)* path, bool verbose = false, bool is
   object.computeBoundingBox();
   object.isVisible = isVisible;
   object.scale([0.5f, 0.5f, 0.5f]);
-}
-
-/** Load an OpenAsset */
-OpenAsset loadOpenAsset(const(char)* path, bool verbose = false, bool isVisible = false) {
-  OpenAsset object = new OpenAsset(path, verbose, isVisible);
-  loadInto(object, path, verbose, isVisible);
-  return object;
 }
 
 /** Get the name from a char[256] */

@@ -5,7 +5,7 @@
 
 import engine;
 
-import assimp : loadOpenAsset, isOpenAsset;
+import assimp : isOpenAsset;
 import bone : mergeBones;
 import boundingbox : computeBoundingBox;
 import animation : animateAsset;
@@ -48,7 +48,7 @@ class TaskThread : Thread {
             auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);
             main.send(texture, mytid);
           } else if(path.isOpenAsset()) {
-            auto openasset = loadOpenAsset(toStringz(path), verbose);
+            auto openasset = new OpenAsset(toStringz(path), verbose);
             openasset.computeBoundingBox();
             main.send((cast(immutable(OpenAsset))(openasset)), mytid);
           } else { main.send("Unknown file", mytid); }
