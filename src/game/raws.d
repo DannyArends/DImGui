@@ -6,7 +6,7 @@
 import phobos;
 
 import color : toColor;
-import ctfe : parseRawsGeneric, parseTokens, splitColon;
+import ctfe : namedField, parseRawsGeneric, parseTokens, splitColon;
 import lsystem : Effect, Rule, Symbol, GEN_END;
 import turtlegfx : AnimClip;
 import rawstructs;
@@ -62,17 +62,20 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
   foreach(token; parseTokens(featuresRaw)) {
     auto p = splitColon(token);
     if(p.length >= 2 && p[0] == "FEATURE") { feat = p[1]; continue; }
-    if(p.length >= 5 && p[0] == "BRUSH") {
-      string member = feat ~ p[3];
+    if(p.length >= 6 && p[0] == "BRUSH") {
+      immutable string sub = namedField(p, "substance");
+      if(sub.length == 0) continue;                         // render-only brush -> no resource variant
+      string member = feat ~ sub;
       bool dup = false; foreach(x; seen) if(x == member) dup = true;
       if(dup) continue;
       seen ~= member;
-      table ~= ResourceT(name: member, meshName: p[2], tex3D: p[4], tex2D: p[4],
-                         scale: p.length > 10 ? p[10].to!float : 1.0f,
-                         offsetY: p.length > 11 ? p[11].to!float : 0.0f,
-                         substance: p[3].to!Substance,
+      immutable string tex = namedField(p, "texture");
+      table ~= ResourceT(name: member, meshName: p[2], tex3D: tex, tex2D: tex,
+                         scale:   namedField(p, "dropScale",   "1.0").to!float,
+                         offsetY: namedField(p, "dropOffsetY", "0.0").to!float,
+                         substance: sub.to!Substance,
                          source: feat.to!Source,
-                         food: p.length > 8 ? p[8].to!float : 0.0f);
+                         food: namedField(p, "food", "0.0").to!float);
     }
   }
   return table;

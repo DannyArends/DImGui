@@ -22,7 +22,7 @@ mixin(composedEnum("Source", "None",
 
 // ResourceType = every tile, then <Feature><Substance> per brush (grouped by FEATURE, brush field 3)
 mixin(composedEnum("ResourceType", "",
-  [EnumRule("TILE"), EnumRule("BRUSH", "FEATURE", 3)],
+  [EnumRule("TILE"), EnumRule("BRUSH", "FEATURE", 1, "substance")],
   import("data/raws/tiles.txt"), import("data/raws/features.txt")));
 
 enum size_t RESOURCE_COUNT = ResourceType.max + 1;   /// Number of ResourceType members (variants)

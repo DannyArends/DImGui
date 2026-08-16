@@ -48,10 +48,18 @@ string enumFromTag(string raw, string tag, string name, string sentinel = "") pu
   return result ~ "}\n";
 }
 
+/** CTFE: value of the `key=...` part among token fields, or `def` if absent. */
+string namedField(const string[] p, string key, string def = "") pure {
+  foreach(kv; p){ if(kv.length > key.length + 1 && kv[0 .. key.length] == key && kv[key.length] == '=') {
+    return kv[key.length + 1 .. $];
+  } }
+  return def;
+}
+
 /** One member-emission rule for composedEnum.
  *  Plain:   groupTag=="" -> every [tag:x] emits member x (field-th token).
  *  Grouped: [groupTag:g] sets the prefix; every [tag:...] emits g ~ (field-th token). */
-struct EnumRule { string tag; string groupTag = ""; int field = 1; }
+struct EnumRule { string tag; string groupTag = ""; int field = 1; string key = ""; }
 
 /** Generic CTFE enum codegen: scan raws in order, emit `enum name : ubyte { sentinel, members... }`.
  *  Members are deduped; the sentinel (e.g. "None") is skipped if a rule would re-emit it. Game-unaware. */
@@ -62,8 +70,10 @@ string composedEnum(string name, string sentinel, EnumRule[] rules, string[] raw
     if(p.length < 2) continue;
     foreach(r; rules) {
       if(r.groupTag.length && p[0] == r.groupTag) prefix = p[1];
-      else if(p[0] == r.tag && p.length > r.field) {
-        string m = (r.groupTag.length ? prefix : "") ~ p[r.field];
+      else if(p[0] == r.tag) {
+        immutable string val = r.key.length ? namedField(p, r.key) : (p.length > r.field ? p[r.field] : "");
+        if(val.length == 0) continue;
+        immutable string m = (r.groupTag.length ? prefix : "") ~ val;
         if(m != sentinel && m !in seen) { seen[m] = true; members ~= m; }
       }
     }
