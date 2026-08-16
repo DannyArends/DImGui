@@ -57,9 +57,9 @@
   [BRUSH:E:Cube:0.40:0.13:false:color=sienna:offY=-0.17:offZ=0.28:depth=0.06]
   [BRUSH:G:Cube:0.30:0.12:false:color=sienna:offY=-0.28:offZ=0.28:depth=0.06]
   [BRUSH:F:Cube:0.22:0.11:false:color=sienna:offY=-0.38:offZ=0.27:depth=0.05]
-  [BRUSH:b:Cube:0.09:0.10:false:color=saddlebrown:offX=-0.11:offY=-0.42:offZ=0.27:depth=0.05]
-  [BRUSH:d:Cube:0.09:0.10:false:color=saddlebrown:offX=0.11:offY=-0.42:offZ=0.27:depth=0.05]
-  [BRUSH:a:Cube:0.07:0.06:false:color=goldenrod:offY=-0.50:offZ=0.26:depth=0.04]
+  [BRUSH:b:Cube:0.09:0.10:false:color=saddlebrown:offX=-0.11:offY=-0.42:offZ=0.26:depth=0.04]
+  [BRUSH:d:Cube:0.09:0.10:false:color=saddlebrown:offX=0.11:offY=-0.42:offZ=0.26:depth=0.04]
+  [BRUSH:a:Cube:0.07:0.06:false:color=goldenrod:offY=-0.42:offZ=0.25:depth=0.03]
 
   # --- hair (K -> style); h cap, i/j/k mohawk spikes, t topknot ---
   [BRUSH:h:Cube:0.50:0.10:false:color=sienna:offZ=-0.02]

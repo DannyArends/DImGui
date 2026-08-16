@@ -6,13 +6,10 @@
 import game;
 
 import animation : animateAsset;
-import assimp : OpenAsset;
 import block : findFreeFood, noBlock, itemOf;
 import bone : mergeBones;
-import entity : buildSkeleton, updateSkeletons, freeSkeleton, isMoving, poseEntity, entityFor, tickEntity, entityMove;
+import entity : buildSkeleton, freeSkeleton, isMoving, poseEntity, entityFor, tickEntity, entityMove;
 import feature : interactFeaturesAt, findNearestFoodFeature;
-import gameobjects : Animals;
-import geometry : Geometry;
 import jobs : Job, consumeCarried;
 import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord;
 import material : registerMaterials;

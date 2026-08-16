@@ -5,15 +5,13 @@
 
 import game;
 
-import animation : AnimationState, animateAsset;
+import animation : animateAsset;
 import block : itemOf, findFreeFood, noBlock, release;
 import color : randomColor;
-import entity : buildSkeleton, updateSkeletons, freeSkeleton, entityFor, poseEntity, tickEntity, entityMove, isMoving;
+import entity : buildSkeleton, freeSkeleton, entityFor, poseEntity, tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
-import game : GameApp;
-import gameobjects : Dwarves, PathMarkers;
 import ghost : syncBuildGhosts;
 import matrix : multiply, translate, rotate, position, scale, halfExtent;
 import names : randomizeName;
