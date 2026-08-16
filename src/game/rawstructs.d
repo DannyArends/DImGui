@@ -51,6 +51,11 @@ struct EntityT {
   float lsystemPitch = 25.0f;                     /// Pitch
   float lsystemRoll = 25.0f;                      /// Roll
   float lsystemGap = 0.2f;                        /// f translation step (no draw)
+  uint heightMin = 1, heightMax = 1;              /// L-system growth budget range (feature height)
+  float tilePenalty = 0.0f;                       /// movement penalty on the feature's footprint tiles
+  float progressRate = 0.25f;                     /// harvest progress per tick
+  string interaction;                             /// interaction verb gate (empty = none)
+  string sound;                                   /// harvest sound
 }
 
 /** Per-drawing-symbol spec: which material/size, and whether it advances the turtle. No Geometry here — the turtle is pure. */
@@ -70,24 +75,6 @@ struct LSystemBrushT {
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// per-brush vertex colour (entities)
   bool tint = false;                            /// tint with the entity's per-instance colour instead of `color`
   float depth = -1.0f;                          /// local Z scale; -1 = use radius (square section)
-}
-
-/** Data-driven terrain feature (tree/bush/cactus): spawn rules + an L-system body. */
-struct FeatureT {
-  string name;
-  string[] spawnOn;
-  float noiseThreshold = 0.65f;
-  uint hashSeed1, hashSeed2;
-  uint hashMod, hashRem;
-  uint heightMin = 1, heightMax = 1;
-  float tilePenalty = 0.0f;
-  float progressRate = 0.25f;
-  string interaction;
-  string sound;
-  float lsystemYaw = 25.0f, lsystemPitch = 25.0f, lsystemRoll = 25.0f;
-  LSystemBrushT[] brushes;
-  string axiom = "X";
-  Rule[] rules;
 }
 
 /** A tile/feature variant = substance @ source; the row backing each ResourceType member. */

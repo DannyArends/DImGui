@@ -33,8 +33,8 @@ struct Feature {
 
 private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
 
-/** The FeatureT whose placed feature is rooted at `tile`, or null if none. */
-private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
+/** The EntityT whose placed feature is rooted at `tile`, or null if none. */
+private const(EntityT)* featureTypeAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   foreach(ref ft; featureTable) {
     if(ft.name !in app.world.vegetation) continue;
@@ -44,7 +44,7 @@ private const(FeatureT)* featureTypeAt(ref GameApp app, int[3] tile) {
 }
 
 /** Primitive mesh name bound to grammar symbol `sym` in `ft`'s brushes, or "" if unbound. */
-private string brushMesh(ref immutable FeatureT ft, char sym) {
+private string brushMesh(ref immutable EntityT ft, char sym) {
   foreach(ref br; ft.brushes){ if(br.symbol == sym){ return(br.mesh); } } return("");
 }
 
@@ -76,7 +76,7 @@ void initFeatureMeshes(ref GameApp app) {
 
 /** Scan a chunk's surface tiles for valid spawn sites of `ft`; 
  * returns one Feature per accepted tile (gated by spawn type, noise threshold, and hash). */
-Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const FeatureT ft, ref const SpawnMask spawnMask) {
+Feature[] buildFeatureData(immutable(WorldData) wd, int[3] coord, const ResourceType[] tileTypes, const EntityT ft, ref const SpawnMask spawnMask) {
   Feature[] result;
   for(int i = 0; i < wd.tileCount; i++) {
     if(tileTypes[i] == ResourceType.None) continue;
@@ -100,7 +100,7 @@ float getFeatureProgressRate(ref GameApp app, int[3] tile) {
 }
 
 /** Mark a feature's tile-penalty footprint: a column for tall features (trunk part or L-system), else the root. */
-private void markFootprint(ref World world, ref Feature f, ref immutable FeatureT ft) {
+private void markFootprint(ref World world, ref Feature f, ref immutable EntityT ft) {
   if(ft.tilePenalty <= 0.0f) return;
   bool tall = ft.brushes.length > 0;
   foreach(uint h; 0 .. (tall ? f.height : 1)){
@@ -109,7 +109,7 @@ private void markFootprint(ref World world, ref Feature f, ref immutable Feature
 }
 
 /** True if this feature type drops a Food-class raw (a forageable bush). */
-bool featureDropsFood(const FeatureT ft) {
+bool featureDropsFood(const EntityT ft) {
   foreach(ref br; ft.brushes) { if(br.food > 0.0f) { return(true); } }
   return(false);
 }
@@ -131,7 +131,7 @@ int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) 
 }
 
 /** Pure per-feature instance generation (static parts + L-system brushes), keyed by mesh name. No live state. */
-DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref immutable FeatureT ft) {
+DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref immutable EntityT ft) {
   DrawInstance[][string] meshes;
   auto wp = lat.tileToWorld(f.rootTile);
   if(ft.brushes.length) {
@@ -152,7 +152,7 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
 
 /** Add all DrawInstances for each feature: mark the tile-penalty footprint, build instance
     batches (static parts + L-system brushes), and emit each via emitInstances. */
-Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable FeatureT ft, ref Geometry[string] meshes) {
+Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable EntityT ft, ref Geometry[string] meshes) {
   foreach(ref f; features) {
     f.instanceRuns = []; f.bounds = Bounds.init;
     auto cp = f.rootTile in app.world.instanceCache;
@@ -214,13 +214,13 @@ bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
 }
 
 /** Remove any pending (queued, not-yet-placed) features of type `ft` rooted at `tile`. */
-void dropPending(ref GameApp app, const FeatureT ft, int[3] coord, int[3] tile) {
+void dropPending(ref GameApp app, const EntityT ft, int[3] coord, int[3] tile) {
   if(ft.name !in app.world.vegetation.pending || coord !in app.world.vegetation.pending[ft.name]) return;
   app.world.vegetation.pending[ft.name][coord] = app.world.vegetation.pending[ft.name][coord].filter!(pf => pf.rootTile != tile).array;
 }
 
 /** Harvest every feature of type `ft` rooted at `tile` (spawns drops, removes the feature). Returns true if any harvested. */
-bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] coord) {
+bool harvestFeatureType(ref GameApp app, const EntityT ft, int[3] tile, int[3] coord) {
   if(ft.name !in app.world.vegetation || coord !in app.world.vegetation[ft.name]) return false;
   bool any = false;
   for(size_t i = 0; i < app.world.vegetation[ft.name][coord].length; ) {

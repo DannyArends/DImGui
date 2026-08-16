@@ -114,82 +114,74 @@ bool parseGrammarToken(ref string axiom, ref Rule[] rules,
     default: return false;
   }
 }
-
-/** CTFE: parse raws into immutable FeatureT[] (built directly — no string codegen). */
-FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "FEATURE", (ref ft, p) {
-  if(parseGrammarToken(ft.axiom, ft.rules, ft.lsystemYaw, ft.lsystemPitch, ft.lsystemRoll, p)) return;
+/** One raw handler for every template: grammar tokens (via parseGrammarToken) + all domain tokens. A
+    features file never emits MOVE_SPEED, a pawn file never emits HEIGHT_MIN — one parser, no drift. */
+void rawHandler(ref EntityT x, const string[] p) pure {
+  if(parseGrammarToken(x.axiom, x.rules, x.lsystemYaw, x.lsystemPitch, x.lsystemRoll, p)) return;
   switch(p[0]) {
-    case "SPAWN_ON":         ft.spawnOn ~= p[1]; break;
-    case "NOISE_THRESHOLD":  ft.noiseThreshold = to!float(p[1]); break;
-    case "HASH_SEED1":       ft.hashSeed1 = to!uint(p[1]); break;
-    case "HASH_SEED2":       ft.hashSeed2 = to!uint(p[1]); break;
-    case "HASH_MOD":         ft.hashMod = to!uint(p[1]); break;
-    case "HASH_REM":         ft.hashRem = to!uint(p[1]); break;
-    case "HEIGHT_MIN":       ft.heightMin = to!uint(p[1]); break;
-    case "HEIGHT_MAX":       ft.heightMax = to!uint(p[1]); break;
-    case "TILE_PENALTY":     ft.tilePenalty = to!float(p[1]); break;
-    case "PROGRESS_RATE":    ft.progressRate = to!float(p[1]); break;
-    case "INTERACTION":      ft.interaction = p[1]; break;
-    case "SOUND":            ft.sound = p[1]; break;
-    // Lsystem
-    case "BRUSH": if(p.length >= 8) {
-      ft.brushes ~= LSystemBrushT(p[1][0], p[2], p[3].to!Substance, p[4],
-        to!float(p[5]), to!float(p[6]), to!bool(p[7]),
-        p.length > 8 ? to!float(p[8]) : 0.0f,
-        p.length > 9 ? to!bool(p[9]) : true,
-        p.length > 10 ? to!float(p[10]) : 1.0f);
-    } break;
-    default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
-  }
-})(raw); }
-
-/** CTFE: parse [ENTITY] blocks into per-species EntityT. Entity brushes carry no substance (0). */
-EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "ENTITY", (ref e, p) {
-  if(parseGrammarToken(e.axiom, e.rules, e.lsystemYaw, e.lsystemPitch, e.lsystemRoll, p)) return;
-  switch(p[0]) {
-    case "MOVE_SPEED":       e.moveSpeed = to!float(p[1]); break;
-    case "SPAWN_ON":         e.spawnOn ~= p[1].to!ResourceType; break;
-    case "NOISE_THRESHOLD":  e.noiseThreshold = to!float(p[1]); break;
-    case "HASH_SEED1":       e.hashSeed1 = to!uint(p[1]); break;
-    case "HASH_SEED2":       e.hashSeed2 = to!uint(p[1]); break;
-    case "HASH_MOD":         e.hashMod = to!uint(p[1]); break;
-    case "HASH_REM":         e.hashRem = to!uint(p[1]); break;
-    case "HUNGER_DECAY":     e.hungerDecay = to!float(p[1]); break;
-    case "THIRST_DECAY":     e.thirstDecay = to!float(p[1]); break;
-    case "DIET":             e.diet = p[1]; break;
-    case "SCALE":            e.scale = to!float(p[1]); break;
-    case "SCALE_VARIANCE":   e.scaleVariance = to!float(p[1]); break;
-    case "OFFSET_Y":         e.offsetY = to!float(p[1]); break;
-    case "FACING":           e.facing = to!float(p[1]); break;
-    case "LSYSTEM_ANGLE":    e.lsystemYaw = e.lsystemPitch = e.lsystemRoll = to!float(p[1]); break;
-    case "LSYSTEM_GAP":      e.lsystemGap = to!float(p[1]); break;
-    case "LSYSTEM_ITER":     e.lsystemIter = to!uint(p[1]); break;
+    // shared spawn gate
+    case "SPAWN_ON":         x.spawnOn ~= p[1].to!ResourceType; break;
+    case "NOISE_THRESHOLD":  x.noiseThreshold = to!float(p[1]); break;
+    case "HASH_SEED1":       x.hashSeed1 = to!uint(p[1]); break;
+    case "HASH_SEED2":       x.hashSeed2 = to!uint(p[1]); break;
+    case "HASH_MOD":         x.hashMod = to!uint(p[1]); break;
+    case "HASH_REM":         x.hashRem = to!uint(p[1]); break;
+    // vegetation domain
+    case "HEIGHT_MIN":       x.heightMin = to!uint(p[1]); break;
+    case "HEIGHT_MAX":       x.heightMax = to!uint(p[1]); break;
+    case "TILE_PENALTY":     x.tilePenalty = to!float(p[1]); break;
+    case "PROGRESS_RATE":    x.progressRate = to!float(p[1]); break;
+    case "INTERACTION":      x.interaction = p[1]; break;
+    case "SOUND":            x.sound = p[1]; break;
+    // pawn domain
+    case "MOVE_SPEED":       x.moveSpeed = to!float(p[1]); break;
+    case "HUNGER_DECAY":     x.hungerDecay = to!float(p[1]); break;
+    case "THIRST_DECAY":     x.thirstDecay = to!float(p[1]); break;
+    case "DIET":             x.diet = p[1]; break;
+    case "SCALE":            x.scale = to!float(p[1]); break;
+    case "SCALE_VARIANCE":   x.scaleVariance = to!float(p[1]); break;
+    case "OFFSET_Y":         x.offsetY = to!float(p[1]); break;
+    case "FACING":           x.facing = to!float(p[1]); break;
+    case "LSYSTEM_GAP":      x.lsystemGap = to!float(p[1]); break;
+    case "LSYSTEM_ITER":     x.lsystemIter = to!uint(p[1]); break;
     case "BRUSH": if(p.length >= 6){
-      immutable bool tnt = p.length > 6 && p[6] == "tint";
-      immutable float[4] col = (p.length > 6 && !tnt) ? cast(float[4])toColor(p[6]) : [1.0f, 1.0f, 1.0f, 1.0f];
-      immutable float[3] off = [p.length > 7 ? to!float(p[7]) : 0.0f,
-                                p.length > 8 ? to!float(p[8]) : 0.0f,
-                                p.length > 9 ? to!float(p[9]) : 0.0f];
-      immutable float dep = p.length > 10 ? to!float(p[10]) : -1.0f;   // -1 -> square section
-      e.brushes ~= LSystemBrushT(p[1][0], p[2], Substance.init, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]),
-                                 0.0f, true, 1.0f, off, col, tnt, dep);
+      LSystemBrushT b = { symbol: p[1][0], mesh: p[2], radius: to!float(p[3]), length: to!float(p[4]), advance: to!bool(p[5]) };
+      foreach(kv; p[6 .. $]) {
+        immutable e = kv.indexOf('=');                 // "key=value"; bare "tint" allowed
+        immutable string k = (e < 0) ? kv : kv[0 .. e];
+        immutable string v = (e < 0) ? "" : kv[e + 1 .. $];
+        switch(k) {
+          case "substance": b.substance = v.to!Substance; break;
+          case "texture":   b.texture = v; break;
+          case "food":      b.food = to!float(v); break;
+          case "render":    b.render = to!bool(v); break;
+          case "dropScale": b.dropScale = to!float(v); break;
+          case "color":     b.color = cast(float[4])toColor(v); break;
+          case "tint":      b.tint = true; break;
+          case "offX":      b.offset[0] = to!float(v); break;
+          case "offY":      b.offset[1] = to!float(v); break;
+          case "offZ":      b.offset[2] = to!float(v); break;
+          case "depth":     b.depth = to!float(v); break;
+          default: break;
+        }
+      }
+      x.brushes ~= b;
     } break;
-    case "CLIP": if(p.length >= 2){       // [CLIP:name:axiom:whenMoving:fps]
-      e.clips ~= AnimClip(p[1], p.length > 2 ? p[2] : "", [], (Symbol[char]).init,
+    case "CLIP": if(p.length >= 2){
+      x.clips ~= AnimClip(p[1], p.length > 2 ? p[2] : "", [], (Symbol[char]).init,
                           p.length > 3 && p[3] == "moving", p.length > 4 ? to!float(p[4]) : 8.0f,
                           p.length > 5 ? to!float(p[5]) : 25.0f);
     } break;
-    case "CRULE": if(p.length >= 4 && e.clips.length){ e.clips[$-1].rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
-    case "POSE": if(p.length >= 3 && e.clips.length){    // [POSE:sym:target:side:axis]  axis = X|Y|Z (world swing)
+    case "CRULE": if(p.length >= 4 && x.clips.length){ x.clips[$-1].rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+    case "POSE": if(p.length >= 3 && x.clips.length){
       float[3] ax = [0.0f, 0.0f, 0.0f];
       if(p.length > 4) { if(p[4] == "X") ax = [1,0,0]; else if(p[4] == "Y") ax = [0,1,0]; else if(p[4] == "Z") ax = [0,0,1]; }
       Symbol ps = { effect: Effect.pose, target: p[2][0], bySide: p.length > 3 && p[3] == "side", axis: ax };
-      e.clips[$-1].poses[p[1][0]] = ps;
+      x.clips[$-1].poses[p[1][0]] = ps;
     } break;
     default: break;
   }
-})(raw); }
-
+}
 Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, "REACTION", (ref r, p) {
   switch(p[0]) {
     case "VERB": r.verb  = p[1]; break;
@@ -233,8 +225,8 @@ string validateEntities(const EntityT[] es) pure {
 }
 
 /** CTFE: per-feature spawn membership mask indexed by ResourceType, parallel to `features`. */
-private SpawnMask spawnMask(const FeatureT ft) pure {
-  SpawnMask m; foreach(s; ft.spawnOn) { auto rt = (s == "None" ? ResourceType.None : s.to!ResourceType); m[rt] = true; } return m;
+private SpawnMask spawnMask(const EntityT ft) pure {
+  SpawnMask m; foreach(rt; ft.spawnOn) m[rt] = true; return m;
 }
 
 immutable SpawnMask[] featureSpawnMask = () { SpawnMask[] a; foreach(ref ft; featureTable) a ~= spawnMask(ft); return a; }();
@@ -248,12 +240,13 @@ enum spawnLookup= () {
 
 // Tables
 immutable HeightBand[] heightBands = parseHeightBands(import("data/raws/terrain.txt"));
-immutable FeatureT[] featureTable = parseFeatures(import("data/raws/features.txt"));
 immutable ResourceT[] resourceTable = parseVariants(import("data/raws/tiles.txt"), import("data/raws/features.txt"));
 immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.txt"));
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
-immutable EntityT[] entityTable = parseEntities(import("data/raws/entity.txt"));
+immutable EntityT[] featureTable = parseRawsGeneric!(EntityT, "FEATURE", rawHandler)(import("data/raws/features.txt"));
+immutable EntityT[] entityTable  = parseRawsGeneric!(EntityT, "ENTITY",  rawHandler)(import("data/raws/entity.txt"));
 
 static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
 static assert(validateEntities(entityTable).length == 0, validateEntities(entityTable));
+static assert(validateEntities(featureTable).length == 0, validateEntities(featureTable));
