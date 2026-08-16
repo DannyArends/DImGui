@@ -93,8 +93,7 @@ bool anyActive(const(char)[] s, const Rule[][char] rules, int t, int budget) {
 /** Grow an axiom to a fixed point: each generation applies the rules active at that generation (growth rules
     windowed [0, budget), caps opened at the budget), until no active rule remains. Deterministic from seed.
     One builder for vegetation, entities, and clip time-walks — the cap is data (a rule), not a phase. */
-char[] grammar(uint seed, int budget, string axiom, const(Rule)[] rules) {
-  enum int safety = 64;                                    // bound against a non-terminating ruleset
+char[] grammar(uint seed, int budget, string axiom, const(Rule)[] rules, int safety = 1024) {
   auto ls = LSystem(axiom.dup);
   foreach(ref r; rules) { ls.rules[r.predecessor] ~= r; }
   auto rnd = Random(seed | 1);

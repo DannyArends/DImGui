@@ -106,6 +106,7 @@ void updateSSBO(T)(ref App app, VkCommandBuffer cmd, ref SSBOList!T container, D
   uint size = cast(uint)(T.sizeof * container.length);
   if(size == 0) return;
   if(size > app.buffers[descriptor.base].size) {
+    if(container.capacity == 0) { container.capacity = 1; }
     while(container.capacity * T.sizeof < size) container.capacity *= 2;
     app.growSSBO(descriptor.base, cast(uint)container.capacity);
   }

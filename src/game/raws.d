@@ -124,7 +124,12 @@ FeatureT[] parseFeatures(string raw) pure { return parseRawsGeneric!(FeatureT, "
         p.length > 9 ? to!bool(p[9]) : true,
         p.length > 10 ? to!float(p[10]) : 1.0f);
     } break;
-    case "RULE":             if(p.length >= 4){ ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+    case "RULE": if(p.length >= 4){
+      int gmin = 0, gmax = int.max;
+      if(p.length > 4 && p[4].length){ gmin = (p[4] == "@") ? GEN_END : to!int(p[4]); }
+      if(p.length > 5 && p[5].length){ gmax = (p[5] == "@") ? GEN_END : to!int(p[5]); }
+      ft.rules ~= Rule(p[1][0], p[2], to!uint(p[3]), gmin, gmax);
+    } break;
     // Current part
     default: break;          // LSYSTEM_BEGIN / LSYSTEM_END are markers, ignored
   }
@@ -175,7 +180,7 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
                           p.length > 3 && p[3] == "moving", p.length > 4 ? to!float(p[4]) : 8.0f,
                           p.length > 5 ? to!float(p[5]) : 25.0f);
     } break;
-    case "CRULE":            if(p.length >= 4 && e.clips.length){ e.clips[$-1].rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+    case "CRULE": if(p.length >= 4 && e.clips.length){ e.clips[$-1].rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
     case "POSE": if(p.length >= 3 && e.clips.length){    // [POSE:sym:target:side:axis]  axis = X|Y|Z (world swing)
       float[3] ax = [0.0f, 0.0f, 0.0f];
       if(p.length > 4) { if(p[4] == "X") ax = [1,0,0]; else if(p[4] == "Y") ax = [0,1,0]; else if(p[4] == "Z") ax = [0,0,1]; }
