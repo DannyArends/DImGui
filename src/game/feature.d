@@ -8,7 +8,7 @@ import game;
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, getOr;
-import lsystem : buildGrammar;
+import lsystem : grammar;
 import matrix : position, halfExtent;
 import noise : noiseHTT;
 import resources : variantOf;
@@ -142,7 +142,7 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
       auto brt = variantOf(br.substance, ft.name.to!Source);
       cfg.alpha[br.symbol] = Symbol(Effect.brush, cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, br.offset);
     }
-    auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
+    auto chars = grammar(f.hash, cast(int)f.height, ft.axiom, ft.rules);
     float groundY = wp[1] - 0.5f * lat.tileHeight;
     auto grouped = interpret(chars, cfg, [wp[0], groundY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
     foreach(sym, insts; grouped) { meshes[meshKey(ft.name, brushMesh(ft, sym))] ~= insts; }
@@ -233,7 +233,7 @@ bool harvestFeatureType(ref GameApp app, const FeatureT ft, int[3] tile, int[3] 
       cfg.alpha[br.symbol] = Symbol(Effect.brush, cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, br.offset);
     }
     auto wp = app.world.tileToWorld(tile);
-    auto chars = buildGrammar(f.hash, f.height, ft.axiom, ft.rules);
+    auto chars = grammar(f.hash, cast(int)f.height, ft.axiom, ft.rules);
     auto grouped = interpret(chars, cfg, [wp[0], wp[1] - 0.5f * app.world.tileHeight, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
     foreach(ref br; ft.brushes) {                                  // spawn one drop per drawn instance, at its tile
       if(br.symbol !in grouped) continue;

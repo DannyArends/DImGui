@@ -7,13 +7,23 @@ import phobos;
 
 enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
 enum Effect : ubyte { brush, pose, asset }      /// What a content symbol does at the cursor
+enum int GEN_END = int.min;
 
-/** A production rule: predecessor symbol, its production string, and a weight. Rules sharing a
-    predecessor should sum to 100; any shortfall is the chance the symbol is left unchanged. */
+/** A production rule: predecessor, production, weight, and the generation window [genMin, genMax) it's
+    active in. GEN_END in a bound means "the growth budget", so a cap is just a rule opened at the budget. */
 struct Rule {
-  char predecessor;
-  string production;
-  uint probability = 100;
+  char predecessor;                             /// symbol this rule rewrites
+  string production;                            /// replacement string
+  uint probability = 100;                       /// weight among the predecessor's active rules (shortfall = passthrough)
+  int genMin = 0;                               /// first generation active (GEN_END => budget)
+  int genMax = int.max;                         /// one past last active generation (GEN_END => budget)
+}
+
+/** Is rule r active at generation t, given the growth budget? */
+bool active(ref const Rule r, int t, int budget) pure nothrow @nogc @safe {
+  immutable int lo = (r.genMin == GEN_END) ? budget : r.genMin;
+  immutable int hi = (r.genMax == GEN_END) ? budget : r.genMax;
+  return lo <= t && t < hi;
 }
 
 /** One alphabet entry: an effect plus its payload. Replaces TurtleBrush AND PoseBrush with a single type. */
@@ -50,43 +60,48 @@ struct LSystem {
   Rule[][char] rules;
   size_t max_length = 20000;
 
-  /** Replace c by a weighted-random production, or keep it (no rule, or probabilities < 100). */
-  const(char)[] replace(char c, ref Random rnd) {
+  /** Replace c by a weighted-random production active at generation t, or keep it. */
+  const(char)[] replace(char c, ref Random rnd, int t, int budget) {
     if(c !in rules) return [c];
     uint roll = uniform(0, 100, rnd), prev = 0;
-    foreach(ref r; rules[c]) { if(roll < prev + r.probability) { return(r.production); } prev += r.probability; }
+    foreach(ref r; rules[c]) {
+      if(!active(r, t, budget)) continue;
+      if(roll < prev + r.probability) { return(r.production); }
+      prev += r.probability;
+    }
     return([c]);
   }
 
-  /** Apply one rewrite pass over the whole state; false if the length cap is hit. */
-  bool iterate(ref Random rnd) {
+  /** Apply one rewrite pass at generation t; false if the length cap is hit. */
+  bool iterate(ref Random rnd, int t, int budget) {
     if(state.length > max_length) return(false);
     char[] newstate;
-    foreach(c; state) newstate ~= replace(c, rnd);
+    foreach(c; state) newstate ~= replace(c, rnd, t, budget);
     state = newstate;
     return(true);
   }
 }
 
-/** Expand an axiom by 'iterations' stochastic rewrite passes; deterministic from seed. No tree/canopy logic. */
-char[] expand(uint seed, uint iterations, string axiom, const(Rule)[] specs) {
-  auto ls = LSystem(axiom.dup);
-  foreach(ref r; specs) { ls.rules[r.predecessor] ~= r; }
-  auto rnd = Random(seed | 1);
-  foreach(k; 0 .. iterations) { if(!ls.iterate(rnd)) break; }
-  return ls.state;
+/** Any symbol in `s` carrying a rule active at generation t? */
+bool anyActive(const(char)[] s, const Rule[][char] rules, int t, int budget) {
+  foreach(c; s) { if(auto rs = c in rules) {
+    foreach(ref r; *rs) { if(active(r, t, budget)) { return(true); } }
+  } }
+  return(false);
 }
 
-/** Build the throwaway trunk grammar: height Y-segments + one canopy leaf. Deterministic from seed. */
-char[] buildGrammar(uint seed, uint height, string axiom, const(Rule)[] specs) {
+/** Grow an axiom to a fixed point: each generation applies the rules active at that generation (growth rules
+    windowed [0, budget), caps opened at the budget), until no active rule remains. Deterministic from seed.
+    One builder for vegetation, entities, and clip time-walks — the cap is data (a rule), not a phase. */
+char[] grammar(uint seed, int budget, string axiom, const(Rule)[] rules) {
+  enum int safety = 64;                                    // bound against a non-terminating ruleset
   auto ls = LSystem(axiom.dup);
-  foreach(ref r; specs) { ls.rules[r.predecessor] ~= r; }     // group productions by predecessor
+  foreach(ref r; rules) { ls.rules[r.predecessor] ~= r; }
   auto rnd = Random(seed | 1);
-  for(uint k = 0; k < height; k++) ls.iterate(rnd);
-  char[] capped;                                              // X -> trunk segment + leaf marker
-  foreach(c; ls.state) { if(c == 'X'){ capped ~= 'Y'; capped ~= 'E'; } else capped ~= c; }
-  ls.state = capped;
-  ls.iterate(rnd);   // E -> I/B/nothing
+  for(int t = 0; t < safety; t++) {
+    if(!anyActive(ls.state, ls.rules, t, budget)) break;   // fixed point: nothing left to rewrite
+    if(!ls.iterate(rnd, t, budget)) break;                 // length cap
+  }
   return ls.state;
 }
 

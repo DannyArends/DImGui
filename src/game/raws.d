@@ -7,7 +7,8 @@ import phobos;
 
 import color : toColor;
 import ctfe : parseRawsGeneric, parseTokens, splitColon;
-import lsystem : Rule;    // brush/rule types used when parsing
+import lsystem : Effect, Rule, Symbol, GEN_END;
+import turtlegfx : AnimClip;
 import rawstructs;
 
 /** NOTE: changes to .txt files require: dub build --force
@@ -163,7 +164,12 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
       e.brushes ~= LSystemBrushT(p[1][0], p[2], Substance.init, "", to!float(p[3]), to!float(p[4]), to!bool(p[5]),
                                  0.0f, true, 1.0f, off, col, tnt, dep);
     } break;
-    case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
+    case "RULE": if(p.length >= 4){
+      int gmin = 0, gmax = int.max;
+      if(p.length > 4 && p[4].length){ gmin = (p[4] == "@") ? GEN_END : to!int(p[4]); }
+      if(p.length > 5 && p[5].length){ gmax = (p[5] == "@") ? GEN_END : to!int(p[5]); }
+      e.rules ~= Rule(p[1][0], p[2], to!uint(p[3]), gmin, gmax);
+    } break;
     case "CLIP": if(p.length >= 2){       // [CLIP:name:axiom:whenMoving:fps]
       e.clips ~= AnimClip(p[1], p.length > 2 ? p[2] : "", [], (Symbol[char]).init,
                           p.length > 3 && p[3] == "moving", p.length > 4 ? to!float(p[4]) : 8.0f,
