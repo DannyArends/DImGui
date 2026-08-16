@@ -110,7 +110,7 @@ float[3] turnAxis(char c) pure nothrow @nogc @safe {
     case '+': return [0.0f, 0.0f,  1.0f];  case '-': return [0.0f, 0.0f, -1.0f];  // yaw   (Z)
     case '&': return [1.0f, 0.0f,  0.0f];  case '^': return [-1.0f, 0.0f, 0.0f];  // pitch (X)
     case '<': return [0.0f, 1.0f,  0.0f];  case '>': return [0.0f, -1.0f, 0.0f];  // roll  (Y)
-    default:  return [0.0f, 0.0f,  0.0f];
+    default:  return NO_AXIS;
   }
 }
 

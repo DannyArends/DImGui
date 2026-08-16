@@ -129,11 +129,13 @@ struct Entity(uint N) {
 @nogc bool isMoving(EntityState s) pure nothrow { return s == EntityState.Moving || s == EntityState.Wandering; }
 
 /** Advance one entity's interpolated step; flip to Working/Idle on arrival. */
-void entityMove(T)(ref GameApp app, ref T e, float dt, float speed, float hop) {
-  if(!e.state.isMoving) return;
-  float[3] d = [e.moveTo[0] - e.moveFrom[0], 0.0f, e.moveTo[2] - e.moveFrom[2]];
-  if(d[0] * d[0] + d[2] * d[2] > 1e-6f) e.heading = atan2(d[0], -d[2]) * (180.0f / PI);
-  if(app.stepMove(e, dt, speed, hop)) e.state = e.hasJob ? EntityState.Working : EntityState.Idle;
+void entityMove(E)(ref GameApp app, ref E entity, float dt, float speed, float hop) {
+  if(!entity.state.isMoving) return;
+  float[3] d = [entity.moveTo[0] - entity.moveFrom[0], 0.0f, entity.moveTo[2] - entity.moveFrom[2]];
+  if(d[0] * d[0] + d[2] * d[2] > 1e-6f) { entity.heading = atan2(d[0], -d[2]) * (180.0f / PI); }
+  if(app.stepMove(entity, dt, speed, hop)) {
+    entity.state = entity.hasJob ? EntityState.Working : EntityState.Idle;
+  }
 }
 
 /** The immutable "Dwarf" entity row (grammar, brushes, angles); looked up by name. */
@@ -150,9 +152,9 @@ void updateSkeletons(ref GameApp app) {
     if(o.boneCount == 0) continue;
     foreach(ref inst; o.instances) { inst.meshdef[3] = cast(int)top; top += o.boneCount; }
   }
-  void assign(C)(C dw) { // dynamic per-pawn skeletons owned by the containers
-    if(dw is null) return;
-    foreach(uid, s; dw.skel) { s.instances[0].meshdef[3] = cast(int)top; top += s.boneCount; }
+  void assign(E)(E entity) { // dynamic per-pawn skeletons owned by the containers
+    if(entity is null) return;
+    foreach(uid, s; entity.skel) { s.instances[0].meshdef[3] = cast(int)top; top += s.boneCount; }
   }
   assign(app.world.dwarves);
   assign(app.world.animals);
@@ -162,103 +164,116 @@ void updateSkeletons(ref GameApp app) {
   }
 }
 
-/** Build (once) the procedural rig for a dwarf uid: seed the grammar by uid so each dwarf differs. */
-void buildRig(C)(C dw, uint uid, ref immutable RawT e) {
-  if(uid in dw.rig) return;
+/** Build (once) the procedural rig for an entity uid: seed the grammar by uid so each entity differs. */
+void buildRig(E)(E entity, uint uid, ref immutable RawT e) {
+  if(uid in entity.rig) return;
   auto cfg = rawConfig(e);
   uint hash = cast(uint)(uid * 2654435761u);
-  auto r = interpretRig(grammar(hash, cast(int)e.lsystemIter, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
-  float lo = 0.0f; bool any = false;
-  foreach(ref n; r) {
+  entity.rig[uid] = interpretRig(grammar(hash, cast(int)e.lsystemIter, e.axiom, e.rules), cfg, [0.0f, 0.0f, 0.0f], [0.0f, 0.0f, 0.0f, 1.0f]);
+  entity.footY[uid] = 0.0f; bool any = false;
+  foreach(ref n; entity.rig[uid]) {
     auto m = n.inst.matrix;
     float y = m[13] - m.halfExtent[1];   // lowest vertex of the segment
-    if(!any || y < lo){ lo = y; any = true; }
+    if(!any || y < entity.footY[uid]) {
+      entity.footY[uid] = y; any = true;
+    }
   }
-  dw.rig[uid] = r; dw.footY[uid] = lo;
   float v = 1.0f + ((hash & 255) / 255.0f * 2.0f - 1.0f) * e.scaleVariance;
-  dw.dscale[uid] = [v, v, v];
+  entity.dscale[uid] = [v, v, v];
 }
 
 /** Build (once per uid) the pawn's vertexless skeleton object; stamp its palette region immediately (no frame lag). */
-void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable RawT e) {
-  if(uid in dw.skel) return;
-  dw.buildRig(uid, e);
+void buildSkeleton(E)(ref GameApp app, E entity, uint uid, ref immutable RawT e) {
+  if(uid in entity.skel) return;
+  entity.buildRig(uid, e);
   int[] slot;
-  uint gait = cast(uint)(uid % 6);   // 6 shared gait personalities, stable per dwarf
-  dw.skel[uid] = app.buildSkinnedAsset(dw.rig[uid], e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), gait, slot);
-  dw.boneSlot[uid] = slot;
+  string prefix = format("%s%u.", e.name, uid);
+  string name = format("%s:skel:%u", e.name, uid);
+  uint seed = uid * 2654435761u;
+  entity.skel[uid] = app.buildSkinnedAsset(entity.rig[uid], e.clips, prefix, name, seed, slot);
+  entity.boneSlot[uid] = slot;
+  app.updateSkeletons();
 }
 
 /** Tear down a pawn's skeleton: drop the sole reference (its palette region reclaims next updateSkeletons)
     and queue any GPU buffers for deletion. (app.bones stays append-only for now.) */
-void freeSkeleton(C)(ref GameApp app, C dw, uint uid) {
-  if(uid !in dw.skel) return;
-  auto s = dw.skel[uid];
+void freeSkeleton(E)(ref GameApp app, E entity, uint uid) {
+  if(uid !in entity.skel) return;
+  auto s = entity.skel[uid];
+  foreach(name; s.bones.keys) app.bones.remove(name);   // reclaim global bone slots
   app.mainDeletionQueue.add((){ app.cleanup(s); });
-  dw.skel.remove(uid); dw.rig.remove(uid); dw.boneSlot.remove(uid);
-  dw.footY.remove(uid); dw.dscale.remove(uid);
+  entity.skel.remove(uid); entity.rig.remove(uid); entity.boneSlot.remove(uid);
+  entity.footY.remove(uid); entity.dscale.remove(uid);
 }
 
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */
-void poseEntity(C, P)(ref GameApp app, C dw, ref P d, ref immutable RawT e, float dt) {
-  app.buildSkeleton(dw, d.uid, e);
-  auto s = dw.skel[d.uid];
+void poseEntity(E, P)(ref GameApp app, E entity, ref P d, ref immutable RawT e, float dt) {
+  app.buildSkeleton(entity, d.uid, e);
+  auto s = entity.skel[d.uid];
   uint pick = 0;
   foreach(ci, ref c; e.clips) if(c.whenMoving == (d.moveT < 1.0f)) { pick = cast(uint)ci; break; }
   s.states[0].animation = pick;
   app.animateAsset(s, dt);                        // eval clip `pick` into boneOffsets[region..] this frame
-  auto ds = dw.dscale[d.uid];
+  auto ds = entity.dscale[d.uid];
   float[3] sc = [ds[0] * e.scale, ds[1] * e.scale, ds[2] * e.scale];
   Matrix world = rotate(Matrix.init, [d.heading + e.facing, 0.0f, 0.0f]).multiply(scale(sc));
-  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - dw.footY[d.uid] * sc[1] + e.offsetY, d.visualPos[2]]);
+  position(world, [d.visualPos[0], d.visualPos[1] - 0.5f - entity.footY[d.uid] * sc[1] + e.offsetY, d.visualPos[2]]);
   const int region = s.instances[0].meshdef[3];
-  auto slot = dw.boneSlot[d.uid];
-  const r = dw.rig[d.uid];
+  auto slot = entity.boneSlot[d.uid];
+  const r = entity.rig[d.uid];
   foreach(k, ref n; r) {
     foreach(ref br; e.brushes) if(br.symbol == n.symbol) {
       float[4] col = br.tint ? d.color : br.color;
       auto inst = DrawInstance(world, -1, col);
       inst.meshdef[3] = region + slot[k];
-      dw.meshes[br.mesh].instances ~= inst;
+      entity.meshes[br.mesh].instances ~= inst;
       break;
     }
   }
 }
 
 /** A single dwarf being ticked */
-void tickEntity(T)(ref GameApp app, ref T d) {
-  foreach(n; 0 .. d.needs.length){ d.needs[n] = min(1.0f, d.needs[n] + decay[n]); }
-  foreach(n; 0 .. d.needBackoff.length) { if(d.needBackoff[n] > 0) { d.needBackoff[n]--; } }
-  if(d.isFalling) return;
+void tickEntity(E)(ref GameApp app, ref E entity) {
+  foreach(n; 0 .. entity.needs.length){ entity.needs[n] = min(1.0f, entity.needs[n] + decay[n]); }
+  foreach(n; 0 .. entity.needBackoff.length) { if(entity.needBackoff[n] > 0) { entity.needBackoff[n]--; } }
+  if(entity.isFalling) return;
 
   // Drop a job the moment it becomes invalid, in any state
-  if(d.hasJob && d.currentJob.isValid !is null && !d.currentJob.isValid(app, d.currentJob)) { d.currentJob.onFail(app, d); }
+  if(entity.hasJob && entity.currentJob.isValid !is null && !entity.currentJob.isValid(app, entity.currentJob)) {
+    entity.currentJob.onFail(app, entity);
+  }
 
-  final switch(d.state) {
+  final switch(entity.state) {
     case EntityState.Idle:
-      if(d.tickNeeds(app)) break;
-      d.whenIdle(app);
+      if(entity.tickNeeds(app)) break;
+      entity.whenIdle(app);
       break;
     case EntityState.WaitingForPath: break;
     case EntityState.Moving:
     case EntityState.Wandering:
-      d.onWork(app);
-      if(d.moveT >= 1.0f && d.path.length > 0) app.followPath(d);
+      entity.onWork(app);
+      if(entity.moveT >= 1.0f && entity.path.length > 0) app.followPath(entity);
       break;
     case EntityState.Working:
-      if(!d.hasJob) { d.state = EntityState.Idle; break; }
-      if(app.atDestination(d, d.currentJob.targetTile, d.currentJob.reach)) {
-        d.blockedSince = 0; d.repathAttempts = 0; d.currentJob.onArrive(app, d);
+      if(!entity.hasJob) { entity.state = EntityState.Idle; break; }
+      if(app.atDestination(entity, entity.currentJob.targetTile, entity.currentJob.reach)) {
+        entity.blockedSince = 0;
+        entity.repathAttempts = 0;
+        entity.currentJob.onArrive(app, entity);
       } else {
-        if(!d.lastPathPartial && ++d.repathAttempts > 3) { d.onStuck(app); d.currentJob.onFail(app, d); break; }
-        final switch(app.repathTo(d, d.currentJob.targetTile, d.currentJob.reach, (PathResult r){ d.onPathResult(app, r); })) {
-          case RepathResult.Unreachable: d.state = EntityState.WaitingForPath; d.currentJob.onFail(app, d); break;
-          case RepathResult.AtTarget:    d.state = EntityState.Working; break;
-          case RepathResult.Pathing:     d.state = EntityState.WaitingForPath; break;
+        if(!entity.lastPathPartial && ++entity.repathAttempts > 3) { 
+          entity.onStuck(app);
+          entity.currentJob.onFail(app, entity);
+          break;
+        }
+        final switch(app.repathTo(entity, entity.currentJob.targetTile, entity.currentJob.reach, (PathResult r){ entity.onPathResult(app, r); })) {
+          case RepathResult.Unreachable: entity.state = EntityState.WaitingForPath; entity.currentJob.onFail(app, entity); break;
+          case RepathResult.AtTarget: entity.state = EntityState.Working; break;
+          case RepathResult.Pathing: entity.state = EntityState.WaitingForPath; break;
         }
       }
       break;
-    case EntityState.Blocked: d.onBlocked(app); break;
+    case EntityState.Blocked: entity.onBlocked(app); break;
   }
 }
 

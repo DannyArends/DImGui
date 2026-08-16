@@ -20,8 +20,7 @@ import matrix : translate;
 import normals : computeNormals, computeTangents;
 import vector : x, y, z, euclidean;
 
-/** OpenAsset using assimp
- */
+/** OpenAsset using assimp */
 class OpenAsset : Geometry {
   Bone[string] bones;   /// Local bone map, merged into app.bones on main thread
   this() {
@@ -54,7 +53,7 @@ OpenAsset buildSkinnedAsset(ref App app, const RigNode[] rig, immutable AnimClip
   s.animations = buildClips(rig, prefix, clips, seed);
   app.mergeBones(s);
   slot.length = rig.length;
-  foreach(k; 0 .. rig.length){
+  foreach(k; 0 .. rig.length) {
     slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - s.boneBase);
   }
   return s;
