@@ -15,10 +15,8 @@ void createInstance(ref App app){
   auto extensions = app.queryInstanceExtensionProperties();
 
   if(app.enableValidation && layers.has("VK_LAYER_KHRONOS_validation")) app.layers ~= "VK_LAYER_KHRONOS_validation";
-  debug {
-    if(extensions.has("VK_EXT_debug_report")) app.instanceExtensions ~= "VK_EXT_debug_report";
-    if(extensions.has("VK_EXT_debug_utils")) app.instanceExtensions ~= "VK_EXT_debug_utils";
-  }
+  if(extensions.has("VK_EXT_debug_report")) app.instanceExtensions ~= "VK_EXT_debug_report";
+  if(extensions.has("VK_EXT_debug_utils")) app.instanceExtensions ~= "VK_EXT_debug_utils";
   if(extensions.has("VK_KHR_get_physical_device_properties2")){ app.instanceExtensions ~= "VK_KHR_get_physical_device_properties2"; }
 
   VkInstanceCreateInfo createInstance = { 

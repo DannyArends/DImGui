@@ -150,29 +150,33 @@ float renderOffsetY(const Item it) { return it.isCraft ? itemTemplateTable[it.sh
   return cast(int)templateMat(it.shape, it.amount > 0 && itemTemplateTable[it.shape].texFilled.length > 0);
 }
 
-void emitBlock(Geometry mesh, ref Block b, float[3] pos, float[3] scale, int matOverride = -1) {
-  auto col = resourceTable[b.item.material].color;                        // material colour tints the template skin
-  auto m = translateScale(pos, scale);
-  if(matOverride >= 0){
-    mesh.addInstances([DrawInstance(m, matOverride, col)]);
-  }else{ mesh.addInstances([DrawInstance(m, cast(int)b.item.material, col)]); }
+void emitBlock(ref World world, ref Block b, float[3] pos, bool hidden = false) {
+  auto mesh = world.drops.meshes[b.item.renderMesh];
+  float sz = hidden ? 0.0f : b.item.renderScale * world.blockSize;
+  auto col = resourceTable[b.item.material].color;                       // material colour tints the template skin
+  auto mat = matOverride(b.item);
+  auto m = translateScale(pos, [sz, sz, sz]);
+  mesh.addInstances([DrawInstance(m, (mat >= 0 ? mat : cast(int)b.item.material), col)]);
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */
 void syncStockpileInstances(ref World world) {
   float bs = world.blockSize;
-  foreach(ref sp; world.stockpiles) { foreach(i, blockID; sp.contents) {
-    if(blockID == emptySlot) continue;
-    auto b = blockID in world.drops;
-    if(b is null) continue;
-    auto ti = i / slotsPerTile;
-    if(ti >= sp.tiles.length) break;
-    float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
-    float[3] off = world.subCellOffset(cast(uint)(i % slotsPerTile));
-    float sz = b.item.renderScale * bs;
-    float[3] pos = [base[0]+off[0], base[1]+off[1]+b.item.renderOffsetY, base[2]+off[2]];
-    emitBlock(world.drops.meshes[b.item.renderMesh], *b, pos, [sz, sz, sz], matOverride(b.item));
-  } }
+  foreach(ref sp; world.stockpiles) {
+    for(size_t i = 0, rank = 0; i < sp.contents.length; i++) {
+      auto blockID = sp.contents[i];
+      if(blockID == emptySlot) continue;
+      auto b = blockID in world.drops;
+      if(b is null) continue;
+      auto ti = rank / slotsPerTile;
+      if(ti >= sp.tiles.length) break;
+      float[3] base = world.tileToWorld(sp.tiles[ti].tileAbove, -world.blockOffset);
+      float[3] off  = world.subCellOffset(cast(uint)(rank % slotsPerTile));
+      float[3] pos = [base[0]+off[0], base[1]+off[1]+b.item.renderOffsetY, base[2]+off[2]];
+      world.emitBlock(*b, pos);
+      rank++;
+    }
+  }
 }
 
 /** Sync instances from blocks registry */
@@ -181,17 +185,13 @@ void syncBlockInstances(ref World world) {
   foreach(key; world.drops.meshes.byKey) { world.drops.meshes[key].instances.reset(); }
   foreach(id, ref b; world.drops) {
     if(b.tile == storedTile) continue;
-    auto meshName = b.item.renderMesh;
     bool hidden = (b.tile == noTile || b.tile == builtTile || world.chunkCoord(b.tile) !in world.chunks);
-    if(hidden) {
-      emitBlock(world.drops.meshes[meshName], b, [0, 0, 0], [0, 0, 0], matOverride(b.item));
-    } else {
+    if (!hidden) {
       auto base = world.tileToWorld(b.tile, -world.blockOffset);
-      float sz = b.item.renderScale * world.blockSize;
       float bx = ((id * 1664525u  + 1013904223u) % 100u) / 100.0f - 0.5f;
       float bz = ((id * 22695477u + 1u) % 100u) / 100.0f - 0.5f;
       float by = (b.fall.isFalling ? b.fall.y : base[1]) + b.item.renderOffsetY;
-      emitBlock(world.drops.meshes[meshName], b, [base[0] + bx, by, base[2] + bz], [sz, sz, sz], matOverride(b.item));
+      world.emitBlock(b, [base[0] + bx, by, base[2] + bz]);
     }
   }
   world.syncStockpileInstances();

@@ -52,6 +52,9 @@ void stampTiles(ref World world, uint id, int[3][] tiles) { foreach(t; tiles){ w
 /** Remove the given tiles from the world's tile to pile index */
 void clearTiles(ref World world, int[3][] tiles) { foreach(t; tiles) { world.stockpiles.at.remove(t); } }
 
+/** The block's compacted position within its pile: count of non-empty slots before it. */
+@nogc uint rankOf(const Stockpile sp, size_t slot) nothrow { return cast(uint)sp.contents[0 .. slot].count!(id => id != emptySlot); }
+
 /** One new pile from the painted preview */
 void createStockpile(ref World world, int[3][] tiles) {
   if(tiles.length == 0) return;
@@ -63,7 +66,11 @@ void createStockpile(ref World world, int[3][] tiles) {
 /** Delete a pile: spill its blocks back to the floor and clear the zone */
 void removeStockpile(ref World world, uint id) {
   if(auto sp = id in world.stockpiles) {
-    foreach(i, blockID; sp.contents) { if(auto b = blockID in world.drops) { b.tile = sp.tiles[i / slotsPerTile].tileAbove; } }
+    for(size_t i = 0, rank = 0; i < sp.contents.length; i++) {
+      if(sp.contents[i] == emptySlot) continue;
+      if(auto b = sp.contents[i] in world.drops) { b.tile = sp.tiles[rank / slotsPerTile].tileAbove; }
+      rank++;
+    }
     world.clearTiles(sp.tiles);
     world.stockpiles.byId.remove(id);
     world.drops.dirty = true;
@@ -98,10 +105,12 @@ uint pendingStores(const World world, uint stockpileID) {
 void storeBlockAt(ref World world, int[3] tile, uint blockID) {
   if(auto idp = tile.tileBelow in world.stockpiles.at) {
     if(auto sp = *idp in world.stockpiles) {
-      if(!hasFreeSlot(*sp)) return;
-      ptrdiff_t slot = sp.contents.countUntil(emptySlot);
-      if(slot < 0) { slot = sp.contents.length; sp.contents ~= emptySlot; }
-      if(slot >= capacity(*sp)) return;
+      ptrdiff_t slot = sp.contents.countUntil(emptySlot);   // reuse a hole if there is one
+      if(slot < 0) {
+        if(sp.contents.length >= capacity(*sp)) return;     // full: refuse BEFORE growing
+        slot = sp.contents.length;
+        sp.contents ~= emptySlot;
+      }
       sp.contents[slot] = blockID;
       if(auto b = blockID in world.drops) { b.tile = storedTile; b.fall = Fall.init; }
     }
@@ -134,13 +143,14 @@ bool withdrawBlock(ref World world, uint blockID) {
 @nogc int[3] storedTileOf(const World world, uint blockID) {
   foreach(sp; world.stockpiles) {
     auto idx = sp.contents.countUntil(blockID);
-    if(idx >= 0){ return(sp.tiles[idx / slotsPerTile]); }
+    if(idx >= 0){ auto ti = sp.rankOf(idx) / slotsPerTile; return(sp.tiles[ti]); }
   }
   return(noTile);
 }
 
 /** Sub-cell world offset for the n-th block in a tile */
 float[3] subCellOffset(const World world, uint slot) {
+  assert(slot < slotsPerTile, "subCellOffset: slot out of sub-cell range");
   immutable float bs = world.blockSize, half = world.tileSize * 0.5f;
   immutable uint sx = slot % subPerAxis, sy = (slot / subPerAxis) % subPerAxis, sz = slot / (subPerAxis^^2);
   return [(sx + 0.5f) * bs - half, sy * bs, (sz + 0.5f) * bs - half];
