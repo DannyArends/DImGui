@@ -33,15 +33,18 @@ struct StockpileField {
   uint nextID = 1;
 }
 
-enum subPerAxis = 4;                          // 1 / 0.25 (blockSize ratio)
-enum slotsPerTile = subPerAxis^^3;            // 64
+enum subSize = 0.25f;                         /// sub-block cell size (fraction of a tile)
+enum subPerAxis = cast(int)(1.0f / subSize);  /// cells per tile axis
+enum slotsPerTile = subPerAxis ^^ 3;          /// subPerAxis cubed
 enum uint emptySlot = uint.max;
 
 /** Total block slots across all of the pile's tiles */
 @nogc uint capacity(const Stockpile sp) nothrow { return cast(uint)sp.tiles.length * slotsPerTile; }
 
-/** "True if the pile has room for another block */
-@nogc bool hasFreeSlot(const Stockpile sp) nothrow { return sp.contents.countUntil(emptySlot) >= 0 || sp.contents.length < sp.capacity; }
+/** True if the pile has room for another block, counting in-flight stores. */
+@nogc bool hasFreeSlot(const Stockpile sp, uint pending = 0) nothrow {
+  return sp.contents.countUntil(emptySlot) >= 0 || sp.contents.length + pending < sp.capacity;
+}
 
 /** Mark each tile as belonging to stockpile `id` in the world's tile to pile index */
 void stampTiles(ref World world, uint id, int[3][] tiles) { foreach(t; tiles){ world.stockpiles.at[t] = id; } }
@@ -72,8 +75,7 @@ uint findStockpileSlot(const World world, Item it, int[3] from, out int[3] tile)
   uint best = 0; float bestD = float.max;
   foreach(id, sp; world.stockpiles) {
     if(!sp.acceptsItem(it)) continue;
-    uint pending = world.pendingStores(id);
-    if(sp.contents.length + pending >= sp.capacity) continue;
+    if(!sp.hasFreeSlot(world.pendingStores(id))) continue;
     foreach(t; sp.tiles) {
       auto above = t.tileAbove;
       if(world.findGoalTile(above, from, Reach.Adjacent) == noTile) continue;
@@ -123,7 +125,7 @@ uint countOf(const Stockpile sp, const Drops drops, Item key) {
 bool withdrawBlock(ref World world, uint blockID) {
   foreach(ref sp; world.stockpiles) {
     auto idx = sp.contents.countUntil(blockID);
-    if(idx >= 0) { sp.contents = sp.contents.remove(idx); return(true); }
+    if(idx >= 0) { sp.contents[idx] = emptySlot; return(true); }
   }
   return(false);
 }
