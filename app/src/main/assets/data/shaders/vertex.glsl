@@ -45,9 +45,11 @@ void main() {
   gl_Position = ubo.viewProj * worldPos;
   gl_PointSize = 2.0f;
 
+  /// Fragment color
   fragColor = INSTANCED ? (inColor * instanceColor) : inColor;
-
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
+
+  /// Find instanced MeshID for multi-mesh objects
   uint meshID = meshdef[0];
   if(meshdef[0] != meshdef[1]) {
     for (; meshID < meshdef[1]; meshID++) {
@@ -60,10 +62,12 @@ void main() {
     fragPosWorld = worldPos;
     fragViewPos = (ubo.view * worldPos).xyz;
     bool hasBakedNormal = (instanceNormal.w != 0.0);
-    vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * inNormal);
+    vec3 nModel = ANIMATED ? animate(vec4(inNormal, 0.0f), inBones, inWeights, uint(meshdef[3])).xyz : inNormal;
+    vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * nModel);
     fragNormal = N;
     if(NORMAL_MAPPED) {
-      vec3 T = hasBakedNormal ? instanceTangent.xyz : normalize(mat3(instance) * inTangent.xyz);
+      vec3 tModel = ANIMATED ? animate(vec4(inTangent.xyz, 0.0f), inBones, inWeights, uint(meshdef[3])).xyz : inTangent.xyz;
+      vec3 T = hasBakedNormal ? instanceTangent.xyz : normalize(mat3(instance) * tModel);
       vec3 B = normalize(cross(N, T)) * (hasBakedNormal ? instanceTangent.w : inTangent.w);
       fragTBN = mat3(T, B, N);
     }
