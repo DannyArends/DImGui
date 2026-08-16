@@ -8,8 +8,8 @@ import phobos;
 
 import color : Colors;
 import ctfe : composedEnum, enumFromTag, EnumRule;
-import lsystem : Rule;
-public import turtlegfx : AnimClip, PoseBrush;
+public import lsystem : Effect, Rule, Symbol;
+public import turtlegfx : AnimClip;
 
 enum WorkshopUse : ubyte { None, Required, Preferred }
 

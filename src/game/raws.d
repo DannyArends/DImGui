@@ -165,7 +165,7 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
     } break;
     case "RULE":             if(p.length >= 4){ e.rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } break;
     case "CLIP": if(p.length >= 2){       // [CLIP:name:axiom:whenMoving:fps]
-      e.clips ~= AnimClip(p[1], p.length > 2 ? p[2] : "", [], (PoseBrush[char]).init,
+      e.clips ~= AnimClip(p[1], p.length > 2 ? p[2] : "", [], (Symbol[char]).init,
                           p.length > 3 && p[3] == "moving", p.length > 4 ? to!float(p[4]) : 8.0f,
                           p.length > 5 ? to!float(p[5]) : 25.0f);
     } break;
@@ -173,7 +173,8 @@ EntityT[] parseEntities(string raw) pure { return parseRawsGeneric!(EntityT, "EN
     case "POSE": if(p.length >= 3 && e.clips.length){    // [POSE:sym:target:side:axis]  axis = X|Y|Z (world swing)
       float[3] ax = [0.0f, 0.0f, 0.0f];
       if(p.length > 4) { if(p[4] == "X") ax = [1,0,0]; else if(p[4] == "Y") ax = [0,1,0]; else if(p[4] == "Z") ax = [0,0,1]; }
-      e.clips[$-1].poses[p[1][0]] = PoseBrush(p[2][0], p.length > 3 && p[3] == "side", ax);
+      Symbol ps = { effect: Effect.pose, target: p[2][0], bySide: p.length > 3 && p[3] == "side", axis: ax };
+      e.clips[$-1].poses[p[1][0]] = ps;
     } break;
     default: break;
   }

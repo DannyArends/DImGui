@@ -93,7 +93,7 @@ Animation[] buildClips(const RigNode[] rig, string prefix, immutable AnimClip[] 
 }
 
 /** One pose's contribution to a bone's local rotation at a key: world-axis swing (body frame) or cursor swing. */
-Matrix poseLocal(ref immutable PoseBrush pb, const float[4] quat, float side, const Matrix localJ, const Matrix Rr) {
+Matrix poseLocal(ref immutable Symbol pb, const float[4] quat, float side, const Matrix localJ, const Matrix Rr) {
   if(pb.axis != NO_AXIS) {
     const float ang = quatAxisAngle(quat, pb.axis) * (pb.bySide ? side : 1.0f);
     return rotate(angleAxis(ang, pb.axis)).multiply(localJ);
@@ -149,7 +149,6 @@ NodeAnimation nodeAnimation(ref const RigNode n, const char[] syms, ref immutabl
 
 /** Bake one AnimClip: walk its L-system in time, then map each target symbol's key stream onto every matching rig node. */
 Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimClip clip, uint seed) {
-  char[char] poses; foreach(sym, ref pb; clip.poses) poses[sym] = pb.target;
   int steps;
   TurtleConfig cfg = { yaw: clip.turn, pitch: clip.turn, roll: clip.turn };
   auto tracks = interpretAnim(expand(seed, 1, clip.axiom, clip.rules), clip.poses, cfg, steps);

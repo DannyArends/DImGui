@@ -35,7 +35,7 @@ public import intersection : Intersection;
 public import lattice : Diff, Lattice, LatticeMap, noTile, builtTile, storedTile, FACE_OFFSETS, FACE_TANGENT;
 public import line : Line;
 public import lights : LMode, Light, Lighting, Lights,  LIGHT_GRID, CLUSTER_COUNT, NIL;
-public import lsystem : LSystem, Rule, TurtleBrush, TurtleConfig, TurtleState;
+public import lsystem : Effect, LSystem, Rule, Symbol, TurtleConfig, TurtleState, NO_AXIS;
 public import material : Material;
 public import matrix : Matrix;
 public import mesh : Mesh;
