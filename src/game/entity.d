@@ -183,6 +183,7 @@ void buildSkeleton(C)(ref GameApp app, C dw, uint uid, ref immutable RawT e) {
   uint gait = cast(uint)(uid % 6);   // 6 shared gait personalities, stable per dwarf
   dw.skel[uid] = app.buildSkinnedAsset(dw.rig[uid], e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), gait, slot);
   dw.boneSlot[uid] = slot;
+  app.updateSkeletons();   // stamp this skel's palette region + grow boneOffsets before it can be animated
 }
 
 /** Tear down a pawn's skeleton: drop the sole reference (its palette region reclaims next updateSkeletons)
@@ -193,6 +194,7 @@ void freeSkeleton(C)(ref GameApp app, C dw, uint uid) {
   app.mainDeletionQueue.add((){ app.cleanup(s); });
   dw.skel.remove(uid); dw.rig.remove(uid); dw.boneSlot.remove(uid);
   dw.footY.remove(uid); dw.dscale.remove(uid);
+  app.updateSkeletons();   // recompact remaining regions, reclaiming the freed slot
 }
 
 /** Emit one UNIT primitive instance per rig node; the GPU skins it by that node's absolute palette slot. */
