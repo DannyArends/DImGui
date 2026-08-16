@@ -1,18 +1,18 @@
 [OBJECT:ITEM]
 
 [ITEM:Flint]
-  [MESH:Cube::Flint]
+  [MESH:Cube:tex=Flint]
   [ACCEPTS:Stone][ACCEPTS:Rock]
   [SCALE:0.4][STACK:4]
 
 [ITEM:Axe]
-  [MESH:Cube:StoneAxe:StoneAxe:StoneAxe]
+  [MESH:Cube:tex3D=StoneAxe:tex=StoneAxe:texFilled=StoneAxe]
   [ACCEPTS:Stone][ACCEPTS:Rock]
   [SCALE:0.5]
   [STACK:1]
 
 [ITEM:Cup]
-  [MESH:cup:colormap-food-kit:WoodCup:WoodCupFilled]
+  [MESH:cup:tex3D=colormap-food-kit:tex=WoodCup:texFilled=WoodCupFilled]
   [ACCEPTS:Wood]
   [HOLDS:Liquid]
   [CAPACITY:1]
