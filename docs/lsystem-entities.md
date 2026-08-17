@@ -2,7 +2,7 @@
 
 Conventions for building a voxel creature. Derived from `segmentTransform` (matrix.d),
 the turtle (`turtlegfx.d` / `lsystem.d`), and the clip selector (`skeleton.d:80`).
-Placement is deterministic math — follow these and parts connect, feet land, and
+Placement is deterministic math follow these and parts connect, feet land, and
 faces don't z-fight. Proportions still want one visual pass in engine.
 
 ## Frame & the brush box
@@ -13,14 +13,14 @@ faces don't z-fight. Proportions still want one visual pass in engine.
   - `advance:false` for all offset-placed parts (normal case). `advance:true` only for turtle-stacked rigs (see Dwarf).
   - `color=NAME` from `colors.txt` (unknown name silently → white). `tint` = per-pawn colour.
 
-## Legs — the rule that bites first
+## Legs the rule that bites first
 - Legs are drawn with `&&`: `(&&o)(&&p)(&&q)(&&r)`. `&&` pitches 180°, so the leg hangs straight down.
 - **The foot sits on the ground iff `offY = -length`.** No exceptions. (`foot_y = -offY - length = 0`.)
-- Under `&&`, a leg's world position is `(offX, -offY, -offZ)` — note `offZ` flips sign.
+- Under `&&`, a leg's world position is `(offX, -offY, -offZ)` note `offZ` flips sign.
 - Quad layout: four legs, `offX ±`, `offZ ±`, equal `radius`/`length`. Leg top must sit *inside* the body
-  (`-offY` above the body's base), not flush with it — flush = z-fight.
+  (`-offY` above the body's base), not flush with it flush = z-fight.
 
-## Connectivity — the two failure modes
+## Connectivity the two failure modes
 - **Detached** (part floats): neighbours must overlap by **≥ 0.02** on the shared axis. Any gap and it floats.
 - **Z-fighting** (shimmer): two visible faces must never be coplanar. Keep each part inset or proud of its
   neighbour by **≥ 0.02**. Equal face planes fight.
@@ -34,15 +34,15 @@ compile-time validation error.
 | Symbol | Kind | Meaning |
 |--------|------|---------|
 | `(` | branch | push the turtle state (position + orientation + angle-scale) |
-| `)` | branch | pop — restore to the matching `(`; parts drawn inside don't move the outer cursor |
+| `)` | branch | pop restore to the matching `(`; parts drawn inside don't move the outer cursor |
 | `f` | move | step one `LSYSTEM_GAP` along the heading, no draw. In a clip: advance one time step |
-| `+` `-` | turn | yaw ∓ about local **Z** (`LSYSTEM_YAW`) — steers heading left/right |
+| `+` `-` | turn | yaw ∓ about local **Z** (`LSYSTEM_YAW`) steers heading left/right |
 | `&` `^` | turn | pitch about local **X** (`LSYSTEM_PITCH`). `&` → +Y turns toward +Z (fwd); `^` → toward −Z (back) |
-| `<` `>` | turn | roll ± about local **Y** = the heading (`LSYSTEM_ROLL`) — twists in place, does **not** steer the cursor |
+| `<` `>` | turn | roll ± about local **Y** = the heading (`LSYSTEM_ROLL`) twists in place, does **not** steer the cursor |
 | `%` | modifier | halve the turn-angle scale for the rest of this branch; composes (`%%` = ¼), restored on `)` |
 | `\|` | modifier | draw the **next** brush world-up, ignoring the heading; `advance` still follows the heading |
-| `X` | nonterminal | reserved growth seed — needs no `[BRUSH]`; conventional axiom for recursive rules |
-| space / tab / newline | — | ignored; use freely for readability |
+| `X` | nonterminal | reserved growth seed needs no `[BRUSH]`; conventional axiom for recursive rules |
+| space / tab / newline | | ignored; use freely for readability |
 | any other letter | content | place its `[BRUSH]`, or expand its `[RULE]` |
 
 Notes:
@@ -75,7 +75,7 @@ Notes:
 `Icosahedron`. Any other name loads a model asset of that name.
 
 ## Axiom structure
-- `[AXIOM:C(part)(part)(&&leg)...]` — body `C` at the **root**; put every other part in its own `()` branch
+- `[AXIOM:C(part)(part)(&&leg)...]` body `C` at the **root**; put every other part in its own `()` branch
   so it parents to the body and animating one part never drags its siblings.
 - Chain without `()` only when you want a real parent→child bone chain (head→snout→nose).
 - Boilerplate for offset-placed animals: `[LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]`.
@@ -89,15 +89,15 @@ Notes:
 ## Animation
 - **Clip selection is first-match** (`skeleton.d:80`): exactly one `moving` clip (walk) and one non-moving clip
   (idle) will ever play. Extra clips are dead weight. Put idle *variety* in `[CRULE]` variants of the single idle
-  clip — the variant is rolled per `uid`, giving each pawn a signature idle.
+  clip the variant is rolled per `uid`, giving each pawn a signature idle.
 - `[CLIP:name:axiom:trigger:fps:turn]`; trigger `moving` marks the walk clip.
 - **Bind pose = the static axiom.** Clips rotate bones *relative to bind*; a bone not posed by the active clip
   stays at bind. → build the walk/rest shape into bind, animate only the difference.
 - `[POSE:clipSym:targetBrush:orient:axis]`: `axis` `X`/`Y`/`Z` swings about that body axis; `side` mirrors L/R by
   the bone's X sign; empty axis = cursor swing. A pose targets a *symbol*, so it drives every bone of that symbol.
 - **Match the turn axis to the pose axis** or the angle is unpredictable: `&`/`^`→X, `<`/`>`→Y, `+`/`-`→Z.
-  Resulting angle = (turn-symbol count) × clip `turn`.
-- Standard quadruped gait — copy verbatim, only change the trailing fps:
+  Resulting angle = (turn-symbol count) x clip `turn`.
+- Standard quadruped gait copy verbatim, only change the trailing fps:
   `[CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:10]`
   with `[POSE:o:o:side]` … `[POSE:r:r:side]`.
 - Standard one-part idle sway: `[CLIP:idle:X f +X f -X f -X f +X::4:2.0]` + `[POSE:X:target:]`.
@@ -107,14 +107,14 @@ Notes:
   `(Pivot (^feather)(^feather) …)`. Then a single pose on the pivot lifts the whole thing; per-feather poses fan it.
 - **Pivot rule:** the pivot bone and the appendage's bases must share the same world position, or the appendage
   detaches the moment it rotates. (In a `^` frame, a feather's `offZ` is world-height and `offY` is world
-  back-distance — so set pivot `offY` = feather `offZ`, pivot `offZ` = feather `offY`.)
+  back-distance so set pivot `offY` = feather `offZ`, pivot `offZ` = feather `offY`.)
 - A part of length `L` swung up about a pivot dips to `pivot - L` mid-swing. Keep `L` short enough, or the pivot
   high enough, that it clears the body and floor.
 
 ## Required metadata (per entity)
 `[MOVE_SPEED:x][DIET:y]`, `[SCALE:s][SCALE_VARIANCE:v][OFFSET_Y:0.0][FACING:180.0]`,
 `[SPAWN_ON:Terrain]…`, `[NOISE_THRESHOLD:n]`, `[HASH_SEED1:..][HASH_SEED2:..][HASH_MOD:..][HASH_REM:..]`.
-`HASH_*` seed spawn placement only — the skeleton/variation is seeded by pawn `uid` (`hash = uid*2654435761`).
+`HASH_*` seed spawn placement only the skeleton/variation is seeded by pawn `uid` (`hash = uid*2654435761`).
 
 ## Checklist
 1. Body `C` at the root; every other part in its own `()`.

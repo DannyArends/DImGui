@@ -30,7 +30,7 @@ import world : nextEntityUID;
 
 enum int NEED_RETRY = 30;
 enum stepSpeed = 5.0f;    // base step rate
-enum hopHeight = 0.5f;    // peak of the hop
+enum hopHeight = 0.0f;    // peak of the hop
 enum nameHeight = 0.8f;   // name tag height above visualPos
 enum nameScale = 0.5f;    // name tag glyph scale
 
