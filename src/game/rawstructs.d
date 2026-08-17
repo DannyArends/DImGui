@@ -40,6 +40,7 @@ struct RawT {
   string diet;                                    /// Substance/type eaten (empty = none)
   float scale = 1.0f, scaleVariance = 0.0f;       /// Instance scale + per-spawn variance
   float offsetY = 0.0f;                           /// Vertical render offset to seat on the tile
+  float hop = 0.0f;                               /// Vertical render offset to seat on the tile
   float facing = 0.0f;                            /// Yaw offset correcting the model's forward axis
   string axiom = "B";                             /// L-system start symbol(s)
   uint lsystemIter = 1;                           /// stochastic rewrite passes (>1 enables recursive limb rules)

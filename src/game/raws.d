@@ -179,6 +179,7 @@ void rawHandler(ref RawT x, const string[] p) pure {
     case "INTERACTION":      x.interaction = p[1]; break;
     case "SOUND":            x.sound = p[1]; break;
     case "MOVE_SPEED":       x.moveSpeed = to!float(p[1]); break;
+    case "HOP":              x.hop = to!float(p[1]); break;
     case "HUNGER_DECAY":     x.hungerDecay = to!float(p[1]); break;
     case "THIRST_DECAY":     x.thirstDecay = to!float(p[1]); break;
     case "DIET":             x.diet = p[1]; break;

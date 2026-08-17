@@ -110,8 +110,10 @@ bool stepMove(T)(ref GameApp app, ref T obj, float dt, float speed, float hop) {
   if(obj.moveT >= 1.0f) return false;
   float cost = max(1.0f, app.world.getTileAt(obj.tile.tileBelow).cost);
   obj.moveT = min(1.0f, obj.moveT + dt * speed / cost);
-  const float climb = max(0.0f, abs(obj.moveTo[1] - obj.moveFrom[1]));   // >0 only when stepping up
-  float arc = (hop > 0.0f) ? (hop + 2 * climb) * obj.moveT * (1.0f - obj.moveT) : 0.0f;
+  const float t = obj.moveT;
+  const float climb = abs(obj.moveTo[1] - obj.moveFrom[1]);
+  const float h = (t < 0.5f) ? 0.0f : (t - 0.5f) * 2.0f;
+  float arc = (climb > 0.0f) ? 2 * climb * t * (1.0f - t) : hop * h * (1.0f - h);
   obj.visualPos = interpolate(obj.moveFrom, obj.moveTo, obj.moveT);
   obj.visualPos[1] += arc;
   if(obj.moveT < 1.0f) return false;

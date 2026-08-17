@@ -25,9 +25,8 @@ import vector : manhattan;
 import water : findNearestWater;
 import world : nextEntityUID;
 
-enum animalStep = 4.0f;    // base step rate (moveT/sec, divided by tile cost)
-enum animalHop  = 0.9f;    // hop arc height
-enum float NEED_SEEK = 0.55f;    // start foraging when a need crosses this
+enum animalStep = 2.0f;           // base step rate (moveT/sec, divided by tile cost)
+enum float NEED_SEEK = 0.55f;     // start foraging when a need crosses this
 
 /** Runtime animal: shared pawn (4 inventory slots) + species type. */
 struct Animal {
@@ -65,7 +64,7 @@ struct AnimalSpawn { int[3] tile; uint type; }
 void animalFrame(ref GameApp app, Animals herd, float dt) {
   foreach(ref a; herd.animals) {
     if(a.isFalling || !a.state.isMoving) continue;
-    app.entityMove(a, dt, animalStep, animalHop);
+    app.entityMove(a, dt, animalStep, entityTable[a.type].hop);
   }
   foreach(mesh; herd.meshes) mesh.instances.reset();
   foreach(ref a; herd.animals) {
