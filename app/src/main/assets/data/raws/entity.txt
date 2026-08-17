@@ -8,7 +8,7 @@
   [LSYSTEM_YAW:90]
   [LSYSTEM_PITCH:90]
   [LSYSTEM_GAP:0.15]
-  [AXIOM:(+f-&&LB)(-f+&&LB)T J(+ff-&&mAN)(-ff+&&mAN)H qw lr S cC v pP K]
+  [AXIOM:(+f-&&LB)(-f+&&LB)T J(+ff-&&mAN)(-ff+&&mAN)H Y lr S cC v pP K]
 
   [CLIP:walk:l a f W:moving:8:14]
     [CRULE:W:&&&l^^^a f ^^^l&&&a f ^^^l&&&a f &&&l^^^a:50]
@@ -17,11 +17,21 @@
     [POSE:l:L:side:X]
     [POSE:a:A:side:X]
   [CLIP:idle:V::4:2]
-    [CRULE:V:t u f &t+u f ^t-u f ^t-u f &t+u:40]
-    [CRULE:V:t u f &t-u f ^t+u f ^t-u f &t+u:30]
-    [CRULE:V:t u f &&t f ^^t f ^^t f &&t:30]
+    # torso sways (unchanged feel)
+    [CRULE:V:t u f &t+u f ^t-u f ^t-u f &t+u:24]
+    [CRULE:V:t u f &t-u f ^t+u f ^t-u f &t+u:18]
+    [CRULE:V:t u f &&t f ^^t f ^^t f &&t:14]
+    # arm shrug (x -> both arms, pitch up ~12 and back)
+    [CRULE:V:f &&&&&&x f f ^^^^^^x f f:18]
+    # foot twist / weight shift (X -> legs, yaw ~10 out and back)
+    [CRULE:V:f <<<<<X f f >>>>>X f f:14]
+    # head nod (O -> head, pitch ~6)
+    [CRULE:V:f &&&O f ^^^O f &&&O f ^^^O f:12]
     [POSE:t:T:_:X]
     [POSE:u:T:_:Z]
+    [POSE:x:A:side:X]
+    [POSE:X:L:side:Y]
+    [POSE:O:H:_:X]
 
   # --- legs / feet ---
   [BRUSH:L:Cylinder:0.20:0.15:true:color=saddlebrown]
@@ -39,18 +49,23 @@
   [BRUSH:H:Cube:0.52:0.30:true:color=burlywood]
   [BRUSH:l:Cube:0.09:0.05:false:color=black:offX=-0.12:offY=-0.15:offZ=0.25]
   [BRUSH:r:Cube:0.09:0.05:false:color=black:offX=0.12:offY=-0.15:offZ=0.25]
-  [BRUSH:q:Cube:0.12:0.03:false:color=sienna:offX=-0.12:offY=-0.08:offZ=0.26]
-  [BRUSH:w:Cube:0.12:0.03:false:color=sienna:offX=0.12:offY=-0.08:offZ=0.26]
   [BRUSH:c:Cube:0.10:0.09:false:color=burlywood:offX=-0.24:offY=-0.22:offZ=0.16]
   [BRUSH:C:Cube:0.10:0.09:false:color=burlywood:offX=0.24:offY=-0.22:offZ=0.16]
   [BRUSH:v:Cube:0.22:0.05:false:color=sienna:offY=-0.30:offZ=0.23]
+
+  # --- brows ---
+  [BRUSH:q:Cube:0.12:0.03:false:color=sienna:offX=-0.12:offY=-0.08:offZ=0.26]
+  [BRUSH:w:Cube:0.12:0.03:false:color=sienna:offX=0.12:offY=-0.08:offZ=0.26]
+  [BRUSH:e:Cube:0.14:0.07:false:color=saddlebrown:offX=-0.12:offY=-0.07:offZ=0.26:depth=0.05]
+  [BRUSH:g:Cube:0.14:0.07:false:color=saddlebrown:offX=0.12:offY=-0.07:offZ=0.26:depth=0.05]
+
   # --- ears ---
   [BRUSH:p:Cube:0.07:0.12:false:color=burlywood:offX=-0.28:offY=-0.15:offZ=0.02]
   [BRUSH:P:Cube:0.07:0.12:false:color=burlywood:offX=0.28:offY=-0.15:offZ=0.02]
 
-  # --- nose (S -> Z small | z big) ---
-  [BRUSH:Z:Sphere:0.075:0.085:false:color=burlywood:offY=-0.20:offZ=0.26]
-  [BRUSH:z:Sphere:0.12:0.13:false:color=burlywood:offY=-0.20:offZ=0.27]
+  # --- nose (S -> z small | Z big) ---
+  [BRUSH:z:Sphere:0.075:0.085:false:color=burlywood:offY=-0.20:offZ=0.26]
+  [BRUSH:Z:Sphere:0.12:0.13:false:color=burlywood:offY=-0.20:offZ=0.27]
 
   # --- beard segments (J -> style) ---
   [BRUSH:D:Cube:0.46:0.13:false:color=sienna:offY=-0.06:offZ=0.28:depth=0.06]
@@ -67,6 +82,9 @@
   [BRUSH:j:Cube:0.08:0.22:false:color=sienna:offY=0.08]
   [BRUSH:k:Cube:0.08:0.16:false:color=sienna:offY=0.08:offZ=-0.14]
   [BRUSH:t:Cube:0.16:0.16:false:color=sienna:offY=0.08:offZ=-0.10]
+  [BRUSH:n:Cube:0.06:0.36:false:color=sienna:offX=-0.27:offY=-0.28:offZ=0.02:depth=0.12]
+  [BRUSH:o:Cube:0.06:0.36:false:color=sienna:offX=0.27:offY=-0.28:offZ=0.02:depth=0.12]
+  [BRUSH:s:Cube:0.26:0.36:false:color=sienna:offX=0.00:offY=-0.28:offZ=-0.24:depth=0.06]
 
   # --- beard style ---
   [RULE:J:DE:25]
@@ -75,14 +93,21 @@
   [RULE:J:DEGFbda:20]
 
   # --- hair style ---
-  [RULE:K:h:40]
-  [RULE:K:ht:35]
-  [RULE:K:hijk:20]
-  [RULE:K::5]
+  [RULE:K:h:26]
+  [RULE:K:ht:18]
+  [RULE:K:hijk:14]
+  [RULE:K:hno:18]
+  [RULE:K:hnos:16]
+  [RULE:K::8]
 
   # --- nose size ---
   [RULE:S:Z:55]
   [RULE:S:z:45]
+
+  # --- eyebrow style ---
+  [RULE:Y:qw:55]
+  [RULE:Y:eg:45]
+
   [LSYSTEM_END]
 
 [ENTITY:Deer]
