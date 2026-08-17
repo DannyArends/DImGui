@@ -9,24 +9,24 @@ import engine;
     radius/length/depth scale base-width / height / base-depth. For spikes, teeth, claws, horn tips. */
 class Pyramid : Geometry {
   this(float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
-    enum float n = 0.4472f, u = 0.8944f;   // slant-face normal (1:0.5 rise, normalised)
+    enum float n = 0.4472f, u = 0.8944f;   // face normal (1:0.5 rise, normalised)
     vertices = [
-      // Front slant (Normal: +Z/+Y): FL, FR, apex
+      // Front (Normal: +Z/+Y): FL, FR, apex
       Vertex([ -0.5f, -0.5f,  0.5f ], [ 0.0f, 0.0f ], color, [  0.0f, n,  u ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([  0.5f, -0.5f,  0.5f ], [ 1.0f, 0.0f ], color, [  0.0f, n,  u ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([  0.0f,  0.5f,  0.0f ], [ 0.5f, 1.0f ], color, [  0.0f, n,  u ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
 
-      // Right slant (Normal: +X/+Y): FR, BR, apex
+      // Right (Normal: +X/+Y): FR, BR, apex
       Vertex([  0.5f, -0.5f,  0.5f ], [ 0.0f, 0.0f ], color, [  u, n, 0.0f ], [ 0.0f, 0.0f, -1.0f, 1.0f ]),
       Vertex([  0.5f, -0.5f, -0.5f ], [ 1.0f, 0.0f ], color, [  u, n, 0.0f ], [ 0.0f, 0.0f, -1.0f, 1.0f ]),
       Vertex([  0.0f,  0.5f,  0.0f ], [ 0.5f, 1.0f ], color, [  u, n, 0.0f ], [ 0.0f, 0.0f, -1.0f, 1.0f ]),
 
-      // Back slant (Normal: -Z/+Y): BR, BL, apex
+      // Back (Normal: -Z/+Y): BR, BL, apex
       Vertex([  0.5f, -0.5f, -0.5f ], [ 0.0f, 0.0f ], color, [  0.0f, n, -u ], [ -1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([ -0.5f, -0.5f, -0.5f ], [ 1.0f, 0.0f ], color, [  0.0f, n, -u ], [ -1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([  0.0f,  0.5f,  0.0f ], [ 0.5f, 1.0f ], color, [  0.0f, n, -u ], [ -1.0f, 0.0f, 0.0f, 1.0f ]),
 
-      // Left slant (Normal: -X/+Y): BL, FL, apex
+      // Left (Normal: -X/+Y): BL, FL, apex
       Vertex([ -0.5f, -0.5f, -0.5f ], [ 0.0f, 0.0f ], color, [ -u, n, 0.0f ], [ 0.0f, 0.0f, 1.0f, 1.0f ]),
       Vertex([ -0.5f, -0.5f,  0.5f ], [ 1.0f, 0.0f ], color, [ -u, n, 0.0f ], [ 0.0f, 0.0f, 1.0f, 1.0f ]),
       Vertex([  0.0f,  0.5f,  0.0f ], [ 0.5f, 1.0f ], color, [ -u, n, 0.0f ], [ 0.0f, 0.0f, 1.0f, 1.0f ]),
@@ -37,10 +37,10 @@ class Pyramid : Geometry {
       Vertex([  0.5f, -0.5f, -0.5f ], [ 1.0f, 1.0f ], color, [ 0.0f, -1.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ]),
       Vertex([ -0.5f, -0.5f, -0.5f ], [ 0.0f, 1.0f ], color, [ 0.0f, -1.0f, 0.0f ], [ 1.0f, 0.0f, 0.0f, 1.0f ])
     ];
-    indices = [ 0, 1, 2,       // front slant
-                3, 4, 5,       // right slant
-                6, 7, 8,       // back slant
-                9,10,11,       // left slant
+    indices = [ 0, 1, 2,                // front
+                3, 4, 5,                // right
+                6, 7, 8,                // back
+                9,10,11,                // left
                12,13,14,  14,15,12 ];   // base
     instances = [DrawInstance()];
     meshes["Pyramid"] = Mesh([0, cast(uint)vertices.length]);
