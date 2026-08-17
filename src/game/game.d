@@ -165,13 +165,16 @@ string modelPath(string name) {
 Geometry makePrimitive(string name) {
   Geometry m;
   switch(name) {
+    case "Capsule": m = new Capsule(0.5f, 1.0f, 16, 6); break;
+    case "Cone": m = new Cone(0.5f, 1.0f, 12); break;
     case "Cube", "Blocks": m = new Cube(); break;
     case "Cylinder": m = new Cylinder(0.4f, 1.0f, 12); break;
-    case "Cone": m = new Cone(0.5f, 1.0f, 12); break;
     case "Berries", "Sphere": m = new Sphere(); break;
-    case "Capsule": m = new Capsule(0.5f, 1.0f, 16, 6); break;
-    case "Torus": m = new Torus(); break;
     case "Icosahedron": m = new Icosahedron(); m.computeTangents(); break;
+    case "Line": m = new Line(); break;
+    case "Pyramid": m = new Pyramid(); break;
+    case "Square": m = new Square(); break;
+    case "Torus": m = new Torus(); break;
     default: return new OpenAsset(toStringz(modelPath(name)), false, true);
   }
   return m;

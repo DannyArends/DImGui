@@ -43,6 +43,7 @@ public import meta : MetaData;
 public import node : Node;
 public import packedarray : PackedArray;
 public import pipeline : GraphicsPipeline;
+public import pyramid : Pyramid;
 public import quaternion : Quaternion;
 public import renderpass : RenderPassInfo, RenderPass;
 public import serialization : Persist, Section;
