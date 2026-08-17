@@ -165,15 +165,18 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
   return(a);
 }
 
-/** The single turtle traversal. Structural glyphs are built-in; content symbols dispatch to the sink,
-    which decides what to emit (space -> RigNode, time -> PoseKey). */
+/** The single turtle traversal. Structural glyphs are built-in; content symbols dispatch to the sink.
+    '%' halves the turn-angle scale (compose for finer turns); scale is per-branch, saved on '(' , restored on ')'. */
 void walk(Sink)(const(char)[] symbols, const Symbol[char] alpha, const TurtleConfig cfg, ref Sink sink) {
+  float scale = 1.0f;      /// live turn-angle multiplier (1 = cfg angle)
+  float[] scales;          /// scale stack, pushed alongside each branch
   foreach(c; symbols) {
-    if(c == '('){ sink.push(); continue; }
-    if(c == ')'){ sink.pop();  continue; }
+    if(c == '('){ scales ~= scale; sink.push(); continue; }
+    if(c == ')'){ sink.pop(); if(scales.length){ scale = scales[$-1]; scales = scales[0 .. $-1]; } continue; }
     if(c == 'f'){ sink.move(cfg.gap); continue; }
+    if(c == '%'){ scale *= 0.5f; continue; }
     const ax = turnAxis(c);
-    if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg)); continue; }
+    if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg) * scale); continue; }
     if(auto s = c in alpha) sink.place(c, *s);
   }
 }
