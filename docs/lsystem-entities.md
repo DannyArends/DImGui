@@ -116,6 +116,98 @@ Notes:
 `[SPAWN_ON:Terrain]…`, `[NOISE_THRESHOLD:n]`, `[HASH_SEED1:..][HASH_SEED2:..][HASH_MOD:..][HASH_REM:..]`.
 `HASH_*` seed spawn placement only the skeleton/variation is seeded by pawn `uid` (`hash = uid*2654435761`).
 
+## The brush box model — `segmentTransform` (read this before building any panel)
+
+Every brush is a **unit cube** (`±0.5` on each axis, `cube.d`) put through
+`segmentTransform(pos, R, radius, length, depth)` (`matrix.d`):
+
+    translate(pos) · R · translate([0, length/2, 0]) · scale([radius, length, depth])
+
+Read right-to-left, that means the box's **local** axes are:
+
+| local axis | driven by | extent | meaning |
+|------------|-----------|--------|---------|
+| **X** | `radius` | centered, `±radius/2` | width across |
+| **Y** | `length` | **base-anchored, `0 → length`** | the **heading / growth** axis |
+| **Z** | `depth`  | centered, `±depth/2` | thickness front/back |
+
+`translate([0, length/2, 0])` is what base-anchors it: the box sits with its base at
+the cursor and grows along **+Y (local)**. Then `R` rotates the whole box about that base,
+and `translate(pos)` drops it at the cursor.
+
+`R = rotate(st.orient)` (the turtle orientation). Its columns are where each local axis
+points in the world — the exact indices used everywhere:
+
+- local **X** → `(R[0], R[1], R[2])`
+- local **Y** → `(R[4], R[5], R[6])`  ← the heading (this is why `move` uses `R[4..6]`)
+- local **Z** → `(R[8], R[9], R[10])`
+
+So a brush's 8 world corners are:
+`pos + sx·(R[0],R[1],R[2]) + sy·(R[4],R[5],R[6]) + sz·(R[8],R[9],R[10])`
+for `sx ∈ ±radius/2`, `sy ∈ {0, length}`, `sz ∈ ±depth/2`.
+
+## Reach vs. surface — the distinction that matters
+
+- A **reach** part (leg, arm bone, spar, tail, horn) only cares *where its tip lands*.
+  Tracing base→tip (local +Y only) fully verifies it. This is what the sim harness did,
+  and why legs/scales/tails/spars all worked.
+- A **surface** part (wing membrane, fin, web, flat plate) cares about its **face** — which
+  way the flat side points and whether neighbours overlap into a sheet. **base→tip tells you
+  nothing about this.** A centerline trace on a panel reports "position correct" while the
+  panel is silently a vertical blade instead of a flat sheet. (This is exactly why four dragon
+  wings failed: the trace measured the length axis; the bug was in the X/Z axes.)
+
+**Rule: for anything flat, trace the corners (all three local axes through `R`), not the
+centerline.** The harness must port `segmentTransform` and emit corners; then assert
+(a) the thin axis points along the intended world normal, and (b) panel *i*'s footprint
+overlaps panel *i+1*'s.
+
+## Building a flat panel reliably
+
+The **thin axis** is the smallest of `radius/length/depth`; the panel's flat face is
+perpendicular to it. What that face points at in the world = the `R` column of the thin axis.
+
+Easiest path: draw the panel with **`|`** (worldUp → `R = identity`, so local axes = world
+axes) and pick proportions directly:
+
+| want the flat face to point… | make thin… | brush (radius:length:depth) |
+|------------------------------|-----------|------------------------------|
+| **+Y** (lies flat on top/back) | Y (`length`) | e.g. `0.16 : 0.03 : 0.16` |
+| **±X** (lies flat on a flank)  | X (`radius`) | e.g. `0.03 : 0.16 : 0.16` |
+| **±Z** (faces front/back)      | Z (`depth`)  | e.g. `0.16 : 0.16 : 0.03` |
+
+Without `|`, the thin axis is rotated by the turns before it, so you **must** compute where
+it lands (corner trace) — do not eyeball it. A membrane that must lie flat while its *length*
+runs along a swept heading is the hard case: the length axis follows the heading, but the
+flat-face (thin) axis is one of the other two, and only a corner trace shows where it ended up.
+
+## Verified turn / hop tables (stop re-deriving these)
+
+Turns rotate the **local** frame; `<`/`>` (roll about the heading) **do not steer the cursor**
+— they spin in place. Only pitch (`&`/`^`) and yaw (`+`/`-`) change the heading.
+
+From **heading +Y** (the start), single turns and round-trip hops (which restore +Y):
+
+| op | new heading | hop | net move |
+|----|-------------|-----|----------|
+| `+` | −X | `+f-` | −X |
+| `-` | +X | `-f+` | +X |
+| `&` | +Z | `&f^` | +Z |
+| `^` | −Z | `^f&` | −Z |
+| `f` | — | — | +Y (up) |
+
+From **heading −X** (e.g. a leading edge swept out to the left): `&`→+Z, `^`→−Z (back),
+`+`→−Y (down), `-`→+Y (up), `<`/`>`→spin (no steer). `%` halves the turn angle (compose for
+45°, 22.5°), per-branch, restored on `)`.
+
+## Harness note
+
+The sim lives outside the repo (a standalone port of `angleAxis`/`qMul`/`rotate`/`segmentTransform`
++ the `walk`/`AnimSink` loop). It is the right tool for **reach and phase** questions (leg
+travel, foot-level, scale coverage, spar positions). For **surface/face** questions it must
+trace corners, and even then it can't tell you if something *looks* like a wing — that needs a
+render. Small corner-verified change → look at it → iterate.
+
 ## Checklist
 1. Body `C` at the root; every other part in its own `()`.
 2. Legs with `&&` and `offY = -length`; leg tops sunk into the body.
