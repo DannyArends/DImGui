@@ -25,16 +25,54 @@ faces don't z-fight. Proportions still want one visual pass in engine.
 - **Z-fighting** (shimmer): two visible faces must never be coplanar. Keep each part inset or proud of its
   neighbour by **≥ 0.02**. Equal face planes fight.
 
-## Turtle orientation (heading = local +Y)
-| symbol | rotation | effect on heading |
-|--------|----------|-------------------|
-| `&`    | pitch +90° (X) | +Y → +Z (forward) |
-| `&&`   | pitch 180° (X) | +Y → -Y (down) — legs |
-| `^`    | pitch -90° (X) | +Y → -Z (back) — tails/trains |
-| `+`/`-`| yaw (Z)  | spread left/right |
-| `<`/`>`| roll (Y) | twist |
+## Symbol reference (axiom / rule / clip strings)
 
-Static turn magnitude = `LSYSTEM_YAW`/`LSYSTEM_PITCH` (use 90). In clips it's the clip `turn`.
+Every character in an `[AXIOM]`, `[RULE]` production, or `[CLIP]` string is one of these.
+Case-sensitive. A letter with neither a `[BRUSH]` nor a `[RULE]` (and not listed below) is a
+compile-time validation error.
+
+| Symbol | Kind | Meaning |
+|--------|------|---------|
+| `(` | branch | push the turtle state (position + orientation + angle-scale) |
+| `)` | branch | pop — restore to the matching `(`; parts drawn inside don't move the outer cursor |
+| `f` | move | step one `LSYSTEM_GAP` along the heading, no draw. In a clip: advance one time step |
+| `+` `-` | turn | yaw ∓ about local **Z** (`LSYSTEM_YAW`) — steers heading left/right |
+| `&` `^` | turn | pitch about local **X** (`LSYSTEM_PITCH`). `&` → +Y turns toward +Z (fwd); `^` → toward −Z (back) |
+| `<` `>` | turn | roll ± about local **Y** = the heading (`LSYSTEM_ROLL`) — twists in place, does **not** steer the cursor |
+| `%` | modifier | halve the turn-angle scale for the rest of this branch; composes (`%%` = ¼), restored on `)` |
+| `\|` | modifier | draw the **next** brush world-up, ignoring the heading; `advance` still follows the heading |
+| `X` | nonterminal | reserved growth seed — needs no `[BRUSH]`; conventional axiom for recursive rules |
+| space / tab / newline | — | ignored; use freely for readability |
+| any other letter | content | place its `[BRUSH]`, or expand its `[RULE]` |
+
+Notes:
+- **Heading vs. steering.** The fwd/back/down labels assume the default start heading `+Y`; after
+  turns the heading changes. `&`/`^`/`+`/`-` change the heading (steer the march); `<`/`>` only spin
+  around it. To march a grid over a surface, step with `f` after a `&`/`^`/`+`/`-`, never `<`/`>`.
+- **Two common idioms.** `(&&o)` = leg (pitch 180° → straight down). `(^tail)` = point a part backward.
+- **Turn magnitude** = the axis angle (`LSYSTEM_YAW`/`PITCH`/`ROLL`, or all three via `LSYSTEM_ANGLE`)
+  × the current `%` scale. In clips all three equal the clip's `turn`.
+- **`|` is what makes surface coats work:** roll the turtle flat so `f` marches across a surface, and
+  drop `(|s)` at each node so every spike stands up regardless of the march direction.
+
+## Grammar & clip tokens
+
+| Token | Meaning |
+|-------|---------|
+| `[BRUSH:s:Mesh:radius:length:advance:kv…]` | Define a drawable part. `kv` = `color=NAME` / `tint` / `offX/offY/offZ` / `depth` / `render=false`. `advance` moves the cursor after drawing (segments); `false` for offset-placed details |
+| `[RULE:X:prod:weight]` | Weighted rewrite of nonterminal `X`, rolled per-uid. Weights are relative |
+| `[RULE:X:prod:weight:genMin:genMax]` | …with a generation window. `@` in a bound = the budget (`LSYSTEM_ITER`) → the rule recurses up to the budget (trees, dense coats) |
+| `[AXIOM:…]` | Start string |
+| `[LSYSTEM_ANGLE:d]` | Set yaw = pitch = roll = `d`° |
+| `[LSYSTEM_YAW/PITCH/ROLL:d]` | Set one axis' turn magnitude |
+| `[LSYSTEM_GAP:g]` | `f` step distance |
+| `[LSYSTEM_ITER:n]` | Rewrite budget: caps `@`-windowed recursion; drives per-uid density |
+| `[CLIP:name:axiom:trigger:fps:turn]` | Animation. `trigger=moving` = walk, else idle. Only the **first** clip of each kind ever plays |
+| `[CRULE:X:prod:weight]` | Like `RULE`, scoped to the enclosing clip (per-uid idle variety) |
+| `[POSE:clipSym:targetBrush:orient:axis]` | Map a clip symbol to a bone. `orient=side` mirrors L/R by the bone's X sign; `axis` ∈ `X`/`Y`/`Z` (empty = cursor swing) |
+
+**Mesh primitives** (`makePrimitive`): `Cube`, `Cylinder`, `Cone`, `Sphere`, `Capsule`, `Torus`,
+`Icosahedron`. Any other name loads a model asset of that name.
 
 ## Axiom structure
 - `[AXIOM:C(part)(part)(&&leg)...]` — body `C` at the **root**; put every other part in its own `()` branch
