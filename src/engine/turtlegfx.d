@@ -170,14 +170,16 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
 void walk(Sink)(const(char)[] symbols, const Symbol[char] alpha, const TurtleConfig cfg, ref Sink sink) {
   float scale = 1.0f;      /// live turn-angle multiplier (1 = cfg angle)
   float[] scales;          /// scale stack, pushed alongside each branch
+  bool up = false;         /// one-shot: next placed brush draws at world-up ('|')
   foreach(c; symbols) {
     if(c == '('){ scales ~= scale; sink.push(); continue; }
     if(c == ')'){ sink.pop(); if(scales.length){ scale = scales[$-1]; scales = scales[0 .. $-1]; } continue; }
     if(c == 'f'){ sink.move(cfg.gap); continue; }
     if(c == '%'){ scale *= 0.5f; continue; }
+    if(c == '|'){ up = true; continue; }
     const ax = turnAxis(c);
     if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg) * scale); continue; }
-    if(auto s = c in alpha) sink.place(c, *s);
+    if(auto s = c in alpha){ sink.place(c, *s, up); up = false; }
   }
 }
 
@@ -192,16 +194,17 @@ struct RigSink {
   void pop(){ if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; current = parents[$-1]; parents = parents[0 .. $-1]; } }
   void turn(const float[3] ax, float ang){ st.orient = qMul(st.orient, angleAxis(ang, ax)); }
   void move(float d){ const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]); }
-  void place(char c, ref const Symbol s){
+  void place(char c, ref const Symbol s, bool worldUp = false) {
     if(s.effect != Effect.brush) return;
-    const Matrix R = rotate(st.orient);
+    const Matrix Rmove = rotate(st.orient);            // heading: used for offset+advance
+    const Matrix R = worldUp ? Matrix() : Rmove;       // draw frame: world-up when '|', else heading
     const float[3] o = s.offset;
     const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
                          st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
                          st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
     nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, s.radius, s.length, s.depth), s.material, s.color), c);
     current = cast(int)nodes.length - 1;
-    if(s.advance){ st.pos = st.pos.vAdd([R[4]*s.length*0.95f, R[5]*s.length*0.95f, R[6]*s.length*0.95f]); }
+    if(s.advance){ st.pos = st.pos.vAdd([Rmove[4]*s.length*0.95f, Rmove[5]*s.length*0.95f, Rmove[6]*s.length*0.95f]); }
   }
 }
 
@@ -215,7 +218,7 @@ struct AnimSink {
   void push(){} void pop(){}
   void turn(const float[3] ax, float ang){ pending = qMul(pending, angleAxis(ang, ax)); }
   void move(float d){ t++; }
-  void place(char c, ref const Symbol s){
+  void place(char c, ref const Symbol s, bool worldUp = false){
     if(s.effect != Effect.pose) return;
     if(c !in cursor) cursor[c] = Quaternion.init;
     cursor[c] = qMul(cursor[c], pending);

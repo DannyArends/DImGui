@@ -205,7 +205,7 @@ Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, 
 })(raw); }
 
 /** CTFE: turtle control chars that never map to a brush or pose. */
-private bool isControl(char c) pure { return "fX()+-&^<> \t\r\n".canFind(c); }
+private bool isControl(char c) pure { return "fX()+-&^<>%| \t\r\n".canFind(c); }
 
 /** CTFE: symbols an entity/clip grammar can produce (axiom + every rule production). */
 private bool[char] produced(string axiom, const Rule[] rules) pure {
