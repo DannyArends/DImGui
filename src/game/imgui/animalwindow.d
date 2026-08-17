@@ -46,31 +46,54 @@ void showAnimalSheet(ref GameApp app, Animals herd, ref Animal a, int selected) 
   text("Job: %s", a.hasJob ? a.currentJob.name : "None");
 }
 
-/** Roster of all animals + state summary. */
-void showAnimalOverview(ref GameApp app) {
-  int idle, walking, working; size_t total;
+/** Top level: one row per species present, with a live count; click to drill in. */
+void showSpeciesList(ref GameApp app) {
   auto herd = app.world.animals;
-  if(herd !is null) foreach(i, ref a; herd.animals) {
-    total++;
+  if(herd is null) { text("No animals"); return; }
+  size_t[entityTable.length] counts = 0;
+  int idle, walking, working; size_t total;
+  foreach(ref a; herd.animals) {
+    total++; counts[a.type]++;
     switch(a.state) {
       case EntityState.Idle: idle++; break;
       case EntityState.Moving: case EntityState.Wandering: walking++; break;
       case EntityState.Working: working++; break;
       default: break;
     }
-    app.showAnimalRow(herd, i, a);
+  }
+  foreach(t; 0 .. entityTable.length) {
+    if(counts[t] == 0) continue;
+    if(igSelectable_Bool(cstr("%s  %s  x%d##sp%d", cast(string)ICON_FA_PAW, entityTable[t].name, counts[t], cast(int)t), false, 0, ImVec2(0, 0))) {
+      herd.selected = -1;
+      herd.selectedType = cast(int)t;
+    }
   }
   text("Animals: %d | Idle: %d | Moving: %d | Feeding: %d", total, idle, walking, working);
+}
+
+/** Second level: every animal of the drilled-in species. */
+void showSpeciesMembers(ref GameApp app, Animals herd, int type) {
+  if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back##SMember"), ImVec2(0,0))) { herd.selectedType = -1; return; }
+  text("%s", entityTable[type].name);
+  igSeparator();
+  foreach(i, ref a; herd.animals) {
+    if(cast(int)a.type != type) continue;
+    app.showAnimalRow(herd, i, a);
+  }
 }
 
 void showAnimalContent(ref GameApp app, uint font = 0) {
   igSeparator();
   auto herd = app.world.animals;
-  if(herd !is null && herd.selected >= 0 && herd.selected < cast(int)herd.animals.length) {
-    if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back"), ImVec2(0,0))) { herd.selected = -1; return; }
+  if(herd is null) { app.showSpeciesList(); return; }
+  if(herd.selected >= 0 && herd.selected < cast(int)herd.animals.length) {
+    if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back##SOverview"), ImVec2(0,0))) { herd.selected = -1; return; }
     app.showAnimalSheet(herd, herd.animals[herd.selected], herd.selected);
     return;
   }
-  app.showAnimalOverview();
+  if(herd.selectedType >= 0 && herd.selectedType < cast(int)entityTable.length) {
+    app.showSpeciesMembers(herd, herd.selectedType);
+    return;
+  }
+  app.showSpeciesList();
 }
-

@@ -102,7 +102,7 @@ void showDwarfContent(ref GameApp app, uint font = 0) {
 
   int sel = app.world.dwarves !is null ? app.world.dwarves.selected : -1;
   if(sel >= 0 && sel < app.world.dwarves.dwarves.length) {
-    if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back"), ImVec2(0,0))) { app.world.dwarves.selected = -1; }
+    if(igButton(iconText(cast(string)ICON_FA_ARROW_LEFT, "Back##Dwarf"), ImVec2(0,0))) { app.world.dwarves.selected = -1; }
     app.showDwarfSheet(app.world.dwarves.dwarves[sel], sel);
   } else { app.showDwarfOverview(); }
   igNewLine();

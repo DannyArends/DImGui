@@ -30,9 +30,10 @@ class Animals : Geometry {
   Animal[] animals;
   alias animals this;
   int selected = -1;
+  int selectedType = -1;          /// species drill-down: entityTable index, -1 = show 
   size_t[] tickOrder;
-  Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
-  Skeleton[uint] skel;              /// per-uid rig + skeleton + animation
+  Geometry[string] meshes;        /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
+  Skeleton[uint] skel;            /// per-uid rig + skeleton + animation
 
   this() {
     super();
