@@ -2,7 +2,7 @@
 
 [ENTITY:Dwarf]
   [MOVE_SPEED:2.5]
-  [SCALE:0.4][SCALE_VARIANCE:0.05]
+  [SCALE:0.6][SCALE_VARIANCE:0.05]
   [OFFSET_Y:0.0][FACING:180.0]
   [LSYSTEM_BEGIN]
   [LSYSTEM_YAW:90]
@@ -515,34 +515,48 @@
 
 [ENTITY:Hedgehog]
   [MOVE_SPEED:1.2][DIET:Berry]
-  [SCALE:0.35][SCALE_VARIANCE:0.12][OFFSET_Y:0.0][FACING:180.0]
+  [SCALE:0.2][SCALE_VARIANCE:0.10][OFFSET_Y:0.0][FACING:180.0]
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02][SPAWN_ON:Forest01][SPAWN_ON:Forest02]
   [NOISE_THRESHOLD:0.78]
   [HASH_SEED1:2654435761][HASH_SEED2:374761393][HASH_MOD:48][HASH_REM:5]
-  [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_ROLL:90][LSYSTEM_GAP:0.08]
-  [LSYSTEM_ITER:2]
-  [AXIOM:C(kHdNLR)(&&o)(&&p)(&&q)(&&r)(fffff&ff^^(Y)(+f-Y)(+ff-Y)(-f+Y)(-ff+Y))]
+  [AXIOM:C(M(s)(a)(b)(e)(g)(i)(j)(u)(v)(w)(U)(V)(W))(L)(R)(N)(o)(p)(q)(r)]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:12]
+  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:11]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
     [POSE:r:r:side]
   [CLIP:idle:h f +h f -h f -h f +h::4:2.0]
-    [POSE:h:H:]
+    [POSE:h:M:]
 
-  [BRUSH:C:Cube:0.40:0.30:false:color=tan:offY=0.14:offZ=0.00:depth=0.52]
-  [BRUSH:k:Cube:0.22:0.16:false:color=wheat:offY=0.12:offZ=0.30:depth=0.20]
-  [BRUSH:H:Cube:0.16:0.14:false:color=wheat:offY=0.12:offZ=0.44:depth=0.18]
-  [BRUSH:d:Cube:0.09:0.09:false:color=rosybrown:offY=0.12:offZ=0.56:depth=0.10]
-  [BRUSH:N:Cube:0.05:0.04:false:color=black:offY=0.15:offZ=0.62:depth=0.04]
-  [BRUSH:L:Cube:0.035:0.04:false:color=black:offX=-0.09:offY=0.20:offZ=0.46:depth=0.04]
-  [BRUSH:R:Cube:0.035:0.04:false:color=black:offX=0.09:offY=0.20:offZ=0.46:depth=0.04]
-  [BRUSH:o:Cube:0.055:0.16:false:color=rosybrown:offX=-0.16:offY=-0.16:offZ=-0.16:depth=0.06]
-  [BRUSH:p:Cube:0.055:0.16:false:color=rosybrown:offX=0.16:offY=-0.16:offZ=-0.16:depth=0.06]
-  [BRUSH:q:Cube:0.055:0.16:false:color=rosybrown:offX=-0.16:offY=-0.16:offZ=0.16:depth=0.06]
-  [BRUSH:r:Cube:0.055:0.16:false:color=rosybrown:offX=0.16:offY=-0.16:offZ=0.16:depth=0.06]
+  # --- two-tone body: cream lower/face + brown mantle wrapping top/back/sides ---
+  [BRUSH:C:Cube:0.44:0.40:false:color=burlywood:offY=0.06:offZ=0.00:depth=0.46]
+  [BRUSH:M:Cube:0.48:0.32:false:color=saddlebrown:offY=0.22:offZ=-0.06:depth=0.42]
 
-  # --- quill coat: 5x5 grid march, '|' stands each spike world-up (traced) ---
-  [BRUSH:s:Cone:0.028:0.22:false:color=saddlebrown]
-  [RULE:Y:(|s)f(|s)f(|s)f(|s)f(|s):100]
+  # --- top studs (7, loose diamond, proud on the mantle top) ---
+  [BRUSH:s:Cube:0.09:0.09:false:color=saddlebrown:offX=0.00:offY=0.48:offZ=-0.02:depth=0.09]
+  [BRUSH:a:Cube:0.09:0.09:false:color=saddlebrown:offX=-0.13:offY=0.48:offZ=-0.10:depth=0.09]
+  [BRUSH:b:Cube:0.09:0.09:false:color=saddlebrown:offX=0.13:offY=0.48:offZ=-0.10:depth=0.09]
+  [BRUSH:e:Cube:0.09:0.09:false:color=saddlebrown:offX=-0.13:offY=0.48:offZ=0.06:depth=0.09]
+  [BRUSH:g:Cube:0.09:0.09:false:color=saddlebrown:offX=0.13:offY=0.48:offZ=0.06:depth=0.09]
+  [BRUSH:i:Cube:0.09:0.09:false:color=saddlebrown:offX=0.00:offY=0.48:offZ=-0.18:depth=0.09]
+  [BRUSH:j:Cube:0.09:0.09:false:color=saddlebrown:offX=0.00:offY=0.48:offZ=0.10:depth=0.09]
+
+  # --- side studs (3 per side, proud on the mantle flanks) ---
+  [BRUSH:u:Cube:0.08:0.08:false:color=saddlebrown:offX=-0.27:offY=0.28:offZ=0.06:depth=0.10]
+  [BRUSH:v:Cube:0.08:0.08:false:color=saddlebrown:offX=-0.27:offY=0.28:offZ=-0.06:depth=0.10]
+  [BRUSH:w:Cube:0.08:0.08:false:color=saddlebrown:offX=-0.27:offY=0.28:offZ=-0.18:depth=0.10]
+  [BRUSH:U:Cube:0.08:0.08:false:color=saddlebrown:offX=0.27:offY=0.28:offZ=0.06:depth=0.10]
+  [BRUSH:V:Cube:0.08:0.08:false:color=saddlebrown:offX=0.27:offY=0.28:offZ=-0.06:depth=0.10]
+  [BRUSH:W:Cube:0.08:0.08:false:color=saddlebrown:offX=0.27:offY=0.28:offZ=-0.18:depth=0.10]
+
+  # --- face: eyes + nose nub on the cream front ---
+  [BRUSH:L:Cube:0.06:0.07:false:color=black:offX=-0.10:offY=0.26:offZ=0.22:depth=0.05]
+  [BRUSH:R:Cube:0.06:0.07:false:color=black:offX=0.10:offY=0.26:offZ=0.22:depth=0.05]
+  [BRUSH:N:Cube:0.07:0.08:false:color=black:offX=0.00:offY=0.10:offZ=0.24:depth=0.10]
+
+  # --- feet (peek out under the front/rear) ---
+  [BRUSH:o:Cube:0.07:0.09:false:color=burlywood:offX=-0.13:offY=0.00:offZ=-0.13:depth=0.07]
+  [BRUSH:p:Cube:0.07:0.09:false:color=burlywood:offX=0.13:offY=0.00:offZ=-0.13:depth=0.07]
+  [BRUSH:q:Cube:0.07:0.09:false:color=burlywood:offX=-0.13:offY=0.00:offZ=0.13:depth=0.07]
+  [BRUSH:r:Cube:0.07:0.09:false:color=burlywood:offX=0.13:offY=0.00:offZ=0.13:depth=0.07]
