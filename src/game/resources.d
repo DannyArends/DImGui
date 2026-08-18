@@ -95,13 +95,9 @@ string itemTex(const Item it) {
 /** Material-SSBO layout: slot i (0..RESOURCE_COUNT) is material i; item templates follow with 2 slots each (empty, filled). */
 @nogc pure uint templateMat(ItemTemplate t, bool filled = false) nothrow { return cast(uint)(RESOURCE_COUNT) + 2 * (cast(uint)t - 1) + (filled ? 1 : 0); }
 
-/** Resource-mesh prefix — one mesh per ResourceType; fully determined at compile time. */
-static immutable Mesh[] resourcePrefix = iota(cast(int)RESOURCE_COUNT).map!(tt => Mesh([0, 0], tt)).array;
 
 void injectResourceMeshes(ref GameApp app, uint minMaterials = RESOURCE_COUNT + (2 * ItemTemplate.max)) {
-  app.meshes.length = resourcePrefix.length;
-  app.meshes[0 .. resourcePrefix.length] = resourcePrefix;
-  if(app.materials.length < minMaterials) app.materials.length = minMaterials;
+  if(app.materials.length < minMaterials){ app.materials.length = minMaterials; }
 }
 
 void updateMaterials(ref GameApp app) {
