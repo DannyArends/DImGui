@@ -36,9 +36,8 @@ void writeOutput(vec3 color, float alpha) {
 void main() {
   Material mat = (fragMaterial >= 0) ? materialSSBO.materials[uint(fragMaterial)] : noMaterial;
 
-  // Color RGB & alpha
-  vec3 rgb = fragColor.rgb;
-  float alpha = fragColor.a;
+  vec3 rgb = mat.color.rgb * fragColor.rgb;
+  float alpha = mat.color.a * fragColor.a;
 
   // Multiply texture to basecolor & adjust alpha outside of the DEPTH_PASS
   if(!DEPTH_PASS && !(TOPOLOGY == 1) && mat.tid >= 0) {
