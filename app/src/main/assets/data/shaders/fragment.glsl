@@ -14,7 +14,7 @@ layout(location = 0) in vec4 fragPosWorld;              /// Fragment Position (i
 layout(location = 1) in vec4 fragColor;                 /// Fragment Color
 layout(location = 2) in vec3 fragNormal;                /// Fragment Normal
 layout(location = 3) in vec2 fragTexCoord;              /// Texture coordinates
-layout(location = 4) flat in ivec2 fragInstance;        /// [Mesh, Material]
+layout(location = 4) flat in int fragMaterial;          /// resolved material id
 layout(location = 5) in vec3 fragViewPos;               /// View-space position (froxel lookup)
 layout(location = 6) in mat3 fragTBN;                   /// Fragment: Tangent, Bitangent, Normal matrix
 
@@ -34,12 +34,11 @@ void writeOutput(vec3 color, float alpha) {
 }
 
 void main() {
-  Material mat = noMaterial;
-  if(fragInstance[0] >= 0) mat = materialSSBO.materials[uint(fragInstance[0])];
-  if(fragInstance[1] >= 0) mat = materialSSBO.materials[uint(fragInstance[1])];
+  Material mat = (fragMaterial >= 0) ? materialSSBO.materials[uint(fragMaterial)] : noMaterial;
 
   // Color RGB & alpha
-  vec3 rgb = fragColor.rgb; float alpha = fragColor.a;
+  vec3 rgb = fragColor.rgb;
+  float alpha = fragColor.a;
 
   // Multiply texture to basecolor & adjust alpha outside of the DEPTH_PASS
   if(!DEPTH_PASS && !(TOPOLOGY == 1) && mat.tid >= 0) {
