@@ -38,13 +38,14 @@ struct Bone {
 };
 
 struct Material {
-  int tid;   /// Diffuse texture ID
-  int nid;   /// Normal map ID
-  int oid;   /// Opacity texture ID
+  int tid;      /// Diffuse texture ID
+  int nid;      /// Normal map ID
+  int oid;      /// Opacity texture ID
   int pad;
+  vec4 color;   /// Base color (palette); multiplies texture when tid >= 0
 };
 
-#define noMaterial Material(-1, -1, -1, 0)
+#define noMaterial Material(-1, -1, -1, 0, vec4(1.0))
 
 struct LightIndex { uint light; uint next; };
 struct Cursor { uint cursor; };
