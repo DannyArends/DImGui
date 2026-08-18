@@ -35,7 +35,7 @@ struct App {
   };
 
   VkClearValue[5] clearValue = [ 
-    {{ float32: [0.5f, 0.2f, 0.1f, 1.0f] }},              // 0: MSAA color (CLEAR)
+    {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }},              // 0: MSAA color (CLEAR)
     {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }},              // 1: resolved (DONT_CARE: value unused)
     { depthStencil : VkClearDepthStencilValue(1.0f, 0) }, // 2: depth (LOAD: value unused)
     {{ float32: [0.0f, 0.0f, 0.0f, 0.0f] }},              // 3: WBOIT accumulation: CLEAR (0,0,0,0)
