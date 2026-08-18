@@ -29,13 +29,10 @@ void registerRenderProviders(ref App app) {
   app.providers["LightMatrices"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.lights); },
     (ref a, ref d, cmd){ a.updateSSBO!Light(cmd, a.lights, d, a.syncIndex); });
-  app.providers["MeshMatrices"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, a.meshes); },
-    (ref a, ref d, cmd){ a.updateSSBO!Mesh(cmd, a.meshes, d, a.syncIndex); });
   app.providers["MaterialBuffer"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.materials); },
     (ref a, ref d, cmd){ a.updateSSBO!Material(cmd, a.materials, d, a.syncIndex); });
-
+  /// Lights
   app.providers["ClusterLights"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, true, true); }, null);
   app.providers["ClusterHeads"] = DescriptorProvider(
@@ -48,7 +45,7 @@ void registerRenderProviders(ref App app) {
     null);
   app.providers["ClusterCounter"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, 1, false); }, null);
-
+  /// SSAO
   app.providers["SSAO"] = DescriptorProvider(
     (ref a, ref d){ a.createUBO(d); },
     (ref a, ref d, cmd){ a.updateSSAO(d, a.syncIndex); });
