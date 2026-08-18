@@ -33,8 +33,8 @@ void registerRenderProviders(ref App app) {
     (ref a, ref d){ a.createSSBO(d, a.materials); },
     (ref a, ref d, cmd){ a.updateSSBO!Material(cmd, a.materials, d, a.syncIndex); });
   app.providers["ColorBuffer"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, a.colors); },
-    (ref a, ref d, cmd){ a.updateSSBO!Material(cmd, a.colors, d, a.syncIndex); });
+    (ref a, ref d){ if(a.colors.length == 0) a.colors ~= colorPalette; a.createSSBO(d, a.colors); },
+    (ref a, ref d, cmd){ a.updateSSBO!Color(cmd, a.colors, d, a.syncIndex); });
   /// Lights
   app.providers["ClusterLights"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.clusterCapacity, true, true); }, null);

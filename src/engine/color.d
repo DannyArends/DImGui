@@ -40,3 +40,5 @@ Colors toColor(string name) pure {
   static foreach(m; __traits(allMembers, Colors)) if(name == m) return __traits(getMember, Colors, m);
   return Colors.white;
 }
+
+enum Colors[] colorPalette = [EnumMembers!Colors];

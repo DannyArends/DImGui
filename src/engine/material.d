@@ -10,7 +10,6 @@ struct Material {
   int nid = -1;
   int oid = -1;
   int pad = 0;
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];   /// Base color (palette); multiplies texture when tid >= 0
 }
 
 /** Bake a mesh's global material id into normal.w across its vertex range (replaces the meshSSBO lookup) */
