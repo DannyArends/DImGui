@@ -12,19 +12,18 @@
 
 /// Shader Storage Buffer Objects
 #define BINDING_BONES_SSBO         2
-#define BINDING_MESH_SSBO          3
-#define BINDING_LIGHT_SSBO         4
+#define BINDING_LIGHT_SSBO         3
 
 /// Samplers/Images (defined in samplers.glsl)
-//BINDING_TEXTURES = 5 & BINDING_SHADOWMAP = 6
+//BINDING_TEXTURES = 4 & BINDING_SHADOWMAP = 5
 
 /// Materials
-#define BINDING_MATERIAL_SSBO      7
+#define BINDING_MATERIAL_SSBO      6
 
 /// Lights
-#define BINDING_CLUSTER_LIGHTS     8
-#define BINDING_CLUSTER_HEADS      9
-#define BINDING_CLUSTER_COUNTER   10
+#define BINDING_CLUSTER_LIGHTS     7
+#define BINDING_CLUSTER_HEADS      8
+#define BINDING_CLUSTER_COUNTER    9
 
 struct Light {
   vec4 position;      /// Position of the light; w==0: directional, w!=0: point/spot
@@ -36,12 +35,6 @@ struct Light {
 
 struct Bone {
   mat4 offset;        /// Bone offset
-};
-
-struct Mesh {
-  uvec2 vertices;     /// Start & End vertex
-  int mid;            /// Material ID
-  int mat;            /// assimp-local material index
 };
 
 struct Material {
@@ -62,25 +55,21 @@ layout (std430, set = 0, binding = BINDING_BONES_SSBO) readonly buffer BoneMatri
   Bone transforms[];
 } boneSSBO;       // 2
 
-layout (std430, set = 0, binding = BINDING_MESH_SSBO) readonly buffer MeshMatrices {
-  Mesh meshes[];
-} meshSSBO;       // 3
-
 layout (std430, set = 0, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatrices {
   Light lights[];
-} lightSSBO;      // 4
+} lightSSBO;      // 3
 
 layout (std430, set = 0, binding = BINDING_MATERIAL_SSBO) readonly buffer MaterialBuffer {
   Material materials[];
-} materialSSBO;   // 7
+} materialSSBO;   // 6
 
 layout(std430, set=0, binding=BINDING_CLUSTER_LIGHTS) buffer ClusterLights {
   LightIndex indices[];
-}; // 8
+}; // 7
 
 layout(std430, set=0, binding=BINDING_CLUSTER_HEADS) buffer ClusterHeads {
   ClusterHead head[];
-}; // 9
+}; // 8
 
 layout(std430, set=0, binding=BINDING_CLUSTER_COUNTER) buffer ClusterCounter {
   Cursor cursor[];

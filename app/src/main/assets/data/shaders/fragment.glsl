@@ -35,7 +35,7 @@ void writeOutput(vec3 color, float alpha) {
 
 void main() {
   Material mat = noMaterial;
-  if(fragInstance[0] >= 0) mat = materialSSBO.materials[uint(meshSSBO.meshes[uint(fragInstance[0])].mid)];
+  if(fragInstance[0] >= 0) mat = materialSSBO.materials[uint(fragInstance[0])];
   if(fragInstance[1] >= 0) mat = materialSSBO.materials[uint(fragInstance[1])];
 
   // Color RGB & alpha
