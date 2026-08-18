@@ -69,7 +69,7 @@ void run(string[] args = null) {
   app.createSurface();                                          /// Create Vulkan rendering surface
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
-  app.initGame();                                               /// Load the chunk world
+  app.initGame();                                               /// [Game] init
   app.initializeAsync();                                        /// Start Async loading objects and textures
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();
@@ -83,9 +83,8 @@ void run(string[] args = null) {
     if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue
     app.timed!removeGeometry();                                   /// Remove stale geometry
     app.timed!checkAsync();                                       /// Check ASync handlers
-    app.timed!checkGameAsync();                                   /// Game specific ASync handlers
 
-    app.timed!updateGame(dt);                                     /// Handle Game Updates
+    app.timed!updateGame(dt);                                     /// [Game] updates
     app.waitForFrame();                                           /// Wait for a new frame (outside timing)
     app.time[FRAMESTART] = SDL_GetTicks();                        /// Start the clock
     app.timed!renderFrame(dt);                                    /// Render frame

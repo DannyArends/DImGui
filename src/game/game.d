@@ -182,7 +182,8 @@ Geometry makePrimitive(string name) {
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
 void updateGame(ref GameApp app, double dt) {
   if(app.regenerate) { app.regenerate = false; app.regenerateWorld(); }
-  app.timed!handleEvents(dt);
+  app.timed!checkGameAsync();         /// Game specific ASync handlers
+  app.timed!handleEvents(dt);         /// Game Events
   app.timed!injectResourceMeshes();
   if(app.textures.loaded) {
     app.timed!updateMaterials(); app.textures.loaded = false;
