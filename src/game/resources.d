@@ -102,8 +102,11 @@ enum COLOR_MAT_COUNT = EnumMembers!Colors.length;
 enum COLOR_MAT_END   = COLOR_MAT_BASE + COLOR_MAT_COUNT;
 
 void injectResourceMeshes(ref GameApp app, uint minMaterials = COLOR_MAT_END) {
-  if(app.materials.length < minMaterials){ app.materials.length = minMaterials; }
-  app.materials[COLOR_MAT_BASE .. COLOR_MAT_END] = colorMaterials[];   // idempotent palette fill; mesh materials append after COLOR_MAT_END
+  if(app.materials.length < minMaterials){
+    app.materials.length = minMaterials;
+    app.materials[COLOR_MAT_BASE .. COLOR_MAT_END] = colorMaterials[];
+    app.colorBase = COLOR_MAT_BASE;
+  }
 }
 
 void updateMaterials(ref GameApp app) {

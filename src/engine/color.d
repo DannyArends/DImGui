@@ -62,3 +62,12 @@ enum Material[] colorMaterials = (){
 template colorSlot(Colors c) {
   enum colorSlot = (){ size_t i = 0; static foreach(m; EnumMembers!Colors) { if(m == c) return i; i++; } return size_t.max; }();
 }
+
+/** Runtime palette ordinal for a color; unmatched (randomColor / HDR) falls back to white. */
+@nogc uint paletteOrdinal(const float[4] c) nothrow {
+  static foreach(i, m; EnumMembers!Colors) { if(c == cast(float[4])m) return i; }
+  return colorSlot!(Colors.white);
+}
+
+/** Material slot for a palette color: base (game-placed) + ordinal. */
+@nogc uint materialFor(const ref App app, const float[4] c) nothrow { return app.colorBase + paletteOrdinal(c); }

@@ -43,10 +43,11 @@ struct App {
   ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
-  Bone[string] bones;                                                           /// All animation bones across all objects [TODO: add a deAllocate]
+  Bone[string] bones;                                                           /// All animation bones across all objects
   SSBOList!Matrix boneOffsets;                                                  /// Animated BoneOffsets for GPU SSBO
   Textures textures;                                                            /// Textures
   SSBOList!Material materials;                                                  /// GPU materials
+  uint colorBase = 0;                                                           /// Base material slot of the color palette
   Audio audio;                                                                  /// Sounds
   GameWindow[] gameWindows;                                                     /// Game windows
   WavFMT[] soundfx;                                                             /// Sound effects
