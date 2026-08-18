@@ -12,6 +12,12 @@ struct Material {
   int pad = 0;
 }
 
+/** Bake a mesh's global material id into normal.w across its vertex range (replaces the meshSSBO lookup) */
+void stampMid(ref Geometry object, const ref Mesh mesh) {
+  foreach(ref v; object.vertices[mesh.vertices[0] .. mesh.vertices[1]]) v.normal[3] = cast(float)mesh.mid;
+  object.vertices.invalidate();
+}
+
 /** Register a global material slot for every mesh with a bindable material (call once at load) */
 void registerMaterials(ref App app, ref Geometry object) {
   foreach(ref mesh; object.meshes) {
@@ -20,6 +26,7 @@ void registerMaterials(ref App app, ref Geometry object) {
     if(mesh.mid >= 0) mesh.mat = mesh.mid;                     // assimp: save local index (procedural keeps its mat)
     mesh.mid = cast(int)(app.materials.length);
     app.materials ~= Material();
+    stampMid(object, mesh);
   }
   app.buffers["MaterialBuffer"].invalidate();
 }
@@ -30,6 +37,7 @@ void ensureMaterial(ref App app, ref Geometry object) {
     if(mesh.mid >= 0) continue;
     mesh.mid = cast(int)(app.materials.length);
     app.materials ~= Material();
+    stampMid(object, mesh);
   }
   app.buffers["MaterialBuffer"].invalidate();
 }
