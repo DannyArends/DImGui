@@ -43,7 +43,7 @@ import fpswindow : showFPSContent;
 import imgui : iconTextStr;
 import inventorywindow : showInventoryContent;
 import io : dir;
-import input : handleEvents;
+import input : handleEvents, handleGameInput;
 import lights : updateSun;
 import lightswindow : showLightsContent;
 import normals : computeTangents;
@@ -150,6 +150,9 @@ void initGame(ref GameApp app) {
   SDL_Log("createScene: WBOIT test rectangles");
   app.testWBOIT();
   SDL_Log("initGame: done");
+
+  // Add the game event handler
+  app.onEvent = (SDL_Event e) { app.handleGameInput(e); };
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
 }
