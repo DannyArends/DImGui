@@ -12,7 +12,7 @@ struct Vertex {
   float[3] position = [0.0f, 0.0f, 0.0f];           /// Vertex position
   float[2] texCoord = [0.0f, 1.0f];                 /// Vertex texture coordinates
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];        /// Vertex color
-  float[3] normal = [0.0f, 1.0f, 0.0f];             /// Vertex normal
+  float[4] normal = [0.0f, 1.0f, 0.0f, -1.0f];             /// Vertex normal
   float[4] tangent = [0.0f, 0.0f, 0.0f, 1.0f];      /// Vertex tangent
   uint[4] bones = [0, 0, 0, 0];                     /// 4 closest bones
   float[4] weights = [1.0f, 0.0f, 0.0f, 0.0f];      /// 4 closest bone weights
@@ -30,7 +30,7 @@ struct Vertex {
     VkVertexInputAttributeDescription[16] attributeDescriptions = [
       { binding: VERTEX, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.position.offsetof },
       { binding: VERTEX, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.color.offsetof },
-      { binding: VERTEX, location: 2, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.normal.offsetof },
+      { binding: VERTEX, location: 2, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.normal.offsetof },
       { binding: VERTEX, location: 3, format: VK_FORMAT_R32G32_SFLOAT, offset: Vertex.texCoord.offsetof },
       { binding: VERTEX, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.tangent.offsetof },
       { binding: VERTEX, location: 5, format: VK_FORMAT_R32G32B32A32_UINT, offset: Vertex.bones.offsetof },

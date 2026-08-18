@@ -11,7 +11,7 @@
 // Per Vertex input attributes
 layout(location = 0) in vec3  inPosition;             /// Vertex Position
 layout(location = 1) in vec4  inColor;                /// Vertex Color
-layout(location = 2) in vec3  inNormal;               /// Normal
+layout(location = 2) in vec4  inNormal;               /// Normal + MaterialID
 layout(location = 3) in vec2  inTexCoord;             /// Texture coordinate
 layout(location = 4) in vec4  inTangent;              /// Tangent xyz + handedness w
 layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
