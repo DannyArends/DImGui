@@ -59,11 +59,11 @@ void main() {
     fragPosWorld = worldPos;
     fragViewPos = (ubo.view * worldPos).xyz;
     bool hasBakedNormal = (instanceNormal.w != 0.0);
-    vec3 nModel = ANIMATED ? animate(vec4(inNormal.xyz, 0.0f), inBones, inWeights, uint(instanceDef[2])).xyz : inNormal.xyz;
+    vec3 nModel = ANIMATED ? animate(vec4(inNormal, 0.0f), inBones, inWeights, uint(instanceDef[3])).xyz : inNormal;
     vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * nModel);
     fragNormal = N;
     if(NORMAL_MAPPED) {
-      vec3 tModel = ANIMATED ? animate(vec4(inTangent.xyz, 0.0f), inBones, inWeights, uint(instanceDef[2])).xyz : inTangent.xyz;
+      vec3 tModel = ANIMATED ? animate(vec4(inTangent.xyz, 0.0f), inBones, inWeights, uint(instanceDef[3])).xyz : inTangent.xyz;
       vec3 T = hasBakedNormal ? instanceTangent.xyz : normalize(mat3(instance) * tModel);
       vec3 B = normalize(cross(N, T)) * (hasBakedNormal ? instanceTangent.w : inTangent.w);
       fragTBN = mat3(T, B, N);

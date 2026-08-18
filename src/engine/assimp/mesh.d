@@ -8,6 +8,7 @@ import engine;
 import assimp : name;
 import bone : loadBoneWeights, synthesizeBone;
 import amat : getChannel;
+import geometry : setColor;
 import material : ensureMaterial;
 import matrix : multiply, inverse, transpose;
 import vector : euclidean, cross, dot, x, y, z;
@@ -52,7 +53,7 @@ string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, stri
     }
     if (mesh.mColors[channel]) {
       auto color = mesh.mColors[channel][vIdx];
-      //asset.vertices[gIdx].color = [color.r, color.g, color.b, color.a];
+      asset.setColor(cast(uint)gIdx, [color.r, color.g, color.b, color.a]);
     }
     if (mesh.mTangents && mesh.mBitangents) {
       float[3] T = [mesh.mTangents[vIdx].x, mesh.mTangents[vIdx].y, mesh.mTangents[vIdx].z];

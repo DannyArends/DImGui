@@ -18,11 +18,11 @@ class Cylinder : Geometry {
 
     // Calculate half height for centering
     float halfHeight = height / 2.0f;
-    auto cI = cast(float)paletteOrdinal(color);
+    float[3] def = [-1.0f, cast(float)paletteOrdinal(color), color[3]];
 
-    computeWall(this, radius, halfHeight, numSegments, cI);
-    computeCap(this, [0.0f, halfHeight, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, cI); // Top cap
-    computeCap(this, [0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, cI); // Bottom cap
+    computeWall(this, radius, halfHeight, numSegments, def);
+    computeCap(this, [0.0f, halfHeight, 0.0f], [0.0f, 1.0f, 0.0f], radius, numSegments, def); // Top cap
+    computeCap(this, [0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, def); // Bottom cap
 
     instances = [DrawInstance()];
     meshes["Cylinder"] = Mesh([0, cast(uint)vertices.length]);
@@ -31,7 +31,7 @@ class Cylinder : Geometry {
 }
 
 /** Cylindrical side wall: numSegments quads spanning y = ±halfHeight. Shared by Cylinder and Capsule. */
-pure void computeWall(T)(T o, float radius, float halfHeight, uint numSegments, float color) nothrow {
+pure void computeWall(T)(T o, float radius, float halfHeight, uint numSegments, float[3] def) nothrow {
   for (uint i = 0; i < numSegments; ++i) {
     float[2] thetas = computeThetas(i, numSegments);
     float[3][2] p = computeBasePositions(radius, thetas);
@@ -39,10 +39,10 @@ pure void computeWall(T)(T o, float radius, float halfHeight, uint numSegments, 
     float[3] n = [cos(avg), 0.0f, sin(avg)];
     float[4] tan = [-sin(avg), 0.0f, cos(avg), 1.0f];
     uint v = cast(uint)o.vertices.length;
-    o.vertices ~= Vertex([p[0].x, -halfHeight, p[0].z], n, [-1.0f, color, 1.0f], [0.0f, 0.0f], tan);
-    o.vertices ~= Vertex([p[1].x, -halfHeight, p[1].z], n, [-1.0f, color, 1.0f], [1.0f, 0.0f], tan);
-    o.vertices ~= Vertex([p[1].x,  halfHeight, p[1].z], n, [-1.0f, color, 1.0f], [1.0f, 1.0f], tan);
-    o.vertices ~= Vertex([p[0].x,  halfHeight, p[0].z], n, [-1.0f, color, 1.0f], [0.0f, 1.0f], tan);
+    o.vertices ~= Vertex([p[0].x, -halfHeight, p[0].z], n, def, [0.0f, 0.0f], tan);
+    o.vertices ~= Vertex([p[1].x, -halfHeight, p[1].z], n, def, [1.0f, 0.0f], tan);
+    o.vertices ~= Vertex([p[1].x,  halfHeight, p[1].z], n, def, [1.0f, 1.0f], tan);
+    o.vertices ~= Vertex([p[0].x,  halfHeight, p[0].z], n, def, [0.0f, 1.0f], tan);
     o.indices ~= [v+2, v+1, v, v, v+3, v+2];
   }
 }

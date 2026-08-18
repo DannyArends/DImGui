@@ -19,7 +19,7 @@ layout(location = 1) in uvec4 inBones;
 layout(location = 2) in vec4 inWeights;
 
 // Per Instance attributes
-layout(location = 3) in ivec4 instanceDef;           /// Mesh [material, color, alpha, boneBase]
+layout(location = 3) in ivec4 instanceDef;           /// [material, color, alpha, boneBase]
 layout(location = 4) in mat4 instance;               /// Instance matrix
 
 void main() {

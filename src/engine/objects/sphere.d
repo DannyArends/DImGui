@@ -8,7 +8,7 @@ import engine;
 import normals : computeTangents;
 import icosahedron : refineIcosahedron;
 
-/** Geodesic sphere: an icosahedron subdivided `level` times. */
+/** Geodesic sphere: an icosahedron subdivided 'level' times */
 class Sphere : Icosahedron {
   this(uint level = 3, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
     super(color);

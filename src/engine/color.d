@@ -43,8 +43,15 @@ Colors toColor(string name) pure {
 
 enum Colors[] colorPalette = [EnumMembers!Colors];
 
-/** Runtime palette ordinal for a color; unmatched falls back to white (index 0). */
+/** Nearest palette ordinal to a color (squared-distance over RGB). */
 @nogc uint paletteOrdinal(const float[4] c) nothrow {
-  static foreach(i, m; EnumMembers!Colors) { if(c == cast(float[4])m) return cast(uint)i; }
-  return 0;   // colors.txt lists white first, so index 0 == white
+  uint best = 0;
+  float bestD = float.max;
+  static foreach(i, m; EnumMembers!Colors) {{
+    const float[4] p = cast(float[4])m;
+    const float dr = c[0]-p[0], dg = c[1]-p[1], db = c[2]-p[2];
+    const float d = dr*dr + dg*dg + db*db;
+    if(d < bestD) { bestD = d; best = cast(uint)i; }
+  }}
+  return best;
 }

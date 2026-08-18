@@ -6,6 +6,7 @@
 import engine;
 
 import buffer : uploadBarrier;
+import color : paletteOrdinal;
 import geometrybuffer : nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
 import textures : idx;
@@ -176,9 +177,20 @@ uint addVertex(T)(T geometry, const Vertex v) nothrow {
   return(cast(uint)(geometry.vertices.length-1));
 }
 
-void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
-  //for (uint x = 0; x < geometry.vertices.length; x++) { geometry.vertices[x].color = color; }
-  //geometry.vertices.invalidate();
+void setColor(T)(T geometry, uint x, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
+  auto cI = cast(float)paletteOrdinal(color);
+  geometry.vertices[x].definition[1] = cI;
+  geometry.vertices[x].definition[2] = color[3];
+  geometry.vertices.invalidate();
+}
+
+void setColor(T)(T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
+  auto cI = cast(float)paletteOrdinal(color);
+  for (uint x = 0; x < geometry.vertices.length; x++) {
+    geometry.vertices[x].definition[1] = cI;
+    geometry.vertices[x].definition[2] = color[3];
+  }
+  geometry.vertices.invalidate();
 }
 
 /** Render a Geometry to VkCommandBuffer cmd */

@@ -5,14 +5,16 @@
 
 import engine;
 
+import color : paletteOrdinal;
 import vector : vAdd, vMul;
 
 /** Line */
 class Line : Geometry {
-  this(){
+  this(float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
+    float[3] def = [-1.0f, cast(float)paletteOrdinal(color), color[3]];
     vertices = [
-      Vertex([ 0.0f, 0.0f, 0.0f ], [0.0f, 0.0f, 0.0f], [-1.0f, -1.0f, 1.0f], [ 0.0f, 0.0f ]),
-      Vertex([ 0.0f, 1.0f, 0.0f ], [0.0f, 0.0f, 0.0f], [-1.0f, -1.0f, 1.0f], [ 0.0f, 0.0f ])
+      Vertex([ 0.0f, 0.0f, 0.0f ], [0.0f, 0.0f, 0.0f], def, [ 0.0f, 0.0f ]),
+      Vertex([ 0.0f, 1.0f, 0.0f ], [0.0f, 0.0f, 0.0f], def, [ 0.0f, 0.0f ])
     ];
     indices = [0, 1];
     instances = [DrawInstance()];

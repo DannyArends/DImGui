@@ -15,11 +15,13 @@ import vector : vSub, vMul;
 /** Shared instanced text: one unit quad mesh, reused by every glyph via per-instance transform + UV remap.
  * All world text shares this one object, so it all draws in a single draw call. */
 class Text : Geometry {
-  this(ref App app) {
-    vertices ~= [ Vertex([0.0f, 0.0f, 0.0f], [0.0f, 1.0f, 0.0f], [-1.0f, -1.0f, 1.0f], [0.0f, 0.0f]),
-                  Vertex([1.0f, 0.0f, 0.0f], [0.0f, 1.0f, 0.0f], [-1.0f, -1.0f, 1.0f], [1.0f, 0.0f]),
-                  Vertex([1.0f, 1.0f, 0.0f], [0.0f, 1.0f, 0.0f], [-1.0f, -1.0f, 1.0f], [1.0f, 1.0f]),
-                  Vertex([0.0f, 1.0f, 0.0f], [0.0f, 1.0f, 0.0f], [-1.0f, -1.0f, 1.0f], [0.0f, 1.0f]) ];
+  this(ref App app, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]) {
+    float[3] def = [-1.0f, cast(float)paletteOrdinal(color), color[3]];
+
+    vertices ~= [ Vertex([0.0f, 0.0f, 0.0f], [0.0f, 1.0f, 0.0f], def, [0.0f, 0.0f]),
+                  Vertex([1.0f, 0.0f, 0.0f], [0.0f, 1.0f, 0.0f], def, [1.0f, 0.0f]),
+                  Vertex([1.0f, 1.0f, 0.0f], [0.0f, 1.0f, 0.0f], def, [1.0f, 1.0f]),
+                  Vertex([0.0f, 1.0f, 0.0f], [0.0f, 1.0f, 0.0f], def, [0.0f, 1.0f]) ];
     indices ~= [0, 2, 1, 0, 3, 2];
     meshes["Text"] = Mesh([0, cast(uint)vertices.length]);
     initInstanced("Text");
