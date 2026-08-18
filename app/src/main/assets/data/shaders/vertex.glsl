@@ -18,7 +18,7 @@ layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
 layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance input attributes
-layout(location = 7) in ivec4 instanceDef;            /// Mesh [material, boneBase, unused, unused]
+layout(location = 7) in ivec4 instanceDef;            /// Mesh [material, color, boneBase, unused]
 layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
 layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
 layout(location = 10) in vec4 instanceNormal;         /// baked world normal (instanced faces)
@@ -30,7 +30,7 @@ layout(location = 0) out vec4 fragPosWorld;           /// Fragment world positio
 layout(location = 1) out vec4 fragColor;              /// Fragment color
 layout(location = 2) out vec3 fragNormal;             /// Fragment normal
 layout(location = 3) out vec2 fragTexCoord;           /// Texture coordinate
-layout(location = 4) flat out int fragMaterial;       /// Material id
+layout(location = 4) flat out ivec2 fragMaterial;     /// [Material, Color]
 layout(location = 5) out vec3 fragViewPos;            /// View-space position (froxel lookup)
 layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
 
@@ -50,7 +50,7 @@ void main() {
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
 
    /// [baked material id, per-instance override]
-  fragMaterial = (instanceDef[0] >= 0) ? instanceDef[0] : int(inNormal.w);
+  fragMaterial = ivec2((instanceDef[0] >= 0) ? instanceDef[0] : int(inNormal.w), (instanceDef[1] >= 0) ? instanceDef[1] : -1);
 
   if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
     fragPosWorld = worldPos;

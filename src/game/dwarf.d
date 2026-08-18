@@ -17,7 +17,7 @@ import matrix : multiply, translate, rotate, position, scale, halfExtent;
 import names : randomizeName;
 import pathfinding : repathTo, RepathResult, findGoalTile;
 import jobs : pinnedPickup, requestStepAside, eatJob, fillCupJob, drinkJob, craftJob, sleepJob;
-import resources : isFood, isEmptyCup, isWaterCup, materialFor;
+import resources : isFood, isEmptyCup, isWaterCup;
 import skeleton : buildSkeleton, freeSkeleton;
 import sfx : play;
 import text : addWorldText, moveWorldText, removeWorldText;

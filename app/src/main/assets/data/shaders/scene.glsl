@@ -19,11 +19,12 @@
 
 /// Materials
 #define BINDING_MATERIAL_SSBO      6
+#define BINDING_COLOR_SSBO         7
 
 /// Lights
-#define BINDING_CLUSTER_LIGHTS     7
-#define BINDING_CLUSTER_HEADS      8
-#define BINDING_CLUSTER_COUNTER    9
+#define BINDING_CLUSTER_LIGHTS     8
+#define BINDING_CLUSTER_HEADS      9
+#define BINDING_CLUSTER_COUNTER    10
 
 struct Light {
   vec4 position;      /// Position of the light; w==0: directional, w!=0: point/spot
@@ -37,15 +38,11 @@ struct Bone {
   mat4 offset;        /// Bone offset
 };
 
-struct Material {
-  int tid;      /// Diffuse texture ID
-  int nid;      /// Normal map ID
-  int oid;      /// Opacity texture ID
-  int pad;
-  vec4 color;   /// Base color (palette); multiplies texture when tid >= 0
-};
+struct Material { int tid; int nid; int oid; int pad; };
+struct Color { vec4 rgb; };     /// [Red, Green, Blue, unused]
 
-#define noMaterial Material(-1, -1, -1, 0, vec4(1.0))
+#define noMaterial Material(-1, -1, -1, 0)
+#define noColor Color(vec4(1.0))
 
 struct LightIndex { uint light; uint next; };
 struct Cursor { uint cursor; };
@@ -64,17 +61,21 @@ layout (std430, set = 0, binding = BINDING_MATERIAL_SSBO) readonly buffer Materi
   Material materials[];
 } materialSSBO;   // 6
 
+layout (std430, set = 0, binding = BINDING_COLOR_SSBO) readonly buffer ColorBuffer {
+  Color colors[];
+} colorSSBO;   // 7
+
 layout(std430, set=0, binding=BINDING_CLUSTER_LIGHTS) buffer ClusterLights {
   LightIndex indices[];
-}; // 7
+}; // 8
 
 layout(std430, set=0, binding=BINDING_CLUSTER_HEADS) buffer ClusterHeads {
   ClusterHead head[];
-}; // 8
+}; // 9
 
 layout(std430, set=0, binding=BINDING_CLUSTER_COUNTER) buffer ClusterCounter {
   Cursor cursor[];
-};
+}; // 10
 
 /// UBO
 layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {

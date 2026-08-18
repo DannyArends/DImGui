@@ -10,7 +10,6 @@ import feature : stampFeatureFootprints;
 import game : GameApp;
 import jobs : activeTiles;
 import lattice : tileIdx, tileToWorld, tileAbove, chunkCoord, tileNeighbours;
-import resources : materialFor;
 import tool : tools;
 import vector : dot;
 

@@ -7,7 +7,7 @@ import engine;
 
 /** An instance of a Geometry */
 struct DrawInstance {
-  int[4] instance = [-1, -1, -1, 0];                 /// [material, boneBase, unused, unused]
+  int[4] instance = [-1, -1, -1, 0];                 /// [material, color, boneBase, unused, unused]
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];        /// Color
   float[4] uvRect = [0.0f, 0.0f, 1.0f, 1.0f];       /// UV remap [offsetX, offsetY, scaleX, scaleY]; identity = full texture
   float[4] worldNormal = [0.0f, 1.0f, 0.0f, 0.0f];  /// baked world-space normal (xyz) + hasBakedNormal (w)
@@ -22,8 +22,8 @@ struct DrawInstance {
   static assert(DrawInstance.matrix.offsetof == 80);
 
   /** Transform (+ optional material / color / UV). Covers primitives, dwarves, features, blocks, glyphs. */
-  @nogc this(Matrix m, int mat = -1, float[4] c = [1.0f, 1.0f, 1.0f, 1.0f], float[4] uv = [0.0f, 0.0f, 1.0f, 1.0f]) nothrow {
-    matrix = m; instance[0] = mat; color = c; uvRect = uv;
+  @nogc this(Matrix m, int mat = -1, int color = -1, float[4] uv = [0.0f, 0.0f, 1.0f, 1.0f]) nothrow {
+    matrix = m; instance[0] = mat; instance[0] = color; uvRect = uv;
   }
 
   /** Packed face transform (+ optional material). For voxel faces (chunk/water/clouds). */

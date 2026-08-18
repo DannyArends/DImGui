@@ -6,7 +6,6 @@
 import game;
 
 import block : itemOf;
-import color : colorMaterials, paletteOrdinal;
 import textures : idx;
 
 /** A concrete item = (shape x material), optionally holding `amount` units of `contents`.
@@ -94,24 +93,13 @@ string itemTex(const Item it) {
 @nogc pure Item toItem(ResourceType m) nothrow { return Item(ItemTemplate.None, m); }
 
 /** Material-SSBO layout: slot i (0..RESOURCE_COUNT) is material i; item templates follow with 2 slots each (empty, filled). */
-@nogc pure uint templateMat(ItemTemplate t, bool filled = false) nothrow { 
+@nogc pure uint templateMat(ItemTemplate t, bool filled = false) nothrow {
   return cast(uint)(RESOURCE_COUNT) + 2 * (cast(uint)t - 1) + (filled ? 1 : 0);
 }
 
-enum COLOR_MAT_BASE  = RESOURCE_COUNT + (2 * ItemTemplate.max);   /// palette occupies [BASE .. BASE+COUNT)
-enum COLOR_MAT_COUNT = EnumMembers!Colors.length;
-enum COLOR_MAT_END   = COLOR_MAT_BASE + COLOR_MAT_COUNT;
-
-void injectResourceMeshes(ref GameApp app, uint minMaterials = COLOR_MAT_END) {
-  if(app.materials.length < minMaterials){
-    app.materials.length = minMaterials;
-    app.materials[COLOR_MAT_BASE .. COLOR_MAT_END] = colorMaterials[];
-    app.colorBase = COLOR_MAT_BASE;
-  }
+void injectResourceMeshes(ref GameApp app, uint minMaterials = RESOURCE_COUNT + (2 * ItemTemplate.max)) {
+  if(app.materials.length < minMaterials){ app.materials.length = minMaterials; }
 }
-
-/** Palette material slot for a color (game-side, compile-time base). */
-@nogc uint materialFor(const float[4] c) nothrow { return(cast(uint)COLOR_MAT_BASE + paletteOrdinal(c)); }
 
 void updateMaterials(ref GameApp app) {
   foreach (tt; 0 .. RESOURCE_COUNT) {

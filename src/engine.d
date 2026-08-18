@@ -47,7 +47,7 @@ struct App {
   SSBOList!Matrix boneOffsets;                                                  /// Animated BoneOffsets for GPU SSBO
   Textures textures;                                                            /// Textures
   SSBOList!Material materials;                                                  /// GPU materials
-  uint colorBase = 0;                                                           /// Base material slot of the color palette
+  SSBOList!Colors colors;                                                       /// GPU colors
   Audio audio;                                                                  /// Sounds
   GameWindow[] gameWindows;                                                     /// Game windows
   WavFMT[] soundfx;                                                             /// Sound effects

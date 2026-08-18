@@ -8,7 +8,7 @@ import game;
 import animation : animateAsset;
 import matrix : multiply, position, rotate, scale;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
-import resources : itemStack, materialFor;
+import resources : itemStack;
 import scheduler : atDestination;
 import skeleton : animateSkeleton, buildSkeleton;
 import vector : vMul;

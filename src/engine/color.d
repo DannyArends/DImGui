@@ -25,22 +25,7 @@ string generateColorsEnum(string raw) pure {
   return result ~ "}\n";
 }
 
-string generateColorMaps(string raw) pure {
-  auto tokens = parseTokens(raw);
-  string residue = "@nogc float[4] residueToColor(string r) nothrow {\n  switch(r) {\n";
-  string atom = "@nogc float[4] atomToColor(string a) nothrow {\n  switch(a) {\n";
-  foreach(token; tokens) {
-    auto p = splitColon(token);
-    if(p.length != 3) continue;
-    if(p[0] == "RESIDUE") residue ~= format("    case \"%s\": return Colors.%s;\n", p[1], p[2]);
-    if(p[0] == "ATOM") atom ~= format("    case \"%s\": return Colors.%s;\n", p[1], p[2]);
-  }
-  string tail = "    default: return Colors.white;\n  }\n}\n";
-  return(residue ~ tail ~ atom ~ tail);
-}
-
 mixin(generateColorsEnum(import("data/raws/colors.txt")));
-mixin(generateColorMaps(import("data/raws/colors.txt")));
 
 /** Generate a random color */
 float[4] randomColor(float alpha = 1.0f) {
@@ -55,24 +40,3 @@ Colors toColor(string name) pure {
   static foreach(m; __traits(allMembers, Colors)) if(name == m) return __traits(getMember, Colors, m);
   return Colors.white;
 }
-
-/** CTFE: one Material per palette Colors entry, color pre-filled (tid/nid/oid = -1). */
-enum Material[] colorMaterials = (){
-  Material[] m;
-  static foreach(c; EnumMembers!Colors) m ~= Material(-1, -1, -1, 0, cast(float[4])c);
-  return m;
-}();
-
-/** Compile-time palette slot for a Colors member (add the color-block base to index app.materials). */
-template colorSlot(Colors c) {
-  enum colorSlot = (){ size_t i = 0; static foreach(m; EnumMembers!Colors) { if(m == c) return i; i++; } return size_t.max; }();
-}
-
-/** Runtime palette ordinal for a color; unmatched (randomColor / HDR) falls back to white. */
-@nogc uint paletteOrdinal(const float[4] c) nothrow {
-  static foreach(i, m; EnumMembers!Colors) { if(c == cast(float[4])m) return i; }
-  return colorSlot!(Colors.white);
-}
-
-/** Material slot for a palette color: base (game-placed) + ordinal. */
-@nogc uint materialFor(const ref App app, const float[4] c) nothrow { return app.colorBase + paletteOrdinal(c); }
