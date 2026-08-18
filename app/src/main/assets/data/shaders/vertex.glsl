@@ -36,7 +36,7 @@ layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, No
 
 void main() {
   /// Compute bone effects on vertex
-  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(instanceDef[1])) : vec4(inPosition, 1.0f);
+  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(instanceDef[2])) : vec4(inPosition, 1.0f);
 
   /// Compute our model matrix
   vec4 worldPos = instance * position;
@@ -56,11 +56,11 @@ void main() {
     fragPosWorld = worldPos;
     fragViewPos = (ubo.view * worldPos).xyz;
     bool hasBakedNormal = (instanceNormal.w != 0.0);
-    vec3 nModel = ANIMATED ? animate(vec4(inNormal.xyz, 0.0f), inBones, inWeights, uint(instanceDef[1])).xyz : inNormal.xyz;
+    vec3 nModel = ANIMATED ? animate(vec4(inNormal.xyz, 0.0f), inBones, inWeights, uint(instanceDef[2])).xyz : inNormal.xyz;
     vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * nModel);
     fragNormal = N;
     if(NORMAL_MAPPED) {
-      vec3 tModel = ANIMATED ? animate(vec4(inTangent.xyz, 0.0f), inBones, inWeights, uint(instanceDef[1])).xyz : inTangent.xyz;
+      vec3 tModel = ANIMATED ? animate(vec4(inTangent.xyz, 0.0f), inBones, inWeights, uint(instanceDef[2])).xyz : inTangent.xyz;
       vec3 T = hasBakedNormal ? instanceTangent.xyz : normalize(mat3(instance) * tModel);
       vec3 B = normalize(cross(N, T)) * (hasBakedNormal ? instanceTangent.w : inTangent.w);
       fragTBN = mat3(T, B, N);

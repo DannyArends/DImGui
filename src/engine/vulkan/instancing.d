@@ -23,7 +23,7 @@ struct DrawInstance {
 
   /** Transform (+ optional material / color / UV). Covers primitives, dwarves, features, blocks, glyphs. */
   @nogc this(Matrix m, int mat = -1, int color = -1, float[4] uv = [0.0f, 0.0f, 1.0f, 1.0f]) nothrow {
-    matrix = m; instance[0] = mat; instance[0] = color; uvRect = uv;
+    matrix = m; instance[0] = mat; instance[1] = color; uvRect = uv;
   }
 
   /** Packed face transform (+ optional material). For voxel faces (chunk/water/clouds). */

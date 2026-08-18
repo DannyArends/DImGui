@@ -19,10 +19,10 @@ layout(location = 1) in uvec4 inBones;
 layout(location = 2) in vec4 inWeights;
 
 // Per Instance attributes
-layout(location = 3) in ivec4 instanceDef;           /// Mesh [material, boneBase, unused, unused]
+layout(location = 3) in ivec4 instanceDef;           /// Mesh [material, color, boneBase, unused]
 layout(location = 4) in mat4 instance;               /// Instance matrix
 
 void main() {
-  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(instanceDef[1])) : vec4(inPosition, 1.0f);
+  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(instanceDef[2])) : vec4(inPosition, 1.0f);
   gl_Position = lightUbo.slotVP[pc.clight] * ((lightUbo.scene * instance) * position);
 }
