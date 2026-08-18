@@ -16,7 +16,6 @@ import timing : timed;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
 import vram : queryVRAM;
 import water : waterTick, flushWaterDirty, evaporateTick;
-import world : regenerateWorld;
 
 /** Handle Game keyboard events */
 void handleGameInput(ref GameApp app, SDL_Event e) {
@@ -79,7 +78,7 @@ void handleEvents(ref GameApp app, float dt) {
 
   app.camera.wasDown = down;
 
-  if(!app.paused && app.timeScale > 0 && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
+  if(!app.paused && app.speed > 0 && app.time[FRAMESTART] - app.time[LASTTICK] > 250) {
     app.time[LASTTICK] = app.time[FRAMESTART];
     if(app.trace) SDL_Log("Tick[%d]: Frame: %d", app.paused, app.totalFramesRendered);
     app.timed!rainTick();             // spawn new falling drops

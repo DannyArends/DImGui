@@ -5,7 +5,7 @@
 
 import engine;
 
-import camera : tryMove;
+import camera : tryDrag, tryZoom, tryMove, handleCameraKeys;
 import deletion : deAllocate;
 import imgui : initializeImGui, saveSettings;
 import screenshot : saveScreenshot;
@@ -45,7 +45,7 @@ void pollEvents(ref App app) {
 
 /** Pure engine frame timer (extracted from handleEvents). */
 double frameDelta(ref App app) {
-  return app.paused ? 0.0 : app.timeScale * ((app.time[FRAMESTOP] - app.time[LASTFRAME]) / 1000.0f);
+  return app.paused ? 0.0 : app.speed * ((app.time[FRAMESTOP] - app.time[LASTFRAME]) / 1000.0f);
 }
 
 /** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 

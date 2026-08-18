@@ -13,7 +13,7 @@ static immutable(char*)[] speedLabels = ["Pause".ptr, "1x".ptr, "2x".ptr, "4x".p
 /** Show the GUI window for the World */
 void showWorldContent(ref GameApp app, uint font = 0) {
   if(igBeginTable("World_Tbl", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0,0), 0.0f)) {
-    cSlider("Time Scale", app.timeScale, speeds, speedLabels, 150, app.gui.uiscale);
+    cSlider("Time Scale", app.speed, speeds, speedLabels, 150, app.gui.uiscale);
     setting("World Seed", app.world.seed[0], 0, 1000, 150, app.gui.uiscale);
     setting("Tile Seed", app.world.seed[1], 0, 1000, 150, app.gui.uiscale);
     setting("Render Distance", app.world.renderDistance, 1, 16, 150, app.gui.uiscale);
