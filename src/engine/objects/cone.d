@@ -4,6 +4,7 @@
  */
 import engine;
 
+import color : paletteOrdinal;
 import vector : x,y,z, magnitude, cross;
 
 /** Cone
@@ -15,6 +16,7 @@ class Cone : Geometry {
     if (numSegments < 3) { numSegments = 3; }
     float halfHeight = height / 2.0f;
     float[3] apex = [0.0f, halfHeight, 0.0f];
+    auto cI = cast(float)paletteOrdinal(color);
 
     for (uint i = 0; i < numSegments; ++i) {
       float[2] theta = computeThetas(i, numSegments);
@@ -30,13 +32,13 @@ class Cone : Geometry {
 
       uint vIdx = cast(uint)vertices.length;
       vertices ~= Vertex(apex, faceNormal, [-1.0f, -1.0f, 1.0f], [0.5f, 0.0f]);
-      vertices ~= Vertex([positions[0].x, positions[0].y - halfHeight, positions[0].z], faceNormal, [-1.0f, -1.0f, 1.0f], [0.0f, 1.0f]);
-      vertices ~= Vertex([positions[1].x, positions[1].y - halfHeight, positions[1].z], faceNormal, [-1.0f, -1.0f, 1.0f], [1.0f, 1.0f]);
+      vertices ~= Vertex([positions[0].x, positions[0].y - halfHeight, positions[0].z], faceNormal, [-1.0f, cI, 1.0f], [0.0f, 1.0f]);
+      vertices ~= Vertex([positions[1].x, positions[1].y - halfHeight, positions[1].z], faceNormal, [-1.0f, cI, 1.0f], [1.0f, 1.0f]);
 
       indices ~= [vIdx+2, vIdx + 1, vIdx];
     }
     // Adjust cap position by subtracting halfHeight
-    this.computeCap([0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, color); // Bottom cap
+    this.computeCap([0.0f, -halfHeight, 0.0f], [0.0f, -1.0f, 0.0f], radius, numSegments, cI); // Bottom cap
 
     instances = [DrawInstance()];
     meshes["Cone"] = Mesh([0, cast(uint)vertices.length]);
@@ -61,7 +63,7 @@ class Cone : Geometry {
   ];
 }
 
-pure void computeCap(T)(T geometry, float[3] center, float[3] normal, float radius, uint numSegments, float[4] color) nothrow {
+pure void computeCap(T)(T geometry, float[3] center, float[3] normal, float radius, uint numSegments, float color) nothrow {
   for (uint i = 0; i < numSegments; ++i) {
     float[2] thetas = computeThetas(i, numSegments);
     float[3][2] baseCirclePositions = computeBasePositions(radius, thetas);
@@ -71,9 +73,9 @@ pure void computeCap(T)(T geometry, float[3] center, float[3] normal, float radi
     float[3] p2 = [baseCirclePositions[1].x, center.y, baseCirclePositions[1].z];
 
     uint vIdx = cast(uint)geometry.vertices.length;
-    geometry.vertices ~= Vertex(p1, normal, [-1.0f, -1.0f, 1.0f], texCoords[0]);      // V0 relative to vIdx
-    geometry.vertices ~= Vertex(p2, normal, [-1.0f, -1.0f, 1.0f], texCoords[1]);      // V1 relative to vIdx
-    geometry.vertices ~= Vertex(center, normal, [-1.0f, -1.0f, 1.0f], [0.5f, 0.5f]);  // V2 relative to vIdx
+    geometry.vertices ~= Vertex(p1, normal, [-1.0f, color, 1.0f], texCoords[0]);      // V0 relative to vIdx
+    geometry.vertices ~= Vertex(p2, normal, [-1.0f, color, 1.0f], texCoords[1]);      // V1 relative to vIdx
+    geometry.vertices ~= Vertex(center, normal, [-1.0f, color, 1.0f], [0.5f, 0.5f]);  // V2 relative to vIdx
 
     if (normal.y > 0.0f) {
       geometry.indices ~= [vIdx+1, vIdx, vIdx+2];

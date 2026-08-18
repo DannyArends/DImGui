@@ -5,6 +5,7 @@
 
 import engine;
 
+import color : paletteOrdinal;
 import cone : computeThetas;
 import cylinder : computeWall;
 import vector : x, y, z, normalize;
@@ -14,11 +15,13 @@ class Capsule : Geometry {
   this(float radius = 0.5f, float height = 1.0f, uint numSegments = 32, uint numRings = 8, float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     if (numSegments < 3) numSegments = 3;
     if (numRings < 1) numRings = 1;
-    float halfHeight = height / 2.0f;
 
-    computeWall(this, radius, halfHeight, numSegments, color);
-    capsuleCap(this, radius, halfHeight, numSegments, numRings, color, true);    // top hemisphere
-    capsuleCap(this, radius, halfHeight, numSegments, numRings, color, false);   // bottom hemisphere
+    float halfHeight = height / 2.0f;
+    auto cI = cast(float)paletteOrdinal(color);
+
+    computeWall(this, radius, halfHeight, numSegments, cI);
+    capsuleCap(this, radius, halfHeight, numSegments, numRings, cI, true);    // top hemisphere
+    capsuleCap(this, radius, halfHeight, numSegments, numRings, cI, false);   // bottom hemisphere
 
     instances = [DrawInstance()];
     meshes["Capsule"] = Mesh([0, cast(uint)vertices.length]);
@@ -28,7 +31,7 @@ class Capsule : Geometry {
 }
 
 /** One hemisphere cap; equator ring aligns to the wall at y = ±halfHeight, apex points outward. */
-void capsuleCap(T)(T o, float radius, float halfHeight, uint numSegments, uint numRings, float[4] color, bool top) {
+void capsuleCap(T)(T o, float radius, float halfHeight, uint numSegments, uint numRings, float color, bool top) {
   float cy = top ? halfHeight : -halfHeight;
   float dir = top ? 1.0f : -1.0f;
   foreach (ring; 0 .. numRings) {
@@ -43,10 +46,10 @@ void capsuleCap(T)(T o, float radius, float halfHeight, uint numSegments, uint n
       float[3] c = [r1*cos(t[1]), y1, r1*sin(t[1])];
       float[3] d = [r1*cos(t[0]), y1, r1*sin(t[0])];
       uint v = cast(uint)o.vertices.length;
-      o.vertices ~= Vertex(a, normalize([a.x, a.y - cy, a.z]), [-1.0f, -1.0f, 1.0f], [0.0f, 0.0f]);
-      o.vertices ~= Vertex(b, normalize([b.x, b.y - cy, b.z]), [-1.0f, -1.0f, 1.0f], [1.0f, 0.0f]);
-      o.vertices ~= Vertex(c, normalize([c.x, c.y - cy, c.z]), [-1.0f, -1.0f, 1.0f], [1.0f, 1.0f]);
-      o.vertices ~= Vertex(d, normalize([d.x, d.y - cy, d.z]), [-1.0f, -1.0f, 1.0f], [0.0f, 1.0f]);
+      o.vertices ~= Vertex(a, normalize([a.x, a.y - cy, a.z]), [-1.0f, color, 1.0f], [0.0f, 0.0f]);
+      o.vertices ~= Vertex(b, normalize([b.x, b.y - cy, b.z]), [-1.0f, color, 1.0f], [1.0f, 0.0f]);
+      o.vertices ~= Vertex(c, normalize([c.x, c.y - cy, c.z]), [-1.0f, color, 1.0f], [1.0f, 1.0f]);
+      o.vertices ~= Vertex(d, normalize([d.x, d.y - cy, d.z]), [-1.0f, color, 1.0f], [0.0f, 1.0f]);
       if (top) o.indices ~= [v, v+1, v+2, v, v+2, v+3];
       else     o.indices ~= [v+2, v+1, v, v+3, v+2, v];   // mirror winding for the downward cap
     }

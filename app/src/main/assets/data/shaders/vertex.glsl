@@ -10,26 +10,28 @@
 
 // Per Vertex input attributes
 layout(location = 0) in vec3  inPosition;             /// Vertex Position
-layout(location = 1) in vec4  inNormal;               /// Normal + MaterialID
-layout(location = 2) in vec2  inTexCoord;             /// Texture coordinate
-layout(location = 3) in vec4  inTangent;              /// Tangent xyz + handedness w
-layout(location = 4) in uvec4 inBones;                /// assimp: BoneIDs
-layout(location = 5) in vec4  inWeights;              /// assimp: BoneWeights
+layout(location = 1) in vec3  inNormal;               /// Normal
+layout(location = 2) in vec3  inDef;                  /// Mesh [material, color, alpha]
+layout(location = 3) in vec2  inTexCoord;             /// Texture coordinate
+layout(location = 4) in vec4  inTangent;              /// Tangent xyz + handedness w
+layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
+layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance input attributes
-layout(location = 6) in ivec4 instanceDef;            /// Mesh [material, color, boneBase, unused]
-layout(location = 7) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
-layout(location = 8) in vec4 instanceNormal;          /// baked world normal (instanced faces)
-layout(location = 9) in vec4 instanceTangent;         /// baked world tangent + handedness
-layout(location = 10) in mat4 instance;               /// Instance matrix
+layout(location = 7) in vec4 instanceDef;             /// Mesh [material, color, alpha, boneBase]
+layout(location = 8) in vec4 instanceUV;              /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
+layout(location = 9) in vec4 instanceNormal;          /// baked world normal (instanced faces)
+layout(location = 10) in vec4 instanceTangent;        /// baked world tangent + handedness
+layout(location = 11) in mat4 instance;               /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;           /// Fragment world position
-layout(location = 1) out vec3 fragNormal;             /// Fragment normal
-layout(location = 2) out vec2 fragTexCoord;           /// Texture coordinate
-layout(location = 3) flat out ivec2 fragMaterial;     /// [Material, Color]
-layout(location = 4) out vec3 fragViewPos;            /// View-space position (froxel lookup)
-layout(location = 5) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
+layout(location = 1) out vec4 fragColor;              /// Resolved rgb + alpha (interpolated)
+layout(location = 2) out vec3 fragNormal;             /// Fragment normal
+layout(location = 3) out vec2 fragTexCoord;           /// Texture coordinate
+layout(location = 4) flat out int fragMaterial;       /// Resolved Material
+layout(location = 5) out vec3 fragViewPos;            /// View-space position (froxel lookup)
+layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
 
 void main() {
   /// Compute bone effects on vertex
@@ -45,8 +47,13 @@ void main() {
   /// Fragment texture
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
 
-   /// [baked material id, per-instance override]
-  fragMaterial = ivec2((instanceDef[0] >= 0) ? instanceDef[0] : int(inNormal.w), (instanceDef[1] >= 0) ? instanceDef[1] : -1);
+  // Fragment color
+  int colorIdx = (instanceDef[1] >= 0.0) ? int(instanceDef[1]) : int(inDef[1]);
+  float alpha = (instanceDef[2] >= 0.0) ? instanceDef[2] : inDef[2];
+  fragColor = vec4((colorIdx >= 0) ? colorSSBO.colors[colorIdx].rgb.rgb : vec3(1.0), alpha);
+
+  /// [baked material id, per-instance override]
+  fragMaterial = (instanceDef[0] >= 0.0) ? int(instanceDef[0]) : int(inDef[0]);
 
   if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
     fragPosWorld = worldPos;
