@@ -11,12 +11,11 @@
 
 // Per Fragment input attributes
 layout(location = 0) in vec4 fragPosWorld;              /// Fragment Position (in world space)
-layout(location = 1) in vec4 fragColor;                 /// Fragment Color
-layout(location = 2) in vec3 fragNormal;                /// Fragment Normal
-layout(location = 3) in vec2 fragTexCoord;              /// Texture coordinates
-layout(location = 4) flat in ivec2 fragMaterial;        /// [material, color]
-layout(location = 5) in vec3 fragViewPos;               /// View-space position (froxel lookup)
-layout(location = 6) in mat3 fragTBN;                   /// Fragment: Tangent, Bitangent, Normal matrix
+layout(location = 1) in vec3 fragNormal;                /// Fragment Normal
+layout(location = 2) in vec2 fragTexCoord;              /// Texture coordinates
+layout(location = 3) flat in ivec2 fragMaterial;        /// [material, color]
+layout(location = 4) in vec3 fragViewPos;               /// View-space position (froxel lookup)
+layout(location = 5) in mat3 fragTBN;                   /// Fragment: Tangent, Bitangent, Normal matrix
 
 // Fragment output: normal path writes location 0; WBOIT path writes accum(0) + revealage(1)
 layout(location = 0) out vec4 outColor;
@@ -36,8 +35,8 @@ void writeOutput(vec3 color, float alpha) {
 void main() {
   Material mat = (fragMaterial[0] >= 0) ? materialSSBO.materials[uint(fragMaterial[0])] : noMaterial;
   Color color = (fragMaterial[1] >= 0) ? colorSSBO.colors[uint(fragMaterial[1])] : noColor;
-  vec3 rgb = color.rgb.rgb * fragColor.rgb;
-  float alpha = color.rgb.a * fragColor.a;
+  vec3 rgb = color.rgb.rgb;
+  float alpha = color.rgb.a;
 
   // Multiply texture to basecolor & adjust alpha outside of the DEPTH_PASS
   if(!DEPTH_PASS && !(TOPOLOGY == 1) && mat.tid >= 0) {

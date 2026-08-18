@@ -10,29 +10,26 @@
 
 // Per Vertex input attributes
 layout(location = 0) in vec3  inPosition;             /// Vertex Position
-layout(location = 1) in vec4  inColor;                /// Vertex Color
-layout(location = 2) in vec4  inNormal;               /// Normal + MaterialID
-layout(location = 3) in vec2  inTexCoord;             /// Texture coordinate
-layout(location = 4) in vec4  inTangent;              /// Tangent xyz + handedness w
-layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
-layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
+layout(location = 1) in vec4  inNormal;               /// Normal + MaterialID
+layout(location = 2) in vec2  inTexCoord;             /// Texture coordinate
+layout(location = 3) in vec4  inTangent;              /// Tangent xyz + handedness w
+layout(location = 4) in uvec4 inBones;                /// assimp: BoneIDs
+layout(location = 5) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance input attributes
-layout(location = 7) in ivec4 instanceDef;            /// Mesh [material, color, boneBase, unused]
-layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
-layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
-layout(location = 10) in vec4 instanceNormal;         /// baked world normal (instanced faces)
-layout(location = 11) in vec4 instanceTangent;        /// baked world tangent + handedness
-layout(location = 12) in mat4 instance;               /// Instance matrix
+layout(location = 6) in ivec4 instanceDef;            /// Mesh [material, color, boneBase, unused]
+layout(location = 7) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
+layout(location = 8) in vec4 instanceNormal;          /// baked world normal (instanced faces)
+layout(location = 9) in vec4 instanceTangent;         /// baked world tangent + handedness
+layout(location = 10) in mat4 instance;               /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;           /// Fragment world position
-layout(location = 1) out vec4 fragColor;              /// Fragment color
-layout(location = 2) out vec3 fragNormal;             /// Fragment normal
-layout(location = 3) out vec2 fragTexCoord;           /// Texture coordinate
-layout(location = 4) flat out ivec2 fragMaterial;     /// [Material, Color]
-layout(location = 5) out vec3 fragViewPos;            /// View-space position (froxel lookup)
-layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
+layout(location = 1) out vec3 fragNormal;             /// Fragment normal
+layout(location = 2) out vec2 fragTexCoord;           /// Texture coordinate
+layout(location = 3) flat out ivec2 fragMaterial;     /// [Material, Color]
+layout(location = 4) out vec3 fragViewPos;            /// View-space position (froxel lookup)
+layout(location = 5) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
 
 void main() {
   /// Compute bone effects on vertex
@@ -45,8 +42,7 @@ void main() {
   gl_Position = ubo.viewProj * worldPos;
   gl_PointSize = 2.0f;
 
-  /// Fragment color
-  fragColor = INSTANCED ? (inColor * instanceColor) : inColor;
+  /// Fragment texture
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
 
    /// [baked material id, per-instance override]

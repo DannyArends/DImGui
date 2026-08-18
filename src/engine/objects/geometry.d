@@ -177,8 +177,8 @@ uint addVertex(T)(T geometry, const Vertex v) nothrow {
 }
 
 void setColor(T)(ref T geometry, float[4] color = [1.0f, 0.0f, 0.0f, 1.0f]){
-  for (uint x = 0; x < geometry.vertices.length; x++) { geometry.vertices[x].color = color; }
-  geometry.vertices.invalidate();
+  //for (uint x = 0; x < geometry.vertices.length; x++) { geometry.vertices[x].color = color; }
+  //geometry.vertices.invalidate();
 }
 
 /** Render a Geometry to VkCommandBuffer cmd */

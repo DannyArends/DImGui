@@ -11,7 +11,6 @@ enum { VERTEX = 0, INSTANCE = 1, INDEX = 2 }
 struct Vertex {
   float[3] position = [0.0f, 0.0f, 0.0f];           /// Vertex position
   float[2] texCoord = [0.0f, 1.0f];                 /// Vertex texture coordinates
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];        /// Vertex color
   float[3] normal = [0.0f, 1.0f, 0.0f];             /// Vertex normal
   float mid = -1.0f;                                /// Baked material id (read as normal.w; -1 = none)
   float[4] tangent = [0.0f, 0.0f, 0.0f, 1.0f];      /// Vertex tangent
@@ -27,26 +26,24 @@ struct Vertex {
     return bindingDescription;
   }
 
-  @nogc static VkVertexInputAttributeDescription[16] getRenderDescriptions() nothrow {
-    VkVertexInputAttributeDescription[16] attributeDescriptions = [
+  @nogc static VkVertexInputAttributeDescription[14] getRenderDescriptions() nothrow {
+    VkVertexInputAttributeDescription[14] attributeDescriptions = [
       { binding: VERTEX, location: 0, format: VK_FORMAT_R32G32B32_SFLOAT, offset: Vertex.position.offsetof },
-      { binding: VERTEX, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.color.offsetof },
-      { binding: VERTEX, location: 2, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.normal.offsetof },
-      { binding: VERTEX, location: 3, format: VK_FORMAT_R32G32_SFLOAT, offset: Vertex.texCoord.offsetof },
-      { binding: VERTEX, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.tangent.offsetof },
-      { binding: VERTEX, location: 5, format: VK_FORMAT_R32G32B32A32_UINT, offset: Vertex.bones.offsetof },
-      { binding: VERTEX, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
+      { binding: VERTEX, location: 1, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.normal.offsetof },
+      { binding: VERTEX, location: 2, format: VK_FORMAT_R32G32_SFLOAT, offset: Vertex.texCoord.offsetof },
+      { binding: VERTEX, location: 3, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.tangent.offsetof },
+      { binding: VERTEX, location: 4, format: VK_FORMAT_R32G32B32A32_UINT, offset: Vertex.bones.offsetof },
+      { binding: VERTEX, location: 5, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
 
-      { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SINT, offset: DrawInstance.instance.offsetof },
-      { binding: INSTANCE, location: 8, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.color.offsetof },
-      { binding: INSTANCE, location: 9, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.uvRect.offsetof },
+      { binding: INSTANCE, location: 6, format: VK_FORMAT_R32G32B32A32_SINT, offset: DrawInstance.instance.offsetof },
+      { binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.uvRect.offsetof },
 
-      { binding: INSTANCE, location: 10, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.worldNormal.offsetof },
-      { binding: INSTANCE, location: 11, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.worldTangent.offsetof },
-      { binding: INSTANCE, location: 12, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
-      { binding: INSTANCE, location: 13, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 4 * float.sizeof },
-      { binding: INSTANCE, location: 14, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 8 * float.sizeof },
-      { binding: INSTANCE, location: 15, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12 * float.sizeof },
+      { binding: INSTANCE, location: 8, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.worldNormal.offsetof },
+      { binding: INSTANCE, location: 9, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.worldTangent.offsetof },
+      { binding: INSTANCE, location: 10, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
+      { binding: INSTANCE, location: 11, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 4 * float.sizeof },
+      { binding: INSTANCE, location: 12, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 8 * float.sizeof },
+      { binding: INSTANCE, location: 13, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12 * float.sizeof },
     ];
     return attributeDescriptions;
   }

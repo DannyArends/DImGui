@@ -29,9 +29,9 @@ class Cone : Geometry {
       float[3] faceNormal = normal[] * invLength;
 
       uint vIdx = cast(uint)vertices.length;
-      vertices ~= Vertex(apex, [0.5f, 0.0f], color, faceNormal);
-      vertices ~= Vertex([positions[0].x, positions[0].y - halfHeight, positions[0].z], [0.0f, 1.0f], color, faceNormal);
-      vertices ~= Vertex([positions[1].x, positions[1].y - halfHeight, positions[1].z], [1.0f, 1.0f], color, faceNormal);
+      vertices ~= Vertex(apex, [0.5f, 0.0f], faceNormal);
+      vertices ~= Vertex([positions[0].x, positions[0].y - halfHeight, positions[0].z], [0.0f, 1.0f], faceNormal);
+      vertices ~= Vertex([positions[1].x, positions[1].y - halfHeight, positions[1].z], [1.0f, 1.0f], faceNormal);
 
       indices ~= [vIdx+2, vIdx + 1, vIdx];
     }
@@ -71,9 +71,9 @@ pure void computeCap(T)(T geometry, float[3] center, float[3] normal, float radi
     float[3] p2 = [baseCirclePositions[1].x, center.y, baseCirclePositions[1].z];
 
     uint vIdx = cast(uint)geometry.vertices.length;
-    geometry.vertices ~= Vertex(p1, texCoords[0], color, normal);      // V0 relative to vIdx
-    geometry.vertices ~= Vertex(p2, texCoords[1], color, normal);      // V1 relative to vIdx
-    geometry.vertices ~= Vertex(center, [0.5f, 0.5f], color, normal);  // V2 relative to vIdx
+    geometry.vertices ~= Vertex(p1, texCoords[0], normal);      // V0 relative to vIdx
+    geometry.vertices ~= Vertex(p2, texCoords[1], normal);      // V1 relative to vIdx
+    geometry.vertices ~= Vertex(center, [0.5f, 0.5f], normal);  // V2 relative to vIdx
 
     if (normal.y > 0.0f) {
       geometry.indices ~= [vIdx+1, vIdx, vIdx+2];

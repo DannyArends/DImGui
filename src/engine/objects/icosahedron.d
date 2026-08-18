@@ -16,20 +16,20 @@ const float y = 0.904279;
 class Icosahedron : Geometry {
    this(float[4] color = [1.0f, 1.0f, 1.0f, 1.0f]){
     vertices = [ 
-                 Vertex([-x, y,0], toTC([-x, y,0]), color, normalize([-x, y,0])),
-                 Vertex([ x, y,0], toTC([ x, y,0]), color, normalize([ x, y,0])),
-                 Vertex([-x,-y,0], toTC([-x,-y,0]), color, normalize([-x,-y,0])),
-                 Vertex([ x,-y,0], toTC([ x,-y,0]), color, normalize([ x,-y,0])),
+                 Vertex([-x, y,0], toTC([-x, y,0]), normalize([-x, y,0])),
+                 Vertex([ x, y,0], toTC([ x, y,0]), normalize([ x, y,0])),
+                 Vertex([-x,-y,0], toTC([-x,-y,0]), normalize([-x,-y,0])),
+                 Vertex([ x,-y,0], toTC([ x,-y,0]), normalize([ x,-y,0])),
 
-                 Vertex([0,-x, y], toTC([0,-x, y]), color, normalize([0,-x, y])),
-                 Vertex([0, x, y], toTC([0, x, y]), color, normalize([0, x, y])),
-                 Vertex([0,-x,-y], toTC([0,-x,-y]), color, normalize([0,-x,-y])),
-                 Vertex([0, x,-y], toTC([0, x,-y]), color, normalize([0, x,-y])),
+                 Vertex([0,-x, y], toTC([0,-x, y]), normalize([0,-x, y])),
+                 Vertex([0, x, y], toTC([0, x, y]), normalize([0, x, y])),
+                 Vertex([0,-x,-y], toTC([0,-x,-y]), normalize([0,-x,-y])),
+                 Vertex([0, x,-y], toTC([0, x,-y]), normalize([0, x,-y])),
 
-                 Vertex([ y,0,-x], toTC([ y,0,-x]), color, normalize([ y,0,-x])),
-                 Vertex([ y,0, x], toTC([ y,0, x]), color, normalize([ y,0, x])),
-                 Vertex([-y,0,-x], toTC([-y,0,-x]), color, normalize([-y,0,-x])),
-                 Vertex([-y,0, x], toTC([-y,0, x]), color, normalize([-y,0, x]))
+                 Vertex([ y,0,-x], toTC([ y,0,-x]), normalize([ y,0,-x])),
+                 Vertex([ y,0, x], toTC([ y,0, x]), normalize([ y,0, x])),
+                 Vertex([-y,0,-x], toTC([-y,0,-x]), normalize([-y,0,-x])),
+                 Vertex([-y,0, x], toTC([-y,0, x]), normalize([-y,0, x]))
                ];
     indices = [0, 11, 5, 0,  5,  1,  0,  1,  7,  0, 7, 10, 0, 10, 11,
                1,  5, 9, 5, 11,  4, 11, 10,  2, 10, 7,  6, 7,  1,  8,
@@ -80,9 +80,9 @@ void refineIcosahedron(T)(T object, uint recursionLevel = 1, float[4] color = [1
       b = midpoint(p1, p2, true);
       c = midpoint(p2, p0, true);
 
-      ia = object.addVertex(Vertex(a, toTC(a), color, a));
-      ib = object.addVertex(Vertex(b, toTC(b), color, b));
-      ic = object.addVertex(Vertex(c, toTC(c), color, c));
+      ia = object.addVertex(Vertex(a, toTC(a), a));
+      ib = object.addVertex(Vertex(b, toTC(b), b));
+      ic = object.addVertex(Vertex(c, toTC(c), c));
 
       // Split triangle into 4 new triangles
       indices ~= tri[0]; indices ~= ia; indices ~= ic;

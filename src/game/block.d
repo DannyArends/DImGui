@@ -154,10 +154,10 @@ float renderOffsetY(const Item it) { return it.isCraft ? itemTemplateTable[it.sh
 void emitBlock(ref World world, ref Block b, float[3] pos, bool hidden = false) {
   auto mesh = world.drops.meshes[b.item.renderMesh];
   float sz = hidden ? 0.0f : b.item.renderScale * world.blockSize;
-  auto col = resourceTable[b.item.material].color;                       // material colour tints the template skin
+  auto col = paletteOrdinal(resourceTable[b.item.material].color);
   auto mat = matOverride(b.item);
   auto m = translateScale(pos, [sz, sz, sz]);
-  mesh.addInstances([DrawInstance(m, (mat >= 0 ? mat : cast(int)b.item.material))]);
+  mesh.addInstances([DrawInstance(m, (mat >= 0 ? mat : cast(int)b.item.material), col)]);
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */

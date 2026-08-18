@@ -43,10 +43,10 @@ void capsuleCap(T)(T o, float radius, float halfHeight, uint numSegments, uint n
       float[3] c = [r1*cos(t[1]), y1, r1*sin(t[1])];
       float[3] d = [r1*cos(t[0]), y1, r1*sin(t[0])];
       uint v = cast(uint)o.vertices.length;
-      o.vertices ~= Vertex(a, [0.0f, 0.0f], color, normalize([a.x, a.y - cy, a.z]));
-      o.vertices ~= Vertex(b, [1.0f, 0.0f], color, normalize([b.x, b.y - cy, b.z]));
-      o.vertices ~= Vertex(c, [1.0f, 1.0f], color, normalize([c.x, c.y - cy, c.z]));
-      o.vertices ~= Vertex(d, [0.0f, 1.0f], color, normalize([d.x, d.y - cy, d.z]));
+      o.vertices ~= Vertex(a, [0.0f, 0.0f], normalize([a.x, a.y - cy, a.z]));
+      o.vertices ~= Vertex(b, [1.0f, 0.0f], normalize([b.x, b.y - cy, b.z]));
+      o.vertices ~= Vertex(c, [1.0f, 1.0f], normalize([c.x, c.y - cy, c.z]));
+      o.vertices ~= Vertex(d, [0.0f, 1.0f], normalize([d.x, d.y - cy, d.z]));
       if (top) o.indices ~= [v, v+1, v+2, v, v+2, v+3];
       else     o.indices ~= [v+2, v+1, v, v+3, v+2, v];   // mirror winding for the downward cap
     }
