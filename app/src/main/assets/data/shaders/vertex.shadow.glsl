@@ -14,13 +14,13 @@ layout(push_constant) uniform PushConstants {
 } pc;
 
 // Per Vertex attributes
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in uvec4 inBones;
-layout(location = 2) in vec4 inWeights;
+layout(location = 0) in vec3 inPosition;              /// Vertex Position
+layout(location = 1) in uvec4 inBones;                /// assimp: BoneIDs
+layout(location = 2) in vec4 inWeights;               /// assimp: BoneWeights
 
 // Per Instance attributes
-layout(location = 3) in ivec4 instanceDef;           /// [material, color, alpha, boneBase]
-layout(location = 4) in mat4 instance;               /// Instance matrix
+layout(location = 3) in vec4 instanceDef;             /// [material, color, alpha, boneBase]
+layout(location = 4) in mat4 instance;                /// Instance matrix
 
 void main() {
   vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(instanceDef[3])) : vec4(inPosition, 1.0f);
