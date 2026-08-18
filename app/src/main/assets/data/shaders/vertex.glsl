@@ -18,7 +18,7 @@ layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
 layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance input attributes
-layout(location = 7) in ivec4 meshdef;                /// Mesh [start, stop, material, boneBase]
+layout(location = 7) in ivec4 instanceDef;            /// Mesh [material, boneBase, unused, unused]
 layout(location = 8) in vec4  instanceColor;          /// per-Instance Color
 layout(location = 9) in vec4  instanceUV;             /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
 layout(location = 10) in vec4 instanceNormal;         /// baked world normal (instanced faces)
@@ -36,7 +36,7 @@ layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, No
 
 void main() {
   /// Compute bone effects on vertex
-  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(meshdef[3])) : vec4(inPosition, 1.0f);
+  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(instanceDef[1])) : vec4(inPosition, 1.0f);
 
   /// Compute our model matrix
   vec4 worldPos = instance * position;
@@ -50,17 +50,17 @@ void main() {
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
 
    /// [baked material id, per-instance override]
-  fragMaterial = (meshdef[2] >= 0) ? meshdef[2] : int(inNormal.w);
+  fragMaterial = (instanceDef[0] >= 0) ? instanceDef[0] : int(inNormal.w);
 
   if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
     fragPosWorld = worldPos;
     fragViewPos = (ubo.view * worldPos).xyz;
     bool hasBakedNormal = (instanceNormal.w != 0.0);
-    vec3 nModel = ANIMATED ? animate(vec4(inNormal.xyz, 0.0f), inBones, inWeights, uint(meshdef[3])).xyz : inNormal.xyz;
+    vec3 nModel = ANIMATED ? animate(vec4(inNormal.xyz, 0.0f), inBones, inWeights, uint(instanceDef[1])).xyz : inNormal.xyz;
     vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * nModel);
     fragNormal = N;
     if(NORMAL_MAPPED) {
-      vec3 tModel = ANIMATED ? animate(vec4(inTangent.xyz, 0.0f), inBones, inWeights, uint(meshdef[3])).xyz : inTangent.xyz;
+      vec3 tModel = ANIMATED ? animate(vec4(inTangent.xyz, 0.0f), inBones, inWeights, uint(instanceDef[1])).xyz : inTangent.xyz;
       vec3 T = hasBakedNormal ? instanceTangent.xyz : normalize(mat3(instance) * tModel);
       vec3 B = normalize(cross(N, T)) * (hasBakedNormal ? instanceTangent.w : inTangent.w);
       fragTBN = mat3(T, B, N);
