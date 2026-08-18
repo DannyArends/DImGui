@@ -6,6 +6,7 @@
 import game;
 
 import block : itemOf;
+import color : colorMaterials, paletteOrdinal;
 import textures : idx;
 
 /** A concrete item = (shape x material), optionally holding `amount` units of `contents`.
@@ -108,6 +109,9 @@ void injectResourceMeshes(ref GameApp app, uint minMaterials = COLOR_MAT_END) {
     app.colorBase = COLOR_MAT_BASE;
   }
 }
+
+/** Palette material slot for a color (game-side, compile-time base). */
+@nogc uint materialFor(const float[4] c) nothrow { return(cast(uint)COLOR_MAT_BASE + paletteOrdinal(c)); }
 
 void updateMaterials(ref GameApp app) {
   foreach (tt; 0 .. RESOURCE_COUNT) {
