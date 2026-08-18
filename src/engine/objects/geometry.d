@@ -9,7 +9,6 @@ import buffer : uploadBarrier;
 import geometrybuffer : nameGeometryBuffer, toGPU;
 import boundingbox : computeBoundingBox;
 import textures : idx;
-import mesh : logMesh;
 import normals : computeNormals, computeTangents;
 import quaternion : aimMatrix;
 import validation : pushLabel, popLabel;
