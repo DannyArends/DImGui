@@ -49,20 +49,14 @@ void main() {
   fragColor = INSTANCED ? (inColor * instanceColor) : inColor;
   fragTexCoord = instanceUV.xy + inTexCoord * instanceUV.zw;
 
-  /// Find instanced MeshID for multi-mesh objects
-  uint meshID = meshdef[0];
-  if(meshdef[0] != meshdef[1]) {
-    for (; meshID < meshdef[1]; meshID++) {
-      if (meshSSBO.meshes[meshID].vertices[0] <= gl_VertexIndex && gl_VertexIndex < meshSSBO.meshes[meshID].vertices[1]) break;
-    }
-  }
-  fragInstance = ivec2(meshID, meshdef[2]);
+   /// [baked material id, per-instance override]
+  fragInstance = ivec2(int(inNormal.w), meshdef[2]);
 
   if(!DEPTH_PASS) { /// Full lighting varyings only needed in the scene pass
     fragPosWorld = worldPos;
     fragViewPos = (ubo.view * worldPos).xyz;
     bool hasBakedNormal = (instanceNormal.w != 0.0);
-    vec3 nModel = ANIMATED ? animate(vec4(inNormal, 0.0f), inBones, inWeights, uint(meshdef[3])).xyz : inNormal;
+    vec3 nModel = ANIMATED ? animate(vec4(inNormal.xyz, 0.0f), inBones, inWeights, uint(meshdef[3])).xyz : inNormal.xyz;
     vec3 N = hasBakedNormal ? instanceNormal.xyz : normalize(mat3(instance) * nModel);
     fragNormal = N;
     if(NORMAL_MAPPED) {
