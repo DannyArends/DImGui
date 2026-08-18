@@ -109,8 +109,6 @@ struct GameApp {
   World world;
   Persist[] persistables;
   bool regenerate = false;
-  bool paused = false;
-  float timeScale = 1.0f;
   size_t loadTotal = 0;
 }
 
@@ -182,6 +180,8 @@ Geometry makePrimitive(string name) {
 
 /** Per-frame game update: refresh resource meshes/materials, settle blocks, and stream the world around the camera */
 void updateGame(ref GameApp app, double dt) {
+  if(app.regenerate) { app.regenerate = false; app.regenerateWorld(); }
+  app.timed!handleEvents(dt);
   app.timed!injectResourceMeshes();
   if(app.textures.loaded) {
     app.timed!updateMaterials(); app.textures.loaded = false;

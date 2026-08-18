@@ -10,12 +10,12 @@ import compute : initializeCompute;
 import descriptor : createImGuiDescriptorPool, createImGuiDescriptorSetLayout;
 import descriptorupdate : registerRenderProviders;
 import devices : createLogicalDevice;
-import events : sdlEventsFilter, removeGeometry;
+import events : pollEvents, sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
 import game : cleanupGame, checkGameAsync, GameApp, initGame, updateGame;
 import glyphatlas : loadGlyphs, uploadFont;
 import imgui : initializeImGui, startImGuiFrame;
-import input : pollEvents, handleEvents;
+import input : handleEvents;
 import instance : createInstance;
 import sdl : initializeSDL;
 import shadow : createShadows;
@@ -79,7 +79,7 @@ void run(string[] args = null) {
     app.timed!pollEvents();                                       /// Ingest SDL events into ImGui (pre-NewFrame)
     if(app.finished) break;                                       /// Close requested, exit the loop now
     app.timed!startImGuiFrame();                                  /// Start a new frame
-    auto dt = app.timed!handleEvents();                           /// Handle SDL / user events
+    auto dt = app.frameDelta();                                   /// Handle SDL / user events
     app.timed!checkForResize();                                   /// Check for resize
     if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue
     app.timed!removeGeometry();                                   /// Remove stale geometry

@@ -21,6 +21,33 @@ void removeGeometry(ref App app) {
   foreach(i; idx.reverse) { app.objects = app.objects.remove(i); }
 }
 
+/** Engine event pump: window, ImGui, camera. Game layers via app.onEvent. */
+void pollEvents(ref App app) {
+  if(app.trace) SDL_Log("pollEvents");
+  SDL_Event e;
+  while (SDL_PollEvent(&e)) {
+    if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
+    if(e.type == SDL_EVENT_QUIT) app.finished = true;
+    if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) app.finished = true;
+    if(e.type == SDL_EVENT_WINDOW_RESTORED)  app.minimized = false;
+    if(e.type == SDL_EVENT_WINDOW_MINIMIZED) app.minimized = true;
+
+    if(!app.gui.io.WantCaptureKeyboard) app.timed!handleCameraKeys(e);
+    if(e.type == SDL_EVENT_MOUSE_MOTION && app.camera.isdrag[1] && !app.gui.io.WantCaptureMouse) app.tryDrag(e.motion.xrel, e.motion.yrel);
+    if(e.type == SDL_EVENT_MOUSE_WHEEL && !app.gui.io.WantCaptureMouse) {
+      if(app.camera.fps) app.tryMove(e.wheel.y > 0 ? app.camera.forward() : app.camera.back());
+      else app.tryZoom(-e.wheel.y);
+    }
+
+    if(app.onEvent) app.onEvent(e);                                            // game: touch, game keys, tools
+  }
+}
+
+/** Pure engine frame timer (extracted from handleEvents). */
+double frameDelta(ref App app) {
+  return app.paused ? 0.0 : app.timeScale * ((app.time[FRAMESTOP] - app.time[LASTFRAME]) / 1000.0f);
+}
+
 /** sdlEventsFilter, return 1: Event go into the SDL_PollEvent queue, 0: If the event was handled immediately. 
  * Android *requires* us to handle the application events, for now we just pauze on enter background, since we 
  * need to ask for permission from the Android OS to run in the background. */

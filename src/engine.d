@@ -162,7 +162,10 @@ struct App {
   bool minimized = false;                                                       /// minimized ?
   bool rebuild = false;                                                         /// Rebuild the swapChain?
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
-
+  bool paused = false;                                                          /// Playback paused
+  float speed = 1.0f;                                                           /// Simulation time scale
+  void delegate(SDL_Event) onEvent;                                             /// Optional game input hook 
+  
   // Properties based on the SwapChain
   @property bool isMinimized() { return minimized || (SDL_GetWindowFlags(this.window) & SDL_WINDOW_MINIMIZED) != 0; }
   @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }

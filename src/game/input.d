@@ -18,21 +18,15 @@ import vram : queryVRAM;
 import water : waterTick, flushWaterDirty, evaporateTick;
 import world : regenerateWorld;
 
-/** Handle keyboard events */
-void handleKeyEvents(ref GameApp app, SDL_Event e) {
+/** Handle Game keyboard events */
+void handleGameInput(ref GameApp app, SDL_Event e) {
   if(e.type == SDL_EVENT_KEY_DOWN) {
     auto symbol = e.key.key;
-    if(symbol == SDLK_PAGEUP) app.tryMove([ 0.0f,  1.0f, 0.0f]);
-    if(symbol == SDLK_PAGEDOWN) app.tryMove([ 0.0f, -1.0f, 0.0f]);
-    if(symbol == SDLK_P || symbol == SDLK_SPACE) app.paused = !app.paused;
-    if(symbol == SDLK_W || symbol == SDLK_UP) app.tryMove(app.camera.forward());
-    if(symbol == SDLK_S || symbol == SDLK_DOWN) app.tryMove(app.camera.back());
-    if(symbol == SDLK_A || symbol == SDLK_LEFT) app.tryMove(app.camera.left());
-    if(symbol == SDLK_D || symbol == SDLK_RIGHT) app.tryMove(app.camera.right());
     if(symbol == SDLK_F12) { app.saveScreenshot(); }
     if(symbol == SDLK_K) { jobQueue ~= craftJob("FlintKnapping"); }
     if(symbol == SDLK_L) { jobQueue ~= craftJob("AxeMaking"); }
   }
+  version(Android) { if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e); }
 }
 
 /** Handle (Android) touch events */
@@ -63,32 +57,8 @@ void handleTouchEvents(ref GameApp app, const SDL_Event event) {
   }
 }
 
-/** Handles all ImGui IO and SDL events */
-void pollEvents(ref GameApp app) {
-  if(app.trace) SDL_Log("pollEvents");
-  SDL_Event e;
-  while (SDL_PollEvent(&e)) {
-    if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
-    if(e.type == SDL_EVENT_QUIT) app.finished = true;
-    if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) { app.finished = true; }
-    if(e.type == SDL_EVENT_WINDOW_RESTORED) { app.minimized = false; }
-    if(e.type == SDL_EVENT_WINDOW_MINIMIZED) { app.minimized = true; }
-    if(!app.gui.io.WantCaptureKeyboard) app.timed!handleKeyEvents(e);
-
-    if(e.type == SDL_EVENT_MOUSE_MOTION && app.camera.isdrag[1] && !app.gui.io.WantCaptureMouse) app.tryDrag(e.motion.xrel, e.motion.yrel);
-    if(e.type == SDL_EVENT_MOUSE_WHEEL && !app.gui.io.WantCaptureMouse) {
-      if(app.camera.fps){
-        app.tryMove(e.wheel.y>0?app.camera.forward():app.camera.back());
-      } else { app.tryZoom(-e.wheel.y); }
-    }
-
-    version(Android) { if(!app.gui.io.WantCaptureMouse) app.timed!handleTouchEvents(e); }
-  }
-  if(app.regenerate) { app.regenerate = false; app.regenerateWorld(); }
-}
-
 /** Dispatch game tool input from CURRENT pointer state. Runs AFTER igNewFrame() */
-double handleEvents(ref GameApp app) {
+void handleEvents(ref GameApp app, float dt) {
   if(app.trace) SDL_Log("handleEvents");
   auto io = app.gui.io;
   bool[2] down = [io.MouseDown[0] && !io.WantCaptureMouse, io.MouseDown[1] && !io.WantCaptureMouse];
@@ -127,11 +97,9 @@ double handleEvents(ref GameApp app) {
   }
 
   // Call all onFrame() handlers
-  float dt = app.paused ? 0.0f : app.timeScale * ((app.time[FRAMESTOP] - app.time[LASTFRAME]) / 1000.0f);
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   app.updateSkeletons();                        // assign palette regions for all bone-bearers before they animate
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }   // Execute all onFrame() on Geometries
   if(app.camera.onFrame !is null) app.camera.onFrame(dt);                   // Execute onFrame() on Camera
   if(app.world.drops.dirty) { app.world.syncBlockInstances(); app.world.drops.dirty = false; }
-  return(dt);
 }

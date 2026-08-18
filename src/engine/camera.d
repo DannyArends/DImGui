@@ -61,6 +61,19 @@ struct Camera {
   bool delegate(float[3] pos) canMoveTo;
 }
 
+/** Engine keyboard: camera navigation + pause. */
+void handleCameraKeys(ref App app, SDL_Event e) {
+  if(e.type != SDL_EVENT_KEY_DOWN) return;
+  auto s = e.key.key;
+  if(s == SDLK_PAGEUP)   app.tryMove([ 0.0f,  1.0f, 0.0f]);
+  if(s == SDLK_PAGEDOWN) app.tryMove([ 0.0f, -1.0f, 0.0f]);
+  if(s == SDLK_P || s == SDLK_SPACE) app.paused = !app.paused;
+  if(s == SDLK_W || s == SDLK_UP)    app.tryMove(app.camera.forward());
+  if(s == SDLK_S || s == SDLK_DOWN)  app.tryMove(app.camera.back());
+  if(s == SDLK_A || s == SDLK_LEFT)  app.tryMove(app.camera.left());
+  if(s == SDLK_D || s == SDLK_RIGHT) app.tryMove(app.camera.right());
+}
+
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
   if(!app.camera.fps) { app.camera.fpsEye = app.camera.position(); app.camera.onFrame = null; app.camera.syncLookat(); }
