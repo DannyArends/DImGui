@@ -29,7 +29,9 @@ void updateMeshInfo(ref App app) {
   for (size_t o = 0; o < app.objects.length; o++) {
     if (app.objects[o].instancedMesh && app.objects[o].boneCount == 0) continue;
     app.ensureMaterial(app.objects[o]);
-    int[2] expected = [cast(int)app.meshes.length, cast(int)(app.meshes.length + app.objects[o].meshes.length)];
+    int L = cast(int)app.meshes.length;
+    size_t n = app.objects[o].meshes.length;
+    int[2] expected = [L, (n == 1) ? L : L + cast(int)n];   // single-mesh: meshEnd==meshStart
     bool anyStale = false;
     foreach (ref inst; app.objects[o].instances)
       if(inst.meshdef[0..2] != expected) { inst.meshdef[0..2] = expected; anyStale = true; }

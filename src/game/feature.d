@@ -226,7 +226,7 @@ bool harvestFeatureType(ref GameApp app, const RawT ft, int[3] tile, int[3] coor
     auto grouped = interpret(chars, cfg, [wp[0], wp[1] - 0.5f * app.world.tileHeight, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
     foreach(ref br; ft.brushes) {                                  // spawn one drop per drawn instance, at its tile
       if(br.symbol !in grouped) continue;
-      if(br.substance.length == 0) continue;
+      if(!br.substance) continue;
       auto brt = variantOf(br.substance, ft.name.to!Source);
       foreach(ref inst; grouped[br.symbol]){
         int hy = app.world.worldToTile(position(inst.matrix))[1];
