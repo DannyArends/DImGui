@@ -43,7 +43,12 @@ mixin(generateColorsEnum(import("data/raws/colors.txt")));
 mixin(generateColorMaps(import("data/raws/colors.txt")));
 
 /** Generate a random color */
-float[4] randomColor(float alpha = 1.0f) { return([uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), uniform(0.0f, 1.0f), alpha]); }
+float[4] randomColor(float alpha = 1.0f) {
+  enum n = EnumMembers!Colors.length;
+  const i = uniform(0, n);
+  static foreach(j, m; EnumMembers!Colors) if(j == i) return cast(float[4])m;
+  return Colors.white;
+}
 
 /** CTFE: resolve a Colors member by name, defaults to white. */
 Colors toColor(string name) pure {
