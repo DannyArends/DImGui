@@ -35,7 +35,7 @@ layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, No
 
 void main() {
   /// Compute bone effects on vertex
-  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(instanceDef[2])) : vec4(inPosition, 1.0f);
+  vec4 position = ANIMATED ? animate(vec4(inPosition, 1.0f), inBones, inWeights, uint(instanceDef[3])) : vec4(inPosition, 1.0f);
 
   /// Compute our model matrix
   vec4 worldPos = instance * position;
