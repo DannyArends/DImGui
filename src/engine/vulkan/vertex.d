@@ -12,7 +12,8 @@ struct Vertex {
   float[3] position = [0.0f, 0.0f, 0.0f];           /// Vertex position
   float[2] texCoord = [0.0f, 1.0f];                 /// Vertex texture coordinates
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];        /// Vertex color
-  float[4] normal = [0.0f, 1.0f, 0.0f, -1.0f];             /// Vertex normal
+  float[3] normal = [0.0f, 1.0f, 0.0f];             /// Vertex normal
+  float mid = -1.0f;                                /// Baked material id (read as normal.w; -1 = none)
   float[4] tangent = [0.0f, 0.0f, 0.0f, 1.0f];      /// Vertex tangent
   uint[4] bones = [0, 0, 0, 0];                     /// 4 closest bones
   float[4] weights = [1.0f, 0.0f, 0.0f, 0.0f];      /// 4 closest bone weights

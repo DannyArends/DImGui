@@ -14,7 +14,7 @@ struct Material {
 
 /** Bake a mesh's global material id into normal.w across its vertex range (replaces the meshSSBO lookup) */
 void stampMid(ref Geometry object, const ref Mesh mesh) {
-  foreach(ref v; object.vertices[mesh.vertices[0] .. mesh.vertices[1]]) v.normal[3] = cast(float)mesh.mid;
+  foreach(ref v; object.vertices[mesh.vertices[0] .. mesh.vertices[1]]) v.mid = cast(float)mesh.mid;
   object.vertices.invalidate();
 }
 

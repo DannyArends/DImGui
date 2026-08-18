@@ -37,10 +37,10 @@ pure void computeWall(T)(T o, float radius, float halfHeight, uint numSegments, 
     float[3] n = [cos(avg), 0.0f, sin(avg)];
     float[4] tan = [-sin(avg), 0.0f, cos(avg), 1.0f];
     uint v = cast(uint)o.vertices.length;
-    o.vertices ~= Vertex([p[0].x, -halfHeight, p[0].z], [0.0f, 0.0f], color, n, tan);
-    o.vertices ~= Vertex([p[1].x, -halfHeight, p[1].z], [1.0f, 0.0f], color, n, tan);
-    o.vertices ~= Vertex([p[1].x,  halfHeight, p[1].z], [1.0f, 1.0f], color, n, tan);
-    o.vertices ~= Vertex([p[0].x,  halfHeight, p[0].z], [0.0f, 1.0f], color, n, tan);
+    o.vertices ~= Vertex([p[0].x, -halfHeight, p[0].z], [0.0f, 0.0f], color, n, -1.0f, tan);
+    o.vertices ~= Vertex([p[1].x, -halfHeight, p[1].z], [1.0f, 0.0f], color, n, -1.0f, tan);
+    o.vertices ~= Vertex([p[1].x,  halfHeight, p[1].z], [1.0f, 1.0f], color, n, -1.0f, tan);
+    o.vertices ~= Vertex([p[0].x,  halfHeight, p[0].z], [0.0f, 1.0f], color, n, -1.0f, tan);
     o.indices ~= [v+2, v+1, v, v, v+3, v+2];
   }
 }
