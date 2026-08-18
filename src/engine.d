@@ -45,7 +45,6 @@ struct App {
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects [TODO: add a deAllocate]
   SSBOList!Matrix boneOffsets;                                                  /// Animated BoneOffsets for GPU SSBO
-  SSBOList!Mesh meshes;                                                         /// Meshes for GPU SSBO
   Textures textures;                                                            /// Textures
   SSBOList!Material materials;                                                  /// GPU materials
   Audio audio;                                                                  /// Sounds
