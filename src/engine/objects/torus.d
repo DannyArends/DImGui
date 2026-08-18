@@ -22,7 +22,7 @@ class Torus : Geometry {
 
         float[3] position = [s * cos(u), radii[0] * sin(v), s * sin(u)];
         float[3] normal = [cos(v) * cos(u), sin(v), cos(v) * sin(u)];
-        vertices ~= Vertex(position, [i / cast(float)(segments[1]), j / cast(float)(segments[0])], normal);
+        vertices ~= Vertex(position, normal, [-1.0f, -1.0f, 1.0f], [i / cast(float)(segments[1]), j / cast(float)(segments[0])]);
 
         if(i < segments[1] && j < segments[0]){
           uint p0 = (i * (segments[0] + 1)) + j;
