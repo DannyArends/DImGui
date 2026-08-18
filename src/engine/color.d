@@ -50,3 +50,15 @@ Colors toColor(string name) pure {
   static foreach(m; __traits(allMembers, Colors)) if(name == m) return __traits(getMember, Colors, m);
   return Colors.white;
 }
+
+/** CTFE: one Material per palette Colors entry, color pre-filled (tid/nid/oid = -1). */
+enum Material[] colorMaterials = (){
+  Material[] m;
+  static foreach(c; EnumMembers!Colors) m ~= Material(-1, -1, -1, 0, cast(float[4])c);
+  return m;
+}();
+
+/** Compile-time palette slot for a Colors member (add the color-block base to index app.materials). */
+template colorSlot(Colors c) {
+  enum colorSlot = (){ size_t i = 0; static foreach(m; EnumMembers!Colors) { if(m == c) return i; i++; } return size_t.max; }();
+}
