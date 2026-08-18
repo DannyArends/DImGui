@@ -18,27 +18,11 @@ struct Mesh {
   int mat = -1;           /// assimp-local material index
 }
 
-void logMesh(uint i, const Mesh m, const(char)* prefix = "meshInfo") {
-  SDL_Log("%s[%d] v=[%d,%d] mid=%d", prefix, i, m.vertices[0], m.vertices[1], m.mid);
-}
-
-void printMeshInfo(const App app) { if(!app.trace){ return; } foreach(i, ref m; app.meshes) logMesh(cast(uint)i, m); }
-
 void updateMeshInfo(ref App app) {
-  bool needsUpdate = false;
   for (size_t o = 0; o < app.objects.length; o++) {
     if (app.objects[o].instancedMesh && app.objects[o].boneCount == 0) continue;
     app.ensureMaterial(app.objects[o]);
-    int L = cast(int)app.meshes.length;
-    size_t n = app.objects[o].meshes.length;
-    int[2] expected = [L, (n == 1) ? L : L + cast(int)n];   // single-mesh: meshEnd==meshStart
-    bool anyStale = false;
-    foreach (ref inst; app.objects[o].instances)
-      if(inst.meshdef[0..2] != expected) { inst.meshdef[0..2] = expected; anyStale = true; }
-    if (anyStale) { app.objects[o].syncInstances(); needsUpdate = true; }
-    app.meshes ~= app.objects[o].meshes.values;
   }
-  if(needsUpdate) { app.buffers["MeshMatrices"].invalidate(); }
 }
 
 string loadMesh(aiMesh* mesh, ref OpenAsset asset, const Matrix gTransform, string ownerNode = null, bool verbose = false) {
