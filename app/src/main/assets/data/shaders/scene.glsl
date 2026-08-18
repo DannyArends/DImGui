@@ -63,19 +63,19 @@ layout (std430, set = 0, binding = BINDING_MATERIAL_SSBO) readonly buffer Materi
 
 layout (std430, set = 0, binding = BINDING_COLOR_SSBO) readonly buffer ColorBuffer {
   Color colors[];
-} colorSSBO;   // 7
+} colorSSBO;      // 7
 
 layout(std430, set=0, binding=BINDING_CLUSTER_LIGHTS) buffer ClusterLights {
   LightIndex indices[];
-}; // 8
+};                // 8
 
 layout(std430, set=0, binding=BINDING_CLUSTER_HEADS) buffer ClusterHeads {
   ClusterHead head[];
-}; // 9
+};                // 9
 
 layout(std430, set=0, binding=BINDING_CLUSTER_COUNTER) buffer ClusterCounter {
   Cursor cursor[];
-}; // 10
+};                // 10
 
 /// UBO
 layout(std140, binding = BINDING_SCENE_UBO) uniform UniformBufferObject {

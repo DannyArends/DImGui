@@ -6,6 +6,7 @@
 import game;
 
 import animation : animateAsset;
+import color : paletteOrdinal;
 import matrix : multiply, position, rotate, scale;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
 import resources : itemStack;
@@ -160,7 +161,7 @@ void poseEntity(Container, Pawn)(ref GameApp app, Container container, ref Pawn 
   foreach(k, ref n; s.rig) {
     foreach(ref br; raw.brushes) { if(br.symbol == n.symbol) {
       float[4] col = br.tint ? pawn.color : br.color;
-      auto inst = DrawInstance(world, materialFor(col));
+      auto inst = DrawInstance(world, -1, cast(int)paletteOrdinal(col));
       inst.instance[2] = region + s.boneSlot[k];
       container.meshes[br.mesh].instances ~= inst;
       break;

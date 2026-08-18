@@ -8,6 +8,7 @@ import game;
 import animal : seedChunkAnimalSpawns, seedChunkAnimals;
 import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
+import color : paletteOrdinal;
 import deletion : deAllocate;
 import feature : buildFeatureData, featureMeshInstances;
 import game : GameApp;

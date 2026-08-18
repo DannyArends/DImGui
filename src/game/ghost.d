@@ -5,6 +5,7 @@
 
 import game;
 
+import color : paletteOrdinal;
 import chunk : getBestTile;
 import feature : stampFeatureFootprints;
 import game : GameApp;
@@ -40,8 +41,9 @@ int[3] getGhostTile(const GameApp app, float[3][2] ray, Intersection[] hits) {
 
 void addTiles(ref World world, const(int[3])[] tiles, ToolMode mode) {
   if(tools[mode].matrix is null) return;               // tools with no ghost (e.g. Select/Query)
+  auto color = cast(int)paletteOrdinal(tools[mode].color);
   foreach(tile; tiles) {
-    auto inst = DrawInstance(tools[mode].matrix(world.tileToWorld(tile), world.tileSize, world.tileHeight), materialFor(tools[mode].color));
+    auto inst = DrawInstance(tools[mode].matrix(world.tileToWorld(tile), world.tileSize, world.tileHeight), -1, color);
     world.inventory.instances ~= inst;
   }
 }

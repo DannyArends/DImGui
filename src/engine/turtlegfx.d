@@ -5,6 +5,7 @@
 
 import engine;
 
+import color : paletteOrdinal;
 import lsystem : grammar, turnAxis, turnAngle;
 import matrix : segmentTransform, position, inverse, multiply;
 import quaternion : angleAxis, quatAxisAngle, qMul, rotate, toQuaternion;
@@ -202,7 +203,8 @@ struct RigSink {
     const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
                          st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
                          st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
-    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, s.radius, s.length, s.depth), s.material, s.color), c);
+    auto color = cast(int)paletteOrdinal(s.color);
+    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, s.radius, s.length, s.depth), s.material, color), c);
     current = cast(int)nodes.length - 1;
     if(s.advance){ st.pos = st.pos.vAdd([Rmove[4]*s.length*0.95f, Rmove[5]*s.length*0.95f, Rmove[6]*s.length*0.95f]); }
   }

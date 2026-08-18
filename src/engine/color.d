@@ -42,3 +42,9 @@ Colors toColor(string name) pure {
 }
 
 enum Colors[] colorPalette = [EnumMembers!Colors];
+
+/** Runtime palette ordinal for a color; unmatched falls back to white (index 0). */
+@nogc uint paletteOrdinal(const float[4] c) nothrow {
+  static foreach(i, m; EnumMembers!Colors) { if(c == cast(float[4])m) return cast(uint)i; }
+  return 0;   // colors.txt lists white first, so index 0 == white
+}

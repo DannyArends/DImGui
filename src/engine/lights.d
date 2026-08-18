@@ -5,6 +5,7 @@
 
 import engine;
 
+import color : paletteOrdinal;
 import devices : getMSAASamples;
 import geometry : setColor;
 import matrix : orthogonal, radian, perspective, multiply, lookAt;
@@ -166,7 +167,8 @@ void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
       o.instances.reset();
       foreach(i, ref light; app.lights) {
         if(i == 0) continue;
-        o.instances ~= DrawInstance(aimMatrix(light.position.xyz, light.direction.xyz.negate), -1, light.intensity.xyz.normalize.xyzw);
+        auto color = cast(int)paletteOrdinal(light.intensity.xyz.normalize.xyzw);
+        o.instances ~= DrawInstance(aimMatrix(light.position.xyz, light.direction.xyz.negate), -1, color);
       }
       o.syncInstances();
     }

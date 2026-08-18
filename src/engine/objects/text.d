@@ -5,6 +5,7 @@
 
 import engine;
 
+import color : paletteOrdinal;
 import geometry : opacity;
 import material : ensureMaterial;
 import matrix : degree, translate, translateScale, multiply, rotate;
@@ -87,7 +88,7 @@ private DrawInstance[] layoutText(ref App app, TextInfo info) {
     float h = atlas.qH(g, glyphscale);
     Matrix m = labelTransform.multiply(translateScale([pX, pY, 0.0f], [w, h, 1.0f]));
     float[4] uv = [atlas.tX(g), atlas.tY(g) + atlas.tYo(g), atlas.tXo(g), -atlas.tYo(g)];
-    insts ~= DrawInstance(m, 0, info.color, uv);
+    insts ~= DrawInstance(m, 0, cast(int)paletteOrdinal(info.color), uv);
     penX += g.advance;
   }
   return insts;

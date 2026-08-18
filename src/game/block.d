@@ -5,6 +5,7 @@
 
 import game;
 
+import color : paletteOrdinal;
 import lattice : tileToWorld, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
@@ -156,7 +157,7 @@ void emitBlock(ref World world, ref Block b, float[3] pos, bool hidden = false) 
   auto col = resourceTable[b.item.material].color;                       // material colour tints the template skin
   auto mat = matOverride(b.item);
   auto m = translateScale(pos, [sz, sz, sz]);
-  mesh.addInstances([DrawInstance(m, (mat >= 0 ? mat : cast(int)b.item.material), col)]);
+  mesh.addInstances([DrawInstance(m, (mat >= 0 ? mat : cast(int)b.item.material))]);
 }
 
 /** Append instances for every stored block at its sub-cell within the owning pile */
