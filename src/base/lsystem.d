@@ -8,7 +8,7 @@ import phobos;
 enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
 enum Effect : ubyte { brush, pose, asset }      /// What a content symbol does at the cursor
 enum int GEN_END = int.min;
-enum string RESERVED = "()f%|+-&^<>";
+enum string RESERVED = "()fX%|+-&^<>";
 
 /** Tokenise an axiom/production: each reserved glyph is one token, each maximal run of non-reserved
     non-space chars is one module name; whitespace separates and is dropped. */

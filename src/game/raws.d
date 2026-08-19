@@ -7,7 +7,7 @@ import phobos;
 
 import color : toColor;
 import ctfe : namedField, opt, parseRawsGeneric, parseTokens, splitColon;
-import lsystem : Effect, Rule, Symbol, GEN_END, lex;
+import lsystem : Effect, Rule, Symbol, GEN_END, RESERVED, lex;
 import turtlegfx : AnimClip;
 import rawstructs;
 
@@ -206,7 +206,7 @@ Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, 
 })(raw); }
 
 /** CTFE: turtle control chars that never map to a brush or pose. */
-private bool isControl(string t) pure { return t.length == 1 && "fX()+-&^<>%|".canFind(t[0]); }
+private bool isControl(string t) pure { return t.length == 1 && RESERVED.canFind(t[0]); }
 
 /** CTFE: symbols an entity/clip grammar can produce (axiom + every rule production). */
 private bool[string] produced(string axiom, const Rule[] rules) pure {
