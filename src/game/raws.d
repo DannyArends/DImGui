@@ -7,7 +7,7 @@ import phobos;
 
 import color : toColor;
 import ctfe : namedField, opt, parseRawsGeneric, parseTokens, splitColon;
-import lsystem : Effect, Rule, Symbol, GEN_END, RESERVED, lex;
+import lsystem : Effect, Rule, Symbol, RESERVED, lex;
 import turtlegfx : AnimClip;
 import rawstructs;
 
@@ -16,9 +16,6 @@ import rawstructs;
 
 /** Pick a result from a band by the [0,1) selector `t` (uniform bucket over results). */
 @nogc pure nothrow ResourceType rSelect(ref const HeightBand b, float t) { return b.results[cast(uint)(t * b.results.length) % b.results.length]; }
-
-/** Rule generation bound: "@" -> the growth budget (GEN_END), a number -> itself, absent -> `def`. */
-private int optGen(const string[] p, size_t i, int def) pure { return (i < p.length && p[i] == "@") ? GEN_END : opt(p, i, def); }
 
 /** Unit swing axis for "X"/"Y"/"Z", else NO_AXIS (cursor-frame swing). */
 private float[3] axisOf(string s) pure {
@@ -125,7 +122,7 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
     case "LSYSTEM_GAP":   x.lsystemGap   = to!float(p[1]); return true;
     case "LSYSTEM_ITER":  x.lsystemIter  = to!uint(p[1]);  return true;
     case "RULE": if(p.length >= 4){
-      x.rules ~= Rule(p[1], p[2], to!uint(p[3]), optGen(p, 4, 0), optGen(p, 5, int.max));
+      x.rules ~= Rule(p[1], p[2], to!uint(p[3]), opt(p, 4, int.min), opt(p, 5, int.max));
     } return true;
     case "BRUSH": if(p.length >= 6){
       LSystemBrushT b = { symbol: p[1], mesh: p[2], radius: to!float(p[3]), length: to!float(p[4]), advance: to!bool(p[5]) };

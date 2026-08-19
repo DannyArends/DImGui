@@ -7,7 +7,6 @@ import phobos;
 
 enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
 enum Effect : ubyte { brush, pose, asset }      /// What a content symbol does at the cursor
-enum int GEN_END = int.min;
 enum string RESERVED = "()~%|+-&^<>";
 
 /** One L-system token: a module name and an optional integer parameter (NONE = bare, e.g. a glyph or plain brush). */
@@ -16,6 +15,23 @@ struct LSym {
   string name;               /// module name or single glyph
   int n = NONE;              /// parameter; NONE => bare
   @property bool hasN() const pure nothrow @nogc @safe { return n != NONE; }
+}
+
+/** Evaluate a parameter expression against the matched n: "n", "n-k", "n+k", or a literal. */
+int evalExpr(const(char)[] e, int n) pure @safe {
+  if(e.length && e[0] == 'n') return (e.length == 1) ? n : (e[1] == '-' ? n - e[2 .. $].to!int : n + e[2 .. $].to!int);
+  return e.to!int;
+}
+
+/** Substitute n into every {expr} of a production/axiom, then tokenise. */
+LSym[] expand(const(char)[] s, int n) pure @safe {
+  char[] outp; size_t i = 0;
+  while(i < s.length) {
+    if(s[i] == '{') { size_t k = i + 1; while(k < s.length && s[k] != '}') k++;
+      outp ~= '{' ~ evalExpr(s[i + 1 .. k], n).to!string ~ '}'; i = k + 1; }
+    else { outp ~= s[i]; i++; }
+  }
+  return lex(outp);
 }
 
 /** Tokenise an axiom/production: each reserved glyph is one token, each maximal run of non-reserved
@@ -28,9 +44,11 @@ LSym[] lex(const(char)[] s) pure @safe {
     if(RESERVED.canFind(c)) { toks ~= LSym([c].idup); i++; continue; }
     size_t j = i; while(j < s.length && s[j] != ' ' && s[j] != '{' && !RESERVED.canFind(s[j])) j++;
     LSym t = { name: s[i .. j].idup };
-    if(j < s.length && s[j] == '{') {                        // Name{int}
-      size_t k = j + 1; while(k < s.length && s[k] != '}') k++;
-      t.n = to!int(s[j + 1 .. k]); j = k + 1;
+    if(j < s.length && s[j] == '{') {
+      size_t k = j + 1; while(k < s.length && s[k] != '}'){ k++; }
+      auto inner = s[j + 1 .. k];
+      if(inner.length && inner.all!(ch => ch >= '0' && ch <= '9')) t.n = inner.to!int;
+      j = k + 1;
     }
     toks ~= t; i = j;
   }
@@ -40,19 +58,15 @@ LSym[] lex(const(char)[] s) pure @safe {
 /** A production rule: predecessor, production, weight, and the generation window [genMin, genMax) it's
     active in. GEN_END in a bound means "the growth budget", so a cap is just a rule opened at the budget. */
 struct Rule {
-  string predecessor;                             /// symbol this rule rewrites
+  string predecessor;                           /// symbol this rule rewrites
   string production;                            /// replacement string
   uint probability = 100;                       /// weight among the predecessor's active rules (shortfall = passthrough)
-  int genMin = 0;                               /// first generation active (GEN_END => budget)
-  int genMax = int.max;                         /// one past last active generation (GEN_END => budget)
+  int nMin = int.min;                           /// window low on the module's own parameter (inclusive); int.min = open
+  int nMax = int.max;                           /// window high (exclusive); int.max = open
 }
 
 /** Is rule r active at generation t, given the growth budget? */
-bool active(ref const Rule r, int t, int budget) pure nothrow @nogc @safe {
-  immutable int lo = (r.genMin == GEN_END) ? budget : r.genMin;
-  immutable int hi = (r.genMax == GEN_END) ? budget : r.genMax;
-  return lo <= t && t < hi;
-}
+bool active(ref const Rule r, LSym tok) pure nothrow @nogc @safe { return r.nMin <= tok.n && tok.n < r.nMax; }
 
 /** One alphabet entry: an effect plus its payload. Replaces TurtleBrush AND PoseBrush with a single type. */
 struct Symbol {
@@ -89,31 +103,31 @@ struct LSystem {
   size_t max_length = 20000;
 
   /** Replace c by a weighted-random production active at generation t, or keep it. */
-  LSym[] replace(LSym c, ref Random rnd, int t, int budget) {
+  LSym[] replace(LSym c, ref Random rnd) {
     if(c.name !in rules) return [c];
     uint roll = uniform(0, 100, rnd), prev = 0;
     foreach(ref r; rules[c.name]) {
-      if(!active(r, t, budget)) continue;
-      if(roll < prev + r.probability) { return(lex(r.production)); }
+      if(!active(r, c)) continue;
+      if(roll < prev + r.probability) return(expand(r.production, c.n));
       prev += r.probability;
     }
     return([c]);
   }
 
   /** Apply one rewrite pass at generation t; false if the length cap is hit. */
-  bool iterate(ref Random rnd, int t, int budget) {
+  bool iterate(ref Random rnd) {
     if(state.length > max_length) return(false);
     LSym[] newstate;
-    foreach(c; state) newstate ~= replace(c, rnd, t, budget);
+    foreach(c; state) newstate ~= replace(c, rnd);
     state = newstate;
     return(true);
   }
 }
 
 /** Any symbol in `s` carrying a rule active at generation t? */
-bool anyActive(const(LSym)[] s, const Rule[][string] rules, int t, int budget) {
+bool anyActive(const(LSym)[] s, const Rule[][string] rules) {
   foreach(c; s) { if(auto rs = c.name in rules) {
-    foreach(ref r; *rs) { if(active(r, t, budget)) { return(true); } }
+    foreach(ref r; *rs) { if(active(r, c)) { return(true); } }
   } }
   return(false);
 }
@@ -121,13 +135,13 @@ bool anyActive(const(LSym)[] s, const Rule[][string] rules, int t, int budget) {
 /** Grow an axiom to a fixed point: each generation applies the rules active at that generation (growth rules
     windowed [0, budget), caps opened at the budget), until no active rule remains. Deterministic from seed.
     One builder for vegetation, entities, and clip time-walks — the cap is data (a rule), not a phase. */
-LSym[] grammar(uint seed, int budget, string axiom, const(Rule)[] rules, int safety = 1024) {
-  auto ls = LSystem(lex(axiom));
+LSym[] grammar(uint seed, int size, string axiom, const(Rule)[] rules, int safety = 1024) {
+  auto ls = LSystem(expand(axiom, size));
   foreach(ref r; rules) { ls.rules[r.predecessor] ~= r; }
   auto rnd = Random(seed | 1);
   for(int t = 0; t < safety; t++) {
-    if(!anyActive(ls.state, ls.rules, t, budget)) break;   // fixed point: nothing left to rewrite
-    if(!ls.iterate(rnd, t, budget)) break;                 // length cap
+    if(!anyActive(ls.state, ls.rules)) break;   // fixed point: nothing left to rewrite
+    if(!ls.iterate(rnd)) break;                 // length cap
   }
   return ls.state;
 }
