@@ -4,10 +4,7 @@
   [MOVE_SPEED:1.5]
   [SCALE:0.6][SCALE_VARIANCE:0.05]
   [OFFSET_Y:0.0][FACING:180.0]
-  [LSYSTEM_BEGIN]
-  [LSYSTEM_YAW:90]
-  [LSYSTEM_PITCH:90]
-  [LSYSTEM_GAP:0.15]
+  [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
   [AXIOM:(+~-&& Leg Boot)(-~+&& Leg Boot) Torso BeardStyle(+~~-&& Shoulder Arm Hand)(-~~+&& Shoulder Arm Hand) Head BrowStyle EyeL EyeR NoseStyle CheekL CheekR Mouth EarL EarR HairStyle]
 
   [CLIP:walk:stepLeg stepArm ~ Gait:moving:8:14]
@@ -82,7 +79,6 @@
   [RULE:NoseStyle:NoseSmall:45]
   [RULE:BrowStyle:BrowThinL BrowThinR:55]
   [RULE:BrowStyle:BrowThickL BrowThickR:45]
-  [LSYSTEM_END]
 
 [ENTITY:Deer]
   [MOVE_SPEED:1.5][DIET:Berry]
@@ -90,7 +86,6 @@
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02]
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:2654435761][HASH_SEED2:2246822519][HASH_MOD:35][HASH_REM:3]
-  [LSYSTEM_BEGIN]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
   [AXIOM:Body Neck Head Snout Nose EarL EarR EyeL EyeR(AntlerStyle)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)Tail]
 
@@ -133,7 +128,6 @@
   [RULE:AntlerStyle:AntlerBeamL AntlerBeamR:30]
   [RULE:AntlerStyle:AntlerBeamL AntlerMidL AntlerBrowL AntlerBeamR AntlerMidR AntlerBrowR:40]
   [RULE:AntlerStyle:AntlerBeamL AntlerMidL AntlerTipL AntlerBrowL AntlerBackL AntlerBeamR AntlerMidR AntlerTipR AntlerBackR AntlerBrowR:30]
-  [LSYSTEM_END]
 
 [ENTITY:Bunny]
   [MOVE_SPEED:1.5][DIET:Berry][HOP:0.5]
@@ -572,4 +566,3 @@
   [BRUSH:ThighR:Cube:0.08:0.12:false:color=black:offX=0.10:offY=-0.14:offZ=0.02:depth=0.08]
   [BRUSH:ShankR:Cube:0.06:0.06:false:color=orange:offX=0.10:offY=-0.04:offZ=0.02:depth=0.06]
   [BRUSH:FootR:Cube:0.10:0.03:false:color=orange:offX=0.10:offY=0.01:offZ=-0.04:depth=0.14]
-  [LSYSTEM_END]
