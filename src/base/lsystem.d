@@ -55,8 +55,8 @@ LSym[] lex(const(char)[] s) pure @safe {
   return(toks);
 }
 
-/** A production rule: predecessor, production, weight, and the generation window [genMin, genMax) it's
-    active in. GEN_END in a bound means "the growth budget", so a cap is just a rule opened at the budget. */
+/** A production rule: predecessor, production, weight, and the window [nMin, nMax) on the matched
+    module's own parameter n that the rule is active in (int.min/int.max = open bound). */
 struct Rule {
   string predecessor;                           /// symbol this rule rewrites
   string production;                            /// replacement string
