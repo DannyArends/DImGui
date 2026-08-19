@@ -1,4 +1,4 @@
-/** 
+/**
  * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
@@ -15,8 +15,7 @@ version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 /** Main application structure, TODOs:
   - Bloom/HDR: scaffolding is there, for a big visual improvement
   - GPU-driven indirect draw (probably not possible, due to how our pipeline works)
-  - Screen space ambient occlusion (SSAO) [DONE]
-  - - Future: Bilateral blur pass
+  - SSAO bilateral blur pass (denoise the AO)
   - Screen-space reflections on water
   - Chunk/object LOD
 */
@@ -27,14 +26,14 @@ struct App {
 
   /// Application information structure
   VkApplicationInfo applicationInfo  = {
-    pApplicationName: applicationName, 
-    applicationVersion: 0, 
-    pEngineName: "CalderaD Engine with Dear ImGui", 
+    pApplicationName: applicationName,
+    applicationVersion: 0,
+    pEngineName: "CalderaD Engine with Dear ImGui",
     engineVersion: 0,
     apiVersion: VK_MAKE_API_VERSION( 0, 1, 2, 0 )
   };
 
-  VkClearValue[5] clearValue = [ 
+  VkClearValue[5] clearValue = [
     {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }},              // 0: MSAA color (CLEAR)
     {{ float32: [0.0f, 0.0f, 0.0f, 1.0f] }},              // 1: resolved (DONT_CARE: value unused)
     { depthStencil : VkClearDepthStencilValue(1.0f, 0) }, // 2: depth (LOAD: value unused)
@@ -123,10 +122,10 @@ struct App {
 
   // Sync and Frame Tracking
   uint selectedDevice = 0;                                                      /// Device selected for rendering
-  @property @nogc uint queueFamily() nothrow const { return queues.graphics.family; }  /// Graphics family (back-compat)
+  @property pure @nogc uint queueFamily() nothrow const { return queues.graphics.family; }  /// Graphics family (back-compat)
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
-  float soundEffectGain = 0.8;                                                  /// Sound Effects Gain
+  float soundEffectGain = 0.8f;                                                 /// Sound Effects Gain
   ulong[6] time = [0, 0, 0, 0, 0, 0];                                           /// Time monitoring
   ulong[string] timings;                                                        /// Stage name into last frame's CPU timings
   uint totalFramesRendered = 0;                                                 /// Total frames rendered so far
@@ -156,8 +155,8 @@ struct App {
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
   bool paused = false;                                                          /// Playback paused
   float speed = 1.0f;                                                           /// Simulation time scale
-  void delegate(SDL_Event) onEvent;                                             /// Optional game input hook 
-  
+  void delegate(SDL_Event) onEvent;                                             /// Optional game input hook
+
   // Properties based on the SwapChain
   @property bool isMinimized() { return minimized || (SDL_GetWindowFlags(this.window) & SDL_WINDOW_MINIMIZED) != 0; }
   @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }
