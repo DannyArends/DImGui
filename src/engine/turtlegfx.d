@@ -16,7 +16,7 @@ struct RigNode {
   int parent = -1;      /// index of parent RigNode in the returned array; -1 == root
   Matrix local;         /// transform relative to parent (world == parent.world · local)
   DrawInstance inst;    /// draw instance: world matrix (bind pose) + material + color
-  Symbol symbol;        /// brush symbol -> shared geometry
+  string symbol;        /// brush symbol -> shared geometry
 }
 
 /** One keyframe from the time-walk: the step index and the cursor quaternion recorded for a bone. */
