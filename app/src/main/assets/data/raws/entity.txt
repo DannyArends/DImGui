@@ -8,7 +8,7 @@
   [LSYSTEM_YAW:90]
   [LSYSTEM_PITCH:90]
   [LSYSTEM_GAP:0.15]
-  [AXIOM:(+f-&&LB)(-f+&&LB)T J(+ff-&&mAN)(-ff+&&mAN)H Y lr S cC v pP K]
+  [AXIOM:(+f-&&L B)(-f+&&L B)T J(+ff-&&m A N)(-ff+&&m A N)H Y l r S c C v p P K]
 
   [CLIP:walk:l a f W:moving:8:14]
     [CRULE:W:&&&l^^^a f ^^^l&&&a f ^^^l&&&a f &&&l^^^a:50]
@@ -87,17 +87,17 @@
   [BRUSH:s:Cube:0.26:0.36:false:color=sienna:offX=0.00:offY=-0.28:offZ=-0.24:depth=0.06]
 
   # --- beard style ---
-  [RULE:J:DE:25]
-  [RULE:J:DEG:30]
-  [RULE:J:DEGF:25]
-  [RULE:J:DEGFbda:20]
+  [RULE:J:D E:25]
+  [RULE:J:D E G:30]
+  [RULE:J:D E G F:25]
+  [RULE:J:D E G F b d a:20]
 
   # --- hair style ---
   [RULE:K:h:26]
-  [RULE:K:ht:18]
-  [RULE:K:hijk:14]
-  [RULE:K:hno:18]
-  [RULE:K:hnos:16]
+  [RULE:K:h t:18]
+  [RULE:K:h i j k:14]
+  [RULE:K:h n o:18]
+  [RULE:K:h n o s:16]
   [RULE:K::8]
 
   # --- nose size ---
@@ -105,8 +105,8 @@
   [RULE:S:z:45]
 
   # --- eyebrow style ---
-  [RULE:Y:qw:55]
-  [RULE:Y:eg:45]
+  [RULE:Y:q w:55]
+  [RULE:Y:e g:45]
 
   [LSYSTEM_END]
 
@@ -118,9 +118,9 @@
   [HASH_SEED1:2654435761][HASH_SEED2:2246822519][HASH_MOD:35][HASH_REM:3]
   [LSYSTEM_BEGIN]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:CnHdNeELM(Y)(&&o)(&&p)(&&q)(&&r)w]
+  [AXIOM:C n H d N e E L M(Y)(&&o)(&&p)(&&q)(&&r)w]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:10]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:10]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -156,9 +156,9 @@
   [BRUSH:r:Cube:0.11:0.34:false:color=sienna:offX=0.14:offY=-0.34:offZ=0.16]
   [BRUSH:w:Cube:0.10:0.12:false:color=seashell:offY=0.30:offZ=-0.20]
   # --- antler style (Y -> personal, seeded per uid) ---
-  [RULE:Y:aA:30]
-  [RULE:Y:abgABJ:40]
-  [RULE:Y:abcghABKIJ:30]
+  [RULE:Y:a A:30]
+  [RULE:Y:a b g A B J:40]
+  [RULE:Y:a b c g h A B K I J:30]
   [LSYSTEM_END]
 
 [ENTITY:Bunny]
@@ -168,9 +168,9 @@
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:22235761][HASH_SEED2:224332519][HASH_MOD:60][HASH_REM:5]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:CFdNLMuU(&&o)(&&p)(&&q)(&&r)w]
+  [AXIOM:C F d N L M u U(&&o)(&&p)(&&q)(&&r)w]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:12]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:12]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -199,9 +199,9 @@
   [NOISE_THRESHOLD:0.78]
   [HASH_SEED1:2166136261][HASH_SEED2:16777619][HASH_MOD:45][HASH_REM:3]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:CGeHdNbBLR(&&o)(&&p)(&&q)(&&r)tw]
+  [AXIOM:C G e H d N b B L R(&&o)(&&p)(&&q)(&&r)t w]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:11]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:11]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -233,9 +233,9 @@
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:40503][HASH_SEED2:2654435761][HASH_MOD:60][HASH_REM:7]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:C(t)(&&o)(&&p)(&&q)(&&r)(kHdNbBLR)]
+  [AXIOM:C(t)(&&o)(&&p)(&&q)(&&r)(k H d N b B L R)]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:9]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:9]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -265,9 +265,9 @@
   [NOISE_THRESHOLD:0.75]
   [HASH_SEED1:374761393][HASH_SEED2:668265263][HASH_MOD:45][HASH_REM:5]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:C(t)(&&o)(&&p)(&&q)(&&r)(HdNbBLRkK)]
+  [AXIOM:C(t)(&&o)(&&p)(&&q)(&&r)(H d N b B L R k K)]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:13]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:13]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -298,9 +298,9 @@
   [NOISE_THRESHOLD:0.75]
   [HASH_SEED1:3266489917][HASH_SEED2:2246822519][HASH_MOD:55][HASH_REM:11]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:CeFgdbBLR(&&o)(&&p)(&&q)(&&r)tw]
+  [AXIOM:C e F g d b B L R(&&o)(&&p)(&&q)(&&r)t w]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:10]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:10]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -331,9 +331,9 @@
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:2578321651][HASH_SEED2:3266489917][HASH_MOD:95][HASH_REM:13]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:C(t)(s)(&&o)(&&p)(&&q)(&&r)(HdNbBgGeE)]
+  [AXIOM:C(t)(s)(&&o)(&&p)(&&q)(&&r)(H d N b B g G e E)]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:9]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:9]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -365,9 +365,9 @@
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:1583531683][HASH_SEED2:2971215073][HASH_MOD:65][HASH_REM:9]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:C(DEuvw)(P)(t)(&&o)(&&p)(&&q)(&&r)(kHdLR)]
+  [AXIOM:C(D E u v w)(P)(t)(&&o)(&&p)(&&q)(&&r)(k H d L R)]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:8]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:8]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -400,7 +400,7 @@
   [NOISE_THRESHOLD:0.75]
   [HASH_SEED1:2718281829][HASH_SEED2:3141592653][HASH_MOD:70][HASH_REM:7]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:C(e)(a)(A)(&&o x i)(&&p u j)(QY)(kHd(L)(R)(W))]
+  [AXIOM:C(e)(a)(A)(&&o x i)(&&p u j)(Q Y)(k H d(L)(R)(W))]
 
   [CLIP:walk:o p x u i j f &&o^^p &x^u ^^^i&&&j f ^^o&&p ^x&u &&&i^^^j f ^^o&&p ^x&u &&&i^^^j f &&o^^p &x^u ^^^i&&&j:moving:8:9]
     [POSE:o:o:]
@@ -451,8 +451,8 @@
   [BRUSH:T:Cube:0.040:0.55:false:color=deepskyblue:offX=-0.13:offY=0.02:offZ=0.50:depth=0.03]
 
   [RULE:W:c:30]
-  [RULE:W:cbB:40]
-  [RULE:W:cbBgG:30]
+  [RULE:W:c b B:40]
+  [RULE:W:c b B g G:30]
   [RULE:Y:(^m)(^n)(^N):30]
   [RULE:Y:(^m)(^n)(^N)(^s)(^S):40]
   [RULE:Y:(^m)(^n)(^N)(^s)(^S)(^t)(^T):30]
@@ -464,9 +464,9 @@
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:1327217909][HASH_SEED2:2971215073][HASH_MOD:100][HASH_REM:11]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:C(e)(i)(j)(m)(&&o)(&&p)(&&q)(&&r)(tuvY)(P(^g))(Q(^h))(kHd(N)(L)(R)(W)(J)(T)(&&l)(&&n)(&&D)(&&E)(I)(M))]
+  [AXIOM:C(e)(i)(j)(m)(&&o)(&&p)(&&q)(&&r)(t u v Y)(P(^g))(Q(^h))(k H d(N)(L)(R)(W)(J)(T)(&&l)(&&n)(&&D)(&&E)(I)(M))]
 
-  [CLIP:walk:s v oqpr f &&o&&r^^p^^q <s<v f ^^o^^r&&p&&q >s>v f ^^o^^r&&p&&q >s>v f &&o&&r^^p^^q <s<v:moving:8:9]
+  [CLIP:walk:s v o q p r f &&o&&r^^p^^q <s<v f ^^o^^r&&p&&q >s>v f ^^o^^r&&p&&q >s>v f &&o&&r^^p^^q <s<v:moving:8:9]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
@@ -526,9 +526,9 @@
   [BRUSH:I:Pyramid:0.035:0.05:false:color=white:offX=-0.05:offY=0.86:offZ=0.86:depth=0.035]
   [BRUSH:M:Pyramid:0.035:0.05:false:color=white:offX=0.05:offY=0.86:offZ=0.86:depth=0.035]
 
-  [RULE:W:aA:30]
-  [RULE:W:abAB:40]
-  [RULE:W:abcABG:30]
+  [RULE:W:a A:30]
+  [RULE:W:a b A B:40]
+  [RULE:W:a b c A B G:30]
   [RULE:Y:y:45]
   [RULE:Y:z:25]
   [RULE:Y::30]
@@ -541,7 +541,7 @@
   [HASH_SEED1:2654435761][HASH_SEED2:374761393][HASH_MOD:48][HASH_REM:5]
   [AXIOM:C(M(s)(a)(b)(e)(g)(i)(j)(u)(v)(w)(U)(V)(W))(L)(R)(N)(o)(p)(q)(r)]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:11]
+  [CLIP:walk:o q p r f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:11]
     [POSE:o:o:side]
     [POSE:p:p:side]
     [POSE:q:q:side]
