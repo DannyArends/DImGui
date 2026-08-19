@@ -7,7 +7,7 @@ import phobos;
 
 import color : toColor;
 import ctfe : namedField, opt, parseRawsGeneric, parseTokens, splitColon;
-import lsystem : Effect, Rule, Symbol, GEN_END;
+import lsystem : Effect, Rule, Symbol, GEN_END, lex;
 import turtlegfx : AnimClip;
 import rawstructs;
 
@@ -125,10 +125,10 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
     case "LSYSTEM_GAP":   x.lsystemGap   = to!float(p[1]); return true;
     case "LSYSTEM_ITER":  x.lsystemIter  = to!uint(p[1]);  return true;
     case "RULE": if(p.length >= 4){
-      x.rules ~= Rule(p[1][0], p[2], to!uint(p[3]), optGen(p, 4, 0), optGen(p, 5, int.max));
+      x.rules ~= Rule(p[1], p[2], to!uint(p[3]), optGen(p, 4, 0), optGen(p, 5, int.max));
     } return true;
     case "BRUSH": if(p.length >= 6){
-      LSystemBrushT b = { symbol: p[1][0], mesh: p[2], radius: to!float(p[3]), length: to!float(p[4]), advance: to!bool(p[5]) };
+      LSystemBrushT b = { symbol: p[1], mesh: p[2], radius: to!float(p[3]), length: to!float(p[4]), advance: to!bool(p[5]) };
       foreach(kv; p[6 .. $]) {
         immutable e = kv.indexOf('=');                 // "key=value"; bare "tint" allowed
         immutable string k = (e < 0) ? kv : kv[0 .. e];
@@ -150,12 +150,12 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
       x.brushes ~= b;
     } return true;
     case "CLIP": if(p.length >= 2){
-      x.clips ~= AnimClip(p[1], opt(p, 2), [], (Symbol[char]).init, opt(p, 3) == "moving", opt(p, 4, 8.0f), opt(p, 5, 25.0f));
+      x.clips ~= AnimClip(p[1], opt(p, 2), [], (Symbol[string]).init, opt(p, 3) == "moving", opt(p, 4, 8.0f), opt(p, 5, 25.0f));
     } return true;
-    case "CRULE": if(p.length >= 4 && x.clips.length){ x.clips[$-1].rules ~= Rule(p[1][0], p[2], to!uint(p[3])); } return true;
+    case "CRULE": if(p.length >= 4 && x.clips.length){ x.clips[$-1].rules ~= Rule(p[1], p[2], to!uint(p[3])); } return true;
     case "POSE": if(p.length >= 3 && x.clips.length){
-      Symbol ps = { effect: Effect.pose, target: p[2][0], bySide: opt(p, 3) == "side", axis: axisOf(opt(p, 4)) };
-      x.clips[$-1].poses[p[1][0]] = ps;
+      Symbol ps = { effect: Effect.pose, target: p[2], bySide: opt(p, 3) == "side", axis: axisOf(opt(p, 4)) };
+      x.clips[$-1].poses[p[1]] = ps;
     } return true;
     default: return false;
   }
@@ -206,19 +206,19 @@ Reaction[] parseReactions(string raw) pure { return parseRawsGeneric!(Reaction, 
 })(raw); }
 
 /** CTFE: turtle control chars that never map to a brush or pose. */
-private bool isControl(char c) pure { return "fX()+-&^<>%| \t\r\n".canFind(c); }
+private bool isControl(string t) pure { return t.length == 1 && "fX()+-&^<>%|".canFind(t[0]); }
 
 /** CTFE: symbols an entity/clip grammar can produce (axiom + every rule production). */
-private bool[char] produced(string axiom, const Rule[] rules) pure {
-  bool[char] s; foreach(c; axiom) s[c] = true;
-  foreach(ref r; rules) foreach(c; r.production) s[c] = true;
+private bool[string] produced(string axiom, const Rule[] rules) pure {
+  bool[string] s; foreach(t; lex(axiom)) s[t] = true;
+  foreach(ref r; rules) foreach(t; lex(r.production)) s[t] = true;
   return s;
 }
 
 /** CTFE: first symbol-consistency error across all entities ("" == valid). */
 string validateEntities(const RawT[] es) pure {
   foreach(ref e; es) {
-    bool[char] brush; foreach(ref b; e.brushes) brush[b.symbol] = true;
+    bool[string] brush; foreach(ref b; e.brushes) brush[b.symbol] = true;
     foreach(c, _; produced(e.axiom, e.rules))
       if(!isControl(c) && c !in brush && e.rules.all!(r => r.predecessor != c))
         return e.name ~ ": body symbol '" ~ c ~ "' has no [BRUSH] and no [RULE]";

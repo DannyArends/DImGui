@@ -16,7 +16,7 @@ struct RigNode {
   int parent = -1;      /// index of parent RigNode in the returned array; -1 == root
   Matrix local;         /// transform relative to parent (world == parent.world · local)
   DrawInstance inst;    /// draw instance: world matrix (bind pose) + material + color
-  char symbol;          /// brush symbol -> shared geometry
+  Symbol symbol;        /// brush symbol -> shared geometry
 }
 
 /** One keyframe from the time-walk: the step index and the cursor quaternion recorded for a bone. */
@@ -27,8 +27,8 @@ struct PoseKey {
 
 /** Everything the per-step bake needs for one rig node. */
 struct PoseCtx {
-  const(char)[] syms;                 /// clip symbols targeting this bone
-  const(PoseKey[][char]) tracks;      /// baked key streams, by symbol
+  const(string)[] syms;                 /// clip symbols targeting this bone
+  const(PoseKey[][string]) tracks;      /// baked key streams, by symbol
   float side;                         /// left/right mirror sign (from bind X)
   Matrix localJ;                      /// node's rigid local (rotation + position)
   Matrix Rr;                          /// localJ with translation stripped (cursor frame)
@@ -39,7 +39,7 @@ struct AnimClip {
   string name;                /// "walk", "idle", ...
   string axiom = "";          /// clip L-system start symbols
   Rule[] rules;               /// clip production rules
-  Symbol[char] poses;         /// symbol -> which bone it poses
+  Symbol[string] poses;         /// symbol -> which bone it poses
   bool whenMoving = false;    /// select walk vs idle
   float fps = 8.0f;           /// steps per second (drives ticksPerSecond)
   float turn = 25.0f;         /// degrees per turn symbol (swing amplitude)
@@ -132,7 +132,8 @@ Matrix posesLocal(ref const PoseCtx c, ref immutable AnimClip clip, int step) {
 }
 
 /** Bake the keyframe track for one rig node from all clip poses that target its symbol. */
-NodeAnimation nodeAnimation(ref const RigNode n, const char[] syms, ref immutable AnimClip clip, const PoseKey[][char] tracks, const Matrix localJ) {
+NodeAnimation nodeAnimation(ref const RigNode n, const string[] syms, ref immutable AnimClip clip, 
+                            const PoseKey[][string] tracks, const Matrix localJ) {
   Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
   auto c = PoseCtx(syms, tracks, (n.inst.matrix[12] < 0.0f) ? -1.0f : 1.0f, localJ, Rr);
 
@@ -157,7 +158,7 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
   Animation a = { name: clip.name, duration: cast(double)steps, ticksPerSecond: clip.fps };
   auto J = jointWorlds(rig);
   foreach(k, ref n; rig) {
-    char[] syms;
+    string[] syms;
     foreach(sym, ref b; clip.poses) { if(b.target == n.symbol && sym in tracks) { syms ~= sym; } }
     if(syms.length == 0) continue;
     const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
@@ -168,19 +169,22 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
 
 /** The single turtle traversal. Structural glyphs are built-in; content symbols dispatch to the sink.
     '%' halves the turn-angle scale (compose for finer turns); scale is per-branch, saved on '(' , restored on ')'. */
-void walk(Sink)(const(char)[] symbols, const Symbol[char] alpha, const TurtleConfig cfg, ref Sink sink) {
+void walk(Sink)(const(string)[] tokens, const Symbol[string] alpha, const TurtleConfig cfg, ref Sink sink) {
   float scale = 1.0f;      /// live turn-angle multiplier (1 = cfg angle)
   float[] scales;          /// scale stack, pushed alongside each branch
   bool up = false;         /// one-shot: next placed brush draws at world-up ('|')
-  foreach(c; symbols) {
-    if(c == '('){ scales ~= scale; sink.push(); continue; }
-    if(c == ')'){ sink.pop(); if(scales.length){ scale = scales[$-1]; scales = scales[0 .. $-1]; } continue; }
-    if(c == 'f'){ sink.move(cfg.gap); continue; }
-    if(c == '%'){ scale *= 0.5f; continue; }
-    if(c == '|'){ up = true; continue; }
-    const ax = turnAxis(c);
-    if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg) * scale); continue; }
-    if(auto s = c in alpha){ sink.place(c, *s, up); up = false; }
+  foreach(t; tokens) {
+    if(t.length == 1) {
+      const char c = t[0];
+      if(c == '('){ scales ~= scale; sink.push(); continue; }
+      if(c == ')'){ sink.pop(); if(scales.length){ scale = scales[$-1]; scales = scales[0 .. $-1]; } continue; }
+      if(c == 'f'){ sink.move(cfg.gap); continue; }
+      if(c == '%'){ scale *= 0.5f; continue; }
+      if(c == '|'){ up = true; continue; }
+      const ax = turnAxis(c);
+      if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg) * scale); continue; }
+    }
+    if(auto s = t in alpha){ sink.place(t, *s, up); up = false; }
   }
 }
 
@@ -195,7 +199,7 @@ struct RigSink {
   void pop(){ if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; current = parents[$-1]; parents = parents[0 .. $-1]; } }
   void turn(const float[3] ax, float ang){ st.orient = qMul(st.orient, angleAxis(ang, ax)); }
   void move(float d){ const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]); }
-  void place(char c, ref const Symbol s, bool worldUp = false) {
+  void place(string c, ref const Symbol s, bool worldUp = false) {
     if(s.effect != Effect.brush) return;
     const Matrix Rmove = rotate(st.orient);            // heading: used for offset+advance
     const Matrix R = worldUp ? Matrix() : Rmove;       // draw frame: world-up when '|', else heading
@@ -213,14 +217,14 @@ struct RigSink {
 /** Time sink: turns accumulate into `pending` (applied to the next pose only); `f` advances a step; a pose
     symbol records the accumulated cursor onto its own track. Branches are ignored (as the old time walk was). */
 struct AnimSink {
-  PoseKey[][char] tracks;
-  float[4][char] cursor;
+  PoseKey[][string] tracks;
+  float[4][string] cursor;
   float[4] pending = [0.0f, 0.0f, 0.0f, 1.0f];
   int t = 0;
   void push(){} void pop(){}
   void turn(const float[3] ax, float ang){ pending = qMul(pending, angleAxis(ang, ax)); }
   void move(float d){ t++; }
-  void place(char c, ref const Symbol s, bool worldUp = false){
+  void place(string c, ref const Symbol s, bool worldUp = false){
     if(s.effect != Effect.pose) return;
     if(c !in cursor) cursor[c] = Quaternion.init;
     cursor[c] = qMul(cursor[c], pending);
@@ -230,7 +234,7 @@ struct AnimSink {
 }
 
 /** Structure walk: retains branch hierarchy; each placed brush becomes a re-poseable RigNode. */
-RigNode[] interpretRig(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+RigNode[] interpretRig(const(string)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
   auto sink = RigSink(); sink.st = TurtleState(origin, orient0);
   walk(symbols, cfg.alpha, cfg, sink);
   foreach(ref n; sink.nodes){ n.local = (n.parent < 0) ? n.inst.matrix : sink.nodes[n.parent].inst.matrix.inverse().multiply(n.inst.matrix); }
@@ -238,14 +242,14 @@ RigNode[] interpretRig(const(char)[] symbols, const TurtleConfig cfg, float[3] o
 }
 
 /** Flattened structure walk: per brush symbol, world-space DrawInstances (hierarchy discarded). */
-DrawInstance[][char] interpret(const(char)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
-  DrawInstance[][char] instances;
+DrawInstance[][string] interpret(const(string)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+  DrawInstance[][string] instances;
   foreach(ref n; interpretRig(symbols, cfg, origin, orient0)) instances[n.symbol] ~= n.inst;
   return instances;
 }
 
 /** Time walk: bake per-target-symbol key streams; `steps` = clip duration. */
-PoseKey[][char] interpretAnim(const(char)[] symbols, const Symbol[char] poses, const TurtleConfig cfg, out int steps) {
+PoseKey[][string] interpretAnim(const(string)[] symbols, const Symbol[string] poses, const TurtleConfig cfg, out int steps) {
   auto sink = AnimSink();
   walk(symbols, poses, cfg, sink);
   steps = (sink.t > 0) ? sink.t : 1;

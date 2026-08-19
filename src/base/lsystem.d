@@ -8,11 +8,26 @@ import phobos;
 enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
 enum Effect : ubyte { brush, pose, asset }      /// What a content symbol does at the cursor
 enum int GEN_END = int.min;
+enum string RESERVED = "()f%|+-&^<>";
+
+/** Tokenise an axiom/production: each reserved glyph is one token, each maximal run of non-reserved
+    non-space chars is one module name; whitespace separates and is dropped. */
+string[] lex(const(char)[] s) pure @safe {
+  string[] toks; size_t i = 0;
+  while(i < s.length) {
+    immutable char c = s[i];
+    if(c == ' ' || c == '\t' || c == '\r' || c == '\n') { i++; continue; }
+    if(RESERVED.canFind(c)) { toks ~= [c].idup; i++; continue; }
+    size_t j = i; while(j < s.length && s[j] != ' ' && !RESERVED.canFind(s[j])) j++;
+    toks ~= s[i .. j].idup; i = j;
+  }
+  return(toks);
+}
 
 /** A production rule: predecessor, production, weight, and the generation window [genMin, genMax) it's
     active in. GEN_END in a bound means "the growth budget", so a cap is just a rule opened at the budget. */
 struct Rule {
-  char predecessor;                             /// symbol this rule rewrites
+  string predecessor;                             /// symbol this rule rewrites
   string production;                            /// replacement string
   uint probability = 100;                       /// weight among the predecessor's active rules (shortfall = passthrough)
   int genMin = 0;                               /// first generation active (GEN_END => budget)
@@ -36,7 +51,7 @@ struct Symbol {
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// brush: per-instance tint
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// brush: local-frame draw offset [right, up, fwd]
   float depth = -1.0f;                          /// brush: Z half-extent; -1 == use radius
-  char target = 0;                              /// pose: bone symbol this pose writes to
+  string target = "";                           /// pose: bone symbol this pose writes to
   bool bySide = false;                          /// pose: mirror by the bone's left/right sign
   float[3] axis = NO_AXIS;                      /// pose: world-axis swing; NO_AXIS == cursor swing
   string asset;                                 /// asset: external mesh/entity id (Phase 2)
@@ -45,28 +60,28 @@ struct Symbol {
 
 /** Turtle config: per-axis turn angles (degrees) + the symbol alphabet. */
 struct TurtleConfig {
-  float yaw = 25.0f;     /// + / -  spread
-  float pitch = 25.0f;   /// & / ^  arch down / up
-  float roll = 25.0f;    /// < / >  twist around heading
-  float gap = 0.2f;      /// f       move without drawing
-  Symbol[char] alpha;    /// content-symbol table (brush/pose/asset)
+  float yaw = 25.0f;        /// + / -  spread
+  float pitch = 25.0f;      /// & / ^  arch down / up
+  float roll = 25.0f;       /// < / >  twist around heading
+  float gap = 0.2f;         /// f       move without drawing
+  Symbol[string] alpha;     /// content-symbol table (brush/pose/asset)
 }
 
 struct TurtleState { float[3] pos; float[4] orient; }
 
 /** A stochastic L-system over plain characters. */
 struct LSystem {
-  char[] state;
-  Rule[][char] rules;
+  string[] state;
+  Rule[][string] rules;
   size_t max_length = 20000;
 
   /** Replace c by a weighted-random production active at generation t, or keep it. */
-  const(char)[] replace(char c, ref Random rnd, int t, int budget) {
+  string[] replace(string c, ref Random rnd, int t, int budget) {
     if(c !in rules) return [c];
     uint roll = uniform(0, 100, rnd), prev = 0;
     foreach(ref r; rules[c]) {
       if(!active(r, t, budget)) continue;
-      if(roll < prev + r.probability) { return(r.production); }
+      if(roll < prev + r.probability) { return(lex(r.production)); }
       prev += r.probability;
     }
     return([c]);
@@ -75,7 +90,7 @@ struct LSystem {
   /** Apply one rewrite pass at generation t; false if the length cap is hit. */
   bool iterate(ref Random rnd, int t, int budget) {
     if(state.length > max_length) return(false);
-    char[] newstate;
+    string[] newstate;
     foreach(c; state) newstate ~= replace(c, rnd, t, budget);
     state = newstate;
     return(true);
@@ -83,7 +98,7 @@ struct LSystem {
 }
 
 /** Any symbol in `s` carrying a rule active at generation t? */
-bool anyActive(const(char)[] s, const Rule[][char] rules, int t, int budget) {
+bool anyActive(const(string)[] s, const Rule[][string] rules, int t, int budget) {
   foreach(c; s) { if(auto rs = c in rules) {
     foreach(ref r; *rs) { if(active(r, t, budget)) { return(true); } }
   } }
@@ -93,8 +108,8 @@ bool anyActive(const(char)[] s, const Rule[][char] rules, int t, int budget) {
 /** Grow an axiom to a fixed point: each generation applies the rules active at that generation (growth rules
     windowed [0, budget), caps opened at the budget), until no active rule remains. Deterministic from seed.
     One builder for vegetation, entities, and clip time-walks — the cap is data (a rule), not a phase. */
-char[] grammar(uint seed, int budget, string axiom, const(Rule)[] rules, int safety = 1024) {
-  auto ls = LSystem(axiom.dup);
+string[] grammar(uint seed, int budget, string axiom, const(Rule)[] rules, int safety = 1024) {
+  auto ls = LSystem(lex(axiom));
   foreach(ref r; rules) { ls.rules[r.predecessor] ~= r; }
   auto rnd = Random(seed | 1);
   for(int t = 0; t < safety; t++) {

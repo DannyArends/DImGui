@@ -44,7 +44,7 @@ private const(RawT)* featureTypeAt(ref GameApp app, int[3] tile) {
 }
 
 /** Primitive mesh name bound to grammar symbol `sym` in `ft`'s brushes, or "" if unbound. */
-private string brushMesh(ref immutable RawT ft, char sym) {
+private string brushMesh(ref immutable RawT ft, string sym) {
   foreach(ref br; ft.brushes){ if(br.symbol == sym){ return(br.mesh); } } return("");
 }
 

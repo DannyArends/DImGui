@@ -60,7 +60,7 @@ struct RawT {
 
 /** L-system brush: one grammar symbol. */
 struct LSystemBrushT {
-  char symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
+  string symbol;                                /// grammar symbol, e.g. 'Y' or 'I'
   string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
   Substance substance;                          /// Substance drawn
   string texture;                               /// per-instance texture for the drawn geometry
