@@ -184,7 +184,7 @@ void walk(Sink)(const(LSym)[] tokens, const Symbol[string] alpha, const TurtleCo
       const ax = turnAxis(c);
       if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg) * scale); continue; }
     }
-    if(auto s = t.name in alpha){ sink.place(t.name, *s, up); up = false; }
+    if(auto s = t.name in alpha){ sink.place(t.name, *s, up, t.hasN ? t.n : 0); up = false; }
   }
 }
 
@@ -199,8 +199,11 @@ struct RigSink {
   void pop(){ if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; current = parents[$-1]; parents = parents[0 .. $-1]; } }
   void turn(const float[3] ax, float ang){ st.orient = qMul(st.orient, angleAxis(ang, ax)); }
   void move(float d){ const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]); }
-  void place(string c, ref const Symbol s, bool worldUp = false) {
+  void place(string c, ref const Symbol s, bool worldUp = false, int n = 0) {
     if(s.effect != Effect.brush) return;
+    const float grow = 1.0f + s.taper * n;                       // fatten toward the base (high n), thin at the tip (n=0)
+    const float rad = s.radius * grow;
+    const float dep = (s.depth < 0.0f) ? s.depth : s.depth * grow;
     const Matrix Rmove = rotate(st.orient);            // heading: used for offset+advance
     const Matrix R = worldUp ? Matrix() : Rmove;       // draw frame: world-up when '|', else heading
     const float[3] o = s.offset;
@@ -208,7 +211,7 @@ struct RigSink {
                          st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
                          st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
     auto color = cast(int)paletteOrdinal(s.color);
-    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, s.radius, s.length, s.depth), s.material, color), c);
+    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, rad, s.length, dep), s.material, color), c);
     current = cast(int)nodes.length - 1;
     if(s.advance){ st.pos = st.pos.vAdd([Rmove[4]*s.length*0.95f, Rmove[5]*s.length*0.95f, Rmove[6]*s.length*0.95f]); }
   }
@@ -224,7 +227,7 @@ struct AnimSink {
   void push(){} void pop(){}
   void turn(const float[3] ax, float ang){ pending = qMul(pending, angleAxis(ang, ax)); }
   void move(float d){ t++; }
-  void place(string c, ref const Symbol s, bool worldUp = false){
+  void place(string c, ref const Symbol s, bool worldUp = false, int n = 0) {
     if(s.effect != Effect.pose) return;
     if(c !in cursor) cursor[c] = Quaternion.init;
     cursor[c] = qMul(cursor[c], pending);

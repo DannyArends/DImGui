@@ -60,16 +60,16 @@ void createOrResizeWindow(ref App app) {
   app.reflectShaders(app.shadows.shaders);
   app.createResources(app.shadows.shaders, Stage.SHADOWS);
   app.createDescriptors(app.shadows.shaders, Stage.SHADOWS);
-  app.shadows.cmd.create(app, app.commandPool, app.framesInFlight);
+  app.shadows.cmd.create(app, app.queues.graphics.pool, app.framesInFlight);
   app.createShadowMapGraphicsPipeline();
 
   SDL_Log("3: Render shaders reflection");
   app.reflectShaders(app.shaders);
   app.createResources(app.shaders, Stage.RENDER);
   app.createDescriptors(app.shaders, Stage.RENDER);
-  app.uploadCmd.create(app, app.commandPool, app.framesInFlight);
-  app.depthCmd.create(app, app.commandPool, app.framesInFlight);
-  app.sceneCmd.create(app, app.commandPool, app.framesInFlight);
+  app.uploadCmd.create(app, app.queues.graphics.pool, app.framesInFlight);
+  app.depthCmd.create(app, app.queues.graphics.pool, app.framesInFlight);
+  app.sceneCmd.create(app, app.queues.graphics.pool, app.framesInFlight);
 
   SDL_Log("4: Post-processing shaders reflection");
   app.reflectShaders(app.postProcess);
@@ -88,8 +88,8 @@ void createOrResizeWindow(ref App app) {
   }
 
   SDL_Log("6:Post-processing and ImGui resources");
-  app.postCmd.create(app, app.commandPool, app.framesInFlight);
-  app.imguiCmd.create(app, app.commandPool, app.framesInFlight);
+  app.postCmd.create(app, app.queues.graphics.pool, app.framesInFlight);
+  app.imguiCmd.create(app, app.queues.graphics.pool, app.framesInFlight);
 
   SDL_Log("7: Create RenderPasses [DEPTH -> SCENE -> POST -> IMGUI]");
   app.createDepthPrePass();

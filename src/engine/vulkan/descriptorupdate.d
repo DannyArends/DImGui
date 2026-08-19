@@ -42,9 +42,9 @@ void registerRenderProviders(ref App app) {
   app.providers["ClusterHeads"] = DescriptorProvider(
     (ref a, ref d){
       a.createSSBO(d, CLUSTER_COUNT, true, true);
-      auto cmd = a.beginSingleTimeCommands(a.commandPool);
+      auto cmd = a.beginSingleTimeCommands(a.queues.graphics.pool);
       foreach(i; 0 .. a.buffers[d.base].length){ vkCmdFillBuffer(cmd, a.buffers[d.base][i].buffer, 0, VK_WHOLE_SIZE, NIL); }
-      a.endSingleTimeCommands(cmd, a.gfxQueue);
+      a.endSingleTimeCommands(cmd, a.queues.graphics.queue);
     },
     null);
   app.providers["ClusterCounter"] = DescriptorProvider(

@@ -74,7 +74,7 @@ void renderFrame(ref App app, double dt) {
         commandBufferCount : cast(uint)computeCommandBuffers.length, pCommandBuffers : &computeCommandBuffers[0],
       };
       if(app.trace) SDL_Log("Phase 2.2: Submit Compute work");
-      enforceVK(vkQueueSubmit(app.computeQueue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
+      enforceVK(vkQueueSubmit(app.queues.compute.queue, 1, &submitComputeInfo, app.fences[app.syncIndex].computeInFlight));
       app.fences[app.syncIndex].computeSubmitted = true;
     }
   }
@@ -126,7 +126,7 @@ void renderFrame(ref App app, double dt) {
   };
 
   //SDL_Log("vkQueueSubmit: frame=%d sync=%d frameIndex=%d", app.totalFramesRendered, app.syncIndex, app.frameIndex);
-  enforceVK(vkQueueSubmit(app.gfxQueue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
+  enforceVK(vkQueueSubmit(app.queues.graphics.queue, 1, &submitInfo, app.fences[app.syncIndex].renderInFlight));
   if(app.trace) SDL_Log("Done renderFrame: %d", app.syncIndex);
   app.totalFramesRendered++;
 }
@@ -143,7 +143,7 @@ void renderFrame(ref App app, double dt) {
     pSwapchains : &app.swapChain,
     pImageIndices : &app.frameIndex,
   };
-  auto err = vkQueuePresentKHR(app.gfxQueue, &info);
+  auto err = vkQueuePresentKHR(app.queues.graphics.queue, &info);
   if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR || err == VK_ERROR_SURFACE_LOST_KHR) app.rebuild = true;
   if(err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_ERROR_SURFACE_LOST_KHR) return;
   if(err != VK_SUBOPTIMAL_KHR) enforceVK(err);

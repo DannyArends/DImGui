@@ -78,6 +78,7 @@ struct Symbol {
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// brush: per-instance tint
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// brush: local-frame draw offset [right, up, fwd]
   float depth = -1.0f;                          /// brush: Z half-extent; -1 == use radius
+  float taper = 0.0f;                           /// brush: radius growth per unit of the module's parameter n (0 = uniform)
   string target = "";                           /// pose: bone symbol this pose writes to
   bool bySide = false;                          /// pose: mirror by the bone's left/right sign
   float[3] axis = NO_AXIS;                      /// pose: world-axis swing; NO_AXIS == cursor swing

@@ -40,9 +40,9 @@ void createDepthResources(ref App app) {
                        app.getMSAASamples(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
   if(app.verbose) SDL_Log(" - image created: %p", app.depthBuffer.image);
 
-  auto cmd = app.beginSingleTimeCommands(app.commandPool);
+  auto cmd = app.beginSingleTimeCommands(app.queues.graphics.pool);
   app.transitionImageLayout(cmd, app.depthBuffer.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, fmt);
-  app.endSingleTimeCommands(cmd, app.gfxQueue);
+  app.endSingleTimeCommands(cmd, app.queues.graphics.queue);
   if(app.verbose) SDL_Log("Depth resources created");
   app.swapDeletionQueue.add((){ app.cleanup(app.depthBuffer); });
 }

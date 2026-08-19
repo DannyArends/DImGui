@@ -99,10 +99,7 @@ void checkPendingTextures(ref App app) {
 
 /** Upload a texture on a single-time command buffer and queue it as pending until its transfer fence signals */
 void transferTextureAsync(ref App app, ref Texture texture) {
-  auto pool = app.commandPool;
-  auto queue = app.gfxQueue;
-
-  SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(pool, true);
+  SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(app.queues.graphics.pool, true);
   GPUAllocation staging;
   app.toGPU(cmdBuffer, texture, staging);
   vkEndCommandBuffer(cmdBuffer);
@@ -112,7 +109,7 @@ void transferTextureAsync(ref App app, ref Texture texture) {
     pCommandBuffers: &cmdBuffer.commands,
   };
   app.nameVulkanObject(cmdBuffer.fence, cstr("[FENCE] %s", texture.path), VK_OBJECT_TYPE_FENCE);
-  enforceVK(vkQueueSubmit(queue, 1, &submitInfo, cmdBuffer.fence));
+  enforceVK(vkQueueSubmit(app.queues.graphics.queue, 1, &submitInfo, cmdBuffer.fence));
   app.textures.pending ~= PendingTexture(texture, cmdBuffer, staging);
 }
 
@@ -209,9 +206,9 @@ void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath 
   app.createNamedImage(texture, texture.width, texture.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
                         VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
 
-  auto cmd = app.beginSingleTimeCommands(app.commandPool);
+  auto cmd = app.beginSingleTimeCommands(app.queues.graphics.pool);
   app.transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  app.endSingleTimeCommands(cmd, app.gfxQueue);
+  app.endSingleTimeCommands(cmd, app.queues.graphics.queue);
 
   if(app.verbose) SDL_Log("Create compute texture %p, view: %p", texture.image, texture.view);
   app.registerTexture(texture);

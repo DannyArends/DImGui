@@ -21,11 +21,11 @@ void saveScreenshot(ref App app) {
 
   void* data = app.mapped(stagingMemory);
 
-  auto cmd = app.beginSingleTimeCommands(app.commandPool);
+  auto cmd = app.beginSingleTimeCommands(app.queues.graphics.pool);
   app.transitionImageLayout(cmd, app.swapChainImages[app.frameIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
   app.copyImageToBuffer(cmd, app.swapChainImages[app.frameIndex], stagingBuffer, app.camera.width, app.camera.height);
   app.transitionImageLayout(cmd, app.swapChainImages[app.frameIndex], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-  app.endSingleTimeCommands(cmd, app.gfxQueue);
+  app.endSingleTimeCommands(cmd, app.queues.graphics.queue);
 
   // Handle BGRA → RGBA swap if needed
   ubyte[] pixels = (cast(ubyte*)data)[0 .. size];

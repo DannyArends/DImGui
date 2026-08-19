@@ -147,7 +147,7 @@ void createComputePipeline(ref App app, Shader shader) {
 }
 
 void createComputeCommandBuffers(ref App app, Shader shader) {
-  VkCommandPool pool = app.isStage(shader.path, ComputeStage.PreRender) ? app.computePool : app.commandPool;
+  VkCommandPool pool = app.isStage(shader.path, ComputeStage.PreRender) ? app.queues.compute.pool : app.queues.graphics.pool;
   app.compute.commands[shader.path] = app.createCommandBuffer(pool, app.framesInFlight);
   if(app.verbose) SDL_Log("createComputeCommandBuffers: %d ComputeCommand, commandpool[%p]", app.framesInFlight, pool);
   app.swapDeletionQueue.add((){

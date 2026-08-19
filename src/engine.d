@@ -93,14 +93,6 @@ struct App {
   VmaAllocator vma = null;                                                      /// VMA allocator (block suballocation)
   Queues queues;                                                                /// Graphics / Compute / Transfer queues
 
-  // Back-compat aliases so existing call sites keep working
-  @property @nogc VkQueue gfxQueue() nothrow { return queues.graphics.queue; }
-  @property @nogc VkQueue transferQueue() nothrow { return queues.transfer.queue; }
-  @property @nogc VkQueue computeQueue() nothrow { return queues.compute.queue; }
-  @property @nogc VkCommandPool commandPool() nothrow { return queues.graphics.pool; }   // graphics pool (back-compat)
-  @property @nogc VkCommandPool transferPool() nothrow { return queues.transfer.pool; }  // transfer pool (back-compat)
-  @property @nogc VkCommandPool computePool() nothrow { return queues.compute.pool; }    // compute pool
-  
   VkDescriptorPool[string] pools;                                               /// Descriptor pools (IMGUI, COMPUTE, RENDER)
   VkDescriptorSetLayout[string] layouts;                                        /// Descriptor layouts (IMGUI, RENDER, N x computeShader.PATH)
   VkDescriptorSet[][string] sets;                                               /// Descriptor sets for (IMGUI, RENDER, N x computeShader.PATH)
