@@ -65,7 +65,7 @@ struct Rule {
   int nMax = int.max;                           /// window high (exclusive); int.max = open
 }
 
-/** Is rule r active at generation t, given the growth budget? */
+/** Is rule r active for this token; i.e. its parameter n falls in the rule's [nMin, nMax) window? */
 bool active(ref const Rule r, LSym tok) pure nothrow @nogc @safe { return r.nMin <= tok.n && tok.n < r.nMax; }
 
 /** One alphabet entry: an effect plus its payload. Replaces TurtleBrush AND PoseBrush with a single type. */
@@ -103,7 +103,7 @@ struct LSystem {
   Rule[][string] rules;
   size_t max_length = 20000;
 
-  /** Replace c by a weighted-random production active at generation t, or keep it. */
+  /** Replace c by a weighted-random production, or keep it. */
   LSym[] replace(LSym c, ref Random rnd) {
     if(c.name !in rules) return [c];
     uint roll = uniform(0, 100, rnd), prev = 0;
@@ -115,7 +115,7 @@ struct LSystem {
     return([c]);
   }
 
-  /** Apply one rewrite pass at generation t; false if the length cap is hit. */
+  /** Apply one rewrite pass; false if the length cap is hit. */
   bool iterate(ref Random rnd) {
     if(state.length > max_length) return(false);
     LSym[] newstate;
@@ -125,7 +125,7 @@ struct LSystem {
   }
 }
 
-/** Any symbol in `s` carrying a rule active at generation t? */
+/** Any symbol in 's' carrying an active rule ? */
 bool anyActive(const(LSym)[] s, const Rule[][string] rules) {
   foreach(c; s) { if(auto rs = c.name in rules) {
     foreach(ref r; *rs) { if(active(r, c)) { return(true); } }
@@ -133,14 +133,14 @@ bool anyActive(const(LSym)[] s, const Rule[][string] rules) {
   return(false);
 }
 
-/** Grow an axiom to a fixed point: each generation applies the rules active at that generation (growth rules
-    windowed [0, budget), caps opened at the budget), until no active rule remains. Deterministic from seed.
+/** Grow an axiom to a fixed point: repeatedly rewrite, each rule gated by the [nMin, nMax) window on the
+    matched module's own parameter n (the axiom seeds the initial n), until no rule matches. Deterministic from seed.
     One builder for vegetation, entities, and clip time-walks — the cap is data (a rule), not a phase. */
 LSym[] grammar(uint seed, int size, string axiom, const(Rule)[] rules, int safety = 1024) {
   auto ls = LSystem(expand(axiom, size));
   foreach(ref r; rules) { ls.rules[r.predecessor] ~= r; }
   auto rnd = Random(seed | 1);
-  for(int t = 0; t < safety; t++) {
+  for(int i = 0; i < safety; i++) {
     if(!anyActive(ls.state, ls.rules)) break;   // fixed point: nothing left to rewrite
     if(!ls.iterate(rnd)) break;                 // length cap
   }

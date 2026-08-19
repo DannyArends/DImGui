@@ -120,7 +120,6 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
     case "LSYSTEM_PITCH": x.lsystemPitch = to!float(p[1]); return true;
     case "LSYSTEM_ROLL":  x.lsystemRoll  = to!float(p[1]); return true;
     case "LSYSTEM_GAP":   x.lsystemGap   = to!float(p[1]); return true;
-    case "LSYSTEM_ITER":  x.lsystemIter  = to!uint(p[1]);  return true;
     case "RULE": if(p.length >= 4){
       x.rules ~= Rule(p[1], p[2], to!uint(p[3]), opt(p, 4, int.min), opt(p, 5, int.max));
     } return true;

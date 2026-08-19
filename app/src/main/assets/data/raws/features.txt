@@ -119,7 +119,6 @@
   [BRUSH:Floret:Icosahedron:0.12:0.12:false:color=jmolGreenyellow:depth=0.12]
   [BRUSH:FloretGold:Icosahedron:0.12:0.12:false:color=yellowgreen:depth=0.12]
   [BRUSH:Fruit:coconut:0.04:0.04:false:substance=Berry:texture=colormap-food-kit:food=1.0:render=false:dropScale=0.04:dropOffsetY=-0.12]
-  [LSYSTEM_END]
 
 [FEATURE:Foxglove]
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02][SPAWN_ON:Forest01]

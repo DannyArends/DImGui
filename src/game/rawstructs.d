@@ -43,7 +43,6 @@ struct RawT {
   float hop = 0.0f;                               /// Vertical render offset to seat on the tile
   float facing = 0.0f;                            /// Yaw offset correcting the model's forward axis
   string axiom = "B";                             /// L-system start symbol(s)
-  uint lsystemIter = 1;                           /// stochastic rewrite passes (>1 enables recursive limb rules)
   Rule[] rules;                                   /// L-system production rules (empty = axiom as-is)
   AnimClip[] clips;                               /// animation L-systems, walked in time -> keyframe tracks
   LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
