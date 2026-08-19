@@ -169,13 +169,13 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
 
 /** The single turtle traversal. Structural glyphs are built-in; content symbols dispatch to the sink.
     '%' halves the turn-angle scale (compose for finer turns); scale is per-branch, saved on '(' , restored on ')'. */
-void walk(Sink)(const(string)[] tokens, const Symbol[string] alpha, const TurtleConfig cfg, ref Sink sink) {
+void walk(Sink)(const(LSym)[] tokens, const Symbol[string] alpha, const TurtleConfig cfg, ref Sink sink) {
   float scale = 1.0f;      /// live turn-angle multiplier (1 = cfg angle)
   float[] scales;          /// scale stack, pushed alongside each branch
   bool up = false;         /// one-shot: next placed brush draws at world-up ('|')
   foreach(t; tokens) {
-    if(t.length == 1) {
-      const char c = t[0];
+    if(t.name.length == 1 && !t.hasN) {
+      const char c = t.name[0];
       if(c == '('){ scales ~= scale; sink.push(); continue; }
       if(c == ')'){ sink.pop(); if(scales.length){ scale = scales[$-1]; scales = scales[0 .. $-1]; } continue; }
       if(c == '~'){ sink.move(cfg.gap); continue; }
@@ -184,7 +184,7 @@ void walk(Sink)(const(string)[] tokens, const Symbol[string] alpha, const Turtle
       const ax = turnAxis(c);
       if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg) * scale); continue; }
     }
-    if(auto s = t in alpha){ sink.place(t, *s, up); up = false; }
+    if(auto s = t.name in alpha){ sink.place(t.name, *s, up); up = false; }
   }
 }
 
@@ -234,7 +234,7 @@ struct AnimSink {
 }
 
 /** Structure walk: retains branch hierarchy; each placed brush becomes a re-poseable RigNode. */
-RigNode[] interpretRig(const(string)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+RigNode[] interpretRig(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
   auto sink = RigSink(); sink.st = TurtleState(origin, orient0);
   walk(symbols, cfg.alpha, cfg, sink);
   foreach(ref n; sink.nodes){ n.local = (n.parent < 0) ? n.inst.matrix : sink.nodes[n.parent].inst.matrix.inverse().multiply(n.inst.matrix); }
@@ -242,14 +242,14 @@ RigNode[] interpretRig(const(string)[] symbols, const TurtleConfig cfg, float[3]
 }
 
 /** Flattened structure walk: per brush symbol, world-space DrawInstances (hierarchy discarded). */
-DrawInstance[][string] interpret(const(string)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+DrawInstance[][string] interpret(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
   DrawInstance[][string] instances;
   foreach(ref n; interpretRig(symbols, cfg, origin, orient0)) instances[n.symbol] ~= n.inst;
   return instances;
 }
 
 /** Time walk: bake per-target-symbol key streams; `steps` = clip duration. */
-PoseKey[][string] interpretAnim(const(string)[] symbols, const Symbol[string] poses, const TurtleConfig cfg, out int steps) {
+PoseKey[][string] interpretAnim(const(LSym)[] symbols, const Symbol[string] poses, const TurtleConfig cfg, out int steps) {
   auto sink = AnimSink();
   walk(symbols, poses, cfg, sink);
   steps = (sink.t > 0) ? sink.t : 1;

@@ -8,7 +8,7 @@ import phobos;
 enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
 enum Effect : ubyte { brush, pose, asset }      /// What a content symbol does at the cursor
 enum int GEN_END = int.min;
-enum string RESERVED = "()~X%|+-&^<>";
+enum string RESERVED = "()~%|+-&^<>";
 
 /** One L-system token: a module name and an optional integer parameter (NONE = bare, e.g. a glyph or plain brush). */
 struct LSym {
@@ -20,14 +20,19 @@ struct LSym {
 
 /** Tokenise an axiom/production: each reserved glyph is one token, each maximal run of non-reserved
     non-space chars is one module name; whitespace separates and is dropped. */
-string[] lex(const(char)[] s) pure @safe {
-  string[] toks; size_t i = 0;
+LSym[] lex(const(char)[] s) pure @safe {
+  LSym[] toks; size_t i = 0;
   while(i < s.length) {
     immutable char c = s[i];
     if(c == ' ' || c == '\t' || c == '\r' || c == '\n') { i++; continue; }
-    if(RESERVED.canFind(c)) { toks ~= [c].idup; i++; continue; }
-    size_t j = i; while(j < s.length && s[j] != ' ' && !RESERVED.canFind(s[j])) j++;
-    toks ~= s[i .. j].idup; i = j;
+    if(RESERVED.canFind(c)) { toks ~= LSym([c].idup); i++; continue; }
+    size_t j = i; while(j < s.length && s[j] != ' ' && s[j] != '{' && !RESERVED.canFind(s[j])) j++;
+    LSym t = { name: s[i .. j].idup };
+    if(j < s.length && s[j] == '{') {                        // Name{int}
+      size_t k = j + 1; while(k < s.length && s[k] != '}') k++;
+      t.n = to!int(s[j + 1 .. k]); j = k + 1;
+    }
+    toks ~= t; i = j;
   }
   return(toks);
 }
@@ -79,15 +84,15 @@ struct TurtleState { float[3] pos; float[4] orient; }
 
 /** A stochastic L-system over plain characters. */
 struct LSystem {
-  string[] state;
+  LSym[] state;
   Rule[][string] rules;
   size_t max_length = 20000;
 
   /** Replace c by a weighted-random production active at generation t, or keep it. */
-  string[] replace(string c, ref Random rnd, int t, int budget) {
-    if(c !in rules) return [c];
+  LSym[] replace(LSym c, ref Random rnd, int t, int budget) {
+    if(c.name !in rules) return [c];
     uint roll = uniform(0, 100, rnd), prev = 0;
-    foreach(ref r; rules[c]) {
+    foreach(ref r; rules[c.name]) {
       if(!active(r, t, budget)) continue;
       if(roll < prev + r.probability) { return(lex(r.production)); }
       prev += r.probability;
@@ -98,7 +103,7 @@ struct LSystem {
   /** Apply one rewrite pass at generation t; false if the length cap is hit. */
   bool iterate(ref Random rnd, int t, int budget) {
     if(state.length > max_length) return(false);
-    string[] newstate;
+    LSym[] newstate;
     foreach(c; state) newstate ~= replace(c, rnd, t, budget);
     state = newstate;
     return(true);
@@ -106,8 +111,8 @@ struct LSystem {
 }
 
 /** Any symbol in `s` carrying a rule active at generation t? */
-bool anyActive(const(string)[] s, const Rule[][string] rules, int t, int budget) {
-  foreach(c; s) { if(auto rs = c in rules) {
+bool anyActive(const(LSym)[] s, const Rule[][string] rules, int t, int budget) {
+  foreach(c; s) { if(auto rs = c.name in rules) {
     foreach(ref r; *rs) { if(active(r, t, budget)) { return(true); } }
   } }
   return(false);
@@ -116,7 +121,7 @@ bool anyActive(const(string)[] s, const Rule[][string] rules, int t, int budget)
 /** Grow an axiom to a fixed point: each generation applies the rules active at that generation (growth rules
     windowed [0, budget), caps opened at the budget), until no active rule remains. Deterministic from seed.
     One builder for vegetation, entities, and clip time-walks — the cap is data (a rule), not a phase. */
-string[] grammar(uint seed, int budget, string axiom, const(Rule)[] rules, int safety = 1024) {
+LSym[] grammar(uint seed, int budget, string axiom, const(Rule)[] rules, int safety = 1024) {
   auto ls = LSystem(lex(axiom));
   foreach(ref r; rules) { ls.rules[r.predecessor] ~= r; }
   auto rnd = Random(seed | 1);

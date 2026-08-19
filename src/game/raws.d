@@ -210,8 +210,8 @@ private bool isControl(string t) pure { return t.length == 1 && RESERVED.canFind
 
 /** CTFE: symbols an entity/clip grammar can produce (axiom + every rule production). */
 private bool[string] produced(string axiom, const Rule[] rules) pure {
-  bool[string] s; foreach(t; lex(axiom)) s[t] = true;
-  foreach(ref r; rules) foreach(t; lex(r.production)) s[t] = true;
+  bool[string] s; foreach(t; lex(axiom)) s[t.name] = true;
+  foreach(ref r; rules) foreach(t; lex(r.production)) s[t.name] = true;
   return s;
 }
 
