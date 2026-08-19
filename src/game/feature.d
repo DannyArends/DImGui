@@ -138,7 +138,7 @@ DrawInstance[][string] featureMeshInstances(L)(ref L lat, ref Feature f, ref imm
     auto cfg = rawConfig(ft, true);
     auto chars = grammar(f.hash, cast(int)f.height, ft.axiom, ft.rules);
     float groundY = wp[1] - 0.5f * lat.tileHeight;
-    auto grouped = interpret(chars, cfg, [wp[0], groundY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f]);
+    auto grouped = interpret(chars, cfg, [wp[0], groundY, wp[2]], [0.0f, 0.0f, 0.0f, 1.0f], f.hash);
     foreach(sym, insts; grouped) { meshes[meshKey(ft.name, brushMesh(ft, sym))] ~= insts; }
   }
   return meshes;

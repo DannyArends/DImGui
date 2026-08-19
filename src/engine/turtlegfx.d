@@ -25,6 +25,11 @@ struct PoseKey {
   float[4] quat;    /// accumulated cursor orientation at that step
 }
 
+struct TurtleState {
+  float[3] pos;
+  float[4] orient;
+}
+
 /** Everything the per-step bake needs for one rig node. */
 struct PoseCtx {
   const(string)[] syms;                 /// clip symbols targeting this bone
@@ -195,10 +200,20 @@ struct RigSink {
   TurtleState[] stack;        /// saved cursors
   int current = -1;           /// parent for the next placed node
   int[] parents;              /// saved parents
+  Random rnd;                 /// per-individual jitter stream (seeded in interpretRig)
+  float latchA = 0.0f;        /// angle-jitter amplitude of the last-placed brush (0 until first brush)
+  float latchL = 0.0f;        /// length-jitter amplitude of the last-placed brush
+
   void push(){ stack ~= st; parents ~= current; }
   void pop(){ if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; current = parents[$-1]; parents = parents[0 .. $-1]; } }
-  void turn(const float[3] ax, float ang){ st.orient = qMul(st.orient, angleAxis(ang, ax)); }
-  void move(float d){ const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]); }
+  void turn(const float[3] ax, float ang) {
+    if(latchA != 0.0f) ang *= 1.0f + uniform(-latchA, latchA, rnd);
+    st.orient = qMul(st.orient, angleAxis(ang, ax));
+  }
+  void move(float d) {
+    if(latchL != 0.0f) d *= 1.0f + uniform(-latchL, latchL, rnd);
+    const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]);
+  }
   void place(string c, ref const Symbol s, bool worldUp = false, int n = 0) {
     if(s.effect != Effect.brush) return;
     const float grow = 1.0f + s.taper * n;                       // fatten toward the base (high n), thin at the tip (n=0)
@@ -211,9 +226,11 @@ struct RigSink {
                          st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
                          st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
     auto color = cast(int)paletteOrdinal(s.color);
-    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, rad, s.length, dep), s.material, color), c);
+    latchA = s.jitterA; latchL = s.jitterL;                                   // turns after this brush inherit its jitter
+    immutable float len = (s.jitterL != 0.0f) ? s.length * (1.0f + uniform(-s.jitterL, s.jitterL, rnd)) : s.length;
+    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, rad, len, dep), s.material, color), c);
     current = cast(int)nodes.length - 1;
-    if(s.advance){ st.pos = st.pos.vAdd([Rmove[4]*s.length*0.95f, Rmove[5]*s.length*0.95f, Rmove[6]*s.length*0.95f]); }
+    if(s.advance){ st.pos = st.pos.vAdd([Rmove[4]*len*0.95f, Rmove[5]*len*0.95f, Rmove[6]*len*0.95f]); }
   }
 }
 
@@ -237,17 +254,18 @@ struct AnimSink {
 }
 
 /** Structure walk: retains branch hierarchy; each placed brush becomes a re-poseable RigNode. */
-RigNode[] interpretRig(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+RigNode[] interpretRig(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0, uint seed = 0) {
   auto sink = RigSink(); sink.st = TurtleState(origin, orient0);
+  sink.rnd = Random((seed ^ 0x9E3779B9) | 1);
   walk(symbols, cfg.alpha, cfg, sink);
   foreach(ref n; sink.nodes){ n.local = (n.parent < 0) ? n.inst.matrix : sink.nodes[n.parent].inst.matrix.inverse().multiply(n.inst.matrix); }
   return sink.nodes;
 }
 
 /** Flattened structure walk: per brush symbol, world-space DrawInstances (hierarchy discarded). */
-DrawInstance[][string] interpret(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+DrawInstance[][string] interpret(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0, uint seed = 0) {
   DrawInstance[][string] instances;
-  foreach(ref n; interpretRig(symbols, cfg, origin, orient0)) instances[n.symbol] ~= n.inst;
+  foreach(ref n; interpretRig(symbols, cfg, origin, orient0, seed)) instances[n.symbol] ~= n.inst;
   return instances;
 }
 

@@ -63,7 +63,7 @@ void buildSkeleton(Container)(ref GameApp app, Container container, uint uid, re
   Skeleton sk;
   auto cfg = rawConfig(e);
   uint hash = uid * 2654435761u;
-  sk.rig = interpretRig(grammar(hash, 1, e.axiom, e.rules), cfg, [0,0,0], [0,0,0,1]);
+  sk.rig = interpretRig(grammar(hash, 1, e.axiom, e.rules), cfg, [0,0,0], [0,0,0,1], hash);
   bool any = false;
   foreach(ref n; sk.rig) { immutable y = n.inst.matrix[13] - n.inst.matrix.halfExtent[1]; if(!any || y < sk.footY) { sk.footY = y; any = true; } }
   immutable v = 1.0f + ((hash & 255) / 255.0f * 2.0f - 1.0f) * e.scaleVariance;

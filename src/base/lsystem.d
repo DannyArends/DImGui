@@ -9,12 +9,79 @@ enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / 
 enum Effect : ubyte { brush, pose, asset }      /// What a content symbol does at the cursor
 enum string RESERVED = "()~%|+-&^<>";
 
+/** A production rule: predecessor, production, weight, and the window [nMin, nMax) on the matched
+    module's own parameter n that the rule is active in (int.min/int.max = open bound). */
+struct Rule {
+  string predecessor;                           /// symbol this rule rewrites
+  string production;                            /// replacement string
+  uint probability = 100;                       /// weight among the predecessor's active rules (shortfall = passthrough)
+  int nMin = int.min;                           /// window low on the module's own parameter (inclusive); int.min = open
+  int nMax = int.max;                           /// window high (exclusive); int.max = open
+}
+
 /** One L-system token: a module name and an optional integer parameter (NONE = bare, e.g. a glyph or plain brush). */
 struct LSym {
   enum int NONE = int.min;   /// sentinel: no parameter
   string name;               /// module name or single glyph
   int n = NONE;              /// parameter; NONE => bare
   @property bool hasN() const pure nothrow @nogc @safe { return n != NONE; }
+}
+
+/** One alphabet entry: an effect plus its payload. Replaces TurtleBrush AND PoseBrush with a single type. */
+struct Symbol {
+  Effect effect = Effect.brush;
+  int material = -1;                            /// brush: material index
+  float radius = 0.1f;                          /// brush: half-width
+  float length = 1.0f;                          /// brush: segment length
+  bool advance = true;                          /// brush: move the cursor forward after drawing
+  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// brush: per-instance tint
+  float[3] offset = [0.0f, 0.0f, 0.0f];         /// brush: local-frame draw offset [right, up, fwd]
+  float depth = -1.0f;                          /// brush: Z half-extent; -1 == use radius
+  float taper = 0.0f;                           /// brush: radius growth per unit of the module's parameter n (0 = uniform)
+  float jitterA = 0.0f;                         /// brush: ± turn-angle jitter while this brush is active (0 = off)
+  float jitterL = 0.0f;                         /// brush: ± segment length/advance jitter (0 = off)
+  string target = "";                           /// pose: bone symbol this pose writes to
+  bool bySide = false;                          /// pose: mirror by the bone's left/right sign
+  float[3] axis = NO_AXIS;                      /// pose: world-axis swing; NO_AXIS == cursor swing
+  string asset;                                 /// asset: external mesh/entity id (Phase 2)
+  string socket;                                /// asset: named equip slot; "" == fixed graft (Phase 2)
+}
+
+/** Turtle config: per-axis turn angles (degrees) + the symbol alphabet. */
+struct TurtleConfig {
+  float yaw = 25.0f;        /// + / -  spread
+  float pitch = 25.0f;      /// & / ^  arch down / up
+  float roll = 25.0f;       /// < / >  twist around heading
+  float gap = 0.2f;         /// f       move without drawing
+  Symbol[string] alpha;     /// content-symbol table (brush/pose/asset)
+}
+
+/** A stochastic L-system over plain characters. */
+struct LSystem {
+  LSym[] state;
+  Rule[][string] rules;
+  size_t max_length = 20000;
+
+  /** Replace c by a weighted-random production, or keep it. */
+  LSym[] replace(LSym c, ref Random rnd) {
+    if(c.name !in rules) return [c];
+    uint roll = uniform(0, 100, rnd), prev = 0;
+    foreach(ref r; rules[c.name]) {
+      if(!active(r, c)) continue;
+      if(roll < prev + r.probability) return(expand(r.production, c.n));
+      prev += r.probability;
+    }
+    return([c]);
+  }
+
+  /** Apply one rewrite pass; false if the length cap is hit. */
+  bool iterate(ref Random rnd) {
+    if(state.length > max_length) return(false);
+    LSym[] newstate;
+    foreach(c; state) newstate ~= replace(c, rnd);
+    state = newstate;
+    return(true);
+  }
 }
 
 /** Evaluate a parameter expression against the matched n: "n", "n-k", "n+k", or a literal. */
@@ -55,75 +122,8 @@ LSym[] lex(const(char)[] s) pure @safe {
   return(toks);
 }
 
-/** A production rule: predecessor, production, weight, and the window [nMin, nMax) on the matched
-    module's own parameter n that the rule is active in (int.min/int.max = open bound). */
-struct Rule {
-  string predecessor;                           /// symbol this rule rewrites
-  string production;                            /// replacement string
-  uint probability = 100;                       /// weight among the predecessor's active rules (shortfall = passthrough)
-  int nMin = int.min;                           /// window low on the module's own parameter (inclusive); int.min = open
-  int nMax = int.max;                           /// window high (exclusive); int.max = open
-}
-
 /** Is rule r active for this token; i.e. its parameter n falls in the rule's [nMin, nMax) window? */
 bool active(ref const Rule r, LSym tok) pure nothrow @nogc @safe { return r.nMin <= tok.n && tok.n < r.nMax; }
-
-/** One alphabet entry: an effect plus its payload. Replaces TurtleBrush AND PoseBrush with a single type. */
-struct Symbol {
-  Effect effect = Effect.brush;
-  int material = -1;                            /// brush: material index
-  float radius = 0.1f;                          /// brush: half-width
-  float length = 1.0f;                          /// brush: segment length
-  bool advance = true;                          /// brush: move the cursor forward after drawing
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// brush: per-instance tint
-  float[3] offset = [0.0f, 0.0f, 0.0f];         /// brush: local-frame draw offset [right, up, fwd]
-  float depth = -1.0f;                          /// brush: Z half-extent; -1 == use radius
-  float taper = 0.0f;                           /// brush: radius growth per unit of the module's parameter n (0 = uniform)
-  string target = "";                           /// pose: bone symbol this pose writes to
-  bool bySide = false;                          /// pose: mirror by the bone's left/right sign
-  float[3] axis = NO_AXIS;                      /// pose: world-axis swing; NO_AXIS == cursor swing
-  string asset;                                 /// asset: external mesh/entity id (Phase 2)
-  string socket;                                /// asset: named equip slot; "" == fixed graft (Phase 2)
-}
-
-/** Turtle config: per-axis turn angles (degrees) + the symbol alphabet. */
-struct TurtleConfig {
-  float yaw = 25.0f;        /// + / -  spread
-  float pitch = 25.0f;      /// & / ^  arch down / up
-  float roll = 25.0f;       /// < / >  twist around heading
-  float gap = 0.2f;         /// f       move without drawing
-  Symbol[string] alpha;     /// content-symbol table (brush/pose/asset)
-}
-
-struct TurtleState { float[3] pos; float[4] orient; }
-
-/** A stochastic L-system over plain characters. */
-struct LSystem {
-  LSym[] state;
-  Rule[][string] rules;
-  size_t max_length = 20000;
-
-  /** Replace c by a weighted-random production, or keep it. */
-  LSym[] replace(LSym c, ref Random rnd) {
-    if(c.name !in rules) return [c];
-    uint roll = uniform(0, 100, rnd), prev = 0;
-    foreach(ref r; rules[c.name]) {
-      if(!active(r, c)) continue;
-      if(roll < prev + r.probability) return(expand(r.production, c.n));
-      prev += r.probability;
-    }
-    return([c]);
-  }
-
-  /** Apply one rewrite pass; false if the length cap is hit. */
-  bool iterate(ref Random rnd) {
-    if(state.length > max_length) return(false);
-    LSym[] newstate;
-    foreach(c; state) newstate ~= replace(c, rnd);
-    state = newstate;
-    return(true);
-  }
-}
 
 /** Any symbol in 's' carrying an active rule ? */
 bool anyActive(const(LSym)[] s, const Rule[][string] rules) {
