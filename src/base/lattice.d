@@ -14,6 +14,7 @@ enum int[3] storedTile = [int.min + 1, 0, int.min + 1];
 
 /** The six axis-aligned neighbour offsets (±X, ±Y, ±Z) */
 static immutable int[3][6] FACE_OFFSETS = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+/** Per-face tangents for normal mapping; each is that face's local +X from chunk.faceData, so +Y and -Y are both [1,0,0] */
 static immutable float[3][6] FACE_TANGENT = [[0,0,1],[0,0,-1],[1,0,0],[1,0,0],[-1,0,0],[1,0,0]];
 
 /** Regular 3D lattice of (possibly non-cubic) cells */
@@ -38,7 +39,7 @@ alias LatticeMap(T) = T[int[3]];
 struct Diff(T) { int[3] coord; uint idx; T value; }
 
 /** Flatten a chunked sparse map (chunk-coord to tile-index to value) into a blittable Diff!V array */
-Diff!T[] flatten(T)(const T[uint][int[3]] map) { 
+Diff!T[] flatten(T)(const T[uint][int[3]] map) {
   Diff!T[] flat;
   foreach(coord, idxMap; map) foreach(idx, value; idxMap) flat ~= Diff!T(coord, idx, value);
   return flat;
@@ -52,7 +53,7 @@ LatticeMap!(T[uint]) unflatten(T)(const Diff!T[] flat) {
 }
 
 /** Chunk-local linear index to local (x, y, z) coordinate within the chunk */
-@nogc pure int[3] tileCoord(T)(const T l, int i) nothrow { 
+@nogc pure int[3] tileCoord(T)(const T l, int i) nothrow {
   return [i % l.chunkSize, (i / l.chunkSize) % l.chunkHeight, i / (l.chunkSize * l.chunkHeight)];
 }
 
@@ -67,7 +68,7 @@ LatticeMap!(T[uint]) unflatten(T)(const Diff!T[] flat) {
 }
 
 /** Chunk-local coordinate to linear per-chunk tile index */
-@nogc pure int tileIndex(T)(const T l, const int[3] local) nothrow { 
+@nogc pure int tileIndex(T)(const T l, const int[3] local) nothrow {
   return(local.z * l.chunkHeight * l.chunkSize + local.y * l.chunkSize + local.x);
 }
 
@@ -81,7 +82,7 @@ LatticeMap!(T[uint]) unflatten(T)(const Diff!T[] flat) {
 @nogc pure int[3] tileAbove(const int[3] tile) nothrow { return [tile.x, tile.y + 1, tile.z]; }
 
 /** True if a chunk-local tile sits on the x or z edge of the chunk (needs cross-chunk neighbour lookup) */
-@nogc pure bool onChunkBoundary(T)(const T l, const int[3] lc) nothrow { 
+@nogc pure bool onChunkBoundary(T)(const T l, const int[3] lc) nothrow {
   return lc.x == 0 || lc.x == l.chunkSize-1 || lc.z == 0 || lc.z == l.chunkSize-1;
 }
 
