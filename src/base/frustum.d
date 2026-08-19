@@ -3,15 +3,14 @@
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
-import phobos;
-
 import vector : x, y, z;
 import quaternion : Quaternion, w;
 import matrix : Matrix, multiply;
 
-alias Quaternion Plane;
+alias Plane = Quaternion;   /// a frustum plane: xyz = normal, w = distance
 
-/** Extract from column-major VP matrix */
+/** Extract the 6 frustum planes (L,R,B,T,N,F) from a column-major view-projection matrix. 
+    Not normalized, only the sign of the plane test matters for culling */
 Plane[6] extractFrustum(const Matrix vp) @nogc pure nothrow {
   Plane[6] p;
   foreach (i; 0..4) {  // i = column index
@@ -34,10 +33,11 @@ bool aabbInFrustum(const Plane[6] planes, const float[3][2] b) @nogc pure nothro
   return true;
 }
 
+/** Flag each object's box visible/invisible by testing its AABB against the frustum. */
 @nogc void cullFrustum(T)(ref T[] objects, const Plane[6] frustum) nothrow {
-  for (size_t x = 0; x < objects.length; x++) {
-    if(objects[x].box is null) continue;
-    objects[x].box.visible = aabbInFrustum(frustum, objects[x].box);
+  for (size_t i = 0; i < objects.length; i++) {
+    if(objects[i].box is null) continue;
+    objects[i].box.visible = aabbInFrustum(frustum, objects[i].box);
   }
 }
 
