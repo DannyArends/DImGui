@@ -20,24 +20,22 @@ struct Intersection{
 }
 
 /** Compute the XZ position where a ray intersects a horizontal plane at height y */
-float[3] rayAtY(float[3][2] ray, float y) {
+@nogc pure float[3] rayAtY(float[3][2] ray, float y) nothrow {
   float t = (y - ray[0].y) / ray[1].y;
   return [ray[0].x + ray[1].x * t, y, ray[0].z + ray[1].z * t];
 }
 
-/** Compute the intersection between a ray and bmin and bmin */
-@nogc pure Intersection intersects(const float[3][2] ray, const float[3] bmin, const float[3] bmax, size_t index, size_t instance) {
-  Intersection i;
+/** Ray vs. axis-aligned box (bmin/bmax) slab test; records entry/exit points and t-range */
+@nogc pure Intersection intersects(const float[3][2] ray, const float[3] bmin, const float[3] bmax, size_t index, size_t instance) nothrow {
+  Intersection i = { tmin: (bmin.x - ray[0].x) / ray[1].x, tmax: (bmax.x - ray[0].x) / ray[1].x };
 
-  i.tmin = (bmin.x - ray[0].x) / ray[1].x;
-  i.tmax = (bmax.x - ray[0].x) / ray[1].x; 
   if (i.tmin > i.tmax) swap(i.tmin, i.tmax);
 
   float tymin = (bmin.y - ray[0].y) / ray[1].y;
   float tymax = (bmax.y - ray[0].y) / ray[1].y; 
   if (tymin > tymax) swap(tymin, tymax);
 
-  if ((i.tmin > tymax) || (tymin > i.tmax)) return i;
+  if ((i.tmin > tymax) || (tymin > i.tmax)) return(i);
 
   if (tymin > i.tmin) i.tmin = tymin;
   if (tymax < i.tmax) i.tmax = tymax;
@@ -46,18 +44,14 @@ float[3] rayAtY(float[3][2] ray, float y) {
   float tzmax = (bmax.z - ray[0].z) / ray[1].z; 
   if (tzmin > tzmax) swap(tzmin, tzmax);
 
-  if ((i.tmin > tzmax) || (tzmin > i.tmax)) return i;
+  if ((i.tmin > tzmax) || (tzmin > i.tmax)) return(i);
   if (tzmin > i.tmin) i.tmin = tzmin;
   if (tzmax < i.tmax) i.tmax = tzmax;
 
   if (i.tmax >= 0.0f) {
-   /* Debug for intercept calculation
-    SDL_Log("tmin: %s, tmax: %s", tmin, tmax);
-    SDL_Log("tymin: %s, tymax: %s", tymin, tymax);
-    SDL_Log("tzmin: %s, tzmax: %s", tzmin, tzmax); */
+    i.intersects = true;
     i.intersection = ray[0].vAdd(ray[1].vMul(i.tmin));
     i.intersectionOut = ray[0].vAdd(ray[1].vMul(i.tmax));
-    i.intersects = true;
     i.idx = [index, instance];
   }
   return(i);
