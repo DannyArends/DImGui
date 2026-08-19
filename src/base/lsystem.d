@@ -8,7 +8,15 @@ import phobos;
 enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
 enum Effect : ubyte { brush, pose, asset }      /// What a content symbol does at the cursor
 enum int GEN_END = int.min;
-enum string RESERVED = "()fX%|+-&^<>";
+enum string RESERVED = "()~X%|+-&^<>";
+
+/** One L-system token: a module name and an optional integer parameter (NONE = bare, e.g. a glyph or plain brush). */
+struct LSym {
+  enum int NONE = int.min;   /// sentinel: no parameter
+  string name;               /// module name or single glyph
+  int n = NONE;              /// parameter; NONE => bare
+  @property bool hasN() const pure nothrow @nogc @safe { return n != NONE; }
+}
 
 /** Tokenise an axiom/production: each reserved glyph is one token, each maximal run of non-reserved
     non-space chars is one module name; whitespace separates and is dropped. */

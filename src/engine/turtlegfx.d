@@ -178,7 +178,7 @@ void walk(Sink)(const(string)[] tokens, const Symbol[string] alpha, const Turtle
       const char c = t[0];
       if(c == '('){ scales ~= scale; sink.push(); continue; }
       if(c == ')'){ sink.pop(); if(scales.length){ scale = scales[$-1]; scales = scales[0 .. $-1]; } continue; }
-      if(c == 'f'){ sink.move(cfg.gap); continue; }
+      if(c == '~'){ sink.move(cfg.gap); continue; }
       if(c == '%'){ scale *= 0.5f; continue; }
       if(c == '|'){ up = true; continue; }
       const ax = turnAxis(c);
