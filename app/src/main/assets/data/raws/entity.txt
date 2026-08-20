@@ -429,7 +429,7 @@
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:1327217909][HASH_SEED2:2971215073][HASH_MOD:100][HASH_REM:11]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:Body(Chest)(SpineFront)(SpineMid)(SpineBack)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Tail1 Tail2 Tail3 TailTip)(WingPivotL(^WingL))(WingPivotR(^WingR))(Neck Head Snout(Nose)(EyeL)(EyeR)(HornStyle)(Jaw)(Chin)(&&ToothUL1)(&&ToothUL2)(&&ToothUR1)(&&ToothUR2)(ToothLL)(ToothLR))]
+  [AXIOM:Body(Chest)(SpineFront)(SpineMid)(SpineBack)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Tail1 Tail2 Tail3 TailTip)(WingPivotL(^WingL))(WingPivotR(^WingR))(Neck Head(Snout(Nose)(&&ToothUL1)(&&ToothUL2)(&&ToothUR1)(&&ToothUR2))(EyeL)(EyeR)(HornStyle)(Jaw(Chin)(ToothLL)(ToothLR)))]
 
   [CLIP:walk:strideTail strideTailTip LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL <strideTail<strideTailTip ~ ^^LegBL^^LegFR&&LegBR&&LegFL >strideTail>strideTailTip ~ ^^LegBL^^LegFR&&LegBR&&LegFL >strideTail>strideTailTip ~ &&LegBL&&LegFR^^LegBR^^LegFL <strideTail<strideTailTip:moving:8:9]
     [POSE:LegBL:LegBL:side]
@@ -496,7 +496,7 @@
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02][SPAWN_ON:Forest01][SPAWN_ON:Forest02]
   [NOISE_THRESHOLD:0.78]
   [HASH_SEED1:2654435761][HASH_SEED2:374761393][HASH_MOD:48][HASH_REM:5]
-  [AXIOM:Belly(Mantle(StudTop)(StudTL)(StudTR)(StudBL)(StudBR)(StudBack)(StudFront)(StudSideL1)(StudSideL2)(StudSideL3)(StudSideR1)(StudSideR2)(StudSideR3))(EyeL)(EyeR)(Nose)(LegBL)(LegBR)(LegFL)(LegFR)]
+  [AXIOM:Body(Mantle(StudTop)(StudTL)(StudTR)(StudBL)(StudBR)(StudBack)(StudFront)(StudSideL1)(StudSideL2)(StudSideL3)(StudSideR1)(StudSideR2)(StudSideR3))(EyeL)(EyeR)(Nose)(LegBL)(LegBR)(LegFL)(LegFR)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:11]
     [POSE:LegBL:LegBL:side]
@@ -505,7 +505,7 @@
     [POSE:LegFR:LegFR:side]
   [CLIP:idle:mantleSway ~ +mantleSway ~ -mantleSway ~ -mantleSway ~ +mantleSway::4:2.0]
     [POSE:mantleSway:Mantle:]
-  [BRUSH:Belly:Cube:0.44:0.40:false:color=burlywood:offY=0.06:offZ=0.00:depth=0.46]
+  [BRUSH:Body:Cube:0.44:0.40:false:color=burlywood:offY=0.06:offZ=0.00:depth=0.46]
   [BRUSH:Mantle:Cube:0.48:0.32:false:color=saddlebrown:offY=0.22:offZ=-0.06:depth=0.42]
   [BRUSH:StudTop:Cube:0.09:0.09:false:color=saddlebrown:offX=0.00:offY=0.48:offZ=-0.02:depth=0.09]
   [BRUSH:StudTL:Cube:0.09:0.09:false:color=saddlebrown:offX=-0.13:offY=0.48:offZ=-0.10:depth=0.09]
