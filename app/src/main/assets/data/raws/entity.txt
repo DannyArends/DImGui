@@ -299,7 +299,7 @@
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:2578321651][HASH_SEED2:3266489917][HASH_MOD:95][HASH_REM:13]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:Body(Tail)(Saddle)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Head Snout Nose EarL EarR PatchL PatchR EyeL EyeR)]
+  [AXIOM:Body(Tail)(Saddle)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Head(Snout Nose)(EarL)(EarR)(PatchL)(PatchR)(EyeL)(EyeR))]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:9]
     [POSE:LegBL:LegBL:side]
@@ -333,7 +333,7 @@
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:1583531683][HASH_SEED2:2971215073][HASH_MOD:65][HASH_REM:9]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:Shell(ShellMid ShellTop ScuteFront ScuteMid ScuteBack)(Plastron)(Tail)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Neck Head Snout EyeL EyeR)]
+  [AXIOM:Shell(ShellMid ShellTop ScuteFront ScuteMid ScuteBack)(Plastron)(Tail)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Neck Head(Snout)(EyeL)(EyeR))]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:8]
     [POSE:LegBL:LegBL:side]
