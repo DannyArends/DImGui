@@ -266,7 +266,7 @@
   [NOISE_THRESHOLD:0.75]
   [HASH_SEED1:3266489917][HASH_SEED2:2246822519][HASH_MOD:55][HASH_REM:11]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:Body Belly Head Face Snout EarL EarR EyeL EyeR(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)Tail TailTip]
+  [AXIOM:Body(Belly)(Head(Face Snout)(EarL)(EarR)(EyeL)(EyeR))(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Tail TailTip)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:10]
     [POSE:LegBL:LegBL:side]
