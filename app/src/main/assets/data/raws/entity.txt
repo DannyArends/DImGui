@@ -136,7 +136,7 @@
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:22235761][HASH_SEED2:224332519][HASH_MOD:60][HASH_REM:5]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:Body Head Snout Nose EyeL EyeR EarL EarR(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)Tail]
+  [AXIOM:Body(Head(Snout Nose)(EyeL)(EyeR)(EarL)(EarR))(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Tail)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:12]
     [POSE:LegBL:LegBL:side]
@@ -167,7 +167,7 @@
   [NOISE_THRESHOLD:0.78]
   [HASH_SEED1:2166136261][HASH_SEED2:16777619][HASH_MOD:45][HASH_REM:3]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:Chest Body Ruff Head Snout Nose EarL EarR EyeL EyeR(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)Tail TailTip]
+  [AXIOM:Body(Chest Ruff Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR))(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Tail TailTip)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:11]
     [POSE:LegBL:LegBL:side]
