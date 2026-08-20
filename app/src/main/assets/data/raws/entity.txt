@@ -87,7 +87,7 @@
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:2654435761][HASH_SEED2:2246822519][HASH_MOD:35][HASH_REM:3]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:Body(Neck Head Snout Nose EarL EarR EyeL EyeR AntlerStyle)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Tail)]
+  [AXIOM:Body(Neck Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR)(AntlerStyle))(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)(Tail)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:10]
     [POSE:LegBL:LegBL:side]
