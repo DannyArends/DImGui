@@ -1,220 +1,147 @@
-# Entity authoring rules ('entity.txt')
+# Entity & feature authoring (`entity.txt`, `features.txt`)
 
-Conventions for building a voxel creature. Derived from `segmentTransform` (matrix.d),
-the turtle (`turtlegfx.d` / `lsystem.d`), and the clip selector (`skeleton.d:80`).
-Placement is deterministic math follow these and parts connect, feet land, and
-faces don't z-fight. Proportions still want one visual pass in engine.
+How to build a voxel creature or plant from an L-system. Placement is deterministic
+math (`segmentTransform` in `matrix.d`, the turtle in `turtlegfx.d`/`lsystem.d`), so
+following these rules makes parts connect, feet land, and faces not z-fight. Proportions
+and animation still want one visual pass in-engine.
 
 ## Frame & the brush box
-- `+Z` = front (nose/head), `+Y` = up, ground plane at `Y=0`. Always set `[FACING:180.0]`.
-- `[BRUSH:sym:Cube:radius:length:advance:color=NAME:offX=..:offY=..:offZ=..:depth=..]`
-  - `radius` = X width, `length` = Y (up) extent, `depth` = Z (front-back); `depth` defaults to `radius`.
-  - **Base-anchored:** the box spans `Y∈[offY, offY+length]`, `X∈offX±radius/2`, `Z∈offZ±depth/2`. It grows UP from `offY`.
-  - `advance:false` for all offset-placed parts (normal case). `advance:true` only for turtle-stacked rigs (see Dwarf).
-  - `color=NAME` from `colors.txt` (unknown name silently → white). `tint` = per-pawn colour.
+- `+Z` = front, `+Y` = up, ground at `Y=0`. Set `[FACING:180.0]`.
+- Every brush is a unit cube put through `segmentTransform(pos, R, radius, length, depth)`:
+  `translate(pos) · R · translate([0, length/2, 0]) · scale([radius, length, depth])`.
+- Local axes: **X** = `radius` (width, `±radius/2`), **Y** = `length` (the **heading/growth**
+  axis, **base-anchored** `0→length`), **Z** = `depth` (front/back, `±depth/2`; defaults to
+  `radius`). The box grows up from its base at the cursor, then `R` (the turtle orientation)
+  rotates it about that base.
+- `R`'s columns are where each local axis points in the world: X→`R[0..2]`,
+  **Y (heading)→`R[4..6]`**, Z→`R[8..10]`.
 
-## Legs the rule that bites first
-- Legs are drawn with `&&`: `(&&o)(&&p)(&&q)(&&r)`. `&&` pitches 180°, so the leg hangs straight down.
-- **The foot sits on the ground iff `offY = -length`.** No exceptions. (`foot_y = -offY - length = 0`.)
-- Under `&&`, a leg's world position is `(offX, -offY, -offZ)` note `offZ` flips sign.
-- Quad layout: four legs, `offX ±`, `offZ ±`, equal `radius`/`length`. Leg top must sit *inside* the body
-  (`-offY` above the body's base), not flush with it flush = z-fight.
+## Names & symbols
+Tokens in `[AXIOM]`/`[RULE]`/`[CLIP]` strings are whitespace-optional. A run of non-reserved,
+non-`{` characters is one **name** — multi-character and case-sensitive (`Leg`, `AntlerBeamL`,
+`Trunk`). A name needs either a `[BRUSH]` or a `[RULE]`, else it's a validation error.
 
-## Connectivity the two failure modes
-- **Detached** (part floats): neighbours must overlap by **≥ 0.02** on the shared axis. Any gap and it floats.
-- **Z-fighting** (shimmer): two visible faces must never be coplanar. Keep each part inset or proud of its
-  neighbour by **≥ 0.02**. Equal face planes fight.
+Reserved glyphs — `RESERVED = "()~%|+-&^<>"`:
 
-## Symbol reference (axiom / rule / clip strings)
+| glyph | kind | meaning |
+|-------|------|---------|
+| `(` `)` | branch | push / pop turtle state; parts inside don't move the outer cursor |
+| `~` | move | step one `LSYSTEM_GAP` along the heading, no draw (in a clip: advance one time step) |
+| `+` `-` | turn | yaw ∓ about local Z (`LSYSTEM_YAW`) — steers the heading left/right |
+| `&` `^` | turn | pitch about local X (`LSYSTEM_PITCH`); `&`→toward +Z, `^`→toward −Z |
+| `<` `>` | turn | roll ± about the heading (`LSYSTEM_ROLL`) — spins in place, does **not** steer |
+| `%` | modifier | halve the turn-angle scale for the rest of this branch (`%%` = ¼), restored on `)` |
+| `\|` | modifier | draw the next brush world-up (ignore the heading); advance still follows the heading |
 
-Every character in an `[AXIOM]`, `[RULE]` production, or `[CLIP]` string is one of these.
-Case-sensitive. A letter with neither a `[BRUSH]` nor a `[RULE]` (and not listed below) is a
-compile-time validation error.
+Only pitch/yaw change the heading; roll only spins around it. Idioms: `(&&Leg)` = leg
+(pitch 180° → straight down), `(^Tail)` = point backward, `(\|Spike)` = stand a part up
+regardless of the march direction.
 
-| Symbol | Kind | Meaning |
-|--------|------|---------|
-| `(` | branch | push the turtle state (position + orientation + angle-scale) |
-| `)` | branch | pop restore to the matching `(`; parts drawn inside don't move the outer cursor |
-| `f` | move | step one `LSYSTEM_GAP` along the heading, no draw. In a clip: advance one time step |
-| `+` `-` | turn | yaw ∓ about local **Z** (`LSYSTEM_YAW`) steers heading left/right |
-| `&` `^` | turn | pitch about local **X** (`LSYSTEM_PITCH`). `&` → +Y turns toward +Z (fwd); `^` → toward −Z (back) |
-| `<` `>` | turn | roll ± about local **Y** = the heading (`LSYSTEM_ROLL`) twists in place, does **not** steer the cursor |
-| `%` | modifier | halve the turn-angle scale for the rest of this branch; composes (`%%` = ¼), restored on `)` |
-| `\|` | modifier | draw the **next** brush world-up, ignoring the heading; `advance` still follows the heading |
-| `X` | nonterminal | reserved growth seed needs no `[BRUSH]`; conventional axiom for recursive rules |
-| space / tab / newline | | ignored; use freely for readability |
-| any other letter | content | place its `[BRUSH]`, or expand its `[RULE]` |
+## Parametric growth `{n}` (plants, recursive limbs)
+A name may carry an integer parameter: `Trunk{n}`, `Wood{5}`. Rules gate on the matched
+module's **own** `n` via a `[nMin:nMax)` window, and productions rewrite `n` with `{n-1}`,
+`{n+1}`, or a literal.
 
-Notes:
-- **Heading vs. steering.** The fwd/back/down labels assume the default start heading `+Y`; after
-  turns the heading changes. `&`/`^`/`+`/`-` change the heading (steer the march); `<`/`>` only spin
-  around it. To march a grid over a surface, step with `f` after a `&`/`^`/`+`/`-`, never `<`/`>`.
-- **Two common idioms.** `(&&o)` = leg (pitch 180° → straight down). `(^tail)` = point a part backward.
-- **Turn magnitude** = the axis angle (`LSYSTEM_YAW`/`PITCH`/`ROLL`, or all three via `LSYSTEM_ANGLE`)
-  × the current `%` scale. In clips all three equal the clip's `turn`.
-- **`|` is what makes surface coats work:** roll the turtle flat so `f` marches across a surface, and
-  drop `(|s)` at each node so every spike stands up regardless of the march direction.
+- `[RULE:pred:production:weight]` — weighted rewrite, rolled per-uid. Weights are relative.
+- `[RULE:pred:production:weight:nMin]` — window `[nMin, ∞)`.
+- `[RULE:pred:production:weight:nMin:nMax]` — window `[nMin, nMax)`.
 
-## Grammar & clip tokens
+The axiom seeds `n` (feature `HEIGHT_MIN/MAX`; entities default to `1`). Because the window is
+on the module's remaining count, morphology can key off *distance to the tip* — leaves low,
+flowers only in the final tiers — independent of total size.
 
-| Token | Meaning |
-|-------|---------|
-| `[BRUSH:s:Mesh:radius:length:advance:kv…]` | Define a drawable part. `kv` = `color=NAME` / `tint` / `offX/offY/offZ` / `depth` / `render=false`. `advance` moves the cursor after drawing (segments); `false` for offset-placed details |
-| `[RULE:X:prod:weight]` | Weighted rewrite of nonterminal `X`, rolled per-uid. Weights are relative |
-| `[RULE:X:prod:weight:genMin:genMax]` | …with a generation window. `@` in a bound = the budget (`LSYSTEM_ITER`) → the rule recurses up to the budget (trees, dense coats) |
-| `[AXIOM:…]` | Start string |
-| `[LSYSTEM_ANGLE:d]` | Set yaw = pitch = roll = `d`° |
-| `[LSYSTEM_YAW/PITCH/ROLL:d]` | Set one axis' turn magnitude |
-| `[LSYSTEM_GAP:g]` | `f` step distance |
-| `[LSYSTEM_ITER:n]` | Rewrite budget: caps `@`-windowed recursion; drives per-uid density |
-| `[CLIP:name:axiom:trigger:fps:turn]` | Animation. `trigger=moving` = walk, else idle. Only the **first** clip of each kind ever plays |
-| `[CRULE:X:prod:weight]` | Like `RULE`, scoped to the enclosing clip (per-uid idle variety) |
-| `[POSE:clipSym:targetBrush:orient:axis]` | Map a clip symbol to a bone. `orient=side` mirrors L/R by the bone's X sign; `axis` ∈ `X`/`Y`/`Z` (empty = cursor swing) |
+```
+[AXIOM:Trunk{n}]
+[RULE:Trunk:Wood{n} Trunk{n-1}:80:1]                   # grow while n >= 1
+[RULE:Trunk:Wood{n}<(+Trunk{n-1})(-Trunk{n-1}):6:1]    # occasional fork
+[RULE:Trunk:Wood{n} Bud:100:0:1]                       # cap at n == 0
+```
 
-**Mesh primitives** (`makePrimitive`): `Cube`, `Cylinder`, `Cone`, `Sphere`, `Capsule`, `Torus`,
-`Icosahedron`. Any other name loads a model asset of that name.
+## Brushes
+`[BRUSH:name:Mesh:radius:length:advance:kv…]`
+
+- `Mesh` (`makePrimitive`): `Cube`, `Cylinder`, `Cone`, `Sphere`, `Capsule`, `Torus`,
+  `Icosahedron`; any other name loads a model asset.
+- `advance`: `true` moves the cursor after drawing (turtle-stacked segments); `false` for
+  offset-placed details (the normal case for animals).
+- `kv` keys: `color=NAME` (from `colors.txt`, unknown → white) · `tint` (per-pawn colour) ·
+  `substance=` / `texture=` · `offX/offY/offZ` (local draw offset) · `depth=` (Z half-extent) ·
+  `render=false` (transform-only, no draw) · `taper=f` (radius grows `f` per unit of `{n}`) ·
+  `jitterA=f` / `jitterL=f` (± per-individual jitter on following turns / on segment length,
+  seeded by uid; latched from the last placed brush).
+
+## Connectivity (two failure modes)
+- **Detached**: neighbours must overlap ≥ **0.02** on the shared axis, or the part floats.
+- **Z-fighting**: two visible faces must never be coplanar — inset or proud by ≥ **0.02**.
+
+## Legs (the rule that bites first)
+- Draw with `&&`: `(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)`. `&&` pitches 180° → straight down.
+- **Foot sits on the ground iff `offY = -length`.** Under `&&`, world position is
+  `(offX, -offY, -offZ)` (note `offZ` flips). Sink the leg top *inside* the body, not flush.
+- Quad layout: `offX ±`, `offZ ±` (back = `-offZ`, front = `+offZ`), equal radius/length.
 
 ## Axiom structure
-- `[AXIOM:C(part)(part)(&&leg)...]` body `C` at the **root**; put every other part in its own `()` branch
-  so it parents to the body and animating one part never drags its siblings.
-- Chain without `()` only when you want a real parent→child bone chain (head→snout→nose).
-- Boilerplate for offset-placed animals: `[LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]`.
+- Body at the root; put every other part in its own `()` so it parents to the body and
+  animating one part never drags its siblings.
+- Chain without `()` only for a real parent→child bone chain (head→snout→nose).
+- Offset-animal boilerplate: `[LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]`.
 
-## Per-individual variation (rules)
-- `[RULE:X:production:weight]`. Put nonterminal `X` in the axiom (usually `(X)`); give 2–4 weighted productions
-  of brush symbols. Rolled once per pawn `uid` → each individual differs (antlers, crest, beard, hair, tail size).
-- Weights are **relative** (need not total 100). An empty production = feature absent.
-- Productions may contain `()` and turn symbols. Every symbol a rule can produce must have a `[BRUSH]`.
+## Per-individual variation
+A nonterminal + weighted `[RULE]`s, rolled once per pawn `uid`, gives each individual a
+signature (antler style, beard length, crest). Put the nonterminal in the axiom (often
+`(Style)`); an empty production = feature absent. Every symbol a rule can produce needs a
+`[BRUSH]`.
 
-## Animation
-- **Clip selection is first-match** (`skeleton.d:80`): exactly one `moving` clip (walk) and one non-moving clip
-  (idle) will ever play. Extra clips are dead weight. Put idle *variety* in `[CRULE]` variants of the single idle
-  clip the variant is rolled per `uid`, giving each pawn a signature idle.
-- `[CLIP:name:axiom:trigger:fps:turn]`; trigger `moving` marks the walk clip.
-- **Bind pose = the static axiom.** Clips rotate bones *relative to bind*; a bone not posed by the active clip
-  stays at bind. → build the walk/rest shape into bind, animate only the difference.
-- `[POSE:clipSym:targetBrush:orient:axis]`: `axis` `X`/`Y`/`Z` swings about that body axis; `side` mirrors L/R by
-  the bone's X sign; empty axis = cursor swing. A pose targets a *symbol*, so it drives every bone of that symbol.
-- **Match the turn axis to the pose axis** or the angle is unpredictable: `&`/`^`→X, `<`/`>`→Y, `+`/`-`→Z.
-  Resulting angle = (turn-symbol count) x clip `turn`.
-- Standard quadruped gait copy verbatim, only change the trailing fps:
-  `[CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:10]`
-  with `[POSE:o:o:side]` … `[POSE:r:r:side]`.
-- Standard one-part idle sway: `[CLIP:idle:X f +X f -X f -X f +X::4:2.0]` + `[POSE:X:target:]`.
+## Animation & clips
+- `[CLIP:name:axiom:trigger:fps:turn]` — `trigger=moving` marks the walk clip, else idle.
+  **First-match selection**: exactly one walk and one idle clip ever play; extra clips are dead
+  weight. Put idle *variety* in `[CRULE:pred:production:weight]` variants of the single idle clip.
+- `[POSE:clipSym:targetBrush:orient:axis]` — a clip symbol drives every bone of `targetBrush`.
+  `orient=side` mirrors L/R by the bone's X sign; `axis` ∈ `X`/`Y`/`Z` (empty = cursor swing).
+  **Match the turn axis to the pose axis** or the angle is unpredictable: `&`/`^`→X, `<`/`>`→Y,
+  `+`/`-`→Z; resulting angle = (turn-symbol count) × clip `turn`.
+- **Bind pose = the static axiom.** Clips rotate bones relative to bind; an un-posed bone stays
+  at bind. Build the rest shape into bind, animate only the difference.
+- Standard quadruped gait (change only the trailing fps):
+  `[CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ …:moving:8:10]`
+  with `[POSE:LegBL:LegBL:side]` … per leg.
 
-## Rotated appendages (tail fans, wings that lift)
-- To swing an appendage about a hinge, give it a hidden **pivot bone** and parent the appendage to it:
-  `(Pivot (^feather)(^feather) …)`. Then a single pose on the pivot lifts the whole thing; per-feather poses fan it.
-- **Pivot rule:** the pivot bone and the appendage's bases must share the same world position, or the appendage
-  detaches the moment it rotates. (In a `^` frame, a feather's `offZ` is world-height and `offY` is world
-  back-distance so set pivot `offY` = feather `offZ`, pivot `offZ` = feather `offY`.)
-- A part of length `L` swung up about a pivot dips to `pivot - L` mid-swing. Keep `L` short enough, or the pivot
-  high enough, that it clears the body and floor.
+## Bones vs. cloud cubes (automatic)
+Bone-ness is **inferred**, never authored (`inferBones`, `skeleton.d`): a node is an animated
+**bone** iff its symbol is a `[POSE]` target in some clip, or it's an ancestor of one; the root is
+always a bone. Every other node — eyes, nose, antler tines, studs, fur — is a static **cloud cube**
+that rides its nearest bone ancestor at a baked offset, costing **no** bone-palette slot and no
+per-frame transform. This decouples cube count from bone count (hundreds of cubes over ~10 bones);
+the fps window shows `bones` vs `static`. Cloud cubes keep their own size and colour but inherit the
+bone's animation. Author normally — anything you don't pose becomes a cloud for free.
 
-## Required metadata (per entity)
+## Rotated appendages (tail fans, lifting wings)
+Give the appendage a hidden **pivot bone** and parent it: `(Pivot (^Feather)(^Feather) …)`. A pose
+on the pivot lifts the whole thing; per-feather poses fan it. The pivot and the appendage bases must
+share a world position or it detaches when rotated (in a `^` frame, feather `offZ` is world-height,
+`offY` is world back-distance → set pivot `offY` = feather `offZ`, pivot `offZ` = feather `offY`).
+
+## Required metadata
 `[MOVE_SPEED:x][DIET:y]`, `[SCALE:s][SCALE_VARIANCE:v][OFFSET_Y:0.0][FACING:180.0]`,
-`[SPAWN_ON:Terrain]…`, `[NOISE_THRESHOLD:n]`, `[HASH_SEED1:..][HASH_SEED2:..][HASH_MOD:..][HASH_REM:..]`.
-`HASH_*` seed spawn placement only the skeleton/variation is seeded by pawn `uid` (`hash = uid*2654435761`).
+`[SPAWN_ON:Terrain]…`, `[NOISE_THRESHOLD:n]`, `[HASH_SEED1][HASH_SEED2][HASH_MOD][HASH_REM]`.
+`HASH_*` seed spawn placement only; the skeleton/variation is seeded by pawn `uid`
+(`hash = uid*2654435761`). Features use `[HEIGHT_MIN][HEIGHT_MAX]` instead of `MOVE_SPEED/DIET`.
 
-## The brush box model — `segmentTransform` (read this before building any panel)
-
-Every brush is a **unit cube** (`±0.5` on each axis, `cube.d`) put through
-`segmentTransform(pos, R, radius, length, depth)` (`matrix.d`):
-
-    translate(pos) · R · translate([0, length/2, 0]) · scale([radius, length, depth])
-
-Read right-to-left, that means the box's **local** axes are:
-
-| local axis | driven by | extent | meaning |
-|------------|-----------|--------|---------|
-| **X** | `radius` | centered, `±radius/2` | width across |
-| **Y** | `length` | **base-anchored, `0 → length`** | the **heading / growth** axis |
-| **Z** | `depth`  | centered, `±depth/2` | thickness front/back |
-
-`translate([0, length/2, 0])` is what base-anchors it: the box sits with its base at
-the cursor and grows along **+Y (local)**. Then `R` rotates the whole box about that base,
-and `translate(pos)` drops it at the cursor.
-
-`R = rotate(st.orient)` (the turtle orientation). Its columns are where each local axis
-points in the world — the exact indices used everywhere:
-
-- local **X** → `(R[0], R[1], R[2])`
-- local **Y** → `(R[4], R[5], R[6])`  ← the heading (this is why `move` uses `R[4..6]`)
-- local **Z** → `(R[8], R[9], R[10])`
-
-So a brush's 8 world corners are:
-`pos + sx·(R[0],R[1],R[2]) + sy·(R[4],R[5],R[6]) + sz·(R[8],R[9],R[10])`
-for `sx ∈ ±radius/2`, `sy ∈ {0, length}`, `sz ∈ ±depth/2`.
-
-## Reach vs. surface — the distinction that matters
-
-- A **reach** part (leg, arm bone, spar, tail, horn) only cares *where its tip lands*.
-  Tracing base→tip (local +Y only) fully verifies it. This is what the sim harness did,
-  and why legs/scales/tails/spars all worked.
-- A **surface** part (wing membrane, fin, web, flat plate) cares about its **face** — which
-  way the flat side points and whether neighbours overlap into a sheet. **base→tip tells you
-  nothing about this.** A centerline trace on a panel reports "position correct" while the
-  panel is silently a vertical blade instead of a flat sheet. (This is exactly why four dragon
-  wings failed: the trace measured the length axis; the bug was in the X/Z axes.)
-
-**Rule: for anything flat, trace the corners (all three local axes through `R`), not the
-centerline.** The harness must port `segmentTransform` and emit corners; then assert
-(a) the thin axis points along the intended world normal, and (b) panel *i*'s footprint
-overlaps panel *i+1*'s.
-
-## Building a flat panel reliably
-
-The **thin axis** is the smallest of `radius/length/depth`; the panel's flat face is
-perpendicular to it. What that face points at in the world = the `R` column of the thin axis.
-
-Easiest path: draw the panel with **`|`** (worldUp → `R = identity`, so local axes = world
-axes) and pick proportions directly:
-
-| want the flat face to point… | make thin… | brush (radius:length:depth) |
-|------------------------------|-----------|------------------------------|
-| **+Y** (lies flat on top/back) | Y (`length`) | e.g. `0.16 : 0.03 : 0.16` |
-| **±X** (lies flat on a flank)  | X (`radius`) | e.g. `0.03 : 0.16 : 0.16` |
-| **±Z** (faces front/back)      | Z (`depth`)  | e.g. `0.16 : 0.16 : 0.03` |
-
-Without `|`, the thin axis is rotated by the turns before it, so you **must** compute where
-it lands (corner trace) — do not eyeball it. A membrane that must lie flat while its *length*
-runs along a swept heading is the hard case: the length axis follows the heading, but the
-flat-face (thin) axis is one of the other two, and only a corner trace shows where it ended up.
-
-## Verified turn / hop tables (stop re-deriving these)
-
-Turns rotate the **local** frame; `<`/`>` (roll about the heading) **do not steer the cursor**
-— they spin in place. Only pitch (`&`/`^`) and yaw (`+`/`-`) change the heading.
-
-From **heading +Y** (the start), single turns and round-trip hops (which restore +Y):
-
-| op | new heading | hop | net move |
-|----|-------------|-----|----------|
-| `+` | −X | `+f-` | −X |
-| `-` | +X | `-f+` | +X |
-| `&` | +Z | `&f^` | +Z |
-| `^` | −Z | `^f&` | −Z |
-| `f` | — | — | +Y (up) |
-
-From **heading −X** (e.g. a leading edge swept out to the left): `&`→+Z, `^`→−Z (back),
-`+`→−Y (down), `-`→+Y (up), `<`/`>`→spin (no steer). `%` halves the turn angle (compose for
-45°, 22.5°), per-branch, restored on `)`.
-
-## Harness note
-
-The sim lives outside the repo (a standalone port of `angleAxis`/`qMul`/`rotate`/`segmentTransform`
-+ the `walk`/`AnimSink` loop). It is the right tool for **reach and phase** questions (leg
-travel, foot-level, scale coverage, spar positions). For **surface/face** questions it must
-trace corners, and even then it can't tell you if something *looks* like a wing — that needs a
-render. Small corner-verified change → look at it → iterate.
+## Flat panels (wings, fins, plates)
+A panel's flat face is perpendicular to its **thin axis** (smallest of radius/length/depth), and
+faces wherever that axis's `R` column points. Easiest: draw with `\|` (worldUp, `R = identity`,
+local axes = world axes) and size directly — flat-up → thin `length` (`0.16:0.03:0.16`); flat on a
+flank → thin `radius` (`0.03:0.16:0.16`); facing front → thin `depth` (`0.16:0.16:0.03`). Without
+`\|`, the thin axis is rotated by preceding turns — compute where it lands (trace corners through
+`R`), don't eyeball. A centerline trace verifies *reach* (legs, tails, spars) but nothing about a *face*.
 
 ## Checklist
-1. Body `C` at the root; every other part in its own `()`.
+1. Body at the root; every other part in its own `()`.
 2. Legs with `&&` and `offY = -length`; leg tops sunk into the body.
-3. Walk the parts: each overlaps its neighbour ≥0.02, no coplanar faces.
+3. Each part overlaps its neighbour ≥ 0.02; no coplanar faces.
 4. Reuse the standard walk gait; pick one part to sway for idle.
-5. Optional: nonterminal + `[RULE]`s for per-individual variety; `[CRULE]` variants for idle variety.
-6. Build in engine and eyeball proportions/animation.
+5. Optional: nonterminal + `[RULE]`s for variety; `[CRULE]` for idle variety; `{n}` for growth.
+6. Build in-engine and eyeball proportions/animation.
 
 ## Minimal template
 ```
@@ -225,22 +152,23 @@ render. Small corner-verified change → look at it → iterate.
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:2654435761][HASH_SEED2:40503][HASH_MOD:50][HASH_REM:7]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:C(H)(t)(&&o)(&&p)(&&q)(&&r)]
+  [AXIOM:Body(Head)(Tail)(&&LegBL)(&&LegBR)(&&LegFL)(&&LegFR)]
 
-  [CLIP:walk:oqpr f &&o&&r^^p^^q f ^^o^^r&&p&&q f ^^o^^r&&p&&q f &&o&&r^^p^^q:moving:8:10]
-    [POSE:o:o:side]
-    [POSE:p:p:side]
-    [POSE:q:q:side]
-    [POSE:r:r:side]
-  [CLIP:idle:h f +h f -h f -h f +h::4:2.0]
-    [POSE:h:H:]
+  [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:10]
+    [POSE:LegBL:LegBL:side]
+    [POSE:LegBR:LegBR:side]
+    [POSE:LegFL:LegFL:side]
+    [POSE:LegFR:LegFR:side]
+  [CLIP:idle:Head ~ +Head ~ -Head ~ -Head ~ +Head::4:2.0]
+    [POSE:Head:Head:]
 
-  [BRUSH:C:Cube:0.34:0.30:false:color=tan:offY=0.20:offZ=0.00:depth=0.50]
-  [BRUSH:H:Cube:0.22:0.22:false:color=tan:offY=0.22:offZ=0.34:depth=0.24]
-  [BRUSH:t:Cube:0.06:0.10:false:color=tan:offY=0.26:offZ=-0.30:depth=0.10]
-  [BRUSH:o:Cube:0.10:0.24:false:color=tan:offX=-0.16:offY=-0.24:offZ=-0.18:depth=0.11]
-  [BRUSH:p:Cube:0.10:0.24:false:color=tan:offX=0.16:offY=-0.24:offZ=-0.18:depth=0.11]
-  [BRUSH:q:Cube:0.10:0.24:false:color=tan:offX=-0.16:offY=-0.24:offZ=0.18:depth=0.11]
-  [BRUSH:r:Cube:0.10:0.24:false:color=tan:offX=0.16:offY=-0.24:offZ=0.18:depth=0.11]
+  [BRUSH:Body:Cube:0.34:0.30:false:color=tan:offY=0.20:offZ=0.00:depth=0.50]
+  [BRUSH:Head:Cube:0.22:0.22:false:color=tan:offY=0.22:offZ=0.34:depth=0.24]
+  [BRUSH:Tail:Cube:0.06:0.10:false:color=tan:offY=0.26:offZ=-0.30:depth=0.10]
+  [BRUSH:LegBL:Cube:0.10:0.24:false:color=tan:offX=-0.16:offY=-0.24:offZ=-0.18:depth=0.11]
+  [BRUSH:LegBR:Cube:0.10:0.24:false:color=tan:offX=0.16:offY=-0.24:offZ=-0.18:depth=0.11]
+  [BRUSH:LegFL:Cube:0.10:0.24:false:color=tan:offX=-0.16:offY=-0.24:offZ=0.18:depth=0.11]
+  [BRUSH:LegFR:Cube:0.10:0.24:false:color=tan:offX=0.16:offY=-0.24:offZ=0.18:depth=0.11]
 ```
-Feet at 0 (`offY=-length=-0.24`); head/tail overlap the body ≥0.02; head sways in idle.
+Legs are posed → bones; `Head`/`Tail` and any detail are inferred cloud cubes. Feet at 0
+(`offY = -length`); head/tail overlap the body ≥ 0.02; head sways in idle.
