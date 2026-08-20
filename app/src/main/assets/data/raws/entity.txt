@@ -5,7 +5,7 @@
   [SCALE:0.6][SCALE_VARIANCE:0.05]
   [OFFSET_Y:0.0][FACING:180.0]
   [LSYSTEM_YAW:90][LSYSTEM_PITCH:90][LSYSTEM_GAP:0.15]
-  [AXIOM:Body(+~-&& Leg Boot)(-~+&& Leg Boot)(+~~-&& Shoulder Arm Hand)(-~~+&& Shoulder Arm Hand)(Head BeardStyle BrowStyle EyeL EyeR NoseStyle CheekL CheekR Mouth EarL EarR HairStyle)]
+  [AXIOM:Body(+~-&& Leg Boot)(-~+&& Leg Boot)(+~~-&& Shoulder Arm Hand)(-~~+&& Shoulder Arm Hand)(Head(BeardStyle)(BrowStyle)(EyeL)(EyeR)(NoseStyle)(CheekL)(CheekR)(Mouth)(EarL)(EarR)(HairStyle))]
 
   [CLIP:walk:stepLeg stepArm ~ Gait:moving:8:14]
     [CRULE:Gait:&&& stepLeg ^^^ stepArm ~ ^^^ stepLeg &&& stepArm ~ ^^^ stepLeg &&& stepArm ~ &&& stepLeg ^^^ stepArm:50]
