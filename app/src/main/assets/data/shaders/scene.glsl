@@ -49,9 +49,9 @@ struct Cursor { uint cursor; };
 struct ClusterHead { uint head; };
 
 /// Shader Storage Buffer Objects
-layout (std430, set = 0, binding = BINDING_BONES_SSBO) readonly buffer BoneMatrices {
+layout (std430, set = 0, binding = BINDING_BONES_SSBO) readonly buffer AnimatedMatrices {
   Bone transforms[];
-} boneSSBO;       // 2
+} animatedSSBO;   // 2
 
 layout (std430, set = 0, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatrices {
   Light lights[];

@@ -97,7 +97,7 @@ void showFPSContent(ref App app, uint font = 0) {
     app.showDeviceLine();
     igText("%.1f FPS, %.1f ms", app.gui.io.Framerate, 1000.0f / app.gui.io.Framerate);
     igText("%d objects, %d textures", app.objects.length, app.textures.length);
-    igText("%d bones, %d pose slots", app.bones.length, app.boneOffsets.capacity);
+    igText("%d bones, %d pose slots", app.bones.length, app.animatedOffsets.capacity);
     app.printVRAM();
     app.showClusterLine();
     app.showGeometryLine();

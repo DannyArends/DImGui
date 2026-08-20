@@ -15,7 +15,7 @@ vec4 animate(vec4 v, uvec4 inBones, vec4 inWeights, uint boneBase) {
   if (inWeights == vec4(0.0)) return v;
   vec4 bonepos = vec4(0.0);
   for (int i = 0; i < 4; i++) {
-    if (inWeights[i] > 0.0) bonepos += (boneSSBO.transforms[boneBase + inBones[i]].offset * v) * inWeights[i];
+    if (inWeights[i] > 0.0) bonepos += (animatedSSBO.transforms[boneBase + inBones[i]].offset * v) * inWeights[i];
   }
   return bonepos;
 }

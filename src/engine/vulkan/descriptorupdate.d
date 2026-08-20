@@ -24,9 +24,9 @@ void registerRenderProviders(ref App app) {
     (ref a, ref d){ a.createUBO(d); },
     (ref a, ref d, cmd){ a.updateShadowMapUBO(d, a.syncIndex); });
   // SSBO
-  app.providers["BoneMatrices"] = DescriptorProvider(
-    (ref a, ref d){ a.createSSBO(d, a.boneOffsets); },
-    (ref a, ref d, cmd){ a.updateSSBO!Matrix(cmd, a.boneOffsets, d, a.syncIndex); });
+  app.providers["AnimatedMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.animatedOffsets); },
+    (ref a, ref d, cmd){ a.updateSSBO!Matrix(cmd, a.animatedOffsets, d, a.syncIndex); });
   app.providers["LightMatrices"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.lights); },
     (ref a, ref d, cmd){ a.updateSSBO!Light(cmd, a.lights, d, a.syncIndex); });

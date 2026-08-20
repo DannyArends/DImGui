@@ -22,7 +22,7 @@ struct Skeleton {
   Bone[string] bones;        /// name -> (local index, inverse bind), merged into app.bones
   Animation[] animations;    /// baked clips
   AnimationState state;      /// single clip state
-  int region;                /// palette base in boneOffsets
+  int region;                /// palette base in animatedOffsets
   uint boneBase, boneCount;  /// global bone range
   int[] boneSlot;            /// node k -> local palette slot
 }
@@ -40,9 +40,9 @@ void updateSkeletons(ref GameApp app) {
   }
   assign(app.world.dwarves);
   assign(app.world.animals);
-  if(top > app.boneOffsets.length) {
-    if(app.boneOffsets.length == 0) app.boneOffsets.length = app.boneOffsets.capacity;
-    while(app.boneOffsets.length < top) app.boneOffsets.length *= 2;
+  if(top > app.animatedOffsets.length) {
+    if(app.animatedOffsets.length == 0) app.animatedOffsets.length = app.animatedOffsets.capacity;
+    while(app.animatedOffsets.length < top) app.animatedOffsets.length *= 2;
   }
 }
 
@@ -82,7 +82,7 @@ void animateSkeleton(Pawn)(ref GameApp app, ref Skeleton s, ref Pawn pawn, ref i
   s.state.animTime += dt;
   immutable cT = calculateCurrentTick(s.state.animTime, s.animations[clip].ticksPerSecond, s.animations[clip].duration);
   app.calculateGlobalTransform(s, s.rootnode, Matrix(), cT, clip, cast(uint)s.region);
-  app.buffers["BoneMatrices"].invalidate();
+  app.buffers["AnimatedMatrices"].invalidate();
 }
 
 /** Tear down a skeleton */

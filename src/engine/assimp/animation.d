@@ -61,7 +61,7 @@ void animateAsset(T)(ref App app, T obj, float dt) {
     double cT = calculateCurrentTick(st.animTime, obj.animations[st.animation].ticksPerSecond, obj.animations[st.animation].duration);
     app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT, st.animation, cast(uint)obj.instances[i].instance[3]);
   }
-  app.buffers["BoneMatrices"].invalidate();
+  app.buffers["AnimatedMatrices"].invalidate();
 }
 
 /** Skinned-model driver: sample keyframes, accumulate parent·local, write the animated bone palette. */
@@ -77,7 +77,7 @@ void calculateGlobalTransform(T)(ref App app, T obj, const Node node, const Matr
   }
   Matrix gTransform = pTransform.multiply(local);
   if (node.name in app.bones) {
-    app.boneOffsets[regionBase + (app.bones[node.name].index - obj.boneBase)] = gTransform.multiply(app.bones[node.name].offset);
+    app.animatedOffsets[regionBase + (app.bones[node.name].index - obj.boneBase)] = gTransform.multiply(app.bones[node.name].offset);
   }
   foreach(cNode; node.children) {
     app.calculateGlobalTransform(obj, cNode, gTransform, animationTime, animIndex, regionBase);
