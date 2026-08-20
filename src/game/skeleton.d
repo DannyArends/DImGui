@@ -62,15 +62,18 @@ void repackStatic(ref GameApp app) {
   app.buffers["StaticMatrices"].invalidate();                       // upload once (updateSSBO grows if needed)
 }
 
-/** Fill a Skeleton's node/bone/animation data from its rig; assigns the local palette slots */
-void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, string prefix, string name, uint seed) {
-  // function ??
+/** Tag rig nodes: a node is a bone iff its symbol is posed by some clip, or it is an ancestor of one; root is always a bone. */
+void inferBones(ref RigNode[] rig, immutable AnimClip[] clips) {
   bool[string] posed;
   foreach(ref c; clips) foreach(sym, ref p; c.poses) posed[p.target] = true;
-  foreach(k, ref n; sk.rig) n.isBone = (n.symbol in posed) !is null;                 // seed from animation targets
-  foreach_reverse(k, ref n; sk.rig) if(n.isBone && n.parent >= 0) sk.rig[n.parent].isBone = true;  // ancestors of a bone are bones
-  foreach(k, ref n; sk.rig) if(n.parent < 0) n.isBone = true;         
-  // function ??
+  foreach(ref n; rig) n.isBone = (n.symbol in posed) !is null;
+  foreach_reverse(k, ref n; rig) if(n.isBone && n.parent >= 0) rig[n.parent].isBone = true;
+  foreach(ref n; rig) if(n.parent < 0) n.isBone = true;
+}
+
+/** Fill a Skeleton's node/bone/animation data from its rig; assigns the local palette slots */
+void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, string prefix, string name, uint seed) {
+  sk.rig.inferBones(clips);
   sk.name = name;
   sk.rootnode = rigToNode(sk.rig, prefix);
   sk.bones = rigBones(sk.rig, prefix);
