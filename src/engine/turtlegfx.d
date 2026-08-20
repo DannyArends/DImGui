@@ -78,17 +78,21 @@ Matrix[] jointWorlds(const RigNode[] rig) nothrow {
 Node rigToNode(const RigNode[] rig, string prefix) {
   Matrix[] J = jointWorlds(rig);
   Node[] nodes = new Node[](rig.length);
-  foreach(k, ref n; rig) { nodes[k] = Node(boneName(prefix, k), 0, (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k])); }
-  foreach_reverse(k, ref n; rig) { if(n.parent >= 0) { nodes[n.parent].children ~= nodes[k]; } }
+  foreach(k, ref n; rig) {
+    if(n.isBone) { nodes[k] = Node(boneName(prefix, k), 0, (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k])); }
+  }
+  foreach_reverse(k, ref n; rig) { if(n.isBone && n.parent >= 0) { nodes[n.parent].children ~= nodes[k]; } }
   Node root = Node(prefix ~ "root", 0, Matrix());
-  foreach(k, ref n; rig) { if(n.parent < 0) { root.children ~= nodes[k]; } }
+  foreach(k, ref n; rig) { if(n.isBone && n.parent < 0) { root.children ~= nodes[k]; } }
   return(root);
 }
 
 /** One bone per node; offset = jointWorld^-1 . bindWorld so a UNIT primitive at bone k lands as that segment. */
 Bone[string] rigBones(const RigNode[] rig, string prefix) {
   Bone[string] bones;
-  foreach(k, ref n; rig) { bones[boneName(prefix, k)] = Bone(jointWorld(n).inverse().multiply(n.inst.matrix), cast(uint)k); }
+  foreach(k, ref n; rig) {
+    if(n.isBone) { bones[boneName(prefix, k)] = Bone(jointWorld(n).inverse().multiply(n.inst.matrix), cast(uint)k); }
+  }
   return(bones);
 }
 

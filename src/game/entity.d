@@ -162,7 +162,7 @@ void poseEntity(Container, Pawn)(ref GameApp app, Container container, ref Pawn 
     foreach(ref br; raw.brushes) { if(br.symbol == n.symbol) {
       float[4] col = br.tint ? pawn.color : br.color;
       auto inst = DrawInstance(world, -1, cast(int)paletteOrdinal(col));
-      inst.instanceDef[3] = region + s.boneSlot[k];
+      inst.instanceDef[3] = region + s.slot[k];
       container.meshes[br.mesh].instances ~= inst;
       break;
     } }

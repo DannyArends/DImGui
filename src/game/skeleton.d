@@ -8,23 +8,24 @@ import game;
 import animation : calculateCurrentTick, calculateGlobalTransform;
 import bone : mergeBones;
 import lsystem : grammar;
-import matrix : halfExtent;
+import matrix : halfExtent, inverse, multiply;
 import resources : rawConfig;
 import turtlegfx : interpretRig, buildClips, rigToNode, rigBones;
 
 /** A pawn's full per-uid rig+animation state. Owned solely by the container's Skeleton[uint] map; never drawn. */
 struct Skeleton {
-  string name;               /// "Species:skel:uid"
-  RigNode[] rig;             /// turtle rig, parent-indexed, walked to emit brush instances
-  float[3] dscale;           /// build girth/height, seeded by uid
-  float footY;               /// lowest bind-pose Y, to seat feet on the ground
-  Node rootnode;             /// posed each frame
-  Bone[string] bones;        /// name -> (local index, inverse bind), merged into app.bones
-  Animation[] animations;    /// baked clips
-  AnimationState state;      /// single clip state
-  int region;                /// palette base in animatedOffsets
-  uint boneBase, boneCount;  /// global bone range
-  int[] boneSlot;            /// node k -> local palette slot
+  string name;                  /// "Species:skel:uid"
+  RigNode[] rig;                /// turtle rig, parent-indexed, walked to emit brush instances
+  float[3] dscale;              /// build girth/height, seeded by uid
+  float footY;                  /// lowest bind-pose Y, to seat feet on the ground
+  Node rootnode;                /// posed each frame
+  Bone[string] bones;           /// name -> (local index, inverse bind), merged into app.bones
+  Animation[] animations;       /// baked clips
+  AnimationState state;         /// single clip state
+  int region;                   /// palette base in animatedOffsets
+  uint boneBase, boneCount;     /// global bone range
+  uint staticBase;              /// base of this pawn's block in app.staticOffsets
+  int[] slot;                   /// node k -> palette slot (bone) OR staticOffsets index (cloud), by isBone
 }
 
 /** Assign every live pawn skeleton a contiguous palette region and grow the palette to fit. Runs once per frame before posing */
@@ -53,8 +54,18 @@ void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, 
   sk.bones = rigBones(sk.rig, prefix);
   sk.animations = buildClips(sk.rig, prefix, clips, seed);
   app.mergeBones(sk);
-  sk.boneSlot.length = sk.rig.length;
-  foreach(k; 0 .. sk.rig.length) sk.boneSlot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - sk.boneBase);
+  sk.slot.length = sk.rig.length;
+  sk.staticBase = cast(uint)app.staticOffsets.length;
+  foreach(k; 0 .. sk.rig.length) {
+    if(sk.rig[k].isBone) {
+      sk.slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - sk.boneBase);
+    } else {
+      immutable p = sk.rig[k].parent;
+      assert(p >= 0 && sk.rig[p].isBone, "cloud cube must be a direct leaf of a bone node");
+      sk.slot[k] = cast(int)app.staticOffsets.length;
+      app.staticOffsets ~= sk.rig[p].inst.matrix.inverse().multiply(sk.rig[k].inst.matrix);
+    }
+  }
 }
 
 /** Build (once) the procedural skeleton for an entity uid: seed the grammar by uid so each entity differs */
