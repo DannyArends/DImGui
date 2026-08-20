@@ -19,12 +19,11 @@ layout(location = 1) in uvec4 inBones;                /// assimp: BoneIDs
 layout(location = 2) in vec4 inWeights;               /// assimp: BoneWeights
 
 // Per Instance attributes
-layout(location = 3) in vec4 instanceDef;             /// [material, color, alpha, boneBase]
-layout(location = 4) in vec4 instanceAux;             /// [nonBoneIdx,unused,unused,unused]
-layout(location = 5) in mat4 instance;                /// Instance matrix
+layout(location = 3) in vec4 instanceAux;             /// [staticBase, boneBase, unused, unused]
+layout(location = 4) in mat4 instance;                /// Instance matrix
 
 void main() {
   vec4 position = staticSSBO.transforms[uint(instanceAux[0])].offset * vec4(inPosition, 1.0);
-  if(ANIMATED) position = animate(position, inBones, inWeights, uint(instanceDef[3]));
+  if(ANIMATED) position = animate(position, inBones, inWeights, uint(instanceAux[1]));
   gl_Position = lightUbo.slotVP[pc.clight] * ((lightUbo.scene * instance) * position);
 }

@@ -7,8 +7,8 @@ import engine;
 
 /** An instance of a Geometry */
 struct DrawInstance {
-  float[4] instanceDef = [-1.0f, -1.0f, -1.0f, 0.0f];   /// [material, color, alpha, boneBase]
-  float[4] instanceAux = [0.0f, 0.0f, 0.0f, 0.0f];      /// .x = static (nonBone) matrix index; 0 = identity. .yzw reserved
+  float[4] instanceDef = [-1.0f, -1.0f, -1.0f, 0.0f];   /// [material, color, alpha, unused]
+  float[4] instanceAux = [0.0f, 0.0f, 0.0f, 0.0f];      /// [staticBase, boneBase, unused, unused]
   float[4] uvRect = [0.0f, 0.0f, 1.0f, 1.0f];           /// UV remap [offsetX, offsetY, scaleX, scaleY]; identity = full texture
   float[4] worldNormal = [0.0f, 1.0f, 0.0f, 0.0f];      /// baked world-space normal (xyz) + hasBakedNormal (w)
   float[4] worldTangent = [1.0f, 0.0f, 0.0f, 1.0f];     /// baked world-space tangent (xyz) + handedness (w)
@@ -32,4 +32,10 @@ struct DrawInstance {
     worldNormal = [FACE_OFFSETS[f][0], FACE_OFFSETS[f][1], FACE_OFFSETS[f][2], 1];
     worldTangent = [FACE_TANGENT[f][0], FACE_TANGENT[f][1], FACE_TANGENT[f][2], -1];
   }
+  
+  @nogc void setStaticBase(uint b) nothrow { instanceAux[0] = b; }
+  @nogc uint staticBase() nothrow { return(cast(uint)instanceAux[1]); }
+  @nogc void setBoneBase(uint b) nothrow { instanceAux[1] = b; }
+  @nogc uint boneBase() nothrow { return(cast(uint)instanceAux[1]); }
 }
+

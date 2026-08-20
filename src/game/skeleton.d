@@ -35,7 +35,7 @@ void updateSkeletons(ref GameApp app) {
   uint top = 0;
   foreach(ref o; app.objects) { /// static/loaded skinned assets (e.g. spider.fbx)
     if(o.boneCount == 0) continue;
-    foreach(ref inst; o.instances) { inst.instanceDef[3] = cast(int)top; top += o.boneCount; }
+    foreach(ref inst; o.instances) { inst.setBoneBase(cast(int)top); top += o.boneCount; }
   }
   void assign(E)(E entity) {
     if(entity is null) return;

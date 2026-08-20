@@ -50,18 +50,17 @@ struct Vertex {
     return attributeDescriptions;
   }
 
-  @nogc static VkVertexInputAttributeDescription[9] getShadowDescriptions() nothrow {
-    VkVertexInputAttributeDescription[9] attributeDescriptions = [
+  @nogc static VkVertexInputAttributeDescription[8] getShadowDescriptions() nothrow {
+    VkVertexInputAttributeDescription[8] attributeDescriptions = [
       {binding: VERTEX,   location: 0, format: VK_FORMAT_R32G32B32_SFLOAT,    offset: Vertex.position.offsetof },
       {binding: VERTEX,   location: 1, format: VK_FORMAT_R32G32B32A32_UINT,   offset: Vertex.bones.offsetof },
       {binding: VERTEX,   location: 2, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: Vertex.weights.offsetof },
 
-      {binding: INSTANCE, location: 3, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.instanceDef.offsetof },
-      {binding: INSTANCE, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.instanceAux.offsetof },
-      {binding: INSTANCE, location: 5, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
-      {binding: INSTANCE, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof +  4*float.sizeof },
-      {binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof +  8*float.sizeof },
-      {binding: INSTANCE, location: 8, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12*float.sizeof },
+      {binding: INSTANCE, location: 3, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.instanceAux.offsetof },
+      {binding: INSTANCE, location: 4, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof },
+      {binding: INSTANCE, location: 5, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof +  4*float.sizeof },
+      {binding: INSTANCE, location: 6, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof +  8*float.sizeof },
+      {binding: INSTANCE, location: 7, format: VK_FORMAT_R32G32B32A32_SFLOAT, offset: DrawInstance.matrix.offsetof + 12*float.sizeof },
     ];
     return attributeDescriptions;
   }

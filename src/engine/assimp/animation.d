@@ -59,7 +59,7 @@ void animateAsset(T)(ref App app, T obj, float dt) {
   foreach(i, ref st; obj.states) {
     st.animTime += dt;
     double cT = calculateCurrentTick(st.animTime, obj.animations[st.animation].ticksPerSecond, obj.animations[st.animation].duration);
-    app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT, st.animation, cast(uint)obj.instances[i].instanceDef[3]);
+    app.calculateGlobalTransform(obj, obj.rootnode, Matrix(), cT, st.animation, obj.instances[i].boneBase());
   }
   app.buffers["AnimatedMatrices"].invalidate();
 }
