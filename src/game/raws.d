@@ -136,7 +136,6 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
           case "taper":     b.taper = to!float(v); break;
           case "jitterA":   b.jitterA = to!float(v); break;
           case "jitterL":   b.jitterL = to!float(v); break;
-          case "bone":      b.isBone  = to!bool(v);  break;
           case "render":    b.render = to!bool(v); break;
           case "color":     b.color = cast(float[4])toColor(v); break;
           case "tint":      b.tint = true; break;

@@ -40,7 +40,6 @@ struct Symbol {
   float taper = 0.0f;                           /// brush: radius growth per unit of the module's parameter n (0 = uniform)
   float jitterA = 0.0f;                         /// brush: ± turn-angle jitter while this brush is active (0 = off)
   float jitterL = 0.0f;                         /// brush: ± segment length/advance jitter (0 = off)
-  bool  isBone = true;                          /// brush: owns an animated bone slot; false = static cloud cube riding its parent bone
   string target = "";                           /// pose: bone symbol this pose writes to
   bool bySide = false;                          /// pose: mirror by the bone's left/right sign
   float[3] axis = NO_AXIS;                      /// pose: world-axis swing; NO_AXIS == cursor swing

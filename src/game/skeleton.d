@@ -27,6 +27,7 @@ struct Skeleton {
   uint staticBase;              /// base of this pawn's block in app.staticOffsets
   Matrix[] staticMats;          /// this pawn's cloud matrices (parentInst⁻¹·ownInst), packed into app.staticOffsets on rebuild
   int[] slot;                   /// node k -> palette slot (bone) OR staticOffsets index (cloud), by isBone
+  int[] cloudBone;              /// cloud node k -> its bone-ancestor's palette slot (valid when !isBone)
 }
 
 /** Assign every live pawn skeleton a contiguous palette region and grow the palette to fit. Runs once per frame before posing */
@@ -63,20 +64,29 @@ void repackStatic(ref GameApp app) {
 
 /** Fill a Skeleton's node/bone/animation data from its rig; assigns the local palette slots */
 void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, string prefix, string name, uint seed) {
+  // function ??
+  bool[string] posed;
+  foreach(ref c; clips) foreach(sym, ref p; c.poses) posed[p.target] = true;
+  foreach(k, ref n; sk.rig) n.isBone = (n.symbol in posed) !is null;                 // seed from animation targets
+  foreach_reverse(k, ref n; sk.rig) if(n.isBone && n.parent >= 0) sk.rig[n.parent].isBone = true;  // ancestors of a bone are bones
+  foreach(k, ref n; sk.rig) if(n.parent < 0) n.isBone = true;         
+  // function ??
   sk.name = name;
   sk.rootnode = rigToNode(sk.rig, prefix);
   sk.bones = rigBones(sk.rig, prefix);
   sk.animations = buildClips(sk.rig, prefix, clips, seed);
   app.mergeBones(sk);
-  sk.slot.length = sk.rig.length;
+  sk.slot.length = sk.cloudBone.length = sk.rig.length;
   foreach(k; 0 .. sk.rig.length) {
     if(sk.rig[k].isBone) {
       sk.slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - sk.boneBase);
     } else {
-      immutable p = sk.rig[k].parent;
-      assert(p >= 0 && sk.rig[p].isBone, "cloud cube must be a direct leaf of a bone node");
-      sk.slot[k] = cast(int)sk.staticMats.length;                                  // local index into staticMats
-      sk.staticMats ~= sk.rig[p].inst.matrix.inverse().multiply(sk.rig[k].inst.matrix);
+      int b = sk.rig[k].parent;
+      while(b >= 0 && !sk.rig[b].isBone) { b = sk.rig[b].parent; } // nearest bone ancestor
+      assert(b >= 0, "cloud has no bone ancestor"); // root-is-bone guarantees this
+      sk.cloudBone[k] = cast(int)(app.bones[format("%s%d", prefix, b)].index - sk.boneBase);
+      sk.slot[k] = cast(int)sk.staticMats.length;
+      sk.staticMats ~= sk.rig[b].inst.matrix.inverse().multiply(sk.rig[k].inst.matrix);  // relative to bone ancestor b
     }
   }
 }

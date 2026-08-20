@@ -75,7 +75,6 @@ struct LSystemBrushT {
   float taper = 0.0f;                           /// radius growth per unit of the module parameter n (0 = uniform)
   float jitterA = 0.0f;                         /// brush: ± turn-angle jitter while this brush is active (0 = off)
   float jitterL = 0.0f;                         /// brush: ± segment length/advance jitter (0 = off)
-  bool isBone = true;                           /// owns an animated bone slot; false = static cloud cube riding its parent bone
 }
 
 /** A tile/feature variant = substance @ source; the row backing each ResourceType member. */

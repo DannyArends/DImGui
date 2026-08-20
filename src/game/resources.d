@@ -27,10 +27,10 @@ TurtleConfig rawConfig(ref const RawT r, bool renderOnly = false) {
     if(br.substance != Substance.init) {
       immutable brt = variantOf(br.substance, r.name.to!Source);
       cfg.alpha[br.symbol] = Symbol(Effect.brush, cast(int)brt, br.radius, br.length, br.advance, resourceTable[brt].color, 
-                                    br.offset, -1.0f, br.taper, br.jitterA, br.jitterL, br.isBone);
+                                    br.offset, -1.0f, br.taper, br.jitterA, br.jitterL);
     } else {
       cfg.alpha[br.symbol] = Symbol(Effect.brush, -1, br.radius, br.length, br.advance, br.color, 
-                                    br.offset, br.depth, br.taper, br.jitterA, br.jitterL, br.isBone);
+                                    br.offset, br.depth, br.taper, br.jitterA, br.jitterL);
     }
   }
   return cfg;
