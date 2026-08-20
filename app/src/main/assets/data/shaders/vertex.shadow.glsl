@@ -23,7 +23,13 @@ layout(location = 3) in vec4 instanceAux;             /// [staticBase, boneBase,
 layout(location = 4) in mat4 instance;                /// Instance matrix
 
 void main() {
-  vec4 position = staticSSBO.transforms[uint(instanceAux[0])].offset * vec4(inPosition, 1.0);
-  if(ANIMATED) position = animate(position, inBones, inWeights, uint(instanceAux[1]));
+  vec4 position = vec4(inPosition, 1.0);
+
+  /// Compute bone effects on vertex
+  uint staticBase = uint(instanceAux[0]);
+  uint boneBase = uint(instanceAux[1]);
+  if(ANIMATED) position = animate(position, inBones, inWeights, staticBase, boneBase);
+
+  /// World position
   gl_Position = lightUbo.slotVP[pc.clight] * ((lightUbo.scene * instance) * position);
 }

@@ -11,13 +11,14 @@
 
 // Function to calculate vector position after animation
 // animate a position with v.w=1.0f, a direction with v.w=0.0f
-vec4 animate(vec4 v, uvec4 inBones, vec4 inWeights, uint boneBase) {
-  if (inWeights == vec4(0.0)) return v;
+vec4 animate(vec4 position, uvec4 inBones, vec4 inWeights, uint staticBase, uint boneBase) {
+  if(inWeights == vec4(0.0)) return position;
   vec4 bonepos = vec4(0.0);
-  for (int i = 0; i < 4; i++) {
-    if (inWeights[i] > 0.0) bonepos += (animatedSSBO.transforms[boneBase + inBones[i]].offset * v) * inWeights[i];
+  position = staticSSBO.transforms[staticBase].offset * position;
+  for(int i = 0; i < 4; i++) {
+    if(inWeights[i] > 0.0) bonepos += (animatedSSBO.transforms[boneBase + inBones[i]].offset * position) * inWeights[i];
   }
-  return bonepos;
+  return(bonepos);
 }
 
 // ambient returned via out; direct (diffuse) is the return value
@@ -26,7 +27,7 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, out vec
   if (light.properties.w == 0.0) return vec3(0.0);
   float attenuation = 1.0;
   vec3 s;
-  if (light.position.w == 0.0) {                          // Directional
+  if(light.position.w == 0.0) {                          // Directional
     s = normalize(light.position.xyz);
   } else {                                                // Point / spot
     vec3 toLight = light.position.xyz - position;
@@ -34,41 +35,39 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, out vec
     if (l > light.cull.x) return vec3(0.0);               // outside cull radius
     s = toLight / l;                                      // reuse length, skip second normalize
     attenuation = 1.0 / (light.properties[1] + l * l);
-    float cosAngle  = dot(-s, light.direction.xyz);
-    attenuation    *= smoothstep(light.cull.z, light.cull.w, cosAngle);  // precomputed cosines (see note)
+    float cosAngle = dot(-s, light.direction.xyz);
+    attenuation *= smoothstep(light.cull.z, light.cull.w, cosAngle);  // precomputed cosines (see note)
   }
   float sDotN = max(dot(s, normal), 0.0);
-  ambientOut  = light.intensity.rgb * baseColor * light.properties[0];
-  return light.intensity.rgb * baseColor * sDotN * attenuation;  // direct only
+  ambientOut = light.intensity.rgb * baseColor * light.properties[0];
+  return(light.intensity.rgb * baseColor * sDotN * attenuation);  // direct only
 }
 
 // Linear froxel index from 3D grid coords — MUST match between cull (write) and fragment (read)
-uint clusterId(uint gx, uint gy, uint gz) {
-  return (gz * GRID_Y + gy) * GRID_X + gx;
-}
+uint clusterId(uint gx, uint gy, uint gz) { return((gz * GRID_Y + gy) * GRID_X + gx); }
 
 uint froxelIndex(vec2 ndcXY, float viewDepth) {
   uint gx = uint(clamp(ndcXY.x * float(GRID_X), 0.0, float(GRID_X - 1u)));
   uint gy = uint(clamp(ndcXY.y * float(GRID_Y), 0.0, float(GRID_Y - 1u)));
   int zs = int(floor(log2(viewDepth) * ubo.clusterCfg.x + ubo.clusterCfg.y));
   uint gz = uint(clamp(zs, 0, int(GRID_Z) - 1));
-  return clusterId(gx, gy, gz);
+  return(clusterId(gx, gy, gz));
 }
 
 // returns NDC min/max for one axis; p = projection scale (P00 or P11), cz = -depth
 // cc = center coord on this axis (cV.x or cV.y), cz = cV.z (negative)
 vec2 projectAxis(float cc, float cz, float r, float p, float depth) {
-  float a  = r / sqrt(cc*cc + cz*cz);
-  float s  = sqrt(1.0 - a*a);
+  float a = r / sqrt(cc*cc + cz*cz);
+  float s = sqrt(1.0 - a*a);
 
   vec2 d1 = vec2( s*cc - a*cz,  a*cc + s*cz);
   vec2 d2 = vec2( s*cc + a*cz, -a*cc + s*cz);
 
-  if (-d1.y < EPS || -d2.y < EPS){ return vec2(-1.0, 1.0); }
+  if(-d1.y < EPS || -d2.y < EPS) { return(vec2(-1.0, 1.0)); }
 
   float n1 = p * d1.x / -d1.y;
   float n2 = p * d2.x / -d2.y;
-  return vec2(min(n1, n2), max(n1, n2));
+  return(vec2(min(n1, n2), max(n1, n2)));
 }
 
 #endif // FUNCTIONS_GLSL
