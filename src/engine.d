@@ -44,6 +44,7 @@ struct App {
   Geometry[] objects;                                                           /// All geometric objects for rendering
   Bone[string] bones;                                                           /// All animation bones across all objects
   SSBOList!Matrix animatedOffsets;                                              /// Animated bone offsets for GPU SSBO
+  SSBOList!Matrix staticOffsets;                                                /// Static non-bone offsets for GPU SSBO
   Textures textures;                                                            /// Textures
   SSBOList!Material materials;                                                  /// GPU materials
   SSBOList!Colors colors;                                                       /// GPU colors

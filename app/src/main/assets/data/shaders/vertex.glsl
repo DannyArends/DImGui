@@ -11,18 +11,19 @@
 // Per Vertex input attributes
 layout(location = 0) in vec3  inPosition;             /// Vertex Position
 layout(location = 1) in vec3  inNormal;               /// Normal
-layout(location = 2) in vec3  inDef;                  /// Mesh [material, color, alpha]
+layout(location = 2) in vec3  inDef;                  /// [material, color, alpha]
 layout(location = 3) in vec2  inTexCoord;             /// Texture coordinate
 layout(location = 4) in vec4  inTangent;              /// Tangent xyz + handedness w
 layout(location = 5) in uvec4 inBones;                /// assimp: BoneIDs
 layout(location = 6) in vec4  inWeights;              /// assimp: BoneWeights
 
 // Per Instance input attributes
-layout(location = 7) in vec4 instanceDef;             /// Mesh [material, color, alpha, boneBase]
-layout(location = 8) in vec4 instanceUV;              /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
-layout(location = 9) in vec4 instanceNormal;          /// baked world normal (instanced faces)
-layout(location = 10) in vec4 instanceTangent;        /// baked world tangent + handedness
-layout(location = 11) in mat4 instance;               /// Instance matrix
+layout(location = 7) in vec4 instanceDef;             /// [material, color, alpha, boneBase]
+layout(location = 8) in vec4 instanceAux;             /// [nonBoneIdx,unused,unused,unused]
+layout(location = 9) in vec4 instanceUV;              /// Per-instance UV remap [offsetX, offsetY, scaleX, scaleY]
+layout(location = 10) in vec4 instanceNormal;         /// baked world normal (instanced faces)
+layout(location = 11) in vec4 instanceTangent;        /// baked world tangent + handedness
+layout(location = 12) in mat4 instance;               /// Instance matrix
 
 // Output to Fragment shader
 layout(location = 0) out vec4 fragPosWorld;           /// Fragment world position
@@ -34,7 +35,7 @@ layout(location = 5) out vec3 fragViewPos;            /// View-space position (f
 layout(location = 6) out mat3 fragTBN;                /// Tangent, Bitangent, Normal matrix
 
 void main() {
-  vec4 position = vec4(inPosition, 1.0f);
+  vec4 position = staticSSBO.transforms[uint(instanceAux[0])].offset * vec4(inPosition, 1.0);
 
   /// Compute bone effects on vertex
   if(ANIMATED) position = animate(position, inBones, inWeights, uint(instanceDef[3]));

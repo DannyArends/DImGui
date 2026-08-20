@@ -12,19 +12,20 @@
 
 /// Shader Storage Buffer Objects
 #define BINDING_BONES_SSBO         2
-#define BINDING_LIGHT_SSBO         3
+#define BINDING_STATIC_SSBO        3
+#define BINDING_LIGHT_SSBO         4
 
 /// Samplers/Images (defined in samplers.glsl)
-//BINDING_TEXTURES = 4 & BINDING_SHADOWMAP = 5
+//BINDING_TEXTURES = 5 & BINDING_SHADOWMAP = 6
 
 /// Materials
-#define BINDING_MATERIAL_SSBO      6
-#define BINDING_COLOR_SSBO         7
+#define BINDING_MATERIAL_SSBO      7
+#define BINDING_COLOR_SSBO         8
 
 /// Lights
-#define BINDING_CLUSTER_LIGHTS     8
-#define BINDING_CLUSTER_HEADS      9
-#define BINDING_CLUSTER_COUNTER    10
+#define BINDING_CLUSTER_LIGHTS     9
+#define BINDING_CLUSTER_HEADS      10
+#define BINDING_CLUSTER_COUNTER    11
 
 struct Light {
   vec4 position;      /// Position of the light; w==0: directional, w!=0: point/spot
@@ -34,12 +35,9 @@ struct Light {
   vec4 cull;          /// [radius, shadow map index (-1 = none), cosOuter, cosInner]
 };
 
-struct Bone {
-  mat4 offset;        /// Bone offset
-};
-
-struct Material { int tid; int nid; int oid; int pad; };
-struct Color { vec4 rgb; };     /// [Red, Green, Blue, unused]
+struct Bone { mat4 offset; };                               /// Bone offset
+struct Material { int tid; int nid; int oid; int pad; };    /// Material/Texture indices
+struct Color { vec4 rgb; };                                 /// [Red, Green, Blue, unused]
 
 #define noMaterial Material(-1, -1, -1, 0)
 #define noColor Color(vec4(1.0))
@@ -52,6 +50,10 @@ struct ClusterHead { uint head; };
 layout (std430, set = 0, binding = BINDING_BONES_SSBO) readonly buffer AnimatedMatrices {
   Bone transforms[];
 } animatedSSBO;   // 2
+
+layout (std430, set = 0, binding = BINDING_STATIC_SSBO) readonly buffer StaticMatrices {
+  Bone transforms[];
+} staticSSBO;
 
 layout (std430, set = 0, binding = BINDING_LIGHT_SSBO) readonly buffer LightMatrices {
   Light lights[];

@@ -12,9 +12,9 @@
 const float NORMAL_OFFSET = 0.12;   // world-space normal offset per cascade level (kills vertical-face peter-panning)
 
 /// Samplers/Images
-#define BINDING_TEXTURES          4
-#define BINDING_SHADOWMAP         5
-#define BINDING_SSAO             11
+#define BINDING_TEXTURES          5
+#define BINDING_SHADOWMAP         6
+#define BINDING_SSAO             12
 
 /// Samplers/Images
 layout(binding = BINDING_TEXTURES) uniform sampler2D textureSampler[];

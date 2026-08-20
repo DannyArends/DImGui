@@ -27,6 +27,9 @@ void registerRenderProviders(ref App app) {
   app.providers["AnimatedMatrices"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.animatedOffsets); },
     (ref a, ref d, cmd){ a.updateSSBO!Matrix(cmd, a.animatedOffsets, d, a.syncIndex); });
+  app.providers["StaticMatrices"] = DescriptorProvider(
+    (ref a, ref d){ a.createSSBO(d, a.staticOffsets);  a.staticOffsets.length = 1;  a.staticOffsets[0] = Matrix.init; },
+    (ref a, ref d, cmd){ a.updateSSBO!Matrix(cmd, a.staticOffsets, d, a.syncIndex); });
   app.providers["LightMatrices"] = DescriptorProvider(
     (ref a, ref d){ a.createSSBO(d, a.lights); },
     (ref a, ref d, cmd){ a.updateSSBO!Light(cmd, a.lights, d, a.syncIndex); });

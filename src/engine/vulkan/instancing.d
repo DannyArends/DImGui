@@ -7,21 +7,23 @@ import engine;
 
 /** An instance of a Geometry */
 struct DrawInstance {
-  float[4] instance = [-1.0f, -1.0f, -1.0f, 0.0f];  /// [material, color, alpha, boneBase]
-  float[4] uvRect = [0.0f, 0.0f, 1.0f, 1.0f];       /// UV remap [offsetX, offsetY, scaleX, scaleY]; identity = full texture
-  float[4] worldNormal = [0.0f, 1.0f, 0.0f, 0.0f];  /// baked world-space normal (xyz) + hasBakedNormal (w)
-  float[4] worldTangent = [1.0f, 0.0f, 0.0f, 1.0f]; /// baked world-space tangent (xyz) + handedness (w)
-  Matrix matrix = Matrix.init;                      /// Matrix
+  float[4] instanceDef = [-1.0f, -1.0f, -1.0f, 0.0f];   /// [material, color, alpha, boneBase]
+  float[4] instanceAux = [0.0f, 0.0f, 0.0f, 0.0f];      /// .x = static (nonBone) matrix index; 0 = identity. .yzw reserved
+  float[4] uvRect = [0.0f, 0.0f, 1.0f, 1.0f];           /// UV remap [offsetX, offsetY, scaleX, scaleY]; identity = full texture
+  float[4] worldNormal = [0.0f, 1.0f, 0.0f, 0.0f];      /// baked world-space normal (xyz) + hasBakedNormal (w)
+  float[4] worldTangent = [1.0f, 0.0f, 0.0f, 1.0f];     /// baked world-space tangent (xyz) + handedness (w)
+  Matrix matrix = Matrix.init;                          /// Matrix
   alias matrix this;
 
-  static assert(DrawInstance.uvRect.offsetof == 16);
-  static assert(DrawInstance.worldNormal.offsetof == 32);
-  static assert(DrawInstance.worldTangent.offsetof == 48);
-  static assert(DrawInstance.matrix.offsetof == 64);
+  static assert(DrawInstance.instanceAux.offsetof == 16);
+  static assert(DrawInstance.uvRect.offsetof == 32);
+  static assert(DrawInstance.worldNormal.offsetof == 48);
+  static assert(DrawInstance.worldTangent.offsetof == 64);
+  static assert(DrawInstance.matrix.offsetof == 80);
 
   /** Transform (+ optional material / color / UV). Covers primitives, dwarves, features, blocks, glyphs. */
   @nogc this(Matrix m, float mat = -1, float color = -1, float[4] uv = [0.0f, 0.0f, 1.0f, 1.0f]) nothrow {
-    matrix = m; instance[0] = mat; instance[1] = color; uvRect = uv;
+    matrix = m; instanceDef[0] = mat; instanceDef[1] = color; uvRect = uv;
   }
 
   /** Packed face transform (+ optional material). For voxel faces (chunk/water/clouds). */
