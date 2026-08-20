@@ -25,6 +25,7 @@ struct Skeleton {
   int region;                   /// palette base in animatedOffsets
   uint boneBase, boneCount;     /// global bone range
   uint staticBase;              /// base of this pawn's block in app.staticOffsets
+  Matrix[] staticMats;          /// this pawn's cloud matrices (parentInst⁻¹·ownInst), packed into app.staticOffsets on rebuild
   int[] slot;                   /// node k -> palette slot (bone) OR staticOffsets index (cloud), by isBone
 }
 
@@ -47,6 +48,19 @@ void updateSkeletons(ref GameApp app) {
   }
 }
 
+/** Rebuild the global static (cloud) SSBO from all live pawns; call on skeleton spawn/despawn. */
+void repackStatic(ref GameApp app) {
+  app.staticOffsets.length = 1;                                     // slot 0 = identity
+  app.staticOffsets[0] = Matrix.init;
+  void pack(E)(E entity) {
+    if(entity is null) return;
+    foreach(uid, ref s; entity.skel) { s.staticBase = cast(uint)app.staticOffsets.length; app.staticOffsets ~= s.staticMats; }
+  }
+  pack(app.world.dwarves);
+  pack(app.world.animals);
+  app.buffers["StaticMatrices"].invalidate();                       // upload once (updateSSBO grows if needed)
+}
+
 /** Fill a Skeleton's node/bone/animation data from its rig; assigns the local palette slots */
 void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, string prefix, string name, uint seed) {
   sk.name = name;
@@ -55,15 +69,14 @@ void bakeSkeleton(ref GameApp app, ref Skeleton sk, immutable AnimClip[] clips, 
   sk.animations = buildClips(sk.rig, prefix, clips, seed);
   app.mergeBones(sk);
   sk.slot.length = sk.rig.length;
-  sk.staticBase = cast(uint)app.staticOffsets.length;
   foreach(k; 0 .. sk.rig.length) {
     if(sk.rig[k].isBone) {
       sk.slot[k] = cast(int)(app.bones[format("%s%d", prefix, k)].index - sk.boneBase);
     } else {
       immutable p = sk.rig[k].parent;
       assert(p >= 0 && sk.rig[p].isBone, "cloud cube must be a direct leaf of a bone node");
-      sk.slot[k] = cast(int)app.staticOffsets.length;
-      app.staticOffsets ~= sk.rig[p].inst.matrix.inverse().multiply(sk.rig[k].inst.matrix);
+      sk.slot[k] = cast(int)sk.staticMats.length;                                  // local index into staticMats
+      sk.staticMats ~= sk.rig[p].inst.matrix.inverse().multiply(sk.rig[k].inst.matrix);
     }
   }
 }
@@ -82,6 +95,7 @@ void buildSkeleton(Container)(ref GameApp app, Container container, uint uid, re
   app.bakeSkeleton(sk, e.clips, format("%s%u.", e.name, uid), format("%s:skel:%u", e.name, uid), hash);
   container.skel[uid] = sk;
   app.updateSkeletons();
+  app.repackStatic();
 }
 
 /** Select and evaluate a skeleton's clip into its palette region */
@@ -101,4 +115,5 @@ void freeSkeleton(Container)(ref GameApp app, Container container, uint uid) {
   if(uid !in container.skel) return;
   foreach(name; container.skel[uid].bones.keys) app.bones.remove(name);
   container.skel.remove(uid);
+  app.repackStatic();
 }
