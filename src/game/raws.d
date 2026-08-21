@@ -113,9 +113,9 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
     case "RULE": if(p.length >= 4){
       x.rules ~= Rule(p[1], p[2], to!uint(p[3]), opt(p, 4, int.min), opt(p, 5, int.max));
     } return true;
-    case "BRUSH": if(p.length >= 6){
+    case "BRUSH": if(p.length >= 5){
       LSystemBrushT b = { symbol: p[1], mesh: p[2], radius: to!float(p[3]), length: to!float(p[4]) };
-      foreach(kv; p[6 .. $]) {
+      foreach(kv; p[5 .. $]) {
         immutable e = kv.indexOf('=');                 // "key=value"; bare "tint" allowed
         immutable string k = (e < 0) ? kv : kv[0 .. e];
         immutable string v = (e < 0) ? "" : kv[e + 1 .. $];
