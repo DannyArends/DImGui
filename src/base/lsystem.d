@@ -96,8 +96,11 @@ int evalExpr(const(char)[] e, int n) pure @safe {
 LSym[] expand(const(char)[] s, int n) pure @safe {
   char[] outp; size_t i = 0;
   while(i < s.length) {
-    if(s[i] == '{') { size_t k = i + 1; while(k < s.length && s[k] != '}') k++;
-      outp ~= '{' ~ evalExpr(s[i + 1 .. k], n).to!string ~ '}'; i = k + 1; }
+    if(s[i] == '{' && !(i > 0 && "+-&^<>~".canFind(s[i - 1]))) {
+      size_t k = i + 1; 
+      while(k < s.length && s[k] != '}') { k++; }
+      outp ~= '{' ~ evalExpr(s[i + 1 .. k], n).to!string ~ '}'; i = k + 1;
+    }
     else { outp ~= s[i]; i++; }
   }
   return lex(outp);
