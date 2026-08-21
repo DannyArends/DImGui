@@ -17,11 +17,6 @@ import rawstructs;
 /** Pick a result from a band by the [0,1) selector `t` (uniform bucket over results). */
 @nogc pure nothrow ResourceType rSelect(ref const HeightBand b, float t) { return b.results[cast(uint)(t * b.results.length) % b.results.length]; }
 
-/** Unit swing axis for "X"/"Y"/"Z", else NO_AXIS (cursor-frame swing). */
-private float[3] axisOf(string s) pure {
-  switch(s) { case "X": return [1.0f,0,0]; case "Y": return [0,1.0f,0]; case "Z": return [0,0,1.0f]; default: return [0,0,0]; }
-}
-
 /** CTFE: parse terrain raws into height bands (resources resolved to enum at compile time). */
 HeightBand[] parseHeightBands(string raw) pure {
   HeightBand[] bands;
@@ -148,7 +143,7 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
     } return true;
     case "CRULE": if(p.length >= 4 && x.clips.length){ x.clips[$-1].rules ~= Rule(p[1], p[2], to!uint(p[3])); } return true;
     case "POSE": if(p.length >= 3 && x.clips.length){
-      Symbol ps = { effect: Effect.pose, target: p[2], bySide: opt(p, 3) == "side", axis: axisOf(opt(p, 4)) };
+      Symbol ps = { effect: Effect.pose, target: p[2] };
       x.clips[$-1].poses[p[1]] = ps;
     } return true;
     default: return false;

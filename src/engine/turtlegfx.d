@@ -111,11 +111,7 @@ float[4] quatAtStep(const PoseKey[] keys, int step) {
 /** Local rotation for a node at one step: cursor swing in the bone frame, composing all its pose tracks. */
 Matrix stepLocal(ref const PoseCtx c, ref immutable AnimClip clip, int step) {
   float[4] q = Quaternion.init;
-  foreach(sym; c.syms) {
-    float[4] t = quatAtStep(c.tracks[sym], step);
-    if(clip.poses[sym].bySide && c.side < 0.0f) { t = [-t[0], -t[1], -t[2], t[3]]; }
-    q = qMul(q, t);
-  }
+  foreach(sym; c.syms) { q = qMul(q, quatAtStep(c.tracks[sym], step)); }
   return(rotate(q).multiply(c.Rr));
 }
 
