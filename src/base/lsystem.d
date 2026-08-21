@@ -40,7 +40,7 @@ struct Symbol {
   float depth = -1.0f;                          /// brush: Z half-extent; -1 == use radius
   float taper = 0.0f;                           /// brush: radius growth per unit of the module's parameter n (0 = uniform)
   float jitterA = 0.0f;                         /// brush: ± turn-angle jitter while this brush is active (0 = off)
-  float jitterL = 0.0f;                         /// brush: ± segment length/advance jitter (0 = off)
+  float jitterL = 0.0f;                         /// brush: ± segment length jitter (0 = off)
   string target = "";                           /// pose: bone symbol this pose writes to
   string asset;                                 /// asset: external mesh/entity id (Phase 2)
   string socket;                                /// asset: named equip slot; "" == fixed graft (Phase 2)

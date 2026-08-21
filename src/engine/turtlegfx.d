@@ -211,7 +211,7 @@ struct RigSink {
   }
 }
 
-/** Time sink: turns accumulate into `pending` (applied to the next pose only); `f` advances a step; a pose
+/** Time sink: turns accumulate into `pending` (applied to the next pose only); '~' advances a step; a pose
     symbol records the accumulated cursor onto its own track. Branches are ignored (as the old time walk was). */
 struct AnimSink {
   PoseKey[][string] tracks;
