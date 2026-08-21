@@ -13,11 +13,14 @@ import vector : vAdd;
 
 /** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree. */
 struct RigNode {
-  int parent = -1;      /// index of parent RigNode in the returned array; -1 == root
-  Matrix local;         /// transform relative to parent (world == parent.world · local)
-  DrawInstance inst;    /// draw instance: world matrix (bind pose) + material + color
-  string symbol;        /// brush symbol -> shared geometry
-  bool isBone = true;   /// false = static cloud cube, rides its parent bone
+  int parent = -1;                                /// index of parent RigNode in the returned array; -1 == root
+  Matrix local;                                   /// transform relative to parent (world == parent.world · local)
+  DrawInstance inst;                              /// draw instance: world matrix (bind pose) + material + color
+  string symbol;                                  /// brush symbol -> shared geometry
+  bool isBone = true;                             /// false = static cloud cube, rides its parent bone
+  float[4] frame = [0.0f, 0.0f, 0.0f, 1.0f];      /// bone local orientation; H/L/U = rotate(frame) columns
+  float[3] base = [0.0f, 0.0f, 0.0f];             /// joint origin (segment base = jointWorld translation)
+  float length = 0.0f;                            /// step distance along H (mesh-independent)
 }
 
 /** One keyframe from the time-walk: the step index and the cursor quaternion recorded for a bone. */
@@ -233,7 +236,7 @@ struct RigSink {
     auto color = cast(int)paletteOrdinal(s.color);
     latchA = s.jitterA; latchL = s.jitterL;                                   // turns after this brush inherit its jitter
     immutable float len = (s.jitterL != 0.0f) ? s.length * (1.0f + uniform(-s.jitterL, s.jitterL, rnd)) : s.length;
-    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, rad, len, dep), s.material, color), c);
+    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, rad, len, dep), s.material, color), c, true, st.orient, dp, len);
     current = cast(int)nodes.length - 1;
     if(s.advance){ st.pos = st.pos.vAdd([Rmove[4]*len*0.95f, Rmove[5]*len*0.95f, Rmove[6]*len*0.95f]); }
   }

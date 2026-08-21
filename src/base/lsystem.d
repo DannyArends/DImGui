@@ -5,8 +5,8 @@
 
 import phobos;
 
-enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
-enum Effect : ubyte { brush, pose, asset }      /// What a content symbol does at the cursor
+enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];         /// Axis sentinel: not a turn / use cursor frame
+enum Effect : ubyte { asset, bone, brush, pose }    /// asset: unused, bone: skeleton node (mesh optional), brush: leaf draw, pose
 enum string RESERVED = "()~%|+-&^<>";
 
 /** A production rule: predecessor, production, weight, and the window [nMin, nMax) on the matched
