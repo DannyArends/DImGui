@@ -48,7 +48,7 @@ struct AnimClip {
   string name;                /// "walk", "idle", ...
   string axiom = "";          /// clip L-system start symbols
   Rule[] rules;               /// clip production rules
-  Symbol[string] poses;         /// symbol -> which bone it poses
+  Symbol[string] poses;       /// symbol -> which bone it poses
   bool whenMoving = false;    /// select walk vs idle
   float fps = 8.0f;           /// steps per second (drives ticksPerSecond)
   float turn = 25.0f;         /// degrees per turn symbol (swing amplitude)
@@ -183,11 +183,11 @@ void walk(Sink)(const(LSym)[] tokens, const Symbol[string] alpha, const TurtleCo
       const char c = t.name[0];
       if(c == '('){ scales ~= scale; sink.push(); continue; }
       if(c == ')'){ sink.pop(); if(scales.length){ scale = scales[$-1]; scales = scales[0 .. $-1]; } continue; }
-      if(c == '~'){ sink.move(cfg.gap); continue; }
+      if(c == '~'){ sink.move(t.hasArg ? t.arg : cfg.gap); continue; }
       if(c == '%'){ scale *= 0.5f; continue; }
       if(c == '|'){ up = true; continue; }
       const ax = turnAxis(c);
-      if(ax != NO_AXIS){ sink.turn(ax, turnAngle(c, cfg) * scale); continue; }
+      if(ax != NO_AXIS){ sink.turn(ax, (t.hasArg ? t.arg : turnAngle(c, cfg)) * scale); continue; }
     }
     if(auto s = t.name in alpha){ sink.place(t.name, *s, up, t.hasN ? t.n : 0); up = false; }
   }

@@ -21,7 +21,7 @@ struct Item {
     substance -> resolved to a resource variant's material + colour; pawn brushes use their literal colour.
     renderOnly skips harvest-only brushes (features draw a subset; harvest needs every brush's position). */
 TurtleConfig rawConfig(ref const RawT r, bool renderOnly = false) {
-  TurtleConfig cfg = { yaw: r.lsystemYaw, pitch: r.lsystemPitch, roll: r.lsystemRoll, gap: r.lsystemGap };
+  TurtleConfig cfg;
   foreach(ref br; r.brushes) {
     if(renderOnly && !br.render) continue;
     if(br.substance != Substance.init) {

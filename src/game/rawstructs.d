@@ -46,10 +46,6 @@ struct RawT {
   Rule[] rules;                                   /// L-system production rules (empty = axiom as-is)
   AnimClip[] clips;                               /// animation L-systems, walked in time -> keyframe tracks
   LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
-  float lsystemYaw = 25.0f;                       /// Yaw
-  float lsystemPitch = 25.0f;                     /// Pitch
-  float lsystemRoll = 25.0f;                      /// Roll
-  float lsystemGap = 0.2f;                        /// f translation step (no draw)
   uint heightMin = 1, heightMax = 1;              /// L-system growth budget range (feature height)
   float tilePenalty = 0.0f;                       /// movement penalty on the feature's footprint tiles
   float progressRate = 0.25f;                     /// harvest progress per tick

@@ -23,8 +23,10 @@ struct Rule {
 struct LSym {
   enum int NONE = int.min;   /// sentinel: no parameter
   string name;               /// module name or single glyph
-  int n = NONE;              /// parameter; NONE => bare
+  int n = NONE;              /// integer parameter (growth); NONE => bare
+  float arg = float.nan;     /// float parameter (turn angle / move distance); NaN => config default
   @property bool hasN() const pure nothrow @nogc @safe { return n != NONE; }
+  @property bool hasArg() const pure nothrow @nogc @safe { return arg == arg; }
 }
 
 /** One alphabet entry: an effect plus its payload. Replaces TurtleBrush AND PoseBrush with a single type. */
@@ -49,10 +51,10 @@ struct Symbol {
 
 /** Turtle config: per-axis turn angles (degrees) + the symbol alphabet. */
 struct TurtleConfig {
-  float yaw = 25.0f;        /// + / -  spread
-  float pitch = 25.0f;      /// & / ^  arch down / up
-  float roll = 25.0f;       /// < / >  twist around heading
-  float gap = 0.2f;         /// f       move without drawing
+  float yaw = 90.0f;        /// + / -  spread
+  float pitch = 90.0f;      /// & / ^  arch down / up
+  float roll = 90.0f;       /// < / >  twist around heading
+  float gap = 1.0f;         /// ~       move without drawing
   Symbol[string] alpha;     /// content-symbol table (brush/pose/asset)
 }
 
@@ -108,7 +110,14 @@ LSym[] lex(const(char)[] s) pure @safe {
   while(i < s.length) {
     immutable char c = s[i];
     if(c == ' ' || c == '\t' || c == '\r' || c == '\n') { i++; continue; }
-    if(RESERVED.canFind(c)) { toks ~= LSym([c].idup); i++; continue; }
+    if(RESERVED.canFind(c)) {
+      LSym g = { name: [c].idup }; size_t j = i + 1;
+      if(j < s.length && s[j] == '{' && "+-&^<>~".canFind(c)) {   // parametric turn/step: {angle} or {distance}
+        size_t k = j + 1; while(k < s.length && s[k] != '}') k++;
+        g.arg = s[j + 1 .. k].to!float; j = k + 1;
+      }
+      toks ~= g; i = j; continue;
+    }
     size_t j = i; while(j < s.length && s[j] != ' ' && s[j] != '{' && !RESERVED.canFind(s[j])) j++;
     LSym t = { name: s[i .. j].idup };
     if(j < s.length && s[j] == '{') {
