@@ -46,11 +46,17 @@ struct RawT {
   Rule[] rules;                                   /// L-system production rules (empty = axiom as-is)
   AnimClip[] clips;                               /// animation L-systems, walked in time -> keyframe tracks
   LSystemBrushT[] brushes;                        /// Symbol -> mesh brushes (entities ignore the material fields)
+  LSystemBoneT[] bones;                           /// meshless skeleton joints
   uint heightMin = 1, heightMax = 1;              /// L-system growth budget range (feature height)
   float tilePenalty = 0.0f;                       /// movement penalty on the feature's footprint tiles
   float progressRate = 0.25f;                     /// harvest progress per tick
   string interaction;                             /// interaction verb gate (empty = none)
   string sound;                                   /// harvest sound
+}
+
+/** A meshless, poseable skeleton joint: a named frame at the cursor. */
+struct LSystemBoneT {
+  string symbol;                                /// grammar symbol (meshless, poseable joint)
 }
 
 /** L-system brush: one grammar symbol. */

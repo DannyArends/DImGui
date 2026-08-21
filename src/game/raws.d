@@ -113,6 +113,7 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
     case "RULE": if(p.length >= 4){
       x.rules ~= Rule(p[1], p[2], to!uint(p[3]), opt(p, 4, int.min), opt(p, 5, int.max));
     } return true;
+    case "BONE": if(p.length >= 2){ x.bones ~= LSystemBoneT(p[1]); } return true;
     case "BRUSH": if(p.length >= 5){
       LSystemBrushT b = { symbol: p[1], mesh: p[2], radius: to!float(p[3]), length: to!float(p[4]) };
       foreach(kv; p[5 .. $]) {
@@ -207,7 +208,9 @@ private bool[string] produced(string axiom, const Rule[] rules) pure {
 /** CTFE: first symbol-consistency error across all entities ("" == valid). */
 string validateEntities(const RawT[] es) pure {
   foreach(ref e; es) {
-    bool[string] brush; foreach(ref b; e.brushes) brush[b.symbol] = true;
+    bool[string] brush; 
+    foreach(ref b; e.brushes) { brush[b.symbol] = true; }
+    foreach(ref b; e.bones) { brush[b.symbol] = true; }
     foreach(c, _; produced(e.axiom, e.rules))
       if(!isControl(c) && c !in brush && e.rules.all!(r => r.predecessor != c))
         return e.name ~ ": body symbol '" ~ c ~ "' has no [BRUSH] and no [RULE]";

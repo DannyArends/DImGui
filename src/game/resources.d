@@ -33,6 +33,7 @@ TurtleConfig rawConfig(ref const RawT r, bool renderOnly = false) {
     }
     cfg.alpha[br.symbol] = Symbol(Effect.brush, mat, br.radius, br.length, col, br.offset, dep, br.taper, br.jitterA, br.jitterL);
   }
+  foreach(ref b; r.bones) { cfg.alpha[b.symbol] = Symbol(Effect.bone); }
   return cfg;
 }
 

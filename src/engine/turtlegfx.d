@@ -194,7 +194,7 @@ struct RigSink {
     const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]);
   }
   void place(string c, ref const Symbol s, bool worldUp = false, int n = 0) {
-    if(s.effect != Effect.brush) return;
+    if(s.effect != Effect.brush && s.effect != Effect.bone) return;
     const float grow = 1.0f + s.taper * n;                       // fatten toward the base (high n), thin at the tip (n=0)
     const float rad = s.radius * grow;
     const float dep = (s.depth < 0.0f) ? s.depth : s.depth * grow;
