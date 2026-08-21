@@ -198,8 +198,7 @@ struct RigSink {
     const float grow = 1.0f + s.taper * n;                       // fatten toward the base (high n), thin at the tip (n=0)
     const float rad = s.radius * grow;
     const float dep = (s.depth < 0.0f) ? s.depth : s.depth * grow;
-    const Matrix Rmove = rotate(st.orient);            // heading: used for offset+advance
-    const Matrix R = worldUp ? Matrix() : Rmove;       // draw frame: world-up when '|', else heading
+    const Matrix R = worldUp ? Matrix() : rotate(st.orient);   // draw frame: world-up when '|', else heading
     const float[3] o = s.offset;
     const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
                          st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
@@ -209,7 +208,6 @@ struct RigSink {
     immutable float len = (s.jitterL != 0.0f) ? s.length * (1.0f + uniform(-s.jitterL, s.jitterL, rnd)) : s.length;
     nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, rad, len, dep), s.material, color), c, true, st.orient, dp, len);
     current = cast(int)nodes.length - 1;
-    if(s.advance){ st.pos = st.pos.vAdd([Rmove[4]*len*0.95f, Rmove[5]*len*0.95f, Rmove[6]*len*0.95f]); }
   }
 }
 

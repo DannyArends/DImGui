@@ -35,7 +35,6 @@ struct Symbol {
   int material = -1;                            /// brush: material index
   float radius = 0.1f;                          /// brush: half-width
   float length = 1.0f;                          /// brush: segment length
-  bool advance = true;                          /// brush: move the cursor forward after drawing
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// brush: per-instance tint
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// brush: local-frame draw offset [right, up, fwd]
   float depth = -1.0f;                          /// brush: Z half-extent; -1 == use radius

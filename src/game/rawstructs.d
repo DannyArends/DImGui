@@ -61,7 +61,6 @@ struct LSystemBrushT {
   string texture;                               /// per-instance texture for the drawn geometry
   float radius = 0.1f;                          /// local X/Z scale
   float length = 1.0f;                          /// local Y scale / segment length
-  bool advance = true;                          /// move turtle forward after drawing
   float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
   bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
