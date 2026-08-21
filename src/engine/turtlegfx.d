@@ -58,16 +58,8 @@ string boneName(string prefix, size_t k) { return format("%s%d", prefix, k); }
 
 /** Rigid joint frame of a rig node: normalized bind rotation, origin at the segment base (the pivot). */
 @nogc Matrix jointWorld(ref const RigNode n) nothrow {
-  const Matrix M = n.inst.matrix;
-  const float lx = sqrt(M[0]*M[0]+M[1]*M[1]+M[2]*M[2]);
-  const float ly = sqrt(M[4]*M[4]+M[5]*M[5]+M[6]*M[6]);
-  const float lz = sqrt(M[8]*M[8]+M[9]*M[9]+M[10]*M[10]);
-  Matrix J;
-  J[0]=M[0]/lx; J[1]=M[1]/lx; J[2]=M[2]/lx;
-  J[4]=M[4]/ly; J[5]=M[5]/ly; J[6]=M[6]/ly;
-  J[8]=M[8]/lz; J[9]=M[9]/lz; J[10]=M[10]/lz;
-  J[12]=M[12]-0.5f*M[4]; J[13]=M[13]-0.5f*M[5]; J[14]=M[14]-0.5f*M[6];
-  return J;
+  Matrix J = rotate(n.frame);
+  return J.position(n.base);
 }
 
 /** Rigid joint frame of every rig node, indexed like `rig`. */
