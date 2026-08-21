@@ -509,7 +509,6 @@
   [NOISE_THRESHOLD:0.78]
   [HASH_SEED1:2654435761][HASH_SEED2:374761393][HASH_MOD:48][HASH_REM:5]
   [AXIOM:Body(&{-20.56}~{0.1709} | Mantle(StudTop)(StudTL)(StudTR)(StudBL)(StudBR)(StudBack)(StudFront)(StudRearL)(StudRearC)(StudRearR)(StudSideL1)(StudSideL2)(StudSideL3)(StudSideR1)(StudSideR2)(StudSideR3))(EyeL)(EyeR)(Nose)(&{90}+{45}~{0.1838} | HipBL && LegBL)(&{90}+{-45}~{0.1838} | HipBR && LegBR)(&{-90}+{45}~{0.1838} | HipFL && LegFL)(&{-90}+{-45}~{0.1838} | HipFR && LegFR)]
-  [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:11]
     [POSE:LegBL:LegBL]
@@ -518,6 +517,9 @@
     [POSE:LegFR:LegFR]
   [CLIP:idle:mantleSway ~ +mantleSway ~ -mantleSway ~ -mantleSway ~ +mantleSway::4:2.0]
     [POSE:mantleSway:Mantle]
+
+  [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
+
   [BRUSH:Body:Cube:0.44:0.40:color=burlywood:offZ=0.00:depth=0.46]
   [BRUSH:Mantle:Cube:0.48:0.32:color=saddlebrown:depth=0.42]
   [BRUSH:StudTop:Cube:0.09:0.09:color=saddlebrown:offX=0.00:offY=0.26:offZ=0.04:depth=0.09]
