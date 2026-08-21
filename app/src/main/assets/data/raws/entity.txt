@@ -142,7 +142,8 @@
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02]
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:22235761][HASH_SEED2:224332519][HASH_MOD:60][HASH_REM:5]
-  [AXIOM:Body(Head(Snout Nose)(EyeL)(EyeR)(EarL)(EarR))(HipBL && LegBL)(HipBR && LegBR)(HipFL && LegFL)(HipFR && LegFR)(Tail)]
+  [AXIOM:Body(Head(Snout Nose)(EyeL)(EyeR)(EarL)(EarR))(&{-38}+{-31.5}~{0.268} HipBL | && LegBL)(&{-38}+{31.5}~{0.268} HipBR | && LegBR)(&{38}+{-31.5}~{0.268} HipFL | && LegFL)(&{38}+{31.5}~{0.268} HipFR | && LegFR)(Tail)]
+  
   [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:12]
@@ -161,10 +162,10 @@
   [BRUSH:EyeR:Cube:0.06:0.10:color=black:offX=0.13:offY=0.42:offZ=0.30]
   [BRUSH:EarL:Cube:0.08:0.34:color=whitesmoke:offX=-0.10:offY=0.52:offZ=0.10]
   [BRUSH:EarR:Cube:0.08:0.34:color=crimson:offX=0.10:offY=0.52:offZ=0.10]
-  [BRUSH:LegBL:Cube:0.11:0.18:color=whitesmoke:offX=-0.14:offY=-0.18:offZ=-0.14]
-  [BRUSH:LegBR:Cube:0.11:0.18:color=whitesmoke:offX=0.14:offY=-0.18:offZ=-0.14]
-  [BRUSH:LegFL:Cube:0.11:0.18:color=blue:offX=-0.14:offY=-0.18:offZ=0.14]
-  [BRUSH:LegFR:Cube:0.11:0.18:color=whitesmoke:offX=0.14:offY=-0.18:offZ=0.14]
+  [BRUSH:LegBL:Cube:0.11:0.18:color=whitesmoke]
+  [BRUSH:LegBR:Cube:0.11:0.18:color=whitesmoke]
+  [BRUSH:LegFL:Cube:0.11:0.18:color=blue]
+  [BRUSH:LegFR:Cube:0.11:0.18:color=green]
   [BRUSH:Tail:Cube:0.11:0.14:color=white:offY=0.16:offZ=-0.22]
 
 [ENTITY:Fox]
