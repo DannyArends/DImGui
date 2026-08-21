@@ -443,7 +443,7 @@
   [SPAWN_ON:Snow][SPAWN_ON:Ice01][SPAWN_ON:Forest02][SPAWN_ON:Grass01]
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:1327217909][HASH_SEED2:2971215073][HASH_MOD:100][HASH_REM:11]
-  [AXIOM:Body(Chest)(SpineFront)(SpineMid)(SpineBack)(&{82.41}+{38.41}~{0.3863} | HipBL && LegBL)(&{82.41}+{-38.41}~{0.3863} | HipBR && LegBR)(&{-82.41}+{38.41}~{0.3863} | HipFL && LegFL)(&{-82.41}+{-38.41}~{0.3863} | HipFR && LegFR)(&{-85.24}~{0.4817} | Tail1 | &{-104.93}~{0.1552} | Tail2 | &{-104.93}~{0.1552} | Tail3 TailTip)(Neck Head(Snout(Nose)(&&ToothUL1)(&&ToothUL2)(&&ToothUR1)(&&ToothUR2))(EyeL)(EyeR)(HornStyle)(Jaw(Chin)(ToothLL)(ToothLR)))]
+  [AXIOM:Body(Chest)(SpineFront)(SpineMid)(SpineBack)(&{82.41}+{27.86}~{0.3423} | HipBL && LegBL)(&{82.41}+{-27.86}~{0.3423} | HipBR && LegBR)(&{-82.41}+{27.86}~{0.3423} | HipFL && LegFL)(&{-82.41}+{-27.86}~{0.3423} | HipFR && LegFR)(&{-85.24}~{0.4817} | Tail1 | &{-104.93}~{0.1552} | Tail2 | &{-104.93}~{0.1552} | Tail3 TailTip)(Neck Head(Snout(Nose)(&&ToothUL1)(&&ToothUL2)(&&ToothUR1)(&&ToothUR2))(EyeL)(EyeR)(HornStyle)(Jaw(Chin)(ToothLL)(ToothLR)))]
   [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
 
   [CLIP:walk:strideTail strideTailTip LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL <strideTail<strideTailTip ~ ^^LegBL^^LegFR&&LegBR&&LegFL >strideTail>strideTailTip ~ ^^LegBL^^LegFR&&LegBR&&LegFL >strideTail>strideTailTip ~ &&LegBL&&LegFR^^LegBR^^LegFL <strideTail<strideTailTip:moving:8:9]
