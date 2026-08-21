@@ -8,7 +8,7 @@ import engine;
 import color : paletteOrdinal;
 import lsystem : grammar, turnAxis, turnAngle;
 import matrix : segmentTransform, position, inverse, multiply;
-import quaternion : angleAxis, quatAxisAngle, qMul, rotate, toQuaternion;
+import quaternion : angleAxis, qMul, rotate, toQuaternion;
 import vector : vAdd;
 
 /** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree. */
@@ -98,16 +98,6 @@ Animation[] buildClips(const RigNode[] rig, string prefix, immutable AnimClip[] 
   return(anims);
 }
 
-/** One pose's contribution to a bone's local rotation at a key: world-axis swing (body frame) or cursor swing. */
-Matrix poseLocal(ref immutable Symbol pb, const float[4] quat, float side, const Matrix localJ, const Matrix Rr) {
-  if(pb.axis != NO_AXIS) {
-    const float ang = quatAxisAngle(quat, pb.axis) * (pb.bySide ? side : 1.0f);
-    return rotate(angleAxis(ang, pb.axis)).multiply(localJ);
-  }
-  const float[4] q = (pb.bySide && side < 0.0f) ? [-quat[0], -quat[1], -quat[2], quat[3]] : quat;
-  return(rotate(q).multiply(Rr));
-}
-
 /** Sample a symbol's track at time `step`: the last key at or before it (hold-last), else identity. */
 float[4] quatAtStep(const PoseKey[] keys, int step) {
   float[4] q = Quaternion.init;
@@ -118,22 +108,15 @@ float[4] quatAtStep(const PoseKey[] keys, int step) {
   return(q);
 }
 
-/** Local rotation for a node at one step: compose axis-poses, or the single cursor pose. */
+/** Local rotation for a node at one step: cursor swing in the bone frame, composing all its pose tracks. */
 Matrix stepLocal(ref const PoseCtx c, ref immutable AnimClip clip, int step) {
-  const first = clip.poses[c.syms[0]];
-  if(first.axis != NO_AXIS) { return(posesLocal(c, clip, step)); }
-  return(poseLocal(first, quatAtStep(c.tracks[c.syms[0]], step), c.side, c.localJ, c.Rr));
-}
-
-/** Compose every axis-pose targeting a bone at one step. */
-Matrix posesLocal(ref const PoseCtx c, ref immutable AnimClip clip, int step) {
-  Matrix rot = Matrix();
+  float[4] q = Quaternion.init;
   foreach(sym; c.syms) {
-    const pb = clip.poses[sym];
-    const float ang = quatAxisAngle(quatAtStep(c.tracks[sym], step), pb.axis) * (pb.bySide ? c.side : 1.0f);
-    rot = rotate(angleAxis(ang, pb.axis)).multiply(rot);
+    float[4] t = quatAtStep(c.tracks[sym], step);
+    if(clip.poses[sym].bySide && c.side < 0.0f) { t = [-t[0], -t[1], -t[2], t[3]]; }
+    q = qMul(q, t);
   }
-  return(rot.multiply(c.localJ));
+  return(rotate(q).multiply(c.Rr));
 }
 
 /** Bake the keyframe track for one rig node from all clip poses that target its symbol. */
