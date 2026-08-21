@@ -208,17 +208,19 @@ private bool[string] produced(string axiom, const Rule[] rules) pure {
 /** CTFE: first symbol-consistency error across all entities ("" == valid). */
 string validateEntities(const RawT[] es) pure {
   foreach(ref e; es) {
-    bool[string] brush; 
-    foreach(ref b; e.brushes) { brush[b.symbol] = true; }
-    foreach(ref b; e.bones) { brush[b.symbol] = true; }
-    foreach(c, _; produced(e.axiom, e.rules))
-      if(!isControl(c) && c !in brush && e.rules.all!(r => r.predecessor != c))
-        return e.name ~ ": body symbol '" ~ c ~ "' has no [BRUSH] and no [RULE]";
+    bool[string] declared; 
+    foreach(ref b; e.brushes) { declared[b.symbol] = true; }
+    foreach(ref b; e.bones) { declared[b.symbol] = true; }
+    foreach(c, _; produced(e.axiom, e.rules)) {
+      if(!isControl(c) && c !in declared && e.rules.all!(r => r.predecessor != c)){
+        return e.name ~ ": body symbol '" ~ c ~ "' has no [BRUSH] or [BONE] and no [RULE]";
+      }
+    }
     foreach(ref cl; e.clips) {
       auto emitted = produced(cl.axiom, cl.rules);
       foreach(sym, ref pb; cl.poses) {
-        if(sym !in emitted) return e.name ~ "/" ~ cl.name ~ ": [POSE] symbol '" ~ sym ~ "' never produced by the clip";
-        if(pb.target !in brush) return e.name ~ "/" ~ cl.name ~ ": [POSE] target '" ~ pb.target ~ "' has no [BRUSH]";
+        if(sym !in emitted) { return e.name ~ "/" ~ cl.name ~ ": [POSE] symbol '" ~ sym ~ "' never produced by the clip"; }
+        if(pb.target !in declared) { return e.name ~ "/" ~ cl.name ~ ": [POSE] target '" ~ pb.target ~ "' has no [BRUSH] or [BONE]"; }
       }
     }
   }
