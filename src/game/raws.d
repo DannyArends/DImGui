@@ -111,7 +111,7 @@ ItemTemplateT[] parseItemTemplates(string raw) pure { return parseRawsGeneric!(I
   }
 })(raw, true); }
 
-/** Parse a grammar token (AXIOM/RULE/LSYSTEM_*) shared by every raw template. Returns true if handled. */
+/** Parse a grammar token (AXIOM/RULE) shared by every raw template. Returns true if handled. */
 bool parseGrammarToken(ref RawT x, const string[] p) pure {
   switch(p[0]) {
     case "AXIOM":         x.axiom = p[1]; return true;
