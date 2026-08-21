@@ -176,7 +176,6 @@ void rawHandler(ref RawT x, const string[] p) pure {
     case "SCALE":            x.scale = to!float(p[1]); break;
     case "SCALE_VARIANCE":   x.scaleVariance = to!float(p[1]); break;
     case "OFFSET_Y":         x.offsetY = to!float(p[1]); break;
-    case "FACING":           x.facing = to!float(p[1]); break;
     default: break;
   }
 }

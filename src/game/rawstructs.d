@@ -41,7 +41,6 @@ struct RawT {
   float scale = 1.0f, scaleVariance = 0.0f;       /// Instance scale + per-spawn variance
   float offsetY = 0.0f;                           /// Vertical render offset to seat on the tile
   float hop = 0.0f;                               /// Vertical render offset to seat on the tile
-  float facing = 0.0f;                            /// Yaw offset correcting the model's forward axis
   string axiom = "B";                             /// L-system start symbol(s)
   Rule[] rules;                                   /// L-system production rules (empty = axiom as-is)
   AnimClip[] clips;                               /// animation L-systems, walked in time -> keyframe tracks

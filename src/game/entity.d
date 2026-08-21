@@ -131,7 +131,7 @@ struct Entity(uint N) {
 void entityMove(Pawn)(ref GameApp app, ref Pawn pawn, float dt, float speed, float hop) {
   if(!pawn.state.isMoving) return;
   float[3] d = [pawn.moveTo[0] - pawn.moveFrom[0], 0.0f, pawn.moveTo[2] - pawn.moveFrom[2]];
-  if(d[0] * d[0] + d[2] * d[2] > 1e-6f) { pawn.heading = atan2(d[0], -d[2]) * (180.0f / PI); }
+  if(d[0] * d[0] + d[2] * d[2] > 1e-6f) { pawn.heading = atan2(-d[0], d[2]) * (180.0f / PI); }
   if(app.stepMove(pawn, dt, speed, hop)) {
     pawn.state = pawn.hasJob ? EntityState.Working : EntityState.Idle;
   }
@@ -146,7 +146,7 @@ ref immutable(RawT) entityFor(string name) {
 /** World transform for a posed pawn: species scale × per-uid build variance, yaw, feet seated on the ground. */
 Matrix positionPawn(Pawn)(ref Skeleton s, ref const Pawn pawn, ref immutable RawT raw) {
   float[3] sc = s.dscale.vMul(raw.scale);
-  Matrix world = rotate(Matrix.init, [pawn.heading + raw.facing, 0.0f, 0.0f]).multiply(scale(sc));
+  Matrix world = rotate(Matrix.init, [pawn.heading, 0.0f, 0.0f]).multiply(scale(sc));
   position(world, [pawn.visualPos[0], pawn.visualPos[1] - 0.5f - s.footY * sc[1] + raw.offsetY, pawn.visualPos[2]]);
   return world;
 }
