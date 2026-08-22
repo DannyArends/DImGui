@@ -162,7 +162,7 @@ void updateLightGeometries(ref App app, float dt, float minsPerSec = 0.3f) {
   foreach(o; app.objects) {
     if(o.geometry() == "SunGeometry") {
       o.position(app.lights[0].position.xyz);
-      o.setColor([1.0f, 0.95f, 0.6f, 1.0f]);
+      //o.setColor([1.0f, 0.95f, 0.6f, 1.0f]);
     } else if(o.geometry() == "LightCones") {
       o.instances.reset();
       foreach(i, ref light; app.lights) {
