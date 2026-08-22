@@ -43,12 +43,8 @@ bool parseRenderToken(T)(ref T cur, const string[] p) pure {
     case "MESH": if(p.length > 1) {
       cur.mesh = p[1];
       static if(__traits(hasMember, T, "color")) { immutable c = namedField(p, "color"); if(c.length) cur.color = toColor(c); }
+      static if(__traits(hasMember, T, "textures")) cur.textures = parseTextures(namedField(p, "textures"));
     } return true;
-    case "TEX":
-      static if(__traits(hasMember, T, "textures")) {
-        foreach(kv; p[1 .. $]) { auto eq = kv.findSplit("="); if(eq[1].length) cur.textures ~= Tex(eq[0], eq[2]); }
-      }
-      return true;
     case "SCALE":    cur.scale    = to!float(p[1]); return true;
     case "OFFSET_Y": cur.offsetY  = to!float(p[1]); return true;
     case "STACK":    cur.maxStack = to!int(p[1]);   return true;
@@ -85,7 +81,7 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
       if(seen.canFind(member)) continue;                    // first brush of a substance wins
       seen ~= member;
       immutable string tex = namedField(p, "texture");
-      table ~= ResourceT(name: member, mesh: p[2], textures: [Tex("3D", tex), Tex("2D", tex)],
+      table ~= ResourceT(name: member, mesh: p[2], textures: parseTextures(namedField(p, "textures")),
                          scale: namedField(p, "dropScale", "1.0").to!float,
                          offsetY: namedField(p, "dropOffsetY", "0.0").to!float,
                          substance: sub.to!Substance,
@@ -124,7 +120,7 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
         immutable string v = (e < 0) ? "" : kv[e + 1 .. $];
         switch(k) {
           case "substance": b.substance = v.to!Substance; break;
-          case "texture":   b.texture = v; break;
+          case "textures":  b.textures = parseTextures(v); break;
           case "food":      b.food = to!float(v); break;
           case "taper":     b.taper = to!float(v); break;
           case "render":    b.render = to!bool(v); break;

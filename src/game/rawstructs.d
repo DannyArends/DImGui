@@ -63,7 +63,6 @@ struct LSystemBrushT {
   string symbol;                                /// grammar symbol, e.g. 'Y' or 'I'
   string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
   Substance substance;                          /// Substance drawn
-  string texture;                               /// per-instance texture for the drawn geometry
   float[3] size = [0.1f, 1.0f, 0.1f];           /// local half-extents [radius(X), length(Y), depth(Z)]
   float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
   bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
@@ -79,6 +78,16 @@ struct Tex { string role; string name; }
 @nogc pure string texOf(const Tex[] textures, string role) nothrow {
   foreach(ref t; textures) if(t.role == role) { return(t.name); }
   return("");
+}
+
+Tex[] parseTextures(string v) pure {
+  Tex[] r;
+  if(v.length >= 2 && v[0] == '{' && v[$ - 1] == '}') { v = v[1 .. $ - 1] };
+  foreach(pair; v.split(";")) {
+    immutable e = pair.indexOf('=');
+    if(e > 0) { r ~= Tex(pair[0 .. e], pair[e + 1 .. $]); }
+  }
+  return(r);
 }
 
 /** Render/item fields common to renderable raws (resources, item templates, ...). */

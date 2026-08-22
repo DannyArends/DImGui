@@ -1,18 +1,18 @@
 [OBJECT:ITEM]
 
 [ITEM:Flint]
-  [MESH:Cube][TEX:skin=Flint]
+  [MESH:Cube:textures={skin=Flint}]
   [ACCEPTS:Stone][ACCEPTS:Rock]
   [SCALE:0.4][STACK:4]
 
 [ITEM:Axe]
-  [MESH:Cube][TEX:3D=StoneAxe:skin=StoneAxe:filled=StoneAxe]
+  [MESH:Cube:textures={3D=StoneAxe;skin=StoneAxe;filled=StoneAxe}]
   [ACCEPTS:Stone][ACCEPTS:Rock]
   [SCALE:0.5]
   [STACK:1]
 
 [ITEM:Cup]
-  [MESH:cup][TEX:3D=colormap-food-kit:skin=WoodCup:filled=WoodCupFilled]
+  [MESH:cup:textures={3D=colormap-food-kit;skin=WoodCup;filled=WoodCupFilled}]
   [ACCEPTS:Wood]
   [HOLDS:Liquid]
   [CAPACITY:1]
