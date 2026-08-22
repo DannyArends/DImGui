@@ -146,7 +146,7 @@ ref immutable(RawT) entityFor(string name) {
 /** World transform for a posed pawn: species scale × per-uid build variance, yaw, feet seated on the ground. */
 Matrix positionPawn(Pawn)(ref Skeleton s, ref const Pawn pawn, ref immutable RawT raw) {
   float[3] sc = s.dscale.vMul(raw.scale);
-  Matrix world = rotate(Matrix.init, [pawn.heading, 0.0f, 0.0f]).multiply(scale(sc));
+  Matrix world = rotate(Matrix.init, [pawn.heading, 0.0f, 0.0f]).scale(sc);
   world = position(world, [pawn.visualPos[0], pawn.visualPos[1] - 0.5f - s.footY * sc[1] + raw.offsetY, pawn.visualPos[2]]);
   return world;
 }

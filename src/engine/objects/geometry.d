@@ -105,9 +105,9 @@ class Geometry {
 
   /** Scale instance from object.instances by s */
   @nogc void scale(float[3] s, uint instance = 0) nothrow { assert(instance <  instances.length, "No such instance");
-    import matrix : multiply, scale;
+    import matrix : scale;
 
-    instances[instance] = instances[instance].multiply(scale(s));
+    instances[instance] = instances[instance].scale(s);
     syncInstances();
   }
 

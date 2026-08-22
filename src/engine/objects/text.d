@@ -78,7 +78,7 @@ private DrawInstance[] layoutText(ref App app, TextInfo info) {
 
   size_t[2] line = [1, lines.length];
   float penX = 0;
-  Matrix labelTransform = translate(info.pos).multiply(rotate(info.rot));
+  Matrix labelTransform = translate(info.pos).rotate(info.rot);
   DrawInstance[] insts;
   foreach(dchar c; info.data.array) {
     if(c == '\n'){ line[0]++; penX = 0; continue; }
@@ -142,7 +142,7 @@ void updateWorldTextBillboards(ref App app) {
     float newYaw = -degree(atan2(dir[0], dir[2]));
     float deltaYaw = newYaw - info.rot[0];
     if(deltaYaw == 0.0f) continue;
-    Matrix pivot = translate(info.pos).multiply(rotate([deltaYaw, 0.0f, 0.0f])).multiply(translate(info.pos.vMul(-1.0f)));
+    Matrix pivot = translate(info.pos).rotate([deltaYaw, 0.0f, 0.0f]).translate(info.pos.vMul(-1.0f));
     foreach(ref inst; app.worldText.text.instances[info.start .. info.to]) {
       inst.matrix = pivot.multiply(inst.matrix);
     }

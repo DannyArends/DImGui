@@ -52,7 +52,7 @@ void showObjectwindow(ref App app, ref Geometry obj) {
       obj.uiInstance++;
     } else {                                   // past the end → create a new instance
       auto inst = obj.instances[obj.uiInstance];
-      inst.matrix = inst.matrix.multiply(translate([1.5f, 0.0f, 0.0f]));
+      inst.matrix = inst.matrix.translate([1.5f, 0.0f, 0.0f]);
       obj.addInstances([inst]);
       obj.syncInstances();
       obj.uiInstance = obj.instances.length - 1;
