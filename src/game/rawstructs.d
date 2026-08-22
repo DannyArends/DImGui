@@ -80,13 +80,14 @@ Tex[] parseTextures(string v) pure {
 
 /** Render/item fields common to renderable raws (resources, item templates, ...). */
 mixin template Renderable() {
-  string mesh = "Cube";         /// geometry (tinted/textured at use time)
-  Tex[] textures;               /// Role to Texture bindings; open-ended set of roles
-  Colors color = Colors.white;  /// Color
-  float[3] size = [0.1f, 1.0f, 0.1f];             /// local half-extents [radius(X), length(Y), depth(Z)]
-  float[3] offset = [0.0f, 0.0f, 0.0f];           /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
-  int maxStack = 1;             /// stack size when carried
-  float food = 0.0f;            /// nutrition/edibility (0 => inedible)
+  string mesh = "Cube";                     /// geometry
+  Tex[] textures;                           /// role->texture bindings
+  Colors color = Colors.white;              /// tint colour
+  float[3] size = [0.1f, 1.0f, 0.1f];       /// local half-extents [X,Y,Z]
+  float[3] offset = [0.0f, 0.0f, 0.0f];     /// local draw offset [right,up,fwd]; offsetY == offset[1]
+  float scale = 1.0f;                       /// uniform render scale (display multiplier, distinct from size)
+  int maxStack = 1;                         /// Stacks
+  float food = 0.0f;                        /// Food value
 }
 
 /** L-system brush: one grammar symbol. */

@@ -24,7 +24,8 @@ TurtleConfig rawConfig(ref const RawT r, bool renderOnly = false) {
   TurtleConfig cfg;
   foreach(ref br; r.brushes) {
     if(renderOnly && !br.render) continue;
-    int mat = -1; float[4] col = br.color;
+    int mat = -1; 
+    Colors col = br.color;
     if(br.substance != Substance.init) {
       immutable brt = variantOf(br.substance, r.name.to!Source);
       mat = cast(int)brt; 

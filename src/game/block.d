@@ -142,8 +142,7 @@ string renderMesh(const Item it) { return it.isCraft ? itemTemplateTable[it.shap
 
 /** Render scale for an item: template scale when crafted, else the material's scale. */
 float renderScale(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].scale : resourceTable[it.material].scale; }
-
-float renderOffsetY(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].offsetY : resourceTable[it.material].offsetY; }
+float renderOffsetY(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].offset[1] : resourceTable[it.material].offset[1]; }
 
 /** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
 @nogc pure int matOverride(const Item it) nothrow {
