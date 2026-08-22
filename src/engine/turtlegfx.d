@@ -182,8 +182,7 @@ struct RigSink {
   void place(string c, ref const Symbol s, int n = 0) {
     if(s.effect != Effect.brush && s.effect != Effect.bone) return;
     const float grow = 1.0f + s.taper * n;
-    const float jit = (s.jitterL != 0.0f) ? 1.0f + uniform(-s.jitterL, s.jitterL, rnd) : 1.0f;
-    const float[3] size = [s.size[0] * grow, s.size[1] * jit, s.size[2] * grow];
+    const float[3] size = [s.size[0] * grow, s.size[1], s.size[2] * grow];
     const Matrix R = rotate(st.orient);   // draw frame: world-up when '|', else heading
     const float[3] o = s.offset;
     const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],

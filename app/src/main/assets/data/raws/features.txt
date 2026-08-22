@@ -19,7 +19,7 @@
   [RULE:Bud:Leaf:90]
   [RULE:Bud:LeafCube:2]
   [RULE:Bud::8]
-  [BRUSH:Wood:Cylinder:0.35;1.0;0.35:substance=Wood:texture=Wood_02_base:taper=0.10:jitterA=0.15:jitterL=0.10]
+  [BRUSH:Wood:Cylinder:0.35;1.0;0.35:substance=Wood:texture=Wood_02_base:taper=0.10]
   [BRUSH:Leaf:Icosahedron:1.2;0.6;1.2:substance=Leaf:texture=Hedge_01_base]
   [BRUSH:LeafCube:Cube:0.8;0.8;0.8:substance=Leaf:texture=Hedge_01_base]
 
