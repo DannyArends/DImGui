@@ -10,7 +10,7 @@ import matrix : degree;
 enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
 enum Effect : ubyte { bone, brush, pose }       /// bone: skeleton node (mesh optional), brush: leaf draw, pose
 enum string RESERVED = "()~%|+-&^<>@";
-enum string PARAMETRIC = "+-&^<>~";
+enum string PARAMETRIC = "+-&^<>~";             /// glyphs taking a numeric {arg} (turns in deg, ~ distance); subset of RESERVED
 
 /** A production rule: predecessor, production, weight, and the window [nMin, nMax) on the matched
     module's own parameter n that the rule is active in (int.min/int.max = open bound) */
@@ -49,7 +49,7 @@ struct TurtleConfig {
   float pitch = 90.0f;      /// & / ^  arch down / up
   float roll = 90.0f;       /// < / >  twist around heading
   float gap = 1.0f;         /// ~       move without drawing
-  Symbol[string] alpha;     /// content-symbol table (brush/pose/asset)
+  Symbol[string] alpha;     /// content-symbol table (bone/brush/pose)
 }
 
 /** A stochastic L-system over plain characters */
@@ -102,12 +102,12 @@ pure LSym[] expand(const(char)[] s, int n) {
     } else if(s[i] == '{' && !(i > 0 && PARAMETRIC.canFind(s[i - 1]))) {
       i = brace(s, i, inner);
       outp ~= format("{%s}", evalExpr(inner, n));
-    } else { outp ~= s[i]; outp = outp; i++; }
+    } else { outp ~= s[i]; i++; }
   }
   return lex(outp);
 }
 
-/** If s[j] opens a '{...}' group, set inner to its contents and return the index past '}'; else inner="" and return j. */
+/** If s[j] opens a '{...}' group, set inner to its contents and return the index past '}'; else inner=null and return j */
 @nogc pure size_t brace(const(char)[] s, size_t j, out const(char)[] inner) nothrow {
   inner = null;
   if(j >= s.length || s[j] != '{') return(j);
@@ -137,7 +137,7 @@ pure LSym lexModule(const(char)[] s, ref size_t i) {
   while(j < s.length && s[j] != ' ' && s[j] != '{' && !RESERVED.canFind(s[j])) { j++; }
   LSym t = { name: s[i .. j].idup };
   const(char)[] inner; i = brace(s, j, inner);
-  if(inner.length && inner.all!(ch => ch >= '0' && ch <= '9')) { t.n = inner.to!int; }
+  if(inner.length && inner.all!(ch => ch >= '0' && ch <= '9')) { t.n = inner.to!int; }   // expr forms already resolved by expand()
   return(t);
 }
 

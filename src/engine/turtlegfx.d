@@ -177,16 +177,13 @@ struct RigSink {
   void pop(){ if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; current = parents[$-1]; parents = parents[0 .. $-1]; } }
   void turn(const float[3] ax, float ang) { st.orient = qMul(st.orient, angleAxis(ang, ax)); }
   void reset(){ st.orient = [0.0f, 0.0f, 0.0f, 1.0f]; }
-  void move(float d) { const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]); }
+  void move(float d) { st.pos = st.pos.vAdd(rotate(st.orient).multiply([0.0f, d, 0.0f])); }
   void place(string c, ref const Symbol s, int n = 0) {
     if(s.effect != Effect.brush && s.effect != Effect.bone) return;
     const float grow = 1.0f + s.taper * n;
     const float[3] size = [s.size[0] * grow, s.size[1], s.size[2] * grow];
     const Matrix R = rotate(st.orient);   // draw frame: world-up when '|', else heading
-    const float[3] o = s.offset;
-    const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
-                         st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
-                         st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
+    const float[3] dp = st.pos.vAdd(R.multiply(s.offset));
     auto color = cast(int)paletteOrdinal(s.color);
     nodes ~= RigNode(current, DrawInstance(segmentTransform(dp, R, size), s.material, color), c, true, st.orient, dp);
     current = cast(int)nodes.length - 1;
