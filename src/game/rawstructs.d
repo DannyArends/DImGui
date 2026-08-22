@@ -55,23 +55,10 @@ struct RawT {
 
 /** A meshless, poseable skeleton joint: a named frame at the cursor. */
 struct LSystemBoneT {
-  string symbol;                                /// grammar symbol (meshless, poseable joint)
+  string symbol;                                  /// grammar symbol (meshless, poseable joint)
 }
 
-/** L-system brush: one grammar symbol. */
-struct LSystemBrushT {
-  string symbol;                                /// grammar symbol, e.g. 'Y' or 'I'
-  string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
-  Tex[] textures;                               /// role->texture bindings for the drawn geometry
-  Substance substance;                          /// Substance drawn
-  float[3] size = [0.1f, 1.0f, 0.1f];           /// local half-extents [radius(X), length(Y), depth(Z)]
-  float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
-  bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
-  float[3] offset = [0.0f, 0.0f, 0.0f];         /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
-  float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// per-brush vertex colour (entities)
-  bool tint = false;                            /// tint with the entity's per-instance colour instead of `color`
-  float taper = 0.0f;                           /// radius growth per unit of the module parameter n (0 = uniform)
-}
+
 
 struct Tex { string role; string name; }
 
@@ -93,31 +80,42 @@ Tex[] parseTextures(string v) pure {
 
 /** Render/item fields common to renderable raws (resources, item templates, ...). */
 mixin template Renderable() {
-  string name = "None";        /// raw identifier
-  string mesh = "Cube";        /// geometry (tinted/textured at use time)
-  Tex[] textures;              /// role->texture bindings; open-ended set of roles
-  float scale = 1.0f;          /// render scale
-  float offsetY = 0.0f;        /// vertical render offset
-  int maxStack = 1;            /// stack size when carried
-  float food = 0.0f;           /// nutrition/edibility (0 => inedible)
+  string mesh = "Cube";         /// geometry (tinted/textured at use time)
+  Tex[] textures;               /// Role to Texture bindings; open-ended set of roles
+  Colors color = Colors.white;  /// Color
+  float[3] size = [0.1f, 1.0f, 0.1f];             /// local half-extents [radius(X), length(Y), depth(Z)]
+  float[3] offset = [0.0f, 0.0f, 0.0f];           /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
+  int maxStack = 1;             /// stack size when carried
+  float food = 0.0f;            /// nutrition/edibility (0 => inedible)
+}
+
+/** L-system brush: one grammar symbol. */
+struct LSystemBrushT {
+  string symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
+  mixin Renderable;
+  Substance substance;                            /// Substance drawn
+  bool render = true;                             /// draw on the growing feature? false = harvest-only (a drop)
+  bool tint = false;                              /// tint with the entity's per-instance colour instead of `color`
+  float taper = 0.0f;                             /// radius growth per unit of the module parameter n (0 = uniform)
 }
 
 /** A tile/feature variant = substance @ source; the row backing each ResourceType member. */
 struct ResourceT {
+  string name = "None";         /// Raw identifier
   mixin Renderable;
-  Colors color = Colors.white;
-  Substance substance;                      /// variant match key
-  Source source;                            /// which tile/feature produced it
-  float traverse = 0.0f;                     /// walk cost; 0 => impassable
-  bool build = false;                        /// may be placed/built with
+  Substance substance;          /// variant match key
+  Source source;                /// which tile/feature produced it
+  float traverse = 0.0f;        /// walk cost; 0 => impassable
+  bool build = false;           /// may be placed/built with
 }
 
 /** A crafted item template (shape) parsed from items.txt into itemTemplateTable. */
 struct ItemTemplateT {
+  string name = "None";         /// Raw identifier
   mixin Renderable;
-  Substance[] accepts;                       /// material's allowed substances; empty => any
-  Substance[] holds;                         /// contents' allowed substances; empty => not a container
-  uint capacity = 0;                         /// max content units (0 => not a container)
+  Substance[] accepts;          /// material's allowed substances; empty => any
+  Substance[] holds;            /// contents' allowed substances; empty => not a container
+  uint capacity = 0;            /// max content units (0 => not a container)
 }
 
 struct Ingredient { Substance cls; ItemTemplate item; uint count = 1; }
