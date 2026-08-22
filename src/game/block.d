@@ -9,7 +9,7 @@ import color : paletteOrdinal;
 import lattice : tileToWorld, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood, toItem, isRaw, isCraft, templateMat, matchDemand;
+import resources : isFood, toItem, isRaw, hasShape, templateMat, matchDemand;
 import tile : isStandable, inColumn, landingTile, hasStandableNeighbour;
 import vector : manhattan;
 
@@ -138,15 +138,15 @@ uint spawnBlock(ref GameApp app, int[3] tile, Item it) {
 }
 
 /** Geometry mesh name for an item: template shape when crafted, else the material's mesh. */
-string renderMesh(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].mesh : resourceTable[it.material].mesh; }
+string renderMesh(const Item it) { return it.hasShape ? itemTemplateTable[it.shape].mesh : resourceTable[it.material].mesh; }
 
 /** Render scale for an item: template scale when crafted, else the material's scale. */
-float renderScale(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].scale : resourceTable[it.material].scale; }
-float renderOffsetY(const Item it) { return it.isCraft ? itemTemplateTable[it.shape].offset[1] : resourceTable[it.material].offset[1]; }
+float renderScale(const Item it) { return it.hasShape ? itemTemplateTable[it.shape].scale : resourceTable[it.material].scale; }
+float renderOffsetY(const Item it) { return it.hasShape ? itemTemplateTable[it.shape].offset[1] : resourceTable[it.material].offset[1]; }
 
 /** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
 @nogc pure int matOverride(const Item it) nothrow {
-  if(!it.isCraft) return -1;
+  if(!it.hasShape) return -1;
   return cast(int)templateMat(it.shape, it.amount > 0 && itemTemplateTable[it.shape].textures.texOf("filled").length > 0);
 }
 

@@ -9,7 +9,7 @@ import block : itemOf;
 import jobs : liveJobs, Reach;
 import lattice : tileBelow, tileAbove;
 import pathfinding : findGoalTile;
-import resources : isCraft;
+import resources : hasShape;
 import vector : sqDist;
 
 struct Stockpile {
@@ -24,7 +24,7 @@ struct Stockpile {
 }
 
 /** Canonical stockpile key: what matters for storage — a craft by its template, a raw item by its material; fill state (contents/amount) dropped. */
-@nogc pure Item acceptKey(Item it) nothrow { return it.isCraft ? Item(it.shape) : Item(ItemTemplate.None, it.material); }
+@nogc pure Item acceptKey(Item it) nothrow { return it.hasShape ? Item(it.shape) : Item(ItemTemplate.None, it.material); }
 
 struct StockpileField {
   Stockpile[uint] byId;

@@ -56,7 +56,7 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 @nogc float cost(const ResourceType r) pure nothrow { return resourceTable[r].traverse; }
 @nogc bool isFood(const Item it) pure nothrow { return it.foodValue() > 0.0f; }
 @nogc float foodValue(const Item it) pure nothrow {
-  return it.isCraft ? itemTemplateTable[it.shape].food : it.material != ResourceType.None ? resourceTable[it.material].food : 0.0f;
+  return it.hasShape ? itemTemplateTable[it.shape].food : it.material != ResourceType.None ? resourceTable[it.material].food : 0.0f;
 }
 /** The source (origin tile/feature) of a variant, and the reverse lookup (substance @ source -> variant). */
 @nogc ResourceType variantOf(Substance s, Source src) pure nothrow {
@@ -66,7 +66,7 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 
 // Item = (shape template x material [+ contents]); accessors compute everything from the pair at use time.
 @nogc pure bool isRaw(const Item it) nothrow { return it.shape == ItemTemplate.None; }
-@nogc pure bool isCraft(const Item it) nothrow { return it.shape != ItemTemplate.None; }
+@nogc pure bool hasShape(const Item it) nothrow { return it.shape != ItemTemplate.None; }
 @nogc pure bool isContainer(const Item it) nothrow { return itemTemplateTable[it.shape].capacity > 0; }
 @nogc pure bool isFull(const Item it) nothrow { return it.amount >= itemTemplateTable[it.shape].capacity; }
 
@@ -77,7 +77,7 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 
 /** Name to display for an item */
 string itemName(const Item it) {
-  if(!it.isCraft) return resourceTable[it.material].name;
+  if(!it.hasShape) return resourceTable[it.material].name;
   string n = resourceTable[it.material].name ~ " " ~ itemTemplateTable[it.shape].name;
   if(it.contents != ResourceType.None) n ~= " of " ~ resourceTable[it.contents].name;
   return n;
@@ -85,7 +85,7 @@ string itemName(const Item it) {
 
 /** Texture to display for an item: template skin (filled variant when holding contents), else the raw material's 2D texture. */
 string itemTex(const Item it) {
-  if(!it.isCraft) return resourceTable[it.material].textures.texOf("2D");
+  if(!it.hasShape) return resourceTable[it.material].textures.texOf("2D");
   auto t = itemTemplateTable[it.shape];
   return (it.amount > 0 && t.textures.texOf("filled").length) ? t.textures.texOf("filled") : t.textures.texOf("skin");
 }
