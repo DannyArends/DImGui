@@ -144,7 +144,7 @@
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02]
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:22235761][HASH_SEED2:224332519][HASH_MOD:60][HASH_REM:5]
-  [AXIOM:Body(&{51.34}~{0.2561} | Head(&{-22.5}+{-24.5}~{0.262} | EarL)(Snout Nose)(EyeL)(EyeR)(EarR))(&{-74.1}+{-43.75}~{0.2025} | HipBL && LegBL)(&{-74.1}+{43.75}~{0.2025} | HipBR && LegBR)(&{74.1}+{-43.75}~{0.2025} | HipFL && LegFL)(&{74.1}+{43.75}~{0.2025} | HipFR && LegFR)(Tail)]
+  [AXIOM:Body(@{0;0.16;0.2} | Head(@{0.1086;0.2203;-0.0912} | EarL)(Snout Nose)(EyeL)(EyeR)(EarR))(@{0.14;0.0401;-0.1407} | HipBL && LegBL)(@{-0.14;0.0401;-0.1407} | HipBR && LegBR)(@{0.14;0.0401;0.1407} | HipFL && LegFL)(@{-0.14;0.0401;0.1407} | HipFR && LegFR)(Tail)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:12]
     [POSE:LegBL:LegBL]
@@ -176,7 +176,7 @@
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02][SPAWN_ON:Grass04][SPAWN_ON:Forest01][SPAWN_ON:Forest02]
   [NOISE_THRESHOLD:0.78]
   [HASH_SEED1:2166136261][HASH_SEED2:16777619][HASH_MOD:45][HASH_REM:3]
-  [AXIOM:Body(Chest Ruff Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR))(&{80.54}+{23.14}~{0.3308} | HipBL && LegBL)(&{80.54}+{-23.14}~{0.3308} | HipBR && LegBR)(&{-57.99}+{54.03}~{0.1606} | HipFL && LegFL)(&{-57.99}+{-54.03}~{0.1606} | HipFR && LegFR)(&{-60.64}~{0.1836} | Tail TailTip)]
+  [AXIOM:Body(Chest Ruff Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR))(@{-0.13;0.05;0.3} | HipBL && LegBL)(@{0.13;0.05;0.3} | HipBR && LegBR)(@{-0.13;0.05;-0.08} | HipFL && LegFL)(@{0.13;0.05;-0.08} | HipFR && LegFR)(@{0;0.09;-0.16} | Tail TailTip)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:11]
     [POSE:LegBL:LegBL]
@@ -211,7 +211,7 @@
   [SPAWN_ON:Snow][SPAWN_ON:Ice01]
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:40503][HASH_SEED2:2654435761][HASH_MOD:60][HASH_REM:7]
-  [AXIOM:Body(Tail)(&{77.01}+{35.45}~{0.3276} | HipBL && LegBL)(&{77.01}+{-35.45}~{0.3276} | HipBR && LegBR)(&{-77.01}+{35.45}~{0.3276} | HipFL && LegFL)(&{-77.01}+{-35.45}~{0.3276} | HipFR && LegFR)(Hump)(&{76.37}~{0.6791} | Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR))]
+  [AXIOM:Body(Tail)(@{-0.19;0.06;0.26} | HipBL && LegBL)(@{0.19;0.06;0.26} | HipBR && LegBR)(@{-0.19;0.06;-0.26} | HipFL && LegFL)(@{0.19;0.06;-0.26} | HipFR && LegFR)(Hump)(@{0;0.16;0.66} | Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR))]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:9]
     [POSE:LegBL:LegBL]
@@ -244,7 +244,7 @@
   [SPAWN_ON:Grass02][SPAWN_ON:Grass03][SPAWN_ON:Forest01][SPAWN_ON:Forest02]
   [NOISE_THRESHOLD:0.75]
   [HASH_SEED1:374761393][HASH_SEED2:668265263][HASH_MOD:45][HASH_REM:5]
-  [AXIOM:Body(Tail)(&{79.7}+{33.85}~{0.2693} | HipBL && LegBL)(&{79.7}+{-33.85}~{0.2693} | HipBR && LegBR)(&{-79.7}+{33.85}~{0.2693} | HipFL && LegFL)(&{-79.7}+{-33.85}~{0.2693} | HipFR && LegFR)(&{95.19}~{0.4418} | Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR)(TuskL)(TuskR))]
+  [AXIOM:Body(Tail)(@{-0.15;0.04;0.22} | HipBL && LegBL)(@{0.15;0.04;0.22} | HipBR && LegBR)(@{-0.15;0.04;-0.22} | HipFL && LegFL)(@{0.15;0.04;-0.22} | HipFR && LegFR)(@{0;-0.04;0.44} | Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR)(TuskL)(TuskR))]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:13]
     [POSE:LegBL:LegBL]
@@ -278,7 +278,7 @@
   [SPAWN_ON:Forest01][SPAWN_ON:Forest02][SPAWN_ON:Grass04]
   [NOISE_THRESHOLD:0.75]
   [HASH_SEED1:3266489917][HASH_SEED2:2246822519][HASH_MOD:55][HASH_REM:11]
-  [AXIOM:Body(Belly)(Head(Face Snout)(EarL)(EarR)(EyeL)(EyeR))(&{71.57}+{40.14}~{0.2482} | HipBL && LegBL)(&{71.57}+{-40.14}~{0.2482} | HipBR && LegBR)(&{-73.3}+{37.46}~{0.2631} | HipFL && LegFL)(&{-73.3}+{-37.46}~{0.2631} | HipFR && LegFR)(&{-60.26}~{0.3225} | Tail TailTip)]
+  [AXIOM:Body(Belly)(Head(Face Snout)(EarL)(EarR)(EyeL)(EyeR))(@{-0.16;0.06;0.18} | HipBL && LegBL)(@{0.16;0.06;0.18} | HipBR && LegBR)(@{-0.16;0.06;-0.2} | HipFL && LegFL)(@{0.16;0.06;-0.2} | HipFR && LegFR)(@{0;0.16;-0.28} | Tail TailTip)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:10]
     [POSE:LegBL:LegBL]
@@ -312,7 +312,7 @@
   [SPAWN_ON:Forest01][SPAWN_ON:Forest02][SPAWN_ON:Grass03][SPAWN_ON:Grass02]
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:2578321651][HASH_SEED2:3266489917][HASH_MOD:95][HASH_REM:13]
-  [AXIOM:Body(Tail)(Saddle)(&{70.02}+{35.99}~{0.2893} | HipBL && LegBL)(&{70.02}+{-35.99}~{0.2893} | HipBR && LegBR)(&{-70.02}+{35.99}~{0.2893} | HipFL && LegFL)(&{-70.02}+{-35.99}~{0.2893} | HipFR && LegFR)(&{79.22}~{0.4276} | Head(Snout Nose)(EarL)(EarR)(PatchL)(PatchR)(EyeL)(EyeR))]
+  [AXIOM:Body(Tail)(Saddle)(@{-0.17;0.08;0.22} | HipBL && LegBL)(@{0.17;0.08;0.22} | HipBR && LegBR)(@{-0.17;0.08;-0.22} | HipFL && LegFL)(@{0.17;0.08;-0.22} | HipFR && LegFR)(@{0;0.08;0.4201} | Head(Snout Nose)(EarL)(EarR)(PatchL)(PatchR)(EyeL)(EyeR))]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:9]
     [POSE:LegBL:LegBL]
@@ -347,7 +347,7 @@
   [SPAWN_ON:Sand02][SPAWN_ON:Sand01][SPAWN_ON:Forest01]
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:1583531683][HASH_SEED2:2971215073][HASH_MOD:65][HASH_REM:9]
-  [AXIOM:Shell(ShellMid ShellTop ScuteFront ScuteMid ScuteBack)(Plastron)(Tail)(&{90}+{50.19}~{0.3124} | HipBL && LegBL)(&{90}+{-50.19}~{0.3124} | HipBR && LegBR)(&{-90}+{50.19}~{0.3124} | HipFL && LegFL)(&{-90}+{-50.19}~{0.3124} | HipFR && LegFR)(&{87.14}~{0.4005} | Neck(&{90}~{0.16} | Head(Snout)(EyeL)(EyeR)))]
+  [AXIOM:Shell(ShellMid ShellTop ScuteFront ScuteMid ScuteBack)(Plastron)(Tail)(@{-0.24;0;0.2} | HipBL && LegBL)(@{0.24;0;0.2} | HipBR && LegBR)(@{-0.24;0;-0.2} | HipFL && LegFL)(@{0.24;0;-0.2} | HipFR && LegFR)(@{0;0.02;0.4} | Neck(@{0;0;0.16} | Head(Snout)(EyeL)(EyeR)))]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:8]
     [POSE:LegBL:LegBL]
@@ -383,7 +383,7 @@
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02][SPAWN_ON:Forest01]
   [NOISE_THRESHOLD:0.75]
   [HASH_SEED1:2718281829][HASH_SEED2:3141592653][HASH_MOD:70][HASH_REM:7]
-  [AXIOM:Body(Breast)(WingL)(WingR)(&{-45}+{60.5}~{0.1149} | && ThighL | &{180}~{0.14} | && ShankL | &{147.99}~{0.1887} | && FootL)(&{-45}+{-60.5}~{0.1149} | && ThighR | &{180}~{0.14} | && ShankR | &{147.99}~{0.1887} | && FootR)(&{-45}~{0.3111} | TailPivot TrainStyle)(Neck Head Beak(EyeL)(EyeR)(CrestStyle))]
+  [AXIOM:Body(Breast)(WingL)(WingR)(@{-0.1;0.04;-0.04} | && ThighL | @{0;-0.14;0} | && ShankL | @{0;-0.16;0.1} | && FootL)(@{0.1;0.04;-0.04} | && ThighR | @{0;-0.14;0} | && ShankR | @{0;-0.16;0.1} | && FootR)(@{0;0.22;-0.22} | TailPivot TrainStyle)(Neck Head Beak(EyeL)(EyeR)(CrestStyle))]
 
   [CLIP:walk:ThighL ThighR ShankL ShankR FootL FootR ~ &&ThighL^^ThighR &ShankL^ShankR ^^^FootL&&&FootR ~ ^^ThighL&&ThighR ^ShankL&ShankR &&&FootL^^^FootR ~ ^^ThighL&&ThighR ^ShankL&ShankR &&&FootL^^^FootR ~ &&ThighL^^ThighR &ShankL^ShankR ^^^FootL&&&FootR:moving:8:9]
     [POSE:ThighL:ThighL]
@@ -443,7 +443,7 @@
   [SPAWN_ON:Snow][SPAWN_ON:Ice01][SPAWN_ON:Forest02][SPAWN_ON:Grass01]
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:1327217909][HASH_SEED2:2971215073][HASH_MOD:100][HASH_REM:11]
-  [AXIOM:Body(Chest)(SpineFront)(SpineMid)(SpineBack)(&{82.41}+{27.86}~{0.3423} | HipBL && LegBL)(&{82.41}+{-27.86}~{0.3423} | HipBR && LegBR)(&{-82.41}+{27.86}~{0.3423} | HipFL && LegFL)(&{-82.41}+{-27.86}~{0.3423} | HipFR && LegFR)(&{-85.24}~{0.4817} | Tail1 | &{-104.93}~{0.1552} | Tail2 | &{-104.93}~{0.1552} | Tail3 TailTip)(Neck Head(Snout(Nose)(&&ToothUL1)(&&ToothUL2)(&&ToothUR1)(&&ToothUR2))(EyeL)(EyeR)(HornStyle)(Jaw(Chin)(ToothLL)(ToothLR)))]
+  [AXIOM:Body(Chest)(SpineFront)(SpineMid)(SpineBack)(@{-0.16;0.04;0.3} | HipBL && LegBL)(@{0.16;0.04;0.3} | HipBR && LegBR)(@{-0.16;0.04;-0.3} | HipFL && LegFL)(@{0.16;0.04;-0.3} | HipFR && LegFR)(@{0;0.04;-0.48} | Tail1 | @{0;-0.04;-0.15} | Tail2 | @{0;-0.04;-0.15} | Tail3 TailTip)(Neck Head(Snout(Nose)(&&ToothUL1)(&&ToothUL2)(&&ToothUR1)(&&ToothUR2))(EyeL)(EyeR)(HornStyle)(Jaw(Chin)(ToothLL)(ToothLR)))]
   [RULE:HornStyle:HornBaseL HornBaseR:30]
   [RULE:HornStyle:HornBaseL HornMidL HornBaseR HornMidR:40]
   [RULE:HornStyle:HornBaseL HornMidL HornTipL HornBaseR HornMidR HornTipR:30]
@@ -506,7 +506,7 @@
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02][SPAWN_ON:Forest01][SPAWN_ON:Forest02]
   [NOISE_THRESHOLD:0.78]
   [HASH_SEED1:2654435761][HASH_SEED2:374761393][HASH_MOD:48][HASH_REM:5]
-  [AXIOM:Body(&{-20.56}~{0.1709} | Mantle(StudTop)(StudTL)(StudTR)(StudBL)(StudBR)(StudBack)(StudFront)(StudRearL)(StudRearC)(StudRearR)(StudSideL1)(StudSideL2)(StudSideL3)(StudSideR1)(StudSideR2)(StudSideR3))(EyeL)(EyeR)(Nose)(&{90}+{45}~{0.1838} | HipBL && LegBL)(&{90}+{-45}~{0.1838} | HipBR && LegBR)(&{-90}+{45}~{0.1838} | HipFL && LegFL)(&{-90}+{-45}~{0.1838} | HipFR && LegFR)]
+  [AXIOM:Body(@{0;0.16;-0.06} | Mantle(StudTop)(StudTL)(StudTR)(StudBL)(StudBR)(StudBack)(StudFront)(StudRearL)(StudRearC)(StudRearR)(StudSideL1)(StudSideL2)(StudSideL3)(StudSideR1)(StudSideR2)(StudSideR3))(EyeL)(EyeR)(Nose)(@{-0.13;0;0.13} | HipBL && LegBL)(@{0.13;0;0.13} | HipBR && LegBR)(@{-0.13;0;-0.13} | HipFL && LegFL)(@{0.13;0;-0.13} | HipFR && LegFR)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:11]
     [POSE:LegBL:LegBL]
@@ -550,7 +550,7 @@
   [SPAWN_ON:Snow][SPAWN_ON:Ice01][SPAWN_ON:Rock01]
   [NOISE_THRESHOLD:0.5]
   [HASH_SEED1:3141592653][HASH_SEED2:1618033988][HASH_MOD:50][HASH_REM:3]
-  [AXIOM:Body(Belly)(&{0}~{0.46} | Head(Beak)(EyePatchL)(EyePatchR)(PupilL)(PupilR))(&{0}+{26.57}~{0.4249} | FlipperPivotL FlipperL)(&{0}+{-26.57}~{0.4249} | FlipperPivotR FlipperR)(&{-45}+{74.21}~{0.1039} | && ThighL | &{180}~{0.10} | && ShankL | &{129.81}~{0.0781} | && FootL)(&{-45}+{-74.21}~{0.1039} | && ThighR | &{180}~{0.10} | && ShankR | &{129.81}~{0.0781} | && FootR)]
+  [AXIOM:Body(Belly)(@{0;0.46;0} | Head(Beak)(EyePatchL)(EyePatchR)(PupilL)(PupilR))(@{-0.1901;0.38;0} | FlipperPivotL FlipperL)(@{0.1901;0.38;0} | FlipperPivotR FlipperR)(@{-0.1;0.02;-0.02} | && ThighL | @{0;-0.1;0} | && ShankL | @{0;-0.05;0.06} | && FootL)(@{0.1;0.02;-0.02} | && ThighR | @{0;-0.1;0} | && ShankR | @{0;-0.05;0.06} | && FootR)]
 
   [CLIP:walk:ThighL ThighR ShankL ShankR FootL FootR ~ &&ThighL^^ThighR &ShankL^ShankR ^^^FootL&&&FootR ~ ^^ThighL&&ThighR ^ShankL&ShankR &&&FootL^^^FootR ~ ^^ThighL&&ThighR ^ShankL&ShankR &&&FootL^^^FootR ~ &&ThighL^^ThighR &ShankL^ShankR ^^^FootL&&&FootR:moving:8:9]
     [POSE:ThighL:ThighL]
@@ -588,7 +588,7 @@
   [SPAWN_ON:Sand01][SPAWN_ON:Sand02][SPAWN_ON:Sand05][SPAWN_ON:Gravel01]
   [NOISE_THRESHOLD:0.75]
   [HASH_SEED1:2654435761][HASH_SEED2:40503][HASH_MOD:50][HASH_REM:12]
-  [AXIOM:Body(&{53.13}~{0.5} | &{78} Neck1 | &{78}~{0.2} | &{60} Neck2 | &{60}~{0.2} | &{35} Neck3 | &{35}~{0.2} | &{55} Head(| Snout)(| Nose)(| EarL)(| EarR)(| EyeL)(| EyeR))(&{-56.31}~{0.505} | &{200} Tail1 | &{200}~{0.16} | &{205} Tail2)(&{73}+{23}~{0.36} | HipBL && LegBL)(&{73}+{-23}~{0.36} | HipBR && LegBR)(&{-73}+{23}~{0.36} | HipFL && LegFL)(&{-73}+{-23}~{0.36} | HipFR && LegFR)(HumpBa)(HumpBb)(HumpBc)(HumpFa)(HumpFb)(HumpFc)]
+  [AXIOM:Body(@{0;0.3;0.4} | &{78} Neck1 | @{0;0.0416;0.1956} | &{60} Neck2 | @{0;0.1;0.1732} | &{35} Neck3 | @{0;0.1638;0.1147} | &{55} Head(| Snout)(| Nose)(| EarL)(| EarR)(| EyeL)(| EyeR))(@{0;0.2801;-0.4202} | &{200} Tail1 | @{0;-0.1504;-0.0547} | &{205} Tail2)(@{-0.1407;0.0969;0.3169} | HipBL && LegBL)(@{0.1407;0.0969;0.3169} | HipBR && LegBR)(@{-0.1407;0.0969;-0.3169} | HipFL && LegFL)(@{0.1407;0.0969;-0.3169} | HipFR && LegFR)(HumpBa)(HumpBb)(HumpBc)(HumpFa)(HumpFb)(HumpFc)]
   [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:10]
