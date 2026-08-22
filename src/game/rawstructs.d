@@ -82,7 +82,7 @@ struct Tex { string role; string name; }
 
 Tex[] parseTextures(string v) pure {
   Tex[] r;
-  if(v.length >= 2 && v[0] == '{' && v[$ - 1] == '}') { v = v[1 .. $ - 1] };
+  if(v.length >= 2 && v[0] == '{' && v[$ - 1] == '}') { v = v[1 .. $ - 1]; }
   foreach(pair; v.split(";")) {
     immutable e = pair.indexOf('=');
     if(e > 0) { r ~= Tex(pair[0 .. e], pair[e + 1 .. $]); }
