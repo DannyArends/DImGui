@@ -110,6 +110,6 @@ void computeBoundingBox(T)(ref T object, bool verbose = false) {
   float maxDim = fmax(size.x, fmax(size.y, size.z));
   float scaleFactor = (maxDim > 0) ? 4.0f / maxDim : 4.0f; // Scale to unit cube
 
-  Matrix scaleToFit = scale(Matrix(), [scaleFactor, scaleFactor, scaleFactor]);
+  Matrix scaleToFit = scale([scaleFactor, scaleFactor, scaleFactor]);
   return(scaleToFit);
 }

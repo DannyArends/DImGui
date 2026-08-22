@@ -100,40 +100,21 @@ struct Matrix {
   // Apply rotations in the order: Roll -> Pitch -> Yaw (local axes)
   return(rotateRoll.multiply(rotatePitch).multiply(rotateYaw));
 }
-
-/** Scale from a matrix M */
-float[3] scale(const Matrix m) {
-  float[3] s = [magnitude(m[0..3]), magnitude(m[4..7]), magnitude(m[8..11])];
-  return(s);
-}
-
-@nogc pure Matrix scale(const Matrix m, const float[3] v) nothrow {
-  return(multiply(m, scale(v)));
-}
-
-@nogc pure Matrix scale(const float[3] v) nothrow {
-  Matrix scale;
-  scale[0] = v[0]; scale[5] = v[1]; scale[10] = v[2];
-  return(scale);
-}
-
-/** Matrix x Translation V(x, y, z) */
-@nogc pure Matrix translate(const Matrix m, const float[3] v) nothrow {
-  return(multiply(m, translate(v)));
-}
-
-/** Translation V(x, y, z) */
-@nogc pure Matrix translate(const float[3] v) nothrow {
-  Matrix translation;
-  translation[12] = v[0]; translation[13] = v[1]; translation[14] = v[2];
-  return(translation);
-}
-
-/** getTranslation float[3] from a Matrix V4(l, r, b, t) */
+/** Get the translation column of m. */
 @nogc pure float[3] position(const Matrix m) nothrow { return([m[12], m[13], m[14]]); }
+/** Copy of m with its translation column set to v (overwrite, no compose). */
 @nogc pure Matrix position(const Matrix m, const float[3] v) nothrow {
   Matrix r = m; r[12] = v[0]; r[13] = v[1]; r[14] = v[2]; return(r);
 }
+/** Pure translation matrix: identity with translation column v. */
+@nogc pure Matrix translate(const float[3] v) nothrow { return position(Matrix(), v); }
+/** m composed with a translation: m · translate(v). */
+@nogc pure Matrix translate(const Matrix m, const float[3] v) nothrow { return multiply(m, translate(v)); }
+
+/** Get the per-axis scale magnitudes of m. */
+@nogc pure float[3] scale(const Matrix m) nothrow { return([magnitude(m[0..3]), magnitude(m[4..7]), magnitude(m[8..11])]); }
+/** Pure scale matrix: identity with scale diagonal v. */
+@nogc pure Matrix scale(const float[3] v) nothrow { Matrix r; r[0] = v[0]; r[5] = v[1]; r[10] = v[2]; return(r); }
 
 /** Orthogonal projection Matrix V4(l, r, b, t) */
 @nogc pure Matrix orthogonal(float left, float right, float bottom, float top, float near, float far) nothrow {
