@@ -164,9 +164,7 @@ pure LSym[] lex(const(char)[] s) {
   return(false);
 }
 
-/** Grow an axiom to a fixed point: repeatedly rewrite, each rule gated by the [nMin, nMax) window on the
-    matched module's own parameter n (the axiom seeds the initial n), until no rule matches. Deterministic from seed.
-    One builder for vegetation, entities, and clip time-walks — the cap is data (a rule), not a phase. */
+/** Grow an axiom to its fixed point: rewrite until no rule's [nMin,nMax) window matches, deterministic from seed. */
 pure LSym[] grammar(uint seed, int size, string axiom, const(Rule)[] rules, int safety = 1024) {
   auto ls = LSystem(expand(axiom, size));
   foreach(ref r; rules) { ls.rules[r.predecessor] ~= r; }

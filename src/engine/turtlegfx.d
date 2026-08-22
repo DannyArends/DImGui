@@ -11,7 +11,7 @@ import matrix : segmentTransform, position, inverse, translation, multiply;
 import quaternion : angleAxis, qMul, rotate, toQuaternion;
 import vector : vAdd;
 
-/** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree. */
+/** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree */
 struct RigNode {
   int parent = -1;                                /// index of parent RigNode in the returned array; -1 == root
   DrawInstance inst;                              /// draw instance: world matrix (bind pose) + material + color
@@ -21,25 +21,26 @@ struct RigNode {
   float[3] base = [0.0f, 0.0f, 0.0f];             /// joint origin (segment base = jointWorld translation)
 }
 
-/** One keyframe from the time-walk: the step index and the cursor quaternion recorded for a bone. */
+/** One keyframe from the time-walk: the step index and the cursor quaternion recorded for a bone */
 struct PoseKey {
   int step;         /// clip tick this key lands on
   float[4] quat;    /// accumulated cursor orientation at that step
 }
 
+/** Live turtle cursor: world position and heading quaternion */
 struct TurtleState {
   float[3] pos;
   float[4] orient;
 }
 
-/** Everything the per-step bake needs for one rig node. */
+/** Everything the per-step bake needs for one rig node */
 struct PoseCtx {
   const(string)[] syms;                 /// clip symbols targeting this bone
   const(PoseKey[][string]) tracks;      /// baked key streams, by symbol
   Matrix Rr;                            /// localJ with translation stripped (cursor frame)
 }
 
-/** An animation as its own L-system, walked in TIME -> baked into NodeAnimation tracks. */
+/** An animation as its own L-system, walked in TIME -> baked into NodeAnimation tracks */
 struct AnimClip {
   string name;                /// "walk", "idle", ...
   string axiom = "";          /// clip L-system start symbols
@@ -50,19 +51,16 @@ struct AnimClip {
   float turn = 25.0f;         /// degrees per turn symbol (swing amplitude)
 }
 
-string boneName(string prefix, size_t k) { return format("%s%d", prefix, k); }
+pure string boneName(string prefix, size_t k) { return format("%s%d", prefix, k); }
 
-/** Rigid joint frame of a rig node: normalized bind rotation, origin at the segment base (the pivot). */
-@nogc Matrix jointWorld(ref const RigNode n) nothrow {
-  Matrix J = rotate(n.frame);
-  return J.position(n.base);
-}
+/** Rigid joint frame of a rig node: normalized bind rotation, origin at the segment base (the pivot) */
+@nogc pure Matrix jointWorld(ref const RigNode n) nothrow { return(rotate(n.frame).position(n.base)); }
 
 /** Rigid joint frame of every rig node, indexed like `rig`. */
-Matrix[] jointWorlds(const RigNode[] rig) nothrow {
+pure Matrix[] jointWorlds(const RigNode[] rig) nothrow {
   auto J = new Matrix[](rig.length);
-  foreach(k, ref n; rig) J[k] = jointWorld(n);
-  return J;
+  foreach(k, ref n; rig) { J[k] = jointWorld(n); }
+  return(J);
 }
 
 /** Node tree calculateGlobalTransform walks: rigid joint frames, node k named `prefix~k`. */
