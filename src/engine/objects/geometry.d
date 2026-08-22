@@ -90,9 +90,9 @@ class Geometry {
   }
 
   @nogc float[3] position(uint instance = 0) nothrow { assert(instance <  instances.length, "No such instance");
-    import matrix : translate;
+    import matrix : translation;
 
-    return(translate(instances[instance]));
+    return(translation(instances[instance]));
   }
 
   /** Rotate instance from object.instances by r */
