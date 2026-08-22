@@ -131,9 +131,8 @@ float[3] scale(const Matrix m) {
 
 /** getTranslation float[3] from a Matrix V4(l, r, b, t) */
 @nogc pure float[3] position(const Matrix m) nothrow { return([m[12], m[13], m[14]]); }
-@nogc pure Matrix position(ref Matrix m, const float[3] v) nothrow { 
-  m[12] = v[0]; m[13] = v[1]; m[14] = v[2];
-  return(m);
+@nogc pure Matrix position(const Matrix m, const float[3] v) nothrow {
+  Matrix r = m; r[12] = v[0]; r[13] = v[1]; r[14] = v[2]; return(r);
 }
 
 /** Orthogonal projection Matrix V4(l, r, b, t) */

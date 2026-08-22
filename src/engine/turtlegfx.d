@@ -113,8 +113,7 @@ Matrix stepLocal(ref const PoseCtx c, int step) {
 
 /** Bake the keyframe track for one rig node from all clip poses that target its symbol. */
 NodeAnimation nodeAnimation(const string[] syms, const PoseKey[][string] tracks, const Matrix localJ) {
-  Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
-  auto c = PoseCtx(syms, tracks, Rr);
+  auto c = PoseCtx(syms, tracks, localJ.position([0.0f,0.0f,0.0f]));
 
   int[] steps;
   foreach(sym; syms) { foreach(ref pk; tracks[sym]) { if(!steps.canFind(pk.step)) { steps ~= pk.step; } } }
