@@ -5,8 +5,8 @@
 
 import phobos;
 
-enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];         /// Axis sentinel: not a turn / use cursor frame
-enum Effect : ubyte { asset, bone, brush, pose }    /// asset: unused, bone: skeleton node (mesh optional), brush: leaf draw, pose
+enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
+enum Effect : ubyte { bone, brush, pose }       /// bone: skeleton node (mesh optional), brush: leaf draw, pose
 enum string RESERVED = "()~%|+-&^<>";
 
 /** A production rule: predecessor, production, weight, and the window [nMin, nMax) on the matched
@@ -42,8 +42,6 @@ struct Symbol {
   float jitterA = 0.0f;                         /// brush: ± turn-angle jitter while this brush is active (0 = off)
   float jitterL = 0.0f;                         /// brush: ± segment length jitter (0 = off)
   string target = "";                           /// pose: bone symbol this pose writes to
-  string asset;                                 /// asset: external mesh/entity id (Phase 2)
-  string socket;                                /// asset: named equip slot; "" == fixed graft (Phase 2)
 }
 
 /** Turtle config: per-axis turn angles (degrees) + the symbol alphabet. */

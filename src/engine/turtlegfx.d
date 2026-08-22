@@ -14,13 +14,11 @@ import vector : vAdd;
 /** One rigid part emitted by the turtle walk: a brush instance plus its place in the rig tree. */
 struct RigNode {
   int parent = -1;                                /// index of parent RigNode in the returned array; -1 == root
-  Matrix local;                                   /// transform relative to parent (world == parent.world · local)
   DrawInstance inst;                              /// draw instance: world matrix (bind pose) + material + color
   string symbol;                                  /// brush symbol -> shared geometry
   bool isBone = true;                             /// false = static cloud cube, rides its parent bone
   float[4] frame = [0.0f, 0.0f, 0.0f, 1.0f];      /// bone local orientation; H/L/U = rotate(frame) columns
   float[3] base = [0.0f, 0.0f, 0.0f];             /// joint origin (segment base = jointWorld translation)
-  float length = 0.0f;                            /// step distance along H (mesh-independent)
 }
 
 /** One keyframe from the time-walk: the step index and the cursor quaternion recorded for a bone. */
@@ -38,9 +36,7 @@ struct TurtleState {
 struct PoseCtx {
   const(string)[] syms;                 /// clip symbols targeting this bone
   const(PoseKey[][string]) tracks;      /// baked key streams, by symbol
-  float side;                         /// left/right mirror sign (from bind X)
-  Matrix localJ;                      /// node's rigid local (rotation + position)
-  Matrix Rr;                          /// localJ with translation stripped (cursor frame)
+  Matrix Rr;                            /// localJ with translation stripped (cursor frame)
 }
 
 /** An animation as its own L-system, walked in TIME -> baked into NodeAnimation tracks. */
@@ -109,17 +105,16 @@ float[4] quatAtStep(const PoseKey[] keys, int step) {
 }
 
 /** Local rotation for a node at one step: cursor swing in the bone frame, composing all its pose tracks. */
-Matrix stepLocal(ref const PoseCtx c, ref immutable AnimClip clip, int step) {
+Matrix stepLocal(ref const PoseCtx c, int step) {
   float[4] q = Quaternion.init;
   foreach(sym; c.syms) { q = qMul(q, quatAtStep(c.tracks[sym], step)); }
   return(rotate(q).multiply(c.Rr));
 }
 
 /** Bake the keyframe track for one rig node from all clip poses that target its symbol. */
-NodeAnimation nodeAnimation(ref const RigNode n, const string[] syms, ref immutable AnimClip clip, 
-                            const PoseKey[][string] tracks, const Matrix localJ) {
+NodeAnimation nodeAnimation(const string[] syms, const PoseKey[][string] tracks, const Matrix localJ) {
   Matrix Rr = localJ; Rr[12] = 0.0f; Rr[13] = 0.0f; Rr[14] = 0.0f;
-  auto c = PoseCtx(syms, tracks, (n.inst.matrix[12] < 0.0f) ? -1.0f : 1.0f, localJ, Rr);
+  auto c = PoseCtx(syms, tracks, Rr);
 
   int[] steps;
   foreach(sym; syms) { foreach(ref pk; tracks[sym]) { if(!steps.canFind(pk.step)) { steps ~= pk.step; } } }
@@ -128,7 +123,7 @@ NodeAnimation nodeAnimation(ref const RigNode n, const string[] syms, ref immuta
   NodeAnimation na = {positionKeys: [PositionKey(0.0, position(localJ))], scalingKeys:  [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])]};
   na.rotationKeys.length = steps.length;
   foreach(i, step; steps) {
-    na.rotationKeys[i] = RotationKey(cast(double)step, toQuaternion(stepLocal(c, clip, step)));
+    na.rotationKeys[i] = RotationKey(cast(double)step, toQuaternion(stepLocal(c, step)));
   }
   return(na);
 }
@@ -146,7 +141,7 @@ Animation clipAnimation(const RigNode[] rig, string prefix, ref immutable AnimCl
     foreach(sym, ref b; clip.poses) { if(b.target == n.symbol && sym in tracks) { syms ~= sym; } }
     if(syms.length == 0) continue;
     const Matrix localJ = (n.parent < 0) ? J[k] : J[n.parent].inverse().multiply(J[k]);
-    a.nodeAnimations[boneName(prefix, k)] = nodeAnimation(n, syms, clip, tracks, localJ);
+    a.nodeAnimations[boneName(prefix, k)] = nodeAnimation(syms, tracks, localJ);
   }
   return(a);
 }
@@ -206,7 +201,7 @@ struct RigSink {
     auto color = cast(int)paletteOrdinal(s.color);
     latchA = s.jitterA; latchL = s.jitterL;                                   // turns after this brush inherit its jitter
     immutable float len = (s.jitterL != 0.0f) ? s.length * (1.0f + uniform(-s.jitterL, s.jitterL, rnd)) : s.length;
-    nodes ~= RigNode(current, Matrix(), DrawInstance(segmentTransform(dp, R, rad, len, dep), s.material, color), c, true, st.orient, dp, len);
+    nodes ~= RigNode(current, DrawInstance(segmentTransform(dp, R, rad, len, dep), s.material, color), c, true, st.orient, dp);
     current = cast(int)nodes.length - 1;
   }
 }
@@ -236,7 +231,6 @@ RigNode[] interpretRig(const(LSym)[] symbols, const TurtleConfig cfg, float[3] o
   auto sink = RigSink(); sink.st = TurtleState(origin, orient0);
   sink.rnd = Random((seed ^ 0x9E3779B9) | 1);
   walk(symbols, cfg.alpha, cfg, sink);
-  foreach(ref n; sink.nodes){ n.local = (n.parent < 0) ? n.inst.matrix : sink.nodes[n.parent].inst.matrix.inverse().multiply(n.inst.matrix); }
   return sink.nodes;
 }
 
