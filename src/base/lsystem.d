@@ -19,7 +19,8 @@ struct Rule {
   int nMax = int.max;                           /// window high (exclusive); int.max = open
 }
 
-/** One L-system token: a module name and an optional integer parameter (NONE = bare, e.g. a glyph or plain brush). */
+/** One L-system token: a module name and an optional integer parameter (NONE = bare, e.g. a glyph or plain brush).
+ * TODO: add @{x,y,z} walk-to-point glyph (engine-side `solve` into current frame) to replace hand-solved &{θ}+{φ}~{d} */
 struct LSym {
   enum int NONE = int.min;   /// sentinel: no parameter
   string name;               /// module name or single glyph

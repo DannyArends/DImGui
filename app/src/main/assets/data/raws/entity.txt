@@ -443,8 +443,16 @@
   [SPAWN_ON:Snow][SPAWN_ON:Ice01][SPAWN_ON:Forest02][SPAWN_ON:Grass01]
   [NOISE_THRESHOLD:0.70]
   [HASH_SEED1:1327217909][HASH_SEED2:2971215073][HASH_MOD:100][HASH_REM:11]
-  [AXIOM:Body(Chest)(SpineFront)(SpineMid)(SpineBack)(&{82.41}+{27.86}~{0.3423} | HipBL && LegBL)(&{82.41}+{-27.86}~{0.3423} | HipBR && LegBR)(&{-82.41}+{27.86}~{0.3423} | HipFL && LegFL)(&{-82.41}+{-27.86}~{0.3423} | HipFR && LegFR)(&{-85.24}~{0.4817} | Tail1 | &{-104.93}~{0.1552} | Tail2 | &{-104.93}~{0.1552} | Tail3 TailTip)(Neck Head(Snout(Nose)(&&ToothUL1)(&&ToothUL2)(&&ToothUR1)(&&ToothUR2))(EyeL)(EyeR)(HornStyle)(Jaw(Chin)(ToothLL)(ToothLR)))]
-  [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
+  [AXIOM:Body(Chest)(SpineFront)(SpineMid)(SpineBack) Legs Tail Neck]
+  [RULE:Legs:(&{82.41}+{27.86}~{0.3423} | HipBL && LegBL)(&{82.41}+{-27.86}~{0.3423} | HipBR && LegBR)(&{-82.41}+{27.86}~{0.3423} | HipFL && LegFL)(&{-82.41}+{-27.86}~{0.3423} | HipFR && LegFR):100]
+  [RULE:Tail:(&{-85.24}~{0.4817} | Tail1 | &{-104.93}~{0.1552} | Tail2 | &{-104.93}~{0.1552} | Tail3 TailTip):100]
+  [RULE:Neck:(Neck Head(Snout(Nose)(&&ToothUL1)(&&ToothUL2)(&&ToothUR1)(&&ToothUR2))(EyeL)(EyeR)(HornStyle)(Jaw(Chin)(ToothLL)(ToothLR))):100]
+  [RULE:HornStyle:HornBaseL HornBaseR:30]
+  [RULE:HornStyle:HornBaseL HornMidL HornBaseR HornMidR:40]
+  [RULE:HornStyle:HornBaseL HornMidL HornTipL HornBaseR HornMidR HornTipR:30]
+  [RULE:TailTip:TailSpade:45]
+  [RULE:TailTip:TailSpike:25]
+  [RULE:TailTip::30]
 
   [CLIP:walk:strideTail strideTailTip LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL <strideTail<strideTailTip ~ ^^LegBL^^LegFR&&LegBR&&LegFL >strideTail>strideTailTip ~ ^^LegBL^^LegFR&&LegBR&&LegFL >strideTail>strideTailTip ~ &&LegBL&&LegFR^^LegBR^^LegFL <strideTail<strideTailTip:moving:8:9]
     [POSE:LegBL:LegBL]
@@ -456,6 +464,8 @@
   [CLIP:idle:wagT wagTip ~ <wagT<<wagTip ~ >wagT>>wagTip ~ >wagT>>wagTip ~ <wagT<<wagTip::5:6]
     [POSE:wagT:Tail1]
     [POSE:wagTip:Tail3]
+
+  [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
 
   [BRUSH:Body:Cube:0.34:0.34:color=darkred:offZ=0.00:depth=0.80]
   [BRUSH:Chest:Cube:0.30:0.10:color=goldenrod:offY=-0.06:offZ=0.00:depth=0.74]
@@ -492,12 +502,6 @@
   [BRUSH:ToothLL:Pyramid:0.035:0.05:color=white:offX=-0.05:offY=0.56:offZ=0.86:depth=0.035]
   [BRUSH:ToothLR:Pyramid:0.035:0.05:color=white:offX=0.05:offY=0.56:offZ=0.86:depth=0.035]
 
-  [RULE:HornStyle:HornBaseL HornBaseR:30]
-  [RULE:HornStyle:HornBaseL HornMidL HornBaseR HornMidR:40]
-  [RULE:HornStyle:HornBaseL HornMidL HornTipL HornBaseR HornMidR HornTipR:30]
-  [RULE:TailTip:TailSpade:45]
-  [RULE:TailTip:TailSpike:25]
-  [RULE:TailTip::30]
 
 [ENTITY:Hedgehog]
   [MOVE_SPEED:0.8][DIET:Berry]
