@@ -62,6 +62,7 @@ struct LSystemBoneT {
 struct LSystemBrushT {
   string symbol;                                /// grammar symbol, e.g. 'Y' or 'I'
   string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
+  Tex[] textures;                               /// role->texture bindings for the drawn geometry
   Substance substance;                          /// Substance drawn
   float[3] size = [0.1f, 1.0f, 0.1f];           /// local half-extents [radius(X), length(Y), depth(Z)]
   float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
