@@ -41,8 +41,8 @@ TurtleConfig rawConfig(ref const RawT r, bool renderOnly = false) {
  *  (restricted to raw blocks when `raw`, so crafted items never fill a build/ingredient demand). */
 @nogc pure bool matchDemand(const Item it, Substance cls, ItemTemplate want, ResourceType type = ResourceType.None, bool raw = true) nothrow {
   if(want != ItemTemplate.None) return it.shape == want;
-  if(type != ResourceType.None) return it.isRaw && it.material == type;   // exact variant (Building)
-  return (!raw || it.isRaw) && (cls == Substance.None || resourceTable[it.material].substance == cls);
+  if(type != ResourceType.None) return !it.hasShape && it.material == type;   // exact variant (Building)
+  return (!raw || !it.hasShape) && (cls == Substance.None || resourceTable[it.material].substance == cls);
 }
 
 /** Carried block ids satisfying a demand (want ? by template : by material substance; crafted allowed). */
@@ -65,7 +65,6 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 }
 
 // Item = (shape template x material [+ contents]); accessors compute everything from the pair at use time.
-@nogc pure bool isRaw(const Item it) nothrow { return it.shape == ItemTemplate.None; }
 @nogc pure bool hasShape(const Item it) nothrow { return it.shape != ItemTemplate.None; }
 @nogc pure bool isContainer(const Item it) nothrow { return itemTemplateTable[it.shape].capacity > 0; }
 @nogc pure bool isFull(const Item it) nothrow { return it.amount >= itemTemplateTable[it.shape].capacity; }

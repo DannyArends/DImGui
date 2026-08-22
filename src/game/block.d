@@ -9,7 +9,7 @@ import color : paletteOrdinal;
 import lattice : tileToWorld, tileAbove, chunkCoord;
 import matrix : translateScale, scale;
 import stockpile : slotsPerTile, subCellOffset, storedTileOf, emptySlot;
-import resources : isFood, toItem, isRaw, hasShape, templateMat, matchDemand;
+import resources : isFood, toItem, hasShape, templateMat, matchDemand;
 import tile : isStandable, inColumn, landingTile, hasStandableNeighbour;
 import vector : manhattan;
 
@@ -53,7 +53,7 @@ void loadBlocks(ref GameApp app, Block[] flat) {
 }
 
 /** Do we have a certain resourceType? */
-@nogc pure bool hasResource(const Drops drops, ResourceType tt) nothrow { return drops.byValue.any!(b => b.item.isRaw && b.item.material == tt); }
+@nogc pure bool hasResource(const Drops drops, ResourceType tt) nothrow { return drops.byValue.any!(b => !b.item.hasShape && b.item.material == tt); }
 
 /** Returns the ResourceType of a block by ID, or ResourceType.None if not found */
 ResourceType resourceType(const Drops drops, uint id) { auto b = id in drops; return b ? b.item.material : ResourceType.None; }
@@ -66,7 +66,7 @@ void release(ref Drops drops, uint[] ids) { foreach(id; ids){ if(auto b = id in 
 
 /** Count unreserved, available blocks of a type. */
 @nogc pure uint available(const Drops drops, ResourceType tt) nothrow { 
-  return cast(uint)drops.byValue.count!(b => b.item.isRaw && b.item.material == tt && !b.reserved); }
+  return cast(uint)drops.byValue.count!(b => !b.item.hasShape && b.item.material == tt && !b.reserved); }
 
 /** Count unreserved drops satisfying an ingredient demand (raw material of a substance, or an item template). */
 @nogc pure uint available(const Drops drops, const Ingredient ing) nothrow {
@@ -104,7 +104,7 @@ private uint findFreeBlockWhere(alias accept)(const World world, const int[3] dw
 }
 
 uint findFreeBlock(const World world, const int[3] dwarfTile, ResourceType tt = ResourceType.None, bool includeStored = true) {
-  return findFreeBlockWhere!(b => b.item.isRaw && (tt == ResourceType.None || b.item.material == tt))(world, dwarfTile, includeStored);
+  return findFreeBlockWhere!(b => !b.item.hasShape && (tt == ResourceType.None || b.item.material == tt))(world, dwarfTile, includeStored);
 }
 
 uint findFreeFood(const World world, const int[3] dwarfTile, bool includeStored = true) {
