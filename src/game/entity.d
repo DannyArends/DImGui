@@ -9,7 +9,6 @@ import animation : animateAsset;
 import color : paletteOrdinal;
 import matrix : multiply, position, rotate, scale;
 import pathfinding : followPath, stepMove, repathTo, RepathResult;
-import resources : itemStack;
 import scheduler : atDestination;
 import skeleton : animateSkeleton, buildSkeleton;
 import vector : vMul;
@@ -43,7 +42,7 @@ struct EntityData(uint N) {
   bool pickup(uint blockID, Item item) {
     foreach(ref s; inventory) {
       if(!s.accepts(item)) continue;
-      if(s.empty) { s.kind = itemStack(item) > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.item = item; }
+      if(s.empty) { s.kind = resourceTable[item.shape].stackSize > 1 ? InventorySlot.Kind.Stack : InventorySlot.Kind.Block; s.item = item; }
       s.resourceIDs[s.count] = blockID;
       s.count++;
       return true;

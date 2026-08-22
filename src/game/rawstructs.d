@@ -80,29 +80,30 @@ Tex[] parseTextures(string v) pure {
 
 /** Render/item fields common to renderable raws (resources, item templates, ...). */
 mixin template Renderable() {
+  string name = "None";         /// Raw identifier
   string mesh = "Cube";                     /// geometry
   Tex[] textures;                           /// role->texture bindings
   Colors color = Colors.white;              /// tint colour
   float[3] size = [0.1f, 1.0f, 0.1f];       /// local half-extents [X,Y,Z]
   float[3] offset = [0.0f, 0.0f, 0.0f];     /// local draw offset [right,up,fwd]; offsetY == offset[1]
   float scale = 1.0f;                       /// uniform render scale (display multiplier, distinct from size)
-  int maxStack = 1;                         /// Stacks
+  int stackSize = 1;                        /// Stacksize
   float food = 0.0f;                        /// Food value
 }
 
-/** L-system brush: one grammar symbol. */
+/** L-system brush: one grammar symbol */
 struct LSystemBrushT {
-  string symbol;                                  /// grammar symbol, e.g. 'Y' or 'I'
   mixin Renderable;
-  Substance substance;                            /// Substance drawn
-  bool render = true;                             /// draw on the growing feature? false = harvest-only (a drop)
-  bool tint = false;                              /// tint with the entity's per-instance colour instead of `color`
-  float taper = 0.0f;                             /// radius growth per unit of the module parameter n (0 = uniform)
+  Substance substance;                      /// Substance drawn
+  bool render = true;                       /// draw on the growing feature? false = harvest-only (a drop)
+  bool tint = false;                        /// tint with the entity's per-instance colour instead of `color`
+  float taper = 0.0f;                       /// radius growth per unit of the module parameter n (0 = uniform)
+
+  @nogc pure string symbol() const nothrow { return(name); } /// grammar symbol, stored in the name ('Y' or 'I')
 }
 
-/** A tile/feature variant = substance @ source; the row backing each ResourceType member. */
+/** A tile/feature variant = substance @ source; the row backing each ResourceType member */
 struct ResourceT {
-  string name = "None";         /// Raw identifier
   mixin Renderable;
   Substance substance;          /// variant match key
   Source source;                /// which tile/feature produced it
@@ -110,9 +111,8 @@ struct ResourceT {
   bool build = false;           /// may be placed/built with
 }
 
-/** A crafted item template (shape) parsed from items.txt into itemTemplateTable. */
+/** A crafted item template (shape) parsed from items.txt into itemTemplateTable */
 struct ItemTemplateT {
-  string name = "None";         /// Raw identifier
   mixin Renderable;
   Substance[] accepts;          /// material's allowed substances; empty => any
   Substance[] holds;            /// contents' allowed substances; empty => not a container

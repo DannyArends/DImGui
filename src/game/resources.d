@@ -54,7 +54,6 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 @nogc bool traversable(const ResourceType r) pure nothrow { return resourceTable[r].traverse > 0.0f; }
 @nogc bool buildable(const ResourceType r) pure nothrow { return resourceTable[r].build; }
 @nogc float cost(const ResourceType r) pure nothrow { return resourceTable[r].traverse; }
-@nogc int maxStack(const ResourceType r) pure nothrow { return resourceTable[r].maxStack; }
 @nogc bool isFood(const Item it) pure nothrow { return it.foodValue() > 0.0f; }
 @nogc float foodValue(const Item it) pure nothrow {
   return it.isCraft ? itemTemplateTable[it.shape].food : it.material != ResourceType.None ? resourceTable[it.material].food : 0.0f;
@@ -70,7 +69,6 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 @nogc pure bool isCraft(const Item it) nothrow { return it.shape != ItemTemplate.None; }
 @nogc pure bool isContainer(const Item it) nothrow { return itemTemplateTable[it.shape].capacity > 0; }
 @nogc pure bool isFull(const Item it) nothrow { return it.amount >= itemTemplateTable[it.shape].capacity; }
-@nogc pure int itemStack(const Item it) nothrow { return it.isCraft ? itemTemplateTable[it.shape].maxStack : it.material.maxStack; }
 
 // Cup container predicates (Water fill mechanic; generalises to barrels/bins later)
 @nogc pure bool isCup(const Item it) nothrow { return it.shape == ItemTemplate.Cup; }

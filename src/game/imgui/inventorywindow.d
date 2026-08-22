@@ -45,7 +45,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
   igSeparator();
   igText("Items:");
   foreach(tileType; EnumMembers!ResourceType) {
-    if(tileType.maxStack <= 1) continue;
+    if(resourceTable[tileType].stackSize <= 1) continue;
     uint total = 0;
     if(app.world.dwarves !is null)
       foreach(ref d; app.world.dwarves){ foreach(ref s; d.inventory){

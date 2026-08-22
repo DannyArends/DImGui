@@ -47,7 +47,7 @@ bool parseRenderToken(T)(ref T cur, const string[] p) pure {
     } return true;
     case "SCALE":    cur.scale = to!float(p[1]); return true;
     case "OFFSET_Y": cur.offset[1] = to!float(p[1]); return true;
-    case "STACK":    cur.maxStack = to!int(p[1]);   return true;
+    case "STACK":    cur.stackSize = to!int(p[1]);   return true;
     case "FOOD":     cur.food = to!float(p[1]); return true;
     default: return false;
   }
@@ -112,7 +112,7 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
     case "BONE": if(p.length >= 2){ x.bones ~= LSystemBoneT(p[1]); } return true;
     case "BRUSH": if(p.length >= 4){
       auto sz = p[3].split(";");
-      LSystemBrushT b = { symbol: p[1], mesh: p[2], size: [to!float(sz[0]), to!float(sz[1]), to!float(sz[2])] };
+      LSystemBrushT b = { name: p[1], mesh: p[2], size: [to!float(sz[0]), to!float(sz[1]), to!float(sz[2])] };
       foreach(kv; p[4 .. $]) {
         immutable e = kv.indexOf('=');                 // "key=value"; bare "tint" allowed
         immutable string k = (e < 0) ? kv : kv[0 .. e];

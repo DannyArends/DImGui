@@ -9,7 +9,7 @@ import block : noBlock;
 import ghost : syncBuildGhosts;
 import jobs : buildingJob, jobQueue;
 import tile : getTileAt;
-import resources : isRaw, itemStack;
+import resources : isRaw;
 
 struct InventorySlot {
   enum Kind : ubyte { Empty, Block, Stack }
@@ -22,7 +22,7 @@ struct InventorySlot {
   @nogc @property bool isStack() const nothrow { return kind == Kind.Stack; }
   @nogc bool accepts(Item item) const {
     if(empty) return true;
-    return isStack && this.item == item && count < itemStack(item);
+    return isStack && this.item == item && count < resourceTable[item.shape].stackSize;
   }
 }
 

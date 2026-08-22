@@ -27,7 +27,7 @@ public import searchnode : PathNode;
 public import skeleton : Skeleton;
 public import stockpile : Stockpile, StockpileField;
 public import tool : ToolMode, PaintState;
-public import resources : Item, traversable, buildable, cost, maxStack, isFood, foodValue;
+public import resources : Item, traversable, buildable, cost, isFood, foodValue;
 public import vegetation : Vegetation;
 public import world : World, WorldData;
 
