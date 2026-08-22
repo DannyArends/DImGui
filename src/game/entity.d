@@ -160,8 +160,9 @@ void poseEntity(Container, Pawn)(ref GameApp app, Container container, ref Pawn 
   const int region = s.region;
   foreach(k, ref n; s.rig) {
     foreach(ref br; raw.brushes) { if(br.symbol == n.symbol) {
-      float[4] col = br.tint ? pawn.color : br.color;
-      auto inst = DrawInstance(world, -1, cast(int)paletteOrdinal(col));
+      auto inst = n.inst;
+      inst.matrix = world;                                 // override bind pose with this frame's world
+      if(br.tint) inst.instanceDef[1] = cast(float)paletteOrdinal(pawn.color);  // tint only: per-pawn colour
       inst.setStaticBase(n.isBone ? 0 : (s.staticBase + s.slot[k]));
       inst.setBoneBase(region + (n.isBone ? s.slot[k] : s.cloudBone[k]));
       container.meshes[br.mesh].instances ~= inst;
