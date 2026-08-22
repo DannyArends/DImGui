@@ -24,14 +24,13 @@ TurtleConfig rawConfig(ref const RawT r, bool renderOnly = false) {
   TurtleConfig cfg;
   foreach(ref br; r.brushes) {
     if(renderOnly && !br.render) continue;
-    int mat = -1; float[4] col = br.color; float dep = br.depth;
+    int mat = -1; float[4] col = br.color;
     if(br.substance != Substance.init) {
       immutable brt = variantOf(br.substance, r.name.to!Source);
       mat = cast(int)brt; 
       col = resourceTable[brt].color;
-      dep = -1.0f;
     }
-    cfg.alpha[br.symbol] = Symbol(Effect.brush, mat, br.radius, br.length, col, br.offset, dep, br.taper, br.jitterA, br.jitterL);
+    cfg.alpha[br.symbol] = Symbol(Effect.brush, mat, br.size, col, br.offset, br.taper, br.jitterA, br.jitterL);
   }
   foreach(ref b; r.bones) { cfg.alpha[b.symbol] = Symbol(Effect.bone); }
   return cfg;

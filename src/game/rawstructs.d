@@ -64,14 +64,12 @@ struct LSystemBrushT {
   string mesh;                                  /// mesh name: primitive ("Cylinder") or model ("watermelon")
   Substance substance;                          /// Substance drawn
   string texture;                               /// per-instance texture for the drawn geometry
-  float radius = 0.1f;                          /// local X/Z scale
-  float length = 1.0f;                          /// local Y scale / segment length
+  float[3] size = [0.1f, 1.0f, 0.1f];           /// local half-extents [radius(X), length(Y), depth(Z)]
   float food = 0.0f;                            /// edibility of the produced substance (0 = inedible)
   bool render = true;                           /// draw on the growing feature? false = harvest-only (a drop)
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// local-frame draw offset [right, up, forward] (entities: place a detail precisely)
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// per-brush vertex colour (entities)
   bool tint = false;                            /// tint with the entity's per-instance colour instead of `color`
-  float depth = -1.0f;                          /// local Z scale; -1 = use radius (square section)
   float taper = 0.0f;                           /// radius growth per unit of the module parameter n (0 = uniform)
   float jitterA = 0.0f;                         /// brush: ± turn-angle jitter while this brush is active (0 = off)
   float jitterL = 0.0f;                         /// brush: ± segment length jitter (0 = off)

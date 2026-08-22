@@ -189,9 +189,9 @@ struct RigSink {
   }
   void place(string c, ref const Symbol s, int n = 0) {
     if(s.effect != Effect.brush && s.effect != Effect.bone) return;
-    const float grow = 1.0f + s.taper * n;                       // fatten toward the base (high n), thin at the tip (n=0)
-    const float rad = s.radius * grow;
-    const float dep = (s.depth < 0.0f) ? s.depth : s.depth * grow;
+    const float grow = 1.0f + s.taper * n;
+    const float jit = (s.jitterL != 0.0f) ? 1.0f + uniform(-s.jitterL, s.jitterL, rnd) : 1.0f;
+    const float[3] size = [s.size[0] * grow, s.size[1] * jit, s.size[2] * grow];
     const Matrix R = rotate(st.orient);   // draw frame: world-up when '|', else heading
     const float[3] o = s.offset;
     const float[3] dp = [st.pos[0] + o[0]*R[0] + o[1]*R[4] + o[2]*R[8],
@@ -199,8 +199,7 @@ struct RigSink {
                          st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
     auto color = cast(int)paletteOrdinal(s.color);
     latchA = s.jitterA; latchL = s.jitterL;                                   // turns after this brush inherit its jitter
-    immutable float len = (s.jitterL != 0.0f) ? s.length * (1.0f + uniform(-s.jitterL, s.jitterL, rnd)) : s.length;
-    nodes ~= RigNode(current, DrawInstance(segmentTransform(dp, R, rad, len, dep), s.material, color), c, true, st.orient, dp);
+    nodes ~= RigNode(current, DrawInstance(segmentTransform(dp, R, size), s.material, color), c, true, st.orient, dp);
     current = cast(int)nodes.length - 1;
   }
 }

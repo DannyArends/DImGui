@@ -34,11 +34,9 @@ struct LSym {
 struct Symbol {
   Effect effect = Effect.brush;
   int material = -1;                            /// brush: material index
-  float radius = 0.1f;                          /// brush: half-width
-  float length = 1.0f;                          /// brush: segment length
+  float[3] size = [0.1f, 1.0f, 0.1f];           /// brush: local half-extents [radius(X), length(Y), depth(Z)]
   float[4] color = [1.0f, 1.0f, 1.0f, 1.0f];    /// brush: per-instance tint
   float[3] offset = [0.0f, 0.0f, 0.0f];         /// brush: local-frame draw offset [right, up, fwd]
-  float depth = -1.0f;                          /// brush: Z half-extent; -1 == use radius
   float taper = 0.0f;                           /// brush: radius growth per unit of the module's parameter n (0 = uniform)
   float jitterA = 0.0f;                         /// brush: ± turn-angle jitter while this brush is active (0 = off)
   float jitterL = 0.0f;                         /// brush: ± segment length jitter (0 = off)

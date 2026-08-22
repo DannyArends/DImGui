@@ -114,9 +114,10 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
       x.rules ~= Rule(p[1], p[2], to!uint(p[3]), opt(p, 4, int.min), opt(p, 5, int.max));
     } return true;
     case "BONE": if(p.length >= 2){ x.bones ~= LSystemBoneT(p[1]); } return true;
-    case "BRUSH": if(p.length >= 5){
-      LSystemBrushT b = { symbol: p[1], mesh: p[2], radius: to!float(p[3]), length: to!float(p[4]) };
-      foreach(kv; p[5 .. $]) {
+    case "BRUSH": if(p.length >= 4){
+      auto sz = p[3].split(";");
+      LSystemBrushT b = { symbol: p[1], mesh: p[2], size: [to!float(sz[0]), to!float(sz[1]), to!float(sz[2])] };
+      foreach(kv; p[4 .. $]) {
         immutable e = kv.indexOf('=');                 // "key=value"; bare "tint" allowed
         immutable string k = (e < 0) ? kv : kv[0 .. e];
         immutable string v = (e < 0) ? "" : kv[e + 1 .. $];
@@ -133,7 +134,6 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
           case "offX":      b.offset[0] = to!float(v); break;
           case "offY":      b.offset[1] = to!float(v); break;
           case "offZ":      b.offset[2] = to!float(v); break;
-          case "depth":     b.depth = to!float(v); break;
           default: break;
         }
       }

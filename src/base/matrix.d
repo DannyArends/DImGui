@@ -68,9 +68,8 @@ struct Matrix {
 @nogc pure Matrix translateScale(float[3] p, float[3] s) nothrow { return translate(p).multiply(scale(s)); }
 
 /** Place a unit primitive along the turtle's local +Y: translate(pos)·R·translate(0,length/2,0)·scale(radius,length,dz). */
-@nogc pure Matrix segmentTransform(const float[3] pos, const Matrix R, const float radius, const float length, const float depth) nothrow {
-  const float dz = (depth < 0.0f) ? radius : depth;   // -1 -> square section (back-compat)
-  return translate(pos).multiply(R).multiply(translate([0.0f, length * 0.5f, 0.0f])).multiply(scale([radius, length, dz]));
+@nogc pure Matrix segmentTransform(const float[3] pos, const Matrix R, const float[3] size) nothrow {
+  return translate(pos).multiply(R).multiply(translate([0.0f, size[1] * 0.5f, 0.0f])).multiply(scale(size));
 }
 
 @nogc pure Matrix rotate(const float[3] v) nothrow {
