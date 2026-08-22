@@ -131,9 +131,7 @@ bool parseGrammarToken(ref RawT x, const string[] p) pure {
           case "render":    b.render = to!bool(v); break;
           case "color":     b.color = cast(float[4])toColor(v); break;
           case "tint":      b.tint = true; break;
-          case "offX":      b.offset[0] = to!float(v); break;
-          case "offY":      b.offset[1] = to!float(v); break;
-          case "offZ":      b.offset[2] = to!float(v); break;
+          case "off":       auto o = v.split(";"); b.offset = [to!float(o[0]), to!float(o[1]), to!float(o[2])]; break;
           default: break;
         }
       }
