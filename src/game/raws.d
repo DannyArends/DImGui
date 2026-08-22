@@ -58,7 +58,7 @@ ResourceT[] parseResources(string tilesRaw) pure { return parseRawsGeneric!(Reso
   switch(p[0]) {
     case "SUBSTANCE":   cur.substance = p[1].to!Substance; break;
     case "TRAVERSABLE": cur.traverse = opt(p, 1, 1.0f); break;
-    case "BUILDABLE":   cur.build = true; break;
+    case "BUILDABLE":   cur.buildable = true; break;
     default: break;
   }
 })(tilesRaw); }

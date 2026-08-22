@@ -190,7 +190,8 @@ pure PathNode[] getSuccessors(T)(const ref T wd, PathNode parent) {
       if(tt != ResourceType.None && tt.traversable && wd.isPassable(standTile)) {
         float modifier = wd.tilePenalties.getOr(standTile, 0.0f);
         if(modifier >= IMPASSABLE) break;
-        successors ~= PathNode(position: [nx*wd.tileSize, (ny+1)*wd.tileHeight+wd.yOffset, nz*wd.tileSize], cost: tt.cost + modifier);
+        successors ~= PathNode(position: [nx*wd.tileSize, (ny+1)*wd.tileHeight+wd.yOffset, nz*wd.tileSize], 
+                               cost: resourceTable[tt].traverse + modifier);
         break;
       }
     }

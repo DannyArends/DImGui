@@ -80,7 +80,7 @@ Tex[] parseTextures(string v) pure {
 
 /** Render/item fields common to renderable raws (resources, item templates, ...). */
 mixin template Renderable() {
-  string name = "None";         /// Raw identifier
+  string name = "None";                     /// Raw identifier
   string mesh = "Cube";                     /// geometry
   Tex[] textures;                           /// role->texture bindings
   Colors color = Colors.white;              /// tint colour
@@ -108,7 +108,7 @@ struct ResourceT {
   Substance substance;          /// variant match key
   Source source;                /// which tile/feature produced it
   float traverse = 0.0f;        /// walk cost; 0 => impassable
-  bool build = false;           /// may be placed/built with
+  bool buildable = false;       /// may be placed/built with
 }
 
 /** A crafted item template (shape) parsed from items.txt into itemTemplateTable */

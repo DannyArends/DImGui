@@ -36,7 +36,7 @@ private void setAll(ref Stockpile sp, bool on) { sp.seed(); foreach(ti; 1 .. cas
 private void tally(ref Stockpile sp, bool delegate(ResourceType) keep, out int total, out int on) { foreach(t; typesWhere(keep)) { total++; if(sp.ok(t)) on++; } }
 
 private void acceptGroup(ref GameApp app, ref Stockpile sp, string label, bool buildable) {
-  bool inGroup(ResourceType t) { return t.buildable == buildable; }
+  bool inGroup(ResourceType t) { return resourceTable[t].buildable == buildable; }
   int gT, gOn; sp.tally(t => inGroup(t), gT, gOn);
   if(gT == 0) return;
 

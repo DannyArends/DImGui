@@ -16,7 +16,7 @@ void showInventoryContent(ref GameApp app, uint font = 0) {
   int col = 0;
 
   foreach(tileType; EnumMembers!ResourceType) {
-    if(!tileType.buildable) continue;
+    if(!resourceTable[tileType].buildable) continue;
     auto texIdx = idx(app.textures, resourceTable[tileType].textures.texOf("2D"));
     if(texIdx < 0) continue;   // no texture registered for this resource yet — skip rather than bind a null descriptor set
     auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);

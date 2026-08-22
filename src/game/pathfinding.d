@@ -108,7 +108,7 @@ void followPath(T)(ref GameApp app, ref T obj) {
 /** Advance one entity's interpolated step; returns true while still moving. Requires tile/visualPos/moveFrom/moveTo/moveT/path. */
 bool stepMove(T)(ref GameApp app, ref T obj, float dt, float speed, float hop) {
   if(obj.moveT >= 1.0f) return false;
-  float cost = max(1.0f, app.world.getTileAt(obj.tile.tileBelow).cost);
+  float cost = max(1.0f, resourceTable[app.world.getTileAt(obj.tile.tileBelow)].traverse);
   obj.moveT = min(1.0f, obj.moveT + dt * speed / cost);
   const float t = obj.moveT;
   const float climb = abs(obj.moveTo[1] - obj.moveFrom[1]);

@@ -52,8 +52,6 @@ auto carriedFor(ref GameApp app, ref Dwarf d, Substance cls, ItemTemplate want =
 
 // Convenience field accessors (UFCS shims over the variant's own fields)
 @nogc bool traversable(const ResourceType r) pure nothrow { return resourceTable[r].traverse > 0.0f; }
-@nogc bool buildable(const ResourceType r) pure nothrow { return resourceTable[r].build; }
-@nogc float cost(const ResourceType r) pure nothrow { return resourceTable[r].traverse; }
 @nogc bool isFood(const Item it) pure nothrow { return it.foodValue() > 0.0f; }
 @nogc float foodValue(const Item it) pure nothrow {
   return it.hasShape ? itemTemplateTable[it.shape].food : it.material != ResourceType.None ? resourceTable[it.material].food : 0.0f;
