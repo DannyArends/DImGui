@@ -44,9 +44,11 @@ bool parseRenderToken(T)(ref T cur, const string[] p) pure {
       cur.mesh = p[1];
       static if(__traits(hasMember, T, "color")) { immutable c = namedField(p, "color"); if(c.length) cur.color = toColor(c); }
     } return true;
-    case "TEX": static if(__traits(hasMember, T, "textures")) {
-      foreach(kv; p[1 .. $]) { auto eq = kv.findSplit("="); if(eq[1].length) cur.textures[eq[0]] = eq[2]; }
-    } return true;
+    case "TEX":
+      static if(__traits(hasMember, T, "textures")) {
+        foreach(kv; p[1 .. $]) { auto eq = kv.findSplit("="); if(eq[1].length) cur.textures ~= Tex(eq[0], eq[2]); }
+      }
+      return true;
     case "SCALE":    cur.scale    = to!float(p[1]); return true;
     case "OFFSET_Y": cur.offsetY  = to!float(p[1]); return true;
     case "STACK":    cur.maxStack = to!int(p[1]);   return true;
@@ -83,7 +85,7 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
       if(seen.canFind(member)) continue;                    // first brush of a substance wins
       seen ~= member;
       immutable string tex = namedField(p, "texture");
-      table ~= ResourceT(name: member, mesh: p[2], tex3D: tex, tex2D: tex,
+      table ~= ResourceT(name: member, mesh: p[2], textures: [Tex("3D", tex), Tex("2D", tex)],
                          scale: namedField(p, "dropScale", "1.0").to!float,
                          offsetY: namedField(p, "dropOffsetY", "0.0").to!float,
                          substance: sub.to!Substance,

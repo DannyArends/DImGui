@@ -148,7 +148,7 @@ float renderOffsetY(const Item it) { return it.isCraft ? itemTemplateTable[it.sh
 /** Material-SSBO override for a crafted item (filled skin when holding contents), or -1 for raw materials. */
 @nogc pure int matOverride(const Item it) nothrow {
   if(!it.isCraft) return -1;
-  return cast(int)templateMat(it.shape, it.amount > 0 && itemTemplateTable[it.shape].texFilled.length > 0);
+  return cast(int)templateMat(it.shape, it.amount > 0 && itemTemplateTable[it.shape].textures.texOf("filled").length > 0);
 }
 
 void emitBlock(ref World world, ref Block b, float[3] pos, bool hidden = false) {

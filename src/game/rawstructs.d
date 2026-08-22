@@ -73,11 +73,19 @@ struct LSystemBrushT {
   float taper = 0.0f;                           /// radius growth per unit of the module parameter n (0 = uniform)
 }
 
+struct Tex { string role; string name; }
+
+/** Texture name for a role, "" if unset. */
+@nogc pure string texOf(const Tex[] textures, string role) nothrow {
+  foreach(ref t; textures) if(t.role == role) { return(t.name); }
+  return("");
+}
+
 /** Render/item fields common to renderable raws (resources, item templates, ...). */
 mixin template Renderable() {
   string name = "None";        /// raw identifier
   string mesh = "Cube";        /// geometry (tinted/textured at use time)
-  string[string] textures;     /// role -> texture name: "3D" world, "2D" icon, "skin" item, "filled" container-full
+  Tex[] textures;              /// role->texture bindings; open-ended set of roles
   float scale = 1.0f;          /// render scale
   float offsetY = 0.0f;        /// vertical render offset
   int maxStack = 1;            /// stack size when carried

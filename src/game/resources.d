@@ -86,9 +86,9 @@ string itemName(const Item it) {
 
 /** Texture to display for an item: template skin (filled variant when holding contents), else the raw material's 2D texture. */
 string itemTex(const Item it) {
-  if(!it.isCraft) return resourceTable[it.material].tex2D;
+  if(!it.isCraft) return resourceTable[it.material].textures.texOf("2D");
   auto t = itemTemplateTable[it.shape];
-  return (it.amount > 0 && t.texFilled.length) ? t.texFilled : t.tex;
+  return (it.amount > 0 && t.textures.texOf("filled").length) ? t.textures.texOf("filled") : t.textures.texOf("skin");
 }
 
 /** Wrap a raw material as an Item (shape == None). The default way to build a material-only Item. */
@@ -106,12 +106,14 @@ void injectResourceMeshes(ref GameApp app, uint minMaterials = RESOURCE_COUNT + 
 void updateMaterials(ref GameApp app) {
   foreach (tt; 0 .. RESOURCE_COUNT) {
     auto ttype = cast(ResourceType)tt;
-    app.materials[tt].tid = app.textures.idx(resourceTable[ttype].tex3D);
-    if(resourceTable[ttype].mesh != "Blocks"){ app.materials[tt].nid = app.textures.idx(resourceTable[ttype].tex3D.replace("_base", "_normal")); }
+    app.materials[tt].tid = app.textures.idx(resourceTable[ttype].textures.texOf("3D"));
+    if(resourceTable[ttype].mesh != "Blocks") { 
+      app.materials[tt].nid = app.textures.idx(resourceTable[ttype].textures.texOf("3D").replace("_base", "_normal")); 
+    }
   }
   foreach (ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;
-    int tid = app.textures.idx(itemTemplateTable[t].tex3D);   // 3D objects always use tex3D; tex/texFilled are 2D-display only
+    int tid = app.textures.idx(itemTemplateTable[t].textures.texOf("3D"));
     app.materials[templateMat(t)].tid = tid;
     app.materials[templateMat(t, true)].tid = tid;
   }
