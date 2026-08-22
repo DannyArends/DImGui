@@ -57,9 +57,9 @@
   [PROGRESS_RATE:0.50]
   [INTERACTION:Gather]
   [SOUND:DM-CGS-07]
-  [AXIOM:Leaf(+{35}Berry)(-{35}Berry)(&{35}Berry)(^{35}Berry)]
+  [AXIOM:Leaf(+{35}Fruit)(-{35}Fruit)(&{35}Fruit)(^{35}Fruit)]
   [BRUSH:Leaf:Icosahedron:0.6;0.5;0.6:substance=Leaf:textures={3D=Foliage_01_base}]
-  [BRUSH:Berry:watermelon:0.03;0.03;0.03:substance=Berry:textures={3D=colormap-food-kit}:food=1.0:render=false:dropScale=0.03:dropOffsetY=-0.15]
+  [BRUSH:Fruit:watermelon:0.03;0.03;0.03:substance=Berry:textures={3D=colormap-food-kit;2D=watermelon}:food=1.0:render=false:dropScale=0.03:dropOffsetY=-0.15]
 
 [FEATURE:Cactus]
   [SPAWN_ON:Sand01][SPAWN_ON:Sand02][SPAWN_ON:Sand03][SPAWN_ON:Sand05]
@@ -82,7 +82,7 @@
   [RULE:Arm:Flesh ~{0.57} Bud:100:0:1]
   [RULE:Bud:Fruit:100]
   [BRUSH:Flesh:Cylinder:0.45;0.6;0.45:substance=Sponge:textures={3D=Sponge_01_base}]
-  [BRUSH:Fruit:coconut:0.04;0.04;0.04:substance=Berry:textures={3D=colormap-food-kit}:food=1.0:render=false:dropScale=0.04:dropOffsetY=-0.12]
+  [BRUSH:Fruit:coconut:0.04;0.04;0.04:substance=Berry:textures={3D=colormap-food-kit;2D=coconut}:food=1.0:render=false:dropScale=0.04:dropOffsetY=-0.12]
 
 [FEATURE:Agave]
   [SPAWN_ON:Sand01][SPAWN_ON:Sand02][SPAWN_ON:Sand03][SPAWN_ON:Grass04]
@@ -113,7 +113,7 @@
   [BRUSH:Twig:Cylinder:0.03;0.35;0.03:substance=Wood:textures={3D=Wood_03_base}]
   [BRUSH:Floret:Icosahedron:0.12;0.12;0.12:color=jmolGreenyellow]
   [BRUSH:FloretGold:Icosahedron:0.12;0.12;0.12:color=yellowgreen]
-  [BRUSH:Fruit:coconut:0.04;0.04;0.04:substance=Berry:textures={3D=colormap-food-kit}:food=1.0:render=false:dropScale=0.04:dropOffsetY=-0.12]
+  [BRUSH:Fruit:coconut:0.04;0.04;0.04:substance=Berry:textures={3D=colormap-food-kit;2D=coconut}:food=1.0:render=false:dropScale=0.04:dropOffsetY=-0.12]
 
 [FEATURE:Foxglove]
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02][SPAWN_ON:Forest01]
