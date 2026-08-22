@@ -41,6 +41,8 @@ Body = root bone at **origin** (no `offY`/`offZ`). Bones walked; clouds offset.
 - **Chain** (Thigh→Shank→Foot): `(walkT | && Thigh | walkS | && Shank | walkF | && Foot)` — each walk is the child−parent delta; `\|` before each segment.
 - **Drop rule** (body → origin): body-relative parts `offY −= drop`; `&&`-frame parts `offY += drop` (world-Y = −offY there); legs reaching the ground **don't** drop (`footY` seats the pawn); never shift `depth`.
 
+**Proportions.** A walk lands at a *point*, so pick the joint's world position from body size, then solve — don't guess angles. Hip Y ≈ leg `length` above ground contact (a leg of `length 0.55` wants its hip near `Y≈0.4–0.5`, not `Y≈0.1`, or the body floats on stilts); a steep pitch (`&{±80}`) drops nearly straight down and puts the hip too low for a long leg. Centerline parts (neck/head/tail) have `x=0` → no yaw (`+{0}`). Sanity numbers on a `~0.4`-wide body: hips `offX ±0.16–0.24`, `offZ ±0.20–0.30`; verify every walk (below) before trusting it.
+
 ## Bones vs clouds (inferred)
 Bone iff its symbol is a `[POSE]` target or ancestor of one; root always bone. Everything else = cloud cube riding its nearest bone ancestor at a baked offset (no palette slot, no per-frame cost). Cloud offset = relative to that bone (in the bone's frame if `&&`/`^`).
 
@@ -96,3 +98,27 @@ Flat face ⟂ thin axis (min of radius/length/depth). Draw with `\|` and size di
   [BRUSH:LegFR:Cube:0.10:0.24:color=tan:depth=0.11]
 ```
 Legs+Head posed → bones (walked); Snout/Eyes → clouds off Head; Tail → cloud off Body.
+
+## Verifier
+Solve joint positions and check every walk with the engine's exact math — don't trust mental `atan2`.
+`walk(θ,φ,d)` = where `&{θ}+{φ}~{d}` lands; `solve(x,y,z)` = the `(θ,φ,d)` to reach a target.
+```python
+import math
+def aa(a,ax):
+    s=sum(v*v for v in ax)
+    if s==0:return[0,0,0,1]
+    n=math.sqrt(s);ax=[v/n for v in ax];h=math.radians(a)/2;si=math.sin(h)
+    q=[ax[0]*si,ax[1]*si,ax[2]*si,math.cos(h)];m=math.sqrt(sum(c*c for c in q));return[c/m for c in q]
+def qM(a,b):
+    return[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],
+           a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]]
+def rot(q):
+    x,y,z,w=q;x2,y2,z2=x+x,y+y,z+z;xx,xy,xz=x*x2,x*y2,x*z2;yy,yz=y*y2,y*z2;zz=z*z2;wx,wy,wz=w*x2,w*y2,w*z2
+    return[1-(yy+zz),xy+wz,xz-wy,0,xy-wz,1-(xx+zz),yz+wx,0,xz+wy,yz-wx,1-(xx+yy),0,0,0,1]
+def walk(th,ph,d):  # &{th}+{ph}~{d} -> world offset from cursor
+    o=qM(qM([0,0,0,1],aa(th,[1,0,0])),aa(ph,[0,0,1]));R=rot(o)
+    return tuple(round((R[4],R[5],R[6])[i]*d,4) for i in range(3))
+def solve(x,y,z):   # target offset -> (th,ph,d) for &{th}+{ph}~{d}
+    return (round(math.degrees(math.atan2(z,y)),2), round(math.degrees(math.atan2(-x,math.hypot(y,z))),2), round(math.hypot(x,y,z),4))
+```
+Chain segment / cloud offset = child_world − parent_world (feed that delta to `solve`). Leg hip target = `(offX, −offY, −offZ)`.
