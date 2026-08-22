@@ -88,25 +88,23 @@ pure int evalExpr(const(char)[] e, int n) {
 
 /** Substitute n into every {expr} of a production/axiom, then tokenise */
 pure LSym[] expand(const(char)[] s, int n) {
-  char[] outp;
-  size_t i = 0;
+  char[] outp; size_t i = 0;
   while(i < s.length) {
+    const(char)[] inner;
     if(s[i] == '@' && i + 1 < s.length && s[i + 1] == '{') {          // @{x;y;z} -> &{θ}+{φ}~{d}
-      size_t k = i + 2; while(k < s.length && s[k] != '}') { k++; }
-      auto p = s[i + 2 .. k].split(";");
+      i = brace(s, i + 1, inner);
+      auto p = inner.split(";");
       immutable float x = p[0].to!float, y = p[1].to!float, z = p[2].to!float;
       immutable float th = degree(atan2(z, y));
       immutable float ph = degree(atan2(-x, sqrt(y*y + z*z)));
       immutable float d = sqrt(x*x + y*y + z*z);
-      outp ~= ("&{" ~ th.to!string ~ "}+{" ~ ph.to!string ~ "}~{" ~ d.to!string ~ "}").dup;
-      i = k + 1;
-    } else if(s[i] == '{' && !(i > 0 && "+-&^<>~".canFind(s[i - 1]))) {
-      size_t k = i + 1; 
-      while(k < s.length && s[k] != '}') { k++; }
-      outp ~= '{' ~ evalExpr(s[i + 1 .. k], n).to!string ~ '}'; i = k + 1;
-    } else { outp ~= s[i]; i++; }
+      outp ~= format("&{%s}+{%s}~{%s}", th, ph, d);
+    } else if(s[i] == '{' && !(i > 0 && PARAMETRIC.canFind(s[i - 1]))) {
+      i = brace(s, i, inner);
+      outp ~= format("{%s}", evalExpr(inner, n));
+    } else { outp ~= s[i]; outp = outp; i++; }
   }
-  return(lex(outp));
+  return lex(outp);
 }
 
 /** If s[j] opens a '{...}' group, set inner to its contents and return the index past '}'; else inner="" and return j. */
