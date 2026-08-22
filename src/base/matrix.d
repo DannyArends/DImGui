@@ -106,10 +106,9 @@ struct Matrix {
 @nogc pure Matrix position(const Matrix m, const float[3] v) nothrow {
   Matrix r = m; r[12] = v[0]; r[13] = v[1]; r[14] = v[2]; return(r);
 }
+
 /** Pure translation matrix: identity with translation column v. */
 @nogc pure Matrix translate(const float[3] v) nothrow { return position(Matrix(), v); }
-/** m composed with a translation: m · translate(v). */
-@nogc pure Matrix translate(const Matrix m, const float[3] v) nothrow { return multiply(m, translate(v)); }
 
 /** Get the per-axis scale magnitudes of m. */
 @nogc pure float[3] scale(const Matrix m) nothrow { return([magnitude(m[0..3]), magnitude(m[4..7]), magnitude(m[8..11])]); }

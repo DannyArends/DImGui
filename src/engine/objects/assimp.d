@@ -61,7 +61,7 @@ void loadInto(OpenAsset object, const(char)* path, bool verbose = false, bool is
   object.rootnode = loadNode(object, scene, scene.mRootNode, Matrix(), verbose);
 
   if (object.mName == "Spider") { // The Spider model is broken, it floats above
-    object.rootnode.transform = object.rootnode.transform.translate([0.0f, -775.0f, 0.0f]);
+    object.rootnode.transform = multiply(object.rootnode.transform, translate([0.0f, -775.0f, 0.0f]));
     isVisible = true;
   }
 
