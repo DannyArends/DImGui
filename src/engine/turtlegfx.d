@@ -173,20 +173,12 @@ struct RigSink {
   int current = -1;           /// parent for the next placed node
   int[] parents;              /// saved parents
   Random rnd;                 /// per-individual jitter stream (seeded in interpretRig)
-  float latchA = 0.0f;        /// angle-jitter amplitude of the last-placed brush (0 until first brush)
-  float latchL = 0.0f;        /// length-jitter amplitude of the last-placed brush
 
   void push(){ stack ~= st; parents ~= current; }
   void pop(){ if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; current = parents[$-1]; parents = parents[0 .. $-1]; } }
-  void turn(const float[3] ax, float ang) {
-    if(latchA != 0.0f) ang *= 1.0f + uniform(-latchA, latchA, rnd);
-    st.orient = qMul(st.orient, angleAxis(ang, ax));
-  }
+  void turn(const float[3] ax, float ang) { st.orient = qMul(st.orient, angleAxis(ang, ax)); }
   void reset(){ st.orient = [0.0f, 0.0f, 0.0f, 1.0f]; }
-  void move(float d) {
-    if(latchL != 0.0f) d *= 1.0f + uniform(-latchL, latchL, rnd);
-    const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]);
-  }
+  void move(float d) { const Matrix R = rotate(st.orient); st.pos = st.pos.vAdd([R[4]*d, R[5]*d, R[6]*d]); }
   void place(string c, ref const Symbol s, int n = 0) {
     if(s.effect != Effect.brush && s.effect != Effect.bone) return;
     const float grow = 1.0f + s.taper * n;
@@ -198,7 +190,6 @@ struct RigSink {
                          st.pos[1] + o[0]*R[1] + o[1]*R[5] + o[2]*R[9],
                          st.pos[2] + o[0]*R[2] + o[1]*R[6] + o[2]*R[10]];
     auto color = cast(int)paletteOrdinal(s.color);
-    latchA = s.jitterA; latchL = s.jitterL;                                   // turns after this brush inherit its jitter
     nodes ~= RigNode(current, DrawInstance(segmentTransform(dp, R, size), s.material, color), c, true, st.orient, dp);
     current = cast(int)nodes.length - 1;
   }
