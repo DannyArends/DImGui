@@ -9,7 +9,7 @@ import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
 import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, getOr;
 import lsystem : grammar;
-import matrix : position, halfExtent;
+import matrix : position, halfExtent, translate;
 import noise : noiseHTT;
 import resources : variantOf, rawConfig;
 import sfx : play;
@@ -229,7 +229,7 @@ bool harvestFeatureType(ref GameApp app, const RawT ft, int[3] tile, int[3] coor
       if(!br.substance) continue;
       auto brt = variantOf(br.substance, ft.name.to!Source);
       foreach(ref inst; grouped[br.symbol]){
-        int hy = app.world.worldToTile(position(inst.matrix))[1];
+        int hy = app.world.worldToTile(translate(inst.matrix))[1];
         app.spawnBlock([tile[0], hy < tile[1] ? tile[1] : hy, tile[2]], Item(ItemTemplate.None, brt));
       }
     }

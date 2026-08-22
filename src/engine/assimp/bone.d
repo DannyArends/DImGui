@@ -7,16 +7,14 @@ import engine;
 
 import animation : calculateCurrentTick, calculateGlobalTransform;
 import assimp : name, nodeName, OpenAsset;
-import matrix : inverse, Matrix, multiply, position, toMatrix;
+import matrix : inverse, Matrix, multiply, translate, toMatrix;
 
 /** Our Bone structure matching the GPU */
 struct Bone {
   Matrix offset;          /// Inverse bind pose matrix
   uint index;             /// Bone index
 
-  @property float[3] bindPosition() {
-    return offset.inverse().position();
-  }
+  @property float[3] bindPosition() { return(offset.inverse().translate()); }
 }
 
 alias float[uint][string] BoneWeights;

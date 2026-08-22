@@ -7,7 +7,7 @@ import engine;
 
 import color : paletteOrdinal;
 import lsystem : grammar, turnAxis, turnAngle;
-import matrix : segmentTransform, position, inverse, multiply;
+import matrix : segmentTransform, position, inverse, translate, multiply;
 import quaternion : angleAxis, qMul, rotate, toQuaternion;
 import vector : vAdd;
 
@@ -119,7 +119,7 @@ NodeAnimation nodeAnimation(const string[] syms, const PoseKey[][string] tracks,
   foreach(sym; syms) { foreach(ref pk; tracks[sym]) { if(!steps.canFind(pk.step)) { steps ~= pk.step; } } }
   steps.sort();
 
-  NodeAnimation na = {positionKeys: [PositionKey(0.0, position(localJ))], scalingKeys:  [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])]};
+  NodeAnimation na = {positionKeys: [PositionKey(0.0, localJ.translate())], scalingKeys:  [ScalingKey(0.0, [1.0f, 1.0f, 1.0f])]};
   na.rotationKeys.length = steps.length;
   foreach(i, step; steps) {
     na.rotationKeys[i] = RotationKey(cast(double)step, toQuaternion(stepLocal(c, step)));

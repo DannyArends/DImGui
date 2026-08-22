@@ -100,13 +100,14 @@ struct Matrix {
   // Apply rotations in the order: Roll -> Pitch -> Yaw (local axes)
   return(rotateRoll.multiply(rotatePitch).multiply(rotateYaw));
 }
-/** Get the translation column of m. */
-@nogc pure float[3] position(const Matrix m) nothrow { return([m[12], m[13], m[14]]); }
+
 /** Copy of m with its translation column set to v (overwrite, no compose). */
 @nogc pure Matrix position(const Matrix m, const float[3] v) nothrow {
   Matrix r = m; r[12] = v[0]; r[13] = v[1]; r[14] = v[2]; return(r);
 }
 
+/** Get the translation column of m. */
+@nogc pure float[3] translate(const Matrix m) nothrow { return([m[12], m[13], m[14]]); }
 /** Pure translation matrix: identity with translation column v. */
 @nogc pure Matrix translate(const float[3] v) nothrow { return position(Matrix(), v); }
 
