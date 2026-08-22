@@ -58,8 +58,6 @@ struct LSystemBoneT {
   string symbol;                                  /// grammar symbol (meshless, poseable joint)
 }
 
-
-
 struct Tex { string role; string name; }
 
 /** Texture name for a role, "" if unset. */
@@ -78,7 +76,7 @@ Tex[] parseTextures(string v) pure {
   return(r);
 }
 
-/** Render/item fields common to renderable raws (resources, item templates, ...). */
+/** Render/item fields common to renderable raws (brushes, resources, item templates, ...). */
 mixin template Renderable() {
   string name = "None";                     /// Raw identifier
   string mesh = "Cube";                     /// geometry
