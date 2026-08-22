@@ -94,7 +94,7 @@
   [SPAWN_ON:Grass01][SPAWN_ON:Grass02]
   [NOISE_THRESHOLD:0.80]
   [HASH_SEED1:2654435761][HASH_SEED2:2246822519][HASH_MOD:35][HASH_REM:3]
-  [AXIOM:Body(&{45}~{0.3111} | Neck(&{33.69}~{0.2163} | Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR)(AntlerStyle)))(&{75.96}+{40.33}~{0.2163} | HipBL && LegBL)(&{75.96}+{-40.33}~{0.2163} | HipBR && LegBR)(&{-75.96}+{40.33}~{0.2163} | HipFL && LegFL)(&{-75.96}+{-40.33}~{0.2163} | HipFR && LegFR)(Tail)]
+  [AXIOM:Body(@{0;0.22;0.22} | Neck(@{0;0.18;0.12} | Head(Snout Nose)(EarL)(EarR)(EyeL)(EyeR)(AntlerStyle)))(@{-0.14;0.04;0.16} | HipBL && LegBL)(@{0.14;0.04;0.16} | HipBR && LegBR)(@{-0.14;0.04;-0.16} | HipFL && LegFL)(@{0.14;0.04;-0.16} | HipFR && LegFR)(Tail)]
 
   [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:10]
     [POSE:LegBL:LegBL]

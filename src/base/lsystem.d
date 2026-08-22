@@ -120,6 +120,9 @@ pure LSym[] lex(const(char)[] s) {
       if(j < s.length && s[j] == '{' && "+-&^<>~".canFind(c)) {   // parametric turn/step: {angle} or {distance}
         size_t k = j + 1; while(k < s.length && s[k] != '}') k++;
         g.arg = s[j + 1 .. k].to!float; j = k + 1;
+      } else if(j < s.length && s[j] == '{' && c == '@') {         // @{x;y;z}: consume the group (expanded elsewhere)
+        size_t k = j + 1; while(k < s.length && s[k] != '}') k++;
+        j = k + 1;
       }
       toks ~= g; i = j; continue;
     }
