@@ -172,7 +172,6 @@ struct RigSink {
   TurtleState[] stack;        /// saved cursors
   int current = -1;           /// parent for the next placed node
   int[] parents;              /// saved parents
-  Random rnd;                 /// per-individual jitter stream (seeded in interpretRig)
 
   void push(){ stack ~= st; parents ~= current; }
   void pop(){ if(stack.length){ st = stack[$-1]; stack = stack[0 .. $-1]; current = parents[$-1]; parents = parents[0 .. $-1]; } }
@@ -215,17 +214,16 @@ struct AnimSink {
 }
 
 /** Structure walk: retains branch hierarchy; each placed brush becomes a re-poseable RigNode. */
-RigNode[] interpretRig(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0, uint seed = 0) {
-  auto sink = RigSink(); sink.st = TurtleState(origin, orient0);
-  sink.rnd = Random((seed ^ 0x9E3779B9) | 1);
+RigNode[] interpretRig(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
+  auto sink = RigSink([], TurtleState(origin, orient0));
   walk(symbols, cfg.alpha, cfg, sink);
   return sink.nodes;
 }
 
 /** Flattened structure walk: per brush symbol, world-space DrawInstances (hierarchy discarded). */
-DrawInstance[][string] interpret(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0, uint seed = 0) {
+DrawInstance[][string] interpret(const(LSym)[] symbols, const TurtleConfig cfg, float[3] origin, float[4] orient0) {
   DrawInstance[][string] instances;
-  foreach(ref n; interpretRig(symbols, cfg, origin, orient0, seed)) instances[n.symbol] ~= n.inst;
+  foreach(ref n; interpretRig(symbols, cfg, origin, orient0)) instances[n.symbol] ~= n.inst;
   return instances;
 }
 
