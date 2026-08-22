@@ -73,34 +73,33 @@ struct LSystemBrushT {
   float taper = 0.0f;                           /// radius growth per unit of the module parameter n (0 = uniform)
 }
 
+/** Render/item fields common to renderable raws (resources, item templates, ...). */
+mixin template Renderable() {
+  string name = "None";        /// raw identifier
+  string mesh = "Cube";        /// geometry (tinted/textured at use time)
+  string[string] textures;     /// role -> texture name: "3D" world, "2D" icon, "skin" item, "filled" container-full
+  float scale = 1.0f;          /// render scale
+  float offsetY = 0.0f;        /// vertical render offset
+  int maxStack = 1;            /// stack size when carried
+  float food = 0.0f;           /// nutrition/edibility (0 => inedible)
+}
+
 /** A tile/feature variant = substance @ source; the row backing each ResourceType member. */
 struct ResourceT {
-  string name = "None", mesh = "Blocks", tex3D = "", tex2D = "";
-  float scale = 1.0f;
-  float offsetY = 0.0f;                     /// vertical render offset (world units) for model-backed drops
+  mixin Renderable;
   Colors color = Colors.white;
-  Substance substance;                      /// Substance — the variant's match key (was the name-class)
-  Source source;                            /// Source — which tile/feature produced this variant
-  float food = 0.0f;                        /// edibility (from the producing brush); 0 => inedible
-  float traverse = 0.0f;                    /// walk cost; 0 => impassable (liquids)
-  bool build = false;                       /// may be placed/built with
-  int maxStack = 1;                         /// stack size when carried as a raw item
+  Substance substance;                      /// variant match key
+  Source source;                            /// which tile/feature produced it
+  float traverse = 0.0f;                     /// walk cost; 0 => impassable
+  bool build = false;                        /// may be placed/built with
 }
 
 /** A crafted item template (shape) parsed from items.txt into itemTemplateTable. */
 struct ItemTemplateT {
-  string name = "None";
-  string mesh = "Cube";    /// shape geometry (tinted/textured by material at use time)
-  string tex3D = "";       /// world texture (model atlas); empty => use `tex`
-  string tex  = "";        /// template skin; empty => fall back to the material's texture
-  string texFilled = "";   /// skin when the container holds contents (amount > 0); empty => use `tex`
-  float scale = 1.0f;      /// render scale of the crafted item
-  float offsetY = 0.0f;    /// vertical render offset (model units) for model-backed items
-  Substance[] accepts;     /// Substance the material may belong to; empty => any
-  Substance[] holds;       /// Substance the contents may belong to; empty => not a container
-  uint capacity = 0;       /// max units of contents (0 => not a container; a cup = 1)
-  int maxStack = 1;        /// stack size of the crafted item
-  float food = 0.0f;       /// nutrition restored when eaten (0 => not edible)
+  mixin Renderable;
+  Substance[] accepts;                       /// material's allowed substances; empty => any
+  Substance[] holds;                         /// contents' allowed substances; empty => not a container
+  uint capacity = 0;                         /// max content units (0 => not a container)
 }
 
 struct Ingredient { Substance cls; ItemTemplate item; uint count = 1; }

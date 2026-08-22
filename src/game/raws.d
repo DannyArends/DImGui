@@ -41,12 +41,11 @@ HeightBand[] parseHeightBands(string raw) pure {
 bool parseRenderToken(T)(ref T cur, const string[] p) pure {
   switch(p[0]) {
     case "MESH": if(p.length > 1) {
-      cur.mesh  = p[1];
-      cur.tex3D = namedField(p, "tex3D");
-      static if(__traits(hasMember, T, "tex2D")) cur.tex2D = namedField(p, "tex2D");
-      static if(__traits(hasMember, T, "tex")) cur.tex = namedField(p, "tex");
-      static if(__traits(hasMember, T, "texFilled")) cur.texFilled = namedField(p, "texFilled");
+      cur.mesh = p[1];
       static if(__traits(hasMember, T, "color")) { immutable c = namedField(p, "color"); if(c.length) cur.color = toColor(c); }
+    } return true;
+    case "TEX": static if(__traits(hasMember, T, "textures")) {
+      foreach(kv; p[1 .. $]) { auto eq = kv.findSplit("="); if(eq[1].length) cur.textures[eq[0]] = eq[2]; }
     } return true;
     case "SCALE":    cur.scale    = to!float(p[1]); return true;
     case "OFFSET_Y": cur.offsetY  = to!float(p[1]); return true;
