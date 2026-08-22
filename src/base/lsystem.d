@@ -10,9 +10,10 @@ import matrix : degree;
 enum float[3] NO_AXIS = [0.0f, 0.0f, 0.0f];     /// Axis sentinel: not a turn / use cursor frame
 enum Effect : ubyte { bone, brush, pose }       /// bone: skeleton node (mesh optional), brush: leaf draw, pose
 enum string RESERVED = "()~%|+-&^<>@";
+enum string PARAMETRIC = "+-&^<>~";
 
 /** A production rule: predecessor, production, weight, and the window [nMin, nMax) on the matched
-    module's own parameter n that the rule is active in (int.min/int.max = open bound). */
+    module's own parameter n that the rule is active in (int.min/int.max = open bound) */
 struct Rule {
   string predecessor;                           /// symbol this rule rewrites
   string production;                            /// replacement string
@@ -21,8 +22,7 @@ struct Rule {
   int nMax = int.max;                           /// window high (exclusive); int.max = open
 }
 
-/** One L-system token: a module name and an optional integer parameter (NONE = bare, e.g. a glyph or plain brush).
- * TODO: add @{x,y,z} walk-to-point glyph (engine-side `solve` into current frame) to replace hand-solved &{θ}+{φ}~{d} */
+/** One L-system token: a module name and an optional integer parameter (NONE = bare, e.g. a glyph or plain brush) */
 struct LSym {
   enum int NONE = int.min;   /// sentinel: no parameter
   string name;               /// module name or single glyph
@@ -32,7 +32,7 @@ struct LSym {
   @property bool hasArg() const pure nothrow @nogc @safe { return arg == arg; }
 }
 
-/** One alphabet entry: an effect plus its payload. Replaces TurtleBrush AND PoseBrush with a single type. */
+/** One alphabet entry: an effect plus its payload */
 struct Symbol {
   Effect effect = Effect.brush;
   int material = -1;                            /// brush: material index
@@ -43,7 +43,7 @@ struct Symbol {
   string target = "";                           /// pose: bone symbol this pose writes to
 }
 
-/** Turtle config: per-axis turn angles (degrees) + the symbol alphabet. */
+/** Turtle config: per-axis turn angles (degrees) + the symbol alphabet */
 struct TurtleConfig {
   float yaw = 90.0f;        /// + / -  spread
   float pitch = 90.0f;      /// & / ^  arch down / up
@@ -52,13 +52,13 @@ struct TurtleConfig {
   Symbol[string] alpha;     /// content-symbol table (brush/pose/asset)
 }
 
-/** A stochastic L-system over plain characters. */
+/** A stochastic L-system over plain characters */
 struct LSystem {
   LSym[] state;
   Rule[][string] rules;
   size_t max_length = 20000;
 
-  /** Replace c by a weighted-random production, or keep it. */
+  /** Replace c by a weighted-random production, or keep it */
   pure LSym[] replace(LSym c, ref Random rnd) {
     if(c.name !in rules) return [c];
     uint roll = uniform(0, 100, rnd), prev = 0;
@@ -70,7 +70,7 @@ struct LSystem {
     return([c]);
   }
 
-  /** Apply one rewrite pass; false if the length cap is hit. */
+  /** Apply one rewrite pass; false if the length cap is hit */
   pure bool iterate(ref Random rnd) {
     if(state.length > max_length) return(false);
     LSym[] newstate;
@@ -80,15 +80,16 @@ struct LSystem {
   }
 }
 
-/** Evaluate a parameter expression against the matched n: "n", "n-k", "n+k", or a literal. */
+/** Evaluate a parameter expression against the matched n: "n", "n-k", "n+k", or a literal */
 pure int evalExpr(const(char)[] e, int n) {
   if(e.length && e[0] == 'n') return (e.length == 1) ? n : (e[1] == '-' ? n - e[2 .. $].to!int : n + e[2 .. $].to!int);
   return e.to!int;
 }
 
-/** Substitute n into every {expr} of a production/axiom, then tokenise. */
+/** Substitute n into every {expr} of a production/axiom, then tokenise */
 pure LSym[] expand(const(char)[] s, int n) {
-  char[] outp; size_t i = 0;
+  char[] outp;
+  size_t i = 0;
   while(i < s.length) {
     if(s[i] == '@' && i + 1 < s.length && s[i + 1] == '{') {          // @{x;y;z} -> &{θ}+{φ}~{d}
       size_t k = i + 2; while(k < s.length && s[k] != '}') { k++; }
@@ -105,36 +106,51 @@ pure LSym[] expand(const(char)[] s, int n) {
       outp ~= '{' ~ evalExpr(s[i + 1 .. k], n).to!string ~ '}'; i = k + 1;
     } else { outp ~= s[i]; i++; }
   }
-  return lex(outp);
+  return(lex(outp));
+}
+
+/** If s[j] opens a '{...}' group, set inner to its contents and return the index past '}'; else inner="" and return j. */
+@nogc pure size_t brace(const(char)[] s, size_t j, out const(char)[] inner) nothrow {
+  inner = null;
+  if(j >= s.length || s[j] != '{') return(j);
+  size_t k = j + 1;
+  while(k < s.length && s[k] != '}') { k++; }
+  inner = s[j + 1 .. k];
+  return(k + 1);
+}
+
+/** Lex a reserved glyph at i (one char) plus its optional {..}: {angle|distance} on turns/steps, or @'s {x;y;z} (consumed, expanded elsewhere) */
+pure LSym lexGlyph(const(char)[] s, ref size_t i) {
+  immutable char c = s[i];
+  LSym g = { name: [c].idup };
+  immutable bool param = PARAMETRIC.canFind(c); // turns/steps take a numeric {arg}
+  const(char)[] inner;
+  size_t j = brace(s, i + 1, inner);
+  if(inner !is null && (param || c == '@')) { // only these glyphs own the brace
+    if(param) { g.arg = inner.to!float; } // @'s {x;y;z} is consumed, parsed in expand()
+    i = j;
+  } else { i = i + 1; }
+  return(g);
+}
+
+/** Lex a module name at i (maximal non-reserved, non-space run) plus its optional integer {n} growth parameter */
+pure LSym lexModule(const(char)[] s, ref size_t i) {
+  size_t j = i; 
+  while(j < s.length && s[j] != ' ' && s[j] != '{' && !RESERVED.canFind(s[j])) { j++; }
+  LSym t = { name: s[i .. j].idup };
+  const(char)[] inner; i = brace(s, j, inner);
+  if(inner.length && inner.all!(ch => ch >= '0' && ch <= '9')) { t.n = inner.to!int; }
+  return(t);
 }
 
 /** Tokenise an axiom/production: each reserved glyph is one token, each maximal run of non-reserved
-    non-space chars is one module name; whitespace separates and is dropped. */
+    non-space chars is one module name; whitespace separates and is dropped */
 pure LSym[] lex(const(char)[] s) {
   LSym[] toks; size_t i = 0;
   while(i < s.length) {
     immutable char c = s[i];
     if(c == ' ' || c == '\t' || c == '\r' || c == '\n') { i++; continue; }
-    if(RESERVED.canFind(c)) {
-      LSym g = { name: [c].idup }; size_t j = i + 1;
-      if(j < s.length && s[j] == '{' && "+-&^<>~".canFind(c)) {   // parametric turn/step: {angle} or {distance}
-        size_t k = j + 1; while(k < s.length && s[k] != '}') k++;
-        g.arg = s[j + 1 .. k].to!float; j = k + 1;
-      } else if(j < s.length && s[j] == '{' && c == '@') {         // @{x;y;z}: consume the group (expanded elsewhere)
-        size_t k = j + 1; while(k < s.length && s[k] != '}') k++;
-        j = k + 1;
-      }
-      toks ~= g; i = j; continue;
-    }
-    size_t j = i; while(j < s.length && s[j] != ' ' && s[j] != '{' && !RESERVED.canFind(s[j])) j++;
-    LSym t = { name: s[i .. j].idup };
-    if(j < s.length && s[j] == '{') {
-      size_t k = j + 1; while(k < s.length && s[k] != '}'){ k++; }
-      auto inner = s[j + 1 .. k];
-      if(inner.length && inner.all!(ch => ch >= '0' && ch <= '9')) t.n = inner.to!int;
-      j = k + 1;
-    }
-    toks ~= t; i = j;
+    toks ~= RESERVED.canFind(c) ? lexGlyph(s, i) : lexModule(s, i);
   }
   return(toks);
 }
@@ -142,7 +158,7 @@ pure LSym[] lex(const(char)[] s) {
 /** Is rule r active for this token; i.e. its parameter n falls in the rule's [nMin, nMax) window? */
 @nogc pure bool active(ref const Rule r, LSym tok) nothrow { return r.nMin <= tok.n && tok.n < r.nMax; }
 
-/** Any symbol in 's' carrying an active rule ? */
+/** Any symbol in 's' carrying an active rule? */
 @nogc pure bool anyActive(const(LSym)[] s, const Rule[][string] rules) nothrow {
   foreach(c; s) { if(auto rs = c.name in rules) {
     foreach(ref r; *rs) { if(active(r, c)) { return(true); } }
