@@ -11,6 +11,10 @@ import widgets : drawCenteredText, text;
 
 /** Show inventory */
 void showInventoryContent(ref GameApp app, uint font = 0) {
+  igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.15f,0.15f,0.15f,1.0f));
+  igPushStyleColor_Vec4(ImGuiCol_ButtonHovered, ImVec4(0.4f,0.4f,0.4f,1.0f));
+  igPushStyleColor_Vec4(ImGuiCol_ButtonActive, ImVec4(0.25f,0.25f,0.25f,1.0f));
+  scope(exit) igPopStyleColor(3);
   float cellSize = 32.0f;
   int cols = cast(int)floor((app.gui.panelW - cellSize) / cast(float)(cellSize + 4)) - 1;
   int col = 0;

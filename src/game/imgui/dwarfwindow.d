@@ -44,12 +44,13 @@ void showDwarfRow(ref GameApp app, size_t i, ref Dwarf d) {
 }
 
 /** One inventory slot cell: empty placeholder, or item icon with count + click-to-drop */
-void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
+bool showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
+  igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.15f,0.15f,0.15f,1.0f));
+  igPushStyleColor_Vec4(ImGuiCol_ButtonHovered, ImVec4(0.4f,0.4f,0.4f,1.0f));
+  igPushStyleColor_Vec4(ImGuiCol_ButtonActive, ImVec4(0.25f,0.25f,0.25f,1.0f));
+  scope(exit) igPopStyleColor(3);
   auto s = &d.inventory[i];
-  if(s.empty) {
-    igButton(cstr("##dwf_inv_%d", cast(int)i), ImVec2(cellSize, cellSize));
-    return;
-  }
+  if(s.empty) return(false);
   auto texIdx = idx(app.textures, itemTex(s.item));
   if(texIdx < 0) {
     igButton(cstr("##dwf_inv_%d", cast(int)i), ImVec2(cellSize, cellSize));
@@ -61,6 +62,7 @@ void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
   ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
   if(s.count > 1) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", s.count));
   if(igIsItemHovered(0)) igSetTooltip(cstr("%s x%d (click to drop)", itemName(s.item), s.count));
+  return(true);
 }
 
 /** Detailed sheet for the selected dwarf */
@@ -79,8 +81,8 @@ void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
   if(cols < 1) cols = 1;
   int col = 0;
   foreach(i, ref s; d.inventory) {
-    app.showInventorySlot(d, i, cellSize);
-    if(++col < cols) igSameLine(0, 4); else col = 0;
+    if(col > 0) igSameLine(0, 4);
+    if(app.showInventorySlot(d, i, cellSize)) { if(++col >= cols) col = 0; }
   }
 }
 
