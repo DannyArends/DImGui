@@ -38,3 +38,30 @@ Once dependencies are built:
 ```
 dub
 ```
+
+
+#### Cross-Compilation [MS Windows x64 -> Android]
+```
+set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr
+set PATH=%PATH%;C:\Users\Danny\AppData\Local\Android\Sdk\platform-tools
+
+gradlew --stop
+
+echo === Building native libs ===
+gradlew externalNativeBuildDebug
+
+echo === Building D code (libmain.so) ===
+dub build --build=release --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force
+
+echo === Assembling APK & Installing ===
+gradlew assembleDebug
+adb install -r app\build\outputs\apk\debug\app-debug.apk
+
+echo === Launching ===
+adb shell am force-stop org.libsdl.app
+adb shell monkey -p org.libsdl.app -c android.intent.category.LAUNCHER 1
+
+echo === Connect Logcat ===
+adb logcat -c
+adb logcat -s SDL,DEBUG,AndroidRuntime,libc
+```

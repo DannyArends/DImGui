@@ -75,6 +75,8 @@ void createCompiler(ref App app) {
     shaderc_compiler_release(app.compiler);
     abort();
   }
+  shaderc_compile_options_set_target_env(app.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+  shaderc_compile_options_set_target_spirv(app.options, shaderc_spirv_version_1_5);
   shaderc_compile_options_set_generate_debug_info(app.options);
   shaderc_compile_options_set_optimization_level(app.options, shaderc_optimization_level_performance);
   shaderc_compile_options_set_include_callbacks(app.options, &includeResolve, &includeRelease, cast(void*)&app.includeContext);
