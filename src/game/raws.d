@@ -96,12 +96,9 @@ ResourceT[] parseVariants(string tilesRaw, string featuresRaw) pure {
       immutable string member = feat ~ sub;
       if(seen.canFind(member)) continue;                    // first brush of a substance wins
       seen ~= member;
-      table ~= ResourceT(name: member, mesh: p[2], textures: parseTextures(namedField(p, "textures")),
-                         scale: namedField(p, "dropScale", "1.0").to!float,
-                         offset: [0.0f, namedField(p, "dropOffsetY", "0.0").to!float, 0.0f],
-                         substance: sub.to!Substance,
-                         source: feat.to!Source,
-                         food: namedField(p, "food", "0.0").to!float);
+      table ~= ResourceT(name: member, mesh: p[2], textures: parseTextures(namedField(p, "textures")), color: toColor(namedField(p, "color", "white")),
+                         scale: namedField(p, "dropScale", "1.0").to!float, offset: [0.0f, namedField(p, "dropOffsetY", "0.0").to!float, 0.0f],
+                         substance: sub.to!Substance, source: feat.to!Source, food: namedField(p, "food", "0.0").to!float);
     }
   }
   return table;
