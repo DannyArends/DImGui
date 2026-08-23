@@ -17,6 +17,22 @@ import rawstructs;
 /** Pick a result from a band by the [0,1) selector `t` (uniform bucket over results). */
 @nogc pure nothrow ResourceType rSelect(ref const HeightBand b, float t) { return b.results[cast(uint)(t * b.results.length) % b.results.length]; }
 
+/** Texture name for a role, "" if unset. */
+@nogc pure string texOf(const Tex[] textures, string role) nothrow {
+  foreach(ref t; textures) if(t.role == role) { return(t.name); }
+  return("");
+}
+
+Tex[] parseTextures(string v) pure {
+  Tex[] r;
+  if(v.length >= 2 && v[0] == '{' && v[$ - 1] == '}') { v = v[1 .. $ - 1]; }
+  foreach(pair; v.split(";")) {
+    immutable e = pair.indexOf('=');
+    if(e > 0) { r ~= Tex(pair[0 .. e], pair[e + 1 .. $]); }
+  }
+  return(r);
+}
+
 /** CTFE: parse terrain raws into height bands (resources resolved to enum at compile time). */
 HeightBand[] parseHeightBands(string raw) pure {
   HeightBand[] bands;

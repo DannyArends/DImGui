@@ -19,7 +19,7 @@
   [RULE:Bud:Leaf:90]
   [RULE:Bud:LeafCube:2]
   [RULE:Bud::8]
-  [BRUSH:Wood:Cylinder:0.35;1.0;0.35:substance=Wood:textures={3D=Wood_02_base}:taper=0.10]
+  [BRUSH:Wood:Cylinder:0.35;1.0;0.35:substance=Wood:textures={3D=Wood_02_base;2D=log}:taper=0.10]
   [BRUSH:Leaf:Icosahedron:1.2;0.6;1.2:substance=Leaf:textures={3D=Hedge_01_base}]
   [BRUSH:LeafCube:Cube:0.8;0.8;0.8:substance=Leaf:textures={3D=Hedge_01_base}]
 
@@ -43,7 +43,7 @@
   [RULE:Bud:Leaf:95]
   [RULE:Bud:LeafCube:2]
   [RULE:Bud::3]
-  [BRUSH:Wood:Cylinder:0.35;1.0;0.35:substance=Wood:textures={3D=Wood_03_base}]
+  [BRUSH:Wood:Cylinder:0.35;1.0;0.35:substance=Wood:textures={3D=Wood_03_base;2D=log}]
   [BRUSH:Leaf:Icosahedron:0.85;0.45;0.85:substance=Leaf:textures={3D=Foliage_01_base}]
   [BRUSH:LeafCube:Cube:0.8;0.8;0.8:substance=Leaf:textures={3D=Foliage_01_base}]
 

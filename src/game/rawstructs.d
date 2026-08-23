@@ -34,8 +34,8 @@ struct RawT {
   ResourceType[] spawnOn;                         /// tiles this entity spawns on (empty = not wild-spawned, e.g. Dwarf)
   float noiseThreshold = 0.92f;                   /// hash-noise spawn gate (higher = rarer)
   uint hashSeed1, hashSeed2;                      /// per-species spawn hash seeds
-  uint hashMod, hashRem;                          /// optional hash bucketing (0 = unused)
-  float moveSpeed = 2.0f;                         /// Tiles per second
+  uint hashMod, hashRem;                          /// hash bucketing (0 = unused)
+  float moveSpeed = 1.0f;                         /// Tiles per second
   float hungerDecay = 0.0f, thirstDecay = 0.0f;   /// Need growth per tick
   string diet;                                    /// Substance/type eaten (empty = none)
   float scale = 1.0f, scaleVariance = 0.0f;       /// Instance scale + per-spawn variance
@@ -60,22 +60,6 @@ struct LSystemBoneT {
 
 struct Tex { string role; string name; }
 
-/** Texture name for a role, "" if unset. */
-@nogc pure string texOf(const Tex[] textures, string role) nothrow {
-  foreach(ref t; textures) if(t.role == role) { return(t.name); }
-  return("");
-}
-
-Tex[] parseTextures(string v) pure {
-  Tex[] r;
-  if(v.length >= 2 && v[0] == '{' && v[$ - 1] == '}') { v = v[1 .. $ - 1]; }
-  foreach(pair; v.split(";")) {
-    immutable e = pair.indexOf('=');
-    if(e > 0) { r ~= Tex(pair[0 .. e], pair[e + 1 .. $]); }
-  }
-  return(r);
-}
-
 /** Render/item fields common to renderable raws (brushes, resources, item templates, ...). */
 mixin template Renderable() {
   string name = "None";                     /// Raw identifier
@@ -84,7 +68,7 @@ mixin template Renderable() {
   Colors color = Colors.white;              /// tint colour
   float[3] size = [0.1f, 1.0f, 0.1f];       /// local half-extents [X,Y,Z]
   float[3] offset = [0.0f, 0.0f, 0.0f];     /// local draw offset [right,up,fwd]; offsetY == offset[1]
-  float scale = 1.0f;                       /// uniform render scale (display multiplier, distinct from size)
+  float scale = 1.0f;                       /// uniform render scale
   int stackSize = 1;                        /// Stacksize
   float food = 0.0f;                        /// Food value
 }
