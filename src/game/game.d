@@ -188,9 +188,7 @@ void updateGame(ref GameApp app, double dt) {
   app.timed!checkGameAsync();         /// Game specific ASync handlers
   app.timed!handleEvents(dt);         /// Game Events
   app.timed!injectResourceMeshes();
-  if(app.textures.loaded) {
-    app.timed!updateMaterials(); app.textures.loaded = false;
-  }
+  if(app.textures.loaded) { app.timed!updateMaterials(); app.textures.loaded = false; }
   app.world.settleBlocks(dt);
   app.timed!settleDwarves(dt);
   app.timed!updateWorld(app.camera.fps ? app.camera.position : app.camera.lookat);

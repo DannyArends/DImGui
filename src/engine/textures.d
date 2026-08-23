@@ -10,7 +10,6 @@ import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import descriptor : createDescriptorSet;
 import descriptorupdate : updateDescriptorSet;
 import images : nameImageBuffer, generateMipmaps, imageSize, createImage, transitionImageLayout, createNamedImage;
-import io : dir;
 import validation : nameVulkanObject;
 import views : createImageView, createLayerViews;
 import vram : mapped;
@@ -38,6 +37,7 @@ struct Texture {
     this.surface = surface;
   }
   @property uint mipLevels() const {
+    if(surface is null) return 1; // no surface (e.g. compute texture): single level
     return((path.indexOf("_base") >= 0) ? cast(uint)(floor(log2(max(surface.w, surface.h)))) + 1 : 1);
   }
 }
@@ -92,7 +92,7 @@ void checkPendingTextures(ref App app) {
   for(uint i = 0; i < textures.length; i++) {
     auto base = stripExtension(baseName(textures[i].path));
     if(base == name) return(i);
-    if(textures[i].path.indexOf(name) >= 0 && base.indexOf("_normal") < 0) besthit = i;
+    if(textures[i].path.indexOf(name) >= 0 && base.indexOf("_normal") < 0) besthit = i;  // fuzzy hit, but never a normal-map
   }
   return(besthit);
 }
@@ -105,8 +105,7 @@ void transferTextureAsync(ref App app, ref Texture texture) {
   vkEndCommandBuffer(cmdBuffer);
   VkSubmitInfo submitInfo = {
     sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    commandBufferCount: 1,
-    pCommandBuffers: &cmdBuffer.commands,
+    commandBufferCount: 1, pCommandBuffers: &cmdBuffer.commands,
   };
   app.nameVulkanObject(cmdBuffer.fence, cstr("[FENCE] %s", texture.path), VK_OBJECT_TYPE_FENCE);
   enforceVK(vkQueueSubmit(app.queues.graphics.queue, 1, &submitInfo, cmdBuffer.fence));
@@ -215,6 +214,7 @@ void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath 
 
   int existing = app.textures.idx(texture.path);
   if(existing >= 0) { // overwrite existing in place so idx() stays stable
+    app.cleanup(app.textures[existing]);
     app.textures[existing] = texture;
   }else{ app.textures ~= texture; }
 
