@@ -42,18 +42,17 @@ struct App {
   ];
   Compute compute;                                                              /// Compute shaders
   Geometry[] objects;                                                           /// All geometric objects for rendering
+  Textures textures;                                                            /// Textures
   Bone[string] bones;                                                           /// All animation bones across all objects
   SSBOList!Matrix animatedOffsets;                                              /// Animated bone offsets for GPU SSBO
   SSBOList!Matrix staticOffsets;                                                /// Static non-bone offsets for GPU SSBO
-  Textures textures;                                                            /// Textures
   SSBOList!Material materials;                                                  /// GPU materials
   SSBOList!Colors colors;                                                       /// GPU colors
   Audio audio;                                                                  /// Sounds
   GameWindow[] gameWindows;                                                     /// Game windows
-  WavFMT[] soundfx;                                                             /// Sound effects
   SSBOStore buffers;                                                            /// SSBO buffers + per-syncIndex descriptor re-point flags
   UBO[string] ubos;                                                             /// UBO buffers
-  Lighting lights = {lights : {items: cast(Light[])[Lights.Sun, Lights.Red, Lights.Green, Lights.Blue]}};  /// Scene lighting
+  Lighting lights = {lights : {items: cast(Light[])[Lights.Sun, Lights.Red]}};  /// Scene lighting
   GUI gui;                                                                      /// ImGui related variables
   Camera camera;                                                                /// Our camera class
   GlyphAtlas glyphAtlas;                                                        /// GlyphAtlas for geometric font rendering
@@ -61,7 +60,8 @@ struct App {
   Shadows shadows;                                                              /// Cascading shadow maps
   WBOIT wboit;                                                                  /// Weighted-blended OIT
   DescriptorProvider[string] providers;                                         /// GPU resource creator
-
+  void delegate(SDL_Event) onEvent;                                             /// Game onEvent input hook
+  
   VkSampler sampler;
   Shader[] shaders;
   Shader[] postProcess;
@@ -110,20 +110,23 @@ struct App {
   Fence[] fences = null;
   VkImage[] swapChainImages = null;
   VkImageView[] swapChainImageViews = null;
-  CommandBuffer!1 uploadCmd;
-  CommandBuffer!1 depthCmd;                                                       /// Depth-only pre-pass
-  CommandBuffer!1 sceneCmd;                                                       /// Scene commandbuffer
-  CommandBuffer!1 postCmd;                                                        /// Post-process commandbuffer
-  CommandBuffer!1 imguiCmd;                                                       /// ImGui commandbuffer
+  CommandBuffer!1 uploadCmd;                                                    /// GPU upload commandbuffer
+  CommandBuffer!1 depthCmd;                                                     /// Depth-only pre-pass
+  CommandBuffer!1 sceneCmd;                                                     /// Scene commandbuffer
+  CommandBuffer!1 postCmd;                                                      /// Post-process commandbuffer
+  CommandBuffer!1 imguiCmd;                                                     /// ImGui commandbuffer
 
   VkAllocationCallbacks* allocator = null;
   VkDebugReportCallbackEXT debugCallback = null;
 
   Threading concurrency;                                                        /// Threads & ASync loading
 
+  const(char)*[] instanceExtensions;                                            /// Enabled instance extensions
+  const(char)*[] deviceExtensions;                                              /// Enabled device extensions
+  const(char)*[] layers;                                                        /// Enabled layers
+
   // Sync and Frame Tracking
   uint selectedDevice = 0;                                                      /// Device selected for rendering
-  @property pure @nogc uint queueFamily() nothrow const { return queues.graphics.family; }  /// Graphics family (back-compat)
   uint syncIndex = 0;                                                           /// Sync index (Semaphore)
   uint frameIndex = 0;                                                          /// Current frame index (Fence)
   float soundEffectGain = 0.8f;                                                 /// Sound Effects Gain
@@ -131,19 +134,15 @@ struct App {
   ulong[string] timings;                                                        /// Stage name into last frame's CPU timings
   uint totalFramesRendered = 0;                                                 /// Total frames rendered so far
 
-  const(char)*[] instanceExtensions;                                            /// Enabled instance extensions
-  const(char)*[] deviceExtensions;                                              /// Enabled device extensions
-  const(char)*[] layers;                                                        /// Enabled layers
-
-  // Global boolean flags
+  // Global flags
+  LMode lMode = LMode.LightsAndShadows;                                         /// Allow shadows to be disabled
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool enableValidation = true;                                                /// Should validation be enabled ?
-  bool nameVulkanObjects = true;                                               /// Name Vulkan Objects via vkSetDebugUtilsObjectName
+  bool enableValidation = true;                                                 /// Should validation be enabled ?
+  bool nameVulkanObjects = true;                                                /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
   bool showPaths = false;                                                       /// Show pathfinding
   bool showRays = false;                                                        /// Show rays
-  LMode lMode = LMode.LightsAndShadows;                                         /// Allow shadows to be disabled
   bool useSSAO = true;                                                          /// Screen space ambient occlusion ?
   bool normalMapping = false;                                                   /// Do normal mapping ?
   bool disco = false;                                                           /// Disco mode
@@ -156,17 +155,14 @@ struct App {
   bool isImGuiInitialized = false;                                              /// ImGui flag, needed for Android
   bool paused = false;                                                          /// Playback paused
   float speed = 1.0f;                                                           /// Simulation time scale
-  void delegate(SDL_Event) onEvent;                                             /// Optional game input hook
 
-  // Properties based on the SwapChain
+  // App properties
   @property bool isMinimized() { return minimized || (SDL_GetWindowFlags(this.window) & SDL_WINDOW_MINIMIZED) != 0; }
   @property pure @nogc uint imageCount() nothrow const { return(cast(uint)swapChainImages.length); }
   @property pure @nogc bool trace() nothrow const { return(verbose > 1); }
   @property pure @nogc uint framesInFlight() nothrow const { return (swapChainImages.length > 2) ? cast(uint)(swapChainImages.length-1) : 1; }
   @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
-  @property VkPhysicalDeviceProperties properties() {
-    VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p);
-  }
+  @property VkPhysicalDeviceProperties properties() { VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p); }
 }
 
 /** Check result of Vulkan call and print if an error occured */

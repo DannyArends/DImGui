@@ -22,6 +22,8 @@ struct Audio {
   const(char)*[] chunk;
   const(char)*[] music;
 
+  WavFMT[] soundfx;
+
   MIX_Mixer* mixer;
   MIX_Track*[] activeTracks;
 
@@ -86,13 +88,13 @@ WavFMT loadWav(MIX_Mixer* mixer, string path, float pitch = 1.0, float gain = 1.
 /** Load all CasualGameSounds WAV sound effects */
 void loadAllSoundEffect(ref App app, const(char)* path = "data/sfx/CasualGameSounds", float pitch = 1.0, float gain = 1.0, bool looping = false) {
   auto files = dir(path, "*.wav");
-  foreach(file; files) { app.soundfx ~= loadWav(app.audio.mixer, file, pitch, gain, looping); }
-  SDL_Log("Loaded %d sounds effects from: %s", app.soundfx.length, path);
+  foreach(file; files) { app.audio.soundfx ~= loadWav(app.audio.mixer, file, pitch, gain, looping); }
+  SDL_Log("Loaded %d sounds effects from: %s", app.audio.soundfx.length, path);
 }
 
 /** Play a loaded sound effect by (partial) filename match */
 int play(ref App app, string name, float gain = 1.0f) {
-  foreach(ref s; app.soundfx){ if(s.path.fromStringz.canFind(name)){ return(app.play(s, gain)); } }
+  foreach(ref s; app.audio.soundfx){ if(s.path.fromStringz.canFind(name)){ return(app.play(s, gain)); } }
   SDL_Log(cstr("Unable to find %s", name));
   return(-1);
 }
