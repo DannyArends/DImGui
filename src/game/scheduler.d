@@ -124,8 +124,9 @@ void doPickup(ref GameApp app, ref Dwarf d) {
   if(blockID == noBlock) { d.currentJob.onFail(app, d); return; }
   if(auto b = blockID in app.world.drops) {
     if(!d.pickup(blockID, b.item)) { d.currentJob.onFail(app, d); return; }
-    if(b.tile == storedTile) app.world.withdrawBlock(blockID);
-    b.tile = noTile; b.fall = Fall.init;
+    immutable wasStored = (b.tile == storedTile);
+    b.tile = noTile; b.fall = Fall.init;              // mutate through b BEFORE any call that could touch drops
+    if(wasStored) app.world.withdrawBlock(blockID);   // now safe: b no longer used
     d.onSubJobComplete(app);
     return;
   }
