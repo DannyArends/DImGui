@@ -20,7 +20,7 @@ import rawstructs;
 /** Texture name for a role, "" if unset. */
 @nogc pure string texOf(const Tex[] textures, string role) nothrow {
   foreach(ref t; textures) if(t.role == role) { return(t.name); }
-  return("");
+  return("none");
 }
 
 Tex[] parseTextures(string v) pure {
