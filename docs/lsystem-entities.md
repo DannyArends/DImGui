@@ -1,124 +1,172 @@
-# L-system entities (`entity.txt`, `features.txt`)
+# L-System Entities & Features — Authoring Reference
 
-Voxel creatures/plants from an L-system. Placement is deterministic (`segmentTransform` in
-`matrix.d`, turtle in `turtlegfx.d`/`lsystem.d`). Animals are **walked HLU skeletons**: posed
-parts are *bones* walked to their joint; everything else is a *cloud* offset from its nearest bone.
+Raw format for **features** (`data/raws/features.txt`) and **entities** (`data/raws/entity.txt`).
+Both share one parser (`rawHandler`) and one struct (`RawT`); they differ only in which
+metadata tokens apply (features never use `MOVE_SPEED`, entities never use `HEIGHT_MIN`).
+Tables build at compile time (CTFE). Every construct maps to a case in `src/game/raws.d`
+or a glyph handler in `src/base/lsystem.d` / `src/engine/turtlegfx.d`.
 
-## Frame
-- `+Z` front, `+Y` up, ground `Y=0`. Model space = world space (heading `atan2(-d[0], d[2])`); no `[FACING]`.
-- Brush = unit cube via `segmentTransform(pos,R,radius,length,depth)` = `translate(pos)·R·translate([0,length/2,0])·scale([radius,length,depth])`.
-- Local axes: X=`radius` (width), **Y=`length`=heading, base-anchored 0→length**, Z=`depth`. `R` cols: X→`R[0..2]`, heading Y→`R[4..6]`, Z→`R[8..10]`. `~`/`move` steps the heading column.
+## 1. Structure
 
-## Glyphs (`RESERVED="()~%|+-&^<>"`)
-| glyph | meaning |
-|---|---|
-| `(` `)` | push/pop turtle state |
-| `~` | step heading, no draw. `~` = `gap` (default 1); `~{d}` = step `d` |
-| `+`/`-` | yaw ∓ about local Z (default 90° or `+{φ}`) |
-| `&`/`^` | pitch about local X (default 90° or `&{θ}`); `&`→+Z, `^`→−Z |
-| `<`/`>` | roll ± about heading (spins, doesn't steer) |
-| `%` | halve turn-scale for rest of branch, restored on `)` |
-| `\|` | reset orientation to world-up (position unchanged) |
+Flat sequence of `[TOKEN:field:field:...]` brackets. `[FEATURE:Name]` / `[ENTITY:Name]`
+open a block; following tokens accumulate into it until the next block tag. Fields are
+`:`-separated; a field is a bare value (`Cube`) or `key=value` (`substance=Wood`).
+`#` lines are comments. A block = **metadata** (§5) + **grammar** (§2) + **palette**
+(brushes/bones, §3) + optional **clips** (§4).
 
-Names: runs of non-reserved/non-`{` chars, case-sensitive; each needs a `[BRUSH]`, `[RULE]`, or `[BONE]`.
+## 2. Grammar
 
-## Heading law (solve a walk)
-Turns post-multiply local; after `&{θ}+{φ}`, step `d` lands at `d·(−sinφ, cosφcosθ, cosφsinθ)`.
-Inverse — to reach `(x,y,z)`: `θ=atan2(z,y)`, `φ=atan2(−x,hypot(y,z))`, `d=hypot(x,y,z)` → `&{θ}+{φ}~{d}`.
-Pure up = `~{d}`; pure lateral = `+{±90}~{d}`.
-
-## Brushes & bones
-`[BRUSH:name:Mesh:radius:length:kv…]` — Mesh ∈ Cube/Cylinder/Cone/Sphere/Capsule/Torus/Icosahedron/Pyramid (else asset).
-kv: `color=` · `tint` · `substance=`/`texture=` · `offX/offY/offZ` · `depth=` · `render=false` · `taper=f` · `jitterA=f`/`jitterL=f`. No `advance` field — `~` is the only mover; a brush draws at `cursor+offset`, never moves it.
-`[BONE:name]` — meshless poseable joint (hip sockets, tail/wing pivots).
-
-## Connectivity
-Overlap neighbours ≥ 0.02 (else detached); never coplanar visible faces (inset/proud ≥ 0.02).
-
-## Walked skeleton
-Body = root bone at **origin** (no `offY`/`offZ`). Bones walked; clouds offset.
-- **Leg**: `(walk | HipXX && LegXX)`. Walk to hip `(offX,−offY,−offZ)`; `\|` **before** the hip (resets the tilted arrival frame, else gait swings sideways); `HipXX` is `[BONE]`; `&&` drops the leg.
-- **Chain** (Thigh→Shank→Foot): `(walkT | && Thigh | walkS | && Shank | walkF | && Foot)` — each walk is the child−parent delta; `\|` before each segment.
-- **Drop rule** (body → origin): body-relative parts `offY −= drop`; `&&`-frame parts `offY += drop` (world-Y = −offY there); legs reaching the ground **don't** drop (`footY` seats the pawn); never shift `depth`.
-
-**Proportions.** A walk lands at a *point*, so pick the joint's world position from body size, then solve — don't guess angles. Hip Y ≈ leg `length` above ground contact (a leg of `length 0.55` wants its hip near `Y≈0.4–0.5`, not `Y≈0.1`, or the body floats on stilts); a steep pitch (`&{±80}`) drops nearly straight down and puts the hip too low for a long leg. Centerline parts (neck/head/tail) have `x=0` → no yaw (`+{0}`). Sanity numbers on a `~0.4`-wide body: hips `offX ±0.16–0.24`, `offZ ±0.20–0.30`; verify every walk (below) before trusting it.
-
-## Bones vs clouds (inferred)
-Bone iff its symbol is a `[POSE]` target or ancestor of one; root always bone. Everything else = cloud cube riding its nearest bone ancestor at a baked offset (no palette slot, no per-frame cost). Cloud offset = relative to that bone (in the bone's frame if `&&`/`^`).
-
-## Rotated appendages
-Walk a pivot bone to the appendage base: `(walkPivot | Pivot Feather Feather …)`. Anchoring the pivot at the base fixes the bind position (un-posed clips render at bind, else it jumps between clips). Pose the pivot to swing all; per-feather poses fan.
-
-## Clips
-`[CLIP:name:axiom:trigger:steps:fps]` — `trigger=moving` = walk clip, else idle; first-match, one of each plays. Idle variety via `[CRULE:pred:prod:weight]`.
-`[POSE:clipSym:target]` — drives that bone; `stepLocal` composes all its tracks as cursor-swing in the bone's frame, so the clip turn glyph is the swing axis (`&`/`^` pitch, `<`/`>` roll, `+`/`-` yaw), angle = glyph-count × clip turn. Bind = static axiom; animate only the difference.
-Standard gait: `[CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ …:moving:8:10]` + `[POSE:LegBL:LegBL]` per leg.
-
-## Growth `{n}` (plants/recursive)
-Name carries int `n`; rules gate on `n` window and rewrite it.
-`[RULE:pred:prod:weight]` / `:weight:nMin` `[nMin,∞)` / `:weight:nMin:nMax` `[nMin,nMax)`. Axiom seeds `n` (feature `HEIGHT_MIN/MAX`, entities default 1). Window keys on distance-to-tip.
 ```
-[RULE:Trunk:Wood{n} Trunk{n-1}:80:1]                 # grow n>=1
-[RULE:Trunk:Wood{n}<(+Trunk{n-1})(-Trunk{n-1}):6:1]  # fork
-[RULE:Trunk:Wood{n} Bud:100:0:1]                     # cap n==0
+[AXIOM:<string>]                                             # start string, default "B"
+[RULE:<pred>:<production>:<weight>[:<nMin>[:<nMax>]]]        # rewrite pred -> production
 ```
 
-## Variation
-Nonterminal + weighted `[RULE]`s, rolled once per uid (empty production = absent). Every producible symbol needs a `[BRUSH]`.
+`<weight>` = relative probability among rules sharing a predecessor. `<nMin>`/`<nMax>`
+gate the rule to modules whose growth param `n` is in `[nMin,nMax)` (defaults
+`int.min`/`int.max`).
 
-## Flat panels
-Flat face ⟂ thin axis (min of radius/length/depth). Draw with `\|` and size directly: flat-up thin length `0.16:0.03:0.16`; flank thin radius `0.03:0.16:0.16`; front thin depth `0.16:0.16:0.03`. Without `\|` the thin axis rotates with prior turns.
+**Growth `{n}`:** a module carries an integer, e.g. `Trunk{n}`. `{expr}` in a production
+is evaluated with the current `n` (`Trunk{n-1}`). Drives bounded recursion until a
+terminating rule (empty production, or `nMax:0`) fires.
 
-## Metadata
-`[MOVE_SPEED][DIET]`, `[SCALE][SCALE_VARIANCE][OFFSET_Y:0.0]`, `[SPAWN_ON]…`, `[NOISE_THRESHOLD]`, `[HASH_SEED1/2][HASH_MOD][HASH_REM]` (spawn only; skeleton seeded by uid). Features use `[HEIGHT_MIN/MAX]`. No `[FACING]`/`[LSYSTEM_*]`.
+**Termination law:** a rule's predecessor must not reappear in its own production without
+a `{n}` decrement toward termination. A non-decrementing self-reference (`[RULE:Neck:Neck Head]`)
+spins to the safety cap and explodes geometry. `Trunk{n} -> ... Trunk{n-1}` is safe.
 
-## Template
+Feature axiom `n` seeds from `[HEIGHT_MIN/MAX]`; entities are usually fixed (no `{n}`).
+
+## 3. Glyphs & palette
+
+Expanded string lexes into glyphs (reserved chars) and modules (non-reserved runs,
+optional `{n}`). `RESERVED="()~%|+-&^<>@"`, `PARAMETRIC="+-&^<>~"` (take a numeric `{arg}`).
+
+| Glyph | Meaning |
+|-------|---------|
+| `(` `)` | push / pop turtle state (branch) + turn-scale |
+| `~{d}` | step `d` along heading (+Y of frame); bare = `cfg.gap` |
+| `&{θ}`/`^{θ}` | pitch about +X / −X (deg) |
+| `+{φ}`/`-{φ}` | yaw about +Z / −Z (deg) |
+| `<{ψ}`/`>{ψ}` | roll about +Y / −Y (deg) |
+| `%` | halve turn-scale until `)` |
+| `\|` | reset orientation to world-up (position kept) |
+| `@{x;y;z}` | walk-to-point sugar → `&{θ}+{φ}~{d}` (§ below) |
+| `Name`/`Name{n}` | place brush/bone if defined, else a grammar symbol |
+
+**Heading law:** steps go along the +Y column of `rotate(orient)`. From world-up,
+`&{θ}+{φ}` then step `d` lands at `(x,y,z)=d·(−sinφ, cosφcosθ, cosφsinθ)`. Turns
+post-multiply (written order). `&`=+X `^`=−X `+`=+Z `-`=−Z `<`=+Y `>`=−Y.
+
+**`@{x;y;z}`** rewrites (at expand time) to `&{θ}+{φ}~{d}` with
+`θ=deg(atan2(z,y))`, `φ=deg(atan2(-x,sqrt(y²+z²)))`, `d=sqrt(x²+y²+z²)` — walks to
+`(x,y,z)` in the current frame, identical to the three glyphs. `@{-0.14;0.04;0.16}` ==
+`&{75.96}+{40.33}~{0.2163}`. Use for legible symmetry (`@{±0.14;0.04;±0.16}`); add `|`
+after to reset heading.
+
+**`[BONE:<symbol>]`** — meshless poseable joint; placed at the cursor, draws nothing,
+targeted by poses.
+
+**`[BRUSH:<Name>:<Mesh>:<sizeX;sizeY;sizeZ>[:key=value ...]]`** — `Mesh` is a primitive
+(`Cube`,`Cylinder`,`Icosahedron`) or model (`watermelon`); size = local half-extents
+(Cylinder: X=radius, Y=length, Z=depth). Keys:
+
+| key | meaning |
+|-----|---------|
+| `substance=<Substance>` | material drawn; feature harvest keys on it |
+| `textures={role=name;...}` | role→texture bindings (§6) |
+| `color=<Colors>` | flat tint (named), used when no texture |
+| `tint` | bare flag: use entity's per-instance colour |
+| `off=<x;y;z>` | local draw offset [right,up,fwd] |
+| `taper=<f>` | radius growth per unit `{n}` (0=uniform) |
+| `food=<f>` | edibility (0=inedible) |
+| `render=<bool>` | false = harvest-only drop, not shown growing |
+
 ```
-[ENTITY:Newbeast]
-  [MOVE_SPEED:1.5][DIET:Berry]
-  [SCALE:0.7][SCALE_VARIANCE:0.1][OFFSET_Y:0.0]
-  [SPAWN_ON:Grass01][SPAWN_ON:Grass02]
-  [NOISE_THRESHOLD:0.80]
-  [HASH_SEED1:2654435761][HASH_SEED2:40503][HASH_MOD:50][HASH_REM:7]
-  [AXIOM:Body(Tail)(&{71}+{29}~{0.30} | HipBL && LegBL)(&{71}+{-29}~{0.30} | HipBR && LegBR)(&{-71}+{29}~{0.30} | HipFL && LegFL)(&{-71}+{-29}~{0.30} | HipFR && LegFR)(&{40}~{0.42} | Head(Snout)(EyeL)(EyeR))]
-  [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
-  [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL ~ &&LegBL&&LegFR^^LegBR^^LegFL:moving:8:10]
+[BRUSH:Wood:Cylinder:0.35;1.0;0.35:substance=Wood:textures={3D=Wood_02_base;2D=log}:taper=0.10]
+[BRUSH:Nose:Cube:0.06;0.06;0.06:color=black:off=0;-0.02;0.20]
+```
+
+## 4. Clips (entities)
+
+Secondary L-systems walked in **time**: advance a tick counter and write rotation
+keyframes onto bones.
+
+```
+[CLIP:<name>[:<axiom>[:moving][:<tps>][:<duration>]]]   # moving=play while moving; tps=8; dur=25
+  [CRULE:<pred>:<prod>:<weight>]                        # optional clip rewrite rules
+  [POSE:<symbol>:<targetBone>]                          # bind a clip symbol to a bone
+```
+
+In the clip walk (`AnimSink`): `~` advances tick `t`; turn glyphs accumulate a *pending*
+rotation; a pose symbol composes pending onto its cursor, appends `PoseKey(t, rot)` to
+the target bone, clears pending.
+
+```
+[CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL:moving:8:10]
+  [POSE:LegBL:LegBL][POSE:LegBR:LegBR][POSE:LegFL:LegFL][POSE:LegFR:LegFR]
+```
+
+## 5. Metadata (all optional; default in parens)
+
+**Shared:** `[SPAWN_ON:<ResourceType>]` (repeatable), `[NOISE_THRESHOLD:<f>]` (0.92,
+higher=rarer), `[HASH_SEED1/2:<u>]`, `[HASH_MOD/REM:<u>]` (0=unused), `[PROGRESS_RATE:<f>]`
+(0.25), `[INTERACTION:<verb>]`, `[SOUND:<id>]`.
+
+**Feature-only:** `[HEIGHT_MIN/MAX:<u>]` (1/1, seeds axiom `n`), `[TILE_PENALTY:<f>]` (0).
+
+**Entity-only:** `[MOVE_SPEED:<f>]` (1), `[DIET:<name>]`, `[HUNGER_DECAY/THIRST_DECAY:<f>]`
+(0), `[SCALE:<f>]` (1), `[SCALE_VARIANCE:<f>]` (0), `[OFFSET_Y:<f>]` (0), `[HOP:<f>]` (0).
+
+## 6. Textures
+
+`textures={role=name;role=name;...}` — open-ended roles read via `texOf(role)`. Common:
+`3D` (world/model), `2D` (inventory icon), `skin` (item mesh), `filled` (container-full).
+Bare names resolve against texture dirs (`log`→`log.png`, incl. subfolders). Only `color=`
++ no `textures` = legitimately textureless. Give an explicit `2D=` where the inventory
+icon must differ from the 3D atlas (a model atlas is unusable as a flat 2D icon).
+
+## 7. Examples
+
+```
+[FEATURE:Oak]
+  [SPAWN_ON:Grass01][SPAWN_ON:Forest01][NOISE_THRESHOLD:0.65]
+  [HASH_SEED1:2654435761][HASH_SEED2:2246822519][HASH_MOD:20][HASH_REM:0]
+  [HEIGHT_MIN:5][HEIGHT_MAX:14][TILE_PENALTY:5000.0][PROGRESS_RATE:0.25]
+  [INTERACTION:Fell][SOUND:DM-CGS-22]
+  [AXIOM:Trunk{n}]
+  [RULE:Trunk:Wood{n} ~{0.95} Trunk{n-1}:80:1]
+  [RULE:Trunk:Wood{n} ~{0.95} <{25}(+{25}Trunk{n-1})(-{25}Trunk{n-1}):6:1]
+  [RULE:Trunk:Wood{n} ~{0.95} Bud:8:1]
+  [RULE:Trunk:Wood{n} ~{0.95} Bud:100:0:1]
+  [RULE:Bud:Leaf:90][RULE:Bud:LeafCube:2][RULE:Bud::8]
+  [BRUSH:Wood:Cylinder:0.35;1.0;0.35:substance=Wood:textures={3D=Wood_02_base;2D=log}:taper=0.10]
+  [BRUSH:Leaf:Icosahedron:1.2;0.6;1.2:substance=Leaf:textures={3D=Hedge_01_base;2D=leaf}]
+```
+Trunk stacks tapering `Wood` with occasional forks, terminating in a `Bud` → leaf/nothing.
+
+```
+[ENTITY:Deer]
+  [MOVE_SPEED:1.5][DIET:Berry][SCALE:0.7][SCALE_VARIANCE:0.12][OFFSET_Y:0.0]
+  [SPAWN_ON:Grass01][NOISE_THRESHOLD:0.80]
+  [HASH_SEED1:2654435761][HASH_SEED2:2246822519][HASH_MOD:35][HASH_REM:3]
+  [AXIOM:Body(@{0;0.22;0.22} | Neck(@{0;0.18;0.12} | Head(Snout Nose)(EarL)(EarR)))(@{-0.14;0.04;0.16} | HipBL && LegBL)(@{0.14;0.04;0.16} | HipBR && LegBR)(@{-0.14;0.04;-0.16} | HipFL && LegFL)(@{0.14;0.04;-0.16} | HipFR && LegFR)(Tail)]
+  [CLIP:walk:LegBL LegFL LegBR LegFR ~ &&LegBL&&LegFR^^LegBR^^LegFL ~ ^^LegBL^^LegFR&&LegBR&&LegFL:moving:8:10]
     [POSE:LegBL:LegBL][POSE:LegBR:LegBR][POSE:LegFL:LegFL][POSE:LegFR:LegFR]
-  [CLIP:idle:headSway ~ +headSway ~ -headSway ~ -headSway ~ +headSway::4:2.0]
+  [CLIP:idle:headSway ~ +headSway ~ -headSway:4:2.0]
     [POSE:headSway:Head]
-  [BRUSH:Body:Cube:0.34:0.30:color=tan:depth=0.50]
-  [BRUSH:Head:Cube:0.22:0.22:color=tan:depth=0.24]
-  [BRUSH:Snout:Cube:0.12:0.10:color=seashell:offY=0.02:offZ=0.18:depth=0.14]
-  [BRUSH:EyeL:Cube:0.05:0.05:color=black:offX=-0.10:offY=0.06:offZ=0.10:depth=0.05]
-  [BRUSH:EyeR:Cube:0.05:0.05:color=black:offX=0.10:offY=0.06:offZ=0.10:depth=0.05]
-  [BRUSH:Tail:Cube:0.06:0.10:color=tan:offY=0.06:offZ=-0.30:depth=0.10]
-  [BRUSH:LegBL:Cube:0.10:0.24:color=tan:depth=0.11]
-  [BRUSH:LegBR:Cube:0.10:0.24:color=tan:depth=0.11]
-  [BRUSH:LegFL:Cube:0.10:0.24:color=tan:depth=0.11]
-  [BRUSH:LegFR:Cube:0.10:0.24:color=tan:depth=0.11]
+  [BONE:HipBL][BONE:HipBR][BONE:HipFL][BONE:HipFR]
+  [BRUSH:Body:Cube:0.42;0.36;0.42:color=sienna]
+  [BRUSH:Neck:Cube:0.20;0.26;0.20:color=sienna]
+  [BRUSH:Snout:Cube:0.14;0.12;0.14:color=seashell:off=0;-0.04;0.12]
 ```
-Legs+Head posed → bones (walked); Snout/Eyes → clouds off Head; Tail → cloud off Body.
+Body → walk up/forward (`@` then `|`) to Neck/Head with facial sub-branches `(...)`;
+four legs branch at symmetric `@{±0.14;0.04;±0.16}`, each a Hip bone + Leg brush; `walk`
+clip poses the leg bones.
 
-## Verifier
-Solve joint positions and check every walk with the engine's exact math — don't trust mental `atan2`.
-`walk(θ,φ,d)` = where `&{θ}+{φ}~{d}` lands; `solve(x,y,z)` = the `(θ,φ,d)` to reach a target.
-```python
-import math
-def aa(a,ax):
-    s=sum(v*v for v in ax)
-    if s==0:return[0,0,0,1]
-    n=math.sqrt(s);ax=[v/n for v in ax];h=math.radians(a)/2;si=math.sin(h)
-    q=[ax[0]*si,ax[1]*si,ax[2]*si,math.cos(h)];m=math.sqrt(sum(c*c for c in q));return[c/m for c in q]
-def qM(a,b):
-    return[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],
-           a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]]
-def rot(q):
-    x,y,z,w=q;x2,y2,z2=x+x,y+y,z+z;xx,xy,xz=x*x2,x*y2,x*z2;yy,yz=y*y2,y*z2;zz=z*z2;wx,wy,wz=w*x2,w*y2,w*z2
-    return[1-(yy+zz),xy+wz,xz-wy,0,xy-wz,1-(xx+zz),yz+wx,0,xz+wy,yz-wx,1-(xx+yy),0,0,0,1]
-def walk(th,ph,d):  # &{th}+{ph}~{d} -> world offset from cursor
-    o=qM(qM([0,0,0,1],aa(th,[1,0,0])),aa(ph,[0,0,1]));R=rot(o)
-    return tuple(round((R[4],R[5],R[6])[i]*d,4) for i in range(3))
-def solve(x,y,z):   # target offset -> (th,ph,d) for &{th}+{ph}~{d}
-    return (round(math.degrees(math.atan2(z,y)),2), round(math.degrees(math.atan2(-x,math.hypot(y,z))),2), round(math.hypot(x,y,z),4))
-```
-Chain segment / cloud offset = child_world − parent_world (feed that delta to `solve`). Leg hip target = `(offX, −offY, −offZ)`.
+## 8. Checklist
+
+1. Open block; add metadata (spawn/hash, then `HEIGHT_*` or `MOVE_SPEED`/`SCALE`/`OFFSET_Y`).
+2. `[AXIOM]`; growing rules must decrement `{n}` toward termination.
+3. Define every placed module as `[BRUSH]` or `[BONE]` (unresolved = grammar-only).
+4. Brush: `size` triple + `textures={3D=...}` or `color=`; add `2D=` for an icon.
+5. Entities: bones for posed parts, then `[CLIP]` + `[POSE:sym:bone]`.
+6. `@{x;y;z}` for joints; `|` after a walk to reset heading.

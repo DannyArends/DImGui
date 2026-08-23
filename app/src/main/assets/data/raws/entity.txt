@@ -2,7 +2,7 @@
 
 [ENTITY:Dwarf]
   [MOVE_SPEED:1.5]
-  [SCALE:0.6][SCALE_VARIANCE:0.05]
+  [SCALE:0.7][SCALE_VARIANCE:0.05]
   [OFFSET_Y:0.0]
   [AXIOM:Body(+{90}~{0.15} | && LegL BootL)(+{-90}~{0.15} | && LegR BootR)(+{57.65}~{0.3551} | && ArmL (ShoulderL)(HandL))(+{-57.65}~{0.3551} | && ArmR (ShoulderR)(HandR))(~{0.19} | Head(BeardStyle)(BrowStyle)(EyeL)(EyeR)(NoseStyle)(CheekL)(CheekR)(Mouth)(EarL)(EarR)(HairStyle))]
 
