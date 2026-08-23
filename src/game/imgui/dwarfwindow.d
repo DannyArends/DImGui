@@ -47,12 +47,16 @@ void showDwarfRow(ref GameApp app, size_t i, ref Dwarf d) {
 void showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
   auto s = &d.inventory[i];
   if(s.empty) {
-    igImageButton(cstr("##dwf_inv_%d", cast(int)i), ImTextureRefFromID(0), ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(0,0,0,0));
+    igButton(cstr("##dwf_inv_%d", cast(int)i), ImVec2(cellSize, cellSize));
     return;
   }
-  auto texIdx  = idx(app.textures, itemTex(s.item));
-  auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
-  igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
+  auto texIdx = idx(app.textures, itemTex(s.item));
+  if(texIdx < 0) {
+    igButton(cstr("##dwf_inv_%d", cast(int)i), ImVec2(cellSize, cellSize));
+  } else {
+    auto texID = ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID);
+    igImageButton(cstr("##dwf_inv_%d", cast(int)i), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
+  }
   if(igIsItemClicked(0)) app.dispatchJob(d, dropBlockJob(d.tile, s.resourceIDs[s.count - 1]));
   ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
   if(s.count > 1) drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", s.count));

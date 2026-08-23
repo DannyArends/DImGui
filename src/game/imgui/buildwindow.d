@@ -58,6 +58,7 @@ void showBuildContent(ref GameApp app, uint font = 0) {
     if(!resourceTable[tileType].buildable) continue;
     int count = app.world.inventory.get(tileType, app); if(count <= 0) continue;
     auto texIdx = idx(app.textures, resourceTable[tileType].textures.texOf("2D"));
+    if(texIdx < 0) continue;
     auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
 
     igImageButton(cstr("##bt_%d", tileType), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
