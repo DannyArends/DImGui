@@ -69,7 +69,7 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   path = fixPath(path);
   version (Android) { path = cstr("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path)); }
   if(verbose) SDL_Log("writeFile: writing to '%s' (%d bytes)", path, content.length);
-  SDL_IOStream* fp = SDL_IOFromFile(path, "w");
+  SDL_IOStream* fp = SDL_IOFromFile(path, "wb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
 
   size_t writeTotal = 0, nWrite = 1;
