@@ -50,6 +50,9 @@ class Tiles : Square {
     isSelectable = false;
     hideInObjectsWindow = true;
   }
+
+  /** Terrain normals live in the global MaterialBuffer (mat.nid), decided per-fragment */
+  override @property bool hasNormalMaps() const nothrow { return(true); }
 }
 
 /** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block */
