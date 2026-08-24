@@ -57,6 +57,7 @@ class Tiles : Square {
 class Chunk : BoundingBox {
   ChunkData data;
   Geometry tiles;
+  bool rebuild = false;
   alias data this;
 
   this(ChunkData cd, immutable(WorldData) wd) {
