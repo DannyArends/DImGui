@@ -59,7 +59,8 @@ class Geometry {
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
   bool movable = false;                             /// re-emitted every frame (dynamic shadow caster) despite no onFrame
-  
+  bool globalNormals = false;                       /// normals come from the global MaterialBuffer
+
   @property @nogc bool inFrustum() nothrow const { return(box is null || box.visible); }
   @property @nogc bool isSDF() nothrow const { return(mName == "Text"); }
   @property bool isAnimated() nothrow { return(animations.length > 0); }
@@ -68,7 +69,8 @@ class Geometry {
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
-  @property bool hasNormalMaps() const nothrow { 
+  @property bool hasNormalMaps() const nothrow {
+    if(globalNormals) return(true);
     foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return(true); } } return(false);
   }
 

@@ -49,10 +49,8 @@ class Tiles : Square {
     initInstanced("Tiles", cd.tileInstances);
     isSelectable = false;
     hideInObjectsWindow = true;
+    globalNormals = true;
   }
-
-  /** Terrain normals live in the global MaterialBuffer (mat.nid), decided per-fragment */
-  override @property bool hasNormalMaps() const nothrow { return(true); }
 }
 
 /** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block */
