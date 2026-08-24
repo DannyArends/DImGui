@@ -43,7 +43,7 @@ Add the Android target to `ldc2-1.40.1-linux-x86_64/etc/ldc2.conf`:
 All dependencies (SDL3, SDL3_image, SDL3_mixer, freetype, shaderc, spirv_cross, assimp, cimgui) are built together by
 Android Studio via `app/jni/CMakeLists.txt`. Open the project in Android Studio and build, or use:
 ```
-./gradlew assembleDebug
+./gradlew externalNativeBuildDebug
 ```
  
 ### Compile D code into libmain.so
@@ -55,5 +55,21 @@ dub build --build=release --compiler=ldc2 --arch=aarch64-unknown-linux-android -
 ### Install on device
  
 ```
-adb install app/build/outputs/apk/debug/app-debug.apk
+./gradlew installDebug && \
+adb logcat -c && \
+adb shell am start -n org.libsdl.app/.SDLActivity && \
+adb logcat --pid=$(adb shell pidof org.libsdl.app)
 ```
+
+### All combined:
+
+```
+./gradlew externalNativeBuildDebug && \
+dub build --build=release --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force && \
+./gradlew installDebug && \
+adb logcat -c && \
+adb shell am start -n org.libsdl.app/.SDLActivity && \
+adb logcat --pid=$(adb shell pidof org.libsdl.app)
+```
+
+
