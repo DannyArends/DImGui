@@ -43,6 +43,12 @@ vec3 illuminate(Light light, vec3 baseColor, vec3 position, vec3 normal, out vec
   return(light.intensity.rgb * baseColor * sDotN * attenuation);  // direct only
 }
 
+/** Load a material by id into an unlayouted local (avoids SSBO->local struct-type mismatch) */
+Material getMaterial(int id) {
+  if (id < 0) return noMaterial;
+  return Material(materialSSBO.materials[uint(id)].tid, materialSSBO.materials[uint(id)].nid, materialSSBO.materials[uint(id)].oid, 0);
+}
+
 // Linear froxel index from 3D grid coords — MUST match between cull (write) and fragment (read)
 uint clusterId(uint gx, uint gy, uint gz) { return((gz * GRID_Y + gy) * GRID_X + gx); }
 
