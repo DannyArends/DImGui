@@ -214,7 +214,6 @@ void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath 
 
   int existing = app.textures.idx(texture.path);
   if(existing >= 0) { // overwrite existing in place so idx() stays stable
-    app.cleanup(app.textures[existing]);
     app.textures[existing] = texture;
   }else{ app.textures ~= texture; }
 
