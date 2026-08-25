@@ -118,20 +118,20 @@ void recordScenePasses(ref App app) {
   app.timed!recordImGuiCommandBuffer();
 }
 
-/** Phase 5: three submits — graphics(depth+resolve) → async compute(SSAO) → graphics(shadows+scene+post+imgui). */
+/** Phase 5: graphics(depth+resolve) → async compute(SSAO) → graphics(shadows+scene+post+imgui). */
 void submitFrame(ref App app, bool shadowsThisFrame) {
   if(app.trace) SDL_Log("Phase 5: Submit CommandBuffers");
-  VkSemaphore computeComplete = app.sync[app.syncIndex].computeComplete;
-  VkSemaphore imageAcquired   = app.sync[app.syncIndex].imageAcquired;
-  VkSemaphore depthComplete   = app.sync[app.syncIndex].depthComplete;
-  VkSemaphore ssaoComplete    = app.sync[app.syncIndex].ssaoComplete;
-  VkSemaphore renderComplete  = app.renderComplete[app.frameIndex];
+  bool ssaoAsync = app.submitDepth();
+  app.submitAsyncSSAO(ssaoAsync);
+  app.submitScene(shadowsThisFrame, ssaoAsync);
+}
 
+/** Submit 1 (graphics): upload + depth + resolve. Returns whether async SSAO runs this frame (signals depthComplete if so). */
+bool submitDepth(ref App app) {
   bool ssaoAsync = false;
-  VkCommandBuffer[] ssaoCmds;
   if(app.worldReady && app.hasCompute){ foreach(ref shader; app.compute.shaders) {
     if(!app.passEnabled(shader.path)) continue;
-    if(app.isStage(shader.path, ComputeStage.PostDepthAsync)){ ssaoCmds ~= app.compute.commands[shader.path][app.syncIndex]; ssaoAsync = true; }
+    if(app.isStage(shader.path, ComputeStage.PostDepthAsync)){ ssaoAsync = true; }
   } }
 
   VkCommandBuffer[] depthCmds;
@@ -143,26 +143,38 @@ void submitFrame(ref App app, bool shadowsThisFrame) {
       if(app.isStage(shader.path, ComputeStage.PostDepth)){ depthCmds ~= app.compute.commands[shader.path][app.syncIndex]; }
     } }
   }
-  {
-    VkSubmitInfo si = {
-      sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      commandBufferCount : cast(uint)depthCmds.length, pCommandBuffers : &depthCmds[0],
-      signalSemaphoreCount : ssaoAsync ? 1 : 0, pSignalSemaphores : ssaoAsync ? &depthComplete : null
-    };
-    enforceVK(vkQueueSubmit(app.queues.graphics.queue, 1, &si, null));
-  }
+  VkSemaphore depthComplete = app.sync[app.syncIndex].depthComplete;
+  VkSubmitInfo si = {
+    sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
+    commandBufferCount : cast(uint)depthCmds.length, pCommandBuffers : &depthCmds[0],
+    signalSemaphoreCount : ssaoAsync ? 1 : 0, pSignalSemaphores : ssaoAsync ? &depthComplete : null
+  };
+  enforceVK(vkQueueSubmit(app.queues.graphics.queue, 1, &si, null));
+  return(ssaoAsync);
+}
 
-  if(ssaoAsync) {
-    VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-    VkSubmitInfo si = {
-      sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
-      waitSemaphoreCount : 1, pWaitSemaphores : &depthComplete, pWaitDstStageMask : &waitStage,
-      commandBufferCount : cast(uint)ssaoCmds.length, pCommandBuffers : &ssaoCmds[0],
-      signalSemaphoreCount : 1, pSignalSemaphores : &ssaoComplete
-    };
-    enforceVK(vkQueueSubmit(app.queues.compute.queue, 1, &si, null));
+/** Submit 2 (compute): async SSAO; waits depthComplete, signals ssaoComplete. No-op when ssaoAsync is false. */
+void submitAsyncSSAO(ref App app, bool ssaoAsync) {
+  if(!ssaoAsync) return;
+  VkCommandBuffer[] ssaoCmds;
+  foreach(ref shader; app.compute.shaders) {
+    if(!app.passEnabled(shader.path)) continue;
+    if(app.isStage(shader.path, ComputeStage.PostDepthAsync)){ ssaoCmds ~= app.compute.commands[shader.path][app.syncIndex]; }
   }
+  VkSemaphore depthComplete = app.sync[app.syncIndex].depthComplete;
+  VkSemaphore ssaoComplete  = app.sync[app.syncIndex].ssaoComplete;
+  VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+  VkSubmitInfo si = {
+    sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
+    waitSemaphoreCount : 1, pWaitSemaphores : &depthComplete, pWaitDstStageMask : &waitStage,
+    commandBufferCount : cast(uint)ssaoCmds.length, pCommandBuffers : &ssaoCmds[0],
+    signalSemaphoreCount : 1, pSignalSemaphores : &ssaoComplete
+  };
+  enforceVK(vkQueueSubmit(app.queues.compute.queue, 1, &si, null));
+}
 
+/** Submit 3 (graphics): shadows + scene + post + imgui; waits imageAcquired (+compute/ssao), signals renderComplete. */
+void submitScene(ref App app, bool shadowsThisFrame, bool ssaoAsync) {
   VkCommandBuffer[] submitCommandBuffers;
   if(app.worldReady) {
     if(shadowsThisFrame) { submitCommandBuffers ~= app.shadows.cmd[app.syncIndex]; }
@@ -170,6 +182,11 @@ void submitFrame(ref App app, bool shadowsThisFrame) {
     submitCommandBuffers ~= app.postCmd[app.syncIndex];
   }
   submitCommandBuffers ~= app.imguiCmd[app.syncIndex];
+
+  VkSemaphore computeComplete = app.sync[app.syncIndex].computeComplete;
+  VkSemaphore imageAcquired   = app.sync[app.syncIndex].imageAcquired;
+  VkSemaphore ssaoComplete    = app.sync[app.syncIndex].ssaoComplete;
+  VkSemaphore renderComplete  = app.renderComplete[app.frameIndex];
 
   WaitList!3 wait;
   wait.add(imageAcquired, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
