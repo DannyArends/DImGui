@@ -57,12 +57,16 @@ void nameVulkanObject(T)(ref App app, T object, const(char)* name, VkObjectType 
   if(vkSetDebugUtilsObjectName) { vkSetDebugUtilsObjectName(app.device, &nameInfo); }
 }
 
-void pushLabel(T)(T object, const(char)* name, Colors color = Colors.lightslategrey) { debug {
-    VkDebugUtilsLabelEXT labelInfo = {
-      sType: VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-      pLabelName: name, color: color
-    };
-    if(vkCmdBeginDebugUtilsLabel) vkCmdBeginDebugUtilsLabel(object, &labelInfo);
+void pushLabel(T)(T object, Colors color, const(char)* name) { debug {
+  VkDebugUtilsLabelEXT labelInfo = {
+    sType: VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+    pLabelName: name, color: color
+  };
+  if(vkCmdBeginDebugUtilsLabel) vkCmdBeginDebugUtilsLabel(object, &labelInfo);
+} }
+
+void pushLabel(T, A...)(T object, Colors color, string fmt, A args) { debug {
+    pushLabel(object, color, cstr(fmt, args));
 } }
 
 void popLabel(T)(T object) { debug {

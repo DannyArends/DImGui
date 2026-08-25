@@ -160,7 +160,7 @@ void dispatchCompute(ref App app, VkCommandBuffer cmd, Shader shader) {
   auto pass = shader.path in app.compute.passes;
   auto pipeline = app.compute.pipelines[shader.path];
 
-  pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
+  pushLabel(cmd, Colors.palegoldenrod, "Compute: %s", baseName(fromStringz(shader.path)));
   app.updateDescriptorData([shader], app.sceneCmd.commands, app.syncIndex);
   if(pass.pre !is null) pass.pre(app, cmd, shader);
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.pipeline);
@@ -182,7 +182,7 @@ void recordComputeCommandBuffer(ref App app, Shader shader) {
   enforceVK(vkBeginCommandBuffer(cmd, &commandBufferInfo));
   app.nameVulkanObject(cmd, cstr("[COMMANDBUFFER] Compute %s %d", fromStringz(shader.path), app.syncIndex), VK_OBJECT_TYPE_COMMAND_BUFFER);
 
-  pushLabel(cmd, cstr("Compute: %s", baseName(fromStringz(shader.path))), Colors.palegoldenrod);
+  pushLabel(cmd, Colors.palegoldenrod, "Compute: %s", baseName(fromStringz(shader.path)));
   app.updateDescriptorData([shader], app.compute.commands[shader.path], app.syncIndex);
 
   auto pass = shader.path in app.compute.passes;
