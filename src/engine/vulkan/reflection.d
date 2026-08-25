@@ -119,6 +119,7 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
       if(to!string(descr.name) == "hdrSampler") descr.target = DescriptorTarget.HDR;
       if(to!string(descr.name) == "depthSampler") descr.target = DescriptorTarget.Depth;
       if(to!string(descr.name) == "ssaoSampler") descr.target = DescriptorTarget.SSAO;
+      if(to!string(descr.name) == "resolvedSampler") descr.target = DescriptorTarget.Resolved;
     }
     if(descr.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) descr.target = DescriptorTarget.Compute;
     if(descr.type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
