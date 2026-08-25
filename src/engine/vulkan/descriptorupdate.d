@@ -88,17 +88,17 @@ void append(T)(ref VkDescriptorImageInfo[] infos, T images, VkSampler sampler, u
 }
 
 /** Populate imageInfos for a given descriptor target */
-void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descriptor d) {
+void writeImageInfos(ref App app, ref VkDescriptorImageInfo[] imageInfos, Descriptor d, uint syncIndex) {
   final switch(d.target) {
     case DescriptorTarget.Textures: imageInfos.append(app.textures.textures, app.sampler); break;
     case DescriptorTarget.Shadow: imageInfos.append(app.shadows.images, app.shadows.sampler, 1); break;
     case DescriptorTarget.HDR: imageInfos.append([app.resolvedHDR], app.sampler); break;
     case DescriptorTarget.Compute:
-      imageInfos.append([app.textures[app.textures.idx(d.name ~ "#" ~ to!string(app.syncIndex))]], app.sampler, 0, VK_IMAGE_LAYOUT_GENERAL);
+      imageInfos.append([app.textures[app.textures.idx(d.name ~ "#" ~ to!string(syncIndex))]], app.sampler, 0, VK_IMAGE_LAYOUT_GENERAL);
     break;
     case DescriptorTarget.Depth: imageInfos.append([app.depthBuffer], app.sampler, 0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL); break;
-    case DescriptorTarget.SSAO: imageInfos.append([app.textures[app.textures.idx("ssaoOut#" ~ to!string(app.syncIndex))]], app.sampler); break;
-    case DescriptorTarget.Resolved: imageInfos.append([app.textures[app.textures.idx("depthResolved#" ~ to!string(app.syncIndex))]], app.sampler); break;
+    case DescriptorTarget.SSAO: imageInfos.append([app.textures[app.textures.idx("ssaoOut#" ~ to!string(syncIndex))]], app.sampler); break;
+    case DescriptorTarget.Resolved: imageInfos.append([app.textures[app.textures.idx("depthResolved#" ~ to!string(syncIndex))]], app.sampler); break;
     case DescriptorTarget.WBOITAccum:  imageInfos.append([app.wboit.accumulation], null, 0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); break;
     case DescriptorTarget.WBOITReveal: imageInfos.append([app.wboit.revealage], null, 0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); break;
     case DescriptorTarget.None: break;
@@ -147,7 +147,7 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[]
   if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
      d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
      d.type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
-    app.writeImageInfos(imageInfos, d);
+    app.writeImageInfos(imageInfos, d, syncIndex);
     VkWriteDescriptorSet set = makeWrite(dst, d.binding, d.type, null, null);
     set.descriptorCount = cast(uint)(imageInfos.length - start);
     write ~= set;
