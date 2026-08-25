@@ -76,28 +76,19 @@ void initializeCompute(ref App app) {
     workItems: (ref App a, Shader shader) { uint[3] r = [a.camera.width, a.camera.height, 1u]; return(r); },
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
       string dr = "depthResolved#" ~ to!string(a.syncIndex);
-      string so = "ssaoOut#" ~ to!string(a.syncIndex);
-      if(a.queues.compute.family != a.queues.graphics.family) {
-        imageBarrier(cmd, a.textures[a.textures.idx(dr)].image,
-                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                     0, VK_ACCESS_SHADER_READ_BIT,
-                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                     0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
-                     a.queues.graphics.family, a.queues.compute.family);
-      }
-      a.transitionImageLayout(cmd, a.textures[a.textures.idx(so)].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+      a.transitionImageLayout(cmd, a.textures[a.textures.idx(dr)].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
     },
     post: (ref App a, VkCommandBuffer cmd, Shader shader) {
-      string so = "ssaoOut#" ~ to!string(a.syncIndex);
+      string dr = "depthResolved#" ~ to!string(a.syncIndex);
       if(a.queues.compute.family != a.queues.graphics.family) {
-        imageBarrier(cmd, a.textures[a.textures.idx(so)].image,
+        imageBarrier(cmd, a.textures[a.textures.idx(dr)].image,
                      VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                      VK_ACCESS_SHADER_WRITE_BIT, 0,
                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                      0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
-                     a.queues.compute.family, a.queues.graphics.family);
+                     a.queues.graphics.family, a.queues.compute.family);
       } else {
-        a.transitionImageLayout(cmd, a.textures[a.textures.idx(so)].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        a.transitionImageLayout(cmd, a.textures[a.textures.idx(dr)].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
       }
     }
   );
@@ -113,16 +104,32 @@ void initializeCompute(ref App app) {
       uint[3] r = [d[0], d[1], 1u]; return(r);
     },
     pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
-      // order the depth read after the previous frame's depth writes (same queue, earlier submission)
-      imageBarrier(cmd, a.depthBuffer.image,
-                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-                   VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                   0, 1, 0, 1, VK_IMAGE_ASPECT_DEPTH_BIT);
-      a.transitionImageLayout(cmd, a.textures[a.textures.idx("ssaoOut")].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+      string dr = "depthResolved#" ~ to!string(a.syncIndex);
+      string so = "ssaoOut#" ~ to!string(a.syncIndex);
+      // acquire depthResolved from graphics (matches the resolve pass release)
+      if(a.queues.compute.family != a.queues.graphics.family) {
+        imageBarrier(cmd, a.textures[a.textures.idx(dr)].image,
+                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     0, VK_ACCESS_SHADER_READ_BIT,
+                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                     0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     a.queues.graphics.family, a.queues.compute.family);
+      }
+      a.transitionImageLayout(cmd, a.textures[a.textures.idx(so)].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
     },
     post: (ref App a, VkCommandBuffer cmd, Shader shader) {
-      a.transitionImageLayout(cmd, a.textures[a.textures.idx("ssaoOut")].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      string so = "ssaoOut#" ~ to!string(a.syncIndex);
+      // release ssaoOut back to graphics (scene acquires on read)
+      if(a.queues.compute.family != a.queues.graphics.family) {
+        imageBarrier(cmd, a.textures[a.textures.idx(so)].image,
+                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     VK_ACCESS_SHADER_WRITE_BIT, 0,
+                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                     0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     a.queues.compute.family, a.queues.graphics.family);
+      } else {
+        a.transitionImageLayout(cmd, a.textures[a.textures.idx(so)].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      }
     }
   );
 }
