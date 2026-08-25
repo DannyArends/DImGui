@@ -191,7 +191,7 @@ void toGPU(ref App app, VkCommandBuffer cmdBuffer, ref Texture texture, out GPUA
 }
 
 /** Create a blank, camera-sized texture that a compute shader can write into (no pixel data — pure GPU storage) */
-void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath = "") {
+void createComputeTexture(ref App app, string name, VkFormat format = VK_FORMAT_R8G8B8A8_UNORM, string shaderPath = "") {
   VkImageUsageFlags usage;
   usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -201,9 +201,9 @@ void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath 
 
   uint w = app.camera.width, h = app.camera.height;
   if(auto p = shaderPath in app.compute.passes) { if(p.resolution) { auto r = p.resolution(app); w = r[0]; h = r[1]; } }
-  Texture texture = Texture(path : descriptor.name, width: w, height: h);
+  Texture texture = Texture(path : name, width: w, height: h);
 
-  app.createNamedImage(texture, texture.width, texture.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
+  app.createNamedImage(texture, texture.width, texture.height, format, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
                         VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
 
   auto cmd = app.beginSingleTimeCommands(app.queues.graphics.pool);
@@ -214,9 +214,9 @@ void createComputeTexture(ref App app, Descriptor descriptor, string shaderPath 
   app.registerTexture(texture);
 
   int existing = app.textures.idx(texture.path);
-  if(existing >= 0) { // overwrite existing in place so idx() stays stable
+  if(existing >= 0) {
     app.textures[existing] = texture;
-  }else{ app.textures ~= texture; }
+  } else { app.textures ~= texture; }
 
   app.swapDeletionQueue.add((){ app.cleanup(texture); });
 }

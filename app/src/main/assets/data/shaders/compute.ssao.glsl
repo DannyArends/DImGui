@@ -7,11 +7,7 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
-#ifdef MSAA
-  layout(binding = 0) uniform sampler2DMS depthSampler;
-#else
-  layout(binding = 0) uniform sampler2D depthSampler;
-#endif
+layout(binding = 0) uniform sampler2D resolvedSampler;
 
 layout(binding = 1, rgba8) uniform writeonly image2D ssaoOut;
 layout(binding = 2) uniform SSAO {
@@ -24,7 +20,7 @@ layout(binding = 2) uniform SSAO {
 } u;
 
 vec3 worldPos(ivec2 px, ivec2 size) {
-  float d = texelFetch(depthSampler, px, 0).r;
+  float d = texelFetch(resolvedSampler, px, 0).r;
   vec2 ndc = (vec2(px) + 0.5) / vec2(size) * 2.0 - 1.0;
   vec4 w = u.invViewProj * vec4(ndc, d, 1.0);
   return w.xyz / w.w;
@@ -34,14 +30,10 @@ void main() {
   ivec2 outPx = ivec2(gl_GlobalInvocationID.xy);
   ivec2 outSize = imageSize(ssaoOut);
   if(outPx.x >= outSize.x || outPx.y >= outSize.y) return;
-  #ifdef MSAA
-    ivec2 size = textureSize(depthSampler);
-  #else
-    ivec2 size = textureSize(depthSampler, 0);
-  #endif
+  ivec2 size = textureSize(resolvedSampler, 0);
   ivec2 px = ivec2((vec2(outPx) + 0.5) * vec2(size) / vec2(outSize));
 
-  float dP = texelFetch(depthSampler, px, 0).r;
+  float dP = texelFetch(resolvedSampler, px, 0).r;
   vec2 ndcP = (vec2(px) + 0.5) / vec2(size) * 2.0 - 1.0;
   vec4 wP = u.invViewProj * vec4(ndcP, dP, 1.0);
   vec3 P  = wP.xyz / wP.w;
@@ -68,8 +60,8 @@ void main() {
     ivec2 spx = ivec2(suv * vec2(size));
     if (any(lessThan(spx, ivec2(0))) || any(greaterThanEqual(spx, size))) continue;
 
-    float sd      = texelFetch(depthSampler, spx, 0).r;  // one fetch, no matrix, no sqrt
-    float surfZ   = u.proj.y / (sd + u.proj.x);          // surface view depth
+    float sd = texelFetch(resolvedSampler, spx, 0).r;  // one fetch, no matrix, no sqrt
+    float surfZ = u.proj.y / (sd + u.proj.x);          // surface view depth
     float sampleZ = clip.w;                              // sample view depth, already computed
     float rangeCheck = smoothstep(0.0, 1.0, radius / max(abs(surfZ - pZ), 1e-4));
     occ += (surfZ < sampleZ - u.params.y ? 1.0 : 0.0) * rangeCheck;
@@ -77,3 +69,4 @@ void main() {
   float ao = mix(1.0, pow(1.0 - occ / float(SSAO_KERNEL), u.params.z), u.params.w);
   imageStore(ssaoOut, outPx, vec4(ao));
 }
+

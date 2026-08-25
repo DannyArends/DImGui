@@ -25,8 +25,9 @@ struct Compute {
 
 /** When a compute pass is dispatched relative to the scene render. */
 enum ComputeStage : ubyte {
-  PreRender,    /// before the scene pass — feeds it (e.g. light culling)
-  PostDepth     /// after the scene pass writes depth — consumes it (e.g. SSAO)
+  PreRender,      /// compute queue, submitted early — feeds the scene (e.g. light culling)
+  PostDepth,      /// graphics queue, inline after depth pre-pass (e.g. depth resolve)
+  PostDepthAsync  /// compute queue, own submit after depth — overlaps shadows (e.g. SSAO)
 }
 
 /** Per-shader compute behaviour, keyed by shader.path (like DescriptorProvider is keyed by descriptor name).
@@ -43,6 +44,7 @@ struct ComputePass {
 
 ShaderDef[] ComputeShaders = [
   ShaderDef("data/shaders/compute.cull.glsl", shaderc_glsl_compute_shader),
+  ShaderDef("data/shaders/compute.depthresolve.glsl", shaderc_glsl_compute_shader),
   ShaderDef("data/shaders/compute.ssao.glsl", shaderc_glsl_compute_shader)
 ];
 
@@ -65,6 +67,39 @@ void initializeCompute(ref App app) {
                         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     },
     workItems: (ref App a, Shader shader) { uint[3] r = [cast(uint)a.lights.length, 1u, 1u]; return r; }
+  );
+
+  // depth resolve: MSAA depth -> per-frame single-sample depthResolved#i (graphics queue, before async SSAO)
+  app.compute.passes["data/shaders/compute.depthresolve.glsl"] = ComputePass(
+    stage: ComputeStage.PostDepth,
+    enabled: (ref App a) => a.useSSAO,
+    workItems: (ref App a, Shader shader) { uint[3] r = [a.camera.width, a.camera.height, 1u]; return(r); },
+    pre: (ref App a, VkCommandBuffer cmd, Shader shader) {
+      string dr = "depthResolved#" ~ to!string(a.syncIndex);
+      string so = "ssaoOut#" ~ to!string(a.syncIndex);
+      if(a.queues.compute.family != a.queues.graphics.family) {
+        imageBarrier(cmd, a.textures[a.textures.idx(dr)].image,
+                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     0, VK_ACCESS_SHADER_READ_BIT,
+                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                     0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     a.queues.graphics.family, a.queues.compute.family);
+      }
+      a.transitionImageLayout(cmd, a.textures[a.textures.idx(so)].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+    },
+    post: (ref App a, VkCommandBuffer cmd, Shader shader) {
+      string so = "ssaoOut#" ~ to!string(a.syncIndex);
+      if(a.queues.compute.family != a.queues.graphics.family) {
+        imageBarrier(cmd, a.textures[a.textures.idx(so)].image,
+                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     VK_ACCESS_SHADER_WRITE_BIT, 0,
+                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                     0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     a.queues.compute.family, a.queues.graphics.family);
+      } else {
+        a.transitionImageLayout(cmd, a.textures[a.textures.idx(so)].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      }
+    }
   );
 
   // ssao.glsl: produced compute image is used in fragment
@@ -147,7 +182,8 @@ void createComputePipeline(ref App app, Shader shader) {
 }
 
 void createComputeCommandBuffers(ref App app, Shader shader) {
-  VkCommandPool pool = app.isStage(shader.path, ComputeStage.PreRender) ? app.queues.compute.pool : app.queues.graphics.pool;
+  bool onCompute = app.isStage(shader.path, ComputeStage.PreRender) || app.isStage(shader.path, ComputeStage.PostDepthAsync);
+  VkCommandPool pool = onCompute ? app.queues.compute.pool : app.queues.graphics.pool;
   app.compute.commands[shader.path] = app.createCommandBuffer(pool, app.framesInFlight);
   if(app.verbose) SDL_Log("createComputeCommandBuffers: %d ComputeCommand, commandpool[%p]", app.framesInFlight, pool);
   app.swapDeletionQueue.add((){

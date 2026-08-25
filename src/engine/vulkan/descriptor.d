@@ -8,7 +8,7 @@ import engine;
 import descriptorupdate : updateDescriptorSet;
 import validation : nameVulkanObject;
 
-enum DescriptorTarget { None, Textures, Shadow, HDR, Compute, Depth, SSAO, WBOITAccum, WBOITReveal }
+enum DescriptorTarget { None, Textures, Shadow, HDR, Compute, Depth, Resolved, SSAO, WBOITAccum, WBOITReveal }
 
 struct Descriptor {
   VkDescriptorType type;    /// Type of Descriptor

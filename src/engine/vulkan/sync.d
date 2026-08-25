@@ -11,6 +11,8 @@ import validation : nameVulkanObject;
 struct Sync {
   VkSemaphore computeComplete;
   VkSemaphore imageAcquired;
+  VkSemaphore depthComplete;
+  VkSemaphore ssaoComplete;
 }
 
 struct Fence {
@@ -41,8 +43,12 @@ void createSyncObjects(ref App app) {
   for (size_t i = 0; i < app.sync.length; i++) {
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].computeComplete));
     enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].imageAcquired));
+    enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].depthComplete));
+    enforceVK(vkCreateSemaphore(app.device, &semaphoreInfo, null, &app.sync[i].ssaoComplete));
     app.nameVulkanObject(app.sync[i].computeComplete, cstr("[SEMAPHORE] computeComplete #%d",i), VK_OBJECT_TYPE_SEMAPHORE);
     app.nameVulkanObject(app.sync[i].imageAcquired, cstr("[SEMAPHORE] imageAcquired #%d",i), VK_OBJECT_TYPE_SEMAPHORE);
+    app.nameVulkanObject(app.sync[i].depthComplete, cstr("[SEMAPHORE] depthComplete #%d",i), VK_OBJECT_TYPE_SEMAPHORE);
+    app.nameVulkanObject(app.sync[i].ssaoComplete, cstr("[SEMAPHORE] ssaoComplete #%d",i), VK_OBJECT_TYPE_SEMAPHORE);
   }
   if(app.verbose) SDL_Log("Done vkCreateSemaphore");
 
@@ -60,6 +66,8 @@ void createSyncObjects(ref App app) {
     for (uint i = 0; i < app.framesInFlight; i++) {
       vkDestroySemaphore(app.device, app.sync[i].computeComplete, app.allocator);
       vkDestroySemaphore(app.device, app.sync[i].imageAcquired, app.allocator);
+      vkDestroySemaphore(app.device, app.sync[i].depthComplete, app.allocator);
+      vkDestroySemaphore(app.device, app.sync[i].ssaoComplete, app.allocator);
 
       vkDestroyFence(app.device, app.fences[i].renderInFlight, app.allocator);
       vkDestroyFence(app.device, app.fences[i].computeInFlight, app.allocator);

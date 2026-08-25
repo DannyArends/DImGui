@@ -76,16 +76,14 @@ void imageBarrier(VkCommandBuffer cmd, VkImage image,
                   VkAccessFlags srcAccess, VkAccessFlags dstAccess,
                   VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
                   uint baseMipLevel = 0, uint levelCount = 1, uint baseLayer = 0, uint layerCount = 1,
-                  VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT) {
+                  VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                  uint srcFamily = VK_QUEUE_FAMILY_IGNORED, uint dstFamily = VK_QUEUE_FAMILY_IGNORED) {
   VkImageMemoryBarrier b = {
     sType: VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
     image: image,
-    oldLayout: oldLayout,
-    newLayout: newLayout,
-    srcQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
-    dstQueueFamilyIndex: VK_QUEUE_FAMILY_IGNORED,
-    srcAccessMask: srcAccess,
-    dstAccessMask: dstAccess,
+    oldLayout: oldLayout, newLayout: newLayout,
+    srcQueueFamilyIndex: srcFamily, dstQueueFamilyIndex: dstFamily,
+    srcAccessMask: srcAccess, dstAccessMask: dstAccess,
     subresourceRange: { aspectMask: aspectMask, baseMipLevel: baseMipLevel, levelCount: levelCount, baseArrayLayer: baseLayer, layerCount: layerCount }
   };
   vkCmdPipelineBarrier(cmd, srcStage, dstStage, 0, 0, null, 0, null, 1, &b);
