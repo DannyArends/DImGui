@@ -203,8 +203,10 @@ void createComputeTexture(ref App app, string name, VkFormat format = VK_FORMAT_
   if(auto p = shaderPath in app.compute.passes) { if(p.resolution) { auto r = p.resolution(app); w = r[0]; h = r[1]; } }
   Texture texture = Texture(path : name, width: w, height: h);
 
+  uint[2] fams = [app.queues.graphics.family, app.queues.compute.family];
+  const(uint)[] queues = (fams[0] != fams[1]) ? fams[] : null;
   app.createNamedImage(texture, texture.width, texture.height, format, VK_IMAGE_ASPECT_COLOR_BIT, "Compute Image",
-                        VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage);
+                        VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 1, 1, queues);
 
   auto cmd = app.beginSingleTimeCommands(app.queues.graphics.pool);
   app.transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

@@ -44,7 +44,8 @@ void createColorResources(ref App app) {
 void createImage(ref App app, ref ImageBuffer buffer, uint width, uint height, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
                  VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
                  VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-                 VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint mipLevels = 1, uint arrayLayers = 1) {
+                 VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint mipLevels = 1, uint arrayLayers = 1,
+                 const(uint)[] concurrentFamilies = null) {
 
   buffer.extent = VkExtent3D(width, height, 1);
   buffer.arrayLayers = arrayLayers;
@@ -57,6 +58,11 @@ void createImage(ref App app, ref ImageBuffer buffer, uint width, uint height, V
     initialLayout: VK_IMAGE_LAYOUT_UNDEFINED, usage: usage,
     sharingMode: VK_SHARING_MODE_EXCLUSIVE, samples: samples, flags: 0
   };
+  if(concurrentFamilies.length > 1) {
+    imageInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    imageInfo.queueFamilyIndexCount = cast(uint)concurrentFamilies.length;
+    imageInfo.pQueueFamilyIndices = &concurrentFamilies[0];
+  }
   VmaAllocationCreateInfo vmaAlloc = { usage: VMA_MEMORY_USAGE_AUTO, requiredFlags: properties };
   enforceVK(vmaCreateImage(app.vma, &imageInfo, &vmaAlloc, &buffer.image, &buffer.memory, null));
 }
@@ -65,8 +71,9 @@ void createImage(ref App app, ref ImageBuffer buffer, uint width, uint height, V
 void createNamedImage(ref App app, ref ImageBuffer buffer, uint width, uint height, VkFormat format, VkImageAspectFlags aspect, string label,
                        VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
                        VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                       VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint mipLevels = 1, uint arrayLayers = 1) {
-  app.createImage(buffer, width, height, format, samples, tiling, usage, properties, mipLevels, arrayLayers);
+                       VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, uint mipLevels = 1, uint arrayLayers = 1,
+                       const(uint)[] concurrentFamilies = null) {
+  app.createImage(buffer, width, height, format, samples, tiling, usage, properties, mipLevels, arrayLayers, concurrentFamilies);
   app.createLayerViews(buffer, format, aspect, mipLevels);
   app.nameImageBuffer(buffer, label);
 }
