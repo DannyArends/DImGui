@@ -144,9 +144,7 @@ void writeDescriptor(ref App app, ref VkWriteDescriptorSet[] write, ref size_t[]
     infoIndex ~= bufferInfos.length - 1;
   }
   // Image sampler / Compute Stored Image Write
-  if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
-     d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
-     d.type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
+  if(d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || d.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE || d.type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
     app.writeImageInfos(imageInfos, d, syncIndex);
     VkWriteDescriptorSet set = makeWrite(dst, d.binding, d.type, null, null);
     set.descriptorCount = cast(uint)(imageInfos.length - start);
