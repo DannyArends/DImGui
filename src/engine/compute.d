@@ -95,7 +95,7 @@ void initializeCompute(ref App app) {
 
   // ssao.glsl: produced compute image is used in fragment
   app.compute.passes["data/shaders/compute.ssao.glsl"] = ComputePass(
-    stage: ComputeStage.PostDepth,
+    stage: ComputeStage.PostDepthAsync,
     enabled: (ref App a) => a.useSSAO,
     resolution: (ref App a) { uint s = isAndroid ? 2 : 1; uint[2] r = [(a.camera.width + s - 1) / s, (a.camera.height + s - 1) / s]; return(r); },
     workItems: (ref App a, Shader shader) {
