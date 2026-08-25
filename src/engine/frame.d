@@ -162,7 +162,7 @@ void submitAsyncSSAO(ref App app, bool ssaoAsync) {
     if(app.isStage(shader.path, ComputeStage.PostDepthAsync)){ ssaoCmds ~= app.compute.commands[shader.path][app.syncIndex]; }
   }
   VkSemaphore depthComplete = app.sync[app.syncIndex].depthComplete;
-  VkSemaphore ssaoComplete  = app.sync[app.syncIndex].ssaoComplete;
+  VkSemaphore ssaoComplete = app.sync[app.syncIndex].ssaoComplete;
   VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
   VkSubmitInfo si = {
     sType : VK_STRUCTURE_TYPE_SUBMIT_INFO,
