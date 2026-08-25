@@ -115,7 +115,11 @@ void initializeCompute(ref App app) {
                      0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
                      a.queues.graphics.family, a.queues.compute.family);
       }
-      a.transitionImageLayout(cmd, a.textures[a.textures.idx(so)].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+      imageBarrier(cmd, a.textures[a.textures.idx(so)].image,
+                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                   VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+                   VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                   0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT);
     },
     post: (ref App a, VkCommandBuffer cmd, Shader shader) {
       string so = "ssaoOut#" ~ to!string(a.syncIndex);
@@ -128,7 +132,11 @@ void initializeCompute(ref App app) {
                      0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
                      a.queues.compute.family, a.queues.graphics.family);
       } else {
-        a.transitionImageLayout(cmd, a.textures[a.textures.idx(so)].image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        imageBarrier(cmd, a.textures[a.textures.idx(so)].image,
+                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                     0, 1, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT);
       }
     }
   );
