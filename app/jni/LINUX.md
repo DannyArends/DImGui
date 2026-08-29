@@ -76,7 +76,7 @@ cd app/jni/
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
-  -DCIMGUI_USE_SDL3=ON -DSDL3_DIR="$PWD/../SDL" \
+  -DCIMGUI_USE_SDL3=ON -DVULKAN_DIR=/usr -DSDL3_DIR="$PWD/../SDL" \
   ../
 cmake --build . --config Release -j10
 cd ../../../
@@ -116,5 +116,5 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ../
 cmake --build . --config Release -j10
-cd ../../../../
+scd ../../../../
 ```

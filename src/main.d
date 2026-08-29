@@ -78,6 +78,7 @@ void run(string[] args = null) {
     app.timed!pollEvents();                                       /// Ingest SDL events into ImGui (pre-NewFrame)
     if(app.finished) break;                                       /// Close requested, exit the loop now
     app.timed!startImGuiFrame();                                  /// Start a new frame
+    scope(exit) igEndFrame();                                     /// Balance igNewFrame on every loop exit
     auto dt = app.frameDelta();                                   /// Handle SDL / user events
     app.timed!checkForResize();                                   /// Check for resize
     if(app.isMinimized) { SDL_Delay(10); continue; }              /// Minimized ? sleep and continue

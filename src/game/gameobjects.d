@@ -49,29 +49,25 @@ class Tiles : Square {
     initInstanced("Tiles", cd.tileInstances);
     isSelectable = false;
     hideInObjectsWindow = true;
+    globalNormals = true;
   }
 }
 
-/** Spatial container for a chunk, selectable via its AABB, delegates rendering to Block */
-class Chunk : Cube {
+/** Selectable chunk AABB proxy (renders nothing itself); terrain is its Tiles member */
+class Chunk : BoundingBox {
   ChunkData data;
   Geometry tiles;
-  bool dirty = false;
+  bool rebuild = false;
   alias data this;
 
   this(ChunkData cd, immutable(WorldData) wd) {
     super();
-    data = cd;
-    castShadow = false;
-    hideInObjectsWindow = true;
-    indices = [];
-    float sx = wd.chunkWorldSize;
-    float sy = wd.chunkHeight * wd.tileHeight;
-    float cx = data.coord[0] * sx + sx * 0.5f;
-    float cz = data.coord[2] * sx + sx * 0.5f;
-    float cy = sy * 0.5f + wd.yOffset;
-    instances = [DrawInstance(translateScale([cx, cy, cz], [sx, sy, sx]))];
-    tiles = new Tiles(cd);
+    tiles = new Tiles(data = cd);
+    indices = [];                   // Hide from rendering
+    hideInObjectsWindow = true;     // Hide from window
+    float ox = cd.coord[0] * wd.chunkWorldSize, oz = cd.coord[2] * wd.chunkWorldSize;
+    setDimensions([ox, wd.yOffset, oz], [ox + wd.chunkWorldSize, wd.yOffset + wd.height, oz + wd.chunkWorldSize]);
+    instances = [DrawInstance()];
     mName = "Chunk";
   }
 }

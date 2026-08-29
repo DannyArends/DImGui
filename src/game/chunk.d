@@ -278,7 +278,7 @@ void finalizeChunk(ref GameApp app, Chunk chunk) {
 
   app.world.chunks[chunk.data.coord] = chunk;
   app.world.seedClouds(chunk.data.coord);
-  app.world.chunks[chunk.data.coord].dirty = false;
+  app.world.chunks[chunk.data.coord].rebuild = false;
   app.world.chunks.pending.remove(chunk.data.coord);
   app.world.chunks.build = app.world.chunks.build.filter!(t => app.world.chunkCoord(t) != chunk.data.coord).array;
   app.world.chunks.mine = app.world.chunks.mine.filter!(t => app.world.chunkCoord(t) != chunk.data.coord).array;

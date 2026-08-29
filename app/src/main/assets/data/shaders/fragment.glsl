@@ -34,7 +34,7 @@ void writeOutput(vec3 color, float alpha) {
 }
 
 void main() {
-  Material mat = (fragMaterial >= 0) ? materialSSBO.materials[uint(fragMaterial)] : noMaterial;
+  Material mat = getMaterial(fragMaterial);
   vec3 rgb = fragColor.rgb;
   float alpha = fragColor.a;
 

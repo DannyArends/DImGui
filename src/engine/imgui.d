@@ -165,7 +165,7 @@ void initializeImGui(ref App app){
 void recordImGuiCommandBuffer(ref App app) {
   auto cmd = app.imguiCmd.begin(app, app.syncIndex, "ImGui");
 
-  pushLabel(cmd, "ImGui", Colors.darkgray);
+  pushLabel(cmd, Colors.darkgray, "ImGui");
 
   // Render UI - must be called before begin() so rotation is applied before GPU submission
   ImDrawData* drawData = app.timed!renderGUI();

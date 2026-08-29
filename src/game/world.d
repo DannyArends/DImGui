@@ -154,7 +154,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
-    if (app.world.chunks[coord].dirty && coord !in app.world.chunks.pending) { app.timed!dispatchWorker(coord); }
+    if (app.world.chunks[coord].rebuild && coord !in app.world.chunks.pending) { app.timed!dispatchWorker(coord); }
   }
 }
 

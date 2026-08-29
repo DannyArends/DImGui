@@ -28,6 +28,7 @@ void showSettingsContent(ref App app, uint font = 0) {
     setting("God Mode", app.camera.godMode);
     if(setting("Show Lights", app.showLights)) app.toggleLightGeometries();
     setting("SSAO", app.useSSAO);
+    setting("Normal Mapping", app.normalMapping);
     setting("Disco Mode", app.disco);
     setting("Show Bounds", app.showBounds);
     setting("Show Paths", app.showPaths);
