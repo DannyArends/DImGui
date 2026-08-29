@@ -8,7 +8,7 @@ import engine;
 import buffer : cleanup;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import images : cleanup;
-import io : readFile, fixPath;
+import io : readFile, readPath;
 import textures : toGPU;
 
 /** Glyph stores FreeType glyph data */
@@ -61,7 +61,7 @@ struct GlyphAtlas {
 /** Loads a GlyphAtlas from file */
 void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Medium.ttf",
                 ubyte pointsize = 64, dchar to = '\U000000FF', uint dim = 1024) {
-  filename = fixPath(filename);
+  filename = readPath(filename);
   if(app.verbose) SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   app.glyphAtlas = GlyphAtlas(filename);
   app.glyphAtlas.pointsize = (pointsize == 0) ? 12 : pointsize;

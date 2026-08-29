@@ -9,7 +9,7 @@ import assimp : isOpenAsset;
 import bone : mergeBones;
 import boundingbox : computeBoundingBox;
 import animation : animateAsset;
-import io : dir, fixPath;
+import io : dir, readPath;
 import material : registerMaterials;
 import images : cleanup;
 import surface : clampSurface, textureCap, isTexture, toRGBA;
@@ -42,7 +42,7 @@ class TaskThread : Thread {
         (string path) {
           if (verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
           if (path.isTexture()) {
-            auto surface = IMG_Load(fixPath(toStringz(path)));
+            auto surface = IMG_Load(readPath(toStringz(path)));
             if (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel < 4) { surface.toRGBA(verbose); }
             surface.clampSurface(textureCap(path));   // downscale oversized art before it reaches the GPU
             auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);

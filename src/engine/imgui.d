@@ -6,7 +6,7 @@
 import engine;
 
 import devices : getMSAASamples;
-import io : fixPath, isfile, readFile, writeFile, writePath;
+import io : isfile, readFile, writeFile, writePath;
 import sfxwindow : showSFXContent;
 import directorywindow : showDirectoryContent;
 import joystickwindow : showJoystickwindow;

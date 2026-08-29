@@ -12,7 +12,7 @@ size_t fwrite(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SD
 ulong tell(SDL_IOStream* fp){ return(SDL_TellIO(fp)); }
 ulong seek(SDL_IOStream* fp, int offset, SDL_IOWhence whence){ return(SDL_SeekIO(fp, offset, whence)); }
 ulong fsize(const(char)* path, bool verbose = true){
-  path = fixPath(path);
+  path = readPath(path);
   SDL_IOStream* fp = SDL_IOFromFile(path, "rb");
   if(fp == null) {
     if(verbose) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); }
@@ -44,19 +44,26 @@ string writePath(string path){ return prefRoot() ~ path; }
 const(char)* writePath(const(char)* path){ return toStringz(writePath(cast(string)fromStringz(path))); }
 
 /** Resolve a user-data path under an asset root */
-string fixPath(string path){
+string readPath(string path){
   version(Android) { } else { if((prefRoot().length && path.startsWith(prefRoot())) || path.startsWith("app/src/main/assets/")){ return(path); }
     return("app/src/main/assets/" ~ path);
   }
   return(path);
 }
-const(char)* fixPath(const(char)* path){ return toStringz(fixPath(cast(string)fromStringz(path))); }
+const(char)* readPath(const(char)* path){ return toStringz(readPath(cast(string)fromStringz(path))); }
+
+/** User Pictures folder (falls back to the writable root when unavailable) */
+string screenshotPath(string path){
+  version(Android) { return writePath(path); } else { const(char)* p = SDL_GetUserFolder(SDL_FOLDER_PICTURES);
+    return((p is null) ? writePath(path) : to!string(p).idup ~ path);
+  }
+}
 
 void ensureWorldDir() { SDL_CreateDirectory(toStringz(writePath("data/world/")));}
 
 /** Read content of a file as a char[] */
 char[] readFile(const(char)* path, uint verbose = 0) {
-  path = fixPath(path);
+  path = readPath(path);
   SDL_IOStream* fp = null;
   for(int retry = 0; retry < 3 && fp == null; retry++) {
     fp = SDL_IOFromFile(path, "rb"); if(fp == null) SDL_Delay(1);
@@ -84,7 +91,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
 
 /** Write content of a char[] to a file */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
-  path = fixPath(path);
+  path = readPath(path);
   if(verbose) SDL_Log("writeFile: writing to '%s' (%d bytes)", path, content.length);
   SDL_IOStream* fp = SDL_IOFromFile(path, "wb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
@@ -170,7 +177,7 @@ version(Android) {
 
   /** Content of a directory */
   string[] dir(const(char)* dirPath, string pattern = "*", bool shallow = true) { 
-    string path = cast(string)fromStringz(fixPath(dirPath));
+    string path = cast(string)fromStringz(readPath(dirPath));
     auto mode = SpanMode.shallow;
     if(!shallow) mode = SpanMode.depth;
     auto entries = dirEntries(path, pattern, mode).map!(a => a.name).array;
@@ -179,7 +186,7 @@ version(Android) {
 
   /** Helper function to determine if a path is a file */
   bool isfile(const(char)* filePath) {
-    string path = cast(string)fromStringz(fixPath(filePath));
+    string path = cast(string)fromStringz(readPath(filePath));
     try {
       if (path.exists() && path.isFile) return(true);
     } catch (Exception e) { SDL_Log("path %s was not a file", path.ptr); }
@@ -188,7 +195,7 @@ version(Android) {
 
   /** Helper function to determine if a path is a file */
   bool isdir(const(char)* dirPath) {
-    string path = cast(string)fromStringz(fixPath(dirPath));
+    string path = cast(string)fromStringz(readPath(dirPath));
     try {
       if (path.exists() && path.isDir) return(true);
     } catch (Exception e) { SDL_Log("path %s was not a directory", path.ptr); }
