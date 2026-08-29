@@ -13,6 +13,7 @@
 		"targetPath": "bin",
 		"platforms": ["linux", "windows"],
 		"sourceFiles": ["src/includes.c"],
+		"sourceFiles-windows": ["app/windows/CalderaD.res"],
 		"libs-linux": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "cimgui", "cvma", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "assimp"],
 		"libs-windows": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "CImGui", "cvma", "vulkan-1", "shaderc_shared", "spirv-cross-c-shared", "assimp-vc142-mt"],
 		"dflags": ["-J$PACKAGE_DIR/app/src/main/assets",
