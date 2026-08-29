@@ -7,6 +7,9 @@ import engine;
 
 import std.file : exists, isFile, isDir, dirEntries, SpanMode;
 
+private __gshared string _writeRoot; /// Cached user-writable root
+private __gshared string _assetRoot; /// Cached asset root (install dir, or dev tree)
+
 size_t fread(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_ReadIO(fp, buffer, n * size)); }
 size_t fwrite(SDL_IOStream* fp, void* buffer, size_t n, size_t size) { return(SDL_WriteIO(fp, buffer, n * size)); }
 ulong tell(SDL_IOStream* fp){ return(SDL_TellIO(fp)); }
@@ -23,8 +26,6 @@ ulong fsize(const(char)* path, bool verbose = true){
   return(size);
 }
 
-private __gshared string _writeRoot; /// Cached user-writable root
-
 /** User-writable root for saves, settings, and screenshots */
 string prefRoot(){
   if(_writeRoot is null) {
@@ -39,6 +40,17 @@ string prefRoot(){
   return(_writeRoot);
 }
 
+/** Asset root: prefer install layout (data/ beside the exe), fall back to the dev tree */
+string assetRoot(){
+  if(_assetRoot is null){
+    const(char)* b = SDL_GetBasePath();
+    string base = (b is null) ? "" : to!string(b).idup; // SDL owns b, do not free
+    SDL_PathInfo info;
+    _assetRoot = (base.length && SDL_GetPathInfo(toStringz(base ~ "data"), &info)) ? base : "app/src/main/assets/";
+  }
+  return(_assetRoot);
+}
+
 /** Resolve a user-data path under the writable root */
 string writePath(string path){
   version(Android) { } else { if(prefRoot().length && path.startsWith(prefRoot())) return(path); }
@@ -46,10 +58,10 @@ string writePath(string path){
 }
 const(char)* writePath(const(char)* path){ return toStringz(writePath(cast(string)fromStringz(path))); }
 
-/** Resolve a user-data path under an asset root */
+/** Resolve an asset path under the asset root (install dir or dev tree) */
 string readPath(string path){
-  version(Android) { } else { if((prefRoot().length && path.startsWith(prefRoot())) || path.startsWith("app/src/main/assets/")){ return(path); }
-    return("app/src/main/assets/" ~ path);
+  version(Android) { } else { if((prefRoot().length && path.startsWith(prefRoot())) || path.startsWith(assetRoot())){ return(path); }
+    return(assetRoot() ~ path);
   }
   return(path);
 }
