@@ -5,7 +5,7 @@ buildscript {
         mavenCentral()
         google()
     }
-    dependencies { classpath 'com.android.tools.build:gradle:8.7.3'  }
+    dependencies { classpath 'com.android.tools.build:gradle:8.9.1'  }
 }
 
 allprojects {

@@ -57,6 +57,8 @@ if(ANDROID)
     set(SDLIMAGE_ANI OFF)
     set(SDLIMAGE_SAMPLES OFF)
     set(SDLIMAGE_TESTS OFF)
+    set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SDL_image/external/zlib")
+    set(ZLIB_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/SDL_image/external/zlib")
     add_subdirectory(SDL_image SDL_image_build)
 
     # SDL_mixer
