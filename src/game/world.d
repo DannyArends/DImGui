@@ -10,7 +10,7 @@ import dwarf : deleteDwarf;
 import events : removeGeometry;
 import feature : removeAllFeatures, rebuildAllFeatures, addFeatureInstances;
 import instancing : DrawInstance;
-import io : fixPath;
+import io : writePath;
 import lattice : chunkCoord;
 import lights : updateSun;
 import jobs : jobQueue;
@@ -37,9 +37,7 @@ struct WorldData {
   LatticeMap!(DrawInstance[][string]) instanceCache;
 
   /** Build a world-data file path: data/world/<seed>_<suffix>.bin (empty suffix = the main world file). */
-  private const(char)* worldFile(string suffix) const {
-    return toStringz(fixPath(format("data/world/%d_%d_%d%s.bin", seed[0], seed[1], seed[2], suffix)));
-  }
+  private const(char)* worldFile(string suffix) const { return toStringz(writePath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], suffix))); }
 
   /** Returns the filesystem path for the world diffs file */
   const(char)* worldPath() const { return worldFile(""); }

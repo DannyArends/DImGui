@@ -23,18 +23,36 @@ ulong fsize(const(char)* path, bool verbose = true){
   return(size);
 }
 
+private __gshared string _writeRoot; /// Cached user-writable root
+
+/** User-writable root for saves, settings, and screenshots */
+string prefRoot(){
+  if(_writeRoot is null) {
+    version(Android) {
+      _writeRoot = format("%s/", fromStringz(SDL_GetAndroidInternalStoragePath()));
+    } else {
+      char* p = SDL_GetPrefPath("DannyArends", "CalderaD");
+      _writeRoot = (p is null) ? "" : to!string(p).idup;
+      if(p !is null) SDL_free(p);
+    }
+  }
+  return(_writeRoot);
+}
+
+/** Resolve a user-data path under the writable root */
+string writePath(string path){ return prefRoot() ~ path; }
+const(char)* writePath(const(char)* path){ return toStringz(writePath(cast(string)fromStringz(path))); }
+
+/** Resolve a user-data path under an asset root */
 string fixPath(string path){
-  version(Android) { } else { if(!path.startsWith("app/src/main/assets/")) return "app/src/main/assets/" ~ path; }
-  return path;
+  version(Android) { } else { if((prefRoot().length && path.startsWith(prefRoot())) || path.startsWith("app/src/main/assets/")){ return(path); }
+    return("app/src/main/assets/" ~ path);
+  }
+  return(path);
 }
-
-void ensureWorldDir() {
-  string path = fixPath(format("data/world/"));
-  version (Android) { path = format("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), path); }
-  SDL_CreateDirectory(toStringz(path));
-}
-
 const(char)* fixPath(const(char)* path){ return toStringz(fixPath(cast(string)fromStringz(path))); }
+
+void ensureWorldDir() { SDL_CreateDirectory(toStringz(writePath("data/world/")));}
 
 /** Read content of a file as a char[] */
 char[] readFile(const(char)* path, uint verbose = 0) {
@@ -67,7 +85,6 @@ char[] readFile(const(char)* path, uint verbose = 0) {
 /** Write content of a char[] to a file */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
   path = fixPath(path);
-  version (Android) { path = cstr("%s/%s", fromStringz(SDL_GetAndroidInternalStoragePath()), fromStringz(path)); }
   if(verbose) SDL_Log("writeFile: writing to '%s' (%d bytes)", path, content.length);
   SDL_IOStream* fp = SDL_IOFromFile(path, "wb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
