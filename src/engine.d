@@ -137,7 +137,7 @@ struct App {
   // Global flags
   LMode lMode = LMode.LightsAndShadows;                                         /// Allow shadows to be disabled
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool enableValidation = true;                                                 /// Should validation be enabled ?
+  bool enableValidation = false;                                                /// Should validation be enabled ?
   bool nameVulkanObjects = true;                                                /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights

@@ -39,6 +39,13 @@ Once dependencies are built:
 dub
 ```
 
+### Generate a windows installer
+Make sure to disable verbose and validation layers in src/engine.d
+
+```
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+iscc app\installer.iss
+```
 
 #### Cross-Compilation [MS Windows x64 -> Android]
 ```
