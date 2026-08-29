@@ -146,7 +146,7 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
 
   SDL_Log("createScene: Add Text");
-  app.addWorldText("CalderaD", [12.0f, 10.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
+  app.addWorldText(App.applicationName, [12.0f, 10.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
   SDL_Log("createScene: WBOIT test rectangles");
   app.testWBOIT();
   SDL_Log("initGame: done");

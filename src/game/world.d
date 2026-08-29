@@ -1,5 +1,5 @@
 /** 
- * Authors: Danny Arends (adapted from CalderaD)
+ * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
@@ -193,5 +193,5 @@ void regenerateWorld(ref GameApp app) {
   app.world.data.seed = seed;
   app.loadWorld();
   app.updateSun();
-  app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
+  app.addWorldText(App.applicationName, [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
 }

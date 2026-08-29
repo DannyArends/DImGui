@@ -35,8 +35,8 @@ void saveScreenshot(ref App app) {
 
   // Save as PNG
   auto ts = SDL_GetTicks();
-  SDL_CreateDirectory(toStringz(screenshotPath("Caldera/")));
-  string path = screenshotPath(format("Caldera/%d.png", ts));
+  SDL_CreateDirectory(toStringz(screenshotPath(App.applicationName)));
+  string path = screenshotPath(format("%s/%d.png", fromStringz(App.applicationName), ts));
   SDL_Surface* surface = SDL_CreateSurfaceFrom(app.camera.width, app.camera.height, SDL_PIXELFORMAT_RGBA32, data, app.camera.width * 4);
   IMG_SavePNG(surface, toStringz(path));
   SDL_DestroySurface(surface);

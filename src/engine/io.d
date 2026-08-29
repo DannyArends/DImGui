@@ -31,7 +31,7 @@ string prefRoot(){
     version(Android) {
       _writeRoot = format("%s/", fromStringz(SDL_GetAndroidInternalStoragePath()));
     } else {
-      char* p = SDL_GetPrefPath("DannyArends", "CalderaD");
+      char* p = SDL_GetPrefPath("DannyArends", App.applicationName);
       _writeRoot = (p is null) ? "" : to!string(p).idup;
       if(p !is null) SDL_free(p);
     }
@@ -40,7 +40,10 @@ string prefRoot(){
 }
 
 /** Resolve a user-data path under the writable root */
-string writePath(string path){ return prefRoot() ~ path; }
+string writePath(string path){
+  version(Android) { } else { if(prefRoot().length && path.startsWith(prefRoot())) return(path); }
+  return(prefRoot() ~ path);
+}
 const(char)* writePath(const(char)* path){ return toStringz(writePath(cast(string)fromStringz(path))); }
 
 /** Resolve a user-data path under an asset root */
@@ -91,7 +94,7 @@ char[] readFile(const(char)* path, uint verbose = 0) {
 
 /** Write content of a char[] to a file */
 void writeFile(const(char)* path, char[] content, uint verbose = 0) {
-  path = readPath(path);
+  path = writePath(path);
   if(verbose) SDL_Log("writeFile: writing to '%s' (%d bytes)", path, content.length);
   SDL_IOStream* fp = SDL_IOFromFile(path, "wb");
   if(fp == null) { SDL_Log("[ERROR] couldn't open file '%s'\n", path); return; }
