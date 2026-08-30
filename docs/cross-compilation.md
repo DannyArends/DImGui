@@ -30,8 +30,7 @@ export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/plat
 Download the LDC Android runtime matching your LDC version (e.g. `ldc2-<version>-android-aarch64.tar.xz`), extract its `lib` folder, rename it to `lib-android-aarch64`, and place it in your LDC2 installation directory.
 
 Add the Android target to your `ldc2.conf` (found in `<ldc-install>/etc/ldc2.conf`). `%%ndkpath%%` is a variable you define to point at your NDK root; set it to `$ANDROID_HOME/ndk` (or wherever the NDK is installed):
- 
-Add the Android target to `ldc2-1.40.1-linux-x86_64/etc/ldc2.conf`:
+
 ```
 "aarch64-.*-linux-android":
 {
