@@ -26,15 +26,7 @@ jobs:
         with:
           path: |
             .git/modules
-            app/jni/SDL
-            app/jni/SDL_image
-            app/jni/SDL_mixer
-            app/jni/freetype
-            app/jni/assimp
-            app/jni/shaderc
-            app/jni/spirv_cross
-            app/jni/cvma
-            app/jni/cimgui
+            app/jni
           key: submodules-${{ hashFiles('.gitmodules') }}
 
       - name: Clone submodules (on sources cache miss)
@@ -181,15 +173,7 @@ jobs:
         with:
           path: |
             .git/modules
-            app/jni/SDL
-            app/jni/SDL_image
-            app/jni/SDL_mixer
-            app/jni/freetype
-            app/jni/assimp
-            app/jni/shaderc
-            app/jni/spirv_cross
-            app/jni/cvma
-            app/jni/cimgui
+            app/jni
           key: submodules-${{ hashFiles('.gitmodules') }}
 
       - name: Clone submodules (fallback on sources cache miss)
