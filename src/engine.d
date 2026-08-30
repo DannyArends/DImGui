@@ -7,6 +7,7 @@ public import phobos;
 public import structures;
 
 import sdl : SDL_WINDOW_MINIMIZED;
+import vulkan : vkResultStr;
 
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS", RESOLVE = "RESOLVE"};
 
@@ -164,18 +165,3 @@ struct App {
   @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
   @property VkPhysicalDeviceProperties properties() { VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p); }
 }
-
-/** Check result of Vulkan call and print if an error occured */
-extern(C) @nogc void enforceVK(VkResult err) nothrow {
-  if (err == VK_SUCCESS) return;
-  SDL_Log("[enforceVK] Error: VkResult = %d", err);
-  if (err < 0) abort();
-}
-
-/** Check result of SpirV-Compiler call and print if an error occured */
-@nogc void enforceSPIRV(App app, spvc_result err) nothrow {
-  if(err == SPVC_SUCCESS) return;
-  SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));
-  abort();
-}
-

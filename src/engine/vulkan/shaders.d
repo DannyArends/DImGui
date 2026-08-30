@@ -54,10 +54,19 @@ struct IncluderContext {
   bool verbose = false;
 }
 
+/** Check result of SpirV-Compiler call and print if an error occured */
+@nogc void enforceSPIRV(App app, spvc_result err) nothrow {
+  if(err == SPVC_SUCCESS) return;
+  SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));
+  abort();
+}
+
+/** Add a single compiler macro */
 void addCompileMacro(ref App app, string name, string value) {
   shaderc_compile_options_add_macro_definition(app.options, toStringz(name), name.length, toStringz(value), value.length);
 }
 
+/** Add our default macros (SSAO_KERNEL, MAX_SHADOW_MAPS, MSAA) */
 void addShaderMacros(ref App app) {
   app.addCompileMacro("SSAO_KERNEL", to!string(SSAO_KERNEL));
   app.addCompileMacro("MAX_SHADOW_MAPS", to!string(MAX_SHADOW_MAPS));
