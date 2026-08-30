@@ -47,7 +47,6 @@
 		"lflags-linux": ["-rpath=$PACKAGE_DIR/bin",
 										 "-L$PACKAGE_DIR/app/jni/build/libs"],
 		"copyFiles-linux":["$PACKAGE_DIR/app/jni/build/libs/*.so*"],
-		],
 	},
 	{
 		"name": "android-64",

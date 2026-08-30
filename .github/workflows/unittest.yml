@@ -58,7 +58,7 @@ jobs:
         run: |
           set -e
           python3 app/jni/shaderc/utils/git-sync-deps
-          cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR=/usr
+          cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR=/usr -DSDL3_DIR="$PWD/app/jni/SDL"
           cmake --build app/jni/build -j$(nproc)
 
       # Save cache
