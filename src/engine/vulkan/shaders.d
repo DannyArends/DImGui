@@ -57,8 +57,7 @@ struct IncluderContext {
 /** Check result of SpirV-Compiler call and print if an error occured */
 @nogc void enforceSPIRV(App app, spvc_result err) nothrow {
   if(err == SPVC_SUCCESS) return;
-  SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));
-  abort();
+  stop("enforceSPIRV", spvc_context_get_last_error_string(app.context));
 }
 
 /** Add a single compiler macro */
@@ -76,14 +75,12 @@ void addShaderMacros(ref App app) {
 /** Create the ShaderC compiler */
 void createCompiler(ref App app) {
   app.compiler = shaderc_compiler_initialize();
-  if(!app.compiler) { SDL_Log("Failed to initialize shaderc compiler."); abort(); }
+
+  if(!app.compiler) { stop("ShaderC Unavailable", "Failed to initialize shaderc compiler"); }
 
   app.options = shaderc_compile_options_initialize();
-  if (!app.options) {
-    SDL_Log("Failed to initialize shaderc compiler options.");
-    shaderc_compiler_release(app.compiler);
-    abort();
-  }
+  if(!app.options) { stop("ShaderC Error", "Failed to initialize shaderc compiler options"); }
+
   shaderc_compile_options_set_target_env(app.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
   shaderc_compile_options_set_target_spirv(app.options, shaderc_spirv_version_1_5);
   shaderc_compile_options_set_generate_debug_info(app.options);
@@ -137,11 +134,7 @@ Shader createShaderModule(App app, string path, shaderc_shader_kind type = shade
   Shader shader = {path : path, stage : convert(type), source : source};
 
   if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
-    SDL_Log("Shader '%s' compilation failed: '%s'", toStringz(path), shaderc_result_get_error_message(result));
-    shaderc_result_release(result);
-    shaderc_compile_options_release(app.options);
-    shaderc_compiler_release(app.compiler);
-    abort();
+    stop("ShaderC Error", toStringz(format("Shader '%s' compilation failed: '%s'", toStringz(path), shaderc_result_get_error_message(result))));
   }
 
   shader.code = cast(const(uint)*)(shaderc_result_get_bytes(result));

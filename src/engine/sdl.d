@@ -70,9 +70,8 @@ App initializeSDL() {
   if(app.verbose) SDL_Log("SDL_CreateWindow: %p", app.window);
 
   if(!app.window) {
-    SDL_Log("Unable to create a window (is Vulkan available ?)");
-    checkSDLError();
-    abort();
+    SDL_Log("Unable to create a window: %s", SDL_GetError());
+    stop("Vulkan Unavailable", "Could not create a Vulkan window, your GPU or driver does not support the required Vulkan features.");
   }
   version(Android) {
     SDL_SetEventFilter(cast(SDL_EventFilter)&sdlEventsFilter, &app); /// Handle Android immediate events [we ignore @nogc and nothrow]

@@ -179,10 +179,7 @@ const(char)* check(string inp) { return(toStringz((inp == "")? "(none)" : inp));
 /** Create SPIRV-Cross reflection context */
 void createReflectionContext(ref App app) {
   spvc_result result = spvc_context_create(&app.context);
-  if(result != SPVC_SUCCESS) {
-    SDL_Log("Failed to create SPIRV-Cross context: %s", spvc_context_get_last_error_string(app.context));
-    abort();
-  }
+  if(result != SPVC_SUCCESS) { stop("SPVC Reflection", toStringz(format("Failed to create SPIRV-Cross context: %s", spvc_context_get_last_error_string(app.context)))); }
   app.mainDeletionQueue.add((){ spvc_context_destroy(app.context); });
 }
 

@@ -127,7 +127,9 @@ void queryPhysicalDevices(ref App app) {
   uint nPhysDevices = 0;
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, null);
   if(app.verbose) SDL_Log("Number of physical vulkan devices found: %d", nPhysDevices);
-  if(nPhysDevices == 0) fatalError("No Vulkan Device", "No Vulkan-capable GPU found, a graphics card and drivers that support Vulkan 1.2 or newer is required.");
+  if(nPhysDevices == 0) {
+    stop("No Vulkan Device", "No Vulkan-capable GPU found, a graphics card and drivers that support Vulkan 1.2 or newer is required.");
+  }
   app.physicalDevices.length = nPhysDevices;
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, &app.physicalDevices[0]);
   if(app.verbose) foreach(i, physicalDevice; app.physicalDevices) { physicalDevice.list(i); }

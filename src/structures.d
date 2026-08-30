@@ -67,6 +67,6 @@ public import threading : Threading;
 public import uniforms : ParticleUniformBuffer, UBO;
 public import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 public import vram : VramUsage;
-public import vulkan : fatalError, SupportedFeatures, enforceVK;
+public import vulkan : stop, SupportedFeatures, enforceVK;
 public import wboit : WBOIT, WBOITShaders;
 public import widgets : DropDownItem, SelectionKey, GameWindow;
