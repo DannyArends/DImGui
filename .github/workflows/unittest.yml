@@ -14,9 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      # One cache: submodule sources + all built native libraries under app/jni.
-      # Saved once the deps are built; restored whole on later runs. Bump the
-      # key suffix (-v1) to force a full rebuild when dependency build flags change.
+      # Cache: submodule sources & built native libraries under app/jni
       - name: Cache dependencies (sources + built libs)
         id: deps-cache
         uses: actions/cache@v5
@@ -24,14 +22,14 @@ jobs:
           path: |
             .git/modules
             app/jni
-          key: deps-v1-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+          key: deps-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
 
       - name: Install LDC
         uses: dlang-community/setup-dlang@v2
         with:
-          compiler: ldc-latest
+          compiler: ldc-1.42.0
 
-      # --- Build native dependencies (only on cache miss) -------------------
+      # System dependencies
       - name: System dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
@@ -46,10 +44,12 @@ jobs:
             libudev-dev libdbus-1-dev libibus-1.0-dev \
             libasound2-dev libpulse-dev
 
+      # Clone
       - name: Clone submodules
         if: steps.deps-cache.outputs.cache-hit != 'true'
         run: git submodule update --init --recursive
 
+      # Build native dependencies (only on cache miss)
       - name: Build native dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
@@ -129,5 +129,16 @@ jobs:
           cmake --build app/jni/build -j$NPROC
           echo "::endgroup::"
 
+      # Save cache
+      - name: Save dependencies cache
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            .git/modules
+            app/jni
+          key: deps-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+
+      # Run
       - name: Run unittests
         run: dub --build=unittest --force
