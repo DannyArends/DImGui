@@ -1,4 +1,18 @@
 ## Compile for Linux
+
+```
+rm -rf app/jni/build
+cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR=/usr -DSDL3_DIR="$PWD/app/jni/SDL"
+cmake --build app/jni/build -j$(nproc)
+```
+Check:
+
+```
+ls app/jni/build/libs
+```
+
+## OLD
+
 Compile Simple DirectMedia Layer (SDL3):
 ```
 rm -rf app/jni/SDL/build

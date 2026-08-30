@@ -1,4 +1,18 @@
 ## Compile for MS Windows 10 / 11
+
+```
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+rmdir /s /q app\jni\build 2>nul
+cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR="C:/VulkanSDK/1.4.341.1" -DSDL3_DIR="%CD%/app/jni/SDL"
+cmake --build app/jni/build --config Release -j10
+```
+Check:
+
+```
+dir /b app\jni\build\libs
+```
+## OLD:
+
 Compile Simple DirectMedia Layer (SDL3):
 ```
 rm -rf app\jni\SDL\build
