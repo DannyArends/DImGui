@@ -67,8 +67,9 @@
 							 "-P-I$PACKAGE_DIR/app/jni/vma/include/",
 							 "-P-I$PACKAGE_DIR/app/jni/cimgui/imgui/",
 							 "-P-I$PACKAGE_DIR/app/jni/assimp/include/",
-							 "-P-I$PACKAGE_DIR/app/jni/assimp/build/include/"],
-		"lflags": [ "-L$PACKAGE_DIR/app/build/intermediates/cxx/Release/9t656d2k/obj/arm64-v8a" ],
+							 "-P-I$PACKAGE_DIR/app/jni/assimp/build/include/",
+							 "-P-I$PACKAGE_DIR/app/.cxx/Release/58422j5k/arm64-v8a/assimp_build/include/"],
+		"lflags": [ "-L$PACKAGE_DIR/app/build/intermediates/cxx/Release/58422j5k/obj/arm64-v8a" ],
 		"libs": ["SDL3", "SDL3_image", "SDL3_mixer", "freetype", "cvma", "vulkan", "shaderc_shared", "spirv-cross-c-shared", "cimgui", "assimp"]
 	}
 ]
