@@ -56,10 +56,7 @@ void querySupportedFeatures(ref App app, VkPhysicalDevice physicalDevice) {
   app.supported.vk16.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
   app.supported.vk12.pNext = &app.supported.vk16;
 
-  VkPhysicalDeviceFeatures2 f2 = {
-    sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-    pNext: &app.supported.vk12
-  };
+  VkPhysicalDeviceFeatures2 f2 = { sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, pNext: &app.supported.vk12 };
   vkGetPhysicalDeviceFeatures2(physicalDevice, &f2);
   app.supported.base = f2.features;
 
