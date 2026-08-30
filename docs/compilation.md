@@ -14,6 +14,7 @@ git submodule update --init --recursive  # if already cloned
 Build all dependencies from `app/jni/` using cmake. This can be done by following command:
 ```
 rm -rf app/jni/build
+python3 app/jni/shaderc/utils/git-sync-deps
 cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR=/usr -DSDL3_DIR="$PWD/app/jni/SDL"
 cmake --build app/jni/build -j$(nproc)
 ```
@@ -32,6 +33,7 @@ Build all dependencies from `app/jni/` using cmake. This can be done by followin
 ```
 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 rmdir /s /q app\jni\build 2>nul
+python app\jni\shaderc\utils\git-sync-deps
 cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR="C:/VulkanSDK/1.4.341.1" -DSDL3_DIR="%CD%/app/jni/SDL"
 cmake --build app/jni/build --config Release -j10
 ```
