@@ -208,13 +208,7 @@ endif()
 
 # Link dependencies
 if(CIMGUI_USE_SDL3)
-  if(WIN32)
-    target_link_libraries(cimgui PRIVATE SDL3-shared)
-  elseif(ANDROID)
-    target_link_libraries(cimgui PRIVATE SDL3-shared)
-  else()
-    target_link_libraries(cimgui PRIVATE SDL3-shared)
-  endif()
+  target_link_libraries(cimgui PRIVATE SDL3-shared)
 endif()
 
 if(CIMGUI_USE_VULKAN)
