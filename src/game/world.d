@@ -98,7 +98,7 @@ bool dispatchWorker(ref GameApp app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, coord);
+      tid.send(ChunkReq(cast(immutable(WorldData))app.world.data, coord));
       app.world.chunks.pending[coord] = true;
       if(app.verbose) SDL_Log(cstr("Loading chunk: %s A-sync", coord));
       return(true);

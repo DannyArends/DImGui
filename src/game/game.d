@@ -69,21 +69,21 @@ class GameTaskThread : TaskThread {
   /** Per-loop: build a chunk or run a pathfinding search on request, sending the result back */
   override void handleGameObjects() {
     receiveTimeout(dur!"msecs"(-1),
-      (immutable(WorldData) wd, int[3] coord) {
-        auto chunk = new Chunk(buildChunkData(wd, coord), wd);
+      (ChunkReq r) {
+        auto chunk = new Chunk(buildChunkData(r.wd, r.coord), r.wd);
         chunk.tiles.computeBoundingBox();
         chunk.computeBoundingBox();
-        main.send(cast(immutable(Chunk))chunk, mytid);
+        main.send(Result!Chunk(cast(immutable(Chunk))chunk, mytid));
       },
-      (immutable(WorldData) wd, PathRequest req) {
-        auto result = pathfindWorker(wd, req);
-        main.send(cast(immutable(PathResult))result, mytid);
+      (PathReq r) {
+        auto result = pathfindWorker(r.wd, r.req);
+        main.send(Result!PathResult(cast(immutable(PathResult))result, mytid));
       },
-      (immutable(WorldData) wd, immutable(CloudRequest) req) {
+      (CloudReq r) {
         float[int[2]] density;
-        foreach(c; req.cells) density[c.key] = c.density;
-        auto inst = buildCloudInstances(wd, density, req.coords);
-        main.send(cast(immutable(CloudResult))CloudResult(inst), mytid);
+        foreach(c; r.req.cells) density[c.key] = c.density;
+        auto inst = buildCloudInstances(r.wd, density, r.req.coords);
+        main.send(Result!CloudResult(cast(immutable(CloudResult))CloudResult(inst), mytid));
       }
     );
   }
@@ -99,6 +99,11 @@ struct GameApp {
   bool regenerate = false;
   size_t loadTotal = 0;
 }
+
+/** Main->worker requests */
+struct ChunkReq { immutable(WorldData) wd; int[3] coord; }
+struct PathReq  { immutable(WorldData) wd; PathRequest req; }
+struct CloudReq { immutable(WorldData) wd; immutable(CloudRequest) req; }
 
 /** Centered 2D progress bar over the loaded fraction of the initial working set; shown until worldReady. */
 void showLoadingBar(ref GameApp app) {

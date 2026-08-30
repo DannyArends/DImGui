@@ -27,7 +27,7 @@ jobs:
       - name: Install LDC
         uses: dlang-community/setup-dlang@v2
         with:
-          compiler: ldc-1.42.0
+          compiler: ldc-latest
 
       # System dependencies
       - name: System dependencies

@@ -63,7 +63,7 @@ public import textures : Texture, Textures;
 public import timing : MS_THRESHOLD;
 public import turtlegfx : RigNode, AnimClip;
 public import torus : Torus;
-public import threading : Threading;
+public import threading : Threading, Result;
 public import uniforms : ParticleUniformBuffer, UBO;
 public import vertex : Vertex, VERTEX, INSTANCE, INDEX;
 public import vram : VramUsage;
