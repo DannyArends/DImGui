@@ -1,16 +1,14 @@
 ## Cross-compile for Android
- 
 All dependencies are included as submodules in `app/jni/` and are built together via the Android CMakeLists.txt.
  
 ### Requirements
- 
+You will need a the LDC D compiler, Android studio, and Python3:
 * [LDC2](https://github.com/ldc-developers/ldc/releases) version 1.40.1+
 * [Android Studio](https://developer.android.com/studio)
 * Android NDK r27c (version: 27.2.12479018)
 * Python (for shaderc dependency sync)
  
 ### Install Android Studio
- 
 After installation, set the required environment variables:
 ```
 export ANDROID_HOME=~/Android/Sdk
@@ -38,7 +36,7 @@ Add the Android target to `ldc2-1.40.1-linux-x86_64/etc/ldc2.conf`:
 };
 ```
 
-### Build Android libraries
+### Build C++ Android libraries
  
 All dependencies (SDL3, SDL3_image, SDL3_mixer, freetype, shaderc, spirv_cross, assimp, cimgui) are built together by
 Android Studio via `app/jni/CMakeLists.txt`. Open the project in Android Studio and build, or use:
@@ -53,7 +51,6 @@ dub build --build=release --compiler=ldc2 --arch=aarch64-unknown-linux-android -
 ```
  
 ### Install on device
- 
 ```
 ./gradlew installDebug && \
 adb logcat -c && \
@@ -61,8 +58,8 @@ adb shell am start -n org.libsdl.app/.SDLActivity && \
 adb logcat --pid=$(adb shell pidof org.libsdl.app)
 ```
 
-### All combined:
-
+### Combined (copy paste)
+This build the C++ Android libraries, the D language based libmain.so, followed by building, installing, and running the APK (and logcat):
 ```
 ./gradlew externalNativeBuildDebug && \
 dub build --build=release --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force && \
