@@ -98,12 +98,6 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device);
 
   app.setupQueues(qs);
-
-  /*
-  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
-  app.nameVulkanObject(app.physicalDevice, cstr("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr)), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
-  app.nameVulkanObject(app.instance, toStringz("[INSTANCE]"), VK_OBJECT_TYPE_INSTANCE);
-  */
   if(app.verbose) SDL_Log("Queue: gfx=%d compute=%d transfer=%d", app.queues.graphics.family, app.queues.compute.family, app.queues.transfer.family);
 }
 
