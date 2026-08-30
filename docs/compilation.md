@@ -10,7 +10,7 @@ git clone --recursive https://github.com/DannyArends/DImGui.git
 git submodule update --init --recursive  # if already cloned
 ```
  
-### Compilation [Linux]
+### Compilation (Linux)
 Build all dependencies from `app/jni/` using cmake, then compile with dub.
 See [app/jni/LINUX.md](../app/jni/LINUX.md) for the full Linux build commands for each dependency.
  
@@ -19,7 +19,7 @@ Once dependencies are built:
 dub --build=release --force
 ```
 
-### Compilation [MS Windows x64]
+### Compilation (MS Windows)
  
 * Install [Visual Studio 2019 Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) with **MSVC v142** and the **Windows 10 SDK**
 * Install the [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
@@ -36,12 +36,12 @@ rc /nologo /fo app\windows\CalderaD.res app\windows\CalderaD.rc
 dub --build=release --force
 ```
 
-### Generate a windows installer
+### Generate a MS Windows installer
 Prerequisites:
 * [Inno Setup 6+](https://jrsoftware.org/isdl.php) (or `winget install JRSoftware.InnoSetup`). The compiler is `ISCC.exe`; it is not added to `PATH` by default, so either add its folder (e.g. `C:\Program Files (x86)\Inno Setup 6`) to `PATH` or call it by full path.
 * The commands below **must run from a `vcvars64` shell**: `app\installer.iss` reads `%VCToolsRedistDir%` (set by `vcvars64.bat`) to locate and bundle the VC++ runtime DLLs. Running `iscc` outside that shell fails with a "VCToolsRedistDir is not set" error.
 
-Make sure to set the verbose level and have validation layers in src/engine.d disabled. The compile using
+For a distributable build, make sure validation layers and verbose logging are disabled in `src/engine.d`. Then compile and package:
 ```
 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 rc /nologo /fo app\windows\CalderaD.res app\windows\CalderaD.rc
@@ -50,7 +50,7 @@ iscc app\installer.iss
 ```
 The installer is written to `bin\CalderaD-Setup.exe`.
 
-### Unitests
+### Unittests (MS Windows & Linux)
 Run unittests with:
 ```
 dub --build=unittest --force
