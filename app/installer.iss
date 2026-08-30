@@ -58,16 +58,16 @@ Source: "bin\{#BuiltExe}"; DestDir: "{app}"; DestName: "{#AppExeName}"; Flags: i
 ; Never bundle the Vulkan loader; it must come from the GPU driver.
 Source: "bin\*.dll"; DestDir: "{app}"; Excludes: "vulkan-1.dll"; Flags: ignoreversion
 ; VC++ runtime trio, app-local, resolved from the environment at compile time
-Source: "{#VCCRT}VCRUNTIME140.dll";   DestDir: "{app}"; Flags: ignoreversion
+Source: "{#VCCRT}VCRUNTIME140.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#VCCRT}VCRUNTIME140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#VCCRT}MSVCP140.dll";        DestDir: "{app}"; Flags: ignoreversion
+Source: "{#VCCRT}MSVCP140.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; Runtime assets, recursively, preserving subfolders -> {app}\data\...
 Source: "app\src\main\assets\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#AppName}";           Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
 Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#AppName}";     Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent

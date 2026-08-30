@@ -57,80 +57,9 @@ jobs:
         if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           set -e
-          NPROC=$(nproc)
-
-          echo "::group::SDL3"
-          cmake -S app/jni/SDL -B app/jni/SDL/build -DCMAKE_BUILD_TYPE=Release \
-                -DSDL_STATIC=OFF -DSDL_SHARED=ON \
-                -DSDL_TESTS=OFF -DSDL_TEST_LIBRARY=OFF -DSDL_X11_XTEST=OFF -DSDL_EXAMPLES=OFF
-          cmake --build app/jni/SDL/build -j$NPROC
-          echo "::endgroup::"
-
-          echo "::group::SDL_image"
-          cmake -S app/jni/SDL_image -B app/jni/SDL_image/build -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON -DSDL3_DIR="$PWD/app/jni/SDL/build" \
-                -DSDLIMAGE_AVIF=OFF -DSDLIMAGE_WEBP=OFF -DSDLIMAGE_TIF=OFF -DSDLIMAGE_XCF=OFF \
-                -DSDLIMAGE_XPM=OFF -DSDLIMAGE_XV=OFF -DSDLIMAGE_LBM=OFF -DSDLIMAGE_PCX=OFF \
-                -DSDLIMAGE_PNM=OFF -DSDLIMAGE_QOI=OFF -DSDLIMAGE_SVG=OFF -DSDLIMAGE_TGA=OFF \
-                -DSDLIMAGE_GIF=OFF -DSDLIMAGE_ANI=OFF -DSDLIMAGE_SAMPLES=OFF -DSDLIMAGE_TESTS=OFF
-          cmake --build app/jni/SDL_image/build -j$NPROC
-          echo "::endgroup::"
-
-          echo "::group::SDL_mixer"
-          cmake -S app/jni/SDL_mixer -B app/jni/SDL_mixer/Release -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON -DSDL3_DIR="$PWD/app/jni/SDL/build" \
-                -DSDLMIXER_AIFF=OFF -DSDLMIXER_VOC=OFF -DSDLMIXER_AU=OFF -DSDLMIXER_FLAC=OFF \
-                -DSDLMIXER_GME=OFF -DSDLMIXER_MOD=OFF -DSDLMIXER_MP3=OFF -DSDLMIXER_MIDI=OFF \
-                -DSDLMIXER_OPUS=OFF -DSDLMIXER_VORBIS_STB=OFF -DSDLMIXER_VORBIS_VORBISFILE=OFF \
-                -DSDLMIXER_WAVPACK=OFF -DSDLMIXER_EXAMPLES=OFF -DSDLMIXER_TESTS=OFF
-          cmake --build app/jni/SDL_mixer/Release -j$NPROC
-          echo "::endgroup::"
-
-          echo "::group::FreeType"
-          cmake -S app/jni/freetype -B app/jni/freetype/build -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON \
-                -DFT_DISABLE_HARFBUZZ=ON -DFT_DISABLE_BROTLI=ON -DFT_DISABLE_ZLIB=ON \
-                -DFT_DISABLE_BZIP2=ON -DFT_DISABLE_PNG=ON
-          cmake --build app/jni/freetype/build -j$NPROC
-          echo "::endgroup::"
-
-          echo "::group::assimp"
-          cmake -S app/jni/assimp -B app/jni/assimp/build -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON \
-                -DASSIMP_BUILD_TESTS=OFF -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_ASSIMP_TOOLS=OFF \
-                -DASSIMP_BUILD_ZLIB=ON -DASSIMP_NO_EXPORT=ON -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF \
-                -DASSIMP_BUILD_FBX_IMPORTER=ON -DASSIMP_BUILD_3DS_IMPORTER=ON -DASSIMP_BUILD_OBJ_IMPORTER=ON
-          cmake --build app/jni/assimp/build -j$NPROC
-          echo "::endgroup::"
-
-          echo "::group::shaderc"
           python3 app/jni/shaderc/utils/git-sync-deps
-          cmake -S app/jni/shaderc -B app/jni/shaderc/build -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON -DSPIRV_SKIP_EXECUTABLES=ON \
-                -DSPIRV_HEADERS_SKIP_EXAMPLES=ON -DSPIRV_HEADERS_SKIP_INSTALL=ON \
-                -DSHADERC_SKIP_TESTS=ON -DSHADERC_SKIP_EXAMPLES=ON -DSHADERC_ENABLE_WGSL_OUTPUT=OFF \
-                -DSPIRV_TOOLS_BUILD_STATIC=OFF -DSHADERC_SKIP_COPYRIGHT_CHECK=ON -DENABLE_GLSLANG_BINARIES=OFF
-          cmake --build app/jni/shaderc/build -j$NPROC
-          echo "::endgroup::"
-
-          echo "::group::spirv_cross"
-          cmake -S app/jni/spirv_cross -B app/jni/spirv_cross/build -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON -DSPIRV_CROSS_SHARED=ON \
-                -DSPIRV_CROSS_ENABLE_TESTS=OFF -DSPIRV_CROSS_CLI=OFF -DSPIRV_CROSS_ENABLE_MSL=OFF
-          cmake --build app/jni/spirv_cross/build -j$NPROC
-          echo "::endgroup::"
-
-          echo "::group::cvma (VMA)"
-          cmake -S app/jni/cvma -B app/jni/cvma/build -DCMAKE_BUILD_TYPE=Release
-          cmake --build app/jni/cvma/build -j$NPROC
-          echo "::endgroup::"
-
-          echo "::group::cimgui"
-          cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON -DCIMGUI_USE_SDL3=ON -DVULKAN_DIR=/usr \
-                -DSDL3_DIR="$PWD/app/jni/SDL"
-          cmake --build app/jni/build -j$NPROC
-          echo "::endgroup::"
+          cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR=/usr
+          cmake --build app/jni/build -j$(nproc)
 
       # Save cache
       - name: Save dependencies cache
