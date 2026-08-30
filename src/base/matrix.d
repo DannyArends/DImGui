@@ -266,7 +266,7 @@ unittest {
 
   // translate stores into the column-major translation column (12,13,14)
   auto t = translate([2.0f, 3.0f, 4.0f]);
-  assert(t.position == [2.0f, 3.0f, 4.0f]);
+  assert(t[12] == 2.0f && t[13] == 3.0f && t[14] == 4.0f);
 
   // M x v3 is affine: identity-rotation translate moves the point by v
   assert(t.multiply([1.0f, 1.0f, 1.0f]) == [3.0f, 4.0f, 5.0f]);

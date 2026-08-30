@@ -31,46 +31,27 @@ dub --build=unittest --force
 * Install the [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
 * Check the Vulkan SDK version in [dub.json](../dub.json) and update if needed
  
-Build all dependencies from `app/jni/` using cmake.
-See [app/jni/WINDOWS.md](../app/jni/WINDOWS.md) for the full Windows build commands for each dependency.
+Build all dependencies from `app/jni/` using cmake. This can be done by following the instruction in 
+[app/jni/WINDOWS.md](../app/jni/WINDOWS.md) for the full Windows build commands for each dependency.
  
-Once dependencies are built:
+Once dependencies are built, compile the resource file and the executable:
+
 ```
-dub
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+rc /nologo /fo app\windows\CalderaD.res app\windows\CalderaD.rc
+dub --build=release --force
 ```
 
 ### Generate a windows installer
-Make sure to disable verbose and validation layers in src/engine.d
+Prerequisites:
+* [Inno Setup 6+](https://jrsoftware.org/isdl.php) (or `winget install JRSoftware.InnoSetup`). The compiler is `ISCC.exe`; it is not added to `PATH` by default, so either add its folder (e.g. `C:\Program Files (x86)\Inno Setup 6`) to `PATH` or call it by full path.
+* The commands below **must run from a `vcvars64` shell**: `app\installer.iss` reads `%VCToolsRedistDir%` (set by `vcvars64.bat`) to locate and bundle the VC++ runtime DLLs. Running `iscc` outside that shell fails with a "VCToolsRedistDir is not set" error.
 
+Make sure to set the verbose level and have validation layers in src/engine.d disabled. The compile using
 ```
 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 rc /nologo /fo app\windows\CalderaD.res app\windows\CalderaD.rc
 dub build --build=release
 iscc app\installer.iss
 ```
-
-#### Cross-Compilation [MS Windows x64 -> Android]
-```
-set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr
-set PATH=%PATH%;C:\Users\Danny\AppData\Local\Android\Sdk\platform-tools
-
-gradlew --stop
-
-echo === Building native libs ===
-gradlew externalNativeBuildDebug
-
-echo === Building D code (libmain.so) ===
-dub build --build=release --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force
-
-echo === Assembling APK & Installing ===
-gradlew assembleDebug
-adb install -r app\build\outputs\apk\debug\app-debug.apk
-
-echo === Launching ===
-adb shell am force-stop org.libsdl.app
-adb shell monkey -p org.libsdl.app -c android.intent.category.LAUNCHER 1
-
-echo === Connect Logcat ===
-adb logcat -c
-adb logcat -s SDL,DEBUG,AndroidRuntime,libc
-```
+The installer is written to `bin\CalderaD-Setup.exe`.

@@ -128,7 +128,7 @@ unittest {
 
   // minimal structural stand-ins for the templated functions
   struct Vtx { float[3] position; float[3] normal; float[2] texCoord; float[4] tangent; }
-  struct Buf { Vtx[] data; bool buffered; alias data this; }
+  struct Buf { Vtx[] data; bool buffered; alias data this; @nogc void invalidate() nothrow {} }
   struct Geo { Buf vertices; uint[] indices; }
 
   // single CCW triangle in the XY plane -> normal points +Z
