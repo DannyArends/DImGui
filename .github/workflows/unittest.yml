@@ -7,54 +7,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  unittest:
+  build-deps:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - name: Checkout (no submodules yet)
         uses: actions/checkout@v5
 
-      - name: Cache submodule sources
-        id: submod-cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            .git/modules
-            app/jni/SDL
-            app/jni/SDL_image
-            app/jni/SDL_mixer
-            app/jni/freetype
-            app/jni/assimp
-            app/jni/shaderc
-            app/jni/spirv_cross
-            app/jni/cvma
-            app/jni/cimgui
-          key: submodules-${{ hashFiles('.gitmodules') }}
-
-      - name: Init submodules (network only on cache miss)
-        run: git submodule update --init --recursive
-
-      - name: System dependencies (Vulkan, CMake, Python, GL/X11 for SDL)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            cmake ninja-build python3 \
-            libvulkan-dev \
-            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
-            libxfixes-dev libxss-dev libxkbcommon-dev \
-            libwayland-dev wayland-protocols libdrm-dev libgbm-dev \
-            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
-            libudev-dev libdbus-1-dev libibus-1.0-dev \
-            libasound2-dev libpulse-dev
-
-      - name: Install LDC
-        uses: dlang-community/setup-dlang@v2
-        with:
-          compiler: ldc-latest
-
       - name: Cache built native dependencies
         id: deps-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: |
             app/jni/SDL/build
@@ -67,6 +29,24 @@ jobs:
             app/jni/cvma/build
             app/jni/build
           key: dependencies-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+
+      - name: Init submodules
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: git submodule update --init --recursive
+
+      - name: System dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build python3 \
+            libvulkan-dev \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxfixes-dev libxss-dev libxkbcommon-dev \
+            libwayland-dev wayland-protocols libdrm-dev libgbm-dev \
+            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+            libudev-dev libdbus-1-dev libibus-1.0-dev \
+            libasound2-dev libpulse-dev
 
       - name: Build SDL3
         if: steps.deps-cache.outputs.cache-hit != 'true'
@@ -154,6 +134,58 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
                 -DCIMGUI_USE_SDL3=ON -DVULKAN_DIR=/usr -DSDL3_DIR="$PWD/../SDL" ../
           cmake --build . --config Release -j$(nproc)
+
+  unittest:
+    needs: build-deps
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v5
+
+      - name: Cache submodule sources
+        uses: actions/cache@v4
+        with:
+          path: |
+            .git/modules
+            app/jni/SDL
+            app/jni/SDL_image
+            app/jni/SDL_mixer
+            app/jni/freetype
+            app/jni/assimp
+            app/jni/shaderc
+            app/jni/spirv_cross
+            app/jni/cvma
+            app/jni/cimgui
+          key: submodules-${{ hashFiles('.gitmodules') }}
+
+      - name: Init submodules (headers needed by ImportC)
+        run: git submodule update --init --recursive
+
+      - name: Restore built native dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/jni/SDL/build
+            app/jni/SDL_image/build
+            app/jni/SDL_mixer/Release
+            app/jni/freetype/build
+            app/jni/assimp/build
+            app/jni/shaderc/build
+            app/jni/spirv_cross/build
+            app/jni/cvma/build
+            app/jni/build
+          key: dependencies-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+
+      - name: System dependencies (headers/loader)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan-dev libx11-dev libwayland-dev libgl1-mesa-dev
+
+      - name: Install LDC
+        uses: dlang-community/setup-dlang@v2
+        with:
+          compiler: ldc-latest
 
       - name: Run unittests
         run: dub --build=unittest --force
