@@ -20,7 +20,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             cmake ninja-build python3 \
-            libvulkan-dev vulkan-headers \
+            libvulkan-dev \
             libx11-dev libxext-dev libwayland-dev libgl1-mesa-dev
 
       - name: Install LDC
@@ -28,7 +28,24 @@ jobs:
         with:
           compiler: ldc-latest
 
+      - name: Cache built native dependencies
+        id: deps-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/jni/SDL/build
+            app/jni/SDL_image/build
+            app/jni/SDL_mixer/Release
+            app/jni/freetype/build
+            app/jni/assimp/build
+            app/jni/shaderc/build
+            app/jni/spirv_cross/build
+            app/jni/cvma/build
+            app/jni/build
+          key: jni-${{ runner.os }}-${{ hashFiles('.gitmodules', 'app/jni/**/CMakeLists.txt') }}
+
       - name: Build SDL3
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni/SDL && mkdir -p build && cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DSDL_SHARED=ON \
@@ -36,6 +53,7 @@ jobs:
           cmake --build . --config Release -j$(nproc)
 
       - name: Build SDL_image
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni/SDL_image && mkdir -p build && cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
@@ -47,6 +65,7 @@ jobs:
           cmake --build . --config Release -j$(nproc)
 
       - name: Build SDL_mixer
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni/SDL_mixer && mkdir -p Release && cd Release
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
@@ -58,6 +77,7 @@ jobs:
           cmake --build . --config Release -j$(nproc)
 
       - name: Build FreeType
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni/freetype && mkdir -p build && cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
@@ -66,6 +86,7 @@ jobs:
           cmake --build . --config Release -j$(nproc)
 
       - name: Build assimp
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni/assimp && mkdir -p build && cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
@@ -75,6 +96,7 @@ jobs:
           cmake --build . --config Release -j$(nproc)
 
       - name: Build shaderc
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni/shaderc
           python3 utils/git-sync-deps
@@ -86,6 +108,7 @@ jobs:
           cmake --build . --config Release -j$(nproc)
 
       - name: Build spirv_cross
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni/spirv_cross && mkdir -p build && cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
@@ -93,12 +116,14 @@ jobs:
           cmake --build . --config Release -j$(nproc)
 
       - name: Build cvma (VMA)
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni/cvma && mkdir -p build && cd build
           cmake -DCMAKE_BUILD_TYPE=Release ../
           cmake --build . --config Release -j$(nproc)
 
       - name: Build cimgui
+        if: steps.deps-cache.outputs.cache-hit != 'true'
         run: |
           cd app/jni && mkdir -p build && cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
