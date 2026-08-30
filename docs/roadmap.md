@@ -1,5 +1,5 @@
 ## Roadmap
-Planned and possible future work for DImGui. Items are aspirational, not commitments, and roughly ordered by interest rather than priority.
+Planned and possible future work for DImGui engine. Items are aspirational, not commitments, and roughly ordered by interest rather than priority.
 
 ### Engine / renderer
 
