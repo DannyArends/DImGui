@@ -25,7 +25,9 @@ self-contained. It is also a minimal SDL3 android_project ready for Android Stud
 The software has been tested on x64 Windows, x64 Linux, and arm64-v8a Android 15.
 
 For building on MS Windows and/or Linux, see [compilation.md](./docs/compilation.md).  
+
 For cross-compiling for Android arm64-v8a, see [cross-compilation.md](./docs/cross-compilation.md).
+
 For planned and possible future work, see [roadmap.md](./docs/roadmap.md).
 
 ### Build with 🛠️
