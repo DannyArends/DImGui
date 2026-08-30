@@ -55,10 +55,7 @@ struct IncluderContext {
 }
 
 /** Check result of SpirV-Compiler call and print if an error occured */
-@nogc void enforceSPIRV(App app, spvc_result err) nothrow {
-  if(err == SPVC_SUCCESS) return;
-  stop("enforceSPIRV", spvc_context_get_last_error_string(app.context));
-}
+@nogc void enforceSPIRV(App app, spvc_result err) nothrow { if(err != SPVC_SUCCESS) stop("enforceSPIRV", spvc_context_get_last_error_string(app.context)); }
 
 /** Add a single compiler macro */
 void addCompileMacro(ref App app, string name, string value) {
@@ -134,7 +131,7 @@ Shader createShaderModule(App app, string path, shaderc_shader_kind type = shade
   Shader shader = {path : path, stage : convert(type), source : source};
 
   if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
-    stop("ShaderC Error", toStringz(format("Shader '%s' compilation failed: '%s'", toStringz(path), shaderc_result_get_error_message(result))));
+    stop("ShaderC Error", toStringz(format("Shader '%s' compilation failed: '%s'", path, fromStringz(shaderc_result_get_error_message(result)))));
   }
 
   shader.code = cast(const(uint)*)(shaderc_result_get_bytes(result));

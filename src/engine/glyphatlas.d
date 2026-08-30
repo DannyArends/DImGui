@@ -74,9 +74,9 @@ void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Medium.ttf",
   FT_Property_Set(app.glyphAtlas.ftLibrary, "sdf", "overlaps", &overlaps);
 
   app.glyphAtlas.fontData = readFile(toStringz(filename));
-  if(app.glyphAtlas.fontData.length == 0) { stop("Glyph Atlas", toStringz(format("Error reading font file %s\n", toStringz(filename)))); }
+  if(app.glyphAtlas.fontData.length == 0) { stop("Glyph Atlas", toStringz(format("Error reading font file %s\n", filename))); }
   if(FT_New_Memory_Face(app.glyphAtlas.ftLibrary, cast(const(ubyte)*)app.glyphAtlas.fontData.ptr, cast(int)app.glyphAtlas.fontData.length, 0, &app.glyphAtlas.face)) {
-    stop("Glyph Atlas", toStringz(format("Error loading FreeType face %s\n", toStringz(filename)))); 
+    stop("Glyph Atlas", toStringz(format("Error loading FreeType face %s\n", filename))); 
   }
   FT_Set_Pixel_Sizes(app.glyphAtlas.face, 0, app.glyphAtlas.pointsize);
 
