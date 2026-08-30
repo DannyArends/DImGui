@@ -8,12 +8,31 @@ on:
 
 jobs:
   unittest:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - name: Checkout (with submodules)
+      - name: Checkout (no submodules yet)
         uses: actions/checkout@v4
+
+      - name: Cache submodule sources
+        id: submod-cache
+        uses: actions/cache@v4
         with:
-          submodules: recursive
+          path: |
+            .git/modules
+            app/jni/SDL
+            app/jni/SDL_image
+            app/jni/SDL_mixer
+            app/jni/freetype
+            app/jni/assimp
+            app/jni/shaderc
+            app/jni/spirv_cross
+            app/jni/cvma
+            app/jni/cimgui
+          key: submodules-${{ hashFiles('.gitmodules') }}
+
+      - name: Init submodules (network only on cache miss)
+        run: git submodule update --init --recursive
 
       - name: System dependencies (Vulkan, CMake, Python, GL/X11 for SDL)
         run: |
