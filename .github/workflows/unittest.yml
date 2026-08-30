@@ -21,7 +21,12 @@ jobs:
           sudo apt-get install -y \
             cmake ninja-build python3 \
             libvulkan-dev \
-            libx11-dev libxext-dev libwayland-dev libgl1-mesa-dev
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxfixes-dev libxss-dev libxkbcommon-dev \
+            libwayland-dev wayland-protocols libdrm-dev libgbm-dev \
+            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+            libudev-dev libdbus-1-dev libibus-1.0-dev \
+            libasound2-dev libpulse-dev
 
       - name: Install LDC
         uses: dlang-community/setup-dlang@v2
