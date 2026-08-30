@@ -89,20 +89,7 @@ class GameTaskThread : TaskThread {
   }
 }
 
-/** Top-level Game state: engine App plus the game World
-  TODO:
-    - Workshops, and crafting at workshops
-    - Liquid barrels for wine/drinks from berries
-    - Barrels and Bins for stockpiles
-    - Allow stockpiles to be extended / shrunk / redrawn
-    - Render crafted objects through assimp models 
-    - Per-dwarf labor roles / job filtering (+ Stockpile priorities / hauling logistics)
-    - Dwarf skills & experience
-    - Item quality tiers
-    - Farming / planting
-    - Furniture placement (beds, tables) as world objects
-    - Wildlife & combat
-    */
+/** Top-level Game state: engine App plus the game World (see docs/roadmap.md for planned game work) */
 struct GameApp {
   App app;
   alias app this;

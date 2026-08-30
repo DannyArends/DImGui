@@ -13,13 +13,7 @@ enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", PO
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 
-/** Main application structure, TODOs:
-  - Bloom/HDR: scaffolding is there, for a big visual improvement
-  - GPU-driven indirect draw (probably not possible, due to how our pipeline works)
-  - SSAO bilateral blur pass (denoise the AO)
-  - Screen-space reflections on water
-  - Chunk/object LOD
-*/
+/** Main application structure (see docs/roadmap.md for planned engine work) */
 struct App {
   SDL_Window* window;
   alias window this;
