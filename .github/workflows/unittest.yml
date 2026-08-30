@@ -66,7 +66,7 @@ jobs:
             app/jni/spirv_cross/build
             app/jni/cvma/build
             app/jni/build
-          key: jni-${{ runner.os }}-${{ hashFiles('.gitmodules', 'app/jni/**/CMakeLists.txt') }}
+          key: dependencies-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
 
       - name: Build SDL3
         if: steps.deps-cache.outputs.cache-hit != 'true'
@@ -125,7 +125,8 @@ jobs:
           cd app/jni/shaderc
           python3 utils/git-sync-deps
           mkdir -p build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DSPIRV_SKIP_EXECUTABLES=ON \
+                -DSPIRV_HEADERS_SKIP_EXAMPLES=ON -DSPIRV_HEADERS_SKIP_INSTALL=ON \
                 -DSHADERC_SKIP_TESTS=ON -DSHADERC_SKIP_EXAMPLES=ON -DSHADERC_ENABLE_WGSL_OUTPUT=OFF \
                 -DSPIRV_TOOLS_BUILD_STATIC=OFF -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
                 -DSHADERC_SKIP_COPYRIGHT_CHECK=ON -DENABLE_GLSLANG_BINARIES=OFF ../
