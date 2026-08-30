@@ -3,7 +3,6 @@ Compile Simple DirectMedia Layer (SDL3):
 ```
 rm -rf app/jni/SDL/build
 cd app/jni/SDL
-call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat" 
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DSDL_SHARED=ON \
