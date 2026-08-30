@@ -16,7 +16,7 @@ import surface : clampSurface, textureCap, isTexture, toRGBA;
 import textures: mapTextures, transferTextureAsync, checkPendingTextures;
 
 /** Worker to main result: immutable payload plus the finishing worker's Tid */
-struct Result(T) { immutable(T) payload; Tid tid; }
+struct Envelope(T) { immutable(T) payload; Tid tid; }
 
 /** Worker thread that loads textures and assimp assets off the main thread, returning results via messages */
 class TaskThread : Thread {
@@ -49,11 +49,11 @@ class TaskThread : Thread {
             if (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel < 4) { surface.toRGBA(verbose); }
             surface.clampSurface(textureCap(path));   // downscale oversized art before it reaches the GPU
             auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);
-            main.send(Result!Texture(texture, mytid));
+            main.send(Envelope!Texture(texture, mytid));
           } else if(path.isOpenAsset()) {
             auto openasset = new OpenAsset(toStringz(path), verbose);
             openasset.computeBoundingBox();
-            main.send(Result!OpenAsset(cast(immutable(OpenAsset))openasset, mytid));
+            main.send(Envelope!OpenAsset(cast(immutable(OpenAsset))openasset, mytid));
           } else { main.send("Unknown file", mytid); }
         },
         (bool active) { this.active = active; }  // shutdown signal
@@ -86,7 +86,7 @@ void initializeAsync(ref App app, bool preLoadAssimp = false, uint numWorkers = 
 bool drainMessages(T)(ref App app, void delegate(T) handler, uint max = uint.max) {
   bool any = false;
   uint n = 0;
-  while(n < max && receiveTimeout(dur!"msecs"(0), (Result!T r) {
+  while(n < max && receiveTimeout(dur!"msecs"(0), (Envelope!T r) {
     app.concurrency.workers[r.tid] = false;
     handler(cast(T)r.payload);
     any = true;

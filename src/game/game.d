@@ -20,6 +20,7 @@ public import feature : Feature;
 public import inventory : Inventory, InventorySlot;
 public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
+public import input : GameTaskThread, ChunkReq, PathReq, CloudReq;
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
 public import fall : Fall;
@@ -34,9 +35,8 @@ public import world : World, WorldData;
 import animalwindow : showAnimalContent;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
-import boundingbox : computeBoundingBox;
-import clouds : buildCloudInstances, applyCloudInstances;
-import chunk : buildChunkData, finalizeChunk, postFinalizeChunks;
+import clouds : applyCloudInstances;
+import chunk : finalizeChunk, postFinalizeChunks;
 import dwarf : settleDwarves;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
@@ -47,7 +47,7 @@ import input : handleEvents, handleGameInput;
 import lights : updateSun;
 import lightswindow : showLightsContent;
 import normals : computeTangents;
-import pathfinding : canMoveTo, dispatchPathResult, pathfindWorker, dispatchPendingPaths;
+import pathfinding : canMoveTo, dispatchPathResult, dispatchPendingPaths;
 import persistence : loadWorld, saveWorld;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
@@ -61,34 +61,6 @@ import waterwindow : showWaterContent;
 import worldwindow : showWorldContent;
 import wboit: testWBOIT;
 
-/** Worker thread variant that also handles chunk building and pathfinding requests */
-class GameTaskThread : TaskThread {
-  /** Construct a game worker bound to the main thread's Tid */
-  this(Tid id, bool verbose = false) { super(id, verbose); }
-
-  /** Per-loop: build a chunk or run a pathfinding search on request, sending the result back */
-  override void handleGameObjects() {
-    receiveTimeout(dur!"msecs"(-1),
-      (ChunkReq r) {
-        auto chunk = new Chunk(buildChunkData(r.wd, r.coord), r.wd);
-        chunk.tiles.computeBoundingBox();
-        chunk.computeBoundingBox();
-        main.send(Result!Chunk(cast(immutable(Chunk))chunk, mytid));
-      },
-      (PathReq r) {
-        auto result = pathfindWorker(r.wd, r.req);
-        main.send(Result!PathResult(cast(immutable(PathResult))result, mytid));
-      },
-      (CloudReq r) {
-        float[int[2]] density;
-        foreach(c; r.req.cells) density[c.key] = c.density;
-        auto inst = buildCloudInstances(r.wd, density, r.req.coords);
-        main.send(Result!CloudResult(cast(immutable(CloudResult))CloudResult(inst), mytid));
-      }
-    );
-  }
-}
-
 /** Top-level Game state: engine App plus the game World (see docs/roadmap.md for planned game work) */
 struct GameApp {
   App app;
@@ -99,11 +71,6 @@ struct GameApp {
   bool regenerate = false;
   size_t loadTotal = 0;
 }
-
-/** Main->worker requests */
-struct ChunkReq { immutable(WorldData) wd; int[3] coord; }
-struct PathReq  { immutable(WorldData) wd; PathRequest req; }
-struct CloudReq { immutable(WorldData) wd; immutable(CloudRequest) req; }
 
 /** Centered 2D progress bar over the loaded fraction of the initial working set; shown until worldReady. */
 void showLoadingBar(ref GameApp app) {

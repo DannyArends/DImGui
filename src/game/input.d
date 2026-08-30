@@ -6,16 +6,52 @@
 import game;
 
 import block : syncBlockInstances;
+import boundingbox : computeBoundingBox;
 import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
-import clouds : rainTick, settleRain, requestCloudRebuild;
+import chunk : buildChunkData;
+import clouds : buildCloudInstances, rainTick, settleRain, requestCloudRebuild;
 import jobs : craftJob, jobQueue;
 import lights : updateSun;
+import pathfinding : pathfindWorker;
 import skeleton : updateSkeletons;
 import screenshot : saveScreenshot;
 import timing : timed;
 import tool : handlePrimaryPress, handlePrimaryDrag, handlePrimaryRelease, handleSecondaryPress, handleSecondaryRelease, updateHoverHighlight;
 import vram : queryVRAM;
 import water : waterTick, flushWaterDirty, evaporateTick;
+
+/** Main->worker requests */
+struct ChunkReq { immutable(WorldData) wd; int[3] coord; }
+struct PathReq { immutable(WorldData) wd; PathRequest req; }
+struct CloudReq { immutable(WorldData) wd; immutable(CloudRequest) req; }
+
+/** Worker thread variant that also handles chunk building and pathfinding requests */
+class GameTaskThread : TaskThread {
+  /** Construct a game worker bound to the main thread's Tid */
+  this(Tid id, bool verbose = false) { super(id, verbose); }
+
+  /** Per-loop: build a chunk or run a pathfinding search on request, sending the result back */
+  override void handleGameObjects() {
+    receiveTimeout(dur!"msecs"(-1),
+      (ChunkReq r) {
+        auto chunk = new Chunk(buildChunkData(r.wd, r.coord), r.wd);
+        chunk.tiles.computeBoundingBox();
+        chunk.computeBoundingBox();
+        main.send(Envelope!Chunk(cast(immutable(Chunk))chunk, mytid));
+      },
+      (PathReq r) {
+        auto result = pathfindWorker(r.wd, r.req);
+        main.send(Envelope!PathResult(cast(immutable(PathResult))result, mytid));
+      },
+      (CloudReq r) {
+        float[int[2]] density;
+        foreach(c; r.req.cells) density[c.key] = c.density;
+        auto inst = buildCloudInstances(r.wd, density, r.req.coords);
+        main.send(Envelope!CloudResult(cast(immutable(CloudResult))CloudResult(inst), mytid));
+      }
+    );
+  }
+}
 
 /** Handle Game keyboard events */
 void handleGameInput(ref GameApp app, SDL_Event e) {
