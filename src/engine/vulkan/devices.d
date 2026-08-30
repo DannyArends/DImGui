@@ -26,6 +26,7 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   app.printQueues();
 }
 
+/** Get the number of Multisample anti-aliasing (MSAA) samples */
 VkSampleCountFlagBits getMSAASamples(ref App app) {
   version (Android) { return VK_SAMPLE_COUNT_1_BIT; }
   VkSampleCountFlags counts = app.properties.limits.framebufferColorSampleCounts & app.properties.limits.framebufferDepthSampleCounts;
@@ -101,6 +102,7 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   if(app.verbose) SDL_Log("Queue: gfx=%d compute=%d transfer=%d", app.queues.graphics.family, app.queues.compute.family, app.queues.transfer.family);
 }
 
+/** List / Print information about a physical device */
 void list(VkPhysicalDevice physicalDevice, size_t i) {
   VkPhysicalDeviceProperties properties;
   vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -117,6 +119,7 @@ void list(VkPhysicalDevice physicalDevice, size_t i) {
   SDL_Log("|- Device type: %d", properties.deviceType);
 }
 
+/** Query available physical devices */
 void queryPhysicalDevices(ref App app) {
   uint nPhysDevices = 0;
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, null);
@@ -129,6 +132,7 @@ void queryPhysicalDevices(ref App app) {
   if(app.verbose) foreach(i, physicalDevice; app.physicalDevices) { physicalDevice.list(i); }
 }
 
+/** Print (gfx) queue information */
 void printQueues(ref App app){
   uint32_t nQueue;
   vkGetPhysicalDeviceQueueFamilyProperties(app.physicalDevice, &nQueue, null);

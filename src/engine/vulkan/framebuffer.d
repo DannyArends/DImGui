@@ -20,6 +20,7 @@ void createHDRImage(ref App app, ref ImageBuffer buffer, VkSampleCountFlagBits f
   });
 }
 
+/** Create a single framebuffer */
 VkFramebuffer createFramebuffer(ref App app, ref RenderPass pass, VkImageView[] views, uint width, uint height, string label, size_t idx = 0) {
   VkFramebufferCreateInfo info = {
     sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -34,6 +35,7 @@ VkFramebuffer createFramebuffer(ref App app, ref RenderPass pass, VkImageView[] 
   return fb;
 }
 
+/** Create framebuffers for every view in the attachment sets */
 void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, uint width, uint height, string label, ref DeletionQueue queue) {
   pass.framebuffers.length = attachmentSets.length;
   foreach(i, views; attachmentSets) { pass.framebuffers[i] = app.createFramebuffer(pass, views, width, height, label, i); }
@@ -43,11 +45,11 @@ void create(ref App app, ref RenderPass pass, VkImageView[][] attachmentSets, ui
 /** Create framebuffers for Rendering, Post-processing, and ImGui, for each SwapChain ImageView 
  * with appropriate Color and Depth attachements */
 void createFramebuffers(ref App app) {
-  auto depthViews  = iota(app.imageCount).map!(i => [app.depthBuffer.view]).array;
-  auto sceneViews  = iota(app.imageCount).map!(i => [app.offscreenHDR.view, app.resolvedHDR.view, app.depthBuffer.view,
-                                                     app.wboit.accumulation.view, app.wboit.revealage.view]).array;
-  auto postViews   = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
-  auto imguiViews  = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
+  auto depthViews = iota(app.imageCount).map!(i => [app.depthBuffer.view]).array;
+  auto sceneViews = iota(app.imageCount).map!(i => [app.offscreenHDR.view, app.resolvedHDR.view, app.depthBuffer.view,
+                                                    app.wboit.accumulation.view, app.wboit.revealage.view]).array;
+  auto postViews = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
+  auto imguiViews = iota(app.imageCount).map!(i => [app.swapChainImageViews[i]]).array;
 
   app.create(app.depthCmd.pass, depthViews, app.camera.width, app.camera.height, "DepthPrePass", app.swapDeletionQueue);
   app.create(app.sceneCmd.pass, sceneViews, app.camera.width, app.camera.height, "Render", app.swapDeletionQueue);

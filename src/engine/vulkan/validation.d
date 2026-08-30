@@ -11,6 +11,7 @@ PFN_vkSetDebugUtilsObjectNameEXT    vkSetDebugUtilsObjectName;
 PFN_vkCmdBeginDebugUtilsLabelEXT    vkCmdBeginDebugUtilsLabel;
 PFN_vkCmdEndDebugUtilsLabelEXT      vkCmdEndDebugUtilsLabel;
 
+/** Validation layer debug callback */
 extern(System) @nogc uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, 
                                         size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) nothrow {
     SDL_Log("[debugCallback] Debug report from ObjectType: %d\nMessage %d: %s\n", objectType, messageCode, pMessage);
@@ -18,6 +19,7 @@ extern(System) @nogc uint debugCallback(VkDebugReportFlagsEXT flags, VkDebugRepo
     return VK_FALSE;
 }
 
+/** Create our validation layer debug callback (Uses: VK_EXT_debug_report) */
 void createDebugCallback(ref App app){
   // Hook instance function
   vkDebugCallback = cast(PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(app.instance, "vkCreateDebugReportCallbackEXT");
@@ -38,6 +40,7 @@ void createDebugCallback(ref App app){
   });
 }
 
+/** Map debug functions for vulkan naming and labels */
 void createDebugUtils(ref App app) {
   vkSetDebugUtilsObjectName = cast(PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(app.instance, "vkSetDebugUtilsObjectNameEXT");
   vkCmdBeginDebugUtilsLabel = cast(PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(app.instance, "vkCmdBeginDebugUtilsLabelEXT");
@@ -48,11 +51,8 @@ void createDebugUtils(ref App app) {
 void nameVulkanObject(T)(ref App app, T object, const(char)* name, VkObjectType objectType = VK_OBJECT_TYPE_RENDER_PASS) {
   if(!app.nameVulkanObjects) return;
   VkDebugUtilsObjectNameInfoEXT nameInfo = {
-      sType: VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-      pNext: null,
-      objectType: objectType,
-      objectHandle: cast(ulong)object,
-      pObjectName: name
+    sType: VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+    objectType: objectType, objectHandle: cast(ulong)object, pObjectName: name
   };
   if(vkSetDebugUtilsObjectName) { vkSetDebugUtilsObjectName(app.device, &nameInfo); }
 }
@@ -66,7 +66,7 @@ void pushLabel(T)(T object, Colors color, const(char)* name) { debug {
 } }
 
 void pushLabel(T, A...)(T object, Colors color, string fmt, A args) { debug {
-    pushLabel(object, color, cstr(fmt, args));
+  pushLabel(object, color, cstr(fmt, args));
 } }
 
 void popLabel(T)(T object) { debug {
