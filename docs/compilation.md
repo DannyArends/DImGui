@@ -16,13 +16,7 @@ See [app/jni/LINUX.md](../app/jni/LINUX.md) for the full Linux build commands fo
  
 Once dependencies are built:
 ```
-dub
-```
-
-### Unitests
-Run unittests with:
-```
-dub --build=unittest --force
+dub --build=release --force
 ```
 
 ### Compilation [MS Windows x64]
@@ -55,3 +49,9 @@ dub build --build=release
 iscc app\installer.iss
 ```
 The installer is written to `bin\CalderaD-Setup.exe`.
+
+### Unitests
+Run unittests with:
+```
+dub --build=unittest --force
+```
