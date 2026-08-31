@@ -73,6 +73,22 @@ void reflectStage(ref App app, spvc_compiler compiler, const(char)* type, spvc_r
   if(app.trace) SDL_Log("%s - loc: %d: %s %s:[%dx%d]", type, location, name, convert(basetype),  rows, columns);
 }
 
+/** Byte size of a SPIR-V scalar basetype (std430 component size) */
+uint basetypeBytes(spvc_basetype b) @nogc nothrow {
+  switch(b) {
+    case SPVC_BASETYPE_INT8:  case SPVC_BASETYPE_UINT8:  return(1);
+    case SPVC_BASETYPE_INT16: case SPVC_BASETYPE_UINT16: case SPVC_BASETYPE_FP16: return(2);
+    case SPVC_BASETYPE_INT32: case SPVC_BASETYPE_UINT32: case SPVC_BASETYPE_FP32: return(4);
+    case SPVC_BASETYPE_INT64: case SPVC_BASETYPE_UINT64: case SPVC_BASETYPE_FP64: return(8);
+    default: return(4);
+  }
+}
+
+/** Byte size of a non-struct SPIR-V type (vector/scalar/matrix), std430 component sizing */
+uint typeBytes(spvc_type handle) @nogc nothrow {
+  return(basetypeBytes(spvc_type_get_basetype(handle)) * spvc_type_get_vector_size(handle) * spvc_type_get_columns(handle));
+}
+
 /** Reflect a single descriptor (UBO, SSBO, sampler) */
 Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* type, spvc_reflected_resource* list, size_t i) {
     Descriptor descr = Descriptor(convert(types[type]));
@@ -96,7 +112,9 @@ Descriptor reflectDescriptor(ref App app, spvc_compiler compiler, const(char)* t
     if (types[type] == SPVC_RESOURCE_TYPE_STORAGE_BUFFER) {
       spvc_type_id element_id = spvc_type_get_member_type(type_handle, 0);
       spvc_type element_handle = spvc_compiler_get_type_handle(compiler, element_id);
-      app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler, element_handle, &descr.bytes));
+      if(spvc_type_get_basetype(element_handle) == SPVC_BASETYPE_STRUCT) {
+        app.enforceSPIRV(spvc_compiler_get_declared_struct_size(compiler, element_handle, &descr.bytes));
+      } else { descr.bytes = typeBytes(element_handle); }
     }
 
     // Figure out the descriptor count in a round-about way
@@ -205,3 +223,55 @@ const(char)* convert(spvc_basetype basetype) {
   }
 }
 
+/** Reflection: a single UBO is reported with correct set, binding and size */
+unittest {
+  import shaders : createCompiler, compileShader;
+
+  App app;
+  app.createCompiler();
+  app.createReflectionContext();
+  auto sh = app.compileShader(q{
+    #version 450
+    layout(set = 0, binding = 2) uniform UBO { mat4 mvp; vec4 tint; } ubo;
+    void main() { gl_Position = ubo.mvp * vec4(0.0); }
+  }, "reflection_1.glsl", shaderc_glsl_vertex_shader);
+
+  app.reflectShader(sh);
+
+  auto ubos = sh.descriptors.filter!(d => d.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER).array;
+  assert(ubos.length == 1, "expected exactly one UBO descriptor");
+  assert(ubos[0].set == 0, "wrong descriptor set");
+  assert(ubos[0].binding == 2, "wrong binding");
+  assert(ubos[0].bytes == 80, "UBO size mismatch (mat4=64 + vec4=16)");
+
+  sh = app.compileShader(q{
+    #version 450
+    layout(set = 1, binding = 0) uniform sampler2D tex;
+    struct Item { vec4 pos; };
+    layout(set = 0, binding = 3) buffer SSBO { Item data[]; } ssbo;
+    layout(location = 0) out vec4 col;
+    void main() { col = texture(tex, vec2(0.0)) + ssbo.data[0].pos; }
+  }, "reflection_2.glsl", shaderc_glsl_fragment_shader);
+
+  app.reflectShader(sh);
+
+  auto samplers = sh.descriptors.filter!(d => d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER).array;
+  auto ssbos = sh.descriptors.filter!(d => d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER).array;
+  assert(samplers.length == 1 && samplers[0].set == 1 && samplers[0].binding == 0, "sampler reflection wrong");
+  assert(ssbos.length == 1 && ssbos[0].set == 0 && ssbos[0].binding == 3, "SSBO reflection wrong");
+
+  sh = app.compileShader(q{
+    #version 450
+    layout(set = 1, binding = 0) uniform sampler2D tex;
+    layout(set = 0, binding = 5) buffer SSBO { vec4 data[]; } ssbo;
+    layout(location = 0) out vec4 col;
+    void main() { col = texture(tex, vec2(0.0)) + ssbo.data[0]; }
+  }, "reflection_3.glsl", shaderc_glsl_fragment_shader);
+
+  app.reflectShader(sh);
+
+  samplers = sh.descriptors.filter!(d => d.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER).array;
+  ssbos = sh.descriptors.filter!(d => d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER).array;
+  assert(samplers.length == 1 && samplers[0].set == 1 && samplers[0].binding == 0, "sampler reflection wrong");
+  assert(ssbos.length == 1 && ssbos[0].set == 0 && ssbos[0].binding == 5, "SSBO reflection wrong");
+}

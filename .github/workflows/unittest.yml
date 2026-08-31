@@ -31,7 +31,7 @@ jobs:
 
       # System dependencies
       - name: System dependencies (onAlways)
-        run: sudo apt-get update && sudo apt-get install -y libvulkan-dev
+        run: sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
 
       - name: System dependencies (onCacheMiss)
         if: steps.deps-cache.outputs.cache-hit != 'true'

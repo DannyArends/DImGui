@@ -18,7 +18,7 @@ struct Shader {
   VkShaderModule shaderModule;            /// Vulkan Shader Module
   VkPipelineShaderStageCreateInfo info;   /// Shader Stage Create Info Object
 
-  char[] source;                          /// Source code
+  const(char)[] source;                   /// Source code
   const(uint)* code;                      /// Compiled Code
   size_t codeSize;                        /// Size of the compiled code
   @property size_t nwords(){ return(codeSize / uint.sizeof); };
@@ -123,31 +123,32 @@ extern (C) void includeRelease(void* userData, shaderc_include_result* result) {
   }
 }
 
+/** Compile GLSL source to SPIR-V (no device) */
+Shader compileShader(ref App app, const(char)[] source, string path, shaderc_shader_kind type) {
+  auto result = shaderc_compile_into_spv(app.compiler, &source[0], source.length, type, toStringz(path), "main", app.options);
+  if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+    stop("ShaderC Error", toStringz(format("Shader '%s' failed: '%s'", path, fromStringz(shaderc_result_get_error_message(result)))));
+  }
+  Shader shader = { path: path, stage: convert(type), source: source };
+  shader.code = cast(const(uint)*)shaderc_result_get_bytes(result);
+  shader.codeSize = shaderc_result_get_length(result);
+  app.mainDeletionQueue.add((){ shaderc_result_release(result); });
+  return(shader);
+}
+
 /** Load GLSL, compile to SpirV, and create the vulkan shaderModule */
 Shader createShaderModule(App app, string path, shaderc_shader_kind type = shaderc_glsl_vertex_shader) {
-  auto source = readFile(toStringz(path), app.verbose);
-  auto result = shaderc_compile_into_spv(app.compiler, &source[0], source.length, type, toStringz(path), "main", app.options);
+  auto shader = app.compileShader(readFile(toStringz(path), app.verbose), path, type);
 
-  Shader shader = {path : path, stage : convert(type), source : source};
-
-  if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
-    stop("ShaderC Error", toStringz(format("Shader '%s' compilation failed: '%s'", path, fromStringz(shaderc_result_get_error_message(result)))));
-  }
-
-  shader.code = cast(const(uint)*)(shaderc_result_get_bytes(result));
-  shader.codeSize = shaderc_result_get_length(result);
   VkShaderModuleCreateInfo createInfo = {
     sType: VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-    codeSize: shader.codeSize,
-    pCode: &shader.code[0]
+    codeSize: shader.codeSize, pCode: &shader.code[0]
   };
 
   enforceVK(vkCreateShaderModule(app.device, &createInfo, null, &shader.shaderModule));
   app.nameVulkanObject(shader.shaderModule, cstr("[SHADER] %s", fromStringz(path)), VK_OBJECT_TYPE_SHADER_MODULE);
 
   shader.info = createShaderStageInfo(convert(type), shader);
-
-  app.mainDeletionQueue.add((){ shaderc_result_release(result); });
   return(shader);
 }
 
@@ -226,3 +227,14 @@ void loadShaders(ref App app, ref Shader[] dst, ShaderDef[] defs) {
   });
 }
 
+/** Shader compilation: trivial vertex shader compiles to non-empty SPIR-V */
+unittest {
+  App app;
+  app.createCompiler();
+  auto sh = app.compileShader(q{
+    #version 450
+    void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0); }
+  }, "test.glsl", shaderc_glsl_vertex_shader);
+  assert(sh.nwords > 4, "SPIR-V too small to be valid");
+  assert(sh.code[0] == 0x07230203, "missing SPIR-V magic number");   // SPIR-V magic
+}
