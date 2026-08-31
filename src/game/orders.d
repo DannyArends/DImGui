@@ -5,7 +5,7 @@
 
 import game;
 
-import jobs : buildingJob, interactFeatureJob, miningJob, jobQueue;
+import jobs : placeTileJob, interactFeatureJob, miningJob, jobQueue;
 
 /** Player-issued order kinds that persist. Extend (e.g. Craft) as needed */
 enum OrderKind : ubyte { Mine, Build, InteractFeature }
@@ -31,7 +31,7 @@ bool orderOf(const Job!Dwarf j, out Order o) {
 Job!Dwarf jobOf(const Order o) {
   final switch(o.kind) {
     case OrderKind.Mine: return miningJob(o.tile);
-    case OrderKind.Build: return buildingJob(o.tile, o.tileType);
+    case OrderKind.Build: return placeTileJob(o.tile, o.tileType);
     case OrderKind.InteractFeature: return interactFeatureJob(o.tile);
   }
 }

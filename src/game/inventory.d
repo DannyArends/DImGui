@@ -7,7 +7,7 @@ import game;
 
 import block : noBlock;
 import ghost : syncBuildGhosts;
-import jobs : buildingJob, jobQueue;
+import jobs : placeTileJob, jobQueue;
 import tile : getTileAt;
 import resources : hasShape;
 
@@ -66,7 +66,7 @@ void placeTile(ref GameApp app, int[3] wc) {
   if(wc == noTile) return;
   if(app.world.inventory.type == ResourceType.None) return;
   if(app.world.inventory.get(app.world.inventory.type, app) <= 0) return;
-  jobQueue ~= buildingJob(wc, app.world.inventory.type);
+  jobQueue ~= placeTileJob(wc, app.world.inventory.type);
   app.syncBuildGhosts();
   app.deriveInventory();
 }

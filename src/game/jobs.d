@@ -15,6 +15,7 @@ import sfx : play;
 import stockpile : storeBlockAt;
 import tile : setTile, setWater, getWater, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour;
 import water : findNearestWater;
+import workshop : workshopFor, finishWorkshop;
 
 enum JobState { Pending, Satisfied, Unavailable }                     /// Job states
 enum Reach { Adjacent, OnTile, AdjacentOrOnTile, AdjacentOrAbove }    /// How a job can be reached
@@ -207,7 +208,7 @@ bool evictDwarfAt(ref GameApp app, int[3] tile) {
 }
 
 /** Building Job (generates a pickup job prereq) */
-Job!Dwarf buildingJob(int[3] targetTile, ResourceType tileType) {
+Job!Dwarf placeTileJob(int[3] targetTile, ResourceType tileType) {
   return Job!Dwarf("Building", targetTile, Substance.None, [cleanWorksiteJob(targetTile), pickupJob(noTile, Substance.None, ItemTemplate.None, tileType)],
     buildType: tileType,
     isValid: (ref GameApp app, ref Job!Dwarf j){ return(app.world.getTileAt(j.targetTile) == ResourceType.None); },
@@ -224,7 +225,7 @@ Job!Dwarf buildingJob(int[3] targetTile, ResourceType tileType) {
     },
     onFail: (ref GameApp app, ref Dwarf d) {
       foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app.world.drops, slot); }
-      auto newJob = buildingJob(d.currentJob.targetTile, d.currentJob.buildType);
+      auto newJob = placeTileJob(d.currentJob.targetTile, d.currentJob.buildType);
       newJob.failedBy = d.jobStack[$-1].failedBy.dup;
       newJob.failedBy[d.uid] = true;
       jobQueue ~= newJob;

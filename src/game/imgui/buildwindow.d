@@ -9,7 +9,7 @@ import ghost : syncBuildGhosts;
 import imgui : faIcon;
 import textures : ImTextureRefFromID, idx;
 import widgets : drawCenteredText, text;
-import jobs : jobQueue, buildingJob;
+import jobs : jobQueue, placeTileJob;
 import inventory : deriveInventory;
 
 /** Queue one buildingJob for the next unassigned tile (source -> sync order). */
@@ -17,7 +17,7 @@ private void assignNextBuild(ref GameApp app, ResourceType type) {
   foreach(ref b; app.world.inventory.buildSelection) {
     if(b.type != ResourceType.None) continue;
     b.type = type;
-    jobQueue ~= buildingJob(b.tile, type);
+    jobQueue ~= placeTileJob(b.tile, type);
     app.deriveInventory();    // lowers get(type)
     app.syncBuildGhosts();
     return;
