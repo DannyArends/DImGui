@@ -117,7 +117,8 @@ void showBuildContent(ref GameApp app, uint font = 0) {
     foreach(ref c; list) { if(app.chosen(c.id)) picked++; else { if(avail == 0) nearest = c.dist; avail++; } }
 
     auto texIdx = idx(app.textures, resourceTable[m].textures.texOf("2D"));
-    if(texIdx >= 0) { igImage(ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID), ImVec2(app.gui.fontsize, app.gui.fontsize), ImVec2(0,0), ImVec2(1,1)); igSameLine(0, 4); }
+    auto imTex = ImTextureRefFromID((texIdx >= 0)? cast(ulong)app.textures[texIdx].imID : -1);
+    if(texIdx >= 0) { igImage(imTex, ImVec2(app.gui.fontsize, app.gui.fontsize), ImVec2(0,0), ImVec2(1,1)); igSameLine(0, 4); }
 
     auto lbl = cstr("%s  avail:%d  picked:%d  Dist:%d###g%d", resourceTable[m].name, avail, picked, nearest, cast(int)m);
     bool open = igTreeNodeEx_Str(lbl, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
@@ -131,7 +132,7 @@ void showBuildContent(ref GameApp app, uint font = 0) {
 
     if(open) foreach(ref c; list) {
       igPushID_Int(cast(int)c.id); scope(exit) igPopID();
-      if(texIdx >= 0) { igImage(ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID), ImVec2(app.gui.fontsize, app.gui.fontsize), ImVec2(0,0), ImVec2(1,1)); igSameLine(0, 4); }
+      if(texIdx >= 0) { igImage(imTex, ImVec2(app.gui.fontsize, app.gui.fontsize), ImVec2(0,0), ImVec2(1,1)); igSameLine(0, 4); }
       bool isPicked = app.chosen(c.id);
       if(igSelectable_Bool(cstr("%s  Dist: %d##i%d", resourceTable[m].name, c.dist, cast(int)c.id), isPicked, 0, ImVec2(0, 0)) && !isPicked) app.pick(c.id);
     }
