@@ -100,8 +100,10 @@ string itemTex(const Item it) {
   return cast(uint)(RESOURCE_COUNT) + 2 * (cast(uint)t - 1) + (filled ? 1 : 0);
 }
 
+enum uint WORKSHOP_MAT_BASE = RESOURCE_COUNT + 2 * ItemTemplate.max;   /// first material slot after tile + item slots
+
 uint workshopMat(size_t wi, size_t bi) nothrow {
-  uint slot = RESOURCE_COUNT + 2 * ItemTemplate.max;
+  uint slot = WORKSHOP_MAT_BASE;
   foreach(i, ref w; workshopTable) { if(i == wi) { return slot + cast(uint)bi; }
     slot += cast(uint)w.brushes.length;
   }
@@ -110,7 +112,7 @@ uint workshopMat(size_t wi, size_t bi) nothrow {
 
 private uint workshopMatCount() nothrow { uint n = 0; foreach(ref w; workshopTable) n += cast(uint)w.brushes.length; return n; }
 
-void injectResourceMeshes(ref GameApp app, uint minMaterials = cast(uint)(RESOURCE_COUNT + (2 * ItemTemplate.max)) + workshopMatCount()) {
+void injectResourceMeshes(ref GameApp app, uint minMaterials = cast(uint)(WORKSHOP_MAT_BASE + workshopMatCount())) {
   if(app.materials.length < minMaterials){ app.materials.length = minMaterials; }
 }
 
@@ -131,3 +133,26 @@ void updateMaterials(ref GameApp app) {
   } }
 }
 
+unittest {
+  // workshop brush material slots sit immediately after the item slots, contiguous and unique.
+  immutable uint base = WORKSHOP_MAT_BASE;
+
+  // first workshop's first brush is exactly the base slot
+  assert(workshopMat(0, 0) == base);
+
+  // slots are contiguous across every (workshop, brush) with no gaps or collisions
+  bool[uint] seen;
+  uint expect = base;
+  foreach(wi, ref w; workshopTable) {
+    foreach(bi, ref br; w.brushes) {
+      uint slot = workshopMat(wi, bi);
+      assert(slot == expect, "workshop slots must be contiguous");
+      assert((slot in seen) is null, "workshop slots must be unique");
+      seen[slot] = true;
+      expect++;
+    }
+  }
+
+  // the reserved count matches the highest slot used, so injectResourceMeshes sizes the array correctly
+  assert(base + workshopMatCount() == expect);
+}
