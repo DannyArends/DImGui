@@ -51,6 +51,7 @@ struct RawT {
   float progressRate = 0.25f;                     /// harvest progress per tick
   string interaction;                             /// interaction verb gate (empty = none)
   string sound;                                   /// harvest sound
+  Ingredient[] buildCost;                         /// items/materials consumed to place this (workshops); empty = none
 }
 
 /** A meshless, poseable skeleton joint: a named frame at the cursor. */
