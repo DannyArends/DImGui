@@ -119,8 +119,7 @@ void showBuildContent(ref GameApp app, uint font = 0) {
     auto texIdx = idx(app.textures, resourceTable[m].textures.texOf("2D"));
     if(texIdx >= 0) { igImage(ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID), ImVec2(app.gui.fontsize, app.gui.fontsize), ImVec2(0,0), ImVec2(1,1)); igSameLine(0, 4); }
 
-    auto lbl = picked > 0 ? cstr("%s  avail:%d  picked:%d  Dist:%d##g%d", resourceTable[m].name, avail, picked, nearest, cast(int)m)
-                          : cstr("%s  avail:%d  Dist:%d##g%d", resourceTable[m].name, avail, nearest, cast(int)m);
+    auto lbl = cstr("%s  avail:%d  picked:%d  Dist:%d###g%d", resourceTable[m].name, avail, picked, nearest, cast(int)m);
     bool open = igTreeNodeEx_Str(lbl, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
     if(igIsItemClicked(0) && !igIsItemToggledOpen()) app.pickNearest(list);   // name = assign one; arrow = expand only
 
