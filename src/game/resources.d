@@ -84,7 +84,7 @@ string itemName(const Item it) {
 string itemTex(const Item it) {
   if(!it.hasShape) return resourceTable[it.material].textures.texOf("2D");
   auto t = itemTemplateTable[it.shape];
-  return (it.amount > 0 && t.textures.texOf("filled").length) ? t.textures.texOf("filled") : t.textures.texOf("skin");
+  return (it.amount > 0 && t.textures.texOf("filled").length) ? t.textures.texOf("filled") : t.textures.texOf("2D");
 }
 
 /** Wrap a raw material as an Item (shape == None). The default way to build a material-only Item. */

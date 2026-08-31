@@ -21,3 +21,10 @@
   [PROGRESS_RATE:0.50]
   [INPUT:Wood:1]
   [OUTPUT_ITEM:Cup:Wood:1]
+
+[REACTION:BarrelMaking]
+  [VERB:Coopering][SKILL:Woodworking]
+  [WORKSHOP:Required]
+  [PROGRESS_RATE:0.10]
+  [INPUT:Wood:3]
+  [OUTPUT_ITEM:Barrel:Wood:1]
