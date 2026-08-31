@@ -199,3 +199,56 @@ void loadStockpiles(ref World world, ubyte[] raw) {
   }
   SDL_Log("loadStockpiles: %d piles", cast(int)world.stockpiles.length);
 }
+
+unittest {
+  // capacity / hasFreeSlot
+  Stockpile sp = { id: 1, name: "t", tiles: [[0,0,0]] };
+  assert(capacity(sp) == slotsPerTile);
+  assert(hasFreeSlot(sp));
+  sp.contents.length = slotsPerTile; sp.contents[] = 0;      // all occupied (emptySlot = uint.max)
+  assert(!hasFreeSlot(sp));
+  sp.contents[3] = emptySlot;
+  assert(hasFreeSlot(sp), "hole reopens a free slot");
+
+  // rankOf skips holes
+  Stockpile r = { id: 2, tiles: [[0,0,0]] };
+  r.contents = [10, emptySlot, 20, emptySlot, 30];
+  assert(rankOf(r, 0) == 0);
+  assert(rankOf(r, 2) == 1);
+  assert(rankOf(r, 4) == 2, "holes skipped");
+
+  // acceptsItem: empty = accept-all; populated = only listed keys
+  Item stone = Item(ItemTemplate.None, ResourceType.Stone01);
+  Item water = Item(ItemTemplate.None, ResourceType.Water);
+  Stockpile a = { id: 3, tiles: [[0,0,0]] };
+  assert(a.acceptsItem(stone), "empty accepts everything");
+  a.accepts[stone.acceptKey] = true;
+  assert(a.acceptsItem(stone), "listed key accepted");
+  assert(!a.acceptsItem(water), "unlisted key rejected");
+
+  // acceptKey: raws key by material, fill state dropped
+  Item stoneFull = Item(ItemTemplate.None, ResourceType.Stone01, ResourceType.Water, 1);
+  assert(stone.acceptKey == stoneFull.acceptKey, "material key ignores contents/amount");
+  assert(stone.acceptKey != water.acceptKey, "different materials differ");
+
+  Item cup = Item(ItemTemplate.Cup, ResourceType.None);
+  assert(cup.acceptKey != stone.acceptKey, "craft (shape) vs raw (material) keys differ");
+
+  // save/load round-trip
+  World world;
+  world.stockpiles.nextID = 5;
+  Stockpile s = { id: 4, name: "Ore", tiles: [[1,2,3],[4,5,6]], contents: [7, emptySlot, 9] };
+  s.accepts[stone.acceptKey] = true;
+  world.stockpiles[4] = s;
+
+  auto blob = saveStockpiles(world);
+  World loaded; loadStockpiles(loaded, blob);
+
+  assert(loaded.stockpiles.nextID == 5);
+  assert(4 in loaded.stockpiles);
+  auto ls = loaded.stockpiles[4];
+  assert(ls.name == "Ore");
+  assert(ls.tiles == [[1,2,3],[4,5,6]]);
+  assert(ls.contents == [7, emptySlot, 9], "holes survive save/load");
+  assert(ls.acceptsItem(stone), "accepts restored");
+}
