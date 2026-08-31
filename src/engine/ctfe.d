@@ -103,3 +103,40 @@ T[] parseRawsGeneric(T, string blockTag, alias handler)(string raw, bool seedNon
   return items;
 }
 
+unittest {
+  // parseTokens: extracts bracketed groups, ignores text between/outside brackets
+  static assert(parseTokens("[a][b][c]") == ["a", "b", "c"]);
+  static assert(parseTokens("x[tag:v]y[k:w]") == ["tag:v", "k:w"]);
+  static assert(parseTokens("no brackets here") == []);
+  static assert(parseTokens("[unclosed") == ["unclosed"]);   // runs to end if no ']'
+  static assert(parseTokens("") == []);
+
+  // splitColon: splits on ':', preserves empties, never drops trailing
+  static assert(splitColon("a:b:c") == ["a", "b", "c"]);
+  static assert(splitColon("solo") == ["solo"]);
+  static assert(splitColon("a::b") == ["a", "", "b"]);        // empty middle field
+  static assert(splitColon("trailing:") == ["trailing", ""]);
+  static assert(splitColon("") == [""]);
+
+  // opt: positional field with default fallback
+  static assert(opt(["x", "y", "z"], 1) == "y");
+  static assert(opt(["x"], 5, "def") == "def");              // index out of range -> default
+  static assert(opt(["x", ""], 1, "def") == "def");          // empty field -> default
+  static assert(opt!int(["10", "20"], 0) == 10);             // typed parse
+  static assert(opt!int([], 0, 99) == 99);                   // empty list -> default
+
+  // namedField: finds key=value among fields
+  static assert(namedField(["a=1", "b=2"], "b") == "2");
+  static assert(namedField(["a=1"], "missing", "d") == "d"); // absent -> default
+  static assert(namedField(["ab=1"], "a") == "");            // "ab" must not match key "a"
+  static assert(namedField(["a=x=y"], "a") == "x=y");        // value may contain '='
+
+  // enumFromTag: emits an enum body from matching [tag:member] tokens
+  static assert(enumFromTag("[K:Alpha][K:Beta][OTHER:Zed]", "K", "Letters", "None") == "enum Letters : ubyte {\n  None,\n  Alpha,\n  Beta,\n}\n");
+  static assert(enumFromTag("[K:X]", "K", "E") == "enum E : ubyte {\n  X,\n}\n");
+
+  // composedEnum: plain rule dedups members, skips sentinel
+  static assert(composedEnum("Res", "None", [EnumRule("R")], "[R:Iron][R:Gold][R:Iron]") == "enum Res : ubyte {\n  None,\n  Iron,\n  Gold,\n}\n");
+  // composedEnum: grouped rule prefixes members with the group value
+  static assert(composedEnum("Job", "", [EnumRule("J", "GRP")], "[GRP:Mine][J:Coal][J:Iron]") == "enum Job : ubyte {\n  MineCoal,\n  MineIron,\n}\n");
+}
