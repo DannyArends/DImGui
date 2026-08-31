@@ -30,6 +30,11 @@ TurtleConfig rawConfig(ref const RawT r, bool renderOnly = false) {
       immutable brt = variantOf(br.substance, r.name.to!Source);
       mat = cast(int)brt; 
       col = resourceTable[brt].color;
+    } else if(br.textures.texOf("3D").length) {
+      foreach(wi, ref w; workshopTable) { if(w.name != r.name) { continue; }
+        foreach(bi, ref wb; w.brushes) { if(wb.symbol == br.symbol) { mat = cast(int)workshopMat(wi, bi); break; } }
+        break;
+      }
     }
     cfg.alpha[br.symbol] = Symbol(Effect.brush, mat, br.size, col, br.offset, br.taper);
   }
@@ -95,7 +100,17 @@ string itemTex(const Item it) {
   return cast(uint)(RESOURCE_COUNT) + 2 * (cast(uint)t - 1) + (filled ? 1 : 0);
 }
 
-void injectResourceMeshes(ref GameApp app, uint minMaterials = RESOURCE_COUNT + (2 * ItemTemplate.max)) {
+uint workshopMat(size_t wi, size_t bi) nothrow {
+  uint slot = RESOURCE_COUNT + 2 * ItemTemplate.max;
+  foreach(i, ref w; workshopTable) { if(i == wi) { return slot + cast(uint)bi; }
+    slot += cast(uint)w.brushes.length;
+  }
+  return slot;
+}
+
+private uint workshopMatCount() nothrow { uint n = 0; foreach(ref w; workshopTable) n += cast(uint)w.brushes.length; return n; }
+
+void injectResourceMeshes(ref GameApp app, uint minMaterials = cast(uint)(RESOURCE_COUNT + (2 * ItemTemplate.max)) + workshopMatCount()) {
   if(app.materials.length < minMaterials){ app.materials.length = minMaterials; }
 }
 
@@ -111,5 +126,8 @@ void updateMaterials(ref GameApp app) {
     app.materials[templateMat(t)].tid = tid;
     app.materials[templateMat(t, true)].tid = tid;
   }
+  foreach (wi, ref w; workshopTable) { foreach (bi, ref br; w.brushes) {
+    app.materials[workshopMat(wi, bi)].tid = app.textures.idx(br.textures.texOf("3D"));
+  } }
 }
 
