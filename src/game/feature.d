@@ -167,21 +167,6 @@ void removeAllFeatures(ref GameApp app, int[3] coord) {
   }
 }
 
-/** The placed-feature raw of this name (features + workshops). */
-ref immutable(RawT) featureFor(string name) {
-  foreach(ref ft; placedTable) { if(ft.name == name) { return(ft); } }
-  assert(0, "no placed feature named " ~ name);
-}
-
-/** Root feature `name` at `tile`: inject it, mark the chunk edited, rebuild instances. */
-void placeFeature(ref GameApp app, string name, int[3] tile) {
-  int[3] coord = app.world.chunkCoord(tile);
-  uint hash = cast(uint)(tile[0] * 73856093) ^ cast(uint)(tile[2] * 19349663);
-  app.world.features[name][coord] ~= Feature(tile, 1, hash);
-  app.world.features.modified[coord] = true;
-  app.rebuildAllFeatures();
-}
-
 /** True if a feature with the given interaction is rooted at this tile */
 bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
   auto ft = app.featureTypeAt(tile); return ft !is null && ft.interaction == interaction;
