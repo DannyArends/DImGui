@@ -148,7 +148,7 @@ void printQueues(ref App app){
   }
 }
 
-/** Integration: full headless Vulkan bring-up (instance -> device -> VMA -> buffer), no window/surface 
+/** Integration: full headless Vulkan bring-up (instance -> device -> VMA -> buffer), no window/surface */
 unittest {
   import buffer : createBuffer;
   import extensions : queryInstanceExtensionProperties;
@@ -156,6 +156,9 @@ unittest {
 
   App app;
   app.enableValidation = false;                     // CI ICD (lavapipe) has no validation layer
+
+  assert(SDL_Vulkan_LoadLibrary(null), "SDL_Vulkan_LoadLibrary failed");
+  scope(exit) SDL_Vulkan_UnloadLibrary();
 
   // --- Instance: always testable, even with no physical device ---
   app.createInstance();
@@ -193,4 +196,4 @@ unittest {
   vmaDestroyAllocator(app.vma);
   vkDestroyDevice(app.device, app.allocator);
   vkDestroyInstance(app.instance, app.allocator);
-}*/
+}
