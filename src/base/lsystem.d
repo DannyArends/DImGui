@@ -197,9 +197,6 @@ pure LSym[] grammar(uint seed, int size, string axiom, const(Rule)[] rules, int 
 }
 
 unittest {
-  import std.algorithm : map, filter, count;
-  import std.array : array;
-
   // --- lex: reserved glyphs are one token each, module names are maximal runs ---
   auto t = lex("A+B");
   assert(t.length == 3);
