@@ -71,6 +71,12 @@ jobs:
             app/jni
           key: deps-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
 
+      - name: Verify Vulkan (lavapipe) is available
+        run: |
+          sudo apt-get install -y vulkan-tools
+          ls /usr/share/vulkan/icd.d/
+          vulkaninfo --summary || true
+
       # Run
       - name: Run unittests
         run: dub --build=unittest --force
