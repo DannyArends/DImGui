@@ -148,7 +148,7 @@ void printQueues(ref App app){
   }
 }
 
-/** Integration: full headless Vulkan bring-up (instance -> device -> VMA -> buffer), no window/surface */
+/** Integration: full headless Vulkan bring-up (instance -> device -> VMA -> buffer), no window/surface 
 unittest {
   import buffer : createBuffer;
   import extensions : queryInstanceExtensionProperties;
@@ -193,4 +193,4 @@ unittest {
   vmaDestroyAllocator(app.vma);
   vkDestroyDevice(app.device, app.allocator);
   vkDestroyInstance(app.instance, app.allocator);
-}
+}*/

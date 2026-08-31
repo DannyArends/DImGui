@@ -96,5 +96,5 @@ void run(string[] args = null) {
   app.cleanup();
 }
 
-version(unittest) shared static this() { SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS); SDL_Vulkan_LoadLibrary(null); }
-version(unittest) shared static ~this() { SDL_Vulkan_UnloadLibrary(); SDL_Quit(); }
+version(unittest) shared static this() { SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS); }
+version(unittest) shared static ~this() { SDL_Quit(); }
