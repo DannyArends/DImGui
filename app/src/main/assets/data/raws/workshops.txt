@@ -1,0 +1,7 @@
+[OBJECT:WORKSHOP]
+
+[WORKSHOP:Woodworker]
+  [TILE_PENALTY:500.0]
+  [INTERACTION:Craft]
+  [AXIOM:Platform]
+  [BRUSH:Platform:platform:0.04;0.04;0.04:textures={3D=colormap-pirate-kit}]

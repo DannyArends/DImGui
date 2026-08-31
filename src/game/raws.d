@@ -252,8 +252,10 @@ immutable Reaction[] reactionTable = parseReactions(import("data/raws/reactions.
 immutable ItemTemplateT[] itemTemplateTable = parseItemTemplates(import("data/raws/items.txt"));
 immutable RawT[] featureTable = parseRawsGeneric!(RawT, "FEATURE", rawHandler)(import("data/raws/features.txt"));
 immutable RawT[] entityTable  = parseRawsGeneric!(RawT, "ENTITY",  rawHandler)(import("data/raws/entity.txt"));
+immutable RawT[] workshopTable = parseRawsGeneric!(RawT, "WORKSHOP", rawHandler)(import("data/raws/workshops.txt"));
 
 static assert(resourceTable.length == RESOURCE_COUNT, "resourceTable out of sync with ResourceType enum");
 static assert(itemTemplateTable.length == ItemTemplate.max + 1, "itemTemplateTable out of sync with ItemTemplate enum");
 static assert(validateEntities(entityTable).length == 0, validateEntities(entityTable));
 static assert(validateEntities(featureTable).length == 0, validateEntities(featureTable));
+static assert(validateEntities(workshopTable).length == 0, validateEntities(workshopTable));
