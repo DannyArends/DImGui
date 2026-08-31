@@ -102,6 +102,7 @@ string itemTex(const Item it) {
 
 enum uint WORKSHOP_MAT_BASE = RESOURCE_COUNT + 2 * ItemTemplate.max;   /// first material slot after tile + item slots
 
+/** Material slot for workshop `wi`'s brush `bi`, following the tile and item slots */
 uint workshopMat(size_t wi, size_t bi) nothrow {
   uint slot = WORKSHOP_MAT_BASE;
   foreach(i, ref w; workshopTable) { if(i == wi) { return slot + cast(uint)bi; }
@@ -110,12 +111,15 @@ uint workshopMat(size_t wi, size_t bi) nothrow {
   return slot;
 }
 
+/** Total number of workshop-brush material slots across every workshop */
 private uint workshopMatCount() nothrow { uint n = 0; foreach(ref w; workshopTable) n += cast(uint)w.brushes.length; return n; }
 
+/** Grow the material array to cover all tile, item, and workshop-brush slots */
 void injectResourceMeshes(ref GameApp app, uint minMaterials = cast(uint)(WORKSHOP_MAT_BASE + workshopMatCount())) {
   if(app.materials.length < minMaterials){ app.materials.length = minMaterials; }
 }
 
+/** Bind every material's texture ids (tiles, item templates, workshop brushes) from the loaded textures */
 void updateMaterials(ref GameApp app) {
   foreach (tt; 0 .. RESOURCE_COUNT) {
     auto ttype = cast(ResourceType)tt;
