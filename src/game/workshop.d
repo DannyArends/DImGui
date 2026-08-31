@@ -28,10 +28,15 @@ void placeWorkshop(ref GameApp app, string name, int[3] tile) {
   app.rebuildAllFeatures();
 }
 
-/** Place a workshop at an empty tile: haul its buildCost, consume it, then root the workshop. */
+/** Auto-fetch variant: haul the nearest matching material for each buildCost ingredient. */
 Job!Dwarf buildWorkshopJob(string name, int[3] targetTile) {
   Job!Dwarf[] prereqs = [cleanWorksiteJob(targetTile)];
   foreach(ing; workshopFor(name).buildCost) foreach(n; 0 .. ing.count) prereqs ~= pickupJob(noTile, ing.cls, ing.item);
+  return buildWorkshopJob(name, targetTile, prereqs);
+}
+
+/** Place a workshop using the given fetch prereqs (pinned blocks from the material picker). */
+Job!Dwarf buildWorkshopJob(string name, int[3] targetTile, Job!Dwarf[] prereqs) {
   return Job!Dwarf(name, targetTile, Substance.None, prereqs,
     isValid: (ref GameApp app, ref Job!Dwarf j){ return(app.world.getTileAt(j.targetTile) == ResourceType.None); },
     onArrive: (ref GameApp app, ref Dwarf d) {

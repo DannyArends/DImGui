@@ -8,8 +8,9 @@ import game;
 import block : noBlock;
 import ghost : syncBuildGhosts;
 import inventory : deriveInventory;
-import jobs : jobQueue, placeTileJob;
-import resources : hasShape;
+import jobs : jobQueue, placeTileJob, pinnedPickup, cleanWorksiteJob;
+import resources : hasShape, matchDemand;
+import workshop : buildWorkshopJob;
 import stockpile : storedTileOf;
 import textures : ImTextureRefFromID, idx;
 import vector : manhattan;
@@ -35,13 +36,21 @@ private bool chosen(ref GameApp app, uint id) {
   return false;
 }
 
-/** Unreserved, unchosen buildable raw blocks grouped by material, each list sorted nearest-first. */
+/** The ingredient the window is filling right now: the need of the first unassigned slot. */
+private Ingredient currentNeed(ref GameApp app) {
+  foreach(ref b; app.world.inventory.buildSelection) if(b.blockID == noBlock) return b.need;
+  return Ingredient.init;
+}
+
 private Cand[][ResourceType] buildCandidates(ref GameApp app) {
   Cand[][ResourceType] groups;
   auto rt = app.refTile();
+  auto need = app.currentNeed();
+  bool anyBuildable = (need.cls == Substance.None && need.item == ItemTemplate.None);   // landscaping
   foreach(id, ref b; app.world.drops) {
     if(b.reserved || b.item.hasShape) continue;
-    if(!resourceTable[b.item.material].buildable) continue;
+    bool ok = anyBuildable ? resourceTable[b.item.material].buildable : b.item.matchDemand(need.cls, need.item);
+    if(!ok) continue;
     int[3] at = (b.tile == storedTile) ? app.world.storedTileOf(id) : b.tile;
     if(at == noTile || at == builtTile) continue;                 // carried / consumed / unresolved
     groups[b.item.material] ~= Cand(id, manhattan(at, rt));
@@ -74,11 +83,24 @@ private void clearMaterial(ref GameApp app, ResourceType m) {
 
 /** Queue one pinned placement job per assigned tile, then close. */
 private void commitBuild(ref GameApp app) {
-  foreach(ref b; app.world.inventory.buildSelection) {
-    if(b.blockID == noBlock) continue;
-    auto p = b.blockID in app.world.drops;
-    if(p is null) continue;
-    jobQueue ~= placeTileJob(b.tile, b.blockID, p.tile, p.item.material);
+  if(app.world.inventory.placingWorkshop.length) {
+    auto tile = app.world.inventory.buildSelection[0].tile;
+    Job!Dwarf[] fetch = [cleanWorksiteJob(tile)];
+    foreach(ref b; app.world.inventory.buildSelection) {
+      if(b.blockID == noBlock) continue;
+      auto p = b.blockID in app.world.drops;
+      if(p is null) continue;
+      int[3] at = (p.tile == storedTile) ? app.world.storedTileOf(b.blockID) : p.tile;
+      fetch ~= pinnedPickup(b.blockID, at, p.item.material);
+    }
+    jobQueue ~= buildWorkshopJob(app.world.inventory.placingWorkshop, tile, fetch);
+  } else {
+    foreach(ref b; app.world.inventory.buildSelection) {
+      if(b.blockID == noBlock) continue;
+      auto p = b.blockID in app.world.drops;
+      if(p is null) continue;
+      jobQueue ~= placeTileJob(b.tile, b.blockID, p.tile, p.item.material);
+    }
   }
   app.world.inventory.buildSelection = [];
   app.world.inventory.showBuildWindow = false;

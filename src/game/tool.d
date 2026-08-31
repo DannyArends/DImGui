@@ -19,6 +19,7 @@ import tile : getTileAt, getWater, setWater;
 import matrix : translateScale;
 import scheduler : tryAssign;
 import water : WATER_MAX;
+import workshop : workshopFor;
 
 enum ToolMode : ubyte { Info, Select, Mine, Interact, Build, Stockpile, Cancel, Water }
 enum ToolKind : ubyte { Query, RayPaint, BuildPaint }
@@ -79,7 +80,12 @@ void cancelCommit(ref GameApp app, int[3] tile) {
 void openBuildSelection(ref GameApp app) {
   if(app.world.inventory.paint.preview.length == 0) return;
   app.world.inventory.buildSelection = [];
-  foreach(t; app.world.inventory.paint.preview) app.world.inventory.buildSelection ~= PendingBuild(t);
+  if(app.world.inventory.placingWorkshop.length) {
+    auto tile = app.world.inventory.paint.preview[0];   // workshops are single-tile
+    foreach(ing; workshopFor(app.world.inventory.placingWorkshop).buildCost){ foreach(n; 0 .. ing.count){
+      app.world.inventory.buildSelection ~= PendingBuild(tile, ing);
+    } }
+  } else { foreach(t; app.world.inventory.paint.preview) { app.world.inventory.buildSelection ~= PendingBuild(t); } }
   app.world.inventory.showBuildWindow = true;
   app.world.inventory.paint = PaintState.init;
   app.syncBuildGhosts();

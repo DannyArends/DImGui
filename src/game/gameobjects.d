@@ -95,8 +95,8 @@ class WaterTiles : Square {
 
 struct PendingBuild {
   int[3] tile;
+  Ingredient need;
   uint blockID = noBlock;
-  //ResourceType type = ResourceType.None;
 }
 
 class GhostCube : Cube {
