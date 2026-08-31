@@ -161,6 +161,7 @@ unittest { import std.math : isClose;
   assert(dot([1.0f, 0.0f, 0.0f], [0.0f, 1.0f, 0.0f]) == 0.0f);
   assert(dot([1.0f, 2.0f, 3.0f], [1.0f, 2.0f, 3.0f]) == 14.0f);
   assert(cross([1.0f, 0.0f, 0.0f], [0.0f, 1.0f, 0.0f]) == [0.0f, 0.0f, 1.0f]);
+  assert(cross([0.0f, 1.0f, 0.0f], [1.0f, 0.0f, 0.0f]) == [0.0f, 0.0f, -1.0f]);
 
   // euclidean vs sqDist consistency, manhattan variants
   assert(euclidean([0.0f, 0.0f, 0.0f], [3.0f, 4.0f, 0.0f]) == 5.0f);
@@ -188,4 +189,8 @@ unittest { import std.math : isClose;
   assert(sum([1.0f, 2.0f, 3.0f]) == 6.0f);
   assert(sum([1.0f, 2.0f, 3.0f], 2u) == 14.0f);
   assert(mean([2.0f, 4.0f, 6.0f]) == 4.0f);
+
+  // vAdd: componentwise add, and scalar-broadcast overload
+  assert(vAdd([1.0f, 2.0f, 3.0f], [10.0f, 20.0f, 30.0f]) == [11.0f, 22.0f, 33.0f]);
+  assert(vAdd([1.0f, 2.0f, 3.0f], 5.0f) == [6.0f, 7.0f, 8.0f]);
 }
