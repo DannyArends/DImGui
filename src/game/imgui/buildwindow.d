@@ -114,7 +114,7 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   foreach(m, ref list; groups) {
     igPushID_Int(cast(int)m); scope(exit) igPopID();
     int avail = 0, picked = 0, nearest = 0;
-    foreach(ref c; list) { if(app.chosen(c.id)) picked++; else { if(avail == 0) nearest = c.dist; avail++; } }
+    foreach(ref c; list) { if(app.chosen(c.id)) { picked++; } else { if(avail == 0) { nearest = c.dist; } avail++; } }
 
     auto texIdx = idx(app.textures, resourceTable[m].textures.texOf("2D"));
     auto imTex = ImTextureRefFromID((texIdx >= 0)? cast(ulong)app.textures[texIdx].imID : -1);
@@ -124,7 +124,8 @@ void showBuildContent(ref GameApp app, uint font = 0) {
     bool open = igTreeNodeEx_Str(lbl, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
     if(igIsItemClicked(0) && !igIsItemToggledOpen()) app.pickNearest(list);   // name = assign one; arrow = expand only
 
-    igSameLine(btnCol, 0); if(igButton("All", ImVec2(0, 0))) foreach(ref c; list) app.pick(c.id);
+    igSameLine(btnCol, 0);
+    if(igButton("All", ImVec2(0, 0))) { foreach(ref c; list) { app.pick(c.id); } }
     igSameLine(0, 4);
     if(picked == 0) igPushStyleVar_Float(ImGuiStyleVar_Alpha, 0.4f);
     if(igButton("None", ImVec2(0, 0)) && picked > 0) app.clearMaterial(m);
