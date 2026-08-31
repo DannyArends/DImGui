@@ -39,11 +39,17 @@ private Cand[][ResourceType] buildCandidates(ref GameApp app) {
   auto rt = app.refTile();
   foreach(id, ref b; app.world.drops) {
     if(b.reserved || b.item.hasShape) continue;
+    if(b.tile == noTile || b.tile == builtTile) continue;
     if(!resourceTable[b.item.material].buildable) continue;
     groups[b.item.material] ~= Cand(id, manhattan(b.tile, rt));
   }
   foreach(m, ref list; groups) list.sort!((a, c) => a.dist < c.dist);
   return groups;
+}
+
+/** Assign the nearest not-yet-chosen block of this group to the next tile. */
+private void pickNearest(ref GameApp app, Cand[] list) {
+  foreach(ref c; list) if(!app.chosen(c.id)) { app.pick(c.id); return; }
 }
 
 /** Assign block `id` to the next unassigned tile. */
@@ -91,6 +97,7 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   igPushFont(app.gui.fonts[font], app.gui.fontsize);
   float dispW = app.gui.io.DisplaySize.x, dispH = app.gui.io.DisplaySize.y;
   igSetNextWindowPos(ImVec2(dispW * 0.5f, dispH * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+  igSetNextWindowSize(ImVec2(app.gui.io.DisplaySize.x * 0.35f, 0), ImGuiCond_Appearing);
 
   int needed = 0;
   foreach(ref b; app.world.inventory.buildSelection) if(b.blockID == noBlock) needed++;
@@ -99,31 +106,20 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   text("Amount needed: %d", needed);
 
   auto groups = app.buildCandidates();
-  if(igBeginTable("mats##buildsel", 3, ImGuiTableFlags_SizingFixedFit, ImVec2(0, 0), 0.0f)) {
-    foreach(m, ref list; groups) {
-      igPushID_Int(cast(int)m); scope(exit) igPopID();
-      igTableNextRow(0, 0.0f);
-      igTableNextColumn();
-        bool open = igTreeNodeEx_Str(cstr("%s [%d]  Dist: %d", resourceTable[m].name, cast(int)list.length, list.length ? list[0].dist : 0),
-                      ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
-      igTableNextColumn();
-        if(igButton("All", ImVec2(0, 0))) foreach(ref c; list) app.pick(c.id);
-      igTableNextColumn();
-        if(igButton("None", ImVec2(0, 0))) app.clearMaterial(m);
-      if(open) {
-        foreach(ref c; list) {
-          igPushID_Int(cast(int)c.id); scope(exit) igPopID();
-          igTableNextRow(0, 0.0f);
-          igTableNextColumn();
-            igText(cstr("  Dist: %d%s", c.dist, app.chosen(c.id) ? "  (picked)" : ""));
-          igTableNextColumn();
-            if(!app.chosen(c.id) && igButton("Use", ImVec2(0, 0))) app.pick(c.id);
-          igTableNextColumn();
-        }
-        igTreePop();
-      }
+  float btnCol = igGetWindowWidth() - app.gui.fontsize * 5.5f;   // right-aligned button column
+  foreach(m, ref list; groups) {
+    igPushID_Int(cast(int)m); scope(exit) igPopID();
+    bool open = igTreeNodeEx_Str(cstr("%s [%d]  Dist: %d", resourceTable[m].name, cast(int)list.length, list[0].dist),
+                  ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
+    if(igIsItemClicked(0)) app.pickNearest(list);               // click the name to assign one
+    igSameLine(btnCol, 0); if(igButton("All", ImVec2(0, 0))) foreach(ref c; list) app.pick(c.id);
+    igSameLine(0, 4);      if(igButton("None", ImVec2(0, 0))) app.clearMaterial(m);
+    if(open) foreach(ref c; list) {
+      igPushID_Int(cast(int)c.id); scope(exit) igPopID();
+      igText(cstr("      Dist: %d%s", c.dist, app.chosen(c.id) ? "  (picked)" : ""));
+      if(!app.chosen(c.id)) { igSameLine(btnCol, 0); if(igButton("Use", ImVec2(0, 0))) app.pick(c.id); }
     }
-    igEndTable();
+    if(open) igTreePop();
   }
 
   igNewLine();
