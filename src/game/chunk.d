@@ -43,7 +43,7 @@ struct ChunkData {
   AnimalSpawn[] animalSpawns;                               /// Spawn decisions
 }
 
-struct ChunkField {
+struct Chunks {
   LatticeMap!Chunk loaded;
   LatticeMap!bool pending;
   int[3][] unsettle, build, mine;

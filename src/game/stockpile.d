@@ -26,7 +26,7 @@ struct Stockpile {
 /** Canonical stockpile key: what matters for storage — a craft by its template, a raw item by its material; fill state (contents/amount) dropped. */
 @nogc pure Item acceptKey(Item it) nothrow { return it.hasShape ? Item(it.shape) : Item(ItemTemplate.None, it.material); }
 
-struct StockpileField {
+struct Stockpiles {
   Stockpile[uint] byId;
   alias byId this;
   LatticeMap!uint at;

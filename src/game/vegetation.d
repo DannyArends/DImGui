@@ -8,13 +8,7 @@ import game;
 import lattice : tileToWorld, chunkCoord;
 import intersection : intersects;
 
-struct Vegetation {
-  Feature[][int[3]][string] active;
-  alias active this;
-  Feature[][int[3]][string] pending;
-  LatticeMap!bool modified;
-  Geometry[string] meshes;
-}
+alias Vegetation = Features;
 
 /** Create a tombstone entry for a cleared chunk */
 T makeTombstone(T)(int[3] coord) if(is(typeof(T.init.rootTile) == int[3])) {

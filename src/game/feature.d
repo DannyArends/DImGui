@@ -31,6 +31,14 @@ struct Feature {
   Bounds bounds; /// world-space AABB over this feature's drawn instances (picking)
 }
 
+struct Features {
+  Feature[][int[3]][string] active;
+  alias active this;
+  Feature[][int[3]][string] pending;
+  LatticeMap!bool modified;
+  Geometry[string] meshes;
+}
+
 private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
 
 /** The EntityT whose placed feature is rooted at `tile`, or null if none. */

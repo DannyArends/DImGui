@@ -57,10 +57,11 @@ struct WorldData {
 struct World {
   WorldData data;                                           /// Immutable world Data
   alias data this;
-  ChunkField chunks;
+  Chunks chunks;
   Vegetation vegetation;
+  Workshops workshops;
   Drops drops;
-  StockpileField stockpiles;
+  Stockpiles stockpiles;
   Inventory inventory;                                      /// Inventory
   Dwarves dwarves;                                          /// Dwarves
   Animals animals;                                          /// Shared brush-instanced container for all animals
@@ -179,8 +180,9 @@ void regenerateWorld(ref GameApp app) {
   app.world.dwarves = null;
   app.world.water = null;
   app.world.drops = Drops.init;
-  app.world.stockpiles = StockpileField.init;
+  app.world.stockpiles = Stockpiles.init;
   app.world.vegetation = Vegetation.init;
+  app.world.workshops = Workshops.init;
   app.world.weather = Weather.init;
   app.world.paths = PathMarker.init;
   app.world.inventory = Inventory.init;
