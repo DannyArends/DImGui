@@ -107,6 +107,7 @@ void showBuildContent(ref GameApp app, uint font = 0) {
 
   auto groups = app.buildCandidates();
   float btnCol = igGetWindowWidth() - app.gui.fontsize * 5.5f;   // right-aligned button column
+  igPushStyleVar_Vec2(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 0.0f));   // buttons as tall as the text
   foreach(m, ref list; groups) {
     igPushID_Int(cast(int)m); scope(exit) igPopID();
     bool open = igTreeNodeEx_Str(cstr("%s [%d]  Dist: %d", resourceTable[m].name, cast(int)list.length, list[0].dist),
@@ -121,8 +122,10 @@ void showBuildContent(ref GameApp app, uint font = 0) {
     }
     if(open) igTreePop();
   }
+  igPopStyleVar(1);
 
   igNewLine();
+
   if(igButton("Cancel".toStringz, ImVec2(0, 0))) app.cancelBuild();
 
   if(needed == 0 && app.world.inventory.buildSelection.length > 0) app.commitBuild();
