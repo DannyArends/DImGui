@@ -124,11 +124,14 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   igSetNextWindowPos(ImVec2(dispW * 0.5f, dispH * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   igSetNextWindowSize(ImVec2(app.gui.io.DisplaySize.x * 0.35f, 0), ImGuiCond_Appearing);
 
+  auto need = app.currentNeed();
   int needed = 0;
-  foreach(ref b; app.world.inventory.buildSelection) if(b.blockID == noBlock) needed++;
+  foreach(ref b; app.world.inventory.buildSelection) if(b.blockID == noBlock && b.need == need) needed++;
+
+  string what = (need.item != ItemTemplate.None) ? itemTemplateTable[need.item].name : (need.cls  != Substance.None) ? to!string(need.cls) : "material";
 
   igBegin("Select materials##buildsel".toStringz, &app.world.inventory.showBuildWindow, 0);
-  text("Amount needed: %d", needed);
+  text("Select %s  (%d needed)", what, needed);
 
   auto groups = app.buildCandidates();
   float btnCol = igGetWindowWidth() - app.gui.fontsize * 5.5f;   // right-aligned button column
