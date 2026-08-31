@@ -110,11 +110,14 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   igPushStyleVar_Vec2(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 0.0f));   // buttons as tall as the text
   foreach(m, ref list; groups) {
     igPushID_Int(cast(int)m); scope(exit) igPopID();
-    bool open = igTreeNodeEx_Str(cstr("%s [%d]  Dist: %d", resourceTable[m].name, cast(int)list.length, list[0].dist),
-                  ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
-    if(igIsItemClicked(0)) app.pickNearest(list);               // click the name to assign one
+    int avail = 0, picked = 0, nearest = 0;
+    foreach(ref c; list) { if(app.chosen(c.id)) picked++; else { if(avail == 0) nearest = c.dist; avail++; } }
+    auto lbl = picked > 0 ? cstr("%s  avail:%d  picked:%d  Dist:%d", resourceTable[m].name, avail, picked, nearest)
+                          : cstr("%s  avail:%d  Dist:%d", resourceTable[m].name, avail, nearest);
+    bool open = igTreeNodeEx_Str(lbl, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
+    if(igIsItemClicked(0) && !igIsItemToggledOpen()) app.pickNearest(list);   // name = assign one; arrow = expand only
     igSameLine(btnCol, 0); if(igButton("All", ImVec2(0, 0))) foreach(ref c; list) app.pick(c.id);
-    igSameLine(0, 4);      if(igButton("None", ImVec2(0, 0))) app.clearMaterial(m);
+    if(picked > 0) { igSameLine(0, 4); if(igButton("None", ImVec2(0, 0))) app.clearMaterial(m); }
     if(open) foreach(ref c; list) {
       igPushID_Int(cast(int)c.id); scope(exit) igPopID();
       igText(cstr("      Dist: %d%s", c.dist, app.chosen(c.id) ? "  (picked)" : ""));
