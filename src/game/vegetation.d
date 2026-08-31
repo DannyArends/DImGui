@@ -6,7 +6,6 @@
 import game;
 
 import lattice : tileToWorld, chunkCoord;
-import intersection : intersects;
 
 alias Vegetation = Features;
 
@@ -38,29 +37,14 @@ void loadVegetation(T)(ref GameApp app, ref T[][int[3]] pending, T[] items) if(i
   }
 }
 
-/** Get the best vegetation hit */
-bool getBestVegetation(T, alias matchGeometry)(ref GameApp app, float[3][2] ray, Intersection[] hits, T[][int[3]] objects, out int[3] rootTile)
-  if(is(typeof(T.init.rootTile) == int[3])) {
-  Intersection best;
-  foreach(ref hit; hits) {
-    if(!matchGeometry(app.objects[hit.idx[0]].geometry())) continue;
-    foreach(ref chunk; objects.values) foreach(ref t; chunk) {
-      if(!t.matchIndex(hit.idx[1])) continue;
-      auto i = ray.intersects(t.bounds.min, t.bounds.max, hit.idx[0], hit.idx[1]);
-      if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = t.rootTile; }
-    }
-  }
-  return best.intersects;
-}
-
 /** Get a vegetation section to persit to disk */
 Persist vegetationSection(ref GameApp app, string name) {
   return Persist(
-    () => [Section("veg:" ~ name, cast(ubyte[])app.saveVegetation!Feature(app.world.vegetation[name], app.world.vegetation.pending[name]))],
+    () => [Section("veg:" ~ name, cast(ubyte[])app.saveVegetation!Feature(app.world.features[name], app.world.features.pending[name]))],
     (const ubyte[][string] b) {
       if(auto p = ("veg:" ~ name) in b) {
-        app.loadVegetation!Feature(app.world.vegetation.pending[name], cast(Feature[])(*p));
-        foreach(coord, items; app.world.vegetation.pending[name]){ if(items.length > 0){ app.world.vegetation.modified[coord] = true; } }
+        app.loadVegetation!Feature(app.world.features.pending[name], cast(Feature[])(*p));
+        foreach(coord, items; app.world.features.pending[name]){ if(items.length > 0){ app.world.features.modified[coord] = true; } }
       }
     });
 }

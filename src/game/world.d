@@ -58,8 +58,7 @@ struct World {
   WorldData data;                                           /// Immutable world Data
   alias data this;
   Chunks chunks;
-  Vegetation vegetation;
-  Workshops workshops;
+  Features features;
   Drops drops;
   Stockpiles stockpiles;
   Inventory inventory;                                      /// Inventory
@@ -126,14 +125,14 @@ void updateWorld(ref GameApp app, float[3] lookat) {
   // Load pending trees onto chunks that have been loaded
   bool grew = false;
   foreach(ref ft; featureTable) {
-    if(ft.name !in app.world.vegetation.pending) continue;
-    foreach(coord; app.world.vegetation.pending[ft.name].keys.dup) {
+    if(ft.name !in app.world.features.pending) continue;
+    foreach(coord; app.world.features.pending[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;
-      if(coord !in app.world.vegetation[ft.name]) {
-        app.world.vegetation[ft.name][coord] = app.addFeatureInstances(app.world.vegetation.pending[ft.name][coord], ft, app.world.vegetation.meshes);
+      if(coord !in app.world.features[ft.name]) {
+        app.world.features[ft.name][coord] = app.addFeatureInstances(app.world.features.pending[ft.name][coord], ft, app.world.features.meshes);
         grew = true;
       }
-      app.world.vegetation.pending[ft.name].remove(coord);
+      app.world.features.pending[ft.name].remove(coord);
     }
   }
   if(grew) app.camera.isDirty = true; 
@@ -181,8 +180,7 @@ void regenerateWorld(ref GameApp app) {
   app.world.water = null;
   app.world.drops = Drops.init;
   app.world.stockpiles = Stockpiles.init;
-  app.world.vegetation = Vegetation.init;
-  app.world.workshops = Workshops.init;
+  app.world.features = Features.init;
   app.world.weather = Weather.init;
   app.world.paths = PathMarker.init;
   app.world.inventory = Inventory.init;

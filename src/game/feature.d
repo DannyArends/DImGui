@@ -7,6 +7,7 @@ import game;
 
 import block : spawnBlock, unsettleBlocks;
 import game : GameApp;
+import intersection : intersects;
 import lattice : tileCoord, tileToWorld, worldToTile, chunkCoord, worldCoord, getOr;
 import lsystem : grammar;
 import matrix : position, halfExtent, translation;
@@ -45,8 +46,8 @@ private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
 private const(RawT)* featureTypeAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
   foreach(ref ft; featureTable) {
-    if(ft.name !in app.world.vegetation) continue;
-    if(auto fs = coord in app.world.vegetation[ft.name]){ if((*fs).canFind!(f => f.rootTile == tile)) { return &ft; } }
+    if(ft.name !in app.world.features) continue;
+    if(auto fs = coord in app.world.features[ft.name]){ if((*fs).canFind!(f => f.rootTile == tile)) { return &ft; } }
   }
   return null;
 }
@@ -73,11 +74,11 @@ private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] i
 void initFeatureMeshes(ref GameApp app) {
   foreach(ref ft; featureTable) foreach(name; ft.brushes.map!(b => b.mesh)) {
     string key = ft.name ~ ":" ~ name;
-    if(key in app.world.vegetation.meshes) continue;
+    if(key in app.world.features.meshes) continue;
     auto mesh = makePrimitive(name);
     if(mesh is null) continue;
     mesh.initInstanced(key);
-    app.world.vegetation.meshes[key] = mesh;
+    app.world.features.meshes[key] = mesh;
     app.objects ~= mesh;
   }
 }
@@ -126,8 +127,8 @@ bool featureDropsFood(const RawT ft) {
 int[3] findNearestFoodFeature(ref GameApp app, int[3] from, int maxTiles = 128) {
   int[3] best = noTile; float bestD = float.max;
   foreach(const ft; featureTable) {
-    if(!featureDropsFood(ft) || ft.name !in app.world.vegetation) continue;
-    foreach(coord, feats; app.world.vegetation[ft.name]) {
+    if(!featureDropsFood(ft) || ft.name !in app.world.features) continue;
+    foreach(coord, feats; app.world.features[ft.name]) {
       foreach(ref f; feats) {
         if(f.rootTile[0] == int.min) continue;                 // tombstone
         float d = manhattan(f.rootTile, from);
@@ -171,7 +172,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
 void stampFeatureFootprints(ref GameApp app) {
   foreach(ref ft; featureTable) {
     if(ft.tilePenalty <= 0.0f) continue;
-    foreach(coord, ref chunkFeatures; app.world.vegetation[ft.name]) {
+    foreach(coord, ref chunkFeatures; app.world.features[ft.name]) {
       if(coord !in app.world.chunks) continue;
       foreach(ref f; chunkFeatures) app.world.markFootprint(f, ft);
     }
@@ -181,17 +182,17 @@ void stampFeatureFootprints(ref GameApp app) {
 /** Phase: clear penalties, reset every mesh buffer, and re-add every loaded chunk's instances. */
 void rebuildInstances(ref GameApp app) {
   app.world.data.tilePenalties.clear();
-  foreach(ref mesh; app.world.vegetation.meshes.values) mesh.instances.reset();
+  foreach(ref mesh; app.world.features.meshes.values) mesh.instances.reset();
   foreach(ref ft; featureTable) {
-    foreach(coord, ref chunkFeatures; app.world.vegetation[ft.name]){
+    foreach(coord, ref chunkFeatures; app.world.features[ft.name]){
       if(coord !in app.world.chunks) continue;
-      chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.vegetation.meshes);
+      chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.features.meshes);
     }
   }
 }
 
 /** Phase: flag every vegetation mesh buffer for GPU re-upload. */
-void syncAllMeshes(ref GameApp app) { foreach(ref mesh; app.world.vegetation.meshes){ mesh.syncInstances(); } }
+void syncAllMeshes(ref GameApp app) { foreach(ref mesh; app.world.features.meshes){ mesh.syncInstances(); } }
 
 /** Clear and regenerate every feature's instances and tile penalties across all loaded chunks. */
 void rebuildAllFeatures(ref GameApp app) {
@@ -202,11 +203,11 @@ void rebuildAllFeatures(ref GameApp app) {
 
 /** Forget cached features for chunk `coord`, but only if it carries no player modifications. */
 void removeAllFeatures(ref GameApp app, int[3] coord) {
-  if(coord in app.world.vegetation.modified) return;
+  if(coord in app.world.features.modified) return;
   foreach(ref ft; featureTable) {
-    if(coord !in app.world.vegetation[ft.name]) continue; // Skip: Feature-types not in this chunk
-    foreach(f; app.world.vegetation[ft.name].getOr(coord, null)){ app.world.instanceCache.remove(f.rootTile); }
-    app.world.vegetation[ft.name].remove(coord);
+    if(coord !in app.world.features[ft.name]) continue; // Skip: Feature-types not in this chunk
+    foreach(f; app.world.features[ft.name].getOr(coord, null)){ app.world.instanceCache.remove(f.rootTile); }
+    app.world.features[ft.name].remove(coord);
   }
 }
 
@@ -217,16 +218,16 @@ bool hasFeature(ref GameApp app, int[3] tile, string interaction) {
 
 /** Remove any pending (queued, not-yet-placed) features of type `ft` rooted at `tile`. */
 void dropPending(ref GameApp app, const RawT ft, int[3] coord, int[3] tile) {
-  if(ft.name !in app.world.vegetation.pending || coord !in app.world.vegetation.pending[ft.name]) return;
-  app.world.vegetation.pending[ft.name][coord] = app.world.vegetation.pending[ft.name][coord].filter!(pf => pf.rootTile != tile).array;
+  if(ft.name !in app.world.features.pending || coord !in app.world.features.pending[ft.name]) return;
+  app.world.features.pending[ft.name][coord] = app.world.features.pending[ft.name][coord].filter!(pf => pf.rootTile != tile).array;
 }
 
 /** Harvest every feature of type `ft` rooted at `tile` (spawns drops, removes the feature). Returns true if any harvested. */
 bool harvestFeatureType(ref GameApp app, const RawT ft, int[3] tile, int[3] coord) {
-  if(ft.name !in app.world.vegetation || coord !in app.world.vegetation[ft.name]) return false;
+  if(ft.name !in app.world.features || coord !in app.world.features[ft.name]) return false;
   bool any = false;
-  for(size_t i = 0; i < app.world.vegetation[ft.name][coord].length; ) {
-    auto f = app.world.vegetation[ft.name][coord][i];
+  for(size_t i = 0; i < app.world.features[ft.name][coord].length; ) {
+    auto f = app.world.features[ft.name][coord][i];
     if(f.rootTile != tile) { i++; continue; }
     auto cfg = rawConfig(ft, false);
     auto wp = app.world.tileToWorld(tile);
@@ -242,9 +243,9 @@ bool harvestFeatureType(ref GameApp app, const RawT ft, int[3] tile, int[3] coor
       }
     }
     app.world.instanceCache.remove(f.rootTile);   // drop cached instances for the harvested feature
-    app.world.vegetation[ft.name][coord] = app.world.vegetation[ft.name][coord][0..i] ~ app.world.vegetation[ft.name][coord][i+1..$];
+    app.world.features[ft.name][coord] = app.world.features[ft.name][coord][0..i] ~ app.world.features[ft.name][coord][i+1..$];
     app.dropPending(ft, coord, tile);
-    app.world.vegetation.modified[coord] = true;
+    app.world.features.modified[coord] = true;
     if(ft.sound.length){ app.play(ft.sound, 0.2f); }
     any = true;
   }
@@ -260,4 +261,19 @@ void interactFeaturesAt(ref GameApp app, int[3] tile) {
     app.world.unsettleBlocks(app.world.drops, tile, 0.25f);
     app.rebuildAllFeatures();
   }
+}
+
+/** Get the best vegetation hit */
+bool getBestFeature(T, alias matchGeometry)(ref GameApp app, float[3][2] ray, Intersection[] hits, T[][int[3]] objects, out int[3] rootTile)
+  if(is(typeof(T.init.rootTile) == int[3])) {
+  Intersection best;
+  foreach(ref hit; hits) {
+    if(!matchGeometry(app.objects[hit.idx[0]].geometry())) continue;
+    foreach(ref chunk; objects.values) foreach(ref t; chunk) {
+      if(!t.matchIndex(hit.idx[1])) continue;
+      auto i = ray.intersects(t.bounds.min, t.bounds.max, hit.idx[0], hit.idx[1]);
+      if(i.intersects && (!best.intersects || i.tmin < best.tmin)) { best = i; rootTile = t.rootTile; }
+    }
+  }
+  return best.intersects;
 }

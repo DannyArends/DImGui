@@ -43,8 +43,8 @@ void loadWorld(ref GameApp app) {
 
   app.ensureBlocks();
   foreach(ref ft; featureTable) {
-    if(ft.name !in app.world.vegetation.pending) app.world.vegetation.pending[ft.name] = null;
-    if(ft.name !in app.world.vegetation) app.world.vegetation[ft.name] = null;
+    if(ft.name !in app.world.features.pending) app.world.features.pending[ft.name] = null;
+    if(ft.name !in app.world.features) app.world.features[ft.name] = null;
   }
 
   app.registerPersistables();

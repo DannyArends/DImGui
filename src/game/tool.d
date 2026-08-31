@@ -8,7 +8,7 @@ import game;
 import block : release;
 import chunk : getBestTile;
 import ghost : getGhostTile, syncBuildGhosts;
-import feature : hasFeature;
+import feature : hasFeature, getBestFeature;
 import inventory : computeDragPreview;
 import jobs : jobQueue, miningJob, interactFeatureJob;
 import hits : getHits;
@@ -17,7 +17,6 @@ import stockpile : createStockpile;
 import tile : getTileAt, getWater, setWater;
 import matrix : translateScale;
 import scheduler : tryAssign;
-import vegetation : getBestVegetation;
 import water : WATER_MAX;
 
 enum ToolMode : ubyte { Info, Select, Mine, Interact, Build, Stockpile, Cancel, Water }
@@ -118,7 +117,7 @@ void selectPress(ref GameApp app, float[3][2] ray) {
   if(app.getBestTile(ray, hits, wc)) job = miningJob(wc);
   foreach(ref ft; featureTable) {
     bool matchFeature(string g) { return ft.brushes.any!(b => g == ft.name ~ ":" ~ b.mesh); }
-    if(app.getBestVegetation!(Feature, matchFeature)(ray, hits, app.world.vegetation.get(ft.name, null), wc)) {
+    if(app.getBestFeature!(Feature, matchFeature)(ray, hits, app.world.features.get(ft.name, null), wc)) {
       job = interactFeatureJob(wc); break;
     }
   }
