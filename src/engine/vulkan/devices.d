@@ -147,3 +147,50 @@ void printQueues(ref App app){
     SDL_Log(cstr("Queue[%d] size: %d: %s", i, queueProperty.queueCount, capabilities));
   }
 }
+
+/** Integration: full headless Vulkan bring-up (instance -> device -> VMA -> buffer), no window/surface */
+unittest {
+  import buffer : createBuffer;
+  import extensions : queryInstanceExtensionProperties;
+  import instance : createInstance;
+
+  App app;
+  app.enableValidation = false;                     // CI ICD (lavapipe) has no validation layer
+
+  // --- Instance: always testable, even with no physical device ---
+  app.createInstance();
+  assert(app.instance !is null, "vkCreateInstance produced a null instance");
+
+  auto exts = app.queryInstanceExtensionProperties();
+  assert(exts.length > 0, "no instance extensions reported");
+  assert(exts.has("VK_KHR_surface"), "VK_KHR_surface should always be present");
+  assert(!exts.has("VK_KHR_does_not_exist"), "phantom extension reported present");
+
+  // --- Device: skip gracefully if the runner has no usable Vulkan device ---
+  app.createLogicalDevice();                         // pickPhysicalDevice + queues + VMA
+  if(app.device is null) {                           // no ICD/device here: instance coverage still ran
+    vkDestroyInstance(app.instance, app.allocator);
+    return;
+  }
+  assert(app.physicalDevices.length >= 1, "no physical device enumerated");
+  assert(app.vma !is null, "VMA allocator not created");
+  assert(app.queues.graphics.family != uint.max, "graphics queue family unresolved");
+  assert(app.properties().limits.maxImageDimension2D >= 4096, "implausible device limits");
+
+  // --- Buffer: VMA allocates host-visible memory that maps and round-trips ---
+  VkBuffer buf; VmaAllocation alloc;
+  app.createBuffer(&buf, &alloc, 4096, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  assert(buf != VK_NULL_HANDLE && alloc !is null, "createBuffer failed");
+
+  void* mapped;
+  enforceVK(vmaMapMemory(app.vma, alloc, &mapped));
+  (cast(uint*)mapped)[0] = 0xDEADBEEF;
+  assert((cast(uint*)mapped)[0] == 0xDEADBEEF, "mapped memory did not retain written value");
+  vmaUnmapMemory(app.vma, alloc);
+
+  // --- Teardown in reverse creation order ---
+  vmaDestroyBuffer(app.vma, buf, alloc);
+  vmaDestroyAllocator(app.vma);
+  vkDestroyDevice(app.device, app.allocator);
+  vkDestroyInstance(app.instance, app.allocator);
+}

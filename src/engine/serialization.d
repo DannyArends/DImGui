@@ -68,8 +68,6 @@ unittest {
 
   void putU(ref ubyte[] b, uint x){ b ~= (cast(ubyte*)&x)[0 .. uint.sizeof]; }
 
-  SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS); scope(exit) { SDL_Quit(); }
-
   auto sectionsF = toStringz(writePath("unittest_sections.bin"));
   auto shortF = toStringz(writePath("unittest_short.bin"));
   auto badF = toStringz(writePath("unittest_badmagic.bin"));
