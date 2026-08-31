@@ -9,7 +9,7 @@ import animation : animateAsset;
 import block : findFreeFood, noBlock, itemOf;
 import bone : mergeBones;
 import entity : isMoving, poseEntity, entityFor, tickEntity, entityMove;
-import feature : interactFeaturesAt, findNearestFoodFeature;
+import feature : interactFeaturesAt;
 import jobs : Job, consumeCarried;
 import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord;
 import material : registerMaterials;
@@ -22,6 +22,7 @@ import sfx : play;
 import textures : mapTextures;
 import tile : getWater, setWater;
 import vector : manhattan;
+import vegetation : findNearestFoodVegetation;
 import water : findNearestWater;
 import world : nextEntityUID;
 
@@ -120,7 +121,7 @@ bool tryAnimalNeeds(ref GameApp app, ref Animal a) {
   if(a.needs[Need.Hunger] >= NEED_SEEK) {
     uint food = findFreeFood(app.world, a.tile, false);
     int[3] foodTile = (food != noBlock) ? app.world.drops[food].tile : noTile;
-    int[3] bushTile = app.findNearestFoodFeature(a.tile);
+    int[3] bushTile = app.findNearestFoodVegetation(a.tile);
 
     int[3] target = noTile;
     if(foodTile != noTile && bushTile != noTile){

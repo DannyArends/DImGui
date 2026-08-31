@@ -10,7 +10,7 @@ import block : unsettleBlocks;
 import clouds : requestCloudRebuild, seedClouds;
 import color : paletteOrdinal;
 import deletion : deAllocate;
-import feature : buildFeatureData, featureMeshInstances;
+import feature : featureMeshInstances;
 import game : GameApp;
 import gameobjects : Chunk;
 import lattice : surfaceLevel, tileCoord, tileIndex, onChunkBoundary, chunkCoord, worldCoord;
@@ -19,6 +19,7 @@ import tile : isBuried, isSolid;
 import noise : noise2D;
 import textures : idx;
 import timing : timed;
+import vegetation : spawnVegetation;
 
 enum float SEAM_BLEED = 0.001f;   /// fraction of a tile; closes T-junction hairlines
 private ResourceType[] tlCell;    /// per-worker thread-local reusable scratch, grown once
@@ -227,7 +228,7 @@ ChunkData buildChunkData(immutable(WorldData) wd, int[3] coord) {
   }
   wd.buildTileGeometry(coord, data);
   foreach(fi, ref ft; featureTable) {
-    data.featureData[ft.name] = buildFeatureData(wd, coord, data.tileTypes, ft, featureSpawnMask[fi]);
+    data.featureData[ft.name] = spawnVegetation(wd, coord, data.tileTypes, ft, featureSpawnMask[fi]);
     foreach(ref f; data.featureData[ft.name]) {
       auto byMesh = featureMeshInstances(wd, f, ft);
       foreach(key, insts; byMesh) data.featureInsts[ft.name][key] ~= insts;

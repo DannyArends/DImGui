@@ -15,7 +15,6 @@ import sfx : play;
 import stockpile : storeBlockAt;
 import tile : setTile, setWater, getWater, getTileAt, isStandable, isTileOccupied, hasStandableNeighbour;
 import water : findNearestWater;
-import workshop : workshopFor, finishWorkshop;
 
 enum JobState { Pending, Satisfied, Unavailable }                     /// Job states
 enum Reach { Adjacent, OnTile, AdjacentOrOnTile, AdjacentOrAbove }    /// How a job can be reached
