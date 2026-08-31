@@ -119,8 +119,8 @@ void showBuildContent(ref GameApp app, uint font = 0) {
     auto texIdx = idx(app.textures, resourceTable[m].textures.texOf("2D"));
     if(texIdx >= 0) { igImage(ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID), ImVec2(app.gui.fontsize, app.gui.fontsize), ImVec2(0,0), ImVec2(1,1)); igSameLine(0, 4); }
 
-    auto lbl = picked > 0 ? cstr("%s  avail:%d  picked:%d  Dist:%d", resourceTable[m].name, avail, picked, nearest)
-                          : cstr("%s  avail:%d  Dist:%d", resourceTable[m].name, avail, nearest);
+    auto lbl = picked > 0 ? cstr("%s  avail:%d  picked:%d  Dist:%d##g%d", resourceTable[m].name, avail, picked, nearest, cast(int)m)
+                          : cstr("%s  avail:%d  Dist:%d##g%d", resourceTable[m].name, avail, nearest, cast(int)m);
     bool open = igTreeNodeEx_Str(lbl, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
     if(igIsItemClicked(0) && !igIsItemToggledOpen()) app.pickNearest(list);   // name = assign one; arrow = expand only
 
@@ -132,8 +132,9 @@ void showBuildContent(ref GameApp app, uint font = 0) {
 
     if(open) foreach(ref c; list) {
       igPushID_Int(cast(int)c.id); scope(exit) igPopID();
-      igText(cstr("      Dist: %d%s", c.dist, app.chosen(c.id) ? "  (picked)" : ""));
-      if(!app.chosen(c.id)) { igSameLine(btnCol, 0); if(igButton("Use", ImVec2(0, 0))) app.pick(c.id); }
+      if(texIdx >= 0) { igImage(ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID), ImVec2(app.gui.fontsize, app.gui.fontsize), ImVec2(0,0), ImVec2(1,1)); igSameLine(0, 4); }
+      bool isPicked = app.chosen(c.id);
+      if(igSelectable_Bool(cstr("%s  Dist: %d##i%d", resourceTable[m].name, c.dist, cast(int)c.id), isPicked, 0, ImVec2(0, 0)) && !isPicked) app.pick(c.id);
     }
     if(open) igTreePop();
   }
