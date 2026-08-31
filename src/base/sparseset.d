@@ -56,3 +56,37 @@ struct SparseSet {
   @nogc @property size_t capacity() const nothrow { return slot.length; }
 }
 
+unittest {
+  // SparseSet: add/contains/length, dedup, capacity bound
+  SparseSet s;
+  s.init(16);
+  assert(s.length == 0 && s.capacity == 16);
+  s.add(3); s.add(7); s.add(3);             // duplicate add is a no-op
+  assert(s.length == 2);
+  assert(3 in s && 7 in s);
+  assert(!(5 in s));
+  assert(!(100 in s));                      // out of domain -> not contained, no crash
+  assert(!(-1 in s));                       // negative -> not contained
+
+  // SparseSet: swap-with-last remove keeps the moved key consistent
+  s.clear();
+  s.add(1); s.add(2); s.add(3); s.add(4);   // dense = [1,2,3,4]
+  s.remove(2);                              // removes middle; last (4) swaps into its slot
+  assert(s.length == 3);
+  assert(!(2 in s));                        // removed
+  assert(1 in s && 3 in s && 4 in s);       // moved key 4 still findable (slot fixed)
+  s.remove(999 & 0);                        // remove key 0 (absent) -> no-op
+  assert(s.length == 3);
+
+  // SparseSet: opOpAssign ~= routes to add, keys view reflects contents
+  s.clear();
+  s ~= 5; s ~= 8;
+  assert(s.length == 2 && 5 in s && 8 in s);
+  import std.algorithm : sort;
+  auto ks = s.keys.dup.sort.array;
+  assert(ks == [5, 8]);
+
+  // SparseSet: clear resets to empty but preserves capacity
+  s.clear();
+  assert(s.length == 0 && s.capacity == 16 && !(5 in s));
+}
