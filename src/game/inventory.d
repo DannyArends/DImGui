@@ -5,7 +5,7 @@
 
 import game;
 
-import block : noBlock;
+import block : noBlock, findFreeBlock;
 import ghost : syncBuildGhosts;
 import jobs : placeTileJob, jobQueue;
 import tile : getTileAt;
@@ -66,7 +66,9 @@ void placeTile(ref GameApp app, int[3] wc) {
   if(wc == noTile) return;
   if(app.world.inventory.type == ResourceType.None) return;
   if(app.world.inventory.get(app.world.inventory.type, app) <= 0) return;
-  jobQueue ~= placeTileJob(wc, app.world.inventory.type);
+  auto id = app.world.findFreeBlock(wc, app.world.inventory.type);
+  if(id == noBlock) return;
+  jobQueue ~= placeTileJob(wc, id, app.world.drops[id].tile, app.world.inventory.type);
   app.syncBuildGhosts();
   app.deriveInventory();
 }

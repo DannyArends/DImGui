@@ -5,7 +5,7 @@
 
 import game;
 
-import assimp : OpenAsset;
+import block : noBlock;
 import matrix : multiply, translate, rotate, position, scale, translateScale;
 
 /** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
@@ -95,7 +95,8 @@ class WaterTiles : Square {
 
 struct PendingBuild {
   int[3] tile;
-  ResourceType type = ResourceType.None;
+  uint blockID = noBlock;
+  //ResourceType type = ResourceType.None;
 }
 
 class GhostCube : Cube {

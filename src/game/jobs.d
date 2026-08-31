@@ -207,9 +207,9 @@ bool evictDwarfAt(ref GameApp app, int[3] tile) {
 }
 
 /** Building Job (generates a pickup job prereq) */
-Job!Dwarf placeTileJob(int[3] targetTile, ResourceType tileType) {
-  return Job!Dwarf("Building", targetTile, Substance.None, [cleanWorksiteJob(targetTile), pickupJob(noTile, Substance.None, ItemTemplate.None, tileType)],
-    buildType: tileType,
+Job!Dwarf placeTileJob(int[3] targetTile, uint blockID, int[3] fromTile, ResourceType tileType) {
+  return Job!Dwarf("Building", targetTile, Substance.None, [cleanWorksiteJob(targetTile), pinnedPickup(blockID, fromTile, tileType)],
+    buildType: tileType, blockIDs: [blockID],
     isValid: (ref GameApp app, ref Job!Dwarf j){ return(app.world.getTileAt(j.targetTile) == ResourceType.None); },
     onArrive: (ref GameApp app, ref Dwarf d) {
       if(app.isTileOccupied(d.currentJob.targetTile)) {
@@ -224,7 +224,9 @@ Job!Dwarf placeTileJob(int[3] targetTile, ResourceType tileType) {
     },
     onFail: (ref GameApp app, ref Dwarf d) {
       foreach(slot, ref s; d.inventory) { if(!s.empty) d.drop(app.world.drops, slot); }
-      auto newJob = placeTileJob(d.currentJob.targetTile, d.currentJob.buildType);
+      auto id = d.currentJob.blockIDs[0];
+      auto p = id in app.world.drops;
+      auto newJob = placeTileJob(d.currentJob.targetTile, id, p ? p.tile : noTile, d.currentJob.buildType);
       newJob.failedBy = d.jobStack[$-1].failedBy.dup;
       newJob.failedBy[d.uid] = true;
       jobQueue ~= newJob;

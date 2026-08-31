@@ -5,6 +5,7 @@
 
 import game;
 
+import block : noBlock;
 import jobs : placeTileJob, interactFeatureJob, miningJob, jobQueue;
 
 /** Player-issued order kinds that persist. Extend (e.g. Craft) as needed */
@@ -15,6 +16,7 @@ struct Order {
   OrderKind kind;
   int[3] tile;
   ResourceType tileType;   // Build only
+  uint blockID = noBlock;  // Build only: the pinned block
 }
 
 /** Map a queued Job back to a persistable Order; returns false for non-player/transient jobs */
@@ -22,16 +24,18 @@ bool orderOf(const Job!Dwarf j, out Order o) {
   switch(j.name) {
     case "Mining": o = Order(OrderKind.Mine, j.targetTile); return true;
     case "InteractFeature": o = Order(OrderKind.InteractFeature, j.targetTile); return true;
-    case "Building": o = Order(OrderKind.Build, j.targetTile, j.buildType); return true;
+    case "Building": o = Order(OrderKind.Build, j.targetTile, j.buildType, j.blockIDs.length ? j.blockIDs[0] : noBlock); return true;
     default: return false;
   }
 }
 
 /** Rebuild a live Job (with its behaviour) from a persisted Order */
-Job!Dwarf jobOf(const Order o) {
+Job!Dwarf jobOf(ref GameApp app, const Order o) {
   final switch(o.kind) {
     case OrderKind.Mine: return miningJob(o.tile);
-    case OrderKind.Build: return placeTileJob(o.tile, o.tileType);
+    case OrderKind.Build:
+      auto p = o.blockID in app.world.drops;
+      return placeTileJob(o.tile, o.blockID, p ? p.tile : noTile, o.tileType);
     case OrderKind.InteractFeature: return interactFeatureJob(o.tile);
   }
 }
@@ -49,6 +53,6 @@ Order[] saveOrders(ref GameApp app) {
 
 /** Replay persisted orders back into the queue; existing isValid/pruneJobQueue cull any now-invalid. */
 void loadOrders(ref GameApp app, Order[] orders) {
-  foreach(ref o; orders){ jobQueue ~= jobOf(o); }
+  foreach(ref o; orders){ jobQueue ~= jobOf(app, o); }
   SDL_Log("loadJobs: %d orders", cast(int)orders.length);
 }

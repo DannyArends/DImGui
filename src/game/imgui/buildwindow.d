@@ -5,37 +5,86 @@
 
 import game;
 
+import block : noBlock;
 import ghost : syncBuildGhosts;
-import imgui : faIcon;
-import textures : ImTextureRefFromID, idx;
-import widgets : drawCenteredText, text;
-import jobs : jobQueue, placeTileJob;
 import inventory : deriveInventory;
+import jobs : jobQueue, placeTileJob;
+import resources : hasShape;
+import vector : manhattan;
+import widgets : text;
 
-/** Queue one buildingJob for the next unassigned tile (source -> sync order). */
-private void assignNextBuild(ref GameApp app, ResourceType type) {
-  foreach(ref b; app.world.inventory.buildSelection) {
-    if(b.type != ResourceType.None) continue;
-    b.type = type;
-    jobQueue ~= placeTileJob(b.tile, type);
-    app.deriveInventory();    // lowers get(type)
-    app.syncBuildGhosts();
-    return;
-  }
+/** A candidate block for a build slot: its id and distance to the reference tile. */
+private struct Cand { uint id; int dist; }
+
+/** Reference tile for distances: the drag-start (first painted) tile of the run. */
+private int[3] refTile(ref GameApp app) {
+  return app.world.inventory.buildSelection.length ? app.world.inventory.buildSelection[0].tile : noTile;
 }
 
-/** Cancel the whole build: remove its queued building jobs and close. */
-private void cancelBuild(ref GameApp app) {
-  bool[int[3]] tiles;
-  foreach(ref b; app.world.inventory.buildSelection) if(b.type != ResourceType.None) tiles[b.tile] = true;
-  jobQueue = jobQueue.filter!(j => !(j.name == "Building" && (j.targetTile in tiles) !is null)).array;
+/** Index of the next tile still awaiting a block, or -1 when all are assigned. */
+private long nextSlot(ref GameApp app) {
+  foreach(i, ref b; app.world.inventory.buildSelection) if(b.blockID == noBlock) return i;
+  return -1;
+}
+
+/** True if block `id` is already chosen for some tile in this selection. */
+private bool chosen(ref GameApp app, uint id) {
+  foreach(ref b; app.world.inventory.buildSelection) if(b.blockID == id) return true;
+  return false;
+}
+
+/** Unreserved, unchosen buildable raw blocks grouped by material, each list sorted nearest-first. */
+private Cand[][ResourceType] buildCandidates(ref GameApp app) {
+  Cand[][ResourceType] groups;
+  auto rt = app.refTile();
+  foreach(id, ref b; app.world.drops) {
+    if(b.reserved || b.item.hasShape) continue;
+    if(!resourceTable[b.item.material].buildable) continue;
+    groups[b.item.material] ~= Cand(id, manhattan(b.tile, rt));
+  }
+  foreach(m, ref list; groups) list.sort!((a, c) => a.dist < c.dist);
+  return groups;
+}
+
+/** Assign block `id` to the next unassigned tile. */
+private void pick(ref GameApp app, uint id) {
+  if(app.chosen(id)) return;
+  auto i = app.nextSlot(); if(i < 0) return;
+  app.world.inventory.buildSelection[i].blockID = id;
+  app.syncBuildGhosts();
+}
+
+/** Clear every tile assigned a block of material `m`. */
+private void clearMaterial(ref GameApp app, ResourceType m) {
+  foreach(ref b; app.world.inventory.buildSelection) {
+    if(b.blockID == noBlock) continue;
+    if(auto p = b.blockID in app.world.drops) if(p.item.material == m) b.blockID = noBlock;
+  }
+  app.syncBuildGhosts();
+}
+
+/** Queue one pinned placement job per assigned tile, then close. */
+private void commitBuild(ref GameApp app) {
+  foreach(ref b; app.world.inventory.buildSelection) {
+    if(b.blockID == noBlock) continue;
+    auto p = b.blockID in app.world.drops;
+    if(p is null) continue;
+    jobQueue ~= placeTileJob(b.tile, b.blockID, p.tile, p.item.material);
+  }
   app.world.inventory.buildSelection = [];
   app.world.inventory.showBuildWindow = false;
   app.deriveInventory();
   app.syncBuildGhosts();
 }
 
-/** Build picker: list of tiles + available types; click a type to queue the next tile. */
+/** Cancel: drop the whole pending selection without queueing. */
+private void cancelBuild(ref GameApp app) {
+  app.world.inventory.buildSelection = [];
+  app.world.inventory.showBuildWindow = false;
+  app.syncBuildGhosts();
+}
+
+/** DF-style material picker: choose a specific block for each tile of the current build. */
 void showBuildContent(ref GameApp app, uint font = 0) {
   if(!app.world.inventory.showBuildWindow) return;
 
@@ -43,41 +92,44 @@ void showBuildContent(ref GameApp app, uint font = 0) {
   float dispW = app.gui.io.DisplaySize.x, dispH = app.gui.io.DisplaySize.y;
   igSetNextWindowPos(ImVec2(dispW * 0.5f, dispH * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-  int remaining = 0;
-  foreach(ref b; app.world.inventory.buildSelection){ if(b.type == ResourceType.None){ remaining++; } }
+  int needed = 0;
+  foreach(ref b; app.world.inventory.buildSelection) if(b.blockID == noBlock) needed++;
 
-  igBegin(cstr("%s Build##buildsel", fromStringz(faIcon(cast(string)ICON_FA_TROWEL))), &app.world.inventory.showBuildWindow, 0);
-  text("Remaining: %d / %d", remaining, app.world.inventory.buildSelection.length);
+  igBegin("Select materials##buildsel".toStringz, &app.world.inventory.showBuildWindow, 0);
+  text("Amount needed: %d", needed);
 
-  igText("Click to queue next:".toStringz);
-
-  // Available types ONLY (count > 0) — clicking queues + lowers count
-  float cellSize = app.gui.fontsize * 2.0f;
-  int col = 0, cols = 6;
-  foreach(tileType; EnumMembers!ResourceType) {
-    if(!resourceTable[tileType].buildable) continue;
-    int count = app.world.inventory.get(tileType, app); if(count <= 0) continue;
-    auto texIdx = idx(app.textures, resourceTable[tileType].textures.texOf("2D"));
-    if(texIdx < 0) continue;
-    auto texID = ImTextureRefFromID(cast(ulong)(texIdx >= 0 ? app.textures[texIdx].imID : null));
-
-    igImageButton(cstr("##bt_%d", tileType), texID, ImVec2(cellSize, cellSize), ImVec2(0,0), ImVec2(1,1), ImVec4(0,0,0,0), ImVec4(1,1,1,1));
-    if(igIsItemClicked(0) && remaining > 0) app.assignNextBuild(tileType);
-    ImVec2 pos, posMax; igGetItemRectMin(&pos); igGetItemRectMax(&posMax);
-    drawCenteredText(igGetWindowDrawList(), pos, posMax, cstr("%d", count));
-    if(igIsItemHovered(0)) igSetTooltip(toStringz(app.world.inventory.toString(tileType, app)));
-    if(++col < cols) igSameLine(0, 4); else col = 0;
+  auto groups = app.buildCandidates();
+  if(igBeginTable("mats##buildsel", 3, ImGuiTableFlags_SizingFixedFit, ImVec2(0, 0), 0.0f)) {
+    foreach(m, ref list; groups) {
+      igPushID_Int(cast(int)m); scope(exit) igPopID();
+      igTableNextRow(0, 0.0f);
+      igTableNextColumn();
+        bool open = igTreeNodeEx_Str(cstr("%s [%d]  Dist: %d", resourceTable[m].name, cast(int)list.length, list.length ? list[0].dist : 0),
+                      ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
+      igTableNextColumn();
+        if(igButton("All", ImVec2(0, 0))) foreach(ref c; list) app.pick(c.id);
+      igTableNextColumn();
+        if(igButton("None", ImVec2(0, 0))) app.clearMaterial(m);
+      if(open) {
+        foreach(ref c; list) {
+          igPushID_Int(cast(int)c.id); scope(exit) igPopID();
+          igTableNextRow(0, 0.0f);
+          igTableNextColumn();
+            igText(cstr("  Dist: %d%s", c.dist, app.chosen(c.id) ? "  (picked)" : ""));
+          igTableNextColumn();
+            if(!app.chosen(c.id) && igButton("Use", ImVec2(0, 0))) app.pick(c.id);
+          igTableNextColumn();
+        }
+        igTreePop();
+      }
+    }
+    igEndTable();
   }
+
   igNewLine();
-  if(igButton("Cancel".toStringz, ImVec2(0,0))) app.cancelBuild();
+  if(igButton("Cancel".toStringz, ImVec2(0, 0))) app.cancelBuild();
 
-  // Auto-close once every tile has a type
-  int left = 0;
-  foreach(ref b; app.world.inventory.buildSelection) if(b.type == ResourceType.None) left++;
-  if(app.world.inventory.buildSelection.length > 0 && left == 0) {
-    app.world.inventory.buildSelection = [];
-    app.world.inventory.showBuildWindow = false;
-  }
+  if(needed == 0 && app.world.inventory.buildSelection.length > 0) app.commitBuild();
 
   igEnd();
   igPopFont();
