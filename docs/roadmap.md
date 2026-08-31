@@ -16,11 +16,13 @@ Planned and possible future work for DImGui engine. Items are aspirational, not 
 
 ### Game
 
-- **Workshops, and crafting at workshops**: placeable workshop objects where dwarves convert input items into crafted outputs; the anchor for most other crafting items below.
+- **Workshop placement (done)**: pick a workshop from the build menu, choose its materials, and a dwarf hauls them and builds it in the world.
+-- **Crafting at workshops (next)**: click a placed workshop to pick a recipe; the dwarf crafts it there. Reactions exist but don't yet require or run at a workshop.
+-- **Workshop build-scale tune**: workshop models render too large; per-part sizes still need tuning.
 - **Liquid barrels for wine / drinks from berries**: a production chain (gather berries → ferment → store liquid) plus a liquid-in-container representation.
 - **Barrels and bins for stockpiles**: container objects that hold multiple items, so stockpiles store in containers rather than loose tiles.
 - **Stockpile editing**: allow an existing stockpile to be extended, shrunk, or redrawn after placement, rather than delete-and-recreate.
-- **Render crafted objects through assimp models**: display crafted items and furniture using the existing assimp model pipeline instead of placeholder geometry.
+- **Render crafted objects through assimp models**: display crafted items and furniture as real models instead of placeholder geometry. Foundation done (fbx models can now be textured as feature parts); extend from workshops to crafted items.
 - **Per-dwarf labour roles / job filtering**: assign which job types each dwarf will take, with stockpile priorities and hauling logistics so work is distributed sensibly.
 - **Dwarf skills & experience**: dwarves gain experience per labour type, affecting speed and (later) output quality.
 - **Item quality tiers**: crafted items carry a quality level, driven by dwarf skill, feeding value and desirability.
