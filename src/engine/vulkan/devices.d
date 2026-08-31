@@ -157,7 +157,9 @@ unittest {
   App app;
   app.enableValidation = false;                     // CI ICD (lavapipe) has no validation layer
 
-  assert(SDL_Vulkan_LoadLibrary(null), "SDL_Vulkan_LoadLibrary failed");
+  if(!SDL_Vulkan_LoadLibrary(null)) {
+    SDL_Log("SDL_Vulkan_LoadLibrary failed: %s", SDL_GetError()); assert(false);
+  }
   scope(exit) SDL_Vulkan_UnloadLibrary();
 
   // --- Instance: always testable, even with no physical device ---

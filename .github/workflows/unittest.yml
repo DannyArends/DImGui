@@ -75,6 +75,7 @@ jobs:
         run: |
           sudo apt-get install -y vulkan-tools
           ls /usr/share/vulkan/icd.d/
+          find / -name 'libvulkan.so*' 2>/dev/null
           vulkaninfo --summary || true
 
       # Run
