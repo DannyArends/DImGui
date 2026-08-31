@@ -227,10 +227,11 @@ void loadShaders(ref App app, ref Shader[] dst, ShaderDef[] defs) {
   });
 }
 
-/** Shader compilation: trivial vertex shader compiles to non-empty SPIR-V */
 unittest {
   App app;
   app.createCompiler();
+
+  // Shader compilation: trivial vertex shader compiles to non-empty SPIR-V
   auto sh = app.compileShader(q{
     #version 450
     void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0); }

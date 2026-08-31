@@ -230,6 +230,8 @@ unittest {
   App app;
   app.createCompiler();
   app.createReflectionContext();
+
+  // Reflection: UBO is reported with correct set, binding and size
   auto sh = app.compileShader(q{
     #version 450
     layout(set = 0, binding = 2) uniform UBO { mat4 mvp; vec4 tint; } ubo;
@@ -244,6 +246,7 @@ unittest {
   assert(ubos[0].binding == 2, "wrong binding");
   assert(ubos[0].bytes == 80, "UBO size mismatch (mat4=64 + vec4=16)");
 
+  // Reflection: Sampler and struct based SSBO are distinguished with correct types and bindings
   sh = app.compileShader(q{
     #version 450
     layout(set = 1, binding = 0) uniform sampler2D tex;
@@ -260,6 +263,7 @@ unittest {
   assert(samplers.length == 1 && samplers[0].set == 1 && samplers[0].binding == 0, "sampler reflection wrong");
   assert(ssbos.length == 1 && ssbos[0].set == 0 && ssbos[0].binding == 3, "SSBO reflection wrong");
 
+  // Reflection: Sampler and vec4 based SSBO are distinguished with correct types and bindings
   sh = app.compileShader(q{
     #version 450
     layout(set = 1, binding = 0) uniform sampler2D tex;
@@ -274,4 +278,16 @@ unittest {
   ssbos = sh.descriptors.filter!(d => d.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER).array;
   assert(samplers.length == 1 && samplers[0].set == 1 && samplers[0].binding == 0, "sampler reflection wrong");
   assert(ssbos.length == 1 && ssbos[0].set == 0 && ssbos[0].binding == 5, "SSBO reflection wrong");
+
+  // Reflection: Compute local workgroup size is extracted into groupCount
+  sh = app.compileShader(q{
+    #version 450
+    layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
+    layout(set = 0, binding = 0) buffer B { uint v[]; } b;
+    void main() { b.v[gl_GlobalInvocationID.x] = 1u; }
+  }, "reflection_4.glsl", shaderc_glsl_compute_shader);
+
+  app.reflectShader(sh);
+
+  assert(sh.groupCount == [8u, 4u, 1u], "compute local_size not reflected");
 }
