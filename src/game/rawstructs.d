@@ -52,6 +52,7 @@ struct RawT {
   string interaction;                             /// interaction verb gate (empty = none)
   string sound;                                   /// harvest sound
   Ingredient[] buildCost;                         /// items/materials consumed to place this (workshops); empty = none
+  string icon = "HAMMER";                         /// FontAwesome glyph name for the build palette (workshops)
 }
 
 /** A meshless, poseable skeleton joint: a named frame at the cursor. */

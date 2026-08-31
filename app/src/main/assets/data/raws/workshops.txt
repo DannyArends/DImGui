@@ -5,5 +5,6 @@
   [INTERACTION:Craft]
   [BUILD:Wood:2]
   [BUILD:Stone:1]
+  [ICON:HAMMER]
   [AXIOM:Platform]
   [BRUSH:Platform:platform:0.04;0.04;0.04:textures={3D=colormap-pirate-kit}]

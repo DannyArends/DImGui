@@ -172,6 +172,7 @@ void rawHandler(ref RawT x, const string[] p) pure {
     case "TILE_PENALTY":     x.tilePenalty = to!float(p[1]); break;
     case "PROGRESS_RATE":    x.progressRate = to!float(p[1]); break;
     case "INTERACTION":      x.interaction = p[1]; break;
+    case "ICON":             x.icon = p[1]; break;
     case "BUILD":            if(p.length >= 3) x.buildCost ~= Ingredient(p[1].to!Substance, ItemTemplate.init, p[2].to!uint); break;
     case "BUILD_ITEM":       if(p.length >= 3) x.buildCost ~= Ingredient(Substance.init, p[1].to!ItemTemplate, p[2].to!uint); break;
     case "SOUND":            x.sound = p[1]; break;

@@ -104,6 +104,7 @@ class GhostCube : Cube {
   ToolMode activeTool = isAndroid ? ToolMode.Info : ToolMode.Select;
   PaintState paint;
   PendingBuild[] buildSelection;   /// Tiles awaiting a block-type choice
+  string placingWorkshop = "";     /// chosen workshop ("" = landscaping/tile mode)
   bool showBuildWindow = false;    /// Build-type picker open
   int[3] tile = noTile;
 
