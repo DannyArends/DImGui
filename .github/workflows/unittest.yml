@@ -79,4 +79,7 @@ jobs:
 
       # Run
       - name: Run unittests
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
         run: dub --build=unittest --force
