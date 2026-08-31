@@ -6,6 +6,7 @@
 import game;
 
 import block : release;
+import buildwindow : cancelBuild;
 import chunk : getBestTile;
 import ghost : getGhostTile, syncBuildGhosts;
 import feature : hasFeature, getBestFeature;
@@ -203,6 +204,7 @@ void handleSecondaryPress(ref GameApp app, float[3][2] ray) { }
 
 /** Secondary press: right click */
 void handleSecondaryRelease(ref GameApp app, float[3][2] ray) {
+  if(app.world.inventory.showBuildWindow) { app.cancelBuild(); return; }
   app.world.inventory.type = ResourceType.None;
   app.setActiveTool(isAndroid ? ToolMode.Info : ToolMode.Select);
   app.syncBuildGhosts();

@@ -10,6 +10,8 @@ import ghost : syncBuildGhosts;
 import inventory : deriveInventory;
 import jobs : jobQueue, placeTileJob;
 import resources : hasShape;
+import stockpile : storedTileOf;
+import textures : ImTextureRefFromID, idx;
 import vector : manhattan;
 import widgets : text;
 
@@ -39,9 +41,10 @@ private Cand[][ResourceType] buildCandidates(ref GameApp app) {
   auto rt = app.refTile();
   foreach(id, ref b; app.world.drops) {
     if(b.reserved || b.item.hasShape) continue;
-    if(b.tile == noTile || b.tile == builtTile) continue;
     if(!resourceTable[b.item.material].buildable) continue;
-    groups[b.item.material] ~= Cand(id, manhattan(b.tile, rt));
+    int[3] at = (b.tile == storedTile) ? app.world.storedTileOf(id) : b.tile;
+    if(at == noTile || at == builtTile) continue;                 // carried / consumed / unresolved
+    groups[b.item.material] ~= Cand(id, manhattan(at, rt));
   }
   foreach(m, ref list; groups) list.sort!((a, c) => a.dist < c.dist);
   return groups;
@@ -84,7 +87,7 @@ private void commitBuild(ref GameApp app) {
 }
 
 /** Cancel: drop the whole pending selection without queueing. */
-private void cancelBuild(ref GameApp app) {
+void cancelBuild(ref GameApp app) {
   app.world.inventory.buildSelection = [];
   app.world.inventory.showBuildWindow = false;
   app.syncBuildGhosts();
@@ -112,12 +115,21 @@ void showBuildContent(ref GameApp app, uint font = 0) {
     igPushID_Int(cast(int)m); scope(exit) igPopID();
     int avail = 0, picked = 0, nearest = 0;
     foreach(ref c; list) { if(app.chosen(c.id)) picked++; else { if(avail == 0) nearest = c.dist; avail++; } }
+
+    auto texIdx = idx(app.textures, resourceTable[m].textures.texOf("2D"));
+    if(texIdx >= 0) { igImage(ImTextureRefFromID(cast(ulong)app.textures[texIdx].imID), ImVec2(app.gui.fontsize, app.gui.fontsize), ImVec2(0,0), ImVec2(1,1)); igSameLine(0, 4); }
+
     auto lbl = picked > 0 ? cstr("%s  avail:%d  picked:%d  Dist:%d", resourceTable[m].name, avail, picked, nearest)
                           : cstr("%s  avail:%d  Dist:%d", resourceTable[m].name, avail, nearest);
     bool open = igTreeNodeEx_Str(lbl, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
     if(igIsItemClicked(0) && !igIsItemToggledOpen()) app.pickNearest(list);   // name = assign one; arrow = expand only
+
     igSameLine(btnCol, 0); if(igButton("All", ImVec2(0, 0))) foreach(ref c; list) app.pick(c.id);
-    if(picked > 0) { igSameLine(0, 4); if(igButton("None", ImVec2(0, 0))) app.clearMaterial(m); }
+    igSameLine(0, 4);
+    if(picked == 0) igPushStyleVar_Float(ImGuiStyleVar_Alpha, 0.4f);
+    if(igButton("None", ImVec2(0, 0)) && picked > 0) app.clearMaterial(m);
+    if(picked == 0) igPopStyleVar(1);
+
     if(open) foreach(ref c; list) {
       igPushID_Int(cast(int)c.id); scope(exit) igPopID();
       igText(cstr("      Dist: %d%s", c.dist, app.chosen(c.id) ? "  (picked)" : ""));
