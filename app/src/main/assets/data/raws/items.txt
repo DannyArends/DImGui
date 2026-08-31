@@ -6,7 +6,7 @@
   [SCALE:0.4][STACK:4]
 
 [ITEM:Axe]
-  [MESH:Cube:textures={3D=StoneAxe;2D=StoneAxe;filled=StoneAxe}]
+  [MESH:Cube:textures={3D=StoneAxe;2D=StoneAxe}]
   [ACCEPTS:Stone][ACCEPTS:Rock]
   [SCALE:0.5]
   [STACK:1]
@@ -20,7 +20,7 @@
   [STACK:1]
 
 [ITEM:Barrel]
-  [MESH:big_wood_barrel:textures={3D=big_wood_barrel;skin=big_wood_barrel}]
+  [MESH:big_wood_barrel:textures={3D=big_wood_barrel;2D=big_wood_barrel}]
   [ACCEPTS:Wood]
   [HOLDS:Liquid]
   [CAPACITY:16]
