@@ -115,7 +115,7 @@ void selectPress(ref GameApp app, float[3][2] ray) {
   auto hits = app.getHits(ray, app.showRays);
   Job!Dwarf job;
   if(app.getBestTile(ray, hits, wc)) job = miningJob(wc);
-  foreach(ref ft; featureTable) {
+  foreach(ref ft; placedTable) {
     bool matchFeature(string g) { return ft.brushes.any!(b => g == ft.name ~ ":" ~ b.mesh); }
     if(app.getBestFeature!(Feature, matchFeature)(ray, hits, app.world.features.get(ft.name, null), wc)) {
       job = interactFeatureJob(wc); break;

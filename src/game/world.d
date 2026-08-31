@@ -124,7 +124,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
 
   // Load pending trees onto chunks that have been loaded
   bool grew = false;
-  foreach(ref ft; featureTable) {
+  foreach(ref ft; placedTable) {
     if(ft.name !in app.world.features.pending) continue;
     foreach(coord; app.world.features.pending[ft.name].keys.dup) {
       if(coord !in app.world.chunks) continue;

@@ -45,7 +45,7 @@ private string meshKey(string name, string mesh) { return name ~ ":" ~ mesh; }
 /** The EntityT whose placed feature is rooted at `tile`, or null if none. */
 private const(RawT)* featureTypeAt(ref GameApp app, int[3] tile) {
   int[3] coord = app.world.chunkCoord(tile);
-  foreach(ref ft; featureTable) {
+  foreach(ref ft; placedTable) {
     if(ft.name !in app.world.features) continue;
     if(auto fs = coord in app.world.features[ft.name]){ if((*fs).canFind!(f => f.rootTile == tile)) { return &ft; } }
   }
@@ -72,7 +72,7 @@ private void emitInstances(ref Feature f, Geometry mesh, const(DrawInstance)[] i
 
 /** Create and register one instanced primitive mesh per (feature, part/brush mesh); skips keys already built. */
 void initFeatureMeshes(ref GameApp app) {
-  foreach(ref ft; featureTable) foreach(name; ft.brushes.map!(b => b.mesh)) {
+  foreach(ref ft; placedTable) foreach(name; ft.brushes.map!(b => b.mesh)) {
     string key = ft.name ~ ":" ~ name;
     if(key in app.world.features.meshes) continue;
     auto mesh = makePrimitive(name);
@@ -170,7 +170,7 @@ Feature[] addFeatureInstances(ref GameApp app, Feature[] features, ref immutable
 
 /** Re-lay every loaded feature's tile-penalty footprint (static hard blocks). */
 void stampFeatureFootprints(ref GameApp app) {
-  foreach(ref ft; featureTable) {
+  foreach(ref ft; placedTable) {
     if(ft.tilePenalty <= 0.0f) continue;
     foreach(coord, ref chunkFeatures; app.world.features[ft.name]) {
       if(coord !in app.world.chunks) continue;
@@ -183,7 +183,7 @@ void stampFeatureFootprints(ref GameApp app) {
 void rebuildInstances(ref GameApp app) {
   app.world.data.tilePenalties.clear();
   foreach(ref mesh; app.world.features.meshes.values) mesh.instances.reset();
-  foreach(ref ft; featureTable) {
+  foreach(ref ft; placedTable) {
     foreach(coord, ref chunkFeatures; app.world.features[ft.name]){
       if(coord !in app.world.chunks) continue;
       chunkFeatures = app.addFeatureInstances(chunkFeatures, ft, app.world.features.meshes);
@@ -204,7 +204,7 @@ void rebuildAllFeatures(ref GameApp app) {
 /** Forget cached features for chunk `coord`, but only if it carries no player modifications. */
 void removeAllFeatures(ref GameApp app, int[3] coord) {
   if(coord in app.world.features.modified) return;
-  foreach(ref ft; featureTable) {
+  foreach(ref ft; placedTable) {
     if(coord !in app.world.features[ft.name]) continue; // Skip: Feature-types not in this chunk
     foreach(f; app.world.features[ft.name].getOr(coord, null)){ app.world.instanceCache.remove(f.rootTile); }
     app.world.features[ft.name].remove(coord);
