@@ -1,5 +1,5 @@
 /** 
- * Authors: Danny Arends (adapted from CalderaD)
+ * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
@@ -103,9 +103,7 @@ void updateMaterials(ref GameApp app) {
   foreach (tt; 0 .. RESOURCE_COUNT) {
     auto ttype = cast(ResourceType)tt;
     app.materials[tt].tid = app.textures.idx(resourceTable[ttype].textures.texOf("3D"));
-    if(resourceTable[ttype].mesh != "Blocks") { 
-      app.materials[tt].nid = app.textures.idx(resourceTable[ttype].textures.texOf("3D").replace("_base", "_normal")); 
-    }
+    app.materials[tt].nid = app.textures.idx(resourceTable[ttype].textures.texOf("3D").replace("_base", "_normal")); 
   }
   foreach (ti; 1 .. cast(int)ItemTemplate.max + 1) {
     auto t = cast(ItemTemplate)ti;

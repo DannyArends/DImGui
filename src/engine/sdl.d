@@ -30,7 +30,7 @@ extern(C) @nogc void myLogFn(void* userdata, int category, SDL_LogPriority prior
 enum { MAIN = 0, TTF = 1, IMG = 2, MIX = 3 };
 enum { START = 0, STARTUP = 1, FRAMESTART = 2, FRAMESTOP = 3, LASTTICK = 4, LASTFRAME = 5 };
 
-/** Initialize SDL libraries (SDL2, SDL_TTF, SDL_IMG, SDL_Mixer) */
+/** Initialize SDL libraries (SDL3, SDL_TTF, SDL_IMG, SDL_Mixer) */
 App initializeSDL() {
   int[4] init;
   App app;
@@ -70,9 +70,8 @@ App initializeSDL() {
   if(app.verbose) SDL_Log("SDL_CreateWindow: %p", app.window);
 
   if(!app.window) {
-    SDL_Log("Unable to create a window (is Vulkan available ?)");
-    checkSDLError();
-    abort();
+    SDL_Log("Unable to create a window: %s", SDL_GetError());
+    stop("Vulkan Unavailable", "Could not create a Vulkan window, your GPU or driver does not support the required Vulkan features.");
   }
   version(Android) {
     SDL_SetEventFilter(cast(SDL_EventFilter)&sdlEventsFilter, &app); /// Handle Android immediate events [we ignore @nogc and nothrow]

@@ -7,18 +7,13 @@ public import phobos;
 public import structures;
 
 import sdl : SDL_WINDOW_MINIMIZED;
+import vulkan : vkResultStr;
 
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS", RESOLVE = "RESOLVE"};
 
 version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
 
-/** Main application structure, TODOs:
-  - Bloom/HDR: scaffolding is there, for a big visual improvement
-  - GPU-driven indirect draw (probably not possible, due to how our pipeline works)
-  - SSAO bilateral blur pass (denoise the AO)
-  - Screen-space reflections on water
-  - Chunk/object LOD
-*/
+/** Main application structure (see docs/roadmap.md for planned engine work) */
 struct App {
   SDL_Window* window;
   alias window this;
@@ -137,7 +132,7 @@ struct App {
   // Global flags
   LMode lMode = LMode.LightsAndShadows;                                         /// Allow shadows to be disabled
   bool finished = false;                                                        /// Is the main loop finished ?
-  bool enableValidation = true;                                                 /// Should validation be enabled ?
+  bool enableValidation = false;                                                /// Should validation be enabled ?
   bool nameVulkanObjects = true;                                                /// Name Vulkan Objects via vkSetDebugUtilsObjectName
   bool showBounds = false;                                                      /// Show bounding boxes
   bool showLights = false;                                                      /// Show lights
@@ -164,18 +159,3 @@ struct App {
   @property pure @nogc VkPhysicalDevice physicalDevice() nothrow { return(physicalDevices[selectedDevice]); }
   @property VkPhysicalDeviceProperties properties() { VkPhysicalDeviceProperties p; vkGetPhysicalDeviceProperties(physicalDevice(), &p); return(p); }
 }
-
-/** Check result of Vulkan call and print if an error occured */
-extern(C) @nogc void enforceVK(VkResult err) nothrow {
-  if (err == VK_SUCCESS) return;
-  SDL_Log("[enforceVK] Error: VkResult = %d", err);
-  if (err < 0) abort();
-}
-
-/** Check result of SpirV-Compiler call and print if an error occured */
-@nogc void enforceSPIRV(App app, spvc_result err) nothrow {
-  if(err == SPVC_SUCCESS) return;
-  SDL_Log("[enforceSPIRV] Error: %s", spvc_context_get_last_error_string(app.context));
-  abort();
-}
-

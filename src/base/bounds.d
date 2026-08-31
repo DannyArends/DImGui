@@ -31,3 +31,20 @@ struct Bounds {
   /** Half-extent (size / 2) per axis */
   @nogc pure @property float[3] extent() nothrow const { float[3] e = bounds[1][] - bounds[0][]; e[] *= 0.5f; return(e); }
 }
+
+unittest {
+  Bounds b;
+  b.update([1, 2, 3]);
+  b.update([-1, 5, 0]);
+  b.update([4, 2, -2]);
+  assert(b.min == [-1f, 2f, -2f], "min not the componentwise minimum");
+  assert(b.max == [4f, 5f, 3f],  "max not the componentwise maximum");
+  assert(b.size == [5f, 3f, 5f], "size = max - min");
+  assert(b.center == [1.5f, 3.5f, 0.5f], "center = midpoint of min/max");
+
+  // merging another Bounds expands correctly
+  Bounds c;
+  c.update([10, 10, 10]);
+  b.update(c);
+  assert(b.max == [10f, 10f, 10f], "merge did not expand max");
+}

@@ -10,58 +10,57 @@ git clone --recursive https://github.com/DannyArends/DImGui.git
 git submodule update --init --recursive  # if already cloned
 ```
  
-### Compilation [Linux]
-Build all dependencies from `app/jni/` using cmake, then compile with dub.
-See [app/jni/LINUX.md](../app/jni/LINUX.md) for the full Linux build commands for each dependency.
- 
-Once dependencies are built:
+### Compilation (Linux)
+Build all dependencies from `app/jni/` using cmake. This can be done by following command:
 ```
-dub
-```
-
-### Unitests
-Run unittests with:
-```
-dub --build=unittest --force
+rm -rf app/jni/build
+python3 app/jni/shaderc/utils/git-sync-deps
+cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR=/usr -DSDL3_DIR="$PWD/app/jni/SDL"
+cmake --build app/jni/build -j$(nproc)
 ```
 
-### Compilation [MS Windows x64]
- 
+Once dependencies are built, compile with dub:
+```
+dub --build=release --force
+```
+
+### Compilation (MS Windows)
 * Install [Visual Studio 2019 Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) with **MSVC v142** and the **Windows 10 SDK**
 * Install the [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
 * Check the Vulkan SDK version in [dub.json](../dub.json) and update if needed
- 
-Build all dependencies from `app/jni/` using cmake.
-See [app/jni/WINDOWS.md](../app/jni/WINDOWS.md) for the full Windows build commands for each dependency.
- 
-Once dependencies are built:
+
+Build all dependencies from `app/jni/` using cmake. This can be done by following command:
 ```
-dub
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+rmdir /s /q app\jni\build 2>nul
+python app\jni\shaderc\utils\git-sync-deps
+cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR="C:/VulkanSDK/1.4.341.1" -DSDL3_DIR="%CD%/app/jni/SDL"
+cmake --build app/jni/build --config Release -j10
 ```
 
-
-#### Cross-Compilation [MS Windows x64 -> Android]
+Once dependencies are built, compile the resource file and the executable:
 ```
-set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr
-set PATH=%PATH%;C:\Users\Danny\AppData\Local\Android\Sdk\platform-tools
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+rc /nologo /fo app\windows\CalderaD.res app\windows\CalderaD.rc
+dub --build=release --force
+```
 
-gradlew --stop
+### Generate a MS Windows installer
+Prerequisites:
+* [Inno Setup 6+](https://jrsoftware.org/isdl.php) (or `winget install JRSoftware.InnoSetup`). The compiler is `ISCC.exe`; it is not added to `PATH` by default, so either add its folder (e.g. `C:\Program Files (x86)\Inno Setup 6`) to `PATH` or call it by full path.
+* The commands below **must run from a `vcvars64` shell**: `app\installer.iss` reads `%VCToolsRedistDir%` (set by `vcvars64.bat`) to locate and bundle the VC++ runtime DLLs. Running `iscc` outside that shell fails with a "VCToolsRedistDir is not set" error.
 
-echo === Building native libs ===
-gradlew externalNativeBuildDebug
+For a distributable build, make sure validation layers and verbose logging are disabled in `src/engine.d`. Then compile and package:
+```
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+rc /nologo /fo app\windows\CalderaD.res app\windows\CalderaD.rc
+dub build --build=release
+iscc app\installer.iss
+```
+The installer is written to `bin\CalderaD-Setup.exe`.
 
-echo === Building D code (libmain.so) ===
-dub build --build=release --compiler=ldc2 --arch=aarch64-unknown-linux-android --config=android-64 --force
-
-echo === Assembling APK & Installing ===
-gradlew assembleDebug
-adb install -r app\build\outputs\apk\debug\app-debug.apk
-
-echo === Launching ===
-adb shell am force-stop org.libsdl.app
-adb shell monkey -p org.libsdl.app -c android.intent.category.LAUNCHER 1
-
-echo === Connect Logcat ===
-adb logcat -c
-adb logcat -s SDL,DEBUG,AndroidRuntime,libc
+### Unittests (MS Windows & Linux)
+Run unittests with:
+```
+dub --build=unittest --force
 ```

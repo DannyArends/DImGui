@@ -1,131 +1,171 @@
 cmake_minimum_required(VERSION 3.15)
 project(cimgui)
-if(ANDROID)
-    # SDL3
-    set(SDL_STATIC OFF)
-    set(SDL_SHARED ON)
-    set(SDL_TESTS OFF)
-    set(SDL_TEST_LIBRARY OFF)
-    set(SDL_EXAMPLES OFF)
-    set(SDL_HIDAPI_LIBUSB OFF)
-    add_subdirectory(SDL SDL_build)
-    set(SDL3_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SDL)
-
-    # spirv_cross
-    cmake_policy(SET CMP0077 NEW)
-    set(SPIRV_CROSS_ENABLE_TESTS OFF)
-    set(SPIRV_CROSS_CLI OFF)
-    set(SPIRV_CROSS_ENABLE_MSL OFF)
-    set(SPIRV_CROSS_SHARED ON CACHE BOOL "" FORCE)
-    add_subdirectory(spirv_cross spirv_cross_build)
-
-    # assimp
-    set(ASSIMP_BUILD_TESTS OFF)
-    add_compile_definitions("FOPEN_FUNC(filename,mode)=fopen(filename,mode)")
-    set(ASSIMP_INSTALL OFF)
-    set(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
-    set(ASSIMP_NO_EXPORT ON)
-    set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
-    set(ASSIMP_BUILD_FBX_IMPORTER ON)
-    set(ASSIMP_BUILD_3DS_IMPORTER ON)
-    set(ASSIMP_BUILD_OBJ_IMPORTER ON)
-    add_subdirectory(assimp assimp_build)
-
-    # shaderc
-    set(SHADERC_SKIP_TESTS ON)
-    set(SHADERC_SKIP_EXAMPLES ON)
-    set(SHADERC_SKIP_COPYRIGHT_CHECK ON)
-    set(SHADERC_ENABLE_WGSL_OUTPUT OFF)
-    set(ENABLE_GLSLANG_BINARIES OFF)
-    set(ENABLE_CTEST OFF)
-    add_subdirectory(shaderc shaderc_build)
-
-    # SDL_image
-    set(SDLIMAGE_AVIF OFF) 
-    set(SDLIMAGE_WEBP OFF)
-    set(SDLIMAGE_TIF OFF)
-    set(SDLIMAGE_XCF OFF)
-    set(SDLIMAGE_XPM OFF)
-    set(SDLIMAGE_XV OFF)
-    set(SDLIMAGE_LBM OFF)
-    set(SDLIMAGE_PCX OFF)
-    set(SDLIMAGE_PNM OFF)
-    set(SDLIMAGE_QOI OFF)
-    set(SDLIMAGE_SVG OFF)
-    set(SDLIMAGE_TGA OFF)
-    set(SDLIMAGE_GIF OFF)
-    set(SDLIMAGE_ANI OFF)
-    set(SDLIMAGE_SAMPLES OFF)
-    set(SDLIMAGE_TESTS OFF)
-    add_subdirectory(SDL_image SDL_image_build)
-
-    # SDL_mixer
-    set(SDLMIXER_AIFF OFF)
-    set(SDLMIXER_VOC OFF)
-    set(SDLMIXER_AU OFF)
-    set(SDLMIXER_FLAC OFF)
-    set(SDLMIXER_GME OFF)
-    set(SDLMIXER_MOD OFF)
-    set(SDLMIXER_MP3 OFF)
-    set(SDLMIXER_MIDI OFF)
-    set(SDLMIXER_OPUS OFF)
-    set(SDLMIXER_VORBIS_STB OFF)
-    set(SDLMIXER_VORBIS_VORBISFILE OFF)
-    set(SDLMIXER_WAVPACK OFF)
-    set(SDLMIXER_EXAMPLES OFF)
-    set(SDLMIXER_TESTS OFF)
-    add_subdirectory(SDL_mixer SDL_mixer_build)
-
-    # freetype
-    add_subdirectory(freetype freetype_build)
-
-    # Vulkan Memory Allocator
-    add_subdirectory(cvma cvma_build)
+# ---------------------------------------------------------------------------
+# Dependency build (all platforms). All outputs collected into one folder so
+# downstream (dub.json) needs a single -L / copy path instead of per-dep dirs.
+# ---------------------------------------------------------------------------
+if(NOT ANDROID)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)  # .dll / .so
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)  # .so
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)  # .lib / .a import libs
 endif()
+cmake_policy(SET CMP0077 NEW)
+
+# SDL3
+set(SDL_STATIC OFF)
+set(SDL_SHARED ON)
+set(SDL_TESTS OFF)
+set(SDL_TEST_LIBRARY OFF)
+set(SDL_EXAMPLES OFF)
+if(NOT ANDROID)
+  set(SDL_X11_XTEST OFF)
+endif()
+if(ANDROID)
+    set(SDL_HIDAPI_LIBUSB OFF)
+endif()
+add_subdirectory(SDL SDL_build)
+set(SDL3_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SDL)
+
+# spirv_cross
+set(SPIRV_CROSS_ENABLE_TESTS OFF)
+set(SPIRV_CROSS_CLI OFF)
+set(SPIRV_CROSS_ENABLE_MSL OFF)
+set(SPIRV_CROSS_SHARED ON CACHE BOOL "" FORCE)
+add_subdirectory(spirv_cross spirv_cross_build)
+
+# assimp
+set(ASSIMP_BUILD_TESTS OFF)
+if(NOT ANDROID)
+set(ASSIMP_BUILD_ZLIB OFF)
+endif()
+if(ANDROID)
+  add_compile_definitions("FOPEN_FUNC(filename,mode)=fopen(filename,mode)")
+endif()
+set(ASSIMP_INSTALL OFF)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
+set(ASSIMP_NO_EXPORT ON)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
+set(ASSIMP_BUILD_FBX_IMPORTER ON)
+set(ASSIMP_BUILD_3DS_IMPORTER ON)
+set(ASSIMP_BUILD_OBJ_IMPORTER ON)
+add_subdirectory(assimp assimp_build)
+
+# shaderc
+set(SHADERC_SKIP_TESTS ON)
+set(SHADERC_SKIP_EXAMPLES ON)
+set(SHADERC_SKIP_COPYRIGHT_CHECK ON)
+set(SHADERC_ENABLE_WGSL_OUTPUT OFF)
+set(ENABLE_GLSLANG_BINARIES OFF)
+set(ENABLE_CTEST OFF)
+if(NOT ANDROID)
+  set(SPIRV_TOOLS_BUILD_STATIC OFF)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  set(SPIRV_SKIP_EXECUTABLES ON)
+  set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
+  set(SPIRV_HEADERS_SKIP_INSTALL ON)
+endif()
+add_subdirectory(shaderc shaderc_build)
+if(NOT ANDROID)
+  unset(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS)
+endif()
+
+# SDL_image
+set(SDLIMAGE_AVIF OFF)
+set(SDLIMAGE_WEBP OFF)
+set(SDLIMAGE_TIF OFF)
+set(SDLIMAGE_XCF OFF)
+set(SDLIMAGE_XPM OFF)
+set(SDLIMAGE_XV OFF)
+set(SDLIMAGE_LBM OFF)
+set(SDLIMAGE_PCX OFF)
+set(SDLIMAGE_PNM OFF)
+set(SDLIMAGE_QOI OFF)
+set(SDLIMAGE_SVG OFF)
+set(SDLIMAGE_TGA OFF)
+set(SDLIMAGE_GIF OFF)
+set(SDLIMAGE_ANI OFF)
+set(SDLIMAGE_SAMPLES OFF)
+set(SDLIMAGE_TESTS OFF)
+if(ANDROID)
+    set(ZLIB_INCLUDE_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/SDL_image/external/zlib")
+    set(ZLIB_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/SDL_image/external/zlib")
+endif()
+add_subdirectory(SDL_image SDL_image_build)
+
+# SDL_mixer
+set(SDLMIXER_AIFF OFF)
+set(SDLMIXER_VOC OFF)
+set(SDLMIXER_AU OFF)
+set(SDLMIXER_FLAC OFF)
+set(SDLMIXER_GME OFF)
+set(SDLMIXER_MOD OFF)
+set(SDLMIXER_MP3 OFF)
+set(SDLMIXER_MIDI OFF)
+set(SDLMIXER_OPUS OFF)
+set(SDLMIXER_VORBIS_STB OFF)
+set(SDLMIXER_VORBIS_VORBISFILE OFF)
+set(SDLMIXER_WAVPACK OFF)
+set(SDLMIXER_EXAMPLES OFF)
+set(SDLMIXER_TESTS OFF)
+add_subdirectory(SDL_mixer SDL_mixer_build)
+
+# freetype
+if(NOT ANDROID)
+  set(FT_DISABLE_HARFBUZZ ON)
+  set(FT_DISABLE_BROTLI ON)
+  set(FT_DISABLE_ZLIB ON)
+  set(FT_DISABLE_BZIP2 ON)
+  set(FT_DISABLE_PNG ON)
+endif()
+add_subdirectory(freetype freetype_build)
+
+# Vulkan Memory Allocator
+add_subdirectory(cvma cvma_build)
+
 # Options
-option(CIMGUI_STATIC     "Build as static library"  OFF)
-option(CIMGUI_USE_SDL3   "Enable SDL3 backend"      ON)
-option(CIMGUI_USE_VULKAN "Enable Vulkan backend"    ON)
+option(CIMGUI_STATIC "Build as static library" OFF)
+option(CIMGUI_USE_SDL3 "Enable SDL3 backend" ON)
+option(CIMGUI_USE_VULKAN "Enable Vulkan backend" ON)
 
 # Paths — override with -DVULKAN_DIR=... and -DSDL3_DIR=...
 set(VULKAN_DIR "" CACHE PATH "Vulkan SDK root (Windows: C:/VulkanSDK/x.x.x.x, Linux: /usr)")
-set(SDL3_DIR   "" CACHE PATH "SDL3 root (e.g. ../app/jni/SDL)")
+set(SDL3_DIR "" CACHE PATH "SDL3 root (e.g. ../app/jni/SDL)")
 set(IMGUI_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/cimgui/imgui)
 set(CIMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cimgui)
 
 # Core sources
 set(SOURCES
-    ${CIMGUI_DIR}/cimgui.cpp
-    ${CIMGUI_DIR}/cimgui_impl.cpp
-    ${IMGUI_DIR}/imgui.cpp
-    ${IMGUI_DIR}/imgui_draw.cpp
-    ${IMGUI_DIR}/imgui_demo.cpp
-    ${IMGUI_DIR}/imgui_tables.cpp
-    ${IMGUI_DIR}/imgui_widgets.cpp
+  ${CIMGUI_DIR}/cimgui.cpp
+  ${CIMGUI_DIR}/cimgui_impl.cpp
+  ${IMGUI_DIR}/imgui.cpp
+  ${IMGUI_DIR}/imgui_draw.cpp
+  ${IMGUI_DIR}/imgui_demo.cpp
+  ${IMGUI_DIR}/imgui_tables.cpp
+  ${IMGUI_DIR}/imgui_widgets.cpp
 )
 
 # Core includes
 set(INCLUDES
-    ${IMGUI_DIR}
-    ${IMGUI_DIR}/backends
+  ${IMGUI_DIR}
+  ${IMGUI_DIR}/backends
 )
 
 # Core defines
 set(DEFINES
-    IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+  IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 )
 
 # SDL3 backend
 if(CIMGUI_USE_SDL3)
-    if(ANDROID)
-        list(APPEND INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/SDL/include)
-    elseif(SDL3_DIR STREQUAL "")
-        message(FATAL_ERROR "SDL3_DIR not set — pass -DSDL3_DIR=path/to/SDL3")
-    else()
-        list(APPEND INCLUDES ${SDL3_DIR}/include)
-    endif()
-    list(APPEND SOURCES  ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp)
-    list(APPEND DEFINES  CIMGUI_USE_SDL3)
+  if(ANDROID)
+    list(APPEND INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/SDL/include)
+  elseif(SDL3_DIR STREQUAL "")
+    message(FATAL_ERROR "SDL3_DIR not set — pass -DSDL3_DIR=path/to/SDL3")
+  else()
+    list(APPEND INCLUDES ${SDL3_DIR}/include)
+  endif()
+  list(APPEND SOURCES  ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp)
+  list(APPEND DEFINES  CIMGUI_USE_SDL3)
 endif()
 
 # Vulkan backend
@@ -135,59 +175,51 @@ if(CIMGUI_USE_VULKAN)
     if(ANDROID)
         # NDK provides Vulkan headers automatically
     elseif(VULKAN_DIR STREQUAL "")
-        message(FATAL_ERROR "VULKAN_DIR not set — pass -DVULKAN_DIR=path/to/VulkanSDK")
+      message(FATAL_ERROR "VULKAN_DIR not set — pass -DVULKAN_DIR=path/to/VulkanSDK")
     elseif(WIN32)
-        list(APPEND INCLUDES ${VULKAN_DIR}/Include)
+      list(APPEND INCLUDES ${VULKAN_DIR}/Include)
     else()
-        list(APPEND INCLUDES ${VULKAN_DIR}/include)
+      list(APPEND INCLUDES ${VULKAN_DIR}/include)
     endif()
 endif()
 
 # Build target — must come before target_* calls
 if(CIMGUI_STATIC)
-    add_library(cimgui STATIC ${SOURCES})
+  add_library(cimgui STATIC ${SOURCES})
 else()
-    add_library(cimgui SHARED ${SOURCES})
+  add_library(cimgui SHARED ${SOURCES})
 endif()
 
 target_include_directories(cimgui PRIVATE ${INCLUDES})
 
 # Platform specific IMGUI_IMPL_API and compile options
 if(WIN32)
-    target_compile_definitions(cimgui PRIVATE
-        ${DEFINES}
-        "IMGUI_IMPL_API=extern \"C\" __declspec(dllexport)"
-    )
+  target_compile_definitions(cimgui PRIVATE
+      ${DEFINES}
+      "IMGUI_IMPL_API=extern \"C\" __declspec(dllexport)"
+  )
 else()
-    target_compile_definitions(cimgui PRIVATE
-        ${DEFINES}
-        "IMGUI_IMPL_API=extern \"C\""
-    )
-    target_compile_options(cimgui PRIVATE -fvisibility=default)
+  target_compile_definitions(cimgui PRIVATE
+      ${DEFINES}
+      "IMGUI_IMPL_API=extern \"C\""
+  )
+  target_compile_options(cimgui PRIVATE -fvisibility=default)
 endif()
 
 # Link dependencies
 if(CIMGUI_USE_SDL3)
-    if(WIN32)
-        target_link_directories(cimgui PRIVATE ${SDL3_DIR}/build)
-        target_link_libraries(cimgui PRIVATE SDL3)
-    elseif(ANDROID)
-        target_link_libraries(cimgui PRIVATE SDL3-shared)
-    else()
-        target_link_directories(cimgui PRIVATE ${SDL3_DIR}/build)
-        target_link_libraries(cimgui PRIVATE SDL3)
-    endif()
+  target_link_libraries(cimgui PRIVATE SDL3-shared)
 endif()
 
 if(CIMGUI_USE_VULKAN)
-    if(WIN32)
-        target_link_directories(cimgui PRIVATE ${VULKAN_DIR}/Lib)
-        target_link_libraries(cimgui PRIVATE vulkan-1)
-    elseif(ANDROID)
-        target_link_libraries(cimgui PRIVATE -lvulkan)
-    else()
-        target_link_libraries(cimgui PRIVATE vulkan)
-    endif()
+  if(WIN32)
+    target_link_directories(cimgui PRIVATE ${VULKAN_DIR}/Lib)
+    target_link_libraries(cimgui PRIVATE vulkan-1)
+  elseif(ANDROID)
+    target_link_libraries(cimgui PRIVATE -lvulkan)
+  else()
+    target_link_libraries(cimgui PRIVATE vulkan)
+  endif()
 endif()
 
 # Install

@@ -20,6 +20,7 @@ public import feature : Feature;
 public import inventory : Inventory, InventorySlot;
 public import jobs : Job, Need, JobState, Reach;
 public import gameobjects : Animals, Chunk, Clouds, Dwarves, PathMarkers, GhostCube, WaterTiles;
+public import input : GameTaskThread, ChunkReq, PathReq, CloudReq;
 public import orders : Order;
 public import pathfinding : PathRequest, PathResult, PathMarker;
 public import fall : Fall;
@@ -34,9 +35,8 @@ public import world : World, WorldData;
 import animalwindow : showAnimalContent;
 import block : settleBlocks;
 import buildwindow : showBuildContent;
-import boundingbox : computeBoundingBox;
-import clouds : buildCloudInstances, applyCloudInstances;
-import chunk : buildChunkData, finalizeChunk, postFinalizeChunks;
+import clouds : applyCloudInstances;
+import chunk : finalizeChunk, postFinalizeChunks;
 import dwarf : settleDwarves;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
@@ -47,7 +47,7 @@ import input : handleEvents, handleGameInput;
 import lights : updateSun;
 import lightswindow : showLightsContent;
 import normals : computeTangents;
-import pathfinding : canMoveTo, dispatchPathResult, pathfindWorker, dispatchPendingPaths;
+import pathfinding : canMoveTo, dispatchPathResult, dispatchPendingPaths;
 import persistence : loadWorld, saveWorld;
 import resources : injectResourceMeshes, updateMaterials;
 import settingswindow : showSettingsContent;
@@ -61,48 +61,7 @@ import waterwindow : showWaterContent;
 import worldwindow : showWorldContent;
 import wboit: testWBOIT;
 
-/** Worker thread variant that also handles chunk building and pathfinding requests */
-class GameTaskThread : TaskThread {
-  /** Construct a game worker bound to the main thread's Tid */
-  this(Tid id, bool verbose = false) { super(id, verbose); }
-
-  /** Per-loop: build a chunk or run a pathfinding search on request, sending the result back */
-  override void handleGameObjects() {
-    receiveTimeout(dur!"msecs"(-1),
-      (immutable(WorldData) wd, int[3] coord) {
-        auto chunk = new Chunk(buildChunkData(wd, coord), wd);
-        chunk.tiles.computeBoundingBox();
-        chunk.computeBoundingBox();
-        main.send(cast(immutable(Chunk))chunk, mytid);
-      },
-      (immutable(WorldData) wd, PathRequest req) {
-        auto result = pathfindWorker(wd, req);
-        main.send(cast(immutable(PathResult))result, mytid);
-      },
-      (immutable(WorldData) wd, immutable(CloudRequest) req) {
-        float[int[2]] density;
-        foreach(c; req.cells) density[c.key] = c.density;
-        auto inst = buildCloudInstances(wd, density, req.coords);
-        main.send(cast(immutable(CloudResult))CloudResult(inst), mytid);
-      }
-    );
-  }
-}
-
-/** Top-level Game state: engine App plus the game World
-  TODO:
-    - Workshops, and crafting at workshops
-    - Liquid barrels for wine/drinks from berries
-    - Barrels and Bins for stockpiles
-    - Allow stockpiles to be extended / shrunk / redrawn
-    - Render crafted objects through assimp models 
-    - Per-dwarf labor roles / job filtering (+ Stockpile priorities / hauling logistics)
-    - Dwarf skills & experience
-    - Item quality tiers
-    - Farming / planting
-    - Furniture placement (beds, tables) as world objects
-    - Wildlife & combat
-    */
+/** Top-level Game state: engine App plus the game World (see docs/roadmap.md for planned game work) */
 struct GameApp {
   App app;
   alias app this;
@@ -146,7 +105,7 @@ void initGame(ref GameApp app) {
   app.gameWindows ~= GameWindow(iconTextStr(cast(string)ICON_FA_WATER, "Water"), (uint font){ app.showWaterContent(font); });
 
   SDL_Log("createScene: Add Text");
-  app.addWorldText("CalderaD", [12.0f, 10.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
+  app.addWorldText(App.applicationName, [12.0f, 10.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
   SDL_Log("createScene: WBOIT test rectangles");
   app.testWBOIT();
   SDL_Log("initGame: done");

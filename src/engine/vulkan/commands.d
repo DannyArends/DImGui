@@ -42,7 +42,7 @@ struct CommandBuffer(size_t N){
 
 /** Draw per-object bounding boxes (debug, LINE_LIST, alpha-test variant) */
 void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
-  pushLabel(cmd, cstr("%d x Bounding Boxes", app.objects.length), Colors.lightgray);
+  pushLabel(cmd, Colors.lightgray, "%d x Bounding Boxes", app.objects.length);
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[VK_PRIMITIVE_TOPOLOGY_LINE_LIST].get(app, Specialization(false, true)));
   for(size_t x = 0; x < app.objects.length; x++) {
@@ -55,7 +55,7 @@ void drawBoundingBoxes(ref App app, VkCommandBuffer cmd) {
 /** Upload all dirty geometry once, before any render pass records, so every pass reads stable, current buffers. */
 void recordUploadPass(ref App app) {
   auto cmd = app.uploadCmd.begin(app, app.syncIndex, "Upload");
-  pushLabel(cmd, "Objects Buffering", Colors.lightgray);
+  pushLabel(cmd, Colors.lightgray, "Objects Buffering");
   app.bufferGeometries(cmd);
   if(!app.worldReady) app.transitionImageLayout(cmd, app.swapChainImages[app.frameIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   popLabel(cmd);
@@ -65,8 +65,8 @@ void recordUploadPass(ref App app) {
 /** Record the depth pre-pass: opaque geometry, depth-only, into app.depthCmd (feeds SSAO before the lit scene pass). */
 void recordDepthPrePass(ref App app) {
   auto cmd = app.depthCmd.begin(app, app.syncIndex, "DepthPrePass");
-  pushLabel(cmd, "Depth Pre-pass", Colors.lightgray);
-  pushLabel(cmd, "Descriptors & SSBO", Colors.lightgray);
+  pushLabel(cmd, Colors.lightgray, "Depth Pre-pass");
+  pushLabel(cmd, Colors.lightgray, "Descriptors & SSBO");
   app.updateDescriptorData(app.shaders, app.depthCmd.commands, app.syncIndex);
   popLabel(cmd);
 
@@ -96,7 +96,7 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
     auto s = Specialization(!obj.isOpaque, obj.instancedMesh, obj.isSDF, app.useSSAO, obj.isAnimated, depthPass, wboit, app.normalMapping && obj.hasNormalMaps);
     if(first || last != s) {
       if(!first) popLabel(cmd);
-      pushLabel(cmd, cstr("PIPELINE: topo: %d, A=%d, I=%d, S=%d, D=%d", topology, s.alpha, s.instanced, s.sdf, s.depthPass), Colors.lightgray);
+      pushLabel(cmd, Colors.lightgray, "PIPELINE: topo: %d, A=%d, I=%d, S=%d, D=%d", topology, s.alpha, s.instanced, s.sdf, s.depthPass);
       vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelines[topology].get(app, s)); 
       last = s; first = false; 
     }
@@ -109,7 +109,7 @@ void drawTopologyPass(ref App app, VkCommandBuffer cmd, VkPrimitiveTopology topo
 void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
   auto cmd = app.sceneCmd.begin(app, app.syncIndex, "Render");
 
-  pushLabel(cmd, "Rendering", Colors.lightgray);
+  pushLabel(cmd, Colors.lightgray, "Rendering");
   if(app.trace) SDL_Log("Starting Scene renderpass");
 
   if(app.camera.isDirty) { app.objects.cullFrustum(extractFrustum(app.camera.proj.multiply(app.camera.view))); app.camera.isDirty = false; }
@@ -142,7 +142,7 @@ void recordSceneCommandBuffer(ref App app, Shader[] shaders) {
 void recordPostCommandBuffer(ref App app) {
   auto cmd = app.postCmd.begin(app, app.syncIndex, "Post");
 
-  pushLabel(cmd, "Post-processing", Colors.lightgray);
+  pushLabel(cmd, Colors.lightgray, "Post-processing");
   if(app.trace) SDL_Log("Starting Post-processing");
 
   app.postCmd.pass.begin(cmd, app.frameIndex, app.camera.currentExtent, app.clearValue[0..1]);

@@ -45,7 +45,7 @@ private bool trySendPath(ref GameApp app, PathRequest req) {
   foreach(tid; app.concurrency.workers.keys) {
     if(!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, req);
+      tid.send(PathReq(cast(immutable(WorldData))app.world.data, req));
       return true;
     }
   }

@@ -111,3 +111,28 @@ LatticeMap!(T[uint]) unflatten(T)(const Diff!T[] flat) {
   foreach(f; 0 .. 6) r[f] = [wc[0]+FACE_OFFSETS[f][0], wc[1]+FACE_OFFSETS[f][1], wc[2]+FACE_OFFSETS[f][2]];
   return r;
 }
+
+unittest {
+  // Minimal lattice: a plain struct with the fields the templates read
+  struct L { float tileSize = 1.0f; float tileHeight = 1.0f; int chunkSize = 4; int chunkHeight = 4; float yOffset = 0.0f; }
+  L l;
+
+  // tileBelow / tileAbove: pure ±1 on Y
+  assert(tileBelow([3, 5, 7]) == [3, 4, 7]);
+  assert(tileAbove([3, 5, 7]) == [3, 6, 7]);
+
+  // world<->tile round-trips back to the same tile
+  int[3] t = [2, 3, 1];
+  auto w = l.tileToWorld(t);
+  assert(l.worldToTile(w) == t, "tileToWorld/worldToTile not inverse");
+
+  // tileToWorld scales by tileSize/tileHeight and applies yOffset
+  L l2 = { tileSize: 2.0f, tileHeight: 0.5f, chunkSize: 4, chunkHeight: 4, yOffset: -10.0f };
+  auto w2 = l2.tileToWorld([1, 4, 3]);
+  assert(w2.x == 2.0f && w2.y == 4*0.5f - 10.0f && w2.z == 6.0f, "tileToWorld scaling/offset wrong");
+
+  // tileNeighbours: 6 axis-aligned neighbours, all distinct, all Manhattan-distance 1
+  auto n = tileNeighbours([0, 0, 0]);
+  assert(n.length == 6);
+  foreach(nb; n) assert((abs(nb[0]) + abs(nb[1]) + abs(nb[2])) == 1, "neighbour not adjacent");
+}

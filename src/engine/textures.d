@@ -36,9 +36,10 @@ struct Texture {
     this.height = height;
     this.surface = surface;
   }
+
   @property uint mipLevels() const {
     if(surface is null) return 1; // no surface (e.g. compute texture): single level
-    return((path.indexOf("_base") >= 0) ? cast(uint)(floor(log2(max(surface.w, surface.h)))) + 1 : 1);
+    return((path.indexOf("_base") >= 0 || path.indexOf("_normal") >= 0) ? cast(uint)(floor(log2(max(surface.w, surface.h)))) + 1 : 1);
   }
 }
 
@@ -101,7 +102,7 @@ void checkPendingTextures(ref App app) {
 void transferTextureAsync(ref App app, ref Texture texture) {
   SingleTimeCommand cmdBuffer = app.beginSingleTimeCommands(app.queues.graphics.pool, true);
   GPUAllocation staging;
-  app.toGPU(cmdBuffer, texture, staging);
+  app.toGPU(cmdBuffer, texture, staging, (texture.path.indexOf("_normal") >= 0) ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_SRGB);
   vkEndCommandBuffer(cmdBuffer);
   VkSubmitInfo submitInfo = {
     sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,

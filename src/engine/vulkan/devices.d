@@ -26,6 +26,7 @@ void pickPhysicalDevice(ref App app, uint device = 0){
   app.printQueues();
 }
 
+/** Get the number of Multisample anti-aliasing (MSAA) samples */
 VkSampleCountFlagBits getMSAASamples(ref App app) {
   version (Android) { return VK_SAMPLE_COUNT_1_BIT; }
   VkSampleCountFlags counts = app.properties.limits.framebufferColorSampleCounts & app.properties.limits.framebufferDepthSampleCounts;
@@ -98,15 +99,10 @@ void createLogicalDevice(ref App app, uint device = 0, uint queueCount = 2){
   if(app.verbose) SDL_Log("vkCreateDevice[extensions:%d]: %p", app.deviceExtensions.length, app.device);
 
   app.setupQueues(qs);
-
-  /*
-  app.nameVulkanObject(app.device, toStringz("[DEVICE]"), VK_OBJECT_TYPE_DEVICE);
-  app.nameVulkanObject(app.physicalDevice, cstr("[PHYSICAL DEVICE] %s", fromStringz(app.properties.deviceName.ptr)), VK_OBJECT_TYPE_PHYSICAL_DEVICE);
-  app.nameVulkanObject(app.instance, toStringz("[INSTANCE]"), VK_OBJECT_TYPE_INSTANCE);
-  */
   if(app.verbose) SDL_Log("Queue: gfx=%d compute=%d transfer=%d", app.queues.graphics.family, app.queues.compute.family, app.queues.transfer.family);
 }
 
+/** List / Print information about a physical device */
 void list(VkPhysicalDevice physicalDevice, size_t i) {
   VkPhysicalDeviceProperties properties;
   vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -123,15 +119,20 @@ void list(VkPhysicalDevice physicalDevice, size_t i) {
   SDL_Log("|- Device type: %d", properties.deviceType);
 }
 
+/** Query available physical devices */
 void queryPhysicalDevices(ref App app) {
   uint nPhysDevices = 0;
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, null);
   if(app.verbose) SDL_Log("Number of physical vulkan devices found: %d", nPhysDevices);
+  if(nPhysDevices == 0) {
+    stop("No Vulkan Device", "No Vulkan-capable GPU found, a graphics card and drivers that support Vulkan 1.2 or newer is required.");
+  }
   app.physicalDevices.length = nPhysDevices;
   vkEnumeratePhysicalDevices(app.instance, &nPhysDevices, &app.physicalDevices[0]);
   if(app.verbose) foreach(i, physicalDevice; app.physicalDevices) { physicalDevice.list(i); }
 }
 
+/** Print (gfx) queue information */
 void printQueues(ref App app){
   uint32_t nQueue;
   vkGetPhysicalDeviceQueueFamilyProperties(app.physicalDevice, &nQueue, null);
@@ -145,4 +146,51 @@ void printQueues(ref App app){
     if(queueProperty.queueFlags & VK_QUEUE_TRANSFER_BIT) capabilities ~= "Transfer";
     SDL_Log(cstr("Queue[%d] size: %d: %s", i, queueProperty.queueCount, capabilities));
   }
+}
+
+/** Integration: full headless Vulkan bring-up (instance -> device -> VMA -> buffer), no window/surface */
+unittest {
+  import buffer : createBuffer;
+  import extensions : queryInstanceExtensionProperties;
+  import instance : createInstance;
+
+  App app;
+  app.enableValidation = false;                     // CI ICD (lavapipe) has no validation layer
+
+  // --- Instance: always testable, even with no physical device ---
+  app.createInstance();
+  assert(app.instance !is null, "vkCreateInstance produced a null instance");
+
+  auto exts = app.queryInstanceExtensionProperties();
+  assert(exts.length > 0, "no instance extensions reported");
+  assert(exts.has("VK_KHR_surface"), "VK_KHR_surface should always be present");
+  assert(!exts.has("VK_KHR_does_not_exist"), "phantom extension reported present");
+
+  // --- Device: skip gracefully if the runner has no usable Vulkan device ---
+  app.createLogicalDevice();                         // pickPhysicalDevice + queues + VMA
+  if(app.device is null) {                           // no ICD/device here: instance coverage still ran
+    vkDestroyInstance(app.instance, app.allocator);
+    return;
+  }
+  assert(app.physicalDevices.length >= 1, "no physical device enumerated");
+  assert(app.vma !is null, "VMA allocator not created");
+  assert(app.queues.graphics.family != uint.max, "graphics queue family unresolved");
+  assert(app.properties().limits.maxImageDimension2D >= 4096, "implausible device limits");
+
+  // --- Buffer: VMA allocates host-visible memory that maps and round-trips ---
+  VkBuffer buf; VmaAllocation alloc;
+  app.createBuffer(&buf, &alloc, 4096, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  assert(buf != VK_NULL_HANDLE && alloc !is null, "createBuffer failed");
+
+  void* mapped;
+  enforceVK(vmaMapMemory(app.vma, alloc, &mapped));
+  (cast(uint*)mapped)[0] = 0xDEADBEEF;
+  assert((cast(uint*)mapped)[0] == 0xDEADBEEF, "mapped memory did not retain written value");
+  vmaUnmapMemory(app.vma, alloc);
+
+  // --- Teardown in reverse creation order ---
+  vmaDestroyBuffer(app.vma, buf, alloc);
+  vmaDestroyAllocator(app.vma);
+  vkDestroyDevice(app.device, app.allocator);
+  vkDestroyInstance(app.instance, app.allocator);
 }

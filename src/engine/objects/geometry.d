@@ -59,7 +59,8 @@ class Geometry {
   bool instancedMesh = false;                       /// When true, meshdef is per-instance relative index
   bool castShadow = true;                           /// Boolean flag
   bool movable = false;                             /// re-emitted every frame (dynamic shadow caster) despite no onFrame
-  
+  bool globalNormals = false;                       /// normals come from the global MaterialBuffer
+
   @property @nogc bool inFrustum() nothrow const { return(box is null || box.visible); }
   @property @nogc bool isSDF() nothrow const { return(mName == "Text"); }
   @property bool isAnimated() nothrow { return(animations.length > 0); }
@@ -68,7 +69,8 @@ class Geometry {
   @property @nogc bool isDrawable() nothrow const { return(vertices.drawable && indices.drawable && instances.drawable); }
   @nogc bool isTopology(VkPrimitiveTopology t) nothrow { return(topology == t); }
   @property @nogc bool hasBoundingBox() nothrow const { return(!(box is null)); }
-  @property bool hasNormalMaps() const nothrow { 
+  @property bool hasNormalMaps() const nothrow {
+    if(globalNormals) return(true);
     foreach(ref m; materials) { if(aiTextureType_NORMALS in m.textures) { return(true); } } return(false);
   }
 
@@ -198,7 +200,7 @@ void draw(T)(ref App app, const(T) object, VkCommandBuffer cmd) {
   if(!object.isDrawable()) return;
 
   VkDeviceSize offset = 0;
-  pushLabel(cmd, cstr("Draw(T=%s)", object.geometry()), Colors.lightgray);
+  pushLabel(cmd, Colors.lightgray, "Draw(T=%s)", object.geometry());
 
   vkCmdBindVertexBuffers(cmd, VERTEX, 1, cast(VkBuffer*)&object.vertices.vb[object.vertices.slot(app.syncIndex)], &offset);
   vkCmdBindVertexBuffers(cmd, INSTANCE, 1, cast(VkBuffer*)&object.instances.vb[object.instances.slot(app.syncIndex)], &offset);

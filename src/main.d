@@ -30,6 +30,12 @@ import vulkan : cleanup;
 import window: createOrResizeWindow, checkForResize;
 import wboit : reportWBOITCommitment;
 
+version(unittest) shared static this() {
+  SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+  if(!SDL_Vulkan_LoadLibrary(null)) { SDL_Log("SDL_Vulkan_LoadLibrary failed: %s", SDL_GetError()); assert(false);}
+}
+version(unittest) shared static ~this() { SDL_Vulkan_UnloadLibrary(); SDL_Quit(); }
+
 /** Main entry point to the program */
 version (Android) {
   import core.runtime : rt_init;
@@ -95,4 +101,3 @@ void run(string[] args = null) {
   SDL_Log("Quit after %d / %d frames", app.totalFramesRendered, frames);
   app.cleanup();
 }
-

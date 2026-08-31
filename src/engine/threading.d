@@ -9,11 +9,14 @@ import assimp : isOpenAsset;
 import bone : mergeBones;
 import boundingbox : computeBoundingBox;
 import animation : animateAsset;
-import io : dir, fixPath;
+import io : dir, readPath;
 import material : registerMaterials;
 import images : cleanup;
 import surface : clampSurface, textureCap, isTexture, toRGBA;
 import textures: mapTextures, transferTextureAsync, checkPendingTextures;
+
+/** Worker to main result: immutable payload plus the finishing worker's Tid */
+struct Envelope(T) { immutable(T) payload; Tid tid; }
 
 /** Worker thread that loads textures and assimp assets off the main thread, returning results via messages */
 class TaskThread : Thread {
@@ -42,15 +45,15 @@ class TaskThread : Thread {
         (string path) {
           if (verbose) SDL_Log("Received path: %s", toStringz(extension(path)));
           if (path.isTexture()) {
-            auto surface = IMG_Load(fixPath(toStringz(path)));
+            auto surface = IMG_Load(readPath(toStringz(path)));
             if (SDL_GetPixelFormatDetails(surface.format).bytes_per_pixel < 4) { surface.toRGBA(verbose); }
             surface.clampSurface(textureCap(path));   // downscale oversized art before it reaches the GPU
             auto texture = cast(immutable(Texture))Texture(path, surface.w, surface.h, surface);
-            main.send(texture, mytid);
+            main.send(Envelope!Texture(texture, mytid));
           } else if(path.isOpenAsset()) {
             auto openasset = new OpenAsset(toStringz(path), verbose);
             openasset.computeBoundingBox();
-            main.send((cast(immutable(OpenAsset))(openasset)), mytid);
+            main.send(Envelope!OpenAsset(cast(immutable(OpenAsset))openasset, mytid));
           } else { main.send("Unknown file", mytid); }
         },
         (bool active) { this.active = active; }  // shutdown signal
@@ -83,9 +86,9 @@ void initializeAsync(ref App app, bool preLoadAssimp = false, uint numWorkers = 
 bool drainMessages(T)(ref App app, void delegate(T) handler, uint max = uint.max) {
   bool any = false;
   uint n = 0;
-  while(n < max && receiveTimeout(dur!"msecs"(0), (immutable(T) msg, Tid tid) {
-    app.concurrency.workers[tid] = false;
-    handler(cast(T)msg);
+  while(n < max && receiveTimeout(dur!"msecs"(0), (Envelope!T r) {
+    app.concurrency.workers[r.tid] = false;
+    handler(cast(T)r.payload);
     any = true;
     n++;
   })) {}

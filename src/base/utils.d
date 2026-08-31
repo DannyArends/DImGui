@@ -48,3 +48,18 @@ size_t removeAt(C)(ref C c, size_t index) {
 mixin template SwapRemove(alias arr) {
   void remove(size_t index) { arr.removeAt(index); instances.removeAt(index); }
 }
+
+unittest {
+  import std.math : isClose;
+
+  // lerp endpoints and midpoint
+  assert(lerp(2.0f, 10.0f, 0.0f) == 2.0f);
+  assert(lerp(2.0f, 10.0f, 1.0f) == 10.0f);
+  assert(lerp(2.0f, 10.0f, 0.5f) == 6.0f);
+  assert(isClose(lerp(2f, 4f, 0.5f), 3f));
+
+  // iDiv: floor-division for negatives (not C truncation)
+  assert(iDiv(7, 4) == 1);
+  assert(iDiv(-1, 4) == -1);   // floor(-0.25) = -1, NOT 0
+  assert(iDiv(-8, 4) == -2);
+}

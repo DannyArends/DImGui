@@ -195,3 +195,58 @@ pure LSym[] grammar(uint seed, int size, string axiom, const(Rule)[] rules, int 
     default:  return 0.0f;
   }
 }
+
+unittest {
+  import std.algorithm : map, filter, count;
+  import std.array : array;
+
+  // --- lex: reserved glyphs are one token each, module names are maximal runs ---
+  auto t = lex("A+B");
+  assert(t.length == 3);
+  assert(t[0].name == "A" && t[1].name == "+" && t[2].name == "B");
+
+  // module with integer growth parameter {n}
+  auto m = lex("Stem{3}");
+  assert(m.length == 1 && m[0].name == "Stem" && m[0].n == 3);
+
+  // parametric glyph owns its {arg}
+  auto g = lex("+{45}");
+  assert(g.length == 1 && g[0].name == "+" && g[0].hasArg && g[0].arg == 45.0f);
+
+  // --- evalExpr: n, n-k, n+k, literal ---
+  assert(evalExpr("n", 5) == 5);
+  assert(evalExpr("n-2", 5) == 3);
+  assert(evalExpr("n+4", 5) == 9);
+  assert(evalExpr("7", 5) == 7);
+
+  // --- expand: substitutes n into {expr} then tokenises ---
+  auto e = expand("X{n-1}", 4);
+  assert(e.length == 1 && e[0].name == "X" && e[0].n == 3);
+
+  // --- turnAxis / turnAngle ---
+  assert(turnAxis('+') == [0.0f, 0.0f, 1.0f]);
+  assert(turnAxis('-') == [0.0f, 0.0f, -1.0f]);
+  assert(turnAxis('A') == NO_AXIS);
+  TurtleConfig cfg;   // yaw=pitch=roll=90 defaults
+  assert(turnAngle('+', cfg) == 90.0f);
+  assert(turnAngle('&', cfg) == 90.0f);
+  assert(turnAngle('A', cfg) == 0.0f);
+
+  // --- END TO END: a bounded parametric rule grows to a fixed point deterministically ---
+  // A{n} -> A{n-1} while n in [1, ..), terminating at n=0. Start size=3 -> 3 rewrites.
+  Rule[] rules = [ Rule("A", "A{n-1}", 100, 1, int.max) ];
+  auto out1 = grammar(1234, 3, "A{n}", rules);
+  assert(out1.length == 1 && out1[0].name == "A", "fixed point should be a single A");
+  assert(out1[0].n == 0, "A{3} must decrement to A{0} at the fixed point");
+
+  // determinism: same seed+axiom+rules -> identical output
+  auto out2 = grammar(1234, 3, "A{n}", rules);
+  assert(out1.map!(s => s.name).array == out2.map!(s => s.name).array && out1.map!(s => s.n).array == out2.map!(s => s.n).array,
+         "grammar must be deterministic for a fixed seed");
+
+  // branching production expands token count
+  Rule[] branch = [ Rule("A", "A+A", 100, 1, 2) ];   // active only at n==1
+  auto b = grammar(7, 1, "A{n}", branch);
+  assert(b.count!(s => s.name == "A") == 2, "A+A should yield two A tokens");
+  assert(b.count!(s => s.name == "+") == 1, "with one + between them");
+}

@@ -332,9 +332,9 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
 /** Record the draw calls in the shadow command buffer */
 void recordShadowCommandBuffer(ref App app, uint syncIndex) {
   auto cmd = app.shadows.cmd.begin(app, syncIndex, "Shadow");
-  pushLabel(cmd, "Shadows", Colors.lightgray);
+  pushLabel(cmd, Colors.lightgray, "Shadows");
 
-  pushLabel(cmd, "Shadows Descriptors & SSBO", Colors.lightgray);
+  pushLabel(cmd, Colors.lightgray, "Shadows Descriptors & SSBO");
   app.updateDescriptorData(app.shadows.shaders, app.shadows.cmd.commands, syncIndex);
   popLabel(cmd);
 
@@ -351,14 +351,14 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       auto lFrustum = extractFrustum(app.shadows.slots[s].committed);
       bool rebuilt = app.shadows.slots[s].dirty;
       if(rebuilt) {
-        pushLabel(cmd, cstr("Static %d:%d in %d, reBuild: %d", first, c, s, rebuilt), Colors.lightgray);
+        pushLabel(cmd, Colors.lightgray, "Static %d:%d in %d, reBuild: %d", first, c, s, rebuilt);
         app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.slots[s].extent, true);
         app.shadows.slots[s].dirty = false;
         app.shadows.staticRebuilds++;
       }
       bool dyn = app.hasDynamicCasters(lFrustum);
       if(rebuilt || dyn || app.shadows.slots[s].hadDynamic) {
-        pushLabel(cmd, cstr("Copy & Dynamic %d:%d in %d, had: %d", first, c, s, app.shadows.slots[s].hadDynamic), Colors.lightgray);
+        pushLabel(cmd, Colors.lightgray, "Copy & Dynamic %d:%d in %d, had: %d", first, c, s, app.shadows.slots[s].hadDynamic);
         app.copyImageLayer(cmd, app.shadows.slots[s], 0, 1, app.shadows.slots[s].extent, app.shadows.format);
         app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.slots[s].extent, false);
         popLabel(cmd);

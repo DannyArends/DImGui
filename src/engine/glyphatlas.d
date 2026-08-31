@@ -8,7 +8,7 @@ import engine;
 import buffer : cleanup;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import images : cleanup;
-import io : readFile, fixPath;
+import io : readFile, readPath;
 import textures : toGPU;
 
 /** Glyph stores FreeType glyph data */
@@ -61,7 +61,7 @@ struct GlyphAtlas {
 /** Loads a GlyphAtlas from file */
 void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Medium.ttf",
                 ubyte pointsize = 64, dchar to = '\U000000FF', uint dim = 1024) {
-  filename = fixPath(filename);
+  filename = readPath(filename);
   if(app.verbose) SDL_Log("loadGlyphAtlas: %s", toStringz(filename));
   app.glyphAtlas = GlyphAtlas(filename);
   app.glyphAtlas.pointsize = (pointsize == 0) ? 12 : pointsize;
@@ -74,13 +74,9 @@ void loadGlyphs(ref App app, string filename = "data/fonts/Roboto-Medium.ttf",
   FT_Property_Set(app.glyphAtlas.ftLibrary, "sdf", "overlaps", &overlaps);
 
   app.glyphAtlas.fontData = readFile(toStringz(filename));
-  if(app.glyphAtlas.fontData.length == 0) {
-    SDL_Log("Error reading font file %s\n", toStringz(filename));
-    abort();
-  }
+  if(app.glyphAtlas.fontData.length == 0) { stop("Glyph Atlas", toStringz(format("Error reading font file %s\n", filename))); }
   if(FT_New_Memory_Face(app.glyphAtlas.ftLibrary, cast(const(ubyte)*)app.glyphAtlas.fontData.ptr, cast(int)app.glyphAtlas.fontData.length, 0, &app.glyphAtlas.face)) {
-    SDL_Log("Error loading FreeType face %s\n", toStringz(filename));
-    abort();
+    stop("Glyph Atlas", toStringz(format("Error loading FreeType face %s\n", filename))); 
   }
   FT_Set_Pixel_Sizes(app.glyphAtlas.face, 0, app.glyphAtlas.pointsize);
 

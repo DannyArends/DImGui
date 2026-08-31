@@ -16,6 +16,8 @@
   /* DMD v2.112.0 - ImportC lacks these GCC/Clang builtins; provide fallbacks for SDL3 */
   static inline int __builtin_clz(unsigned int x){ int n = 0; while(!(x & 0x80000000u)) { x <<= 1; n++; } return(n); }
   static inline int __builtin_ctz(unsigned int x){ int n = 0; while(!(x & 1u)) { x >>= 1; n++; } return(n); }
+  #define __builtin_mul_overflow(a, b, res) ({ *(res) = (a) * (b); (a) != 0 && (*(res)) / (a) != (b); })
+  #define __builtin_add_overflow(a, b, res) ({ *(res) = (a) + (b); *(res) < (a); })
 #endif
 #pragma attribute(pop)
 

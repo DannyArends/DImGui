@@ -8,7 +8,7 @@ import engine;
 import buffer : createBuffer, copyImageToBuffer;
 import commandpool : beginSingleTimeCommands, endSingleTimeCommands;
 import images : transitionImageLayout;
-import io : fixPath;
+import io : screenshotPath;
 import vram : mapped;
 
 void saveScreenshot(ref App app) {
@@ -35,7 +35,8 @@ void saveScreenshot(ref App app) {
 
   // Save as PNG
   auto ts = SDL_GetTicks();
-  string path = fixPath(format("data/screenshots/%d.png", ts));
+  SDL_CreateDirectory(toStringz(screenshotPath(App.applicationName)));
+  string path = screenshotPath(format("%s/%d.png", fromStringz(App.applicationName), ts));
   SDL_Surface* surface = SDL_CreateSurfaceFrom(app.camera.width, app.camera.height, SDL_PIXELFORMAT_RGBA32, data, app.camera.width * 4);
   IMG_SavePNG(surface, toStringz(path));
   SDL_DestroySurface(surface);

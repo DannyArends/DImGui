@@ -44,7 +44,7 @@ void pollEvents(ref App app) {
 }
 
 /** Pure engine frame timer (extracted from handleEvents). */
-double frameDelta(ref App app) {
+@nogc double frameDelta(ref App app) nothrow {
   return app.paused ? 0.0 : app.speed * ((app.time[FRAMESTOP] - app.time[LASTFRAME]) / 1000.0f);
 }
 

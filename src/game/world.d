@@ -1,5 +1,5 @@
 /** 
- * Authors: Danny Arends (adapted from CalderaD)
+ * Authors: Danny Arends
  * License: GPL-v3 (See accompanying file LICENSE.txt or copy at https://www.gnu.org/licenses/gpl-3.0.en.html)
  */
 
@@ -10,7 +10,7 @@ import dwarf : deleteDwarf;
 import events : removeGeometry;
 import feature : removeAllFeatures, rebuildAllFeatures, addFeatureInstances;
 import instancing : DrawInstance;
-import io : fixPath;
+import io : writePath;
 import lattice : chunkCoord;
 import lights : updateSun;
 import jobs : jobQueue;
@@ -37,9 +37,7 @@ struct WorldData {
   LatticeMap!(DrawInstance[][string]) instanceCache;
 
   /** Build a world-data file path: data/world/<seed>_<suffix>.bin (empty suffix = the main world file). */
-  private const(char)* worldFile(string suffix) const {
-    return toStringz(fixPath(format("data/world/%d_%d_%d%s.bin", seed[0], seed[1], seed[2], suffix)));
-  }
+  private const(char)* worldFile(string suffix) const { return toStringz(writePath(format("data/world/%d_%d_%d_%s.bin", seed[0], seed[1], seed[2], suffix))); }
 
   /** Returns the filesystem path for the world diffs file */
   const(char)* worldPath() const { return worldFile(""); }
@@ -100,7 +98,7 @@ bool dispatchWorker(ref GameApp app, int[3] coord){
   foreach(tid; app.concurrency.workers.keys) {
     if (!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
-      tid.send(cast(immutable(WorldData))app.world.data, coord);
+      tid.send(ChunkReq(cast(immutable(WorldData))app.world.data, coord));
       app.world.chunks.pending[coord] = true;
       if(app.verbose) SDL_Log(cstr("Loading chunk: %s A-sync", coord));
       return(true);
@@ -154,7 +152,7 @@ void updateWorld(ref GameApp app, float[3] lookat) {
 
   // Rebuild dirty chunks
   foreach (coord; app.world.chunks.keys) {
-    if (app.world.chunks[coord].dirty && coord !in app.world.chunks.pending) { app.timed!dispatchWorker(coord); }
+    if (app.world.chunks[coord].rebuild && coord !in app.world.chunks.pending) { app.timed!dispatchWorker(coord); }
   }
 }
 
@@ -195,5 +193,5 @@ void regenerateWorld(ref GameApp app) {
   app.world.data.seed = seed;
   app.loadWorld();
   app.updateSun();
-  app.addWorldText("CalderaD", [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
+  app.addWorldText(App.applicationName, [6.0f, 4.0f, 0.0f], [90.0f, 0.0f, 0.0f]);
 }

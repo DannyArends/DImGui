@@ -1,0 +1,80 @@
+name: unittest
+
+on:
+  push:
+    branches: [ development, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Cache: submodule sources & built native libraries under app/jni
+      - name: Cache dependencies (sources + built libs)
+        id: deps-cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            .git/modules
+            app/jni
+          key: deps-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+
+      - name: Install LDC
+        uses: dlang-community/setup-dlang@v2
+        with:
+          compiler: ldc-latest
+
+      # System dependencies
+      - name: System dependencies (onAlways)
+        run: sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
+
+      - name: System dependencies (onCacheMiss)
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build python3 \
+            libvulkan-dev \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxfixes-dev libxss-dev libxkbcommon-dev \
+            libwayland-dev wayland-protocols libdrm-dev libgbm-dev \
+            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+            libudev-dev libdbus-1-dev libibus-1.0-dev \
+            libasound2-dev libpulse-dev
+
+      # Clone
+      - name: Clone submodules
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: git submodule update --init --recursive
+
+      # Build native dependencies (only on cache miss)
+      - name: Build native dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          python3 app/jni/shaderc/utils/git-sync-deps
+          cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR=/usr -DSDL3_DIR="$PWD/app/jni/SDL"
+          cmake --build app/jni/build -j$(nproc)
+
+      # Save cache
+      - name: Save dependencies cache
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            .git/modules
+            app/jni
+          key: deps-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+
+      # Run
+      - name: Run unittests
+        env:
+          SDL_VIDEODRIVER: offscreen
+          SDL_VULKAN_LIBRARY: /usr/lib/x86_64-linux-gnu/libvulkan.so.1
+          SDL_AUDIODRIVER: dummy
+        run: dub --build=unittest --force

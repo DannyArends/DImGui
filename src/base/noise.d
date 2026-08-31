@@ -77,11 +77,6 @@ unittest {
   assert(valueNoise([0, 0, 0], 0) != valueNoise([0, 0, 0], 1));
   assert(valueNoise([0, 0, 0], 0) != valueNoise([1, 0, 0], 0));
 
-  // lerp endpoints and midpoint
-  assert(lerp(2.0f, 10.0f, 0.0f) == 2.0f);
-  assert(lerp(2.0f, 10.0f, 1.0f) == 10.0f);
-  assert(lerp(2.0f, 10.0f, 0.5f) == 6.0f);
-
   // smoothNoise at integer coords collapses to valueNoise of that cell
   // (fractional part 0 -> all weight on the lower corner)
   assert(isClose(smoothNoise([3.0f, 4.0f, 5.0f], 0), valueNoise([3, 4, 5], 0)));

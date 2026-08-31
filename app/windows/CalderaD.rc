@@ -1,0 +1,30 @@
+#include <windows.h>
+
+// Application icon (shown in Explorer, titlebar, taskbar)
+IDI_ICON1 ICON "CalderaD.ico"
+
+VS_VERSION_INFO VERSIONINFO
+  FILEVERSION     0,1,0,0
+  PRODUCTVERSION  0,1,0,0
+  FILEOS          VOS__WINDOWS32
+  FILETYPE        VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "080904b0"                       // language: English (UK), Unicode
+    BEGIN
+      VALUE "CompanyName",      "Danny Arends"
+      VALUE "FileDescription",  "CalderaD"
+      VALUE "FileVersion",      "0.1.0.0"
+      VALUE "InternalName",     "CalderaD"
+      VALUE "LegalCopyright",   "Copyright (C) 2026 Danny Arends. GPL-v3."
+      VALUE "OriginalFilename", "CalderaD.exe"
+      VALUE "ProductName",      "CalderaD"
+      VALUE "ProductVersion",   "0.1.0.0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x809, 1200       // 0x809 = en-GB, 1200 = Unicode
+  END
+END

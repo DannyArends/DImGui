@@ -173,7 +173,7 @@ void requestCloudRebuild(ref GameApp app) {
     if(!app.concurrency.workers[tid]) {
       app.concurrency.workers[tid] = true;
       app.world.weather.rebuildPending = true;
-      tid.send(cast(immutable(WorldData))app.world.data, immutable(CloudRequest)(cells.idup, coords.idup));
+      tid.send(CloudReq(cast(immutable(WorldData))app.world.data, immutable(CloudRequest)(cells.idup, coords.idup)));
       return;
     }
   } // no free worker this tick: retry next tick (pending stays false)

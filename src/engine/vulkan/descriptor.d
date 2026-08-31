@@ -175,3 +175,56 @@ void createDescriptors(ref App app, Shader[] shaders, Stage stage = Stage.RENDER
     vkDestroyDescriptorSetLayout(app.device, app.layouts[stage], app.allocator); 
   });
 }
+
+unittest {
+  import commandpool : createCommandPool, createCommandBuffer;
+  import devices : createLogicalDevice;
+  import instance : createInstance;
+  import reflection : createReflectionContext, reflectShader;
+  import shaders : createCompiler, compileShader;
+
+  App app;
+  app.enableValidation = false;
+  app.createInstance();
+  app.createLogicalDevice();
+  if(app.device is null) return;                 // no device on this runner
+  scope(exit) { vmaDestroyAllocator(app.vma); vkDestroyDevice(app.device, app.allocator); vkDestroyInstance(app.instance, app.allocator); }
+
+  // --- End-to-end: GLSL -> SPIR-V -> reflect -> build a real VkDescriptorSetLayout ---
+  app.createCompiler();
+  app.createReflectionContext();
+  auto vs = app.compileShader(q{
+    #version 450
+    layout(set = 0, binding = 0) uniform UBO { mat4 mvp; } ubo;
+    void main() { gl_Position = ubo.mvp * vec4(0.0); }
+  }, "layout_test.glsl", shaderc_glsl_vertex_shader);
+  vs.stage = VK_SHADER_STAGE_VERTEX_BIT;
+  app.reflectShader(vs);
+  assert(vs.descriptors.length == 1, "expected one reflected descriptor");
+
+  auto layout = app.createDescriptorSetLayout([vs]);
+  assert(layout != VK_NULL_HANDLE, "createDescriptorSetLayout returned null");
+  vkDestroyDescriptorSetLayout(app.device, layout, app.allocator);
+
+  // --- DescriptorLayoutBuilder builds a layout from hand-specified bindings ---
+  DescriptorLayoutBuilder builder;
+  builder.add(0, 1, VK_SHADER_STAGE_VERTEX_BIT,   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  builder.add(1, 4, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  auto l2 = builder.build(app.device);
+  assert(l2 != VK_NULL_HANDLE, "builder.build returned null");
+  vkDestroyDescriptorSetLayout(app.device, l2, app.allocator);
+
+  // --- add() merges stage flags when the same binding appears twice ---
+  DescriptorLayoutBuilder merged;
+  merged.add(0, 1, VK_SHADER_STAGE_VERTEX_BIT,   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  merged.add(0, 1, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  assert(merged.bindings.length == 1, "duplicate binding not merged");
+  assert(merged.bindings[0].stageFlags == (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), "stage flags not OR-merged");
+
+  // --- Command pool + buffer allocation on the graphics queue family ---
+  auto pool = app.createCommandPool(app.queues.graphics.family);
+  assert(pool != VK_NULL_HANDLE, "createCommandPool returned null");
+  auto cmds = app.createCommandBuffer(pool, 2);
+  assert(cmds.length == 2 && cmds[0] != VK_NULL_HANDLE, "command buffer allocation failed");
+  vkDestroyCommandPool(app.device, pool, app.allocator);
+}

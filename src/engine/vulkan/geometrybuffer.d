@@ -30,6 +30,7 @@ struct GeometryBuffer(T = ubyte) {
   @nogc uint slot(uint sync) nothrow const { return(vb.length ? sync % cast(uint)vb.length : 0); }
 }
 
+/** Cleanup a geometry buffer */
 @nogc void cleanup(T)(ref App app, ref GeometryBuffer!T buffer) nothrow {
   import buffer : cleanup;
   foreach(i; 0 .. buffer.staging.length){ app.cleanup(buffer.staging[i]); }
@@ -39,6 +40,7 @@ struct GeometryBuffer(T = ubyte) {
   buffer = GeometryBuffer!T();
 }
 
+/** Name a geometry buffer (Uses: DEBUG_UTILS_OBJECT_NAME) */
 void nameGeometryBuffer(T)(ref App app, GeometryBuffer!T buffer, string type, string name){
   foreach(i; 0 .. buffer.vb.length) {
     app.nameVulkanObject(buffer.vb[i], toStringz("["~type~"-BUF] " ~ name), VK_OBJECT_TYPE_BUFFER);

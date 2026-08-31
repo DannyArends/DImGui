@@ -62,3 +62,46 @@ ubyte[][string] loadSections(const(char)* path, bool verbose = false) {
   }
   return blobs;
 }
+
+unittest {
+  import io : writePath, exists;
+
+  void putU(ref ubyte[] b, uint x){ b ~= (cast(ubyte*)&x)[0 .. uint.sizeof]; }
+
+  auto sectionsF = toStringz(writePath("unittest_sections.bin"));
+  auto shortF = toStringz(writePath("unittest_short.bin"));
+  auto badF = toStringz(writePath("unittest_badmagic.bin"));
+  auto truncF = toStringz(writePath("unittest_truncated.bin"));
+  scope(exit) foreach(f; [sectionsF, shortF, badF, truncF]){ if(exists(f)) SDL_RemovePath(f); }
+
+  // Round-trip: save then load returns every section's bytes intact
+  Section[] original = [
+    Section("alpha", cast(ubyte[])[1, 2, 3, 4]),
+    Section("beta",  cast(ubyte[])[]),                       // empty section
+    Section("gamma", cast(ubyte[])[255, 0, 128, 64, 32]),
+  ];
+  saveSections(sectionsF, original);
+  auto blobs = loadSections(sectionsF);
+  assert(blobs.length == 3, format("wrong number of sections restored: got %d", blobs.length));
+  assert(blobs["alpha"] == cast(ubyte[])[1, 2, 3, 4], "alpha data corrupted");
+  assert(blobs["beta"].length == 0, "empty section not preserved");
+  assert(blobs["gamma"] == cast(ubyte[])[255, 0, 128, 64, 32], "gamma data corrupted");
+
+  // Short file (< 4-uint header) yields no sections
+  writeFile(shortF, cast(char[])[0, 1, 2]);
+  assert(loadSections(shortF).length == 0, "short file should yield no sections");
+
+  // Wrong magic yields no sections (triggers regenerate path)
+  ubyte[] bad;
+  putU(bad, 0xDEADBEEF); putU(bad, WORLD_SCHEMA); putU(bad, WORLD_PLATFORM); putU(bad, 0);
+  writeFile(badF, cast(char[])bad);
+  assert(loadSections(badF).length == 0, "bad magic should yield no sections");
+
+  // Truncated section (claims 100 data bytes, only 2 present) stops cleanly
+  ubyte[] trunc;
+  putU(trunc, WORLD_MAGIC); putU(trunc, WORLD_SCHEMA); putU(trunc, WORLD_PLATFORM); putU(trunc, 1);
+  putU(trunc, 3); trunc ~= cast(ubyte[])"key";
+  putU(trunc, 100); trunc ~= cast(ubyte[])[1, 2];
+  writeFile(truncF, cast(char[])trunc);
+  assert("key" !in loadSections(truncF), "truncated section must not be loaded");
+}

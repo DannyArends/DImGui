@@ -56,3 +56,22 @@ struct PackedArray(T) {
   @nogc @property size_t reserved() const nothrow { return store.length; }
 }
 
+unittest {
+  // PackedArray: append, capacity-vs-length, block append, reset, shrink
+  PackedArray!int pa;
+  pa ~= 10; pa ~= 20; pa ~= 30;
+  assert(pa.length == 3);
+  assert(pa.items == [10, 20, 30]);
+  assert(pa.reserved >= 3);                 // capacity grew to hold them
+  pa ~= [40, 50];                           // block append
+  assert(pa.items == [10, 20, 30, 40, 50]);
+  auto capAfter = pa.reserved;
+  pa.reset();                               // clears count, keeps capacity
+  assert(pa.length == 0 && pa.reserved == capAfter);
+  pa ~= 99;
+  assert(pa.items == [99] && pa.reserved == capAfter);  // reused backing, no realloc
+  pa.resize(3);
+  assert(pa.length == 3);                   // grows live count
+  pa.shrink(1);
+  assert(pa.length == 1);                   // drops count, capacity untouched
+}

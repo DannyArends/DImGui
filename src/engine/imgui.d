@@ -6,7 +6,7 @@
 import engine;
 
 import devices : getMSAASamples;
-import io : fixPath, isfile, readFile, writeFile;
+import io : isfile, readFile, writeFile, writePath;
 import sfxwindow : showSFXContent;
 import directorywindow : showDirectoryContent;
 import joystickwindow : showJoystickwindow;
@@ -65,7 +65,7 @@ void saveSettings() {
   const(char)* ini_data = igSaveIniSettingsToMemory(&ini_data_size);
   if (ini_data) {
     char[] data = (to!string(ini_data)).dup;
-    writeFile("imgui.ini", data, true);
+    writeFile(writePath("imgui.ini".ptr), data, true);
     SDL_Log("Saved ImGui INI data (size: %zu bytes)", ini_data_size);
   }
 }
@@ -87,7 +87,7 @@ void clearSettings() {
 
 /** Load ImGui settings from disk (or Android internal storage) */
 void loadSettings(const(char)* path = "imgui.ini") {
-  path = fixPath(path);
+  path = writePath(path);
   if(path.isfile()) {
     SDL_Log("Loading ImGui settings from %s", path);
     auto content = readFile(path);
@@ -165,7 +165,7 @@ void initializeImGui(ref App app){
 void recordImGuiCommandBuffer(ref App app) {
   auto cmd = app.imguiCmd.begin(app, app.syncIndex, "ImGui");
 
-  pushLabel(cmd, "ImGui", Colors.darkgray);
+  pushLabel(cmd, Colors.darkgray, "ImGui");
 
   // Render UI - must be called before begin() so rotation is applied before GPU submission
   ImDrawData* drawData = app.timed!renderGUI();

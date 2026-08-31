@@ -5,13 +5,13 @@
 
 import engine;
 
-import io : fixPath, isfile;
+import io : readPath, isfile;
 
 /** Set an icon for the SDL window */
 void setIcon(SDL_Window *window, const(char)* path = "data/icons/icon.png") {
   version(Android){ }else{
     if (path.isfile()) {
-      path = fixPath(path);
+      path = readPath(path);
       SDL_Surface* surface = IMG_Load(path);
       SDL_SetWindowIcon(window, surface);
       SDL_DestroySurface(surface);

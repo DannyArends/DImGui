@@ -89,12 +89,12 @@ void setTile(ref GameApp app, const int[3] tile, ResourceType newType = Resource
 
   app.world.chunks[coord].tileTypes[idx] = newType;
   app.world.data.diffs[coord][idx] = newType;
-  app.world.chunks[coord].dirty = true;
+  app.world.chunks[coord].rebuild = true;
 
   // Mark neighbouring chunks dirty if tile is on a chunk boundary
   foreach (n; tileNeighbours(tile)) {
     int[3] nc = app.world.chunkCoord(n);
-    if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].dirty = true;
+    if (nc != coord && nc in app.world.chunks) app.world.chunks[nc].rebuild = true;
   }
   app.world.paths.pending = [];
   app.invalidatePaths(tile);
