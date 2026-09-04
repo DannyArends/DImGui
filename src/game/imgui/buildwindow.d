@@ -10,10 +10,11 @@ import ghost : syncBuildGhosts;
 import inventory : deriveInventory;
 import jobs : jobQueue, placeTileJob, pinnedPickup, cleanWorksiteJob;
 import resources : hasShape, matchDemand;
-import workshop : buildWorkshopJob;
+import scheduler : pathTileFor;
 import textures : ImTextureRefFromID, idx;
 import vector : manhattan;
 import widgets : text;
+import workshop : buildWorkshopJob;
 
 /** A candidate block for a build slot: its id and distance to the reference tile. */
 private struct Cand { uint id; int dist; }
@@ -50,8 +51,9 @@ private Cand[][ResourceType] buildCandidates(ref GameApp app) {
     if(b.reserved || b.item.hasShape) continue;
     bool ok = anyBuildable ? resourceTable[b.item.material].buildable : b.item.matchDemand(need.cls, need.item);
     if(!ok) continue;
-    if(b.tile == noTile || b.tile == builtTile || b.tile == storedTile) continue;   // carried / consumed / stockpiled
-    groups[b.item.material] ~= Cand(id, manhattan(b.tile, rt));
+    int[3] at = app.world.pathTileFor(id, b);
+    if(at == noTile || at == builtTile) continue;                 // carried / consumed / unresolved
+    groups[b.item.material] ~= Cand(id, manhattan(at, rt));
   }
   foreach(m, ref list; groups) list.sort!((a, c) => a.dist < c.dist);
   return groups;
@@ -88,7 +90,7 @@ private void commitBuild(ref GameApp app) {
       if(b.blockID == noBlock) continue;
       auto p = b.blockID in app.world.drops;
       if(p is null) continue;
-      fetch ~= pinnedPickup(b.blockID, p.tile, p.item.material);
+      fetch ~= pinnedPickup(b.blockID, app.world.pathTileFor(b.blockID, *p), p.item.material);
     }
     jobQueue ~= buildWorkshopJob(app.world.inventory.placingWorkshop, tile, fetch);
   } else {
