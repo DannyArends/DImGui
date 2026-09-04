@@ -112,7 +112,7 @@ void storeBlockAt(ref World world, int[3] tile, uint blockID) {
         sp.contents ~= emptySlot;
       }
       sp.contents[slot] = blockID;
-      if(auto b = blockID in world.drops) { b.tile = storedTile; b.fall = Fall.init; }
+      if(auto b = blockID in world.drops) { b.tile = tile; b.fall = Fall.init; }
     }
   }
 }
