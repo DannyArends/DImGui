@@ -17,7 +17,6 @@ void entityGlyph(T)(ref T e, string icon) {
 
 /** Camera follow: track the uid-matching entity until it's gone. */
 void followEntity(M)(ref GameApp app, uint uid, M manager) {
-  app.camera.followOffset = [0.0f, 0.0f, 0.0f];
   app.camera.mode = CameraMode.follow;
   app.camera.follow = (ref float[3] target) {
     foreach(ref e; manager){ if(e.uid == uid) { target = e.visualPos; return true; } }

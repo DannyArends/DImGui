@@ -33,10 +33,8 @@ struct Camera {
   float           lastPinchDist = -1.0f;                    /// -1 = no active pinch
   bool            isDirty       = true;                     /// Camera moved/rotated this frame
   bool            godMode       = true;                     /// Move through walls
-  CameraMode      mode          = CameraMode.fps;          /// Active camera mode
-  bool delegate(ref float[3] target) follow;               /// Follow-target supplier; returns false when the target is gone
-  float[3]        followOffset  = [0.0f, 0.0f, 0.0f];      /// User pan applied on top of the followed target
-  float           turn          = 90.0f;                   /// Rotation speed, degrees/second
+  CameraMode      mode          = CameraMode.fps;           /// Active camera mode
+  bool delegate(ref float[3] target) follow;                /// Follow-target supplier; returns false when the target is gone
 
   @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -1.0f]); }
   @property @nogc float[3] right() const nothrow { return orientation.multiply([1.0f, 0.0f,  0.0f]); }
@@ -77,16 +75,10 @@ void updateCamera(ref App app, float dt) {
     app.tryMove(pan.normalize().vMul(app.camera.speed * dt));
   }
 
-  float yaw = (k[SDL_SCANCODE_E] ? 1.0f : 0.0f) - (k[SDL_SCANCODE_Q] ? 1.0f : 0.0f);
-  if(yaw != 0.0f) app.camera.drag(yaw * app.camera.turn * dt, 0.0f);
-
   if(app.camera.mode == CameraMode.follow) {
     float[3] target;
     if(app.camera.follow !is null && app.camera.follow(target)) {
-      float a = 1.0f - exp(-12.0f * dt);   // framerate-independent smoothing
-      float[3] want = target.vAdd(app.camera.followOffset);
-      app.camera.lookat = app.camera.lookat.vAdd(want.vSub(app.camera.lookat).vMul(a));
-      app.camera.isDirty = true;
+      app.camera.lookat = target; app.camera.isDirty = true;
     } else { app.camera.stopFollow(); }
   }
 }
@@ -101,7 +93,6 @@ void handleCameraKeys(ref App app, SDL_Event e) {
 @nogc void stopFollow(ref Camera camera) nothrow {
   camera.mode = CameraMode.fps;
   camera.follow = null;
-  camera.followOffset = [0.0f, 0.0f, 0.0f];
   camera.enterFPS();
 }
 
