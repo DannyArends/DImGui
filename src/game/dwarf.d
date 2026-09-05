@@ -133,17 +133,18 @@ void invalidatePaths(ref GameApp app, int[3] tile) {
   }
 }
 
-/** Overburdened: fumble a random item when more than half-full */
+/** Overburdened: fumble a random item when the pack is fuller than `above` (default 80%) */
 void overBurdened(ref GameApp app, ref Dwarf d, float above = 0.8f) {
   size_t filled = 0;
   foreach(ref s; d.inventory) if(!s.empty) filled++;
-  if((filled > cast(size_t)(above * d.inventory.length)) && uniform(0, 100) < 2) {   // ~2%/tick over 50%
+  if((filled > cast(size_t)(above * d.inventory.length)) && uniform(0, 100) < 2) {   // ~2%/tick over the fill threshold
     size_t slot = uniform(0, d.inventory.length);
     d.drop(app.world.drops, slot);   // no-op if that slot is empty
     app.play("DM-CGS-03", 0.2f);
   }
 }
 
+/** Log a throttled STUCK diagnostic for a dwarf that cannot reach its goal */
 void logStuck(ref GameApp app, ref Dwarf d) {
   static uint last = 0;
   if(app.totalFramesRendered - last < 60) return;
@@ -189,6 +190,7 @@ bool tryNeeds(ref GameApp app, ref Dwarf d) {
   return(false);
 }
 
+/** Blocked at target: ask the occupier aside, fail the job after a 4s timeout, else re-path */
 void handleBlocking(ref GameApp app, ref Dwarf d) {
   foreach(ref other; app.world.dwarves.dwarves) {
     if(other.uid == d.uid) continue;
@@ -242,6 +244,7 @@ void initDwarfMeshes(ref GameApp app) {
   }
 }
 
+/** Lazily create the Dwarves container, wire its frame/tick callbacks, and build meshes */
 void ensureDwarves(ref GameApp app) {
   if(app.world.dwarves !is null) return;
   app.world.dwarves = new Dwarves();
@@ -251,6 +254,7 @@ void ensureDwarves(ref GameApp app) {
   app.initDwarfMeshes();
 }
 
+/** Place a dwarf in the world: skeleton, torch light, name tag, roster entry */
 void addDwarf(ref GameApp app, ref Dwarf d, float[3] worldPos) {
   d.idleTicks[1] = uniform(3, 18);
   d.state = EntityState.Idle;
@@ -266,7 +270,7 @@ void addDwarf(ref GameApp app, ref Dwarf d, float[3] worldPos) {
 /** Spawn a Dwarf */
 void spawnDwarf(ref GameApp app) {
   auto tile = app.findFreeSurfaceTile();
-  if(tile[0] == int.min) return;
+  if(tile == noTile) return;
   app.ensureDwarves();
   Dwarf d; d.entity.data = EntityData!32(nextEntityUID++, randomColor(), tile);
   randomizeName(d);
@@ -294,11 +298,13 @@ void removeDwarfNameLabel(ref GameApp app, ref Dwarf d) {
   d.nameLabel = size_t.max;
 }
 
+/** Serialise all dwarves to their EntityData for saving */
 EntityData!32[] saveDwarfs(ref GameApp app) {
   if(app.world.dwarves is null) return [];
   return app.world.dwarves[].map!(d => d.entity.data).array;
 }
 
+/** Restore dwarves from saved EntityData and advance the UID counter past them */
 void loadDwarfs(ref GameApp app, EntityData!32[] data) {
   app.ensureDwarves();
   foreach(ref dd; data) { Dwarf d; d.entity.data = dd; app.addDwarf(d, app.world.tileToWorld(d.tile)); }
@@ -308,6 +314,7 @@ void loadDwarfs(ref GameApp app, EntityData!32[] data) {
   foreach(ref d; app.world.dwarves.dwarves) if(d.uid >= nextEntityUID) nextEntityUID = d.uid + 1;
 }
 
+/** Step falling dwarves: start a fall when unsupported, advance it, land on completion */
 void settleDwarves(ref GameApp app, float dt) {
   if(app.world.dwarves is null) return;
   foreach(ref d; app.world.dwarves.dwarves) {
