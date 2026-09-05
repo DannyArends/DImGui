@@ -31,7 +31,7 @@ dub --build=release --force
 
 Build all dependencies from `app/jni/` using cmake. This can be done by following command:
 ```
-call "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64 10.0.19041.0
 rmdir /s /q app\jni\build 2>nul
 python app\jni\shaderc\utils\git-sync-deps
 cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR="C:/VulkanSDK/1.4.341.1" -DSDL3_DIR="%CD%/app/jni/SDL"
@@ -40,7 +40,7 @@ cmake --build app/jni/build --config Release -j10
 
 Once dependencies are built, compile the resource file and the executable:
 ```
-call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64 10.0.19041.0
 rc /nologo /fo app\windows\CalderaD.res app\windows\CalderaD.rc
 dub --build=release --force
 ```
@@ -52,7 +52,7 @@ Prerequisites:
 
 For a distributable build, make sure validation layers and verbose logging are disabled in `src/engine.d`. Then compile and package:
 ```
-call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64 10.0.19041.0
 rc /nologo /fo app\windows\CalderaD.res app\windows\CalderaD.rc
 dub build --build=release
 iscc app\installer.iss
