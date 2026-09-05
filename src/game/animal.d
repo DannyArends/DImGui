@@ -10,6 +10,7 @@ import block : findFreeFood, noBlock, itemOf;
 import bone : mergeBones;
 import entity : isMoving, poseEntity, entityFor, tickEntity, entityMove;
 import feature : interactFeaturesAt;
+import gameobjects : buildInstancedMesh;
 import jobs : Job, consumeCarried;
 import lattice : tileToWorld, tileCoord, worldCoord, chunkCoord;
 import material : registerMaterials;
@@ -146,16 +147,9 @@ Animals ensureAnimals(ref GameApp app) {
   herd.onTick  = (){ animalTick(app, herd); };
   app.world.animals = herd;
   app.objects ~= herd;
-  foreach(ref e; entityTable) foreach(ref br; e.brushes) {   // register every animal brush mesh once
-    if(e.spawnOn.length == 0 || br.mesh in herd.meshes) continue;
-    auto mesh = makePrimitive(br.mesh);
-    if(mesh is null) continue;
-    mesh.initInstanced("Animal:" ~ br.mesh);
-    mesh.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
-    mesh.movable = true;
-    herd.meshes[br.mesh] = mesh;
-    app.objects ~= mesh;
-  }
+  foreach(ref e; entityTable) { foreach(ref br; e.brushes) {     // register every animal brush mesh once
+    if(e.spawnOn.length) app.buildInstancedMesh(herd.meshes, "Animal", br.mesh);
+  } }
   return herd;
 }
 

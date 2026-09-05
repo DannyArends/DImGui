@@ -8,38 +8,36 @@ import game;
 import block : noBlock;
 import matrix : multiply, translate, rotate, position, scale, translateScale;
 
-/** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
-class Dwarves : Geometry {
-  Dwarf[] dwarves;
-  alias dwarves this;
-  int selected = -1;
-  size_t[] tickOrder;
+/** Instanced roster of pawns of type T, backed by a swap-removable array. */
+class Pawns(Pawn, string label) : Geometry if(is(typeof(Pawn.init.entity) == Entity!N, uint N)) {
+  Pawn[] items;                     /// Backing roster of Pawns (each is-an Entity via alias this)
+  alias items this;
+  int selected = -1;                /// Selected index, -1 = none
+  size_t[] tickOrder;               /// Shuffled per-tick iteration order
   Geometry[string] meshes;          /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
   Skeleton[uint] skel;              /// per-uid rig + skeleton + animation
 
-  this() {
-    super();
-    initInstanced("Dwarves");
-  }
+  this() { super(); initInstanced(label); }
 
-  mixin SwapRemove!dwarves;
+  mixin SwapRemove!items;
 }
 
-/** Data-driven foraging animals, rendered as instanced tori */
-class Animals : Geometry {
-  Animal[] animals;
-  alias animals this;
-  int selected = -1;
-  int selectedType = -1;          /// species drill-down: entityTable index, -1 = show 
-  size_t[] tickOrder;
-  Geometry[string] meshes;        /// shared brush geometry per mesh name (Cube/Cylinder/Sphere)
-  Skeleton[uint] skel;            /// per-uid rig + skeleton + animation
+/** Dwarven bodies, baked from the [ENTITY:Dwarf] L-system, rendered instanced. */
+class Dwarves : Pawns!(Dwarf, "Dwarves") { alias dwarves = items; alias dwarves this; }
 
-  this() {
-    super();
-    initInstanced("Animals");
-  }
-  mixin SwapRemove!animals;
+/** Data-driven foraging animals, rendered as instanced tori */
+class Animals : Pawns!(Animal, "Animals") { alias animals = items; alias animals this; int selectedType = -1; }
+
+/** Build one instanced primitive for `mesh`, register it on `into`, and add it to the scene. */
+void buildInstancedMesh(ref GameApp app, ref Geometry[string] into, string prefix, string mesh) {
+  if(mesh in into) return;
+  auto m = makePrimitive(mesh);
+  if(m is null) return;
+  m.initInstanced(prefix ~ ":" ~ mesh);
+  m.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
+  m.movable = true;
+  into[mesh] = m;
+  app.objects ~= m;
 }
 
 /** Renderable cube geometry for individual blocks within a chunk, not selectable */

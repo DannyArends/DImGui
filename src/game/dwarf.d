@@ -12,6 +12,7 @@ import entity : entityFor, poseEntity, tickEntity, entityMove, isMoving;
 import inventory : deriveInventory;
 import lattice : tileBelow, worldToTile, tileToWorld, chunkCoord;
 import lights : addLight, removeLight, torchLight, TORCH_HEIGHT;
+import gameobjects : buildInstancedMesh;
 import ghost : syncBuildGhosts;
 import matrix : multiply, translate, rotate, position, scale, halfExtent;
 import names : randomizeName;
@@ -232,16 +233,7 @@ void dwarfTick(ref GameApp app) {
 
 /** Create and register one instanced primitive per distinct Dwarf brush mesh. */
 void initDwarfMeshes(ref GameApp app) {
-  foreach(ref br; entityFor("Dwarf").brushes) {
-    if(br.mesh in app.world.dwarves.meshes) continue;
-    auto mesh = makePrimitive(br.mesh);
-    if(mesh is null) continue;
-    mesh.initInstanced("Dwarf:" ~ br.mesh);
-    mesh.animations.length = 1;   // select the ANIMATED pipeline; boneCount stays 0 so updateMeshInfo leaves meshdef[3] alone
-    mesh.movable = true;
-    app.world.dwarves.meshes[br.mesh] = mesh;
-    app.objects ~= mesh;
-  }
+  foreach(ref br; entityFor("Dwarf").brushes) app.buildInstancedMesh(app.world.dwarves.meshes, "Dwarf", br.mesh);
 }
 
 /** Lazily create the Dwarves container, wire its frame/tick callbacks, and build meshes */
