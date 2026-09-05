@@ -42,6 +42,7 @@ struct Job(T) {
 
 Job!Dwarf[] jobQueue;
 
+/** Post-order flatten of a job's prereq tree into a linear list (clears prereqs) */
 Job!T[] flatten(T)(Job!T j) {
   Job!T[] r;
   foreach(p; j.prereqs) r ~= flatten(p);
@@ -56,6 +57,7 @@ const(Job!Dwarf)[] liveJobs(const World world, string name) {
   return(r);
 }
 
+/** Target tiles of all live jobs with this name */
 const(int[3])[] activeTiles(const World world, string jobName) { return world.liveJobs(jobName).map!(j => j.targetTile).array; }
 
 /** Claim the nearest free block of the required type for a job; sets j.targetTile to noTile if unavailable */
@@ -75,13 +77,13 @@ void claimBlock(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
 }
 
 /** Claim a standable neighbour tile adjacent to j.targetTile; sets j.targetTile to noTile if none found */
-void claimNeighbour(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) { 
-  foreach(n; tileNeighbours(j.targetTile)[0..2] ~ tileNeighbours(j.targetTile)[4..6]) {
-    if(app.world.isStandable(n)) { j.targetTile = n; return; }
-  }
+void claimNeighbour(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
+  int[3][6] ns = tileNeighbours(j.targetTile);
+  foreach(n; ns[0..2].chain(ns[4..6])) { if(app.world.isStandable(n)) { j.targetTile = n; return; } }
   j.state = JobState.Unavailable;
 }
 
+/** Claim the dwarf's own tile as the job target */
 void claimSelf(ref GameApp app, ref Dwarf d, ref Job!Dwarf j) { j.targetTile = d.tile; }
 
 /** Mining Job */
@@ -235,7 +237,7 @@ Job!Dwarf placeTileJob(int[3] targetTile, uint blockID, int[3] fromTile, Resourc
   );
 }
 
-/** Eat Job — claim nearest free Berry on the floor, walk to it, consume it */
+/** Eat Job: consume a food item the dwarf already carries (dispatched only when carrying food) */
 Job!Dwarf eatJob() {
   return Job!Dwarf("Eating", noTile, Substance.None, [], true, reach: Reach.OnTile,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
@@ -257,6 +259,7 @@ Job!Dwarf eatJob() {
     onFail: &failComplete);
 }
 
+/** Fill Cup Job: carry an empty cup to the nearest water and fill it */
 Job!Dwarf fillCupJob() {
   return Job!Dwarf("FillCup", noTile, Substance.None, [], true, reach: Reach.Adjacent,
     onClaim: (ref GameApp app, ref Dwarf d, ref Job!Dwarf j) {
@@ -279,6 +282,7 @@ Job!Dwarf fillCupJob() {
     onFail: &failComplete);
 }
 
+/** Drink Job: consume a carried full cup, clearing thirst */
 Job!T drinkJob(T)() {
   return Job!T("Drinking", noTile, Substance.None, [], true, reach: Reach.OnTile,
     onClaim: &claimSelf,
@@ -296,6 +300,7 @@ Job!T drinkJob(T)() {
     onFail: &failComplete);
 }
 
+/** Craft Job: gather reaction inputs, then consume them to spawn outputs */
 Job!Dwarf craftJob(string name) {
   auto r = reactionFor(name);
   Job!Dwarf[] prereqs;
@@ -325,6 +330,8 @@ Job!Dwarf craftJob(string name) {
     },
     onFail: &failReleaseRequeue);
 }
+
+/** Sleep Job: stand still at a tile until the rest need clears */
 Job!T sleepJob(T)(int[3] atTile) {
   return Job!T("Sleeping", atTile, Substance.None, [], true, reach: Reach.OnTile,
     basePriority: 100,
