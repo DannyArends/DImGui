@@ -25,13 +25,13 @@ dub --build=release --force
 ```
 
 ### Compilation (MS Windows)
-* Install [Visual Studio 2019 Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) with **MSVC v142** and the **Windows 10 SDK**
+* Install [Visual Studio 2019 Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) (or above) with **MSVC v142** and the **Windows 10/11 SDK**
 * Install the [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
 * Check the Vulkan SDK version in [dub.json](../dub.json) and update if needed
 
 Build all dependencies from `app/jni/` using cmake. This can be done by following command:
 ```
-call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+call "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 rmdir /s /q app\jni\build 2>nul
 python app\jni\shaderc\utils\git-sync-deps
 cmake -S app/jni -B app/jni/build -DCMAKE_BUILD_TYPE=Release -DVULKAN_DIR="C:/VulkanSDK/1.4.341.1" -DSDL3_DIR="%CD%/app/jni/SDL"

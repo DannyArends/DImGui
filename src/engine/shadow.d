@@ -16,13 +16,14 @@ import shaders : createStageInfo, loadShaders;
 import shadowmap : assignSlot, initShadowMap, resizeShadowMap, shadowResolution, shadowScore;
 import validation : popLabel, pushLabel;
 
-enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;                /// Maximum number of shadown maps, limits budget
+enum MAX_SHADOW_MAPS = isAndroid ? 8 : 32;              /// Maximum number of shadown maps, limits budget
 enum float SHADOW_HYSTERESIS = 1.25f;
-enum float SHADOW_DEPTH_TEXELS = 1.0f;                    /// Constant bias in texel-depths
-enum float SHADOW_SLOPE_BIAS = 2.0f;                     /// Slope-scaled bias factor (hardware multiplies by real surface slope)
-enum uint NUM_CASCADES = 3;                               /// Number of shadow map cascades
-enum float CASCADE_LAMBDA = 0.75f;                         /// Cascade split blend: 0 = uniform, 1 = logarithmic
+enum float SHADOW_DEPTH_TEXELS = 1.0f;                  /// Constant bias in texel-depths
+enum float SHADOW_SLOPE_BIAS = 2.0f;                    /// Slope-scaled bias factor (hardware multiplies by real surface slope)
+enum uint NUM_CASCADES = 3;                             /// Number of shadow map cascades
+enum float CASCADE_LAMBDA = 0.75f;                      /// Cascade split blend: 0 = uniform, 1 = logarithmic
 
+/** Shadow subsystem: sampler, pipeline, per-slot maps and per-frame cascade/rebuild state */
 struct Shadows {
   VkSampler sampler;                          /// Comparison sampler for depth lookups
   Shader[] shaders;                           /// Shadow depth-only shader(s)
@@ -49,6 +50,7 @@ struct Shadows {
   alias slots this;
 }
 
+/** Create the shadow render passes, pool, sampler and depth-only shaders */
 void createShadows(ref App app) {
   app.createShadowMapRenderPass(app.shadows.cmd.pass(0), VK_ATTACHMENT_LOAD_OP_CLEAR);
   app.createShadowMapRenderPass(app.shadows.cmd.pass(1), VK_ATTACHMENT_LOAD_OP_LOAD);
@@ -57,6 +59,7 @@ void createShadows(ref App app) {
   app.loadShaders(app.shadows.shaders, [ShaderDef("data/shaders/vertex.shadow.glsl", shaderc_glsl_vertex_shader)]);
 }
 
+/** Shadow UBO: scene transform, cascade splits, per-slot view-proj and active light count */
 struct LightUbo {
   Matrix scene;                       /// Scene root transform
   float[4] cascadeSplit;              /// per-cascade shadowDistance splits (x,y,z, nCascades)
@@ -289,7 +292,7 @@ void updateShadowMapUBO(ref App app, Descriptor d, uint syncIndex) {
 }
 
 /** Record shadow casters for light l into cmd; staticPhase selects static vs dynamic casters. */
-void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
+void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t s, uint light, Plane[6] lFrustum, VkExtent3D ext, bool staticPhase) {
   VkClearValue clearDepth = { depthStencil: { depth: 1.0f, stencil: 0 } };
   VkRect2D sc = { extent: { width: ext.width, height: ext.height } };
 
@@ -312,7 +315,7 @@ void recordCasters(ref App app, VkCommandBuffer cmd, ref RenderPass pass, size_t
   float r = app.shadows.cascadeRadius[ci] > 0.0f ? app.shadows.cascadeRadius[ci] : app.shadows.cascadeRadius[0];
   float texelWorld = (r > 0.0f) ? 2.0f * r / cast(float)ext.width : 1.0f;             // world units per shadow texel
   float span = app.shadows.bounds[0] + 4.0f * r;                                      // ortho depth range this cascade covers (world units)
-  float elev = fmax(0.1f, -app.lights[0].direction[1]);                              // sun elevation factor; low sun -> more depth-slop per texel
+  float elev = fmax(0.1f, -app.lights[light].direction[1]);                          // sun elevation factor; low sun -> more depth-slop per texel
   float ndcBias = (texelWorld / elev) / span;                                         // NDC-depth shift needed to clear one texel
   vkCmdSetDepthBias(cmd, SHADOW_DEPTH_TEXELS * ndcBias * cast(float)(1 << 23), 0.0f, SHADOW_SLOPE_BIAS);
 
@@ -352,7 +355,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       bool rebuilt = app.shadows.slots[s].dirty;
       if(rebuilt) {
         pushLabel(cmd, Colors.lightgray, "Static %d:%d in %d, reBuild: %d", first, c, s, rebuilt);
-        app.recordCasters(cmd, app.shadows.cmd.pass(0), s, lFrustum, app.shadows.slots[s].extent, true);
+        app.recordCasters(cmd, app.shadows.cmd.pass(0), s, l, lFrustum, app.shadows.slots[s].extent, true);
         app.shadows.slots[s].dirty = false;
         app.shadows.staticRebuilds++;
       }
@@ -360,7 +363,7 @@ void recordShadowCommandBuffer(ref App app, uint syncIndex) {
       if(rebuilt || dyn || app.shadows.slots[s].hadDynamic) {
         pushLabel(cmd, Colors.lightgray, "Copy & Dynamic %d:%d in %d, had: %d", first, c, s, app.shadows.slots[s].hadDynamic);
         app.copyImageLayer(cmd, app.shadows.slots[s], 0, 1, app.shadows.slots[s].extent, app.shadows.format);
-        app.recordCasters(cmd, app.shadows.cmd.pass(1), s, lFrustum, app.shadows.slots[s].extent, false);
+        app.recordCasters(cmd, app.shadows.cmd.pass(1), s, l, lFrustum, app.shadows.slots[s].extent, false);
         popLabel(cmd);
       }
       app.shadows.slots[s].hadDynamic = dyn;
