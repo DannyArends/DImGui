@@ -35,8 +35,7 @@ void pollEvents(ref App app) {
     if(!app.gui.io.WantCaptureKeyboard) app.timed!handleCameraKeys(e);
     if(e.type == SDL_EVENT_MOUSE_MOTION && app.camera.isdrag[1] && !app.gui.io.WantCaptureMouse) app.tryDrag(e.motion.xrel, e.motion.yrel);
     if(e.type == SDL_EVENT_MOUSE_WHEEL && !app.gui.io.WantCaptureMouse) {
-      if(app.camera.fps) app.tryMove(e.wheel.y > 0 ? app.camera.forward() : app.camera.back());
-      else app.tryZoom(-e.wheel.y);
+      if(!app.camera.fps) app.tryZoom(-e.wheel.y);
     }
 
     if(app.onEvent) app.onEvent(e);                                            // game: touch, game keys, tools

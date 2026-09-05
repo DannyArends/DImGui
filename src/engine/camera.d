@@ -10,35 +10,36 @@ import matrix : inverse, lookAt, radian, multiply, perspective, rotate, transpos
 import quaternion : angleAxis, normalize, qMul, rotate;
 import vector : normalize, vAdd, vSub, vMul, xyz, magnitude;
 
+enum CameraMode { fps, follow }
+
 /** Camera structure holding everything camera and movement related
   nearfar[1]: Could be defined from the voxels = (renderDistance + 1) * chunkSize * tileSize * √2f; */
 struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
-  float[3]        fpsEye        = [-15.0f, 5.0f, 0.0f];   /// FPS eye position (authoritative in FPS mode)
-  float[3]        lookat        = [0.0f, 5.0f, 0.0f];     /// Position in the middle of the screen
-  float[2]        nearfar       = [1.0f, 500.0f];         /// View distances, near [0], far [1]
-  float[3]        up            = [0.0f, 1.0f, 0.0f];     /// Defined up vector
-  float           fov           = 45.0f;                  /// Field of view
-  float           speed         =  0.5f;                  /// Movement speed
-  float[3]        rotation      = [90.0f, 0.0f, 0.0f];     /// Horizontal [0], Vertical [1]
-  float           distance      = 15.0f;                  /// Distance of camera to lookat
-  bool[2]         isdrag        = [false, false];         /// Mouse dragging
-  SDL_FingerID[2] fingerIDs     = [-1, -1];               /// Android FingerIDs
-  float[2][2]     fingerPos     = [[0,0],[0,0]];          /// normalized positions of finger 0 and 1
-  float[2]        pressPos      = [0, 0];                 /// Where the current press started (tap-vs-drag test, either button)
-  bool[2]         wasDown       = [false, false];         /// [primary, secondary] pointer state LAST frame (edge detection)
-  float           lastPinchDist = -1.0f;                  /// -1 = no active pinch
-  bool            isDirty       = true;                   /// Camera moved/rotated this frame
-  bool            godMode       = true;                   /// Move through walls
-  void delegate(float dt) onFrame;                        /// onFrame hook
+  float[3]        fpsEye        = [-15.0f, 5.0f, 0.0f];     /// FPS eye position (authoritative in FPS mode)
+  float[3]        lookat        = [0.0f, 5.0f, 0.0f];       /// Position in the middle of the screen
+  float[2]        nearfar       = [1.0f, 500.0f];           /// View distances, near [0], far [1]
+  float[3]        up            = [0.0f, 1.0f, 0.0f];       /// Defined up vector
+  float           fov           = 45.0f;                    /// Field of view
+  float           speed         = 30.0f;                    /// Movement speed, units/second
+  float[3]        rotation      = [90.0f, 0.0f, 0.0f];      /// Horizontal [0], Vertical [1]
+  float           distance      = 15.0f;                    /// Distance of camera to lookat
+  bool[2]         isdrag        = [false, false];           /// Mouse dragging
+  SDL_FingerID[2] fingerIDs     = [-1, -1];                 /// Android FingerIDs
+  float[2][2]     fingerPos     = [[0,0],[0,0]];            /// normalized positions of finger 0 and 1
+  float[2]        pressPos      = [0, 0];                   /// Where the current press started (tap-vs-drag test, either button)
+  bool[2]         wasDown       = [false, false];           /// [primary, secondary] pointer state LAST frame (edge detection)
+  float           lastPinchDist = -1.0f;                    /// -1 = no active pinch
+  bool            isDirty       = true;                     /// Camera moved/rotated this frame
+  bool            godMode       = true;                     /// Move through walls
+  CameraMode      mode          = CameraMode.fps;          /// Active camera mode
+  bool delegate(ref float[3] target) follow;               /// Follow-target supplier; returns false when the target is gone
+  float[3]        followOffset  = [0.0f, 0.0f, 0.0f];      /// User pan applied on top of the followed target
+  float           turn          = 90.0f;                   /// Rotation speed, degrees/second
 
-  @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -speed]); }
-  @property @nogc float[3] back() const nothrow { return orientation.multiply([0.0f, 0.0f,  speed]); }
-  @property @nogc float[3] right() const nothrow { return orientation.multiply([ speed, 0.0f, 0.0f]); }
-  @property @nogc float[3] left() const nothrow { return orientation.multiply([-speed, 0.0f, 0.0f]); }
-  @property @nogc float[3] pgup() const nothrow { return [0.0f,  speed, 0.0f]; }
-  @property @nogc float[3] down() const nothrow { return [0.0f, -speed, 0.0f]; }
+  @property @nogc float[3] forward() const nothrow { return orientation.multiply([0.0f, 0.0f, -1.0f]); }
+  @property @nogc float[3] right() const nothrow { return orientation.multiply([1.0f, 0.0f,  0.0f]); }
   @property @nogc uint width() const nothrow { return(currentExtent.width); };
   @property @nogc uint height() const nothrow { return(currentExtent.height); };
   @property @nogc float aspectRatio() const nothrow { return(width / cast(float) height); }
@@ -49,7 +50,7 @@ struct Camera {
   }
   @property @nogc Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
   @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
-  @property @nogc bool fps() const nothrow { return(onFrame is null); }   /// mode derived: no follow hook => FPS
+  @property @nogc bool fps() const nothrow { return(mode == CameraMode.fps); }
   @nogc float[3] position() const nothrow { return fps ? fpsEye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
   @nogc void syncLookat() nothrow { lookat = vAdd(fpsEye, orientation.multiply([0.0f, 0.0f, -distance])); }
   @nogc void enterFPS() nothrow { fpsEye = vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); syncLookat(); }
@@ -61,22 +62,52 @@ struct Camera {
   bool delegate(float[3] pos) canMoveTo;
 }
 
+/** Per-frame camera update: poll held keys (dt-scaled), then track the follow target. */
+void updateCamera(ref App app, float dt) {
+  auto k = SDL_GetKeyboardState(null);
+  float[3] pan = [0.0f, 0.0f, 0.0f];
+  if(k[SDL_SCANCODE_W] || k[SDL_SCANCODE_UP]) pan = pan.vAdd(app.camera.forward);
+  if(k[SDL_SCANCODE_S] || k[SDL_SCANCODE_DOWN]) pan = pan.vSub(app.camera.forward);
+  if(k[SDL_SCANCODE_D] || k[SDL_SCANCODE_RIGHT]) pan = pan.vAdd(app.camera.right);
+  if(k[SDL_SCANCODE_A] || k[SDL_SCANCODE_LEFT]) pan = pan.vSub(app.camera.right);
+  if(k[SDL_SCANCODE_PAGEUP]) pan[1] += 1.0f;
+  if(k[SDL_SCANCODE_PAGEDOWN]) pan[1] -= 1.0f;
+  if(pan.magnitude() > 1e-6f) {
+    if(app.camera.mode == CameraMode.follow) app.camera.stopFollow();
+    app.tryMove(pan.normalize().vMul(app.camera.speed * dt));
+  }
+
+  float yaw = (k[SDL_SCANCODE_E] ? 1.0f : 0.0f) - (k[SDL_SCANCODE_Q] ? 1.0f : 0.0f);
+  if(yaw != 0.0f) app.camera.drag(yaw * app.camera.turn * dt, 0.0f);
+
+  if(app.camera.mode == CameraMode.follow) {
+    float[3] target;
+    if(app.camera.follow !is null && app.camera.follow(target)) {
+      float a = 1.0f - exp(-12.0f * dt);   // framerate-independent smoothing
+      float[3] want = target.vAdd(app.camera.followOffset);
+      app.camera.lookat = app.camera.lookat.vAdd(want.vSub(app.camera.lookat).vMul(a));
+      app.camera.isDirty = true;
+    } else { app.camera.stopFollow(); }
+  }
+}
+
 /** Engine keyboard: camera navigation + pause. */
 void handleCameraKeys(ref App app, SDL_Event e) {
-  if(e.type != SDL_EVENT_KEY_DOWN) return;
-  auto s = e.key.key;
-  if(s == SDLK_PAGEUP)   app.tryMove([ 0.0f,  1.0f, 0.0f]);
-  if(s == SDLK_PAGEDOWN) app.tryMove([ 0.0f, -1.0f, 0.0f]);
-  if(s == SDLK_P || s == SDLK_SPACE) app.paused = !app.paused;
-  if(s == SDLK_W || s == SDLK_UP)    app.tryMove(app.camera.forward());
-  if(s == SDLK_S || s == SDLK_DOWN)  app.tryMove(app.camera.back());
-  if(s == SDLK_A || s == SDLK_LEFT)  app.tryMove(app.camera.left());
-  if(s == SDLK_D || s == SDLK_RIGHT) app.tryMove(app.camera.right());
+  if(e.type != SDL_EVENT_KEY_DOWN) return;                 // held-key pan/rotate now polled in updateCamera
+  if(e.key.key == SDLK_P || e.key.key == SDLK_SPACE) app.paused = !app.paused;
+}
+
+/** Leave follow mode, freezing the free-fly eye at the current view. */
+@nogc void stopFollow(ref Camera camera) nothrow {
+  camera.mode = CameraMode.fps;
+  camera.follow = null;
+  camera.followOffset = [0.0f, 0.0f, 0.0f];
+  camera.enterFPS();
 }
 
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
-  if(!app.camera.fps) { app.camera.fpsEye = app.camera.position(); app.camera.onFrame = null; app.camera.syncLookat(); }
+  if(!app.camera.fps) { app.camera.fpsEye = app.camera.position(); app.camera.mode = CameraMode.fps; app.camera.syncLookat(); }
   auto oldEye = app.camera.fpsEye; auto oldLook = app.camera.lookat;
   app.camera.move(direction);
   if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) {

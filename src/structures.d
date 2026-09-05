@@ -10,7 +10,7 @@ public import bone : Bone, BoneWeights;
 public import bounds : Bounds;
 public import boundingbox : BoundingBox;
 public import buffer : GPUAllocation;
-public import camera : Camera;
+public import camera : Camera, CameraMode;
 public import compute : ComputeStage, Compute;
 public import commandpool : SingleTimeCommand;
 public import commands : CommandBuffer;

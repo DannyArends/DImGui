@@ -7,7 +7,7 @@ import game;
 
 import block : syncBlockInstances;
 import boundingbox : computeBoundingBox;
-import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
+import camera : updateCamera, castRay, tryDrag, tryZoom, tryMove, drag, zoom;
 import chunk : buildChunkData;
 import clouds : buildCloudInstances, rainTick, settleRain, requestCloudRebuild;
 import jobs : craftJob, jobQueue;
@@ -135,6 +135,6 @@ void handleEvents(ref GameApp app, float dt) {
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   app.updateSkeletons();                        // assign palette regions for all bone-bearers before they animate
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }   // Execute all onFrame() on Geometries
-  if(app.camera.onFrame !is null) app.camera.onFrame(dt);                   // Execute onFrame() on Camera
+  app.updateCamera(dt);                                                     // poll input + track follow target
   if(app.world.drops.dirty) { app.world.syncBlockInstances(); app.world.drops.dirty = false; }
 }
