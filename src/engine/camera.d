@@ -46,7 +46,7 @@ struct Camera {
   @nogc Matrix orientation() const nothrow {
     float[4] qYaw = angleAxis!float(rotation[0], [0.0f, 1.0f, 0.0f]);
     float[4] qPitch = angleAxis!float(-rotation[1], [1.0f, 0.0f, 0.0f]);
-    return qMul(qPitch, qYaw).normalize().rotate();
+    return(qMul(qPitch, qYaw).normalize().rotate().transpose());
   }
   @property @nogc Matrix proj() const nothrow { return(perspective(fov, width / cast(float)height, nearfar[0], nearfar[1])); }
   @property @nogc Matrix view() const nothrow { return(orientation.viewFrom(position)); }
