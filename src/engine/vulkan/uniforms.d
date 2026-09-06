@@ -7,7 +7,7 @@ import engine;
 
 import buffer : createBuffer, cleanup;
 import quaternion : xyzw;
-import matrix : multiply, rotate, lookAt, perspective;
+import matrix : multiply, rotate, perspective;
 import lights : computeLightSpace, LMode;
 import validation : nameVulkanObject;
 import vram : mapped;

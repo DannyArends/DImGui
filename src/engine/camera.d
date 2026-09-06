@@ -6,7 +6,7 @@
 import engine;
 
 import frustum : aabbInFrustum, extractFrustum;
-import matrix : inverse, lookAt, viewAt, radian, multiply, perspective, rotate, transpose;
+import matrix : inverse, viewFrom, radian, multiply, perspective, rotate, transpose;
 import quaternion : angleAxis, normalize, qMul, rotate;
 import vector : normalize, vAdd, vSub, vMul, xyz, magnitude;
 
@@ -46,10 +46,10 @@ struct Camera {
   @nogc Matrix orientation() const nothrow {
     float[4] qYaw = angleAxis!float(rotation[0], [0.0f, 1.0f, 0.0f]);
     float[4] qPitch = angleAxis!float(-rotation[1], [1.0f, 0.0f, 0.0f]);
-    return qMul(qPitch, qYaw).normalize().rotate().transpose();
+    return qMul(qPitch, qYaw).normalize().rotate();
   }
   @property @nogc Matrix proj() const nothrow { return(perspective(fov, width / cast(float)height, nearfar[0], nearfar[1])); }
-  @property @nogc Matrix view() const nothrow { return(orientation.viewAt(position)); }
+  @property @nogc Matrix view() const nothrow { return(orientation.viewFrom(position)); }
   @property @nogc bool fps() const nothrow { return(mode == CameraMode.fps); }
   @nogc float[3] position() const nothrow { return fps ? eye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
   @nogc void stopFollow() nothrow { eye = position(); mode = CameraMode.fps; follow = null; }

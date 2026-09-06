@@ -5,7 +5,7 @@
 
 import phobos;
 
-import vector : dot, magnitude, vSub, cross, normalize;
+import vector : cross, dot, magnitude, negate, normalize, vSub;
 
 /** Matrix is a [4x4] 'structure' stored as float[16] (defaults to identity matrix). */
 struct Matrix {
@@ -145,14 +145,8 @@ struct Matrix {
     ]));
 }
 
-/** View matrix from a camera basis (rotation-only, column-major) and eye position: R with the eye translation folded into the last row. */
-@nogc pure Matrix viewAt(const Matrix R, const float[3] eye) nothrow {
-  Matrix v = R.transpose();                                  // R is world-from-camera; view is camera-from-world
-  v[12] = -(v[0]*eye[0] + v[4]*eye[1] + v[8]*eye[2]);         // -dot(right,   eye)
-  v[13] = -(v[1]*eye[0] + v[5]*eye[1] + v[9]*eye[2]);         // -dot(up,      eye)
-  v[14] = -(v[2]*eye[0] + v[6]*eye[1] + v[10]*eye[2]);        // -dot(forward, eye)
-  return(v);
-}
+/** View matrix from a world-space camera basis R (columns = right/up/fwd) and eye: R already IS the view rotation; fold in -R·eye. */
+@nogc pure Matrix viewFrom(const Matrix R, const float[3] eye) nothrow { Matrix v = R; v[12 .. 15] = negate(R.multiply(eye))[]; return(v); }
 
 /** lookAt function, looks from pos at "at" using the upvector (up) */
 @nogc pure Matrix lookAt(float[3] pos, float[3] at, float[3] up) nothrow {
