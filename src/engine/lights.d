@@ -130,7 +130,7 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
 }
 
 /** Compute lightspace for the provided light. Builds a cascade's light-space matrix: ortho box centred on lookat */
-@nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint sDim, float[4] sphere = [0,0,0,0], float[3] up = [0.0f, 1.0f, 0.0f]) nothrow {
+@nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint sDim, float[4] sphere = [0,0,0,0], float[3] up = [0, 1, 0]) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
 
