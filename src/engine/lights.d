@@ -129,30 +129,35 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   return [centre[0], centre[1], centre[2], r];
 }
 
+/** Perspective light-space matrix for a spot/point light aimed along its direction. */
+@nogc Matrix spotLightSpace(ref Light light, float[3] lightDir, float far, float[3] up) nothrow {
+  Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), up);
+  return(perspective(2 * light.properties[2], 1.0f, 0.1f, far).multiply(v));
+}
+
+/** Texel-snap `centre` onto the shadow grid along the light's right/up axes, killing cascade shimmer. */
+@nogc float[3] snapToTexel(float[3] centre, float[3] s, float[3] v, float texelSize) nothrow {
+  float du = centre.dot(s), dv = centre.dot(v);
+  return(centre.vAdd(s.vMul(floor(du / texelSize) * texelSize - du)).vAdd(v.vMul(floor(dv / texelSize) * texelSize - dv)));
+}
+
+/** Orthographic light-space matrix for one directional cascade, fit to `sphere` (xyz=centre, w=radius) or full bounds. */
+@nogc Matrix cascadeLightSpace(ref Camera cam, float[3] lightDir, float[2] size, uint sDim, float[4] sphere, float[3] up) nothrow {
+  float radius = (sphere[3] > 0.0f) ? ceil(sphere[3] / 8.0f) * 8.0f : size[1];
+  float depth  = size[0] + 2.0f * radius;
+  float[3] centre = (sphere[3] > 0.0f) ? sphere.xyz : [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
+  float[3] s = lightDir.cross(up).normalize();
+  float[3] v = s.cross(lightDir).normalize();
+  centre = snapToTexel(centre, s, v, 2.0f * radius / cast(float)sDim);
+  float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f + radius));   // pull back so tall casters don't near-clip
+  return(orthogonal(-radius, radius, -radius, radius, 0.0f, depth + 2.0f * radius).multiply(lookAt(eye, centre, up)));
+}
+
 /** Compute lightspace for the provided light. Builds a cascade's light-space matrix: ortho box centred on lookat */
 @nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint sDim, float[4] sphere = [0,0,0,0], float[3] up = [0, 1, 0]) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
-  light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
-
-  if(!light.directional) {
-    Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), up);
-    return perspective(2 * light.properties[2], 1.0f, 0.1f, size[1]).multiply(v);
-  }
-
-  // CSM: cascades stash their half-extent in properties[2] (unused for directional). 0 => full bounds.
-  float radius = (sphere[3] > 0.0f) ? sphere[3] : size[1];
-  if(sphere[3] > 0.0f) radius = ceil(radius / 8.0f) * 8.0f;
-  float depth = size[0] + 2.0f * radius;
-  float[3] centre = (sphere[3] > 0.0f) ? [sphere[0], sphere[1], sphere[2]] : [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
-  float[3] s = lightDir.cross(up).normalize();
-  float[3] v = s.cross(lightDir).normalize();
-  float texelSize = 2.0f * radius / cast(float)sDim;
-  float du = centre.dot(s), dv = centre.dot(v);
-  centre = centre.vAdd(s.vMul(floor(du / texelSize) * texelSize - du)).vAdd(v.vMul(floor(dv / texelSize) * texelSize - dv));
-  // pull eye a full radius toward light so casters above the sphere aren't near-clipped
-  float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f + radius));
-  Matrix lightView = lookAt(eye, centre, up);
-  return orthogonal(-radius, radius, -radius, radius, 0.0f, depth + 2.0f * radius).multiply(lightView);
+  light.direction = lightDir.xyzw(light.direction[3]);
+  return light.directional ? cascadeLightSpace(cam, lightDir, size, sDim, sphere, up) : spotLightSpace(light, lightDir, size[1], up);
 }
 
 /** Update light geometries for rendering */
