@@ -26,6 +26,8 @@ struct Camera {
   float[3]        rotation      = [90.0f, 0.0f, 0.0f];      /// Horizontal [0], Vertical [1]
   float           distance      = 15.0f;                    /// Distance of camera to lookat
   bool[2]         isdrag        = [false, false];           /// Mouse dragging
+  float[2]        dragAccum     = [0.0f, 0.0f];             /// Mouse motion accumulated this frame, applied once in updateCamera
+  float           sensitivity   = 0.35;                     /// Mouse look: degrees of rotation per pixel of motion
   SDL_FingerID[2] fingerIDs     = [-1, -1];                 /// Android FingerIDs
   float[2][2]     fingerPos     = [[0,0],[0,0]];            /// normalized positions of finger 0 and 1
   float[2]        pressPos      = [0, 0];                   /// Where the current press started (tap-vs-drag test, either button)
@@ -74,15 +76,16 @@ void updateCamera(ref App app, float dt) {
     if(app.camera.mode == CameraMode.follow) app.camera.stopFollow();
     app.tryMove(pan.normalize().vMul(app.camera.speed * dt));
   }
-
+  if(app.camera.dragAccum[0] != 0.0f || app.camera.dragAccum[1] != 0.0f) {
+    app.tryDrag(app.camera.dragAccum[0], app.camera.dragAccum[1]);
+    app.camera.dragAccum = [0.0f, 0.0f];
+  }
   if(app.camera.mode == CameraMode.follow) {
     float[3] target;
     if(app.camera.follow !is null && app.camera.follow(target)) {
       app.camera.lookat = target; app.camera.isDirty = true;
     } else { app.camera.stopFollow(); }
   }
-  static float lo = 1, hi = 0; lo = min(lo, dt); hi = max(hi, dt);
-  SDL_Log("dt %.4f  span %.4f-%.4f", dt, lo, hi);
 }
 
 /** Engine keyboard: camera navigation + pause. */
@@ -140,8 +143,8 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 
 /** Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
-  camera.rotation[0] = fmod(camera.rotation[0] - xrel, 360.0f);
-  camera.rotation[1] = clamp(camera.rotation[1] - yrel, -65.0f, 65.0f);
+  camera.rotation[0] = fmod(camera.rotation[0] - xrel * camera.sensitivity, 360.0f);
+  camera.rotation[1] = clamp(camera.rotation[1] - yrel * camera.sensitivity, -65.0f, 65.0f);
   if(camera.fps) camera.syncLookat();
   camera.isDirty = true;
 }

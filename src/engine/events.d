@@ -33,7 +33,9 @@ void pollEvents(ref App app) {
     if(e.type == SDL_EVENT_WINDOW_MINIMIZED) app.minimized = true;
 
     if(!app.gui.io.WantCaptureKeyboard) app.timed!handleCameraKeys(e);
-    if(e.type == SDL_EVENT_MOUSE_MOTION && app.camera.isdrag[1] && !app.gui.io.WantCaptureMouse) app.tryDrag(e.motion.xrel, e.motion.yrel);
+    if(e.type == SDL_EVENT_MOUSE_MOTION && app.camera.isdrag[1] && !app.gui.io.WantCaptureMouse) { 
+      app.camera.dragAccum[0] += e.motion.xrel; app.camera.dragAccum[1] += e.motion.yrel;
+    }
     if(e.type == SDL_EVENT_MOUSE_WHEEL && !app.gui.io.WantCaptureMouse) {
       if(!app.camera.fps) app.tryZoom(-e.wheel.y);
     }

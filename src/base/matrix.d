@@ -147,10 +147,10 @@ struct Matrix {
 
 /** View matrix from a camera basis (rotation-only, column-major) and eye position: R with the eye translation folded into the last row. */
 @nogc pure Matrix viewAt(const Matrix R, const float[3] eye) nothrow {
-  Matrix v = R;
-  v[12] = -(R[0]*eye[0] + R[1]*eye[1] + R[2]*eye[2]);
-  v[13] = -(R[4]*eye[0] + R[5]*eye[1] + R[6]*eye[2]);
-  v[14] = -(R[8]*eye[0] + R[9]*eye[1] + R[10]*eye[2]);
+  Matrix v = R.transpose();                                  // R is world-from-camera; view is camera-from-world
+  v[12] = -(v[0]*eye[0] + v[4]*eye[1] + v[8]*eye[2]);         // -dot(right,   eye)
+  v[13] = -(v[1]*eye[0] + v[5]*eye[1] + v[9]*eye[2]);         // -dot(up,      eye)
+  v[14] = -(v[2]*eye[0] + v[6]*eye[1] + v[10]*eye[2]);        // -dot(forward, eye)
   return(v);
 }
 
