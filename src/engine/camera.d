@@ -18,6 +18,7 @@ struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
   float[3]        lookat        = [0.0f, 5.0f, 0.0f];       /// Position in the middle of the screen
+  float[3]        eye           = [-15.0f, 5.0f, 0.0f];     /// FPS eye anchor (rotation pivots here, pivot = 0)
   float[2]        nearfar       = [1.0f, 500.0f];           /// View distances, near [0], far [1]
   float[3]        up            = [0.0f, 1.0f, 0.0f];       /// Defined up vector
   float           fov           = 45.0f;                    /// Field of view
@@ -50,7 +51,7 @@ struct Camera {
   @property @nogc Matrix proj() const nothrow { return(perspective(fov, width / cast(float)height, nearfar[0], nearfar[1])); }
   @property @nogc Matrix view() const nothrow { return(orientation.viewAt(position)); }
   @property @nogc bool fps() const nothrow { return(mode == CameraMode.fps); }
-  @nogc float[3] position() const nothrow { return(vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance]))); }
+  @nogc float[3] position() const nothrow { return fps ? eye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
   @property @nogc float visibleRadius() const nothrow {
     float fov2 = tan(radian(fov) * 0.5f), far = nearfar[1];
     float[2] s = [far - distance, far * fov2 * sqrt(1.0f + aspectRatio * aspectRatio)];
@@ -100,9 +101,9 @@ void handleCameraKeys(ref App app, SDL_Event e) {
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
   if(!app.camera.fps) app.camera.stopFollow();
-  auto oldLook = app.camera.lookat;
+  auto oldEye = app.camera.eye; auto oldLook = app.camera.lookat;
   app.camera.move(direction);
-  if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.lookat = oldLook;
+  if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) { app.camera.eye = oldEye; app.camera.lookat = oldLook; }
 }
 
 /** tryDrag (checks God-mode) */
@@ -130,7 +131,7 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 
 /** Move the position the camera looks at */
 @nogc void move(ref Camera camera, float[3] movement) nothrow {
-  camera.lookat = vAdd(camera.lookat, movement);
+  if(camera.fps) camera.eye = vAdd(camera.eye, movement); else camera.lookat = vAdd(camera.lookat, movement);
   camera.isDirty = true;
 }
 
