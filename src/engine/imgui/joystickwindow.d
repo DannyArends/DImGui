@@ -6,6 +6,7 @@
 import engine;
 import camera : tryMove;
 import imgui : faIcon;
+import vector : vMul;
 
 /** Show on-screen movement joystick buttons centered at bottom of screen, Android only */
 void showJoystickwindow(ref App app, uint font = 0) {
@@ -36,29 +37,29 @@ void showJoystickwindow(ref App app, uint font = 0) {
     // Middle column: forward / (centre) / back
     igSetCursorPos(ImVec2(cMid, rTop));
     igButton(faIcon(cast(string)ICON_FA_ARROW_UP), bsize);
-    if(igIsItemActive()) app.tryMove(app.camera.forward());
+    if(igIsItemActive()) app.tryMove(app.camera.forward);
 
     igSetCursorPos(ImVec2(cMid, rBot));
     igButton(faIcon(cast(string)ICON_FA_ARROW_DOWN), bsize);
-    if(igIsItemActive()) app.tryMove(app.camera.back());
+    if(igIsItemActive()) app.tryMove(app.camera.forward.vMul(-1.0f));
 
     // Sides: left / right
     igSetCursorPos(ImVec2(cLeft, rMid));
     igButton(faIcon(cast(string)ICON_FA_ARROW_LEFT), bsize);
-    if(igIsItemActive()) app.tryMove(app.camera.left());
+    if(igIsItemActive()) app.tryMove(app.camera.right.vMul(-1.0f));
 
     igSetCursorPos(ImVec2(cRight, rMid));
     igButton(faIcon(cast(string)ICON_FA_ARROW_RIGHT), bsize);
-    if(igIsItemActive()) app.tryMove(app.camera.right());
+    if(igIsItemActive()) app.tryMove(app.camera.right);
 
     // Altitude: page up (top-left) / page down (bottom-right corner)
     igSetCursorPos(ImVec2(cLeft, rTop));
     igButton(faIcon(cast(string)ICON_FA_ANGLES_UP), bsize);
-    if(igIsItemActive()) app.tryMove(app.camera.pgup());
+    if(igIsItemActive()) app.tryMove([0.0f,  1.0f, 0.0f]);
 
     igSetCursorPos(ImVec2(cRight, rBot));
     igButton(faIcon(cast(string)ICON_FA_ANGLES_DOWN), bsize);
-    if(igIsItemActive()) app.tryMove(app.camera.down());
+    if(igIsItemActive()) app.tryMove([0.0f, -1.0f, 0.0f]);
 
     igEnd();
     igPopStyleVar(1);

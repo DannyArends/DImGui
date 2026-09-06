@@ -77,7 +77,7 @@ void updateCamera(ref App app, float dt) {
     app.tryMove(pan.normalize().vMul(app.camera.speed * dt));
   }
   if(app.camera.dragAccum[0] != 0.0f || app.camera.dragAccum[1] != 0.0f) {
-    app.tryDrag(app.camera.dragAccum[0], app.camera.dragAccum[1]);
+    app.tryDrag(app.camera.dragAccum[0] * app.camera.sensitivity, app.camera.dragAccum[1] * app.camera.sensitivity);
     app.camera.dragAccum = [0.0f, 0.0f];
   }
   if(app.camera.mode == CameraMode.follow) {
@@ -143,8 +143,8 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 
 /** Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
-  camera.rotation[0] = fmod(camera.rotation[0] - xrel * camera.sensitivity, 360.0f);
-  camera.rotation[1] = clamp(camera.rotation[1] - yrel * camera.sensitivity, -65.0f, 65.0f);
+  camera.rotation[0] = fmod(camera.rotation[0] - xrel, 360.0f);
+  camera.rotation[1] = clamp(camera.rotation[1] - yrel, -65.0f, 65.0f);
   if(camera.fps) camera.syncLookat();
   camera.isDirty = true;
 }
