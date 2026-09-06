@@ -17,7 +17,6 @@ enum CameraMode { fps, follow }
 struct Camera {
   VkSurfaceCapabilitiesKHR capabilities;
   alias capabilities this;
-  float[3]        fpsEye        = [-15.0f, 5.0f, 0.0f];     /// FPS eye position (authoritative in FPS mode)
   float[3]        lookat        = [0.0f, 5.0f, 0.0f];       /// Position in the middle of the screen
   float[2]        nearfar       = [1.0f, 500.0f];           /// View distances, near [0], far [1]
   float[3]        up            = [0.0f, 1.0f, 0.0f];       /// Defined up vector
@@ -51,9 +50,7 @@ struct Camera {
   @property @nogc Matrix proj() const nothrow { return(perspective(fov, width / cast(float)height, nearfar[0], nearfar[1])); }
   @property @nogc Matrix view() const nothrow { return(orientation.viewAt(position)); }
   @property @nogc bool fps() const nothrow { return(mode == CameraMode.fps); }
-  @nogc float[3] position() const nothrow { return fps ? fpsEye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
-  @nogc void syncLookat() nothrow { lookat = vAdd(fpsEye, orientation.multiply([0.0f, 0.0f, -distance])); }
-  @nogc void enterFPS() nothrow { fpsEye = vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); syncLookat(); }
+  @nogc float[3] position() const nothrow { return(vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance]))); }
   @property @nogc float visibleRadius() const nothrow {
     float fov2 = tan(radian(fov) * 0.5f), far = nearfar[1];
     float[2] s = [far - distance, far * fov2 * sqrt(1.0f + aspectRatio * aspectRatio)];
@@ -98,17 +95,14 @@ void handleCameraKeys(ref App app, SDL_Event e) {
 @nogc void stopFollow(ref Camera camera) nothrow {
   camera.mode = CameraMode.fps;
   camera.follow = null;
-  camera.enterFPS();
 }
 
 /** tryMove (checks God-mode) */
 void tryMove(ref App app, float[3] direction) {
-  if(!app.camera.fps) { app.camera.fpsEye = app.camera.position(); app.camera.mode = CameraMode.fps; app.camera.syncLookat(); }
-  auto oldEye = app.camera.fpsEye; auto oldLook = app.camera.lookat;
+  if(!app.camera.fps) app.camera.stopFollow();
+  auto oldLook = app.camera.lookat;
   app.camera.move(direction);
-  if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) {
-    app.camera.fpsEye = oldEye; app.camera.lookat = oldLook; app.camera.syncLookat();
-  }
+  if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.lookat = oldLook;
 }
 
 /** tryDrag (checks God-mode) */
@@ -136,8 +130,7 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 
 /** Move the position the camera looks at */
 @nogc void move(ref Camera camera, float[3] movement) nothrow {
-  if(camera.fps) { camera.fpsEye = vAdd(camera.fpsEye, movement); camera.syncLookat();
-  } else { camera.lookat = vAdd(camera.lookat, movement); }
+  camera.lookat = vAdd(camera.lookat, movement);
   camera.isDirty = true;
 }
 
@@ -145,7 +138,6 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
   camera.rotation[0] = fmod(camera.rotation[0] - xrel, 360.0f);
   camera.rotation[1] = clamp(camera.rotation[1] - yrel, -65.0f, 65.0f);
-  if(camera.fps) camera.syncLookat();
   camera.isDirty = true;
 }
 
