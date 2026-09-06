@@ -39,7 +39,7 @@ void pollEvents(ref App app) {
       app.camera.dragAccum[1] += e.motion.yrel;
     }
     if(e.type == SDL_EVENT_MOUSE_WHEEL && !app.gui.io.WantCaptureMouse) {
-      if(!app.camera.fps) app.tryZoom(-e.wheel.y);
+      if(!app.camera.fps) app.camera.tryZoom(-e.wheel.y);
     }
 
     if(app.onEvent) app.onEvent(e);                                            // game: touch, game keys, tools
@@ -48,28 +48,28 @@ void pollEvents(ref App app) {
 
 
 /** Per-frame camera update: poll held keys (dt-scaled), then track the follow target. */
-void updateCamera(ref App app, float dt) {
+void updateCamera(ref Camera camera, float dt) {
   auto k = SDL_GetKeyboardState(null);
   float[3] pan = [0.0f, 0.0f, 0.0f];
-  if(k[SDL_SCANCODE_W] || k[SDL_SCANCODE_UP]) pan = pan.vAdd(app.camera.forward);
-  if(k[SDL_SCANCODE_S] || k[SDL_SCANCODE_DOWN]) pan = pan.vSub(app.camera.forward);
-  if(k[SDL_SCANCODE_D] || k[SDL_SCANCODE_RIGHT]) pan = pan.vAdd(app.camera.right);
-  if(k[SDL_SCANCODE_A] || k[SDL_SCANCODE_LEFT]) pan = pan.vSub(app.camera.right);
+  if(k[SDL_SCANCODE_W] || k[SDL_SCANCODE_UP]) pan = pan.vAdd(camera.forward);
+  if(k[SDL_SCANCODE_S] || k[SDL_SCANCODE_DOWN]) pan = pan.vSub(camera.forward);
+  if(k[SDL_SCANCODE_D] || k[SDL_SCANCODE_RIGHT]) pan = pan.vAdd(camera.right);
+  if(k[SDL_SCANCODE_A] || k[SDL_SCANCODE_LEFT]) pan = pan.vSub(camera.right);
   if(k[SDL_SCANCODE_PAGEUP]) pan[1] += 1.0f;
   if(k[SDL_SCANCODE_PAGEDOWN]) pan[1] -= 1.0f;
   if(pan.magnitude() > 1e-6f) {
-    if(app.camera.mode == CameraMode.follow) app.camera.stopFollow();
-    app.tryMove(pan.normalize().vMul(app.camera.speed * dt));
+    if(camera.mode == CameraMode.follow) camera.stopFollow();
+    camera.tryMove(pan.normalize().vMul(camera.speed * dt));
   }
-  if(app.camera.dragAccum[0] != 0.0f || app.camera.dragAccum[1] != 0.0f) {
-    app.tryDrag(app.camera.dragAccum[0] * app.camera.sensitivity, app.camera.dragAccum[1] * app.camera.sensitivity);
-    app.camera.dragAccum = [0.0f, 0.0f];
+  if(camera.dragAccum[0] != 0.0f || camera.dragAccum[1] != 0.0f) {
+    camera.tryDrag(camera.dragAccum[0] * camera.sensitivity, camera.dragAccum[1] * camera.sensitivity);
+    camera.dragAccum = [0.0f, 0.0f];
   }
-  if(app.camera.mode == CameraMode.follow) {
+  if(camera.mode == CameraMode.follow) {
     float[3] target;
-    if(app.camera.follow !is null && app.camera.follow(target)) {
-      app.camera.lookat = target; app.camera.isDirty = true;
-    } else { app.camera.stopFollow(); }
+    if(camera.follow !is null && camera.follow(target)) {
+      camera.lookat = target; camera.isDirty = true;
+    } else { camera.stopFollow(); }
   }
 }
 

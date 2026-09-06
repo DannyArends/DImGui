@@ -136,6 +136,6 @@ void handleEvents(ref GameApp app, float dt) {
   if(app.trace) SDL_Log("onFrame: Frame: %d", app.totalFramesRendered);
   app.updateSkeletons();                        // assign palette regions for all bone-bearers before they animate
   foreach(object; app.objects) { if(object.onFrame) object.onFrame(dt); }   // Execute all onFrame() on Geometries
-  app.updateCamera(dt);                                                     // poll input + track follow target
+  app.camera.updateCamera(dt);                                                     // poll input + track follow target
   if(app.world.drops.dirty) { app.world.syncBlockInstances(); app.world.drops.dirty = false; }
 }

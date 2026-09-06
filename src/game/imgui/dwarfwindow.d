@@ -68,7 +68,7 @@ bool showInventorySlot(ref GameApp app, ref Dwarf d, size_t i, float cellSize) {
 /** Detailed sheet for the selected dwarf */
 void showDwarfSheet(ref GameApp app, ref Dwarf d, int selected) {
   entityGlyph(d, cast(string)ICON_FA_USER); igSameLine(0, 5);
-  if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.followEntity(d.uid, app.world.dwarves); }
+  if(igSelectable_Bool(cstr("%s##follow", d.name), false, 0, ImVec2(0, 0))) { app.camera.followEntity(d.uid, app.world.dwarves); }
   if(igButton(iconText(cast(string)ICON_FA_TRASH, "Delete"), ImVec2(0, 0))) { app.deleteDwarf(selected); return; }
   text("Tile: %s", d.tile);
   needToggle("Hunger", "hungry", d.needs[Need.Hunger], "dwf_hunger");

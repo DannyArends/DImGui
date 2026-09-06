@@ -39,7 +39,7 @@ void showAnimalRow(ref GameApp app, Animals herd, size_t i, ref Animal a) {
 void showAnimalSheet(ref GameApp app, Animals herd, ref Animal a, int selected) {
   entityGlyph(a, cast(string)ICON_FA_PAW); igSameLine(0, 5);
   string species = entityTable[a.type].name;
-  if(igSelectable_Bool(cstr("%s##anmfollow", species), false, 0, ImVec2(0, 0))) { app.followEntity(a.uid, herd); }
+  if(igSelectable_Bool(cstr("%s##anmfollow", species), false, 0, ImVec2(0, 0))) { app.camera.followEntity(a.uid, herd); }
   text("Tile: %s", a.tile);
   needToggle("Hunger", "hungry", a.needs[Need.Hunger], "anm_hunger");
   needToggle("Thirst", "thirsty", a.needs[Need.Thirst], "anm_thirst");

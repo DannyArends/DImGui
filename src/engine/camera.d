@@ -62,18 +62,18 @@ struct Camera {
 }
 
 /** Run a camera mutation, reverting the whole pose if it lands the eye in blocked space. */
-void guarded(ref App app, scope void delegate() act) {
-  auto snap = app.camera; act(); if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) { app.camera = snap; }
+void guarded(ref Camera camera, scope void delegate() act) {
+  auto snap = camera; act(); if(!camera.godMode && camera.canMoveTo && !camera.canMoveTo(camera.position)) { camera = snap; }
 }
 
 /** Translate the active anchor, blocked by collision unless in god mode. */
-void tryMove(ref App app, float[3] direction) { if(!app.camera.fps) app.camera.stopFollow(); app.guarded({ app.camera.move(direction); }); }
+void tryMove(ref Camera camera, float[3] direction) { if(!camera.fps) camera.stopFollow(); camera.guarded({ camera.move(direction); }); }
 
 /** Rotate from a screen-space drag delta. */
-void tryDrag(ref App app, float xrel, float yrel) { app.guarded({ app.camera.drag(xrel, yrel); }); }
+void tryDrag(ref Camera camera, float xrel, float yrel) { camera.guarded({ camera.drag(xrel, yrel); }); }
 
 /** Zoom the eye-to-focus distance. */
-void tryZoom(ref App app, float delta) { app.guarded({ app.camera.zoom(delta); }); }
+void tryZoom(ref Camera camera, float delta) { camera.guarded({ camera.zoom(delta); }); }
 
 /** Create a position/rotation matrix through 3D space starting from xy */
 float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
