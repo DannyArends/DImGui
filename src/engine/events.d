@@ -46,7 +46,6 @@ void pollEvents(ref App app) {
   }
 }
 
-
 /** Per-frame camera update: poll held keys (dt-scaled), then track the follow target. */
 void updateCamera(ref Camera camera, float dt) {
   auto k = SDL_GetKeyboardState(null);

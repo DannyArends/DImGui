@@ -62,33 +62,33 @@ void handleGameInput(ref GameApp app, SDL_Event e) {
     if(symbol == SDLK_K) { jobQueue ~= craftJob("FlintKnapping"); }
     if(symbol == SDLK_L) { jobQueue ~= craftJob("AxeMaking"); }
   }
-  version(Android) { if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(e); }
+  version(Android) { if(!app.gui.io.WantCaptureMouse) app.handleTouchEvents(app.camera, e); }
 }
 
 /** Handle (Android) touch events */
-void handleTouchEvents(ref GameApp app, const SDL_Event event) {
+void handleTouchEvents(ref GameApp app, ref Camera camera, const SDL_Event event) {
   SDL_TouchFingerEvent e = event.tfinger;
   if (event.type == SDL_EVENT_FINGER_DOWN) {
-    if(app.camera.fingerIDs[0] == -1) { app.camera.fingerIDs[0] = e.fingerID; app.camera.fingerPos[0] = [e.x, e.y]; }
-    else if(app.camera.fingerIDs[1] == -1) { app.camera.fingerIDs[1] = e.fingerID; app.camera.fingerPos[1] = [e.x, e.y]; app.camera.lastPinchDist = -1.0f; }
+    if(camera.fingerIDs[0] == -1) { camera.fingerIDs[0] = e.fingerID; camera.fingerPos[0] = [e.x, e.y]; }
+    else if(camera.fingerIDs[1] == -1) { camera.fingerIDs[1] = e.fingerID; camera.fingerPos[1] = [e.x, e.y]; camera.lastPinchDist = -1.0f; }
   }
   if (event.type == SDL_EVENT_FINGER_UP) {
-    if(e.fingerID == app.camera.fingerIDs[0]) { app.camera.fingerIDs[0] = -1; app.camera.lastPinchDist = -1.0f; }
-    if(e.fingerID == app.camera.fingerIDs[1]) { app.camera.fingerIDs[1] = -1; app.camera.lastPinchDist = -1.0f; }
+    if(e.fingerID == camera.fingerIDs[0]) { camera.fingerIDs[0] = -1; camera.lastPinchDist = -1.0f; }
+    if(e.fingerID == camera.fingerIDs[1]) { camera.fingerIDs[1] = -1; camera.lastPinchDist = -1.0f; }
   }
   if (event.type == SDL_EVENT_FINGER_MOTION) {
-    if(e.fingerID == app.camera.fingerIDs[0]) app.camera.fingerPos[0] = [e.x, e.y];
-    if(e.fingerID == app.camera.fingerIDs[1]) app.camera.fingerPos[1] = [e.x, e.y];
-    bool twoFingers = app.camera.fingerIDs[0] != -1 && app.camera.fingerIDs[1] != -1;
+    if(e.fingerID == camera.fingerIDs[0]) camera.fingerPos[0] = [e.x, e.y];
+    if(e.fingerID == camera.fingerIDs[1]) camera.fingerPos[1] = [e.x, e.y];
+    bool twoFingers = camera.fingerIDs[0] != -1 && camera.fingerIDs[1] != -1;
     if (twoFingers) {
-      float dx = app.camera.fingerPos[1][0] - app.camera.fingerPos[0][0];
-      float dy = app.camera.fingerPos[1][1] - app.camera.fingerPos[0][1];
+      float dx = camera.fingerPos[1][0] - camera.fingerPos[0][0];
+      float dy = camera.fingerPos[1][1] - camera.fingerPos[0][1];
       float dist = sqrt(dx*dx + dy*dy);
 
-      if(app.camera.lastPinchDist > 0.0f) { app.camera.zoom((app.camera.lastPinchDist - dist) * 60.0f); }
-      app.camera.lastPinchDist = dist;
-    } else if(e.fingerID == app.camera.fingerIDs[0] && app.world.inventory.activeTool == ToolMode.Info) {
-      app.camera.drag(e.dx * 200.0f, e.dy * 200.0f);
+      if(camera.lastPinchDist > 0.0f) { camera.zoom((camera.lastPinchDist - dist) * 60.0f); }
+      camera.lastPinchDist = dist;
+    } else if(e.fingerID == camera.fingerIDs[0] && app.world.inventory.activeTool == ToolMode.Info) {
+      camera.drag(-e.dx * 200.0f, -e.dy * 200.0f);
     }
   }
 }
