@@ -52,6 +52,7 @@ struct Camera {
   @property @nogc Matrix view() const nothrow { return(orientation.viewAt(position)); }
   @property @nogc bool fps() const nothrow { return(mode == CameraMode.fps); }
   @nogc float[3] position() const nothrow { return fps ? eye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
+  @nogc void stopFollow() nothrow { eye = position(); mode = CameraMode.fps; follow = null; }
   @property @nogc float visibleRadius() const nothrow {
     float fov2 = tan(radian(fov) * 0.5f), far = nearfar[1];
     float[2] s = [far - distance, far * fov2 * sqrt(1.0f + aspectRatio * aspectRatio)];
@@ -60,65 +61,19 @@ struct Camera {
   bool delegate(float[3] pos) canMoveTo;
 }
 
-/** Per-frame camera update: poll held keys (dt-scaled), then track the follow target. */
-void updateCamera(ref App app, float dt) {
-  auto k = SDL_GetKeyboardState(null);
-  float[3] pan = [0.0f, 0.0f, 0.0f];
-  if(k[SDL_SCANCODE_W] || k[SDL_SCANCODE_UP]) pan = pan.vAdd(app.camera.forward);
-  if(k[SDL_SCANCODE_S] || k[SDL_SCANCODE_DOWN]) pan = pan.vSub(app.camera.forward);
-  if(k[SDL_SCANCODE_D] || k[SDL_SCANCODE_RIGHT]) pan = pan.vAdd(app.camera.right);
-  if(k[SDL_SCANCODE_A] || k[SDL_SCANCODE_LEFT]) pan = pan.vSub(app.camera.right);
-  if(k[SDL_SCANCODE_PAGEUP]) pan[1] += 1.0f;
-  if(k[SDL_SCANCODE_PAGEDOWN]) pan[1] -= 1.0f;
-  if(pan.magnitude() > 1e-6f) {
-    if(app.camera.mode == CameraMode.follow) app.camera.stopFollow();
-    app.tryMove(pan.normalize().vMul(app.camera.speed * dt));
-  }
-  if(app.camera.dragAccum[0] != 0.0f || app.camera.dragAccum[1] != 0.0f) {
-    app.tryDrag(app.camera.dragAccum[0] * app.camera.sensitivity, app.camera.dragAccum[1] * app.camera.sensitivity);
-    app.camera.dragAccum = [0.0f, 0.0f];
-  }
-  if(app.camera.mode == CameraMode.follow) {
-    float[3] target;
-    if(app.camera.follow !is null && app.camera.follow(target)) {
-      app.camera.lookat = target; app.camera.isDirty = true;
-    } else { app.camera.stopFollow(); }
-  }
+/** Run a camera mutation, reverting the whole pose if it lands the eye in blocked space. */
+void guarded(ref App app, scope void delegate() act) {
+  auto snap = app.camera; act(); if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) { app.camera = snap; }
 }
 
-/** Engine keyboard: camera navigation + pause. */
-void handleCameraKeys(ref App app, SDL_Event e) {
-  if(e.type != SDL_EVENT_KEY_DOWN) return;                 // held-key pan/rotate now polled in updateCamera
-  if(e.key.key == SDLK_P || e.key.key == SDLK_SPACE) app.paused = !app.paused;
-}
+/** Translate the active anchor, blocked by collision unless in god mode. */
+void tryMove(ref App app, float[3] direction) { if(!app.camera.fps) app.camera.stopFollow(); app.guarded({ app.camera.move(direction); }); }
 
-/** Leave follow mode, freezing the free-fly eye at the current view. */
-@nogc void stopFollow(ref Camera camera) nothrow {
-  camera.mode = CameraMode.fps;
-  camera.follow = null;
-}
+/** Rotate from a screen-space drag delta. */
+void tryDrag(ref App app, float xrel, float yrel) { app.guarded({ app.camera.drag(xrel, yrel); }); }
 
-/** tryMove (checks God-mode) */
-void tryMove(ref App app, float[3] direction) {
-  if(!app.camera.fps) app.camera.stopFollow();
-  auto oldEye = app.camera.eye; auto oldLook = app.camera.lookat;
-  app.camera.move(direction);
-  if(!app.camera.godMode && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) { app.camera.eye = oldEye; app.camera.lookat = oldLook; }
-}
-
-/** tryDrag (checks God-mode) */
-void tryDrag(ref App app, float xrel, float yrel) {
-  auto old = app.camera.rotation;
-  app.camera.drag(xrel, yrel);
-  if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.rotation = old;
-}
-
-/** tryZoom (checks God-mode) */
-void tryZoom(ref App app, float delta) {
-  auto old = app.camera.distance;
-  app.camera.zoom(delta);
-  if(!app.camera.godMode  && app.camera.canMoveTo && !app.camera.canMoveTo(app.camera.position)) app.camera.distance = old;
-}
+/** Zoom the eye-to-focus distance. */
+void tryZoom(ref App app, float delta) { app.guarded({ app.camera.zoom(delta); }); }
 
 /** Create a position/rotation matrix through 3D space starting from xy */
 float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {

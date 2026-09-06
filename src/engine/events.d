@@ -5,12 +5,13 @@
 
 import engine;
 
-import camera : tryDrag, tryZoom, tryMove, handleCameraKeys;
+import camera : tryDrag, tryZoom, tryMove;
 import deletion : deAllocate;
 import imgui : initializeImGui, saveSettings;
 import screenshot : saveScreenshot;
 import surface : createSurface;
 import timing : timed;
+import vector : normalize, vAdd, vSub, vMul, magnitude;
 import vulkan : cleanup;
 import window : createOrResizeWindow;
 
@@ -43,6 +44,39 @@ void pollEvents(ref App app) {
 
     if(app.onEvent) app.onEvent(e);                                            // game: touch, game keys, tools
   }
+}
+
+
+/** Per-frame camera update: poll held keys (dt-scaled), then track the follow target. */
+void updateCamera(ref App app, float dt) {
+  auto k = SDL_GetKeyboardState(null);
+  float[3] pan = [0.0f, 0.0f, 0.0f];
+  if(k[SDL_SCANCODE_W] || k[SDL_SCANCODE_UP]) pan = pan.vAdd(app.camera.forward);
+  if(k[SDL_SCANCODE_S] || k[SDL_SCANCODE_DOWN]) pan = pan.vSub(app.camera.forward);
+  if(k[SDL_SCANCODE_D] || k[SDL_SCANCODE_RIGHT]) pan = pan.vAdd(app.camera.right);
+  if(k[SDL_SCANCODE_A] || k[SDL_SCANCODE_LEFT]) pan = pan.vSub(app.camera.right);
+  if(k[SDL_SCANCODE_PAGEUP]) pan[1] += 1.0f;
+  if(k[SDL_SCANCODE_PAGEDOWN]) pan[1] -= 1.0f;
+  if(pan.magnitude() > 1e-6f) {
+    if(app.camera.mode == CameraMode.follow) app.camera.stopFollow();
+    app.tryMove(pan.normalize().vMul(app.camera.speed * dt));
+  }
+  if(app.camera.dragAccum[0] != 0.0f || app.camera.dragAccum[1] != 0.0f) {
+    app.tryDrag(app.camera.dragAccum[0] * app.camera.sensitivity, app.camera.dragAccum[1] * app.camera.sensitivity);
+    app.camera.dragAccum = [0.0f, 0.0f];
+  }
+  if(app.camera.mode == CameraMode.follow) {
+    float[3] target;
+    if(app.camera.follow !is null && app.camera.follow(target)) {
+      app.camera.lookat = target; app.camera.isDirty = true;
+    } else { app.camera.stopFollow(); }
+  }
+}
+
+/** Engine keyboard: camera navigation + pause. */
+void handleCameraKeys(ref App app, SDL_Event e) {
+  if(e.type != SDL_EVENT_KEY_DOWN) return;                 // held-key pan/rotate now polled in updateCamera
+  if(e.key.key == SDLK_P || e.key.key == SDLK_SPACE) app.paused = !app.paused;
 }
 
 /** Pure engine frame timer (extracted from handleEvents). */

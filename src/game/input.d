@@ -7,9 +7,10 @@ import game;
 
 import block : syncBlockInstances;
 import boundingbox : computeBoundingBox;
-import camera : updateCamera, castRay, tryDrag, tryZoom, tryMove, drag, zoom;
+import camera : castRay, tryDrag, tryZoom, tryMove, drag, zoom;
 import chunk : buildChunkData;
 import clouds : buildCloudInstances, rainTick, settleRain, requestCloudRebuild;
+import events : updateCamera;
 import jobs : craftJob, jobQueue;
 import lights : updateSun;
 import pathfinding : pathfindWorker;
