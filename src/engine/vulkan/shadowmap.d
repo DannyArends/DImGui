@@ -22,7 +22,10 @@ struct ShadowMap {
   Matrix desired;                           /// Desired light-space matrix this frame (pre-commit)
   Matrix committed;                         /// Light-space matrix layer 0 was actually rendered with (committed)
 
-  @property @nogc nothrow bool outOfDate() const { return(desired != committed); }
+  @property @nogc nothrow bool outOfDate() const {
+    foreach(i; 0 .. 16) { if(fabs(desired[i] - committed[i]) > 1e-4f) { return(true); } }
+    return(false);
+  }
 }
 
 /** Create shadow image+view+framebuffer for slot l at the given square size */

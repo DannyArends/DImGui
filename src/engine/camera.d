@@ -6,7 +6,7 @@
 import engine;
 
 import frustum : aabbInFrustum, extractFrustum;
-import matrix : inverse, lookAt, radian, multiply, perspective, rotate, transpose;
+import matrix : inverse, lookAt, viewAt, radian, multiply, perspective, rotate, transpose;
 import quaternion : angleAxis, normalize, qMul, rotate;
 import vector : normalize, vAdd, vSub, vMul, xyz, magnitude;
 
@@ -46,8 +46,8 @@ struct Camera {
     float[4] qPitch = angleAxis!float(-rotation[1], [1.0f, 0.0f, 0.0f]);
     return qMul(qPitch, qYaw).normalize().rotate().transpose();
   }
-  @property @nogc Matrix proj() const nothrow { return perspective(fov, width / cast(float)height, nearfar[0], nearfar[1]); }
-  @property @nogc Matrix view() const nothrow { return(lookAt(position, lookat, up)); }
+  @property @nogc Matrix proj() const nothrow { return(perspective(fov, width / cast(float)height, nearfar[0], nearfar[1])); }
+  @property @nogc Matrix view() const nothrow { return(orientation.viewAt(position)); }
   @property @nogc bool fps() const nothrow { return(mode == CameraMode.fps); }
   @nogc float[3] position() const nothrow { return fps ? fpsEye : vAdd(lookat, orientation.multiply([0.0f, 0.0f, distance])); }
   @nogc void syncLookat() nothrow { lookat = vAdd(fpsEye, orientation.multiply([0.0f, 0.0f, -distance])); }
@@ -81,6 +81,8 @@ void updateCamera(ref App app, float dt) {
       app.camera.lookat = target; app.camera.isDirty = true;
     } else { app.camera.stopFollow(); }
   }
+  static float lo = 1, hi = 0; lo = min(lo, dt); hi = max(hi, dt);
+  SDL_Log("dt %.4f  span %.4f-%.4f", dt, lo, hi);
 }
 
 /** Engine keyboard: camera navigation + pause. */
@@ -138,8 +140,8 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 
 /** Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
-  camera.rotation[0] = fmod(camera.rotation[0] - xrel + 360.0f, 360.0f);
-  camera.rotation[1] = clamp(camera.rotation[1] -= yrel, -65.0f, 65.0f);
+  camera.rotation[0] = fmod(camera.rotation[0] - xrel, 360.0f);
+  camera.rotation[1] = clamp(camera.rotation[1] - yrel, -65.0f, 65.0f);
   if(camera.fps) camera.syncLookat();
   camera.isDirty = true;
 }
