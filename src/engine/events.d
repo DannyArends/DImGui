@@ -62,7 +62,7 @@ void updateCamera(ref Camera camera, float dt) {
     camera.tryMove(pan.normalize().vMul(camera.speed * dt));
   }
   if(camera.dragAccum[0] != 0.0f || camera.dragAccum[1] != 0.0f) {
-    camera.tryDrag(camera.dragAccum[0] * camera.sensitivity, camera.dragAccum[1] * camera.sensitivity);
+    camera.tryDrag(-camera.dragAccum[0] * camera.sensitivity, -camera.dragAccum[1] * camera.sensitivity);
     camera.dragAccum = [0.0f, 0.0f];
   }
   if(camera.mode == CameraMode.follow) {

@@ -90,8 +90,8 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 
 /** Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
-  camera.rotation[0] = fmod(camera.rotation[0] - xrel, 360.0f);
-  camera.rotation[1] = clamp(camera.rotation[1] - yrel, -85.0f, 85.0f);
+  camera.rotation[0] = fmod(camera.rotation[0] + xrel, 360.0f);
+  camera.rotation[1] = clamp(camera.rotation[1] + yrel, -85.0f, 85.0f);
   camera.isDirty = true;
 }
 
@@ -120,16 +120,17 @@ unittest {
   // view maps the eye to the origin (viewFrom translation is correct)
   auto p = c.position;
   auto e = c.view.multiply([p[0], p[1], p[2], 1.0f]);
-  assert(abs(e[0]) < 1e-3f && abs(e[1]) < 1e-3f && abs(e[2]) < 1e-3f, "eye does not map to view-space origin");
-  assert(c.position == c.eye);                                   // fps anchors the eye
+  assert(approx([e[0], e[1], e[2]], [0.0f, 0.0f, 0.0f]), "eye does not map to view-space origin");
+  assert(c.position == c.eye); // fps anchors the eye
 
   // drag: pitch clamps ±85, yaw subtracts the delta
   c.drag(0.0f, 1000.0f);  assert(c.rotation[1] == 85.0f);
   c.drag(0.0f, -1000.0f); assert(c.rotation[1] == -85.0f);
-  c.rotation[0] = 90.0f; c.drag(20.0f, 0.0f); assert(isClose(c.rotation[0], 70.0f));
+  c.rotation[0] = 90.0f; c.drag(20.0f, 0.0f); assert(isClose(c.rotation[0], 110.0f));
+  c.rotation[1] = 40.0f; c.drag(0.0f, 20.0f); assert(isClose(c.rotation[1], 60.0f));
 
   // zoom clamps distance to [2, 60]
-  c.zoom(1000.0f);  assert(c.distance == 60.0f);
+  c.zoom(1000.0f); assert(c.distance == 60.0f);
   c.zoom(-1000.0f); assert(c.distance == 2.0f);
 
   // move: fps translates the eye, follow translates lookat
