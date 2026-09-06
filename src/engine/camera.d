@@ -20,7 +20,6 @@ struct Camera {
   float[3]        lookat        = [0.0f, 5.0f, 0.0f];       /// Position in the middle of the screen
   float[3]        eye           = [-15.0f, 5.0f, 0.0f];     /// FPS eye anchor (rotation pivots here, pivot = 0)
   float[2]        nearfar       = [1.0f, 500.0f];           /// View distances, near [0], far [1]
-  float[3]        up            = [0.0f, 1.0f, 0.0f];       /// Defined up vector
   float           fov           = 45.0f;                    /// Field of view
   float           speed         = 30.0f;                    /// Movement speed, units/second
   float[3]        rotation      = [90.0f, 0.0f, 0.0f];      /// Horizontal [0], Vertical [1]

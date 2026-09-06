@@ -130,12 +130,12 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
 }
 
 /** Compute lightspace for the provided light. Builds a cascade's light-space matrix: ortho box centred on lookat */
-@nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint shadowDimension, float[4] sphere = [0,0,0,0]) nothrow {
+@nogc Matrix computeLightSpace(ref Camera cam, ref Light light, float[2] size, uint sDim, float[4] sphere = [0,0,0,0], float[3] up = [0.0f, 1.0f, 0.0f]) nothrow {
   float[3] lightDir = light.direction.xyz.normalize();
   light.direction = lightDir.xyzw(light.direction[3]); // Store normalized dir, GLSL illuminate() can skip a per-pixel normalize
 
   if(!light.directional) {
-    Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), cam.up);
+    Matrix v = lookAt(light.position.xyz, light.position.xyz.vAdd(lightDir), up);
     return perspective(2 * light.properties[2], 1.0f, 0.1f, size[1]).multiply(v);
   }
 
@@ -144,14 +144,14 @@ void computeRadius(ref Light l, float cutoff = 0.05f) {
   if(sphere[3] > 0.0f) radius = ceil(radius / 8.0f) * 8.0f;
   float depth = size[0] + 2.0f * radius;
   float[3] centre = (sphere[3] > 0.0f) ? [sphere[0], sphere[1], sphere[2]] : [cam.lookat[0], size[0] * 0.5f, cam.lookat[2]];
-  float[3] s = lightDir.cross(cam.up).normalize();
+  float[3] s = lightDir.cross(up).normalize();
   float[3] v = s.cross(lightDir).normalize();
-  float texelSize = 2.0f * radius / cast(float)shadowDimension;
+  float texelSize = 2.0f * radius / cast(float)sDim;
   float du = centre.dot(s), dv = centre.dot(v);
   centre = centre.vAdd(s.vMul(floor(du / texelSize) * texelSize - du)).vAdd(v.vMul(floor(dv / texelSize) * texelSize - dv));
   // pull eye a full radius toward light so casters above the sphere aren't near-clipped
   float[3] eye = centre.vSub(lightDir.vMul(depth * 0.5f + radius));
-  Matrix lightView = lookAt(eye, centre, cam.up);
+  Matrix lightView = lookAt(eye, centre, up);
   return orthogonal(-radius, radius, -radius, radius, 0.0f, depth + 2.0f * radius).multiply(lightView);
 }
 
