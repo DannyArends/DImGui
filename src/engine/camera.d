@@ -100,3 +100,56 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
   camera.distance = clamp(camera.distance + delta, 2.0f, 60.0f);
   camera.isDirty = true;
 }
+
+unittest {
+  import vector : approx, dot, magnitude, vAdd;
+
+  Camera c;
+  c.capabilities.currentExtent.width = 800;
+  c.capabilities.currentExtent.height = 600;
+
+  // orientation is a proper rotation: R * Rᵀ == I
+  auto o = c.orientation();
+  assert(approx(o.multiply(o.transpose), Matrix()), "orientation not orthonormal");
+
+  // forward/right are unit length and mutually orthogonal
+  assert(isClose(magnitude(c.forward), 1.0f));
+  assert(isClose(magnitude(c.right), 1.0f));
+  assert(abs(dot(c.forward, c.right)) < 1e-5f);
+
+  // view maps the eye to the origin (viewFrom translation is correct)
+  auto p = c.position;
+  auto e = c.view.multiply([p[0], p[1], p[2], 1.0f]);
+  assert(abs(e[0]) < 1e-3f && abs(e[1]) < 1e-3f && abs(e[2]) < 1e-3f, "eye does not map to view-space origin");
+  assert(c.position == c.eye);                                   // fps anchors the eye
+
+  // drag: pitch clamps ±85, yaw subtracts the delta
+  c.drag(0.0f, 1000.0f);  assert(c.rotation[1] == 85.0f);
+  c.drag(0.0f, -1000.0f); assert(c.rotation[1] == -85.0f);
+  c.rotation[0] = 90.0f; c.drag(20.0f, 0.0f); assert(isClose(c.rotation[0], 70.0f));
+
+  // zoom clamps distance to [2, 60]
+  c.zoom(1000.0f);  assert(c.distance == 60.0f);
+  c.zoom(-1000.0f); assert(c.distance == 2.0f);
+
+  // move: fps translates the eye, follow translates lookat
+  Camera m;
+  auto e0 = m.eye; m.move([1.0f, 0.0f, 0.0f]);
+  assert(m.eye == vAdd(e0, [1.0f, 0.0f, 0.0f]));
+  m.mode = CameraMode.follow;
+  auto l0 = m.lookat; m.move([0.0f, 0.0f, 2.0f]);
+  assert(m.lookat == vAdd(l0, [0.0f, 0.0f, 2.0f]));
+
+  // stopFollow seeds the eye from the current view: no jump, mode flips, follow cleared
+  Camera f; f.mode = CameraMode.follow; f.lookat = [3.0f, 5.0f, 7.0f];
+  auto before = f.position; f.stopFollow();
+  assert(f.fps && f.follow is null);
+  assert(approx(f.position, before), "stopFollow jumped the camera");
+
+  // guarded reverts a blocked move, keeps an allowed one
+  Camera g; g.godMode = false; g.canMoveTo = (float[3] q) => false;
+  auto ge = g.eye; g.tryMove([5.0f, 0.0f, 0.0f]);
+  assert(g.eye == ge, "blocked move not reverted");
+  g.canMoveTo = (float[3] q) => true; g.tryMove([5.0f, 0.0f, 0.0f]);
+  assert(g.eye == vAdd(ge, [5.0f, 0.0f, 0.0f]), "allowed move reverted");
+}

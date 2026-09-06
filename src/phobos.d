@@ -21,7 +21,7 @@ public import std.array : array, split, replace, empty, join;
 public import std.concurrency : Tid, send, spawn, thisTid, ownerTid, receive, receiveOnly, receiveTimeout;
 public import std.conv : to, text;
 public import std.format : format;
-public import std.math : abs, ceil, sqrt, pow, PI, cos, sin, tan, acos, asin, atan, atan2, floor, fmod, isFinite, isNaN;
+public import std.math : abs, ceil, sqrt, pow, PI, cos, sin, tan, acos, asin, atan, atan2, floor, fmod, isClose, isFinite, isNaN;
 public import std.path : baseName, dirName, extension, globMatch, stripExtension;
 public import std.random : Random, uniform, randomShuffle, dice;
 public import std.range : iota, chain, front;

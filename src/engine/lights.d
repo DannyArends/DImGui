@@ -290,3 +290,29 @@ void updateDisco(ref App app, float dt) {
   }
 }
 
+unittest {
+  // directional vs point classification (position.w)
+  Light dir; dir.position = [0.0f, 0.0f, 0.0f, 0.0f]; dir.direction = [0.0f, -1.0f, 0.0f, 0.0f];
+  assert(dir.directional);
+  Light pt; pt.position = [1.0f, 2.0f, 3.0f, 1.0f];
+  assert(!pt.directional);
+
+  // yaw/pitch derived from the aim direction
+  Light down; down.direction = [0.0f, -1.0f, 0.0f, 0.0f];
+  assert(isClose(down.pitch, 90.0f));                          // straight down
+  Light xpos; xpos.direction = [1.0f, 0.0f, 0.0f, 0.0f];
+  assert(isClose(xpos.yaw, 90.0f, 0.0f, 1e-4f));               // +X
+
+  // spot cone cosines
+  Light spot; spot.properties[2] = 60.0f; spot.computeCone();
+  assert(isClose(spot.cull[2], cos(radian(60.0f))));           // cosOuter
+  assert(isClose(spot.cull[3], cos(radian(30.0f))));           // cosInner
+
+  // computeLightSpace: a directional cascade is orthographic (w preserved) and finite
+  Camera cam; cam.capabilities.currentExtent.width = 512; cam.capabilities.currentExtent.height = 512;
+  Light sun; sun.position = [0.0f, 0.0f, 0.0f, 0.0f]; sun.direction = [0.0f, -1.0f, 0.0f, 0.0f];
+  auto M = cam.computeLightSpace(sun, [100.0f, 50.0f], 1024);
+  auto q = M.multiply([1.0f, 2.0f, 3.0f, 1.0f]);
+  assert(isClose(q[3], 1.0f), "directional light space is not orthographic");
+  assert(q[0] == q[0], "NaN in light space matrix");           // NaN != NaN
+}
