@@ -79,9 +79,9 @@ void tryZoom(ref App app, float delta) { app.guarded({ app.camera.zoom(delta); }
 float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
   float[2] ndc = [(2.0f * x) / cast(float)camera.width  - 1.0f, (2.0f * y) / cast(float)camera.height - 1.0f];
   float[4] clip = [ndc[0], ndc[1], -1.0f, 1.0f];
-  float[4] eye  = multiply(camera.proj().inverse(), clip);
-  float[3] dir  = multiply(camera.view.inverse(), [eye[0], eye[1], eye[2], 0.0f]).xyz;
-  return [camera.position.vAdd(dir), dir.normalize()];
+  float[4] eye = multiply(camera.proj().inverse(), clip);
+  float[3] dir = multiply(camera.view.inverse(), [eye[0], eye[1], eye[2], 0.0f]).xyz;
+  return([camera.position.vAdd(dir), dir.normalize()]);
 }
 
 /** Move the position the camera looks at */
@@ -93,7 +93,7 @@ float[3][2] castRay(const ref Camera camera, float x, float y) nothrow {
 /** Drag the camera in the x/y directions, causes camera rotation */
 @nogc void drag(ref Camera camera, float xrel, float yrel) nothrow {
   camera.rotation[0] = fmod(camera.rotation[0] - xrel, 360.0f);
-  camera.rotation[1] = clamp(camera.rotation[1] - yrel, -65.0f, 65.0f);
+  camera.rotation[1] = clamp(camera.rotation[1] - yrel, -85.0f, 85.0f);
   camera.isDirty = true;
 }
 
