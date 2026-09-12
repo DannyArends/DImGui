@@ -126,14 +126,7 @@ void writeFile(const(char)* path, char[] content, uint verbose = 0) {
 
 version(Android) {
   /** SDL does not provide the ability to scan folders, and on android we need to use the jni dir() is the wrapper function provided */
-  string[] dir(const(char)* path, string pattern = "*", bool shallow = true) {
-    return(listDirContent(path, pattern, shallow)); 
-  }
-
-  struct JNI {
-    JNIEnv* env;
-    auto opDispatch(string m, Args...)(Args args) { mixin("return (*env)." ~ m ~ "(env, args);"); }
-  }
+  string[] dir(const(char)* path, string pattern = "*", bool shallow = true) { return(listDirContent(path, pattern, shallow)); }
 
   /** listDirContent uses SDL to get jni the environment, and obtain a link to the asset_manager via jni calls */
   string[] listDirContent(const(char)* path = "", string pattern = "*", bool shallow = true, uint verbose = 0) {

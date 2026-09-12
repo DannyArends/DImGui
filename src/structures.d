@@ -24,6 +24,7 @@ public import depthbuffer : DepthBuffer;
 public import deletion : CheckedDeletionQueue, DeletionQueue;
 public import frustum : Plane;
 public import glyphatlas : Glyph, GlyphAtlas;
+public import gps : LocationFix;
 public import geometry : Geometry;
 public import geometrybuffer : GeometryBuffer;
 public import queue : QueueSetup, Queues;

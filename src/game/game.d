@@ -113,6 +113,7 @@ void initGame(ref GameApp app) {
 
   // Add the game event handler
   app.onEvent = (SDL_Event e) { app.handleGameInput(e); };
+  version(Android) app.onLocation = (ref LocationFix f) { SDL_Log("fix %f, %f +-%.0fm", f.lat, f.lon, f.acc); };
 
   app.mainDeletionQueue.add((){ app.saveWorld(); });
 }

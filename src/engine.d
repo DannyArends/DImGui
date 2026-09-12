@@ -11,7 +11,12 @@ import vulkan : vkResultStr;
 
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS", RESOLVE = "RESOLVE"};
 
-version(Android){ enum isAndroid = true; }else{ enum isAndroid = false; }
+version(Android){ enum isAndroid = true; 
+  struct JNI {
+    JNIEnv* env;
+    auto opDispatch(string m, Args...)(Args args) { mixin("return (*env)." ~ m ~ "(env, args);"); }
+  }
+}else{ enum isAndroid = false; }
 
 /** Main application structure (see docs/roadmap.md for planned engine work) */
 struct App {
@@ -56,7 +61,8 @@ struct App {
   WBOIT wboit;                                                                  /// Weighted-blended OIT
   DescriptorProvider[string] providers;                                         /// GPU resource creator
   void delegate(SDL_Event) onEvent;                                             /// Game onEvent input hook
-  
+  void delegate(ref LocationFix) onLocation;                                    /// Game GPS fix hook (Android)
+    
   VkSampler sampler;
   Shader[] shaders;
   Shader[] postProcess;

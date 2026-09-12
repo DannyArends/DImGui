@@ -7,6 +7,7 @@ import engine;
 
 import camera : tryDrag, tryZoom, tryMove;
 import deletion : deAllocate;
+import gps : handleLocationEvent;
 import imgui : initializeImGui, saveSettings;
 import screenshot : saveScreenshot;
 import surface : createSurface;
@@ -28,6 +29,7 @@ void pollEvents(ref App app) {
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     if(app.isImGuiInitialized) ImGui_ImplSDL3_ProcessEvent(&e);
+    version(Android) { if(app.handleLocationEvent(e)) continue; }
     if(e.type == SDL_EVENT_QUIT) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(app)) app.finished = true;
     if(e.type == SDL_EVENT_WINDOW_RESTORED)  app.minimized = false;

@@ -14,6 +14,7 @@ import events : pollEvents, frameDelta, sdlEventsFilter, removeGeometry;
 import frame : waitForFrame, presentFrame, renderFrame;
 import game : cleanupGame, checkGameAsync, GameApp, initGame, updateGame;
 import glyphatlas : loadGlyphs, uploadFont;
+import gps : initGPS;
 import imgui : initializeImGui, startImGuiFrame;
 import instance : createInstance;
 import sdl : initializeSDL;
@@ -76,6 +77,7 @@ void run(string[] args = null) {
   app.createOrResizeWindow();                                   /// Create window (swapchain, renderpass, framebuffers, etc)
   app.initializeImGui();                                        /// Initialize ImGui (IO, Style, etc)
   app.initGame();                                               /// [Game] init
+  version(Android) { initGPS(); }                               /// Register the async GPS / permission event
   app.initializeAsync();                                        /// Start Async loading objects and textures
 
   app.time[LASTTICK] = app.time[STARTUP] = SDL_GetTicks();      /// Start counting time
