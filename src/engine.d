@@ -11,7 +11,7 @@ import vulkan : vkResultStr;
 
 enum Stage : string {IMGUI = "IMGUI", COMPUTE = "COMPUTE", RENDER = "RENDER", POST = "POST", SHADOWS = "SHADOWS", RESOLVE = "RESOLVE"};
 
-version(Android){ enum isAndroid = true; 
+version(Android){ enum isAndroid = true;
   struct JNI {
     JNIEnv* env;
     auto opDispatch(string m, Args...)(Args args) { mixin("return (*env)." ~ m ~ "(env, args);"); }

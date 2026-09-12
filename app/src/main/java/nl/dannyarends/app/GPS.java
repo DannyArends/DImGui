@@ -22,8 +22,8 @@ public class GPS implements LocationListener {
   public static void start(final long minMs, final float minM) {
     final Activity ctx = SDLActivity.getContext();
     ctx.runOnUiThread(new Runnable() {
-        public void run() {
-        if (instance == null) instance = new GPS(ctx);
+      public void run() {
+        if(instance == null) instance = new GPS(ctx);
         instance.begin(minMs, minM);
       }
     });
@@ -33,8 +33,8 @@ public class GPS implements LocationListener {
     try {
       seed(manager.getLastKnownLocation(LocationManager.GPS_PROVIDER));
       seed(manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER));
-      if (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minMs, minM, this);
-      if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minMs, minM, this);
+      if(manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minMs, minM, this);
+      if(manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minMs, minM, this);
     } catch (SecurityException e) { /* permission not granted yet */ }
   }
 
