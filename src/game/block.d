@@ -207,11 +207,11 @@ void unsettleBlocks(ref World world, ref Block[uint] drops, int[3] minedTile, fl
 }
 
 /** Update falling blocks */
-void settleBlocks(ref World world, float dt) {
-  if(world.drops.length == 0) return;
-  foreach(id, ref b; world.drops) {
+void settleBlocks(ref GameApp app, float dt) {
+  if(app.world.drops.length == 0) return;
+  foreach(id, ref b; app.world.drops) {
     if(!b.fall.isFalling) continue;
     if(b.fall.step(dt)) b.tile = b.fall.landedTile;
-    world.drops.dirty = true;
+    app.world.drops.dirty = true;
   }
 }
