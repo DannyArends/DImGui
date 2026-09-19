@@ -6,12 +6,9 @@
 
 #pragma attribute(push, nogc, nothrow)
 #if defined(_WIN32)
-  /* DMD v2.112.0 - ImportC lacks these MSVC intrinsics */
-  static unsigned char _BitScanReverse(unsigned long *index, unsigned long mask) {
-    if (mask == 0){ return(0); }
-    unsigned long i = 31;
-    while (!(mask & (1ul << i))){ i--; } *index = i; return(1);
-  }
+  /* MSVC 14.51 __check_arch_support calls these; ImportC declares them but emits no body. Define verbatim. */
+  unsigned __arch_avx10ver(void) { return 0; }
+  unsigned __arch_inverted(void) { return 0; }
 #else
   /* DMD v2.112.0 - ImportC lacks these GCC/Clang builtins; provide fallbacks for SDL3 */
   static inline int __builtin_clz(unsigned int x){ int n = 0; while(!(x & 0x80000000u)) { x <<= 1; n++; } return(n); }
