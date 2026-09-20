@@ -41,7 +41,6 @@ import chunk : finalizeChunk, postFinalizeChunks;
 import dwarf : settleDwarves;
 import dwarfwindow : showDwarfContent;
 import fpswindow : showFPSContent;
-import house : House;
 import imgui : iconTextStr;
 import inventorywindow : showInventoryContent;
 import io : dir;
@@ -111,8 +110,6 @@ void initGame(ref GameApp app) {
   SDL_Log("createScene: WBOIT test rectangles");
   app.testWBOIT();
   SDL_Log("initGame: done");
-
-  app.objects ~= new House();
 
   // Add the game event handler
   app.onEvent = (SDL_Event e) { app.handleGameInput(e); };
