@@ -49,9 +49,7 @@ set(ASSIMP_BUILD_3DS_IMPORTER ON)
 set(ASSIMP_BUILD_OBJ_IMPORTER ON)
 add_subdirectory(assimp assimp_build)
 if(ANDROID)
-  set_target_properties(assimp PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/jniLibs/${ANDROID_ABI}
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/jniLibs/${ANDROID_ABI})
+  set_target_properties(assimp PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/jniLibs/${ANDROID_ABI})
 endif()
 
 # shaderc
