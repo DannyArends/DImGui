@@ -1,10 +1,6 @@
 ## Roadmap
 Planned and possible future work for DImGui engine. Items are aspirational, not commitments, and roughly ordered by interest rather than priority.
 
-### Build system
-
-- **Android hashed .cxx path in dub.json**: Path breaks on a gradle hash regen until the auto-copy-config.h task is added.
-
 ### Engine / renderer
 
 - **Bloom / HDR**: scaffolding is present. Extract bright areas above a luminance threshold, blur them, and composite back for glow on emissive surfaces and highlights. The main visual bang-for-buck item.

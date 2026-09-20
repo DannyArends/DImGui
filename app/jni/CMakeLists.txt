@@ -4,10 +4,12 @@ project(cimgui)
 # Dependency build (all platforms). All outputs collected into one folder so
 # downstream (dub.json) needs a single -L / copy path instead of per-dep dirs.
 # ---------------------------------------------------------------------------
-if(NOT ANDROID)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)  # .dll / .so
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)  # .so
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)  # .lib / .a import libs
+if(ANDROID)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/jniLibs/${ANDROID_ABI})
+else()
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/libs)
 endif()
 cmake_policy(SET CMP0077 NEW)
 
@@ -38,9 +40,6 @@ set(ASSIMP_BUILD_TESTS OFF)
 if(NOT ANDROID)
 set(ASSIMP_BUILD_ZLIB OFF)
 endif()
-if(ANDROID)
-  add_compile_definitions("FOPEN_FUNC(filename,mode)=fopen(filename,mode)")
-endif()
 set(ASSIMP_INSTALL OFF)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
 set(ASSIMP_NO_EXPORT ON)
@@ -49,6 +48,11 @@ set(ASSIMP_BUILD_FBX_IMPORTER ON)
 set(ASSIMP_BUILD_3DS_IMPORTER ON)
 set(ASSIMP_BUILD_OBJ_IMPORTER ON)
 add_subdirectory(assimp assimp_build)
+if(ANDROID)
+  set_target_properties(assimp PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/jniLibs/${ANDROID_ABI}
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/jniLibs/${ANDROID_ABI})
+endif()
 
 # shaderc
 set(SHADERC_SKIP_TESTS ON)
@@ -121,6 +125,9 @@ add_subdirectory(freetype freetype_build)
 
 # Vulkan Memory Allocator
 add_subdirectory(cvma cvma_build)
+if(ANDROID)
+  target_compile_options(cvma PRIVATE -Wno-nullability-completeness)
+endif()
 
 # Options
 option(CIMGUI_STATIC "Build as static library" OFF)
