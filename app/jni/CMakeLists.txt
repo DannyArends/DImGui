@@ -50,6 +50,7 @@ set(ASSIMP_BUILD_OBJ_IMPORTER ON)
 add_subdirectory(assimp assimp_build)
 if(ANDROID)
   set_target_properties(assimp PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/jniLibs/${ANDROID_ABI})
+  file(COPY ${CMAKE_CURRENT_BINARY_DIR}/assimp_build/include/assimp/config.h DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/build-android/assimp/)
 endif()
 
 # shaderc

@@ -1,5 +1,6 @@
-libcimgui.so
-libcimgui.a
+*.so
+*.a
+config.h
 imgui.ini
 DImGui
 
